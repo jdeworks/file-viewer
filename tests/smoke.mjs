@@ -30,7 +30,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf',
   '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain',
   '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
-  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip', '.vcf': 'text/vcard' };
+  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip', '.vcf': 'text/vcard', '.stl': 'model/stl' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -696,6 +696,25 @@ try {
   const sf = await sframe.contentFrame();
   await sf.waitForSelector('.img-doc svg', { timeout: 8000 });
   pass('SVG sanitized and rendered inline');
+
+  // ── STL 3D viewer ── hand-rolled canvas renderer (zero dep), draws the mesh. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.stl' }).click();
+  await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
+  const stlTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (stlTypeId === 'stl') pass('.stl detected as 3D model'); else fail('stl type: ' + stlTypeId);
+  const stlInfo = await page.$eval('#previewHost .stl-info', (e) => e.textContent);
+  if (/8 triangles/.test(stlInfo)) pass('STL parsed (binary, 8 triangles)'); else fail('stl info: ' + stlInfo);
+  // Confirm the mesh actually rasterized to the canvas (non-transparent pixels exist).
+  await page.waitForTimeout(400);
+  const painted = await page.evaluate(() => {
+    const c = document.querySelector('#previewHost .stl-canvas');
+    if (!c || !c.width) return 0;
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] !== 0) n++;
+    return n;
+  });
+  if (painted > 100) pass('STL mesh rendered to canvas (' + painted + ' painted pixels)'); else fail('stl canvas painted pixels: ' + painted);
 
   // ── Raster image ── parent-pane viewer with fit-to-screen default + size-based zoom. ──
   await page.goto(origin, { waitUntil: 'networkidle' });

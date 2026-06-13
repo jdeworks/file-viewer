@@ -263,6 +263,16 @@ body {
 .pdf-changes { padding: 6px 12px; font-size: 12px; color: var(--fg-2); background: var(--bg-2); border-bottom: 1px solid var(--border); }
 .pdf-changes strong { color: var(--accent); }
 
+/* STL 3D viewer (parent pane): canvas + drag-to-orbit. */
+.preview-host .stl-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
+.stl-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
+.stl-info { font-size: 12px; color: var(--fg-2); }
+.stl-bar button { margin-left: auto; font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
+.stl-stage { flex: 1; min-height: 0; overflow: hidden; }
+.stl-canvas { display: block; touch-action: none; cursor: grab; }
+.stl-canvas:active { cursor: grabbing; }
+.stl-empty { color: var(--fg-2); padding: 16px; }
+
 /* Raster image viewer (parent pane): fit-to-screen by default + size-based zoom. */
 .preview-host .imgv-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
 .imgv-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); }

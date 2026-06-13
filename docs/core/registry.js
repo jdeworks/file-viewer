@@ -49,6 +49,7 @@ import patchType from '../types/patch/index.js';
 import logType from '../types/log/index.js';
 import geoType from '../types/geo/index.js';
 import fontType from '../types/font/index.js';
+import stlType from '../types/stl/index.js';
 import subtitleType from '../types/subtitle/index.js';
 import vcardType from '../types/vcard/index.js';
 import sqliteType from '../types/sqlite/index.js';
@@ -80,6 +81,7 @@ export const REGISTRY = [
   imageType,
   mediaType,
   fontType,
+  stlType,
   sqliteType,
   epubType,
   zipType,
