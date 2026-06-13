@@ -34,6 +34,7 @@
   { "label": "Sample.png", "file": "sample.png", "mime": "image/png", "category": "Media" },
   { "label": "Sample.stl", "file": "sample.stl", "mime": "model/stl", "category": "Media" },
   { "label": "Sample.obj", "file": "sample.obj", "mime": "model/obj", "category": "Media" },
+  { "label": "Sample.glb", "file": "sample.glb", "mime": "model/gltf-binary", "category": "Media" },
   { "label": "example.svg", "file": "example.svg", "mime": "image/svg+xml", "category": "Media" },
   { "label": "Sample.wav", "file": "sample.wav", "mime": "audio/wav", "category": "Media" },
   { "label": "Sample.mp3", "file": "sample.mp3", "mime": "audio/mpeg", "category": "Media" },

@@ -51,6 +51,7 @@ import geoType from '../types/geo/index.js';
 import fontType from '../types/font/index.js';
 import stlType from '../types/stl/index.js';
 import objType from '../types/obj/index.js';
+import gltfType from '../types/gltf/index.js';
 import subtitleType from '../types/subtitle/index.js';
 import vcardType from '../types/vcard/index.js';
 import sqliteType from '../types/sqlite/index.js';
@@ -84,6 +85,7 @@ export const REGISTRY = [
   fontType,
   stlType,
   objType,
+  gltfType,
   sqliteType,
   epubType,
   zipType,
