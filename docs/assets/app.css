@@ -201,6 +201,29 @@ body {
 .k-moved-modified { background: rgba(163, 113, 247, .07); border-color: rgba(163, 113, 247, .45); }
 .k-added     { background: rgba(46, 160, 67, .16); border-color: rgba(46, 160, 67, .5); }
 .k-removed   { background: rgba(210, 59, 59, .14); border-color: rgba(210, 59, 59, .5); }
+/* Semantic JSON key-tree diff (rendered in the raw pane's custom-diff host). */
+.jsondiff { font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 0 0 16px; }
+.jd-head { padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); position: sticky; top: 0; z-index: 2; font-family: system-ui, sans-serif; }
+.jd-head .jd-note { display: block; color: var(--fg-2); font-size: 11px; margin-top: 3px; }
+.jd-tree { padding: 10px 12px; }
+.jd-node { padding-left: 2px; }
+.jd-children { padding-left: 1.3em; border-left: 1px solid #8884; margin-left: .3em; }
+.jd-node > summary { cursor: pointer; list-style: none; }
+.jd-node > summary::-webkit-details-marker { display: none; }
+.jd-node > summary::before { content: "▾"; display: inline-block; width: 1em; color: #888; }
+.jd-node:not([open]) > summary::before { content: "▸"; }
+.jd-key { color: #0b69c7; } [data-theme="dark"] .jd-key { color: #7cb7ff; }
+.jd-str { color: #1a7f37; } [data-theme="dark"] .jd-str { color: #7ee787; }
+.jd-num { color: #9a5400; } [data-theme="dark"] .jd-num { color: #ffab70; }
+.jd-bool { color: #8250df; } [data-theme="dark"] .jd-bool { color: #d2a8ff; }
+.jd-null, .jd-punc { color: #888; }
+.jd-old { opacity: .7; text-decoration: line-through; }
+.jd-badge { font-family: system-ui, sans-serif; font-size: 10px; margin-left: 8px; padding: 0 6px; border-radius: 8px; background: var(--bg-3); color: var(--fg-2); }
+.jd-added > summary, .jd-added { background: rgba(46,160,67,.14); border-radius: 4px; }
+.jd-removed > summary, .jd-removed { background: rgba(210,59,59,.13); border-radius: 4px; }
+.jd-changed > summary { background: rgba(210,153,34,.13); border-radius: 4px; }
+.jd-error { color: var(--danger); font-family: system-ui, sans-serif; padding: 14px; }
+
 /* Word-level change highlights inside a modified/moved-modified block. */
 .w-del { background: rgba(210, 59, 59, .28); border-radius: 3px; text-decoration: line-through; text-decoration-color: rgba(210,59,59,.7); }
 .w-ins { background: rgba(46, 160, 67, .30); border-radius: 3px; }

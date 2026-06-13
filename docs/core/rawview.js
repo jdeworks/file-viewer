@@ -10,17 +10,20 @@ function fill(el) { el.style.position = 'absolute'; el.style.inset = '0'; return
 
 export async function createRawView(host, {
   originalText, currentText, language, theme, options = {},
-  onChange, onCursor, onScroll, onMoveDiff,
+  onChange, onCursor, onScroll, onMoveDiff, onCustomDiff,
 }) {
   const monaco = await loadMonaco();
   host.innerHTML = '';
   const stdHost = fill(document.createElement('div'));
   const diffHost = fill(document.createElement('div'));
   const moveHost = fill(document.createElement('div'));
+  const customHost = fill(document.createElement('div'));    // type-provided diff (e.g. JSON key diff)
   moveHost.className = 'movediff-host';
+  customHost.className = 'movediff-host';
   diffHost.style.display = 'none';
   moveHost.style.display = 'none';
-  host.append(stdHost, diffHost, moveHost);
+  customHost.style.display = 'none';
+  host.append(stdHost, diffHost, moveHost, customHost);
 
   const originalModel = monaco.editor.createModel(originalText, language);
   const modifiedModel = monaco.editor.createModel(currentText, language);
@@ -53,8 +56,12 @@ export async function createRawView(host, {
 
   function setMode(next) {
     mode = next;
-    stdHost.style.display = 'none'; diffHost.style.display = 'none'; moveHost.style.display = 'none';
-    if (next === 'diff') {
+    stdHost.style.display = 'none'; diffHost.style.display = 'none'; moveHost.style.display = 'none'; customHost.style.display = 'none';
+    // A type can supply a custom diff (e.g. JSON key-tree) — it replaces Monaco's text diff.
+    if (next === 'diff' && onCustomDiff) {
+      customHost.style.display = '';
+      onCustomDiff(customHost, originalModel.getValue(), modifiedModel.getValue());
+    } else if (next === 'diff') {
       ensureDiff().updateOptions({ renderSideBySide: !isNarrow() });
       diffHost.style.display = ''; diff.layout();
     } else if (next === 'movediff') {

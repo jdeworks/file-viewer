@@ -350,6 +350,22 @@ try {
   const jkeys = await jf.$$eval('.json-tree .j-key', (els) => els.length);
   if (jkeys > 0) pass('JSON rendered as collapsible tree (' + jkeys + ' keys)'); else fail('no json keys');
 
+  // Semantic JSON key-tree diff: edit working copy (add/remove/change a key + REORDER one)
+  // then open Diff — reordering must NOT show as a change.
+  await page.evaluate(() => {
+    const obj = { private: true, name: 'file-viewer', mobileFirst: false, added: 1, trust: { server: false, tracking: false, cdn: false }, types: ['markdown', 'pdf', 'csv', 'xlsx', 'docx', 'pptx', 'json', 'image', 'code'], counts: { smokeChecks: 29, offOriginRequests: 0 }, tags: ['client-only', 'vendored', 'modular'] };
+    window.__fv.state.rawview.setValue(JSON.stringify(obj, null, 2));
+  });   // vs original: 'private' moved up (reorder), mobileFirst true->false, 'added' new, 'name' same
+  await page.click('#rawMode button[data-raw="diff"]');
+  await page.waitForSelector('.jsondiff', { timeout: 6000 });
+  const jdAdded = await page.$$eval('.jd-added > .jd-key, .jd-added > summary .jd-key', (els) => els.map((e) => e.textContent));
+  const jdChanged = await page.$$eval('.jsondiff .jd-changed', (els) => els.length);
+  if (jdAdded.includes('added')) pass('JSON key diff flags an added key'); else fail('jd-added keys: ' + jdAdded.join(','));
+  // 'mobileFirst' changed value -> a changed leaf; reordered 'private'/'name' must NOT be changed.
+  const changedKeys = await page.$$eval('.jsondiff .jd-changed > .jd-key', (els) => els.map((e) => e.textContent));
+  if (changedKeys.includes('mobileFirst') && !changedKeys.includes('private') && !changedKeys.includes('name')) pass('JSON key diff: value change flagged, reordered keys ignored'); else fail('jd changed keys: ' + changedKeys.join(','));
+  await page.click('#rawMode button[data-raw="current"]');
+
   // ── Calendar (.ics) ── parse iCalendar, render events chronologically.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.ics' }).click();

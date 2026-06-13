@@ -307,6 +307,14 @@ async function buildRawView() {
       const { renderMoveDiff } = await import('./movediff-view.js');
       renderMoveDiff(moveHost, original, current, { threshold: 0.8 });
     },
+    // JSON gets a semantic key-tree diff in place of Monaco's text diff (compares by
+    // key/path; reordering + formatting are ignored).
+    onCustomDiff: state.type.id === 'json'
+      ? async (host, original, current) => {
+          const { renderJsonDiff } = await import('../types/json/jsondiff.js');
+          renderJsonDiff(host, original, current);
+        }
+      : undefined,
   });
   syncRawModeButtons();
 }
