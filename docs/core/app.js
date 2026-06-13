@@ -8,12 +8,13 @@ import { pickType } from './detect.js';
 import { wireIntake, LARGE_FILE_BYTES } from './intake.js';
 import { loadMonaco } from './monaco-loader.js';
 import { mountPreview } from './iframe.js';
+import { buildModel, monacoOptions, renderSettings } from './settings.js';
 
 const $ = (id) => document.getElementById(id);
 const state = {
   intake: null,
   type: null,
-  settings: {},          // current setting values for the active type
+  settingsModel: null,   // WP03 settings model for the active type
   editor: null,
   monaco: null,
   preview: null,         // iframe controller
@@ -62,7 +63,7 @@ function populateTypeSelect(ranking, selectedId) {
 
 async function activateType(type) {
   state.type = type;
-  state.settings = await loadSettings(type);
+  state.settingsModel = await buildModel(type);
   // Show workspace + relevant chrome.
   $('intake').hidden = true;
   $('workspace').hidden = false;
@@ -96,7 +97,7 @@ async function renderRaw() {
       value, language: lang, automaticLayout: true,
       theme: themeIsDark() ? 'vs-dark' : 'vs',
       readOnly: state.intake.isBinary,
-      ...monacoOptionsFromSettings(),
+      ...monacoOptions(state.settingsModel),
     });
     // raw -> preview magic selector + scroll sync
     state.editor.onDidChangeCursorPosition((e) => mapRawToPreview(e.position.lineNumber));
@@ -106,19 +107,9 @@ async function renderRaw() {
   } else {
     const model = state.editor.getModel();
     monaco.editor.setModelLanguage(model, lang);
-    state.editor.updateOptions({ readOnly: state.intake.isBinary, ...monacoOptionsFromSettings() });
+    state.editor.updateOptions({ readOnly: state.intake.isBinary, ...monacoOptions(state.settingsModel) });
     if (model.getValue() !== value) model.setValue(value);
   }
-}
-
-function monacoOptionsFromSettings() {
-  const s = state.settings;
-  return {
-    wordWrap: s.wordWrap ?? 'on',
-    fontSize: s.fontSize ?? 14,
-    minimap: { enabled: !!s.minimap },
-    lineNumbers: s.lineNumbers ?? 'on',
-  };
 }
 
 async function onRawEdited() {
@@ -136,7 +127,7 @@ async function renderPreview() {
   let rendered;
   try {
     const mod = await type.loadRenderer();
-    rendered = await mod.render(state.intake, { settings: state.settings });
+    rendered = await mod.render(state.intake, { settings: state.settingsModel.values });
   } catch (err) {
     $('previewHost').innerHTML = '<p style="padding:16px;color:var(--danger)">Preview failed: ' + escapeHtml(err.message) + '</p>';
     return;
@@ -144,6 +135,7 @@ async function renderPreview() {
   state.preview = mountPreview($('previewHost'), {
     bodyHtml: rendered.bodyHtml,
     theme: themeIsDark() ? 'dark' : 'light',
+    maxWidth: state.settingsModel.values.previewMaxWidth,
     onSelect: (src) => mapPreviewToRaw(src),
     onHover: (src) => mapPreviewToRaw(src, false),
     onScroll: (ratio) => syncScrollFromPreview(ratio),
@@ -181,7 +173,7 @@ function mapRawToPreview(line) {
 /* ─────────────────────────── Scroll sync (WP08 seed) ─────────────────────────── */
 
 function syncScrollFromRaw() {
-  if (state.syncing || !state.preview || !state.settings.syncScroll) return;
+  if (state.syncing || !state.preview || !state.settingsModel.values.syncScroll) return;
   const ed = state.editor;
   const top = ed.getScrollTop(), max = ed.getScrollHeight() - ed.getLayoutInfo().height;
   state.syncing = true;
@@ -189,7 +181,7 @@ function syncScrollFromRaw() {
   requestAnimationFrame(() => (state.syncing = false));
 }
 function syncScrollFromPreview(ratio) {
-  if (state.syncing || !state.editor || !state.settings.syncScroll) return;
+  if (state.syncing || !state.editor || !state.settingsModel.values.syncScroll) return;
   const ed = state.editor;
   const max = ed.getScrollHeight() - ed.getLayoutInfo().height;
   state.syncing = true;
@@ -214,57 +206,20 @@ function applyLayout() {
   state.editor?.layout();
 }
 
-/* ─────────────────────────── Settings (minimal; WP03 replaces) ─────────────────────────── */
+/* ─────────────────────────── Settings (WP03) ─────────────────────────── */
 
-async function loadSettings(type) {
-  try {
-    const res = await fetch(type.settingsUrl);
-    const json = await res.json();
-    const saved = JSON.parse(localStorage.getItem('fv:settings:' + type.id) || 'null');
-    return { ...json.values, ...(saved?.values || {}) };
-  } catch {
-    return {};
-  }
+function openSettings() {
+  renderSettings($('settingsBody'), state.settingsModel, { onChange: onSettingsChange, toast });
 }
 
-function buildSettings() {
-  const body = $('settingsBody');
-  const s = state.settings;
-  const rows = [
-    ['Word wrap', selectCtl('wordWrap', s.wordWrap, ['on', 'off'])],
-    ['Font size', numCtl('fontSize', s.fontSize, 8, 40)],
-    ['Line numbers', selectCtl('lineNumbers', s.lineNumbers, ['on', 'off', 'relative'])],
-    ['Minimap', boolCtl('minimap', s.minimap)],
-  ];
-  if (state.type.capabilities.preview) rows.push(['Sync scroll', boolCtl('syncScroll', s.syncScroll)]);
-  body.innerHTML = '';
-  for (const [label, ctl] of rows) {
-    const row = document.createElement('div'); row.className = 'set-row';
-    const l = document.createElement('label'); l.textContent = label;
-    row.append(l, ctl); body.appendChild(row);
-  }
-  const save = document.createElement('button');
-  save.className = 'btn'; save.style.marginTop = '12px'; save.textContent = 'Save for this file type';
-  save.onclick = () => { localStorage.setItem('fv:settings:' + state.type.id, JSON.stringify({ version: 1, values: state.settings })); toast('Saved'); };
-  body.appendChild(save);
-}
-function applySetting(key, val) {
-  state.settings[key] = val;
-  state.editor?.updateOptions(monacoOptionsFromSettings());
-  if (['previewMaxWidth', 'syncScroll'].includes(key) && state.type?.capabilities.preview) renderPreview();
-}
-function selectCtl(key, val, opts) {
-  const el = document.createElement('select');
-  for (const o of opts) { const op = document.createElement('option'); op.value = o; op.textContent = o; if (o === String(val)) op.selected = true; el.appendChild(op); }
-  el.onchange = () => applySetting(key, el.value); return el;
-}
-function numCtl(key, val, min, max) {
-  const el = document.createElement('input'); el.type = 'number'; el.min = min; el.max = max; el.value = val ?? 14;
-  el.onchange = () => applySetting(key, Number(el.value)); return el;
-}
-function boolCtl(key, val) {
-  const el = document.createElement('input'); el.type = 'checkbox'; el.checked = !!val;
-  el.onchange = () => applySetting(key, el.checked); return el;
+// Re-apply settings after any change. Editor options apply live; the preview only
+// re-renders when a viewer setting that affects rendering changed (syncScroll reads live).
+function onSettingsChange(model, changedKey) {
+  state.editor?.updateOptions(monacoOptions(model));
+  if (!state.type?.capabilities.preview) return;
+  const cat = model.descriptors.find((d) => d.key === changedKey)?.category;
+  const viewerRenderKey = cat && cat.startsWith('viewer') && changedKey !== 'syncScroll';
+  if (!changedKey || viewerRenderKey) renderPreview();
 }
 
 /* ─────────────────────────── Metadata ─────────────────────────── */
@@ -356,7 +311,7 @@ function init() {
 
   $('typeSelect').addEventListener('change', (e) => { const t = getType(e.target.value); if (t) activateType(t); });
   $('themeBtn').addEventListener('click', () => applyTheme(!themeIsDark()));
-  $('settingsBtn').addEventListener('click', () => openDrawer('settingsDrawer', buildSettings));
+  $('settingsBtn').addEventListener('click', () => openDrawer('settingsDrawer', openSettings));
   $('metaBtn').addEventListener('click', () => openDrawer('metaDrawer', buildMetadata));
   $('scrim').addEventListener('click', closeDrawers);
   document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeDrawers));

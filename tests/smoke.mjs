@@ -78,6 +78,35 @@ try {
   const sandbox = await frame.getAttribute('sandbox');
   if (sandbox === 'allow-scripts') pass('iframe sandbox = allow-scripts only'); else fail('sandbox: ' + sandbox);
 
+  // ── Settings (WP03) ──
+  await page.click('#settingsBtn');
+  await page.waitForSelector('#settingsBody .set-group', { timeout: 5000 });
+  const groups = await page.$$eval('#settingsBody .set-group > summary', (els) => els.map((e) => e.textContent));
+  if (groups.includes('Editor') && groups.includes('Preview')) pass('settings render by category (' + groups.join(', ') + ')');
+  else fail('categories: ' + groups.join(', '));
+
+  // Switch preset to Compact -> preview re-renders at 680px max width.
+  const presetSel = await page.$('#settingsBody select');
+  await presetSel.selectOption('compact');
+  await page.waitForTimeout(500);
+  const frame2 = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 5000 });
+  const f2 = await frame2.contentFrame();
+  const maxW = await f2.evaluate(() => getComputedStyle(document.body).maxWidth);
+  if (maxW === '680px') pass('preset applied to preview (maxWidth=680px)'); else fail('preview maxWidth after Compact: ' + maxW);
+
+  // Preset matcher reports Compact (not Custom) after selecting it.
+  const presetVal = await page.$eval('#settingsBody select', (s) => s.value);
+  if (presetVal === 'compact') pass('preset dropdown reflects selection'); else fail('preset value: ' + presetVal);
+
+  // Changing one value flips the dropdown to Custom.
+  const numInput = await page.$('#settingsBody input[type="number"]');
+  await numInput.fill('22'); await numInput.dispatchEvent('change');
+  await page.waitForTimeout(200);
+  const afterEdit = await page.$eval('#settingsBody select', (s) => s.value);
+  if (afterEdit === 'custom') pass('manual edit -> Custom preset'); else fail('expected custom, got ' + afterEdit);
+
+  await page.click('#settingsDrawer [data-close]');
+
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
 } catch (e) {

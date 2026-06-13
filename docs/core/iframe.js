@@ -48,31 +48,32 @@ const BRIDGE = `
 const BASE_CSS = `
   :root{color-scheme:light dark;}
   html,body{margin:0;}
-  body{font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:20px;max-width:900px;margin:0 auto;
+  body{font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:20px;max-width:var(--fv-maxw,900px);margin:0 auto;
        color:#1a1a1a;background:#fff;}
   body.fv-dark{color:#e6e6e6;background:#1e1e1e;}
   .fv-hl{outline:2px solid #4c9aff;outline-offset:2px;border-radius:3px;background:rgba(76,154,255,.12);}
   img,video,canvas{max-width:100%;height:auto;}
   pre{overflow:auto;}`;
 
-function buildSrcdoc({ bodyHtml, theme, extraHead = '' }) {
+function buildSrcdoc({ bodyHtml, theme, extraHead = '', maxWidth }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';
+  const rootStyle = Number.isFinite(maxWidth) ? `<style>:root{--fv-maxw:${maxWidth}px;}</style>` : '';
   return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
     + '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-    + '<style>' + BASE_CSS + '</style>\n' + extraHead + '\n</head>\n'
+    + '<style>' + BASE_CSS + '</style>\n' + rootStyle + extraHead + '\n</head>\n'
     + '<body' + darkClass + '>\n' + bodyHtml + '\n'
     + '<script>' + BRIDGE + '</scr' + 'ipt>\n</body>\n</html>';
 }
 
 // container: element to host the iframe. Returns a controller for the parent side.
-export function mountPreview(container, { bodyHtml, theme, allowScripts = false, extraHead = '', onSelect, onHover, onScroll }) {
+export function mountPreview(container, { bodyHtml, theme, allowScripts = false, extraHead = '', maxWidth, onSelect, onHover, onScroll }) {
   container.innerHTML = '';
   const iframe = document.createElement('iframe');
   iframe.className = 'fv-preview-frame';
   iframe.title = 'Rendered preview';
   // allow-scripts only. NEVER add allow-same-origin together with allow-scripts.
   iframe.setAttribute('sandbox', allowScripts ? 'allow-scripts' : 'allow-scripts');
-  iframe.srcdoc = buildSrcdoc({ bodyHtml, theme, extraHead });
+  iframe.srcdoc = buildSrcdoc({ bodyHtml, theme, extraHead, maxWidth: Number(maxWidth) });
   container.appendChild(iframe);
 
   function onMsg(e) {

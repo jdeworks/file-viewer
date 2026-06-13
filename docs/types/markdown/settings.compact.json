@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "label": "Compact",
+  "values": {
+    "wordWrap": "on",
+    "fontSize": 12,
+    "lineNumbers": "off",
+    "tabSize": 2,
+    "minimap": false,
+    "previewMaxWidth": 680,
+    "syncScroll": true
+  }
+}
