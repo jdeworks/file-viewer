@@ -651,6 +651,16 @@ try {
   const geoPolys = await geof.$$eval('.geo-svg .geo-poly', (els) => els.length);
   const geoPts = await geof.$$eval('.geo-svg .geo-pt', (els) => els.length);
   if (geoLines >= 1 && geoPolys >= 1 && geoPts >= 2) pass('GeoJSON drawn as SVG (' + geoLines + ' line, ' + geoPolys + ' polygon, ' + geoPts + ' points)'); else fail('geo svg: line=' + geoLines + ' poly=' + geoPolys + ' pt=' + geoPts);
+  // GeoJSON → GPX export.
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const geoExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
+  if (geoExports.includes('Download as GPX')) pass('GeoJSON export offers GPX'); else fail('geo exports: ' + geoExports.join(','));
+  const [gpxDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download as GPX")'),
+  ]);
+  if (/\.gpx$/.test(gpxDl.suggestedFilename())) pass('GeoJSON → GPX download (' + gpxDl.suggestedFilename() + ')'); else fail('geo→gpx: ' + gpxDl.suggestedFilename());
 
   // ── ID3 metadata ── an MP3's tags surface in the info drawer. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
