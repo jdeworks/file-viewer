@@ -10,6 +10,8 @@ No install. No PWA. No account. Nothing to run.
 
 The point is trust. **Zero off-origin requests at runtime** — there is no server, no CDN, no analytics, no telemetry. Every library is vendored into this repo and served from the same origin as the page. Your files never leave the tab. The smoke test asserts "zero off-origin requests" on every run, so this stays true.
 
+> **Don't take our word for it — verify it yourself.** Open your browser's **DevTools → Network tab**, then load a file and click around. You'll see requests only to this site's own origin (and `data:`/`blob:` URLs, which never leave your machine) — nothing to any third party. Want to be certain? **Turn off your network / go offline and reload** — once the page has loaded, everything still works, because there's no server to talk to.
+
 - 📱 **Mobile is a first-class target** — on phones the raw/preview views become tabs instead of cramped side-by-side panes.
 - 🔒 **Secure preview** — rendered output lives in a `sandbox="allow-scripts"` iframe (opaque origin, never `allow-same-origin`). Untrusted HTML is DOMPurify-sanitized. If a file contains scripts or inline JS, you're asked before anything runs. Program source (Python, JS, …) is shown, never executed.
 - 🧩 **Modular** — adding a file type is one folder plus one line.
