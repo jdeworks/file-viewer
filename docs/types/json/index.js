@@ -14,5 +14,8 @@ export default {
   syntaxLanguage: 'json',
   loadRenderer: () => import('./renderer.js'),
   loadMetadata: () => import('./metadata.js'),
+  // Declarative custom diff (Layer 2): semantic key-tree diff lives in the json folder,
+  // not in core. Module exports render(host, originalText, currentText).
+  loadDiffRenderer: () => import('./jsondiff.js'),
   settingsUrl: new URL('./settings.default.json', import.meta.url),
 };

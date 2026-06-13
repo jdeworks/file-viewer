@@ -7,6 +7,7 @@
   { "label": "Sample.pptx", "file": "sample.pptx", "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation" },
   { "label": "Sample.json", "file": "sample.json", "mime": "application/json" },
   { "label": "Sample.yaml", "file": "sample.yaml", "mime": "application/yaml" },
+  { "label": "package.json", "file": "package.json", "mime": "application/json" },
   { "label": "Sample.ipynb", "file": "sample.ipynb", "mime": "application/x-ipynb+json" },
   { "label": "Sample.html", "file": "sample.html", "mime": "text/html" },
   { "label": "Sample.eml", "file": "sample.eml", "mime": "message/rfc822" },

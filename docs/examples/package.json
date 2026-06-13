@@ -1,0 +1,21 @@
+{
+  "name": "demo-package",
+  "version": "1.2.0",
+  "description": "A sample package.json — the viewer recognizes it and links each dependency to npm.",
+  "license": "MIT",
+  "homepage": "https://example.com",
+  "repository": { "type": "git", "url": "git+https://github.com/example/demo-package.git" },
+  "scripts": {
+    "build": "vite build",
+    "test": "node tests/run.mjs",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "markdown-it": "^14.1.0",
+    "dompurify": "^3.2.4"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "eslint": "^9.0.0"
+  }
+}

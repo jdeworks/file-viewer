@@ -83,6 +83,9 @@ function nodeHtml(node, isRoot) {
   return '<div class="' + cls + '">' + keyHtml + val + '</div>';
 }
 
+// Diff-renderer contract used by core (Layer 2): render(host, originalText, currentText).
+export const render = (host, aText, bText) => renderJsonDiff(host, aText, bText);
+
 export function renderJsonDiff(host, aText, bText) {
   const d = diffJson(aText, bText);
   if (d.error) { host.innerHTML = '<div class="jsondiff"><p class="jd-error">' + esc(d.error) + '</p></div>'; return; }

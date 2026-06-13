@@ -8,6 +8,7 @@ import { pickType } from './detect.js';
 import { wireIntake, intakeFromFile, LARGE_FILE_BYTES } from './intake.js';
 import { buildTree, renderTree } from './filetree.js';
 import { findGitDir, isGitInternal, openRepo } from './git.js';
+import { matchKnown } from '../known/registry.js';
 import { renderRepoView } from './repoview.js';
 import { createRawView } from './rawview.js';
 import { loadMonaco } from './monaco-loader.js';
@@ -31,6 +32,8 @@ const state = {
   treeApi: null,         // folder tree controller (setActive)
   htmlAllowScripts: false,
   htmlAsked: false,
+  known: null,           // matched known-file enhancement (Layer 3), or null
+  forceBase: false,      // user toggled "show the plain view" -> bypass the enhancement
 };
 
 const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
@@ -252,6 +255,10 @@ function normalizePercents(values) {
 async function activateType(type) {
   state.type = type;
   state.settingsModel = await getModel(type);   // cached per type (no re-fetch per file)
+  // Layer 3: does a known-file enhancement apply (e.g. package.json)? Reset the revert flag.
+  state.known = type.capabilities.preview ? matchKnown(state.intake, type) : null;
+  state.forceBase = false;
+  updateEnhanceChip();
   // Show workspace + relevant chrome.
   $('intake').hidden = true;
   $('workspace').hidden = false;
@@ -307,12 +314,15 @@ async function buildRawView() {
       const { renderMoveDiff } = await import('./movediff-view.js');
       renderMoveDiff(moveHost, original, current, { threshold: 0.8 });
     },
-    // JSON gets a semantic key-tree diff in place of Monaco's text diff (compares by
-    // key/path; reordering + formatting are ignored).
-    onCustomDiff: state.type.id === 'json'
+    // A type (or a matched known-file) can declare a custom diff via loadDiffRenderer;
+    // core dispatches generically (no type-name checks). The loader is resolved at call
+    // time so the "show plain view" toggle takes effect without rebuilding the editor.
+    onCustomDiff: (state.type.loadDiffRenderer || (state.known && state.known.loadDiffRenderer))
       ? async (host, original, current) => {
-          const { renderJsonDiff } = await import('../types/json/jsondiff.js');
-          renderJsonDiff(host, original, current);
+          const loader = (state.known && !state.forceBase && state.known.loadDiffRenderer) || state.type.loadDiffRenderer;
+          if (!loader) { host.textContent = ''; return; }
+          const mod = await loader();
+          (mod.render || mod.default)(host, original, current);
         }
       : undefined,
   });
@@ -383,10 +393,13 @@ function downloadCurrent() {
 
 async function renderPreview() {
   const type = state.type;
-  if (!type.loadRenderer) return clearPreview();
+  // A matched known-file enhancement (Layer 3) overrides the base renderer unless the user
+  // toggled "show the plain view".
+  const useKnown = state.known && !state.forceBase;
+  if (!useKnown && !type.loadRenderer) return clearPreview();
   let rendered;
   try {
-    const mod = await type.loadRenderer();
+    const mod = useKnown ? await state.known.loadRenderer() : await type.loadRenderer();
     const ctx = { settings: state.settingsModel.values };
     if (type.id === 'html') ctx.allowScripts = state.htmlAllowScripts;
     rendered = await mod.render(state.intake, ctx);
@@ -434,6 +447,25 @@ function clearPreview() {
   state.preview?.destroy();
   state.preview = null;
   $('previewHost').innerHTML = '';
+}
+
+/* ─────────────── Known-file enhancement chip (Layer 3 indicator + revert) ─────────────── */
+
+function updateEnhanceChip() {
+  const chip = $('enhanceChip');
+  if (!state.known) { chip.hidden = true; return; }
+  chip.hidden = false;
+  const showingEnhanced = !state.forceBase;
+  chip.querySelector('.ec-label').textContent = (showingEnhanced ? '✦ Enhanced: ' : 'Plain view — ') + state.known.label;
+  const btn = chip.querySelector('.ec-toggle');
+  btn.textContent = showingEnhanced ? 'Show default view' : 'Show enhanced view';
+}
+
+function toggleEnhance() {
+  if (!state.known) return;
+  state.forceBase = !state.forceBase;
+  updateEnhanceChip();
+  renderPreview();
 }
 
 /* ─────────────────────────── Magic selector ─────────────────────────── */
@@ -681,6 +713,7 @@ function init() {
     else document.documentElement.requestFullscreen?.();
   });
   $('screenshotBtn').addEventListener('click', takeScreenshot);
+  $('enhanceChip').querySelector('.ec-toggle').addEventListener('click', toggleEnhance);
   $('moreBtn').addEventListener('click', toggleMoreMenu);
   $('moreMenu').addEventListener('click', (e) => { if (e.target.closest('button')) closeMoreMenu(); });
   document.addEventListener('click', (e) => {

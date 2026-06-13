@@ -169,6 +169,36 @@ body {
 .preview-host { position: absolute; inset: 0; overflow: auto; background: var(--bg); }
 .fv-preview-frame { width: 100%; height: 100%; border: 0; background: #fff; }
 
+/* Known-file enhancement chip (Layer 3 indicator + revert) */
+.enhance-chip { display: flex; align-items: center; gap: 10px; padding: 5px 12px; background: var(--bg-2);
+  border-bottom: 1px solid var(--border); font-size: 12.5px; color: var(--fg); }
+.enhance-chip .ec-label { font-weight: 600; }
+.enhance-chip .ec-toggle { margin-left: auto; padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg-3); color: var(--fg); cursor: pointer; font-size: 12px; }
+.enhance-chip .ec-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Enhanced package.json view (rendered in the parent preview pane) */
+.pj-doc { padding: 16px 18px; max-width: 860px; margin: 0 auto; font: 14px/1.55 system-ui, sans-serif; }
+.pj-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pj-title { font-size: 19px; font-weight: 700; }
+.pj-tag { font-size: 11px; padding: 1px 7px; border-radius: 10px; background: var(--bg-3); color: var(--fg-2); margin-left: 4px; }
+.pj-desc { color: var(--fg-2); margin: 6px 0 12px; }
+.pj-links { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0 0 16px; }
+.pj-link { color: var(--accent); text-decoration: none; }
+.pj-link:hover { text-decoration: underline; }
+.pj-ext { font-size: 10px; opacity: .7; }
+.pj-sec { margin: 16px 0; }
+.pj-sec h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .03em; color: var(--fg-2); margin: 0 0 6px; }
+.pj-count { background: var(--bg-3); border-radius: 8px; padding: 0 6px; font-size: 11px; }
+.pj-deps { list-style: none; margin: 0; padding: 0; }
+.pj-deps li { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: 1px solid var(--border); }
+.pj-ver { color: var(--fg-2); font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.pj-scripts { list-style: none; margin: 0; padding: 0; }
+.pj-scripts li { display: grid; grid-template-columns: minmax(80px, auto) 1fr; gap: 12px; padding: 3px 0; border-bottom: 1px solid var(--border); }
+.pj-skey { color: var(--accent); font-size: 12px; }
+.pj-scmd { color: var(--fg-2); font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+.pj-err { color: var(--danger); }
+
 /* Media (audio/video) renders directly in the preview pane via a blob: URL (outside the
    sandbox — bytes can't execute). Styled here in the parent, not the iframe template. */
 .preview-host .media-doc { display: flex; flex-direction: column; align-items: center; gap: 12px;

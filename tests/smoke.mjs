@@ -381,6 +381,25 @@ try {
   const yamlHasEditor = await page.$('#editor .monaco-editor');
   if (yamlHasEditor) pass('YAML has raw editor (editable text)'); else fail('YAML missing raw editor');
 
+  // ── Known-file enhancement (Layer 3): package.json -> npm links + revert chip ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'package.json', exact: true }).click();
+  await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
+  pass('package.json gets the enhanced view (rendered in the parent pane)');
+  const npmHrefs = await page.$$eval('#previewHost .pj-deps a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
+  if (npmHrefs.some((h) => /npmjs\.com\/package\/markdown-it/.test(h)) && npmHrefs.every((h) => /^https:\/\/www\.npmjs\.com\/package\//.test(h))) pass('dependencies link to npm (' + npmHrefs.length + ' deps)'); else fail('npm links: ' + npmHrefs.join(','));
+  // External links are href-only (open in a new tab, rel=noopener) — not auto-fetched.
+  const linkRel = await page.$eval('#previewHost .pj-deps a.pj-link', (a) => a.rel + '|' + a.target);
+  if (/noopener/.test(linkRel) && /_blank/.test(linkRel)) pass('npm links are external-safe (noopener, new tab)'); else fail('link rel/target: ' + linkRel);
+  // The enhance chip is shown and reverts to the plain JSON tree.
+  const chipShown = await page.$eval('#enhanceChip', (e) => !e.hidden && /package\.json/.test(e.textContent));
+  if (chipShown) pass('enhance chip shows the active known-file'); else fail('enhance chip not shown');
+  await page.click('#enhanceChip .ec-toggle');
+  await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 8000 });
+  const pjFrame = await (await page.$('#previewHost iframe.fv-preview-frame')).contentFrame();
+  await pjFrame.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+  pass('revert chip switches to the plain JSON tree view');
+
   // ── Calendar (.ics) ── parse iCalendar, render events chronologically.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.ics' }).click();
