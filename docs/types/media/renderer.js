@@ -12,9 +12,26 @@ import { mediaInfo, blobUrl } from './medialib.js';
 import { loadState, saveState, clearState } from '../../core/persistence.js';
 
 const SLEEP_OPTIONS = [0, 5, 15, 30, 45, 60];   // minutes; 0 = off
+const PLAYABLE = /\.(mp3|wav|m4a|m4b|aac|oga|ogg|opus|flac|weba|mp4|m4v|webm|ogv|mov|mkv)$/i;
+// Set true just before a playlist navigation reloads the app → the NEXT render auto-plays.
+// (Module-level so it survives the re-render; the initial folder-open never sets it.)
+let pendingAutoplay = false;
 
-export async function render(intake, _ctx) {
+// Build a playlist of the sibling media files in the current folder (if any), with the file we
+// just opened as the current track. Returns null when there's no folder or no siblings.
+function buildPlaylist(intake, folder) {
+  if (!folder || !folder.files || folder.files.length < 2) return null;
+  const items = folder.files.filter((f) => PLAYABLE.test(f.path || f.file?.name || ''));
+  if (items.length < 2) return null;
+  const index = items.findIndex((f) => f.file === intake.file
+    || (f.file && f.file.name === intake.filename && f.file.size === intake.size));
+  if (index < 0) return null;
+  return { items, index };
+}
+
+export async function render(intake, ctx = {}) {
   const info = mediaInfo(intake);
+  const playlist = buildPlaylist(intake, ctx.folder);
   const host = document.createElement('div');
   host.className = 'media-doc media-' + (info.kind || 'audio');
   if (!info.kind) {
@@ -51,6 +68,34 @@ export async function render(intake, _ctx) {
   sleepNote.className = 'media-sleep-note';
   tools.append(sleepWrap, sleepNote);
 
+  // ── Folder playlist (when the file is part of a multi-track folder) ──
+  let shuffle = false;
+  if (playlist) {
+    const pl = document.createElement('div');
+    pl.className = 'media-playlist';
+    const prev = btn('⏮', 'Previous track');
+    const posLabel = document.createElement('span');
+    posLabel.className = 'media-track-pos';
+    posLabel.textContent = (playlist.index + 1) + ' / ' + playlist.items.length;
+    const next = btn('⏭', 'Next track');
+    const shuf = document.createElement('label');
+    shuf.className = 'media-shuffle';
+    shuf.innerHTML = '<input type="checkbox"> 🔀';
+    shuf.querySelector('input').addEventListener('change', (e) => { shuffle = e.target.checked; });
+    prev.addEventListener('click', () => go(-1));
+    next.addEventListener('click', () => go(1));
+    pl.append(prev, posLabel, next, shuf);
+    tools.appendChild(pl);
+  }
+  function go(dir) {
+    if (!playlist) return;
+    let i;
+    if (shuffle && dir > 0) { do { i = Math.floor(Math.random() * playlist.items.length); } while (playlist.items.length > 1 && i === playlist.index); }
+    else { i = playlist.index + dir; if (i < 0 || i >= playlist.items.length) return; }
+    pendingAutoplay = true;
+    ctx.folder.open(playlist.items[i].file);          // app reloads → renderer re-runs for the new track
+  }
+
   if (info.kind === 'audio') host.append(name, el, tools);
   else host.append(el, name, tools);
 
@@ -68,7 +113,11 @@ export async function render(intake, _ctx) {
     lastSave = now;
     saveState(intake, { kind: 'media', time: now, duration: el.duration || 0 });
   });
-  el.addEventListener('ended', () => { clearState(intake); cancelSleep(); });
+  el.addEventListener('ended', () => {
+    clearState(intake);                  // this track finished — forget its position
+    if (playlist) { go(1); return; }     // auto-advance to the next track (or a random one if shuffling)
+    cancelSleep();
+  });
 
   // ── Sleep timer ──
   let sleepId = null, sleepAt = 0, tickId = null;
@@ -107,9 +156,22 @@ export async function render(intake, _ctx) {
     } catch { /* not all actions supported everywhere */ }
   }
 
+  // Autoplay only when we arrived via a playlist advance/next/prev (not the initial open).
+  // Best-effort: browsers may block autoplay until the user has interacted with the page.
+  if (pendingAutoplay) { pendingAutoplay = false; el.play().catch(() => { /* autoplay blocked */ }); }
+
   // parentNode = render outside the sandbox; revoke frees the blob + timers when the preview changes.
   return {
     parentNode: host,
     revoke: () => { cancelSleep(); URL.revokeObjectURL(url); },
   };
+}
+
+function btn(label, title) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = label;
+  b.title = title;
+  b.className = 'media-track-btn';
+  return b;
 }

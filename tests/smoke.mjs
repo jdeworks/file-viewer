@@ -527,6 +527,21 @@ try {
   // Sleep timer control present (long-form listening).
   const sleepOpts = await page.$$eval('#previewHost .media-sleep select option', (els) => els.map((e) => e.textContent));
   if (sleepOpts.includes('Off') && sleepOpts.includes('30 min')) pass('audio: sleep timer control present (Off … 60 min)'); else fail('sleep options: ' + sleepOpts.join(','));
+  // Folder playlist: load a 2-track folder via the seam → prev/next + position + shuffle appear.
+  await page.evaluate(async () => {
+    const r = await fetch('examples/sample.wav');
+    const buf = await r.arrayBuffer();
+    const mk = (n) => new File([buf], n, { type: 'audio/wav' });
+    await window.__fv.loadFolder([
+      { file: mk('01-intro.wav'), path: 'album/01-intro.wav' },
+      { file: mk('02-outro.wav'), path: 'album/02-outro.wav' },
+    ]);
+  });
+  await page.waitForSelector('#previewHost .media-playlist', { timeout: 12000 });
+  const trackPos = await page.$eval('#previewHost .media-track-pos', (e) => e.textContent);
+  if (/1\s*\/\s*2/.test(trackPos)) pass('audio folder playlist: track position (' + trackPos.trim() + ')'); else fail('playlist pos: ' + trackPos);
+  const hasShuffle = await page.$('#previewHost .media-shuffle input');
+  if (hasShuffle) pass('audio folder playlist: prev/next + shuffle controls'); else fail('no shuffle toggle in playlist');
   // No iframe for media — it renders directly in the pane (outside the sandbox).
   const mediaIframe = await page.$('#previewHost iframe.fv-preview-frame');
   if (!mediaIframe) pass('media renders outside the sandboxed iframe'); else fail('media used an iframe');

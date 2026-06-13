@@ -123,6 +123,23 @@ async function openTreeFile(node) {
   }
 }
 
+// Generic folder context handed to every renderer: the sibling files (when a folder is loaded)
+// + a callback to open one. Renderers that care about siblings (e.g. media → playlist) use it;
+// others ignore it. Kept type-agnostic so core stays free of per-type logic.
+function folderContext() {
+  const files = (state.treeEntries || []).map((e) => ({ file: e.file, path: e.path }));
+  return {
+    files,
+    open: async (file) => {
+      const node = files.find((f) => f.file === file);
+      if (!node) return;
+      state._skipDiscardGuard = true;                 // media playback advance: nothing unsaved
+      await loadIntake(await intakeFromFile(file));
+      state.treeApi?.setActive?.(node.path);
+    },
+  };
+}
+
 // On phones, keep only the essentials in the top bar (tree, file name, open, fullscreen)
 // and move the rest into the ⋯ popover. On desktop the controls return to their original
 // spots (same DOM nodes, so their handlers + hidden-state logic keep working).
@@ -401,7 +418,7 @@ async function renderPreview() {
   let rendered;
   try {
     const mod = useKnown ? await state.known.loadRenderer() : await type.loadRenderer();
-    const ctx = { settings: state.settingsModel.values };
+    const ctx = { settings: state.settingsModel.values, folder: folderContext() };
     if (type.id === 'html') ctx.allowScripts = state.htmlAllowScripts;
     rendered = await mod.render(state.intake, ctx);
   } catch (err) {
