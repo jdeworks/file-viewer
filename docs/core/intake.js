@@ -5,6 +5,10 @@ const TEXT_SNIFF_BYTES = 4096;     // how much we decode for textSample / detect
 export const LARGE_FILE_BYTES = 8 * 1024 * 1024;  // >8MB: warn before loading into Monaco
 const MEDIA_STREAM_BYTES = 8 * 1024 * 1024;       // media bigger than this is streamed, not read into RAM
 const MEDIA_HEAD_BYTES = 64 * 1024;               // header slice kept for detection of streamed media
+// Hard ceiling on reading a NON-media file fully into memory. Above this we read only a head slice
+// and flag `truncated` — so a 10 GB .log/.json/.txt is browsable (first chunk) instead of OOM-ing
+// the tab. The File handle is retained for a future "load more" / hex-window over the rest.
+const MAX_FULL_READ = 64 * 1024 * 1024;
 
 // Audio/video that the browser can stream straight off disk via a blob: URL — no need to read
 // the whole (possibly multi-GB) file into memory. Recognized by extension or MIME.
@@ -29,7 +33,7 @@ function decodeText(bytes) {
   }
 }
 
-function buildIntake({ filename, mimeType, bytes, isPaste, lastModified, file = null, size, streamed = false }) {
+function buildIntake({ filename, mimeType, bytes, isPaste, lastModified, file = null, size, streamed = false, truncated = false }) {
   const text = streamed ? null : decodeText(bytes);
   return {
     filename: filename || (isPaste ? 'pasted' : 'untitled'),
@@ -43,6 +47,8 @@ function buildIntake({ filename, mimeType, bytes, isPaste, lastModified, file = 
     lastModified: lastModified || null,
     file,                                   // original File handle (when from disk) — streamable
     streamed,                               // true => bytes is a header only; use `file` for content
+    truncated,                              // true => bytes/text are only the first MAX_FULL_READ; size is the full size
+    loadedBytes: bytes.length,              // how many bytes are actually in `bytes` (≤ size when truncated)
   };
 }
 
@@ -55,6 +61,15 @@ export async function intakeFromFile(file) {
     return buildIntake({
       filename: file.name, mimeType: file.type, bytes: head, size: file.size,
       file, streamed: true, lastModified: file.lastModified || null,
+    });
+  }
+  // Non-media files above the hard ceiling: read only the head so a multi-GB file can't OOM the
+  // tab. The renderer/editor shows the first MAX_FULL_READ and flags it as truncated.
+  if (file.size > MAX_FULL_READ) {
+    const head = new Uint8Array(await file.slice(0, MAX_FULL_READ).arrayBuffer());
+    return buildIntake({
+      filename: file.name, mimeType: file.type, bytes: head, size: file.size,
+      file, truncated: true, lastModified: file.lastModified || null,
     });
   }
   const buf = new Uint8Array(await file.arrayBuffer());

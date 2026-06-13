@@ -56,7 +56,11 @@ async function loadIntake(intake) {
   // Guard unsaved work — unless loadFolder already asked for this same action.
   if (state._skipDiscardGuard) state._skipDiscardGuard = false;
   else if (!confirmDiscard()) return;
-  if (!intake.streamed && intake.size > LARGE_FILE_BYTES) {
+  if (intake.truncated) {
+    const mb = (intake.size / 1048576).toFixed(0);
+    const shown = (intake.loadedBytes / 1048576).toFixed(0);
+    if (!confirm(`This file is ${mb} MB — too large to load fully. Only the first ${shown} MB will be shown. Open anyway?`)) return;
+  } else if (!intake.streamed && intake.size > LARGE_FILE_BYTES) {
     const mb = (intake.size / 1048576).toFixed(1);
     if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return;
   }
@@ -65,6 +69,11 @@ async function loadIntake(intake) {
   const { type, ranking } = pickType(intake);
   populateTypeSelect(ranking, type.id);
   await activateType(type);
+  if (intake.truncated) {
+    const shown = (intake.loadedBytes / 1048576).toFixed(0);
+    const total = (intake.size / 1048576).toFixed(0);
+    toast(`Large file: showing the first ${shown} MB of ${total} MB.`, 6000);
+  }
 }
 
 // Return to the intake screen to pick another file/folder (keeps any loaded tree).

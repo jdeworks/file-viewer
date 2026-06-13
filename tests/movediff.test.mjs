@@ -2,6 +2,7 @@
 import { computeMoveDiff, wordDiff } from '../docs/core/movediff.js';
 import { parseId3 } from '../docs/types/media/id3.js';
 import { parseExif } from '../docs/types/image/exif.js';
+import { intakeFromFile } from '../docs/core/intake.js';
 
 let failed = 0;
 const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!cond) failed++; };
@@ -109,6 +110,32 @@ const P3 = 'A third paragraph at the bottom.';
   const ex = parseExif(jpeg);
   ok(ex && ex.make === 'TestCam', 'EXIF: Make tag read from JPEG APP1');
   ok(parseExif(new Uint8Array([0xFF, 0xD8, 0xFF, 0xD9])) === null, 'EXIF: JPEG without EXIF -> null');
+}
+
+// Big-file guard: a huge NON-media file is read head-only (truncated) instead of fully into RAM.
+// We mock a File-like object so no real multi-GB buffer is needed — only .size, .slice, .arrayBuffer.
+{
+  const MB = 1024 * 1024;
+  const head = new TextEncoder().encode('line one\nline two\n');   // pretend file head
+  function mockFile(name, size, type = '') {
+    return {
+      name, type, size, lastModified: 0,
+      slice: (start, end) => ({ arrayBuffer: async () => head.slice(start, end === undefined ? head.length : Math.min(end, head.length)).buffer }),
+      arrayBuffer: async () => head.buffer,
+    };
+  }
+  // 100 MB .log → over the 64 MB ceiling → truncated, full size preserved, head decoded as text.
+  const big = await intakeFromFile(mockFile('huge.log', 100 * MB));
+  ok(big.truncated === true, 'big-file guard: 100 MB non-media file is truncated (head-only)');
+  ok(big.size === 100 * MB, 'big-file guard: full size preserved on the intake');
+  ok(big.loadedBytes < big.size, 'big-file guard: only a slice is loaded (loadedBytes < size)');
+  ok(big.text && big.text.startsWith('line one'), 'big-file guard: head still decoded as text');
+  // 1 MB file → under the ceiling → read fully, not truncated.
+  const small = await intakeFromFile(mockFile('small.log', 1 * MB));
+  ok(small.truncated === false, 'big-file guard: a 1 MB file is NOT truncated');
+  // Big MEDIA streams (own path) — truncated stays false; streamed true.
+  const media = await intakeFromFile(mockFile('movie.mp4', 500 * MB, 'video/mp4'));
+  ok(media.streamed === true && media.truncated === false, 'big-file guard: big media streams (not truncated)');
 }
 
 console.log(failed ? `\nMOVEDIFF FAILED (${failed})` : '\nMOVEDIFF PASSED');
