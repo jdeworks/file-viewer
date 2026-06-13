@@ -6,6 +6,7 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { createRequire } from 'node:module';
+import zlib from 'node:zlib';
 
 // Resolve Playwright from whatever's available: a sibling make-it-look-good checkout
 // (local dev), this tests/ folder's own node_modules (CI installs it there), or cwd.
@@ -418,6 +419,39 @@ try {
   await page.waitForTimeout(300);
   const navPath = await page.$eval('#fileTree .ft-file.active', (e) => e.dataset.path).catch(() => null);
   if (navPath && navPath !== firstPath) pass('arrow-key navigation moves + opens next file (' + navPath + ')'); else fail('arrow nav active: ' + navPath + ' (first=' + firstPath + ')');
+
+  // ── Git repository browser (in-browser .git reader) ──
+  {
+    const sha = 'b'.repeat(40);
+    const content = 'tree ' + 'a'.repeat(40) + '\n'
+      + 'author Tester <t@example.com> 1700000000 +0000\n'
+      + 'committer Tester <t@example.com> 1700000000 +0000\n\n'
+      + 'Initial commit\n';
+    const store = Buffer.concat([Buffer.from('commit ' + Buffer.byteLength(content) + '\0'), Buffer.from(content)]);
+    const obj = Array.from(zlib.deflateSync(store));     // zlib stream (DecompressionStream 'deflate')
+    await page.goto(origin, { waitUntil: 'networkidle' });
+    await page.evaluate(({ sha, obj }) => {
+      const enc = (s) => new TextEncoder().encode(s);
+      const mk = (name, bytes) => ({ file: new File([bytes], name.split('/').pop(), { type: '' }), path: name });
+      window.__fv.loadFolder([
+        mk('repo/.git/HEAD', enc('ref: refs/heads/main\n')),
+        mk('repo/.git/refs/heads/main', enc(sha + '\n')),
+        mk('repo/.git/objects/' + sha.slice(0, 2) + '/' + sha.slice(2), new Uint8Array(obj)),
+        mk('repo/README.md', enc('# Repo')),
+      ]);
+    }, { sha, obj });
+    await page.waitForSelector('#repoPanel:not([hidden]) .repo-commit', { timeout: 10000 });
+    const branchVal = await page.$eval('#repoPanel .repo-branch', (s) => s.options[s.selectedIndex].textContent);
+    if (/main/.test(branchVal)) pass('git: current branch detected (' + branchVal + ')'); else fail('git branch: ' + branchVal);
+    const subj = await page.$eval('#repoPanel .repo-commit .rc-subject', (e) => e.textContent);
+    if (/Initial commit/.test(subj)) pass('git: loose commit object inflated + listed'); else fail('git subject: ' + subj);
+    const detailTxt = await page.$eval('#repoPanel .repo-detail', (e) => e.textContent);
+    if (/Tester/.test(detailTxt) && /Initial commit/.test(detailTxt)) pass('git: commit details (author + message)'); else fail('git detail: ' + detailTxt.slice(0, 60));
+    const treePaths = await page.$$eval('#fileTree .ft-file', (els) => els.map((e) => e.dataset.path));
+    if (!treePaths.some((p) => p.includes('.git/'))) pass('git: .git internals hidden from the file tree'); else fail('.git shown in tree: ' + treePaths.join(','));
+    const badge = await page.$('#repoBtn:not([hidden])');
+    if (badge) pass('git: repo badge shown in sidebar'); else fail('no repo badge');
+  }
 
   // ── HTML type + script-confirm gate (WP07) ──
   let acceptScripts = false;

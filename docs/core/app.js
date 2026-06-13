@@ -7,6 +7,8 @@ import { REGISTRY, getType, FALLBACK_TYPE } from './registry.js';
 import { pickType } from './detect.js';
 import { wireIntake, intakeFromFile, LARGE_FILE_BYTES } from './intake.js';
 import { buildTree, renderTree } from './filetree.js';
+import { findGitDir, isGitInternal, openRepo } from './git.js';
+import { renderRepoView } from './repoview.js';
 import { createRawView } from './rawview.js';
 import { loadMonaco } from './monaco-loader.js';
 import { hexDump } from './hexdump.js';
@@ -60,27 +62,52 @@ async function loadIntake(intake) {
 function showIntake() {
   $('intake').hidden = false;
   $('workspace').hidden = true;
+  $('repoPanel').hidden = true;
 }
 
 /* ─────────────────────────── Folder tree (sidebar) ─────────────────────────── */
 
 async function loadFolder(entries) {
   if (!confirmDiscard()) return;               // guard unsaved work before swapping folders
-  state._skipDiscardGuard = true;              // already confirmed — don't re-ask on the default file
-  // Build + render the tree, reveal the sidebar, and open a sensible default file.
-  state.treeEntries = entries;                 // kept for arrow-key navigation lookups
-  const rootName = (entries[0]?.path.split('/')[0]) || 'Folder';
+  // A .git dir makes this a repository: hide git internals from the tree, surface a
+  // branch/commit browser, and default to it instead of opening a file.
+  const git = findGitDir(entries);
+  state.repoEntries = git ? entries : null;
+  state.repoHandle = null;
+  const display = git ? entries.filter((e) => !isGitInternal(e.path)) : entries;
+  state.treeEntries = display;                 // kept for arrow-key navigation lookups
+  const rootName = git ? git.repoName : (display[0]?.path.split('/')[0] || 'Folder');
   $('ftRoot').textContent = rootName;
   $('ftRoot').title = rootName;
-  const tree = buildTree(entries);
+  const tree = buildTree(display);
   state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node) });
   $('treeBtn').hidden = false;
+  $('repoBtn').hidden = !git;
   setTree(true);
 
-  // Prefer a README / index, else the first file.
-  const pick = entries.find((e) => /(^|\/)(readme|index)\.\w+$/i.test(e.path)) || entries[0];
-  if (pick) { await openTreeFile({ file: pick.file, path: pick.path }); state.treeApi.setActive(pick.path); }
+  if (git) {
+    await openRepoView();                      // default to the commit/branch view
+  } else {
+    const pick = display.find((e) => /(^|\/)(readme|index)\.\w+$/i.test(e.path)) || display[0];
+    if (pick) { state._skipDiscardGuard = true; await openTreeFile({ file: pick.file, path: pick.path }); state.treeApi.setActive(pick.path); }
+  }
 }
+
+// Render the git branch/commit browser into the repo panel (parent document).
+async function openRepoView() {
+  if (!state.repoEntries) return;
+  $('intake').hidden = true; $('workspace').hidden = true;
+  const panel = $('repoPanel'); panel.hidden = false;
+  panel.innerHTML = '<p class="repo-hint">Reading repository…</p>';
+  try {
+    if (!state.repoHandle) state.repoHandle = await openRepo(state.repoEntries);
+    if (!state.repoHandle) { panel.innerHTML = '<p class="repo-hint">Not a git repository.</p>'; return; }
+    await renderRepoView(panel, state.repoHandle);
+  } catch (e) {
+    panel.innerHTML = '<p class="repo-hint">Could not read repository: ' + escapeHtml(e.message) + '</p>';
+  }
+}
+function hideRepo() { $('repoPanel').hidden = true; }
 
 async function openTreeFile(node) {
   try {
@@ -200,6 +227,7 @@ async function activateType(type) {
   // Show workspace + relevant chrome.
   $('intake').hidden = true;
   $('workspace').hidden = false;
+  $('repoPanel').hidden = true;                 // leave the repo view when opening a file
   $('fileId').hidden = false;
   $('fileName').textContent = state.intake.filename;
   $('settingsBtn').hidden = false;
@@ -600,6 +628,7 @@ function init() {
   $('treeBtn').addEventListener('click', () => setTree($('fileTree').hidden));
   $('treeCloseBtn').addEventListener('click', () => setTree(false));
   $('fileTree').addEventListener('keydown', onTreeKey);
+  $('repoBtn').addEventListener('click', openRepoView);
   initTreeResize();
   $('openInlineBtn').addEventListener('click', showIntake);
   $('formatBtn').addEventListener('click', () => state.rawview?.format());
@@ -654,7 +683,7 @@ function init() {
 
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
   window.__fv = {
-    state, setRawMode, downloadCurrent, loadFolder, hasUnsavedWork,
+    state, setRawMode, downloadCurrent, loadFolder, hasUnsavedWork, openRepoView,
     screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };
 }

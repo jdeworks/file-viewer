@@ -57,6 +57,7 @@
         <span class="ft-root" id="ftRoot">Folder</span>
         <button class="icon-btn ft-close" id="treeCloseBtn" title="Hide tree" aria-label="Hide tree">‹</button>
       </div>
+      <button class="repo-badge" id="repoBtn" hidden title="View branches & commits">⎇ Branches &amp; commits</button>
       <div class="ft-body" id="ftBody"></div>
     </aside>
     <div class="ft-resize" id="ftResize" hidden role="separator" aria-orientation="vertical" aria-label="Resize sidebar" title="Drag to resize"></div>
@@ -84,6 +85,9 @@
         <div class="examples" id="examples"></div>
       </div>
     </section>
+
+    <!-- Git repository browser (branches + commits) -->
+    <section id="repoPanel" class="repo-panel" hidden aria-label="Repository"></section>
 
     <!-- Workspace -->
     <section id="workspace" class="workspace" hidden>
