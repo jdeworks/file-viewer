@@ -29,7 +29,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar', '.yaml': 'application/yaml', '.toml': 'application/toml',
   '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf',
   '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain',
-  '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml' };
+  '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.ttf': 'font/ttf' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -493,6 +493,16 @@ try {
   const geoPolys = await geof.$$eval('.geo-svg .geo-poly', (els) => els.length);
   const geoPts = await geof.$$eval('.geo-svg .geo-pt', (els) => els.length);
   if (geoLines >= 1 && geoPolys >= 1 && geoPts >= 2) pass('GeoJSON drawn as SVG (' + geoLines + ' line, ' + geoPolys + ' polygon, ' + geoPts + ' points)'); else fail('geo svg: line=' + geoLines + ' poly=' + geoPolys + ' pt=' + geoPts);
+
+  // ── Font specimen ── load the font via FontFace + render sample text in the parent pane. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.ttf' }).click();
+  await page.waitForSelector('#previewHost .font-doc', { timeout: 12000 });
+  const fontTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (fontTypeId === 'font') pass('.ttf detected as Font'); else fail('font type: ' + fontTypeId);
+  const fontSamples = await page.$$eval('#previewHost .font-sample', (els) => els.length);
+  const fontLoaded = await page.evaluate(() => [...document.fonts].some((f) => /^fvfont-/.test(f.family) && f.status === 'loaded'));
+  if (fontSamples >= 6 && fontLoaded) pass('font specimen rendered + FontFace loaded (' + fontSamples + ' samples)'); else fail('font: samples=' + fontSamples + ' loaded=' + fontLoaded);
 
   // ── Known-file enhancement (Layer 3): package.json -> npm links + revert chip ──
   await page.goto(origin, { waitUntil: 'networkidle' });

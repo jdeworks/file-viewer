@@ -216,6 +216,10 @@ body {
 .preview-host .media-video .media-view { max-width: 100%; max-height: 100%; border-radius: 8px;
   box-shadow: 0 1px 12px rgba(0,0,0,.35); background: #000; }
 .preview-host .media-note { color: var(--fg-2); }
+/* Font specimen (parent pane — FontFace registers on this document). */
+.preview-host .font-doc { position: absolute; inset: 0; overflow: auto; padding: 24px clamp(16px, 5vw, 48px); background: var(--bg); }
+.font-name { font: 12px ui-monospace, monospace; color: var(--fg-2); margin-bottom: 18px; word-break: break-all; }
+.font-sample { margin: 12px 0; line-height: 1.3; word-break: break-word; color: var(--fg); }
 .preview-host .media-tools { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--fg-2); }
 .preview-host .media-sleep { display: flex; align-items: center; gap: 6px; }
 .preview-host .media-sleep select { font-size: 12px; padding: 3px 6px; border-radius: 6px;
