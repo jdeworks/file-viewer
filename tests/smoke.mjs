@@ -160,7 +160,13 @@ try {
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
   const exportItems = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
   if (exportItems.some((t) => /Print \/ Save as PDF/.test(t))) pass('export menu offers Print / Save as PDF'); else fail('export items: ' + exportItems.join(','));
-  await page.click('#exportBtn');   // close the menu
+  // Generic "Download as HTML" — a standalone, sanitized HTML file of the rendered preview.
+  if (exportItems.some((t) => /Download as HTML/.test(t))) pass('export menu offers Download as HTML'); else fail('no Download as HTML in: ' + exportItems.join(','));
+  const [htmlDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download as HTML")'),
+  ]);
+  if (/\.html$/.test(htmlDownload.suggestedFilename())) pass('preview exported as standalone HTML (' + htmlDownload.suggestedFilename() + ')'); else fail('html export name: ' + htmlDownload.suggestedFilename());
 
   // Sandbox attribute is allow-scripts only (no allow-same-origin).
   const sandbox = await frame.getAttribute('sandbox');
