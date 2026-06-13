@@ -14,6 +14,7 @@ import { createRawView } from './rawview.js';
 import { loadMonaco } from './monaco-loader.js';
 import { hexDump } from './hexdump.js';
 import { initOffline, offlineMissHtml } from './offline.js';
+import * as persistence from './persistence.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
 import { getModel, preloadModels, monacoOptions, renderSettings, persistGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
@@ -796,6 +797,7 @@ function init() {
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
   window.__fv = {
     state, setRawMode, downloadCurrent, loadFolder, hasUnsavedWork, openRepoView,
+    persistence,
     screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };
 }

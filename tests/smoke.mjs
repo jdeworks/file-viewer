@@ -132,6 +132,24 @@ try {
   const sandbox = await frame.getAttribute('sandbox');
   if (sandbox === 'allow-scripts') pass('iframe sandbox = allow-scripts only'); else fail('sandbox: ' + sandbox);
 
+  // Per-file persistence (foundation for stateful viewers): fingerprint stability + round-trip.
+  const persist = await page.evaluate(() => {
+    const p = window.__fv.persistence;
+    const a = { filename: 'book.epub', size: 1234, lastModified: 99 };
+    const a2 = { filename: 'book.epub', size: 1234, lastModified: 99 };   // same file again
+    const b = { filename: 'book.epub', size: 9999 };                       // different size
+    const fpStable = p.fingerprint(a) === p.fingerprint(a2) && p.fingerprint(a) !== p.fingerprint(b);
+    p.clearState(a);
+    p.saveState(a, { pos: 0.5, bookmarks: [1, 2] });
+    const merged = p.updateState(a, { pos: 0.8 });
+    const reread = p.loadState(a2);                                        // same fingerprint reads it back
+    const ok = fpStable && reread && reread.pos === 0.8 && reread.bookmarks.length === 2 && merged.bookmarks.length === 2;
+    p.clearState(a);
+    const cleared = p.loadState(a) === null;
+    return ok && cleared;
+  });
+  if (persist) pass('per-file persistence: fingerprint stable + save/update/load/clear round-trip'); else fail('persistence round-trip failed');
+
   // Screenshot (WP18): sanitized body re-rendered in a same-origin temp iframe + html2canvas.
   const shotUrl = await page.evaluate(() => window.__fv.screenshot());
   if (typeof shotUrl === 'string' && shotUrl.startsWith('data:image/png') && shotUrl.length > 2000) pass('preview screenshot captured (PNG)'); else fail('screenshot: ' + String(shotUrl).slice(0, 40));
