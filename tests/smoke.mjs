@@ -254,6 +254,27 @@ try {
   const pyType = await page.$eval('#typeSelect', (s) => s.value);
   if (pyType === 'code') pass('clicking tree file opens it (util.py -> Code)'); else fail('py type: ' + pyType);
 
+  // ── HTML type + script-confirm gate (WP07) ──
+  let acceptScripts = false;
+  page.on('dialog', (d) => (acceptScripts ? d.accept() : d.dismiss()));
+  // Default: dismiss -> sanitized, script must NOT run.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.html' }).click();
+  const hframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const hf = await hframe.contentFrame();
+  await hf.waitForSelector('#safe', { timeout: 8000 });
+  await page.waitForTimeout(300);
+  const sanitizedRan = await hf.$('#ran-script');
+  if (!sanitizedRan) pass('HTML sanitized by default (script did NOT run)'); else fail('script ran while sanitized');
+  // Opt in: accept -> scripts run in the sandbox.
+  acceptScripts = true;
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.html' }).click();
+  const hframe2 = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const hf2 = await hframe2.contentFrame();
+  await hf2.waitForSelector('#ran-script', { timeout: 8000 });
+  pass('HTML scripts run after explicit opt-in (sandboxed)');
+
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
 } catch (e) {

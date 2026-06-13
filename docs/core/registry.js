@@ -36,6 +36,7 @@ import pptxType from '../types/pptx/index.js';
 import jsonType from '../types/json/index.js';
 import imageType from '../types/image/index.js';
 import codeType from '../types/code/index.js';
+import htmlType from '../types/html/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -45,6 +46,7 @@ export const REGISTRY = [
   xlsxType,
   docxType,
   pptxType,
+  htmlType,
   jsonType,
   imageType,
   codeType,

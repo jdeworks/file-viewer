@@ -96,14 +96,22 @@ function buildSrcdoc({ bodyHtml, theme, extraHead = '', maxWidth }) {
 }
 
 // container: element to host the iframe. Returns a controller for the parent side.
-export function mountPreview(container, { bodyHtml, theme, allowScripts = false, extraHead = '', maxWidth, onSelect, onHover, onScroll }) {
+// Inject our trusted bridge script into a full user document (HTML "run scripts" mode).
+function injectBridge(doc) {
+  const tag = '<script>' + BRIDGE + '</scr' + 'ipt>';
+  return doc.includes('</body>') ? doc.replace('</body>', tag + '</body>') : doc + tag;
+}
+
+export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts = false, extraHead = '', maxWidth, onSelect, onHover, onScroll }) {
   container.innerHTML = '';
   const iframe = document.createElement('iframe');
   iframe.className = 'fv-preview-frame';
   iframe.title = 'Rendered preview';
   // allow-scripts only. NEVER add allow-same-origin together with allow-scripts.
-  iframe.setAttribute('sandbox', allowScripts ? 'allow-scripts' : 'allow-scripts');
-  iframe.srcdoc = buildSrcdoc({ bodyHtml, theme, extraHead, maxWidth: Number(maxWidth) });
+  iframe.setAttribute('sandbox', 'allow-scripts');
+  // fullDoc: render the user's whole document (scripts run in the sandbox). Otherwise wrap
+  // the sanitized body fragment in our themed template.
+  iframe.srcdoc = fullDoc != null ? injectBridge(fullDoc) : buildSrcdoc({ bodyHtml, theme, extraHead, maxWidth: Number(maxWidth) });
   container.appendChild(iframe);
 
   function onMsg(e) {

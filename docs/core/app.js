@@ -23,6 +23,8 @@ const state = {
   tab: 'raw',            // mobile active tab
   syncing: false,
   treeApi: null,         // folder tree controller (setActive)
+  htmlAllowScripts: false,
+  htmlAsked: false,
 };
 
 const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
@@ -125,6 +127,7 @@ async function activateType(type) {
   state.mode = both ? 'split' : (canPreview && !canRaw ? 'preview' : 'raw');
   state.rawMode = 'current';
   state.tab = both ? 'raw' : (canPreview && !canRaw ? 'preview' : 'raw');
+  state.htmlAllowScripts = false; state.htmlAsked = false;   // re-ask per file
 
   if (canRaw) await buildRawView();
   else { state.rawview?.dispose(); state.rawview = null; $('editor').innerHTML = ''; }
@@ -198,13 +201,25 @@ async function renderPreview() {
   let rendered;
   try {
     const mod = await type.loadRenderer();
-    rendered = await mod.render(state.intake, { settings: state.settingsModel.values });
+    const ctx = { settings: state.settingsModel.values };
+    if (type.id === 'html') ctx.allowScripts = state.htmlAllowScripts;
+    rendered = await mod.render(state.intake, ctx);
   } catch (err) {
     $('previewHost').innerHTML = '<p style="padding:16px;color:var(--danger)">Preview failed: ' + escapeHtml(err.message) + '</p>';
     return;
   }
+  // WP07 script gate: HTML with scripts is sanitized by default; ask once before running them.
+  if (type.id === 'html' && rendered.containsScripts && !state.htmlAllowScripts && !state.htmlAsked) {
+    state.htmlAsked = true;
+    if (confirm('This HTML contains scripts. Run them in a sandboxed iframe?\n\nThey cannot access this page or your data, but only continue if you trust the source. Cancel to view it sanitized (scripts removed).')) {
+      state.htmlAllowScripts = true;
+      return renderPreview();
+    }
+  }
   state.preview = mountPreview($('previewHost'), {
     bodyHtml: rendered.bodyHtml,
+    fullDoc: rendered.fullDoc,
+    allowScripts: !!rendered.ranScripts,
     theme: themeIsDark() ? 'dark' : 'light',
     maxWidth: state.settingsModel.values.previewMaxWidth,
     onSelect: (src) => mapPreviewToRaw(src),

@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>HTML sample</title>
+<style>body{font-family:system-ui;margin:2rem} .box{padding:1rem;border:2px solid #4c9aff;border-radius:10px}</style></head>
+<body>
+  <h1 id="safe">Safe HTML heading</h1>
+  <p>A self-contained client-side HTML document with inline CSS and a script.</p>
+  <div class="box">This box is styled with inline CSS (kept after sanitizing).</div>
+  <script>
+    var d = document.createElement('p');
+    d.id = 'ran-script';
+    d.textContent = 'This line was added by JavaScript at runtime.';
+    document.body.appendChild(d);
+  </script>
+</body>
+</html>
