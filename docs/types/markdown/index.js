@@ -18,7 +18,14 @@ export default {
   settings: {
     // Type-specific viewer descriptors (merged with core monaco + generic viewer ones).
     schema: [
-      { key: 'previewMaxWidth', label: 'Preview width (px)', category: 'viewer-common', type: 'number', min: 320, max: 1600, default: 900 },
+      // previewMaxWidth / font / spacing are generic now (settings-schema VIEWER_DESCRIPTORS).
+      // These are markdown-it parser options, applied per render via ctx.settings.
+      { key: 'mdLinkify', label: 'Auto-link URLs', category: 'viewer-extended', type: 'bool', default: true,
+        hint: 'Turn bare URLs like https://example.com into clickable links.' },
+      { key: 'mdTypographer', label: 'Smart typography', category: 'viewer-extended', type: 'bool', default: true,
+        hint: 'Replace straight quotes, dashes and ellipses with typographic equivalents (“ ” — …).' },
+      { key: 'mdBreaks', label: 'Line breaks as <br>', category: 'viewer-extended', type: 'bool', default: false,
+        hint: 'Treat every single newline as a hard line break (GitHub-comment style).' },
     ],
     hidden: [],
     // Presets are explicit per-type — no directory listing needed.

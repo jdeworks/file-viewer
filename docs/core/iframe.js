@@ -49,7 +49,8 @@ const BRIDGE = `
 const BASE_CSS = `
   :root{color-scheme:light dark;}
   html,body{margin:0;}
-  body{font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:20px;max-width:var(--fv-maxw,900px);margin:0 auto;
+  body{font:var(--fv-fontsize,16px)/var(--fv-lh,1.6) system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       padding:var(--fv-pad,20px);max-width:var(--fv-maxw,900px);margin:0 auto;
        color:#1a1a1a;background:#fff;}
   body.fv-dark{color:#e6e6e6;background:#1e1e1e;}
   .fv-hl{outline:2px solid #4c9aff;outline-offset:2px;border-radius:3px;background:rgba(76,154,255,.12);}
@@ -108,9 +109,14 @@ const BASE_CSS = `
   .media-video .media-view{max-width:100%;max-height:80vh;border-radius:8px;box-shadow:0 1px 10px rgba(0,0,0,.3);background:#000;}
   .media-note{font-family:system-ui,sans-serif;color:#888;}`;
 
-function buildSrcdoc({ bodyHtml, theme, extraHead = '', maxWidth }) {
+function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';
-  const rootStyle = Number.isFinite(maxWidth) ? `<style>:root{--fv-maxw:${maxWidth}px;}</style>` : '';
+  const vars = [];
+  if (Number.isFinite(style.maxWidth)) vars.push(`--fv-maxw:${style.maxWidth}px;`);
+  if (Number.isFinite(style.fontSize)) vars.push(`--fv-fontsize:${style.fontSize}px;`);
+  if (Number.isFinite(style.lineHeight)) vars.push(`--fv-lh:${style.lineHeight};`);
+  if (Number.isFinite(style.padding)) vars.push(`--fv-pad:${style.padding}px;`);
+  const rootStyle = vars.length ? `<style>:root{${vars.join('')}}</style>` : '';
   return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
     + '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
     + '<style>' + BASE_CSS + '</style>\n' + rootStyle + extraHead + '\n</head>\n'
@@ -125,7 +131,7 @@ function injectBridge(doc) {
   return doc.includes('</body>') ? doc.replace('</body>', tag + '</body>') : doc + tag;
 }
 
-export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts = false, extraHead = '', maxWidth, onSelect, onHover, onScroll }) {
+export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts = false, extraHead = '', style = {}, onSelect, onHover, onScroll }) {
   container.innerHTML = '';
   const iframe = document.createElement('iframe');
   iframe.className = 'fv-preview-frame';
@@ -134,7 +140,7 @@ export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts
   iframe.setAttribute('sandbox', 'allow-scripts');
   // fullDoc: render the user's whole document (scripts run in the sandbox). Otherwise wrap
   // the sanitized body fragment in our themed template.
-  iframe.srcdoc = fullDoc != null ? injectBridge(fullDoc) : buildSrcdoc({ bodyHtml, theme, extraHead, maxWidth: Number(maxWidth) });
+  iframe.srcdoc = fullDoc != null ? injectBridge(fullDoc) : buildSrcdoc({ bodyHtml, theme, extraHead, style });
   container.appendChild(iframe);
 
   function onMsg(e) {
@@ -163,11 +169,11 @@ export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts
 // can't capture (its clone-iframe trick needs same-origin). So we re-render the ALREADY
 // SANITIZED body into a temporary SAME-ORIGIN, off-screen iframe (safe — scripts are gone)
 // and capture that. Not used for "run scripts" HTML (no sanitized body to reuse).
-export async function captureBodyHtml(bodyHtml, { theme, maxWidth }) {
+export async function captureBodyHtml(bodyHtml, { theme, style = {} }) {
   const html2canvas = await loadGlobal(vendor('html2canvas/html2canvas.min.js'), 'html2canvas');
   const tmp = document.createElement('iframe');
-  tmp.style.cssText = 'position:fixed;left:-99999px;top:0;border:0;width:' + (Number(maxWidth) || 900) + 'px;height:10px;';
-  tmp.srcdoc = buildSrcdoc({ bodyHtml, theme, maxWidth: Number(maxWidth) });
+  tmp.style.cssText = 'position:fixed;left:-99999px;top:0;border:0;width:' + (Number(style.maxWidth) || 900) + 'px;height:10px;';
+  tmp.srcdoc = buildSrcdoc({ bodyHtml, theme, style });
   document.body.appendChild(tmp);
   try {
     await new Promise((r) => { tmp.onload = r; });

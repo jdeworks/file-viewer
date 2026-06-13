@@ -122,6 +122,23 @@ try {
   const afterEdit = await page.$eval('#settingsBody select', (s) => s.value);
   if (afterEdit === 'custom') pass('manual edit -> Custom preset'); else fail('expected custom, got ' + afterEdit);
 
+  // Every setting carries a visible info hint (self-documenting).
+  const hintCount = await page.$$eval('#settingsBody .set-hint', (els) => els.length);
+  if (hintCount > 12) pass('settings show an info hint per option (' + hintCount + ')'); else fail('set-hints: ' + hintCount);
+
+  // Type dropdown is filtered to plausible matches by default (welcome.md -> just Markdown).
+  const optsDefault = await page.$$eval('#typeSelect option', (els) => els.length);
+  if (optsDefault <= 2) pass('type dropdown filtered to matches by default (' + optsDefault + ')'); else fail('default type options: ' + optsDefault);
+
+  // Clicking the LABEL (not the checkbox) of "Show all file types" toggles it -> full list.
+  await page.click('label[for="set-showAllTypes"]');
+  await page.waitForTimeout(150);
+  const boxChecked = await page.$eval('#set-showAllTypes', (e) => e.checked);
+  if (boxChecked) pass('clicking a setting label toggles its checkbox'); else fail('label click did not toggle checkbox');
+  const optsAll = await page.$$eval('#typeSelect option', (els) => els.length);
+  if (optsAll > optsDefault && optsAll >= 11) pass('"show all types" reveals every type (' + optsDefault + ' -> ' + optsAll + ')'); else fail('show-all options: ' + optsAll);
+  await page.click('label[for="set-showAllTypes"]');   // restore default for later checks
+
   await page.click('#settingsDrawer [data-close]');
 
   // ── Diff (WP13/WP14) ──
@@ -161,6 +178,29 @@ try {
   if (movedBlocks > 0) pass('move-aware view classified moved block(s)'); else fail('no moved blocks rendered');
   const arrows = await page.$$eval('.md-arrows path[d]', (els) => els.length);
   if (arrows > 0) pass('move arrow drawn (' + arrows + ')'); else fail('no move arrows drawn');
+
+  // ── Draggable split divider (linked to Preview width) ──
+  // Diff/move-diff go full-width; return to split so the divider is shown.
+  await page.click('#rawMode button[data-raw="current"]');
+  await page.waitForTimeout(200);
+  const beforeW = await page.$eval('#previewPane', (e) => e.getBoundingClientRect().width);
+  const dvBox = await (await page.$('#splitDivider')).boundingBox();
+  if (dvBox) {
+    await page.mouse.move(dvBox.x + dvBox.width / 2, dvBox.y + dvBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(dvBox.x - 150, dvBox.y + dvBox.height / 2, { steps: 10 });  // drag left -> grow preview
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+    const afterW = await page.$eval('#previewPane', (e) => e.getBoundingClientRect().width);
+    if (afterW - beforeW > 60) pass('split divider drag resized preview pane (' + Math.round(beforeW) + ' -> ' + Math.round(afterW) + 'px)'); else fail('divider drag: ' + Math.round(beforeW) + ' -> ' + Math.round(afterW));
+    const pmw = await page.evaluate(() => window.__fv.state.settingsModel.values.previewMaxWidth);
+    if (Math.abs(pmw - afterW) < 40) pass('divider linked to Preview width setting (' + pmw + 'px)'); else fail('previewMaxWidth ' + pmw + ' vs pane ' + Math.round(afterW));
+  } else fail('split divider not visible in desktop split');
+
+  // ── Inline open button (next to type dropdown) ──
+  await page.click('#openInlineBtn');
+  const intakeShown = await page.$eval('#intake', (e) => !e.hidden);
+  if (intakeShown) pass('inline open button returns to file/folder picker'); else fail('inline open did not show intake');
 
   // ── PDF module (WP17) ── fresh load so the examples gallery is reachable.
   await page.goto(origin, { waitUntil: 'networkidle' });

@@ -9,7 +9,8 @@ import { wireIntake, intakeFromFile, LARGE_FILE_BYTES } from './intake.js';
 import { buildTree, renderTree } from './filetree.js';
 import { createRawView } from './rawview.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
-import { buildModel, monacoOptions, renderSettings } from './settings.js';
+import { buildModel, monacoOptions, renderSettings, persistGlobalKey, syncModelPreset } from './settings.js';
+import { previewStyle } from './settings-schema.js';
 
 const $ = (id) => document.getElementById(id);
 const state = {
@@ -88,11 +89,15 @@ function setTree(open) {
 
 function populateTypeSelect(ranking, selectedId) {
   const sel = $('typeSelect');
-  // Show all registered types; annotate the auto-detected ranking.
+  // By default list only plausible matches (≥1%); the "Show all file types" setting
+  // (global) reveals every registered type so you can force any viewer. The selected
+  // type is always shown even at 0% (e.g. the raw fallback or a manual override).
+  const showAll = !!state.settingsModel?.values?.showAllTypes;
   const byScore = new Map(ranking.map((r) => [r.type.id, r.score]));
   sel.innerHTML = '';
   for (const t of REGISTRY) {
     const score = byScore.get(t.id) || 0;
+    if (!showAll && score < 0.01 && t.id !== selectedId) continue;
     const opt = document.createElement('option');
     opt.value = t.id;
     opt.textContent = score > 0 ? `${t.label} (${Math.round(score * 100)}%)` : t.label;
@@ -242,7 +247,7 @@ async function renderPreview() {
     fullDoc: rendered.fullDoc,
     allowScripts: !!rendered.ranScripts,
     theme: themeIsDark() ? 'dark' : 'light',
-    maxWidth: state.settingsModel.values.previewMaxWidth,
+    style: previewStyle(state.settingsModel.values),
     onSelect: (src) => mapPreviewToRaw(src),
     onHover: (src) => mapPreviewToRaw(src, false),
     onScroll: (ratio) => syncScrollFromPreview(ratio),
@@ -309,7 +314,68 @@ function applyLayout() {
   }
   document.querySelectorAll('#viewMode button').forEach((b) => b.classList.toggle('active', b.dataset.mode === state.mode));
   document.querySelectorAll('#tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.mode === state.tab));
+  applyPreviewPaneWidth();
   state.rawview?.layout();
+}
+
+// Desktop split: the preview pane width tracks the "Preview width (px)" setting, clamped
+// so the editor keeps a usable minimum. The draggable divider writes back to that setting.
+const MIN_EDITOR_PX = 380, DIVIDER_PX = 6;
+function applyPreviewPaneWidth() {
+  const caps = state.type?.capabilities;
+  const both = caps && caps.rawView && caps.preview;
+  const splitActive = both && !isMobile() && state.mode === 'split';
+  $('splitDivider').hidden = !splitActive;
+  const previewPane = $('previewPane'), rawPane = $('rawPane');
+  if (!splitActive) { previewPane.style.flex = ''; rawPane.style.flex = ''; return; }
+  const total = $('panes').clientWidth || 0;
+  const want = Number(state.settingsModel?.values?.previewMaxWidth) || 900;
+  const maxPreview = Math.max(320, total - MIN_EDITOR_PX - DIVIDER_PX);
+  const w = Math.max(320, Math.min(want, maxPreview));
+  previewPane.style.flex = '0 0 ' + Math.round(w) + 'px';
+  rawPane.style.flex = '1 1 auto';
+}
+
+function initSplitDivider() {
+  const divider = $('splitDivider'), panes = $('panes');
+  const previewPane = $('previewPane'), rawPane = $('rawPane');
+  let dragging = false;
+  const onMove = (e) => {
+    if (!dragging) return;
+    const rect = panes.getBoundingClientRect();
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    let w = rect.right - x;                 // preview pane is on the right
+    w = Math.max(320, Math.min(w, rect.width - MIN_EDITOR_PX - DIVIDER_PX));
+    previewPane.style.flex = '0 0 ' + Math.round(w) + 'px';
+    rawPane.style.flex = '1 1 auto';
+    if (state.settingsModel) state.settingsModel.values.previewMaxWidth = Math.round(w);  // keep the setting live
+    state.rawview?.layout();
+    e.preventDefault();
+  };
+  const onUp = () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.userSelect = '';
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    // Width already tracked live in onMove; on release, re-render so the iframe content
+    // width matches and refresh the settings UI if it's open.
+    const m = state.settingsModel;
+    if (m) {
+      m.values.previewMaxWidth = Math.round(previewPane.getBoundingClientRect().width);
+      syncModelPreset(m);
+      renderPreview();
+      if (!$('settingsDrawer').hidden) openSettings();
+    }
+  };
+  divider.addEventListener('pointerdown', (e) => {
+    if (divider.hidden) return;
+    dragging = true;
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    e.preventDefault();
+  });
 }
 
 /* ─────────────────────────── Settings (WP03) ─────────────────────────── */
@@ -322,7 +388,13 @@ function openSettings() {
 // re-renders when a viewer setting that affects rendering changed (syncScroll reads live).
 function onSettingsChange(model, changedKey) {
   state.rawview?.updateOptions(monacoOptions(model));
+  // "Show all file types" is a global pref applied to the type dropdown immediately.
+  if (changedKey === 'showAllTypes') {
+    persistGlobalKey('showAllTypes', model.values.showAllTypes);
+    if (state.intake && state.type) populateTypeSelect(pickType(state.intake).ranking, state.type.id);
+  }
   if (!state.type?.capabilities.preview) return;
+  if (changedKey === 'previewMaxWidth') applyLayout();   // resize the split pane too
   const cat = model.descriptors.find((d) => d.key === changedKey)?.category;
   const viewerRenderKey = cat && cat.startsWith('viewer') && changedKey !== 'syncScroll';
   if (!changedKey || viewerRenderKey) renderPreview();
@@ -417,7 +489,9 @@ function init() {
   $('treeBtn').addEventListener('click', () => setTree($('fileTree').hidden));
   $('treeCloseBtn').addEventListener('click', () => setTree(false));
   $('openBtn').addEventListener('click', showIntake);
+  $('openInlineBtn').addEventListener('click', showIntake);
   $('formatBtn').addEventListener('click', () => state.rawview?.format());
+  initSplitDivider();
 
   $('typeSelect').addEventListener('change', (e) => { const t = getType(e.target.value); if (t) activateType(t); });
   $('themeBtn').addEventListener('click', () => applyTheme(!themeIsDark()));
@@ -449,12 +523,15 @@ function init() {
     applyLayout();
   });
 
+  // Re-clamp the split pane width when the window resizes on desktop.
+  window.addEventListener('resize', debounce(() => { if (state.type) applyPreviewPaneWidth(); }, 100));
+
   loadExamples();
 
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
   window.__fv = {
     state, setRawMode, downloadCurrent, loadFolder,
-    screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', maxWidth: state.settingsModel.values.previewMaxWidth }),
+    screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };
 }
 

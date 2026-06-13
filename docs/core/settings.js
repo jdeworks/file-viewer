@@ -1,7 +1,7 @@
 // Settings system (WP03): model resolution, preset handling, persistence, migration,
 // and descriptor-driven UI. Hidden fields never render. Presets are explicit per-type
 // (declared in index.js settings.presets) — no directory listing needed.
-import { descriptorsFor, applyMonacoOptions, MONACO_KEYS, CATEGORY_ORDER, CATEGORY_LABEL, CATEGORY_OPEN } from './settings-schema.js';
+import { descriptorsFor, applyMonacoOptions, GLOBAL_KEYS, CATEGORY_ORDER, CATEGORY_LABEL, CATEGORY_OPEN } from './settings-schema.js';
 
 const SETTINGS_VERSION = 1;
 const typeKey = (id) => 'fv:settings:type:' + id;
@@ -68,11 +68,26 @@ export function persist(model, scope) {
     for (const k of visible) values[k] = model.values[k];
     localStorage.setItem(typeKey(model.type.id), JSON.stringify({ version: SETTINGS_VERSION, values }));
   } else if (scope === 'global') {
-    // Global = common editor/general keys only (viewer settings are type-specific).
+    // Global = editor options + general app prefs (viewer settings stay type-specific).
     const values = {};
-    for (const k of visible) if (MONACO_KEYS.has(k)) values[k] = model.values[k];
+    for (const k of visible) if (GLOBAL_KEYS.has(k)) values[k] = model.values[k];
     localStorage.setItem(GLOBAL_KEY, JSON.stringify({ version: SETTINGS_VERSION, values }));
   }
+}
+
+// Persist a single global key (merging into the existing global bag) without saving the
+// whole editor config. Used for instant prefs like "show all file types".
+export function persistGlobalKey(key, value) {
+  if (!GLOBAL_KEYS.has(key)) return;
+  const cur = readSaved(GLOBAL_KEY) || {};
+  cur[key] = value;
+  localStorage.setItem(GLOBAL_KEY, JSON.stringify({ version: SETTINGS_VERSION, values: cur }));
+}
+
+// Recompute which preset (if any) the current values match. Call after mutating values
+// outside the settings UI (e.g. dragging the split divider changes previewMaxWidth).
+export function syncModelPreset(model) {
+  model.selectedPresetId = matchPreset(model.values, model.presets, model.descriptors);
 }
 
 /* ─────────────────────────── UI ─────────────────────────── */
@@ -104,7 +119,7 @@ export function renderSettings(container, model, { onChange, toast }) {
     presetSel.value = model.selectedPresetId;
   }
 
-  function control(d) {
+  function control(d, id) {
     const v = model.values[d.key];
     let el;
     if (d.type === 'bool') {
@@ -120,6 +135,7 @@ export function renderSettings(container, model, { onChange, toast }) {
       el.value = String(v);
       el.onchange = () => set(d.key, coerce(el.value, v));
     }
+    if (id) el.id = id;
     return el;
   }
 
@@ -135,8 +151,12 @@ export function renderSettings(container, model, { onChange, toast }) {
       det.appendChild(sum);
       for (const d of items) {
         const row = document.createElement('div'); row.className = 'set-row';
-        const l = document.createElement('label'); l.textContent = d.label; if (d.hint) l.title = d.hint;
-        row.append(l, control(d)); det.appendChild(row);
+        const id = 'set-' + d.key;
+        const info = document.createElement('div'); info.className = 'set-info';
+        const l = document.createElement('label'); l.textContent = d.label; l.htmlFor = id;   // click label -> toggle/focus control
+        info.appendChild(l);
+        if (d.hint) { const h = document.createElement('div'); h.className = 'set-hint'; h.textContent = d.hint; info.appendChild(h); }
+        row.append(info, control(d, id)); det.appendChild(row);
       }
       groupsHost.appendChild(det);
     }

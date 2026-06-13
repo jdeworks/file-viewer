@@ -28,8 +28,11 @@ async function ensureLibs() {
   return { md: mdInstance, DOMPurify };
 }
 
-export async function render(intake, _ctx) {
+export async function render(intake, ctx) {
   const { md, DOMPurify } = await ensureLibs();
+  // markdown-it parser options are user-tunable via settings (applied per render).
+  const s = (ctx && ctx.settings) || {};
+  md.set({ html: true, linkify: s.mdLinkify !== false, typographer: s.mdTypographer !== false, breaks: !!s.mdBreaks });
   const dirty = md.render(intake.text || '');
   DOMPurify.removed = [];
   // Sanitize. Keep our data-fv-src mapping attribute; forbid event handlers + scripts.

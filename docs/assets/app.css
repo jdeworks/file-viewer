@@ -108,7 +108,14 @@ body {
 .tabbar button.active { color: var(--fg); border-bottom-color: var(--accent); }
 .panes { flex: 1; display: flex; min-height: 0; }
 .pane { flex: 1; min-width: 0; min-height: 0; overflow: hidden; position: relative; }
-.raw-pane { border-right: 1px solid var(--border); }
+.raw-pane { border-right: 0; }   /* the split divider provides separation in split view */
+/* Draggable split divider (desktop split view). Hidden via [hidden] otherwise. */
+.split-divider { flex: 0 0 6px; align-self: stretch; cursor: col-resize; background: var(--border);
+  position: relative; touch-action: none; }
+.split-divider:hover, .split-divider:active { background: var(--accent); }
+.split-divider::after { content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 2px; height: 26px; border-radius: 2px; background: var(--bg); opacity: .6; }
+.split-divider::before { content: ""; position: absolute; inset: 0 -5px; }   /* wider grab area */
 .editor-host { position: absolute; inset: 0; }
 .preview-host { position: absolute; inset: 0; overflow: auto; background: var(--bg); }
 .fv-preview-frame { width: 100%; height: 100%; border: 0; background: #fff; }
@@ -164,8 +171,12 @@ body {
 /* Settings groups */
 .set-group { margin-bottom: 16px; }
 .set-group > summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
-.set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; }
-.set-row label { color: var(--fg-2); }
+.set-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 7px 0; }
+.set-info { min-width: 0; flex: 1; }
+.set-row label { color: var(--fg); cursor: pointer; }
+.set-hint { color: var(--fg-2); font-size: 11px; line-height: 1.4; margin-top: 2px; }
+.set-row input, .set-row select { flex: 0 0 auto; align-self: center; }
+.set-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
 .set-row input[type="number"], .set-row select {
   background: var(--bg-3); color: var(--fg); border: 1px solid var(--border);
   border-radius: 6px; padding: 4px 6px; max-width: 130px;

@@ -18,6 +18,7 @@
       <div class="file-id" id="fileId" hidden>
         <span class="file-name" id="fileName">—</span>
         <select class="type-select" id="typeSelect" title="Detected type — override if we guessed wrong"></select>
+        <button class="icon-btn" id="openInlineBtn" title="Open another file or folder" aria-label="Open another file or folder">📂</button>
       </div>
 
       <div class="spacer"></div>
@@ -90,6 +91,7 @@
       </div>
       <div class="panes" id="panes">
         <div class="pane raw-pane" id="rawPane"><div id="editor" class="editor-host"></div></div>
+        <div class="split-divider" id="splitDivider" hidden role="separator" aria-orientation="vertical" aria-label="Drag to resize panes" title="Drag to resize"></div>
         <div class="pane preview-pane" id="previewPane"><div id="previewHost" class="preview-host"></div></div>
       </div>
     </section>
