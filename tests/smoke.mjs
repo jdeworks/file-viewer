@@ -4,6 +4,8 @@
 // selector wires preview->raw, and ZERO off-origin requests are made (trust guarantee).
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { extname, join, normalize, relative } from 'node:path';
 import { createRequire } from 'node:module';
 import zlib from 'node:zlib';
@@ -785,8 +787,18 @@ try {
   if (plyTypeId === 'ply') pass('.ply detected as 3D model'); else fail('ply type: ' + plyTypeId);
   const plyInfo = await page.$eval('#previewHost .stl-info', (e) => e.textContent);
   if (/12 triangles/.test(plyInfo)) pass('ASCII PLY parsed (cube: 6 quads → 12 triangles)'); else fail('ply info: ' + plyInfo);
-  // Binary little-endian PLY via the file input (no network for the bytes).
-  await page.setInputFiles('#fileInput', '/tmp/sample-bin.ply');
+  // Binary little-endian PLY via the file input — generate the fixture at runtime (self-contained,
+  // so CI's clean checkout has it too; never depend on a pre-existing local file).
+  const plyBinPath = join(tmpdir(), 'fv-smoke-sample-bin.ply');
+  {
+    const verts = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]];
+    const faces = [[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]];
+    const header = Buffer.from('ply\nformat binary_little_endian 1.0\nelement vertex 4\nproperty float x\nproperty float y\nproperty float z\nelement face 4\nproperty list uchar int vertex_indices\nend_header\n', 'latin1');
+    const vb = Buffer.alloc(4 * 3 * 4); let o = 0; for (const v of verts) for (const c of v) { vb.writeFloatLE(c, o); o += 4; }
+    const fb = Buffer.alloc(4 * (1 + 3 * 4)); o = 0; for (const f of faces) { fb.writeUInt8(3, o); o += 1; for (const i of f) { fb.writeInt32LE(i, o); o += 4; } }
+    writeFileSync(plyBinPath, Buffer.concat([header, vb, fb]));
+  }
+  await page.setInputFiles('#fileInput', plyBinPath);
   await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
   const plyBinInfo = await page.$eval('#previewHost .stl-info', (e) => e.textContent);
   if (/4 triangles/.test(plyBinInfo)) pass('binary PLY parsed (tetrahedron: 4 triangles)'); else fail('ply binary info: ' + plyBinInfo);
