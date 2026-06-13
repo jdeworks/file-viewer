@@ -1186,6 +1186,32 @@ try {
   const navPath = await page.$eval('#fileTree .ft-file.active', (e) => e.dataset.path).catch(() => null);
   if (navPath && navPath !== firstPath) pass('arrow-key navigation moves + opens next file (' + navPath + ')'); else fail('arrow nav active: ' + navPath + ' (first=' + firstPath + ')');
 
+  // ── Folder edit-tracking + export as .zip ── edit a file → * marker + export the folder.
+  await page.click('#fileTree .ft-file[data-path="proj/src/app.js"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
+  await page.click('#editor .monaco-editor');
+  await page.keyboard.type('// an edit\n');
+  await page.waitForFunction(() => document.querySelector('#fileTree .ft-file[data-path="proj/src/app.js"]')?.classList.contains('ft-edited'), { timeout: 5000 }).catch(() => {});
+  const edited = await page.$eval('#fileTree .ft-file[data-path="proj/src/app.js"]', (e) => e.classList.contains('ft-edited'));
+  if (edited) pass('folder edit tracked (* marker on the edited file)'); else fail('no ft-edited marker after edit');
+  // The edit survives navigating away and back (stashed in folderEdits).
+  await page.click('#fileTree .ft-file[data-path="proj/src/util.py"]');
+  await page.waitForTimeout(250);
+  await page.click('#fileTree .ft-file[data-path="proj/src/app.js"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 10000 });
+  await page.waitForTimeout(250);
+  const persisted = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (/an edit/.test(persisted)) pass('folder edit persists across navigation'); else fail('edit lost on nav: ' + persisted.slice(0, 40));
+  // Export the whole folder as a .zip (edits applied).
+  const exportShown = await page.$eval('#ftExportBtn', (e) => !e.hidden);
+  if (exportShown) pass('folder export button shown'); else fail('export button hidden for folder');
+  const [zipDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 12000 }),
+    page.click('#ftExportBtn'),
+  ]);
+  if (/\.zip$/.test(zipDownload.suggestedFilename())) pass('folder exported as .zip (' + zipDownload.suggestedFilename() + ')'); else fail('folder zip name: ' + zipDownload.suggestedFilename());
+  await page.evaluate(() => { window.__fv.state.downloadedSinceEdit = true; });   // clear unsaved-work for the next folder load
+
   // ── Huge-folder render cap ── a folder with a very high file count is capped (not frozen) + noted.
   await page.evaluate(() => {
     // 20010 tiny files (over the 20000 cap). File bodies are 1 char — cheap; we're testing the cap.

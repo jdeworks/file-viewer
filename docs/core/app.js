@@ -17,7 +17,8 @@ import { initOffline, offlineMissHtml } from './offline.js';
 import * as persistence from './persistence.js';
 import { suppressInstallPrompt } from './ios-audio.js';
 import { registerCodeMetrics } from '../types/code/codelens.js';
-import { getExports, hasExports } from './exports.js';
+import { getExports, hasExports, downloadBlob } from './exports.js';
+import { exportFolderZip } from './folder-export.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
 import { getModel, preloadModels, monacoOptions, renderSettings, persistGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
@@ -40,6 +41,8 @@ const state = {
   htmlAsked: false,
   known: null,           // matched known-file enhancement (Layer 3), or null
   forceBase: false,      // user toggled "show the plain view" -> bypass the enhancement
+  folderEdits: new Map(),    // path -> edited text for files opened from a loaded folder
+  currentFolderPath: null,   // path of the currently-open folder file (null for single files)
 };
 
 const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
@@ -66,6 +69,7 @@ async function loadIntake(intake) {
     if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return;
   }
   state.downloadedSinceEdit = true;    // fresh document — nothing unsaved yet
+  state.currentFolderPath = null;      // single-file load by default; openTreeFile re-sets it
   state.intake = intake;
   const { type, ranking } = pickType(intake);
   populateTypeSelect(ranking, type.id);
@@ -119,10 +123,14 @@ async function loadFolder(entries) {
   const rootName = git ? git.repoName : (display[0]?.path.split('/')[0] || 'Folder');
   $('ftRoot').textContent = rootName;
   $('ftRoot').title = rootName;
+  state.folderEdits = new Map();               // fresh folder → no tracked edits yet
+  state.currentFolderPath = null;
+  state.folderExported = false;
   const tree = buildTree(display);
   state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node) });
   $('treeBtn').hidden = false;
   $('repoBtn').hidden = !git;
+  $('ftExportBtn').hidden = !!git;             // export the loaded folder (not for git repos)
   setTree(true);
 
   if (git) {
@@ -151,10 +159,44 @@ function hideRepo() { $('repoPanel').hidden = true; }
 
 async function openTreeFile(node) {
   try {
-    await loadIntake(await intakeFromFile(node.file));
-    if (isMobile()) setTree(false);   // collapse the overlay after picking on phones
+    flushFolderEdit();                 // stash any pending edit of the file we're leaving
+    // If this folder file was edited earlier, reopen its edited text (edits persist across nav).
+    const stashed = state.folderEdits.get(node.path);
+    const intake = stashed != null
+      ? intakeFromText(stashed, node.path.split('/').pop())
+      : await intakeFromFile(node.file);
+    state._skipDiscardGuard = true;    // folder edits are preserved in folderEdits — no discard prompt
+    await loadIntake(intake);
+    state.currentFolderPath = node.path;   // mark this as a folder file (loadIntake cleared it)
+    if (isMobile()) setTree(false);    // collapse the overlay after picking on phones
   } catch (err) {
     toast('Could not open ' + node.path);
+  }
+}
+
+// Stash the current folder file's edit (if any) into folderEdits and mark it in the tree.
+function flushFolderEdit() {
+  if (state.currentFolderPath && state.rawview && state.rawview.isDirty()) {
+    state.folderEdits.set(state.currentFolderPath, state.rawview.getValue());
+    state.treeApi?.setEdited?.(state.currentFolderPath, true);
+  }
+}
+
+// Build + download the loaded folder as a .zip (edits applied), preserving structure.
+async function exportFolder(changedOnly) {
+  flushFolderEdit();
+  const entries = state.treeEntries;
+  if (!entries || !entries.length) return;
+  if (changedOnly && state.folderEdits.size === 0) { toast('No edited files to export yet.'); return; }
+  try {
+    toast('Building .zip…', 1500);
+    const { blob, count } = await exportFolderZip(entries, state.folderEdits, { changedOnly });
+    const base = ($('ftRoot').textContent || 'folder').replace(/[^\w.-]+/g, '_');
+    downloadBlob(blob, base + (changedOnly ? '-changed' : '') + '.zip');
+    state.folderExported = true;       // edits are now saved out; clears the unsaved-work warning
+    toast(`Exported ${count} file${count === 1 ? '' : 's'} as .zip.`);
+  } catch (e) {
+    toast('Could not export folder: ' + e.message);
   }
 }
 
@@ -411,6 +453,12 @@ async function onRawEdited(value) {
   // Keep the working text in sync so download + preview reflect edits.
   state.intake = { ...state.intake, text: value };
   state.downloadedSinceEdit = false;   // there are now edits not yet saved to disk
+  // Folder file: stash the edit so it survives navigation + feeds "Export folder as .zip".
+  if (state.currentFolderPath) {
+    state.folderEdits.set(state.currentFolderPath, value);
+    state.folderExported = false;      // a new edit invalidates any prior export
+    state.treeApi?.setEdited?.(state.currentFolderPath, true);
+  }
   // Easter-egg surface: typing `import easteregg` in any editable file unlocks the arcade.
   if (state.games && !state.games.isUnlocked() && /(^|\n)\s*import\s+easteregg\b/.test(value)) {
     state.games.unlock();
@@ -423,7 +471,9 @@ async function onRawEdited(value) {
 // Unsaved work = the working copy differs from the original AND it wasn't downloaded
 // since the last edit. Used to guard against silently discarding progress.
 function hasUnsavedWork() {
-  return !!(state.rawview?.isDirty() && !state.downloadedSinceEdit);
+  if (state.rawview?.isDirty() && !state.downloadedSinceEdit) return true;
+  // Folder edits stashed but not yet exported also count — closing the tab would lose them.
+  return state.folderEdits.size > 0 && !state.folderExported;
 }
 function confirmDiscard() {
   if (!hasUnsavedWork()) return true;
@@ -880,6 +930,7 @@ function init() {
   $('treeCloseBtn').addEventListener('click', () => setTree(false));
   $('fileTree').addEventListener('keydown', onTreeKey);
   $('repoBtn').addEventListener('click', openRepoView);
+  $('ftExportBtn').addEventListener('click', () => exportFolder(false));
   initTreeResize();
   $('openInlineBtn').addEventListener('click', showIntake);
   $('newFileBtn').addEventListener('click', createNewFile);

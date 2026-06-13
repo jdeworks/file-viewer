@@ -120,10 +120,16 @@ export function renderTree(host, root, { onOpen }) {
     else stopMarquee();
   }
 
+  // Mark/unmark a file row as edited (adds a `*` via the .ft-edited class) — folder edit-tracking.
+  function setEdited(path, on = true) {
+    const row = host.querySelector('.ft-file[data-path="' + cssEscape(path) + '"]');
+    if (row) row.classList.toggle('ft-edited', on !== false);
+  }
+
   // Top-level children of root (skip the empty root node itself).
   for (const c of sortedChildren(root)) host.appendChild(makeNode(c, 0));
   // refresh() re-evaluates the marquee (e.g. after the sidebar is resized).
-  return { setActive, refresh: () => startMarquee(activeRow), stop: stopMarquee };
+  return { setActive, setEdited, refresh: () => startMarquee(activeRow), stop: stopMarquee };
 }
 
 function escapeHtml(s) { return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
