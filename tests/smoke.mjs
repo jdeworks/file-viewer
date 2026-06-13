@@ -161,6 +161,20 @@ try {
   else fail('PDF metadata rows: ' + meta.join(', '));
   await page.click('#metaDrawer [data-close]');
 
+  // ── CSV module + shared tabular renderer (WP19) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.csv' }).click();
+  const cframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
+  const cf = await cframe.contentFrame();
+  await cf.waitForSelector('table', { timeout: 10000 });
+  const headers = await cf.$$eval('thead th', (els) => els.map((e) => e.textContent));
+  if (headers.join(',') === 'name,role,city,commits') pass('CSV rendered as table with header row'); else fail('CSV headers: ' + headers.join(','));
+  const rowCount = await cf.$$eval('tbody tr', (els) => els.length);
+  if (rowCount === 5) pass('CSV body rows (' + rowCount + ')'); else fail('CSV rows: ' + rowCount);
+  // CSV is editable text -> raw editor + diff available.
+  const csvHasEditor = await page.$('#editor .monaco-editor');
+  if (csvHasEditor) pass('CSV has raw editor (editable text)'); else fail('CSV missing raw editor');
+
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
 } catch (e) {

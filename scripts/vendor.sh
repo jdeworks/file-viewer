@@ -7,7 +7,8 @@ cd "$(dirname "$0")/.."
 
 VENDOR=docs/vendor
 rm -rf "$VENDOR"
-mkdir -p "$VENDOR/monaco" "$VENDOR/pdfjs" "$VENDOR/dompurify" "$VENDOR/markdown-it"
+mkdir -p "$VENDOR/monaco" "$VENDOR/pdfjs" "$VENDOR/dompurify" "$VENDOR/markdown-it" \
+         "$VENDOR/papaparse" "$VENDOR/xlsx" "$VENDOR/mammoth"
 
 # --- Monaco (AMD dist). Drop locale bundles (English is built-in) to save weight. ---
 cp -r node_modules/monaco-editor/min/vs "$VENDOR/monaco/vs"
@@ -22,6 +23,15 @@ cp node_modules/dompurify/dist/purify.min.js "$VENDOR/dompurify/purify.min.js"
 
 # --- markdown-it (UMD min). ---
 cp node_modules/markdown-it/dist/markdown-it.min.js "$VENDOR/markdown-it/markdown-it.min.js"
+
+# --- PapaParse (CSV parse, UMD min). ---
+cp node_modules/papaparse/papaparse.min.js "$VENDOR/papaparse/papaparse.min.js"
+
+# --- SheetJS (Excel/ODS, UMD full min). ---
+cp node_modules/xlsx/dist/xlsx.full.min.js "$VENDOR/xlsx/xlsx.full.min.js"
+
+# --- mammoth (DOCX -> HTML, browser min). ---
+cp node_modules/mammoth/mammoth.browser.min.js "$VENDOR/mammoth/mammoth.browser.min.js"
 
 # Record pinned versions for provenance.
 node -e "const p=require('./package.json').devDependencies; require('fs').writeFileSync('$VENDOR/VERSIONS.json', JSON.stringify(p,null,2)+'\n')"

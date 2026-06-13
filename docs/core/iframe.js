@@ -56,7 +56,18 @@ const BASE_CSS = `
   pre{overflow:auto;}
   .pdf-doc{display:flex;flex-direction:column;align-items:center;gap:14px;}
   .pdf-page{box-shadow:0 1px 10px rgba(0,0,0,.3);max-width:100%;}
-  .pdf-note{color:#888;font-size:13px;}`;
+  .pdf-note{color:#888;font-size:13px;}
+  .tabular{font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .sheet-title{font-family:system-ui,sans-serif;margin:18px 0 4px;}
+  .tbl-meta,.tbl-note{font-family:system-ui,sans-serif;color:#888;font-size:12px;margin:2px 0;}
+  .table-wrap{overflow-x:auto;border:1px solid #0002;border-radius:6px;}
+  table{border-collapse:collapse;width:100%;}
+  th,td{border:1px solid #0001;padding:4px 8px;text-align:left;white-space:nowrap;vertical-align:top;}
+  thead th{position:sticky;top:0;background:#f3f4f6;z-index:1;}
+  tbody tr:nth-child(even){background:#00000006;}
+  body.fv-dark thead th{background:#2a2a2a;}
+  body.fv-dark .table-wrap{border-color:#fff2;}
+  body.fv-dark th,body.fv-dark td{border-color:#ffffff1a;}`;
 
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', maxWidth }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';

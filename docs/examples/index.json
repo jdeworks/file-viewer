@@ -1,5 +1,6 @@
 [
   { "label": "Welcome.md", "file": "welcome.md", "mime": "text/markdown" },
   { "label": "Sample.pdf", "file": "sample.pdf", "mime": "application/pdf" },
+  { "label": "Sample.csv", "file": "sample.csv", "mime": "text/csv" },
   { "label": "Sample.txt", "file": "sample.txt", "mime": "text/plain" }
 ]

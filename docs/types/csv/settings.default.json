@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "label": "Default",
+  "values": {
+    "wordWrap": "off",
+    "fontSize": 13,
+    "csvHeader": true,
+    "delimiter": "auto",
+    "syncScroll": false
+  }
+}
