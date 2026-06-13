@@ -4,5 +4,6 @@
   { "label": "Sample.csv", "file": "sample.csv", "mime": "text/csv" },
   { "label": "Sample.xlsx", "file": "sample.xlsx", "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
   { "label": "Sample.docx", "file": "sample.docx", "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+  { "label": "Sample.pptx", "file": "sample.pptx", "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation" },
   { "label": "Sample.txt", "file": "sample.txt", "mime": "text/plain" }
 ]

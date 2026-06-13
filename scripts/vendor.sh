@@ -8,7 +8,8 @@ cd "$(dirname "$0")/.."
 VENDOR=docs/vendor
 rm -rf "$VENDOR"
 mkdir -p "$VENDOR/monaco" "$VENDOR/pdfjs" "$VENDOR/dompurify" "$VENDOR/markdown-it" \
-         "$VENDOR/papaparse" "$VENDOR/xlsx" "$VENDOR/mammoth"
+         "$VENDOR/papaparse" "$VENDOR/xlsx" "$VENDOR/mammoth" \
+         "$VENDOR/jszip" "$VENDOR/chartjs" "$VENDOR/pptxviewjs"
 
 # --- Monaco (AMD dist). Drop locale bundles (English is built-in) to save weight. ---
 cp -r node_modules/monaco-editor/min/vs "$VENDOR/monaco/vs"
@@ -32,6 +33,11 @@ cp node_modules/xlsx/dist/xlsx.full.min.js "$VENDOR/xlsx/xlsx.full.min.js"
 
 # --- mammoth (DOCX -> HTML, browser min). ---
 cp node_modules/mammoth/mammoth.browser.min.js "$VENDOR/mammoth/mammoth.browser.min.js"
+
+# --- PPTX viewer stack (pptxviewjs + peers JSZip, Chart.js). Loaded only for .pptx. ---
+cp node_modules/jszip/dist/jszip.min.js              "$VENDOR/jszip/jszip.min.js"
+cp node_modules/chart.js/dist/chart.umd.js           "$VENDOR/chartjs/chart.umd.js"
+cp node_modules/pptxviewjs/dist/PptxViewJS.min.js    "$VENDOR/pptxviewjs/PptxViewJS.min.js"
 
 # Record pinned versions for provenance.
 node -e "const p=require('./package.json').devDependencies; require('fs').writeFileSync('$VENDOR/VERSIONS.json', JSON.stringify(p,null,2)+'\n')"

@@ -197,6 +197,15 @@ try {
   const strong = await df.$$eval('.docx-body strong, .docx-body b', (els) => els.length);
   if (strong > 0) pass('Word: formatting preserved (bold)'); else fail('no bold run in docx');
 
+  // ── PowerPoint module (WP19) ── pptxviewjs renders slides to images in the iframe.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.pptx' }).click();
+  const ppframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 25000 });
+  const ppf = await ppframe.contentFrame();
+  await ppf.waitForSelector('img.pptx-slide', { timeout: 25000 });
+  const slideDims = await ppf.$$eval('img.pptx-slide', (els) => els.map((e) => e.naturalWidth));
+  if (slideDims.length === 2 && slideDims.every((w) => w > 100)) pass('PPTX: ' + slideDims.length + ' slides rendered to images'); else fail('pptx slides: ' + JSON.stringify(slideDims));
+
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
 } catch (e) {
