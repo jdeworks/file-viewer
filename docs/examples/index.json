@@ -1,6 +1,7 @@
 [
   { "label": "Welcome.md", "file": "welcome.md", "mime": "text/markdown", "category": "Documents" },
   { "label": "Sample.pdf", "file": "sample.pdf", "mime": "application/pdf", "category": "Documents" },
+  { "label": "Sample (3 pages).pdf", "file": "sample-pages.pdf", "mime": "application/pdf", "category": "Documents" },
   { "label": "Sample.txt", "file": "sample.txt", "mime": "text/plain", "category": "Documents" },
   { "label": "Sample.epub", "file": "sample.epub", "mime": "application/epub+zip", "category": "Documents" },
   { "label": "Sample.csv", "file": "sample.csv", "mime": "text/csv", "category": "Data" },

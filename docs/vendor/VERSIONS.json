@@ -8,6 +8,7 @@
   "markdown-it": "14.1.0",
   "monaco-editor": "0.52.2",
   "papaparse": "5.4.1",
+  "pdf-lib": "1.17.1",
   "pdfjs-dist": "4.10.38",
   "pptxviewjs": "1.1.9",
   "sql.js": "1.12.0",

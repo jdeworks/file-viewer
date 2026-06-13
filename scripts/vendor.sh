@@ -52,6 +52,10 @@ mkdir -p "$VENDOR/sql.js"
 cp node_modules/sql.js/dist/sql-wasm.js   "$VENDOR/sql.js/sql-wasm.js"
 cp node_modules/sql.js/dist/sql-wasm.wasm "$VENDOR/sql.js/sql-wasm.wasm"
 
+# --- pdf-lib (PDF writer, UMD min). Loaded only when editing a PDF. ---
+mkdir -p "$VENDOR/pdf-lib"
+cp node_modules/pdf-lib/dist/pdf-lib.min.js "$VENDOR/pdf-lib/pdf-lib.min.js"
+
 # Record pinned versions for provenance.
 node -e "const p=require('./package.json').devDependencies; require('fs').writeFileSync('$VENDOR/VERSIONS.json', JSON.stringify(p,null,2)+'\n')"
 
