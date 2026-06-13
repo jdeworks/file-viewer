@@ -27,7 +27,8 @@ const ROOT = new URL('../docs/', import.meta.url).pathname;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.css': 'text/css', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain',
   '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar', '.yaml': 'application/yaml', '.toml': 'application/toml',
-  '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf' };
+  '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf',
+  '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -440,6 +441,44 @@ try {
   const xmlDiffHead = await page.$eval('.jsondiff .jd-head', (e) => e.textContent);
   if (/changed/.test(xmlDiffHead)) pass('XML structural diff flags a changed text node'); else fail('xml diff: ' + xmlDiffHead.slice(0, 80));
   await page.click('#rawMode button[data-raw="current"]');
+
+  // ── INI / .env ── key-value tables grouped by section. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.ini' }).click();
+  const iniframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const inif = await iniframe.contentFrame();
+  await inif.waitForSelector('.kv-table', { timeout: 8000 });
+  const iniType = await page.$eval('#typeSelect', (s) => s.value);
+  if (iniType === 'ini') pass('.ini detected as Config (INI/env)'); else fail('ini type: ' + iniType);
+  const iniSecs = await inif.$$eval('.kv-section h3', (els) => els.map((e) => e.textContent));
+  const iniKeys = await inif.$$eval('.kv-key', (els) => els.map((e) => e.textContent));
+  if (iniSecs.some((s) => /server/.test(s)) && iniKeys.includes('port')) pass('INI rendered as sectioned key-value tables'); else fail('ini secs=' + iniSecs.join(',') + ' keys=' + iniKeys.join(','));
+
+  // ── Patch / unified diff ── colorized add/remove/hunk lines. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.patch' }).click();
+  const patchframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const patchf = await patchframe.contentFrame();
+  await patchf.waitForSelector('.patch', { timeout: 8000 });
+  const patchType2 = await page.$eval('#typeSelect', (s) => s.value);
+  if (patchType2 === 'patch') pass('.patch detected as Patch / Diff'); else fail('patch type: ' + patchType2);
+  const adds = await patchf.$$eval('.patch .p-add', (els) => els.length);
+  const dels = await patchf.$$eval('.patch .p-del', (els) => els.length);
+  const hunks = await patchf.$$eval('.patch .p-hunk', (els) => els.length);
+  if (adds >= 2 && dels >= 1 && hunks >= 1) pass('patch colorized (+' + adds + ' −' + dels + ', ' + hunks + ' hunk)'); else fail('patch lines: add=' + adds + ' del=' + dels + ' hunk=' + hunks);
+
+  // ── Log ── severity highlighting + timestamps. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.log' }).click();
+  const lframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const lf = await lframe.contentFrame();
+  await lf.waitForSelector('.logv', { timeout: 8000 });
+  const logType2 = await page.$eval('#typeSelect', (s) => s.value);
+  if (logType2 === 'log') pass('.log detected as Log'); else fail('log type: ' + logType2);
+  const errLines = await lf.$$eval('.logv .l-error', (els) => els.length);
+  const warnLines = await lf.$$eval('.logv .l-warn', (els) => els.length);
+  const tsSpans = await lf.$$eval('.logv .l-ts', (els) => els.length);
+  if (errLines >= 1 && warnLines >= 1 && tsSpans >= 4) pass('log severity highlighted (' + errLines + ' error, ' + warnLines + ' warn, ' + tsSpans + ' timestamps)'); else fail('log: err=' + errLines + ' warn=' + warnLines + ' ts=' + tsSpans);
 
   // ── Known-file enhancement (Layer 3): package.json -> npm links + revert chip ──
   await page.goto(origin, { waitUntil: 'networkidle' });

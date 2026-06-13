@@ -127,7 +127,28 @@ const BASE_CSS = `
   .ics-loc,.ics-rrule{font:12px system-ui,sans-serif;color:#666;margin-top:3px;}
   body.fv-dark .ics-loc,body.fv-dark .ics-rrule{color:#9aa;}
   .ics-desc{font:13px/1.5 system-ui,sans-serif;white-space:pre-wrap;word-break:break-word;margin-top:6px;}
-  .ics-empty{color:#888;font-family:system-ui,sans-serif;}`;
+  .ics-empty{color:#888;font-family:system-ui,sans-serif;}
+  .kv-section{margin:0 0 16px;}
+  .kv-section h3{font:600 13px system-ui,sans-serif;color:#4c9aff;margin:0 0 6px;border-bottom:1px solid #0001;padding-bottom:3px;}
+  body.fv-dark .kv-section h3{border-bottom-color:#fff2;}
+  .kv-table{border-collapse:collapse;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;width:100%;}
+  .kv-table td{padding:2px 14px 2px 0;vertical-align:top;word-break:break-word;}
+  .kv-key{color:#888;white-space:nowrap;}
+  .kv-val{color:inherit;}
+  .patch{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;}
+  .patch .pl{display:block;padding:0 6px;}
+  .patch .p-add{background:#2ea04322;color:#1a7f37;}
+  .patch .p-del{background:#cf222e22;color:#cf222e;}
+  .patch .p-hunk{background:#4c9aff22;color:#4c9aff;}
+  .patch .p-file{font-weight:600;background:#8884;}
+  body.fv-dark .patch .p-add{color:#3fb950;} body.fv-dark .patch .p-del{color:#ff7b72;}
+  .logv{font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;}
+  .logv .ll{display:block;padding:0 6px;border-left:3px solid transparent;}
+  .logv .l-error{border-left-color:#cf222e;background:#cf222e14;}
+  .logv .l-warn{border-left-color:#d29922;background:#d2992214;}
+  .logv .l-info{border-left-color:#4c9aff;}
+  .logv .l-debug{color:#888;}
+  .logv .l-ts{color:#4c9aff;}`;
 
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';

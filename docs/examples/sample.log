@@ -1,0 +1,6 @@
+2026-06-13 09:14:02 INFO  Starting File Viewer service on port 8080
+2026-06-13 09:14:02 DEBUG Loaded 18 type plugins
+2026-06-13 09:14:05 INFO  Request GET /index.html 200 12ms
+2026-06-13 09:14:07 WARN  Asset manifest is 3 versions behind
+2026-06-13 09:14:09 ERROR Failed to open file: permission denied
+2026-06-13 09:14:10 INFO  Recovered, serving from cache

@@ -44,6 +44,9 @@ import icsType from '../types/ics/index.js';
 import yamlType from '../types/yaml/index.js';
 import tomlType from '../types/toml/index.js';
 import xmlType from '../types/xml/index.js';
+import iniType from '../types/ini/index.js';
+import patchType from '../types/patch/index.js';
+import logType from '../types/log/index.js';
 import zipType from '../types/zip/index.js';
 import epubType from '../types/epub/index.js';
 
@@ -61,6 +64,9 @@ export const REGISTRY = [
   yamlType,
   tomlType,
   xmlType,
+  iniType,
+  patchType,
+  logType,
   ipynbType,
   jsonType,
   imageType,
