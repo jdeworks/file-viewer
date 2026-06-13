@@ -625,3 +625,26 @@ body {
 .snake-restart, .snake-quit { background: var(--accent); color: var(--accent-fg); border: 0;
   border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
 .snake-quit { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); }
+
+/* Bit Foundry (meta-game incremental core). */
+.mg-wrap { display: flex; flex-direction: column; gap: 14px; width: min(420px, 100%); }
+.mg-head { text-align: center; }
+.mg-bits { font: 700 28px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.mg-rate { color: var(--fg-2); font-size: 13px; margin-top: 2px; }
+.mg-compute { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 12px;
+  padding: 18px; font-size: 18px; font-weight: 700; cursor: pointer; transition: transform .05s; }
+.mg-compute:active { transform: scale(.97); }
+.mg-click { opacity: .85; font-size: 14px; font-weight: 600; margin-left: 6px; }
+.mg-snake .mg-claim { width: 100%; background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border: 1px solid var(--accent); color: var(--fg); border-radius: 10px; padding: 10px; cursor: pointer; font-size: 13px; }
+.mg-shop { display: flex; flex-direction: column; gap: 8px; }
+.mg-buy { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center;
+  background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+  cursor: pointer; text-align: left; color: var(--fg); opacity: .6; }
+.mg-buy.mg-afford { opacity: 1; border-color: var(--accent); }
+.mg-buy-name { font-weight: 600; }
+.mg-owned { color: var(--fg-2); font-weight: 400; font-size: 12px; }
+.mg-buy-blurb { grid-column: 1; color: var(--fg-2); font-size: 12px; }
+.mg-buy-cost { grid-column: 2; grid-row: 1 / span 2; font: 700 15px ui-monospace, monospace; color: var(--accent); }
+.mg-back { align-self: flex-start; background: var(--bg-2); color: var(--fg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }

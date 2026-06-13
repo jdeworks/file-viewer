@@ -1585,6 +1585,26 @@ try {
   const stillOpen = await page.$('.games-overlay:not([hidden])');
   if (!stillOpen) pass('hub closes'); else fail('hub did not close');
 
+  // ── Meta-game: Bit Foundry (incremental core, P2) ── launch, compute, buy automation. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 1000 })); } catch {}
+    window.__fv.games.unlock();
+    window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-wrap', { timeout: 8000 });
+  const mgBits = await page.$eval('.mg-bits', (e) => e.textContent);
+  if (/bits/.test(mgBits)) pass('Bit Foundry launches (resource: ' + mgBits + ')'); else fail('mg bits: ' + mgBits);
+  await page.click('.mg-compute');                      // manual compute
+  await page.click('.mg-shop .mg-buy[data-id="cron"]'); // buy the cheapest automation (1000 bits seeded)
+  const mgRate = await page.$eval('.mg-rate', (e) => e.textContent);
+  if (/0\.2\/s/.test(mgRate)) pass('Bit Foundry: automation raises the bit rate (' + mgRate + ')'); else fail('mg rate: ' + mgRate);
+  const mgOwned = await page.$eval('.mg-buy[data-id="cron"] .mg-owned', (e) => e.textContent);
+  if (mgOwned === '×1') pass('Bit Foundry: upgrade purchased (owned ' + mgOwned + ')'); else fail('mg owned: ' + mgOwned);
+  await page.click('.games-close');
+
   // ── Graceful offline-miss ── cache-on-use only (no full precache), then open a viewer that
   // was never loaded online while offline → friendly note instead of a raw error.
   {

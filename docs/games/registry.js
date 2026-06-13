@@ -13,6 +13,13 @@ export const GAMES = [
     blurb: 'The classic. Arrow keys or swipe. Eat the bytes, don’t bite yourself.',
     load: () => import('./snake/snake.js'),
   },
+  {
+    id: 'metagame',
+    title: 'Bit Foundry',
+    emoji: '⚙️',
+    blurb: 'Generate bits, automate the grind. The spine of the bigger game to come.',
+    load: () => import('./metagame/metagame.js'),
+  },
 ];
 
 export function getGame(id) {
