@@ -8,7 +8,7 @@ import { pickType } from './detect.js';
 import { wireIntake, intakeFromFile, LARGE_FILE_BYTES } from './intake.js';
 import { buildTree, renderTree } from './filetree.js';
 import { createRawView } from './rawview.js';
-import { mountPreview } from './iframe.js';
+import { mountPreview, captureBodyHtml } from './iframe.js';
 import { buildModel, monacoOptions, renderSettings } from './settings.js';
 
 const $ = (id) => document.getElementById(id);
@@ -184,6 +184,24 @@ function syncRawModeButtons() {
   document.querySelectorAll('#rawMode button').forEach((b) => b.classList.toggle('active', b.dataset.raw === state.rawMode));
 }
 
+async function takeScreenshot() {
+  if (state.lastBodyHtml == null) { toast('Screenshot not available for script-enabled HTML.'); return; }
+  toast('Capturing…', 1500);
+  try {
+    const url = await captureBodyHtml(state.lastBodyHtml, {
+      theme: themeIsDark() ? 'dark' : 'light',
+      maxWidth: state.settingsModel.values.previewMaxWidth,
+    });
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (state.intake.filename || 'preview').replace(/\.[^.]+$/, '') + '.png';
+    a.click();
+    toast('Screenshot saved');
+  } catch (err) {
+    toast('Screenshot failed: ' + err.message);
+  }
+}
+
 function downloadCurrent() {
   const blob = new Blob([state.rawview ? state.rawview.getValue() : (state.intake.text || '')], { type: state.intake.mimeType || 'text/plain' });
   const a = document.createElement('a');
@@ -216,6 +234,8 @@ async function renderPreview() {
       return renderPreview();
     }
   }
+  // Remember the sanitized body for screenshots (null for script-enabled full docs).
+  state.lastBodyHtml = rendered.fullDoc ? null : rendered.bodyHtml;
   state.preview = mountPreview($('previewHost'), {
     bodyHtml: rendered.bodyHtml,
     fullDoc: rendered.fullDoc,
@@ -408,7 +428,7 @@ function init() {
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen?.();
   });
-  $('screenshotBtn').addEventListener('click', () => toast('Screenshot lands in WP18.'));
+  $('screenshotBtn').addEventListener('click', takeScreenshot);
 
   document.querySelectorAll('#viewMode button').forEach((b) =>
     b.addEventListener('click', () => { state.mode = b.dataset.mode; applyLayout(); }));
@@ -431,7 +451,10 @@ function init() {
   loadExamples();
 
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
-  window.__fv = { state, setRawMode, downloadCurrent, loadFolder };
+  window.__fv = {
+    state, setRawMode, downloadCurrent, loadFolder,
+    screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', maxWidth: state.settingsModel.values.previewMaxWidth }),
+  };
 }
 
 document.addEventListener('DOMContentLoaded', init);

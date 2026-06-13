@@ -78,6 +78,10 @@ try {
   const sandbox = await frame.getAttribute('sandbox');
   if (sandbox === 'allow-scripts') pass('iframe sandbox = allow-scripts only'); else fail('sandbox: ' + sandbox);
 
+  // Screenshot (WP18): sanitized body re-rendered in a same-origin temp iframe + html2canvas.
+  const shotUrl = await page.evaluate(() => window.__fv.screenshot());
+  if (typeof shotUrl === 'string' && shotUrl.startsWith('data:image/png') && shotUrl.length > 2000) pass('preview screenshot captured (PNG)'); else fail('screenshot: ' + String(shotUrl).slice(0, 40));
+
   // ── Settings (WP03) ──
   await page.click('#settingsBtn');
   await page.waitForSelector('#settingsBody .set-group', { timeout: 5000 });

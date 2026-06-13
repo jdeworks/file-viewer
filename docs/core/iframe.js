@@ -8,6 +8,7 @@
 //   - scripts (opt-in, WP07 confirm flow): user scripts allowed to run. Bridge still ours.
 //
 // The bridge talks to the parent only via postMessage (works despite the cross-origin sandbox).
+import { loadGlobal, vendor } from './script-loader.js';
 
 const BRIDGE = `
 (function(){
@@ -134,4 +135,26 @@ export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts
       container.innerHTML = '';
     },
   };
+}
+
+// Screenshot (WP18): the live preview iframe is a null-origin sandbox, which html2canvas
+// can't capture (its clone-iframe trick needs same-origin). So we re-render the ALREADY
+// SANITIZED body into a temporary SAME-ORIGIN, off-screen iframe (safe — scripts are gone)
+// and capture that. Not used for "run scripts" HTML (no sanitized body to reuse).
+export async function captureBodyHtml(bodyHtml, { theme, maxWidth }) {
+  const html2canvas = await loadGlobal(vendor('html2canvas/html2canvas.min.js'), 'html2canvas');
+  const tmp = document.createElement('iframe');
+  tmp.style.cssText = 'position:fixed;left:-99999px;top:0;border:0;width:' + (Number(maxWidth) || 900) + 'px;height:10px;';
+  tmp.srcdoc = buildSrcdoc({ bodyHtml, theme, maxWidth: Number(maxWidth) });
+  document.body.appendChild(tmp);
+  try {
+    await new Promise((r) => { tmp.onload = r; });
+    const doc = tmp.contentDocument;
+    tmp.style.height = Math.max(10, doc.body.scrollHeight) + 'px';
+    await new Promise((r) => requestAnimationFrame(r));
+    const canvas = await html2canvas(doc.body, { scale: 2, backgroundColor: null, useCORS: true });
+    return canvas.toDataURL('image/png');
+  } finally {
+    tmp.remove();
+  }
 }

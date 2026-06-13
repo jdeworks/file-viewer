@@ -22,6 +22,10 @@ cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs "$VENDOR/pdfjs/pdf.worker.mi
 # --- DOMPurify (UMD min). ---
 cp node_modules/dompurify/dist/purify.min.js "$VENDOR/dompurify/purify.min.js"
 
+# --- html2canvas (preview screenshot, UMD min). Injected into the iframe on demand. ---
+mkdir -p "$VENDOR/html2canvas"
+cp node_modules/html2canvas/dist/html2canvas.min.js "$VENDOR/html2canvas/html2canvas.min.js"
+
 # --- markdown-it (UMD min). ---
 cp node_modules/markdown-it/dist/markdown-it.min.js "$VENDOR/markdown-it/markdown-it.min.js"
 

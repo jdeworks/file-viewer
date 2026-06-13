@@ -5,6 +5,7 @@
   "devDependencies": {
     "chart.js": "4.4.7",
     "dompurify": "3.2.4",
+    "html2canvas": "1.4.1",
     "jszip": "3.10.1",
     "mammoth": "1.8.0",
     "markdown-it": "14.1.0",
