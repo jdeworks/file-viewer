@@ -1,5 +1,6 @@
 // STL (stereolithography) parser — binary and ASCII. Returns a flat triangle list with vertices
 // and a normal per face (computed if the file's normal is missing/zero). Pure JS, no dependency.
+import { bounds } from '../../core/meshview.js';
 
 function vsub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
 function vcross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
@@ -51,12 +52,5 @@ export function parseSTL(intake) {
   if (!intake.isBinary && /^\s*solid/i.test(intake.text || '') && /facet/i.test(intake.text || '')) tris = parseAscii(intake.text);
   else if (isBinary(bytes)) tris = parseBinary(bytes);
   else tris = parseAscii(new TextDecoder().decode(bytes));   // last resort
-
-  // Bounding box for centering/scaling.
-  let min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
-  for (const t of tris) for (const p of t.v) for (let k = 0; k < 3; k++) { if (p[k] < min[k]) min[k] = p[k]; if (p[k] > max[k]) max[k] = p[k]; }
-  if (!tris.length) min = max = [0, 0, 0];
-  const size = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
-  const center = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2];
-  return { tris, min, max, size, center };
+  return { tris, ...bounds(tris) };
 }

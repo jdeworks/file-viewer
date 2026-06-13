@@ -50,6 +50,7 @@ import logType from '../types/log/index.js';
 import geoType from '../types/geo/index.js';
 import fontType from '../types/font/index.js';
 import stlType from '../types/stl/index.js';
+import objType from '../types/obj/index.js';
 import subtitleType from '../types/subtitle/index.js';
 import vcardType from '../types/vcard/index.js';
 import sqliteType from '../types/sqlite/index.js';
@@ -82,6 +83,7 @@ export const REGISTRY = [
   mediaType,
   fontType,
   stlType,
+  objType,
   sqliteType,
   epubType,
   zipType,
