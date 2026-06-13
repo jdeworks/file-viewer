@@ -20,7 +20,15 @@ export async function readZip(intake) {
     totalU += d.uncompressedSize || 0;
     totalC += d.compressedSize || 0;
   }
-  return { files, folders, totalU, totalC, ratio: totalU > 0 ? Math.round((1 - totalC / totalU) * 100) : 0 };
+  // `zip` is retained so callers can decompress a single entry on demand (extractEntry).
+  return { zip, files, folders, totalU, totalC, ratio: totalU > 0 ? Math.round((1 - totalC / totalU) * 100) : 0 };
+}
+
+// Decompress ONE entry by name → its bytes (Uint8Array). Used to open a file inside the archive.
+export async function extractEntry(zip, name) {
+  const entry = zip && zip.file(name);
+  if (!entry) return null;
+  return entry.async('uint8array');
 }
 
 // List the zip from its central directory WITHOUT JSZip — so it works even for password-protected

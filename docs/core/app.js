@@ -487,6 +487,7 @@ async function renderPreview() {
     onSelect: (src) => mapPreviewToRaw(src),
     onHover: (src) => mapPreviewToRaw(src, false),
     onScroll: (ratio) => syncScrollFromPreview(ratio),
+    onOpen: rendered.openEntry ? (name) => openInnerEntry(rendered.openEntry, name) : undefined,
   });
   if (rendered.hadUnsafe) toast('Some unsafe HTML (scripts/handlers) was removed for safety.');
   updateExportButton();
@@ -499,6 +500,20 @@ function clearPreview() {
   state.lastBodyHtml = null;
   updateExportButton();
   $('previewHost').innerHTML = '';
+}
+
+// Open one entry from inside a container preview (e.g. a file inside a zip): the renderer's
+// openEntry() extracts that entry's bytes → a fresh intake, which we load through the normal
+// detection/render path. No unsaved work exists for a binary container, so loading is safe.
+async function openInnerEntry(openEntry, name) {
+  try {
+    const intake = await openEntry(name);
+    if (!intake) { toast('Could not open ' + name); return; }
+    state._skipDiscardGuard = true;   // container view holds no editable/unsaved work
+    await loadIntake(intake);
+  } catch {
+    toast('Could not open ' + name);
+  }
 }
 
 /* ─────────────── Known-file enhancement chip (Layer 3 indicator + revert) ─────────────── */

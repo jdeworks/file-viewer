@@ -69,6 +69,12 @@ export function intakeFromText(text, filename) {
   return buildIntake({ filename, mimeType: 'text/plain', bytes, isPaste: true });
 }
 
+// Build an intake from raw bytes already in memory (e.g. a single entry extracted from a zip).
+// Detection + binary/text sniffing run exactly as for a dropped file.
+export function intakeFromBytes(bytes, filename, mimeType = '') {
+  return buildIntake({ filename, mimeType, bytes, size: bytes.length });
+}
+
 // Recursively read a dropped directory tree into [{ file, path }] using the Entries API.
 function readEntries(reader) {
   return new Promise((resolve, reject) => {

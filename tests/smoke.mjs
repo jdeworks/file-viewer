@@ -678,6 +678,21 @@ try {
   if (/files/.test(zMeta) && /uncompressed/.test(zMeta)) pass('archive summary (counts + size)'); else fail('zip meta: ' + zMeta);
   const zipHasEditor = await page.$('#editor .monaco-editor');
   if (!zipHasEditor) pass('archive is preview-only (no raw editor)'); else fail('raw editor present for zip');
+  // Open-file-inside-zip: entry names are clickable → the entry opens through normal detection.
+  const openable = await zf.$$eval('.zip-table .z-open', (els) => els.map((e) => e.getAttribute('data-fv-open')));
+  if (openable.includes('README.txt') && openable.includes('data/rows.csv')) pass('archive entries are clickable (open-inside-zip)'); else fail('zip openable: ' + openable.join(','));
+  await zf.click('.zip-table .z-open[data-fv-open="data/rows.csv"]');
+  // The extracted CSV is re-detected and rendered in a fresh preview iframe (as a CSV table).
+  // Wait for the new intake to load (filename swaps to the entry's own name) before asserting.
+  await page.waitForFunction(() => document.getElementById('fileName').textContent === 'rows.csv', { timeout: 12000 });
+  const innerType = await page.$eval('#typeSelect', (s) => s.value);
+  if (innerType === 'csv') pass('zip entry opened + re-detected (rows.csv → CSV)'); else fail('inner type: ' + innerType);
+  pass('opened entry shows its own filename (rows.csv)');
+  const innerFrameEl = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const innerFrame = await innerFrameEl.contentFrame();
+  await innerFrame.waitForSelector('table', { timeout: 10000 });
+  const innerHasTable = await innerFrame.$$eval('table tbody tr', (els) => els.length);
+  if (innerHasTable > 0) pass('zip entry rendered through its real renderer (CSV table, ' + innerHasTable + ' rows)'); else fail('inner CSV rows: ' + innerHasTable);
 
   // ── Password-protected zip ── JSZip refuses it; we still list via our own central-dir parse + 🔒. ──
   await page.goto(origin, { waitUntil: 'networkidle' });

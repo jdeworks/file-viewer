@@ -15,11 +15,14 @@ const BRIDGE = `
   function send(m){ parent.postMessage(Object.assign({__fv:1}, m), '*'); }
   // Magic selector: hover/click a [data-fv-src] element -> tell parent its source range.
   function srcEl(t){ while(t && t!==document.body){ if(t.dataset && t.dataset.fvSrc) return t; t=t.parentElement; } return null; }
+  function openEl(t){ while(t && t!==document.body){ if(t.dataset && t.dataset.fvOpen!=null) return t; t=t.parentElement; } return null; }
   document.addEventListener('mousemove', function(e){
     var el = srcEl(e.target); if(!el) return;
     send({type:'hover', src: el.dataset.fvSrc});
   });
   document.addEventListener('click', function(e){
+    // Open-an-entry click (e.g. a file inside a zip) takes precedence over source-mapping.
+    var o = openEl(e.target); if(o){ send({type:'open', name: o.dataset.fvOpen}); return; }
     var el = srcEl(e.target); if(!el) return;
     send({type:'select', src: el.dataset.fvSrc});
   });
@@ -131,6 +134,10 @@ const BASE_CSS = `
   .zip-table .z-num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
   .zip-table .z-date{white-space:nowrap;color:#888;font-size:12px;}
   .zip-table .z-lock{font-size:12px;}
+  .zip-table .z-open{cursor:pointer;color:#0b69c7;}
+  .zip-table .z-open:hover{text-decoration:underline;background:#4c9aff14;}
+  body.fv-dark .zip-table .z-open{color:#7cb7ff;}
+  .zip-hint{font:12px system-ui,sans-serif;color:#888;margin:0 0 10px;}
   .zip-locked{background:#d2992222;border:1px solid #d2992255;border-radius:8px;padding:8px 12px;margin:0 0 12px;font:13px system-ui,sans-serif;color:#9a6700;}
   body.fv-dark .zip-locked{color:#e3b341;}
   .ics-head{font:600 14px system-ui,sans-serif;margin:0 0 14px;}
@@ -216,7 +223,7 @@ function injectBridge(doc) {
   return doc.includes('</body>') ? doc.replace('</body>', tag + '</body>') : doc + tag;
 }
 
-export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts = false, extraHead = '', style = {}, onSelect, onHover, onScroll }) {
+export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts = false, extraHead = '', style = {}, onSelect, onHover, onScroll, onOpen }) {
   container.innerHTML = '';
   const iframe = document.createElement('iframe');
   iframe.className = 'fv-preview-frame';
@@ -235,6 +242,7 @@ export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts
     if (d.type === 'select') onSelect?.(d.src);
     else if (d.type === 'hover') onHover?.(d.src);
     else if (d.type === 'scroll') onScroll?.(d.ratio);
+    else if (d.type === 'open') onOpen?.(d.name);
   }
   window.addEventListener('message', onMsg);
 
