@@ -115,6 +115,17 @@ const BASE_CSS = `
   body.fv-dark .eml-sep{border-top-color:#fff2;}
   .eml-plain{white-space:pre-wrap;word-break:break-word;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;}
   .eml-html{overflow:auto;}
+  .mbox-head{font:600 14px system-ui,sans-serif;margin:0 0 12px;}
+  .mbox-msg{border:1px solid #0001;border-radius:8px;padding:10px 12px;margin:0 0 8px;}
+  body.fv-dark .mbox-msg{border-color:#fff2;}
+  .mbox-row1{display:flex;justify-content:space-between;gap:10px;font:13px system-ui,sans-serif;}
+  .mbox-from{font-weight:600;word-break:break-word;}
+  .mbox-date{color:#888;white-space:nowrap;font-size:12px;}
+  .mbox-subj{font:13px system-ui,sans-serif;margin:2px 0;}
+  .mbox-att{color:#888;font-size:12px;margin-left:6px;}
+  .mbox-snippet{font:12px/1.5 system-ui,sans-serif;color:#666;}
+  body.fv-dark .mbox-snippet{color:#9aa;}
+  .mbox-empty{color:#888;font-family:system-ui,sans-serif;}
   .zip-meta{font:12px system-ui,sans-serif;color:#888;margin:0 0 10px;}
   .zip-table .z-name{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:normal;word-break:break-all;}
   .zip-table .z-num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}

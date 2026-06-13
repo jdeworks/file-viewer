@@ -30,7 +30,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf',
   '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain',
   '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
-  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip', '.vcf': 'text/vcard', '.stl': 'model/stl', '.obj': 'model/obj', '.glb': 'model/gltf-binary' };
+  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip', '.vcf': 'text/vcard', '.stl': 'model/stl', '.obj': 'model/obj', '.glb': 'model/gltf-binary', '.mbox': 'application/mbox' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -659,6 +659,18 @@ try {
   if (/Hello from File Viewer/.test(emlHead) && /alice@example\.com/.test(emlHead)) pass('email header card (encoded subject decoded + From)'); else fail('eml head: ' + emlHead.slice(0, 80));
   const emlBody = await ef.$eval('.eml-html', (e) => e.innerHTML);
   if (/<b>File Viewer<\/b>/.test(emlBody) && !/<script/i.test(emlBody)) pass('email HTML body rendered + sanitized (script stripped)'); else fail('eml body: ' + emlBody.slice(0, 80));
+
+  // ── Mailbox (.mbox) ── split into messages, inbox list (reuses the eml MIME parser). ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.mbox' }).click();
+  const mbframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const mbf = await mbframe.contentFrame();
+  await mbf.waitForSelector('.mbox-msg', { timeout: 8000 });
+  const mboxTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (mboxTypeId === 'mbox') pass('.mbox detected as Mailbox'); else fail('mbox type: ' + mboxTypeId);
+  const mboxCount = await mbf.$$eval('.mbox-msg', (els) => els.length);
+  const mboxFroms = await mbf.$$eval('.mbox-from', (els) => els.map((e) => e.textContent).join(' '));
+  if (mboxCount === 3 && /Alice/.test(mboxFroms) && /Carol/.test(mboxFroms)) pass('mbox split into 3 messages with senders'); else fail('mbox count=' + mboxCount + ' froms=' + mboxFroms);
 
   // ── Jupyter Notebook (.ipynb) ── markdown + code cells + saved outputs, sanitized.
   await page.goto(origin, { waitUntil: 'networkidle' });

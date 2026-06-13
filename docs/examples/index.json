@@ -8,6 +8,7 @@
   { "label": "Sample.sqlite", "file": "sample.sqlite", "mime": "application/vnd.sqlite3", "category": "Data" },
   { "label": "Sample.json", "file": "sample.json", "mime": "application/json", "category": "Data" },
   { "label": "Sample.eml", "file": "sample.eml", "mime": "message/rfc822", "category": "Data" },
+  { "label": "Sample.mbox", "file": "sample.mbox", "mime": "application/mbox", "category": "Data" },
   { "label": "Sample.ics", "file": "sample.ics", "mime": "text/calendar", "category": "Data" },
   { "label": "Sample.vcf", "file": "sample.vcf", "mime": "text/vcard", "category": "Data" },
   { "label": "Sample.xlsx", "file": "sample.xlsx", "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "category": "Office" },
