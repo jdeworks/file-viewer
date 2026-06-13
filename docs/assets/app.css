@@ -266,6 +266,15 @@ body {
 .kf-field { display: flex; gap: 10px; padding: 2px 0; flex-wrap: wrap; }
 .kf-flabel { color: var(--fg-2); font-size: 12px; min-width: 90px; }
 .kf-fvals code { font: 12px ui-monospace, monospace; margin-right: 6px; }
+/* OpenAPI / Swagger endpoint list. */
+.oa-list { display: flex; flex-direction: column; gap: 2px; }
+.oa-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.oa-method { font: 700 11px ui-monospace, monospace; padding: 2px 7px; border-radius: 5px; color: #fff; min-width: 56px; text-align: center; }
+.oa-get { background: #2f9e44; } .oa-post { background: #1971c2; } .oa-put { background: #e8590c; }
+.oa-patch { background: #ae3ec9; } .oa-delete { background: #e03131; }
+.oa-head, .oa-options, .oa-trace { background: #868e96; }
+.oa-path { font: 12px ui-monospace, monospace; color: var(--fg); }
+.oa-summary { color: var(--fg-2); font-size: 12px; margin-left: auto; text-align: right; }
 
 /* Media (audio/video) renders directly in the preview pane via a blob: URL (outside the
    sandbox — bytes can't execute). Styled here in the parent, not the iframe template. */

@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info:
+  title: Widget API
+  version: 1.2.0
+  description: A small example API for managing widgets.
+paths:
+  /widgets:
+    get:
+      summary: List all widgets
+      operationId: listWidgets
+    post:
+      summary: Create a widget
+  /widgets/{id}:
+    get:
+      summary: Get a widget by id
+    put:
+      summary: Replace a widget
+    delete:
+      summary: Delete a widget
+  /health:
+    get:
+      summary: Health check

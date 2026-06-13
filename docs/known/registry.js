@@ -27,10 +27,11 @@ import editorconfig from './editorconfig/index.js';
 import pomXml from './pom-xml/index.js';
 import buildGradle from './build-gradle/index.js';
 import pipfile from './pipfile/index.js';
+import openapi from './openapi/index.js';
 
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
-  buildGradle, pipfile];
+  buildGradle, pipfile, openapi];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
