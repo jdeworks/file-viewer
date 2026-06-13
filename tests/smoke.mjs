@@ -1308,6 +1308,30 @@ try {
     if (/Delta-resolved subject/.test(deltaSubj)) pass('git Phase 2: OFS_DELTA resolved against base object'); else fail('delta subject: ' + deltaSubj);
   }
 
+  // ── New empty file ── create from the intake screen; the extension drives the type.
+  // (Runs BEFORE the persistent dialog handler below, so page.once can answer the name prompt.)
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  page.once('dialog', (d) => d.accept('notes.md'));
+  await page.click('#newFileBtn');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
+  const newType = await page.$eval('#typeSelect', (s) => s.value);
+  if (newType === 'markdown') pass('new file: created + typed from extension (notes.md → Markdown)'); else fail('new file type: ' + newType);
+  const newName = await page.$eval('#fileName', (e) => e.textContent);
+  if (newName === 'notes.md') pass('new file: named as entered'); else fail('new file name: ' + newName);
+
+  // ── import easteregg unlock ── typing the magic line into a file opens the arcade. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => { try { localStorage.removeItem('fv:games:unlocked'); } catch {} });
+  page.once('dialog', (d) => d.accept('trigger.js'));
+  await page.click('#newFileBtn');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
+  await page.click('#editor .monaco-editor');
+  await page.keyboard.type('import easteregg');
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  pass('`import easteregg` in a new file unlocks the arcade');
+  await page.click('.games-close');
+  await page.evaluate(() => { window.__fv.state.downloadedSinceEdit = true; });   // clear unsaved-work so the next navigation isn't blocked by beforeunload
+
   // ── HTML type + script-confirm gate (WP07) ──
   let acceptScripts = false;
   page.on('dialog', (d) => (acceptScripts ? d.accept() : d.dismiss()));

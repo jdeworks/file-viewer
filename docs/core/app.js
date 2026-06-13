@@ -5,7 +5,7 @@
 
 import { REGISTRY, getType, FALLBACK_TYPE } from './registry.js';
 import { pickType } from './detect.js';
-import { wireIntake, intakeFromFile, LARGE_FILE_BYTES } from './intake.js';
+import { wireIntake, intakeFromFile, intakeFromText, LARGE_FILE_BYTES } from './intake.js';
 import { buildTree, renderTree } from './filetree.js';
 import { findGitDir, isGitInternal, openRepo } from './git.js';
 import { matchKnown } from '../known/registry.js';
@@ -75,6 +75,16 @@ async function loadIntake(intake) {
     const total = (intake.size / 1048576).toFixed(0);
     toast(`Large file: showing the first ${shown} MB of ${total} MB.`, 6000);
   }
+}
+
+// Create a new, empty file and open it in the editor. The name's extension drives type detection,
+// so "notes.md" opens as Markdown, "main.py" as Python code, etc. The surface for the
+// `import easteregg` unlock too (see onRawEdited).
+function createNewFile() {
+  const name = prompt('New file name (include an extension, e.g. notes.md, script.js, data.json):', 'untitled.txt');
+  if (name == null) return;                         // cancelled
+  const filename = (name.trim() || 'untitled.txt');
+  loadIntake(intakeFromText('', filename));
 }
 
 // Return to the intake screen to pick another file/folder (keeps any loaded tree).
@@ -401,6 +411,12 @@ async function onRawEdited(value) {
   // Keep the working text in sync so download + preview reflect edits.
   state.intake = { ...state.intake, text: value };
   state.downloadedSinceEdit = false;   // there are now edits not yet saved to disk
+  // Easter-egg surface: typing `import easteregg` in any editable file unlocks the arcade.
+  if (state.games && !state.games.isUnlocked() && /(^|\n)\s*import\s+easteregg\b/.test(value)) {
+    state.games.unlock();
+    state.games.open();
+    toast('🎮 import easteregg — arcade unlocked!');
+  }
   if (state.type?.capabilities.preview) await renderPreview();
 }
 
@@ -866,6 +882,7 @@ function init() {
   $('repoBtn').addEventListener('click', openRepoView);
   initTreeResize();
   $('openInlineBtn').addEventListener('click', showIntake);
+  $('newFileBtn').addEventListener('click', createNewFile);
   $('formatBtn').addEventListener('click', () => state.rawview?.format());
   initSplitDivider();
 
@@ -940,6 +957,7 @@ function init() {
   // Easter-egg games: attaches only a tiny Konami-code keydown listener at startup; the hub and
   // the games themselves are lazy-loaded on first unlock, so this costs ~nothing.
   const games = initGames({ onToast: toast });
+  state.games = games;   // so onRawEdited can offer the `import easteregg` unlock
 
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
   window.__fv = {
