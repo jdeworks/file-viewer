@@ -23,6 +23,8 @@ export const CATEGORY_OPEN = { always: true, 'monaco-common': true, 'monaco-exte
 export const GENERAL_DESCRIPTORS = [
   { key: 'showAllTypes', label: 'Show all file types in selector', category: 'always', type: 'bool', default: false,
     hint: 'The type dropdown normally lists only formats that matched this file (≥1%). Turn on to always list every supported type so you can force any viewer.' },
+  { key: 'treeArrowKeys', label: 'Arrow-key file navigation', category: 'always', type: 'bool', default: true,
+    hint: 'When the folder sidebar has focus, ↑/↓ move between files and open them. Click a file first to focus the tree.' },
 ];
 
 // Shown for any type with capability.rawView. Apply to the Monaco raw editor.

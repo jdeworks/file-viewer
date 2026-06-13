@@ -375,13 +375,14 @@ try {
       mk('proj/src/app.js', 'console.log(1)'),
       mk('proj/src/util.py', 'print(2)'),
       mk('proj/data/rows.csv', 'a,b\n1,2'),
+      mk('proj/a-really-extremely-long-file-name-that-overflows-the-sidebar-column.txt', 'x'),
     ];
     window.__fv.loadFolder(entries);
   });
   await page.waitForSelector('#fileTree:not([hidden]) .ft-file', { timeout: 8000 });
   const fileRows = await page.$$eval('#fileTree .ft-file', (els) => els.length);
   const folderRows = await page.$$eval('#fileTree .ft-folder', (els) => els.length);
-  if (fileRows === 4 && folderRows >= 2) pass('folder tree built (' + fileRows + ' files, ' + folderRows + ' folders)'); else fail('tree rows: files=' + fileRows + ' folders=' + folderRows);
+  if (fileRows === 5 && folderRows >= 2) pass('folder tree built (' + fileRows + ' files, ' + folderRows + ' folders)'); else fail('tree rows: files=' + fileRows + ' folders=' + folderRows);
   // README opened by default + marked active (async open, so wait for it).
   await page.waitForSelector('#fileTree .ft-file.active', { timeout: 8000 });
   const active = await page.$eval('#fileTree .ft-file.active .ft-name', (e) => e.textContent).catch(() => null);
@@ -391,6 +392,32 @@ try {
   await page.waitForTimeout(400);
   const pyType = await page.$eval('#typeSelect', (s) => s.value);
   if (pyType === 'code') pass('clicking tree file opens it (util.py -> Code)'); else fail('py type: ' + pyType);
+
+  // Marquee: a long active file name that overflows the column scrolls (ticker class).
+  await page.click('#fileTree .ft-file[data-path="proj/a-really-extremely-long-file-name-that-overflows-the-sidebar-column.txt"]');
+  await page.waitForTimeout(200);
+  const ticking = await page.$('#fileTree .ft-file.active .ft-name.ft-ticker');
+  if (ticking) pass('long active file name marquees (ticker)'); else fail('no marquee on overflowing active name');
+
+  // Sidebar resize: drag the handle wider; width grows.
+  const beforeTreeW = await page.$eval('#fileTree', (e) => e.getBoundingClientRect().width);
+  const rb = await (await page.$('#ftResize')).boundingBox();
+  await page.mouse.move(rb.x + rb.width / 2, rb.y + 60);
+  await page.mouse.down();
+  await page.mouse.move(rb.x + 130, rb.y + 60, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(150);
+  const afterTreeW = await page.$eval('#fileTree', (e) => e.getBoundingClientRect().width);
+  if (afterTreeW - beforeTreeW > 60) pass('sidebar resized by dragging (' + Math.round(beforeTreeW) + ' -> ' + Math.round(afterTreeW) + 'px)'); else fail('sidebar resize: ' + Math.round(beforeTreeW) + ' -> ' + Math.round(afterTreeW));
+
+  // Arrow-key navigation: focus the FIRST file, ArrowDown opens the next file in the list.
+  const firstPath = await page.$eval('#fileTree .ft-file', (e) => e.dataset.path);
+  await page.click('#fileTree .ft-file[data-path="' + firstPath + '"]');
+  await page.waitForTimeout(150);
+  await page.keyboard.press('ArrowDown');
+  await page.waitForTimeout(300);
+  const navPath = await page.$eval('#fileTree .ft-file.active', (e) => e.dataset.path).catch(() => null);
+  if (navPath && navPath !== firstPath) pass('arrow-key navigation moves + opens next file (' + navPath + ')'); else fail('arrow nav active: ' + navPath + ' (first=' + firstPath + ')');
 
   // ── HTML type + script-confirm gate (WP07) ──
   let acceptScripts = false;

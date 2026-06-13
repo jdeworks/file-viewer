@@ -62,6 +62,7 @@ function showIntake() {
 
 async function loadFolder(entries) {
   // Build + render the tree, reveal the sidebar, and open a sensible default file.
+  state.treeEntries = entries;                 // kept for arrow-key navigation lookups
   const rootName = (entries[0]?.path.split('/')[0]) || 'Folder';
   $('ftRoot').textContent = rootName;
   $('ftRoot').title = rootName;
@@ -86,7 +87,61 @@ async function openTreeFile(node) {
 
 function setTree(open) {
   $('fileTree').hidden = !open;
+  $('ftResize').hidden = !open || isMobile();   // resizer only for the desktop docked sidebar
   if (isMobile()) $('scrim').hidden = !open;
+}
+
+const TREE_MIN = 170, TREE_MAX = 560;
+function applyTreeWidth(px) {
+  const w = Math.max(TREE_MIN, Math.min(TREE_MAX, px));
+  $('fileTree').style.flex = '0 0 ' + w + 'px';
+  $('fileTree').style.width = w + 'px';
+  try { localStorage.setItem('fv:treeWidth', String(w)); } catch {}
+}
+
+function initTreeResize() {
+  const saved = Number(localStorage.getItem('fv:treeWidth'));
+  if (saved) applyTreeWidth(saved);
+  const handle = $('ftResize');
+  let dragging = false;
+  const onMove = (e) => {
+    if (!dragging) return;
+    const left = $('fileTree').getBoundingClientRect().left;
+    applyTreeWidth((e.touches ? e.touches[0].clientX : e.clientX) - left);
+    state.treeApi?.refresh();          // re-evaluate the active-name marquee at the new width
+    e.preventDefault();
+  };
+  const onUp = () => {
+    dragging = false;
+    document.body.style.userSelect = '';
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+  };
+  handle.addEventListener('pointerdown', (e) => {
+    if (handle.hidden) return;
+    dragging = true;
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    e.preventDefault();
+  });
+}
+
+// Arrow-key navigation: when enabled and the sidebar has focus, ↑/↓ move between files
+// and open them. Click a file first to focus the tree.
+function onTreeKey(e) {
+  if (!state.settingsModel?.values?.treeArrowKeys) return;
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  const files = [...document.querySelectorAll('#fileTree .ft-file')];
+  if (!files.length) return;
+  e.preventDefault();
+  const cur = document.querySelector('#fileTree .ft-file.active');
+  let idx = files.indexOf(cur);
+  idx = e.key === 'ArrowDown' ? Math.min(files.length - 1, idx + 1) : Math.max(0, idx - 1);
+  if (idx < 0) idx = 0;
+  const next = files[idx];
+  const entry = state.treeEntries?.find((x) => x.path === next.dataset.path);
+  if (entry) { state.treeApi?.setActive(entry.path); openTreeFile({ file: entry.file, path: entry.path }); next.focus(); }
 }
 
 function populateTypeSelect(ranking, selectedId) {
@@ -526,6 +581,8 @@ function init() {
   });
   $('treeBtn').addEventListener('click', () => setTree($('fileTree').hidden));
   $('treeCloseBtn').addEventListener('click', () => setTree(false));
+  $('fileTree').addEventListener('keydown', onTreeKey);
+  initTreeResize();
   $('openBtn').addEventListener('click', showIntake);
   $('openInlineBtn').addEventListener('click', showIntake);
   $('formatBtn').addEventListener('click', () => state.rawview?.format());

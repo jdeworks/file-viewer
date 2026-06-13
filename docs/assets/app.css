@@ -68,10 +68,17 @@ body {
 .ft-arrow { display: inline-block; width: 1em; color: var(--fg-2); font-size: 10px; flex: 0 0 auto; }
 .ft-folder .ft-name { color: var(--fg); }
 .ft-dot { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 auto; }
-.ft-name { overflow: hidden; text-overflow: ellipsis; color: var(--fg); }
+.ft-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--fg); }
 .ft-size { margin-left: auto; padding-left: 10px; color: var(--fg-2); font-size: 11px; flex: 0 0 auto; }
 .ft-file.active { background: color-mix(in srgb, var(--accent) 18%, transparent); box-shadow: inset 2px 0 0 var(--accent); }
+.ft-file:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ft-name.ft-ticker { text-overflow: clip; }   /* no ellipsis while the marquee scrolls */
 .collapsed > .ft-children { display: none; }
+/* Draggable sidebar resizer (desktop). Hidden via [hidden] when the tree is closed. */
+.ft-resize { flex: 0 0 5px; align-self: stretch; cursor: col-resize; background: var(--border);
+  position: relative; touch-action: none; }
+.ft-resize:hover, .ft-resize:active { background: var(--accent); }
+.ft-resize::before { content: ""; position: absolute; inset: 0 -4px; }   /* wider grab area */
 
 /* ── Intake ── */
 .intake { flex: 1; display: grid; place-items: center; padding: 20px; }

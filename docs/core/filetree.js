@@ -84,6 +84,7 @@ export function renderTree(host, root, { onOpen }) {
     row.className = 'ft-row ft-file';
     row.style.paddingLeft = pad + 'px';
     row.dataset.path = node.path;
+    row.tabIndex = 0;                          // focusable so arrow-key nav can target it
     const id = quickType(node.name);
     row.innerHTML = '<span class="ft-dot" style="background:' + dotColor(id) + '"></span>'
       + '<span class="ft-name">' + escapeHtml(node.name) + '</span>'
@@ -92,15 +93,37 @@ export function renderTree(host, root, { onOpen }) {
     return row;
   }
 
+  // Marquee: when the active file name overflows its column, rotate it one char every
+  // 100ms so the whole name reads out; restored to normal when another file is selected.
+  let mq = null;
+  function stopMarquee() {
+    if (!mq) return;
+    clearInterval(mq.timer);
+    mq.el.textContent = mq.name;
+    mq.el.classList.remove('ft-ticker');
+    mq = null;
+  }
+  function startMarquee(row) {
+    stopMarquee();
+    const el = row && row.querySelector('.ft-name');
+    if (!el || el.scrollWidth <= el.clientWidth + 1) return;   // fits — nothing to scroll
+    const name = el.textContent;
+    el.classList.add('ft-ticker');
+    let s = name + '   ';                       // gap before the name wraps around
+    mq = { el, name, timer: setInterval(() => { s = s.slice(1) + s[0]; el.textContent = s; }, 100) };
+  }
+
   function setActive(path) {
     if (activeRow) activeRow.classList.remove('active');
     activeRow = host.querySelector('.ft-file[data-path="' + cssEscape(path) + '"]');
-    if (activeRow) activeRow.classList.add('active');
+    if (activeRow) { activeRow.classList.add('active'); startMarquee(activeRow); }
+    else stopMarquee();
   }
 
   // Top-level children of root (skip the empty root node itself).
   for (const c of sortedChildren(root)) host.appendChild(makeNode(c, 0));
-  return { setActive };
+  // refresh() re-evaluates the marquee (e.g. after the sidebar is resized).
+  return { setActive, refresh: () => startMarquee(activeRow), stop: stopMarquee };
 }
 
 function escapeHtml(s) { return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
