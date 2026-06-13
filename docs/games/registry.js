@@ -14,6 +14,13 @@ export const GAMES = [
     load: () => import('./snake/snake.js'),
   },
   {
+    id: '2048',
+    title: '2048',
+    emoji: '🔢',
+    blurb: 'Slide tiles, merge matching numbers, reach 2048. Arrows or swipe.',
+    load: () => import('./2048/g2048.js'),
+  },
+  {
     id: 'metagame',
     title: 'Bit Foundry',
     emoji: '⚙️',

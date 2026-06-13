@@ -1619,6 +1619,21 @@ try {
   const stillOpen = await page.$('.games-overlay:not([hidden])');
   if (!stillOpen) pass('hub closes'); else fail('hub did not close');
 
+  // ── Arcade game: 2048 ── second easter-egg game; 4×4 sliding tiles. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => { window.__fv.games.unlock(); window.__fv.games.open(); });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="2048"]');
+  await page.waitForSelector('.g2048-board', { timeout: 8000 });
+  const g2048Cells = await page.$$eval('.g2048-cell', (els) => els.length);
+  const g2048Tiles = await page.$$eval('.g2048-cell', (els) => els.filter((e) => e.textContent.trim()).length);
+  if (g2048Cells === 16 && g2048Tiles === 2) pass('2048 launches (4×4 board, 2 starting tiles)'); else fail('2048 board: cells=' + g2048Cells + ' tiles=' + g2048Tiles);
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowUp');
+  const g2048Score = await page.$eval('.g2048-score', (e) => e.textContent);
+  if (/Score: \d+/.test(g2048Score)) pass('2048 responds to moves (' + g2048Score + ')'); else fail('2048 score: ' + g2048Score);
+  await page.click('.games-close');
+
   // ── Meta-game: Bit Foundry (incremental core, P2) ── launch, compute, buy automation. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => {
