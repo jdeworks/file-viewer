@@ -842,6 +842,82 @@ try {
     if (badge) pass('git: repo badge shown in sidebar'); else fail('no repo badge');
   }
 
+  // ── Git Phase 2: packfile reading ── a commit stored only in a .pack/.idx (no loose object).
+  {
+    const u32 = (n) => { const b = Buffer.alloc(4); b.writeUInt32BE(n >>> 0); return b; };
+    const packObjHeader = (type, size) => { const out = []; let b = (type << 4) | (size & 0x0f); size = Math.floor(size / 16); if (size) b |= 0x80; out.push(b); while (size) { let bb = size & 0x7f; size = Math.floor(size / 128); if (size) bb |= 0x80; out.push(bb); } return out; };
+    const sha = 'c'.repeat(40);
+    const pcontent = 'tree ' + 'a'.repeat(40) + '\n'
+      + 'author Tester <t@example.com> 1700000000 +0000\n'
+      + 'committer Tester <t@example.com> 1700000000 +0000\n\n'
+      + 'Packed commit\n';
+    const deflated = zlib.deflateSync(Buffer.from(pcontent));
+    const packBuf = Buffer.concat([Buffer.from('PACK'), u32(2), u32(1), Buffer.from(packObjHeader(1, Buffer.byteLength(pcontent))), deflated, Buffer.alloc(20)]);
+    const fanout = Buffer.alloc(256 * 4);
+    for (let i = 0; i < 256; i++) fanout.writeUInt32BE(i >= 0xcc ? 1 : 0, i * 4);
+    const idxBuf = Buffer.concat([Buffer.from([0xff, 0x74, 0x4f, 0x63]), u32(2), fanout, Buffer.alloc(20, 0xcc), u32(0), u32(12), Buffer.alloc(20), Buffer.alloc(20)]);
+    const packArr = Array.from(packBuf), idxArr = Array.from(idxBuf);
+    await page.goto(origin, { waitUntil: 'networkidle' });
+    await page.evaluate(({ sha, packArr, idxArr }) => {
+      const enc = (s) => new TextEncoder().encode(s);
+      const mk = (name, bytes) => ({ file: new File([bytes], name.split('/').pop(), { type: '' }), path: name });
+      const base = 'repo/.git/objects/pack/pack-' + 'c'.repeat(40);
+      window.__fv.loadFolder([
+        mk('repo/.git/HEAD', enc('ref: refs/heads/main\n')),
+        mk('repo/.git/refs/heads/main', enc(sha + '\n')),
+        mk(base + '.pack', new Uint8Array(packArr)),
+        mk(base + '.idx', new Uint8Array(idxArr)),
+        mk('repo/README.md', enc('# Packed repo')),
+      ]);
+    }, { sha, packArr, idxArr });
+    await page.waitForSelector('#repoPanel:not([hidden]) .repo-commit', { timeout: 10000 });
+    const packSubj = await page.$eval('#repoPanel .repo-commit .rc-subject', (e) => e.textContent);
+    if (/Packed commit/.test(packSubj)) pass('git Phase 2: commit read from packfile (idx + inflate)'); else fail('packed subject: ' + packSubj);
+  }
+
+  // ── Git Phase 2: OFS_DELTA resolution ── the HEAD commit is a delta against an earlier object.
+  {
+    const u32 = (n) => { const b = Buffer.alloc(4); b.writeUInt32BE(n >>> 0); return b; };
+    const hdr = (type, size) => { const out = []; let b = (type << 4) | (size & 0x0f); size = Math.floor(size / 16); if (size) b |= 0x80; out.push(b); while (size) { let bb = size & 0x7f; size = Math.floor(size / 128); if (size) bb |= 0x80; out.push(bb); } return out; };
+    const varint = (n) => { const b = []; for (;;) { let x = n & 0x7f; n = Math.floor(n / 128); if (n) b.push(x | 0x80); else { b.push(x); break; } } return b; };
+    const encodeOfs = (n) => { const b = [n & 0x7f]; n = Math.floor(n / 128) - 1; while (n >= 0) { b.unshift(0x80 | (n & 0x7f)); n = Math.floor(n / 128) - 1; } return b; };
+
+    const baseContent = 'tree ' + 'a'.repeat(40) + '\nauthor T <t@e> 1700000000 +0000\ncommitter T <t@e> 1700000000 +0000\n\nBase commit\n';
+    const prefixLen = baseContent.lastIndexOf('Base commit\n');
+    const tail = 'Delta-resolved subject\n';
+    const targetContent = baseContent.slice(0, prefixLen) + tail;
+
+    const delta = [...varint(baseContent.length), ...varint(targetContent.length)];
+    { let size = prefixLen, cmd = 0x80; const sz = []; if (size & 0xff) { cmd |= 0x10; sz.push(size & 0xff); } if ((size >> 8) & 0xff) { cmd |= 0x20; sz.push((size >> 8) & 0xff); } delta.push(cmd, ...sz); }   // copy prefix from base
+    { const tb = Buffer.from(tail); delta.push(tb.length, ...tb); }                                                                                                                                                  // insert new tail
+
+    const baseBytes = Buffer.concat([Buffer.from(hdr(1, Buffer.byteLength(baseContent))), zlib.deflateSync(Buffer.from(baseContent))]);
+    const deltaBytes = Buffer.concat([Buffer.from(hdr(6, delta.length)), Buffer.from(encodeOfs(baseBytes.length)), zlib.deflateSync(Buffer.from(delta))]);
+    const deltaOffset = 12 + baseBytes.length;
+    const packBuf = Buffer.concat([Buffer.from('PACK'), u32(2), u32(2), baseBytes, deltaBytes, Buffer.alloc(20)]);
+    const fanout = Buffer.alloc(256 * 4);
+    for (let i = 0; i < 256; i++) fanout.writeUInt32BE(i >= 0xdd ? 1 : 0, i * 4);
+    const idxBuf = Buffer.concat([Buffer.from([0xff, 0x74, 0x4f, 0x63]), u32(2), fanout, Buffer.alloc(20, 0xdd), u32(0), u32(deltaOffset), Buffer.alloc(20), Buffer.alloc(20)]);
+    const packArr = Array.from(packBuf), idxArr = Array.from(idxBuf), sha = 'd'.repeat(40);
+
+    await page.goto(origin, { waitUntil: 'networkidle' });
+    await page.evaluate(({ sha, packArr, idxArr }) => {
+      const enc = (s) => new TextEncoder().encode(s);
+      const mk = (name, bytes) => ({ file: new File([bytes], name.split('/').pop(), { type: '' }), path: name });
+      const base = 'repo/.git/objects/pack/pack-' + 'd'.repeat(40);
+      window.__fv.loadFolder([
+        mk('repo/.git/HEAD', enc('ref: refs/heads/main\n')),
+        mk('repo/.git/refs/heads/main', enc(sha + '\n')),
+        mk(base + '.pack', new Uint8Array(packArr)),
+        mk(base + '.idx', new Uint8Array(idxArr)),
+        mk('repo/README.md', enc('# Delta repo')),
+      ]);
+    }, { sha, packArr, idxArr });
+    await page.waitForSelector('#repoPanel:not([hidden]) .repo-commit', { timeout: 10000 });
+    const deltaSubj = await page.$eval('#repoPanel .repo-commit .rc-subject', (e) => e.textContent);
+    if (/Delta-resolved subject/.test(deltaSubj)) pass('git Phase 2: OFS_DELTA resolved against base object'); else fail('delta subject: ' + deltaSubj);
+  }
+
   // ── HTML type + script-confirm gate (WP07) ──
   let acceptScripts = false;
   page.on('dialog', (d) => (acceptScripts ? d.accept() : d.dismiss()));

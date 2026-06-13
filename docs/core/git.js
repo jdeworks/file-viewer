@@ -29,6 +29,82 @@ async function inflate(u8) {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
+// ── Packfile support (Phase 2) ──────────────────────────────────────────────────────────────
+// A fully-packed repo stores history in .git/objects/pack/*.pack (delta-compressed), indexed by
+// a *.idx file. We parse the v2 index (sha → byte offset), read an object's variable-length
+// header at that offset, inflate it, and resolve OFS_DELTA / REF_DELTA chains against their base
+// objects. All native (DecompressionStream) — no dependency.
+
+const OBJ_TYPE = { 1: 'commit', 2: 'tree', 3: 'blob', 4: 'tag' };
+const hex = (u8) => Array.from(u8, (b) => b.toString(16).padStart(2, '0')).join('');
+
+// Inflate one zlib stream starting at `offset`, stopping once `size` bytes are produced. We
+// don't know the compressed length, but jumping by offset (idx / delta base) never needs it.
+async function inflateAt(packBytes, offset, size) {
+  const stream = new Blob([packBytes.subarray(offset)]).stream().pipeThrough(new DecompressionStream('deflate'));
+  const reader = stream.getReader();
+  const out = new Uint8Array(size);
+  let have = 0;
+  try {
+    while (have < size) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const take = Math.min(value.length, size - have);
+      out.set(value.subarray(0, take), have);
+      have += take;
+    }
+  } finally { reader.cancel().catch(() => {}); }
+  return out;
+}
+
+function readVarint(buf, p) { let v = 0, sh = 0, c; do { c = buf[p++]; v += (c & 0x7f) * (2 ** sh); sh += 7; } while (c & 0x80); return [v, p]; }
+
+// Apply a git delta (copy-from-base / insert-literal instructions) to a base buffer.
+function applyDelta(base, delta) {
+  let p = 0, srcSize, tgtSize;
+  [srcSize, p] = readVarint(delta, p);
+  [tgtSize, p] = readVarint(delta, p);
+  const out = new Uint8Array(tgtSize);
+  let o = 0;
+  while (p < delta.length) {
+    const cmd = delta[p++];
+    if (cmd & 0x80) {                                   // copy from base
+      let off = 0, len = 0;
+      if (cmd & 0x01) off |= delta[p++];
+      if (cmd & 0x02) off |= delta[p++] << 8;
+      if (cmd & 0x04) off |= delta[p++] << 16;
+      if (cmd & 0x08) off |= delta[p++] << 24;
+      if (cmd & 0x10) len |= delta[p++];
+      if (cmd & 0x20) len |= delta[p++] << 8;
+      if (cmd & 0x40) len |= delta[p++] << 16;
+      if (len === 0) len = 0x10000;
+      out.set(base.subarray(off >>> 0, (off >>> 0) + len), o);
+      o += len;
+    } else if (cmd) {                                   // insert literal
+      out.set(delta.subarray(p, p + cmd), o); o += cmd; p += cmd;
+    }
+  }
+  return out;
+}
+
+// Parse a v2 .idx file into a Map(sha40 → pack byte offset).
+function parseIdx(buf) {
+  if (!(buf[0] === 0xff && buf[1] === 0x74 && buf[2] === 0x4f && buf[3] === 0x63)) return null;   // v2 magic
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  const count = view.getUint32(8 + 255 * 4);
+  const shaStart = 8 + 256 * 4;
+  const offStart = shaStart + count * 24;              // skip 20-byte shas + 4-byte CRCs
+  const largeStart = offStart + count * 4;
+  const map = new Map();
+  for (let i = 0; i < count; i++) {
+    const sha = hex(buf.subarray(shaStart + i * 20, shaStart + i * 20 + 20));
+    let off = view.getUint32(offStart + i * 4);
+    if (off & 0x80000000) off = Number(view.getBigUint64(largeStart + (off & 0x7fffffff) * 8));
+    map.set(sha, off);
+  }
+  return map;
+}
+
 function parseIdent(s) {
   const m = s.match(/^(.*?)\s*<(.*?)>\s*(\d+)\s*([+-]\d{4})?/);
   if (!m) return { name: s.trim(), email: '', date: null, tz: '' };
@@ -88,19 +164,72 @@ export async function openRepo(entries) {
   }
   if (head.branch && branches.has(head.branch)) head.sha = branches.get(head.branch);
 
-  async function readCommit(sha) {
-    const f = rel('objects/' + sha.slice(0, 2) + '/' + sha.slice(2));
-    if (!f) return null;
+  // Build the packfile index: parse every .idx (sha → offset) and keep a lazy loader for each
+  // pack's bytes (loaded once, on first need).
+  const packs = [];                          // { offsets: Map, file: File, bytes: Uint8Array|null }
+  const shaToPack = new Map();               // sha → pack entry
+  const packRe = new RegExp('^' + escapeRe(gitPrefix) + '/objects/pack/(pack-[0-9a-f]+)\\.idx$');
+  for (const e of entries) {
+    const m = e.path.match(packRe);
+    if (!m) continue;
+    const packFile = byPath.get(gitPrefix + '/objects/pack/' + m[1] + '.pack');
+    if (!packFile) continue;
     try {
-      const raw = await inflate(new Uint8Array(await f.arrayBuffer()));
-      const nul = raw.indexOf(0);
-      if (dec.decode(raw.subarray(0, nul)).split(' ')[0] !== 'commit') return null;
-      return parseCommit(sha, dec.decode(raw.subarray(nul + 1)));
-    } catch { return null; }
+      const offsets = parseIdx(new Uint8Array(await e.file.arrayBuffer()));
+      if (!offsets) continue;
+      const pack = { offsets, file: packFile, bytes: null };
+      packs.push(pack);
+      for (const sha of offsets.keys()) shaToPack.set(sha, pack);
+    } catch { /* skip an unreadable pack */ }
+  }
+  const packBytesOf = async (pack) => (pack.bytes ||= new Uint8Array(await pack.file.arrayBuffer()));
+
+  // Read a packed object (resolving OFS_DELTA / REF_DELTA) at a byte offset → { type, data }.
+  async function readPackObjectAt(pack, offset) {
+    const buf = await packBytesOf(pack);
+    let p = offset, c = buf[p++];
+    let type = (c >> 4) & 7;
+    let size = c & 15, shift = 4;
+    while (c & 0x80) { c = buf[p++]; size += (c & 0x7f) * (2 ** shift); shift += 7; }
+    if (type === 6) {                                   // OFS_DELTA: base is earlier in this pack
+      let c2 = buf[p++], rel = c2 & 0x7f;
+      while (c2 & 0x80) { c2 = buf[p++]; rel = ((rel + 1) << 7) | (c2 & 0x7f); }
+      const base = await readPackObjectAt(pack, offset - rel);
+      return { type: base.type, data: applyDelta(base.data, await inflateAt(buf, p, size)) };
+    }
+    if (type === 7) {                                   // REF_DELTA: base referenced by sha
+      const baseSha = hex(buf.subarray(p, p + 20)); p += 20;
+      const base = await readObjectBySha(baseSha);
+      if (!base) throw new Error('missing delta base ' + baseSha);
+      return { type: base.type, data: applyDelta(base.data, await inflateAt(buf, p, size)) };
+    }
+    return { type: OBJ_TYPE[type] || String(type), data: await inflateAt(buf, p, size) };
   }
 
-  // Walk first-parent from a tip SHA, reading loose objects. Stops (packed=true) when an
-  // object is missing — that's where the packed history begins.
+  // Unified object read: try the loose store, then the packs. Returns { type, data } or null.
+  async function readObjectBySha(sha) {
+    const f = rel('objects/' + sha.slice(0, 2) + '/' + sha.slice(2));
+    if (f) {
+      try {
+        const raw = await inflate(new Uint8Array(await f.arrayBuffer()));
+        const nul = raw.indexOf(0);
+        const type = dec.decode(raw.subarray(0, nul)).split(' ')[0];
+        return { type, data: raw.subarray(nul + 1) };
+      } catch { /* fall through to packs */ }
+    }
+    const pack = shaToPack.get(sha);
+    if (pack) { try { return await readPackObjectAt(pack, pack.offsets.get(sha)); } catch { return null; } }
+    return null;
+  }
+
+  async function readCommit(sha) {
+    const obj = await readObjectBySha(sha);
+    if (!obj || obj.type !== 'commit') return null;
+    return parseCommit(sha, dec.decode(obj.data));
+  }
+
+  // Walk first-parent from a tip SHA across BOTH loose and packed history. `packed` is true only
+  // if the chain hit a commit we genuinely couldn't read (truncated/missing object).
   async function walk(sha, limit = 50) {
     const commits = [];
     let packed = false;
