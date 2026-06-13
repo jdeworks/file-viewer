@@ -790,6 +790,23 @@ try {
   const lockBanner = await lzf.$eval('.zip-locked', (e) => e.textContent).catch(() => '');
   if (lockBadge === 1 && /password-protected/.test(lockBanner)) pass('password-protected entry flagged (🔒 badge + banner)'); else fail('lock badge=' + lockBadge + ' banner=' + lockBanner.slice(0, 50));
 
+  // ── Comic book (.cbz) ── zip of images → page reader (parent pane, blob image URLs, natural sort).
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.cbz' }).click();
+  await page.waitForSelector('#previewHost .comic-doc .comic-page', { timeout: 15000 });
+  const cbzType = await page.$eval('#typeSelect', (s) => s.value);
+  if (cbzType === 'comic') pass('.cbz detected as Comic book'); else fail('cbz type: ' + cbzType);
+  const comicPages = await page.$$eval('#previewHost .comic-page', (els) => els.map((e) => e.getAttribute('src')));
+  if (comicPages.length === 3 && comicPages.every((s) => s.startsWith('blob:'))) pass('comic: pages rendered from blob URLs (' + comicPages.length + ')'); else fail('comic pages: ' + comicPages.length);
+  // Book-mode spread toggle pairs pages two-up.
+  await page.click('#previewHost .comic-spread');
+  const comicSpread = await page.$$eval('#previewHost .comic-page-wrap', (els) => {
+    if (els.length < 2) return false;
+    const a = els[0].getBoundingClientRect(), b = els[1].getBoundingClientRect();
+    return Math.abs(a.top - b.top) < 5 && b.left > a.left;
+  });
+  if (comicSpread) pass('comic book mode: two-page spread'); else fail('comic spread not two-up');
+
   // ── Email (.eml) ── parsed MIME: header card + sanitized HTML body, encoded subject decoded.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.eml' }).click();

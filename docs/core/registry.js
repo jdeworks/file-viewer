@@ -59,6 +59,7 @@ import vcardType from '../types/vcard/index.js';
 import sqliteType from '../types/sqlite/index.js';
 import zipType from '../types/zip/index.js';
 import epubType from '../types/epub/index.js';
+import comicType from '../types/comic/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -92,6 +93,7 @@ export const REGISTRY = [
   plyType,
   sqliteType,
   epubType,
+  comicType,
   zipType,
   codeType,
   rawType,

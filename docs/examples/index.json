@@ -50,5 +50,6 @@
   { "label": "Sample.ttf", "file": "sample.ttf", "mime": "font/ttf", "category": "Media" },
   { "label": "Sample.bin", "file": "sample.bin", "mime": "application/octet-stream", "category": "Archive & Binary" },
   { "label": "Sample.zip", "file": "sample.zip", "mime": "application/zip", "category": "Archive & Binary" },
-  { "label": "Locked.zip", "file": "sample-locked.zip", "mime": "application/zip", "category": "Archive & Binary" }
+  { "label": "Locked.zip", "file": "sample-locked.zip", "mime": "application/zip", "category": "Archive & Binary" },
+  { "label": "Sample.cbz", "file": "sample.cbz", "mime": "application/vnd.comicbook+zip", "category": "Archive & Binary" }
 ]

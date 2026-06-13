@@ -263,6 +263,22 @@ body {
 .preview-host .media-video .media-view { max-width: 100%; max-height: 100%; border-radius: 8px;
   box-shadow: 0 1px 12px rgba(0,0,0,.35); background: #000; }
 .preview-host .media-note { color: var(--fg-2); }
+/* Comic book reader (.cbz) — pages render in the parent pane via blob: image URLs. */
+.preview-host .comic-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
+.comic-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
+.comic-info { font-size: 12px; color: var(--fg-2); flex: 1; }
+.comic-bar .comic-spread { font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
+.comic-bar .comic-spread.active { border-color: var(--accent); color: var(--accent); }
+.comic-pages { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.comic-page-wrap { max-width: 100%; display: flex; justify-content: center; }
+.comic-page { max-width: min(900px, 100%); height: auto; box-shadow: 0 1px 10px rgba(0,0,0,.25); background: #fff; border-radius: 2px; }
+.comic-note { margin: 24px auto; max-width: 560px; padding: 16px 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-2); color: var(--fg-2); font-size: 14px; line-height: 1.5; }
+.comic-note code { font-size: 12px; }
+@media (min-width: 761px) {
+  .comic-doc.comic-spread-on .comic-pages { flex-flow: row wrap; align-items: flex-start; align-content: flex-start; justify-content: center; gap: 12px; }
+  .comic-doc.comic-spread-on .comic-page-wrap { flex: 0 1 calc(50% - 12px); min-width: 0; }
+  .comic-doc.comic-spread-on .comic-page { max-width: 100%; }
+}
 /* PDF viewer + lite editor (parent pane). */
 .preview-host .pdf-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
 .pdf-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
