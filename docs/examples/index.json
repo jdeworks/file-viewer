@@ -13,6 +13,7 @@
   { "label": "Sample.yaml", "file": "sample.yaml", "mime": "application/yaml", "category": "Config" },
   { "label": "Sample.toml", "file": "sample.toml", "mime": "application/toml", "category": "Config" },
   { "label": "package.json", "file": "package.json", "mime": "application/json", "category": "Config" },
+  { "label": "Sample.xml", "file": "sample.xml", "mime": "application/xml", "category": "Config" },
   { "label": "example.js", "file": "example.js", "mime": "text/javascript", "category": "Code" },
   { "label": "Sample.html", "file": "sample.html", "mime": "text/html", "category": "Code" },
   { "label": "Sample.ipynb", "file": "sample.ipynb", "mime": "application/x-ipynb+json", "category": "Code" },

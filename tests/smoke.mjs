@@ -26,7 +26,8 @@ const chromium = loadChromium();
 const ROOT = new URL('../docs/', import.meta.url).pathname;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.css': 'text/css', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain',
-  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar', '.yaml': 'application/yaml', '.toml': 'application/toml' };
+  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar', '.yaml': 'application/yaml', '.toml': 'application/toml',
+  '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -419,6 +420,26 @@ try {
   const tBool = await tf.$$eval('.json-tree .j-bool', (els) => els.length);
   const tNum = await tf.$$eval('.json-tree .j-num', (els) => els.length);
   if (tBool >= 4 && tNum >= 2) pass('TOML scalar types preserved (booleans + numbers)'); else fail('toml scalars: bool=' + tBool + ' num=' + tNum);
+
+  // ── XML ── element tree (reuses JSON tree styling) + structural diff. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.xml' }).click();
+  const xmlframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const xmlf = await xmlframe.contentFrame();
+  await xmlf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+  const xType = await page.$eval('#typeSelect', (s) => s.value);
+  if (xType === 'xml') pass('.xml detected as XML'); else fail('xml type: ' + xType);
+  const xTags = await xmlf.$$eval('.json-tree .j-key', (els) => els.map((e) => e.textContent));
+  if (xTags.some((t) => /<catalog>/.test(t)) && xTags.some((t) => /<book>/.test(t))) pass('XML rendered as element tree (' + xTags.length + ' nodes)'); else fail('xml tags: ' + xTags.slice(0, 6).join(','));
+  // Structural diff: change one element's text → flagged; reindenting ignored.
+  await page.waitForFunction(() => !!window.__fv?.state?.rawview, { timeout: 8000 });
+  const xmlOrig = await page.evaluate(() => window.__fv.state.rawview.originalValue());
+  await page.evaluate((o) => window.__fv.state.rawview.setValue(o.replace('Midnight Rain', 'Midnight Sun')), xmlOrig);
+  await page.click('#rawMode button[data-raw="diff"]');
+  await page.waitForFunction(() => /\bchanged\b/.test(document.querySelector('.jsondiff .jd-head')?.textContent || ''), { timeout: 6000 }).catch(() => {});
+  const xmlDiffHead = await page.$eval('.jsondiff .jd-head', (e) => e.textContent);
+  if (/changed/.test(xmlDiffHead)) pass('XML structural diff flags a changed text node'); else fail('xml diff: ' + xmlDiffHead.slice(0, 80));
+  await page.click('#rawMode button[data-raw="current"]');
 
   // ── Known-file enhancement (Layer 3): package.json -> npm links + revert chip ──
   await page.goto(origin, { waitUntil: 'networkidle' });
