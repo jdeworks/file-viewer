@@ -131,6 +131,9 @@ async function loadFolder(entries) {
   $('treeBtn').hidden = false;
   $('repoBtn').hidden = !git;
   $('ftExportBtn').hidden = !!git;             // export the loaded folder (not for git repos)
+  $('ftSearch').hidden = !!git;                // filename/content search (not for git repos)
+  $('ftSearchInput').value = '';
+  $('ftSearchCount').textContent = '';
   setTree(true);
 
   if (git) {
@@ -180,6 +183,40 @@ function flushFolderEdit() {
     state.folderEdits.set(state.currentFolderPath, state.rawview.getValue());
     state.treeApi?.setEdited?.(state.currentFolderPath, true);
   }
+}
+
+/* ─────────────── Folder search: filter by filename (live) + contents (on Enter) ─────────────── */
+
+const CONTENT_SEARCH_MAX = 2 * 1024 * 1024;   // skip files larger than this for content search
+
+function onTreeSearchInput() {
+  if (!state.treeApi) return;
+  const q = $('ftSearchInput').value.trim().toLowerCase();
+  if (!q) { state.treeApi.clearFilter(); $('ftSearchCount').textContent = ''; return; }
+  const shown = state.treeApi.filter((path) => path.toLowerCase().includes(q));
+  $('ftSearchCount').textContent = shown + ' match' + (shown === 1 ? '' : 'es');
+}
+
+// Content search (on Enter): read each text file (capped) and keep those whose text contains the
+// query — unioned with filename matches. Reads lazily off disk; binary/huge files are skipped.
+async function searchTreeContents() {
+  if (!state.treeApi || !state.treeEntries) return;
+  const q = $('ftSearchInput').value.trim();
+  if (!q) { state.treeApi.clearFilter(); $('ftSearchCount').textContent = ''; return; }
+  const ql = q.toLowerCase();
+  $('ftSearchCount').textContent = 'searching…';
+  const matched = new Set();
+  for (const e of state.treeEntries) {
+    if (e.path.toLowerCase().includes(ql)) { matched.add(e.path); continue; }   // filename match
+    if (e.file.size > CONTENT_SEARCH_MAX) continue;
+    try {
+      const text = await e.file.text();
+      if (text.includes('\0')) continue;                  // looks binary
+      if (text.toLowerCase().includes(ql)) matched.add(e.path);
+    } catch { /* unreadable — skip */ }
+  }
+  const shown = state.treeApi.filter((path) => matched.has(path));
+  $('ftSearchCount').textContent = shown + ' file' + (shown === 1 ? '' : 's') + ' (name + contents)';
 }
 
 // Build + download the loaded folder as a .zip (edits applied), preserving structure.
@@ -931,6 +968,8 @@ function init() {
   $('fileTree').addEventListener('keydown', onTreeKey);
   $('repoBtn').addEventListener('click', openRepoView);
   $('ftExportBtn').addEventListener('click', () => exportFolder(false));
+  $('ftSearchInput').addEventListener('input', onTreeSearchInput);
+  $('ftSearchInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); searchTreeContents(); } });
   initTreeResize();
   $('openInlineBtn').addEventListener('click', showIntake);
   $('newFileBtn').addEventListener('click', createNewFile);

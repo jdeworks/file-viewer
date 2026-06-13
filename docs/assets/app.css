@@ -84,6 +84,12 @@ body {
 .ft-notice { padding: 7px 12px; font: 11px/1.4 system-ui, sans-serif; color: var(--fg-2);
   background: var(--bg-3); border-bottom: 1px solid var(--border); }
 .ft-notice[hidden] { display: none; }
+.ft-search { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.ft-search[hidden] { display: none; }
+.ft-search input { flex: 1; min-width: 0; font: 12px system-ui, sans-serif; padding: 5px 8px;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); }
+.ft-search input:focus { outline: none; border-color: var(--accent); }
+.ft-search-count { font: 11px system-ui, sans-serif; color: var(--fg-2); white-space: nowrap; }
 .ft-body { flex: 1; overflow: auto; padding: 4px 0 14px; font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .ft-row { display: flex; align-items: center; gap: 7px; padding: 1px 10px 1px 8px; cursor: pointer;
   white-space: nowrap; user-select: none; }

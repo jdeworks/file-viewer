@@ -1235,6 +1235,24 @@ try {
   if (/\.zip$/.test(zipDownload.suggestedFilename())) pass('folder exported as .zip (' + zipDownload.suggestedFilename() + ')'); else fail('folder zip name: ' + zipDownload.suggestedFilename());
   await page.evaluate(() => { window.__fv.state.downloadedSinceEdit = true; });   // clear unsaved-work for the next folder load
 
+  // ── Folder search ── live filename filter + content search on Enter. ──
+  await page.fill('#ftSearchInput', 'util');
+  await page.waitForTimeout(150);
+  const utilVisible = await page.$eval('#fileTree .ft-file[data-path="proj/src/util.py"]', (e) => e.style.display !== 'none');
+  const appHidden = await page.$eval('#fileTree .ft-file[data-path="proj/src/app.js"]', (e) => e.style.display === 'none');
+  if (utilVisible && appHidden) pass('folder search: filename filter narrows the tree'); else fail('search filter: util=' + utilVisible + ' appHidden=' + appHidden);
+  const searchCount = await page.$eval('#ftSearchCount', (e) => e.textContent);
+  if (/1 match/.test(searchCount)) pass('folder search: match count shown (' + searchCount + ')'); else fail('search count: ' + searchCount);
+  // Content search: "Project" appears only INSIDE README.md (not in any filename).
+  await page.fill('#ftSearchInput', 'Project');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => /file/.test(document.getElementById('ftSearchCount').textContent), { timeout: 5000 });
+  const readmeVisible = await page.$eval('#fileTree .ft-file[data-path="proj/README.md"]', (e) => e.style.display !== 'none');
+  const appHidden2 = await page.$eval('#fileTree .ft-file[data-path="proj/src/app.js"]', (e) => e.style.display === 'none');
+  if (readmeVisible && appHidden2) pass('folder search: content search matches inside files'); else fail('content search: readme=' + readmeVisible + ' appHidden=' + appHidden2);
+  await page.fill('#ftSearchInput', '');
+  await page.waitForTimeout(100);
+
   // ── Huge-folder render cap ── a folder with a very high file count is capped (not frozen) + noted.
   await page.evaluate(() => {
     // 20010 tiny files (over the 20000 cap). File bodies are 1 char — cheap; we're testing the cap.

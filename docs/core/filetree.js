@@ -126,10 +126,31 @@ export function renderTree(host, root, { onOpen }) {
     if (row) row.classList.toggle('ft-edited', on !== false);
   }
 
+  // Filter the tree to files whose path satisfies matchFn(path). Pass null to clear. Folders with
+  // no visible descendants are hidden; while filtering, folders are force-expanded so matches show.
+  function filter(matchFn) {
+    let shown = 0;
+    host.querySelectorAll('.ft-file').forEach((r) => {
+      const ok = !matchFn || matchFn(r.dataset.path);
+      r.style.display = ok ? '' : 'none';
+      if (ok && matchFn) shown++;
+    });
+    host.querySelectorAll('.ft-children').forEach((kids) => {
+      const wrap = kids.parentElement;
+      if (!wrap) return;
+      if (!matchFn) { wrap.style.display = ''; return; }
+      const anyVisible = [...kids.querySelectorAll('.ft-file')].some((r) => r.style.display !== 'none');
+      wrap.style.display = anyVisible ? '' : 'none';
+      if (anyVisible) { wrap.classList.remove('collapsed'); const a = wrap.querySelector('.ft-arrow'); if (a) a.textContent = '▾'; }
+    });
+    return shown;
+  }
+  function clearFilter() { filter(null); }
+
   // Top-level children of root (skip the empty root node itself).
   for (const c of sortedChildren(root)) host.appendChild(makeNode(c, 0));
   // refresh() re-evaluates the marquee (e.g. after the sidebar is resized).
-  return { setActive, setEdited, refresh: () => startMarquee(activeRow), stop: stopMarquee };
+  return { setActive, setEdited, filter, clearFilter, refresh: () => startMarquee(activeRow), stop: stopMarquee };
 }
 
 function escapeHtml(s) { return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
