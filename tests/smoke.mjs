@@ -376,6 +376,15 @@ try {
   pass('PDF edit: image inserted as a new page (' + beforeAdd + '→' + (beforeAdd + 1) + ')');
   const pdfChanges3 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
   if (/image page.* added/.test(pdfChanges3)) pass('PDF edit: image insertion noted in changes summary'); else fail('pdf changes3: ' + pdfChanges3);
+  // Book mode: the spread toggle lays pages two-up (wide screens). Pages wrap into rows.
+  await page.click('#previewHost .pdf-spread');
+  const spreadOn = await page.$eval('#previewHost .pdf-doc', (e) => e.classList.contains('pdf-spread-on'));
+  const twoUp = await page.$$eval('#previewHost .pdf-page-wrap', (els) => {
+    if (els.length < 2) return false;
+    const a = els[0].getBoundingClientRect(), b = els[1].getBoundingClientRect();
+    return Math.abs(a.top - b.top) < 5 && b.left > a.left;   // first two pages share a row, side by side
+  });
+  if (spreadOn && twoUp) pass('PDF book mode: two-page spread lays pages side by side'); else fail('pdf spread: on=' + spreadOn + ' twoUp=' + twoUp);
   // Type dropdown shows PDF's confidence but NOT the fallback floor as a phantom "%".
   const pdfOpts = await page.$$eval('#typeSelect option', (els) => els.map((e) => e.textContent));
   if (pdfOpts.some((t) => /^PDF \(\d+%\)/.test(t))) pass('PDF shows match confidence (' + pdfOpts.find((t) => /^PDF/.test(t)) + ')'); else fail('PDF option: ' + pdfOpts.join(', '));

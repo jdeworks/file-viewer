@@ -35,6 +35,7 @@ export async function render(intake, ctx) {
   host.className = 'pdf-doc';
   host.innerHTML =
     '<div class="pdf-bar"><span class="pdf-info"></span>'
+    + '<button class="pdf-spread" title="Two-page spread (book mode)">⊞ Spread</button>'
     + '<button class="pdf-edit" title="Edit pages">Edit</button>'
     + '<button class="pdf-addimg" hidden title="Add an image as a new page">+ Image page</button>'
     + '<button class="pdf-download" hidden>Download edited PDF</button></div>'
@@ -117,6 +118,13 @@ export async function render(intake, ctx) {
       catch (e) { infoEl.textContent = 'Editing unavailable: ' + esc(e.message); editing = false; host.querySelector('.pdf-edit').classList.remove('active'); host.querySelector('.pdf-addimg').hidden = true; return; }
     }
     await renderPages(currentBytes);
+  });
+
+  // Two-page spread (book mode): lay pages out two-up on wide screens. Pure CSS toggle; the
+  // media query in app.css keeps it single-page on phones. Independent of edit mode.
+  host.querySelector('.pdf-spread').addEventListener('click', (e) => {
+    const on = host.classList.toggle('pdf-spread-on');
+    e.currentTarget.classList.toggle('active', on);
   });
 
   // Insert an image as a new page: pick any raster/SVG image, rasterize to PNG (pdf-lib embeds
