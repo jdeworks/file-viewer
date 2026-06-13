@@ -14,5 +14,6 @@ export default {
   syntaxLanguage: null,
   loadRenderer: () => import('./renderer.js'),
   loadMetadata: () => import('./metadata.js'),
+  loadExports: () => import('./exports.js'),   // Export menu: PNG / JPEG / WebP (+ SVG)
   settingsUrl: new URL('./settings.default.json', import.meta.url),
 };

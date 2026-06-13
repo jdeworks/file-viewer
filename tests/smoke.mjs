@@ -828,6 +828,16 @@ try {
   const zoomLabel = await page.$eval('#previewHost .imgv-zoom', (e) => e.textContent);
   const widthSet = await page.$eval('#previewHost .imgv-img', (e) => e.style.width);
   if (/%/.test(zoomLabel) && /px$/.test(widthSet)) pass('image zoom sets a real pixel width (' + zoomLabel + ')'); else fail('image zoom: label=' + zoomLabel + ' width=' + widthSet);
+  // Image export (loadExports hook): menu offers PNG/JPEG/WebP, and a conversion actually downloads.
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const imgExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
+  if (['Download as PNG', 'Download as JPEG', 'Download as WebP'].every((l) => imgExports.includes(l))) pass('image export menu offers PNG/JPEG/WebP'); else fail('image exports: ' + imgExports.join(','));
+  const [imgDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download as WebP")'),
+  ]);
+  if (/\.webp$/.test(imgDownload.suggestedFilename())) pass('image converted + downloaded (' + imgDownload.suggestedFilename() + ')'); else fail('image download name: ' + imgDownload.suggestedFilename());
 
   // ── Audio/Video (media) ── native player rendered in the pane via a blob: URL.
   await page.goto(origin, { waitUntil: 'networkidle' });
