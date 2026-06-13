@@ -233,6 +233,23 @@ try {
   const arrows = await page.$$eval('.md-arrows path[d]', (els) => els.length);
   if (arrows > 0) pass('move arrow drawn (' + arrows + ')'); else fail('no move arrows drawn');
 
+  // Word-level diff: change ONE word in a paragraph -> only that word is highlighted
+  // (not the whole block). Load fresh markdown so block matching is clean.
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    const orig = rv.originalValue();
+    rv.setValue(orig.replace(/Viewer/, 'Veiwer'));   // single-word typo in one block
+  });
+  await page.click('#rawMode button[data-raw="current"]');
+  await page.click('#rawMode button[data-raw="movediff"]');
+  await page.waitForSelector('.movediff', { timeout: 5000 });
+  await page.waitForTimeout(200);
+  const wIns = await page.$$eval('.md-current .w-ins', (els) => els.map((e) => e.textContent));
+  const wDel = await page.$$eval('.md-original .w-del', (els) => els.map((e) => e.textContent));
+  if (wIns.length >= 1 && wIns.length <= 3 && wIns.some((t) => /Veiwer/.test(t))) pass('word-level diff highlights only the changed word (' + JSON.stringify(wIns) + ')');
+  else fail('word-level ins spans: ' + JSON.stringify(wIns));
+  if (wDel.some((t) => /Viewer/.test(t))) pass('word-level diff marks the removed word on the original side'); else fail('word-level del spans: ' + JSON.stringify(wDel));
+
   // ── Draggable split divider (linked to Preview width) ──
   // Diff/move-diff go full-width; return to split so the divider is shown.
   await page.click('#rawMode button[data-raw="current"]');
@@ -559,7 +576,12 @@ try {
   mpage.on('request', (req) => { const u = req.url(); if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u); });
   await mpage.goto(origin, { waitUntil: 'networkidle' });
   await mpage.getByRole('button', { name: 'Welcome.md' }).click();
-  await mpage.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
+  const mframe = await mpage.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
+  // Preview must NOT scroll horizontally on a phone (fixed to screen width).
+  const mpf = await mframe.contentFrame();
+  await mpf.waitForSelector('h1', { timeout: 10000 });
+  const overflowX = await mpf.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  if (overflowX <= 1) pass('mobile: preview has no horizontal scroll (width fixed to screen)'); else fail('mobile preview overflows x by ' + overflowX + 'px');
   // Tab bar is shown on phones and defaults to Preview (reading-first).
   const tabbarShown = await mpage.$eval('#tabbar', (e) => getComputedStyle(e).display !== 'none');
   if (tabbarShown) pass('mobile: tab bar shown (not split)'); else fail('mobile: tab bar hidden');

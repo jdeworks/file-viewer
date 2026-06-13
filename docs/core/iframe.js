@@ -48,10 +48,11 @@ const BRIDGE = `
 
 const BASE_CSS = `
   :root{color-scheme:light dark;}
-  html,body{margin:0;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;max-width:100%;overflow-x:hidden;}   /* mobile: only vertical scroll */
   body{font:var(--fv-fontsize,16px)/var(--fv-lh,1.6) system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
        padding:var(--fv-pad,20px);max-width:var(--fv-maxw,900px);margin:0 auto;
-       color:#1a1a1a;background:#fff;}
+       color:#1a1a1a;background:#fff;overflow-wrap:break-word;}
   body.fv-dark{color:#e6e6e6;background:#1e1e1e;}
   .fv-hl{outline:2px solid #4c9aff;outline-offset:2px;border-radius:3px;background:rgba(76,154,255,.12);}
   img,video,canvas{max-width:100%;height:auto;}

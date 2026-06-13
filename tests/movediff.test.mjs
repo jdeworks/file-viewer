@@ -1,5 +1,5 @@
 // Unit tests for the move-aware diff algorithm (WP15). Pure logic, no browser.
-import { computeMoveDiff } from '../docs/core/movediff.js';
+import { computeMoveDiff, wordDiff } from '../docs/core/movediff.js';
 
 let failed = 0;
 const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!cond) failed++; };
@@ -53,6 +53,23 @@ const P3 = 'A third paragraph at the bottom.';
   const after = [P1, P2, P3].join('\n\n');
   const r = computeMoveDiff(before, after);
   ok(r.stats.added === 1 && r.stats.unchanged === 2, 'append: 1 added, 2 unchanged');
+}
+
+// 6. Word-level diff: a one-word change marks ONLY that word, not the whole sentence.
+{
+  const wd = wordDiff('The quick brown fox jumps', 'The quick red fox jumps');
+  const changedA = wd.a.filter((r) => r.changed).map((r) => r.text);
+  const changedB = wd.b.filter((r) => r.changed).map((r) => r.text);
+  ok(changedA.join('|') === 'brown' && changedB.join('|') === 'red', 'word diff isolates the single changed word');
+  const unchangedB = wd.b.filter((r) => !r.changed).map((r) => r.text).join('');
+  ok(unchangedB.includes('The quick ') && unchangedB.includes(' fox jumps'), 'word diff keeps surrounding text unmarked');
+}
+
+// 7. Word diff reconstructs each side's exact text (no loss).
+{
+  const a = 'alpha beta gamma delta', b = 'alpha BETA gamma omega';
+  const wd = wordDiff(a, b);
+  ok(wd.a.map((r) => r.text).join('') === a && wd.b.map((r) => r.text).join('') === b, 'word diff is lossless on both sides');
 }
 
 console.log(failed ? `\nMOVEDIFF FAILED (${failed})` : '\nMOVEDIFF PASSED');

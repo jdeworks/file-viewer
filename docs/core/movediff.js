@@ -66,6 +66,45 @@ function backboneIndices(seq, weight) {
   return keep;
 }
 
+// Word-level diff between two blocks (the displayed text of a matched pair). Returns
+// per-side token runs {text, changed} so the renderer highlights ONLY the changed words
+// instead of flat-marking the whole paragraph. Tokens are words + whitespace runs (so the
+// exact text reconstructs); comparison is by token equality, common tokens via LCS.
+const tokenizeWords = (text) => (text ?? '').match(/\s+|\S+/g) || [];
+
+export function wordDiff(aText, bText) {
+  const a = tokenizeWords(aText), b = tokenizeWords(bText);
+  // Guard against pathological sizes — fall back to "all changed" so we never hang.
+  if (a.length * b.length > 1_000_000) {
+    return { a: a.length ? [{ text: aText, changed: true }] : [], b: b.length ? [{ text: bText, changed: true }] : [] };
+  }
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Int32Array(n + 1));   // LCS length table
+  for (let i = m - 1; i >= 0; i--) {
+    for (let j = n - 1; j >= 0; j--) {
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const aMark = new Array(m).fill(true), bMark = new Array(n).fill(true);   // true = changed
+  let i = 0, j = 0;
+  while (i < m && j < n) {
+    if (a[i] === b[j]) { aMark[i] = false; bMark[j] = false; i++; j++; }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
+    else j++;
+  }
+  const runs = (tokens, mark) => {
+    const out = [];
+    for (let k = 0; k < tokens.length; k++) {
+      const changed = mark[k] && tokens[k].trim() !== '';   // pure-whitespace stays unmarked
+      const last = out[out.length - 1];
+      if (last && last.changed === changed) last.text += tokens[k];
+      else out.push({ text: tokens[k], changed });
+    }
+    return out;
+  };
+  return { a: runs(a, aMark), b: runs(b, bMark) };
+}
+
 export function computeMoveDiff(originalText, currentText, { threshold = DEFAULT_THRESHOLD } = {}) {
   const A = splitBlocks(originalText);
   const B = splitBlocks(currentText);
