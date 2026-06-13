@@ -1149,6 +1149,12 @@ try {
   await page.click('#previewHost .epub-theme[data-theme="sepia"]');
   const sepia = await page.$eval('#previewHost .epub-doc', (e) => e.classList.contains('epub-theme-sepia'));
   if (sepia) pass('EPUB reading theme switch (sepia)'); else fail('epub theme not applied');
+  // Two-column reading mode: the inner flow uses CSS columns (wide screen).
+  await page.click('#previewHost .epub-cols[data-cols="2"]');
+  const twocol = await page.$eval('#previewHost .epub-doc', (e) => e.classList.contains('epub-twocol'));
+  const colCount = await page.$eval('#previewHost .epub-flow', (e) => getComputedStyle(e).columnCount);
+  if (twocol && colCount === '2') pass('EPUB two-column reading mode (CSS columns)'); else fail('epub columns: twocol=' + twocol + ' count=' + colCount);
+  await page.click('#previewHost .epub-cols[data-cols="1"]');   // back to single column for later assertions
   // First chapter rendered, with its embedded SVG image rewritten to an in-book blob URL.
   const epubH1 = await page.$eval('#previewHost .epub-content h1', (e) => e.textContent).catch(() => '');
   if (/A Beginning/.test(epubH1)) pass('EPUB first chapter rendered'); else fail('epub chapter h1: ' + epubH1);

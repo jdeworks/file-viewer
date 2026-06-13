@@ -395,6 +395,12 @@ body {
 .epub-theme-dark .epub-content { background: #14171c; color: #c9d1d9; }
 .epub-theme-dark .epub-content a { color: #6cb6ff; }
 .epub-content :where(img, image, svg) { max-width: 100%; height: auto; }
+/* Two-column reading (wide screens): CSS columns on the inner flow → vertical scroll, no overflow. */
+@media (min-width: 900px) {
+  .epub-twocol .epub-flow { column-count: 2; column-gap: clamp(28px, 5vw, 64px); }
+  .epub-twocol .epub-flow :where(h1, h2, h3) { column-span: all; }
+  .epub-twocol .epub-flow img { break-inside: avoid; }
+}
 .epub-content h1, .epub-content h2, .epub-content h3 { line-height: 1.25; }
 .epub-content a { color: var(--accent); }
 .epub-empty, .epub-content .epub-empty { color: var(--fg-2); }

@@ -39,6 +39,7 @@ export async function render(intake, _ctx) {
     + '<div class="epub-pref-row"><span>Size</span><button class="epub-fs-dn" title="Smaller">A−</button><button class="epub-fs-up" title="Larger">A+</button></div>'
     + '<div class="epub-pref-row"><span>Font</span><button class="epub-font" data-font="serif">Serif</button><button class="epub-font" data-font="sans">Sans</button></div>'
     + '<div class="epub-pref-row"><span>Theme</span><button class="epub-theme" data-theme="light">Light</button><button class="epub-theme" data-theme="sepia">Sepia</button><button class="epub-theme" data-theme="dark">Dark</button></div>'
+    + '<div class="epub-pref-row epub-cols-row"><span>Columns</span><button class="epub-cols" data-cols="1">1</button><button class="epub-cols" data-cols="2">2</button></div>'
     + '</div>'
     + '<nav class="epub-toc"></nav></aside>'
     + '<div class="epub-main">'
@@ -56,20 +57,23 @@ export async function render(intake, _ctx) {
   // Reading preferences (global, shared across books) — size/font/theme. Zoom changes the real
   // font-size (not a transform), so text stays crisp and reflows.
   const PREFS_KEY = 'fv:epub:prefs';
-  const prefs = Object.assign({ fontSize: 18, font: 'serif', theme: 'light' }, readPrefs(PREFS_KEY));
+  const prefs = Object.assign({ fontSize: 18, font: 'serif', theme: 'light', columns: 1 }, readPrefs(PREFS_KEY));
   function applyPrefs() {
     contentEl.style.fontSize = prefs.fontSize + 'px';
     contentEl.style.fontFamily = prefs.font === 'sans' ? 'system-ui, sans-serif' : 'Georgia, "Times New Roman", serif';
     host.classList.remove('epub-theme-light', 'epub-theme-sepia', 'epub-theme-dark');
     host.classList.add('epub-theme-' + prefs.theme);
+    host.classList.toggle('epub-twocol', prefs.columns === 2);   // two-column reading (wide screens)
     for (const b of host.querySelectorAll('.epub-font')) b.classList.toggle('active', b.dataset.font === prefs.font);
     for (const b of host.querySelectorAll('.epub-theme')) b.classList.toggle('active', b.dataset.theme === prefs.theme);
+    for (const b of host.querySelectorAll('.epub-cols')) b.classList.toggle('active', Number(b.dataset.cols) === prefs.columns);
     writePrefs(PREFS_KEY, prefs);
   }
   host.querySelector('.epub-fs-dn').addEventListener('click', () => { prefs.fontSize = Math.max(12, prefs.fontSize - 1); applyPrefs(); });
   host.querySelector('.epub-fs-up').addEventListener('click', () => { prefs.fontSize = Math.min(32, prefs.fontSize + 1); applyPrefs(); });
   for (const b of host.querySelectorAll('.epub-font')) b.addEventListener('click', () => { prefs.font = b.dataset.font; applyPrefs(); });
   for (const b of host.querySelectorAll('.epub-theme')) b.addEventListener('click', () => { prefs.theme = b.dataset.theme; applyPrefs(); });
+  for (const b of host.querySelectorAll('.epub-cols')) b.addEventListener('click', () => { prefs.columns = Number(b.dataset.cols); applyPrefs(); });
   applyPrefs();
 
   // Build the TOC list.
@@ -129,7 +133,12 @@ export async function render(intake, _ctx) {
       FORBID_TAGS: ['script', 'link', 'style'], FORBID_ATTR: ['srcset'], RETURN_DOM_FRAGMENT: true,
     });
     await rewriteResources(frag2, item.path);
-    contentEl.appendChild(frag2);
+    // Wrap in an inner flow element so two-column mode (CSS columns) balances within the chapter
+    // while the outer .epub-content keeps scrolling vertically (no horizontal column overflow).
+    const flow = document.createElement('div');
+    flow.className = 'epub-flow';
+    flow.appendChild(frag2);
+    contentEl.appendChild(flow);
 
     // Highlight active TOC entry + position label.
     for (const a of tocEl.children) a.classList.toggle('active', a._spine === index);
