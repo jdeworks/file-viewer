@@ -42,10 +42,14 @@ function toast(msg, ms = 2600) {
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
 async function loadIntake(intake) {
+  // Guard unsaved work — unless loadFolder already asked for this same action.
+  if (state._skipDiscardGuard) state._skipDiscardGuard = false;
+  else if (!confirmDiscard()) return;
   if (intake.size > LARGE_FILE_BYTES) {
     const mb = (intake.size / 1048576).toFixed(1);
     if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return;
   }
+  state.downloadedSinceEdit = true;    // fresh document — nothing unsaved yet
   state.intake = intake;
   const { type, ranking } = pickType(intake);
   populateTypeSelect(ranking, type.id);
@@ -61,6 +65,8 @@ function showIntake() {
 /* ─────────────────────────── Folder tree (sidebar) ─────────────────────────── */
 
 async function loadFolder(entries) {
+  if (!confirmDiscard()) return;               // guard unsaved work before swapping folders
+  state._skipDiscardGuard = true;              // already confirmed — don't re-ask on the default file
   // Build + render the tree, reveal the sidebar, and open a sensible default file.
   state.treeEntries = entries;                 // kept for arrow-key navigation lookups
   const rootName = (entries[0]?.path.split('/')[0]) || 'Folder';
@@ -252,7 +258,18 @@ async function buildRawView() {
 async function onRawEdited(value) {
   // Keep the working text in sync so download + preview reflect edits.
   state.intake = { ...state.intake, text: value };
+  state.downloadedSinceEdit = false;   // there are now edits not yet saved to disk
   if (state.type?.capabilities.preview) await renderPreview();
+}
+
+// Unsaved work = the working copy differs from the original AND it wasn't downloaded
+// since the last edit. Used to guard against silently discarding progress.
+function hasUnsavedWork() {
+  return !!(state.rawview?.isDirty() && !state.downloadedSinceEdit);
+}
+function confirmDiscard() {
+  if (!hasUnsavedWork()) return true;
+  return confirm('You have unsaved changes that haven’t been downloaded.\n\nDiscard them and continue?');
 }
 
 function setRawMode(mode) {
@@ -295,6 +312,7 @@ function downloadCurrent() {
   a.download = state.intake.filename || 'download.txt';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  state.downloadedSinceEdit = true;    // current edits are now saved to disk
 }
 
 /* ─────────────────────────── Preview (iframe) ─────────────────────────── */
@@ -583,7 +601,6 @@ function init() {
   $('treeCloseBtn').addEventListener('click', () => setTree(false));
   $('fileTree').addEventListener('keydown', onTreeKey);
   initTreeResize();
-  $('openBtn').addEventListener('click', showIntake);
   $('openInlineBtn').addEventListener('click', showIntake);
   $('formatBtn').addEventListener('click', () => state.rawview?.format());
   initSplitDivider();
@@ -621,6 +638,11 @@ function init() {
   // Re-clamp the split pane width when the window resizes on desktop.
   window.addEventListener('resize', debounce(() => { if (state.type) applyPreviewPaneWidth(); }, 100));
 
+  // Warn before leaving/closing the tab if there are unsaved, undownloaded edits.
+  window.addEventListener('beforeunload', (e) => {
+    if (hasUnsavedWork()) { e.preventDefault(); e.returnValue = ''; }
+  });
+
   loadExamples();
 
   // Startup stays light (Monaco isn't loaded just to show the intake screen). Warm it in
@@ -632,7 +654,7 @@ function init() {
 
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
   window.__fv = {
-    state, setRawMode, downloadCurrent, loadFolder,
+    state, setRawMode, downloadCurrent, loadFolder, hasUnsavedWork,
     screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };
 }

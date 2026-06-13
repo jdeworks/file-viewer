@@ -440,6 +440,22 @@ try {
   await hf2.waitForSelector('#ran-script', { timeout: 8000 });
   pass('HTML scripts run after explicit opt-in (sandboxed)');
 
+  // ── Duplicate open button removed + unsaved-work tracking ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  const hasOldOpen = await page.$('#openBtn');
+  const hasInlineOpen = await page.$('#openInlineBtn');
+  if (!hasOldOpen && hasInlineOpen) pass('duplicate top-bar open button removed (inline 📂 kept)'); else fail('openBtn present=' + !!hasOldOpen + ' inline=' + !!hasInlineOpen);
+  await page.getByRole('button', { name: 'Welcome.md' }).click();
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 20000 });
+  const clean0 = await page.evaluate(() => window.__fv.hasUnsavedWork());
+  await page.evaluate(() => { const rv = window.__fv.state.rawview; rv.setValue(rv.getValue() + '\nunsaved edit'); });
+  await page.waitForTimeout(350);
+  const dirty1 = await page.evaluate(() => window.__fv.hasUnsavedWork());
+  await page.evaluate(() => window.__fv.downloadCurrent());
+  await page.waitForTimeout(150);
+  const afterDl = await page.evaluate(() => window.__fv.hasUnsavedWork());
+  if (!clean0 && dirty1 && !afterDl) pass('unsaved-work tracked (clean → edit → download clears it; gates discard + beforeunload)'); else fail('unsaved flags clean=' + clean0 + ' dirty=' + dirty1 + ' afterDownload=' + afterDl);
+
   // ── Mobile hardening (WP06) ── phone viewport: Preview-first + scrollable topbar.
   const mctx = await browser.newContext({ viewport: { width: 390, height: 780 }, isMobile: true, hasTouch: true });
   const mpage = await mctx.newPage();
