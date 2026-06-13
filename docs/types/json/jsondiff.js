@@ -2,56 +2,34 @@
 // reordered keys and reformatting don't read as changes. Object keys are matched by name
 // (and sorted in the output); arrays are compared by index. Renders a collapsible tree
 // where each node is tagged unchanged / added / removed / changed. Pure client-side.
+//
+// The diff ENGINE is the shared generic core (core/treediff.js); this file only supplies the
+// JSON adapter + JSON-flavoured rendering.
+import { treeDiff, ABSENT } from '../../core/treediff.js';
 
 const typeOf = (v) => (v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-const ABSENT = Symbol('absent');
-
-function aggregate(children) {
-  const c = { added: 0, removed: 0, changed: 0 };
-  for (const ch of children) {
-    if (ch.status === 'added') c.added++;
-    else if (ch.status === 'removed') c.removed++;
-    else if (ch.status === 'changed') c.changed++;
-    if (ch.children) { c.added += ch.counts.added; c.removed += ch.counts.removed; c.changed += ch.counts.changed; }
-  }
-  return c;
-}
-
-// Build a diff node for key `key` comparing a vs b (either may be ABSENT).
-function diffNode(key, a, b) {
-  if (a === ABSENT) return { key, status: 'added', kind: typeOf(b), value: b };
-  if (b === ABSENT) return { key, status: 'removed', kind: typeOf(a), value: a };
-
-  const ta = typeOf(a), tb = typeOf(b);
-  if (ta !== tb) return { key, status: 'changed', kind: tb, oldValue: a, value: b };
-
-  if (ta === 'object') {
-    const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])].sort();
-    const children = keys.map((k) => diffNode(k, k in a ? a[k] : ABSENT, k in b ? b[k] : ABSENT));
-    const counts = aggregate(children);
-    return { key, status: counts.added + counts.removed + counts.changed ? 'changed' : 'unchanged', kind: 'object', children, counts };
-  }
-  if (ta === 'array') {
-    const n = Math.max(a.length, b.length);
-    const children = [];
-    for (let i = 0; i < n; i++) children.push(diffNode(i, i < a.length ? a[i] : ABSENT, i < b.length ? b[i] : ABSENT));
-    const counts = aggregate(children);
-    return { key, status: counts.added + counts.removed + counts.changed ? 'changed' : 'unchanged', kind: 'array', children, counts };
-  }
-  // primitives
-  return a === b
-    ? { key, status: 'unchanged', kind: ta, value: b }
-    : { key, status: 'changed', kind: ta, oldValue: a, value: b };
-}
+// JSON tree adapter: objects are containers keyed by (sorted) property name; arrays by index.
+const jsonAdapter = {
+  isContainer: (v) => { const t = typeOf(v); return t === 'object' || t === 'array'; },
+  kindOf: typeOf,
+  childKeys: (a, b) => {
+    if (typeOf(a) === 'array') { const n = Math.max(a.length, b.length); return Array.from({ length: n }, (_, i) => i); }
+    return [...new Set([...Object.keys(a), ...Object.keys(b)])].sort();
+  },
+  getChild: (node, key) => {
+    if (Array.isArray(node)) return key < node.length ? node[key] : ABSENT;
+    return key in node ? node[key] : ABSENT;
+  },
+  leafEqual: (a, b) => a === b,
+};
 
 export function diffJson(aText, bText) {
   let a, b;
   try { a = JSON.parse(aText || 'null'); } catch (e) { return { error: 'Original is not valid JSON: ' + e.message }; }
   try { b = JSON.parse(bText || 'null'); } catch (e) { return { error: 'Current is not valid JSON: ' + e.message }; }
-  const root = diffNode(null, a, b);
-  return { root, counts: root.children ? root.counts : aggregate([root]) };
+  return treeDiff(a, b, jsonAdapter);
 }
 
 const fmtVal = (v) => {

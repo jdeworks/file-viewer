@@ -13,6 +13,7 @@ export default {
   },
   syntaxLanguage: 'html',
   loadRenderer: () => import('./renderer.js'),
+  loadDiffRenderer: () => import('./htmldiff.js'),   // structural DOM diff instead of text diff
   loadMetadata: () => import('./metadata.js'),
   settingsUrl: new URL('./settings.default.json', import.meta.url),
 };

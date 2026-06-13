@@ -720,6 +720,29 @@ try {
   await hf2.waitForSelector('#ran-script', { timeout: 8000 });
   pass('HTML scripts run after explicit opt-in (sandboxed)');
 
+  // ── HTML structural diff (Layer-2 DOM diff) ── reindenting is ignored; real edits are flagged.
+  await page.waitForFunction(() => !!window.__fv?.state?.rawview, { timeout: 8000 });
+  const htmlOrig = await page.evaluate(() => window.__fv.state.rawview.originalValue());
+  // Whitespace-only reformat → no structural difference.
+  await page.evaluate((o) => window.__fv.state.rawview.setValue(o.replace(/>\s+</g, '>\n      <')), htmlOrig);
+  await page.click('#rawMode button[data-raw="diff"]');
+  await page.waitForSelector('.jsondiff', { timeout: 6000 });
+  const htmlWsHead = await page.$eval('.jsondiff .jd-head', (e) => e.textContent);
+  if (/No structural differences/.test(htmlWsHead)) pass('HTML structural diff ignores whitespace/reindenting'); else fail('html ws diff: ' + htmlWsHead.slice(0, 80));
+  // Real change: inject an identifiable element → flagged as added.
+  await page.click('#rawMode button[data-raw="current"]');
+  await page.evaluate((o) => {
+    const add = '<p id="fv-added">new</p>';
+    window.__fv.state.rawview.setValue(/<\/body>/i.test(o) ? o.replace(/<\/body>/i, add + '</body>') : o + add);
+  }, htmlOrig);
+  await page.click('#rawMode button[data-raw="diff"]');
+  // The custom diff re-renders async; wait for the head to reflect the change (not the stale render).
+  await page.waitForFunction(() => /\badded\b/.test(document.querySelector('.jsondiff .jd-head')?.textContent || ''), { timeout: 6000 }).catch(() => {});
+  const htmlChgHead = await page.$eval('.jsondiff .jd-head', (e) => e.textContent);
+  const htmlAddedKeys = await page.$$eval('.jsondiff .jd-added .jd-key', (els) => els.map((e) => e.textContent));
+  if (/added/.test(htmlChgHead) && htmlAddedKeys.some((k) => /p#fv-added/.test(k))) pass('HTML structural diff flags an added element (p#fv-added)'); else fail('html change diff: ' + htmlChgHead + ' keys=' + htmlAddedKeys.join(','));
+  await page.click('#rawMode button[data-raw="current"]');
+
   // ── Duplicate open button removed + unsaved-work tracking ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   const hasOldOpen = await page.$('#openBtn');
