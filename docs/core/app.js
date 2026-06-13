@@ -328,6 +328,7 @@ async function activateType(type) {
   $('screenshotBtn').hidden = !(type.capabilities.screenshot && canPreview);
   state.mode = both ? 'split' : (canPreview && !canRaw ? 'preview' : 'raw');
   state.rawMode = 'current';
+  resetCompare();                              // a fresh file drops any active two-file comparison
   // On phones, default to Preview when a type has one — reading beats Monaco-on-glass.
   state.tab = both ? (isMobile() ? 'preview' : 'raw') : (canPreview && !canRaw ? 'preview' : 'raw');
   state.htmlAllowScripts = false; state.htmlAsked = false;   // re-ask per file
@@ -404,7 +405,53 @@ function setRawMode(mode) {
 }
 
 function syncRawModeButtons() {
-  document.querySelectorAll('#rawMode button').forEach((b) => b.classList.toggle('active', b.dataset.raw === state.rawMode));
+  document.querySelectorAll('#rawMode button:not(#compareBtn)').forEach((b) => b.classList.toggle('active', b.dataset.raw === state.rawMode));
+  $('compareBtn')?.classList.toggle('active', !!state.rawview?.hasCompare?.());
+}
+
+/* ─────────────── Compare with another file (two-file diff) ─────────────── */
+
+// Pick a second file and diff the CURRENT file against it (current ↔ other), reusing Monaco's
+// diff (and any type custom diff). Edit-tracking (original ↔ current) is untouched.
+function startCompare() {
+  if (!state.rawview) return;
+  $('compareInput').value = '';
+  $('compareInput').click();
+}
+
+async function onComparePicked(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file || !state.rawview) return;
+  try {
+    const other = await intakeFromFile(file);
+    if (other.isBinary) { toast('Can’t compare binary files as text.'); return; }
+    state.rawview.setCompare(other.text || '');     // keeps the current file's language on both sides
+    state.rawMode = 'diff';
+    $('rawPane').classList.add('comparing');
+    const bar = $('compareBar');
+    bar.querySelector('.compare-label').textContent = 'Comparing current ↔ ' + (file.name || 'file');
+    bar.hidden = false;
+    syncRawModeButtons();
+    applyLayout();
+    state.rawview.layout();
+  } catch (err) {
+    toast('Could not read file: ' + err.message);
+  }
+}
+
+function stopCompare() {
+  if (!state.rawview?.hasCompare?.()) { resetCompare(); return; }
+  state.rawview.clearCompare();
+  resetCompare();
+  state.rawMode = state.rawview.mode();
+  syncRawModeButtons();
+  state.rawview.layout();
+}
+
+// Hide the compare UI without touching the rawview (used on file load / teardown).
+function resetCompare() {
+  $('rawPane')?.classList.remove('comparing');
+  const bar = $('compareBar'); if (bar) bar.hidden = true;
 }
 
 async function takeScreenshot() {
@@ -826,8 +873,11 @@ function init() {
     b.addEventListener('click', () => { state.mode = b.dataset.mode; applyLayout(); }));
   document.querySelectorAll('#tabbar button').forEach((b) =>
     b.addEventListener('click', () => { state.tab = b.dataset.mode; applyLayout(); }));
-  document.querySelectorAll('#rawMode button').forEach((b) =>
+  document.querySelectorAll('#rawMode button:not(#compareBtn)').forEach((b) =>
     b.addEventListener('click', () => setRawMode(b.dataset.raw)));
+  $('compareBtn').addEventListener('click', startCompare);
+  $('compareInput').addEventListener('change', onComparePicked);
+  $('compareBar').querySelector('.compare-stop').addEventListener('click', stopCompare);
   $('downloadBtn').addEventListener('click', downloadCurrent);
 
   // Viewport change must NOT rebuild the editor (would drop edits) — just relayout

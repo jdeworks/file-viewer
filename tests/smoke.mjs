@@ -1348,6 +1348,25 @@ try {
     await octx.close();
   }
 
+  // ── Two-file Compare ("Compare with…") ── pick a 2nd file → diff current ↔ other ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.csv' }).click();
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
+  const compareBtnShown = await page.$eval('#compareBtn', (e) => !e.closest('[hidden]'));
+  if (compareBtnShown) pass('compare button available for an editable type'); else fail('compare button hidden for csv');
+  // Feed the comparison file through the hidden input (Playwright sets files directly — no dialog).
+  await page.setInputFiles('#compareInput', new URL('../docs/examples/welcome.md', import.meta.url).pathname);
+  await page.waitForFunction(() => !document.getElementById('compareBar').hidden, { timeout: 8000 });
+  const compLabel = await page.$eval('#compareBar .compare-label', (e) => e.textContent);
+  if (/Comparing current/.test(compLabel) && /welcome\.md/i.test(compLabel)) pass('two-file compare: bar names the compared file'); else fail('compare label: ' + compLabel);
+  await page.waitForSelector('#editor .monaco-diff-editor', { timeout: 10000 });
+  pass('two-file compare: Monaco diff editor shown (current ↔ other)');
+  const falseDirty = await page.evaluate(() => window.__fv.hasUnsavedWork());
+  if (!falseDirty) pass('two-file compare: edit-tracking untouched (no false unsaved-work)'); else fail('compare created false unsaved work');
+  await page.click('#compareBar .compare-stop');
+  await page.waitForFunction(() => document.getElementById('compareBar').hidden, { timeout: 4000 });
+  pass('two-file compare: "Stop comparing" exits');
+
   // ── Easter-egg games (Konami → hub → Snake) ── lazy-loaded; one tiny listener at startup.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => { try { localStorage.removeItem('fv:games:unlocked'); } catch {} });

@@ -39,7 +39,9 @@
         <button data-raw="current" class="active" title="Current" aria-label="Current">≡</button>
         <button data-raw="diff" title="Diff" aria-label="Diff">⇄</button>
         <button data-raw="movediff" title="Move-aware diff" aria-label="Move-aware diff">⇅</button>
+        <button id="compareBtn" data-raw="compare" title="Compare with another file…" aria-label="Compare with another file">⧉</button>
       </div>
+      <input type="file" id="compareInput" hidden aria-hidden="true">
 
       <!-- View-mode switch (icons). Visible only when the type supports a preview. -->
       <div class="seg viewmode" id="viewMode" hidden role="tablist" aria-label="View mode">
@@ -115,7 +117,13 @@
         <button data-mode="preview">Preview</button>
       </div>
       <div class="panes" id="panes">
-        <div class="pane raw-pane" id="rawPane"><div id="editor" class="editor-host"></div></div>
+        <div class="pane raw-pane" id="rawPane">
+          <div id="compareBar" class="compare-bar" hidden>
+            <span class="compare-label"></span>
+            <button class="compare-stop" type="button">Stop comparing</button>
+          </div>
+          <div id="editor" class="editor-host"></div>
+        </div>
         <div class="split-divider" id="splitDivider" hidden role="separator" aria-orientation="vertical" aria-label="Drag to resize panes" title="Drag to resize"></div>
         <div class="pane preview-pane" id="previewPane"><div id="previewHost" class="preview-host"></div></div>
       </div>
