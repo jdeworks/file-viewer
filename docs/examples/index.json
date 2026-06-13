@@ -3,5 +3,6 @@
   { "label": "Sample.pdf", "file": "sample.pdf", "mime": "application/pdf" },
   { "label": "Sample.csv", "file": "sample.csv", "mime": "text/csv" },
   { "label": "Sample.xlsx", "file": "sample.xlsx", "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+  { "label": "Sample.docx", "file": "sample.docx", "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
   { "label": "Sample.txt", "file": "sample.txt", "mime": "text/plain" }
 ]

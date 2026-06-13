@@ -31,6 +31,7 @@ import markdownType from '../types/markdown/index.js';
 import pdfType from '../types/pdf/index.js';
 import csvType from '../types/csv/index.js';
 import xlsxType from '../types/xlsx/index.js';
+import docxType from '../types/docx/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -38,6 +39,7 @@ export const REGISTRY = [
   pdfType,
   csvType,
   xlsxType,
+  docxType,
   rawType,
 ];
 

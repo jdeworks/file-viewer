@@ -186,6 +186,17 @@ try {
   const xTables = await xf.$$eval('.sheet table', (els) => els.length);
   if (xTables === 2) pass('Excel: one table per sheet'); else fail('Excel tables: ' + xTables);
 
+  // ── Word module (WP19) ── mammoth -> sanitized HTML in the iframe.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.docx' }).click();
+  const dframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
+  const df = await dframe.contentFrame();
+  await df.waitForSelector('.docx-body h1', { timeout: 12000 });
+  const dh1 = await df.$eval('.docx-body h1', (e) => e.textContent);
+  if (/Hello, File Viewer/.test(dh1)) pass('Word: docx converted to HTML (h1)'); else fail('docx h1: ' + dh1);
+  const strong = await df.$$eval('.docx-body strong, .docx-body b', (els) => els.length);
+  if (strong > 0) pass('Word: formatting preserved (bold)'); else fail('no bold run in docx');
+
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
 } catch (e) {
