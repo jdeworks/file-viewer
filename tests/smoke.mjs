@@ -358,6 +358,14 @@ try {
   const mediaHasEditor = await page.$('#editor .monaco-editor');
   if (!mediaHasEditor) pass('media is preview-only (no raw editor)'); else fail('raw editor present for media');
 
+  // ── Binary file → hex dump in the read-only editor ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.bin' }).click();
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
+  const hexVal = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (/^00000000\s+([0-9a-f]{2} )+/m.test(hexVal)) pass('binary file rendered as hex dump (offset + hex columns)'); else fail('no hex dump: ' + hexVal.slice(0, 40));
+  if (/\|.*Hello.*\|/.test(hexVal)) pass('hex dump shows ASCII column (printable bytes)'); else fail('no ASCII column in hex dump');
+
   // ── Folder tree sidebar ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => {

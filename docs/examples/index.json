@@ -11,5 +11,6 @@
   { "label": "example.js", "file": "example.js", "mime": "text/javascript" },
   { "label": "example.svg", "file": "example.svg", "mime": "image/svg+xml" },
   { "label": "Sample.wav", "file": "sample.wav", "mime": "audio/wav" },
-  { "label": "Sample.txt", "file": "sample.txt", "mime": "text/plain" }
+  { "label": "Sample.txt", "file": "sample.txt", "mime": "text/plain" },
+  { "label": "Sample.bin", "file": "sample.bin", "mime": "application/octet-stream" }
 ]

@@ -59,6 +59,20 @@ export async function buildModel(type) {
   return model;
 }
 
+// Built models are cached per type for the session: the defaults/presets are fetched
+// once (small JSON, but no reason to re-fetch on every file click) and in-session tweaks
+// persist when you switch between files of the same type. Use getModel(), not buildModel().
+const modelCache = new Map();
+export async function getModel(type) {
+  let m = modelCache.get(type.id);
+  if (!m) { m = await buildModel(type); modelCache.set(type.id, m); }
+  return m;
+}
+// Warm every type's settings during idle so the first open of any type is instant.
+export function preloadModels(types) {
+  return Promise.allSettled(types.map((t) => getModel(t)));
+}
+
 export function monacoOptions(model) { return applyMonacoOptions(model.values); }
 
 export function persist(model, scope) {

@@ -9,8 +9,9 @@ import { wireIntake, intakeFromFile, LARGE_FILE_BYTES } from './intake.js';
 import { buildTree, renderTree } from './filetree.js';
 import { createRawView } from './rawview.js';
 import { loadMonaco } from './monaco-loader.js';
+import { hexDump } from './hexdump.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
-import { buildModel, monacoOptions, renderSettings, persistGlobalKey, syncModelPreset } from './settings.js';
+import { getModel, preloadModels, monacoOptions, renderSettings, persistGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
 
 const $ = (id) => document.getElementById(id);
@@ -134,7 +135,7 @@ function normalizePercents(values) {
 
 async function activateType(type) {
   state.type = type;
-  state.settingsModel = await buildModel(type);
+  state.settingsModel = await getModel(type);   // cached per type (no re-fetch per file)
   // Show workspace + relevant chrome.
   $('intake').hidden = true;
   $('workspace').hidden = false;
@@ -174,8 +175,9 @@ async function buildRawView() {
   // syntaxLanguage may be a function(intake) for types that pick the language per file (code).
   const sl = state.type.syntaxLanguage;
   const lang = state.intake.isBinary ? 'plaintext' : ((typeof sl === 'function' ? sl(state.intake) : sl) || 'plaintext');
+  // Binary files get a read-only hex dump (offset / hex / ASCII) instead of a placeholder.
   const text = state.intake.isBinary
-    ? '[binary file — ' + state.intake.size + ' bytes — no text preview]'
+    ? hexDump(state.intake.bytes)
     : (state.intake.text || '');
   state.rawview = await createRawView($('editor'), {
     originalText: text, currentText: text, language: lang,
@@ -567,9 +569,9 @@ function init() {
   // Startup stays light (Monaco isn't loaded just to show the intake screen). Warm it in
   // the background during idle so the FIRST file opens instantly instead of waiting on
   // the heaviest dependency. loadMonaco() caches its promise, so buildRawView reuses this.
-  const warmMonaco = () => loadMonaco().catch(() => {});
-  if ('requestIdleCallback' in window) requestIdleCallback(warmMonaco, { timeout: 3000 });
-  else setTimeout(warmMonaco, 1200);
+  const warm = () => { loadMonaco().catch(() => {}); preloadModels(REGISTRY); };
+  if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 3000 });
+  else setTimeout(warm, 1200);
 
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
   window.__fv = {
