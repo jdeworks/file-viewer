@@ -1,10 +1,11 @@
 name: CI
 
+# DISABLED for cost (user decision 2026-06-13): we validate locally before every push
+# (`scripts/check.sh` runs the exact same `node tests/movediff.test.mjs` + `node tests/smoke.mjs`),
+# so automatic CI on every push/PR just burns Actions minutes. Left as manual-only — trigger from
+# the Actions tab ("Run workflow") if ever needed. Re-enable auto runs by restoring push/PR below.
 on:
-  push:
-    branches: [dev, main]
-  pull_request:
-    branches: [dev, main]
+  workflow_dispatch:
 
 jobs:
   test:
