@@ -52,7 +52,7 @@ async function loadIntake(intake) {
   // Guard unsaved work — unless loadFolder already asked for this same action.
   if (state._skipDiscardGuard) state._skipDiscardGuard = false;
   else if (!confirmDiscard()) return;
-  if (intake.size > LARGE_FILE_BYTES) {
+  if (!intake.streamed && intake.size > LARGE_FILE_BYTES) {
     const mb = (intake.size / 1048576).toFixed(1);
     if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return;
   }

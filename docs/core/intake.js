@@ -3,6 +3,15 @@
 
 const TEXT_SNIFF_BYTES = 4096;     // how much we decode for textSample / detection
 export const LARGE_FILE_BYTES = 8 * 1024 * 1024;  // >8MB: warn before loading into Monaco
+const MEDIA_STREAM_BYTES = 8 * 1024 * 1024;       // media bigger than this is streamed, not read into RAM
+const MEDIA_HEAD_BYTES = 64 * 1024;               // header slice kept for detection of streamed media
+
+// Audio/video that the browser can stream straight off disk via a blob: URL — no need to read
+// the whole (possibly multi-GB) file into memory. Recognized by extension or MIME.
+const MEDIA_EXT = /\.(mp3|wav|m4a|m4b|aac|oga|ogg|opus|flac|weba|mp4|m4v|webm|ogv|mov|mkv)$/i;
+function looksLikeMedia(file) {
+  return MEDIA_EXT.test(file.name || '') || /^(audio|video)\//.test(file.type || '');
+}
 
 // Decode bytes as UTF-8, stripping a BOM if present. Returns null if it looks binary.
 function decodeText(bytes) {
@@ -20,28 +29,38 @@ function decodeText(bytes) {
   }
 }
 
-function buildIntake({ filename, mimeType, bytes, isPaste, lastModified }) {
-  const text = decodeText(bytes);
+function buildIntake({ filename, mimeType, bytes, isPaste, lastModified, file = null, size, streamed = false }) {
+  const text = streamed ? null : decodeText(bytes);
   return {
     filename: filename || (isPaste ? 'pasted' : 'untitled'),
     mimeType: mimeType || '',
-    bytes,
+    bytes,                                  // for streamed media this is only a header slice
     text,                                   // null => binary
     textSample: text ? text.slice(0, TEXT_SNIFF_BYTES) : '',
     isBinary: text === null,
     isPaste: !!isPaste,
-    size: bytes.length,
+    size: size == null ? bytes.length : size,
     lastModified: lastModified || null,
+    file,                                   // original File handle (when from disk) — streamable
+    streamed,                               // true => bytes is a header only; use `file` for content
   };
 }
 
 export async function intakeFromFile(file) {
+  // Big media (GB audiobooks/video) must NOT be read into memory. Keep the File handle — the
+  // browser streams playback straight off disk via a blob: URL — and read only a small header
+  // for type detection. Everything else is read in full as before.
+  if (looksLikeMedia(file) && file.size > MEDIA_STREAM_BYTES) {
+    const head = new Uint8Array(await file.slice(0, MEDIA_HEAD_BYTES).arrayBuffer());
+    return buildIntake({
+      filename: file.name, mimeType: file.type, bytes: head, size: file.size,
+      file, streamed: true, lastModified: file.lastModified || null,
+    });
+  }
   const buf = new Uint8Array(await file.arrayBuffer());
   return buildIntake({
-    filename: file.name,
-    mimeType: file.type,
-    bytes: buf,
-    lastModified: file.lastModified || null,
+    filename: file.name, mimeType: file.type, bytes: buf, size: file.size,
+    file, lastModified: file.lastModified || null,
   });
 }
 

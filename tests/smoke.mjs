@@ -520,6 +520,13 @@ try {
   if (mediaType === 'media') pass('.wav detected as Audio / Video'); else fail('media type: ' + mediaType);
   const audioSrc = await page.$eval('#previewHost audio.media-view', (e) => e.getAttribute('src') || '');
   if (audioSrc.startsWith('blob:')) pass('audio served from in-page blob URL (streamed, no size ceiling)'); else fail('audio src: ' + audioSrc.slice(0, 30));
+  // Streaming: the File handle is retained on the intake (blob built from the File = disk-backed,
+  // never reads a multi-GB file into memory).
+  const hasFileHandle = await page.evaluate(() => !!window.__fv.state.intake.file);
+  if (hasFileHandle) pass('media keeps the File handle (streams off disk, no full read into memory)'); else fail('no File handle on media intake');
+  // Sleep timer control present (long-form listening).
+  const sleepOpts = await page.$$eval('#previewHost .media-sleep select option', (els) => els.map((e) => e.textContent));
+  if (sleepOpts.includes('Off') && sleepOpts.includes('30 min')) pass('audio: sleep timer control present (Off … 60 min)'); else fail('sleep options: ' + sleepOpts.join(','));
   // No iframe for media — it renders directly in the pane (outside the sandbox).
   const mediaIframe = await page.$('#previewHost iframe.fv-preview-frame');
   if (!mediaIframe) pass('media renders outside the sandboxed iframe'); else fail('media used an iframe');
