@@ -1157,6 +1157,19 @@ try {
   const navPath = await page.$eval('#fileTree .ft-file.active', (e) => e.dataset.path).catch(() => null);
   if (navPath && navPath !== firstPath) pass('arrow-key navigation moves + opens next file (' + navPath + ')'); else fail('arrow nav active: ' + navPath + ' (first=' + firstPath + ')');
 
+  // ── Huge-folder render cap ── a folder with a very high file count is capped (not frozen) + noted.
+  await page.evaluate(() => {
+    // 20010 tiny files (over the 20000 cap). File bodies are 1 char — cheap; we're testing the cap.
+    const entries = [];
+    for (let i = 0; i < 20010; i++) entries.push({ file: new File(['x'], 'f' + i + '.txt', { type: '' }), path: 'big/f' + i + '.txt' });
+    window.__fv.state._skipDiscardGuard = true;
+    window.__fv.loadFolder(entries);
+  });
+  await page.waitForFunction(() => !document.getElementById('ftNotice').hidden, { timeout: 15000 });
+  const cappedCount = await page.evaluate(() => window.__fv.state.treeEntries.length);
+  const capNotice = await page.$eval('#ftNotice', (e) => e.textContent);
+  if (cappedCount === 20000 && /20,000 of 20,010/.test(capNotice)) pass('huge folder render-capped + noted (' + capNotice.trim() + ')'); else fail('cap: count=' + cappedCount + ' notice=' + capNotice);
+
   // ── Git repository browser (in-browser .git reader) ──
   {
     const sha = 'b'.repeat(40);

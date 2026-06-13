@@ -24,6 +24,7 @@ import { previewStyle } from './settings-schema.js';
 import { initGames } from '../games/launcher.js';
 
 const $ = (id) => document.getElementById(id);
+const MAX_TREE_FILES = 20000;   // cap rendered tree rows so a huge file count can't freeze the tab
 const state = {
   intake: null,
   type: null,
@@ -92,7 +93,18 @@ async function loadFolder(entries) {
   const git = findGitDir(entries);
   state.repoEntries = git ? entries : null;
   state.repoHandle = null;
-  const display = git ? entries.filter((e) => !isGitInternal(e.path)) : entries;
+  let display = git ? entries.filter((e) => !isGitInternal(e.path)) : entries;
+  // Tree render cap: the tree builds one DOM row per file, so an enormous file COUNT would freeze
+  // the tab. Cap the rendered set and say so (the data is all still on disk; opening a file is
+  // unaffected). NOTE: a future virtualized tree would lift this — see [[scale-limits]].
+  const notice = $('ftNotice');
+  if (display.length > MAX_TREE_FILES) {
+    notice.textContent = `Large folder — showing the first ${MAX_TREE_FILES.toLocaleString()} of ${display.length.toLocaleString()} files.`;
+    notice.hidden = false;
+    display = display.slice(0, MAX_TREE_FILES);
+  } else {
+    notice.hidden = true; notice.textContent = '';
+  }
   state.treeEntries = display;                 // kept for arrow-key navigation lookups
   const rootName = git ? git.repoName : (display[0]?.path.split('/')[0] || 'Folder');
   $('ftRoot').textContent = rootName;
