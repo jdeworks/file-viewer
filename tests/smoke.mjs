@@ -526,6 +526,34 @@ try {
   const mediaHasEditor = await page.$('#editor .monaco-editor');
   if (!mediaHasEditor) pass('media is preview-only (no raw editor)'); else fail('raw editor present for media');
 
+  // ── EPUB e-book (hand-rolled reader) ── unzip + spine + TOC, rendered in the pane. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.epub' }).click();
+  await page.waitForSelector('#previewHost .epub-doc', { timeout: 15000 });
+  const epubType = await page.$eval('#typeSelect', (s) => s.value);
+  if (epubType === 'epub') pass('.epub detected as E-book (outscores Archive)'); else fail('epub type: ' + epubType);
+  const epubTitle = await page.$eval('#previewHost .epub-title', (e) => e.textContent);
+  if (/File Viewer Sampler/.test(epubTitle)) pass('EPUB title parsed from OPF metadata'); else fail('epub title: ' + epubTitle);
+  const tocCount = await page.$$eval('#previewHost .epub-toc-item', (els) => els.length);
+  if (tocCount === 3) pass('EPUB table of contents built (' + tocCount + ' entries)'); else fail('epub toc entries: ' + tocCount);
+  // First chapter rendered, with its embedded SVG image rewritten to an in-book blob URL.
+  const epubH1 = await page.$eval('#previewHost .epub-content h1', (e) => e.textContent).catch(() => '');
+  if (/A Beginning/.test(epubH1)) pass('EPUB first chapter rendered'); else fail('epub chapter h1: ' + epubH1);
+  const epubImg = await page.$eval('#previewHost .epub-content img', (e) => e.getAttribute('src') || 'none').catch(() => 'none');
+  if (epubImg.startsWith('blob:')) pass('EPUB embedded image rewritten to in-book blob URL (zero off-origin)'); else fail('epub img src: ' + epubImg);
+  // Navigate to chapter 2, then reopen the book → resumes at chapter 2 (per-file persistence).
+  await page.click('#previewHost .epub-next');
+  await page.waitForFunction(() => /The Middle/.test(document.querySelector('#previewHost .epub-content h1')?.textContent || ''), { timeout: 8000 });
+  pass('EPUB next-chapter navigation works');
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.epub' }).click();
+  await page.waitForSelector('#previewHost .epub-content', { timeout: 15000 });
+  const resumedH1 = await page.waitForFunction(() => {
+    const t = document.querySelector('#previewHost .epub-content h1')?.textContent || '';
+    return /The Middle/.test(t) ? t : false;
+  }, { timeout: 8000 }).then(() => true).catch(() => false);
+  if (resumedH1) pass('EPUB resumes at the last-read chapter on reopen (persistence)'); else fail('epub did not resume at chapter 2');
+
   // ── Binary file → hex dump in the read-only editor ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.bin' }).click();

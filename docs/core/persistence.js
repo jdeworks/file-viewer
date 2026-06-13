@@ -10,14 +10,14 @@ const PREFIX = 'fv:state:';
 const INDEX = 'fv:state:index';      // LRU-ordered list of fingerprints (most-recent last)
 const MAX_ENTRIES = 120;             // cap remembered files so storage stays bounded
 
-// A stable-enough identity for "the same file again". Name+size collides rarely; lastModified
-// (when the File carried it) makes it sharper. Intentionally NOT a content hash — we want this
-// to be instant and to survive trivial in-app edits to the *current* copy.
+// A stable-enough identity for "the same file again": name + size. Intentionally NOT a content
+// hash (we want this instant and to survive trivial in-app edits to the current copy) and NOT
+// lastModified — a File reconstructed from bytes (e.g. an example, or a re-read) gets a fresh
+// lastModified, which would defeat resume. Name+size collides rarely in practice.
 export function fingerprint(intake) {
   if (!intake) return '';
   const name = intake.filename || 'untitled';
-  const lm = intake.lastModified ? ':' + intake.lastModified : '';
-  return `${name}:${intake.size || 0}${lm}`;
+  return `${name}:${intake.size || 0}`;
 }
 
 const keyFor = (fp) => PREFIX + fp;

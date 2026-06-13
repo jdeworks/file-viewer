@@ -44,6 +44,7 @@ import icsType from '../types/ics/index.js';
 import yamlType from '../types/yaml/index.js';
 import tomlType from '../types/toml/index.js';
 import zipType from '../types/zip/index.js';
+import epubType from '../types/epub/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -62,6 +63,7 @@ export const REGISTRY = [
   jsonType,
   imageType,
   mediaType,
+  epubType,
   zipType,
   codeType,
   rawType,

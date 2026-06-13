@@ -173,7 +173,9 @@ body {
 .split-divider::before { content: ""; position: absolute; inset: 0 -5px; }   /* wider grab area */
 .editor-host { position: absolute; inset: 0; }
 .preview-host { position: absolute; inset: 0; overflow: auto; background: var(--bg); }
-.fv-preview-frame { width: 100%; height: 100%; border: 0; background: #fff; }
+/* display:block kills the inline-iframe baseline gap that otherwise pushes content a few px
+   past 100% and gives .preview-host a spurious scrollbar (e.g. on the image viewer). */
+.fv-preview-frame { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
 
 /* Known-file enhancement chip (Layer 3 indicator + revert) */
 .enhance-chip { display: flex; align-items: center; gap: 10px; padding: 5px 12px; background: var(--bg-2);
@@ -214,6 +216,36 @@ body {
 .preview-host .media-video .media-view { max-width: 100%; max-height: 100%; border-radius: 8px;
   box-shadow: 0 1px 12px rgba(0,0,0,.35); background: #000; }
 .preview-host .media-note { color: var(--fg-2); }
+
+/* EPUB reader (hand-rolled): sidebar TOC + paged chapter content, rendered in the parent
+   pane (blob: images need a real origin). Sanitized before it reaches the DOM. */
+.preview-host .epub-doc { position: absolute; inset: 0; display: flex; background: var(--bg); }
+.epub-side { width: 240px; flex: 0 0 240px; border-right: 1px solid var(--border); background: var(--bg-2);
+  display: flex; flex-direction: column; min-height: 0; }
+.epub-book { padding: 14px 14px 10px; border-bottom: 1px solid var(--border); }
+.epub-title { font-weight: 600; font-size: 14px; line-height: 1.3; }
+.epub-author { font-size: 12px; color: var(--fg-2); margin-top: 4px; }
+.epub-toc { overflow: auto; padding: 6px 0; }
+.epub-toc-item { display: block; padding: 7px 14px; font-size: 13px; color: var(--fg-2);
+  text-decoration: none; border-left: 2px solid transparent; cursor: pointer; }
+.epub-toc-item:hover { background: var(--bg); color: var(--fg); }
+.epub-toc-item.active { color: var(--fg); border-left-color: var(--accent); background: var(--bg); }
+.epub-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.epub-bar { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--border);
+  background: var(--bg-2); }
+.epub-bar button { font-size: 13px; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--fg); cursor: pointer; }
+.epub-pos { font-size: 12px; color: var(--fg-2); margin-left: auto; }
+.epub-content { flex: 1; overflow: auto; padding: 28px clamp(16px, 8vw, 80px); line-height: 1.65;
+  font-size: 17px; max-width: 100%; }
+.epub-content :where(img, image, svg) { max-width: 100%; height: auto; }
+.epub-content h1, .epub-content h2, .epub-content h3 { line-height: 1.25; }
+.epub-content a { color: var(--accent); }
+.epub-empty, .epub-content .epub-empty { color: var(--fg-2); }
+@media (max-width: 760px) {
+  .epub-side { width: 150px; flex-basis: 150px; }
+  .epub-content { font-size: 16px; padding: 20px 16px; }
+}
 
 /* Magic-selector highlight inside Monaco (preview hover/click -> raw line). */
 .fv-line-hl { background: rgba(76, 154, 255, .18); }
