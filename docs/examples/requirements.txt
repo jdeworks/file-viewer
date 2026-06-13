@@ -1,0 +1,15 @@
+# Web service dependencies
+Flask==3.0.0
+requests>=2.31,<3
+SQLAlchemy~=2.0
+gunicorn==21.2.0
+celery[redis]==5.3.4
+python-dotenv
+
+# Dev / test tools
+pytest==7.4.3
+black
+
+# Pull in shared constraints
+-r constraints.txt
+--index-url https://pypi.org/simple

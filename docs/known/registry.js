@@ -18,8 +18,13 @@ import tsconfig from './tsconfig/index.js';
 import dockerfile from './dockerfile/index.js';
 import gitignore from './gitignore/index.js';
 import dockerCompose from './docker-compose/index.js';
+import requirementsTxt from './requirements-txt/index.js';
+import goMod from './go-mod/index.js';
+import composerJson from './composer-json/index.js';
+import gemfile from './gemfile/index.js';
 
-export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose];
+export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
+  requirementsTxt, goMod, composerJson, gemfile];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
