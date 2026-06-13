@@ -246,6 +246,16 @@ body {
 .meta-row .k { color: var(--fg-2); }
 .meta-row .v { text-align: right; word-break: break-word; }
 
+/* Offline-cache status pill */
+.offline-status { position: fixed; left: 12px; bottom: 12px; z-index: 45; display: flex; align-items: center; gap: 8px;
+  background: var(--bg-2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px;
+  font-size: 12px; color: var(--fg-2); box-shadow: 0 4px 16px rgba(0,0,0,.2); max-width: 86vw; }
+.offline-status.ready { color: #2ea043; border-color: #2ea04366; }
+.off-check { color: #2ea043; font-weight: 700; }
+.off-spin { width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%; display: inline-block; animation: off-spin .7s linear infinite; }
+@keyframes off-spin { to { transform: rotate(360deg); } }
+
 /* Toast */
 .toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);

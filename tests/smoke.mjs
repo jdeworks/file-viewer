@@ -4,7 +4,7 @@
 // selector wires preview->raw, and ZERO off-origin requests are made (trust guarantee).
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { extname, join, normalize } from 'node:path';
+import { extname, join, normalize, relative } from 'node:path';
 import { createRequire } from 'node:module';
 import zlib from 'node:zlib';
 
@@ -42,6 +42,26 @@ const server = http.createServer(async (req, res) => {
 
 const fail = (m) => { console.error('✗ ' + m); process.exitCode = 1; };
 const pass = (m) => console.log('✓ ' + m);
+
+// Asset manifest must list every static file (so the offline precache is complete).
+{
+  const { readdir, stat } = await import('node:fs/promises');
+  const exclude = new Set(['asset-manifest.json', 'sw.js']);
+  const onDisk = [];
+  await (async function walk(dir) {
+    for (const name of await readdir(dir)) {
+      const full = join(dir, name);
+      if ((await stat(full)).isDirectory()) await walk(full);
+      else { const p = relative(ROOT, full).split('\\').join('/'); if (!exclude.has(p)) onDisk.push(p); }
+    }
+  })(ROOT);
+  const manifest = JSON.parse(await readFile(join(ROOT, 'asset-manifest.json'), 'utf8'));
+  const listed = new Set(manifest.assets);
+  const missing = onDisk.filter((p) => !listed.has(p));
+  const extra = manifest.assets.filter((p) => !onDisk.includes(p));
+  if (!missing.length && !extra.length) pass('asset-manifest covers every file (' + manifest.assets.length + ') — offline precache complete');
+  else fail('asset-manifest stale (run node scripts/gen-asset-manifest.mjs). missing=' + missing.join(',') + ' extra=' + extra.join(','));
+}
 
 await new Promise((r) => server.listen(0, r));
 const port = server.address().port;
@@ -529,6 +549,33 @@ try {
   const barH = await mpage.$eval('.topbar', (e) => e.clientHeight);
   if (barH <= 60) pass('mobile: topbar stays single-row (' + barH + 'px)'); else fail('mobile topbar height: ' + barH);
   await mctx.close();
+
+  // ── Service worker + offline ── precache, then reload with the network disabled.
+  {
+    const octx = await browser.newContext();
+    const op = await octx.newPage();
+    const oErr = [];
+    op.on('pageerror', (e) => oErr.push(e.message));
+    await op.goto(origin, { waitUntil: 'networkidle' });
+    await op.waitForSelector('#offlineStatus.ready', { timeout: 90000 });
+    pass('service worker precached all assets (status: Available offline)');
+    const cachedMonaco = await op.evaluate(async () => {
+      const k = (await caches.keys()).find((x) => x === 'file-viewer');
+      return k ? !!(await (await caches.open(k)).match('vendor/monaco/vs/loader.js')) : false;
+    });
+    if (cachedMonaco) pass('offline cache holds vendored assets (Monaco)'); else fail('Monaco not in cache');
+    // Go offline, hard-reload: the app must still load and render from cache.
+    await octx.setOffline(true);
+    await op.reload({ waitUntil: 'domcontentloaded' });
+    await op.getByRole('button', { name: 'Welcome.md' }).click();
+    await op.waitForSelector('.monaco-editor', { timeout: 30000 });
+    const offl = await op.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
+    await (await offl.contentFrame()).waitForSelector('h1', { timeout: 10000 });
+    pass('app loads + renders OFFLINE (reload with network disabled)');
+    await octx.setOffline(false);
+    if (oErr.length === 0) pass('no errors during offline run'); else fail('offline errors:\n  ' + oErr.join('\n  '));
+    await octx.close();
+  }
 
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
