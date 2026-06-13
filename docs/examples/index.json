@@ -24,6 +24,7 @@
   { "label": "Sample.geojson", "file": "sample.geojson", "mime": "application/geo+json", "category": "Data" },
   { "label": "example.svg", "file": "example.svg", "mime": "image/svg+xml", "category": "Media" },
   { "label": "Sample.wav", "file": "sample.wav", "mime": "audio/wav", "category": "Media" },
+  { "label": "Sample.mp3", "file": "sample.mp3", "mime": "audio/mpeg", "category": "Media" },
   { "label": "Sample.ttf", "file": "sample.ttf", "mime": "font/ttf", "category": "Media" },
   { "label": "Sample.bin", "file": "sample.bin", "mime": "application/octet-stream", "category": "Archive & Binary" },
   { "label": "Sample.zip", "file": "sample.zip", "mime": "application/zip", "category": "Archive & Binary" }

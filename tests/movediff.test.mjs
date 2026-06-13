@@ -1,5 +1,7 @@
-// Unit tests for the move-aware diff algorithm (WP15). Pure logic, no browser.
+// Unit tests for the move-aware diff algorithm (WP15) + metadata parsers. Pure logic, no browser.
 import { computeMoveDiff, wordDiff } from '../docs/core/movediff.js';
+import { parseId3 } from '../docs/types/media/id3.js';
+import { parseExif } from '../docs/types/image/exif.js';
 
 let failed = 0;
 const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!cond) failed++; };
@@ -70,6 +72,43 @@ const P3 = 'A third paragraph at the bottom.';
   const a = 'alpha beta gamma delta', b = 'alpha BETA gamma omega';
   const wd = wordDiff(a, b);
   ok(wd.a.map((r) => r.text).join('') === a && wd.b.map((r) => r.text).join('') === b, 'word diff is lossless on both sides');
+}
+
+// 8. ID3v2.3 tag parsing (title/artist/album).
+{
+  const enc = new TextEncoder();
+  const frame = (id, text) => {
+    const data = new Uint8Array([0x03, ...enc.encode(text)]);   // 0x03 = UTF-8
+    const s = data.length;
+    return [...enc.encode(id), (s >>> 24) & 255, (s >>> 16) & 255, (s >>> 8) & 255, s & 255, 0, 0, ...data];
+  };
+  const body = [...frame('TIT2', 'Demo Title'), ...frame('TPE1', 'Demo Artist'), ...frame('TALB', 'Demo Album')];
+  const t = body.length;
+  const tag = new Uint8Array([0x49, 0x44, 0x33, 0x03, 0x00, 0x00,
+    (t >>> 21) & 127, (t >>> 14) & 127, (t >>> 7) & 127, t & 127, ...body]);
+  const r = parseId3(tag);
+  ok(r && r.title === 'Demo Title' && r.artist === 'Demo Artist' && r.album === 'Demo Album', 'ID3v2.3: title/artist/album parsed');
+  ok(parseId3(new Uint8Array([1, 2, 3, 4, 5])) === null, 'ID3: non-ID3 bytes -> null');
+}
+
+// 9. EXIF parsing from a hand-built JPEG (Make tag).
+{
+  const tiff = [
+    0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00,                 // II, 42, IFD0 @ 8
+    0x01, 0x00,                                                     // 1 entry
+    0x0F, 0x01, 0x02, 0x00, 0x08, 0x00, 0x00, 0x00, 0x1A, 0x00, 0x00, 0x00, // Make, ASCII, len 8, off 26
+    0x00, 0x00, 0x00, 0x00,                                        // next IFD = 0
+    ...[...'TestCam'].map((c) => c.charCodeAt(0)), 0x00,           // string @ 26
+  ];
+  const app1len = 2 + 6 + tiff.length;
+  const jpeg = new Uint8Array([
+    0xFF, 0xD8,
+    0xFF, 0xE1, (app1len >> 8) & 255, app1len & 255, 0x45, 0x78, 0x69, 0x66, 0x00, 0x00, ...tiff,
+    0xFF, 0xD9,
+  ]);
+  const ex = parseExif(jpeg);
+  ok(ex && ex.make === 'TestCam', 'EXIF: Make tag read from JPEG APP1');
+  ok(parseExif(new Uint8Array([0xFF, 0xD8, 0xFF, 0xD9])) === null, 'EXIF: JPEG without EXIF -> null');
 }
 
 console.log(failed ? `\nMOVEDIFF FAILED (${failed})` : '\nMOVEDIFF PASSED');

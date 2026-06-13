@@ -29,7 +29,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar', '.yaml': 'application/yaml', '.toml': 'application/toml',
   '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf',
   '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain',
-  '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.ttf': 'font/ttf' };
+  '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -493,6 +493,17 @@ try {
   const geoPolys = await geof.$$eval('.geo-svg .geo-poly', (els) => els.length);
   const geoPts = await geof.$$eval('.geo-svg .geo-pt', (els) => els.length);
   if (geoLines >= 1 && geoPolys >= 1 && geoPts >= 2) pass('GeoJSON drawn as SVG (' + geoLines + ' line, ' + geoPolys + ' polygon, ' + geoPts + ' points)'); else fail('geo svg: line=' + geoLines + ' poly=' + geoPolys + ' pt=' + geoPts);
+
+  // ── ID3 metadata ── an MP3's tags surface in the info drawer. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.mp3' }).click();
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaDrawer:not([hidden]) #metaBody', { timeout: 6000 });
+  await page.waitForFunction(() => /Demo Artist/.test(document.querySelector('#metaBody')?.textContent || ''), { timeout: 6000 }).catch(() => {});
+  const metaText = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Demo Artist/.test(metaText) && /Demo Track/.test(metaText)) pass('ID3 tags surfaced in metadata (artist + title)'); else fail('id3 meta: ' + metaText.replace(/\s+/g, ' ').slice(0, 100));
+  await page.click('#metaDrawer [data-close]').catch(() => {});
 
   // ── Font specimen ── load the font via FontFace + render sample text in the parent pane. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
