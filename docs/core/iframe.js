@@ -102,7 +102,16 @@ const BASE_CSS = `
   .nb-img{max-width:100%;height:auto;margin:6px 0;display:block;}
   .nb-rich{margin:6px 0;overflow:auto;}
   .nb-empty{color:#888;}
-  @media (max-width:620px){.nb-prompt{display:none;}.nb-out{margin-left:0;}.nb-code{padding-left:8px;}}`;
+  @media (max-width:620px){.nb-prompt{display:none;}.nb-out{margin-left:0;}.nb-code{padding-left:8px;}}
+  .eml-head{border-collapse:collapse;font:13px/1.5 system-ui,sans-serif;margin:0 0 6px;}
+  .eml-head th{text-align:right;vertical-align:top;color:#888;font-weight:600;padding:2px 10px 2px 0;white-space:nowrap;}
+  .eml-head td{padding:2px 0;word-break:break-word;}
+  .eml-att{font:12px system-ui,sans-serif;color:#666;margin:4px 0;}
+  body.fv-dark .eml-att{color:#aaa;}
+  .eml-sep{border:0;border-top:1px solid #0002;margin:12px 0;}
+  body.fv-dark .eml-sep{border-top-color:#fff2;}
+  .eml-plain{white-space:pre-wrap;word-break:break-word;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .eml-html{overflow:auto;}`;
 
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';

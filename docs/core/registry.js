@@ -39,6 +39,7 @@ import imageType from '../types/image/index.js';
 import mediaType from '../types/media/index.js';
 import codeType from '../types/code/index.js';
 import htmlType from '../types/html/index.js';
+import emlType from '../types/eml/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -49,6 +50,7 @@ export const REGISTRY = [
   docxType,
   pptxType,
   htmlType,
+  emlType,
   ipynbType,
   jsonType,
   imageType,

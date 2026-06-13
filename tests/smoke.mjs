@@ -26,7 +26,7 @@ const chromium = loadChromium();
 const ROOT = new URL('../docs/', import.meta.url).pathname;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.css': 'text/css', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain',
-  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml' };
+  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -312,6 +312,19 @@ try {
   await jf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   const jkeys = await jf.$$eval('.json-tree .j-key', (els) => els.length);
   if (jkeys > 0) pass('JSON rendered as collapsible tree (' + jkeys + ' keys)'); else fail('no json keys');
+
+  // ── Email (.eml) ── parsed MIME: header card + sanitized HTML body, encoded subject decoded.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.eml' }).click();
+  const eframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const ef = await eframe.contentFrame();
+  await ef.waitForSelector('.eml-head', { timeout: 8000 });
+  const emlType2 = await page.$eval('#typeSelect', (s) => s.value);
+  if (emlType2 === 'eml') pass('.eml detected as Email'); else fail('eml type: ' + emlType2);
+  const emlHead = await ef.$eval('.eml-head', (e) => e.textContent);
+  if (/Hello from File Viewer/.test(emlHead) && /alice@example\.com/.test(emlHead)) pass('email header card (encoded subject decoded + From)'); else fail('eml head: ' + emlHead.slice(0, 80));
+  const emlBody = await ef.$eval('.eml-html', (e) => e.innerHTML);
+  if (/<b>File Viewer<\/b>/.test(emlBody) && !/<script/i.test(emlBody)) pass('email HTML body rendered + sanitized (script stripped)'); else fail('eml body: ' + emlBody.slice(0, 80));
 
   // ── Jupyter Notebook (.ipynb) ── markdown + code cells + saved outputs, sanitized.
   await page.goto(origin, { waitUntil: 'networkidle' });
