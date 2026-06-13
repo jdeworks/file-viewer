@@ -38,6 +38,10 @@ cp node_modules/xlsx/dist/xlsx.full.min.js "$VENDOR/xlsx/xlsx.full.min.js"
 # --- mammoth (DOCX -> HTML, browser min). ---
 cp node_modules/mammoth/mammoth.browser.min.js "$VENDOR/mammoth/mammoth.browser.min.js"
 
+# --- js-yaml (YAML parse, UMD min). Loaded only for .yaml/.yml. ---
+mkdir -p "$VENDOR/js-yaml"
+cp node_modules/js-yaml/dist/js-yaml.min.js "$VENDOR/js-yaml/js-yaml.min.js"
+
 # --- PPTX viewer stack (pptxviewjs + peers JSZip, Chart.js). Loaded only for .pptx. ---
 cp node_modules/jszip/dist/jszip.min.js              "$VENDOR/jszip/jszip.min.js"
 cp node_modules/chart.js/dist/chart.umd.js           "$VENDOR/chartjs/chart.umd.js"

@@ -85,6 +85,8 @@ const BASE_CSS = `
   .j-bool{color:#8250df;} body.fv-dark .j-bool{color:#d2a8ff;}
   .j-null{color:#888;} .j-punc{color:#888;} .j-count{color:#aaa;font-size:11px;margin-left:6px;}
   .json-error{font-family:system-ui,sans-serif;color:#d23b3b;padding:14px;border:1px solid #d23b3b55;border-radius:8px;}
+  .yaml-doc-sep{font:600 11px system-ui,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:#888;margin:14px 0 6px;border-top:1px solid #8883;padding-top:8px;}
+  .yaml-doc-sep:first-child{border-top:0;margin-top:0;}
   .img-doc{display:flex;justify-content:center;align-items:flex-start;}
   .img-view,.img-doc svg{max-width:100%;height:auto;}
   .nb-notebook{max-width:100%;}

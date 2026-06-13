@@ -26,7 +26,7 @@ const chromium = loadChromium();
 const ROOT = new URL('../docs/', import.meta.url).pathname;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.css': 'text/css', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain',
-  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar' };
+  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar', '.yaml': 'application/yaml' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -365,6 +365,21 @@ try {
   const changedKeys = await page.$$eval('.jsondiff .jd-changed > .jd-key', (els) => els.map((e) => e.textContent));
   if (changedKeys.includes('mobileFirst') && !changedKeys.includes('private') && !changedKeys.includes('name')) pass('JSON key diff: value change flagged, reordered keys ignored'); else fail('jd changed keys: ' + changedKeys.join(','));
   await page.click('#rawMode button[data-raw="current"]');
+
+  // ── YAML ── parse with js-yaml, render as a collapsible tree (reuses JSON tree styling).
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.yaml' }).click();
+  const yframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const yf = await yframe.contentFrame();
+  await yf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+  const yType = await page.$eval('#typeSelect', (s) => s.value);
+  if (yType === 'yaml') pass('.yaml detected as YAML'); else fail('yaml type: ' + yType);
+  const yKeys = await yf.$$eval('.json-tree .j-key', (els) => els.map((e) => e.textContent));
+  if (yKeys.includes('mobileFirst') && yKeys.includes('trust')) pass('YAML rendered as tree (' + yKeys.length + ' keys)'); else fail('yaml keys: ' + yKeys.join(','));
+  const yBool = await yf.$$eval('.json-tree .j-bool', (els) => els.length);
+  if (yBool > 0) pass('YAML scalar types preserved (booleans rendered)'); else fail('no yaml booleans');
+  const yamlHasEditor = await page.$('#editor .monaco-editor');
+  if (yamlHasEditor) pass('YAML has raw editor (editable text)'); else fail('YAML missing raw editor');
 
   // ── Calendar (.ics) ── parse iCalendar, render events chronologically.
   await page.goto(origin, { waitUntil: 'networkidle' });

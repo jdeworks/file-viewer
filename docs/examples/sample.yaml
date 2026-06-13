@@ -1,0 +1,21 @@
+# Sample YAML — rendered as a collapsible tree
+name: file-viewer
+mobileFirst: true
+trust:
+  server: false
+  tracking: false
+  cdn: false
+types:
+  - markdown
+  - pdf
+  - yaml
+  - json
+server:
+  port: 8000
+  hosts:
+    - localhost
+    - 0.0.0.0
+nested:
+  deep:
+    value: 42
+    enabled: true

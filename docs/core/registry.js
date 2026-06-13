@@ -41,6 +41,7 @@ import codeType from '../types/code/index.js';
 import htmlType from '../types/html/index.js';
 import emlType from '../types/eml/index.js';
 import icsType from '../types/ics/index.js';
+import yamlType from '../types/yaml/index.js';
 import zipType from '../types/zip/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
@@ -54,6 +55,7 @@ export const REGISTRY = [
   htmlType,
   emlType,
   icsType,
+  yamlType,
   ipynbType,
   jsonType,
   imageType,
