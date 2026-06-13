@@ -26,7 +26,7 @@ const chromium = loadChromium();
 const ROOT = new URL('../docs/', import.meta.url).pathname;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.css': 'text/css', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain',
-  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip' };
+  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -332,6 +332,19 @@ try {
   await jf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   const jkeys = await jf.$$eval('.json-tree .j-key', (els) => els.length);
   if (jkeys > 0) pass('JSON rendered as collapsible tree (' + jkeys + ' keys)'); else fail('no json keys');
+
+  // ── Calendar (.ics) ── parse iCalendar, render events chronologically.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.ics' }).click();
+  const icframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const icf = await icframe.contentFrame();
+  await icf.waitForSelector('.ics-event', { timeout: 8000 });
+  const icsType2 = await page.$eval('#typeSelect', (s) => s.value);
+  if (icsType2 === 'ics') pass('.ics detected as Calendar'); else fail('ics type: ' + icsType2);
+  const evTitles = await icf.$$eval('.ics-event .ics-title', (els) => els.map((e) => e.textContent));
+  if (evTitles.length === 3 && evTitles[0] === 'Project kickoff') pass('calendar events parsed + sorted (' + evTitles.length + ')'); else fail('ics events: ' + evTitles.join(','));
+  const rrule = await icf.$eval('.ics-rrule', (e) => e.textContent).catch(() => '');
+  if (/weekly/i.test(rrule)) pass('recurrence rule shown (' + rrule.trim() + ')'); else fail('ics rrule: ' + rrule);
 
   // ── Archive (.zip) ── list entries from the central directory (no extraction).
   await page.goto(origin, { waitUntil: 'networkidle' });

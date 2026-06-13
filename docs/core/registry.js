@@ -40,6 +40,7 @@ import mediaType from '../types/media/index.js';
 import codeType from '../types/code/index.js';
 import htmlType from '../types/html/index.js';
 import emlType from '../types/eml/index.js';
+import icsType from '../types/ics/index.js';
 import zipType from '../types/zip/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
@@ -52,6 +53,7 @@ export const REGISTRY = [
   pptxType,
   htmlType,
   emlType,
+  icsType,
   ipynbType,
   jsonType,
   imageType,

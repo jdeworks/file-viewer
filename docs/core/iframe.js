@@ -115,7 +115,16 @@ const BASE_CSS = `
   .zip-meta{font:12px system-ui,sans-serif;color:#888;margin:0 0 10px;}
   .zip-table .z-name{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:normal;word-break:break-all;}
   .zip-table .z-num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
-  .zip-table .z-date{white-space:nowrap;color:#888;font-size:12px;}`;
+  .zip-table .z-date{white-space:nowrap;color:#888;font-size:12px;}
+  .ics-head{font:600 14px system-ui,sans-serif;margin:0 0 14px;}
+  .ics-event{border-left:3px solid #4c9aff;background:#4c9aff14;border-radius:0 8px 8px 0;padding:10px 12px;margin:0 0 10px;}
+  .ics-title{font:600 15px system-ui,sans-serif;}
+  .ics-when{font:13px system-ui,sans-serif;color:#555;margin-top:2px;}
+  body.fv-dark .ics-when{color:#aab;}
+  .ics-loc,.ics-rrule{font:12px system-ui,sans-serif;color:#666;margin-top:3px;}
+  body.fv-dark .ics-loc,body.fv-dark .ics-rrule{color:#9aa;}
+  .ics-desc{font:13px/1.5 system-ui,sans-serif;white-space:pre-wrap;word-break:break-word;margin-top:6px;}
+  .ics-empty{color:#888;font-family:system-ui,sans-serif;}`;
 
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';

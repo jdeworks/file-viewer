@@ -9,6 +9,7 @@
   { "label": "Sample.ipynb", "file": "sample.ipynb", "mime": "application/x-ipynb+json" },
   { "label": "Sample.html", "file": "sample.html", "mime": "text/html" },
   { "label": "Sample.eml", "file": "sample.eml", "mime": "message/rfc822" },
+  { "label": "Sample.ics", "file": "sample.ics", "mime": "text/calendar" },
   { "label": "example.js", "file": "example.js", "mime": "text/javascript" },
   { "label": "example.svg", "file": "example.svg", "mime": "image/svg+xml" },
   { "label": "Sample.wav", "file": "sample.wav", "mime": "audio/wav" },
