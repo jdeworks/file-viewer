@@ -26,7 +26,7 @@ const chromium = loadChromium();
 const ROOT = new URL('../docs/', import.meta.url).pathname;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.css': 'text/css', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain',
-  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822' };
+  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -332,6 +332,21 @@ try {
   await jf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   const jkeys = await jf.$$eval('.json-tree .j-key', (els) => els.length);
   if (jkeys > 0) pass('JSON rendered as collapsible tree (' + jkeys + ' keys)'); else fail('no json keys');
+
+  // ── Archive (.zip) ── list entries from the central directory (no extraction).
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.zip' }).click();
+  const zframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
+  const zf = await zframe.contentFrame();
+  await zf.waitForSelector('.zip-table tbody tr', { timeout: 12000 });
+  const zipType2 = await page.$eval('#typeSelect', (s) => s.value);
+  if (zipType2 === 'zip') pass('.zip detected as Archive'); else fail('zip type: ' + zipType2);
+  const zNames = await zf.$$eval('.zip-table .z-name', (els) => els.map((e) => e.textContent));
+  if (zNames.includes('README.txt') && zNames.some((n) => n.startsWith('src/'))) pass('archive lists entries (' + zNames.length + ' files)'); else fail('zip names: ' + zNames.join(','));
+  const zMeta = await zf.$eval('.zip-meta', (e) => e.textContent);
+  if (/files/.test(zMeta) && /uncompressed/.test(zMeta)) pass('archive summary (counts + size)'); else fail('zip meta: ' + zMeta);
+  const zipHasEditor = await page.$('#editor .monaco-editor');
+  if (!zipHasEditor) pass('archive is preview-only (no raw editor)'); else fail('raw editor present for zip');
 
   // ── Email (.eml) ── parsed MIME: header card + sanitized HTML body, encoded subject decoded.
   await page.goto(origin, { waitUntil: 'networkidle' });

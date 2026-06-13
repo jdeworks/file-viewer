@@ -111,7 +111,11 @@ const BASE_CSS = `
   .eml-sep{border:0;border-top:1px solid #0002;margin:12px 0;}
   body.fv-dark .eml-sep{border-top-color:#fff2;}
   .eml-plain{white-space:pre-wrap;word-break:break-word;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;}
-  .eml-html{overflow:auto;}`;
+  .eml-html{overflow:auto;}
+  .zip-meta{font:12px system-ui,sans-serif;color:#888;margin:0 0 10px;}
+  .zip-table .z-name{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:normal;word-break:break-all;}
+  .zip-table .z-num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .zip-table .z-date{white-space:nowrap;color:#888;font-size:12px;}`;
 
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';
