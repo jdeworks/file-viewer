@@ -21,6 +21,14 @@
 
       <div class="spacer"></div>
 
+      <!-- Raw-side content switch (4-way, icons). Visible when the type is editable/diffable. -->
+      <div class="seg rawmode" id="rawMode" hidden role="tablist" aria-label="Raw content mode">
+        <button data-raw="original" title="Original" aria-label="Original">⟲</button>
+        <button data-raw="current" class="active" title="Current" aria-label="Current">≡</button>
+        <button data-raw="diff" title="Diff" aria-label="Diff">⇄</button>
+        <button data-raw="movediff" title="Move-aware diff" aria-label="Move-aware diff">⇅</button>
+      </div>
+
       <!-- View-mode switch (icons). Visible only when the type supports a preview. -->
       <div class="seg viewmode" id="viewMode" hidden role="tablist" aria-label="View mode">
         <button data-mode="raw" title="Raw" aria-label="Raw">⟨⟩</button>
@@ -28,6 +36,7 @@
         <button data-mode="preview" title="Preview" aria-label="Preview">▦</button>
       </div>
 
+      <button class="icon-btn" id="downloadBtn" title="Download" aria-label="Download" hidden>⤓</button>
       <button class="icon-btn" id="themeBtn" title="Toggle dark / light" aria-label="Toggle theme">◐</button>
       <button class="icon-btn" id="screenshotBtn" title="Screenshot preview" aria-label="Screenshot" hidden>▣</button>
       <button class="icon-btn" id="metaBtn" title="File info" aria-label="File info" hidden>ⓘ</button>

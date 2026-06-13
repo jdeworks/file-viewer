@@ -107,6 +107,28 @@ try {
 
   await page.click('#settingsDrawer [data-close]');
 
+  // ── Diff (WP13/WP14) ──
+  // Edit the working copy programmatically (robust vs. simulating Monaco keystrokes),
+  // then open standard diff and assert Monaco's diff editor renders the change.
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    rv.setValue(rv.getValue() + '\n\nAn edited line for the diff test.\n');
+  });
+  await page.waitForTimeout(200);
+  const dirty = await page.evaluate(() => window.__fv.state.rawview.isDirty());
+  if (dirty) pass('edit tracked vs original (isDirty)'); else fail('isDirty false after edit');
+  await page.click('#rawMode button[data-raw="diff"]');
+  const diffEl = await page.waitForSelector('#editor .monaco-diff-editor', { timeout: 8000 });
+  if (diffEl) pass('standard Monaco diff editor mounted');
+  const changes = await page.$$eval('#editor .line-insert, #editor .char-insert', (els) => els.length);
+  if (changes > 0) pass('diff shows inserted change (' + changes + ' markers)'); else fail('no insert markers in diff');
+
+  // 4-way switch back to current keeps the edit.
+  await page.click('#rawMode button[data-raw="current"]');
+  await page.waitForTimeout(200);
+  const stillEdited = await page.evaluate(() => document.querySelector('#editor .monaco-diff-editor')?.offsetParent !== null);
+  if (!stillEdited) pass('switching back to current hides diff editor'); else fail('diff editor still visible after switching to current');
+
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
 } catch (e) {

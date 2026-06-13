@@ -6,7 +6,7 @@
 import { REGISTRY, getType } from './registry.js';
 import { pickType } from './detect.js';
 import { wireIntake, LARGE_FILE_BYTES } from './intake.js';
-import { loadMonaco } from './monaco-loader.js';
+import { createRawView } from './rawview.js';
 import { mountPreview } from './iframe.js';
 import { buildModel, monacoOptions, renderSettings } from './settings.js';
 
@@ -15,13 +15,12 @@ const state = {
   intake: null,
   type: null,
   settingsModel: null,   // WP03 settings model for the active type
-  editor: null,
-  monaco: null,
+  rawview: null,         // WP13 RawView controller (owns original+current models, 4 modes)
   preview: null,         // iframe controller
+  rawMode: 'current',    // original | current | diff | movediff
   mode: 'split',         // desktop view mode: raw | split | preview
   tab: 'raw',            // mobile active tab
   syncing: false,
-  decorations: [],
 };
 
 const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
@@ -73,50 +72,64 @@ async function activateType(type) {
   $('metaBtn').hidden = false;
 
   const canPreview = type.capabilities.preview && !state.intake.isBinary;
+  const canDiff = type.capabilities.diff && !state.intake.isBinary;
   $('viewMode').hidden = !canPreview || isMobile();
+  $('rawMode').hidden = !canDiff;
+  $('downloadBtn').hidden = !canDiff;
   $('tabbar').style.display = canPreview && isMobile() ? 'flex' : 'none';
   $('screenshotBtn').hidden = !(type.capabilities.screenshot && canPreview);
   state.mode = canPreview ? 'split' : 'raw';
+  state.rawMode = 'current';
 
-  await renderRaw();
+  await buildRawView();
   if (canPreview) await renderPreview(); else clearPreview();
   applyLayout();
 }
 
-/* ─────────────────────────── Raw (Monaco) ─────────────────────────── */
+/* ─────────────────────────── Raw side (RawView controller) ─────────────────────────── */
 
-async function renderRaw() {
-  const monaco = state.monaco || (state.monaco = await loadMonaco());
+async function buildRawView() {
+  state.rawview?.dispose();
   const lang = state.intake.isBinary ? 'plaintext' : (state.type.syntaxLanguage || 'plaintext');
-  const value = state.intake.isBinary
+  const text = state.intake.isBinary
     ? '[binary file — ' + state.intake.size + ' bytes — no text preview]'
     : (state.intake.text || '');
-
-  if (!state.editor) {
-    state.editor = monaco.editor.create($('editor'), {
-      value, language: lang, automaticLayout: true,
-      theme: themeIsDark() ? 'vs-dark' : 'vs',
-      readOnly: state.intake.isBinary,
-      ...monacoOptions(state.settingsModel),
-    });
-    // raw -> preview magic selector + scroll sync
-    state.editor.onDidChangeCursorPosition((e) => mapRawToPreview(e.position.lineNumber));
-    state.editor.onDidScrollChange(() => syncScrollFromRaw());
-    // live re-render preview on edit (WP08 seed)
-    state.editor.onDidChangeModelContent(debounce(() => onRawEdited(), 250));
-  } else {
-    const model = state.editor.getModel();
-    monaco.editor.setModelLanguage(model, lang);
-    state.editor.updateOptions({ readOnly: state.intake.isBinary, ...monacoOptions(state.settingsModel) });
-    if (model.getValue() !== value) model.setValue(value);
-  }
+  state.rawview = await createRawView($('editor'), {
+    originalText: text, currentText: text, language: lang,
+    theme: themeIsDark() ? 'dark' : 'light',
+    options: { readOnly: state.intake.isBinary, ...monacoOptions(state.settingsModel) },
+    onChange: debounce((value) => onRawEdited(value), 250),
+    onCursor: (line) => mapRawToPreview(line),
+    onScroll: () => syncScrollFromRaw(),
+  });
+  syncRawModeButtons();
 }
 
-async function onRawEdited() {
-  if (!state.type?.capabilities.preview) return;
-  // Update the working text and re-render preview from the editor's current value.
-  state.intake = { ...state.intake, text: state.editor.getValue() };
-  await renderPreview();
+async function onRawEdited(value) {
+  // Keep the working text in sync so download + preview reflect edits.
+  state.intake = { ...state.intake, text: value };
+  if (state.type?.capabilities.preview) await renderPreview();
+}
+
+function setRawMode(mode) {
+  if (!state.rawview) return;
+  state.rawMode = mode;
+  state.rawview.setMode(mode);
+  syncRawModeButtons();
+  if (mode === 'movediff') toast('Move-aware diff lands in WP15/WP16 — showing standard diff for now.');
+}
+
+function syncRawModeButtons() {
+  document.querySelectorAll('#rawMode button').forEach((b) => b.classList.toggle('active', b.dataset.raw === state.rawMode));
+}
+
+function downloadCurrent() {
+  const blob = new Blob([state.rawview ? state.rawview.getValue() : (state.intake.text || '')], { type: state.intake.mimeType || 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = state.intake.filename || 'download.txt';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 /* ─────────────────────────── Preview (iframe) ─────────────────────────── */
@@ -153,15 +166,11 @@ function clearPreview() {
 
 // Preview element carries data-fv-src="startLine:endLine" (0-based, end-exclusive).
 function mapPreviewToRaw(src, moveCursor = true) {
-  if (!src || !state.editor || !state.monaco) return;
+  if (!src || !state.rawview) return;
   const [a, b] = src.split(':').map(Number);
   const startLine = a + 1, endLine = Math.max(startLine, b);
-  const monaco = state.monaco;
-  state.decorations = state.editor.deltaDecorations(state.decorations, [{
-    range: new monaco.Range(startLine, 1, endLine, 1),
-    options: { isWholeLine: true, className: 'fv-line-hl', inlineClassName: 'fv-line-hl' },
-  }]);
-  if (moveCursor) state.editor.revealLineInCenter(startLine);
+  state.rawview.decorate(startLine, endLine);
+  if (moveCursor) state.rawview.reveal(startLine);
 }
 
 function mapRawToPreview(line) {
@@ -174,18 +183,18 @@ function mapRawToPreview(line) {
 
 function syncScrollFromRaw() {
   if (state.syncing || !state.preview || !state.settingsModel.values.syncScroll) return;
-  const ed = state.editor;
-  const top = ed.getScrollTop(), max = ed.getScrollHeight() - ed.getLayoutInfo().height;
+  if (!state.rawview?.canSync()) return;
+  const { top, max } = state.rawview.scrollInfo();
   state.syncing = true;
   state.preview.scrollTo(max > 0 ? top / max : 0);
   requestAnimationFrame(() => (state.syncing = false));
 }
 function syncScrollFromPreview(ratio) {
-  if (state.syncing || !state.editor || !state.settingsModel.values.syncScroll) return;
-  const ed = state.editor;
-  const max = ed.getScrollHeight() - ed.getLayoutInfo().height;
+  if (state.syncing || !state.rawview || !state.settingsModel.values.syncScroll) return;
+  if (!state.rawview.canSync()) return;
+  const { max } = state.rawview.scrollInfo();
   state.syncing = true;
-  ed.setScrollTop(ratio * Math.max(0, max));
+  state.rawview.setScrollTop(ratio * Math.max(0, max));
   requestAnimationFrame(() => (state.syncing = false));
 }
 
@@ -203,7 +212,7 @@ function applyLayout() {
   // reflect active buttons
   document.querySelectorAll('#viewMode button').forEach((b) => b.classList.toggle('active', b.dataset.mode === state.mode));
   document.querySelectorAll('#tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.mode === state.tab));
-  state.editor?.layout();
+  state.rawview?.layout();
 }
 
 /* ─────────────────────────── Settings (WP03) ─────────────────────────── */
@@ -215,7 +224,7 @@ function openSettings() {
 // Re-apply settings after any change. Editor options apply live; the preview only
 // re-renders when a viewer setting that affects rendering changed (syncScroll reads live).
 function onSettingsChange(model, changedKey) {
-  state.editor?.updateOptions(monacoOptions(model));
+  state.rawview?.updateOptions(monacoOptions(model));
   if (!state.type?.capabilities.preview) return;
   const cat = model.descriptors.find((d) => d.key === changedKey)?.category;
   const viewerRenderKey = cat && cat.startsWith('viewer') && changedKey !== 'syncScroll';
@@ -255,7 +264,7 @@ function themeIsDark() { return document.documentElement.dataset.theme === 'dark
 function applyTheme(dark) {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   localStorage.setItem('fv:theme', dark ? 'dark' : 'light');
-  state.monaco?.editor.setTheme(dark ? 'vs-dark' : 'vs');
+  state.rawview?.setTheme(dark ? 'dark' : 'light');
   if (state.preview && state.type?.capabilities.preview) renderPreview();
 }
 
@@ -325,10 +334,24 @@ function init() {
     b.addEventListener('click', () => { state.mode = b.dataset.mode; applyLayout(); }));
   document.querySelectorAll('#tabbar button').forEach((b) =>
     b.addEventListener('click', () => { state.tab = b.dataset.mode; applyLayout(); }));
+  document.querySelectorAll('#rawMode button').forEach((b) =>
+    b.addEventListener('click', () => setRawMode(b.dataset.raw)));
+  $('downloadBtn').addEventListener('click', downloadCurrent);
 
-  window.matchMedia('(max-width: 760px)').addEventListener('change', () => { if (state.type) activateType(state.type); });
+  // Viewport change must NOT rebuild the editor (would drop edits) — just relayout
+  // and toggle which view controls apply (desktop split vs mobile tabs).
+  window.matchMedia('(max-width: 760px)').addEventListener('change', () => {
+    if (!state.type) return;
+    const canPreview = state.type.capabilities.preview && !state.intake.isBinary;
+    $('viewMode').hidden = !canPreview || isMobile();
+    $('tabbar').style.display = canPreview && isMobile() ? 'flex' : 'none';
+    applyLayout();
+  });
 
   loadExamples();
+
+  // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
+  window.__fv = { state, setRawMode, downloadCurrent };
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -132,7 +132,9 @@ body {
 
 /* ── Mobile: tabs instead of split ── */
 @media (max-width: 760px) {
+  .brand { display: none; }                   /* reclaim topbar space on phones */
   .file-name { max-width: 22vw; }
+  .seg button { min-width: 30px; padding: 6px 7px; }
   .viewmode { display: none !important; }     /* mobile uses the tab bar */
   .tabbar { display: flex; }
   .panes { display: block; position: relative; }
