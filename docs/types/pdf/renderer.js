@@ -8,6 +8,27 @@ import { createEditor } from './pdfedit.js';
 const MAX_PAGES = 50;
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// Rasterize any image file (PNG/JPEG/WebP/GIF/SVG) to PNG bytes via a canvas, so pdf-lib (which
+// embeds only PNG/JPEG) can place it. Pure in-browser; the image is never uploaded.
+function imageFileToPngBytes(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || 1024; canvas.height = img.naturalHeight || 768;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(url);
+        if (!blob) return reject(new Error('this browser could not rasterize the image'));
+        blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf))).catch(reject);
+      }, 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('could not load the image')); };
+    img.src = url;
+  });
+}
+
 export async function render(intake, ctx) {
   const scale = ctx?.settings?.pdfScale || 1.5;
   const host = document.createElement('div');
@@ -15,8 +36,10 @@ export async function render(intake, ctx) {
   host.innerHTML =
     '<div class="pdf-bar"><span class="pdf-info"></span>'
     + '<button class="pdf-edit" title="Edit pages">Edit</button>'
+    + '<button class="pdf-addimg" hidden title="Add an image as a new page">+ Image page</button>'
     + '<button class="pdf-download" hidden>Download edited PDF</button></div>'
     + '<div class="pdf-changes" hidden></div>'
+    + '<input type="file" class="pdf-imginput" accept="image/*" hidden>'
     + '<div class="pdf-pages"></div>';
   const pagesEl = host.querySelector('.pdf-pages');
   const infoEl = host.querySelector('.pdf-info');
@@ -88,11 +111,25 @@ export async function render(intake, ctx) {
   host.querySelector('.pdf-edit').addEventListener('click', async () => {
     editing = !editing;
     host.querySelector('.pdf-edit').classList.toggle('active', editing);
+    host.querySelector('.pdf-addimg').hidden = !editing;
     if (editing && !editor) {
       try { editor = await createEditor(intake.bytes); }
-      catch (e) { infoEl.textContent = 'Editing unavailable: ' + esc(e.message); editing = false; host.querySelector('.pdf-edit').classList.remove('active'); return; }
+      catch (e) { infoEl.textContent = 'Editing unavailable: ' + esc(e.message); editing = false; host.querySelector('.pdf-edit').classList.remove('active'); host.querySelector('.pdf-addimg').hidden = true; return; }
     }
     await renderPages(currentBytes);
+  });
+
+  // Insert an image as a new page: pick any raster/SVG image, rasterize to PNG (pdf-lib embeds
+  // PNG/JPEG only), append it as a page, then rebuild + re-render. All in-browser, no upload.
+  const imgInput = host.querySelector('.pdf-imginput');
+  host.querySelector('.pdf-addimg').addEventListener('click', () => { imgInput.value = ''; imgInput.click(); });
+  imgInput.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !editor) return;
+    try {
+      const png = await imageFileToPngBytes(file);
+      await applyEdit(() => editor.addImage(png));
+    } catch (err) { infoEl.textContent = 'Could not add image: ' + esc(err.message); }
   });
 
   host.querySelector('.pdf-download').addEventListener('click', () => {

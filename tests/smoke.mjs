@@ -368,6 +368,14 @@ try {
   await page.waitForFunction(() => /rotated/.test(document.querySelector('#previewHost .pdf-changes')?.textContent || ''), { timeout: 8000 }).catch(() => {});
   const pdfChanges2 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
   if (/rotated 90/.test(pdfChanges2)) pass('PDF edit: rotation reflected in changes summary'); else fail('pdf changes2: ' + pdfChanges2);
+  // Insert an image as a new page: pick sample.png → page count grows + summary notes it.
+  const beforeAdd = await page.$$eval('#previewHost img.pdf-page', (els) => els.length);
+  await page.waitForSelector('#previewHost .pdf-addimg:not([hidden])', { timeout: 4000 });
+  await page.setInputFiles('#previewHost .pdf-imginput', new URL('../docs/examples/sample.png', import.meta.url).pathname);
+  await page.waitForFunction((n) => document.querySelectorAll('#previewHost img.pdf-page').length === n + 1, beforeAdd, { timeout: 12000 });
+  pass('PDF edit: image inserted as a new page (' + beforeAdd + '→' + (beforeAdd + 1) + ')');
+  const pdfChanges3 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
+  if (/image page.* added/.test(pdfChanges3)) pass('PDF edit: image insertion noted in changes summary'); else fail('pdf changes3: ' + pdfChanges3);
   // Type dropdown shows PDF's confidence but NOT the fallback floor as a phantom "%".
   const pdfOpts = await page.$$eval('#typeSelect option', (els) => els.map((e) => e.textContent));
   if (pdfOpts.some((t) => /^PDF \(\d+%\)/.test(t))) pass('PDF shows match confidence (' + pdfOpts.find((t) => /^PDF/.test(t)) + ')'); else fail('PDF option: ' + pdfOpts.join(', '));
