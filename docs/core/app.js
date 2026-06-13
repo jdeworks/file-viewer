@@ -3,7 +3,7 @@
 // Settings here are intentionally minimal; WP03 replaces buildSettings() with the
 // full descriptor-driven system. The contract this file consumes is frozen.
 
-import { REGISTRY, getType } from './registry.js';
+import { REGISTRY, getType, FALLBACK_TYPE } from './registry.js';
 import { pickType } from './detect.js';
 import { wireIntake, intakeFromFile, LARGE_FILE_BYTES } from './intake.js';
 import { buildTree, renderTree } from './filetree.js';
@@ -89,18 +89,21 @@ function setTree(open) {
 
 function populateTypeSelect(ranking, selectedId) {
   const sel = $('typeSelect');
-  // By default list only plausible matches (≥1%); the "Show all file types" setting
-  // (global) reveals every registered type so you can force any viewer. The selected
-  // type is always shown even at 0% (e.g. the raw fallback or a manual override).
+  // Scores are INDEPENDENT per-type confidences (each detector returns 0..1 on its own),
+  // not a distribution that sums to 100%. The `raw`/Plain-text fallback only returns a
+  // tiny floor so it always ranks last-but-present — that's a tiebreaker, not a real
+  // match, so we never show it as a percentage. By default we list only plausible
+  // matches (≥1%); "Show all file types" reveals every registered type. The selected
+  // type is always shown (e.g. the fallback, or a manual override).
   const showAll = !!state.settingsModel?.values?.showAllTypes;
   const byScore = new Map(ranking.map((r) => [r.type.id, r.score]));
   sel.innerHTML = '';
   for (const t of REGISTRY) {
-    const score = byScore.get(t.id) || 0;
-    if (!showAll && score < 0.01 && t.id !== selectedId) continue;
+    const match = t === FALLBACK_TYPE ? 0 : (byScore.get(t.id) || 0);  // floor isn't a match
+    if (!showAll && match < 0.01 && t.id !== selectedId) continue;
     const opt = document.createElement('option');
     opt.value = t.id;
-    opt.textContent = score > 0 ? `${t.label} (${Math.round(score * 100)}%)` : t.label;
+    opt.textContent = match > 0 ? `${t.label} (${Math.round(match * 100)}%)` : t.label;
     if (t.id === selectedId) opt.selected = true;
     sel.appendChild(opt);
   }

@@ -237,6 +237,10 @@ try {
   pass('PDF rendered to image pages');
   const hasEditor = await page.$('#editor .monaco-editor');
   if (!hasEditor) pass('PDF is preview-only (no raw editor)'); else fail('raw editor present for PDF');
+  // Type dropdown shows PDF's confidence but NOT the fallback floor as a phantom "%".
+  const pdfOpts = await page.$$eval('#typeSelect option', (els) => els.map((e) => e.textContent));
+  if (pdfOpts.some((t) => /^PDF \(\d+%\)/.test(t))) pass('PDF shows match confidence (' + pdfOpts.find((t) => /^PDF/.test(t)) + ')'); else fail('PDF option: ' + pdfOpts.join(', '));
+  if (!pdfOpts.some((t) => /Plain text \(\d+%\)/.test(t))) pass('fallback "Plain text" not shown as a phantom percentage'); else fail('phantom fallback %: ' + pdfOpts.join(', '));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row');
   const meta = await page.$$eval('#metaBody .meta-row .k', (els) => els.map((e) => e.textContent));
