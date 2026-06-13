@@ -77,6 +77,24 @@ const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1100, height: 800 } });
 const page = await ctx.newPage();
 
+// Robust contentFrame(): an iframe element can exist before its content document has committed,
+// so handle.contentFrame() transiently returns null → "Cannot read properties of null". Poll
+// briefly until the frame is ready. Used everywhere instead of a bare .contentFrame().
+// Accepts a CSS selector (preferred) or an element handle. A selector is re-queried fresh on
+// each poll, so it survives the app swapping the iframe (which detaches a held handle and makes
+// its contentFrame() return null forever).
+async function frameOf(target, timeout = 8000) {
+  const deadline = Date.now() + timeout;
+  const get = async () => {
+    const h = typeof target === 'string' ? await page.$(target) : target;
+    return h ? await h.contentFrame() : null;
+  };
+  let f = await get();
+  while (!f && Date.now() < deadline) { await page.waitForTimeout(50); f = await get(); }
+  if (!f) throw new Error('iframe never produced a content frame: ' + (typeof target === 'string' ? target : '<handle>'));
+  return f;
+}
+
 const consoleErrors = [];
 const offOrigin = [];
 page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
@@ -119,7 +137,7 @@ try {
 
   // Preview iframe renders the markdown (h1 "Welcome to File Viewer").
   const frame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
-  const f = await frame.contentFrame();
+  const f = await frameOf('iframe.fv-preview-frame');
   await f.waitForSelector('h1', { timeout: 10000 });
   const h1 = await f.$eval('h1', (el) => el.textContent);
   if (/Welcome to File Viewer/.test(h1)) pass('markdown rendered in sandboxed iframe'); else fail('h1 text: ' + h1);
@@ -182,7 +200,7 @@ try {
   await presetSel.selectOption('compact');
   await page.waitForTimeout(500);
   const frame2 = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 5000 });
-  const f2 = await frame2.contentFrame();
+  const f2 = await frameOf('iframe.fv-preview-frame');
   const maxW = await f2.evaluate(() => getComputedStyle(document.body).maxWidth);
   if (maxW === '680px') pass('preset applied to preview (maxWidth=680px)'); else fail('preview maxWidth after Compact: ' + maxW);
 
@@ -368,7 +386,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.csv' }).click();
   const cframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
-  const cf = await cframe.contentFrame();
+  const cf = await frameOf('iframe.fv-preview-frame');
   await cf.waitForSelector('table', { timeout: 10000 });
   const headers = await cf.$$eval('thead th', (els) => els.map((e) => e.textContent));
   if (headers.join(',') === 'name,role,city,commits') pass('CSV rendered as table with header row'); else fail('CSV headers: ' + headers.join(','));
@@ -392,7 +410,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.xlsx' }).click();
   const xframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
-  const xf = await xframe.contentFrame();
+  const xf = await frameOf('iframe.fv-preview-frame');
   await xf.waitForSelector('.sheet table', { timeout: 12000 });
   const sheetTitles = await xf.$$eval('.sheet-title', (els) => els.map((e) => e.textContent));
   if (sheetTitles.join(',') === 'People,Totals') pass('Excel: both sheets rendered'); else fail('sheet titles: ' + sheetTitles.join(','));
@@ -413,7 +431,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.docx' }).click();
   const dframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
-  const df = await dframe.contentFrame();
+  const df = await frameOf('iframe.fv-preview-frame');
   await df.waitForSelector('.docx-body h1', { timeout: 12000 });
   const dh1 = await df.$eval('.docx-body h1', (e) => e.textContent);
   if (/Hello, File Viewer/.test(dh1)) pass('Word: docx converted to HTML (h1)'); else fail('docx h1: ' + dh1);
@@ -424,7 +442,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.pptx' }).click();
   const ppframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 25000 });
-  const ppf = await ppframe.contentFrame();
+  const ppf = await frameOf('iframe.fv-preview-frame');
   await ppf.waitForSelector('img.pptx-slide', { timeout: 25000 });
   const slideDims = await ppf.$$eval('img.pptx-slide', (els) => els.map((e) => e.naturalWidth));
   if (slideDims.length === 2 && slideDims.every((w) => w > 100)) pass('PPTX: ' + slideDims.length + ' slides rendered to images'); else fail('pptx slides: ' + JSON.stringify(slideDims));
@@ -433,7 +451,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.json' }).click();
   const jframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const jf = await jframe.contentFrame();
+  const jf = await frameOf('iframe.fv-preview-frame');
   await jf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   const jkeys = await jf.$$eval('.json-tree .j-key', (els) => els.length);
   if (jkeys > 0) pass('JSON rendered as collapsible tree (' + jkeys + ' keys)'); else fail('no json keys');
@@ -458,7 +476,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.yaml' }).click();
   const yframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const yf = await yframe.contentFrame();
+  const yf = await frameOf('iframe.fv-preview-frame');
   await yf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   const yType = await page.$eval('#typeSelect', (s) => s.value);
   if (yType === 'yaml') pass('.yaml detected as YAML'); else fail('yaml type: ' + yType);
@@ -473,7 +491,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.toml' }).click();
   const tframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const tf = await tframe.contentFrame();
+  const tf = await frameOf('iframe.fv-preview-frame');
   await tf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   const tType = await page.$eval('#typeSelect', (s) => s.value);
   if (tType === 'toml') pass('.toml detected as TOML'); else fail('toml type: ' + tType);
@@ -488,7 +506,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.xml' }).click();
   const xmlframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const xmlf = await xmlframe.contentFrame();
+  const xmlf = await frameOf('iframe.fv-preview-frame');
   await xmlf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   const xType = await page.$eval('#typeSelect', (s) => s.value);
   if (xType === 'xml') pass('.xml detected as XML'); else fail('xml type: ' + xType);
@@ -508,7 +526,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.ini' }).click();
   const iniframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const inif = await iniframe.contentFrame();
+  const inif = await frameOf('iframe.fv-preview-frame');
   await inif.waitForSelector('.kv-table', { timeout: 8000 });
   const iniType = await page.$eval('#typeSelect', (s) => s.value);
   if (iniType === 'ini') pass('.ini detected as Config (INI/env)'); else fail('ini type: ' + iniType);
@@ -520,7 +538,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.patch' }).click();
   const patchframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const patchf = await patchframe.contentFrame();
+  const patchf = await frameOf('iframe.fv-preview-frame');
   await patchf.waitForSelector('.patch', { timeout: 8000 });
   const patchType2 = await page.$eval('#typeSelect', (s) => s.value);
   if (patchType2 === 'patch') pass('.patch detected as Patch / Diff'); else fail('patch type: ' + patchType2);
@@ -533,7 +551,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.log' }).click();
   const lframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const lf = await lframe.contentFrame();
+  const lf = await frameOf('iframe.fv-preview-frame');
   await lf.waitForSelector('.logv', { timeout: 8000 });
   const logType2 = await page.$eval('#typeSelect', (s) => s.value);
   if (logType2 === 'log') pass('.log detected as Log'); else fail('log type: ' + logType2);
@@ -546,7 +564,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.vcf' }).click();
   const vcfframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const vcff = await vcfframe.contentFrame();
+  const vcff = await frameOf('iframe.fv-preview-frame');
   await vcff.waitForSelector('.vcf-card', { timeout: 8000 });
   const vcfTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (vcfTypeId === 'vcard') pass('.vcf detected as Contacts (vCard)'); else fail('vcard type: ' + vcfTypeId);
@@ -558,7 +576,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.srt' }).click();
   const subframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const subf = await subframe.contentFrame();
+  const subf = await frameOf('iframe.fv-preview-frame');
   await subf.waitForSelector('.sub-cue', { timeout: 8000 });
   const subTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (subTypeId === 'subtitle') pass('.srt detected as Subtitles'); else fail('subtitle type: ' + subTypeId);
@@ -570,7 +588,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.geojson' }).click();
   const geoframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const geof = await geoframe.contentFrame();
+  const geof = await frameOf('iframe.fv-preview-frame');
   await geof.waitForSelector('.geo-svg', { timeout: 8000 });
   const geoTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (geoTypeId === 'geo') pass('.geojson detected as Map (GeoJSON/GPX)'); else fail('geo type: ' + geoTypeId);
@@ -615,7 +633,7 @@ try {
   if (chipShown) pass('enhance chip shows the active known-file'); else fail('enhance chip not shown');
   await page.click('#enhanceChip .ec-toggle');
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 8000 });
-  const pjFrame = await (await page.$('#previewHost iframe.fv-preview-frame')).contentFrame();
+  const pjFrame = await frameOf('#previewHost iframe.fv-preview-frame');
   await pjFrame.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   pass('revert chip switches to the plain JSON tree view');
 
@@ -704,7 +722,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.ics' }).click();
   const icframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const icf = await icframe.contentFrame();
+  const icf = await frameOf('iframe.fv-preview-frame');
   await icf.waitForSelector('.ics-event', { timeout: 8000 });
   const icsType2 = await page.$eval('#typeSelect', (s) => s.value);
   if (icsType2 === 'ics') pass('.ics detected as Calendar'); else fail('ics type: ' + icsType2);
@@ -717,7 +735,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.zip' }).click();
   const zframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
-  const zf = await zframe.contentFrame();
+  const zf = await frameOf('iframe.fv-preview-frame');
   await zf.waitForSelector('.zip-table tbody tr', { timeout: 12000 });
   const zipType2 = await page.$eval('#typeSelect', (s) => s.value);
   if (zipType2 === 'zip') pass('.zip detected as Archive'); else fail('zip type: ' + zipType2);
@@ -738,7 +756,7 @@ try {
   if (innerType === 'csv') pass('zip entry opened + re-detected (rows.csv → CSV)'); else fail('inner type: ' + innerType);
   pass('opened entry shows its own filename (rows.csv)');
   const innerFrameEl = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const innerFrame = await innerFrameEl.contentFrame();
+  const innerFrame = await frameOf('iframe.fv-preview-frame');
   await innerFrame.waitForSelector('table', { timeout: 10000 });
   const innerHasTable = await innerFrame.$$eval('table tbody tr', (els) => els.length);
   if (innerHasTable > 0) pass('zip entry rendered through its real renderer (CSV table, ' + innerHasTable + ' rows)'); else fail('inner CSV rows: ' + innerHasTable);
@@ -747,7 +765,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Locked.zip' }).click();
   const lzframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
-  const lzf = await lzframe.contentFrame();
+  const lzf = await frameOf('iframe.fv-preview-frame');
   await lzf.waitForSelector('.zip-table tbody tr', { timeout: 12000 });
   const lzNames = await lzf.$$eval('.zip-table .z-name', (els) => els.map((e) => e.textContent));
   if (lzNames.some((n) => /secret\.txt/.test(n)) && lzNames.some((n) => /readme\.txt/.test(n))) pass('encrypted zip still lists entries (fallback parser)'); else fail('locked zip names: ' + lzNames.join(','));
@@ -759,7 +777,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.eml' }).click();
   const eframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const ef = await eframe.contentFrame();
+  const ef = await frameOf('iframe.fv-preview-frame');
   await ef.waitForSelector('.eml-head', { timeout: 8000 });
   const emlType2 = await page.$eval('#typeSelect', (s) => s.value);
   if (emlType2 === 'eml') pass('.eml detected as Email'); else fail('eml type: ' + emlType2);
@@ -772,7 +790,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.mbox' }).click();
   const mbframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const mbf = await mbframe.contentFrame();
+  const mbf = await frameOf('iframe.fv-preview-frame');
   await mbf.waitForSelector('.mbox-msg', { timeout: 8000 });
   const mboxTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (mboxTypeId === 'mbox') pass('.mbox detected as Mailbox'); else fail('mbox type: ' + mboxTypeId);
@@ -784,7 +802,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.ipynb' }).click();
   const nframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
-  const nf = await nframe.contentFrame();
+  const nf = await frameOf('iframe.fv-preview-frame');
   await nf.waitForSelector('.nb-notebook', { timeout: 10000 });
   const nbType = await page.$eval('#typeSelect', (s) => s.value);
   if (nbType === 'ipynb') pass('.ipynb detected as Jupyter Notebook'); else fail('ipynb type: ' + nbType);
@@ -813,7 +831,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'example.svg' }).click();
   const sframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const sf = await sframe.contentFrame();
+  const sf = await frameOf('iframe.fv-preview-frame');
   await sf.waitForSelector('.img-doc svg', { timeout: 8000 });
   pass('SVG sanitized and rendered inline');
 
@@ -1212,7 +1230,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.html' }).click();
   const hframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const hf = await hframe.contentFrame();
+  const hf = await frameOf('iframe.fv-preview-frame');
   await hf.waitForSelector('#safe', { timeout: 8000 });
   await page.waitForTimeout(300);
   const sanitizedRan = await hf.$('#ran-script');
@@ -1222,7 +1240,7 @@ try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.html' }).click();
   const hframe2 = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const hf2 = await hframe2.contentFrame();
+  const hf2 = await frameOf('iframe.fv-preview-frame');
   await hf2.waitForSelector('#ran-script', { timeout: 8000 });
   pass('HTML scripts run after explicit opt-in (sandboxed)');
 
@@ -1275,7 +1293,7 @@ try {
   await mpage.getByRole('button', { name: 'Welcome.md' }).click();
   const mframe = await mpage.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
   // Preview must NOT scroll horizontally on a phone (fixed to screen width).
-  const mpf = await mframe.contentFrame();
+  const mpf = await frameOf('iframe.fv-preview-frame');
   await mpf.waitForSelector('h1', { timeout: 10000 });
   const overflowX = await mpf.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   if (overflowX <= 1) pass('mobile: preview has no horizontal scroll (width fixed to screen)'); else fail('mobile preview overflows x by ' + overflowX + 'px');
@@ -1323,7 +1341,7 @@ try {
     await op.getByRole('button', { name: 'Welcome.md' }).click();
     await op.waitForSelector('.monaco-editor', { timeout: 30000 });
     const offl = await op.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
-    await (await offl.contentFrame()).waitForSelector('h1', { timeout: 10000 });
+    await (await frameOf('iframe.fv-preview-frame')).waitForSelector('h1', { timeout: 10000 });
     pass('app loads + renders OFFLINE (reload with network disabled)');
     await octx.setOffline(false);
     if (oErr.length === 0) pass('no errors during offline run'); else fail('offline errors:\n  ' + oErr.join('\n  '));
