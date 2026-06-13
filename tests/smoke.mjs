@@ -30,7 +30,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf',
   '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain',
   '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
-  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip', '.vcf': 'text/vcard', '.stl': 'model/stl', '.obj': 'model/obj', '.glb': 'model/gltf-binary', '.mbox': 'application/mbox' };
+  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip', '.vcf': 'text/vcard', '.stl': 'model/stl', '.obj': 'model/obj', '.glb': 'model/gltf-binary', '.mbox': 'application/mbox', '.ply': 'model/ply' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -764,6 +764,20 @@ try {
     return n;
   });
   if (glbPainted > 100) pass('GLB mesh rendered to canvas (' + glbPainted + ' painted pixels)'); else fail('glb painted pixels: ' + glbPainted);
+
+  // ── PLY 3D viewer ── ASCII (gallery) + binary-little-endian (via file input). ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.ply' }).click();
+  await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
+  const plyTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (plyTypeId === 'ply') pass('.ply detected as 3D model'); else fail('ply type: ' + plyTypeId);
+  const plyInfo = await page.$eval('#previewHost .stl-info', (e) => e.textContent);
+  if (/12 triangles/.test(plyInfo)) pass('ASCII PLY parsed (cube: 6 quads → 12 triangles)'); else fail('ply info: ' + plyInfo);
+  // Binary little-endian PLY via the file input (no network for the bytes).
+  await page.setInputFiles('#fileInput', '/tmp/sample-bin.ply');
+  await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
+  const plyBinInfo = await page.$eval('#previewHost .stl-info', (e) => e.textContent);
+  if (/4 triangles/.test(plyBinInfo)) pass('binary PLY parsed (tetrahedron: 4 triangles)'); else fail('ply binary info: ' + plyBinInfo);
 
   // ── Raster image ── parent-pane viewer with fit-to-screen default + size-based zoom. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
