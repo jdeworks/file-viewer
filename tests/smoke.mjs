@@ -241,6 +241,9 @@ try {
   const pdfOpts = await page.$$eval('#typeSelect option', (els) => els.map((e) => e.textContent));
   if (pdfOpts.some((t) => /^PDF \(\d+%\)/.test(t))) pass('PDF shows match confidence (' + pdfOpts.find((t) => /^PDF/.test(t)) + ')'); else fail('PDF option: ' + pdfOpts.join(', '));
   if (!pdfOpts.some((t) => /Plain text \(\d+%\)/.test(t))) pass('fallback "Plain text" not shown as a phantom percentage'); else fail('phantom fallback %: ' + pdfOpts.join(', '));
+  // Shown confidences are normalized to total exactly 100%.
+  const pctSum = pdfOpts.reduce((a, t) => a + (Number((t.match(/\((\d+)%\)/) || [])[1]) || 0), 0);
+  if (pctSum === 100) pass('match percentages normalized to 100% (sum=' + pctSum + ')'); else fail('percent sum: ' + pctSum + ' from ' + pdfOpts.join(', '));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row');
   const meta = await page.$$eval('#metaBody .meta-row .k', (els) => els.map((e) => e.textContent));

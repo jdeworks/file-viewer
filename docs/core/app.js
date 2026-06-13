@@ -97,16 +97,38 @@ function populateTypeSelect(ranking, selectedId) {
   // type is always shown (e.g. the fallback, or a manual override).
   const showAll = !!state.settingsModel?.values?.showAllTypes;
   const byScore = new Map(ranking.map((r) => [r.type.id, r.score]));
-  sel.innerHTML = '';
+  const rows = [];
   for (const t of REGISTRY) {
     const match = t === FALLBACK_TYPE ? 0 : (byScore.get(t.id) || 0);  // floor isn't a match
     if (!showAll && match < 0.01 && t.id !== selectedId) continue;
+    rows.push({ t, match });
+  }
+  // The raw scores are independent confidences; normalize the shown matches so the
+  // displayed percentages always total 100% (largest-remainder rounding).
+  const matched = rows.filter((r) => r.match > 0);
+  const pcts = normalizePercents(matched.map((r) => r.match));
+  matched.forEach((r, i) => (r.pct = pcts[i]));
+
+  sel.innerHTML = '';
+  for (const r of rows) {
     const opt = document.createElement('option');
-    opt.value = t.id;
-    opt.textContent = match > 0 ? `${t.label} (${Math.round(match * 100)}%)` : t.label;
-    if (t.id === selectedId) opt.selected = true;
+    opt.value = r.t.id;
+    opt.textContent = r.pct != null ? `${r.t.label} (${r.pct}%)` : r.t.label;
+    if (r.t.id === selectedId) opt.selected = true;
     sel.appendChild(opt);
   }
+}
+
+// Scale values to integer percentages that sum to exactly 100 (largest-remainder method).
+function normalizePercents(values) {
+  const sum = values.reduce((a, b) => a + b, 0);
+  if (!values.length || sum <= 0) return values.map(() => 0);
+  const raw = values.map((v) => (v / sum) * 100);
+  const out = raw.map((x) => Math.floor(x));
+  let rem = 100 - out.reduce((a, b) => a + b, 0);
+  const order = raw.map((x, i) => [x - Math.floor(x), i]).sort((a, b) => b[0] - a[0]);
+  for (let k = 0; k < order.length && rem > 0; k++, rem--) out[order[k][1]]++;
+  return out;
 }
 
 async function activateType(type) {
