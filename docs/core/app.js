@@ -16,6 +16,7 @@ import { hexDump } from './hexdump.js';
 import { initOffline, offlineMissHtml } from './offline.js';
 import * as persistence from './persistence.js';
 import { suppressInstallPrompt } from './ios-audio.js';
+import { registerCodeMetrics } from '../types/code/codelens.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
 import { getModel, preloadModels, monacoOptions, renderSettings, persistGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
@@ -805,7 +806,7 @@ function init() {
   // Startup stays light (Monaco isn't loaded just to show the intake screen). Warm it in
   // the background during idle so the FIRST file opens instantly instead of waiting on
   // the heaviest dependency. loadMonaco() caches its promise, so buildRawView reuses this.
-  const warm = () => { loadMonaco().catch(() => {}); preloadModels(REGISTRY); };
+  const warm = () => { loadMonaco().then((m) => registerCodeMetrics(m)).catch(() => {}); preloadModels(REGISTRY); };
   if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 3000 });
   else setTimeout(warm, 1200);
 

@@ -504,6 +504,11 @@ try {
   await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
   const codeType = await page.$eval('#typeSelect', (s) => s.value);
   if (codeType === 'code') pass('JS file detected as Code with syntax highlighting'); else fail('js type: ' + codeType);
+  // Per-function metrics CodeLens (LOC + cyclomatic complexity) — display-only overlay.
+  await page.waitForFunction(() => document.querySelectorAll('#editor .codelens-decoration').length >= 2, { timeout: 15000 }).catch(() => {});
+  const lensText = await page.$$eval('#editor .codelens-decoration', (els) => els.map((e) => e.innerText).join(' | '));
+  const okLens = /\bfib\b/.test(lensText) && /\bclassify\b/.test(lensText) && /complexity 2\b/.test(lensText) && /complexity 7\b/.test(lensText);
+  if (okLens) pass('code metrics CodeLens: per-function LOC + complexity (fib=2, classify=7)'); else fail('codelens text: ' + lensText.slice(0, 160));
 
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'example.svg' }).click();
