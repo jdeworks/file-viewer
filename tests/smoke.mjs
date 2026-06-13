@@ -175,6 +175,17 @@ try {
   const csvHasEditor = await page.$('#editor .monaco-editor');
   if (csvHasEditor) pass('CSV has raw editor (editable text)'); else fail('CSV missing raw editor');
 
+  // ── Excel module (WP19) ── multi-sheet workbook via SheetJS on the tabular renderer.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.xlsx' }).click();
+  const xframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
+  const xf = await xframe.contentFrame();
+  await xf.waitForSelector('.sheet table', { timeout: 12000 });
+  const sheetTitles = await xf.$$eval('.sheet-title', (els) => els.map((e) => e.textContent));
+  if (sheetTitles.join(',') === 'People,Totals') pass('Excel: both sheets rendered'); else fail('sheet titles: ' + sheetTitles.join(','));
+  const xTables = await xf.$$eval('.sheet table', (els) => els.length);
+  if (xTables === 2) pass('Excel: one table per sheet'); else fail('Excel tables: ' + xTables);
+
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
 } catch (e) {
