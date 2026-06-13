@@ -13,6 +13,7 @@ export default {
   },
   syntaxLanguage: 'toml',
   loadRenderer: () => import('./renderer.js'),
+  loadExports: () => import('./exports.js'),
   loadMetadata: () => import('./metadata.js'),
   settingsUrl: new URL('./settings.default.json', import.meta.url),
 };

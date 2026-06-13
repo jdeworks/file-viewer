@@ -812,6 +812,33 @@ try {
   ]);
   if (/\.json$/.test(jsonDownload.suggestedFilename())) pass('YAML → JSON conversion download (' + jsonDownload.suggestedFilename() + ')'); else fail('yaml→json name: ' + jsonDownload.suggestedFilename());
 
+  // ── Subtitle SRT → VTT + TOML → JSON conversions (loadExports) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.srt' }).click();
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const srtExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
+  if (srtExports.some((t) => /WebVTT/.test(t))) pass('subtitle SRT export offers WebVTT'); else fail('srt exports: ' + srtExports.join(','));
+  const [vttDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("WebVTT")'),
+  ]);
+  if (/\.vtt$/.test(vttDl.suggestedFilename())) pass('subtitle SRT → VTT download (' + vttDl.suggestedFilename() + ')'); else fail('srt→vtt: ' + vttDl.suggestedFilename());
+
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.toml' }).click();
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const tomlExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
+  if (tomlExports.includes('Download as JSON')) pass('TOML export offers JSON'); else fail('toml exports: ' + tomlExports.join(','));
+  const [tjDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download as JSON")'),
+  ]);
+  if (/\.json$/.test(tjDl.suggestedFilename())) pass('TOML → JSON download (' + tjDl.suggestedFilename() + ')'); else fail('toml→json: ' + tjDl.suggestedFilename());
+
   // ── Calendar (.ics) ── parse iCalendar, render events chronologically.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.ics' }).click();
