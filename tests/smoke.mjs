@@ -219,6 +219,25 @@ try {
   const jkeys = await jf.$$eval('.json-tree .j-key', (els) => els.length);
   if (jkeys > 0) pass('JSON rendered as collapsible tree (' + jkeys + ' keys)'); else fail('no json keys');
 
+  // ── Jupyter Notebook (.ipynb) ── markdown + code cells + saved outputs, sanitized.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.ipynb' }).click();
+  const nframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
+  const nf = await nframe.contentFrame();
+  await nf.waitForSelector('.nb-notebook', { timeout: 10000 });
+  const nbType = await page.$eval('#typeSelect', (s) => s.value);
+  if (nbType === 'ipynb') pass('.ipynb detected as Jupyter Notebook'); else fail('ipynb type: ' + nbType);
+  const nbMd = await nf.$$eval('.nb-md h1', (els) => els.map((e) => e.textContent));
+  if (nbMd.some((t) => /Notebook demo/.test(t))) pass('notebook markdown cell rendered'); else fail('nb markdown h1: ' + nbMd.join(','));
+  const nbCode = await nf.$$eval('.nb-code .nb-src', (els) => els.length);
+  if (nbCode === 3) pass('notebook code cells rendered (' + nbCode + ')'); else fail('nb code cells: ' + nbCode);
+  const nbStream = await nf.$eval('.nb-stream', (e) => e.textContent).catch(() => '');
+  if (/Hello from a saved notebook output/.test(nbStream)) pass('notebook stream output shown'); else fail('nb stream: ' + nbStream);
+  const nbHtmlOut = await nf.$$eval('.nb-rich table td', (els) => els.length);
+  if (nbHtmlOut > 0) pass('notebook rich HTML output sanitized + rendered (' + nbHtmlOut + ' cells)'); else fail('no nb rich output table');
+  const nbErr = await nf.$('.nb-error');
+  if (nbErr) pass('notebook error output shown'); else fail('no nb error output');
+
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'example.js' }).click();
   await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });

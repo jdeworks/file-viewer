@@ -34,6 +34,7 @@ import xlsxType from '../types/xlsx/index.js';
 import docxType from '../types/docx/index.js';
 import pptxType from '../types/pptx/index.js';
 import jsonType from '../types/json/index.js';
+import ipynbType from '../types/ipynb/index.js';
 import imageType from '../types/image/index.js';
 import codeType from '../types/code/index.js';
 import htmlType from '../types/html/index.js';
@@ -47,6 +48,7 @@ export const REGISTRY = [
   docxType,
   pptxType,
   htmlType,
+  ipynbType,
   jsonType,
   imageType,
   codeType,
