@@ -28,10 +28,12 @@
 
 import rawType from '../types/raw/index.js';
 import markdownType from '../types/markdown/index.js';
+import pdfType from '../types/pdf/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
   markdownType,
+  pdfType,
   rawType,
 ];
 

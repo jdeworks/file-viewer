@@ -145,6 +145,22 @@ try {
   const arrows = await page.$$eval('.md-arrows path[d]', (els) => els.length);
   if (arrows > 0) pass('move arrow drawn (' + arrows + ')'); else fail('no move arrows drawn');
 
+  // ── PDF module (WP17) ── fresh load so the examples gallery is reachable.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.pdf' }).click();
+  const pframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
+  const pf = await pframe.contentFrame();
+  await pf.waitForSelector('img.pdf-page', { timeout: 15000 });
+  pass('PDF rendered to image pages');
+  const hasEditor = await page.$('#editor .monaco-editor');
+  if (!hasEditor) pass('PDF is preview-only (no raw editor)'); else fail('raw editor present for PDF');
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row');
+  const meta = await page.$$eval('#metaBody .meta-row .k', (els) => els.map((e) => e.textContent));
+  if (meta.includes('Pages') && meta.includes('Created')) pass('PDF embedded metadata (Pages, Created)');
+  else fail('PDF metadata rows: ' + meta.join(', '));
+  await page.click('#metaDrawer [data-close]');
+
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
 } catch (e) {

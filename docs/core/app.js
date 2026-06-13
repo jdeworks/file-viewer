@@ -71,17 +71,23 @@ async function activateType(type) {
   $('settingsBtn').hidden = false;
   $('metaBtn').hidden = false;
 
-  const canPreview = type.capabilities.preview && !state.intake.isBinary;
-  const canDiff = type.capabilities.diff && !state.intake.isBinary;
-  $('viewMode').hidden = !canPreview || isMobile();
+  // Capabilities decide which surfaces exist. Some types are preview-only (PDF: no raw
+  // editor), some raw-only (code), some both (markdown).
+  const canRaw = type.capabilities.rawView;
+  const canPreview = type.capabilities.preview;
+  const canDiff = type.capabilities.diff && canRaw && !state.intake.isBinary;
+  const both = canRaw && canPreview;
+  $('viewMode').hidden = !both || isMobile();
   $('rawMode').hidden = !canDiff;
   $('downloadBtn').hidden = !canDiff;
-  $('tabbar').style.display = canPreview && isMobile() ? 'flex' : 'none';
+  $('tabbar').style.display = both && isMobile() ? 'flex' : 'none';
   $('screenshotBtn').hidden = !(type.capabilities.screenshot && canPreview);
-  state.mode = canPreview ? 'split' : 'raw';
+  state.mode = both ? 'split' : (canPreview && !canRaw ? 'preview' : 'raw');
   state.rawMode = 'current';
+  state.tab = both ? 'raw' : (canPreview && !canRaw ? 'preview' : 'raw');
 
-  await buildRawView();
+  if (canRaw) await buildRawView();
+  else { state.rawview?.dispose(); state.rawview = null; $('editor').innerHTML = ''; }
   if (canPreview) await renderPreview(); else clearPreview();
   applyLayout();
 }
@@ -211,15 +217,18 @@ function syncScrollFromPreview(ratio) {
 /* ─────────────────────────── Layout / view modes ─────────────────────────── */
 
 function applyLayout() {
+  const caps = state.type.capabilities;
+  const both = caps.rawView && caps.preview;
+  // Forced view for single-surface types: preview-only -> preview, raw-only -> raw.
+  const forced = caps.preview && !caps.rawView ? 'preview' : 'raw';
   const panes = $('panes');
   if (isMobile()) {
     panes.removeAttribute('data-mode');
-    panes.setAttribute('data-tab', state.type.capabilities.preview ? state.tab : 'raw');
+    panes.setAttribute('data-tab', both ? state.tab : forced);
   } else {
     panes.removeAttribute('data-tab');
-    panes.setAttribute('data-mode', state.type.capabilities.preview ? state.mode : 'raw');
+    panes.setAttribute('data-mode', both ? state.mode : forced);
   }
-  // reflect active buttons
   document.querySelectorAll('#viewMode button').forEach((b) => b.classList.toggle('active', b.dataset.mode === state.mode));
   document.querySelectorAll('#tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.mode === state.tab));
   state.rawview?.layout();
@@ -253,8 +262,8 @@ async function buildMetadata() {
     ['MIME', i.mimeType || '—'],
     ['Modified', i.lastModified ? new Date(i.lastModified).toLocaleString() : '—'],
   ];
-  if (state.type.loadMetadata && !i.isBinary) {
-    try { const m = await state.type.loadMetadata(); for (const r of m.extract(i)) rows.push([r.label, r.value]); } catch {}
+  if (state.type.loadMetadata) {
+    try { const m = await state.type.loadMetadata(); for (const r of await m.extract(i)) rows.push([r.label, r.value]); } catch {}
   }
   body.innerHTML = '';
   for (const [k, v] of rows) {

@@ -53,7 +53,10 @@ const BASE_CSS = `
   body.fv-dark{color:#e6e6e6;background:#1e1e1e;}
   .fv-hl{outline:2px solid #4c9aff;outline-offset:2px;border-radius:3px;background:rgba(76,154,255,.12);}
   img,video,canvas{max-width:100%;height:auto;}
-  pre{overflow:auto;}`;
+  pre{overflow:auto;}
+  .pdf-doc{display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .pdf-page{box-shadow:0 1px 10px rgba(0,0,0,.3);max-width:100%;}
+  .pdf-note{color:#888;font-size:13px;}`;
 
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', maxWidth }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';
