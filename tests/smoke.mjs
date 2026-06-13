@@ -29,7 +29,8 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar', '.yaml': 'application/yaml', '.toml': 'application/toml',
   '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf',
   '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain',
-  '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg' };
+  '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
+  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -703,6 +704,21 @@ try {
   if (!mediaIframe) pass('media renders outside the sandboxed iframe'); else fail('media used an iframe');
   const mediaHasEditor = await page.$('#editor .monaco-editor');
   if (!mediaHasEditor) pass('media is preview-only (no raw editor)'); else fail('raw editor present for media');
+
+  // ── SQLite browser ── sql.js (WASM, same-origin) table list + grid + query. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.sqlite' }).click();
+  await page.waitForSelector('#previewHost .sq-grid', { timeout: 25000 });
+  const sqType = await page.$eval('#typeSelect', (s) => s.value);
+  if (sqType === 'sqlite') pass('.sqlite detected as SQLite database'); else fail('sqlite type: ' + sqType);
+  const sqTables = await page.$$eval('#previewHost .sq-table .sq-tname', (els) => els.map((e) => e.textContent));
+  if (sqTables.includes('artists') && sqTables.includes('albums')) pass('SQLite tables listed (' + sqTables.join(', ') + ')'); else fail('sqlite tables: ' + sqTables.join(','));
+  // Run a query and read the grid.
+  await page.fill('#previewHost .sq-sql', "SELECT name FROM artists WHERE country='UK' ORDER BY name");
+  await page.click('#previewHost .sq-run');
+  await page.waitForFunction(() => /Aphex Twin/.test(document.querySelector('#previewHost .sq-grid')?.textContent || ''), { timeout: 8000 }).catch(() => {});
+  const sqQueryText = await page.$eval('#previewHost .sq-grid', (e) => e.textContent);
+  if (/Aphex Twin/.test(sqQueryText) && /Bonobo/.test(sqQueryText) && !/Tycho/.test(sqQueryText)) pass('SQLite query executes (filtered result)'); else fail('sqlite query: ' + sqQueryText.replace(/\s+/g, ' ').slice(0, 80));
 
   // ── EPUB e-book (hand-rolled reader) ── unzip + spine + TOC, rendered in the pane. ──
   await page.goto(origin, { waitUntil: 'networkidle' });

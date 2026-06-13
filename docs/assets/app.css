@@ -290,6 +290,31 @@ body {
   .epub-content { font-size: 16px; padding: 20px 16px; }
 }
 
+/* SQLite browser (parent pane): table list + data grid + query box. */
+.preview-host .sq-doc { position: absolute; inset: 0; display: flex; background: var(--bg); }
+.sq-side { width: 200px; flex: 0 0 200px; border-right: 1px solid var(--border); background: var(--bg-2); overflow: auto; }
+.sq-side-head { padding: 10px 12px; font: 600 12px system-ui, sans-serif; color: var(--fg-2); text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border); }
+.sq-tables { list-style: none; margin: 0; padding: 4px 0; }
+.sq-table { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.sq-table:hover { background: var(--bg); }
+.sq-table.active { background: var(--bg); border-left: 2px solid var(--accent); }
+.sq-tname { font: 12px ui-monospace, monospace; word-break: break-all; }
+.sq-trows { color: var(--fg-2); font-size: 11px; font-variant-numeric: tabular-nums; }
+.sq-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.sq-query { display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
+.sq-sql { flex: 1; font: 12px ui-monospace, monospace; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); }
+.sq-run { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--accent); color: var(--accent-fg); cursor: pointer; }
+.sq-result { flex: 1; overflow: auto; padding: 8px 12px; }
+.sq-note { color: var(--fg-2); font-size: 12px; margin: 0 0 8px; }
+.sq-err { color: var(--danger); font: 12px ui-monospace, monospace; }
+.sq-grid-wrap { overflow: auto; }
+.sq-grid { border-collapse: collapse; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.sq-grid th, .sq-grid td { border: 1px solid var(--border); padding: 3px 8px; text-align: left; white-space: nowrap; max-width: 360px; overflow: hidden; text-overflow: ellipsis; }
+.sq-grid th { background: var(--bg-2); position: sticky; top: 0; }
+.sq-null { color: var(--fg-2); font-style: italic; }
+.sq-blob { color: var(--fg-2); }
+@media (max-width: 760px) { .sq-side { width: 120px; flex-basis: 120px; } }
+
 /* Magic-selector highlight inside Monaco (preview hover/click -> raw line). */
 .fv-line-hl { background: rgba(76, 154, 255, .18); }
 

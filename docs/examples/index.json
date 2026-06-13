@@ -4,6 +4,7 @@
   { "label": "Sample.txt", "file": "sample.txt", "mime": "text/plain", "category": "Documents" },
   { "label": "Sample.epub", "file": "sample.epub", "mime": "application/epub+zip", "category": "Documents" },
   { "label": "Sample.csv", "file": "sample.csv", "mime": "text/csv", "category": "Data" },
+  { "label": "Sample.sqlite", "file": "sample.sqlite", "mime": "application/vnd.sqlite3", "category": "Data" },
   { "label": "Sample.json", "file": "sample.json", "mime": "application/json", "category": "Data" },
   { "label": "Sample.eml", "file": "sample.eml", "mime": "message/rfc822", "category": "Data" },
   { "label": "Sample.ics", "file": "sample.ics", "mime": "text/calendar", "category": "Data" },

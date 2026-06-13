@@ -47,6 +47,11 @@ cp node_modules/jszip/dist/jszip.min.js              "$VENDOR/jszip/jszip.min.js
 cp node_modules/chart.js/dist/chart.umd.js           "$VENDOR/chartjs/chart.umd.js"
 cp node_modules/pptxviewjs/dist/PptxViewJS.min.js    "$VENDOR/pptxviewjs/PptxViewJS.min.js"
 
+# --- sql.js (SQLite compiled to WASM). JS loader + wasm binary; loaded only for .db/.sqlite. ---
+mkdir -p "$VENDOR/sql.js"
+cp node_modules/sql.js/dist/sql-wasm.js   "$VENDOR/sql.js/sql-wasm.js"
+cp node_modules/sql.js/dist/sql-wasm.wasm "$VENDOR/sql.js/sql-wasm.wasm"
+
 # Record pinned versions for provenance.
 node -e "const p=require('./package.json').devDependencies; require('fs').writeFileSync('$VENDOR/VERSIONS.json', JSON.stringify(p,null,2)+'\n')"
 
