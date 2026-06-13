@@ -785,6 +785,33 @@ try {
   const oaPaths = await page.$$eval('#previewHost .oa-path', (els) => els.map((e) => e.textContent));
   if (/Widget API/.test(oaTitle) && oaMethods.includes('DELETE') && oaPaths.includes('/widgets/{id}')) pass('OpenAPI: endpoints listed by method + path (' + oaMethods.length + ' ops)'); else fail('openapi: title=' + oaTitle + ' methods=' + oaMethods.join(',') + ' paths=' + oaPaths.join(','));
 
+  // ── JSON ↔ YAML conversion exports (loadExports) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.json' }).click();
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const jsonExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
+  if (jsonExports.includes('Download as YAML') && jsonExports.includes('Download minified JSON')) pass('JSON export menu offers YAML + minified'); else fail('json exports: ' + jsonExports.join(','));
+  const [yamlDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download as YAML")'),
+  ]);
+  if (/\.yaml$/.test(yamlDownload.suggestedFilename())) pass('JSON → YAML conversion download (' + yamlDownload.suggestedFilename() + ')'); else fail('json→yaml name: ' + yamlDownload.suggestedFilename());
+
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.yaml' }).click();
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const yamlExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
+  if (yamlExports.includes('Download as JSON')) pass('YAML export menu offers JSON'); else fail('yaml exports: ' + yamlExports.join(','));
+  const [jsonDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download as JSON")'),
+  ]);
+  if (/\.json$/.test(jsonDownload.suggestedFilename())) pass('YAML → JSON conversion download (' + jsonDownload.suggestedFilename() + ')'); else fail('yaml→json name: ' + jsonDownload.suggestedFilename());
+
   // ── Calendar (.ics) ── parse iCalendar, render events chronologically.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.ics' }).click();

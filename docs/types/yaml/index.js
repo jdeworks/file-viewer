@@ -13,6 +13,7 @@ export default {
   },
   syntaxLanguage: 'yaml',
   loadRenderer: () => import('./renderer.js'),
+  loadExports: () => import('./exports.js'),   // Export menu: format conversion
   loadMetadata: () => import('./metadata.js'),
   settingsUrl: new URL('./settings.default.json', import.meta.url),
 };
