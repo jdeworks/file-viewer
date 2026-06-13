@@ -156,7 +156,15 @@ const BASE_CSS = `
   .geo-poly{fill:#4c9aff33;stroke:#4c9aff;stroke-width:1.5;stroke-linejoin:round;}
   .geo-line{fill:none;stroke:#2ea043;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
   .geo-pt{fill:#cf222e;stroke:#fff;stroke-width:1;}
-  body.fv-dark .geo-pt{stroke:#161b22;}`;
+  body.fv-dark .geo-pt{stroke:#161b22;}
+  .sub-meta{font:12px system-ui,sans-serif;color:#888;margin:0 0 12px;}
+  .sub-cue{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:6px 0;border-bottom:1px solid #0001;}
+  body.fv-dark .sub-cue{border-bottom-color:#fff1;}
+  .sub-time{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#4c9aff;white-space:nowrap;}
+  .sub-idx{display:inline-block;min-width:26px;color:#888;margin-right:6px;}
+  .sub-text{white-space:pre-wrap;word-break:break-word;line-height:1.5;}
+  .sub-empty{color:#888;font-family:system-ui,sans-serif;}
+  @media (max-width:620px){.sub-cue{grid-template-columns:1fr;gap:2px;}}`;
 
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';

@@ -25,6 +25,7 @@
   { "label": "Sample.ini", "file": "sample.ini", "mime": "text/plain", "category": "Config" },
   { "label": "Sample.patch", "file": "sample.patch", "mime": "text/x-diff", "category": "Code" },
   { "label": "Sample.log", "file": "sample.log", "mime": "text/plain", "category": "Code" },
+  { "label": "Sample.srt", "file": "sample.srt", "mime": "application/x-subrip", "category": "Media" },
   { "label": "example.js", "file": "example.js", "mime": "text/javascript", "category": "Code" },
   { "label": "Sample.html", "file": "sample.html", "mime": "text/html", "category": "Code" },
   { "label": "Sample.ipynb", "file": "sample.ipynb", "mime": "application/x-ipynb+json", "category": "Code" },

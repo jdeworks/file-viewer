@@ -30,7 +30,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf',
   '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain',
   '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
-  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm', '.png': 'image/png' };
+  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -509,6 +509,18 @@ try {
   const warnLines = await lf.$$eval('.logv .l-warn', (els) => els.length);
   const tsSpans = await lf.$$eval('.logv .l-ts', (els) => els.length);
   if (errLines >= 1 && warnLines >= 1 && tsSpans >= 4) pass('log severity highlighted (' + errLines + ' error, ' + warnLines + ' warn, ' + tsSpans + ' timestamps)'); else fail('log: err=' + errLines + ' warn=' + warnLines + ' ts=' + tsSpans);
+
+  // ── Subtitles (.srt/.vtt) ── parse cues into a timecoded list. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.srt' }).click();
+  const subframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const subf = await subframe.contentFrame();
+  await subf.waitForSelector('.sub-cue', { timeout: 8000 });
+  const subTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (subTypeId === 'subtitle') pass('.srt detected as Subtitles'); else fail('subtitle type: ' + subTypeId);
+  const cueCount = await subf.$$eval('.sub-cue', (els) => els.length);
+  const firstTime = await subf.$eval('.sub-cue .sub-time', (e) => e.textContent);
+  if (cueCount === 3 && /0:01\s*→\s*0:04/.test(firstTime)) pass('subtitle cues parsed with timecodes (' + cueCount + ' cues)'); else fail('subtitle cues=' + cueCount + ' first=' + firstTime);
 
   // ── GeoJSON map ── pure inline SVG, no tiles (zero network). ──
   await page.goto(origin, { waitUntil: 'networkidle' });

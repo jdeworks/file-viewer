@@ -1,0 +1,13 @@
+1
+00:00:01,000 --> 00:00:04,000
+Welcome to the File Viewer subtitle demo.
+
+2
+00:00:04,500 --> 00:00:08,200
+SubRip (.srt) and WebVTT (.vtt) are
+parsed into a timecoded cue list.
+
+3
+00:00:09,000 --> 00:00:12,750
+Everything stays on your device —
+no network, no upload.
