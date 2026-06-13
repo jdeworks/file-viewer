@@ -13,8 +13,13 @@
 //     loadDiffRenderer?() => Promise<{render}>,   // optional custom diff (overrides the type's)
 //   }
 import packageJson from './package-json/index.js';
+import cargoToml from './cargo-toml/index.js';
+import tsconfig from './tsconfig/index.js';
+import dockerfile from './dockerfile/index.js';
+import gitignore from './gitignore/index.js';
+import dockerCompose from './docker-compose/index.js';
 
-export const KNOWN = [packageJson];
+export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

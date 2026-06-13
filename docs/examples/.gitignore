@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build output
+dist/
+*.log
+
+# Env & secrets
+.env
+!.env.example

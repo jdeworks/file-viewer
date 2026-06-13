@@ -206,6 +206,35 @@ body {
 .pj-skey { color: var(--accent); font-size: 12px; }
 .pj-scmd { color: var(--fg-2); font-size: 12px; white-space: pre-wrap; word-break: break-all; }
 .pj-err { color: var(--danger); }
+.pj-head h2 { font-size: 19px; margin: 0; }
+.pj-pkgver { font: 13px ui-monospace, monospace; color: var(--fg-2); }
+.pj-meta { color: var(--fg-2); font-size: 12px; margin: 4px 0; }
+.pj-ext-min { font-size: 11px; color: var(--fg-2); margin-left: 6px; text-decoration: none; }
+.pj-ext-min:hover { text-decoration: underline; }
+
+/* Shared styling for the other known-file enhancements (tsconfig / Dockerfile / .gitignore / compose) */
+.ts-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.ts-table th { text-align: left; color: var(--fg-2); font-size: 11px; text-transform: uppercase; letter-spacing: .03em; border-bottom: 1px solid var(--border); padding: 4px 10px 4px 0; }
+.ts-table td { padding: 4px 10px 4px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.ts-key { color: var(--accent); font: 12px ui-monospace, monospace; white-space: nowrap; }
+.ts-val code { font: 12px ui-monospace, monospace; }
+.ts-boolean code { color: #d29922; }
+.ts-doc { color: var(--fg-2); }
+.ts-list { list-style: none; margin: 0; padding: 0; }
+.ts-list li { padding: 2px 0; font: 12px ui-monospace, monospace; }
+.kf-list { list-style: none; margin: 0; padding: 0; }
+.kf-instr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.kf-badge { font: 600 11px ui-monospace, monospace; padding: 1px 7px; border-radius: 5px; background: var(--accent); color: var(--accent-fg); white-space: nowrap; }
+.kf-args { font: 12px ui-monospace, monospace; color: var(--fg); word-break: break-word; flex: 1 1 200px; }
+.kf-note { color: var(--fg-2); font-size: 11px; }
+.kf-pat { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.kf-pat code { font: 12px ui-monospace, monospace; }
+.kf-tag { font-size: 10px; padding: 0 6px; border-radius: 8px; background: var(--bg-3); color: var(--fg-2); }
+.kf-svc { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 10px 0; }
+.kf-svc h3 { margin: 0 0 6px; font-size: 14px; }
+.kf-field { display: flex; gap: 10px; padding: 2px 0; flex-wrap: wrap; }
+.kf-flabel { color: var(--fg-2); font-size: 12px; min-width: 90px; }
+.kf-fvals code { font: 12px ui-monospace, monospace; margin-right: 6px; }
 
 /* Media (audio/video) renders directly in the preview pane via a blob: URL (outside the
    sandbox — bytes can't execute). Styled here in the parent, not the iframe template. */

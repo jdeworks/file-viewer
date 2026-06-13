@@ -275,8 +275,9 @@ function normalizePercents(values) {
 async function activateType(type) {
   state.type = type;
   state.settingsModel = await getModel(type);   // cached per type (no re-fetch per file)
-  // Layer 3: does a known-file enhancement apply (e.g. package.json)? Reset the revert flag.
-  state.known = type.capabilities.preview ? matchKnown(state.intake, type) : null;
+  // Layer 3: does a known-file enhancement apply (e.g. package.json, Dockerfile)? A known
+  // renderer can supply a preview even when the base type has none (e.g. Dockerfile→code).
+  state.known = matchKnown(state.intake, type);
   state.forceBase = false;
   updateEnhanceChip();
   // Show workspace + relevant chrome.
@@ -291,7 +292,8 @@ async function activateType(type) {
   // Capabilities decide which surfaces exist. Some types are preview-only (PDF: no raw
   // editor), some raw-only (code), some both (markdown).
   const canRaw = type.capabilities.rawView;
-  const canPreview = type.capabilities.preview;
+  // A matched known-file enhancement provides a preview even if the base type doesn't.
+  const canPreview = type.capabilities.preview || (!!state.known && !state.forceBase);
   const canDiff = type.capabilities.diff && canRaw && !state.intake.isBinary;
   const both = canRaw && canPreview;
   $('viewMode').hidden = !both || isMobile();
@@ -531,9 +533,11 @@ function syncScrollFromPreview(ratio) {
 
 function applyLayout() {
   const caps = state.type.capabilities;
-  const both = caps.rawView && caps.preview;
+  // A matched known-file enhancement supplies a preview even if the base type has none.
+  const hasPreview = caps.preview || (!!state.known && !state.forceBase);
+  const both = caps.rawView && hasPreview;
   // Forced view for single-surface types: preview-only -> preview, raw-only -> raw.
-  const forced = caps.preview && !caps.rawView ? 'preview' : 'raw';
+  const forced = hasPreview && !caps.rawView ? 'preview' : 'raw';
   const panes = $('panes');
   if (isMobile()) {
     panes.removeAttribute('data-mode');
