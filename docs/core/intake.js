@@ -50,8 +50,33 @@ export function intakeFromText(text, filename) {
   return buildIntake({ filename, mimeType: 'text/plain', bytes, isPaste: true });
 }
 
-// Wire all three intake paths onto the page. `onIntake(intake)` is called with a normalized object.
-export function wireIntake({ dropZone, fileInput, onIntake, onError }) {
+// Recursively read a dropped directory tree into [{ file, path }] using the Entries API.
+function readEntries(reader) {
+  return new Promise((resolve, reject) => {
+    const all = [];
+    const next = () => reader.readEntries((batch) => {
+      if (!batch.length) return resolve(all);
+      all.push(...batch); next();
+    }, reject);
+    next();
+  });
+}
+async function walkEntry(entry, prefix, out) {
+  const path = prefix ? prefix + '/' + entry.name : entry.name;
+  if (entry.isFile) {
+    await new Promise((res) => entry.file((f) => { out.push({ file: f, path }); res(); }, () => res()));
+  } else if (entry.isDirectory) {
+    for (const child of await readEntries(entry.createReader())) await walkEntry(child, path, out);
+  }
+}
+
+// `webkitdirectory` input -> [{ file, path }] using webkitRelativePath.
+export function entriesFromFileList(fileList) {
+  return [...fileList].map((file) => ({ file, path: file.webkitRelativePath || file.name }));
+}
+
+// Wire intake: single file (picker/drop/paste) -> onIntake; folder (dir picker/drop) -> onFolder.
+export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolder, onError }) {
   const handleFile = async (file) => {
     try {
       if (!file) return;
@@ -62,6 +87,10 @@ export function wireIntake({ dropZone, fileInput, onIntake, onError }) {
   };
 
   fileInput?.addEventListener('change', (e) => handleFile(e.target.files?.[0]));
+  folderInput?.addEventListener('change', (e) => {
+    const entries = entriesFromFileList(e.target.files || []);
+    if (entries.length) onFolder?.(entries);
+  });
 
   if (dropZone) {
     ['dragenter', 'dragover'].forEach((ev) =>
@@ -77,7 +106,16 @@ export function wireIntake({ dropZone, fileInput, onIntake, onError }) {
         dropZone.classList.remove('drag-over');
       })
     );
-    dropZone.addEventListener('drop', (e) => {
+    dropZone.addEventListener('drop', async (e) => {
+      // Capture entries synchronously (the items list is consumed after the event).
+      const items = [...(e.dataTransfer?.items || [])];
+      const roots = items.map((i) => i.webkitGetAsEntry?.()).filter(Boolean);
+      const hasDir = roots.some((r) => r.isDirectory);
+      if (hasDir && onFolder) {
+        const out = [];
+        for (const r of roots) await walkEntry(r, '', out);
+        if (out.length) return onFolder(out);
+      }
       const file = e.dataTransfer?.files?.[0];
       if (file) handleFile(file);
     });

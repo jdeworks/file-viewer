@@ -228,6 +228,32 @@ try {
   await sf.waitForSelector('.img-doc svg', { timeout: 8000 });
   pass('SVG sanitized and rendered inline');
 
+  // ── Folder tree sidebar ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    const mk = (name, body) => ({ file: new File([body], name.split('/').pop(), { type: '' }), path: name });
+    const entries = [
+      mk('proj/README.md', '# Project\n\nHello from the tree.'),
+      mk('proj/src/app.js', 'console.log(1)'),
+      mk('proj/src/util.py', 'print(2)'),
+      mk('proj/data/rows.csv', 'a,b\n1,2'),
+    ];
+    window.__fv.loadFolder(entries);
+  });
+  await page.waitForSelector('#fileTree:not([hidden]) .ft-file', { timeout: 8000 });
+  const fileRows = await page.$$eval('#fileTree .ft-file', (els) => els.length);
+  const folderRows = await page.$$eval('#fileTree .ft-folder', (els) => els.length);
+  if (fileRows === 4 && folderRows >= 2) pass('folder tree built (' + fileRows + ' files, ' + folderRows + ' folders)'); else fail('tree rows: files=' + fileRows + ' folders=' + folderRows);
+  // README opened by default + marked active (async open, so wait for it).
+  await page.waitForSelector('#fileTree .ft-file.active', { timeout: 8000 });
+  const active = await page.$eval('#fileTree .ft-file.active .ft-name', (e) => e.textContent).catch(() => null);
+  if (active === 'README.md') pass('default file (README) opened + active'); else fail('active file: ' + active);
+  // Click the Python file -> Code type with python highlighting.
+  await page.click('#fileTree .ft-file[data-path="proj/src/util.py"]');
+  await page.waitForTimeout(400);
+  const pyType = await page.$eval('#typeSelect', (s) => s.value);
+  if (pyType === 'code') pass('clicking tree file opens it (util.py -> Code)'); else fail('py type: ' + pyType);
+
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
 } catch (e) {

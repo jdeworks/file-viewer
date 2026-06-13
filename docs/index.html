@@ -12,6 +12,7 @@
   <div id="app">
     <!-- Top bar: minimal by default, expert controls tuck behind the gear / fullscreen. -->
     <header class="topbar">
+      <button class="icon-btn" id="treeBtn" title="Toggle file tree" aria-label="Toggle file tree" hidden>☰</button>
       <div class="brand" title="File Viewer — nothing leaves your device">◧ Viewer</div>
 
       <div class="file-id" id="fileId" hidden>
@@ -44,6 +45,17 @@
       <button class="icon-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">⛶</button>
     </header>
 
+    <div class="body">
+    <!-- Folder tree sidebar -->
+    <aside id="fileTree" class="filetree" hidden aria-label="File tree">
+      <div class="ft-head">
+        <span class="ft-root" id="ftRoot">Folder</span>
+        <button class="icon-btn ft-close" id="treeCloseBtn" title="Hide tree" aria-label="Hide tree">‹</button>
+      </div>
+      <div class="ft-body" id="ftBody"></div>
+    </aside>
+
+    <div class="main-area">
     <!-- Intake screen -->
     <section id="intake" class="intake">
       <div class="dropzone" id="dropZone">
@@ -51,11 +63,17 @@
         <h1>Drop a file, pick one, or paste</h1>
         <p class="muted">Everything runs in your browser. No upload, no server, no tracking.</p>
         <div class="dz-actions">
-          <label class="btn primary">
-            Choose file
-            <input type="file" id="fileInput" hidden>
-          </label>
-          <span class="muted">or drag &amp; drop · or ⌘/Ctrl+V to paste</span>
+          <div class="dz-buttons">
+            <label class="btn primary">
+              Choose file
+              <input type="file" id="fileInput" hidden>
+            </label>
+            <label class="btn">
+              Choose folder
+              <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+            </label>
+          </div>
+          <span class="muted">or drag &amp; drop a file or folder · ⌘/Ctrl+V to paste</span>
         </div>
         <div class="examples" id="examples"></div>
       </div>
@@ -73,6 +91,8 @@
         <div class="pane preview-pane" id="previewPane"><div id="previewHost" class="preview-host"></div></div>
       </div>
     </section>
+    </div><!-- /.main-area -->
+    </div><!-- /.body -->
 
     <!-- Settings drawer (collapsible, off-canvas) -->
     <aside id="settingsDrawer" class="drawer" hidden aria-label="Settings">

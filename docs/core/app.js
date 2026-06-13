@@ -5,7 +5,8 @@
 
 import { REGISTRY, getType } from './registry.js';
 import { pickType } from './detect.js';
-import { wireIntake, LARGE_FILE_BYTES } from './intake.js';
+import { wireIntake, intakeFromFile, LARGE_FILE_BYTES } from './intake.js';
+import { buildTree, renderTree } from './filetree.js';
 import { createRawView } from './rawview.js';
 import { mountPreview } from './iframe.js';
 import { buildModel, monacoOptions, renderSettings } from './settings.js';
@@ -21,6 +22,7 @@ const state = {
   mode: 'split',         // desktop view mode: raw | split | preview
   tab: 'raw',            // mobile active tab
   syncing: false,
+  treeApi: null,         // folder tree controller (setActive)
 };
 
 const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
@@ -43,6 +45,37 @@ async function loadIntake(intake) {
   const { type, ranking } = pickType(intake);
   populateTypeSelect(ranking, type.id);
   await activateType(type);
+}
+
+/* ─────────────────────────── Folder tree (sidebar) ─────────────────────────── */
+
+async function loadFolder(entries) {
+  // Build + render the tree, reveal the sidebar, and open a sensible default file.
+  const rootName = (entries[0]?.path.split('/')[0]) || 'Folder';
+  $('ftRoot').textContent = rootName;
+  $('ftRoot').title = rootName;
+  const tree = buildTree(entries);
+  state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node) });
+  $('treeBtn').hidden = false;
+  setTree(true);
+
+  // Prefer a README / index, else the first file.
+  const pick = entries.find((e) => /(^|\/)(readme|index)\.\w+$/i.test(e.path)) || entries[0];
+  if (pick) { await openTreeFile({ file: pick.file, path: pick.path }); state.treeApi.setActive(pick.path); }
+}
+
+async function openTreeFile(node) {
+  try {
+    await loadIntake(await intakeFromFile(node.file));
+    if (isMobile()) setTree(false);   // collapse the overlay after picking on phones
+  } catch (err) {
+    toast('Could not open ' + node.path);
+  }
+}
+
+function setTree(open) {
+  $('fileTree').hidden = !open;
+  if (isMobile()) $('scrim').hidden = !open;
 }
 
 function populateTypeSelect(ranking, selectedId) {
@@ -335,15 +368,17 @@ function init() {
   applyTheme(saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   wireIntake({
-    dropZone: $('dropZone'), fileInput: $('fileInput'),
-    onIntake: loadIntake, onError: (e) => toast('Could not read file: ' + e.message),
+    dropZone: $('dropZone'), fileInput: $('fileInput'), folderInput: $('folderInput'),
+    onIntake: loadIntake, onFolder: loadFolder, onError: (e) => toast('Could not read file: ' + e.message),
   });
+  $('treeBtn').addEventListener('click', () => setTree($('fileTree').hidden));
+  $('treeCloseBtn').addEventListener('click', () => setTree(false));
 
   $('typeSelect').addEventListener('change', (e) => { const t = getType(e.target.value); if (t) activateType(t); });
   $('themeBtn').addEventListener('click', () => applyTheme(!themeIsDark()));
   $('settingsBtn').addEventListener('click', () => openDrawer('settingsDrawer', openSettings));
   $('metaBtn').addEventListener('click', () => openDrawer('metaDrawer', buildMetadata));
-  $('scrim').addEventListener('click', closeDrawers);
+  $('scrim').addEventListener('click', () => { closeDrawers(); if (isMobile()) setTree(false); });
   document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeDrawers));
   $('fullscreenBtn').addEventListener('click', () => {
     if (document.fullscreenElement) document.exitFullscreen();
@@ -372,7 +407,7 @@ function init() {
   loadExamples();
 
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
-  window.__fv = { state, setRawMode, downloadCurrent };
+  window.__fv = { state, setRawMode, downloadCurrent, loadFolder };
 }
 
 document.addEventListener('DOMContentLoaded', init);
