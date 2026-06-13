@@ -433,6 +433,15 @@ try {
   if (sheetTitles.join(',') === 'People,Totals') pass('Excel: both sheets rendered'); else fail('sheet titles: ' + sheetTitles.join(','));
   const xTables = await xf.$$eval('.sheet table', (els) => els.length);
   if (xTables === 2) pass('Excel: one table per sheet'); else fail('Excel tables: ' + xTables);
+  // Multi-sheet tab switcher (CSS-only): a tab per sheet; only the active panel is visible, and
+  // clicking the 2nd tab reveals the 2nd sheet (no script — pure :checked CSS).
+  const sheetTabs = await xf.$$eval('.sheet-tabbar .sheet-tab', (els) => els.map((e) => e.textContent));
+  const panel0Visible = await xf.$eval('#tb-p0', (e) => getComputedStyle(e).display !== 'none');
+  const panel1Hidden = await xf.$eval('#tb-p1', (e) => getComputedStyle(e).display === 'none');
+  if (sheetTabs.join(',') === 'People,Totals' && panel0Visible && panel1Hidden) pass('Excel: multi-sheet tab switcher (only active sheet shown)'); else fail('sheet tabs=' + sheetTabs.join(',') + ' p0vis=' + panel0Visible + ' p1hid=' + panel1Hidden);
+  await xf.click('.sheet-tabbar .sheet-tab:nth-of-type(2)');
+  const panel1NowVisible = await xf.$eval('#tb-p1', (e) => getComputedStyle(e).display !== 'none');
+  if (panel1NowVisible) pass('Excel: clicking a tab switches sheets (CSS-only, no script)'); else fail('tab switch did not reveal sheet 2');
   // Excel export (loadExports hook): menu offers CSV / JSON (+ all-sheets for multi-sheet); CSV fires.
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });

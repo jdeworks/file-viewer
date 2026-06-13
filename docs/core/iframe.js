@@ -65,6 +65,34 @@ const BASE_CSS = `
   .pdf-note{color:#888;font-size:13px;}
   .tabular{font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;}
   .sheet-title{font-family:system-ui,sans-serif;margin:18px 0 4px;}
+  /* Multi-sheet tab switcher (CSS-only: radios drive panel visibility, no script). */
+  .sheet-radio{position:absolute;width:0;height:0;opacity:0;pointer-events:none;}
+  .sheet-tabbar{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid #0002;margin-bottom:8px;position:sticky;top:0;background:inherit;z-index:2;}
+  .sheet-tab{font-family:system-ui,sans-serif;font-size:13px;padding:6px 12px;border:1px solid transparent;border-bottom:0;border-radius:6px 6px 0 0;cursor:pointer;color:#666;white-space:nowrap;}
+  body.fv-dark .sheet-tab{color:#9aa;}
+  .sheet-panel{display:none;}
+  .sheet-panel .sheet-title{display:none;}   /* the tab already names the sheet */
+  /* checked-radio → active tab styling: match each radio to its label via :checked + sibling order */
+  .sheet-radio:checked + .sheet-tabbar { }
+  .sheet-tabbed .sheet-tab{}
+  .sheet-radio:nth-of-type(1):checked~.sheet-tabbar .sheet-tab:nth-of-type(1),
+  .sheet-radio:nth-of-type(2):checked~.sheet-tabbar .sheet-tab:nth-of-type(2),
+  .sheet-radio:nth-of-type(3):checked~.sheet-tabbar .sheet-tab:nth-of-type(3),
+  .sheet-radio:nth-of-type(4):checked~.sheet-tabbar .sheet-tab:nth-of-type(4),
+  .sheet-radio:nth-of-type(5):checked~.sheet-tabbar .sheet-tab:nth-of-type(5),
+  .sheet-radio:nth-of-type(6):checked~.sheet-tabbar .sheet-tab:nth-of-type(6),
+  .sheet-radio:nth-of-type(7):checked~.sheet-tabbar .sheet-tab:nth-of-type(7),
+  .sheet-radio:nth-of-type(8):checked~.sheet-tabbar .sheet-tab:nth-of-type(8){
+    color:#1a1a1a;background:#f3f4f6;border-color:#0002;}
+  body.fv-dark .sheet-radio:nth-of-type(1):checked~.sheet-tabbar .sheet-tab:nth-of-type(1),
+  body.fv-dark .sheet-radio:nth-of-type(2):checked~.sheet-tabbar .sheet-tab:nth-of-type(2),
+  body.fv-dark .sheet-radio:nth-of-type(3):checked~.sheet-tabbar .sheet-tab:nth-of-type(3),
+  body.fv-dark .sheet-radio:nth-of-type(4):checked~.sheet-tabbar .sheet-tab:nth-of-type(4),
+  body.fv-dark .sheet-radio:nth-of-type(5):checked~.sheet-tabbar .sheet-tab:nth-of-type(5),
+  body.fv-dark .sheet-radio:nth-of-type(6):checked~.sheet-tabbar .sheet-tab:nth-of-type(6),
+  body.fv-dark .sheet-radio:nth-of-type(7):checked~.sheet-tabbar .sheet-tab:nth-of-type(7),
+  body.fv-dark .sheet-radio:nth-of-type(8):checked~.sheet-tabbar .sheet-tab:nth-of-type(8){
+    color:#e6e6e6;background:#2a2a2a;border-color:#fff2;}
   .tbl-meta,.tbl-note{font-family:system-ui,sans-serif;color:#888;font-size:12px;margin:2px 0;}
   .table-wrap{overflow-x:auto;border:1px solid #0002;border-radius:6px;}
   table{border-collapse:collapse;width:100%;}
