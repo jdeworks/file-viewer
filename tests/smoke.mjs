@@ -909,6 +909,16 @@ try {
     return n;
   });
   if (painted > 100) pass('STL mesh rendered to canvas (' + painted + ' painted pixels)'); else fail('stl canvas painted pixels: ' + painted);
+  // Mesh interconvert (loadExports): STL offers OBJ/PLY; an OBJ download actually fires.
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const stlExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
+  if (stlExports.includes('Download as OBJ') && stlExports.includes('Download as PLY') && !stlExports.includes('Download as STL')) pass('STL export menu offers OBJ + PLY (not its own format)'); else fail('stl exports: ' + stlExports.join(','));
+  const [meshDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download as OBJ")'),
+  ]);
+  if (/\.obj$/.test(meshDownload.suggestedFilename())) pass('mesh interconvert: STL → OBJ downloaded (' + meshDownload.suggestedFilename() + ')'); else fail('mesh download name: ' + meshDownload.suggestedFilename());
 
   // ── OBJ 3D viewer ── reuses the shared mesh viewer; polygons fan-triangulated. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
