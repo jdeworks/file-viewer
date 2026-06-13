@@ -1,0 +1,11 @@
+{
+  "name": "file-viewer-vendoring",
+  "private": true,
+  "description": "Dev-only: pins versions of vendored runtime libs. NOT shipped — runtime serves docs/vendor/ only. See scripts/vendor.sh.",
+  "devDependencies": {
+    "monaco-editor": "0.52.2",
+    "pdfjs-dist": "4.10.38",
+    "dompurify": "3.2.4",
+    "markdown-it": "14.1.0"
+  }
+}

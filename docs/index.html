@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>File Viewer</title>
+  <meta name="description" content="Mobile-first, private, client-only file viewer. Nothing leaves your device.">
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Top bar: minimal by default, expert controls tuck behind the gear / fullscreen. -->
+    <header class="topbar">
+      <div class="brand" title="File Viewer — nothing leaves your device">◧ Viewer</div>
+
+      <div class="file-id" id="fileId" hidden>
+        <span class="file-name" id="fileName">—</span>
+        <select class="type-select" id="typeSelect" title="Detected type — override if we guessed wrong"></select>
+      </div>
+
+      <div class="spacer"></div>
+
+      <!-- View-mode switch (icons). Visible only when the type supports a preview. -->
+      <div class="seg viewmode" id="viewMode" hidden role="tablist" aria-label="View mode">
+        <button data-mode="raw" title="Raw" aria-label="Raw">⟨⟩</button>
+        <button data-mode="split" title="Split" aria-label="Split">▥</button>
+        <button data-mode="preview" title="Preview" aria-label="Preview">▦</button>
+      </div>
+
+      <button class="icon-btn" id="themeBtn" title="Toggle dark / light" aria-label="Toggle theme">◐</button>
+      <button class="icon-btn" id="screenshotBtn" title="Screenshot preview" aria-label="Screenshot" hidden>▣</button>
+      <button class="icon-btn" id="metaBtn" title="File info" aria-label="File info" hidden>ⓘ</button>
+      <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings" hidden>⚙</button>
+      <button class="icon-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">⛶</button>
+    </header>
+
+    <!-- Intake screen -->
+    <section id="intake" class="intake">
+      <div class="dropzone" id="dropZone">
+        <div class="dz-icon">⬓</div>
+        <h1>Drop a file, pick one, or paste</h1>
+        <p class="muted">Everything runs in your browser. No upload, no server, no tracking.</p>
+        <div class="dz-actions">
+          <label class="btn primary">
+            Choose file
+            <input type="file" id="fileInput" hidden>
+          </label>
+          <span class="muted">or drag &amp; drop · or ⌘/Ctrl+V to paste</span>
+        </div>
+        <div class="examples" id="examples"></div>
+      </div>
+    </section>
+
+    <!-- Workspace -->
+    <section id="workspace" class="workspace" hidden>
+      <!-- Mobile tab bar (hidden on desktop split) -->
+      <div class="tabbar" id="tabbar">
+        <button data-mode="raw" class="active">Raw</button>
+        <button data-mode="preview">Preview</button>
+      </div>
+      <div class="panes" id="panes">
+        <div class="pane raw-pane" id="rawPane"><div id="editor" class="editor-host"></div></div>
+        <div class="pane preview-pane" id="previewPane"><div id="previewHost" class="preview-host"></div></div>
+      </div>
+    </section>
+
+    <!-- Settings drawer (collapsible, off-canvas) -->
+    <aside id="settingsDrawer" class="drawer" hidden aria-label="Settings">
+      <div class="drawer-head"><h2>Settings</h2><button class="icon-btn" data-close>✕</button></div>
+      <div class="drawer-body" id="settingsBody"></div>
+    </aside>
+
+    <!-- Metadata drawer -->
+    <aside id="metaDrawer" class="drawer" hidden aria-label="File info">
+      <div class="drawer-head"><h2>File info</h2><button class="icon-btn" data-close>✕</button></div>
+      <div class="drawer-body" id="metaBody"></div>
+    </aside>
+
+    <div id="toast" class="toast" hidden></div>
+    <div id="scrim" class="scrim" hidden></div>
+  </div>
+
+  <script type="module" src="core/app.js"></script>
+</body>
+</html>

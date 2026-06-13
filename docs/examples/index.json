@@ -1,0 +1,4 @@
+[
+  { "label": "Welcome.md", "file": "welcome.md", "mime": "text/markdown" },
+  { "label": "Sample.txt", "file": "sample.txt", "mime": "text/plain" }
+]

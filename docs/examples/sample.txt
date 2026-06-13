@@ -1,0 +1,6 @@
+Plain text sample.
+
+This file has no special type, so it opens in the raw Monaco editor
+with word-wrap, search (Ctrl+F), and syntax set to plain text.
+
+Tabs, lines, and large files are all handled by the raw fallback.
