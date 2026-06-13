@@ -52,12 +52,15 @@
       <button class="icon-btn" id="downloadBtn" title="Download" aria-label="Download" hidden>⤓</button>
       <button class="icon-btn" id="themeBtn" title="Toggle dark / light" aria-label="Toggle theme">◐</button>
       <button class="icon-btn" id="screenshotBtn" title="Screenshot preview" aria-label="Screenshot" hidden>▣</button>
+      <button class="icon-btn" id="exportBtn" title="Export / Download as…" aria-label="Export" aria-expanded="false" hidden>📤</button>
       <button class="icon-btn" id="metaBtn" title="File info" aria-label="File info" hidden>ⓘ</button>
       <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings" hidden>⚙</button>
       <button class="icon-btn" id="moreBtn" title="More controls" aria-label="More controls" aria-expanded="false" hidden>⋯</button>
       <button class="icon-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">⛶</button>
       <!-- On phones the overflow controls move into this popover (see app.js layoutTopbar). -->
       <div class="more-menu" id="moreMenu" hidden></div>
+      <!-- Export / Download-as popover, populated on open (see app.js openExportMenu). -->
+      <div class="more-menu export-menu" id="exportMenu" hidden></div>
     </header>
 
     <div class="body">

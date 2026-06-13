@@ -134,6 +134,16 @@ try {
   const deco = await page.$$eval('.fv-line-hl', (els) => els.length);
   if (deco > 0) pass('magic selector highlighted raw line'); else fail('no raw decoration after preview click');
 
+  // Export framework: a Markdown (HTML) preview offers "Print / Save as PDF". (Don't click Print —
+  // window.print() would open a dialog; we only assert the menu is wired.)
+  const exportHidden = await page.$eval('#exportBtn', (e) => e.hidden);
+  if (!exportHidden) pass('export button shown for an HTML preview'); else fail('export button hidden for markdown');
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const exportItems = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
+  if (exportItems.some((t) => /Print \/ Save as PDF/.test(t))) pass('export menu offers Print / Save as PDF'); else fail('export items: ' + exportItems.join(','));
+  await page.click('#exportBtn');   // close the menu
+
   // Sandbox attribute is allow-scripts only (no allow-same-origin).
   const sandbox = await frame.getAttribute('sandbox');
   if (sandbox === 'allow-scripts') pass('iframe sandbox = allow-scripts only'); else fail('sandbox: ' + sandbox);

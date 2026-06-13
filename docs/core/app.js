@@ -17,6 +17,7 @@ import { initOffline, offlineMissHtml } from './offline.js';
 import * as persistence from './persistence.js';
 import { suppressInstallPrompt } from './ios-audio.js';
 import { registerCodeMetrics } from '../types/code/codelens.js';
+import { getExports, hasExports } from './exports.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
 import { getModel, preloadModels, monacoOptions, renderSettings, persistGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
@@ -145,7 +146,7 @@ function folderContext() {
 // On phones, keep only the essentials in the top bar (tree, file name, open, fullscreen)
 // and move the rest into the ⋯ popover. On desktop the controls return to their original
 // spots (same DOM nodes, so their handlers + hidden-state logic keep working).
-const OVERFLOW_IDS = ['typeSelect', 'rawMode', 'formatBtn', 'downloadBtn', 'screenshotBtn', 'metaBtn', 'settingsBtn', 'themeBtn'];
+const OVERFLOW_IDS = ['typeSelect', 'rawMode', 'formatBtn', 'downloadBtn', 'screenshotBtn', 'exportBtn', 'metaBtn', 'settingsBtn', 'themeBtn'];
 let overflowAnchors = null;
 function layoutTopbar() {
   if (!overflowAnchors) {
@@ -168,6 +169,28 @@ function toggleMoreMenu() {
   $('moreBtn').setAttribute('aria-expanded', String(open));
 }
 function closeMoreMenu() { $('moreMenu').hidden = true; $('moreBtn').setAttribute('aria-expanded', 'false'); }
+
+// Export / Download-as menu — populated on open from core + per-type export actions.
+function updateExportButton() { $('exportBtn').hidden = !hasExports(state); }
+function closeExportMenu() { $('exportMenu').hidden = true; $('exportBtn').setAttribute('aria-expanded', 'false'); }
+async function toggleExportMenu() {
+  const menu = $('exportMenu');
+  if (!menu.hidden) { closeExportMenu(); return; }
+  menu.innerHTML = '<div class="export-loading">…</div>';
+  menu.hidden = false;
+  $('exportBtn').setAttribute('aria-expanded', 'true');
+  const items = await getExports(state, { previewStyle: previewStyle(state.settingsModel.values) });
+  if ($('exportMenu').hidden) return;                          // closed while loading
+  menu.innerHTML = '';
+  if (!items.length) { menu.innerHTML = '<div class="export-loading">No exports available</div>'; return; }
+  for (const it of items) {
+    const b = document.createElement('button');
+    b.className = 'export-item';
+    b.textContent = it.label;
+    b.addEventListener('click', async () => { closeExportMenu(); try { await it.run(); } catch (e) { toast('Export failed: ' + e.message); } });
+    menu.appendChild(b);
+  }
+}
 
 function setTree(open) {
   $('fileTree').hidden = !open;
@@ -450,9 +473,10 @@ async function renderPreview() {
     state.lastBodyHtml = null;   // not screenshot-able via the sanitized-body path
     state.previewCleanup = rendered.revoke || null;
     state.preview = { iframe: null, highlight() {}, scrollTo() {}, destroy() { $('previewHost').innerHTML = ''; } };
+    updateExportButton();
     return;
   }
-  // Remember the sanitized body for screenshots (null for script-enabled full docs).
+  // Remember the sanitized body for screenshots + Print/Save-as-PDF (null for script full docs).
   state.lastBodyHtml = rendered.fullDoc ? null : rendered.bodyHtml;
   state.preview = mountPreview($('previewHost'), {
     bodyHtml: rendered.bodyHtml,
@@ -465,12 +489,15 @@ async function renderPreview() {
     onScroll: (ratio) => syncScrollFromPreview(ratio),
   });
   if (rendered.hadUnsafe) toast('Some unsafe HTML (scripts/handlers) was removed for safety.');
+  updateExportButton();
 }
 
 function clearPreview() {
   state.previewCleanup?.(); state.previewCleanup = null;
   state.preview?.destroy();
   state.preview = null;
+  state.lastBodyHtml = null;
+  updateExportButton();
   $('previewHost').innerHTML = '';
 }
 
@@ -769,12 +796,13 @@ function init() {
     else document.documentElement.requestFullscreen?.();
   });
   $('screenshotBtn').addEventListener('click', takeScreenshot);
+  $('exportBtn').addEventListener('click', toggleExportMenu);
   $('enhanceChip').querySelector('.ec-toggle').addEventListener('click', toggleEnhance);
   $('moreBtn').addEventListener('click', toggleMoreMenu);
   $('moreMenu').addEventListener('click', (e) => { if (e.target.closest('button')) closeMoreMenu(); });
   document.addEventListener('click', (e) => {
-    if ($('moreMenu').hidden) return;
-    if (!e.target.closest('#moreMenu') && !e.target.closest('#moreBtn')) closeMoreMenu();
+    if (!$('moreMenu').hidden && !e.target.closest('#moreMenu') && !e.target.closest('#moreBtn')) closeMoreMenu();
+    if (!$('exportMenu').hidden && !e.target.closest('#exportMenu') && !e.target.closest('#exportBtn')) closeExportMenu();
   });
   layoutTopbar();
 
