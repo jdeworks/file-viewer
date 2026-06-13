@@ -129,6 +129,22 @@ try {
   const stillEdited = await page.evaluate(() => document.querySelector('#editor .monaco-diff-editor')?.offsetParent !== null);
   if (!stillEdited) pass('switching back to current hides diff editor'); else fail('diff editor still visible after switching to current');
 
+  // ── Move-aware diff (WP15/WP16) ──
+  // Reorder a paragraph in the working copy, then open the move-aware view.
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    const parts = rv.originalValue().split('\n\n');
+    const moved = [parts[2], ...parts.slice(0, 2), ...parts.slice(3)].join('\n\n');
+    rv.setValue(moved);
+  });
+  await page.click('#rawMode button[data-raw="movediff"]');
+  await page.waitForSelector('.movediff', { timeout: 5000 });
+  await page.waitForTimeout(300);
+  const movedBlocks = await page.$$eval('.k-moved, .k-moved-modified', (els) => els.length);
+  if (movedBlocks > 0) pass('move-aware view classified moved block(s)'); else fail('no moved blocks rendered');
+  const arrows = await page.$$eval('.md-arrows path[d]', (els) => els.length);
+  if (arrows > 0) pass('move arrow drawn (' + arrows + ')'); else fail('no move arrows drawn');
+
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
 } catch (e) {

@@ -10,14 +10,17 @@ function fill(el) { el.style.position = 'absolute'; el.style.inset = '0'; return
 
 export async function createRawView(host, {
   originalText, currentText, language, theme, options = {},
-  onChange, onCursor, onScroll,
+  onChange, onCursor, onScroll, onMoveDiff,
 }) {
   const monaco = await loadMonaco();
   host.innerHTML = '';
   const stdHost = fill(document.createElement('div'));
   const diffHost = fill(document.createElement('div'));
+  const moveHost = fill(document.createElement('div'));
+  moveHost.className = 'movediff-host';
   diffHost.style.display = 'none';
-  host.append(stdHost, diffHost);
+  moveHost.style.display = 'none';
+  host.append(stdHost, diffHost, moveHost);
 
   const originalModel = monaco.editor.createModel(originalText, language);
   const modifiedModel = monaco.editor.createModel(currentText, language);
@@ -50,16 +53,17 @@ export async function createRawView(host, {
 
   function setMode(next) {
     mode = next;
-    const showDiff = next === 'diff' || next === 'movediff';
-    if (showDiff) {
+    stdHost.style.display = 'none'; diffHost.style.display = 'none'; moveHost.style.display = 'none';
+    if (next === 'diff') {
       ensureDiff().updateOptions({ renderSideBySide: !isNarrow() });
-      stdHost.style.display = 'none'; diffHost.style.display = '';
-      diff.layout();
+      diffHost.style.display = ''; diff.layout();
+    } else if (next === 'movediff') {
+      moveHost.style.display = '';
+      onMoveDiff?.(moveHost, originalModel.getValue(), modifiedModel.getValue());
     } else {
       std.setModel(next === 'original' ? originalModel : modifiedModel);
       std.updateOptions({ readOnly: next === 'original' });
-      diffHost.style.display = 'none'; stdHost.style.display = '';
-      std.layout();
+      stdHost.style.display = ''; std.layout();
     }
   }
 
@@ -67,6 +71,7 @@ export async function createRawView(host, {
     monaco, mode: () => mode,
     setMode,
     getValue: () => modifiedModel.getValue(),
+    originalValue: () => originalModel.getValue(),
     setValue: (text) => modifiedModel.setValue(text),
     isDirty: () => originalModel.getValue() !== modifiedModel.getValue(),
     setLanguage(lang) { monaco.editor.setModelLanguage(originalModel, lang); monaco.editor.setModelLanguage(modifiedModel, lang); },

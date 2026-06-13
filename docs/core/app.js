@@ -101,6 +101,10 @@ async function buildRawView() {
     onChange: debounce((value) => onRawEdited(value), 250),
     onCursor: (line) => mapRawToPreview(line),
     onScroll: () => syncScrollFromRaw(),
+    onMoveDiff: async (moveHost, original, current) => {
+      const { renderMoveDiff } = await import('./movediff-view.js');
+      renderMoveDiff(moveHost, original, current, { threshold: 0.8 });
+    },
   });
   syncRawModeButtons();
 }
@@ -116,7 +120,6 @@ function setRawMode(mode) {
   state.rawMode = mode;
   state.rawview.setMode(mode);
   syncRawModeButtons();
-  if (mode === 'movediff') toast('Move-aware diff lands in WP15/WP16 — showing standard diff for now.');
 }
 
 function syncRawModeButtons() {

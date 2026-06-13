@@ -1,0 +1,5 @@
+{
+  "type": "module",
+  "private": true,
+  "//": "Marks docs/ JS as ES modules for Node tooling/tests. Browsers use <script type=module> and ignore this; GitHub Pages just serves static files."
+}
