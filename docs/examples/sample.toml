@@ -1,0 +1,28 @@
+# Sample TOML — rendered as a collapsible tree
+title = "File Viewer"
+mobileFirst = true
+port = 8000
+ratio = 0.85
+
+[trust]
+server = false
+tracking = false
+cdn = false
+
+[build]
+targets = ["web", "offline"]
+flags = { minify = true, sourcemap = false }
+
+[[types]]
+id = "markdown"
+preview = true
+
+[[types]]
+id = "toml"
+preview = true
+
+[notes]
+description = """
+TOML supports multi-line strings,
+inline tables, and arrays of tables.
+"""

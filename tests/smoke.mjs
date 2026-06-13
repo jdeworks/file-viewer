@@ -26,7 +26,7 @@ const chromium = loadChromium();
 const ROOT = new URL('../docs/', import.meta.url).pathname;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.css': 'text/css', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain',
-  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar', '.yaml': 'application/yaml' };
+  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar', '.yaml': 'application/yaml', '.toml': 'application/toml' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -380,6 +380,21 @@ try {
   if (yBool > 0) pass('YAML scalar types preserved (booleans rendered)'); else fail('no yaml booleans');
   const yamlHasEditor = await page.$('#editor .monaco-editor');
   if (yamlHasEditor) pass('YAML has raw editor (editable text)'); else fail('YAML missing raw editor');
+
+  // ── TOML ── hand-rolled parser, render as a collapsible tree (reuses JSON tree styling).
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.toml' }).click();
+  const tframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const tf = await tframe.contentFrame();
+  await tf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+  const tType = await page.$eval('#typeSelect', (s) => s.value);
+  if (tType === 'toml') pass('.toml detected as TOML'); else fail('toml type: ' + tType);
+  const tKeys = await tf.$$eval('.json-tree .j-key', (els) => els.map((e) => e.textContent));
+  if (tKeys.includes('trust') && tKeys.includes('types')) pass('TOML tables rendered as tree (' + tKeys.length + ' keys)'); else fail('toml keys: ' + tKeys.join(','));
+  // Array-of-tables [[types]] -> an array with 2 entries; booleans preserved.
+  const tBool = await tf.$$eval('.json-tree .j-bool', (els) => els.length);
+  const tNum = await tf.$$eval('.json-tree .j-num', (els) => els.length);
+  if (tBool >= 4 && tNum >= 2) pass('TOML scalar types preserved (booleans + numbers)'); else fail('toml scalars: bool=' + tBool + ' num=' + tNum);
 
   // ── Known-file enhancement (Layer 3): package.json -> npm links + revert chip ──
   await page.goto(origin, { waitUntil: 'networkidle' });
