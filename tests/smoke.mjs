@@ -647,6 +647,18 @@ try {
   const zipHasEditor = await page.$('#editor .monaco-editor');
   if (!zipHasEditor) pass('archive is preview-only (no raw editor)'); else fail('raw editor present for zip');
 
+  // ── Password-protected zip ── JSZip refuses it; we still list via our own central-dir parse + 🔒. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Locked.zip' }).click();
+  const lzframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
+  const lzf = await lzframe.contentFrame();
+  await lzf.waitForSelector('.zip-table tbody tr', { timeout: 12000 });
+  const lzNames = await lzf.$$eval('.zip-table .z-name', (els) => els.map((e) => e.textContent));
+  if (lzNames.some((n) => /secret\.txt/.test(n)) && lzNames.some((n) => /readme\.txt/.test(n))) pass('encrypted zip still lists entries (fallback parser)'); else fail('locked zip names: ' + lzNames.join(','));
+  const lockBadge = await lzf.$$eval('.zip-table .z-lock', (els) => els.length);
+  const lockBanner = await lzf.$eval('.zip-locked', (e) => e.textContent).catch(() => '');
+  if (lockBadge === 1 && /password-protected/.test(lockBanner)) pass('password-protected entry flagged (🔒 badge + banner)'); else fail('lock badge=' + lockBadge + ' banner=' + lockBanner.slice(0, 50));
+
   // ── Email (.eml) ── parsed MIME: header card + sanitized HTML body, encoded subject decoded.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.eml' }).click();

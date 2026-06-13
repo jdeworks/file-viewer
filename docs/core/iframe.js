@@ -130,6 +130,9 @@ const BASE_CSS = `
   .zip-table .z-name{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:normal;word-break:break-all;}
   .zip-table .z-num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
   .zip-table .z-date{white-space:nowrap;color:#888;font-size:12px;}
+  .zip-table .z-lock{font-size:12px;}
+  .zip-locked{background:#d2992222;border:1px solid #d2992255;border-radius:8px;padding:8px 12px;margin:0 0 12px;font:13px system-ui,sans-serif;color:#9a6700;}
+  body.fv-dark .zip-locked{color:#e3b341;}
   .ics-head{font:600 14px system-ui,sans-serif;margin:0 0 14px;}
   .ics-event{border-left:3px solid #4c9aff;background:#4c9aff14;border-radius:0 8px 8px 0;padding:10px 12px;margin:0 0 10px;}
   .ics-title{font:600 15px system-ui,sans-serif;}
