@@ -3,6 +3,7 @@ import { computeMoveDiff, wordDiff } from '../docs/core/movediff.js';
 import { parseId3 } from '../docs/types/media/id3.js';
 import { parseExif } from '../docs/types/image/exif.js';
 import { intakeFromFile } from '../docs/core/intake.js';
+import { palmDocDecompress } from '../docs/types/mobi/mobilib.js';
 
 let failed = 0;
 const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!cond) failed++; };
@@ -136,6 +137,15 @@ const P3 = 'A third paragraph at the bottom.';
   // Big MEDIA streams (own path) — truncated stays false; streamed true.
   const media = await intakeFromFile(mockFile('movie.mp4', 500 * MB, 'video/mp4'));
   ok(media.streamed === true && media.truncated === false, 'big-file guard: big media streams (not truncated)');
+}
+
+// PalmDOC (MOBI compression type 2) decompression — cover each token form.
+{
+  const dec = (arr) => new TextDecoder().decode(palmDocDecompress(Uint8Array.from(arr)));
+  ok(dec([0x41]) === 'A', 'PalmDOC: single literal byte');
+  ok(dec([0x03, 0x61, 0x62, 0x63]) === 'abc', 'PalmDOC: literal run (length 3)');
+  ok(dec([0xC1]) === ' A', 'PalmDOC: space+char shorthand (0xC0..0xFF)');
+  ok(dec([0x03, 0x61, 0x62, 0x63, 0x80, 0x18]) === 'abcabc', 'PalmDOC: LZ77 back-reference (dist 3, len 3)');
 }
 
 console.log(failed ? `\nMOVEDIFF FAILED (${failed})` : '\nMOVEDIFF PASSED');

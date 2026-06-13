@@ -1075,6 +1075,19 @@ try {
   const fb2ImgSrc = await fb2f.$eval('.fb2-img', (e) => e.getAttribute('src')).catch(() => '');
   if (/^data:image\/png;base64,/.test(fb2ImgSrc)) pass('FB2 inline image embedded as a data: URL (zero off-origin)'); else fail('fb2 img src: ' + fb2ImgSrc.slice(0, 30));
 
+  // ── MOBI / Kindle (.mobi) ── PalmDB parse + PalmDOC text → sanitized HTML, inline data: images. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.mobi' }).click();
+  const mobiframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
+  const mobif = await frameOf('iframe.fv-preview-frame');
+  await mobif.waitForSelector('.mobi-book', { timeout: 10000 });
+  const mobiType = await page.$eval('#typeSelect', (s) => s.value);
+  if (mobiType === 'mobi') pass('.mobi detected as Kindle / MOBI'); else fail('mobi type: ' + mobiType);
+  const mobiText = await mobif.$eval('.mobi-book', (e) => e.textContent);
+  if (/Mobi Sampler/.test(mobiText) && /rendered entirely in the browser/.test(mobiText)) pass('MOBI text decompressed + rendered'); else fail('mobi text: ' + mobiText.slice(0, 60));
+  const mobiImg = await mobif.$eval('.mobi-img', (e) => e.getAttribute('src')).catch(() => '');
+  if (/^data:image\/png;base64,/.test(mobiImg)) pass('MOBI embedded image inlined as data: URL (zero off-origin)'); else fail('mobi img: ' + mobiImg.slice(0, 30));
+
   // ── EPUB e-book (hand-rolled reader) ── unzip + spine + TOC, rendered in the pane. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.epub' }).click();

@@ -175,6 +175,13 @@ const BASE_CSS = `
   body.fv-dark .fb2-epigraph,body.fv-dark .fb2-cite{color:#aab;}
   .fb2-poem{margin:16px 0;padding-left:14px;}
   .fb2-v{font-style:italic;text-indent:0;}
+  /* MOBI / AZW reader — sanitized book HTML with inline data: images. */
+  .mobi-book{max-width:42rem;margin:0 auto;font-family:Georgia,"Times New Roman",serif;}
+  .mobi-head{text-align:center;margin:0 0 28px;padding-bottom:16px;border-bottom:1px solid #8883;}
+  .mobi-booktitle{font:700 26px/1.25 Georgia,serif;margin:0;}
+  .mobi-book p{margin:0 0 10px;text-align:justify;}
+  .mobi-img{display:block;max-width:100%;height:auto;margin:16px auto;}
+  .mobi-break{border:0;border-top:1px solid #8884;margin:20px 0;}
   .zip-meta{font:12px system-ui,sans-serif;color:#888;margin:0 0 10px;}
   .zip-table .z-name{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:normal;word-break:break-all;}
   .zip-table .z-num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
