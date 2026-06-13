@@ -1037,6 +1037,15 @@ try {
   if (/1\s*\/\s*2/.test(trackPos)) pass('audio folder playlist: track position (' + trackPos.trim() + ')'); else fail('playlist pos: ' + trackPos);
   const hasShuffle = await page.$('#previewHost .media-shuffle input');
   if (hasShuffle) pass('audio folder playlist: prev/next + shuffle controls'); else fail('no shuffle toggle in playlist');
+  // Album track list: a row per track, the current one highlighted, click-to-play another.
+  const trackLabels = await page.$$eval('#previewHost .media-tracklist .media-track-label', (els) => els.map((e) => e.textContent));
+  if (trackLabels.length === 2 && trackLabels.some((t) => /intro/.test(t))) pass('audio album: track list shows every track (' + trackLabels.length + ')'); else fail('track list: ' + trackLabels.join(','));
+  const curIdx = await page.$$eval('#previewHost .media-track', (els) => els.findIndex((e) => e.classList.contains('current')));
+  if (curIdx === 0) pass('audio album: current track highlighted'); else fail('current track idx: ' + curIdx);
+  // Click the 2nd track → it becomes the current track (app re-renders for the new file).
+  await page.click('#previewHost .media-tracklist .media-track:nth-child(2)');
+  await page.waitForFunction(() => /2\s*\/\s*2/.test(document.querySelector('#previewHost .media-track-pos')?.textContent || ''), { timeout: 8000 });
+  pass('audio album: clicking a track plays it (now 2 / 2)');
   // iOS install exception: the Add-to-Home-Screen hint must NOT appear on desktop (no-install default).
   const iosHintDesktop = await page.$eval('#iosAudioHint', (e) => e.hidden);
   if (iosHintDesktop) pass('iOS audio hint NOT shown on desktop (no-install default holds)'); else fail('iOS hint showed on desktop');

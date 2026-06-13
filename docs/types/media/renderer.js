@@ -11,12 +11,27 @@
 import { mediaInfo, blobUrl } from './medialib.js';
 import { loadState, saveState, clearState } from '../../core/persistence.js';
 import { showIosAudioHint, hideIosAudioHint } from '../../core/ios-audio.js';
+import { parseId3 } from './id3.js';
 
 const SLEEP_OPTIONS = [0, 5, 15, 30, 45, 60];   // minutes; 0 = off
 const PLAYABLE = /\.(mp3|wav|m4a|m4b|aac|oga|ogg|opus|flac|weba|mp4|m4v|webm|ogv|mov|mkv)$/i;
 // Set true just before a playlist navigation reloads the app → the NEXT render auto-plays.
 // (Module-level so it survives the re-render; the initial folder-open never sets it.)
 let pendingAutoplay = false;
+
+// Lazily read each track's ID3 tag (from a head slice — ID3v2 sits at the file start) and upgrade
+// its label to "Title — Artist". Best-effort: unreadable / tag-less files keep their filename.
+async function enrichTrackTags(labels) {
+  for (const { item, label } of labels) {
+    const f = item.file;
+    if (!f || typeof f.slice !== 'function') continue;
+    try {
+      const head = new Uint8Array(await f.slice(0, 256 * 1024).arrayBuffer());
+      const tags = parseId3(head);
+      if (tags && (tags.title || tags.artist)) label.textContent = [tags.title, tags.artist].filter(Boolean).join(' — ');
+    } catch { /* keep the filename */ }
+  }
+}
 
 // Build a playlist of the sibling media files in the current folder (if any), with the file we
 // just opened as the current track. Returns null when there's no folder or no siblings.
@@ -71,6 +86,7 @@ export async function render(intake, ctx = {}) {
 
   // ── Folder playlist (when the file is part of a multi-track folder) ──
   let shuffle = false;
+  let trackListEl = null;
   if (playlist) {
     const pl = document.createElement('div');
     pl.className = 'media-playlist';
@@ -87,18 +103,42 @@ export async function render(intake, ctx = {}) {
     next.addEventListener('click', () => go(1));
     pl.append(prev, posLabel, next, shuf);
     tools.appendChild(pl);
+
+    // ── Album/track list: every track, current highlighted, click-to-play. Labels start as
+    // filenames and are upgraded with ID3 title/artist read lazily off each File (folder album).
+    trackListEl = document.createElement('div');
+    trackListEl.className = 'media-tracklist';
+    const labels = [];
+    playlist.items.forEach((item, i) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'media-track' + (i === playlist.index ? ' current' : '');
+      const n = document.createElement('span'); n.className = 'media-track-n'; n.textContent = String(i + 1);
+      const label = document.createElement('span'); label.className = 'media-track-label';
+      label.textContent = (item.path || item.file?.name || 'track').split('/').pop();
+      row.append(n, label);
+      row.addEventListener('click', () => goTo(i));
+      trackListEl.appendChild(row);
+      labels.push({ item, label });
+    });
+    enrichTrackTags(labels);   // fire-and-forget ID3 enrichment
+  }
+  function goTo(i) {
+    if (!playlist || i < 0 || i >= playlist.items.length || i === playlist.index) return;
+    pendingAutoplay = true;
+    ctx.folder.open(playlist.items[i].file);          // app reloads → renderer re-runs for the new track
   }
   function go(dir) {
     if (!playlist) return;
     let i;
     if (shuffle && dir > 0) { do { i = Math.floor(Math.random() * playlist.items.length); } while (playlist.items.length > 1 && i === playlist.index); }
     else { i = playlist.index + dir; if (i < 0 || i >= playlist.items.length) return; }
-    pendingAutoplay = true;
-    ctx.folder.open(playlist.items[i].file);          // app reloads → renderer re-runs for the new track
+    goTo(i);
   }
 
   if (info.kind === 'audio') host.append(name, el, tools);
   else host.append(el, name, tools);
+  if (trackListEl) host.append(trackListEl);
 
   // ── Resume position ──
   const saved = loadState(intake);
