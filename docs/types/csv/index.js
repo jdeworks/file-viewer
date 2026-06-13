@@ -14,6 +14,7 @@ export default {
   syntaxLanguage: 'plaintext',
   loadRenderer: () => import('./renderer.js'),
   loadMetadata: () => import('./metadata.js'),
+  loadExports: () => import('./exports.js'),   // Export menu: JSON / Excel (.xlsx)
   settingsUrl: new URL('./settings.default.json', import.meta.url),
   settings: {
     schema: [

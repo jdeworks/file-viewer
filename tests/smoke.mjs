@@ -377,6 +377,16 @@ try {
   // CSV is editable text -> raw editor + diff available.
   const csvHasEditor = await page.$('#editor .monaco-editor');
   if (csvHasEditor) pass('CSV has raw editor (editable text)'); else fail('CSV missing raw editor');
+  // CSV export (loadExports hook): menu offers JSON / Excel; JSON download actually fires.
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const csvExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
+  if (['Download as JSON', 'Download as Excel (.xlsx)'].every((l) => csvExports.includes(l))) pass('CSV export menu offers JSON + Excel'); else fail('CSV exports: ' + csvExports.join(','));
+  const [csvDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download as JSON")'),
+  ]);
+  if (/\.json$/.test(csvDownload.suggestedFilename())) pass('CSV exported to JSON (' + csvDownload.suggestedFilename() + ')'); else fail('CSV download name: ' + csvDownload.suggestedFilename());
 
   // ── Excel module (WP19) ── multi-sheet workbook via SheetJS on the tabular renderer.
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -388,6 +398,16 @@ try {
   if (sheetTitles.join(',') === 'People,Totals') pass('Excel: both sheets rendered'); else fail('sheet titles: ' + sheetTitles.join(','));
   const xTables = await xf.$$eval('.sheet table', (els) => els.length);
   if (xTables === 2) pass('Excel: one table per sheet'); else fail('Excel tables: ' + xTables);
+  // Excel export (loadExports hook): menu offers CSV / JSON (+ all-sheets for multi-sheet); CSV fires.
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const xlsxExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
+  if (['Download first sheet as CSV', 'Download first sheet as JSON', 'Download all sheets as JSON'].every((l) => xlsxExports.includes(l))) pass('Excel export menu offers CSV/JSON/all-sheets'); else fail('Excel exports: ' + xlsxExports.join(','));
+  const [xlsxDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download first sheet as CSV")'),
+  ]);
+  if (/\.csv$/.test(xlsxDownload.suggestedFilename())) pass('Excel exported to CSV (' + xlsxDownload.suggestedFilename() + ')'); else fail('Excel download name: ' + xlsxDownload.suggestedFilename());
 
   // ── Word module (WP19) ── mammoth -> sanitized HTML in the iframe.
   await page.goto(origin, { waitUntil: 'networkidle' });
