@@ -1,0 +1,19 @@
+BEGIN:VCARD
+VERSION:3.0
+FN:Ada Lovelace
+N:Lovelace;Ada;;;
+ORG:Analytical Engine Co.
+TITLE:Mathematician
+EMAIL;TYPE=WORK:ada@example.com
+TEL;TYPE=CELL:+1-202-555-0173
+URL:https://example.com/ada
+ADR;TYPE=HOME:;;12 Babbage St;London;;EC1;UK
+NOTE:First computer programmer.
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+FN:Alan Turing
+ORG:Bletchley Park
+EMAIL;TYPE=WORK:alan@example.com
+TEL;TYPE=WORK:+44-20-7946-0958
+END:VCARD

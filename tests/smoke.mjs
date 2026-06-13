@@ -30,7 +30,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf',
   '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain',
   '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
-  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip' };
+  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip', '.vcf': 'text/vcard' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -509,6 +509,18 @@ try {
   const warnLines = await lf.$$eval('.logv .l-warn', (els) => els.length);
   const tsSpans = await lf.$$eval('.logv .l-ts', (els) => els.length);
   if (errLines >= 1 && warnLines >= 1 && tsSpans >= 4) pass('log severity highlighted (' + errLines + ' error, ' + warnLines + ' warn, ' + tsSpans + ' timestamps)'); else fail('log: err=' + errLines + ' warn=' + warnLines + ' ts=' + tsSpans);
+
+  // ── vCard (.vcf) ── parse contacts into cards (name, email, phone). ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.vcf' }).click();
+  const vcfframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const vcff = await vcfframe.contentFrame();
+  await vcff.waitForSelector('.vcf-card', { timeout: 8000 });
+  const vcfTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (vcfTypeId === 'vcard') pass('.vcf detected as Contacts (vCard)'); else fail('vcard type: ' + vcfTypeId);
+  const vcfNames = await vcff.$$eval('.vcf-card .vcf-name', (els) => els.map((e) => e.textContent));
+  const mailto = await vcff.$$eval('.vcf-card a[href^="mailto:"]', (els) => els.map((a) => a.getAttribute('href')));
+  if (vcfNames.length === 2 && vcfNames.includes('Ada Lovelace') && mailto.some((h) => /ada@example\.com/.test(h))) pass('vCard contacts parsed (2 cards, mailto links)'); else fail('vcard names=' + vcfNames.join(',') + ' mailto=' + mailto.join(','));
 
   // ── Subtitles (.srt/.vtt) ── parse cues into a timecoded list. ──
   await page.goto(origin, { waitUntil: 'networkidle' });

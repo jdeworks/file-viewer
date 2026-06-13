@@ -164,7 +164,21 @@ const BASE_CSS = `
   .sub-idx{display:inline-block;min-width:26px;color:#888;margin-right:6px;}
   .sub-text{white-space:pre-wrap;word-break:break-word;line-height:1.5;}
   .sub-empty{color:#888;font-family:system-ui,sans-serif;}
-  @media (max-width:620px){.sub-cue{grid-template-columns:1fr;gap:2px;}}`;
+  @media (max-width:620px){.sub-cue{grid-template-columns:1fr;gap:2px;}}
+  .vcf-head{font:600 14px system-ui,sans-serif;margin:0 0 14px;}
+  .vcf-card{border:1px solid #0001;border-radius:10px;padding:12px 14px;margin:0 0 10px;}
+  body.fv-dark .vcf-card{border-color:#fff2;}
+  .vcf-name{font:600 16px system-ui,sans-serif;}
+  .vcf-org{font:13px system-ui,sans-serif;color:#666;margin:2px 0 8px;}
+  body.fv-dark .vcf-org{color:#9aa;}
+  .vcf-row{display:flex;gap:8px;font:13px/1.6 system-ui,sans-serif;padding:1px 0;}
+  .vcf-ic{width:18px;flex:0 0 18px;text-align:center;opacity:.8;}
+  .vcf-val{word-break:break-word;}
+  .vcf-val a{color:#3b82f6;text-decoration:none;}
+  .vcf-type{font-size:11px;color:#888;}
+  .vcf-note{margin-top:8px;font:13px/1.5 system-ui,sans-serif;color:#555;white-space:pre-wrap;}
+  body.fv-dark .vcf-note{color:#aab;}
+  .vcf-empty{color:#888;font-family:system-ui,sans-serif;}`;
 
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';
