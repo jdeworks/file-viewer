@@ -730,6 +730,15 @@ try {
   if (/File Viewer Sampler/.test(epubTitle)) pass('EPUB title parsed from OPF metadata'); else fail('epub title: ' + epubTitle);
   const tocCount = await page.$$eval('#previewHost .epub-toc-item', (els) => els.length);
   if (tocCount === 3) pass('EPUB table of contents built (' + tocCount + ' entries)'); else fail('epub toc entries: ' + tocCount);
+  // Reading settings: font-size zoom (size-based, not transform) + theme.
+  const fs0 = await page.$eval('#previewHost .epub-content', (e) => getComputedStyle(e).fontSize);
+  await page.click('#previewHost .epub-fs-up');
+  await page.click('#previewHost .epub-fs-up');
+  const fs1 = await page.$eval('#previewHost .epub-content', (e) => getComputedStyle(e).fontSize);
+  if (parseFloat(fs1) === parseFloat(fs0) + 2) pass('EPUB font-size zoom increases real size (' + fs0 + '→' + fs1 + ')'); else fail('epub font-size: ' + fs0 + ' → ' + fs1);
+  await page.click('#previewHost .epub-theme[data-theme="sepia"]');
+  const sepia = await page.$eval('#previewHost .epub-doc', (e) => e.classList.contains('epub-theme-sepia'));
+  if (sepia) pass('EPUB reading theme switch (sepia)'); else fail('epub theme not applied');
   // First chapter rendered, with its embedded SVG image rewritten to an in-book blob URL.
   const epubH1 = await page.$eval('#previewHost .epub-content h1', (e) => e.textContent).catch(() => '');
   if (/A Beginning/.test(epubH1)) pass('EPUB first chapter rendered'); else fail('epub chapter h1: ' + epubH1);

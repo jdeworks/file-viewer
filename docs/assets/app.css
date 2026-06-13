@@ -281,6 +281,15 @@ body {
 .epub-pos { font-size: 12px; color: var(--fg-2); margin-left: auto; }
 .epub-content { flex: 1; overflow: auto; padding: 28px clamp(16px, 8vw, 80px); line-height: 1.65;
   font-size: 17px; max-width: 100%; }
+.epub-prefs { padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.epub-pref-row { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--fg-2); }
+.epub-pref-row > span { width: 38px; flex: 0 0 38px; }
+.epub-prefs button { font-size: 11px; padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border); background: var(--bg); color: var(--fg-2); cursor: pointer; }
+.epub-prefs button.active { border-color: var(--accent); color: var(--accent); }
+/* Reading themes — applied to the content pane (size-based, not transform). */
+.epub-theme-sepia .epub-content { background: #f4ecd8; color: #5b4636; }
+.epub-theme-dark .epub-content { background: #14171c; color: #c9d1d9; }
+.epub-theme-dark .epub-content a { color: #6cb6ff; }
 .epub-content :where(img, image, svg) { max-width: 100%; height: auto; }
 .epub-content h1, .epub-content h2, .epub-content h3 { line-height: 1.25; }
 .epub-content a { color: var(--accent); }

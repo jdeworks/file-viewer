@@ -31,10 +31,15 @@ export async function render(intake, _ctx) {
   // spine path → index, for resolving TOC + internal links to a chapter.
   const spineIndex = new Map(book.spine.map((s, i) => [s.path, i]));
 
-  // ── Layout: sidebar (title + TOC) | reader (toolbar + content) ──
+  // ── Layout: sidebar (title + reading settings + TOC) | reader (toolbar + content) ──
   host.innerHTML =
     '<aside class="epub-side">'
     + '<div class="epub-book"><div class="epub-title"></div><div class="epub-author"></div></div>'
+    + '<div class="epub-prefs">'
+    + '<div class="epub-pref-row"><span>Size</span><button class="epub-fs-dn" title="Smaller">A−</button><button class="epub-fs-up" title="Larger">A+</button></div>'
+    + '<div class="epub-pref-row"><span>Font</span><button class="epub-font" data-font="serif">Serif</button><button class="epub-font" data-font="sans">Sans</button></div>'
+    + '<div class="epub-pref-row"><span>Theme</span><button class="epub-theme" data-theme="light">Light</button><button class="epub-theme" data-theme="sepia">Sepia</button><button class="epub-theme" data-theme="dark">Dark</button></div>'
+    + '</div>'
     + '<nav class="epub-toc"></nav></aside>'
     + '<div class="epub-main">'
     + '<div class="epub-bar"><button class="epub-prev" title="Previous">‹ Prev</button>'
@@ -47,6 +52,25 @@ export async function render(intake, _ctx) {
   const tocEl = host.querySelector('.epub-toc');
   const contentEl = host.querySelector('.epub-content');
   const posEl = host.querySelector('.epub-pos');
+
+  // Reading preferences (global, shared across books) — size/font/theme. Zoom changes the real
+  // font-size (not a transform), so text stays crisp and reflows.
+  const PREFS_KEY = 'fv:epub:prefs';
+  const prefs = Object.assign({ fontSize: 18, font: 'serif', theme: 'light' }, readPrefs(PREFS_KEY));
+  function applyPrefs() {
+    contentEl.style.fontSize = prefs.fontSize + 'px';
+    contentEl.style.fontFamily = prefs.font === 'sans' ? 'system-ui, sans-serif' : 'Georgia, "Times New Roman", serif';
+    host.classList.remove('epub-theme-light', 'epub-theme-sepia', 'epub-theme-dark');
+    host.classList.add('epub-theme-' + prefs.theme);
+    for (const b of host.querySelectorAll('.epub-font')) b.classList.toggle('active', b.dataset.font === prefs.font);
+    for (const b of host.querySelectorAll('.epub-theme')) b.classList.toggle('active', b.dataset.theme === prefs.theme);
+    writePrefs(PREFS_KEY, prefs);
+  }
+  host.querySelector('.epub-fs-dn').addEventListener('click', () => { prefs.fontSize = Math.max(12, prefs.fontSize - 1); applyPrefs(); });
+  host.querySelector('.epub-fs-up').addEventListener('click', () => { prefs.fontSize = Math.min(32, prefs.fontSize + 1); applyPrefs(); });
+  for (const b of host.querySelectorAll('.epub-font')) b.addEventListener('click', () => { prefs.font = b.dataset.font; applyPrefs(); });
+  for (const b of host.querySelectorAll('.epub-theme')) b.addEventListener('click', () => { prefs.theme = b.dataset.theme; applyPrefs(); });
+  applyPrefs();
 
   // Build the TOC list.
   for (const entry of book.toc) {
@@ -171,3 +195,5 @@ export async function render(intake, _ctx) {
 
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 function cssEscape(s) { return (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/[^\w-]/g, '\\$&'); }
+function readPrefs(key) { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } }
+function writePrefs(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* ignore */ } }
