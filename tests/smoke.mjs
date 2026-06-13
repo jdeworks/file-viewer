@@ -70,6 +70,13 @@ try {
     if (r) pass('favicon present and served same-origin'); else fail('favicon fetch failed: ' + iconHref);
   } else fail('no favicon link');
 
+  // Startup stays light: no Monaco editor exists before a file is opened...
+  const editorAtStartup = await page.$('#editor .monaco-editor');
+  if (!editorAtStartup) pass('startup is lazy (no editor mounted before opening a file)'); else fail('Monaco editor mounted at startup');
+  // ...but Monaco is warmed in the background (idle) so the first open is instant.
+  await page.waitForFunction(() => !!window.monaco, { timeout: 12000 });
+  pass('Monaco preloaded in the background during idle');
+
   // Load the Welcome.md example.
   await page.getByRole('button', { name: 'Welcome.md' }).click();
 

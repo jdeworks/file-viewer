@@ -8,6 +8,7 @@ import { pickType } from './detect.js';
 import { wireIntake, intakeFromFile, LARGE_FILE_BYTES } from './intake.js';
 import { buildTree, renderTree } from './filetree.js';
 import { createRawView } from './rawview.js';
+import { loadMonaco } from './monaco-loader.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
 import { buildModel, monacoOptions, renderSettings, persistGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
@@ -562,6 +563,13 @@ function init() {
   window.addEventListener('resize', debounce(() => { if (state.type) applyPreviewPaneWidth(); }, 100));
 
   loadExamples();
+
+  // Startup stays light (Monaco isn't loaded just to show the intake screen). Warm it in
+  // the background during idle so the FIRST file opens instantly instead of waiting on
+  // the heaviest dependency. loadMonaco() caches its promise, so buildRawView reuses this.
+  const warmMonaco = () => loadMonaco().catch(() => {});
+  if ('requestIdleCallback' in window) requestIdleCallback(warmMonaco, { timeout: 3000 });
+  else setTimeout(warmMonaco, 1200);
 
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
   window.__fv = {
