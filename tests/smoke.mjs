@@ -30,7 +30,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf',
   '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain',
   '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
-  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm' };
+  '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm', '.png': 'image/png' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -644,6 +644,22 @@ try {
   const sf = await sframe.contentFrame();
   await sf.waitForSelector('.img-doc svg', { timeout: 8000 });
   pass('SVG sanitized and rendered inline');
+
+  // ── Raster image ── parent-pane viewer with fit-to-screen default + size-based zoom. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.png' }).click();
+  await page.waitForSelector('#previewHost .imgv-img', { timeout: 12000 });
+  const imgType = await page.$eval('#typeSelect', (s) => s.value);
+  if (imgType === 'image') pass('.png detected as Image'); else fail('image type: ' + imgType);
+  const imgSrc = await page.$eval('#previewHost .imgv-img', (e) => e.src);
+  if (imgSrc.startsWith('blob:')) pass('raster image served from blob URL (no base64 inflation)'); else fail('img src: ' + imgSrc.slice(0, 20));
+  const fitDefault = await page.$eval('#previewHost .imgv-fit', (e) => e.classList.contains('active'));
+  if (fitDefault) pass('image defaults to fit-to-screen'); else fail('image not fit by default');
+  // Zoom changes the real rendered width (size-based, not transform).
+  await page.click('#previewHost .imgv-up');
+  const zoomLabel = await page.$eval('#previewHost .imgv-zoom', (e) => e.textContent);
+  const widthSet = await page.$eval('#previewHost .imgv-img', (e) => e.style.width);
+  if (/%/.test(zoomLabel) && /px$/.test(widthSet)) pass('image zoom sets a real pixel width (' + zoomLabel + ')'); else fail('image zoom: label=' + zoomLabel + ' width=' + widthSet);
 
   // ── Audio/Video (media) ── native player rendered in the pane via a blob: URL.
   await page.goto(origin, { waitUntil: 'networkidle' });

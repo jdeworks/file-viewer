@@ -245,6 +245,14 @@ body {
 .preview-host .media-video .media-view { max-width: 100%; max-height: 100%; border-radius: 8px;
   box-shadow: 0 1px 12px rgba(0,0,0,.35); background: #000; }
 .preview-host .media-note { color: var(--fg-2); }
+/* Raster image viewer (parent pane): fit-to-screen by default + size-based zoom. */
+.preview-host .imgv-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
+.imgv-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
+.imgv-bar button { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
+.imgv-bar button.active { border-color: var(--accent); color: var(--accent); }
+.imgv-zoom { margin-left: auto; font-size: 12px; color: var(--fg-2); font-variant-numeric: tabular-nums; }
+.imgv-stage { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 12px; min-height: 0; }
+.imgv-img { display: block; }
 /* Font specimen (parent pane — FontFace registers on this document). */
 .preview-host .font-doc { position: absolute; inset: 0; overflow: auto; padding: 24px clamp(16px, 5vw, 48px); background: var(--bg); }
 .font-name { font: 12px ui-monospace, monospace; color: var(--fg-2); margin-bottom: 18px; word-break: break-all; }
