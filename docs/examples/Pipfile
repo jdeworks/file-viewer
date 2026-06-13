@@ -1,0 +1,17 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[packages]
+flask = "==3.0.0"
+requests = ">=2.31"
+sqlalchemy = "*"
+gunicorn = { version = "==21.2.0" }
+
+[dev-packages]
+pytest = "==7.4.3"
+black = "*"
+
+[requires]
+python_version = "3.12"

@@ -30,6 +30,8 @@
   { "label": "go.mod", "file": "go.mod", "mime": "text/plain", "category": "Config" },
   { "label": "composer.json", "file": "composer.json", "mime": "application/json", "category": "Config" },
   { "label": "Gemfile", "file": "Gemfile", "mime": "text/plain", "category": "Config" },
+  { "label": "build.gradle", "file": "build.gradle", "mime": "text/plain", "category": "Config" },
+  { "label": "Pipfile", "file": "Pipfile", "mime": "text/plain", "category": "Config" },
   { "label": "CODEOWNERS", "file": "CODEOWNERS", "mime": "text/plain", "category": "Config" },
   { "label": ".editorconfig", "file": ".editorconfig", "mime": "text/plain", "category": "Config" },
   { "label": "pom.xml", "file": "pom.xml", "mime": "application/xml", "category": "Config" },
