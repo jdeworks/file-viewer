@@ -98,6 +98,12 @@ try {
   await page.waitForFunction(() => !!window.monaco, { timeout: 12000 });
   pass('Monaco preloaded in the background during idle');
 
+  // Examples gallery is grouped by category (tidy intake catalogue).
+  const exGroups = await page.$$eval('#examples .ex-group .ex-group-label', (els) => els.map((e) => e.textContent));
+  if (exGroups.includes('Documents') && exGroups.includes('Office') && exGroups.length >= 5)
+    pass(`examples grouped by category (${exGroups.length} groups: ${exGroups.join(', ')})`);
+  else fail('examples not grouped; labels: ' + JSON.stringify(exGroups));
+
   // Load the Welcome.md example.
   await page.getByRole('button', { name: 'Welcome.md' }).click();
 
