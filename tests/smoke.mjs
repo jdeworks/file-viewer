@@ -330,6 +330,14 @@ try {
     return document.querySelectorAll('#previewHost img.pdf-page').length;
   });
   if (editedPages === 2) pass('PDF edit: re-rendered from the rebuilt PDF bytes'); else fail('edited pages: ' + editedPages);
+  // Edit-changes summary (the lightweight PDF "diff").
+  const pdfChanges = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
+  if (/Page 1 deleted/.test(pdfChanges)) pass('PDF edit: changes summary lists the edit'); else fail('pdf changes: ' + pdfChanges);
+  // Rotate the (now first) page → summary also notes a rotation.
+  await page.click('#previewHost .pdf-page-wrap .pdf-pagectl button[data-act="rr"]');
+  await page.waitForFunction(() => /rotated/.test(document.querySelector('#previewHost .pdf-changes')?.textContent || ''), { timeout: 8000 }).catch(() => {});
+  const pdfChanges2 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
+  if (/rotated 90/.test(pdfChanges2)) pass('PDF edit: rotation reflected in changes summary'); else fail('pdf changes2: ' + pdfChanges2);
   // Type dropdown shows PDF's confidence but NOT the fallback floor as a phantom "%".
   const pdfOpts = await page.$$eval('#typeSelect option', (els) => els.map((e) => e.textContent));
   if (pdfOpts.some((t) => /^PDF \(\d+%\)/.test(t))) pass('PDF shows match confidence (' + pdfOpts.find((t) => /^PDF/.test(t)) + ')'); else fail('PDF option: ' + pdfOpts.join(', '));

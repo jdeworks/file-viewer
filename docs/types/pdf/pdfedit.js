@@ -18,12 +18,25 @@ export async function createEditor(origBytes) {
   let order = Array.from({ length: n }, (_, i) => i);          // display position → original index
   const rotations = {};                                        // original index → absolute degrees
   for (let i = 0; i < n; i++) { try { rotations[i] = src.getPage(i).getRotation().angle || 0; } catch { rotations[i] = 0; } }
+  const origRotations = { ...rotations };
+  const origOrder = order.join(',');
 
   return {
     pageCount: () => order.length,
     rotate(pos, delta) { const oi = order[pos]; rotations[oi] = ((rotations[oi] || 0) + delta + 360) % 360; },
     remove(pos) { if (order.length > 1) order.splice(pos, 1); },
     move(pos, dir) { const j = pos + dir; if (j < 0 || j >= order.length) return; [order[pos], order[j]] = [order[j], order[pos]]; },
+    // A human summary of what changed vs the original — a lightweight PDF "diff".
+    changes() {
+      const out = [];
+      const present = new Set(order);
+      for (let i = 0; i < n; i++) if (!present.has(i)) out.push('Page ' + (i + 1) + ' deleted');
+      for (const oi of order) { const d = ((rotations[oi] || 0) - (origRotations[oi] || 0) + 360) % 360; if (d) out.push('Page ' + (oi + 1) + ' rotated ' + d + '°'); }
+      const sortedPresent = [...present].sort((a, b) => a - b).join(',');
+      if (order.length === n && order.join(',') !== origOrder && order.join(',') !== sortedPresent) out.push('Pages reordered');
+      else if (order.length < n && order.join(',') !== sortedPresent) out.push('Pages reordered');
+      return out;
+    },
     // Rebuild a fresh PDF from the original pages in the current order, applying rotations.
     async build() {
       const out = await PDFLib.PDFDocument.create();

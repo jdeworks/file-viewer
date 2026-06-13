@@ -16,9 +16,11 @@ export async function render(intake, ctx) {
     '<div class="pdf-bar"><span class="pdf-info"></span>'
     + '<button class="pdf-edit" title="Edit pages">Edit</button>'
     + '<button class="pdf-download" hidden>Download edited PDF</button></div>'
+    + '<div class="pdf-changes" hidden></div>'
     + '<div class="pdf-pages"></div>';
   const pagesEl = host.querySelector('.pdf-pages');
   const infoEl = host.querySelector('.pdf-info');
+  const changesEl = host.querySelector('.pdf-changes');
 
   let editor = null, editing = false, dirty = false, currentBytes = intake.bytes;
 
@@ -67,11 +69,19 @@ export async function render(intake, ctx) {
     return bar;
   }
 
+  function updateChanges() {
+    const list = editor ? editor.changes() : [];
+    if (!list.length) { changesEl.hidden = true; changesEl.innerHTML = ''; return; }
+    changesEl.hidden = false;
+    changesEl.innerHTML = '<strong>Changes:</strong> ' + list.map(esc).join(' · ');
+  }
+
   async function applyEdit(mutate) {
     mutate();
     dirty = true;
     host.querySelector('.pdf-download').hidden = false;
     currentBytes = await editor.build();
+    updateChanges();
     await renderPages(currentBytes);
   }
 
