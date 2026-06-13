@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "label": "Default",
+  "values": {
+    "wordWrap": "on",
+    "fontSize": 13,
+    "lineNumbers": "on",
+    "minimap": false,
+    "syncScroll": false
+  }
+}

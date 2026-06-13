@@ -33,6 +33,9 @@ import csvType from '../types/csv/index.js';
 import xlsxType from '../types/xlsx/index.js';
 import docxType from '../types/docx/index.js';
 import pptxType from '../types/pptx/index.js';
+import jsonType from '../types/json/index.js';
+import imageType from '../types/image/index.js';
+import codeType from '../types/code/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -42,6 +45,9 @@ export const REGISTRY = [
   xlsxType,
   docxType,
   pptxType,
+  jsonType,
+  imageType,
+  codeType,
   rawType,
 ];
 

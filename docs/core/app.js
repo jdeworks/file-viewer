@@ -96,7 +96,9 @@ async function activateType(type) {
 
 async function buildRawView() {
   state.rawview?.dispose();
-  const lang = state.intake.isBinary ? 'plaintext' : (state.type.syntaxLanguage || 'plaintext');
+  // syntaxLanguage may be a function(intake) for types that pick the language per file (code).
+  const sl = state.type.syntaxLanguage;
+  const lang = state.intake.isBinary ? 'plaintext' : ((typeof sl === 'function' ? sl(state.intake) : sl) || 'plaintext');
   const text = state.intake.isBinary
     ? '[binary file — ' + state.intake.size + ' bytes — no text preview]'
     : (state.intake.text || '');

@@ -1,0 +1,9 @@
+{
+  "name": "file-viewer",
+  "private": true,
+  "mobileFirst": true,
+  "trust": { "server": false, "tracking": false, "cdn": false },
+  "types": ["markdown", "pdf", "csv", "xlsx", "docx", "pptx", "json", "image", "code"],
+  "counts": { "smokeChecks": 29, "offOriginRequests": 0 },
+  "tags": ["client-only", "vendored", "modular"]
+}

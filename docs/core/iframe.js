@@ -67,7 +67,23 @@ const BASE_CSS = `
   tbody tr:nth-child(even){background:#00000006;}
   body.fv-dark thead th{background:#2a2a2a;}
   body.fv-dark .table-wrap{border-color:#fff2;}
-  body.fv-dark th,body.fv-dark td{border-color:#ffffff1a;}`;
+  body.fv-dark th,body.fv-dark td{border-color:#ffffff1a;}
+  .json-tree{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .json-tree details{margin:0;}
+  .json-tree summary{cursor:pointer;list-style:none;}
+  .json-tree summary::-webkit-details-marker{display:none;}
+  .json-tree summary::before{content:"\\25be";display:inline-block;width:1em;color:#888;}
+  .json-tree details:not([open])>summary::before{content:"\\25b8";}
+  .j-row,.j-node{padding-left:1.2em;}
+  .j-children{padding-left:1.2em;border-left:1px solid #8884;margin-left:.3em;}
+  .j-key{color:#0b69c7;} body.fv-dark .j-key{color:#7cb7ff;}
+  .j-str{color:#1a7f37;} body.fv-dark .j-str{color:#7ee787;}
+  .j-num{color:#9a5400;} body.fv-dark .j-num{color:#ffab70;}
+  .j-bool{color:#8250df;} body.fv-dark .j-bool{color:#d2a8ff;}
+  .j-null{color:#888;} .j-punc{color:#888;} .j-count{color:#aaa;font-size:11px;margin-left:6px;}
+  .json-error{font-family:system-ui,sans-serif;color:#d23b3b;padding:14px;border:1px solid #d23b3b55;border-radius:8px;}
+  .img-doc{display:flex;justify-content:center;align-items:flex-start;}
+  .img-view,.img-doc svg{max-width:100%;height:auto;}`;
 
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', maxWidth }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';

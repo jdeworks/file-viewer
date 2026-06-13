@@ -206,6 +206,28 @@ try {
   const slideDims = await ppf.$$eval('img.pptx-slide', (els) => els.map((e) => e.naturalWidth));
   if (slideDims.length === 2 && slideDims.every((w) => w > 100)) pass('PPTX: ' + slideDims.length + ' slides rendered to images'); else fail('pptx slides: ' + JSON.stringify(slideDims));
 
+  // ── JSON / Code / Image simple types (WP19) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.json' }).click();
+  const jframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const jf = await jframe.contentFrame();
+  await jf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+  const jkeys = await jf.$$eval('.json-tree .j-key', (els) => els.length);
+  if (jkeys > 0) pass('JSON rendered as collapsible tree (' + jkeys + ' keys)'); else fail('no json keys');
+
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'example.js' }).click();
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
+  const codeType = await page.$eval('#typeSelect', (s) => s.value);
+  if (codeType === 'code') pass('JS file detected as Code with syntax highlighting'); else fail('js type: ' + codeType);
+
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'example.svg' }).click();
+  const sframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const sf = await sframe.contentFrame();
+  await sf.waitForSelector('.img-doc svg', { timeout: 8000 });
+  pass('SVG sanitized and rendered inline');
+
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
 } catch (e) {
