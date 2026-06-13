@@ -186,6 +186,14 @@ body {
 /* ── Mobile: tabs instead of split ── */
 @media (max-width: 760px) {
   .brand { display: none; }                   /* reclaim topbar space on phones */
+  /* Topbar would overflow on a phone (4-way switch + up to 8 actions). Pack left and
+     let it scroll horizontally so every control stays reachable; nothing gets clipped. */
+  .topbar { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; gap: 4px; scrollbar-width: none; }
+  .topbar::-webkit-scrollbar { display: none; }
+  .topbar > * { flex-shrink: 0; }
+  .spacer { display: none; }
+  .icon-btn { width: 40px; height: 40px; }    /* fat-finger targets */
+  .seg button { min-height: 38px; }
   /* Sidebar becomes a left overlay drawer on phones. */
   .filetree { position: fixed; left: 0; top: calc(var(--topbar-h) + env(safe-area-inset-top)); bottom: 0;
     z-index: 25; width: 82vw; max-width: 320px; box-shadow: 6px 0 24px rgba(0,0,0,.3); }

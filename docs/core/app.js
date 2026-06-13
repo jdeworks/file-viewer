@@ -126,7 +126,8 @@ async function activateType(type) {
   $('screenshotBtn').hidden = !(type.capabilities.screenshot && canPreview);
   state.mode = both ? 'split' : (canPreview && !canRaw ? 'preview' : 'raw');
   state.rawMode = 'current';
-  state.tab = both ? 'raw' : (canPreview && !canRaw ? 'preview' : 'raw');
+  // On phones, default to Preview when a type has one — reading beats Monaco-on-glass.
+  state.tab = both ? (isMobile() ? 'preview' : 'raw') : (canPreview && !canRaw ? 'preview' : 'raw');
   state.htmlAllowScripts = false; state.htmlAsked = false;   // re-ask per file
 
   if (canRaw) await buildRawView();

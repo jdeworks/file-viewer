@@ -310,6 +310,27 @@ try {
   await hf2.waitForSelector('#ran-script', { timeout: 8000 });
   pass('HTML scripts run after explicit opt-in (sandboxed)');
 
+  // ── Mobile hardening (WP06) ── phone viewport: Preview-first + scrollable topbar.
+  const mctx = await browser.newContext({ viewport: { width: 390, height: 780 }, isMobile: true, hasTouch: true });
+  const mpage = await mctx.newPage();
+  mpage.on('console', (m) => { if (m.type() === 'error') consoleErrors.push('[mobile] ' + m.text()); });
+  mpage.on('pageerror', (e) => consoleErrors.push('[mobile] pageerror: ' + e.message));
+  mpage.on('request', (req) => { const u = req.url(); if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u); });
+  await mpage.goto(origin, { waitUntil: 'networkidle' });
+  await mpage.getByRole('button', { name: 'Welcome.md' }).click();
+  await mpage.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
+  // Tab bar is shown on phones and defaults to Preview (reading-first).
+  const tabbarShown = await mpage.$eval('#tabbar', (e) => getComputedStyle(e).display !== 'none');
+  if (tabbarShown) pass('mobile: tab bar shown (not split)'); else fail('mobile: tab bar hidden');
+  const activeTab = await mpage.$eval('#tabbar button.active', (e) => e.dataset.mode).catch(() => null);
+  if (activeTab === 'preview') pass('mobile: defaults to Preview tab'); else fail('mobile active tab: ' + activeTab);
+  // Topbar overflows but is horizontally scrollable (contained, not clipped/wrapped).
+  const tb = await mpage.$eval('.topbar', (e) => ({ ox: getComputedStyle(e).overflowX, scroll: e.scrollWidth, client: e.clientWidth, h: e.clientHeight }));
+  if (tb.ox === 'auto' && tb.scroll > tb.client) pass('mobile: topbar scrollable, all controls reachable (' + tb.scroll + '>' + tb.client + 'px)');
+  else fail('mobile topbar: ' + JSON.stringify(tb));
+  if (tb.h <= 60) pass('mobile: topbar stays single-row (' + tb.h + 'px)'); else fail('mobile topbar height: ' + tb.h);
+  await mctx.close();
+
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
   if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
 } catch (e) {
