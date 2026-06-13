@@ -1120,6 +1120,16 @@ try {
   const mobiImg = await mobif.$eval('.mobi-img', (e) => e.getAttribute('src')).catch(() => '');
   if (/^data:image\/png;base64,/.test(mobiImg)) pass('MOBI embedded image inlined as data: URL (zero off-origin)'); else fail('mobi img: ' + mobiImg.slice(0, 30));
 
+  // ── Sony LRF ── recognized (BBeB), shown with a clear note instead of a raw hex dump. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.lrf' }).click();
+  const lrfframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const lrff = await frameOf('iframe.fv-preview-frame');
+  await lrff.waitForSelector('.comic-note', { timeout: 8000 });
+  const lrfType = await page.$eval('#typeSelect', (s) => s.value);
+  const lrfNote = await lrff.$eval('.comic-note', (e) => e.textContent);
+  if (lrfType === 'lrf' && /Sony/.test(lrfNote)) pass('.lrf recognized as Sony LRF with a friendly note'); else fail('lrf: type=' + lrfType + ' note=' + lrfNote.slice(0, 40));
+
   // ── EPUB e-book (hand-rolled reader) ── unzip + spine + TOC, rendered in the pane. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.epub' }).click();

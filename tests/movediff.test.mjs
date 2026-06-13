@@ -3,7 +3,7 @@ import { computeMoveDiff, wordDiff } from '../docs/core/movediff.js';
 import { parseId3 } from '../docs/types/media/id3.js';
 import { parseExif } from '../docs/types/image/exif.js';
 import { intakeFromFile } from '../docs/core/intake.js';
-import { palmDocDecompress } from '../docs/types/mobi/mobilib.js';
+import { palmDocDecompress, openMobi } from '../docs/types/mobi/mobilib.js';
 
 let failed = 0;
 const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!cond) failed++; };
@@ -146,6 +146,35 @@ const P3 = 'A third paragraph at the bottom.';
   ok(dec([0x03, 0x61, 0x62, 0x63]) === 'abc', 'PalmDOC: literal run (length 3)');
   ok(dec([0xC1]) === ' A', 'PalmDOC: space+char shorthand (0xC0..0xFF)');
   ok(dec([0x03, 0x61, 0x62, 0x63, 0x80, 0x18]) === 'abcabc', 'PalmDOC: LZ77 back-reference (dist 3, len 3)');
+}
+
+// MOBI: AZW3/KF8 (file version ≥ 8) is detected and reported (not mis-rendered as MOBI6).
+{
+  function buildMobi(version) {
+    const HDRLEN = 232;
+    const rec0 = new Uint8Array(16 + HDRLEN);
+    const dv = new DataView(rec0.buffer);
+    dv.setUint16(0, 1, false);                 // compression: none
+    dv.setUint16(8, 0, false);                 // text record count: 0
+    dv.setUint16(12, 0, false);                // encryption: none
+    rec0.set([0x4d, 0x4f, 0x42, 0x49], 16);    // 'MOBI'
+    dv.setUint32(16 + 4, HDRLEN, false);       // header length
+    dv.setUint32(16 + 8, 2, false);            // mobi type
+    dv.setUint32(16 + 28, 65001, false);       // text encoding UTF-8
+    dv.setUint32(16 + 36, version, false);     // file version
+    const numRec = 1, dataStart = 78 + numRec * 8 + 2;
+    const head = new Uint8Array(dataStart);
+    const hv = new DataView(head.buffer);
+    head.set([0x42, 0x4f, 0x4f, 0x4b], 60); head.set([0x4d, 0x4f, 0x42, 0x49], 64);   // 'BOOKMOBI'
+    hv.setUint16(76, numRec, false);
+    hv.setUint32(78, dataStart, false);
+    const out = new Uint8Array(dataStart + rec0.length);
+    out.set(head, 0); out.set(rec0, dataStart);
+    return out;
+  }
+  const kf8 = openMobi(buildMobi(8));
+  ok(kf8.ok === false && /KF8|AZW3/.test(kf8.reason), 'MOBI: KF8/AZW3 detected + reported (not garbled)');
+  ok(openMobi(buildMobi(6)).ok === true, 'MOBI: a version-6 book still parses');
 }
 
 console.log(failed ? `\nMOVEDIFF FAILED (${failed})` : '\nMOVEDIFF PASSED');

@@ -6,6 +6,7 @@
   { "label": "Sample.epub", "file": "sample.epub", "mime": "application/epub+zip", "category": "Documents" },
   { "label": "Sample.fb2", "file": "sample.fb2", "mime": "application/x-fictionbook+xml", "category": "Documents" },
   { "label": "Sample.mobi", "file": "sample.mobi", "mime": "application/x-mobipocket-ebook", "category": "Documents" },
+  { "label": "Sample.lrf", "file": "sample.lrf", "mime": "application/x-sony-bbeb", "category": "Documents" },
   { "label": "Sample.csv", "file": "sample.csv", "mime": "text/csv", "category": "Data" },
   { "label": "Sample.sqlite", "file": "sample.sqlite", "mime": "application/vnd.sqlite3", "category": "Data" },
   { "label": "Sample.json", "file": "sample.json", "mime": "application/json", "category": "Data" },

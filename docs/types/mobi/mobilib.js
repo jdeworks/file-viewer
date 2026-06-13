@@ -102,6 +102,10 @@ export function openMobi(bytes) {
   const hasMobi = rec0.length >= 20 && td(rec0.subarray(16, 20)) === 'MOBI';
   let textEncoding = 'utf-8', firstImageIndex = 0xffffffff, extraFlags = 0, fullName = '';
   if (hasMobi) {
+    // KF8/AZW3 (file version ≥ 8) stores the book differently (EPUB-like); the PalmDOC text path
+    // below would yield garbage, so detect it and say so rather than mis-rendering.
+    const version = dv0.getUint32(M + 36, false);
+    if (version >= 8) return { ok: false, reason: 'this is an AZW3 / KF8 (Kindle Format 8) book — not supported yet (older .mobi works)' };
     const mobiHeaderLen = dv0.getUint32(M + 4, false);
     const enc = dv0.getUint32(M + 28, false);
     textEncoding = enc === 1252 ? 'windows-1252' : 'utf-8';
