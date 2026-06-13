@@ -35,13 +35,28 @@ Markdown · PDF · CSV · Excel/ODS (`.xlsx`/`.ods`) · Word (`.docx`) · PowerP
 
 ## Offline use
 
-The app makes zero off-origin requests, but it isn't fully offline-capable *yet*: assets
-(Monaco, each type's renderer, settings) are fetched lazily from the origin as you use
-them, so opening a new feature — or hard-reloading — while offline will fail. Making it
-work on a train with no signal (no install, no app store) is planned via a **service
-worker** that precaches every asset on first visit, so the site then runs entirely from
-cache. A service worker caches transparently in the background — it does *not* add an
-install prompt or turn this into an installed app.
+**It works offline** — for a train with no signal, no install, no app store. A
+[service worker](docs/sw.js) precaches every asset in the background on your first visit
+(watch the pill in the corner go from "Saving for offline…" to a green **✓ Available
+offline**). After that the whole app runs from the local cache.
+
+**How to use it offline:** just visit the page once while online and wait for the green
+check. Then you can lose the network entirely — open the bookmark again, hard-reload,
+open any file type — and it all works.
+
+**Do I need to do anything when the network drops?** No. This is handled automatically.
+A service worker, once registered, intercepts the browser's page request: when you're
+offline it serves the cached copy instead of letting the browser show its "no internet"
+page. The browser only shows that error for sites *without* a service worker. The one
+requirement is that **the first visit must be online** (so there's something to cache),
+and the browser must not have evicted the cache since.
+
+This is **not** an installed app: there's no Web App Manifest and no "Add to Home Screen"
+prompt — the service worker only caches transparently in the background. It works the same
+on desktop and on phones (iOS Safari and Android Chrome).
+
+To verify: load the page, wait for **✓ Available offline**, then switch your device to
+airplane mode and reload. Everything still works.
 
 ## Run it locally
 
@@ -87,4 +102,5 @@ The smoke harness uses the Playwright install from a sibling `make-it-look-good`
 
 ## License
 
-See repository.
+[MIT](LICENSE). Vendored third-party libraries under `docs/vendor/` retain their own
+licenses (listed at the bottom of the [LICENSE](LICENSE) file).
