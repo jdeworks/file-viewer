@@ -120,6 +120,13 @@ function setRawMode(mode) {
   state.rawMode = mode;
   state.rawview.setMode(mode);
   syncRawModeButtons();
+  // Diff modes are themselves a comparison — give them the full width (desktop).
+  if (state.type?.capabilities.preview) {
+    const wantRaw = mode === 'diff' || mode === 'movediff';
+    state.mode = wantRaw ? 'raw' : 'split';
+    state.tab = 'raw';
+    applyLayout();
+  }
 }
 
 function syncRawModeButtons() {
