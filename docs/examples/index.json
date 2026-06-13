@@ -21,6 +21,7 @@
   { "label": "example.js", "file": "example.js", "mime": "text/javascript", "category": "Code" },
   { "label": "Sample.html", "file": "sample.html", "mime": "text/html", "category": "Code" },
   { "label": "Sample.ipynb", "file": "sample.ipynb", "mime": "application/x-ipynb+json", "category": "Code" },
+  { "label": "Sample.geojson", "file": "sample.geojson", "mime": "application/geo+json", "category": "Data" },
   { "label": "example.svg", "file": "example.svg", "mime": "image/svg+xml", "category": "Media" },
   { "label": "Sample.wav", "file": "sample.wav", "mime": "audio/wav", "category": "Media" },
   { "label": "Sample.bin", "file": "sample.bin", "mime": "application/octet-stream", "category": "Archive & Binary" },

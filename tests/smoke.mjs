@@ -28,7 +28,8 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.css': 'text/css', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain',
   '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar', '.yaml': 'application/yaml', '.toml': 'application/toml',
   '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf',
-  '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain' };
+  '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain',
+  '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -479,6 +480,19 @@ try {
   const warnLines = await lf.$$eval('.logv .l-warn', (els) => els.length);
   const tsSpans = await lf.$$eval('.logv .l-ts', (els) => els.length);
   if (errLines >= 1 && warnLines >= 1 && tsSpans >= 4) pass('log severity highlighted (' + errLines + ' error, ' + warnLines + ' warn, ' + tsSpans + ' timestamps)'); else fail('log: err=' + errLines + ' warn=' + warnLines + ' ts=' + tsSpans);
+
+  // ── GeoJSON map ── pure inline SVG, no tiles (zero network). ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.geojson' }).click();
+  const geoframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const geof = await geoframe.contentFrame();
+  await geof.waitForSelector('.geo-svg', { timeout: 8000 });
+  const geoTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (geoTypeId === 'geo') pass('.geojson detected as Map (GeoJSON/GPX)'); else fail('geo type: ' + geoTypeId);
+  const geoLines = await geof.$$eval('.geo-svg .geo-line', (els) => els.length);
+  const geoPolys = await geof.$$eval('.geo-svg .geo-poly', (els) => els.length);
+  const geoPts = await geof.$$eval('.geo-svg .geo-pt', (els) => els.length);
+  if (geoLines >= 1 && geoPolys >= 1 && geoPts >= 2) pass('GeoJSON drawn as SVG (' + geoLines + ' line, ' + geoPolys + ' polygon, ' + geoPts + ' points)'); else fail('geo svg: line=' + geoLines + ' poly=' + geoPolys + ' pt=' + geoPts);
 
   // ── Known-file enhancement (Layer 3): package.json -> npm links + revert chip ──
   await page.goto(origin, { waitUntil: 'networkidle' });

@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "properties": { "name": "Route" }, "geometry": {
+      "type": "LineString",
+      "coordinates": [[13.405,52.52],[13.42,52.50],[13.45,52.49],[13.46,52.51]] } },
+    { "type": "Feature", "properties": { "name": "Park" }, "geometry": {
+      "type": "Polygon",
+      "coordinates": [[[13.41,52.515],[13.43,52.515],[13.43,52.505],[13.41,52.505],[13.41,52.515]]] } },
+    { "type": "Feature", "properties": { "name": "Start" }, "geometry": {
+      "type": "Point", "coordinates": [13.405,52.52] } },
+    { "type": "Feature", "properties": { "name": "End" }, "geometry": {
+      "type": "Point", "coordinates": [13.46,52.51] } }
+  ]
+}

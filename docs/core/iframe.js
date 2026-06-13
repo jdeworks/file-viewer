@@ -148,7 +148,15 @@ const BASE_CSS = `
   .logv .l-warn{border-left-color:#d29922;background:#d2992214;}
   .logv .l-info{border-left-color:#4c9aff;}
   .logv .l-debug{color:#888;}
-  .logv .l-ts{color:#4c9aff;}`;
+  .logv .l-ts{color:#4c9aff;}
+  .geo-meta{font:12px system-ui,sans-serif;color:#888;margin:0 0 8px;}
+  .geo-svg{display:block;border:1px solid #0001;border-radius:8px;max-width:100%;}
+  body.fv-dark .geo-svg{border-color:#fff2;}
+  .geo-bg{fill:#f6f8fa;} body.fv-dark .geo-bg{fill:#161b22;}
+  .geo-poly{fill:#4c9aff33;stroke:#4c9aff;stroke-width:1.5;stroke-linejoin:round;}
+  .geo-line{fill:none;stroke:#2ea043;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .geo-pt{fill:#cf222e;stroke:#fff;stroke-width:1;}
+  body.fv-dark .geo-pt{stroke:#161b22;}`;
 
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';

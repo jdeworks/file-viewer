@@ -47,6 +47,7 @@ import xmlType from '../types/xml/index.js';
 import iniType from '../types/ini/index.js';
 import patchType from '../types/patch/index.js';
 import logType from '../types/log/index.js';
+import geoType from '../types/geo/index.js';
 import zipType from '../types/zip/index.js';
 import epubType from '../types/epub/index.js';
 
@@ -67,6 +68,7 @@ export const REGISTRY = [
   iniType,
   patchType,
   logType,
+  geoType,
   ipynbType,
   jsonType,
   imageType,
