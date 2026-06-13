@@ -45,8 +45,27 @@ async function precache() {
   }
 }
 
+// Report how much of the manifest is already cached + the current manifest version,
+// WITHOUT fetching anything new — lets the page show a resting pill state (cache-on-use is
+// the default; a full precache is opt-in). Offline: falls back to the cached manifest.
+async function status() {
+  let version = null, total = 0, cached = 0;
+  try {
+    const res = await fetch('asset-manifest.json', { cache: 'no-store' }).catch(() => caches.match('asset-manifest.json'));
+    const manifest = await res.json();
+    version = manifest.version;
+    const assets = manifest.assets || [];
+    total = assets.length;
+    const cache = await caches.open(CACHE);
+    for (const a of assets) { if (await cache.match(a)) cached++; }
+  } catch { /* no manifest reachable — report unknown (version stays null) */ }
+  await notify({ type: 'cache-status', cached, total, version });
+}
+
 self.addEventListener('message', (e) => {
-  if (e.data && e.data.type === 'precache') e.waitUntil(precache());
+  if (!e.data) return;
+  if (e.data.type === 'precache') e.waitUntil(precache());
+  else if (e.data.type === 'status') e.waitUntil(status());
 });
 
 self.addEventListener('fetch', (e) => {

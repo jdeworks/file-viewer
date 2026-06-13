@@ -313,11 +313,22 @@ body {
 .offline-status { position: fixed; left: 12px; bottom: 12px; z-index: 45; display: flex; align-items: center; gap: 8px;
   background: var(--bg-2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px;
   font-size: 12px; color: var(--fg-2); box-shadow: 0 4px 16px rgba(0,0,0,.2); max-width: 86vw; }
+.offline-status.idle { color: var(--fg-2); }
 .offline-status.ready { color: #2ea043; border-color: #2ea04366; }
+.offline-status.update { color: #d29922; border-color: #d2992266; }
+.offline-status.update .off-check { color: #d29922; }
 .off-check { color: #2ea043; font-weight: 700; }
+.off-ring { width: 11px; height: 11px; border: 2px solid currentColor; border-radius: 50%;
+  display: inline-block; opacity: 0.65; }
 .off-spin { width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--accent);
   border-radius: 50%; display: inline-block; animation: off-spin .7s linear infinite; }
 @keyframes off-spin { to { transform: rotate(360deg); } }
+
+/* Graceful offline-miss note (renderer not cached while offline) */
+.offline-miss { padding: 28px 22px; max-width: 460px; margin: 0 auto; text-align: center; color: var(--fg-2); }
+.offline-miss .om-icon { font-size: 34px; margin-bottom: 6px; }
+.offline-miss p { margin: 8px 0; line-height: 1.5; }
+.offline-miss strong { color: var(--fg); }
 
 /* Toast */
 .toast {

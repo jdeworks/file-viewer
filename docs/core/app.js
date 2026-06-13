@@ -13,7 +13,7 @@ import { renderRepoView } from './repoview.js';
 import { createRawView } from './rawview.js';
 import { loadMonaco } from './monaco-loader.js';
 import { hexDump } from './hexdump.js';
-import { initOffline } from './offline.js';
+import { initOffline, offlineMissHtml } from './offline.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
 import { getModel, preloadModels, monacoOptions, renderSettings, persistGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
@@ -404,6 +404,9 @@ async function renderPreview() {
     if (type.id === 'html') ctx.allowScripts = state.htmlAllowScripts;
     rendered = await mod.render(state.intake, ctx);
   } catch (err) {
+    // Offline + this renderer module was never cached (cache-on-use never saw it): a dynamic
+    // import()/fetch fails. Show a friendly, actionable note instead of a raw error.
+    if (!navigator.onLine) { $('previewHost').innerHTML = offlineMissHtml(); return; }
     $('previewHost').innerHTML = '<p style="padding:16px;color:var(--danger)">Preview failed: ' + escapeHtml(err.message) + '</p>';
     return;
   }

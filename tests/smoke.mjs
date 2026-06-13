@@ -678,8 +678,14 @@ try {
     const oErr = [];
     op.on('pageerror', (e) => oErr.push(e.message));
     await op.goto(origin, { waitUntil: 'networkidle' });
+    // Default is cache-on-use: the pill rests at "idle" (offers an opt-in full save), it does
+    // NOT auto-precache everything.
+    await op.waitForSelector('#offlineStatus.idle', { timeout: 90000 });
+    pass('offline precache is opt-in (pill rests at idle, no auto-precache)');
+    // Opt in: clicking the pill kicks off the full precache → green "ready".
+    await op.click('#offlineStatus');
     await op.waitForSelector('#offlineStatus.ready', { timeout: 90000 });
-    pass('service worker precached all assets (status: Available offline)');
+    pass('clicking the pill precaches all assets (status: Available offline)');
     const cachedMonaco = await op.evaluate(async () => {
       const k = (await caches.keys()).find((x) => x === 'file-viewer');
       return k ? !!(await (await caches.open(k)).match('vendor/monaco/vs/loader.js')) : false;
@@ -696,6 +702,24 @@ try {
     await octx.setOffline(false);
     if (oErr.length === 0) pass('no errors during offline run'); else fail('offline errors:\n  ' + oErr.join('\n  '));
     await octx.close();
+  }
+
+  // ── Graceful offline-miss ── cache-on-use only (no full precache), then open a viewer that
+  // was never loaded online while offline → friendly note instead of a raw error.
+  {
+    const mctx = await browser.newContext();
+    const mp = await mctx.newPage();
+    await mp.goto(origin, { waitUntil: 'networkidle' });
+    await mp.waitForSelector('#offlineStatus', { timeout: 90000 });
+    await mp.getByRole('button', { name: 'Welcome.md' }).click();   // caches app + markdown only
+    await mp.waitForSelector('.monaco-editor', { timeout: 30000 });
+    await mctx.setOffline(true);
+    // Feed a PDF from disk (no network for the bytes); its viewer + pdf.js were never cached.
+    await mp.setInputFiles('#fileInput', new URL('../docs/examples/sample.pdf', import.meta.url).pathname);
+    const miss = await mp.waitForSelector('.offline-miss', { timeout: 20000 }).catch(() => null);
+    if (miss) pass('graceful offline-miss note shown for an uncached viewer'); else fail('no offline-miss note for uncached PDF viewer while offline');
+    await mctx.setOffline(false);
+    await mctx.close();
   }
 
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
