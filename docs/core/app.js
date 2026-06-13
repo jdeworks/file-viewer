@@ -47,6 +47,12 @@ async function loadIntake(intake) {
   await activateType(type);
 }
 
+// Return to the intake screen to pick another file/folder (keeps any loaded tree).
+function showIntake() {
+  $('intake').hidden = false;
+  $('workspace').hidden = true;
+}
+
 /* ─────────────────────────── Folder tree (sidebar) ─────────────────────────── */
 
 async function loadFolder(entries) {
@@ -113,6 +119,7 @@ async function activateType(type) {
   $('viewMode').hidden = !both || isMobile();
   $('rawMode').hidden = !canDiff;
   $('downloadBtn').hidden = !canDiff;
+  $('formatBtn').hidden = !(canRaw && ['json', 'code'].includes(type.id));
   $('tabbar').style.display = both && isMobile() ? 'flex' : 'none';
   $('screenshotBtn').hidden = !(type.capabilities.screenshot && canPreview);
   state.mode = both ? 'split' : (canPreview && !canRaw ? 'preview' : 'raw');
@@ -373,6 +380,8 @@ function init() {
   });
   $('treeBtn').addEventListener('click', () => setTree($('fileTree').hidden));
   $('treeCloseBtn').addEventListener('click', () => setTree(false));
+  $('openBtn').addEventListener('click', showIntake);
+  $('formatBtn').addEventListener('click', () => state.rawview?.format());
 
   $('typeSelect').addEventListener('change', (e) => { const t = getType(e.target.value); if (t) activateType(t); });
   $('themeBtn').addEventListener('click', () => applyTheme(!themeIsDark()));

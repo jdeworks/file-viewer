@@ -86,6 +86,7 @@ export async function createRawView(host, {
       }]);
     },
     reveal(line) { std.revealLineInCenter(line); },
+    format() { return std.getAction?.('editor.action.formatDocument')?.run(); },
     // Scroll sync uses the std editor (active in current/original modes).
     scrollInfo() { return { top: std.getScrollTop(), max: std.getScrollHeight() - std.getLayoutInfo().height }; },
     setScrollTop(t) { std.setScrollTop(t); },

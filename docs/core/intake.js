@@ -92,34 +92,34 @@ export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolde
     if (entries.length) onFolder?.(entries);
   });
 
+  // Shared drop handler — folder if any directory entry, else first file.
+  const handleDrop = async (e) => {
+    // Capture entries synchronously (the items list is consumed after the event).
+    const items = [...(e.dataTransfer?.items || [])];
+    const roots = items.map((i) => i.webkitGetAsEntry?.()).filter(Boolean);
+    if (roots.some((r) => r.isDirectory) && onFolder) {
+      const out = [];
+      for (const r of roots) await walkEntry(r, '', out);
+      if (out.length) return onFolder(out);
+    }
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleFile(file);
+  };
+
   if (dropZone) {
     ['dragenter', 'dragover'].forEach((ev) =>
-      dropZone.addEventListener(ev, (e) => {
-        e.preventDefault();
-        dropZone.classList.add('drag-over');
-      })
-    );
+      dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); }));
     ['dragleave', 'drop'].forEach((ev) =>
       dropZone.addEventListener(ev, (e) => {
         e.preventDefault();
         if (ev === 'dragleave' && e.target !== dropZone) return;
         dropZone.classList.remove('drag-over');
-      })
-    );
-    dropZone.addEventListener('drop', async (e) => {
-      // Capture entries synchronously (the items list is consumed after the event).
-      const items = [...(e.dataTransfer?.items || [])];
-      const roots = items.map((i) => i.webkitGetAsEntry?.()).filter(Boolean);
-      const hasDir = roots.some((r) => r.isDirectory);
-      if (hasDir && onFolder) {
-        const out = [];
-        for (const r of roots) await walkEntry(r, '', out);
-        if (out.length) return onFolder(out);
-      }
-      const file = e.dataTransfer?.files?.[0];
-      if (file) handleFile(file);
-    });
+      }));
   }
+
+  // Global drop: accept a file/folder dropped anywhere, even after one is already open.
+  window.addEventListener('dragover', (e) => { e.preventDefault(); });
+  window.addEventListener('drop', (e) => { e.preventDefault(); handleDrop(e); });
 
   // Paste: prefer a pasted file (image, etc.), else pasted text.
   window.addEventListener('paste', (e) => {
