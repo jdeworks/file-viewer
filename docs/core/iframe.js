@@ -157,6 +157,24 @@ const BASE_CSS = `
   .mbox-snippet{font:12px/1.5 system-ui,sans-serif;color:#666;}
   body.fv-dark .mbox-snippet{color:#9aa;}
   .mbox-empty{color:#888;font-family:system-ui,sans-serif;}
+  /* FictionBook (FB2) reader — rendered as sanitized HTML with inline data: images. */
+  .fb2-book{max-width:42rem;margin:0 auto;}
+  .fb2-head{text-align:center;margin:0 0 28px;padding-bottom:16px;border-bottom:1px solid #8883;}
+  .fb2-booktitle{font:700 26px/1.25 Georgia,"Times New Roman",serif;margin:0 0 8px;}
+  .fb2-author{color:#888;font-size:15px;}
+  .fb2-book{font-family:Georgia,"Times New Roman",serif;}
+  .fb2-section{margin:0 0 8px;}
+  .fb2-title{font-family:Georgia,serif;margin:28px 0 12px;line-height:1.3;}
+  .fb2-subtitle{color:#666;font-weight:600;margin:18px 0 8px;}
+  body.fv-dark .fb2-subtitle{color:#9aa;}
+  .fb2-book p{margin:0 0 12px;text-align:justify;text-indent:1.4em;}
+  .fb2-book p:first-of-type,.fb2-title+p,.fb2-empty+p{text-indent:0;}
+  .fb2-empty{height:1em;}
+  .fb2-img{display:block;max-width:100%;height:auto;margin:16px auto;}
+  .fb2-epigraph,.fb2-cite{font-style:italic;color:#555;border-left:3px solid #8884;margin:14px 0;padding-left:14px;}
+  body.fv-dark .fb2-epigraph,body.fv-dark .fb2-cite{color:#aab;}
+  .fb2-poem{margin:16px 0;padding-left:14px;}
+  .fb2-v{font-style:italic;text-indent:0;}
   .zip-meta{font:12px system-ui,sans-serif;color:#888;margin:0 0 10px;}
   .zip-table .z-name{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:normal;word-break:break-all;}
   .zip-table .z-num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}

@@ -60,6 +60,7 @@ import sqliteType from '../types/sqlite/index.js';
 import zipType from '../types/zip/index.js';
 import epubType from '../types/epub/index.js';
 import comicType from '../types/comic/index.js';
+import fb2Type from '../types/fb2/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -83,6 +84,7 @@ export const REGISTRY = [
   vcardType,
   geoType,
   ipynbType,
+  fb2Type,
   jsonType,
   imageType,
   mediaType,

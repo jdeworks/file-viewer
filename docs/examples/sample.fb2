@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <genre>sf</genre>
+      <author><first-name>Ada</first-name><last-name>Lovelace</last-name></author>
+      <book-title>The Analytical Engine</book-title>
+      <lang>en</lang>
+    </title-info>
+  </description>
+  <body>
+    <section>
+      <title><p>Chapter One</p></title>
+      <p>It is a truth universally acknowledged, that a machine in possession of a good algorithm must be in want of a programmer.</p>
+      <p><emphasis>Emphasis</emphasis> and <strong>strong</strong> both render.</p>
+      <image l:href="#cover.png"/>
+      <subtitle>A short verse</subtitle>
+      <poem><stanza><v>Roses are red,</v><v>violets are blue,</v></stanza></poem>
+    </section>
+    <section>
+      <title><p>Chapter Two</p></title>
+      <p>The second chapter continues the tale.</p>
+    </section>
+  </body>
+  <binary id="cover.png" content-type="image/png">iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAAAQklEQVR4nO3OQQ0AIAwAselEE+pQhAuOR5MK6Kx9vjL5QEhISKgeCAkJCdUDISEhoXogJCQkVA+EhISE6oGQkNBjF3XReOIsO0DTAAAAAElFTkSuQmCC</binary>
+</FictionBook>

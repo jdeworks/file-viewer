@@ -1059,6 +1059,22 @@ try {
   const sqQueryText = await page.$eval('#previewHost .sq-grid', (e) => e.textContent);
   if (/Aphex Twin/.test(sqQueryText) && /Bonobo/.test(sqQueryText) && !/Tycho/.test(sqQueryText)) pass('SQLite query executes (filtered result)'); else fail('sqlite query: ' + sqQueryText.replace(/\s+/g, ' ').slice(0, 80));
 
+  // ── FictionBook (.fb2) ── XML ebook → sanitized reading HTML with inline data: images. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.fb2' }).click();
+  const fb2frame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
+  const fb2f = await frameOf('iframe.fv-preview-frame');
+  await fb2f.waitForSelector('.fb2-book', { timeout: 10000 });
+  const fb2Type = await page.$eval('#typeSelect', (s) => s.value);
+  if (fb2Type === 'fb2') pass('.fb2 detected as FictionBook (outscores XML)'); else fail('fb2 type: ' + fb2Type);
+  const fb2Title = await fb2f.$eval('.fb2-booktitle', (e) => e.textContent).catch(() => '');
+  if (/Analytical Engine/.test(fb2Title)) pass('FB2 book title rendered from title-info'); else fail('fb2 title: ' + fb2Title);
+  const fb2Headings = await fb2f.$$eval('.fb2-title', (els) => els.map((e) => e.textContent));
+  if (fb2Headings.some((h) => /Chapter One/.test(h)) && fb2Headings.some((h) => /Chapter Two/.test(h))) pass('FB2 sections become headings (' + fb2Headings.length + ')'); else fail('fb2 headings: ' + fb2Headings.join(','));
+  // The inline <binary> image is embedded as a data: URL (zero off-origin — no network fetch).
+  const fb2ImgSrc = await fb2f.$eval('.fb2-img', (e) => e.getAttribute('src')).catch(() => '');
+  if (/^data:image\/png;base64,/.test(fb2ImgSrc)) pass('FB2 inline image embedded as a data: URL (zero off-origin)'); else fail('fb2 img src: ' + fb2ImgSrc.slice(0, 30));
+
   // ── EPUB e-book (hand-rolled reader) ── unzip + spine + TOC, rendered in the pane. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.epub' }).click();
