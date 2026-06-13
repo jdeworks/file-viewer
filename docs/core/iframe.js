@@ -101,7 +101,12 @@ const BASE_CSS = `
   .nb-img{max-width:100%;height:auto;margin:6px 0;display:block;}
   .nb-rich{margin:6px 0;overflow:auto;}
   .nb-empty{color:#888;}
-  @media (max-width:620px){.nb-prompt{display:none;}.nb-out{margin-left:0;}.nb-code{padding-left:8px;}}`;
+  @media (max-width:620px){.nb-prompt{display:none;}.nb-out{margin-left:0;}.nb-code{padding-left:8px;}}
+  .media-doc{display:flex;flex-direction:column;align-items:center;gap:12px;padding:10px 0;}
+  .media-name{font-family:system-ui,sans-serif;font-size:13px;color:#888;word-break:break-all;text-align:center;}
+  .media-audio .media-view{width:min(520px,100%);}
+  .media-video .media-view{max-width:100%;max-height:80vh;border-radius:8px;box-shadow:0 1px 10px rgba(0,0,0,.3);background:#000;}
+  .media-note{font-family:system-ui,sans-serif;color:#888;}`;
 
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', maxWidth }) {
   const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';

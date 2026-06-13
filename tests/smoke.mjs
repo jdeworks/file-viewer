@@ -24,7 +24,8 @@ const chromium = loadChromium();
 
 const ROOT = new URL('../docs/', import.meta.url).pathname;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
-  '.css': 'text/css', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain' };
+  '.css': 'text/css', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain',
+  '.wav': 'audio/wav', '.ipynb': 'application/json' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -262,6 +263,19 @@ try {
   const sf = await sframe.contentFrame();
   await sf.waitForSelector('.img-doc svg', { timeout: 8000 });
   pass('SVG sanitized and rendered inline');
+
+  // ── Audio/Video (media) ── native player fed a data: URL in the sandbox.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.wav' }).click();
+  const aframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const af = await aframe.contentFrame();
+  await af.waitForSelector('audio.media-view', { timeout: 8000 });
+  const mediaType = await page.$eval('#typeSelect', (s) => s.value);
+  if (mediaType === 'media') pass('.wav detected as Audio / Video'); else fail('media type: ' + mediaType);
+  const audioSrc = await af.$eval('audio.media-view', (e) => e.getAttribute('src') || '');
+  if (audioSrc.startsWith('data:audio/wav;base64,')) pass('audio served as in-page data URL (no fetch)'); else fail('audio src: ' + audioSrc.slice(0, 30));
+  const mediaHasEditor = await page.$('#editor .monaco-editor');
+  if (!mediaHasEditor) pass('media is preview-only (no raw editor)'); else fail('raw editor present for media');
 
   // ── Folder tree sidebar ──
   await page.goto(origin, { waitUntil: 'networkidle' });

@@ -36,6 +36,7 @@ import pptxType from '../types/pptx/index.js';
 import jsonType from '../types/json/index.js';
 import ipynbType from '../types/ipynb/index.js';
 import imageType from '../types/image/index.js';
+import mediaType from '../types/media/index.js';
 import codeType from '../types/code/index.js';
 import htmlType from '../types/html/index.js';
 
@@ -51,6 +52,7 @@ export const REGISTRY = [
   ipynbType,
   jsonType,
   imageType,
+  mediaType,
   codeType,
   rawType,
 ];
