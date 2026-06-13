@@ -1348,6 +1348,29 @@ try {
     await octx.close();
   }
 
+  // ── Easter-egg games (Konami → hub → Snake) ── lazy-loaded; one tiny listener at startup.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => { try { localStorage.removeItem('fv:games:unlocked'); } catch {} });
+  const preOverlay = await page.$('.games-overlay');
+  if (!preOverlay) pass('games hub not present before unlock (lazy-loaded)'); else fail('games overlay present before unlock');
+  for (const k of ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a']) await page.keyboard.press(k);
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  pass('Konami code unlocks + opens the arcade hub');
+  const gameCards = await page.$$eval('.games-card .games-title', (els) => els.map((e) => e.textContent));
+  if (gameCards.includes('Snake')) pass('Snake appears in the hub (' + gameCards.join(', ') + ')'); else fail('hub games: ' + gameCards.join(','));
+  await page.click('.games-card[data-game="snake"]');
+  await page.waitForSelector('.snake-canvas', { timeout: 8000 });
+  const snakeScore = await page.$eval('.snake-score', (e) => e.textContent);
+  if (/Score: 0/.test(snakeScore)) pass('Snake launches (canvas + score HUD)'); else fail('snake score: ' + snakeScore);
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('ArrowRight');
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+  pass('Back returns from Snake to the hub grid');
+  await page.click('.games-close');
+  const stillOpen = await page.$('.games-overlay:not([hidden])');
+  if (!stillOpen) pass('hub closes'); else fail('hub did not close');
+
   // ── Graceful offline-miss ── cache-on-use only (no full precache), then open a viewer that
   // was never loaded online while offline → friendly note instead of a raw error.
   {

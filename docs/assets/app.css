@@ -523,3 +523,44 @@ body {
   .panes[data-tab="preview"] .raw-pane { display: none; }
   .raw-pane { border-right: 0; }
 }
+
+/* ── Easter-egg games: hub overlay + Snake (created on demand by docs/games) ── */
+.games-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center; padding: 16px; }
+.games-overlay[hidden] { display: none; }
+.games-panel { background: var(--bg); color: var(--fg); border: 1px solid var(--border);
+  border-radius: 14px; width: min(720px, 100%); max-height: 92vh; overflow: auto;
+  box-shadow: 0 12px 48px rgba(0,0,0,.4); }
+.games-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.games-head h2 { font-size: 17px; margin: 0; flex: 1; }
+.games-back, .games-close { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 8px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+.games-back[hidden] { display: none; }
+.games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; padding: 16px; }
+.games-grid[hidden] { display: none; }
+.games-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
+  background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; color: var(--fg); }
+.games-card:hover { border-color: var(--accent); }
+.games-emoji { font-size: 30px; }
+.games-title { font-weight: 700; font-size: 15px; }
+.games-blurb { font-size: 12px; color: var(--fg-2); }
+.games-hi { font-size: 11px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.games-stage { padding: 16px; display: flex; justify-content: center; }
+.games-stage[hidden] { display: none; }
+
+.snake-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.snake-hud { display: flex; gap: 14px; align-items: baseline; width: 100%; justify-content: space-between; }
+.snake-score { font-weight: 700; font-variant-numeric: tabular-nums; }
+.snake-hint { font-size: 11px; color: var(--fg-2); }
+.snake-board { position: relative; }
+.snake-canvas { display: block; width: min(360px, 80vw); height: auto; image-rendering: pixelated;
+  border: 1px solid var(--border); border-radius: 8px; touch-action: none; background: var(--bg-2); }
+.snake-board.snake-dead .snake-canvas { opacity: .5; }
+.snake-over { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.snake-over[hidden] { display: none; }
+.snake-over-box { background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 18px; text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+.snake-over-msg { font-weight: 700; margin-bottom: 10px; }
+.snake-restart, .snake-quit { background: var(--accent); color: var(--accent-fg); border: 0;
+  border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
+.snake-quit { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); }

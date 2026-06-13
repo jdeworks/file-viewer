@@ -21,6 +21,7 @@ import { getExports, hasExports } from './exports.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
 import { getModel, preloadModels, monacoOptions, renderSettings, persistGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
+import { initGames } from '../games/launcher.js';
 
 const $ = (id) => document.getElementById(id);
 const state = {
@@ -865,10 +866,14 @@ function init() {
   // by the media renderer, not an install prompt.)
   suppressInstallPrompt();
 
+  // Easter-egg games: attaches only a tiny Konami-code keydown listener at startup; the hub and
+  // the games themselves are lazy-loaded on first unlock, so this costs ~nothing.
+  const games = initGames({ onToast: toast });
+
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
   window.__fv = {
     state, setRawMode, downloadCurrent, loadFolder, hasUnsavedWork, openRepoView,
-    persistence,
+    persistence, games,
     screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };
 }
