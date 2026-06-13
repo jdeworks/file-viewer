@@ -7,8 +7,20 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { createRequire } from 'node:module';
 
-const require = createRequire('/home/jens/repos/make-it-look-good/');
-const { chromium } = require('playwright');
+// Resolve Playwright from whatever's available: a sibling make-it-look-good checkout
+// (local dev), this tests/ folder's own node_modules (CI installs it there), or cwd.
+function loadChromium() {
+  const bases = [
+    '/home/jens/repos/make-it-look-good/',
+    new URL('./', import.meta.url).pathname,
+    process.cwd() + '/',
+  ];
+  for (const base of bases) {
+    try { return createRequire(base)('playwright').chromium; } catch { /* try next */ }
+  }
+  throw new Error('Playwright not found. Run: cd tests && npm install && npx playwright install chromium');
+}
+const chromium = loadChromium();
 
 const ROOT = new URL('../docs/', import.meta.url).pathname;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',

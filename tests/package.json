@@ -1,0 +1,11 @@
+{
+  "name": "file-viewer-tests",
+  "private": true,
+  "description": "Test-only tooling (Playwright for the headless smoke test). Isolated from the root vendoring package so CI installs just this, not the runtime libs.",
+  "scripts": {
+    "test": "node movediff.test.mjs && node smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.59.1"
+  }
+}

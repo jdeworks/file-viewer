@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Test tooling lives in tests/package.json (Playwright only) — isolated from the
+      # root vendoring package, so we don't pull the runtime libs just to run tests.
+      - name: Install Playwright
+        working-directory: tests
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Move-aware diff unit tests
+        run: node tests/movediff.test.mjs
+
+      # Serves docs/, drives headless Chromium, and asserts ZERO off-origin requests.
+      - name: Smoke test (headless Chromium)
+        run: node tests/smoke.mjs
