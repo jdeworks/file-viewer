@@ -22,9 +22,12 @@ import requirementsTxt from './requirements-txt/index.js';
 import goMod from './go-mod/index.js';
 import composerJson from './composer-json/index.js';
 import gemfile from './gemfile/index.js';
+import codeowners from './codeowners/index.js';
+import editorconfig from './editorconfig/index.js';
+import pomXml from './pom-xml/index.js';
 
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
-  requirementsTxt, goMod, composerJson, gemfile];
+  requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

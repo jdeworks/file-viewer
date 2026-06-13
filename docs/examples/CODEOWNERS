@@ -1,0 +1,10 @@
+# Default owners for everything in the repo
+*       @acme/maintainers
+
+# Front-end
+/docs/          @acme/web-team @ada
+*.css           @ada
+
+# Build & CI
+/.github/       @acme/devops
+Dockerfile      ops@example.com
