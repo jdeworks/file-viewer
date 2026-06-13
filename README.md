@@ -10,7 +10,9 @@ No install. No PWA. No account. Nothing to run.
 
 The point is trust. **Zero off-origin requests at runtime** — there is no server, no CDN, no analytics, no telemetry. Every library is vendored into this repo and served from the same origin as the page. Your files never leave the tab. The smoke test asserts "zero off-origin requests" on every run, so this stays true.
 
-> **Don't take our word for it — verify it yourself.** Open your browser's **DevTools → Network tab**, then load a file and click around. You'll see requests only to this site's own origin (and `data:`/`blob:` URLs, which never leave your machine) — nothing to any third party. Want to be certain? **Turn off your network / go offline and reload** — once the page has loaded, everything still works, because there's no server to talk to.
+> **Don't take our word for it — verify it yourself.** Open your browser's **DevTools → Network tab**, then load a file and click around. Every request goes to this site's own origin only (plus `data:`/`blob:` URLs, which never leave your machine) — nothing to any third party, ever. That's the trust guarantee: your files are processed entirely in the tab.
+>
+> *(Note: assets are loaded lazily from the origin as you use features, so going fully offline isn't supported yet — see [Offline use](#offline-use).)*
 
 - 📱 **Mobile is a first-class target** — on phones the raw/preview views become tabs instead of cramped side-by-side panes.
 - 🔒 **Secure preview** — rendered output lives in a `sandbox="allow-scripts"` iframe (opaque origin, never `allow-same-origin`). Untrusted HTML is DOMPurify-sanitized. If a file contains scripts or inline JS, you're asked before anything runs. Program source (Python, JS, …) is shown, never executed.
@@ -30,6 +32,16 @@ The point is trust. **Zero off-origin requests at runtime** — there is no serv
 ## Supported types
 
 Markdown · PDF · CSV · Excel/ODS (`.xlsx`/`.ods`) · Word (`.docx`) · PowerPoint (`.pptx`) · HTML · JSON · images (incl. SVG) · source code (~50 languages) · plain text. More are added over time.
+
+## Offline use
+
+The app makes zero off-origin requests, but it isn't fully offline-capable *yet*: assets
+(Monaco, each type's renderer, settings) are fetched lazily from the origin as you use
+them, so opening a new feature — or hard-reloading — while offline will fail. Making it
+work on a train with no signal (no install, no app store) is planned via a **service
+worker** that precaches every asset on first visit, so the site then runs entirely from
+cache. A service worker caches transparently in the background — it does *not* add an
+install prompt or turn this into an installed app.
 
 ## Run it locally
 
