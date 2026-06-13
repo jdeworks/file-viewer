@@ -15,6 +15,7 @@ import { loadMonaco } from './monaco-loader.js';
 import { hexDump } from './hexdump.js';
 import { initOffline, offlineMissHtml } from './offline.js';
 import * as persistence from './persistence.js';
+import { suppressInstallPrompt } from './ios-audio.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
 import { getModel, preloadModels, monacoOptions, renderSettings, persistGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
@@ -810,6 +811,11 @@ function init() {
 
   // Register the service worker + start the background offline precache (spinner → ✓).
   initOffline($('offlineStatus'));
+
+  // Keep the no-install promise: never let Android/desktop offer to install the app. (The one
+  // exception — an iOS-only "Add to Home Screen" hint for background audio — is opt-in and shown
+  // by the media renderer, not an install prompt.)
+  suppressInstallPrompt();
 
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
   window.__fv = {

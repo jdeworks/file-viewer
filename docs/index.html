@@ -9,6 +9,13 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.svg">
   <meta name="theme-color" content="#2f6feb">
+  <!-- iOS standalone support — ONLY used by the opt-in "Add to Home Screen" hint we surface for
+       iPhone users when an audio file is open (background/lock-screen playback). The web app
+       stays no-install everywhere else; the Android/desktop install prompt is suppressed in JS. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="File Viewer">
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
@@ -126,6 +133,8 @@
     </aside>
 
     <div id="offlineStatus" class="offline-status" hidden></div>
+    <!-- iOS-only opt-in: shown when audio is open on an iPhone/iPad (not Android/desktop). -->
+    <div id="iosAudioHint" class="ios-hint" hidden></div>
     <div id="toast" class="toast" hidden></div>
     <div id="scrim" class="scrim" hidden></div>
   </div>

@@ -10,6 +10,7 @@
 // controls show the track and work.
 import { mediaInfo, blobUrl } from './medialib.js';
 import { loadState, saveState, clearState } from '../../core/persistence.js';
+import { showIosAudioHint, hideIosAudioHint } from '../../core/ios-audio.js';
 
 const SLEEP_OPTIONS = [0, 5, 15, 30, 45, 60];   // minutes; 0 = off
 const PLAYABLE = /\.(mp3|wav|m4a|m4b|aac|oga|ogg|opus|flac|weba|mp4|m4v|webm|ogv|mov|mkv)$/i;
@@ -160,10 +161,14 @@ export async function render(intake, ctx = {}) {
   // Best-effort: browsers may block autoplay until the user has interacted with the page.
   if (pendingAutoplay) { pendingAutoplay = false; el.play().catch(() => { /* autoplay blocked */ }); }
 
+  // iOS-only opt-in: for AUDIO, suggest Add-to-Home-Screen so playback survives a screen lock.
+  // No-op off iOS / when standalone / once dismissed.
+  if (info.kind === 'audio') showIosAudioHint(); else hideIosAudioHint();
+
   // parentNode = render outside the sandbox; revoke frees the blob + timers when the preview changes.
   return {
     parentNode: host,
-    revoke: () => { cancelSleep(); URL.revokeObjectURL(url); },
+    revoke: () => { cancelSleep(); hideIosAudioHint(); URL.revokeObjectURL(url); },
   };
 }
 

@@ -542,6 +542,30 @@ try {
   if (/1\s*\/\s*2/.test(trackPos)) pass('audio folder playlist: track position (' + trackPos.trim() + ')'); else fail('playlist pos: ' + trackPos);
   const hasShuffle = await page.$('#previewHost .media-shuffle input');
   if (hasShuffle) pass('audio folder playlist: prev/next + shuffle controls'); else fail('no shuffle toggle in playlist');
+  // iOS install exception: the Add-to-Home-Screen hint must NOT appear on desktop (no-install default).
+  const iosHintDesktop = await page.$eval('#iosAudioHint', (e) => e.hidden);
+  if (iosHintDesktop) pass('iOS audio hint NOT shown on desktop (no-install default holds)'); else fail('iOS hint showed on desktop');
+  const appleMeta = await page.$('meta[name="apple-mobile-web-app-capable"]');
+  if (appleMeta) pass('iOS standalone meta + manifest present'); else fail('no apple-mobile-web-app-capable meta');
+
+  // ── iOS background-audio exception ── on an iPhone UA, opening audio surfaces the opt-in hint.
+  {
+    const ictx = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+      hasTouch: true, isMobile: true,
+    });
+    const ip = await ictx.newPage();
+    await ip.goto(origin, { waitUntil: 'networkidle' });
+    await ip.getByRole('button', { name: 'Sample.wav' }).click();
+    await ip.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+    const shown = await ip.waitForSelector('#iosAudioHint:not([hidden])', { timeout: 8000 }).catch(() => null);
+    const hintText = shown ? await ip.$eval('#iosAudioHint', (e) => e.textContent) : '';
+    if (shown && /Add to Home Screen/i.test(hintText)) pass('iOS: background-audio Add-to-Home-Screen hint shown for audio'); else fail('iOS hint missing/wrong: ' + hintText.slice(0, 60));
+    await ip.click('#iosAudioHint .ios-hint-never');
+    const hiddenAfter = await ip.$eval('#iosAudioHint', (e) => e.hidden);
+    if (hiddenAfter) pass('iOS: hint permanently dismissible'); else fail('iOS hint not dismissed');
+    await ictx.close();
+  }
   // No iframe for media — it renders directly in the pane (outside the sandbox).
   const mediaIframe = await page.$('#previewHost iframe.fv-preview-frame');
   if (!mediaIframe) pass('media renders outside the sandboxed iframe'); else fail('media used an iframe');

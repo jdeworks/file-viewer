@@ -1,0 +1,13 @@
+{
+  "name": "File Viewer",
+  "short_name": "File Viewer",
+  "description": "Mobile-first, private, client-only file viewer. Nothing leaves your device.",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#2f6feb",
+  "start_url": ".",
+  "scope": ".",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
