@@ -25,7 +25,7 @@ const chromium = loadChromium();
 const ROOT = new URL('../docs/', import.meta.url).pathname;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.css': 'text/css', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain',
-  '.wav': 'audio/wav', '.ipynb': 'application/json' };
+  '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml' };
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -62,6 +62,13 @@ page.on('request', (req) => {
 try {
   await page.goto(origin, { waitUntil: 'networkidle' });
   pass('page loaded');
+
+  // Favicon present + same-origin (no off-origin icon fetch).
+  const iconHref = await page.$eval('link[rel="icon"]', (l) => l.getAttribute('href')).catch(() => null);
+  if (iconHref) {
+    const r = await page.evaluate(async (h) => (await fetch(h)).ok, iconHref);
+    if (r) pass('favicon present and served same-origin'); else fail('favicon fetch failed: ' + iconHref);
+  } else fail('no favicon link');
 
   // Load the Welcome.md example.
   await page.getByRole('button', { name: 'Welcome.md' }).click();
@@ -162,6 +169,25 @@ try {
   await page.waitForTimeout(200);
   const stillEdited = await page.evaluate(() => document.querySelector('#editor .monaco-diff-editor')?.offsetParent !== null);
   if (!stillEdited) pass('switching back to current hides diff editor'); else fail('diff editor still visible after switching to current');
+
+  // ── Original mode: read-only + non-destructive (edits live in a separate model) ──
+  await page.click('#rawMode button[data-raw="original"]');
+  await page.waitForTimeout(200);
+  const origClean = await page.evaluate(() => !window.__fv.state.rawview.originalValue().includes('An edited line for the diff test.'));
+  if (origClean) pass('original view shows the pristine text (edit not present)'); else fail('original contains the edit');
+  // Typing in original must not stick (read-only) nor pollute current.
+  await page.click('#editor .monaco-editor .view-lines').catch(() => {});
+  await page.keyboard.type('XX_SHOULD_NOT_STICK');
+  await page.waitForTimeout(150);
+  const origUnchanged = await page.evaluate(() => !window.__fv.state.rawview.originalValue().includes('XX_SHOULD_NOT_STICK'));
+  if (origUnchanged) pass('original is read-only (typing rejected)'); else fail('original was edited');
+  await page.click('#rawMode button[data-raw="current"]');
+  await page.waitForTimeout(200);
+  const recovered = await page.evaluate(() => {
+    const v = window.__fv.state.rawview.getValue();
+    return v.includes('An edited line for the diff test.') && !v.includes('XX_SHOULD_NOT_STICK');
+  });
+  if (recovered) pass('switching original→current recovers the edit unchanged'); else fail('edit not recovered after original toggle');
 
   // ── Move-aware diff (WP15/WP16) ──
   // Reorder a paragraph in the working copy, then open the move-aware view.
@@ -304,16 +330,17 @@ try {
   await sf.waitForSelector('.img-doc svg', { timeout: 8000 });
   pass('SVG sanitized and rendered inline');
 
-  // ── Audio/Video (media) ── native player fed a data: URL in the sandbox.
+  // ── Audio/Video (media) ── native player rendered in the pane via a blob: URL.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.wav' }).click();
-  const aframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const af = await aframe.contentFrame();
-  await af.waitForSelector('audio.media-view', { timeout: 8000 });
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
   const mediaType = await page.$eval('#typeSelect', (s) => s.value);
   if (mediaType === 'media') pass('.wav detected as Audio / Video'); else fail('media type: ' + mediaType);
-  const audioSrc = await af.$eval('audio.media-view', (e) => e.getAttribute('src') || '');
-  if (audioSrc.startsWith('data:audio/wav;base64,')) pass('audio served as in-page data URL (no fetch)'); else fail('audio src: ' + audioSrc.slice(0, 30));
+  const audioSrc = await page.$eval('#previewHost audio.media-view', (e) => e.getAttribute('src') || '');
+  if (audioSrc.startsWith('blob:')) pass('audio served from in-page blob URL (streamed, no size ceiling)'); else fail('audio src: ' + audioSrc.slice(0, 30));
+  // No iframe for media — it renders directly in the pane (outside the sandbox).
+  const mediaIframe = await page.$('#previewHost iframe.fv-preview-frame');
+  if (!mediaIframe) pass('media renders outside the sandboxed iframe'); else fail('media used an iframe');
   const mediaHasEditor = await page.$('#editor .monaco-editor');
   if (!mediaHasEditor) pass('media is preview-only (no raw editor)'); else fail('raw editor present for media');
 

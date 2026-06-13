@@ -177,13 +177,10 @@ function setRawMode(mode) {
   state.rawMode = mode;
   state.rawview.setMode(mode);
   syncRawModeButtons();
-  // Diff modes are themselves a comparison — give them the full width (desktop).
-  if (state.type?.capabilities.preview) {
-    const wantRaw = mode === 'diff' || mode === 'movediff';
-    state.mode = wantRaw ? 'raw' : 'split';
-    state.tab = 'raw';
-    applyLayout();
-  }
+  // Keep the chosen view layout (split + draggable divider) stable across raw modes so
+  // nothing jumps when switching original/current/diff/move-diff. Use the view-mode
+  // switch (raw/split/preview) to give a diff full width when you want it.
+  applyLayout();
 }
 
 function syncRawModeButtons() {
@@ -240,6 +237,18 @@ async function renderPreview() {
       return renderPreview();
     }
   }
+  // Free any previous out-of-sandbox resource (e.g. a media blob URL).
+  state.previewCleanup?.(); state.previewCleanup = null;
+  // Some types (media) render a live node directly in the preview pane — outside the
+  // sandboxed iframe, which can't reach blob: URLs. Safe: media bytes aren't markup.
+  if (rendered.parentNode) {
+    clearPreview();
+    $('previewHost').appendChild(rendered.parentNode);
+    state.lastBodyHtml = null;   // not screenshot-able via the sanitized-body path
+    state.previewCleanup = rendered.revoke || null;
+    state.preview = { iframe: null, highlight() {}, scrollTo() {}, destroy() { $('previewHost').innerHTML = ''; } };
+    return;
+  }
   // Remember the sanitized body for screenshots (null for script-enabled full docs).
   state.lastBodyHtml = rendered.fullDoc ? null : rendered.bodyHtml;
   state.preview = mountPreview($('previewHost'), {
@@ -256,6 +265,7 @@ async function renderPreview() {
 }
 
 function clearPreview() {
+  state.previewCleanup?.(); state.previewCleanup = null;
   state.preview?.destroy();
   state.preview = null;
   $('previewHost').innerHTML = '';

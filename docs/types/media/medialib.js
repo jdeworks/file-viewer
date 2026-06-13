@@ -15,15 +15,12 @@ export function mediaInfo(intake) {
   return { kind: null, mime: 'application/octet-stream' };
 }
 
-function bytesToBase64(bytes) {
-  let bin = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-  return btoa(bin);
-}
-
-export function dataUrl(intake, mime) {
-  return 'data:' + mime + ';base64,' + bytesToBase64(intake.bytes);
+// Blob URL: the bytes stay as a single Blob the browser streams from — no base64
+// inflation, efficient seeking, and no practical size ceiling. The element lives in
+// the parent preview pane (not the sandboxed iframe), which can't reach blob: URLs.
+// Caller must URL.revokeObjectURL(url) when done.
+export function blobUrl(intake, mime) {
+  return URL.createObjectURL(new Blob([intake.bytes], { type: mime }));
 }
 
 // Probe duration (and dimensions for video) off-DOM. Resolves null on failure.

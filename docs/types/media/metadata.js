@@ -1,4 +1,4 @@
-import { mediaInfo, dataUrl, probe } from './medialib.js';
+import { mediaInfo, blobUrl, probe } from './medialib.js';
 
 function fmtDuration(s) {
   if (!isFinite(s) || s <= 0) return null;
@@ -12,7 +12,9 @@ export async function extract(intake) {
     { label: 'Kind', value: info.kind === 'video' ? 'Video' : 'Audio' },
     { label: 'Format', value: info.mime },
   ];
-  const p = await probe(info.kind, dataUrl(intake, info.mime));
+  const url = blobUrl(intake, info.mime);
+  const p = await probe(info.kind, url);
+  URL.revokeObjectURL(url);
   if (p) {
     const dur = fmtDuration(p.duration);
     if (dur) rows.push({ label: 'Duration', value: dur });
