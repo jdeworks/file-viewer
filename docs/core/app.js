@@ -118,6 +118,33 @@ async function openTreeFile(node) {
   }
 }
 
+// On phones, keep only the essentials in the top bar (tree, file name, open, fullscreen)
+// and move the rest into the ⋯ popover. On desktop the controls return to their original
+// spots (same DOM nodes, so their handlers + hidden-state logic keep working).
+const OVERFLOW_IDS = ['typeSelect', 'rawMode', 'formatBtn', 'downloadBtn', 'screenshotBtn', 'metaBtn', 'settingsBtn', 'themeBtn'];
+let overflowAnchors = null;
+function layoutTopbar() {
+  if (!overflowAnchors) {
+    overflowAnchors = OVERFLOW_IDS.map((id) => { const el = $(id); return { el, parent: el.parentNode, next: el.nextSibling }; });
+  }
+  const menu = $('moreMenu');
+  if (isMobile()) {
+    for (const { el } of overflowAnchors) menu.appendChild(el);   // array order = menu order
+    $('moreBtn').hidden = false;
+  } else {
+    for (const { el, parent, next } of overflowAnchors) parent.insertBefore(el, next);
+    $('moreBtn').hidden = true;
+    closeMoreMenu();
+  }
+}
+function toggleMoreMenu() {
+  const menu = $('moreMenu');
+  const open = menu.hidden;
+  menu.hidden = !open;
+  $('moreBtn').setAttribute('aria-expanded', String(open));
+}
+function closeMoreMenu() { $('moreMenu').hidden = true; $('moreBtn').setAttribute('aria-expanded', 'false'); }
+
 function setTree(open) {
   $('fileTree').hidden = !open;
   $('ftResize').hidden = !open || isMobile();   // resizer only for the desktop docked sidebar
@@ -645,6 +672,13 @@ function init() {
     else document.documentElement.requestFullscreen?.();
   });
   $('screenshotBtn').addEventListener('click', takeScreenshot);
+  $('moreBtn').addEventListener('click', toggleMoreMenu);
+  $('moreMenu').addEventListener('click', (e) => { if (e.target.closest('button')) closeMoreMenu(); });
+  document.addEventListener('click', (e) => {
+    if ($('moreMenu').hidden) return;
+    if (!e.target.closest('#moreMenu') && !e.target.closest('#moreBtn')) closeMoreMenu();
+  });
+  layoutTopbar();
 
   document.querySelectorAll('#viewMode button').forEach((b) =>
     b.addEventListener('click', () => { state.mode = b.dataset.mode; applyLayout(); }));
@@ -657,6 +691,7 @@ function init() {
   // Viewport change must NOT rebuild the editor (would drop edits) — just relayout
   // and toggle which view controls apply (desktop split vs mobile tabs).
   window.matchMedia('(max-width: 760px)').addEventListener('change', () => {
+    layoutTopbar();                              // move controls in/out of the ⋯ menu
     if (!state.type) return;
     const canPreview = state.type.capabilities.preview && !state.intake.isBinary;
     $('viewMode').hidden = !canPreview || isMobile();

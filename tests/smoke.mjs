@@ -503,7 +503,7 @@ try {
   const afterDl = await page.evaluate(() => window.__fv.hasUnsavedWork());
   if (!clean0 && dirty1 && !afterDl) pass('unsaved-work tracked (clean → edit → download clears it; gates discard + beforeunload)'); else fail('unsaved flags clean=' + clean0 + ' dirty=' + dirty1 + ' afterDownload=' + afterDl);
 
-  // ── Mobile hardening (WP06) ── phone viewport: Preview-first + scrollable topbar.
+  // ── Mobile hardening (WP06) ── phone viewport: Preview-first + ⋯ overflow menu.
   const mctx = await browser.newContext({ viewport: { width: 390, height: 780 }, isMobile: true, hasTouch: true });
   const mpage = await mctx.newPage();
   mpage.on('console', (m) => { if (m.type() === 'error') consoleErrors.push('[mobile] ' + m.text()); });
@@ -517,11 +517,17 @@ try {
   if (tabbarShown) pass('mobile: tab bar shown (not split)'); else fail('mobile: tab bar hidden');
   const activeTab = await mpage.$eval('#tabbar button.active', (e) => e.dataset.mode).catch(() => null);
   if (activeTab === 'preview') pass('mobile: defaults to Preview tab'); else fail('mobile active tab: ' + activeTab);
-  // Topbar overflows but is horizontally scrollable (contained, not clipped/wrapped).
-  const tb = await mpage.$eval('.topbar', (e) => ({ ox: getComputedStyle(e).overflowX, scroll: e.scrollWidth, client: e.clientWidth, h: e.clientHeight }));
-  if (tb.ox === 'auto' && tb.scroll > tb.client) pass('mobile: topbar scrollable, all controls reachable (' + tb.scroll + '>' + tb.client + 'px)');
-  else fail('mobile topbar: ' + JSON.stringify(tb));
-  if (tb.h <= 60) pass('mobile: topbar stays single-row (' + tb.h + 'px)'); else fail('mobile topbar height: ' + tb.h);
+  // Overflow menu: ⋯ is shown, settings lives inside the popover (not the bar), and the
+  // bar stays a single row.
+  const moreShown = await mpage.$eval('#moreBtn', (e) => !e.hidden);
+  const settingsInBar = await mpage.evaluate(() => document.querySelector('.topbar > #settingsBtn') != null);
+  if (moreShown && !settingsInBar) pass('mobile: ⋯ overflow menu shown, secondary controls moved out of the bar'); else fail('mobile overflow: more=' + moreShown + ' settingsInBar=' + settingsInBar);
+  await mpage.click('#moreBtn');
+  await mpage.waitForTimeout(150);
+  const menuHasSettings = await mpage.evaluate(() => !document.querySelector('#moreMenu').hidden && document.querySelector('#moreMenu #settingsBtn') != null);
+  if (menuHasSettings) pass('mobile: ⋯ opens popover containing the overflow controls'); else fail('overflow menu missing settings');
+  const barH = await mpage.$eval('.topbar', (e) => e.clientHeight);
+  if (barH <= 60) pass('mobile: topbar stays single-row (' + barH + 'px)'); else fail('mobile topbar height: ' + barH);
   await mctx.close();
 
   if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
