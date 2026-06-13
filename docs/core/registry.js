@@ -62,6 +62,7 @@ import epubType from '../types/epub/index.js';
 import comicType from '../types/comic/index.js';
 import fb2Type from '../types/fb2/index.js';
 import mobiType from '../types/mobi/index.js';
+import odfType from '../types/odf/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -71,6 +72,7 @@ export const REGISTRY = [
   xlsxType,
   docxType,
   pptxType,
+  odfType,
   htmlType,
   emlType,
   mboxType,

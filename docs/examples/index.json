@@ -15,6 +15,7 @@
   { "label": "Sample.vcf", "file": "sample.vcf", "mime": "text/vcard", "category": "Data" },
   { "label": "Sample.xlsx", "file": "sample.xlsx", "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "category": "Office" },
   { "label": "Sample.docx", "file": "sample.docx", "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "category": "Office" },
+  { "label": "Sample.odt", "file": "sample.odt", "mime": "application/vnd.oasis.opendocument.text", "category": "Office" },
   { "label": "Sample.pptx", "file": "sample.pptx", "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation", "category": "Office" },
   { "label": "Sample.yaml", "file": "sample.yaml", "mime": "application/yaml", "category": "Config" },
   { "label": "Sample.toml", "file": "sample.toml", "mime": "application/toml", "category": "Config" },

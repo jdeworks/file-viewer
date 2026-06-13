@@ -464,6 +464,19 @@ try {
   const strong = await df.$$eval('.docx-body strong, .docx-body b', (els) => els.length);
   if (strong > 0) pass('Word: formatting preserved (bold)'); else fail('no bold run in docx');
 
+  // ── OpenDocument text (.odt) ── unzip content.xml → sanitized reading HTML in the iframe. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.odt' }).click();
+  const odtframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
+  const odtf = await frameOf('iframe.fv-preview-frame');
+  await odtf.waitForSelector('.odf-doc', { timeout: 12000 });
+  const odtType = await page.$eval('#typeSelect', (s) => s.value);
+  if (odtType === 'odf') pass('.odt detected as OpenDocument'); else fail('odt type: ' + odtType);
+  const odtH1 = await odtf.$eval('.odf-doc h1', (e) => e.textContent).catch(() => '');
+  if (/OpenDocument Sample/.test(odtH1)) pass('ODT heading rendered (text:h → h1)'); else fail('odt h1: ' + odtH1);
+  const odtItems = await odtf.$$eval('.odf-doc li', (els) => els.map((e) => e.textContent.trim()));
+  if (odtItems.some((t) => /First item/.test(t)) && odtItems.length === 2) pass('ODT list rendered (' + odtItems.length + ' items)'); else fail('odt list: ' + odtItems.join(','));
+
   // ── PowerPoint module (WP19) ── pptxviewjs renders slides to images in the iframe.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sample.pptx' }).click();

@@ -182,6 +182,13 @@ const BASE_CSS = `
   .mobi-book p{margin:0 0 10px;text-align:justify;}
   .mobi-img{display:block;max-width:100%;height:auto;margin:16px auto;}
   .mobi-break{border:0;border-top:1px solid #8884;margin:20px 0;}
+  /* OpenDocument (.odt/.odp) reader — sanitized body with inline data: images. */
+  .odf-doc{max-width:44rem;margin:0 auto;}
+  .odf-text{font-family:Georgia,"Times New Roman",serif;}
+  .odf-img{max-width:100%;height:auto;margin:10px 0;}
+  .odf-textbox{margin:8px 0;}
+  .odf-slide{border:1px solid #8883;border-radius:8px;padding:20px 22px;margin:0 0 16px;box-shadow:0 1px 8px rgba(0,0,0,.12);}
+  .odf-presentation .odf-slide h1,.odf-presentation .odf-slide h2{margin-top:0;}
   .zip-meta{font:12px system-ui,sans-serif;color:#888;margin:0 0 10px;}
   .zip-table .z-name{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:normal;word-break:break-all;}
   .zip-table .z-num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
