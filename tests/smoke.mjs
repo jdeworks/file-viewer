@@ -1708,24 +1708,50 @@ try {
   if (/Score: \d+/.test(g2048Score)) pass('2048 responds to moves (' + g2048Score + ')'); else fail('2048 score: ' + g2048Score);
   await page.click('.games-close');
 
-  // ── Meta-game: Bit Foundry (incremental core, P2) ── launch, compute, buy automation. ──
+  // ── Meta-game: staged campaign (intro → Bit Foundry grind → boss → victory) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => {
-    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 1000 })); } catch {}
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 1000, stage: 1 })); } catch {}
     window.__fv.games.unlock();
     window.__fv.games.open();
   });
   await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
   await page.click('.games-card[data-game="metagame"]');
-  await page.waitForSelector('.mg-wrap', { timeout: 8000 });
+  // Stage intro dialog plays first.
+  await page.waitForSelector('.mg-dialog', { timeout: 8000 });
+  pass('meta-game: stage intro dialog shown');
+  const clickThroughDialog = async () => { for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); } };
+  await clickThroughDialog();
+  // Grind (Bit Foundry) reached; buying automation raises the rate.
+  await page.waitForSelector('.mg-bits', { timeout: 8000 });
   const mgBits = await page.$eval('.mg-bits', (e) => e.textContent);
-  if (/bits/.test(mgBits)) pass('Bit Foundry launches (resource: ' + mgBits + ')'); else fail('mg bits: ' + mgBits);
-  await page.click('.mg-compute');                      // manual compute
-  await page.click('.mg-shop .mg-buy[data-id="cron"]'); // buy the cheapest automation (1000 bits seeded)
+  if (/bits/.test(mgBits)) pass('meta-game: grind reached (' + mgBits + ')'); else fail('mg bits: ' + mgBits);
+  await page.click('.mg-shop .mg-buy[data-id="cron"]');
   const mgRate = await page.$eval('.mg-rate', (e) => e.textContent);
-  if (/0\.2\/s/.test(mgRate)) pass('Bit Foundry: automation raises the bit rate (' + mgRate + ')'); else fail('mg rate: ' + mgRate);
-  const mgOwned = await page.$eval('.mg-buy[data-id="cron"] .mg-owned', (e) => e.textContent);
-  if (mgOwned === '×1') pass('Bit Foundry: upgrade purchased (owned ' + mgOwned + ')'); else fail('mg owned: ' + mgOwned);
+  if (/0\.2\/s/.test(mgRate)) pass('meta-game: automation raises the bit rate (' + mgRate + ')'); else fail('mg rate: ' + mgRate);
+  // Bits (1000) exceed the stage goal (100) → Confront button → boss.
+  await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 4000 });
+  await page.click('.mg-faceboss');
+  await clickThroughDialog();                          // boss taunt → Fight
+  await page.waitForSelector('.mg-boss', { timeout: 8000 });
+  const locks0 = await page.$$eval('.mg-boss-locks .mg-lock', (els) => els.length);
+  if (locks0 === 3) pass('meta-game boss: The Overwriter appears (3 locks)'); else fail('boss locks: ' + locks0);
+  // Hint mechanic reveals guidance.
+  await page.click('.mg-hint-btn');
+  if (await page.$('.mg-dialog')) pass('meta-game boss: hint mechanic reveals a hint'); else fail('no hint dialog');
+  await page.click('.mg-dlg-next');                    // close the hint
+  // Defeat: create a new file that OVERWRITES his lock, three times, racing the re-lock.
+  await page.fill('.mg-boss-file', 'boss.lock');
+  await page.check('.mg-boss-owchk');
+  for (let k = 2; k >= 0; k--) {
+    await page.click('.mg-boss-create');
+    await page.waitForFunction((n) => document.querySelectorAll('.mg-boss-locks .mg-lock').length === n, k, { timeout: 4000 });
+  }
+  await page.waitForSelector('.mg-dialog', { timeout: 4000 });
+  const victoryText = await page.$eval('.mg-dlg-text', (e) => e.textContent);
+  if (victoryText && victoryText.length > 0) pass('meta-game boss defeated with a real app feature → victory'); else fail('victory: ' + victoryText);
+  const beaten = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame')) || {}).defeated || []; } catch { return []; } });
+  if (beaten.includes(1)) pass('meta-game: stage 1 marked defeated (persisted)'); else fail('defeated: ' + JSON.stringify(beaten));
   await page.click('.games-close');
 
   // ── Graceful offline-miss ── cache-on-use only (no full precache), then open a viewer that
