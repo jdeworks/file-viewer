@@ -1136,4 +1136,9 @@ function init() {
   };
 }
 
-document.addEventListener('DOMContentLoaded', init);
+// Run init once the DOM is ready. A bare addEventListener('DOMContentLoaded') would miss the
+// event if it already fired — which happens now that an imported module (iframe.js) uses a
+// top-level await, delaying this module's evaluation past DOMContentLoaded. So fire immediately
+// if the document is already parsed.
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
