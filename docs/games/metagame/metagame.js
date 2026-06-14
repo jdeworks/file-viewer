@@ -6,7 +6,10 @@ import { playDialog } from './dialog.js';
 import { STAGES, stageByNumber } from './stages.js';
 import { renderStage1, mountBell, bellLoad, bellAdd, updateBellDot, checkMessages, removeStageMsgs } from './stage1.js';
 import { MESSAGES1 } from './messages1.js';
+import { loadState, saveState } from './s1state.js';
+import { gte, fromNumber, toNumber } from './bignum.js';
 
+// SAVE_KEY is the same as s1state.SAVE_KEY ('fv:games:metagame'); imported indirectly via loadState/saveState.
 const SAVE_KEY = 'fv:games:metagame';
 const COMPLETE_KEY = 'fv:games:metagame:complete';
 
@@ -17,8 +20,19 @@ function fmt(n) {
   while (v >= 1000 && u < units.length - 1) { v /= 1000; u++; }
   return v.toFixed(2) + units[u];
 }
-const load = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch { return {}; } };
-const save = (st) => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(st)); } catch { /* private mode */ } };
+// Stage 1 uses BigNum save/load (base64, s1state); stages 2-10 use plain JSON.
+// stage1.js still uses plain-number bits at runtime (WP-S1-10 migrates it to BigNum in parallel).
+// For Stage 1 saves we convert plain-number bits → BigNum so the localStorage format is correct.
+function save(st) {
+  if ((st.stage || 1) === 1) {
+    // Lift plain-number bits to BigNum before encoding; don't mutate the live state object.
+    const bits = (st.bits && typeof st.bits === 'object') ? st.bits : fromNumber(st.bits || 0);
+    const totalBits = (st.totalBits && typeof st.totalBits === 'object') ? st.totalBits : fromNumber(st.totalBits || 0);
+    saveState({ ...st, bits, totalBits });   // s1state: base64 + BigNum serialization
+  } else {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(st)); } catch { /* private mode */ }
+  }
+}
 // Arcade minigames feed a CROSS-STAGE bonus: each game's high score is claimable (the new points
 // since last claim) as a one-off boost to the CURRENT stage's resource. Works in every stage.
 const SCORE_GAMES = [{ id: 'snake', name: 'Snake' }, { id: '2048', name: '2048' }];
@@ -100,17 +114,43 @@ function showCompletion(host, { onNewGame, onExit } = {}) {
 }
 
 export function mount(host, { onExit } = {}) {
-  const s = load();
-  const state = {
-    bits: s.bits || 0,
-    totalBits: s.totalBits || 0,           // lifetime bits ever earned; used by Stage 1 gate system
-    owned: s.owned || {},
-    claimed: (s.claimed && typeof s.claimed === 'object') ? s.claimed : (s.snakeClaimed ? { snake: gameHigh('snake') } : {}),
-    stage: s.stage || 1,
-    defeated: Array.isArray(s.defeated) ? s.defeated : [],
-    introStages: Array.isArray(s.introStages) ? s.introStages : (s.introSeen ? [1] : []),   // per-stage intro seen
-    buyMult: s.buyMult || 1,            // 1 | 10 | 100 | 'max'
+  // Stage 1 uses BigNum save (base64); stages 2-10 use plain JSON.
+  // Peek at the raw save to decide which loader to use.
+  let state;
+  const rawSave = localStorage.getItem(SAVE_KEY);
+  // toNumState: convert BigNum bits/totalBits to plain numbers for stage1.js compat (WP-S1-10
+  // migrates stage1.js to BigNum arithmetic; until then, runtime state must use plain numbers).
+  const toNumState = (s) => {
+    if (s.bits && typeof s.bits === 'object') s.bits = toNumber(s.bits);
+    if (s.totalBits && typeof s.totalBits === 'object') s.totalBits = toNumber(s.totalBits);
+    return s;
   };
+  if (!rawSave) {
+    state = toNumState(loadState());   // s1state default → convert BigNum→number
+  } else {
+    let stageNum = 1;
+    try {
+      // Try plain JSON peek first (stage 2-10 saves); s1state base64 will throw here.
+      const peek = JSON.parse(rawSave);
+      stageNum = peek.stage || 1;
+    } catch { stageNum = 1; }  // base64 (Stage 1) — s1state.loadState handles it
+    if (stageNum === 1) {
+      state = toNumState(loadState());   // s1state: base64 + BigNum migration → convert BigNum→number
+    } else {
+      // Stages 2-10: plain JSON with legacy field normalisation.
+      const s = JSON.parse(rawSave);
+      state = {
+        bits: s.bits || 0,
+        totalBits: s.totalBits || 0,
+        owned: s.owned || {},
+        claimed: (s.claimed && typeof s.claimed === 'object') ? s.claimed : (s.snakeClaimed ? { snake: gameHigh('snake') } : {}),
+        stage: s.stage || 1,
+        defeated: Array.isArray(s.defeated) ? s.defeated : [],
+        introStages: Array.isArray(s.introStages) ? s.introStages : (s.introSeen ? [1] : []),
+        buyMult: s.buyMult || 1,
+      };
+    }
+  }
   let timer = null, bossCtl = null, dlgCtl = null;
 
   // If the player already finished all 10 stages, go straight to the completion screen.
@@ -156,9 +196,17 @@ export function mount(host, { onExit } = {}) {
   }
   function renderS1() {
     clearTransient();
+    // canFightBoss for Stage 1: all sub-stages owned ≥1 AND bits ≥ bossTicket (§10.2).
+    // state.bits is a plain number (stage1.js compat); bossTicket is BigNum → convert via toNumber.
+    const st1 = stage();
+    const bossTicket = st1.bossTicket;
+    const bossTicketNum = bossTicket ? toNumber(bossTicket) : Infinity;
+    const allOwned = (st1.tiers || []).filter(t => t.id !== 's1-cursor').every(t => (state.owned[t.id] || 0) >= 1);
+    const canFightBoss = allOwned && bossTicket && state.bits >= bossTicketNum;
     renderStage1({
       host, state, save, stage,
       clickPower, buyTier,
+      canFightBoss,
       onExit,
       onBoss: () => startBoss(),
       attachChrome: (h) => attachChrome(h, { debug: true }),
@@ -281,7 +329,8 @@ export function mount(host, { onExit } = {}) {
   function onBossDefeat() {
     const st = stage();
     if (!state.defeated.includes(st.n)) state.defeated.push(st.n);
-    state.bits += st.goal * 5;                 // spoils
+    // Spoils: plain-number stages only; Stage 1 uses BigNum bits (no plain-number goal).
+    if (st.goal != null) state.bits += st.goal * 5;
     save(state);
     clearTransient();
     host.innerHTML = '<div class="mg-wrap mg-stage-host"></div>';

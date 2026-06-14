@@ -14,9 +14,13 @@ export async function loadExamples(onPick) {
     const host = $('examples');
     host.textContent = '';
 
+    // Hide Overwriter.frag if the boss-1 cheat is permanently disabled (§10A.3 step 5).
+    const cheatDisabled = (() => { try { return localStorage.getItem('fv:boss1:cheat') === btoa(JSON.stringify(false)); } catch { return false; } })();
+    const visible = cheatDisabled ? list.filter(ex => !/Overwriter/i.test(ex.label || ex.file)) : list;
+
     // Group by category, preserving in-file order within each group.
     const groups = new Map();
-    for (const ex of list) {
+    for (const ex of visible) {
       const cat = ex.category || 'Other';
       if (!groups.has(cat)) groups.set(cat, []);
       groups.get(cat).push(ex);

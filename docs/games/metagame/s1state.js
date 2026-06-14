@@ -62,6 +62,7 @@ export function migrate(s) {
     s.totalBits = fromNumber(s.totalBits || 0);
 
   // Ensure new fields exist with their defaults.
+  s.owned        ||= {};
   s.timedStates  ||= {};
   s.managers     ||= {};
   s.pullFactors  ||= [];
