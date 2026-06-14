@@ -1,23 +1,34 @@
 // Comic book reader (parent pane — pages are image bytes, never executed). .cbz pages render as
 // fit-to-width images in a vertical scroll, with a page counter and a two-page "spread" toggle
-// (book mode) on wide screens. .cbr/.7z get a clear, friendly note (the RAR/7z readers are a
-// planned opt-in). Blob URLs are revoked on teardown via the returned revoke().
-import { openComic } from './comiclib.js';
+// (book mode) on wide screens. .cbr/.cb7 open via libarchive.wasm when enableArchiveWasm is on;
+// otherwise a friendly opt-in note is shown. Blob URLs are revoked on teardown via revoke().
+import { openComic, archiveKind } from './comiclib.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-export async function render(intake, _ctx) {
+export async function render(intake, ctx) {
   const host = document.createElement('div');
   host.className = 'comic-doc';
+  const enableArchiveWasm = !!(ctx && ctx.settings && ctx.settings.enableArchiveWasm);
+
+  // For RAR/7z comics, require WASM opt-in before trying to open.
+  const kind = archiveKind(intake.bytes);
+  if ((kind === 'rar' || kind === '7z') && !enableArchiveWasm) {
+    const what = kind === 'rar' ? 'RAR (.cbr)' : '7-Zip (.cb7)';
+    const fname = esc(intake.filename || 'this comic');
+    host.innerHTML = '<div class="comic-note"><strong>Archive support is not enabled.</strong><br>'
+      + fname + ' is a ' + what + ' comic. Enable <strong>Archive support</strong> in '
+      + 'Settings → Advanced to open it.</div>';
+    return { parentNode: host };
+  }
 
   let result;
-  try { result = await openComic(intake); }
+  try { result = await openComic(intake, { enableArchiveWasm }); }
   catch (e) { host.innerHTML = '<div class="comic-note"><strong>Could not read comic</strong><br>' + esc(e.message) + '</div>'; return { parentNode: host }; }
 
-  if (result.kind !== 'zip') {
+  if (!result.pages) {
     const what = result.kind === 'rar' ? 'a RAR archive (.cbr)' : result.kind === '7z' ? 'a 7-Zip archive (.cb7)' : 'an unrecognized archive';
     host.innerHTML = '<div class="comic-note"><strong>This comic is ' + what + '.</strong><br>'
-      + 'Only <code>.cbz</code> (zip-based) comics open in the reader today. A RAR/7z reader is planned as an opt-in download. '
       + 'If this file is actually a zip, renaming it to <code>.cbz</code> will open it.</div>';
     return { parentNode: host };
   }

@@ -9,7 +9,7 @@ VENDOR=docs/vendor
 rm -rf "$VENDOR"
 mkdir -p "$VENDOR/monaco" "$VENDOR/pdfjs" "$VENDOR/dompurify" "$VENDOR/markdown-it" \
          "$VENDOR/papaparse" "$VENDOR/xlsx" "$VENDOR/mammoth" \
-         "$VENDOR/jszip" "$VENDOR/chartjs" "$VENDOR/pptxviewjs"
+         "$VENDOR/jszip" "$VENDOR/chartjs" "$VENDOR/pptxviewjs" "$VENDOR/libarchive"
 
 # --- Monaco (AMD dist). Drop locale bundles (English is built-in) to save weight. ---
 cp -r node_modules/monaco-editor/min/vs "$VENDOR/monaco/vs"
@@ -55,6 +55,12 @@ cp node_modules/sql.js/dist/sql-wasm.wasm "$VENDOR/sql.js/sql-wasm.wasm"
 # --- pdf-lib (PDF writer, UMD min). Loaded only when editing a PDF. ---
 mkdir -p "$VENDOR/pdf-lib"
 cp node_modules/pdf-lib/dist/pdf-lib.min.js "$VENDOR/pdf-lib/pdf-lib.min.js"
+
+# --- libarchive.js (7z/RAR/tar WASM, ~1 MB). ESM loader + WASM binary + worker bundle.
+# Loaded ONLY when Advanced > Archive support is ON and a non-zip archive is opened.
+cp node_modules/libarchive.js/dist/libarchive.js      "$VENDOR/libarchive/libarchive.js"
+cp node_modules/libarchive.js/dist/libarchive.wasm    "$VENDOR/libarchive/libarchive.wasm"
+cp node_modules/libarchive.js/dist/worker-bundle.js   "$VENDOR/libarchive/worker-bundle.js"
 
 # --- ffmpeg.wasm (media transcoding, ~23 MB WASM). UMD wrapper + core-st (single-threaded,
 # no SharedArrayBuffer required). Loaded ONLY when Advanced > Enable media transcoding is ON

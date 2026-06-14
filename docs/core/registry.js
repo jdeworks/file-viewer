@@ -58,6 +58,7 @@ import subtitleType from '../types/text/subtitle/index.js';
 import vcardType from '../types/vcard/index.js';
 import sqliteType from '../types/sqlite/index.js';
 import zipType from '../types/zip/index.js';
+import archiveType from '../types/archive/index.js';
 import epubType from '../types/ebook/epub/index.js';
 import comicType from '../types/ebook/comic/index.js';
 import fb2Type from '../types/ebook/fb2/index.js';
@@ -102,6 +103,7 @@ export const REGISTRY = [
   sqliteType,
   epubType,
   comicType,
+  archiveType,
   zipType,
   codeType,
   rawType,

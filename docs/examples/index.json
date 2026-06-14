@@ -364,5 +364,11 @@
     "file": "sample.cbz",
     "mime": "application/vnd.comicbook+zip",
     "category": "Archive & Binary"
+  },
+  {
+    "label": "Sample.7z",
+    "file": "Sample.7z",
+    "mime": "application/x-7z-compressed",
+    "category": "Archive & Binary"
   }
 ]

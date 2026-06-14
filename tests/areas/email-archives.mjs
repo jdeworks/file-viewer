@@ -54,7 +54,18 @@ export async function run(ctx) {
   if (lzNames.some((n) => /secret\.txt/.test(n)) && lzNames.some((n) => /readme\.txt/.test(n))) pass('encrypted zip still lists entries (fallback parser)'); else fail('locked zip names: ' + lzNames.join(','));
   const lockBadge = await lzf.$$eval('.zip-table .z-lock', (els) => els.length);
   const lockBanner = await lzf.$eval('.zip-locked', (e) => e.textContent).catch(() => '');
-  if (lockBadge === 1 && /password-protected/.test(lockBanner)) pass('password-protected entry flagged (🔒 badge + banner)'); else fail('lock badge=' + lockBadge + ' banner=' + lockBanner.slice(0, 50));
+  if (lockBadge === 1 && /password-protected/.test(lockBanner)) pass('password-protected entry flagged (lock badge + banner)'); else fail('lock badge=' + lockBadge + ' banner=' + lockBanner.slice(0, 50));
+
+  // ── 7z archive ── with enableArchiveWasm off, shows the opt-in hint panel.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.7z' }).click();
+  const szframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
+  const szf = await frameOf('iframe.fv-preview-frame');
+  await szf.waitForSelector('.zip-doc', { timeout: 12000 });
+  const szType = await page.$eval('#typeSelect', (s) => s.value);
+  if (szType === 'archive') pass('.7z detected as Archive type'); else fail('7z type: ' + szType);
+  const szHint = await szf.$('.archive-hint');
+  if (szHint) pass('7z shows opt-in hint when enableArchiveWasm is off'); else fail('no hint for 7z without WASM enabled');
 
   // ── Comic book (.cbz) ── zip of images → page reader (parent pane, blob image URLs, natural sort).
   await page.goto(origin, { waitUntil: 'networkidle' });
