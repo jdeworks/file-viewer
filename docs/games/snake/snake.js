@@ -52,9 +52,9 @@ export function mount(host, { onScore, onExit } = {}) {
   function tick() {
     if (dead) return;
     dir = nextDir;
-    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
-    // Wall or self collision ends the game.
-    if (head.x < 0 || head.y < 0 || head.x >= GRID || head.y >= GRID || snake.some((s) => s.x === head.x && s.y === head.y)) {
+    const head = { x: (snake[0].x + dir.x + GRID) % GRID, y: (snake[0].y + dir.y + GRID) % GRID };
+    // Only self-collision ends the game (no wall death):
+    if (snake.some((s) => s.x === head.x && s.y === head.y)) {
       return gameOver();
     }
     snake.unshift(head);
@@ -114,8 +114,8 @@ export function mount(host, { onScore, onExit } = {}) {
   }
 
   window.addEventListener('keydown', onKey);
-  canvas.addEventListener('touchstart', onTouchStart, { passive: false });
-  canvas.addEventListener('touchend', onTouchEnd, { passive: true });
+  host.addEventListener('touchstart', onTouchStart, { passive: false });
+  host.addEventListener('touchend', onTouchEnd, { passive: true });
   host.querySelector('.snake-restart').addEventListener('click', () => { host.querySelector('.snake-board').classList.remove('snake-dead'); reset(); });
   host.querySelector('.snake-quit').addEventListener('click', () => onExit?.());
 
@@ -125,8 +125,8 @@ export function mount(host, { onScore, onExit } = {}) {
     destroy() {
       if (timer) clearInterval(timer);
       window.removeEventListener('keydown', onKey);
-      canvas.removeEventListener('touchstart', onTouchStart);
-      canvas.removeEventListener('touchend', onTouchEnd);
+      host.removeEventListener('touchstart', onTouchStart);
+      host.removeEventListener('touchend', onTouchEnd);
       host.innerHTML = '';
     },
   };

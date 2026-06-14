@@ -35,7 +35,7 @@ export async function render(intake, _ctx) {
 
   function apply() {
     host.querySelector('.imgv-fit').classList.toggle('active', fit);
-    if (fit || !natural) { img.style.width = ''; img.style.maxWidth = '100%'; img.style.maxHeight = '100%'; zoomLabel.textContent = 'fit'; }
+    if (fit || !natural) { img.style.width = ''; img.style.maxWidth = ''; img.style.maxHeight = ''; zoomLabel.textContent = 'fit'; }
     else { img.style.maxWidth = 'none'; img.style.maxHeight = 'none'; img.style.width = Math.round(natural * zoom) + 'px'; zoomLabel.textContent = Math.round(zoom * 100) + '%'; }
   }
   host.querySelector('.imgv-fit').addEventListener('click', () => { fit = true; apply(); });
