@@ -2,7 +2,17 @@
 // iframe. Markdown cells go through markdown-it; code cells show source + their saved
 // outputs (stream/text/html/image/error). All HTML-bearing outputs are DOMPurify'd — a
 // notebook's display_data can contain arbitrary HTML. Notebook code is NEVER executed.
+// Markup lives in sibling .html templates (error/notebook/cell-md/cell-code/cell-raw) and
+// is filled via core/template.js. Pre-escaped values use {{&slot}} raw injection; already-safe
+// sanitized HTML (DOMPurify output) also uses {{&slot}}.
 import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadTemplate, fill } from '../../core/template.js';
+
+const ERROR_TPL   = new URL('./error.html',    import.meta.url);
+const NOTEBOOK_TPL = new URL('./notebook.html', import.meta.url);
+const CELL_MD_TPL  = new URL('./cell-md.html',  import.meta.url);
+const CELL_CODE_TPL = new URL('./cell-code.html', import.meta.url);
+const CELL_RAW_TPL = new URL('./cell-raw.html', import.meta.url);
 
 let mdInstance = null;
 
@@ -58,12 +68,20 @@ function renderOutputs(outputs, DOMPurify) {
 }
 
 export async function render(intake, _ctx) {
+  const [errorTpl, notebookTpl, cellMdTpl, cellCodeTpl, cellRawTpl] = await Promise.all([
+    loadTemplate(ERROR_TPL),
+    loadTemplate(NOTEBOOK_TPL),
+    loadTemplate(CELL_MD_TPL),
+    loadTemplate(CELL_CODE_TPL),
+    loadTemplate(CELL_RAW_TPL),
+  ]);
+
   const { md, DOMPurify } = await ensureLibs();
   let nb;
   try {
     nb = JSON.parse(intake.text || '');
   } catch (err) {
-    return { bodyHtml: '<div class="json-error"><strong>Invalid notebook</strong><br>' + esc(err.message) + '</div>', hadUnsafe: false };
+    return { bodyHtml: fill(errorTpl, { errMsg: esc(err.message) }), hadUnsafe: false };
   }
 
   // nbformat 4 = nb.cells; nbformat 3 nests under worksheets[0].cells.
@@ -77,21 +95,18 @@ export async function render(intake, _ctx) {
       DOMPurify.removed = [];
       const clean = DOMPurify.sanitize(md.render(src), SAN_OPTS);
       if (DOMPurify.removed.length) unsafe = true;
-      body += '<div class="nb-cell nb-md">' + clean + '</div>';
+      body += fill(cellMdTpl, { content: clean });
     } else if (cell.cell_type === 'code') {
       const count = cell.execution_count != null ? cell.execution_count : ' ';
-      let cellHtml = '<div class="nb-cell nb-code">'
-        + '<div class="nb-in"><span class="nb-prompt">In [' + esc(count) + ']:</span>'
-        + '<pre class="nb-src"><code>' + esc(src) + '</code></pre></div>';
       const outs = renderOutputs(cell.outputs, DOMPurify);
       if (outs.unsafe) unsafe = true;
-      if (outs.html) cellHtml += '<div class="nb-out">' + outs.html + '</div>';
-      body += cellHtml + '</div>';
+      const out = outs.html ? '<div class="nb-out">' + outs.html + '</div>' : '';
+      body += fill(cellCodeTpl, { count: esc(count), src: esc(src), out });
     } else {
-      body += '<div class="nb-cell nb-raw"><pre>' + esc(src) + '</pre></div>';
+      body += fill(cellRawTpl, { src: esc(src) });
     }
   }
 
   if (!body) body = '<p class="nb-empty">Empty notebook (no cells).</p>';
-  return { bodyHtml: '<div class="nb-notebook">' + body + '</div>', hadUnsafe: unsafe };
+  return { bodyHtml: fill(notebookTpl, { body }), hadUnsafe: unsafe };
 }

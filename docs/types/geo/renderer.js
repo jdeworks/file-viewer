@@ -1,8 +1,15 @@
 // GeoJSON / GPX map preview — rendered as a pure inline SVG (no map tiles, so it works fully
 // offline and makes zero network requests). Geometries are projected with a simple equirectangular
 // projection (longitude compressed by cos(latitude) so shapes aren't stretched), fit to a padded
-// viewport. Points = circles, lines = polylines, polygons = filled paths.
+// viewport. Points = circles, lines = polylines, polygons = filled paths. Markup scaffolds live in
+// sibling .html templates (error/doc/svg) filled via core/template.js; SVG geometry fragments are
+// JS-built from numeric coordinates and inserted via {{&...}} raw slots.
 import { parseGeo, allCoords } from './geolib.js';
+import { loadTemplate, fill } from '../../core/template.js';
+
+const ERROR_TPL = new URL('./error.html', import.meta.url);
+const DOC_TPL = new URL('./doc.html', import.meta.url);
+const SVG_TPL = new URL('./svg.html', import.meta.url);
 
 const W = 720, PAD = 24;
 
@@ -10,8 +17,11 @@ export async function render(intake, _ctx) {
   const geo = parseGeo(intake);
   const coords = allCoords(geo);
   if (!coords.length) {
-    return { bodyHtml: '<div class="json-error"><strong>No geometry found</strong><br>Expected GeoJSON features or GPX track/route/waypoints.</div>', hadUnsafe: false };
+    const errorTpl = await loadTemplate(ERROR_TPL);
+    return { bodyHtml: errorTpl, hadUnsafe: false };
   }
+
+  const [docTpl, svgTpl] = await Promise.all([loadTemplate(DOC_TPL), loadTemplate(SVG_TPL)]);
 
   let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
   for (const [lon, lat] of coords) {
@@ -39,7 +49,6 @@ export async function render(intake, _ctx) {
     + ' · ' + geo.polygons.length + ' polygon' + (geo.polygons.length === 1 ? '' : 's');
   const bbox = 'bbox [' + minLon.toFixed(4) + ', ' + minLat.toFixed(4) + '] → [' + maxLon.toFixed(4) + ', ' + maxLat.toFixed(4) + ']';
 
-  const svg = '<svg class="geo-svg" viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'
-    + '<rect x="0" y="0" width="' + W + '" height="' + H + '" class="geo-bg"/>' + polys + lines + points + '</svg>';
-  return { bodyHtml: '<div class="geo-doc"><div class="geo-meta">' + counts + ' · ' + bbox + '</div>' + svg + '</div>', hadUnsafe: false };
+  const svg = fill(svgTpl, { W, H, polys, lines, points });
+  return { bodyHtml: fill(docTpl, { counts, bbox, svg }), hadUnsafe: false };
 }
