@@ -178,11 +178,12 @@
   border-radius: 4px; background: var(--bg); color: var(--fg); cursor: pointer; }
 .mg-hex-cell:hover { border-color: var(--accent); }
 
-/* ── Stage 1 — pixel-reveal onboarding. Everything is absolute within the game host. ── */
-.mg-s1 { position: absolute; inset: 0; width: 100%; gap: 0; }
-/* Ensure the host has real height for the absolute stage-1 layout even with no flow content. */
+/* ── Stage 1 — pixel-reveal onboarding (top) + tabbed idle clicker (below). ── */
+.mg-s1 { width: min(460px, 100%); gap: 10px; }
 .games-stage:has(.mg-s1) { min-height: 60vh; }
-/* Full-screen tap area (below the button z-wise, covers the whole host). */
+/* The reveal "top" is the absolute-positioning context for the tap area + Compute button. */
+.mg-s1-top { position: relative; height: 220px; }
+/* Tap area covers the reveal top only (not the tabs below). */
 .mg-s1-tap { position: absolute; inset: 0; z-index: 1; cursor: pointer; touch-action: none; }
 /* The Compute button pinned to the bottom-centre, with the reveal grid laid exactly over it. */
 .mg-s1-stage { position: absolute; left: 50%; bottom: 10%; transform: translateX(-50%); z-index: 2; }
@@ -195,7 +196,57 @@
 .mg-s1-cell { background: var(--bg-3, #161b22); }
 .mg-s1-cell.mg-s1-on { background: transparent; pointer-events: none; }   /* revealed → click-through */
 
-.mg-s1-boss { position: absolute; left: 50%; bottom: 2%; transform: translateX(-50%); z-index: 3; }
+/* Tabs */
+.mg-s1-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+.mg-s1-tab { background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--fg-2);
+  padding: 7px 10px; cursor: pointer; font-size: 13px; }
+.mg-s1-tab:hover { color: var(--fg); }
+.mg-s1-tab-on { color: var(--fg); border-bottom-color: var(--accent); font-weight: 600; }
+.mg-s1-panels { display: flex; flex-direction: column; }
+.mg-s1-panel { display: flex; flex-direction: column; gap: 12px; }
+
+/* Shop rows (extend .mg-buy). Buy-count selectors + a wide buy button. */
+.mg-s1-shoprow { opacity: 1; }
+.mg-s1-shoprow[hidden] { display: none; }
+.mg-s1-buyrow { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.mg-s1-counts { display: flex; gap: 3px; flex-wrap: wrap; justify-content: flex-end; }
+.mg-s1-counts .mg-mult-b { padding: 2px 6px; font-size: 11px; }
+.mg-s1-buybtn { grid-column: auto; grid-row: auto; background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border: 1px solid var(--accent); color: var(--fg); border-radius: 8px; padding: 6px 10px; cursor: pointer;
+  font: 700 13px ui-monospace, monospace; white-space: nowrap; }
+.mg-s1-buybtn.mg-buy-locked { opacity: .45; border-color: var(--border); color: var(--fg-2); cursor: not-allowed; }
+
+/* Timed buttons */
+.mg-s1-timers { display: flex; flex-direction: column; gap: 8px; }
+.mg-s1-timed[hidden] { display: none; }
+.mg-s1-timed-btn { width: 100%; background: var(--bg-2); border: 1px solid var(--accent); color: var(--fg);
+  border-radius: 10px; padding: 12px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.mg-s1-timed-btn:hover { background: color-mix(in srgb, var(--accent) 12%, var(--bg-2)); }
+.mg-s1-timed-bar { position: relative; height: 36px; border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; background: var(--bg-3); }
+.mg-s1-timed-bar[hidden] { display: none; }
+.mg-s1-timed-fill { position: absolute; inset: 0; width: 0; background: color-mix(in srgb, var(--accent) 35%, transparent);
+  transition: width .1s linear; }
+.mg-s1-timed-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font: 700 13px ui-monospace, monospace; }
+.mg-s1-flash { animation: mg-s1-flash .25s ease; }
+@keyframes mg-s1-flash { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 0 2px var(--accent); } }
+
+/* Statistics */
+.mg-s1-stats { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 13px; color: var(--fg-2); }
+.mg-s1-stat strong { color: var(--fg); font-family: ui-monospace, monospace; }
+.mg-s1-stat.mg-s1-neg strong { color: #f85149; }
+
+/* Achievements / stubs */
+.mg-s1-ach-empty, .mg-managers-stub, .mg-reset-stub { color: var(--fg-2); text-align: center; padding: 20px; font-size: 13px; }
+.mg-s1-ach-list { display: flex; flex-direction: column; gap: 6px; }
+.mg-s1-ach { display: flex; gap: 10px; align-items: center; background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 12px; }
+.mg-s1-ach-icon { font-size: 20px; }
+.mg-s1-ach-text { display: flex; flex-direction: column; }
+.mg-s1-ach-desc { color: var(--fg-2); font-size: 12px; }
+
+.mg-s1-boss { align-self: center; }
 
 /* ── Commentary bell — top-right overlay, absolute (never pushes layout). ── */
 .mg-bell-wrap { position: absolute; top: 8px; right: 8px; z-index: 20; }

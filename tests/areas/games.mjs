@@ -51,7 +51,7 @@ export async function run(ctx) {
   if (g2048NewCells > 0) pass('2048 new-tile pop animation class applied (' + g2048NewCells + ' cells)'); else fail('2048 g2048-new class not found after moves');
   await page.click('.games-close');
 
-  // ── Meta-game Stage 1: pixel-reveal onboarding (no score/shop; bell narrates). ──
+  // ── Meta-game Stage 1: pixel-reveal onboarding + tabbed idle clicker (bell narrates). ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => {
     try {
@@ -62,18 +62,19 @@ export async function run(ctx) {
   });
   await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
   await page.click('.games-card[data-game="metagame"]');
-  // Stage 1 lands straight on the empty pixel screen — no intro dialog, no score, no shop.
+  // Stage 1 lands straight on the pixel-reveal top + tabs — no intro dialog, no grind banner/rate.
   await page.waitForSelector('.mg-s1', { timeout: 8000 });
-  const s1Bare = await page.evaluate(() => ({
-    score: !!document.querySelector('.mg-score, .mg-bits'),
-    shop: !!document.querySelector('.mg-shop'),
-    rate: !!document.querySelector('.mg-rate'),
+  const s1Onboard = await page.evaluate(() => ({
+    rate: !!document.querySelector('.mg-rate'),       // old grind rate readout — gone
     banner: !!document.querySelector('.mg-stage-banner'),
     dialog: !!document.querySelector('.mg-dialog'),
+    tabs: !!document.querySelector('.mg-s1-tabs'),
+    bitsTab: !!document.querySelector('.mg-s1-tab[data-tab="bits"].mg-s1-tab-on'),
+    cursorRow: !!document.querySelector('.mg-s1-shoprow[data-id="s1-cursor"]:not([hidden])'),
   }));
-  if (!s1Bare.score && !s1Bare.shop && !s1Bare.rate && !s1Bare.banner && !s1Bare.dialog)
-    pass('meta-game stage 1: empty screen (no score/shop/rate/banner/intro)');
-  else fail('stage 1 not bare: ' + JSON.stringify(s1Bare));
+  if (!s1Onboard.rate && !s1Onboard.banner && !s1Onboard.dialog && s1Onboard.tabs && s1Onboard.bitsTab && s1Onboard.cursorRow)
+    pass('meta-game stage 1: pixel-reveal + Bits tab active with s1-cursor shop row (no grind banner/rate/intro)');
+  else fail('stage 1 onboarding: ' + JSON.stringify(s1Onboard));
   // The reveal grid is 100 squares and the full-screen tap area exists.
   const s1Cells = await page.$$eval('.mg-s1-grid .mg-s1-cell', (els) => els.length);
   if (s1Cells === 100) pass('meta-game stage 1: 100-square pixel grid'); else fail('s1 cells: ' + s1Cells);
@@ -118,23 +119,26 @@ export async function run(ctx) {
   await page.waitForFunction(() => !document.querySelector('.mg-s1-btn').classList.contains('mg-s1-ready'), null, { timeout: 4000 });
   const afterBuy = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('fv:games:metagame')) || {}; } catch { return {}; } });
   if ((afterBuy.owned || {})['s1-cursor'] === 1) pass('meta-game stage 1: buy resets bits + raises compute level'); else fail('s1 buy: ' + JSON.stringify(afterBuy));
+  // Stagger gating: buying s1-cursor reveals the s1-mult shop row (was hidden at the start).
+  const multVisible = await page.$('.mg-s1-shoprow[data-id="s1-mult"]:not([hidden])');
+  if (multVisible) pass('meta-game stage 1: s1-mult shop row unlocks after buying s1-cursor'); else fail('s1-mult row not visible after cursor buy');
   // Debug toggle: hidden panel, gear button shows it.
   if (await page.$eval('.mg-debug', (e) => e.hidden)) pass('meta-game: debug panel hidden by default'); else fail('debug panel not hidden');
   await page.click('.mg-dbg-toggle');
   if (await page.$eval('.mg-debug', (e) => !e.hidden)) pass('meta-game: debug toggle reveals the panel'); else fail('debug toggle did not reveal');
   await page.click('.games-close');
 
-  // ── Meta-game Stage 1 boss (The Defragmenter) — Confront button after 5 cursor upgrades. ──
+  // ── Meta-game Stage 1 boss (The Defragmenter) — Confront button at the boss ticket (1e9 bits). ──
   // WP-S1-11 wires mountDefragmenter: clicking Confront → dialog → the boss LOBBY (taunt + Fight).
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => {
-    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 0, stage: 1, introStages: [1], owned: { 's1-cursor': 5 } })); } catch {}
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 1e9, totalBits: 1e9, stage: 1, introStages: [1], owned: { 's1-cursor': 5 } })); } catch {}
     window.__fv.games.unlock(); window.__fv.games.open();
   });
   await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.mg-s1-boss:not([hidden])', { timeout: 8000 });
-  pass('meta-game stage 1: Confront button appears after 5 upgrades');
+  pass('meta-game stage 1: Confront button appears at the boss ticket (1e9 bits)');
   const clickThroughDialog = async () => { for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); } };
   await page.click('.mg-s1-boss');
   await clickThroughDialog();                          // boss taunt → Fight → The Defragmenter lobby
