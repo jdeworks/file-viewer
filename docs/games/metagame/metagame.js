@@ -52,7 +52,7 @@ export function mount(host, { onExit } = {}) {
     snakeClaimed: !!s.snakeClaimed,
     stage: s.stage || 1,
     defeated: Array.isArray(s.defeated) ? s.defeated : [],
-    introSeen: !!s.introSeen,
+    introStages: Array.isArray(s.introStages) ? s.introStages : (s.introSeen ? [1] : []),   // per-stage intro seen
     buyMult: s.buyMult || 1,            // 1 | 10 | 100 | 'max'
   };
   let timer = null, bossCtl = null, dlgCtl = null;
@@ -80,13 +80,16 @@ export function mount(host, { onExit } = {}) {
     if (dlgCtl) { dlgCtl.destroy && dlgCtl.destroy(); dlgCtl = null; }
   }
 
-  /* ── Phase: intro ── */
+  /* ── Phase: intro (per stage) ── */
+  function enterStage() {
+    if (!state.introStages.includes(stage().n)) startIntro(); else renderGrind();
+  }
   function startIntro() {
     clearTransient();
     host.innerHTML = '<div class="mg-wrap mg-stage-host"></div>';
     const st = stage();
     dlgCtl = playDialog(host.querySelector('.mg-stage-host'), st.intro, {
-      cta: 'Begin', onDone: () => { state.introSeen = true; save(state); renderGrind(); },
+      cta: 'Begin', onDone: () => { if (!state.introStages.includes(st.n)) state.introStages.push(st.n); save(state); renderGrind(); },
     });
   }
 
@@ -185,11 +188,11 @@ export function mount(host, { onExit } = {}) {
     clearTransient();
     host.innerHTML = '<div class="mg-wrap mg-stage-host"></div>';
     dlgCtl = playDialog(host.querySelector('.mg-stage-host'), st.victory, {
-      cta: 'Continue', onDone: () => { if (state.stage < STAGES.length) state.stage++; save(state); renderGrind(); },
+      cta: 'Continue', onDone: () => { if (state.stage < STAGES.length) state.stage++; save(state); enterStage(); },
     });
   }
 
-  if (!state.introSeen) startIntro(); else renderGrind();
+  enterStage();
 
   return {
     destroy() { clearTransient(); save(state); host.innerHTML = ''; },

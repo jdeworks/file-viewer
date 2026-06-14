@@ -1807,6 +1807,36 @@ try {
   if (beaten.includes(1)) pass('meta-game: stage 1 marked defeated (persisted)'); else fail('defeated: ' + JSON.stringify(beaten));
   await page.click('.games-close');
 
+  // ── Meta-game Stage 2 (Config Demon) ── proves the modular stage system + a 2nd boss mechanic. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 5000, stage: 2, defeated: [1], introStages: [1, 2] })); } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  // Stage 2 reskins the resource to "cycles" (modular config).
+  await page.waitForSelector('.mg-bits', { timeout: 8000 });
+  const s2res = await page.$eval('.mg-bits', (e) => e.textContent);
+  if (/cycles/.test(s2res)) pass('meta-game stage 2: resource reskinned via config (' + s2res + ')'); else fail('stage2 resource: ' + s2res);
+  await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 4000 });
+  await page.click('.mg-faceboss');
+  const clickThrough2 = async () => { for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); } };
+  await clickThrough2();
+  await page.waitForSelector('.mg-boss-demon', { timeout: 8000 });
+  pass('meta-game stage 2: Config Demon arena (distinct boss)');
+  // Defeat: edit boss.ini → invincible=false, apply, attack 3× racing the rewrite.
+  for (let h = 0; h < 3; h++) {
+    await page.fill('.mg-ini', 'invincible = false\nhp = 1');
+    await page.click('.mg-ini-apply');
+    await page.click('.mg-attack');
+    await page.waitForTimeout(80);
+  }
+  await page.waitForSelector('.mg-dialog', { timeout: 4000 });
+  const beaten2 = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame')) || {}).defeated || []; } catch { return []; } });
+  if (beaten2.includes(2)) pass('meta-game stage 2: Config Demon defeated by editing his config (persisted)'); else fail('stage2 defeated: ' + JSON.stringify(beaten2));
+  await page.click('.games-close');
+
   // ── Graceful offline-miss ── cache-on-use only (no full precache), then open a viewer that
   // was never loaded online while offline → friendly note instead of a raw error.
   {

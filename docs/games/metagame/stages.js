@@ -64,6 +64,58 @@ function mountOverwriter(arena, { stage, onDefeat }) {
   return { destroy() { clearInterval(relock); } };
 }
 
+/* ── Stage 2 — Config Demon (file type: .ini/.env). Defeat = edit boss.ini to set invincible=false
+   and drop his hp, then attack — but he REWRITES the config on a timer, so you must be fast. ── */
+function mountConfigDemon(arena, { stage, onDefeat }) {
+  let hp = stage.hp, invincible = true, dead = false;
+  const INI_LOCKED = 'invincible = true\nhp = 9999';
+  arena.innerHTML =
+    '<div class="mg-boss mg-boss-demon">'
+    + '<div class="mg-boss-sprite">≣◢◣≣</div>'
+    + '<div class="mg-boss-name">' + esc(stage.bossName) + '</div>'
+    + '<div class="mg-boss-hp">HP: <span class="mg-hp-n"></span> <span class="mg-inv"></span></div>'
+    + '<div class="mg-ini-wrap"><textarea class="mg-ini" spellcheck="false" aria-label="boss.ini"></textarea></div>'
+    + '<div class="mg-boss-tool"><button class="mg-ini-apply" type="button">Apply config</button>'
+    + '<button class="mg-attack" type="button">Attack</button></div>'
+    + '<div class="mg-boss-msg" role="status"></div>'
+    + '</div>';
+  const bossEl = arena.querySelector('.mg-boss');
+  const ini = arena.querySelector('.mg-ini');
+  const msgEl = arena.querySelector('.mg-boss-msg');
+  ini.value = INI_LOCKED;
+  function paint() {
+    arena.querySelector('.mg-hp-n').textContent = hp;
+    arena.querySelector('.mg-inv').textContent = invincible ? '🛡 invincible' : '⚔ vulnerable';
+  }
+  paint();
+  function applyConfig() {
+    if (dead) return;
+    const v = ini.value.toLowerCase();
+    const inv = /invincible\s*=\s*false/.test(v);
+    invincible = !inv;
+    msgEl.textContent = invincible ? 'Still invincible — set invincible = false.' : 'Config applied — he is vulnerable! Attack now.';
+    paint();
+  }
+  function attack() {
+    if (dead) return;
+    if (invincible) { msgEl.textContent = 'He shrugs it off. Change boss.ini first.'; return; }
+    hp--; msgEl.textContent = 'Hit! HP ' + hp;
+    bossEl.classList.remove('mg-hit'); void bossEl.offsetWidth; bossEl.classList.add('mg-hit');
+    paint();
+    if (hp <= 0) defeat();
+  }
+  function defeat() { dead = true; clearInterval(rw); bossEl.classList.add('mg-boss-dead'); msgEl.textContent = 'The Config Demon crashes.'; setTimeout(onDefeat, 750); }
+  // Cheat: he rewrites boss.ini back to locked on a timer.
+  const rw = setInterval(() => {
+    if (dead) return;
+    ini.value = INI_LOCKED; invincible = true; paint();
+    msgEl.textContent = 'The Config Demon REWROTE boss.ini!';
+  }, stage.rewriteMs);
+  arena.querySelector('.mg-ini-apply').addEventListener('click', applyConfig);
+  arena.querySelector('.mg-attack').addEventListener('click', attack);
+  return { destroy() { clearInterval(rw); } };
+}
+
 export const STAGES = [
   {
     n: 1,
@@ -102,6 +154,39 @@ export const STAGES = [
     locks: 3,
     relockMs: 7000,
     mountBoss: mountOverwriter,
+  },
+  {
+    n: 2,
+    title: 'Config Demon',
+    goal: 250,
+    resource: { name: 'cycles', color: '#4c9aff' },     // stage 2 reskins the resource (modular)
+    tiers: [
+      { id: 'click', name: 'Hotkey macro', icon: '⌨', type: 'click', amount: 2, base: 20, mult: 1.5, desc: '+2 cycles per click' },
+      { id: 'daemon', name: 'Daemon', icon: '😈', type: 'auto', rate: 1, base: 80, mult: 1.15, desc: 'spins 1 cycle/s' },
+      { id: 'service', name: 'System service', icon: '🛠', type: 'auto', rate: 6, base: 900, mult: 1.15, desc: 'spins 6 cycles/s' },
+      { id: 'cluster', name: 'Cluster', icon: '🗄', type: 'auto', rate: 40, base: 9000, mult: 1.15, desc: 'spins 40 cycles/s' },
+    ],
+    intro: [
+      { speaker: 'SYS', text: 'A new sector. The numbers run on cycles now. Same idea — generate, automate, grow.' },
+      { speaker: 'SYS', text: 'A Config Demon squats in the settings. He has declared himself invincible. Reach 250 cycles.' },
+    ],
+    bossName: 'Config Demon',
+    bossIntro: [
+      { speaker: 'Config Demon', text: 'My power is DECLARED in boss.ini: invincible = true. It is LAW.' },
+      { speaker: 'Config Demon', text: 'Edit it if you dare — I rewrite my own config faster than you can save. Hahaha.' },
+    ],
+    hints: [
+      { speaker: '??? (a friendly daemon)', text: 'His invincibility is just a config flag. This app edits .ini/.env files…' },
+      { speaker: '??? (a friendly daemon)', text: 'In boss.ini set "invincible = false", Apply, then Attack.' },
+      { speaker: '??? (a friendly daemon)', text: 'He rewrites the file on a timer — edit, apply, and land your hits FAST.' },
+    ],
+    victory: [
+      { speaker: 'Config Demon', text: 'You edited my own config against me… invincible = false… nooo…' },
+      { speaker: 'SYS', text: 'Two down. Each boss falls to a real feature of this very app. Keep climbing.' },
+    ],
+    hp: 3,
+    rewriteMs: 6000,
+    mountBoss: mountConfigDemon,
   },
 ];
 
