@@ -25,6 +25,8 @@ import { initGames } from '../games/launcher.js';
 import { loadExamples } from './examples.js';
 import { startSideBySide, openSideBySide } from './sidebyside.js';
 import { initLayout, layoutTopbar, toggleMoreMenu, closeMoreMenu, updateExportButton, closeExportMenu, toggleExportMenu, applyLayout, applyPreviewPaneWidth, initSplitDivider } from './layout.js';
+import { mapPreviewToRaw, mapRawToPreview, syncScrollFromRaw, syncScrollFromPreview } from './sync.js';
+import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare } from './compare.js';
 import { buildMetadata } from './meta-drawer.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey } from './folder.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml } from './state.js';
@@ -247,51 +249,6 @@ function syncRawModeButtons() {
   $('compareBtn')?.classList.toggle('active', !!state.rawview?.hasCompare?.());
 }
 
-/* ─────────────── Compare with another file (two-file diff) ─────────────── */
-
-// Pick a second file and diff the CURRENT file against it (current ↔ other), reusing Monaco's
-// diff (and any type custom diff). Edit-tracking (original ↔ current) is untouched.
-function startCompare() {
-  if (!state.rawview) return;
-  $('compareInput').value = '';
-  $('compareInput').click();
-}
-
-async function onComparePicked(e) {
-  const file = e.target.files && e.target.files[0];
-  if (!file || !state.rawview) return;
-  try {
-    const other = await intakeFromFile(file);
-    if (other.isBinary) { toast('Can’t compare binary files as text.'); return; }
-    state.rawview.setCompare(other.text || '');     // keeps the current file's language on both sides
-    state.rawMode = 'diff';
-    $('rawPane').classList.add('comparing');
-    const bar = $('compareBar');
-    bar.querySelector('.compare-label').textContent = 'Comparing current ↔ ' + (file.name || 'file');
-    bar.hidden = false;
-    syncRawModeButtons();
-    applyLayout();
-    state.rawview.layout();
-  } catch (err) {
-    toast('Could not read file: ' + err.message);
-  }
-}
-
-function stopCompare() {
-  if (!state.rawview?.hasCompare?.()) { resetCompare(); return; }
-  state.rawview.clearCompare();
-  resetCompare();
-  state.rawMode = state.rawview.mode();
-  syncRawModeButtons();
-  state.rawview.layout();
-}
-
-// Hide the compare UI without touching the rawview (used on file load / teardown).
-function resetCompare() {
-  $('rawPane')?.classList.remove('comparing');
-  const bar = $('compareBar'); if (bar) bar.hidden = true;
-}
-
 async function takeScreenshot() {
   if (state.lastBodyHtml == null) { toast('Screenshot not available for script-enabled HTML.'); return; }
   toast('Capturing…', 1500);
@@ -421,42 +378,6 @@ function toggleEnhance() {
   renderPreview();
 }
 
-/* ─────────────────────────── Magic selector ─────────────────────────── */
-
-// Preview element carries data-fv-src="startLine:endLine" (0-based, end-exclusive).
-function mapPreviewToRaw(src, moveCursor = true) {
-  if (!src || !state.rawview) return;
-  const [a, b] = src.split(':').map(Number);
-  const startLine = a + 1, endLine = Math.max(startLine, b);
-  state.rawview.decorate(startLine, endLine);
-  if (moveCursor) state.rawview.reveal(startLine);
-}
-
-function mapRawToPreview(line) {
-  if (!state.preview) return;
-  // Find the nearest source block whose range covers this line (0-based).
-  state.preview.highlight((line - 1) + ':' + line);
-}
-
-/* ─────────────────────────── Scroll sync (WP08 seed) ─────────────────────────── */
-
-function syncScrollFromRaw() {
-  if (state.syncing || !state.preview || !state.settingsModel.values.syncScroll) return;
-  if (!state.rawview?.canSync()) return;
-  const { top, max } = state.rawview.scrollInfo();
-  state.syncing = true;
-  state.preview.scrollTo(max > 0 ? top / max : 0);
-  requestAnimationFrame(() => (state.syncing = false));
-}
-function syncScrollFromPreview(ratio) {
-  if (state.syncing || !state.rawview || !state.settingsModel.values.syncScroll) return;
-  if (!state.rawview.canSync()) return;
-  const { max } = state.rawview.scrollInfo();
-  state.syncing = true;
-  state.rawview.setScrollTop(ratio * Math.max(0, max));
-  requestAnimationFrame(() => (state.syncing = false));
-}
-
 /* ─────────────────────────── Settings (WP03) ─────────────────────────── */
 
 function openSettings() {
@@ -520,6 +441,7 @@ function init() {
   // gets these via init — no circular import).
   initFolder({ loadIntake, confirmDiscard });
   initLayout({ renderPreview, openSettings });
+  initCompare({ syncRawModeButtons });
   // Theme: saved or system.
   const saved = localStorage.getItem('fv:theme');
   applyTheme(saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
