@@ -13,8 +13,9 @@ import { ACHIEVEMENTS1 } from './achievements1.js';
 import {
   netRate, passiveRate, managerCostPerSec, clickPower as economyClickPower,
   timedPayout, totalCost, maxAffordable, buyTier,
+  managerHireCost, managerRunCost, autoInterval, globalPull, pullGain,
 } from './s1economy.js';
-import { fromNumber, add, sub, mulScalar, gte, toDisplay } from './bignum.js';
+import { fromNumber, add, sub, mulScalar, gte, toDisplay, ZERO } from './bignum.js';
 
 const BELL_KEY = 'fv:games:mg:bell';
 const GRID_COLS = 20, GRID_ROWS = 5, GRID_CELLS = GRID_COLS * GRID_ROWS;   // 20×5 = 100
@@ -501,12 +502,199 @@ export function renderStage1(ctx) {
     panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="achievements">' + body + '</div>';
   }
 
-  // ── Manager / Reset stubs (filled in WP-S1-10) ─────────────────────────────
-  function renderManagersPanel() {
-    panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="managers"><div class="mg-managers-stub">Managers panel — coming in WP-S1-10</div></div>';
+  // ── Managers tab (§6.4) ────────────────────────────────────────────────────
+  // Lazily initialize per-manager state. A manager is "hired" when level >= 1.
+  function mgrState(id) {
+    state.managers = state.managers || {};
+    return (state.managers[id] = state.managers[id] || { level: 0, paused: false, lastFire: 0 });
   }
+  const managers = cfg.managers || [];
+  const managedTier = (mgr) => tiers.find((t) => t.id === mgr.manages);
+
+  function mgrCardHtml(mgr) {
+    const ms = mgrState(mgr.id);
+    const mt = managedTier(mgr);
+    const mtName = mt ? (mt.icon + ' ' + mt.name) : mgr.manages;
+    if (ms.level === 0) {
+      // Un-hired: greyed card with a single Hire button.
+      const cost = managerHireCost(mgr, 0, cfg);
+      return '<div class="mg-mgr-card mg-mgr-unhired" data-id="' + mgr.id + '">'
+        + '<span class="mg-mgr-head"><span class="mg-mgr-icon">' + escapeHtml(mgr.icon) + '</span>'
+        + '<span class="mg-mgr-name">' + escapeHtml(mgr.name) + '</span></span>'
+        + '<span class="mg-mgr-manages">Manages: ' + escapeHtml(mtName) + '</span>'
+        + '<button class="mg-mgr-hire" type="button" data-id="' + mgr.id + '" data-act="hire">Hire — ' + toDisplay(cost) + '</button>'
+        + '</div>';
+    }
+    // Hired: full controls.
+    const runCost = managerRunCost(mgr.id, state, cfg);
+    const lvlCost = managerHireCost(mgr, ms.level, cfg);
+    return '<div class="mg-mgr-card mg-mgr-hired" data-id="' + mgr.id + '">'
+      + '<span class="mg-mgr-head"><span class="mg-mgr-icon">' + escapeHtml(mgr.icon) + '</span>'
+      + '<span class="mg-mgr-name">' + escapeHtml(mgr.name) + '</span>'
+      + '<span class="mg-mgr-level">Level ' + ms.level + '</span></span>'
+      + '<span class="mg-mgr-manages">Manages: ' + escapeHtml(mtName) + '</span>'
+      + '<span class="mg-mgr-run">Running cost: <strong class="mg-mgr-runcost">' + toDisplay(fromNumber(runCost)) + '</strong>/s</span>'
+      + (ms.paused ? '<span class="mg-mgr-paused">⏸ Paused (out of bits)</span>' : '')
+      + '<span class="mg-mgr-actions">'
+      + '<button class="mg-mgr-lvl" type="button" data-id="' + mgr.id + '" data-act="lvl">Level up — ' + toDisplay(lvlCost) + '</button>'
+      + '<button class="mg-mgr-fire" type="button" data-id="' + mgr.id + '" data-act="fire">Fire</button>'
+      + '</span>'
+      + '</div>';
+  }
+
+  // Net-rate preview: recompute net rate as if `mgr` were one level higher.
+  function previewNetNeg(mgr) {
+    const ms = mgrState(mgr.id);
+    const saved = ms.level;
+    ms.level = saved + 1;
+    const r = netRate(state, cfg);
+    ms.level = saved;
+    return r < 0;
+  }
+
+  function renderManagersPanel() {
+    // Show each manager whose managed tier is owned >= 1.
+    const visible = managers.filter((mgr) => {
+      const mt = managedTier(mgr);
+      return mt && (state.owned[mt.id] || 0) >= 1;
+    });
+    const rate = netRate(state, cfg);
+    const head = '<div class="mg-mgr-net' + (rate < 0 ? ' mg-s1-neg' : '') + '">Net rate: <strong>'
+      + (rate < 0 ? '-' : '') + toDisplay(fromNumber(Math.abs(rate))) + '/s</strong></div>';
+    const body = visible.length
+      ? '<div class="mg-mgr-list">' + visible.map(mgrCardHtml).join('') + '</div>'
+      : '<div class="mg-managers-stub">no managers available yet</div>';
+    panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="managers">' + head + body + '</div>';
+
+    panelsEl.querySelectorAll('.mg-mgr-card [data-act]').forEach((b) => {
+      const id = b.dataset.id, act = b.dataset.act;
+      const mgr = managers.find((m) => m.id === id);
+      if (!mgr) return;
+      b.addEventListener('click', () => mgrAction(mgr, act));
+      // Net-rate negative preview on hover/focus for the level-up button.
+      if (act === 'lvl') {
+        const show = () => { if (previewNetNeg(mgr)) panelsEl.querySelector('.mg-mgr-net')?.classList.add('mg-net-neg-preview'); };
+        const hide = () => panelsEl.querySelector('.mg-mgr-net')?.classList.remove('mg-net-neg-preview');
+        b.addEventListener('mouseenter', show);
+        b.addEventListener('focus', show);
+        b.addEventListener('mouseleave', hide);
+        b.addEventListener('blur', hide);
+      }
+    });
+    paintManagers();
+  }
+
+  // Live paint for the managers tab (no innerHTML churn). Re-renders fully only when a
+  // manager's paused flag flips (that adds/removes the ⏸ indicator element).
+  function paintManagers() {
+    const rateNeg = netRate(state, cfg) < 0;
+    const net = panelsEl.querySelector('.mg-mgr-net');
+    if (net) net.classList.toggle('mg-s1-neg', rateNeg);
+    let pausedChanged = false;
+    managers.forEach((mgr) => {
+      const ms = mgrState(mgr.id);
+      const card = panelsEl.querySelector('.mg-mgr-card[data-id="' + mgr.id + '"]');
+      if (!card) return;
+      // Detect a paused flip vs. what the DOM currently shows.
+      const hasIndicator = !!card.querySelector('.mg-mgr-paused');
+      if (ms.level >= 1 && hasIndicator !== !!ms.paused) pausedChanged = true;
+      const cost = managerHireCost(mgr, ms.level, cfg);
+      const btn = card.querySelector(ms.level === 0 ? '.mg-mgr-hire' : '.mg-mgr-lvl');
+      if (btn) {
+        const can = gte(state.bits, cost);
+        btn.disabled = !can;
+        btn.classList.toggle('mg-buy-locked', !can);
+      }
+      const runEl = card.querySelector('.mg-mgr-runcost');
+      if (runEl) {
+        runEl.textContent = toDisplay(fromNumber(managerRunCost(mgr.id, state, cfg)));
+        runEl.classList.toggle('mg-mgr-runcost-neg', rateNeg);
+      }
+    });
+    if (pausedChanged) renderManagersPanel();
+  }
+
+  function mgrAction(mgr, act) {
+    const ms = mgrState(mgr.id);
+    if (act === 'fire') {
+      ms.level = 0; ms.paused = false; ms.lastFire = 0;
+      save(state);
+      renderManagersPanel();
+      paintStats();
+      return;
+    }
+    // hire (0→1) and lvl (N→N+1) share the same buy path.
+    const cost = managerHireCost(mgr, ms.level, cfg);
+    if (!gte(state.bits, cost)) return;
+    state.bits = sub(state.bits, cost);
+    ms.level++;
+    save(state);
+    checkMessages('buy', state, bellLoad());
+    checkAchievements(state, cfg, bellLoad());
+    renderManagersPanel();
+    paintStats();
+  }
+
+  // ── Auto-fire (§5.6/§6.2) + shutdown rule (§6.3), called from the game tick. ──
+  function runManagerAutoFire() {
+    const now = Date.now();
+    // Shutdown rule (§6.3): pause all managers if net-negative AND broke; resume once bits > 0.
+    const broke = state.bits.m === 0;
+    const rate = netRate(state, cfg);
+    if (rate < 0 && broke) {
+      for (const mgr of managers) { const ms = mgrState(mgr.id); if (ms.level >= 1) ms.paused = true; }
+    } else if (!broke) {
+      for (const mgr of managers) { const ms = mgrState(mgr.id); if (ms.level >= 1 && ms.paused) ms.paused = false; }
+    }
+    // Auto-fire each hired, non-paused manager's managed timed button.
+    for (const mgr of managers) {
+      const ms = mgrState(mgr.id);
+      if (ms.level < 1 || ms.paused) continue;
+      const mt = managedTier(mgr);
+      if (!mt || mt.type !== 'timed' || (state.owned[mt.id] || 0) < 1) continue;
+      const ts = state.timedStates[mt.id];
+      if (ts && ts.active) continue;
+      const interval = autoInterval(mt.duration_ms, ms.level);
+      if (now - (ms.lastFire || 0) >= interval) {
+        state.timedStates[mt.id] = { active: true, startedAt: now, duration_ms: interval };
+        ms.lastFire = now;
+      }
+    }
+  }
+
+  // ── Reset / prestige tab (§8.5) ────────────────────────────────────────────
   function renderResetPanel() {
-    panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-stub">Reset panel — coming in WP-S1-10</div></div>';
+    const gain = pullGain(state.totalBits);
+    const newTotal = (globalPull(state) * gain).toFixed(1);
+    panelsEl.innerHTML =
+      '<div class="mg-s1-panel" data-panel="reset">'
+      + '<div class="mg-reset-panel">'
+      + '<div class="mg-reset-title">Reset Stage 1?</div>'
+      + '<p class="mg-reset-line">You will gain <strong>×' + gain.toFixed(1) + '</strong> Gravitational Pull (total <strong>×' + newTotal + '</strong>).</p>'
+      + '<p class="mg-reset-line">All bits, buildings, and managers will be lost.</p>'
+      + '<p class="mg-reset-line mg-reset-keep">Achievements and pull persist.</p>'
+      + '<div class="mg-reset-actions">'
+      + '<button class="mg-reset-go" type="button">Reset</button>'
+      + '<button class="mg-reset-cancel" type="button">Cancel</button>'
+      + '</div></div></div>';
+    panelsEl.querySelector('.mg-reset-go').addEventListener('click', doReset);
+    panelsEl.querySelector('.mg-reset-cancel').addEventListener('click', renderResetPanel);
+  }
+
+  function doReset() {
+    const gain = pullGain(state.totalBits);
+    state.pullFactors = [...(state.pullFactors || []), gain];   // append, don't replace
+    // Wipe per-run progress; preserve meta progression.
+    state.bits = ZERO;
+    state.totalBits = ZERO;
+    state.owned = {};
+    state.timedStates = {};
+    state.managers = {};
+    state.runStartedAt = Date.now();
+    save(state);
+    checkMessages('prestige', state, bellLoad());
+    checkAchievements(state, cfg, bellLoad());
+    renderAll();
   }
 
   function renderPanel() {
@@ -598,10 +786,13 @@ export function renderStage1(ctx) {
       }
     }
     if (timedDone) checkMessages('bit-earn', state, bellLoad());
+    // 3b. Manager auto-fire + shutdown rule (§5.6/§6.3).
+    runManagerAutoFire();
     // 4. Reveal.
     reveal();
-    // 5. Partial re-render of the live Bits tab.
+    // 5. Partial re-render of the live tab.
     if (activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
+    else if (activeTab === 'managers') paintManagers();
     checkAchievements(state, cfg, bellLoad());
     // 6. Periodic save.
     if (++tickAcc >= 10) { tickAcc = 0; save(state); }
