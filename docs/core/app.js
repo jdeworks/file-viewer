@@ -257,7 +257,7 @@ function folderContext() {
 // On phones, keep only the essentials in the top bar (tree, file name, open, fullscreen)
 // and move the rest into the ⋯ popover. On desktop the controls return to their original
 // spots (same DOM nodes, so their handlers + hidden-state logic keep working).
-const OVERFLOW_IDS = ['typeSelect', 'rawMode', 'formatBtn', 'downloadBtn', 'screenshotBtn', 'exportBtn', 'metaBtn', 'settingsBtn', 'themeBtn'];
+const OVERFLOW_IDS = ['typeSelect', 'rawMode', 'formatBtn', 'downloadBtn', 'screenshotBtn', 'sbsBtn', 'exportBtn', 'metaBtn', 'settingsBtn', 'themeBtn'];
 let overflowAnchors = null;
 function layoutTopbar() {
   if (!overflowAnchors) {
@@ -436,6 +436,7 @@ async function activateType(type) {
   $('formatBtn').hidden = !(canRaw && ['json', 'code'].includes(type.id));
   $('tabbar').style.display = both && isMobile() ? 'flex' : 'none';
   $('screenshotBtn').hidden = !(type.capabilities.screenshot && canPreview);
+  $('sbsBtn').hidden = !canPreview;            // view this file beside another
   state.mode = both ? 'split' : (canPreview && !canRaw ? 'preview' : 'raw');
   state.rawMode = 'current';
   resetCompare();                              // a fresh file drops any active two-file comparison
@@ -686,6 +687,72 @@ async function openInnerEntry(openEntry, name) {
   } catch {
     toast('Could not open ' + name);
   }
+}
+
+/* ─────────────── Side-by-side: view two files at once (incl. PDFs/images) ─────────────── */
+
+// Render an intake's preview into an arbitrary host (standalone — does not touch global state).
+// Used by the side-by-side overlay so two files render independently next to each other.
+async function renderFileInto(host, intake) {
+  const { type } = pickType(intake);
+  const known = matchKnown(intake, type);
+  const useKnown = known && known.loadRenderer;
+  const canPrev = (type.capabilities.preview || useKnown) && !(intake.isBinary && !type.capabilities.preview && !useKnown);
+  host.innerHTML = '';
+  if (!canPrev || (!type.loadRenderer && !useKnown)) {
+    host.innerHTML = '<p class="sbs-note">No preview for this file type.</p>';
+    return { destroy() { host.innerHTML = ''; } };
+  }
+  try {
+    const mod = useKnown ? await known.loadRenderer() : await type.loadRenderer();
+    const rendered = await mod.render(intake, { settings: {}, folder: null });
+    if (rendered.parentNode) {
+      host.appendChild(rendered.parentNode);
+      return { destroy() { rendered.revoke?.(); host.innerHTML = ''; } };
+    }
+    const ctrl = mountPreview(host, {
+      bodyHtml: rendered.bodyHtml, fullDoc: rendered.fullDoc, allowScripts: !!rendered.ranScripts,
+      theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values),
+    });
+    return { destroy() { ctrl.destroy(); } };
+  } catch (e) {
+    host.innerHTML = '<p class="sbs-note">Preview failed: ' + escapeHtml(e.message) + '</p>';
+    return { destroy() { host.innerHTML = ''; } };
+  }
+}
+
+function startSideBySide() {
+  if (!state.intake) return;
+  $('sbsInput').value = '';
+  $('sbsInput').click();
+}
+
+async function openSideBySide(file2) {
+  let intake2;
+  try { intake2 = await intakeFromFile(file2); } catch (e) { toast('Could not read file: ' + e.message); return; }
+  const overlay = document.createElement('div');
+  overlay.className = 'sbs-overlay';
+  overlay.innerHTML =
+    '<div class="sbs-head"><span class="sbs-title">Side by side</span><button class="sbs-close" aria-label="Close">✕</button></div>'
+    + '<div class="sbs-body">'
+    + '<div class="sbs-pane"><div class="sbs-name"></div><div class="sbs-host"></div></div>'
+    + '<div class="sbs-pane"><div class="sbs-name"></div><div class="sbs-host"></div></div>'
+    + '</div>';
+  document.body.appendChild(overlay);
+  const panes = overlay.querySelectorAll('.sbs-pane');
+  panes[0].querySelector('.sbs-name').textContent = state.intake.filename || 'current';
+  panes[1].querySelector('.sbs-name').textContent = intake2.filename || 'file 2';
+  const ctrls = [];
+  ctrls.push(await renderFileInto(panes[0].querySelector('.sbs-host'), state.intake));
+  ctrls.push(await renderFileInto(panes[1].querySelector('.sbs-host'), intake2));
+  function close() {
+    ctrls.forEach((c) => c && c.destroy && c.destroy());
+    overlay.remove();
+    document.removeEventListener('keydown', onEsc, true);
+  }
+  function onEsc(e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } }
+  overlay.querySelector('.sbs-close').addEventListener('click', close);
+  document.addEventListener('keydown', onEsc, true);
 }
 
 /* ─────────────── Known-file enhancement chip (Layer 3 indicator + revert) ─────────────── */
@@ -987,6 +1054,8 @@ function init() {
     else document.documentElement.requestFullscreen?.();
   });
   $('screenshotBtn').addEventListener('click', takeScreenshot);
+  $('sbsBtn').addEventListener('click', startSideBySide);
+  $('sbsInput').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; if (f) openSideBySide(f); });
   $('exportBtn').addEventListener('click', toggleExportMenu);
   $('enhanceChip').querySelector('.ec-toggle').addEventListener('click', toggleEnhance);
   $('moreBtn').addEventListener('click', toggleMoreMenu);

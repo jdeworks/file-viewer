@@ -1689,6 +1689,22 @@ try {
   await page.waitForFunction(() => document.getElementById('compareBar').hidden, { timeout: 4000 });
   pass('two-file compare: "Stop comparing" exits');
 
+  // ── Side-by-side: view two files (incl. non-text) next to each other ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Welcome.md' }).click();
+  await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 15000 });
+  const sbsShown = await page.$eval('#sbsBtn', (e) => !e.hidden);
+  if (sbsShown) pass('side-by-side button shown for a previewable file'); else fail('sbs button hidden');
+  await page.setInputFiles('#sbsInput', new URL('../docs/examples/sample.csv', import.meta.url).pathname);
+  await page.waitForSelector('.sbs-overlay', { timeout: 8000 });
+  const sbsPanes = await page.$$eval('.sbs-pane', (els) => els.length);
+  const sbsNames = await page.$$eval('.sbs-name', (els) => els.map((e) => e.textContent));
+  if (sbsPanes === 2 && sbsNames.some((n) => /welcome\.md/i.test(n)) && sbsNames.some((n) => /sample\.csv/i.test(n))) pass('side-by-side: two named panes (current + picked)'); else fail('sbs panes=' + sbsPanes + ' names=' + sbsNames.join(','));
+  await page.waitForFunction(() => document.querySelectorAll('.sbs-host iframe').length === 2, { timeout: 12000 });
+  pass('side-by-side: both files rendered independently');
+  await page.click('.sbs-close');
+  if (!(await page.$('.sbs-overlay'))) pass('side-by-side closes'); else fail('sbs did not close');
+
   // ── Easter-egg games (Konami → hub → Snake) ── lazy-loaded; one tiny listener at startup.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => { try { localStorage.removeItem('fv:games:unlocked'); } catch {} });
