@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // PLY 3D models (ASCII or binary). Extension is the signal; the magic first line is "ply".
 export function detect(intake) {

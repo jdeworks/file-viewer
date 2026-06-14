@@ -1,7 +1,7 @@
 // STL 3D viewer — parse the mesh, then hand it to the shared canvas mesh viewer. STL is geometry
 // data (not code), so it renders safely in the parent pane.
 import { parseSTL } from './stllib.js';
-import { mountMeshView } from '../../core/meshview.js';
+import { mountMeshView } from '../../../core/meshview.js';
 
 export async function render(intake, _ctx) {
   let model;

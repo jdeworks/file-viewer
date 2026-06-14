@@ -3,7 +3,7 @@
 // be fetched (single-file open + zero-off-origin), so those primitives are skipped. Reads the
 // POSITION accessor + indices for TRIANGLE primitives, applies the scene node transforms, and
 // computes flat per-face normals. No materials/animation/sparse-accessor support. Pure JS.
-import { bounds } from '../../core/meshview.js';
+import { bounds } from '../../../core/meshview.js';
 
 const CT = { 5120: 'getInt8', 5121: 'getUint8', 5122: 'getInt16', 5123: 'getUint16', 5125: 'getUint32', 5126: 'getFloat32' };
 const CSZ = { 5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4 };

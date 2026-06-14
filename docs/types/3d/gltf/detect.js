@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // glTF 2.0 models: .glb (binary, magic 'glTF') and .gltf (JSON).
 export function detect(intake) {

@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // STL 3D models (binary or ASCII). Extension is the strong signal (binary STL has no reliable
 // magic); an ASCII "solid … facet" sniff is a fallback.

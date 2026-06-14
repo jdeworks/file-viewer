@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // Wavefront OBJ 3D models. Extension is the signal; a content sniff (vertex + face lines) is a
 // fallback. (.obj has no magic and the extension collides with nothing else here.)

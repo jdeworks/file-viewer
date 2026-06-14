@@ -1,6 +1,6 @@
 // STL (stereolithography) parser — binary and ASCII. Returns a flat triangle list with vertices
 // and a normal per face (computed if the file's normal is missing/zero). Pure JS, no dependency.
-import { bounds } from '../../core/meshview.js';
+import { bounds } from '../../../core/meshview.js';
 
 function vsub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
 function vcross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }

@@ -2,7 +2,7 @@
 // binary_little_endian (+ big_endian). Reads vertex x/y/z and the face vertex-index list (any
 // extra properties like colors/normals are skipped but their byte sizes are accounted for in the
 // binary path). Polygons are fan-triangulated; per-face normals are computed. Pure JS.
-import { bounds } from '../../core/meshview.js';
+import { bounds } from '../../../core/meshview.js';
 
 const TYPE_BYTES = { char: 1, uchar: 1, int8: 1, uint8: 1, short: 2, ushort: 2, int16: 2, uint16: 2, int: 4, uint: 4, int32: 4, uint32: 4, float: 4, float32: 4, double: 8, float64: 8 };
 const READERS = {

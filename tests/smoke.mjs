@@ -441,7 +441,9 @@ try {
   // Merge: append another PDF (Sample.pdf, 1 page) → page count grows + summary notes the merge.
   const beforeMerge = await page.$$eval('#previewHost img.pdf-page', (els) => els.length);
   await page.setInputFiles('#previewHost .pdf-pdfinput', new URL('../docs/examples/sample.pdf', import.meta.url).pathname);
-  await page.waitForFunction((n) => document.querySelectorAll('#previewHost img.pdf-page').length > n, beforeMerge, { timeout: 12000 });
+  // Merge decodes another PDF and re-rasterizes every page; under headless CPU contention this can
+  // take a while, so allow a generous window (the assertion itself is fast once pages reappear).
+  await page.waitForFunction((n) => document.querySelectorAll('#previewHost img.pdf-page').length > n, beforeMerge, { timeout: 30000 });
   const afterMerge = await page.$$eval('#previewHost img.pdf-page', (els) => els.length);
   const pdfChanges4 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
   if (afterMerge > beforeMerge && /merged in/.test(pdfChanges4)) pass('PDF edit: merge appends another PDF (' + beforeMerge + '→' + afterMerge + ')'); else fail('pdf merge: ' + beforeMerge + '→' + afterMerge + ' changes=' + pdfChanges4);
