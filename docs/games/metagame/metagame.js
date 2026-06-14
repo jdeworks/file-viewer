@@ -6,6 +6,7 @@ import { playDialog } from './dialog.js';
 import { STAGES, stageByNumber } from './stages.js';
 
 const SAVE_KEY = 'fv:games:metagame';
+const COMPLETE_KEY = 'fv:games:metagame:complete';
 
 function fmt(n) {
   if (n < 1000) return (Math.floor(n * 10) / 10).toString().replace(/\.0$/, '');
@@ -65,6 +66,37 @@ function drawCanvas(canvas, bits, owned, tiers, color, theme) {
   }
 }
 
+/* ── Completion screen: shown after all 10 stages are beaten, and on every subsequent open. ── */
+function showCompletion(host, { onNewGame, onExit } = {}) {
+  host.innerHTML =
+    '<div class="mg-wrap mg-complete">'
+    + '<pre class="mg-complete-art">'
+    + ' █████╗ ██╗     ██╗      \n'
+    + '██╔══██╗██║     ██║      \n'
+    + '███████║██║     ██║      \n'
+    + '██╔══██║██║     ██║      \n'
+    + '██║  ██║███████╗███████╗ \n'
+    + '╚═╝  ╚═╝╚══════╝╚══════╝ \n'
+    + 'STAGES COMPLETE'
+    + '</pre>'
+    + '<div class="mg-complete-msg">'
+    + '<p><strong>SYS:</strong> You reached the end of the Foundry.</p>'
+    + '<p>All bosses defeated. All features weaponized.</p>'
+    + '<p>The system is yours.</p>'
+    + '</div>'
+    + '<div class="mg-complete-stats">10 / 10 stages beaten</div>'
+    + '<div class="mg-complete-actions">'
+    + '<button class="mg-complete-new" type="button">New Game</button>'
+    + '<button class="mg-back" type="button">Back to arcade</button>'
+    + '</div>'
+    + '</div>';
+  host.querySelector('.mg-complete-new').addEventListener('click', () => {
+    try { localStorage.removeItem(SAVE_KEY); localStorage.removeItem(COMPLETE_KEY); } catch { /* private mode */ }
+    if (onNewGame) onNewGame(); else location.reload();
+  });
+  host.querySelector('.mg-back').addEventListener('click', () => { if (onExit) onExit(); });
+}
+
 export function mount(host, { onExit } = {}) {
   const s = load();
   const state = {
@@ -77,6 +109,9 @@ export function mount(host, { onExit } = {}) {
     buyMult: s.buyMult || 1,            // 1 | 10 | 100 | 'max'
   };
   let timer = null, bossCtl = null, dlgCtl = null;
+
+  // If the player already finished all 10 stages, go straight to the completion screen.
+  const isComplete = () => { try { return localStorage.getItem(COMPLETE_KEY) === '1'; } catch { return false; } };
 
   const stage = () => stageByNumber(Math.min(state.stage, STAGES.length));
   const tiers = () => stage().tiers || [];
@@ -103,6 +138,11 @@ export function mount(host, { onExit } = {}) {
 
   /* ── Phase: intro (per stage) ── */
   function enterStage() {
+    if (isComplete()) {
+      showCompletion(host, { onNewGame: () => { mount(host, { onExit }); }, onExit });
+      attachDbg();
+      return;
+    }
     if (!state.introStages.includes(stage().n)) startIntro(); else renderGrind();
   }
   function startIntro() {
@@ -216,8 +256,24 @@ export function mount(host, { onExit } = {}) {
     clearTransient();
     host.innerHTML = '<div class="mg-wrap mg-stage-host"></div>';
     attachDbg();
+    const isFinalStage = st.n === STAGES.length;
     dlgCtl = playDialog(host.querySelector('.mg-stage-host'), st.victory, {
-      cta: 'Continue', onDone: () => { if (state.stage < STAGES.length) state.stage++; save(state); enterStage(); },
+      cta: isFinalStage ? 'The End' : 'Continue',
+      onDone: () => {
+        if (isFinalStage) {
+          try { localStorage.setItem(COMPLETE_KEY, '1'); } catch { /* private mode */ }
+          clearTransient();
+          showCompletion(host, {
+            onNewGame: () => { mount(host, { onExit }); },
+            onExit,
+          });
+          attachDbg();
+        } else {
+          if (state.stage < STAGES.length) state.stage++;
+          save(state);
+          enterStage();
+        }
+      },
     });
   }
 
@@ -267,13 +323,26 @@ export function mount(host, { onExit } = {}) {
       save(state);
       host.innerHTML = '<div class="mg-wrap mg-stage-host"></div>';
       attachDbg();
+      const isFinal = st.n === STAGES.length;
       dlgCtl = playDialog(host.querySelector('.mg-stage-host'), st.victory, {
-        cta: 'Continue', onDone: () => { if (state.stage < STAGES.length) state.stage++; save(state); enterStage(); },
+        cta: isFinal ? 'The End' : 'Continue',
+        onDone: () => {
+          if (isFinal) {
+            try { localStorage.setItem(COMPLETE_KEY, '1'); } catch { /* private mode */ }
+            clearTransient();
+            showCompletion(host, { onNewGame: () => { mount(host, { onExit }); }, onExit });
+            attachDbg();
+          } else {
+            if (state.stage < STAGES.length) state.stage++;
+            save(state);
+            enterStage();
+          }
+        },
       });
     }
   });
   dbg.querySelector('.mg-dbg-reset').addEventListener('click', () => {
-    try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+    try { localStorage.removeItem(SAVE_KEY); localStorage.removeItem(COMPLETE_KEY); } catch { /* ignore */ }
     location.reload();
   });
 

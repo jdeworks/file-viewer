@@ -362,9 +362,9 @@ export const STAGES2 = [
       { speaker: 'The Time Lord', text: 'I have already won. That is simply recorded fact. Look at the board.' },
     ],
     hints: [
-      { speaker: '??? (a friendly daemon)', text: 'His advantage is documented... in a save file. This app edits those.' },
-      { speaker: '??? (a friendly daemon)', text: 'Edit game.sav: set turn=mine, score=0, cheat=0. Then click Load Save.' },
-      { speaker: '??? (a friendly daemon)', text: 'He rewrites the file — you must load it 3 times total. Be faster than his timer.' },
+      { speaker: '??? (a friendly daemon)', text: 'Save file. Edit it. You know how this works by now.' },
+      { speaker: '??? (a friendly daemon)', text: 'turn=mine, score=0, cheat=0. Load it. Three times.' },
+      { speaker: '??? (a friendly daemon)', text: 'He rewrites. You re-edit. Be faster. That is all.' },
     ],
     victory: [
       { speaker: 'The Time Lord', text: 'You... save-scummed... a TIME LORD?! This was not in the timeline!' },
@@ -395,9 +395,9 @@ export const STAGES2 = [
       { speaker: 'The Phantom Server', text: 'Offline? There IS no offline. The network is everywhere. I am everywhere.' },
     ],
     hints: [
-      { speaker: '??? (a friendly daemon)', text: 'He heals from network calls. You need to cut them off.' },
-      { speaker: '??? (a friendly daemon)', text: 'Cache him. Go offline. His regen stops when there is no network.' },
-      { speaker: '??? (a friendly daemon)', text: 'He will switch routes after 15s. Cache him again when he does. 2 caches total.' },
+      { speaker: '??? (a friendly daemon)', text: 'He feeds on the network. Cut it.' },
+      { speaker: '??? (a friendly daemon)', text: 'Cache button. Go offline. Regen dies. Attack.' },
+      { speaker: '??? (a friendly daemon)', text: 'He reroutes after 15s. Cache him again. Two caches. You can do this.' },
     ],
     victory: [
       { speaker: 'The Phantom Server', text: 'Request... timed out... 504 Gateway... no... the network... [CONNECTION REFUSED]' },
@@ -429,9 +429,9 @@ export const STAGES2 = [
       { speaker: 'The Duplicant', text: 'Attack the wrong one and you pay the price. I will always be one step ahead.' },
     ],
     hints: [
-      { speaker: '??? (a friendly daemon)', text: 'Two identical grids — but they are not actually identical.' },
-      { speaker: '??? (a friendly daemon)', text: 'Use Compare to find the cell that differs. The REAL one has the unique character.' },
-      { speaker: '??? (a friendly daemon)', text: 'Attack the side with the unique character. Wrong guess costs you HP.' },
+      { speaker: '??? (a friendly daemon)', text: 'The diff reveals truth. One cell differs. Find it.' },
+      { speaker: '??? (a friendly daemon)', text: 'Compare first. The real one carries the unique character. Attack that side.' },
+      { speaker: '??? (a friendly daemon)', text: 'Wrong guess costs you HP. You know what Compare does. Use it.' },
     ],
     victory: [
       { speaker: 'The Duplicant', text: 'You compared the two... found the diff... which one was I...?' },

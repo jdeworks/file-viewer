@@ -369,9 +369,9 @@ export const STAGES3 = [
       { speaker: 'The Redactor', text: 'The decree is permanent. Irrevocable. This app cannot touch a PDF.' },
     ],
     hints: [
-      { speaker: '??? (a friendly daemon)', text: 'His invincibility is documented on page 3 of his PDF. This app can delete pages.' },
-      { speaker: '??? (a friendly daemon)', text: 'Select Page 3 from the dropdown and click Delete Page to remove his decree.' },
-      { speaker: '??? (a friendly daemon)', text: 'He re-adds page 3 on a timer. Delete it and attack fast before it returns.' },
+      { speaker: '??? (a friendly daemon)', text: 'Page 3 is the decree. Delete it.' },
+      { speaker: '??? (a friendly daemon)', text: 'Same as stage 7 — but the weapon is a page selector, not a diff. You know the pattern.' },
+      { speaker: '??? (a friendly daemon)', text: 'He re-adds it. You already know the rhythm. Delete, attack, repeat.' },
     ],
     victory: [
       { speaker: 'The Redactor', text: 'Page 3 deleted... my DECREE is... void... [DOCUMENT CORRUPTED]' },
@@ -402,9 +402,9 @@ export const STAGES3 = [
       { speaker: 'The Query Golem', text: 'My weakness is in the table. But you will never find the right SELECT.' },
     ],
     hints: [
-      { speaker: '??? (a friendly daemon)', text: 'The database has a boss_stats table. One row has his weakness.' },
-      { speaker: '??? (a friendly daemon)', text: 'Try: SELECT value FROM boss_stats WHERE attribute = \'weakness\'' },
-      { speaker: '??? (a friendly daemon)', text: 'Once you see his weakness, the Use Light button appears. He must be re-queried after each hit.' },
+      { speaker: '??? (a friendly daemon)', text: 'One row. One weakness. You know how to SELECT it.' },
+      { speaker: '??? (a friendly daemon)', text: 'SELECT value FROM boss_stats WHERE attribute = \'weakness\'' },
+      { speaker: '??? (a friendly daemon)', text: 'He optimizes. You re-query. Light button reappears. You have done harder.' },
     ],
     victory: [
       { speaker: 'The Query Golem', text: 'Query... returned... weakness... 0 rows remaining. [TABLE DROPPED]' },
@@ -435,9 +435,7 @@ export const STAGES3 = [
       { speaker: 'The Archivist', text: 'Even if you fix the files — I will corrupt them again. The archive is MINE.' },
     ],
     hints: [
-      { speaker: '??? (a friendly daemon)', text: 'Three key files, each holding one word of a three-word phrase. This app can edit them.' },
-      { speaker: '??? (a friendly daemon)', text: 'alpha=OPEN, beta=THE, gamma=GATE. Edit each textarea and Save File.' },
-      { speaker: '??? (a friendly daemon)', text: 'Once all three are saved correctly, Export Folder as ZIP to finish the fight.' },
+      { speaker: '??? (a friendly daemon)', text: 'The archive knows the way.' },
     ],
     victory: [
       { speaker: 'The Archivist', text: 'ALL FRAGMENTS ASSEMBLED — EXPORT COMPLETE. The exit... it opens...' },
