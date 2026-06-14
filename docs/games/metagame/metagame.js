@@ -4,7 +4,8 @@
 // stages.js; the dialog/hint box in dialog.js. Contract: mount(host, { onExit }) => { destroy() }.
 import { playDialog } from './dialog.js';
 import { STAGES, stageByNumber } from './stages.js';
-import { renderStage1, mountBell, bellAdd, updateBellDot, STAGE1 } from './stage1.js';
+import { renderStage1, mountBell, bellLoad, updateBellDot, checkMessages, removeStageMsgs } from './stage1.js';
+import { MESSAGES1 } from './messages1.js';
 
 const SAVE_KEY = 'fv:games:metagame';
 const COMPLETE_KEY = 'fv:games:metagame:complete';
@@ -152,8 +153,6 @@ export function mount(host, { onExit } = {}) {
   function renderStageGrind() {
     if (stage().n === 1) renderS1(); else renderGrind();
   }
-  // Bell triggers checked on each bit-earn: "I can see something" once bits first cross 10.
-  function checkBells() { if (state.bits >= 10) bellAdd('bell-firstsight', 'I can see something', true); }
   function renderS1() {
     clearTransient();
     renderStage1({
@@ -162,13 +161,6 @@ export function mount(host, { onExit } = {}) {
       onExit,
       onBoss: () => startBoss(),
       attachChrome: (h) => attachChrome(h, { debug: true }),
-      onBits: checkBells,
-      onReset: () => {
-        // A purchase wiped the bits. Narrate the loss + (for the first few) the growing strength.
-        bellAdd('bell-reset', 'where did everything go :(', false);
-        const bought = (state.owned[(stage().tiers || [])[0]?.id] || 0);
-        if (bought > 0 && bought < 5) bellAdd('bell-stronger', 'I feel stronger already', false);
-      },
     });
   }
   function startIntro() {
@@ -295,8 +287,11 @@ export function mount(host, { onExit } = {}) {
           });
           attachDbg();
         } else {
+          const prevStage = state.stage;
           if (state.stage < STAGES.length) state.stage++;
           save(state);
+          // Clean up stage-specific messages when leaving a stage (no-op if already removed).
+          if (prevStage === 1) removeStageMsgs(MESSAGES1);
           enterStage();
         }
       },
@@ -325,7 +320,7 @@ export function mount(host, { onExit } = {}) {
   dbgToggle.className = 'mg-dbg-toggle';
   dbgToggle.title = 'Debug';
   dbgToggle.textContent = '⚙';
-  dbgToggle.addEventListener('click', () => { dbg.hidden = !dbg.hidden; });
+  dbgToggle.addEventListener('click', (e) => { e.stopPropagation(); dbg.hidden = !dbg.hidden; });
 
   // Chrome = the persistent overlay furniture (debug + bell). Re-attached after every innerHTML wipe.
   // opts.debug shows the grind-only debug toggle; the bell rides along in every phase.
@@ -389,6 +384,10 @@ export function mount(host, { onExit } = {}) {
     try { localStorage.removeItem(SAVE_KEY); localStorage.removeItem(COMPLETE_KEY); } catch { /* ignore */ }
     location.reload();
   });
+
+  // Fire 'game-start' messages on every mount (bell-nothing fires once on first open, giving the
+  // red dot immediately before the player has done anything).
+  checkMessages('game-start', state, bellLoad());
 
   enterStage();   // each render path attaches its own chrome (debug panel + bell)
 

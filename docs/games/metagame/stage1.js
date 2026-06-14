@@ -6,6 +6,8 @@
 // square in COLUMN-MAJOR order. At 100 the button is fully revealed and interactive; buying it
 // resets bits to 0 and raises click power, so the reveal restarts (faster). The bell narrates it.
 
+import { MESSAGES1 } from './messages1.js';
+
 const BELL_KEY = 'fv:games:mg:bell';
 const GRID_COLS = 20, GRID_ROWS = 5, GRID_CELLS = GRID_COLS * GRID_ROWS;   // 20×5 = 100
 
@@ -15,38 +17,33 @@ export function bellLoad() {
     const s = JSON.parse(localStorage.getItem(BELL_KEY)) || {};
     return {
       messages: Array.isArray(s.messages) ? s.messages : [],
-      seen: Array.isArray(s.seen) ? s.seen : [],
-      readCount: Number(s.readCount) || 0,
+      fired: (s.fired && typeof s.fired === 'object') ? s.fired : {},
+      removed: Array.isArray(s.removed) ? s.removed : [],
+      lastReadCount: Number(s.lastReadCount) || 0,
     };
-  } catch { return { messages: [], seen: [], readCount: 0 }; }
+  } catch { return { messages: [], fired: {}, removed: [], lastReadCount: 0 }; }
 }
-export function bellSave(state) { try { localStorage.setItem(BELL_KEY, JSON.stringify(state)); } catch { /* private mode */ } }
+export function bellSave(bs) { try { localStorage.setItem(BELL_KEY, JSON.stringify(bs)); } catch { /* private mode */ } }
 
-// Add a message. oneTime messages are added at most once ever (tracked in `seen`); repeatable ones
-// bump a per-id count so the panel can show "text ×N". readCount is the total messages ever logged.
-export function bellAdd(id, text, oneTime) {
-  const state = bellLoad();
-  if (oneTime && state.seen.includes(id)) return;
-  if (oneTime) state.seen.push(id);
+// Add a message entry into the bell panel. Bumps the count if the id already appears (grouping).
+// Does NOT check maxCount / removeAfterFire — that's handled by checkMessages.
+export function bellAdd(id, text, bs) {
+  const state = bs || bellLoad();
   const existing = state.messages.find((m) => m.id === id);
   if (existing) existing.count++;
   else state.messages.push({ id, text, count: 1, ts: Date.now() });
-  state.readCount = state.messages.reduce((s, m) => s + m.count, 0);
   bellSave(state);
   updateBellDot();
 }
 
-// Total logged vs. how many the player has acknowledged (persisted as a plain number in localStorage).
-const ACK_KEY = 'fv:games:mg:bell:ack';
-const ackGet = () => { try { return Number(localStorage.getItem(ACK_KEY)) || 0; } catch { return 0; } };
-const ackSet = (n) => { try { localStorage.setItem(ACK_KEY, String(n)); } catch { /* ignore */ } };
-
+// Unread count: total messages logged vs. how many the player has acknowledged.
 let bellRoot = null;   // the live bell DOM (per mount) so bellAdd can refresh the dot from anywhere.
 
 export function updateBellDot() {
   if (!bellRoot) return;
-  const state = bellLoad();
-  const unread = state.readCount > ackGet();
+  const bs = bellLoad();
+  const total = bs.messages.reduce((s, m) => s + m.count, 0);
+  const unread = total > bs.lastReadCount;
   const dot = bellRoot.querySelector('.mg-bell-dot');
   if (dot) dot.hidden = !unread;
 }
@@ -66,16 +63,25 @@ export function mountBell(host) {
   const panel = wrap.querySelector('.mg-bell-panel');
 
   function renderPanel() {
-    const state = bellLoad();
-    if (!state.messages.length) { panel.innerHTML = '<div class="mg-bell-empty">nothing here</div>'; return; }
-    panel.innerHTML = state.messages.map((m) =>
+    const bs = bellLoad();
+    if (!bs.messages.length) { panel.innerHTML = '<div class="mg-bell-empty">nothing here</div>'; return; }
+    // Newest first.
+    const sorted = [...bs.messages].sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    panel.innerHTML = sorted.map((m) =>
       '<div class="mg-bell-msg">' + escapeHtml(m.text) + (m.count > 1 ? ' <span class="mg-bell-x">×' + m.count + '</span>' : '') + '</div>'
     ).join('');
   }
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
     const open = panel.hidden;
     panel.hidden = !open;
-    if (open) { renderPanel(); ackSet(bellLoad().readCount); updateBellDot(); }
+    if (open) {
+      renderPanel();
+      const bs = bellLoad();
+      bs.lastReadCount = bs.messages.reduce((s, m) => s + m.count, 0);
+      bellSave(bs);
+      updateBellDot();
+    }
   });
   updateBellDot();
   return { el: wrap };
@@ -83,8 +89,49 @@ export function mountBell(host) {
 
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
+/* ── Event-driven message checking ── */
+// activeMessages: the subset of MESSAGES1 not yet permanently removed. Null = needs reload.
+let activeMessages = null;
+
+function loadActiveMessages(bs) {
+  const removed = new Set(bs.removed || []);
+  return MESSAGES1.filter((m) => !removed.has(m.id));
+}
+
+// Check messages matching eventType against state. Fires qualifying ones, updates bell state.
+export function checkMessages(eventType, state, bs) {
+  if (!activeMessages) activeMessages = loadActiveMessages(bs);
+  let changed = false;
+  for (const msg of activeMessages.slice()) {   // slice: safe to mutate activeMessages during loop
+    if (msg.trigger !== eventType && msg.trigger !== 'any') continue;
+    if (msg.maxCount !== undefined) {
+      const fired = (bs.fired[msg.id] || 0);
+      if (fired >= msg.maxCount) continue;
+    }
+    if (!msg.condition(state)) continue;
+    // Fire: add to bell panel, record in fired map.
+    bellAdd(msg.id, msg.text, bs);
+    bs.fired[msg.id] = (bs.fired[msg.id] || 0) + 1;
+    if (msg.removeAfterFire) {
+      bs.removed = bs.removed || [];
+      if (!bs.removed.includes(msg.id)) bs.removed.push(msg.id);
+      activeMessages = activeMessages.filter((m) => m.id !== msg.id);
+    }
+    changed = true;
+  }
+  if (changed) bellSave(bs);
+}
+
+// Mark all message IDs from a given array as permanently removed (call when stage advances past 1).
+export function removeStageMsgs(msgs) {
+  const bs = bellLoad();
+  bs.removed = [...new Set([...(bs.removed || []), ...msgs.map((m) => m.id)])];
+  bellSave(bs);
+  activeMessages = null;   // force reload on next checkMessages call
+}
+
 /* ── Stage 1 render: full-screen tap area + a Compute button under a 100-square reveal grid. ── */
-// ctx: { host, state, save, stage, clickPower, buyTier, onExit, attachChrome, onBits, onReset, onBoss }
+// ctx: { host, state, save, stage, clickPower, buyTier, onExit, attachChrome, onBoss }
 //   attachChrome(host) re-attaches the back/fullscreen/debug header + bell after any innerHTML wipe.
 //   After 5 purchases (and if the stage isn't already beaten) a "Confront" button appears so the
 //   onboarding loop hands off to the stage-1 boss.
@@ -110,7 +157,7 @@ export function renderStage1(ctx) {
   const btn = $('.mg-s1-btn');
   const grid = $('.mg-s1-grid');
   const bossBtn = $('.mg-s1-boss');
-  if (bossBtn) bossBtn.addEventListener('click', () => ctx.onBoss && ctx.onBoss());
+  if (bossBtn) bossBtn.addEventListener('click', (e) => { e.stopPropagation(); ctx.onBoss && ctx.onBoss(); });
 
   // Build the 100 covering squares in COLUMN-MAJOR fill order: cell index i maps to (r,c) with
   // c = floor(i / ROWS), r = i % ROWS. We lay them out in a CSS grid that is row-major, so we give
@@ -137,19 +184,25 @@ export function renderStage1(ctx) {
 
   function addBits() {
     state.bits += clickPower();
-    ctx.onBits && ctx.onBits();
+    const bs = bellLoad();
+    checkMessages('bit-earn', state, bs);
     reveal();
   }
   // Full-screen tap area: pointer (covers mouse + touch). The grid sits above the button but is
   // click-through (pointer-events:none on covered cells) until cleared.
   tap.addEventListener('pointerdown', addBits);
 
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (state.bits < GRID_CELLS) return;     // not revealed yet → ignore (shouldn't fire; covered)
     if (t && buyTier(t.id)) {                // spends the tier cost (=100); raises click power
       state.bits = 0;                        // …then wipe whatever's left — everything goes
+      // Compute totalBought for condition checks (counts across all resets).
+      state.totalBought = (state.totalBought || 0) + 1;
       save(state);
-      ctx.onReset && ctx.onReset();
+      const bs = bellLoad();
+      checkMessages('buy', state, bs);
+      checkMessages('bit-lose', state, bs);
       renderStage1(ctx);                     // re-render fresh (all covered again)
     }
   });
