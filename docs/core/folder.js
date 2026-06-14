@@ -3,7 +3,7 @@
 // export, and the resizable/keyboard-navigable sidebar. Extracted from app.js. The core load flow
 // (loadIntake) and the unsaved-work guard (confirmDiscard) live in app.js and are injected via
 // initFolder() so this module never imports app.js back (no circular dependency).
-import { state, $, MAX_TREE_FILES, isMobile, toast, escapeHtml } from './state.js';
+import { state, $, isMobile, toast, escapeHtml } from './state.js';
 import { findGitDir, isGitInternal, openRepo } from './git.js';
 import { renderRepoView } from './repoview.js';
 import { buildTree, renderTree } from './filetree.js';
@@ -24,17 +24,7 @@ export async function loadFolder(entries) {
   state.repoEntries = git ? entries : null;
   state.repoHandle = null;
   let display = git ? entries.filter((e) => !isGitInternal(e.path)) : entries;
-  // Tree render cap: the tree builds one DOM row per file, so an enormous file COUNT would freeze
-  // the tab. Cap the rendered set and say so (the data is all still on disk; opening a file is
-  // unaffected). NOTE: a future virtualized tree would lift this — see reference.md scale limits.
-  const notice = $('ftNotice');
-  if (display.length > MAX_TREE_FILES) {
-    notice.textContent = `Large folder — showing the first ${MAX_TREE_FILES.toLocaleString()} of ${display.length.toLocaleString()} files.`;
-    notice.hidden = false;
-    display = display.slice(0, MAX_TREE_FILES);
-  } else {
-    notice.hidden = true; notice.textContent = '';
-  }
+  $('ftNotice').hidden = true;
   state.treeEntries = display;                 // kept for arrow-key navigation lookups
   const rootName = git ? git.repoName : (display[0]?.path.split('/')[0] || 'Folder');
   $('ftRoot').textContent = rootName;
@@ -218,14 +208,6 @@ export function initTreeResize() {
 export function onTreeKey(e) {
   if (!state.settingsModel?.values?.treeArrowKeys) return;
   if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-  const files = [...document.querySelectorAll('#fileTree .ft-file')];
-  if (!files.length) return;
   e.preventDefault();
-  const cur = document.querySelector('#fileTree .ft-file.active');
-  let idx = files.indexOf(cur);
-  idx = e.key === 'ArrowDown' ? Math.min(files.length - 1, idx + 1) : Math.max(0, idx - 1);
-  if (idx < 0) idx = 0;
-  const next = files[idx];
-  const entry = state.treeEntries?.find((x) => x.path === next.dataset.path);
-  if (entry) { state.treeApi?.setActive(entry.path); openTreeFile({ file: entry.file, path: entry.path }); next.focus(); }
+  state.treeApi?.navigate(e.key === 'ArrowDown' ? 1 : -1);
 }

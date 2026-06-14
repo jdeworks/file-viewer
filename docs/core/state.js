@@ -4,7 +4,6 @@
 
 export const $ = (id) => document.getElementById(id);
 export const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
-export const MAX_TREE_FILES = 20000;   // cap rendered tree rows so a huge file count can't freeze the tab
 
 export const state = {
   intake: null,

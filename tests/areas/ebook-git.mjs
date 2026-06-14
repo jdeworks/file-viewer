@@ -190,8 +190,8 @@ export async function run(ctx) {
   // ── Folder search ── live filename filter + content search on Enter. ──
   await page.fill('#ftSearchInput', 'util');
   await page.waitForTimeout(150);
-  const utilVisible = await page.$eval('#fileTree .ft-file[data-path="proj/src/util.py"]', (e) => e.style.display !== 'none');
-  const appHidden = await page.$eval('#fileTree .ft-file[data-path="proj/src/app.js"]', (e) => e.style.display === 'none');
+  const utilVisible = await page.$('#fileTree .ft-file[data-path="proj/src/util.py"]') !== null;
+  const appHidden = await page.$('#fileTree .ft-file[data-path="proj/src/app.js"]') === null;
   if (utilVisible && appHidden) pass('folder search: filename filter narrows the tree'); else fail('search filter: util=' + utilVisible + ' appHidden=' + appHidden);
   const searchCount = await page.$eval('#ftSearchCount', (e) => e.textContent);
   if (/1 match/.test(searchCount)) pass('folder search: match count shown (' + searchCount + ')'); else fail('search count: ' + searchCount);
@@ -199,24 +199,26 @@ export async function run(ctx) {
   await page.fill('#ftSearchInput', 'Project');
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => /file/.test(document.getElementById('ftSearchCount').textContent), { timeout: 5000 });
-  const readmeVisible = await page.$eval('#fileTree .ft-file[data-path="proj/README.md"]', (e) => e.style.display !== 'none');
-  const appHidden2 = await page.$eval('#fileTree .ft-file[data-path="proj/src/app.js"]', (e) => e.style.display === 'none');
+  const readmeVisible = await page.$('#fileTree .ft-file[data-path="proj/README.md"]') !== null;
+  const appHidden2 = await page.$('#fileTree .ft-file[data-path="proj/src/app.js"]') === null;
   if (readmeVisible && appHidden2) pass('folder search: content search matches inside files'); else fail('content search: readme=' + readmeVisible + ' appHidden=' + appHidden2);
   await page.fill('#ftSearchInput', '');
   await page.waitForTimeout(100);
 
-  // ── Huge-folder render cap ── a folder with a very high file count is capped (not frozen) + noted.
+  // ── Huge-folder virtual scroll: all 20 010 entries load; only a viewport slice is in the DOM ──
   await page.evaluate(() => {
-    // 20010 tiny files (over the 20000 cap). File bodies are 1 char — cheap; we're testing the cap.
     const entries = [];
     for (let i = 0; i < 20010; i++) entries.push({ file: new File(['x'], 'f' + i + '.txt', { type: '' }), path: 'big/f' + i + '.txt' });
     window.__fv.state._skipDiscardGuard = true;
     window.__fv.loadFolder(entries);
   });
-  await page.waitForFunction(() => !document.getElementById('ftNotice').hidden, { timeout: 15000 });
-  const cappedCount = await page.evaluate(() => window.__fv.state.treeEntries.length);
-  const capNotice = await page.$eval('#ftNotice', (e) => e.textContent);
-  if (cappedCount === 20000 && /20,000 of 20,010/.test(capNotice)) pass('huge folder render-capped + noted (' + capNotice.trim() + ')'); else fail('cap: count=' + cappedCount + ' notice=' + capNotice);
+  await page.waitForFunction(() => window.__fv.state.treeEntries?.length === 20010, { timeout: 15000 });
+  const ftNoticeHidden = await page.$eval('#ftNotice', (e) => e.hidden);
+  const domRows = await page.$$eval('#fileTree .ft-row', (els) => els.length);
+  const loadedCount = await page.evaluate(() => window.__fv.state.treeEntries.length);
+  if (loadedCount === 20010 && ftNoticeHidden && domRows < 200)
+    pass('virtual tree: all ' + loadedCount + ' entries loaded, only ' + domRows + ' DOM rows mounted');
+  else fail('virtual tree: loaded=' + loadedCount + ' ftNoticeHidden=' + ftNoticeHidden + ' domRows=' + domRows);
 
   // ── Git repository browser (in-browser .git reader) ──
   {

@@ -1,6 +1,8 @@
 // Folder tree sidebar (VS Code-ish, aligned to the jdeworks code-editor theme). Builds a
 // tree from a flat file list (webkitdirectory or drag-dropped folder), renders it with a
-// cheap per-file type guess (filename only — no reading bytes), and opens a file on click.
+// cheap per-file type guess (filename only -- no reading bytes), and opens a file on click.
+// Virtual-scroll: only rows in the current viewport (+OVERSCAN) are in the DOM, so an
+// arbitrarily large file count never freezes the tab.
 import { LANGS, FILENAMES } from '../types/text/code/langmap.js';
 
 // Type guess from filename alone -> { id, dot color }. Cheap; the real detector runs on open.
@@ -57,40 +59,63 @@ function sortedChildren(node) {
     (a.dir === b.dir) ? a.name.localeCompare(b.name) : (a.dir ? -1 : 1));
 }
 
-// Render into `host`. onOpen(node) fires on a file click. Returns { setActive(path) }.
+const ROW_H = 28;
+const OVERSCAN = 8;
+
+// Collect all folder paths in the tree (for pre-populating openFolders).
+function collectFolderPaths(node, prefix, out) {
+  for (const c of sortedChildren(node)) {
+    if (c.dir) {
+      const fp = prefix ? prefix + '/' + c.name : c.name;
+      out.add(fp);
+      collectFolderPaths(c, fp, out);
+    }
+  }
+}
+
+// Render into `host`. onOpen(node) fires on a file click. Returns controller API.
 export function renderTree(host, root, { onOpen }) {
   host.innerHTML = '';
-  let activeRow = null;
+  const inner = document.createElement('div');
+  inner.className = 'ft-virtual-inner';
+  inner.style.position = 'relative';
+  inner.style.height = '0px';
+  host.appendChild(inner);
 
-  function makeNode(node, depth) {
-    const pad = 8 + depth * 14;
-    if (node.dir) {
-      const wrap = document.createElement('div');
-      const row = document.createElement('div');
-      row.className = 'ft-row ft-folder';
-      row.style.paddingLeft = pad + 'px';
-      row.innerHTML = '<span class="ft-arrow">▾</span><span class="ft-name">' + escapeHtml(node.name) + '</span>';
-      const kids = document.createElement('div');
-      kids.className = 'ft-children';
-      for (const c of sortedChildren(node)) kids.appendChild(makeNode(c, depth + 1));
-      row.addEventListener('click', () => {
-        const collapsed = wrap.classList.toggle('collapsed');
-        row.querySelector('.ft-arrow').textContent = collapsed ? '▸' : '▾';
-      });
-      wrap.append(row, kids);
-      return wrap;
+  // Pre-populate all folder paths so the tree starts fully expanded.
+  const openFolders = new Set();
+  collectFolderPaths(root, '', openFolders);
+
+  let items = [];          // flat array of { node, depth, isFolder, folderPath }
+  let activeNode = null;
+  let filterFn = null;
+  const editedPaths = new Set();
+
+  // Rebuild the flat items array from current expand/filter state.
+  function buildFlat() {
+    items = [];
+    function walk(node, depth, parentPath) {
+      for (const c of sortedChildren(node)) {
+        const fp = parentPath ? parentPath + '/' + c.name : c.name;
+        if (c.dir) {
+          if (!filterFn) {
+            items.push({ node: c, depth, isFolder: true, folderPath: fp });
+            if (openFolders.has(fp)) walk(c, depth + 1, fp);
+          } else {
+            walk(c, depth + 1, fp);
+          }
+        } else {
+          if (!filterFn || filterFn(c.path)) {
+            items.push({ node: c, depth: filterFn ? 0 : depth, isFolder: false, folderPath: '' });
+          }
+        }
+      }
     }
-    const row = document.createElement('div');
-    row.className = 'ft-row ft-file';
-    row.style.paddingLeft = pad + 'px';
-    row.dataset.path = node.path;
-    row.tabIndex = 0;                          // focusable so arrow-key nav can target it
-    const id = quickType(node.name);
-    row.innerHTML = '<span class="ft-dot" style="background:' + dotColor(id) + '"></span>'
-      + '<span class="ft-name">' + escapeHtml(node.name) + '</span>'
-      + '<span class="ft-size">' + fmtSize(node.file.size) + '</span>';
-    row.addEventListener('click', () => { setActive(node.path); onOpen(node); });
-    return row;
+    walk(root, 0, '');
+    inner.style.height = items.length * ROW_H + 'px';
+    // Clear all rendered rows — items array changed so cached indices no longer match nodes.
+    inner.innerHTML = '';
+    paint();
   }
 
   // Marquee: when the active file name overflows its column, rotate it one char every
@@ -106,51 +131,126 @@ export function renderTree(host, root, { onOpen }) {
   function startMarquee(row) {
     stopMarquee();
     const el = row && row.querySelector('.ft-name');
-    if (!el || el.scrollWidth <= el.clientWidth + 1) return;   // fits — nothing to scroll
+    if (!el || el.scrollWidth <= el.clientWidth + 1) return;   // fits -- nothing to scroll
     const name = el.textContent;
     el.classList.add('ft-ticker');
     let s = name + '   ';                       // gap before the name wraps around
     mq = { el, name, timer: setInterval(() => { s = s.slice(1) + s[0]; el.textContent = s; }, 100) };
   }
 
-  function setActive(path) {
-    if (activeRow) activeRow.classList.remove('active');
-    activeRow = host.querySelector('.ft-file[data-path="' + cssEscape(path) + '"]');
-    if (activeRow) { activeRow.classList.add('active'); startMarquee(activeRow); }
-    else stopMarquee();
+  function makeRow(item, idx) {
+    const row = document.createElement('div');
+    row.className = 'ft-row ' + (item.isFolder ? 'ft-folder' : 'ft-file');
+    row.dataset.idx = idx;
+    row.style.position = 'absolute';
+    row.style.top = idx * ROW_H + 'px';
+    row.style.height = ROW_H + 'px';
+    row.style.width = '100%';
+    const pad = 8 + item.depth * 14;
+    row.style.paddingLeft = pad + 'px';
+
+    if (item.isFolder) {
+      row.innerHTML = '<span class="ft-arrow">' + (openFolders.has(item.folderPath) ? '▾' : '▸') + '</span>'
+        + '<span class="ft-name">' + escapeHtml(item.node.name) + '</span>';
+      row.tabIndex = -1;
+      row.addEventListener('click', () => {
+        if (openFolders.has(item.folderPath)) openFolders.delete(item.folderPath);
+        else openFolders.add(item.folderPath);
+        buildFlat();
+      });
+    } else {
+      row.dataset.path = item.node.path;
+      row.tabIndex = 0;
+      const id = quickType(item.node.name);
+      row.innerHTML = '<span class="ft-dot" style="background:' + dotColor(id) + '"></span>'
+        + '<span class="ft-name">' + escapeHtml(item.node.name) + '</span>'
+        + '<span class="ft-size">' + fmtSize(item.node.file.size) + '</span>';
+      if (item.node === activeNode) row.classList.add('active');
+      if (editedPaths.has(item.node.path)) row.classList.add('ft-edited');
+      row.addEventListener('click', () => { setActive(item.node.path); onOpen(item.node); });
+    }
+    return row;
   }
 
-  // Mark/unmark a file row as edited (adds a `*` via the .ft-edited class) — folder edit-tracking.
+  // Update visible rows: remove out-of-range, create missing in-range rows.
+  function paint() {
+    const scrollTop = host.scrollTop;
+    const viewRows = Math.ceil(host.clientHeight / ROW_H) + 1;
+    const start = Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN);
+    const end = Math.min(items.length, start + viewRows + OVERSCAN * 2);
+
+    // Remove rows outside [start, end).
+    const existing = inner.querySelectorAll('[data-idx]');
+    for (const el of existing) {
+      const i = Number(el.dataset.idx);
+      if (i < start || i >= end) el.remove();
+    }
+
+    // Build a set of already-rendered indices.
+    const rendered = new Set();
+    for (const el of inner.querySelectorAll('[data-idx]')) rendered.add(Number(el.dataset.idx));
+
+    // Create rows for indices not yet in DOM.
+    for (let i = start; i < end; i++) {
+      if (!rendered.has(i)) inner.appendChild(makeRow(items[i], i));
+    }
+  }
+
+  function setActive(path) {
+    // Remove active from old active row if in DOM.
+    const oldRow = inner.querySelector('.ft-row.active');
+    if (oldRow) oldRow.classList.remove('active');
+    stopMarquee();
+
+    activeNode = items.find((it) => !it.isFolder && it.node.path === path)?.node || null;
+
+    const newRow = inner.querySelector('[data-path="' + cssEscape(path) + '"]');
+    if (newRow) { newRow.classList.add('active'); startMarquee(newRow); }
+
+    // Scroll item into view if needed.
+    const itemIdx = items.findIndex((it) => !it.isFolder && it.node.path === path);
+    if (itemIdx >= 0) {
+      const top = itemIdx * ROW_H;
+      if (top < host.scrollTop) host.scrollTop = top;
+      else if (top + ROW_H > host.scrollTop + host.clientHeight) host.scrollTop = top + ROW_H - host.clientHeight;
+    }
+  }
+
   function setEdited(path, on = true) {
-    const row = host.querySelector('.ft-file[data-path="' + cssEscape(path) + '"]');
+    if (on) editedPaths.add(path); else editedPaths.delete(path);
+    const row = inner.querySelector('[data-path="' + cssEscape(path) + '"]');
     if (row) row.classList.toggle('ft-edited', on !== false);
   }
 
-  // Filter the tree to files whose path satisfies matchFn(path). Pass null to clear. Folders with
-  // no visible descendants are hidden; while filtering, folders are force-expanded so matches show.
   function filter(matchFn) {
-    let shown = 0;
-    host.querySelectorAll('.ft-file').forEach((r) => {
-      const ok = !matchFn || matchFn(r.dataset.path);
-      r.style.display = ok ? '' : 'none';
-      if (ok && matchFn) shown++;
-    });
-    host.querySelectorAll('.ft-children').forEach((kids) => {
-      const wrap = kids.parentElement;
-      if (!wrap) return;
-      if (!matchFn) { wrap.style.display = ''; return; }
-      const anyVisible = [...kids.querySelectorAll('.ft-file')].some((r) => r.style.display !== 'none');
-      wrap.style.display = anyVisible ? '' : 'none';
-      if (anyVisible) { wrap.classList.remove('collapsed'); const a = wrap.querySelector('.ft-arrow'); if (a) a.textContent = '▾'; }
-    });
-    return shown;
+    filterFn = matchFn;
+    buildFlat();
+    return items.length;   // all items are files when filterFn is set
   }
-  function clearFilter() { filter(null); }
 
-  // Top-level children of root (skip the empty root node itself).
-  for (const c of sortedChildren(root)) host.appendChild(makeNode(c, 0));
-  // refresh() re-evaluates the marquee (e.g. after the sidebar is resized).
-  return { setActive, setEdited, filter, clearFilter, refresh: () => startMarquee(activeRow), stop: stopMarquee };
+  function clearFilter() { filterFn = null; buildFlat(); }
+
+  function navigate(dir) {
+    const fileItems = items.filter((it) => !it.isFolder);
+    if (!fileItems.length) return;
+    const curIdx = activeNode ? fileItems.findIndex((it) => it.node === activeNode) : -1;
+    const nextIdx = Math.max(0, Math.min(fileItems.length - 1, curIdx + dir));
+    const next = fileItems[nextIdx];
+    if (!next) return;
+    setActive(next.node.path);
+    onOpen(next.node);
+  }
+
+  function refresh() { startMarquee(inner.querySelector('.ft-row.active')); }
+  function stop() { stopMarquee(); host.removeEventListener('scroll', onScroll); }
+
+  function onScroll() { paint(); }
+  host.addEventListener('scroll', onScroll, { passive: true });
+  new ResizeObserver(paint).observe(host);
+
+  buildFlat();
+
+  return { setActive, setEdited, filter, clearFilter, navigate, refresh, stop };
 }
 
 function escapeHtml(s) { return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
