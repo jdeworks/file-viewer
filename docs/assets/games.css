@@ -194,8 +194,7 @@
 .mg-s1-grid.mg-s1-clear { pointer-events: none; }
 .mg-s1-cell { background: var(--bg-3, #161b22); }
 .mg-s1-cell.mg-s1-on { background: transparent; pointer-events: none; }   /* revealed → click-through */
-@keyframes mg-s1-flash { 0% { opacity: 0.3; transform: scale(1.15); } 100% { opacity: 1; transform: scale(1); } }
-.mg-s1-flash { animation: mg-s1-flash 0.18s ease-out; }
+
 .mg-s1-boss { position: absolute; left: 50%; bottom: 2%; transform: translateX(-50%); z-index: 3; }
 
 /* ── Commentary bell — top-right overlay, absolute (never pushes layout). ── */
