@@ -116,7 +116,8 @@ export async function run(ctx) {
   // Buying deducts GRID_CELLS bits, bumps owned[s1-cursor], and re-renders (grid no longer full).
   await page.click('.mg-s1-btn');
   await page.waitForFunction(() => !document.querySelector('.mg-s1-btn').classList.contains('mg-s1-ready'), null, { timeout: 4000 });
-  const afterBuy = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('fv:games:metagame')) || {}; } catch { return {}; } });
+  // Stage 1 save is now base64-encoded (s1state); decode before parsing.
+  const afterBuy = await page.evaluate(() => { try { const raw = localStorage.getItem('fv:games:metagame'); return JSON.parse(decodeURIComponent(escape(atob(raw)))); } catch { try { return JSON.parse(localStorage.getItem('fv:games:metagame')); } catch { return {}; } } });
   if ((afterBuy.owned || {})['s1-cursor'] === 1) pass('meta-game stage 1: buy resets bits + raises compute level'); else fail('s1 buy: ' + JSON.stringify(afterBuy));
   // Debug toggle: hidden panel, gear button shows it.
   if (await page.$eval('.mg-debug', (e) => e.hidden)) pass('meta-game: debug panel hidden by default'); else fail('debug panel not hidden');
