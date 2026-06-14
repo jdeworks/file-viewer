@@ -114,6 +114,7 @@ export function createHub({ onToast } = {}) {
     exitGame();
     if (root) root.hidden = true;
     document.removeEventListener('keydown', onEsc, true);
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   }
   function onEsc(e) {
     if (e.key !== 'Escape') return;
