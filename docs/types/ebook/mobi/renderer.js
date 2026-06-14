@@ -2,7 +2,7 @@
 // to inline data: URLs from the embedded image records (zero off-origin — no network fetch),
 // DOMPurify-sanitizes the HTML, and renders it via the shared sandboxed iframe like FB2/Markdown.
 // DRM'd or HUFF/CDIC-compressed books show a clear, friendly note instead of garbage.
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 import { openMobi } from './mobilib.js';
 
 export async function render(intake, _ctx) {

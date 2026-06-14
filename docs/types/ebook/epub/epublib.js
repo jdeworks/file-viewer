@@ -4,7 +4,7 @@
 //   nav.xhtml / toc.ncx     → table of contents
 // We parse those with the platform DOMParser and hand back a flat, render-ready structure.
 // Resource bytes are pulled lazily by the renderer (one chapter at a time — books are big).
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 const XML = (s) => new DOMParser().parseFromString(s, 'application/xml');
 

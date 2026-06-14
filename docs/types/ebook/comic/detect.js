@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // Comic book archives: .cbz (zip of images) and .cbr (rar of images). Claim these extensions
 // above the generic zip type so a comic opens in the page-turning reader, not as a file listing.

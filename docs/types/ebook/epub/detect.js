@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // EPUB e-books. A .epub is a zip, so we must outscore the generic archive type (0.9) on the
 // extension. As a fallback, sniff the uncompressed "mimetype" entry that every EPUB stores

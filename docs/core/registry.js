@@ -58,12 +58,12 @@ import subtitleType from '../types/subtitle/index.js';
 import vcardType from '../types/vcard/index.js';
 import sqliteType from '../types/sqlite/index.js';
 import zipType from '../types/zip/index.js';
-import epubType from '../types/epub/index.js';
-import comicType from '../types/comic/index.js';
-import fb2Type from '../types/fb2/index.js';
-import mobiType from '../types/mobi/index.js';
+import epubType from '../types/ebook/epub/index.js';
+import comicType from '../types/ebook/comic/index.js';
+import fb2Type from '../types/ebook/fb2/index.js';
+import mobiType from '../types/ebook/mobi/index.js';
 import odfType from '../types/odf/index.js';
-import lrfType from '../types/lrf/index.js';
+import lrfType from '../types/ebook/lrf/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [

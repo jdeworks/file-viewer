@@ -1,7 +1,7 @@
 // Comic archive reader. .cbz is a ZIP of page images → we read it with the already-vendored JSZip
 // (no new dependency) and hand back the sorted page entries. .cbr is a RAR archive, which needs a
 // RAR decompressor we don't vendor yet (planned opt-in) — we detect it and say so, no crash.
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 const IMAGE_RE = /\.(jpe?g|png|gif|webp|avif|bmp)$/i;
 

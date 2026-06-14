@@ -7,9 +7,9 @@
 //
 // One chapter (spine item) is shown at a time — books are large. A sidebar TOC + prev/next
 // navigate; the reading position (chapter + scroll) is remembered per file via persistence.
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 import { parseEpub, resolvePath, splitFrag, guessMime } from './epublib.js';
-import { fingerprint, loadState, saveState } from '../../core/persistence.js';
+import { fingerprint, loadState, saveState } from '../../../core/persistence.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 

@@ -3,7 +3,7 @@
 // (so NO off-origin request is ever made), DOMPurify the result, and hand the body to the shared
 // sandboxed preview iframe — exactly like the Markdown path. Section nesting becomes heading
 // levels so the structure reads naturally.
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 

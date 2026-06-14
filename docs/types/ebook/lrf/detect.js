@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // Sony LRF (BBeB / Broad Band eBook) — the old Sony Reader format. Detected by extension and its
 // "L\0R\0F\0\0\0" magic. We don't decode the proprietary BBeB stream yet (see the renderer note),

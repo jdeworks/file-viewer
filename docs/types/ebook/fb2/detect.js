@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // FictionBook 2 (.fb2) — a plain-XML ebook. Claim the extension strongly, and the <FictionBook>
 // root element as a content signal so a mis-named .xml still routes here (above the generic XML

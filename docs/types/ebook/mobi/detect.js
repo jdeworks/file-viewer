@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // MOBI / AZW (Kindle / Mobipocket). Claim the extensions, and the PalmDB type/creator signature
 // 'BOOKMOBI' (at offset 60) as a strong content signal for mis-named files.
