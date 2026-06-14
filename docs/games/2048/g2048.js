@@ -17,11 +17,11 @@ export function mount(host, { onScore, onExit } = {}) {
   const overEl = host.querySelector('.g2048-over');
   const overMsg = host.querySelector('.g2048-over-msg');
 
-  let grid, score, dead;
+  let grid, score, dead, prevGrid;
 
   function reset() {
     grid = Array.from({ length: SIZE }, () => new Array(SIZE).fill(0));
-    score = 0; dead = false;
+    score = 0; dead = false; prevGrid = null;
     addTile(); addTile();
     overEl.hidden = true;
     scoreEl.textContent = 'Score: 0';
@@ -66,6 +66,7 @@ export function mount(host, { onScore, onExit } = {}) {
     g = g.map((row) => { const [nr, gg, mv] = collapse(row); if (mv) moved = true; gained += gg; return nr; });
     for (let i = 0; i < (4 - dir) % 4; i++) g = rotateCW(g);
     if (!moved) return;
+    prevGrid = grid.map((r) => [...r]);
     grid = g; score += gained;
     addTile();
     scoreEl.textContent = 'Score: ' + score;
@@ -89,7 +90,8 @@ export function mount(host, { onScore, onExit } = {}) {
     for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
       const v = grid[r][c];
       const cell = document.createElement('div');
-      cell.className = 'g2048-cell' + (v ? ' g2048-v' + v : '');
+      const isNew = v !== 0 && (!prevGrid || prevGrid[r][c] !== v);
+      cell.className = 'g2048-cell' + (v ? ' g2048-v' + v : '') + (isNew ? ' g2048-new' : '');
       cell.textContent = v || '';
       boardEl.appendChild(cell);
     }
@@ -114,8 +116,8 @@ export function mount(host, { onScore, onExit } = {}) {
   }
 
   window.addEventListener('keydown', onKey);
-  boardEl.addEventListener('touchstart', onTouchStart, { passive: true });
-  boardEl.addEventListener('touchend', onTouchEnd, { passive: true });
+  host.addEventListener('touchstart', onTouchStart, { passive: true });
+  host.addEventListener('touchend', onTouchEnd, { passive: true });
   host.querySelector('.g2048-restart').addEventListener('click', reset);
   host.querySelector('.g2048-quit').addEventListener('click', () => onExit?.());
 
@@ -123,8 +125,8 @@ export function mount(host, { onScore, onExit } = {}) {
   return {
     destroy() {
       window.removeEventListener('keydown', onKey);
-      boardEl.removeEventListener('touchstart', onTouchStart);
-      boardEl.removeEventListener('touchend', onTouchEnd);
+      host.removeEventListener('touchstart', onTouchStart);
+      host.removeEventListener('touchend', onTouchEnd);
       host.innerHTML = '';
     },
     _move: move,   // test seam

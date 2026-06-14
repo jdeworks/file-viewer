@@ -62,6 +62,12 @@
 .g2048-over-msg { font-weight: 700; margin-bottom: 10px; }
 .g2048-restart, .g2048-quit { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
 .g2048-quit { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); }
+@keyframes g2048-pop {
+  0%   { transform: scale(0.5); opacity: 0.5; }
+  60%  { transform: scale(1.1); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+.g2048-new { animation: g2048-pop 0.12s ease-out; }
 
 /* Bit Foundry (meta-game incremental core). */
 .mg-wrap { display: flex; flex-direction: column; gap: 14px; width: min(420px, 100%); }
