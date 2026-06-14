@@ -69,6 +69,17 @@ export const STAGES = [
     n: 1,
     title: 'The Overwriter',
     goal: 100,                         // bits to accrue before the boss can be faced
+    // VISUAL/ECONOMY config (data-driven — reorder or extend a stage by editing only this).
+    resource: { name: 'bits', color: '#3fb950' },     // raw pixels are green data bits (IT theme)
+    // The upgrade ladder. `click` tiers raise pixels-per-click; `auto` tiers paint pixels/sec.
+    // Each owned tier is "assembled" from spent pixels into a little machine on the canvas.
+    tiers: [
+      { id: 'click', name: 'Overclock', icon: '⚡', type: 'click', amount: 1, base: 10, mult: 1.5, desc: '+1 pixel per click' },
+      { id: 'cron', name: 'Cron job', icon: '⏱', type: 'auto', rate: 0.5, base: 50, mult: 1.15, desc: 'paints 0.5 pixels/s' },
+      { id: 'thread', name: 'Worker thread', icon: '🧵', type: 'auto', rate: 3, base: 500, mult: 1.15, desc: 'paints 3 pixels/s' },
+      { id: 'factory', name: 'Pixel factory', icon: '🏭', type: 'auto', rate: 20, base: 5000, mult: 1.15, desc: 'paints 20 pixels/s' },
+      { id: 'forge', name: 'Machine forge', icon: '⚙', type: 'auto', rate: 120, base: 60000, mult: 1.15, desc: 'builds machines: 120 pixels/s' },
+    ],
     intro: [
       { speaker: 'SYS', text: 'You found the Foundry. Compute bits, automate, grow your throughput.' },
       { speaker: 'SYS', text: 'But the pipeline ahead is blocked. Something locked it. Reach 100 bits and confront it.' },

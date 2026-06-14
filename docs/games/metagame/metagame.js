@@ -7,14 +7,6 @@ import { STAGES, stageByNumber } from './stages.js';
 
 const SAVE_KEY = 'fv:games:metagame';
 
-const UPGRADES = [
-  { id: 'cron', name: 'Cron job', base: 15, rate: 0.2, blurb: 'runs a tiny task on a schedule' },
-  { id: 'thread', name: 'Worker thread', base: 110, rate: 1, blurb: 'computes in the background' },
-  { id: 'container', name: 'Container', base: 1300, rate: 8, blurb: 'a packaged, reproducible worker' },
-  { id: 'rack', name: 'Server rack', base: 14000, rate: 47, blurb: 'a wall of compute' },
-  { id: 'datacenter', name: 'Data center', base: 200000, rate: 260, blurb: 'industrial-scale bits' },
-];
-
 function fmt(n) {
   if (n < 1000) return (Math.floor(n * 10) / 10).toString().replace(/\.0$/, '');
   const units = ['K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx'];
@@ -26,23 +18,61 @@ const load = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || 
 const save = (st) => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(st)); } catch { /* private mode */ } };
 const snakeHigh = () => { try { return Number(localStorage.getItem('fv:games:hi:snake') || 0); } catch { return 0; } };
 
+// Pixel canvas: bits become green pixels filling from the bottom (the canvas IS the progress bar);
+// owned machines are drawn as little sprites along the top. Buying spends bits → fewer raw pixels.
+const COLS = 48, ROWS = 16, CELL = 5, CAP = COLS * ROWS;
+function drawCanvas(canvas, bits, owned, tiers, color) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Raw bit-pixels fill bottom-up.
+  const n = Math.min(Math.floor(bits), CAP);
+  ctx.fillStyle = color || '#3fb950';
+  for (let i = 0; i < n; i++) {
+    const col = i % COLS, row = ROWS - 1 - Math.floor(i / COLS);
+    if (row < 0) break;
+    ctx.fillRect(col * CELL + 1, row * CELL + 1, CELL - 1, CELL - 1);
+  }
+  // Owned machines: a small 2×2 block per machine type along the top, dimmed.
+  let x = 1;
+  for (const t of tiers) {
+    const c = owned[t.id] || 0;
+    if (!c) continue;
+    ctx.fillStyle = t.type === 'click' ? '#e3b341' : '#4c9aff';
+    const blocks = Math.min(c, 6);
+    for (let b = 0; b < blocks; b++) { ctx.fillRect(x, 1, CELL - 1, CELL - 1); ctx.fillRect(x, CELL + 1, CELL - 1, CELL - 1); x += CELL; }
+    x += CELL;
+  }
+}
+
 export function mount(host, { onExit } = {}) {
   const s = load();
   const state = {
     bits: s.bits || 0,
-    clickPower: s.clickPower || 1,
-    owned: Object.assign({}, ...UPGRADES.map((u) => ({ [u.id]: 0 })), s.owned || {}),
+    owned: s.owned || {},
     snakeClaimed: !!s.snakeClaimed,
     stage: s.stage || 1,
     defeated: Array.isArray(s.defeated) ? s.defeated : [],
     introSeen: !!s.introSeen,
+    buyMult: s.buyMult || 1,            // 1 | 10 | 100 | 'max'
   };
   let timer = null, bossCtl = null, dlgCtl = null;
 
   const stage = () => stageByNumber(Math.min(state.stage, STAGES.length));
+  const tiers = () => stage().tiers || [];
+  const ownedOf = (id) => state.owned[id] || 0;
   const stageBeaten = () => state.defeated.includes(stage()?.n);
-  const cost = (u) => Math.ceil(u.base * Math.pow(1.15, state.owned[u.id]));
-  const totalRate = () => UPGRADES.reduce((sum, u) => sum + u.rate * state.owned[u.id], 0);
+  const costOf = (t, count) => Math.ceil(t.base * Math.pow(t.mult, count));
+  const clickPower = () => 1 + tiers().filter((t) => t.type === 'click').reduce((a, t) => a + ownedOf(t.id) * (t.amount || 1), 0);
+  const totalRate = () => tiers().filter((t) => t.type === 'auto').reduce((sum, t) => sum + (t.rate || 0) * ownedOf(t.id), 0);
+  // Buy up to the active multiplier (or as many as affordable for 'max').
+  function buyTier(id) {
+    const t = tiers().find((x) => x.id === id); if (!t) return;
+    const limit = state.buyMult === 'max' ? Infinity : state.buyMult;
+    let bought = 0;
+    while (bought < limit) { const c = costOf(t, ownedOf(id) + bought); if (state.bits < c) break; state.bits -= c; bought++; }
+    if (bought) { state.owned[id] = ownedOf(id) + bought; save(state); }
+    return bought;
+  }
 
   function clearTransient() {
     if (timer) { clearInterval(timer); timer = null; }
@@ -60,53 +90,63 @@ export function mount(host, { onExit } = {}) {
     });
   }
 
-  /* ── Phase: grind (Bit Foundry) ── */
+  /* ── Phase: grind (the visual pixel economy) ── */
   function renderGrind() {
     clearTransient();
     const st = stage();
+    const color = (st.resource && st.resource.color) || '#3fb950';
+    const resName = (st.resource && st.resource.name) || 'bits';
     host.innerHTML =
       '<div class="mg-wrap">'
       + '<div class="mg-stage-banner">Stage ' + st.n + ' · <strong>' + st.title + '</strong></div>'
+      + '<canvas class="mg-canvas" width="' + (COLS * CELL + 2) + '" height="' + (ROWS * CELL + 2) + '"></canvas>'
       + '<div class="mg-head"><div class="mg-bits"></div><div class="mg-rate"></div></div>'
       + '<div class="mg-progress"><div class="mg-progress-bar"></div></div>'
       + '<button class="mg-compute" type="button">⚙ Compute<span class="mg-click"></span></button>'
+      + '<div class="mg-mult" hidden>Buy: ' + [1, 10, 100, 'max'].map((m) => '<button class="mg-mult-b" data-m="' + m + '">×' + m + '</button>').join('') + '</div>'
       + '<button class="mg-faceboss" type="button" hidden>⚔ Confront ' + st.bossName + '</button>'
       + '<div class="mg-snake" hidden></div>'
       + '<div class="mg-shop"></div>'
       + '<button class="mg-back" type="button">‹ Back to arcade</button>'
       + '</div>';
     const $ = (s2) => host.querySelector(s2);
+    const canvas = $('.mg-canvas');
     const shopEl = $('.mg-shop');
-    shopEl.innerHTML = UPGRADES.map((u) =>
-      '<button class="mg-buy" data-id="' + u.id + '"><span class="mg-buy-name">' + u.name
-      + ' <span class="mg-owned">×' + state.owned[u.id] + '</span></span>'
-      + '<span class="mg-buy-blurb">' + u.blurb + ' · +' + u.rate + '/s</span>'
+    shopEl.innerHTML = tiers().map((t) =>
+      '<button class="mg-buy" data-id="' + t.id + '"><span class="mg-buy-name">' + t.icon + ' ' + t.name
+      + ' <span class="mg-owned">×' + ownedOf(t.id) + '</span></span>'
+      + '<span class="mg-buy-blurb">' + t.desc + '</span>'
       + '<span class="mg-buy-cost"></span></button>').join('');
-    shopEl.querySelectorAll('.mg-buy').forEach((b) => b.addEventListener('click', () => {
-      const u = UPGRADES.find((x) => x.id === b.dataset.id); const c = cost(u);
-      if (state.bits < c) return; state.bits -= c; state.owned[u.id]++; save(state); paint();
-    }));
-    $('.mg-compute').addEventListener('click', () => { state.bits += state.clickPower; paint(); });
+    shopEl.querySelectorAll('.mg-buy').forEach((b) => b.addEventListener('click', () => { if (buyTier(b.dataset.id)) paint(); }));
+    $('.mg-compute').addEventListener('click', () => { state.bits += clickPower(); paint(); });
     $('.mg-faceboss').addEventListener('click', () => startBoss());
     $('.mg-back').addEventListener('click', () => onExit && onExit());
+    $('.mg-mult').querySelectorAll('.mg-mult-b').forEach((b) => b.addEventListener('click', () => {
+      state.buyMult = b.dataset.m === 'max' ? 'max' : Number(b.dataset.m); save(state); paint();
+    }));
 
     function paint() {
-      $('.mg-bits').textContent = fmt(state.bits) + ' bits';
+      $('.mg-bits').textContent = fmt(state.bits) + ' ' + resName;
       $('.mg-rate').textContent = fmt(totalRate()) + '/s';
-      $('.mg-click').textContent = ' +' + fmt(state.clickPower);
+      $('.mg-click').textContent = ' +' + fmt(clickPower());
+      drawCanvas(canvas, state.bits, state.owned, tiers(), color);
+      canvas.dataset.pixels = String(Math.min(Math.floor(state.bits), CAP));
       const goal = st.goal, beaten = stageBeaten();
       $('.mg-progress-bar').style.width = Math.min(100, (state.bits / goal) * 100) + '%';
       $('.mg-faceboss').hidden = beaten || state.bits < goal;
+      // Buy-multiplier overlay appears once numbers get big.
+      $('.mg-mult').hidden = state.bits < 1000;
+      for (const b of $('.mg-mult').querySelectorAll('.mg-mult-b')) b.classList.toggle('mg-mult-on', String(state.buyMult) === b.dataset.m);
       for (const b of shopEl.querySelectorAll('.mg-buy')) {
-        const u = UPGRADES.find((x) => x.id === b.dataset.id); const c = cost(u);
+        const t = tiers().find((x) => x.id === b.dataset.id); const c = costOf(t, ownedOf(t.id));
         b.querySelector('.mg-buy-cost').textContent = fmt(c);
-        b.querySelector('.mg-owned').textContent = '×' + state.owned[u.id];
+        b.querySelector('.mg-owned').textContent = '×' + ownedOf(t.id);
         b.classList.toggle('mg-afford', state.bits >= c);
       }
       const hi = snakeHigh(), snakeEl = $('.mg-snake');
       if (hi > 0 && !state.snakeClaimed) {
         snakeEl.hidden = false;
-        snakeEl.innerHTML = '<button class="mg-claim" type="button">Import Snake high score (' + hi + ') → +' + fmt(hi * 25) + ' bits</button>';
+        snakeEl.innerHTML = '<button class="mg-claim" type="button">Import Snake high score (' + hi + ') → +' + fmt(hi * 25) + ' ' + resName + '</button>';
         snakeEl.querySelector('.mg-claim').onclick = () => { state.bits += hi * 25; state.snakeClaimed = true; save(state); paint(); };
       } else snakeEl.hidden = true;
     }

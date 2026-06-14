@@ -1746,7 +1746,7 @@ try {
   // ── Meta-game: staged campaign (intro → Bit Foundry grind → boss → victory) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => {
-    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 1000, stage: 1 })); } catch {}
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 5000, stage: 1 })); } catch {}
     window.__fv.games.unlock();
     window.__fv.games.open();
   });
@@ -1757,14 +1757,20 @@ try {
   pass('meta-game: stage intro dialog shown');
   const clickThroughDialog = async () => { for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); } };
   await clickThroughDialog();
-  // Grind (Bit Foundry) reached; buying automation raises the rate.
-  await page.waitForSelector('.mg-bits', { timeout: 8000 });
-  const mgBits = await page.$eval('.mg-bits', (e) => e.textContent);
-  if (/bits/.test(mgBits)) pass('meta-game: grind reached (' + mgBits + ')'); else fail('mg bits: ' + mgBits);
+  // Grind: the pixel canvas reflects bits (the canvas IS the progress indicator).
+  await page.waitForSelector('.mg-canvas', { timeout: 8000 });
+  const mgPixels = await page.$eval('.mg-canvas', (e) => Number(e.dataset.pixels));
+  if (mgPixels > 0) pass('meta-game: bits drawn as pixels on the canvas (' + mgPixels + ' px)'); else fail('mg pixels: ' + mgPixels);
+  // Buy-multiplier overlay appears at big numbers; select ×10.
+  await page.waitForSelector('.mg-mult:not([hidden])', { timeout: 4000 });
+  await page.click('.mg-mult-b[data-m="10"]');
+  if (await page.$eval('.mg-mult-b[data-m="10"]', (e) => e.classList.contains('mg-mult-on'))) pass('meta-game: buy-multiplier overlay (×10 selected)'); else fail('mult not selected');
+  // Buying a data-driven tier with ×10 spends pixels + raises the rate.
   await page.click('.mg-shop .mg-buy[data-id="cron"]');
+  const mgOwned = await page.$eval('.mg-buy[data-id="cron"] .mg-owned', (e) => e.textContent);
   const mgRate = await page.$eval('.mg-rate', (e) => e.textContent);
-  if (/0\.2\/s/.test(mgRate)) pass('meta-game: automation raises the bit rate (' + mgRate + ')'); else fail('mg rate: ' + mgRate);
-  // Bits (1000) exceed the stage goal (100) → Confront button → boss.
+  if (!/^×0$/.test(mgOwned) && !/^0\/s$/.test(mgRate)) pass('meta-game: tier bought ' + mgOwned + ', rate ' + mgRate); else fail('mg buy: owned=' + mgOwned + ' rate=' + mgRate);
+  // Bits still exceed the stage goal (100) → Confront button → boss.
   await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 4000 });
   await page.click('.mg-faceboss');
   await clickThroughDialog();                          // boss taunt → Fight

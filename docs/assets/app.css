@@ -717,6 +717,14 @@ body {
 .mg-buy-cost { grid-column: 2; grid-row: 1 / span 2; font: 700 15px ui-monospace, monospace; color: var(--accent); }
 .mg-back { align-self: flex-start; background: var(--bg-2); color: var(--fg); border: 1px solid var(--border);
   border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+/* Pixel canvas: bits as pixels (the canvas is the progress indicator). */
+.mg-canvas { display: block; width: min(340px, 86vw); height: auto; image-rendering: pixelated;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--bg-3); align-self: center; }
+/* Buy-multiplier overlay (appears once numbers get big). */
+.mg-mult { display: flex; gap: 6px; align-items: center; justify-content: center; font-size: 12px; color: var(--fg-2); }
+.mg-mult[hidden] { display: none; }
+.mg-mult-b { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg); border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 12px; }
+.mg-mult-b.mg-mult-on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
 /* Stage progression */
 .mg-stage-banner { text-align: center; font-size: 13px; color: var(--fg-2); }
 .mg-stage-banner strong { color: var(--fg); }
