@@ -98,6 +98,13 @@ export function persistGlobalKey(key, value) {
   localStorage.setItem(GLOBAL_KEY, JSON.stringify({ version: SETTINGS_VERSION, values: cur }));
 }
 
+// Read a single global pref straight from storage (no model needed). Returns `fallback`
+// if unset. Used at startup to apply prefs like "reduce motion" before any model loads.
+export function readGlobalKey(key, fallback) {
+  const cur = readSaved(GLOBAL_KEY);
+  return cur && key in cur ? cur[key] : fallback;
+}
+
 // Recompute which preset (if any) the current values match. Call after mutating values
 // outside the settings UI (e.g. dragging the split divider changes previewMaxWidth).
 export function syncModelPreset(model) {

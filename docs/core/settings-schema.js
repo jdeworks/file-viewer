@@ -6,16 +6,17 @@
 //
 // Categories (render order). Preview groups come first (reading-first); monaco-* apply to
 // the raw editor, viewer-* to the preview, always = general app preferences.
-export const CATEGORY_ORDER = ['viewer-common', 'viewer-extended', 'monaco-common', 'monaco-extended', 'always'];
+export const CATEGORY_ORDER = ['viewer-common', 'viewer-extended', 'monaco-common', 'monaco-extended', 'always', 'advanced'];
 export const CATEGORY_LABEL = {
   always: 'General',
   'monaco-common': 'Editor',
   'monaco-extended': 'Editor — advanced',
   'viewer-common': 'Preview',
   'viewer-extended': 'Preview — advanced',
+  advanced: 'Advanced',
 };
 // Which categories collapse by default (extended = expert, start collapsed).
-export const CATEGORY_OPEN = { always: true, 'monaco-common': true, 'monaco-extended': false, 'viewer-common': true, 'viewer-extended': false };
+export const CATEGORY_OPEN = { always: true, 'monaco-common': true, 'monaco-extended': false, 'viewer-common': true, 'viewer-extended': false, advanced: false };
 
 // Descriptor: { key, label, category, type:'bool'|'number'|'select', default, options?, min?, max?, hint? }
 
@@ -25,6 +26,8 @@ export const GENERAL_DESCRIPTORS = [
     hint: 'The type dropdown normally lists only formats that matched this file (≥1%). Turn on to always list every supported type so you can force any viewer.' },
   { key: 'treeArrowKeys', label: 'Arrow-key file navigation', category: 'always', type: 'bool', default: true,
     hint: 'When the folder sidebar has focus, ↑/↓ move between files and open them. Click a file first to focus the tree.' },
+  { key: 'reduceMotion', label: 'Reduce motion', category: 'advanced', type: 'bool', default: false,
+    hint: 'Disable UI and game animations (transitions, pulses, arcade effects). Helps on low-power devices or if motion is distracting.' },
 ];
 
 // Shown for any type with capability.rawView. Apply to the Monaco raw editor.

@@ -20,7 +20,7 @@ import { registerCodeMetrics } from '../types/code/codelens.js';
 import { getExports, hasExports, downloadBlob } from './exports.js';
 import { exportFolderZip } from './folder-export.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
-import { getModel, preloadModels, monacoOptions, renderSettings, persistGlobalKey, syncModelPreset } from './settings.js';
+import { getModel, preloadModels, monacoOptions, renderSettings, persistGlobalKey, readGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
 import { initGames } from '../games/launcher.js';
 
@@ -908,6 +908,11 @@ function onSettingsChange(model, changedKey) {
     persistGlobalKey('showAllTypes', model.values.showAllTypes);
     if (state.intake && state.type) populateTypeSelect(pickType(state.intake).ranking, state.type.id);
   }
+  // "Reduce motion" is a global pref that toggles a root class disabling all CSS animation.
+  if (changedKey === 'reduceMotion') {
+    persistGlobalKey('reduceMotion', model.values.reduceMotion);
+    applyReduceMotion(model.values.reduceMotion);
+  }
   if (!state.type?.capabilities.preview) return;
   if (changedKey === 'previewMaxWidth') applyLayout();   // resize the split pane too
   const cat = model.descriptors.find((d) => d.key === changedKey)?.category;
@@ -950,6 +955,10 @@ function applyTheme(dark) {
   localStorage.setItem('fv:theme', dark ? 'dark' : 'light');
   state.rawview?.setTheme(dark ? 'dark' : 'light');
   if (state.preview && state.type?.capabilities.preview) renderPreview();
+}
+// Toggle the root `reduce-motion` class — CSS kills all transitions/animations under it.
+function applyReduceMotion(on) {
+  document.documentElement.classList.toggle('reduce-motion', !!on);
 }
 
 /* ─────────────────────────── Drawers ─────────────────────────── */
@@ -1025,6 +1034,7 @@ function init() {
   // Theme: saved or system.
   const saved = localStorage.getItem('fv:theme');
   applyTheme(saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
+  applyReduceMotion(readGlobalKey('reduceMotion', false));
 
   wireIntake({
     dropZone: $('dropZone'), fileInput: $('fileInput'), folderInput: $('folderInput'),

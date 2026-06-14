@@ -796,3 +796,13 @@ body {
 .mg-hex-cell { font: 13px ui-monospace, monospace; padding: 6px 0; border: 1px solid var(--border);
   border-radius: 4px; background: var(--bg); color: var(--fg); cursor: pointer; }
 .mg-hex-cell:hover { border-color: var(--accent); }
+
+/* Reduce motion (Advanced setting): kill every transition + animation app-wide. */
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  scroll-behavior: auto !important;
+}

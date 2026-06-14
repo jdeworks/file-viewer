@@ -260,6 +260,19 @@ try {
   if (optsAll > optsDefault && optsAll >= 11) pass('"show all types" reveals every type (' + optsDefault + ' -> ' + optsAll + ')'); else fail('show-all options: ' + optsAll);
   await page.click('label[for="set-showAllTypes"]');   // restore default for later checks
 
+  // Advanced settings group exists and the "Reduce motion" toggle flips the root class.
+  if (groups.includes('Advanced')) pass('settings expose an Advanced group'); else fail('no Advanced group: ' + groups.join(', '));
+  await page.evaluate(() => { const d = [...document.querySelectorAll('#settingsBody .set-group > summary')].find((s) => s.textContent === 'Advanced'); if (d) d.parentElement.open = true; });
+  await page.waitForSelector('#set-reduceMotion', { timeout: 3000 });
+  await page.click('label[for="set-reduceMotion"]');
+  await page.waitForTimeout(120);
+  const rmOn = await page.evaluate(() => document.documentElement.classList.contains('reduce-motion') && document.getElementById('set-reduceMotion').checked);
+  if (rmOn) pass('reduce-motion toggle sets the root class'); else fail('reduce-motion did not apply');
+  await page.click('label[for="set-reduceMotion"]');   // restore
+  await page.waitForTimeout(80);
+  const rmOff = await page.evaluate(() => !document.documentElement.classList.contains('reduce-motion'));
+  if (rmOff) pass('reduce-motion toggle clears the root class'); else fail('reduce-motion did not clear');
+
   await page.click('#settingsDrawer [data-close]');
 
   // ── Diff (WP13/WP14) ──
