@@ -7,7 +7,7 @@ import { STAGES, stageByNumber } from './stages.js';
 import { renderStage1, mountBell, bellLoad, bellAdd, updateBellDot, checkMessages, removeStageMsgs } from './stage1.js';
 import { MESSAGES1 } from './messages1.js';
 import { loadState, saveState } from './s1state.js';
-import { gte, fromNumber, toNumber } from './bignum.js';
+import { gte, fromNumber } from './bignum.js';
 
 // SAVE_KEY is the same as s1state.SAVE_KEY ('fv:games:metagame'); imported indirectly via loadState/saveState.
 const SAVE_KEY = 'fv:games:metagame';
@@ -114,19 +114,12 @@ function showCompletion(host, { onNewGame, onExit } = {}) {
 }
 
 export function mount(host, { onExit } = {}) {
-  // Stage 1 uses BigNum save (base64); stages 2-10 use plain JSON.
+  // Stage 1 uses BigNum save (base64, s1state); stages 2-10 use plain JSON.
   // Peek at the raw save to decide which loader to use.
   let state;
   const rawSave = localStorage.getItem(SAVE_KEY);
-  // toNumState: convert BigNum bits/totalBits to plain numbers for stage1.js compat (WP-S1-10
-  // migrates stage1.js to BigNum arithmetic; until then, runtime state must use plain numbers).
-  const toNumState = (s) => {
-    if (s.bits && typeof s.bits === 'object') s.bits = toNumber(s.bits);
-    if (s.totalBits && typeof s.totalBits === 'object') s.totalBits = toNumber(s.totalBits);
-    return s;
-  };
   if (!rawSave) {
-    state = toNumState(loadState());   // s1state default → convert BigNum→number
+    state = loadState();   // s1state default (BigNum bits — stage1.js uses BigNum arithmetic)
   } else {
     let stageNum = 1;
     try {
@@ -135,7 +128,7 @@ export function mount(host, { onExit } = {}) {
       stageNum = peek.stage || 1;
     } catch { stageNum = 1; }  // base64 (Stage 1) — s1state.loadState handles it
     if (stageNum === 1) {
-      state = toNumState(loadState());   // s1state: base64 + BigNum migration → convert BigNum→number
+      state = loadState();   // s1state: base64 + BigNum migration; stage1.js uses BigNum arithmetic
     } else {
       // Stages 2-10: plain JSON with legacy field normalisation.
       const s = JSON.parse(rawSave);
@@ -196,13 +189,11 @@ export function mount(host, { onExit } = {}) {
   }
   function renderS1() {
     clearTransient();
-    // canFightBoss for Stage 1: all sub-stages owned ≥1 AND bits ≥ bossTicket (§10.2).
-    // state.bits is a plain number (stage1.js compat); bossTicket is BigNum → convert via toNumber.
+    // canFightBoss for Stage 1: all non-cursor sub-stages owned ≥1 AND bits ≥ bossTicket (§10.2).
     const st1 = stage();
     const bossTicket = st1.bossTicket;
-    const bossTicketNum = bossTicket ? toNumber(bossTicket) : Infinity;
     const allOwned = (st1.tiers || []).filter(t => t.id !== 's1-cursor').every(t => (state.owned[t.id] || 0) >= 1);
-    const canFightBoss = allOwned && bossTicket && state.bits >= bossTicketNum;
+    const canFightBoss = allOwned && bossTicket && gte(state.bits, bossTicket);
     renderStage1({
       host, state, save, stage,
       clickPower, buyTier,
