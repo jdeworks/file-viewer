@@ -148,7 +148,7 @@ body {
   padding-right: max(20px, env(safe-area-inset-right, 20px)); }
 .dz-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .dropzone {
-  width: min(640px, 92vw); text-align: center; padding: 40px 24px;
+  width: min(640px, 100%); text-align: center; padding: 40px 24px;
   border: 2px dashed var(--border); border-radius: 16px; background: var(--bg-2);
   transition: border-color .15s, background .15s;
 }
