@@ -28,6 +28,8 @@ export const GENERAL_DESCRIPTORS = [
     hint: 'When the folder sidebar has focus, ↑/↓ move between files and open them. Click a file first to focus the tree.' },
   { key: 'reduceMotion', label: 'Reduce motion', category: 'advanced', type: 'bool', default: false,
     hint: 'Disable UI and game animations (transitions, pulses, arcade effects). Helps on low-power devices or if motion is distracting.' },
+  { key: 'enableFfmpeg', label: 'Media transcoding (ffmpeg.wasm — ~23 MB download on first use)', category: 'advanced', type: 'bool', default: false,
+    hint: 'Convert audio/video formats your browser cannot play natively (AVI, WMV, FLV, TS, …) using ffmpeg.wasm. Downloads ~23 MB the first time; cached for subsequent uses. Transcoding runs entirely in-browser — no upload, no server.' },
 ];
 
 // Shown for any type with capability.rawView. Apply to the Monaco raw editor.

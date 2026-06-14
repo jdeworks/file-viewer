@@ -1,62 +1,368 @@
 [
-  { "label": "Welcome.md", "file": "welcome.md", "mime": "text/markdown", "category": "Documents" },
-  { "label": "Sample.pdf", "file": "sample.pdf", "mime": "application/pdf", "category": "Documents" },
-  { "label": "Sample (3 pages).pdf", "file": "sample-pages.pdf", "mime": "application/pdf", "category": "Documents" },
-  { "label": "Sample.txt", "file": "sample.txt", "mime": "text/plain", "category": "Documents" },
-  { "label": "Sample.epub", "file": "sample.epub", "mime": "application/epub+zip", "category": "Documents" },
-  { "label": "Sample.fb2", "file": "sample.fb2", "mime": "application/x-fictionbook+xml", "category": "Documents" },
-  { "label": "Sample.mobi", "file": "sample.mobi", "mime": "application/x-mobipocket-ebook", "category": "Documents" },
-  { "label": "Sample.lrf", "file": "sample.lrf", "mime": "application/x-sony-bbeb", "category": "Documents" },
-  { "label": "Sample.csv", "file": "sample.csv", "mime": "text/csv", "category": "Data" },
-  { "label": "Sample.sqlite", "file": "sample.sqlite", "mime": "application/vnd.sqlite3", "category": "Data" },
-  { "label": "Sample.json", "file": "sample.json", "mime": "application/json", "category": "Data" },
-  { "label": "Sample.eml", "file": "sample.eml", "mime": "message/rfc822", "category": "Data" },
-  { "label": "Sample.mbox", "file": "sample.mbox", "mime": "application/mbox", "category": "Data" },
-  { "label": "Sample.ics", "file": "sample.ics", "mime": "text/calendar", "category": "Data" },
-  { "label": "Sample.vcf", "file": "sample.vcf", "mime": "text/vcard", "category": "Data" },
-  { "label": "Sample.xlsx", "file": "sample.xlsx", "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "category": "Office" },
-  { "label": "Sample.docx", "file": "sample.docx", "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "category": "Office" },
-  { "label": "Sample.odt", "file": "sample.odt", "mime": "application/vnd.oasis.opendocument.text", "category": "Office" },
-  { "label": "Sample.pptx", "file": "sample.pptx", "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation", "category": "Office" },
-  { "label": "Sample.yaml", "file": "sample.yaml", "mime": "application/yaml", "category": "Config" },
-  { "label": "Sample.toml", "file": "sample.toml", "mime": "application/toml", "category": "Config" },
-  { "label": "package.json", "file": "package.json", "mime": "application/json", "category": "Config" },
-  { "label": "tsconfig.json", "file": "tsconfig.json", "mime": "application/json", "category": "Config" },
-  { "label": "Cargo.toml", "file": "Cargo.toml", "mime": "application/toml", "category": "Config" },
-  { "label": "Dockerfile", "file": "Dockerfile", "mime": "text/plain", "category": "Config" },
-  { "label": "docker-compose.yml", "file": "docker-compose.yml", "mime": "application/yaml", "category": "Config" },
-  { "label": ".gitignore", "file": ".gitignore", "mime": "text/plain", "category": "Config" },
-  { "label": "requirements.txt", "file": "requirements.txt", "mime": "text/plain", "category": "Config" },
-  { "label": "go.mod", "file": "go.mod", "mime": "text/plain", "category": "Config" },
-  { "label": "composer.json", "file": "composer.json", "mime": "application/json", "category": "Config" },
-  { "label": "Gemfile", "file": "Gemfile", "mime": "text/plain", "category": "Config" },
-  { "label": "build.gradle", "file": "build.gradle", "mime": "text/plain", "category": "Config" },
-  { "label": "Pipfile", "file": "Pipfile", "mime": "text/plain", "category": "Config" },
-  { "label": "openapi.yaml", "file": "openapi.yaml", "mime": "application/yaml", "category": "Config" },
-  { "label": "CODEOWNERS", "file": "CODEOWNERS", "mime": "text/plain", "category": "Config" },
-  { "label": ".editorconfig", "file": ".editorconfig", "mime": "text/plain", "category": "Config" },
-  { "label": "pom.xml", "file": "pom.xml", "mime": "application/xml", "category": "Config" },
-  { "label": "Sample.xml", "file": "sample.xml", "mime": "application/xml", "category": "Config" },
-  { "label": "sample.env", "file": "sample.env", "mime": "text/plain", "category": "Config" },
-  { "label": "Sample.ini", "file": "sample.ini", "mime": "text/plain", "category": "Config" },
-  { "label": "Sample.patch", "file": "sample.patch", "mime": "text/x-diff", "category": "Code" },
-  { "label": "Sample.log", "file": "sample.log", "mime": "text/plain", "category": "Code" },
-  { "label": "Sample.srt", "file": "sample.srt", "mime": "application/x-subrip", "category": "Media" },
-  { "label": "example.js", "file": "example.js", "mime": "text/javascript", "category": "Code" },
-  { "label": "Sample.html", "file": "sample.html", "mime": "text/html", "category": "Code" },
-  { "label": "Sample.ipynb", "file": "sample.ipynb", "mime": "application/x-ipynb+json", "category": "Code" },
-  { "label": "Sample.geojson", "file": "sample.geojson", "mime": "application/geo+json", "category": "Data" },
-  { "label": "Sample.png", "file": "sample.png", "mime": "image/png", "category": "Media" },
-  { "label": "Sample.stl", "file": "sample.stl", "mime": "model/stl", "category": "Media" },
-  { "label": "Sample.obj", "file": "sample.obj", "mime": "model/obj", "category": "Media" },
-  { "label": "Sample.glb", "file": "sample.glb", "mime": "model/gltf-binary", "category": "Media" },
-  { "label": "Sample.ply", "file": "sample.ply", "mime": "model/ply", "category": "Media" },
-  { "label": "example.svg", "file": "example.svg", "mime": "image/svg+xml", "category": "Media" },
-  { "label": "Sample.wav", "file": "sample.wav", "mime": "audio/wav", "category": "Media" },
-  { "label": "Sample.mp3", "file": "sample.mp3", "mime": "audio/mpeg", "category": "Media" },
-  { "label": "Sample.ttf", "file": "sample.ttf", "mime": "font/ttf", "category": "Media" },
-  { "label": "Sample.bin", "file": "sample.bin", "mime": "application/octet-stream", "category": "Archive & Binary" },
-  { "label": "Sample.zip", "file": "sample.zip", "mime": "application/zip", "category": "Archive & Binary" },
-  { "label": "Locked.zip", "file": "sample-locked.zip", "mime": "application/zip", "category": "Archive & Binary" },
-  { "label": "Sample.cbz", "file": "sample.cbz", "mime": "application/vnd.comicbook+zip", "category": "Archive & Binary" }
+  {
+    "label": "Welcome.md",
+    "file": "welcome.md",
+    "mime": "text/markdown",
+    "category": "Documents"
+  },
+  {
+    "label": "Sample.pdf",
+    "file": "sample.pdf",
+    "mime": "application/pdf",
+    "category": "Documents"
+  },
+  {
+    "label": "Sample (3 pages).pdf",
+    "file": "sample-pages.pdf",
+    "mime": "application/pdf",
+    "category": "Documents"
+  },
+  {
+    "label": "Sample.txt",
+    "file": "sample.txt",
+    "mime": "text/plain",
+    "category": "Documents"
+  },
+  {
+    "label": "Sample.epub",
+    "file": "sample.epub",
+    "mime": "application/epub+zip",
+    "category": "Documents"
+  },
+  {
+    "label": "Sample.fb2",
+    "file": "sample.fb2",
+    "mime": "application/x-fictionbook+xml",
+    "category": "Documents"
+  },
+  {
+    "label": "Sample.mobi",
+    "file": "sample.mobi",
+    "mime": "application/x-mobipocket-ebook",
+    "category": "Documents"
+  },
+  {
+    "label": "Sample.lrf",
+    "file": "sample.lrf",
+    "mime": "application/x-sony-bbeb",
+    "category": "Documents"
+  },
+  {
+    "label": "Sample.csv",
+    "file": "sample.csv",
+    "mime": "text/csv",
+    "category": "Data"
+  },
+  {
+    "label": "Sample.sqlite",
+    "file": "sample.sqlite",
+    "mime": "application/vnd.sqlite3",
+    "category": "Data"
+  },
+  {
+    "label": "Sample.json",
+    "file": "sample.json",
+    "mime": "application/json",
+    "category": "Data"
+  },
+  {
+    "label": "Sample.eml",
+    "file": "sample.eml",
+    "mime": "message/rfc822",
+    "category": "Data"
+  },
+  {
+    "label": "Sample.mbox",
+    "file": "sample.mbox",
+    "mime": "application/mbox",
+    "category": "Data"
+  },
+  {
+    "label": "Sample.ics",
+    "file": "sample.ics",
+    "mime": "text/calendar",
+    "category": "Data"
+  },
+  {
+    "label": "Sample.vcf",
+    "file": "sample.vcf",
+    "mime": "text/vcard",
+    "category": "Data"
+  },
+  {
+    "label": "Sample.xlsx",
+    "file": "sample.xlsx",
+    "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "category": "Office"
+  },
+  {
+    "label": "Sample.docx",
+    "file": "sample.docx",
+    "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "category": "Office"
+  },
+  {
+    "label": "Sample.odt",
+    "file": "sample.odt",
+    "mime": "application/vnd.oasis.opendocument.text",
+    "category": "Office"
+  },
+  {
+    "label": "Sample.pptx",
+    "file": "sample.pptx",
+    "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "category": "Office"
+  },
+  {
+    "label": "Sample.yaml",
+    "file": "sample.yaml",
+    "mime": "application/yaml",
+    "category": "Config"
+  },
+  {
+    "label": "Sample.toml",
+    "file": "sample.toml",
+    "mime": "application/toml",
+    "category": "Config"
+  },
+  {
+    "label": "package.json",
+    "file": "package.json",
+    "mime": "application/json",
+    "category": "Config"
+  },
+  {
+    "label": "tsconfig.json",
+    "file": "tsconfig.json",
+    "mime": "application/json",
+    "category": "Config"
+  },
+  {
+    "label": "Cargo.toml",
+    "file": "Cargo.toml",
+    "mime": "application/toml",
+    "category": "Config"
+  },
+  {
+    "label": "Dockerfile",
+    "file": "Dockerfile",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
+    "label": "docker-compose.yml",
+    "file": "docker-compose.yml",
+    "mime": "application/yaml",
+    "category": "Config"
+  },
+  {
+    "label": ".gitignore",
+    "file": ".gitignore",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
+    "label": "requirements.txt",
+    "file": "requirements.txt",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
+    "label": "go.mod",
+    "file": "go.mod",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
+    "label": "composer.json",
+    "file": "composer.json",
+    "mime": "application/json",
+    "category": "Config"
+  },
+  {
+    "label": "Gemfile",
+    "file": "Gemfile",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
+    "label": "build.gradle",
+    "file": "build.gradle",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
+    "label": "Pipfile",
+    "file": "Pipfile",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
+    "label": "openapi.yaml",
+    "file": "openapi.yaml",
+    "mime": "application/yaml",
+    "category": "Config"
+  },
+  {
+    "label": "CODEOWNERS",
+    "file": "CODEOWNERS",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
+    "label": ".editorconfig",
+    "file": ".editorconfig",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
+    "label": "pom.xml",
+    "file": "pom.xml",
+    "mime": "application/xml",
+    "category": "Config"
+  },
+  {
+    "label": "Sample.xml",
+    "file": "sample.xml",
+    "mime": "application/xml",
+    "category": "Config"
+  },
+  {
+    "label": "sample.env",
+    "file": "sample.env",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
+    "label": "Sample.ini",
+    "file": "sample.ini",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
+    "label": "Sample.patch",
+    "file": "sample.patch",
+    "mime": "text/x-diff",
+    "category": "Code"
+  },
+  {
+    "label": "Sample.log",
+    "file": "sample.log",
+    "mime": "text/plain",
+    "category": "Code"
+  },
+  {
+    "label": "Sample.srt",
+    "file": "sample.srt",
+    "mime": "application/x-subrip",
+    "category": "Media"
+  },
+  {
+    "label": "example.js",
+    "file": "example.js",
+    "mime": "text/javascript",
+    "category": "Code"
+  },
+  {
+    "label": "Sample.html",
+    "file": "sample.html",
+    "mime": "text/html",
+    "category": "Code"
+  },
+  {
+    "label": "Sample.ipynb",
+    "file": "sample.ipynb",
+    "mime": "application/x-ipynb+json",
+    "category": "Code"
+  },
+  {
+    "label": "Sample.geojson",
+    "file": "sample.geojson",
+    "mime": "application/geo+json",
+    "category": "Data"
+  },
+  {
+    "label": "Sample.png",
+    "file": "sample.png",
+    "mime": "image/png",
+    "category": "Media"
+  },
+  {
+    "label": "Sample.stl",
+    "file": "sample.stl",
+    "mime": "model/stl",
+    "category": "Media"
+  },
+  {
+    "label": "Sample.obj",
+    "file": "sample.obj",
+    "mime": "model/obj",
+    "category": "Media"
+  },
+  {
+    "label": "Sample.glb",
+    "file": "sample.glb",
+    "mime": "model/gltf-binary",
+    "category": "Media"
+  },
+  {
+    "label": "Sample.ply",
+    "file": "sample.ply",
+    "mime": "model/ply",
+    "category": "Media"
+  },
+  {
+    "label": "example.svg",
+    "file": "example.svg",
+    "mime": "image/svg+xml",
+    "category": "Media"
+  },
+  {
+    "label": "Sample.wav",
+    "file": "sample.wav",
+    "mime": "audio/wav",
+    "category": "Media"
+  },
+  {
+    "label": "Sample.mp3",
+    "file": "sample.mp3",
+    "mime": "audio/mpeg",
+    "category": "Media"
+  },
+  {
+    "label": "Sample.ttf",
+    "file": "sample.ttf",
+    "mime": "font/ttf",
+    "category": "Media"
+  },
+  {
+    "label": "Sample.avi",
+    "file": "Sample.avi",
+    "mime": "video/x-msvideo",
+    "category": "Media"
+  },
+  {
+    "label": "Sample.bin",
+    "file": "sample.bin",
+    "mime": "application/octet-stream",
+    "category": "Archive & Binary"
+  },
+  {
+    "label": "Sample.zip",
+    "file": "sample.zip",
+    "mime": "application/zip",
+    "category": "Archive & Binary"
+  },
+  {
+    "label": "Locked.zip",
+    "file": "sample-locked.zip",
+    "mime": "application/zip",
+    "category": "Archive & Binary"
+  },
+  {
+    "label": "Sample.cbz",
+    "file": "sample.cbz",
+    "mime": "application/vnd.comicbook+zip",
+    "category": "Archive & Binary"
+  }
 ]

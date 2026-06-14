@@ -56,6 +56,16 @@ cp node_modules/sql.js/dist/sql-wasm.wasm "$VENDOR/sql.js/sql-wasm.wasm"
 mkdir -p "$VENDOR/pdf-lib"
 cp node_modules/pdf-lib/dist/pdf-lib.min.js "$VENDOR/pdf-lib/pdf-lib.min.js"
 
+# --- ffmpeg.wasm (media transcoding, ~23 MB WASM). UMD wrapper + core-st (single-threaded,
+# no SharedArrayBuffer required). Loaded ONLY when Advanced > Enable media transcoding is ON
+# and an unsupported format is opened. Marked heavy so the cache-download modal leaves it
+# unchecked by default — the service worker will not auto-precache it.
+mkdir -p "$VENDOR/ffmpeg"
+cp node_modules/@ffmpeg/ffmpeg/dist/ffmpeg.min.js          "$VENDOR/ffmpeg/ffmpeg.min.js"
+cp node_modules/@ffmpeg/core-st/dist/ffmpeg-core.js        "$VENDOR/ffmpeg/ffmpeg-core.js"
+cp node_modules/@ffmpeg/core-st/dist/ffmpeg-core.wasm      "$VENDOR/ffmpeg/ffmpeg-core.wasm"
+cp node_modules/@ffmpeg/core-st/dist/ffmpeg-core.worker.js "$VENDOR/ffmpeg/ffmpeg-core.worker.js"
+
 # Record pinned versions for provenance.
 node -e "const p=require('./package.json').devDependencies; require('fs').writeFileSync('$VENDOR/VERSIONS.json', JSON.stringify(p,null,2)+'\n')"
 

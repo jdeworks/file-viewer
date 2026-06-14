@@ -189,4 +189,17 @@ export async function run(ctx) {
   if (!mediaIframe) pass('media renders outside the sandboxed iframe'); else fail('media used an iframe');
   const mediaHasEditor = await page.$('#editor .monaco-editor');
   if (!mediaHasEditor) pass('media is preview-only (no raw editor)'); else fail('raw editor present for media');
+
+  // ── ffmpeg.wasm transcoding opt-in ── opening a format that likely needs transcoding (AVI)
+  // with enableFfmpeg OFF shows a hint panel pointing to Advanced settings.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sample.avi' }).click();
+  await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
+  const aviType = await page.$eval('#typeSelect', (s) => s.value);
+  if (aviType === 'media') pass('AVI detected as media type'); else fail('AVI type: ' + aviType);
+  // Hint panel must be visible with the "Settings → Advanced" message (enableFfmpeg is off).
+  const txPanel = await page.$('#previewHost .media-tx-panel');
+  if (txPanel) pass('transcoding panel present for AVI'); else fail('no transcoding panel for AVI');
+  const txText = txPanel ? await page.$eval('#previewHost .media-tx-panel .media-tx-msg', (e) => e.textContent) : '';
+  if (/Advanced/i.test(txText)) pass('transcoding hint points to Advanced settings'); else fail('transcoding msg: ' + txText.slice(0, 80));
 }

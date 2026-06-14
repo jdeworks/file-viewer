@@ -30,8 +30,11 @@ export async function run(ctx) {
   const sized = bundles.every((b) => typeof b.size === 'number' && b.size >= 0);
   const monaco = bundles.find((b) => b.id === 'vendor:monaco');
   const core = bundles.find((b) => b.id === 'core');
+  const ffmpeg = bundles.find((b) => b.id === 'vendor:ffmpeg');
   if (allCovered && sized && monaco && monaco.heavy && core && !core.heavy) pass('asset-manifest grouped into ' + bundles.length + ' sized bundles (Monaco flagged heavy)');
   else fail('manifest bundles: covered=' + allCovered + ' sized=' + sized + ' monacoHeavy=' + (monaco && monaco.heavy) + ' coreLight=' + (core && !core.heavy));
+  if (ffmpeg && ffmpeg.heavy) pass('ffmpeg bundle present and flagged heavy (~23 MB, opt-in)');
+  else fail('ffmpeg bundle missing or not heavy: ' + JSON.stringify(ffmpeg));
 }
 
   await page.goto(origin, { waitUntil: 'networkidle' });

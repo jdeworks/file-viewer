@@ -167,6 +167,20 @@
   border: 1px solid var(--border); background: var(--bg); color: var(--fg); }
 .preview-host .media-track-pos { font-variant-numeric: tabular-nums; }
 .preview-host .media-shuffle { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+/* Transcoding panel — shown for formats that may not play natively (ffmpeg.wasm opt-in). */
+.preview-host .media-tx-panel { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--bg-2); font-size: 13px; color: var(--fg-2); max-width: min(520px, 100%); }
+.preview-host .media-tx-panel[hidden] { display: none; }
+.preview-host .media-tx-icon { font-size: 18px; flex-shrink: 0; }
+.preview-host .media-tx-msg { flex: 1; line-height: 1.4; }
+.preview-host .media-tx-btn { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--accent);
+  background: var(--accent); color: var(--accent-fg); cursor: pointer; font-size: 12px; font-weight: 600;
+  white-space: nowrap; flex-shrink: 0; }
+.preview-host .media-tx-btn:hover { opacity: .85; }
+.preview-host .media-tx-progress { font-size: 12px; color: var(--accent); font-variant-numeric: tabular-nums; }
+@keyframes tx-spin { to { transform: rotate(360deg); } }
+.preview-host .media-tx-spin { display: inline-block; animation: tx-spin 1s linear infinite; }
 
 /* EPUB reader (hand-rolled): sidebar TOC + paged chapter content, rendered in the parent
    pane (blob: images need a real origin). Sanitized before it reaches the DOM. */

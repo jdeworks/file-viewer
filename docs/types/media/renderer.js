@@ -12,6 +12,7 @@ import { mediaInfo, blobUrl } from './medialib.js';
 import { loadState, saveState, clearState } from '../../core/persistence.js';
 import { showIosAudioHint, hideIosAudioHint } from '../../core/ios-audio.js';
 import { parseId3 } from './id3.js';
+import { likelyNeedsTranscode, transcode } from './transcoder.js';
 
 const SLEEP_OPTIONS = [0, 5, 15, 30, 45, 60];   // minutes; 0 = off
 const PLAYABLE = /\.(mp3|wav|m4a|m4b|aac|oga|ogg|opus|flac|weba|mp4|m4v|webm|ogv|mov|mkv)$/i;
@@ -136,8 +137,65 @@ export async function render(intake, ctx = {}) {
     goTo(i);
   }
 
+  // ── Transcoding panel (ffmpeg.wasm opt-in) ──
+  // Show a hint for formats that likely won't play natively. When the toggle is ON, offer
+  // a "Transcode" button that lazy-loads ffmpeg.wasm and converts in-browser.
+  const enableFfmpeg = !!ctx.settings?.enableFfmpeg;
+  const needsConvert = likelyNeedsTranscode(intake);
+  let transcodedUrl = null;  // revoked on cleanup
+  const txPanel = document.createElement('div');
+  txPanel.className = 'media-tx-panel';
+
+  function showTranscodeHint() {
+    txPanel.innerHTML = enableFfmpeg
+      ? '<span class="media-tx-icon">🎬</span>'
+        + '<span class="media-tx-msg">This format may not play natively.</span>'
+        + '<button class="media-tx-btn" type="button">Transcode to '
+        + (info.kind === 'video' ? 'MP4' : 'M4A') + '</button>'
+      : '<span class="media-tx-icon">🎬</span>'
+        + '<span class="media-tx-msg">This format may not play natively. '
+        + 'Enable <strong>Media transcoding</strong> in '
+        + '<em>Settings → Advanced</em> to convert it (~23 MB download on first use).</span>';
+    txPanel.hidden = false;
+    const txBtn = txPanel.querySelector('.media-tx-btn');
+    if (txBtn) txBtn.addEventListener('click', startTranscode);
+  }
+
+  async function startTranscode() {
+    txPanel.innerHTML = '<span class="media-tx-icon media-tx-spin">⟳</span>'
+      + '<span class="media-tx-msg">Loading ffmpeg.wasm…</span>'
+      + '<span class="media-tx-progress" data-progress=""></span>';
+    const progressEl = txPanel.querySelector('.media-tx-progress');
+    try {
+      const url2 = await transcode(intake, info.kind, ({ ratio }) => {
+        if (progressEl) progressEl.textContent = Math.round((ratio || 0) * 100) + '%';
+      });
+      if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
+      transcodedUrl = url2;
+      el.src = url2;
+      el.load();
+      el.play().catch(() => { /* autoplay block */ });
+      txPanel.innerHTML = '<span class="media-tx-icon">✓</span>'
+        + '<span class="media-tx-msg">Transcoded — playing converted version.</span>';
+    } catch (err) {
+      txPanel.innerHTML = '<span class="media-tx-icon">⚠</span>'
+        + '<span class="media-tx-msg">Transcoding failed: ' + err.message + '</span>';
+    }
+  }
+
+  // Show hint up-front if the format is a known non-native one.
+  if (needsConvert) showTranscodeHint();
+  // Also show when native playback errors out (catches formats our list missed).
+  el.addEventListener('error', () => { if (txPanel.hidden !== false) showTranscodeHint(); }, { once: true });
+
   if (info.kind === 'audio') host.append(name, el, tools);
   else host.append(el, name, tools);
+  if (needsConvert || !txPanel.hidden) host.append(txPanel);
+  else {
+    // Panel hidden — still append so the error listener can un-hide it.
+    txPanel.hidden = true;
+    host.append(txPanel);
+  }
   if (trackListEl) host.append(trackListEl);
 
   // ── Resume position ──
@@ -208,7 +266,12 @@ export async function render(intake, ctx = {}) {
   // parentNode = render outside the sandbox; revoke frees the blob + timers when the preview changes.
   return {
     parentNode: host,
-    revoke: () => { cancelSleep(); hideIosAudioHint(); URL.revokeObjectURL(url); },
+    revoke: () => {
+      cancelSleep();
+      hideIosAudioHint();
+      URL.revokeObjectURL(url);
+      if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
+    },
   };
 }
 

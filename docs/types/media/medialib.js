@@ -1,8 +1,22 @@
 // Audio/video helpers. A native <audio>/<video> element plays the file from a blob: URL in the
 // parent preview pane (the opaque-origin sandbox can't reach blob:). No decoding, no third-party
 // lib — the browser streams it straight off disk via the File handle (see blobUrl).
-const VIDEO = { mp4: 'video/mp4', m4v: 'video/mp4', webm: 'video/webm', ogv: 'video/ogg', mov: 'video/quicktime', mkv: 'video/x-matroska' };
-const AUDIO = { mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', m4b: 'audio/mp4', aac: 'audio/aac', oga: 'audio/ogg', ogg: 'audio/ogg', opus: 'audio/ogg', flac: 'audio/flac', weba: 'audio/webm' };
+const VIDEO = {
+  mp4: 'video/mp4', m4v: 'video/mp4', webm: 'video/webm', ogv: 'video/ogg',
+  mov: 'video/quicktime', mkv: 'video/x-matroska',
+  // Formats that need ffmpeg.wasm transcoding (not natively playable in most browsers).
+  avi: 'video/x-msvideo', wmv: 'video/x-ms-wmv', flv: 'video/x-flv',
+  ts: 'video/mp2t', m2ts: 'video/mp2t', m2v: 'video/mpeg',
+  asf: 'video/x-ms-asf', divx: 'video/divx', vob: 'video/dvd',
+  '3gp': 'video/3gpp', f4v: 'video/x-f4v',
+};
+const AUDIO = {
+  mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', m4b: 'audio/mp4',
+  aac: 'audio/aac', oga: 'audio/ogg', ogg: 'audio/ogg', opus: 'audio/ogg',
+  flac: 'audio/flac', weba: 'audio/webm',
+  // Formats that need ffmpeg.wasm transcoding.
+  wma: 'audio/x-ms-wma', rm: 'audio/vnd.rn-realaudio', rmvb: 'audio/vnd.rn-realaudio',
+};
 
 export function mediaInfo(intake) {
   const name = (intake.filename || '').toLowerCase();
