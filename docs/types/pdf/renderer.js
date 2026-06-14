@@ -38,9 +38,11 @@ export async function render(intake, ctx) {
     + '<button class="pdf-spread" title="Two-page spread (book mode)">⊞ Spread</button>'
     + '<button class="pdf-edit" title="Edit pages">Edit</button>'
     + '<button class="pdf-addimg" hidden title="Add an image as a new page">+ Image page</button>'
+    + '<button class="pdf-merge" hidden title="Append another PDF">+ Merge PDF</button>'
     + '<button class="pdf-download" hidden>Download edited PDF</button></div>'
     + '<div class="pdf-changes" hidden></div>'
     + '<input type="file" class="pdf-imginput" accept="image/*" hidden>'
+    + '<input type="file" class="pdf-pdfinput" accept="application/pdf,.pdf" hidden>'
     + '<div class="pdf-pages"></div>';
   const pagesEl = host.querySelector('.pdf-pages');
   const infoEl = host.querySelector('.pdf-info');
@@ -101,7 +103,7 @@ export async function render(intake, ctx) {
   }
 
   async function applyEdit(mutate) {
-    mutate();
+    await mutate();                       // mutate may be async (e.g. merging another PDF)
     dirty = true;
     host.querySelector('.pdf-download').hidden = false;
     currentBytes = await editor.build();
@@ -113,9 +115,10 @@ export async function render(intake, ctx) {
     editing = !editing;
     host.querySelector('.pdf-edit').classList.toggle('active', editing);
     host.querySelector('.pdf-addimg').hidden = !editing;
+    host.querySelector('.pdf-merge').hidden = !editing;
     if (editing && !editor) {
       try { editor = await createEditor(intake.bytes); }
-      catch (e) { infoEl.textContent = 'Editing unavailable: ' + esc(e.message); editing = false; host.querySelector('.pdf-edit').classList.remove('active'); host.querySelector('.pdf-addimg').hidden = true; return; }
+      catch (e) { infoEl.textContent = 'Editing unavailable: ' + esc(e.message); editing = false; host.querySelector('.pdf-edit').classList.remove('active'); host.querySelector('.pdf-addimg').hidden = true; host.querySelector('.pdf-merge').hidden = true; return; }
     }
     await renderPages(currentBytes);
   });
@@ -138,6 +141,18 @@ export async function render(intake, ctx) {
       const png = await imageFileToPngBytes(file);
       await applyEdit(() => editor.addImage(png));
     } catch (err) { infoEl.textContent = 'Could not add image: ' + esc(err.message); }
+  });
+
+  // Merge: append another PDF's pages to the end.
+  const pdfInput = host.querySelector('.pdf-pdfinput');
+  host.querySelector('.pdf-merge').addEventListener('click', () => { pdfInput.value = ''; pdfInput.click(); });
+  pdfInput.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !editor) return;
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      await applyEdit(async () => { await editor.addPdf(bytes); });
+    } catch (err) { infoEl.textContent = 'Could not merge PDF: ' + esc(err.message); }
   });
 
   host.querySelector('.pdf-download').addEventListener('click', () => {

@@ -320,8 +320,8 @@ body {
 .pdf-bar button { margin-left: auto; font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
 .pdf-bar .pdf-edit { margin-left: auto; }
 .pdf-bar .pdf-edit.active { border-color: var(--accent); color: var(--accent); }
-.pdf-bar .pdf-addimg { margin-left: 8px; }
-.pdf-bar .pdf-addimg[hidden] { display: none; }
+.pdf-bar .pdf-addimg, .pdf-bar .pdf-merge { margin-left: 8px; }
+.pdf-bar .pdf-addimg[hidden], .pdf-bar .pdf-merge[hidden] { display: none; }
 .pdf-bar .pdf-download { margin-left: 8px; background: var(--accent); color: var(--accent-fg); border-color: transparent; }
 .pdf-pages { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .pdf-bar .pdf-spread.active { border-color: var(--accent); color: var(--accent); }

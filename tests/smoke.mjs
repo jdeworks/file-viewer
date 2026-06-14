@@ -404,6 +404,13 @@ try {
   pass('PDF edit: image inserted as a new page (' + beforeAdd + '→' + (beforeAdd + 1) + ')');
   const pdfChanges3 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
   if (/image page.* added/.test(pdfChanges3)) pass('PDF edit: image insertion noted in changes summary'); else fail('pdf changes3: ' + pdfChanges3);
+  // Merge: append another PDF (Sample.pdf, 1 page) → page count grows + summary notes the merge.
+  const beforeMerge = await page.$$eval('#previewHost img.pdf-page', (els) => els.length);
+  await page.setInputFiles('#previewHost .pdf-pdfinput', new URL('../docs/examples/sample.pdf', import.meta.url).pathname);
+  await page.waitForFunction((n) => document.querySelectorAll('#previewHost img.pdf-page').length > n, beforeMerge, { timeout: 12000 });
+  const afterMerge = await page.$$eval('#previewHost img.pdf-page', (els) => els.length);
+  const pdfChanges4 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
+  if (afterMerge > beforeMerge && /merged in/.test(pdfChanges4)) pass('PDF edit: merge appends another PDF (' + beforeMerge + '→' + afterMerge + ')'); else fail('pdf merge: ' + beforeMerge + '→' + afterMerge + ' changes=' + pdfChanges4);
   // Book mode: the spread toggle lays pages two-up (wide screens). Pages wrap into rows.
   await page.click('#previewHost .pdf-spread');
   const spreadOn = await page.$eval('#previewHost .pdf-doc', (e) => e.classList.contains('pdf-spread-on'));
