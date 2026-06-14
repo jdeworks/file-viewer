@@ -71,6 +71,8 @@ export function mount(host, { onScore, onExit } = {}) {
     addTile();
     scoreEl.textContent = 'Score: ' + score;
     onScore?.(score);
+    boardEl.classList.add('g2048-moving');
+    boardEl.addEventListener('animationend', () => boardEl.classList.remove('g2048-moving'), { once: true });
     draw();
     if (!canMove()) gameOver();
   }
@@ -105,7 +107,7 @@ export function mount(host, { onScore, onExit } = {}) {
     move(map[k]);
   }
   let tStart = null;
-  function onTouchStart(e) { const t = e.touches[0]; tStart = { x: t.clientX, y: t.clientY }; }
+  function onTouchStart(e) { e.preventDefault(); const t = e.touches[0]; tStart = { x: t.clientX, y: t.clientY }; }
   function onTouchEnd(e) {
     if (!tStart) return;
     const t = e.changedTouches[0];
@@ -116,7 +118,7 @@ export function mount(host, { onScore, onExit } = {}) {
   }
 
   window.addEventListener('keydown', onKey);
-  host.addEventListener('touchstart', onTouchStart, { passive: true });
+  host.addEventListener('touchstart', onTouchStart, { passive: false });
   host.addEventListener('touchend', onTouchEnd, { passive: true });
   host.querySelector('.g2048-restart').addEventListener('click', reset);
   host.querySelector('.g2048-quit').addEventListener('click', () => onExit?.());

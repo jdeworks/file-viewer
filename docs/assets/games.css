@@ -7,7 +7,7 @@
 .games-overlay[hidden] { display: none; }
 .games-panel { background: var(--bg); color: var(--fg); border: 1px solid var(--border);
   border-radius: 14px; width: min(720px, 100%); max-height: 92vh; overflow: auto;
-  box-shadow: 0 12px 48px rgba(0,0,0,.4); }
+  box-shadow: 0 12px 48px rgba(0,0,0,.4); display: flex; flex-direction: column; }
 .games-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
 .games-head h2 { font-size: 17px; margin: 0; flex: 1; }
 .games-back, .games-close { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
@@ -15,17 +15,19 @@
 .games-back[hidden] { display: none; }
 .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; padding: 16px; }
 .games-grid[hidden] { display: none; }
-.games-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
-  background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; color: var(--fg); }
+.games-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
+  background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 14px 28px; cursor: pointer; color: var(--fg); }
 .games-card:hover { border-color: var(--accent); }
 .games-emoji { font-size: 30px; }
 .games-title { font-weight: 700; font-size: 15px; }
-.games-blurb { font-size: 12px; color: var(--fg-2); }
+.games-blurb { position: absolute; bottom: 8px; left: 14px; right: 14px;
+  font-size: 11px; color: var(--fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .games-hi { font-size: 11px; color: var(--accent); font-variant-numeric: tabular-nums; }
-.games-stage { padding: 16px; display: flex; justify-content: center; }
+.games-stage { padding: 16px; display: flex; justify-content: center; align-items: flex-start;
+  flex: 1; min-height: 0; touch-action: none; }
 .games-stage[hidden] { display: none; }
 
-.snake-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.snake-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; touch-action: none; }
 .snake-hud { display: flex; gap: 14px; align-items: baseline; width: 100%; justify-content: space-between; }
 .snake-score { font-weight: 700; font-variant-numeric: tabular-nums; }
 .snake-hint { font-size: 11px; color: var(--fg-2); }
@@ -43,7 +45,7 @@
 .snake-quit { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); }
 
 /* 2048 arcade game. */
-.g2048-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.g2048-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; touch-action: none; }
 .g2048-hud { display: flex; justify-content: space-between; width: min(360px, 86vw); align-items: baseline; }
 .g2048-score { font-weight: 700; font-variant-numeric: tabular-nums; }
 .g2048-hint { font-size: 11px; color: var(--fg-2); }
@@ -68,6 +70,11 @@
   100% { transform: scale(1);   opacity: 1; }
 }
 .g2048-new { animation: g2048-pop 0.12s ease-out; }
+@keyframes g2048-slide {
+  0%   { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+.g2048-board.g2048-moving { animation: g2048-slide 0.08s ease-out; }
 
 /* Bit Foundry (meta-game incremental core). */
 .mg-wrap { display: flex; flex-direction: column; gap: 14px; width: min(420px, 100%); }
