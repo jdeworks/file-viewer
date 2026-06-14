@@ -1,4 +1,4 @@
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 export async function extract(intake) {
   const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');

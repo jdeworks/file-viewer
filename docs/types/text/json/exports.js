@@ -1,6 +1,6 @@
 // JSON exports: convert to YAML (via vendored js-yaml) or download a pretty / minified copy.
-import { downloadBlob } from '../../core/exports.js';
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { downloadBlob } from '../../../core/exports.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 export function getExports(intake) {
   const base = (intake.filename || 'data').replace(/\.[^.]+$/, '');

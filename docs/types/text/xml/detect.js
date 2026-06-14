@@ -1,4 +1,4 @@
-import { hasExtension, mimeMatches } from '../../core/detect.js';
+import { hasExtension, mimeMatches } from '../../../core/detect.js';
 
 // XML family (but NOT .svg — that's the image type, and not the Office/zip XML containers).
 // Strong on explicit XML extensions; a `<?xml` / root-element sniff catches the rest.

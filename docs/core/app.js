@@ -16,7 +16,7 @@ import { hexDump } from './hexdump.js';
 import { initOffline, offlineMissHtml } from './offline.js';
 import * as persistence from './persistence.js';
 import { suppressInstallPrompt } from './ios-audio.js';
-import { registerCodeMetrics } from '../types/code/codelens.js';
+import { registerCodeMetrics } from '../types/text/code/codelens.js';
 import { getExports, hasExports, downloadBlob } from './exports.js';
 import { exportFolderZip } from './folder-export.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';

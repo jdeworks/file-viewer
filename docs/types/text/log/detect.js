@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // Log files — by extension, or a content sniff for timestamped / leveled lines.
 export function detect(intake) {

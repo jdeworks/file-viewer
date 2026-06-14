@@ -5,7 +5,7 @@
 //
 // The diff ENGINE is the shared generic core (core/treediff.js); this file only supplies the
 // JSON adapter + JSON-flavoured rendering.
-import { treeDiff, ABSENT } from '../../core/treediff.js';
+import { treeDiff, ABSENT } from '../../../core/treediff.js';
 
 const typeOf = (v) => (v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

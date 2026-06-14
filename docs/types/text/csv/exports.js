@@ -1,7 +1,7 @@
 // CSV/TSV exports (loadExports hook): convert the parsed table to JSON or Excel (.xlsx). JSON is
 // dependency-free; xlsx uses the already-vendored SheetJS (lazy-loaded on use).
-import { downloadBlob } from '../../core/exports.js';
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { downloadBlob } from '../../../core/exports.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 import { parseCsv } from './renderer.js';
 
 function rowsToJson(rows, header) {

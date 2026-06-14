@@ -1,4 +1,4 @@
-import { hasExtension, mimeMatches } from '../../core/detect.js';
+import { hasExtension, mimeMatches } from '../../../core/detect.js';
 
 export function detect(intake) {
   if (intake.isBinary) return 0;

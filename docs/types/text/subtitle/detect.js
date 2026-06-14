@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // Subtitles: SubRip (.srt) and WebVTT (.vtt). Strong on extension; a content sniff catches the
 // WEBVTT header or an SRT timecode arrow.

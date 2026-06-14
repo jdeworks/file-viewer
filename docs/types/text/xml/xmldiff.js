@@ -1,6 +1,6 @@
 // Structural XML diff (Layer-2) — reuses the shared DOM diff engine with an XML parser, so two
 // XML documents compare by element/attribute/text structure rather than as raw text.
-import { renderDomDiff } from '../../core/domdiff.js';
+import { renderDomDiff } from '../../../core/domdiff.js';
 
 const parse = (text) => {
   const doc = new DOMParser().parseFromString(text || '', 'application/xml');

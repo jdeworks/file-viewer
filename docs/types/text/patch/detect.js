@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // Unified diff / patch files.
 export function detect(intake) {

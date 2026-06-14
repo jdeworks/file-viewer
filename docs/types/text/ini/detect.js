@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // INI / .env / .properties / .cfg / .conf key-value config files.
 export function detect(intake) {

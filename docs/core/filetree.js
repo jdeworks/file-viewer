@@ -1,7 +1,7 @@
 // Folder tree sidebar (VS Code-ish, aligned to the jdeworks code-editor theme). Builds a
 // tree from a flat file list (webkitdirectory or drag-dropped folder), renders it with a
 // cheap per-file type guess (filename only — no reading bytes), and opens a file on click.
-import { LANGS, FILENAMES } from '../types/code/langmap.js';
+import { LANGS, FILENAMES } from '../types/text/code/langmap.js';
 
 // Type guess from filename alone -> { id, dot color }. Cheap; the real detector runs on open.
 const TYPE_DOT = {

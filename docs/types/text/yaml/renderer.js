@@ -1,7 +1,7 @@
 // YAML preview: parse with vendored js-yaml, render the resulting value as a collapsible
 // tree (reusing the JSON tree styling). Supports multi-document streams (---). Parse errors
 // surface clearly. js-yaml's safe load (no custom types) — no code execution.
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 

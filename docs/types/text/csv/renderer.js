@@ -1,6 +1,6 @@
 // CSV preview: PapaParse -> rows -> shared tabular renderer.
-import { loadGlobal, vendor } from '../../core/script-loader.js';
-import { renderTables } from '../../core/tabular.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
+import { renderTables } from '../../../core/tabular.js';
 
 const DELIMS = { auto: '', comma: ',', semicolon: ';', tab: '\t', pipe: '|' };
 

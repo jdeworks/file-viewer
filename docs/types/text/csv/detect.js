@@ -1,4 +1,4 @@
-import { hasExtension, mimeMatches } from '../../core/detect.js';
+import { hasExtension, mimeMatches } from '../../../core/detect.js';
 
 // CSV/TSV: extension/MIME are strong; otherwise look for consistent delimiter counts
 // across the first lines (so we don't misfire on prose).

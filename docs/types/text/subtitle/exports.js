@@ -1,6 +1,6 @@
 // Subtitle exports: convert between SubRip (.srt) and WebVTT (.vtt) — they share a cue model, so
 // conversion is just re-serializing the parsed cues with the right timestamp separator.
-import { downloadBlob } from '../../core/exports.js';
+import { downloadBlob } from '../../../core/exports.js';
 import { parseSubtitles, isVtt } from './sublib.js';
 
 const pad = (n, w = 2) => String(n).padStart(w, '0');

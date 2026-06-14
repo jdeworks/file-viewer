@@ -1,4 +1,4 @@
-import { hasExtension, mimeMatches } from '../../core/detect.js';
+import { hasExtension, mimeMatches } from '../../../core/detect.js';
 
 // YAML by extension/MIME; weak content sniff for extensionless pasted YAML.
 export function detect(intake) {
