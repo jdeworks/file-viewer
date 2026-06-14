@@ -438,15 +438,16 @@ try {
   pass('PDF edit: image inserted as a new page (' + beforeAdd + '→' + (beforeAdd + 1) + ')');
   const pdfChanges3 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
   if (/image page.* added/.test(pdfChanges3)) pass('PDF edit: image insertion noted in changes summary'); else fail('pdf changes3: ' + pdfChanges3);
-  // Merge: append another PDF (Sample.pdf, 1 page) → page count grows + summary notes the merge.
-  const beforeMerge = await page.$$eval('#previewHost img.pdf-page', (els) => els.length);
+  // Merge: append another PDF (sample.pdf, 1 page). The end state is deterministic — 3 original
+  // pages, −1 deleted, +1 image, +1 merged = 4 — and the changes summary records the merge. We
+  // assert that settled end-state rather than an afterMerge>beforeMerge count delta: the pre-merge
+  // render can already be settled, making the delta flaky even though the merge always succeeds.
   await page.setInputFiles('#previewHost .pdf-pdfinput', new URL('../docs/examples/sample.pdf', import.meta.url).pathname);
-  // Merge decodes another PDF and re-rasterizes every page; under headless CPU contention this can
-  // take a while, so allow a generous window (the assertion itself is fast once pages reappear).
-  await page.waitForFunction((n) => document.querySelectorAll('#previewHost img.pdf-page').length > n, beforeMerge, { timeout: 30000 });
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost img.pdf-page').length === 4
+    && /merged in/.test(document.querySelector('#previewHost .pdf-changes')?.textContent || ''), null, { timeout: 20000 });
   const afterMerge = await page.$$eval('#previewHost img.pdf-page', (els) => els.length);
   const pdfChanges4 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
-  if (afterMerge > beforeMerge && /merged in/.test(pdfChanges4)) pass('PDF edit: merge appends another PDF (' + beforeMerge + '→' + afterMerge + ')'); else fail('pdf merge: ' + beforeMerge + '→' + afterMerge + ' changes=' + pdfChanges4);
+  if (afterMerge === 4 && /merged in/.test(pdfChanges4)) pass('PDF edit: merge appends another PDF (→' + afterMerge + ' pages)'); else fail('pdf merge: pages=' + afterMerge + ' changes=' + pdfChanges4);
   // Book mode: the spread toggle lays pages two-up (wide screens). Pages wrap into rows.
   await page.click('#previewHost .pdf-spread');
   const spreadOn = await page.$eval('#previewHost .pdf-doc', (e) => e.classList.contains('pdf-spread-on'));

@@ -53,25 +53,32 @@ export async function render(intake, ctx) {
   async function renderPages(bytes) {
     const lib = await loadPdfjs();
     const doc = await lib.getDocument({ data: bytes.slice() }).promise;
-    const max = Math.min(doc.numPages, MAX_PAGES);
-    pagesEl.innerHTML = '';
-    for (let i = 1; i <= max; i++) {
-      const page = await doc.getPage(i);
-      const vp = page.getViewport({ scale });
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(vp.width); canvas.height = Math.ceil(vp.height);
-      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-      const wrap = document.createElement('div');
-      wrap.className = 'pdf-page-wrap';
-      const img = document.createElement('img');
-      img.className = 'pdf-page'; img.alt = 'Page ' + i; img.src = canvas.toDataURL('image/png');
-      canvas.width = canvas.height = 0;
-      wrap.appendChild(img);
-      if (editing) wrap.appendChild(pageControls(i - 1));
-      pagesEl.appendChild(wrap);
+    try {
+      const max = Math.min(doc.numPages, MAX_PAGES);
+      pagesEl.innerHTML = '';
+      for (let i = 1; i <= max; i++) {
+        const page = await doc.getPage(i);
+        const vp = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.ceil(vp.width); canvas.height = Math.ceil(vp.height);
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        const wrap = document.createElement('div');
+        wrap.className = 'pdf-page-wrap';
+        const img = document.createElement('img');
+        img.className = 'pdf-page'; img.alt = 'Page ' + i; img.src = canvas.toDataURL('image/png');
+        canvas.width = canvas.height = 0;
+        page.cleanup();
+        wrap.appendChild(img);
+        if (editing) wrap.appendChild(pageControls(i - 1));
+        pagesEl.appendChild(wrap);
+      }
+      if (doc.numPages > max) { const n = document.createElement('p'); n.className = 'pdf-note'; n.textContent = 'Showing first ' + max + ' of ' + doc.numPages + ' pages.'; pagesEl.appendChild(n); }
+      infoEl.textContent = doc.numPages + ' page' + (doc.numPages === 1 ? '' : 's') + (editing ? ' · editing' : '') + (dirty ? ' · modified' : '');
+    } finally {
+      // pdf.js holds a worker + buffers per document; every edit/merge re-renders, so destroy the
+      // proxy each time or workers/memory pile up across a session and renders start failing.
+      try { await doc.destroy(); } catch { /* already gone */ }
     }
-    if (doc.numPages > max) { const n = document.createElement('p'); n.className = 'pdf-note'; n.textContent = 'Showing first ' + max + ' of ' + doc.numPages + ' pages.'; pagesEl.appendChild(n); }
-    infoEl.textContent = doc.numPages + ' page' + (doc.numPages === 1 ? '' : 's') + (editing ? ' · editing' : '') + (dirty ? ' · modified' : '');
   }
 
   function pageControls(pos) {
