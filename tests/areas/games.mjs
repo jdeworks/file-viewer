@@ -1,0 +1,209 @@
+export async function run(ctx) {
+  const { browser, page, origin, frameOf, pass, fail, consoleErrors, offOrigin } = ctx;
+
+  // ── Easter-egg games (Konami → hub → Snake) ── lazy-loaded; one tiny listener at startup.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => { try { localStorage.removeItem('fv:games:unlocked'); } catch {} });
+  const preOverlay = await page.$('.games-overlay');
+  if (!preOverlay) pass('games hub not present before unlock (lazy-loaded)'); else fail('games overlay present before unlock');
+  for (const k of ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a']) await page.keyboard.press(k);
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  pass('Konami code unlocks + opens the arcade hub');
+  const gameCards = await page.$$eval('.games-card .games-title', (els) => els.map((e) => e.textContent));
+  if (gameCards.includes('Snake')) pass('Snake appears in the hub (' + gameCards.join(', ') + ')'); else fail('hub games: ' + gameCards.join(','));
+  await page.click('.games-card[data-game="snake"]');
+  await page.waitForSelector('.snake-canvas', { timeout: 8000 });
+  const snakeScore = await page.$eval('.snake-score', (e) => e.textContent);
+  if (/Score: 0/.test(snakeScore)) pass('Snake launches (canvas + score HUD)'); else fail('snake score: ' + snakeScore);
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('ArrowRight');
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+  pass('Back returns from Snake to the hub grid');
+  await page.click('.games-close');
+  const stillOpen = await page.$('.games-overlay:not([hidden])');
+  if (!stillOpen) pass('hub closes'); else fail('hub did not close');
+
+  // ── Arcade game: 2048 ── second easter-egg game; 4×4 sliding tiles. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => { window.__fv.games.unlock(); window.__fv.games.open(); });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="2048"]');
+  await page.waitForSelector('.g2048-board', { timeout: 8000 });
+  const g2048Cells = await page.$$eval('.g2048-cell', (els) => els.length);
+  const g2048Tiles = await page.$$eval('.g2048-cell', (els) => els.filter((e) => e.textContent.trim()).length);
+  if (g2048Cells === 16 && g2048Tiles === 2) pass('2048 launches (4×4 board, 2 starting tiles)'); else fail('2048 board: cells=' + g2048Cells + ' tiles=' + g2048Tiles);
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowUp');
+  const g2048Score = await page.$eval('.g2048-score', (e) => e.textContent);
+  if (/Score: \d+/.test(g2048Score)) pass('2048 responds to moves (' + g2048Score + ')'); else fail('2048 score: ' + g2048Score);
+  await page.click('.games-close');
+
+  // ── Meta-game: staged campaign (intro → Bit Foundry grind → boss → victory) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 5000, stage: 1 })); } catch {}
+    window.__fv.games.unlock();
+    window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  // Stage intro dialog plays first.
+  await page.waitForSelector('.mg-dialog', { timeout: 8000 });
+  pass('meta-game: stage intro dialog shown');
+  const clickThroughDialog = async () => { for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); } };
+  await clickThroughDialog();
+  // Grind: the pixel canvas reflects bits (the canvas IS the progress indicator).
+  await page.waitForSelector('.mg-canvas', { timeout: 8000 });
+  const mgPixels = await page.$eval('.mg-canvas', (e) => Number(e.dataset.pixels));
+  if (mgPixels > 0) pass('meta-game: bits drawn as pixels on the canvas (' + mgPixels + ' px)'); else fail('mg pixels: ' + mgPixels);
+  // Buy-multiplier overlay appears at big numbers; select ×10.
+  await page.waitForSelector('.mg-mult:not([hidden])', { timeout: 4000 });
+  await page.click('.mg-mult-b[data-m="10"]');
+  if (await page.$eval('.mg-mult-b[data-m="10"]', (e) => e.classList.contains('mg-mult-on'))) pass('meta-game: buy-multiplier overlay (×10 selected)'); else fail('mult not selected');
+  // Buying a data-driven tier with ×10 spends pixels + raises the rate.
+  await page.click('.mg-shop .mg-buy[data-id="cron"]');
+  const mgOwned = await page.$eval('.mg-buy[data-id="cron"] .mg-owned', (e) => e.textContent);
+  const mgRate = await page.$eval('.mg-rate', (e) => e.textContent);
+  if (!/^×0$/.test(mgOwned) && !/^0\/s$/.test(mgRate)) pass('meta-game: tier bought ' + mgOwned + ', rate ' + mgRate); else fail('mg buy: owned=' + mgOwned + ' rate=' + mgRate);
+  // Bits still exceed the stage goal (100) → Confront button → boss.
+  await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 4000 });
+  await page.click('.mg-faceboss');
+  await clickThroughDialog();                          // boss taunt → Fight
+  await page.waitForSelector('.mg-boss', { timeout: 8000 });
+  const locks0 = await page.$$eval('.mg-boss-locks .mg-lock', (els) => els.length);
+  if (locks0 === 3) pass('meta-game boss: The Overwriter appears (3 locks)'); else fail('boss locks: ' + locks0);
+  // Hint mechanic reveals guidance.
+  await page.click('.mg-hint-btn');
+  if (await page.$('.mg-dialog')) pass('meta-game boss: hint mechanic reveals a hint'); else fail('no hint dialog');
+  await page.click('.mg-dlg-next');                    // close the hint
+  // Defeat: create a new file that OVERWRITES his lock, three times, racing the re-lock.
+  await page.fill('.mg-boss-file', 'boss.lock');
+  await page.check('.mg-boss-owchk');
+  for (let k = 2; k >= 0; k--) {
+    await page.click('.mg-boss-create');
+    await page.waitForFunction((n) => document.querySelectorAll('.mg-boss-locks .mg-lock').length === n, k, { timeout: 4000 });
+  }
+  await page.waitForSelector('.mg-dialog', { timeout: 4000 });
+  const victoryText = await page.$eval('.mg-dlg-text', (e) => e.textContent);
+  if (victoryText && victoryText.length > 0) pass('meta-game boss defeated with a real app feature → victory'); else fail('victory: ' + victoryText);
+  const beaten = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame')) || {}).defeated || []; } catch { return []; } });
+  if (beaten.includes(1)) pass('meta-game: stage 1 marked defeated (persisted)'); else fail('defeated: ' + JSON.stringify(beaten));
+  await page.click('.games-close');
+
+  // ── Meta-game Stage 2 (Config Demon) ── proves the modular stage system + a 2nd boss mechanic. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 5000, stage: 2, defeated: [1], introStages: [1, 2] })); } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  // Stage 2 reskins the resource to "cycles" (modular config).
+  await page.waitForSelector('.mg-bits', { timeout: 8000 });
+  const s2res = await page.$eval('.mg-bits', (e) => e.textContent);
+  if (/cycles/.test(s2res)) pass('meta-game stage 2: resource reskinned via config (' + s2res + ')'); else fail('stage2 resource: ' + s2res);
+  await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 4000 });
+  await page.click('.mg-faceboss');
+  const clickThrough2 = async () => { for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); } };
+  await clickThrough2();
+  await page.waitForSelector('.mg-boss-demon', { timeout: 8000 });
+  pass('meta-game stage 2: Config Demon arena (distinct boss)');
+  // Defeat: edit boss.ini → invincible=false, apply, attack 3× racing the rewrite.
+  for (let h = 0; h < 3; h++) {
+    await page.fill('.mg-ini', 'invincible = false\nhp = 1');
+    await page.click('.mg-ini-apply');
+    await page.click('.mg-attack');
+    await page.waitForTimeout(80);
+  }
+  await page.waitForSelector('.mg-dialog', { timeout: 4000 });
+  const beaten2 = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame')) || {}).defeated || []; } catch { return []; } });
+  if (beaten2.includes(2)) pass('meta-game stage 2: Config Demon defeated by editing his config (persisted)'); else fail('stage2 defeated: ' + JSON.stringify(beaten2));
+  await page.click('.games-close');
+
+  // ── Meta-game cross-stage arcade bonus ── minigame high scores → claimable in any stage. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try {
+      localStorage.setItem('fv:games:hi:snake', '50');
+      localStorage.setItem('fv:games:hi:2048', '30');
+      localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 0, stage: 1, introStages: [1], claimed: {} }));
+    } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-bonus:not([hidden])', { timeout: 8000 });
+  const bonusClaims = await page.$$eval('.mg-bonus .mg-claim', (els) => els.map((e) => e.textContent));
+  if (bonusClaims.some((c) => /Snake/.test(c)) && bonusClaims.some((c) => /2048/.test(c))) pass('meta-game: arcade bonus claimable from each game'); else fail('bonus claims: ' + bonusClaims.join(' | '));
+  await page.click('.mg-bonus .mg-claim[data-g="snake"]');
+  const bitsAfterClaim = await page.$eval('.mg-bits', (e) => e.textContent);
+  if (/1\.25K/.test(bitsAfterClaim)) pass('meta-game: claiming a minigame bonus adds resource (' + bitsAfterClaim + ')'); else fail('bits after claim: ' + bitsAfterClaim);
+  await page.click('.games-close');
+
+  // ── Meta-game Stage 3 (ASCII Awakening) ── a stage changes the whole VISUAL via config alone. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 5000, stage: 3, defeated: [1, 2], introStages: [1, 2, 3] })); } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-ascii', { timeout: 8000 });
+  const s3res = await page.$eval('.mg-bits', (e) => e.textContent);
+  if (/bytes/.test(s3res)) pass('meta-game stage 3: ASCII theme + resource reskin (' + s3res + ')'); else fail('stage3 resource: ' + s3res);
+  await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 4000 });
+  await page.click('.mg-faceboss');
+  const clickThrough3 = async () => { for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); } };
+  await clickThrough3();
+  await page.waitForSelector('.mg-boss-kernel', { timeout: 8000 });
+  pass('meta-game stage 3: Kernel Panic terminal boss');
+  for (let i = 0; i < 3; i++) { await page.fill('.mg-cmd', 'reboot'); await page.click('.mg-cmd-run'); await page.waitForTimeout(80); }
+  await page.waitForSelector('.mg-dialog', { timeout: 4000 });
+  const beaten3 = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame')) || {}).defeated || []; } catch { return []; } });
+  if (beaten3.includes(3)) pass('meta-game stage 3: Kernel Panic defeated via a terminal command (persisted)'); else fail('stage3 defeated: ' + JSON.stringify(beaten3));
+  await page.click('.games-close');
+
+  // ── Meta-game Stage 4 (Hex Hydra) ── defeat by flipping his FF (HP) byte in a hex view. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 5000, stage: 4, defeated: [1, 2, 3], introStages: [1, 2, 3, 4] })); } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 8000 });
+  await page.click('.mg-faceboss');
+  for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); }
+  await page.waitForSelector('.mg-boss-hydra .mg-hp-cell', { timeout: 8000 });
+  pass('meta-game stage 4: Hex Hydra hex grid (FF = HP byte)');
+  for (let h = 2; h >= 0; h--) {
+    await page.click('.mg-boss-hydra .mg-hp-cell');
+    await page.waitForFunction((hp) => !!document.querySelector('.mg-dialog') || (document.querySelector('.mg-boss-hydra .mg-boss-name') || {}).textContent?.includes('HP ' + hp), h, { timeout: 4000 });
+  }
+  await page.waitForSelector('.mg-dialog', { timeout: 4000 });
+  const beaten4 = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame')) || {}).defeated || []; } catch { return []; } });
+  if (beaten4.includes(4)) pass('meta-game stage 4: Hex Hydra defeated by flipping its HP byte (persisted)'); else fail('stage4 defeated: ' + JSON.stringify(beaten4));
+  await page.click('.games-close');
+
+  // ── Graceful offline-miss ── cache-on-use only (no full precache), then open a viewer that
+  // was never loaded online while offline → friendly note instead of a raw error.
+  {
+    const mctx = await browser.newContext();
+    const mp = await mctx.newPage();
+    await mp.goto(origin, { waitUntil: 'networkidle' });
+    await mp.waitForSelector('#offlineStatus', { timeout: 90000 });
+    await mp.getByRole('button', { name: 'Welcome.md' }).click();   // caches app + markdown only
+    await mp.waitForSelector('.monaco-editor', { timeout: 30000 });
+    await mctx.setOffline(true);
+    // Feed a PDF from disk (no network for the bytes); its viewer + pdf.js were never cached.
+    await mp.setInputFiles('#fileInput', new URL('../../docs/examples/sample.pdf', import.meta.url).pathname);
+    const miss = await mp.waitForSelector('.offline-miss', { timeout: 20000 }).catch(() => null);
+    if (miss) pass('graceful offline-miss note shown for an uncached viewer'); else fail('no offline-miss note for uncached PDF viewer while offline');
+    await mctx.setOffline(false);
+    await mctx.close();
+  }
+
+  if (consoleErrors.length === 0) pass('no console/page errors'); else fail('console errors:\n  ' + consoleErrors.join('\n  '));
+  if (offOrigin.length === 0) pass('ZERO off-origin requests (trust guarantee)'); else fail('off-origin requests:\n  ' + offOrigin.join('\n  '));
+}
