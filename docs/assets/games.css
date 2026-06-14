@@ -23,7 +23,7 @@
 .games-blurb { position: absolute; bottom: 8px; left: 14px; right: 14px;
   font-size: 11px; color: var(--fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .games-hi { font-size: 11px; color: var(--accent); font-variant-numeric: tabular-nums; }
-.games-stage { padding: 16px; display: flex; justify-content: center; align-items: flex-start;
+.games-stage { position: relative; padding: 16px; display: flex; justify-content: center; align-items: flex-start;
   flex: 1; min-height: 0; touch-action: none; }
 .games-stage[hidden] { display: none; }
 
@@ -178,10 +178,53 @@
   border-radius: 4px; background: var(--bg); color: var(--fg); cursor: pointer; }
 .mg-hex-cell:hover { border-color: var(--accent); }
 
-/* Debug jump panel — developer tool, always visible for now. */
-.mg-debug { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px;
+/* ── Stage 1 — pixel-reveal onboarding. Everything is absolute within the game host. ── */
+.mg-s1 { position: absolute; inset: 0; width: 100%; gap: 0; }
+/* Ensure the host has real height for the absolute stage-1 layout even with no flow content. */
+.games-stage:has(.mg-s1) { min-height: 60vh; }
+/* Full-screen tap area (below the button z-wise, covers the whole host). */
+.mg-s1-tap { position: absolute; inset: 0; z-index: 1; cursor: pointer; touch-action: none; }
+/* The Compute button pinned to the bottom-centre, with the reveal grid laid exactly over it. */
+.mg-s1-stage { position: absolute; left: 50%; bottom: 10%; transform: translateX(-50%); z-index: 2; }
+.mg-s1-btn { position: relative; display: block; pointer-events: none; }
+.mg-s1-btn.mg-s1-ready { pointer-events: auto; box-shadow: 0 0 22px 2px rgba(63,185,80,.5); }
+/* 20×5 covering grid sits exactly over the button. Covered cells are opaque + block the button. */
+.mg-s1-grid { position: absolute; inset: 0; display: grid;
+  grid-template-columns: repeat(20, 1fr); grid-template-rows: repeat(5, 1fr); }
+.mg-s1-grid.mg-s1-clear { pointer-events: none; }
+.mg-s1-cell { background: var(--bg-3, #161b22); }
+.mg-s1-cell.mg-s1-on { background: transparent; pointer-events: none; }   /* revealed → click-through */
+.mg-s1-boss { position: absolute; left: 50%; bottom: 2%; transform: translateX(-50%); z-index: 3; }
+
+/* ── Commentary bell — top-right overlay, absolute (never pushes layout). ── */
+.mg-bell-wrap { position: absolute; top: 8px; right: 8px; z-index: 20; }
+.mg-bell-btn { position: relative; background: var(--bg-2); border: 1px solid var(--border);
+  color: var(--fg); border-radius: 8px; padding: 5px 9px; cursor: pointer; font-size: 15px; line-height: 1; }
+.mg-bell-btn:hover { border-color: var(--accent); }
+.mg-bell-dot { position: absolute; top: -3px; right: -3px; width: 9px; height: 9px;
+  background: #e03131; border-radius: 50%; border: 1.5px solid var(--bg); }
+.mg-bell-dot[hidden] { display: none; }
+.mg-bell-panel { position: absolute; top: 38px; right: 0; width: min(240px, 70vw); max-height: 50vh;
+  overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.35); padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+.mg-bell-panel[hidden] { display: none; }
+.mg-bell-msg { font-size: 13px; padding: 7px 9px; background: var(--bg-2); border-radius: 7px; }
+.mg-bell-x { color: var(--fg-2); font-size: 11px; font-variant-numeric: tabular-nums; }
+.mg-bell-empty { font-size: 13px; color: var(--fg-2); padding: 10px; text-align: center; }
+
+/* Debug toggle (grind header) — subtle gear next to Back/Fullscreen. */
+.mg-dbg-toggle { position: absolute; top: 8px; left: 8px; z-index: 20; background: var(--bg-2);
+  border: 1px solid var(--border); color: var(--fg-2); border-radius: 8px; padding: 4px 8px;
+  cursor: pointer; font-size: 13px; line-height: 1; opacity: .6; }
+.mg-dbg-toggle:hover { opacity: 1; border-color: var(--accent); }
+.mg-dbg-toggle[hidden] { display: none; }
+
+/* Debug jump panel — absolutely positioned overlay; hidden until the gear toggles it. */
+.mg-debug { position: absolute; top: 44px; left: 8px; z-index: 19; max-width: min(360px, 92%);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
   padding: 8px 10px; background: var(--bg-2); border: 1px dashed var(--border);
-  border-radius: 8px; font-size: 11px; color: var(--fg-2); }
+  border-radius: 8px; font-size: 11px; color: var(--fg-2); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.mg-debug[hidden] { display: none; }
 .mg-debug-label { font-weight: 700; color: var(--fg); }
 .mg-debug label { display: flex; align-items: center; gap: 4px; }
 .mg-debug select { font-size: 11px; background: var(--bg); color: var(--fg);

@@ -4,6 +4,7 @@
 // stages.js; the dialog/hint box in dialog.js. Contract: mount(host, { onExit }) => { destroy() }.
 import { playDialog } from './dialog.js';
 import { STAGES, stageByNumber } from './stages.js';
+import { renderStage1, mountBell, bellAdd, updateBellDot, STAGE1 } from './stage1.js';
 
 const SAVE_KEY = 'fv:games:metagame';
 const COMPLETE_KEY = 'fv:games:metagame:complete';
@@ -143,14 +144,39 @@ export function mount(host, { onExit } = {}) {
       attachDbg();
       return;
     }
-    if (!state.introStages.includes(stage().n)) startIntro(); else renderGrind();
+    // Stage 1 skips the dialog intro entirely — the empty pixel screen IS the onboarding (the bell
+    // narrates it). Every later stage still plays its intro once.
+    if (stage().n === 1 || state.introStages.includes(stage().n)) renderStageGrind(); else startIntro();
+  }
+  // Stage 1 has a bespoke render (pixel-reveal); every other stage uses the shared grind economy.
+  function renderStageGrind() {
+    if (stage().n === 1) renderS1(); else renderGrind();
+  }
+  // Bell triggers checked on each bit-earn: "I can see something" once bits first cross 10.
+  function checkBells() { if (state.bits >= 10) bellAdd('bell-firstsight', 'I can see something', true); }
+  function renderS1() {
+    clearTransient();
+    renderStage1({
+      host, state, save, stage,
+      clickPower, buyTier,
+      onExit,
+      onBoss: () => startBoss(),
+      attachChrome: (h) => attachChrome(h, { debug: true }),
+      onBits: checkBells,
+      onReset: () => {
+        // A purchase wiped the bits. Narrate the loss + (for the first few) the growing strength.
+        bellAdd('bell-reset', 'where did everything go :(', false);
+        const bought = (state.owned[(stage().tiers || [])[0]?.id] || 0);
+        if (bought > 0 && bought < 5) bellAdd('bell-stronger', 'I feel stronger already', false);
+      },
+    });
   }
   function startIntro() {
     clearTransient();
     host.innerHTML = '<div class="mg-wrap mg-stage-host"></div>';
     const st = stage();
     dlgCtl = playDialog(host.querySelector('.mg-stage-host'), st.intro, {
-      cta: 'Begin', onDone: () => { if (!state.introStages.includes(st.n)) state.introStages.push(st.n); save(state); renderGrind(); },
+      cta: 'Begin', onDone: () => { if (!state.introStages.includes(st.n)) state.introStages.push(st.n); save(state); renderStageGrind(); },
     });
     attachDbg();
   }
@@ -220,7 +246,7 @@ export function mount(host, { onExit } = {}) {
       } else bonusEl.hidden = true;
     }
     paint();
-    attachDbg();
+    attachChrome(host, { debug: true });
     let acc = 0;
     timer = setInterval(() => { state.bits += totalRate() / 10; paint(); if (++acc >= 10) { acc = 0; save(state); } }, 100);
   }
@@ -234,7 +260,7 @@ export function mount(host, { onExit } = {}) {
       + '<button class="mg-flee" type="button">Retreat</button></div></div>';
     const stageHost = host.querySelector('.mg-stage-host');
     const arena = host.querySelector('.mg-arena');
-    host.querySelector('.mg-flee').addEventListener('click', () => renderGrind());
+    host.querySelector('.mg-flee').addEventListener('click', () => renderStageGrind());
     let hintIdx = 0;
     host.querySelector('.mg-hint-btn').addEventListener('click', () => {
       const line = st.hints[Math.min(hintIdx, st.hints.length - 1)];
@@ -277,9 +303,11 @@ export function mount(host, { onExit } = {}) {
     });
   }
 
-  /* ── Debug panel (always visible; condition on localStorage('fv:games:debug') later if desired) ── */
+  /* ── Debug panel — absolutely positioned (overlays, never pushes layout) + hidden by default.
+     A subtle ⚙ toggle in the grind header opens it. ── */
   const dbg = document.createElement('div');
   dbg.className = 'mg-debug';
+  dbg.hidden = true;
   const stageOpts = Array.from({ length: STAGES.length }, (_, i) =>
     '<option value="' + (i + 1) + '">' + (i + 1) + '</option>').join('');
   dbg.innerHTML =
@@ -291,8 +319,24 @@ export function mount(host, { onExit } = {}) {
     + '</select></label>'
     + '<button class="mg-dbg-jump" type="button">Jump</button>'
     + '<button class="mg-dbg-reset" type="button">Reset Save</button>';
-  // Re-attach after any host.innerHTML wipe.
-  function attachDbg() { host.appendChild(dbg); }
+  // The grind-phase toggle button (subtle ⚙). Lives next to Back/Fullscreen, shown only in grind.
+  const dbgToggle = document.createElement('button');
+  dbgToggle.type = 'button';
+  dbgToggle.className = 'mg-dbg-toggle';
+  dbgToggle.title = 'Debug';
+  dbgToggle.textContent = '⚙';
+  dbgToggle.addEventListener('click', () => { dbg.hidden = !dbg.hidden; });
+
+  // Chrome = the persistent overlay furniture (debug + bell). Re-attached after every innerHTML wipe.
+  // opts.debug shows the grind-only debug toggle; the bell rides along in every phase.
+  function attachChrome(h = host, { debug = false } = {}) {
+    h.appendChild(dbg);
+    if (debug) { dbgToggle.hidden = false; h.appendChild(dbgToggle); } else { dbgToggle.hidden = true; }
+    mountBell(h);
+    updateBellDot();
+  }
+  // Back-compat alias for the rest of the orchestrator (boss/victory/completion phases: no toggle).
+  const attachDbg = () => attachChrome(host, { debug: false });
 
   dbg.querySelector('.mg-dbg-jump').addEventListener('click', () => {
     const targetStage = Number(dbg.querySelector('.mg-dbg-stage').value);
@@ -306,11 +350,11 @@ export function mount(host, { onExit } = {}) {
       save(state);
       startIntro();
     } else if (targetPhase === 'grind') {
-      // Mark intro seen so renderGrind is called directly.
+      // Mark intro seen so the grind view is shown directly (stage 1 routes to its pixel reveal).
       if (!state.introStages.includes(st.n)) state.introStages.push(st.n);
       state.bits = 0;
       save(state);
-      renderGrind();
+      renderStageGrind();
     } else if (targetPhase === 'boss') {
       if (!state.introStages.includes(st.n)) state.introStages.push(st.n);
       state.bits = st.goal;     // meets threshold; startBoss() checks nothing else
@@ -346,12 +390,11 @@ export function mount(host, { onExit } = {}) {
     location.reload();
   });
 
-  enterStage();
-  attachDbg();
+  enterStage();   // each render path attaches its own chrome (debug panel + bell)
 
   return {
     destroy() { clearTransient(); save(state); host.innerHTML = ''; },
     _state: state,
-    _debug: { startBoss, renderGrind },   // test seam
+    _debug: { startBoss, renderGrind, renderStageGrind, renderS1 },   // test seam
   };
 }

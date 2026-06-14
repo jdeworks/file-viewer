@@ -51,45 +51,93 @@ export async function run(ctx) {
   if (g2048NewCells > 0) pass('2048 new-tile pop animation class applied (' + g2048NewCells + ' cells)'); else fail('2048 g2048-new class not found after moves');
   await page.click('.games-close');
 
-  // ── Meta-game: staged campaign (intro → Bit Foundry grind → boss → victory) ──
+  // ── Meta-game Stage 1: pixel-reveal onboarding (no score/shop; bell narrates). ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => {
-    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 5000, stage: 1 })); } catch {}
-    window.__fv.games.unlock();
-    window.__fv.games.open();
+    try {
+      localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 0, stage: 1, introStages: [1] }));
+      localStorage.removeItem('fv:games:mg:bell'); localStorage.removeItem('fv:games:mg:bell:ack');
+    } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
   });
   await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
   await page.click('.games-card[data-game="metagame"]');
-  // Stage intro dialog plays first.
-  await page.waitForSelector('.mg-dialog', { timeout: 8000 });
-  pass('meta-game: stage intro dialog shown');
+  // Stage 1 lands straight on the empty pixel screen — no intro dialog, no score, no shop.
+  await page.waitForSelector('.mg-s1', { timeout: 8000 });
+  const s1Bare = await page.evaluate(() => ({
+    score: !!document.querySelector('.mg-score, .mg-bits'),
+    shop: !!document.querySelector('.mg-shop'),
+    rate: !!document.querySelector('.mg-rate'),
+    banner: !!document.querySelector('.mg-stage-banner'),
+    dialog: !!document.querySelector('.mg-dialog'),
+  }));
+  if (!s1Bare.score && !s1Bare.shop && !s1Bare.rate && !s1Bare.banner && !s1Bare.dialog)
+    pass('meta-game stage 1: empty screen (no score/shop/rate/banner/intro)');
+  else fail('stage 1 not bare: ' + JSON.stringify(s1Bare));
+  // The reveal grid is 100 squares and the full-screen tap area exists.
+  const s1Cells = await page.$$eval('.mg-s1-grid .mg-s1-cell', (els) => els.length);
+  if (s1Cells === 100) pass('meta-game stage 1: 100-square pixel grid'); else fail('s1 cells: ' + s1Cells);
+  if (await page.$('.mg-s1-tap')) pass('meta-game stage 1: full-screen tap area present'); else fail('no s1 tap area');
+  // Bell is present and (empty) shows the "nothing here" placeholder.
+  if (await page.$('.mg-bell-btn')) pass('meta-game: commentary bell present'); else fail('no bell');
+  await page.click('.mg-bell-btn');
+  await page.waitForSelector('.mg-bell-panel:not([hidden])', { timeout: 4000 });
+  const bellEmpty = await page.$eval('.mg-bell-panel', (e) => e.textContent);
+  if (/nothing here/.test(bellEmpty)) pass('meta-game bell: "nothing here" when empty'); else fail('bell empty text: ' + bellEmpty);
+  await page.click('.mg-bell-btn');                                  // close
+  // Tapping adds bits → reveals squares; crossing 10 logs the first bell message.
+  for (let i = 0; i < 12; i++) await page.click('.mg-s1-tap', { position: { x: 5, y: 5 } });
+  const s1Revealed = await page.$$eval('.mg-s1-grid .mg-s1-cell.mg-s1-on', (els) => els.length);
+  if (s1Revealed >= 10) pass('meta-game stage 1: taps reveal squares (' + s1Revealed + ' on)'); else fail('s1 revealed: ' + s1Revealed);
+  await page.waitForSelector('.mg-bell-dot:not([hidden])', { timeout: 4000 });
+  pass('meta-game bell: unread dot after first message');
+  await page.click('.mg-bell-btn');
+  const bellMsg = await page.$eval('.mg-bell-panel', (e) => e.textContent);
+  if (/I can see something/.test(bellMsg)) pass('meta-game bell: opens message list ("I can see something")'); else fail('bell msg: ' + bellMsg);
+  await page.click('.games-close');
+
+  // ── Meta-game Stage 1 reveal/enable mechanic + debug toggle (state preset to 100 bits). ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 100, stage: 1, introStages: [1] })); } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-s1', { timeout: 8000 });
+  const allOn = await page.$$eval('.mg-s1-grid .mg-s1-cell.mg-s1-on', (els) => els.length);
+  const ready = await page.$eval('.mg-s1-btn', (e) => e.classList.contains('mg-s1-ready'));
+  if (allOn === 100 && ready) pass('meta-game stage 1: 100 bits reveals all squares + enables button'); else fail('s1 enable: on=' + allOn + ' ready=' + ready);
+  // Buying resets bits to 0 (all covered again) → "where did everything go" bell message.
+  await page.click('.mg-s1-btn');
+  await page.waitForFunction(() => document.querySelectorAll('.mg-s1-grid .mg-s1-cell.mg-s1-on').length === 0, null, { timeout: 4000 });
+  const afterBuy = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('fv:games:metagame')) || {}; } catch { return {}; } });
+  if (afterBuy.bits === 0 && (afterBuy.owned || {})['s1-t1'] === 1) pass('meta-game stage 1: buy resets bits + raises compute level'); else fail('s1 buy: ' + JSON.stringify(afterBuy));
+  // Debug toggle: hidden panel, gear button shows it.
+  if (await page.$eval('.mg-debug', (e) => e.hidden)) pass('meta-game: debug panel hidden by default'); else fail('debug panel not hidden');
+  await page.click('.mg-dbg-toggle');
+  if (await page.$eval('.mg-debug', (e) => !e.hidden)) pass('meta-game: debug toggle reveals the panel'); else fail('debug toggle did not reveal');
+  await page.click('.games-close');
+
+  // ── Meta-game Stage 1 boss (The Overwriter) — reachable after 5 compute upgrades. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 0, stage: 1, introStages: [1], owned: { 's1-t1': 5 } })); } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-s1-boss:not([hidden])', { timeout: 8000 });
+  pass('meta-game stage 1: Confront button appears after 5 upgrades');
   const clickThroughDialog = async () => { for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); } };
-  await clickThroughDialog();
-  // Grind: the pixel canvas reflects bits (the canvas IS the progress indicator).
-  await page.waitForSelector('.mg-canvas', { timeout: 8000 });
-  const mgPixels = await page.$eval('.mg-canvas', (e) => Number(e.dataset.pixels));
-  if (mgPixels > 0) pass('meta-game: bits drawn as pixels on the canvas (' + mgPixels + ' px)'); else fail('mg pixels: ' + mgPixels);
-  // Buy-multiplier overlay appears at big numbers; select ×10.
-  await page.waitForSelector('.mg-mult:not([hidden])', { timeout: 4000 });
-  await page.click('.mg-mult-b[data-m="10"]');
-  if (await page.$eval('.mg-mult-b[data-m="10"]', (e) => e.classList.contains('mg-mult-on'))) pass('meta-game: buy-multiplier overlay (×10 selected)'); else fail('mult not selected');
-  // Buying a data-driven tier with ×10 spends pixels + raises the rate.
-  await page.click('.mg-shop .mg-buy[data-id="cron"]');
-  const mgOwned = await page.$eval('.mg-buy[data-id="cron"] .mg-owned', (e) => e.textContent);
-  const mgRate = await page.$eval('.mg-rate', (e) => e.textContent);
-  if (!/^×0$/.test(mgOwned) && !/^0\/s$/.test(mgRate)) pass('meta-game: tier bought ' + mgOwned + ', rate ' + mgRate); else fail('mg buy: owned=' + mgOwned + ' rate=' + mgRate);
-  // Bits still exceed the stage goal (100) → Confront button → boss.
-  await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 4000 });
-  await page.click('.mg-faceboss');
+  await page.click('.mg-s1-boss');
   await clickThroughDialog();                          // boss taunt → Fight
   await page.waitForSelector('.mg-boss', { timeout: 8000 });
   const locks0 = await page.$$eval('.mg-boss-locks .mg-lock', (els) => els.length);
   if (locks0 === 3) pass('meta-game boss: The Overwriter appears (3 locks)'); else fail('boss locks: ' + locks0);
-  // Hint mechanic reveals guidance.
   await page.click('.mg-hint-btn');
   if (await page.$('.mg-dialog')) pass('meta-game boss: hint mechanic reveals a hint'); else fail('no hint dialog');
   await page.click('.mg-dlg-next');                    // close the hint
-  // Defeat: create a new file that OVERWRITES his lock, three times, racing the re-lock.
   await page.fill('.mg-boss-file', 'boss.lock');
   await page.check('.mg-boss-owchk');
   for (let k = 2; k >= 0; k--) {
@@ -115,6 +163,18 @@ export async function run(ctx) {
   await page.waitForSelector('.mg-bits', { timeout: 8000 });
   const s2res = await page.$eval('.mg-bits', (e) => e.textContent);
   if (/cycles/.test(s2res)) pass('meta-game stage 2: resource reskinned via config (' + s2res + ')'); else fail('stage2 resource: ' + s2res);
+  // Shared grind economy: the pixel canvas IS the progress indicator (bits → pixels).
+  const mgPixels = await page.$eval('.mg-canvas', (e) => Number(e.dataset.pixels));
+  if (mgPixels > 0) pass('meta-game grind: bits drawn as pixels on the canvas (' + mgPixels + ' px)'); else fail('mg pixels: ' + mgPixels);
+  // Buy-multiplier overlay appears at big numbers; select ×10.
+  await page.waitForSelector('.mg-mult:not([hidden])', { timeout: 4000 });
+  await page.click('.mg-mult-b[data-m="10"]');
+  if (await page.$eval('.mg-mult-b[data-m="10"]', (e) => e.classList.contains('mg-mult-on'))) pass('meta-game grind: buy-multiplier overlay (×10 selected)'); else fail('mult not selected');
+  // Buying a data-driven tier with ×10 spends pixels + raises the rate.
+  await page.click('.mg-shop .mg-buy[data-id="daemon"]');
+  const mgOwned = await page.$eval('.mg-buy[data-id="daemon"] .mg-owned', (e) => e.textContent);
+  const mgRate = await page.$eval('.mg-rate', (e) => e.textContent);
+  if (!/^×0$/.test(mgOwned) && !/^0\/s$/.test(mgRate)) pass('meta-game grind: tier bought ' + mgOwned + ', rate ' + mgRate); else fail('mg buy: owned=' + mgOwned + ' rate=' + mgRate);
   await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 4000 });
   await page.click('.mg-faceboss');
   const clickThrough2 = async () => { for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); } };
@@ -139,7 +199,7 @@ export async function run(ctx) {
     try {
       localStorage.setItem('fv:games:hi:snake', '50');
       localStorage.setItem('fv:games:hi:2048', '30');
-      localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 0, stage: 1, introStages: [1], claimed: {} }));
+      localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 0, stage: 2, defeated: [1], introStages: [1, 2], claimed: {} }));
     } catch {}
     window.__fv.games.unlock(); window.__fv.games.open();
   });
