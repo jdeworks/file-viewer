@@ -261,8 +261,13 @@ export function mount(host, { onExit } = {}) {
       dlgCtl = playDialog(stageHost, [line], { cta: 'Got it', onDone: () => { dlgCtl = null; } });
     });
     // Boss taunt, then the arena goes live.
+    // mountBoss may be null while the boss module is pending (e.g. Stage 1 before WP-S1-11).
     dlgCtl = playDialog(stageHost, st.bossIntro, {
-      cta: 'Fight', onDone: () => { dlgCtl = null; bossCtl = st.mountBoss(arena, { stage: st, onDefeat: onBossDefeat }); },
+      cta: 'Fight', onDone: () => {
+        dlgCtl = null;
+        if (!st.mountBoss) { arena.innerHTML = '<div class="mg-boss-pending">boss coming soon</div>'; return; }
+        bossCtl = st.mountBoss(arena, { stage: st, onDefeat: onBossDefeat });
+      },
     });
     attachDbg();
   }

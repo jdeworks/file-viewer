@@ -112,17 +112,18 @@ export async function run(ctx) {
   await page.click('.mg-s1-btn');
   await page.waitForFunction(() => document.querySelectorAll('.mg-s1-grid .mg-s1-cell.mg-s1-on').length === 0, null, { timeout: 4000 });
   const afterBuy = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('fv:games:metagame')) || {}; } catch { return {}; } });
-  if (afterBuy.bits === 0 && (afterBuy.owned || {})['s1-t1'] === 1) pass('meta-game stage 1: buy resets bits + raises compute level'); else fail('s1 buy: ' + JSON.stringify(afterBuy));
+  if (afterBuy.bits === 0 && (afterBuy.owned || {})['s1-cursor'] === 1) pass('meta-game stage 1: buy resets bits + raises compute level'); else fail('s1 buy: ' + JSON.stringify(afterBuy));
   // Debug toggle: hidden panel, gear button shows it.
   if (await page.$eval('.mg-debug', (e) => e.hidden)) pass('meta-game: debug panel hidden by default'); else fail('debug panel not hidden');
   await page.click('.mg-dbg-toggle');
   if (await page.$eval('.mg-debug', (e) => !e.hidden)) pass('meta-game: debug toggle reveals the panel'); else fail('debug toggle did not reveal');
   await page.click('.games-close');
 
-  // ── Meta-game Stage 1 boss (The Overwriter) — reachable after 5 compute upgrades. ──
+  // ── Meta-game Stage 1 boss (The Defragmenter) — Confront button after 5 cursor upgrades. ──
+  // mountBoss is null until WP-S1-11 lands; the orchestrator shows a pending placeholder.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => {
-    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 0, stage: 1, introStages: [1], owned: { 's1-t1': 5 } })); } catch {}
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 0, stage: 1, introStages: [1], owned: { 's1-cursor': 5 } })); } catch {}
     window.__fv.games.unlock(); window.__fv.games.open();
   });
   await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
@@ -131,24 +132,9 @@ export async function run(ctx) {
   pass('meta-game stage 1: Confront button appears after 5 upgrades');
   const clickThroughDialog = async () => { for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); } };
   await page.click('.mg-s1-boss');
-  await clickThroughDialog();                          // boss taunt → Fight
-  await page.waitForSelector('.mg-boss', { timeout: 8000 });
-  const locks0 = await page.$$eval('.mg-boss-locks .mg-lock', (els) => els.length);
-  if (locks0 === 3) pass('meta-game boss: The Overwriter appears (3 locks)'); else fail('boss locks: ' + locks0);
-  await page.click('.mg-hint-btn');
-  if (await page.$('.mg-dialog')) pass('meta-game boss: hint mechanic reveals a hint'); else fail('no hint dialog');
-  await page.click('.mg-dlg-next');                    // close the hint
-  await page.fill('.mg-boss-file', 'boss.lock');
-  await page.check('.mg-boss-owchk');
-  for (let k = 2; k >= 0; k--) {
-    await page.click('.mg-boss-create');
-    await page.waitForFunction((n) => document.querySelectorAll('.mg-boss-locks .mg-lock').length === n, k, { timeout: 4000 });
-  }
-  await page.waitForSelector('.mg-dialog', { timeout: 4000 });
-  const victoryText = await page.$eval('.mg-dlg-text', (e) => e.textContent);
-  if (victoryText && victoryText.length > 0) pass('meta-game boss defeated with a real app feature → victory'); else fail('victory: ' + victoryText);
-  const beaten = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame')) || {}).defeated || []; } catch { return []; } });
-  if (beaten.includes(1)) pass('meta-game: stage 1 marked defeated (persisted)'); else fail('defeated: ' + JSON.stringify(beaten));
+  await clickThroughDialog();                          // boss taunt → Fight (mountBoss=null → pending)
+  await page.waitForSelector('.mg-boss-pending', { timeout: 8000 });
+  pass('meta-game boss: The Defragmenter arena pending (mountBoss wired in WP-S1-11)');
   await page.click('.games-close');
 
   // ── Meta-game Stage 2 (Config Demon) ── proves the modular stage system + a 2nd boss mechanic. ──
