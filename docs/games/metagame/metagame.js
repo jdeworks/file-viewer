@@ -112,6 +112,7 @@ export function mount(host, { onExit } = {}) {
     dlgCtl = playDialog(host.querySelector('.mg-stage-host'), st.intro, {
       cta: 'Begin', onDone: () => { if (!state.introStages.includes(st.n)) state.introStages.push(st.n); save(state); renderGrind(); },
     });
+    attachDbg();
   }
 
   /* ── Phase: grind (the visual pixel economy) ── */
@@ -179,6 +180,7 @@ export function mount(host, { onExit } = {}) {
       } else bonusEl.hidden = true;
     }
     paint();
+    attachDbg();
     let acc = 0;
     timer = setInterval(() => { state.bits += totalRate() / 10; paint(); if (++acc >= 10) { acc = 0; save(state); } }, 100);
   }
@@ -204,6 +206,7 @@ export function mount(host, { onExit } = {}) {
     dlgCtl = playDialog(stageHost, st.bossIntro, {
       cta: 'Fight', onDone: () => { dlgCtl = null; bossCtl = st.mountBoss(arena, { stage: st, onDefeat: onBossDefeat }); },
     });
+    attachDbg();
   }
   function onBossDefeat() {
     const st = stage();
@@ -212,12 +215,70 @@ export function mount(host, { onExit } = {}) {
     save(state);
     clearTransient();
     host.innerHTML = '<div class="mg-wrap mg-stage-host"></div>';
+    attachDbg();
     dlgCtl = playDialog(host.querySelector('.mg-stage-host'), st.victory, {
       cta: 'Continue', onDone: () => { if (state.stage < STAGES.length) state.stage++; save(state); enterStage(); },
     });
   }
 
+  /* ── Debug panel (always visible; condition on localStorage('fv:games:debug') later if desired) ── */
+  const dbg = document.createElement('div');
+  dbg.className = 'mg-debug';
+  const stageOpts = Array.from({ length: STAGES.length }, (_, i) =>
+    '<option value="' + (i + 1) + '">' + (i + 1) + '</option>').join('');
+  dbg.innerHTML =
+    '<span class="mg-debug-label">&#x1f527; Debug</span>'
+    + '<label>Stage <select class="mg-dbg-stage">' + stageOpts + '</select></label>'
+    + '<label>Phase <select class="mg-dbg-phase">'
+    + '<option value="intro">intro</option><option value="grind">grind</option>'
+    + '<option value="boss">boss</option><option value="victory">victory</option>'
+    + '</select></label>'
+    + '<button class="mg-dbg-jump" type="button">Jump</button>'
+    + '<button class="mg-dbg-reset" type="button">Reset Save</button>';
+  // Re-attach after any host.innerHTML wipe.
+  function attachDbg() { host.appendChild(dbg); }
+
+  dbg.querySelector('.mg-dbg-jump').addEventListener('click', () => {
+    const targetStage = Number(dbg.querySelector('.mg-dbg-stage').value);
+    const targetPhase = dbg.querySelector('.mg-dbg-phase').value;
+    const st = stageByNumber(Math.min(targetStage, STAGES.length));
+    clearTransient();
+    state.stage = targetStage;
+    if (targetPhase === 'intro') {
+      state.introStages = state.introStages.filter((n) => n !== st.n);
+      state.bits = 0;
+      save(state);
+      startIntro();
+    } else if (targetPhase === 'grind') {
+      // Mark intro seen so renderGrind is called directly.
+      if (!state.introStages.includes(st.n)) state.introStages.push(st.n);
+      state.bits = 0;
+      save(state);
+      renderGrind();
+    } else if (targetPhase === 'boss') {
+      if (!state.introStages.includes(st.n)) state.introStages.push(st.n);
+      state.bits = st.goal;     // meets threshold; startBoss() checks nothing else
+      save(state);
+      startBoss();
+    } else if (targetPhase === 'victory') {
+      if (!state.introStages.includes(st.n)) state.introStages.push(st.n);
+      if (!state.defeated.includes(st.n)) state.defeated.push(st.n);
+      state.bits = st.goal * 6;
+      save(state);
+      host.innerHTML = '<div class="mg-wrap mg-stage-host"></div>';
+      attachDbg();
+      dlgCtl = playDialog(host.querySelector('.mg-stage-host'), st.victory, {
+        cta: 'Continue', onDone: () => { if (state.stage < STAGES.length) state.stage++; save(state); enterStage(); },
+      });
+    }
+  });
+  dbg.querySelector('.mg-dbg-reset').addEventListener('click', () => {
+    try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+    location.reload();
+  });
+
   enterStage();
+  attachDbg();
 
   return {
     destroy() { clearTransient(); save(state); host.innerHTML = ''; },

@@ -5,12 +5,17 @@
 import { GAMES, getGame } from './registry.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const MOBILE_TIP_KEY = 'fv:games:fs-tip-dismissed';
+const isMobile = () => window.innerWidth < 760;
 
 function highScore(id) {
   try { return Number(localStorage.getItem('fv:games:hi:' + id) || 0); } catch { return 0; }
 }
 function setHighScore(id, n) {
   try { if (n > highScore(id)) localStorage.setItem('fv:games:hi:' + id, String(n)); } catch { /* ignore */ }
+}
+function tryFullscreen(el) {
+  try { (el.requestFullscreen ? el : document.documentElement).requestFullscreen(); } catch { /* blocked */ }
 }
 
 export function createHub({ onToast } = {}) {
@@ -31,11 +36,19 @@ export function createHub({ onToast } = {}) {
     root = document.createElement('div');
     root.className = 'games-overlay';
     root.hidden = true;
+
+    // Mobile tip banner (shown once until dismissed).
+    const tipHtml = '<div class="games-tip" id="games-tip">'
+      + 'Tip: tap &#x26f6; for the best experience on mobile'
+      + '<button class="games-tip-x" aria-label="Dismiss" type="button">&#xd7;</button></div>';
+
     root.innerHTML =
       '<div class="games-panel" role="dialog" aria-label="Easter-egg games">'
-      + '<header class="games-head"><h2>🎮 Arcade</h2>'
-      + '<button class="games-back" hidden>‹ Back</button>'
-      + '<button class="games-close" aria-label="Close">✕</button></header>'
+      + '<header class="games-head"><h2>&#x1f3ae; Arcade</h2>'
+      + '<button class="games-fs-btn" type="button" title="Fullscreen">&#x26f6;</button>'
+      + '<button class="games-back" hidden>&#x2039; Back</button>'
+      + '<button class="games-close" aria-label="Close">&#x2715;</button></header>'
+      + (isMobile() && !localStorage.getItem(MOBILE_TIP_KEY) ? tipHtml : '')
       + buildGrid()
       + '<div class="games-stage" hidden></div></div>';
     document.body.appendChild(root);
@@ -43,9 +56,17 @@ export function createHub({ onToast } = {}) {
 
     root.querySelector('.games-close').addEventListener('click', close);
     root.querySelector('.games-back').addEventListener('click', exitGame);
+    root.querySelector('.games-fs-btn').addEventListener('click', () => tryFullscreen(root.querySelector('.games-panel')));
     root.addEventListener('click', (e) => { if (e.target === root) close(); });   // backdrop
     root.querySelectorAll('.games-card').forEach((b) =>
       b.addEventListener('click', () => launch(b.dataset.game)));
+    const tip = root.querySelector('#games-tip');
+    if (tip) {
+      tip.querySelector('.games-tip-x').addEventListener('click', () => {
+        try { localStorage.setItem(MOBILE_TIP_KEY, '1'); } catch { /* ignore */ }
+        tip.remove();
+      });
+    }
   }
 
   async function launch(id) {
@@ -58,6 +79,16 @@ export function createHub({ onToast } = {}) {
     stage.hidden = false;
     stage.innerHTML = '';
     root.querySelector('.games-back').hidden = false;
+    // Add in-game fullscreen button.
+    const fsBtn = document.createElement('button');
+    fsBtn.className = 'games-fs-btn games-fs-ingame';
+    fsBtn.type = 'button';
+    fsBtn.title = 'Fullscreen';
+    fsBtn.innerHTML = '&#x26f6;';
+    fsBtn.addEventListener('click', () => tryFullscreen(root.querySelector('.games-panel')));
+    stage.appendChild(fsBtn);
+    // On mobile, attempt fullscreen automatically (best-effort; may be blocked without user gesture).
+    if (isMobile()) tryFullscreen(root.querySelector('.games-panel'));
     current = mount(stage, {
       onScore: (n) => { setHighScore(id, n); const el = root.querySelector('[data-hi="' + id + '"]'); if (el) el.textContent = 'Best: ' + highScore(id); },
       onExit: exitGame,

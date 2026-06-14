@@ -101,22 +101,21 @@ export function mount(host, { onScore, onExit } = {}) {
     e.preventDefault();
   }
 
-  // Touch swipe (mobile).
+  // Touch swipe (mobile): record on touchstart, resolve direction on touchend (20px threshold).
   let tStart = null;
-  function onTouchStart(e) { const t = e.touches[0]; tStart = { x: t.clientX, y: t.clientY }; }
-  function onTouchMove(e) {
+  function onTouchStart(e) { const t = e.touches[0]; tStart = { x: t.clientX, y: t.clientY }; e.preventDefault(); }
+  function onTouchEnd(e) {
     if (!tStart) return;
-    const t = e.touches[0];
+    const t = e.changedTouches[0];
     const dx = t.clientX - tStart.x, dy = t.clientY - tStart.y;
-    if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
-    if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0); else setDir(0, dy > 0 ? 1 : -1);
     tStart = null;
-    e.preventDefault();
+    if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;  // below threshold — ignore
+    if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0); else setDir(0, dy > 0 ? 1 : -1);
   }
 
   window.addEventListener('keydown', onKey);
   canvas.addEventListener('touchstart', onTouchStart, { passive: false });
-  canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+  canvas.addEventListener('touchend', onTouchEnd, { passive: true });
   host.querySelector('.snake-restart').addEventListener('click', () => { host.querySelector('.snake-board').classList.remove('snake-dead'); reset(); });
   host.querySelector('.snake-quit').addEventListener('click', () => onExit?.());
 
@@ -127,7 +126,7 @@ export function mount(host, { onScore, onExit } = {}) {
       if (timer) clearInterval(timer);
       window.removeEventListener('keydown', onKey);
       canvas.removeEventListener('touchstart', onTouchStart);
-      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchend', onTouchEnd);
       host.innerHTML = '';
     },
   };

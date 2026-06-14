@@ -5,6 +5,10 @@
 // animation. Stages are built one at a time; this file grows as bosses land.
 //
 // A boss's mountBoss returns { destroy() } and calls onDefeat() when beaten.
+//
+// Stages 5-7 live in stages2.js; stages 8-10 in stages3.js.
+import { STAGES2 } from './stages2.js';
+import { STAGES3 } from './stages3.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -330,6 +334,8 @@ export const STAGES = [
     hp: 3,
     mountBoss: mountHexHydra,
   },
+  ...STAGES2,
+  ...STAGES3,
 ];
 
 export function stageByNumber(n) { return STAGES[n - 1] || null; }

@@ -164,3 +164,31 @@
 .mg-hex-cell { font: 13px ui-monospace, monospace; padding: 6px 0; border: 1px solid var(--border);
   border-radius: 4px; background: var(--bg); color: var(--fg); cursor: pointer; }
 .mg-hex-cell:hover { border-color: var(--accent); }
+
+/* Debug jump panel — developer tool, always visible for now. */
+.mg-debug { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px;
+  padding: 8px 10px; background: var(--bg-2); border: 1px dashed var(--border);
+  border-radius: 8px; font-size: 11px; color: var(--fg-2); }
+.mg-debug-label { font-weight: 700; color: var(--fg); }
+.mg-debug label { display: flex; align-items: center; gap: 4px; }
+.mg-debug select { font-size: 11px; background: var(--bg); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; }
+.mg-dbg-jump, .mg-dbg-reset { background: var(--bg-3, var(--bg-2)); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 5px; padding: 3px 10px;
+  cursor: pointer; font-size: 11px; }
+.mg-dbg-jump:hover { border-color: var(--accent); color: var(--accent); }
+.mg-dbg-reset:hover { border-color: #e03131; color: #e03131; }
+
+/* Hub fullscreen button. */
+.games-fs-btn { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 14px; line-height: 1; }
+.games-fs-btn:hover { border-color: var(--accent); }
+.games-fs-ingame { position: absolute; top: 8px; right: 8px; z-index: 10; opacity: .7; }
+.games-fs-ingame:hover { opacity: 1; }
+
+/* Mobile tip banner. */
+.games-tip { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 14px; background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-bottom: 1px solid var(--border); font-size: 12px; color: var(--fg-2); }
+.games-tip-x { background: none; border: none; cursor: pointer; color: var(--fg-2);
+  font-size: 15px; line-height: 1; padding: 0 2px; }
