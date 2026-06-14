@@ -211,6 +211,18 @@ try {
     pass('DOCX embeds data-URL image as an inline picture (media + rel + drawing)');
   else fail('docx image embed: ' + JSON.stringify(docxImg));
 
+  // Template helper (core/template.js): {{key}} HTML-escapes, {{&key}} stays raw, and templates
+  // load same-origin (the renderer .html-file refactor depends on this).
+  const tpl = await page.evaluate(async () => {
+    const { fill, loadTemplate } = await import('/core/template.js');
+    const out = fill('<i>{{a}}</i>{{&b}}{{missing}}', { a: '<x>&"', b: '<b>raw</b>' });
+    const vcardRow = await loadTemplate(new URL('/types/vcard/row.html', location.origin));
+    return { out, hasRowTpl: /vcf-row/.test(vcardRow) };
+  });
+  if (tpl.out === '<i>&lt;x&gt;&amp;&quot;</i><b>raw</b>' && tpl.hasRowTpl)
+    pass('template helper: {{}} escapes, {{&}} raw, .html partials load same-origin');
+  else fail('template helper: ' + JSON.stringify(tpl));
+
   // Sandbox attribute is allow-scripts only (no allow-same-origin).
   const sandbox = await frame.getAttribute('sandbox');
   if (sandbox === 'allow-scripts') pass('iframe sandbox = allow-scripts only'); else fail('sandbox: ' + sandbox);
