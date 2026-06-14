@@ -1864,6 +1864,29 @@ try {
   if (/1\.25K/.test(bitsAfterClaim)) pass('meta-game: claiming a minigame bonus adds resource (' + bitsAfterClaim + ')'); else fail('bits after claim: ' + bitsAfterClaim);
   await page.click('.games-close');
 
+  // ── Meta-game Stage 3 (ASCII Awakening) ── a stage changes the whole VISUAL via config alone. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 5000, stage: 3, defeated: [1, 2], introStages: [1, 2, 3] })); } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-ascii', { timeout: 8000 });
+  const s3res = await page.$eval('.mg-bits', (e) => e.textContent);
+  if (/bytes/.test(s3res)) pass('meta-game stage 3: ASCII theme + resource reskin (' + s3res + ')'); else fail('stage3 resource: ' + s3res);
+  await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 4000 });
+  await page.click('.mg-faceboss');
+  const clickThrough3 = async () => { for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); } };
+  await clickThrough3();
+  await page.waitForSelector('.mg-boss-kernel', { timeout: 8000 });
+  pass('meta-game stage 3: Kernel Panic terminal boss');
+  for (let i = 0; i < 3; i++) { await page.fill('.mg-cmd', 'reboot'); await page.click('.mg-cmd-run'); await page.waitForTimeout(80); }
+  await page.waitForSelector('.mg-dialog', { timeout: 4000 });
+  const beaten3 = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame')) || {}).defeated || []; } catch { return []; } });
+  if (beaten3.includes(3)) pass('meta-game stage 3: Kernel Panic defeated via a terminal command (persisted)'); else fail('stage3 defeated: ' + JSON.stringify(beaten3));
+  await page.click('.games-close');
+
   // ── Graceful offline-miss ── cache-on-use only (no full precache), then open a viewer that
   // was never loaded online while offline → friendly note instead of a raw error.
   {

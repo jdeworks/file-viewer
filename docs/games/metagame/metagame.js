@@ -25,18 +25,35 @@ const gameHigh = (id) => { try { return Number(localStorage.getItem('fv:games:hi
 // Pixel canvas: bits become green pixels filling from the bottom (the canvas IS the progress bar);
 // owned machines are drawn as little sprites along the top. Buying spends bits → fewer raw pixels.
 const COLS = 48, ROWS = 16, CELL = 5, CAP = COLS * ROWS;
-function drawCanvas(canvas, bits, owned, tiers, color) {
+const ASCII_GLYPHS = '01<>{}[]/\\|=+*';
+function drawCanvas(canvas, bits, owned, tiers, color, theme) {
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // Raw bit-pixels fill bottom-up.
   const n = Math.min(Math.floor(bits), CAP);
+  // ASCII theme (stage 3+): the same economy drawn as glyphs, not pixels — proves a stage can
+  // change the whole VISUAL by config alone.
+  if (theme === 'ascii') {
+    ctx.font = (CELL + 2) + 'px ui-monospace, monospace';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = color || '#7ee787';
+    for (let i = 0; i < n; i++) {
+      const col = i % COLS, row = ROWS - 1 - Math.floor(i / COLS);
+      if (row < 0) break;
+      ctx.fillText(ASCII_GLYPHS[(i * 7) % ASCII_GLYPHS.length], col * CELL, row * CELL);
+    }
+    ctx.fillStyle = '#58a6ff';
+    let xa = 0;
+    for (const t of tiers) { const c = owned[t.id] || 0; for (let b = 0; b < Math.min(c, 8); b++) { ctx.fillText('#', xa, 0); xa += CELL; } if (c) xa += CELL; }
+    return;
+  }
+  // Default: raw bit-pixels fill bottom-up.
   ctx.fillStyle = color || '#3fb950';
   for (let i = 0; i < n; i++) {
     const col = i % COLS, row = ROWS - 1 - Math.floor(i / COLS);
     if (row < 0) break;
     ctx.fillRect(col * CELL + 1, row * CELL + 1, CELL - 1, CELL - 1);
   }
-  // Owned machines: a small 2×2 block per machine type along the top, dimmed.
+  // Owned machines: a small 2×2 block per machine type along the top.
   let x = 1;
   for (const t of tiers) {
     const c = owned[t.id] || 0;
@@ -103,8 +120,9 @@ export function mount(host, { onExit } = {}) {
     const st = stage();
     const color = (st.resource && st.resource.color) || '#3fb950';
     const resName = (st.resource && st.resource.name) || 'bits';
+    const ascii = st.resource && st.resource.theme === 'ascii';
     host.innerHTML =
-      '<div class="mg-wrap">'
+      '<div class="mg-wrap' + (ascii ? ' mg-ascii' : '') + '">'
       + '<div class="mg-stage-banner">Stage ' + st.n + ' · <strong>' + st.title + '</strong></div>'
       + '<canvas class="mg-canvas" width="' + (COLS * CELL + 2) + '" height="' + (ROWS * CELL + 2) + '"></canvas>'
       + '<div class="mg-head"><div class="mg-bits"></div><div class="mg-rate"></div></div>'
@@ -136,7 +154,7 @@ export function mount(host, { onExit } = {}) {
       $('.mg-bits').textContent = fmt(state.bits) + ' ' + resName;
       $('.mg-rate').textContent = fmt(totalRate()) + '/s';
       $('.mg-click').textContent = ' +' + fmt(clickPower());
-      drawCanvas(canvas, state.bits, state.owned, tiers(), color);
+      drawCanvas(canvas, state.bits, state.owned, tiers(), color, st.resource && st.resource.theme);
       canvas.dataset.pixels = String(Math.min(Math.floor(state.bits), CAP));
       const goal = st.goal, beaten = stageBeaten();
       $('.mg-progress-bar').style.width = Math.min(100, (state.bits / goal) * 100) + '%';

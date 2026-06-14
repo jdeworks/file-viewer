@@ -781,3 +781,13 @@ body {
 .mg-ini-apply { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); }
 .mg-hit { animation: mg-hit-flash .18s ease; }
 @keyframes mg-hit-flash { 0% { background: #e0313133; } 100% { background: var(--bg-2); } }
+/* ASCII Awakening (stage 3) — terminal/green-on-black skin via one config flag. */
+.mg-ascii { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.mg-ascii .mg-canvas { background: #06140a; border-color: #1f6f37; }
+.mg-ascii .mg-compute { background: #1f6f37; }
+.mg-ascii .mg-stage-banner strong { color: #7ee787; }
+.mg-term { background: #06140a; color: #7ee787; font: 12px/1.35 ui-monospace, monospace; padding: 10px;
+  border: 1px solid #1f6f37; border-radius: 6px; margin: 0 0 8px; white-space: pre; overflow: hidden; min-height: 70px; }
+.mg-cmd { flex: 1; font: 13px ui-monospace, monospace; padding: 6px 8px; border: 1px solid #1f6f37;
+  border-radius: 6px; background: #06140a; color: #7ee787; }
+.mg-cmd-run { background: #1f6f37; color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 13px; }

@@ -116,6 +116,41 @@ function mountConfigDemon(arena, { stage, onDefeat }) {
   return { destroy() { clearInterval(rw); } };
 }
 
+/* ── Stage 3 — ASCII Awakening (transition: the game downshifts to terminal/ASCII). Boss = Kernel
+   Panic: a corrupted terminal you fix with the right command; it re-panics on a timer. ── */
+function mountKernelPanic(arena, { stage, onDefeat }) {
+  let panics = stage.panics, dead = false;
+  arena.innerHTML =
+    '<div class="mg-boss mg-boss-kernel">'
+    + '<pre class="mg-term"></pre>'
+    + '<div class="mg-boss-name">' + esc(stage.bossName) + '</div>'
+    + '<div class="mg-boss-tool"><input class="mg-cmd" spellcheck="false" placeholder="type a command…" aria-label="terminal command">'
+    + '<button class="mg-cmd-run" type="button">Enter ⏎</button></div>'
+    + '<div class="mg-boss-msg" role="status"></div>'
+    + '</div>';
+  const bossEl = arena.querySelector('.mg-boss');
+  const term = arena.querySelector('.mg-term');
+  const msgEl = arena.querySelector('.mg-boss-msg');
+  const corrupt = () => '▓▒░ KERNEL PANIC ░▒▓\n' + Array.from({ length: 3 }, () => Array.from({ length: 22 }, (_, i) => '01<>{}[]/\\|=+*#'[(i * 7 + panics) % 14]).join('')).join('\n');
+  const fixed = () => 'user@reality:~$ _\nsystem stable.\npanics remaining: ' + panics;
+  const paint = () => { term.textContent = panics > 0 ? corrupt() : fixed(); };
+  paint();
+  function run() {
+    if (dead) return;
+    const cmd = arena.querySelector('.mg-cmd').value.trim().toLowerCase();
+    if (cmd !== stage.command) { msgEl.textContent = '`' + cmd + '`: command not found.'; return; }
+    panics--;
+    msgEl.textContent = 'Reboot accepted. Panics left: ' + panics;
+    paint();
+    if (panics <= 0) defeat();
+  }
+  function defeat() { dead = true; clearInterval(rp); bossEl.classList.add('mg-boss-dead'); msgEl.textContent = 'The terminal goes quiet.'; setTimeout(onDefeat, 750); }
+  const rp = setInterval(() => { if (dead || panics <= 0 || panics >= stage.panics) return; panics++; paint(); msgEl.textContent = 'It panicked AGAIN. Reboot faster.'; }, stage.repanicMs);
+  arena.querySelector('.mg-cmd-run').addEventListener('click', run);
+  arena.querySelector('.mg-cmd').addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
+  return { destroy() { clearInterval(rp); } };
+}
+
 export const STAGES = [
   {
     n: 1,
@@ -187,6 +222,40 @@ export const STAGES = [
     hp: 3,
     rewriteMs: 6000,
     mountBoss: mountConfigDemon,
+  },
+  {
+    n: 3,
+    title: 'ASCII Awakening',
+    goal: 400,
+    resource: { name: 'bytes', color: '#7ee787', theme: 'ascii' },     // the whole stage goes ASCII
+    tiers: [
+      { id: 'click', name: 'Keystroke', icon: '⌨', type: 'click', amount: 3, base: 30, mult: 1.5, desc: '+3 bytes per keystroke' },
+      { id: 'pipe', name: 'Pipe', icon: '|', type: 'auto', rate: 2, base: 120, mult: 1.15, desc: 'streams 2 bytes/s' },
+      { id: 'shell', name: 'Shell script', icon: '$', type: 'auto', rate: 12, base: 1400, mult: 1.15, desc: 'streams 12 bytes/s' },
+      { id: 'kernel', name: 'Kernel module', icon: '#', type: 'auto', rate: 70, base: 16000, mult: 1.15, desc: 'streams 70 bytes/s' },
+    ],
+    intro: [
+      { speaker: 'SYS', text: '>_ Graphics subsystem offline. We are dropping to a TERMINAL. Everything is text now.' },
+      { speaker: 'SYS', text: 'Generate bytes the old way. Reach 400 — then deal with the panicking kernel ahead.' },
+    ],
+    bossName: 'Kernel Panic',
+    bossIntro: [
+      { speaker: 'Kernel Panic', text: '▓▒░ PANIC ░▒▓ I corrupt every frame. You cannot read me.' },
+      { speaker: 'Kernel Panic', text: 'There is no GUI to save you here. Only the command line. Hahaha.' },
+    ],
+    hints: [
+      { speaker: '??? (a friendly daemon)', text: 'This is a terminal now. Terminals take COMMANDS.' },
+      { speaker: '??? (a friendly daemon)', text: 'A panicking kernel needs one thing: a reboot.' },
+      { speaker: '??? (a friendly daemon)', text: 'Type "reboot" and hit Enter — repeatedly, before it panics again.' },
+    ],
+    victory: [
+      { speaker: 'Kernel Panic', text: 'reboot… reboot… you kept rebooting me to death…' },
+      { speaker: 'SYS', text: 'Stable. We stay in the terminal a while — it suits what comes next. Three down.' },
+    ],
+    command: 'reboot',
+    panics: 3,
+    repanicMs: 6000,
+    mountBoss: mountKernelPanic,
   },
 ];
 
