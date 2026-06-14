@@ -15,7 +15,20 @@ function setUnlocked() {
   try { localStorage.setItem(UNLOCK_KEY, '1'); } catch { /* private mode — still works this session */ }
 }
 
+// The games/metagame stylesheet is split out of app.css and only attached the first time the
+// arcade opens — so the always-loaded core CSS stays small for users who never find the egg.
+function ensureGamesCss() {
+  if (document.getElementById('fv-games-css')) return;
+  const link = document.createElement('link');
+  link.id = 'fv-games-css';
+  link.rel = 'stylesheet';
+  // launcher.js lives at docs/games/; the stylesheet at docs/assets/.
+  link.href = new URL('../assets/games.css', import.meta.url).href;
+  document.head.appendChild(link);
+}
+
 async function openHub() {
+  ensureGamesCss();
   if (!hubApi) {
     const mod = await import('./hub.js');
     hubApi = mod.createHub({ onToast: toastFn });
