@@ -264,6 +264,12 @@
     "category": "Code"
   },
   {
+    "label": "Overwriter.frag",
+    "file": "Overwriter.frag",
+    "mime": "text/plain",
+    "category": "Code"
+  },
+  {
     "label": "Sample.html",
     "file": "sample.html",
     "mime": "text/html",

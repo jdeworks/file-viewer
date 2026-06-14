@@ -4,7 +4,7 @@
 // stages.js; the dialog/hint box in dialog.js. Contract: mount(host, { onExit }) => { destroy() }.
 import { playDialog } from './dialog.js';
 import { STAGES, stageByNumber } from './stages.js';
-import { renderStage1, mountBell, bellLoad, updateBellDot, checkMessages, removeStageMsgs } from './stage1.js';
+import { renderStage1, mountBell, bellLoad, bellAdd, updateBellDot, checkMessages, removeStageMsgs } from './stage1.js';
 import { MESSAGES1 } from './messages1.js';
 
 const SAVE_KEY = 'fv:games:metagame';
@@ -266,7 +266,13 @@ export function mount(host, { onExit } = {}) {
       cta: 'Fight', onDone: () => {
         dlgCtl = null;
         if (!st.mountBoss) { arena.innerHTML = '<div class="mg-boss-pending">boss coming soon</div>'; return; }
-        bossCtl = st.mountBoss(arena, { stage: st, onDefeat: onBossDefeat });
+        // Pass state + save + bell helpers so the boss can seed bossSeen, fire achievements, and
+        // mirror loss hints into the bell (WP-S1-12 will route Stage 1 through BigNum save/load).
+        bossCtl = st.mountBoss(arena, {
+          stage: st, onDefeat: onBossDefeat, state, save,
+          checkMessages, bellLoad, bellAdd,
+          onRetreat: () => renderStageGrind(),
+        });
       },
     });
     attachDbg();

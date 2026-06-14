@@ -120,7 +120,7 @@ export async function run(ctx) {
   await page.click('.games-close');
 
   // ── Meta-game Stage 1 boss (The Defragmenter) — Confront button after 5 cursor upgrades. ──
-  // mountBoss is null until WP-S1-11 lands; the orchestrator shows a pending placeholder.
+  // WP-S1-11 wires mountDefragmenter: clicking Confront → dialog → the boss LOBBY (taunt + Fight).
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => {
     try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 0, stage: 1, introStages: [1], owned: { 's1-cursor': 5 } })); } catch {}
@@ -132,9 +132,13 @@ export async function run(ctx) {
   pass('meta-game stage 1: Confront button appears after 5 upgrades');
   const clickThroughDialog = async () => { for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); } };
   await page.click('.mg-s1-boss');
-  await clickThroughDialog();                          // boss taunt → Fight (mountBoss=null → pending)
-  await page.waitForSelector('.mg-boss-pending', { timeout: 8000 });
-  pass('meta-game boss: The Defragmenter arena pending (mountBoss wired in WP-S1-11)');
+  await clickThroughDialog();                          // boss taunt → Fight → The Defragmenter lobby
+  await page.waitForSelector('.mg-defrag-arena', { timeout: 8000 });
+  pass('meta-game boss: The Defragmenter lobby mounts (mountDefragmenter wired)');
+  // Start the fight and confirm the split-screen arena (tap target + timer) goes live.
+  await page.click('.mg-defrag-fight');
+  await page.waitForSelector('.mg-defrag-tap', { timeout: 8000 });
+  pass('meta-game boss: fight arena live (tap target + timer)');
   await page.click('.games-close');
 
   // ── Meta-game Stage 2 (Config Demon) ── proves the modular stage system + a 2nd boss mechanic. ──
