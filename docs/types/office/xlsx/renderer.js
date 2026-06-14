@@ -1,6 +1,6 @@
 // Excel/ODS preview: SheetJS -> rows per sheet -> shared tabular renderer (multi-sheet).
 import { readWorkbook } from './xlsxlib.js';
-import { renderTables } from '../../core/tabular.js';
+import { renderTables } from '../../../core/tabular.js';
 
 export async function render(intake, ctx) {
   const settings = ctx?.settings || {};

@@ -1,7 +1,7 @@
 // Spreadsheet exports (loadExports hook): convert the workbook to CSV / JSON via the already-vendored
 // SheetJS (lazy-loaded). The active sheet is the first one; multi-sheet workbooks also get a
 // "Download all sheets as JSON" (sheet-name -> rows).
-import { downloadBlob } from '../../core/exports.js';
+import { downloadBlob } from '../../../core/exports.js';
 import { readWorkbook } from './xlsxlib.js';
 
 export async function getExports(intake) {

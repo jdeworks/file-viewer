@@ -1,7 +1,7 @@
 // pptxviewjs loader. Its UMD reads globals Chart + JSZip, so those load first. Like
 // pdf.js/SheetJS, pptxviewjs runs in the parent (trusted, vendored) and only PARSES the
 // .pptx — nothing from the file executes.
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 let promise = null;
 export function loadPptxViewer() {

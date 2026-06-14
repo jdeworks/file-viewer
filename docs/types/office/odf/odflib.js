@@ -1,7 +1,7 @@
 // OpenDocument (.odt/.odp) reader helpers. ODF is a ZIP holding content.xml (the document body)
 // plus a Pictures/ folder. We read it with the already-vendored JSZip (no new dependency), inline
 // the pictures as data: URLs (zero off-origin), and hand back the XML + image map + document kind.
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 const picMime = (name) => {
   const ext = (name.split('.').pop() || '').toLowerCase();

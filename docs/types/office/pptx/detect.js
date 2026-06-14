@@ -1,4 +1,4 @@
-import { hasExtension, mimeMatches } from '../../core/detect.js';
+import { hasExtension, mimeMatches } from '../../../core/detect.js';
 
 // .pptx/.ppsx are zips; rely on extension/MIME (legacy binary .ppt isn't supported).
 export function detect(intake) {

@@ -30,9 +30,9 @@ import rawType from '../types/raw/index.js';
 import markdownType from '../types/markdown/index.js';
 import pdfType from '../types/pdf/index.js';
 import csvType from '../types/csv/index.js';
-import xlsxType from '../types/xlsx/index.js';
-import docxType from '../types/docx/index.js';
-import pptxType from '../types/pptx/index.js';
+import xlsxType from '../types/office/xlsx/index.js';
+import docxType from '../types/office/docx/index.js';
+import pptxType from '../types/office/pptx/index.js';
 import jsonType from '../types/json/index.js';
 import ipynbType from '../types/ipynb/index.js';
 import imageType from '../types/image/index.js';
@@ -62,7 +62,7 @@ import epubType from '../types/ebook/epub/index.js';
 import comicType from '../types/ebook/comic/index.js';
 import fb2Type from '../types/ebook/fb2/index.js';
 import mobiType from '../types/ebook/mobi/index.js';
-import odfType from '../types/odf/index.js';
+import odfType from '../types/office/odf/index.js';
 import lrfType from '../types/ebook/lrf/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.

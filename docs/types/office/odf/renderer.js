@@ -2,7 +2,7 @@
 // converts the ODF body to clean reading HTML (headings, paragraphs, lists, tables, images),
 // inlines pictures as data: URLs (zero off-origin), DOMPurify-sanitizes, and renders via the
 // shared sandboxed iframe like the other document types. Presentations render one block per slide.
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 import { openOdf } from './odflib.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

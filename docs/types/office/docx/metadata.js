@@ -1,4 +1,4 @@
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 export async function extract(intake) {
   const mammoth = await loadGlobal(vendor('mammoth/mammoth.browser.min.js'), 'mammoth');

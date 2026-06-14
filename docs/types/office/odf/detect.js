@@ -1,4 +1,4 @@
-import { hasExtension } from '../../core/detect.js';
+import { hasExtension } from '../../../core/detect.js';
 
 // OpenDocument text (.odt) and presentation (.odp). These are ZIP+XML like the Office formats;
 // .ods (spreadsheet) is handled by the SheetJS-backed xlsx type, so it's not claimed here.

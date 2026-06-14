@@ -1,4 +1,4 @@
-import { hasExtension, mimeMatches } from '../../core/detect.js';
+import { hasExtension, mimeMatches } from '../../../core/detect.js';
 
 // Spreadsheets are binary (xlsx/ods are zips, xls is OLE). Extension/MIME drive detection;
 // content sniffing would require unzipping, so we keep it to reliable signals.

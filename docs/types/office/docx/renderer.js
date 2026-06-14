@@ -1,7 +1,7 @@
 // Word (.docx) preview: mammoth converts to clean semantic HTML, which we sanitize and put
 // in the sandboxed iframe — same trust path as markdown. mammoth runs in the parent and
 // only parses the document; nothing from the file executes.
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 async function libs() {
   const [mammoth, DOMPurify] = await Promise.all([

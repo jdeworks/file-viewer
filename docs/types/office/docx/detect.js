@@ -1,4 +1,4 @@
-import { hasExtension, mimeMatches } from '../../core/detect.js';
+import { hasExtension, mimeMatches } from '../../../core/detect.js';
 
 // .docx is a zip; rely on extension/MIME (old binary .doc is not supported by mammoth).
 export function detect(intake) {

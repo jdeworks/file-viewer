@@ -3,7 +3,7 @@ import { computeMoveDiff, wordDiff } from '../docs/core/movediff.js';
 import { parseId3 } from '../docs/types/media/id3.js';
 import { parseExif } from '../docs/types/image/exif.js';
 import { intakeFromFile } from '../docs/core/intake.js';
-import { palmDocDecompress, openMobi } from '../docs/types/mobi/mobilib.js';
+import { palmDocDecompress, openMobi } from '../docs/types/ebook/mobi/mobilib.js';
 
 let failed = 0;
 const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!cond) failed++; };
