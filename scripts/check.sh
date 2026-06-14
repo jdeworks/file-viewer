@@ -17,6 +17,9 @@ if ! git diff --quiet -- docs/asset-manifest.json; then
   echo "  asset-manifest.json changed — stage it (docs files changed since last regen)."
 fi
 
+echo "→ LOC housekeeping report (advisory)…"
+./scripts/loc-check.sh || true
+
 echo "→ unit tests (move-aware diff + parsers)…"
 node tests/movediff.test.mjs
 
