@@ -8,9 +8,61 @@
 
 import { MESSAGES1 } from './messages1.js';
 import { clickTick } from './sounds.js';
+import { ACHIEVEMENTS1 } from './achievements1.js';
+import { netRate } from './s1economy.js';
 
 const BELL_KEY = 'fv:games:mg:bell';
 const GRID_COLS = 20, GRID_ROWS = 5, GRID_CELLS = GRID_COLS * GRID_ROWS;   // 20×5 = 100
+
+// ── BigNum helper for gate metrics (local, avoids circular imports) ──────────
+// Handles both legacy plain numbers and BigNum {m,e} objects gracefully.
+function bigToNum(bn) {
+  if (bn === null || bn === undefined) return 0;
+  if (typeof bn === 'number') return bn;   // legacy plain number
+  if (!bn.m) return 0;
+  return Math.min(bn.m * Math.pow(10, bn.e || 0), Number.MAX_VALUE);
+}
+
+// ── Gate table (§3.2) ────────────────────────────────────────────────────────
+// Each gate tracks progress toward the next unlock. The active gate is the first
+// one whose satisfied() returns false; when all are satisfied g8 stays active.
+const GATES = [
+  // g0: until Multiplier reachable — metric: totalBits, threshold: [0, 1]
+  { id: 'g0', metric: (s) => bigToNum(s.totalBits), from: 0, to: 1,
+    satisfied: (s) => bigToNum(s.totalBits) >= 1 },
+  // g1: until Bit Box reachable — metric: bits on hand, threshold: [0, 500]
+  { id: 'g1', metric: (s) => bigToNum(s.bits), from: 0, to: 500,
+    satisfied: (s) => bigToNum(s.bits) >= 500 || (s.owned && s.owned['s1-box'] >= 1) },
+  // g2: until Signal Booster reachable — fill toward first Bit Box cost (500)
+  { id: 'g2', metric: (s) => bigToNum(s.bits), from: 0, to: 500,
+    satisfied: (s) => (s.owned && (s.owned['s1-box'] || 0) >= 1) },
+  // g3: until Core Cluster reachable — fill toward Signal Booster cost (2500)
+  { id: 'g3', metric: (s) => bigToNum(s.bits), from: 0, to: 2500,
+    satisfied: (s) => (s.owned && (s.owned['s1-boost'] || 0) >= 1) },
+  // g4: until Processing Array reachable — fill toward Core Cluster cost (12000)
+  { id: 'g4', metric: (s) => bigToNum(s.bits), from: 0, to: 12000,
+    satisfied: (s) => (s.owned && (s.owned['s1-cluster'] || 0) >= 1) },
+  // g5: until Neural Net reachable — metric: totalBits, threshold: [0, 1e6]
+  { id: 'g5', metric: (s) => bigToNum(s.totalBits), from: 0, to: 1e6,
+    satisfied: (s) => bigToNum(s.totalBits) >= 1e6 },
+  // g6: until Quantum Tap reachable — owned[s1-neural] toward 3
+  { id: 'g6', metric: (s) => (s.owned && s.owned['s1-neural'] || 0), from: 0, to: 3,
+    satisfied: (s) => (s.owned && (s.owned['s1-neural'] || 0) >= 3) },
+  // g7: until Boss reachable — bits toward 5M; all sub-stages must be owned ≥1
+  { id: 'g7', metric: (s) => bigToNum(s.bits), from: 0, to: 5e6,
+    satisfied: (s) => bigToNum(s.bits) >= 5e6 && Object.keys(s.owned || {}).filter(id => id.startsWith('s1-') && id !== 's1-cursor').every(id => (s.owned[id] || 0) >= 1) },
+  // g8: boss ticket gate — bits toward 1B
+  { id: 'g8', metric: (s) => bigToNum(s.bits), from: 0, to: 1e9,
+    satisfied: (s) => bigToNum(s.bits) >= 1e9 },
+];
+
+// Return the first unsatisfied gate (or g8 when all are done).
+function activeGate(state) {
+  for (const gate of GATES) {
+    if (!gate.satisfied(state)) return gate;
+  }
+  return GATES[GATES.length - 1];   // g8 stays active at max
+}
 
 const MILESTONES = [
   { id: 'sound-unlock',  threshold: 1000,  msg: 'I can hear something' },
@@ -206,8 +258,12 @@ export function renderStage1(ctx) {
     cells.push(cell);
   }
 
-  function reveal() {
-    const n = Math.min(Math.floor(state.bits), GRID_CELLS);
+  function reveal(state) {
+    const gate = activeGate(state);
+    const range = gate.to - gate.from;
+    const raw = range > 0 ? (gate.metric(state) - gate.from) / range : 0;
+    const progress = Math.max(0, Math.min(1, raw));
+    const n = Math.floor(100 * progress);
     for (let i = 0; i < GRID_CELLS; i++) cells[i].classList.toggle('mg-s1-on', i < n);
     const done = n >= GRID_CELLS;
     btn.style.opacity = done ? '' : String(n / GRID_CELLS);
@@ -230,7 +286,7 @@ export function renderStage1(ctx) {
     }
     if (soundOn) clickTick();
     checkMessages('bit-earn', state, bs);
-    reveal();
+    reveal(state);
   }
   // Full-screen tap area: pointer (covers mouse + touch). The grid sits above the button but is
   // click-through (pointer-events:none on covered cells) until cleared.
@@ -238,7 +294,7 @@ export function renderStage1(ctx) {
 
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (state.bits < GRID_CELLS) return;     // not revealed yet → ignore (shouldn't fire; covered)
+    if (!btn.classList.contains('mg-s1-ready')) return;  // grid not fully revealed yet → ignore
     // Stage 1 cursor tier has a BigNum base cost ({m,e}) which the generic costOf cannot handle yet
     // (WP-S1-05 lands a BigNum-aware buyTier). For now, deduct GRID_CELLS directly and bump owned.
     let bought = 0;
@@ -263,8 +319,35 @@ export function renderStage1(ctx) {
     }
   });
 
-  reveal(animOn);
+  reveal(state);
   attachChrome(host);
+}
+
+// ── Achievement runtime (§7, WP-S1-06) ──────────────────────────────────────
+// Called from event paths (buy, bit-earn, prestige, boss events) to check all
+// achievement conditions and fire bells for newly unlocked ones.
+// ach-boss-cheat-found is excluded here — it fires from the fv:boss-cheat-disable
+// event in boss1.js/rawpane.js, not from condition polling.
+export function checkAchievements(state, cfg, bs) {
+  if (!cfg) return false;   // guard during early boot
+  const achieved = state.achievements || [];
+  let changed = false;
+  for (const ach of ACHIEVEMENTS1) {
+    if (achieved.includes(ach.id)) continue;
+    // ach-boss-cheat-found is fired by the fv:boss-cheat-disable event, not polling
+    if (ach.id === 'ach-boss-cheat-found') continue;
+    try {
+      if (!ach.condition(state, cfg)) continue;
+    } catch { continue; }
+    achieved.push(ach.id);
+    state.achievements = achieved;
+    changed = true;
+    // Fire bell
+    const bsLocal = bs || bellLoad();
+    bellAdd(ach.id, ach.bell, bsLocal);
+    if (bsLocal !== bs) bellSave(bsLocal);
+  }
+  return changed;
 }
 
 export const STAGE1 = { GRID_CELLS, GRID_COLS, GRID_ROWS };

@@ -103,6 +103,7 @@ export function mount(host, { onExit } = {}) {
   const s = load();
   const state = {
     bits: s.bits || 0,
+    totalBits: s.totalBits || 0,           // lifetime bits ever earned; used by Stage 1 gate system
     owned: s.owned || {},
     claimed: (s.claimed && typeof s.claimed === 'object') ? s.claimed : (s.snakeClaimed ? { snake: gameHigh('snake') } : {}),
     stage: s.stage || 1,
