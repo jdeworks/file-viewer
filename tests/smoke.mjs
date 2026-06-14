@@ -1639,10 +1639,19 @@ try {
     // NOT auto-precache everything.
     await op.waitForSelector('#offlineStatus.idle', { timeout: 90000 });
     pass('offline precache is opt-in (pill rests at idle, no auto-precache)');
-    // Opt in: clicking the pill kicks off the full precache → green "ready".
+    // Opt in: clicking the pill opens the cache-download modal (pick bundles + sizes).
     await op.click('#offlineStatus');
+    await op.waitForSelector('.cache-modal', { timeout: 8000 });
+    const monacoChecked = await op.$eval('.cm-chk[data-id="vendor:monaco"]', (e) => e.checked);
+    const coreRequired = await op.$eval('.cm-chk[data-id="core"]', (e) => e.disabled && e.checked);
+    const hasSizes = await op.$$eval('.cm-size', (els) => els.length > 5 && els.every((e) => /\d/.test(e.textContent)));
+    if (monacoChecked === false && coreRequired && hasSizes) pass('cache modal: sized bundles listed; core required, Monaco (heavy) opt-in'); else fail('cache modal: monacoChecked=' + monacoChecked + ' coreReq=' + coreRequired + ' sizes=' + hasSizes);
+    // Select everything (full offline) and save → precache → green "ready".
+    const boxes = await op.$$('.cm-chk:not([disabled])');
+    for (const b of boxes) { if (!(await b.isChecked())) await b.check(); }
+    await op.click('.cm-save');
     await op.waitForSelector('#offlineStatus.ready', { timeout: 90000 });
-    pass('clicking the pill precaches all assets (status: Available offline)');
+    pass('cache modal: saving selected bundles precaches them (Available offline)');
     const cachedMonaco = await op.evaluate(async () => {
       const k = (await caches.keys()).find((x) => x === 'file-viewer');
       return k ? !!(await (await caches.open(k)).match('vendor/monaco/vs/loader.js')) : false;

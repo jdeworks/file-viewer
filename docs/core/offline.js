@@ -58,8 +58,10 @@ export function initOffline(statusEl) {
   statusEl.tabIndex = 0;
   const onActivate = () => {
     if (statusEl.classList.contains('caching')) return;        // already saving
-    setState('caching', '<span class="off-spin"></span> Saving for offline…');
-    send({ type: 'precache' });
+    openCacheModal((files) => {                                // user picked bundles → precache them
+      setState('caching', '<span class="off-spin"></span> Saving for offline…');
+      send({ type: 'precache', files });
+    });
   };
   statusEl.addEventListener('click', onActivate);
   statusEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate(); } });
@@ -71,6 +73,67 @@ export function initOffline(statusEl) {
     // controller may not be set on the very first load; retry once it takes over.
     navigator.serviceWorker.addEventListener('controllerchange', () => send({ type: 'status' }));
   }).catch(() => { /* offline support unavailable — stay online-only */ });
+}
+
+// Cache-download modal: pick which asset bundles to save for offline, each with its size.
+// Smart defaults: the core app shell is always on; non-heavy bundles are pre-checked; large
+// optional libraries (Monaco, pdf.js, …) are shown unchecked so they're opt-in. On confirm,
+// the selected bundles' files are handed to the SW to precache. Built on demand, no markup.
+function fmtSize(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(0) + ' KB';
+  return (n / 1048576).toFixed(1) + ' MB';
+}
+
+async function openCacheModal(onConfirm) {
+  let bundles;
+  try { bundles = (await (await fetch('asset-manifest.json', { cache: 'no-store' })).json()).bundles || []; }
+  catch { onConfirm(undefined); return; }                    // manifest unreachable → just cache all
+  if (!bundles.length) { onConfirm(undefined); return; }
+
+  const root = document.createElement('div');
+  root.className = 'cache-modal-backdrop';
+  root.innerHTML =
+    '<div class="cache-modal" role="dialog" aria-label="Save for offline">'
+    + '<header class="cm-head"><h2>Save for offline</h2><button class="cm-close" aria-label="Close">✕</button></header>'
+    + '<p class="cm-intro">Choose what to cache so it works without a connection. Sizes are downloads.</p>'
+    + '<div class="cm-list"></div>'
+    + '<footer class="cm-foot"><span class="cm-total"></span><button class="cm-save">Save selected</button></footer>'
+    + '</div>';
+  document.body.appendChild(root);
+  const listEl = root.querySelector('.cm-list');
+  const totalEl = root.querySelector('.cm-total');
+
+  listEl.innerHTML = bundles.map((b) => {
+    const isCore = b.id === 'core';
+    const checked = isCore || !b.heavy;                      // core always; heavy off by default
+    return '<label class="cm-row' + (b.heavy ? ' cm-row-heavy' : '') + '">'
+      + '<input type="checkbox" class="cm-chk" data-id="' + b.id + '" data-size="' + b.size + '"'
+      + (checked ? ' checked' : '') + (isCore ? ' disabled' : '') + '>'
+      + '<span class="cm-label">' + (b.label || b.id) + (isCore ? ' <span class="cm-req">(required)</span>' : '') + '</span>'
+      + (b.heavy ? '<span class="cm-heavy">large</span>' : '')
+      + '<span class="cm-size">' + fmtSize(b.size) + '</span></label>';
+  }).join('');
+
+  function updateTotal() {
+    let total = 0;
+    for (const c of listEl.querySelectorAll('.cm-chk')) if (c.checked) total += Number(c.dataset.size) || 0;
+    totalEl.textContent = 'Selected: ' + fmtSize(total);
+  }
+  updateTotal();
+  listEl.addEventListener('change', updateTotal);
+
+  const close = () => root.remove();
+  root.querySelector('.cm-close').addEventListener('click', close);
+  root.addEventListener('click', (e) => { if (e.target === root) close(); });
+  document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
+  root.querySelector('.cm-save').addEventListener('click', () => {
+    const chosen = new Set();
+    for (const c of listEl.querySelectorAll('.cm-chk')) if (c.checked || c.disabled) chosen.add(c.dataset.id);
+    const files = bundles.filter((b) => chosen.has(b.id)).flatMap((b) => b.files);
+    close();
+    onConfirm(files);
+  });
 }
 
 // Friendly note for a renderer that couldn't load because we're offline and it was never

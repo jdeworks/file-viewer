@@ -16,13 +16,16 @@ async function notify(msg) {
 }
 
 let precaching = false;
-async function precache() {
+// `only`: optional list of asset paths to cache (a per-bundle selection from the cache modal).
+// When omitted, the whole manifest is cached (the old "save everything" behaviour).
+async function precache(only) {
   if (precaching) return;
   precaching = true;
   try {
     const manifest = await (await fetch('asset-manifest.json', { cache: 'no-store' })).json();
     const cache = await caches.open(CACHE);
-    const assets = manifest.assets || [];
+    let assets = manifest.assets || [];
+    if (Array.isArray(only) && only.length) { const set = new Set(only); assets = assets.filter((a) => set.has(a)); }
     const pending = [];
     let done = 0;
     for (const a of assets) { if (await cache.match(a)) done++; else pending.push(a); }   // resume
@@ -64,7 +67,7 @@ async function status() {
 
 self.addEventListener('message', (e) => {
   if (!e.data) return;
-  if (e.data.type === 'precache') e.waitUntil(precache());
+  if (e.data.type === 'precache') e.waitUntil(precache(e.data.files));
   else if (e.data.type === 'status') e.waitUntil(status());
 });
 
