@@ -9,6 +9,7 @@
 // Stages 5-7 live in stages2.js; stages 8-10 in stages3.js.
 import { STAGES2 } from './stages2.js';
 import { STAGES3 } from './stages3.js';
+import { mountDefragmenter } from './boss1.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -315,9 +316,9 @@ export const STAGES = [
       { speaker: 'SYS', text: 'you beat The Defragmenter. it\'s still running in the background. just slower.' },
     ],
 
-    // ── Boss mount (wired in WP-S1-11 when boss1.js exists) ─────────────────────────────────
-    // mountBoss: mountDefragmenter  ← will be imported and set here in WP-S1-11.
-    mountBoss: null,
+    // ── Boss mount (WP-S1-11) ───────────────────────────────────────────────────────────────
+    // The Defragmenter click-contest boss (boss1.js). Orchestrator passes the full ctx in WP-S1-12.
+    mountBoss: mountDefragmenter,
   },
   {
     n: 2,
