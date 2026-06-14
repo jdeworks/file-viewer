@@ -186,6 +186,66 @@ export async function run(ctx) {
   if (beaten4.includes(4)) pass('meta-game stage 4: Hex Hydra defeated by flipping its HP byte (persisted)'); else fail('stage4 defeated: ' + JSON.stringify(beaten4));
   await page.click('.games-close');
 
+  // ── Meta-game Stage 5 (The Time Lord) ── save-scum mechanic: edit game.sav + load 3 times. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 5000, stage: 5, defeated: [1, 2, 3, 4], introStages: [1, 2, 3, 4, 5] })); } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 8000 });
+  const s5res = await page.$eval('.mg-bits', (e) => e.textContent);
+  if (/packets/.test(s5res)) pass('meta-game stage 5: resource reskinned to packets (' + s5res + ')'); else fail('stage5 resource: ' + s5res);
+  await page.click('.mg-faceboss');
+  for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); }
+  await page.waitForSelector('.mg-boss-timelord', { timeout: 8000 });
+  pass('meta-game stage 5: The Time Lord boss arena (chess board + save file)');
+  // Defeat: edit game.sav to turn=mine/score=0/cheat=0 and Load Save 3 times.
+  const SAV_WIN = 'turn = mine\nscore = 0\ncheat = 0';
+  for (let h = 0; h < 3; h++) {
+    await page.fill('.mg-sav', SAV_WIN);
+    await page.click('.mg-tl-load');
+    await page.waitForTimeout(80);
+  }
+  await page.waitForSelector('.mg-dialog', { timeout: 4000 });
+  const beaten5 = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame')) || {}).defeated || []; } catch { return []; } });
+  if (beaten5.includes(5)) pass('meta-game stage 5: The Time Lord defeated by save-scumming (persisted)'); else fail('stage5 defeated: ' + JSON.stringify(beaten5));
+  await page.click('.games-close');
+
+  // ── Meta-game Stage 10 (The Archivist) ── assemble 3 key fragments and export ZIP. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 5000, stage: 10, defeated: [1, 2, 3, 4, 5, 6, 7, 8, 9], introStages: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] })); } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 8000 });
+  const s10res = await page.$eval('.mg-bits', (e) => e.textContent);
+  if (/archives/.test(s10res)) pass('meta-game stage 10: resource reskinned to archives (' + s10res + ')'); else fail('stage10 resource: ' + s10res);
+  await page.click('.mg-faceboss');
+  for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); }
+  await page.waitForSelector('.mg-boss-archivist', { timeout: 8000 });
+  pass('meta-game stage 10: The Archivist boss arena (folder with key files)');
+  // Defeat: save each key file with correct content, then export.
+  const keyFiles = [
+    { name: 'fragment-alpha.txt', value: 'OPEN' },
+    { name: 'fragment-beta.txt',  value: 'THE'  },
+    { name: 'fragment-gamma.txt', value: 'GATE' },
+  ];
+  for (const kf of keyFiles) {
+    await page.fill('.mg-arc-txt[data-name="' + kf.name + '"]', kf.value);
+    await page.click('.mg-arc-save[data-name="' + kf.name + '"]');
+    await page.waitForTimeout(80);
+  }
+  await page.waitForSelector('.mg-arc-export:not([disabled])', { timeout: 4000 });
+  await page.click('.mg-arc-export');
+  await page.waitForSelector('.mg-dialog', { timeout: 4000 });
+  const beaten10 = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame')) || {}).defeated || []; } catch { return []; } });
+  if (beaten10.includes(10)) pass('meta-game stage 10: The Archivist defeated by assembling fragments (persisted)'); else fail('stage10 defeated: ' + JSON.stringify(beaten10));
+  await page.click('.games-close');
+
   // ── Graceful offline-miss ── cache-on-use only (no full precache), then open a viewer that
   // was never loaded online while offline → friendly note instead of a raw error.
   {
