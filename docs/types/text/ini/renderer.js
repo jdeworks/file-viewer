@@ -1,6 +1,11 @@
 // INI / .env / .properties preview: parse into [section] → key/value pairs and render grouped
 // key-value tables. Tolerant of `=` and `:` separators, `#`/`;` comments, and quoted values.
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// Markup lives in sibling .html templates (section/row) and is filled via core/template.js —
+// values go through the {{slot}} interpolator's HTML escaping (keys/values are untrusted).
+import { loadTemplate, fill, esc, fillEach } from '../../../core/template.js';
+
+const SECTION = new URL('./section.html', import.meta.url);
+const ROW = new URL('./row.html', import.meta.url);
 
 export function parseIni(text) {
   const sections = [{ name: null, pairs: [] }];
@@ -23,10 +28,11 @@ export function parseIni(text) {
 export async function render(intake, _ctx) {
   const sections = parseIni(intake.text || '');
   if (!sections.length) return { bodyHtml: '<p class="ics-empty">No key-value pairs found.</p>', hadUnsafe: false };
+  const [sectionTpl, rowTpl] = await Promise.all([loadTemplate(SECTION), loadTemplate(ROW)]);
   const body = sections.map((s) => {
-    const rows = s.pairs.map((p) => '<tr><td class="kv-key">' + esc(p.key) + '</td><td class="kv-val">' + esc(p.value) + '</td></tr>').join('');
+    const rows = fillEach(rowTpl, s.pairs, (p) => ({ key: p.key, val: p.value }));
     const head = s.name ? '<h3>[' + esc(s.name) + ']</h3>' : '';
-    return '<div class="kv-section">' + head + '<table class="kv-table"><tbody>' + rows + '</tbody></table></div>';
+    return fill(sectionTpl, { head, rows });
   }).join('');
   return { bodyHtml: body, hadUnsafe: false };
 }
