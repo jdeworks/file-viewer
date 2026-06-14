@@ -12,8 +12,24 @@ import { STAGES3 } from './stages3.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-/* ── Stage 1 — The Overwriter (file type: new-file). Defeat = create a new file that OVERWRITES
-   his lock. He re-locks the path on a timer, so it's a real fight once you know the trick. ── */
+// ── Stage 1 BigNum helper ─────────────────────────────────────────────────────────────────────
+// Local inline stub so stages.js is importable before bignum.js (WP-S1-01) exists.
+// BigNum shape: { m: number (1–9.999…), e: integer }  meaning m × 10^e.
+// The real bignum.js is imported by s1economy.js and s1state.js; this stub is only used
+// in Stage 1 unlock predicates (called at runtime, not at parse time).
+function _gte(a, b) {
+  if (!a || !b) return false;
+  if (a.e !== b.e) return a.e > b.e;
+  return a.m >= b.m;
+}
+
+// ── Stage 1 — The Defragmenter (idle-clicker / click-contest boss; WP-S1-11) ────────────────
+// mountOverwriter is REPLACED by mountDefragmenter (boss1.js, WP-S1-11). The old function body
+// is kept as a commented-out reference below. BOSS_AFTER is removed — entry is gated by
+// canFightBoss() in the orchestrator (WP-S1-12). mountBoss is null until boss1.js lands.
+
+// replaced by mountDefragmenter in WP-S1-11
+/*
 function mountOverwriter(arena, { stage, onDefeat }) {
   let locks = stage.locks;
   let dead = false;
@@ -34,7 +50,6 @@ function mountOverwriter(arena, { stage, onDefeat }) {
   const msgEl = arena.querySelector('.mg-boss-msg');
   const drawLocks = () => { locksEl.innerHTML = Array.from({ length: locks }, () => '<span class="mg-lock">🔒</span>').join(''); };
   drawLocks();
-
   function tryCreate() {
     if (dead) return;
     const name = arena.querySelector('.mg-boss-file').value.trim();
@@ -50,23 +65,21 @@ function mountOverwriter(arena, { stage, onDefeat }) {
     setTimeout(() => { if (dead) return; drawLocks(); if (locks <= 0) defeat(); }, 320);
   }
   function defeat() {
-    dead = true;
-    clearInterval(relock);
+    dead = true; clearInterval(relock);
     bossEl.classList.add('mg-boss-dead');
     msgEl.textContent = 'The Overwriter dissolves into null bytes.';
     setTimeout(onDefeat, 750);
   }
-  // Cheat: he re-locks the path on a timer (only after you've started breaking locks).
   const relock = setInterval(() => {
     if (dead || locks <= 0 || locks >= stage.locks) return;
     locks++; drawLocks();
     msgEl.textContent = 'He RE-LOCKED the path! Overwrite faster.';
   }, stage.relockMs);
-
   arena.querySelector('.mg-boss-create').addEventListener('click', tryCreate);
   arena.querySelector('.mg-boss-file').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryCreate(); });
   return { destroy() { clearInterval(relock); } };
 }
+*/
 
 /* ── Stage 2 — Config Demon (file type: .ini/.env). Defeat = edit boss.ini to set invincible=false
    and drop his hp, then attack — but he REWRITES the config on a timer, so you must be fast. ── */
@@ -197,39 +210,114 @@ function mountHexHydra(arena, { stage, onDefeat }) {
 }
 
 export const STAGES = [
+  // ── Stage 1 — Bit Foundry (idle-clicker; boss = The Defragmenter, click-contest) ────────────
+  // Economy, save/load (base64), and boss are implemented in WP-S1-04 through WP-S1-12.
+  // This entry is the data-only config; runtime modules import it via stageByNumber(1).
   {
     n: 1,
-    title: 'The Overwriter',
-    goal: 100,                         // bits to accrue before the boss can be faced
-    // VISUAL/ECONOMY config (data-driven — reorder or extend a stage by editing only this).
-    resource: { name: 'bits', color: '#3fb950' },     // raw pixels are green data bits (IT theme)
-    // Stage 1 uses the bespoke pixel-reveal mechanic (see renderStage1 in metagame.js): a single
-    // "Compute" tier hidden under a 100-square reveal grid. Each purchase resets bits and raises
-    // click power, so the reveal speaks for itself — no shop, no rate, no score.
+    title: 'Bit Foundry',
+    resource: { name: 'bits', color: '#3fb950' },     // green data bits (IT theme)
+
+    // ── Tiers (8 sub-stages) — §2.1 ─────────────────────────────────────────────────────────
+    // BigNum costs use { m, e } shape (m × 10^e). Unlock predicates use _gte() (local stub
+    // above) which is safe to call before bignum.js exists. At runtime s1economy.js uses
+    // the real BigNum ops from bignum.js.
     tiers: [
-      { id: 's1-t1', name: 'Compute', icon: '⚙', type: 'click', amount: 1, base: 100, mult: 1, desc: 'Upgrade compute power' },
+      // 1. Hand Cursor — free base tier; always unlocked; start owned:1
+      {
+        id: 's1-cursor', name: 'Hand Cursor', icon: '🖐', type: 'click_mult',
+        base: { m: 0, e: 0 }, mult: 1, amount: 1,
+        unlock: () => true,
+        bell: null, grid: 'g0',
+      },
+      // 2. Multiplier — +1 clickPower per level; unlocks at totalBits ≥ 1
+      {
+        id: 's1-mult', name: 'Multiplier', icon: '✖', type: 'click_mult',
+        base: { m: 100, e: 0 }, mult: 1.12, amount: 1,
+        unlock: (state) => _gte(state.totalBits, { m: 1, e: 0 }),
+        bell: 'bell-mult', grid: 'g1',
+      },
+      // 3. Bit Box — timed; 100 bits/cycle per owned; unlocks at bits ≥ 500
+      {
+        id: 's1-box', name: 'Bit Box', icon: '🧰', type: 'timed',
+        base: { m: 500, e: 0 }, mult: 1.10, baseAmount: 100, duration_ms: 4000,
+        unlock: (state) => _gte(state.bits, { m: 500, e: 0 }),
+        bell: 'bell-box', grid: 'g2',
+      },
+      // 4. Signal Booster — timed; boosts Bit Box +10%/level; unlocks at owned[s1-box] ≥ 1
+      {
+        id: 's1-boost', name: 'Signal Booster', icon: '📡', type: 'timed',
+        base: { m: 2.5, e: 3 }, mult: 1.10, baseAmount: 75, duration_ms: 5000,
+        boost: { targetId: 's1-box', perLevelPct: 0.10 },
+        unlock: (state) => (state.owned['s1-box'] || 0) >= 1,
+        bell: 'bell-boost', grid: 'g3',
+      },
+      // 5. Core Cluster — timed; 500 bits/cycle per owned; unlocks at owned[s1-boost] ≥ 1
+      {
+        id: 's1-cluster', name: 'Core Cluster', icon: '🧊', type: 'timed',
+        base: { m: 12, e: 3 }, mult: 1.08, baseAmount: 500, duration_ms: 8000,
+        unlock: (state) => (state.owned['s1-boost'] || 0) >= 1,
+        bell: 'bell-cluster', grid: 'g4',
+      },
+      // 6. Processing Array — passive; 0.5 bits/sec per owned; unlocks at owned[s1-cluster] ≥ 1
+      {
+        id: 's1-array', name: 'Processing Array', icon: '🛰', type: 'passive',
+        base: { m: 60, e: 3 }, mult: 1.07, rate: 0.5,
+        unlock: (state) => (state.owned['s1-cluster'] || 0) >= 1,
+        bell: 'bell-array', grid: 'g5',
+      },
+      // 7. Neural Net — globalMult node: ×(1 + 0.25·level) to all timed payouts;
+      //    unlocks at totalBits ≥ 1 000 000
+      {
+        id: 's1-neural', name: 'Neural Net', icon: '🧠', type: 'click_mult',
+        globalMult: { perLevel: 0.25, targets: 'timed' },
+        base: { m: 500, e: 3 }, mult: 1.06, amount: 0,
+        unlock: (state) => _gte(state.totalBits, { m: 1, e: 6 }),
+        bell: 'bell-neural', grid: 'g6',
+      },
+      // 8. Quantum Tap — multiplicative click mult: clickPower ×(1 + owned);
+      //    unlocks at owned[s1-neural] ≥ 3
+      {
+        id: 's1-quantum', name: 'Quantum Tap', icon: '⚛', type: 'click_mult',
+        base: { m: 5, e: 6 }, mult: 1.05, amount: 0, quantumMult: true,
+        unlock: (state) => (state.owned['s1-neural'] || 0) >= 3,
+        bell: 'bell-quantum', grid: 'g7',
+      },
     ],
+
+    // ── Managers (3) — §6.1 ─────────────────────────────────────────────────────────────────
+    // hireCostBase = 10 × toNumber(managedTier.base). Scaling formula (hireCost(mgr, level) =
+    // 10 × baseCost_of_managedTier × 1.15^level) is implemented in s1economy.js.
+    managers: [
+      { id: 'm-box',     name: 'Box Operator',    icon: '🛠', manages: 's1-box',     hireCostBase: 5000,   runCostPerSec: 20  },
+      { id: 'm-signal',  name: 'Signal Engineer',  icon: '🔧', manages: 's1-boost',   hireCostBase: 25000,  runCostPerSec: 90  },
+      { id: 'm-cluster', name: 'Cluster Foreman',  icon: '👷', manages: 's1-cluster', hireCostBase: 120000, runCostPerSec: 400 },
+    ],
+
+    // ── Boss ticket (§10.2) ──────────────────────────────────────────────────────────────────
+    // canFightBoss = allSubStagesOwned AND gte(bits, bossTicket). Checked in orchestrator (WP-S1-12).
+    bossTicket: { m: 1, e: 9 },   // 1 000 000 000 bits
+
+    // ── Intro / boss dialog ──────────────────────────────────────────────────────────────────
     intro: [
       { speaker: 'SYS', text: 'Tap to get started.' },
     ],
-    bossName: 'The Overwriter',
+    bossName: 'The Defragmenter',
     bossIntro: [
-      { speaker: 'The Overwriter', text: 'This path is MINE. I sealed it with locks you cannot delete.' },
-      { speaker: 'The Overwriter', text: 'Delete one and I rewrite it. You will grind here forever. Hahaha.' },
+      { speaker: 'The Defragmenter', text: 'your bits are scattered. I\'ll reorganize them — into mine.' },
     ],
     hints: [
-      { speaker: '??? (a friendly daemon)', text: 'You can\'t DELETE his locks. But a lock is just a file…' },
-      { speaker: '??? (a friendly daemon)', text: 'This app can create a NEW file that OVERWRITES one that already exists.' },
-      { speaker: '??? (a friendly daemon)', text: 'Create a new file named exactly "' + 'boss.lock' + '" and tick OVERWRITE. Do it faster than he re-locks.' },
+      // Hints are delivered as loss-gated taunts by the boss itself (§10C) and mirrored in the
+      // bell (§7.3 bell-boss-hint-1/2/3). No separate hint dialog for Stage 1.
     ],
     victory: [
-      { speaker: 'The Overwriter', text: 'No— my locks— you OVERWROTE them all?!' },
-      { speaker: 'SYS', text: 'You beat him with the app itself. That is the only way anything here is won. Onward.' },
+      // Fired as a bell line by the win handler (§10.7):
+      { speaker: 'SYS', text: 'you beat The Defragmenter. it\'s still running in the background. just slower.' },
     ],
-    lockName: 'boss.lock',
-    locks: 3,
-    relockMs: 7000,
-    mountBoss: mountOverwriter,
+
+    // ── Boss mount (wired in WP-S1-11 when boss1.js exists) ─────────────────────────────────
+    // mountBoss: mountDefragmenter  ← will be imported and set here in WP-S1-11.
+    mountBoss: null,
   },
   {
     n: 2,

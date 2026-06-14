@@ -239,7 +239,19 @@ export function renderStage1(ctx) {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (state.bits < GRID_CELLS) return;     // not revealed yet → ignore (shouldn't fire; covered)
-    if (t && buyTier(t.id)) {                // deducts 100 from state.bits; raises click power
+    // Stage 1 cursor tier has a BigNum base cost ({m,e}) which the generic costOf cannot handle yet
+    // (WP-S1-05 lands a BigNum-aware buyTier). For now, deduct GRID_CELLS directly and bump owned.
+    let bought = 0;
+    if (t) {
+      const baseCost = (typeof t.base === 'number') ? t.base : GRID_CELLS;   // plain-number compat
+      if (state.bits >= baseCost) {
+        state.bits = Math.max(0, state.bits - baseCost);
+        state.owned = state.owned || {};
+        state.owned[t.id] = (state.owned[t.id] || 0) + 1;
+        bought = 1;
+      }
+    }
+    if (bought) {
       // Keep remainder (bits > 100 after fast taps carry into the next cycle).
       // Compute totalBought for condition checks (counts across all resets).
       state.totalBought = (state.totalBought || 0) + 1;
