@@ -12,22 +12,25 @@
 //     loadRenderer() => Promise<{render}>, // render(intake, ctx) -> { parentNode } | { bodyHtml }
 //     loadDiffRenderer?() => Promise<{render}>,   // optional custom diff (overrides the type's)
 //   }
-import packageJson from './package-json/index.js';
-import cargoToml from './cargo-toml/index.js';
-import tsconfig from './tsconfig/index.js';
-import dockerfile from './dockerfile/index.js';
-import gitignore from './gitignore/index.js';
-import dockerCompose from './docker-compose/index.js';
-import requirementsTxt from './requirements-txt/index.js';
-import goMod from './go-mod/index.js';
-import composerJson from './composer-json/index.js';
-import gemfile from './gemfile/index.js';
-import codeowners from './codeowners/index.js';
-import editorconfig from './editorconfig/index.js';
-import pomXml from './pom-xml/index.js';
-import buildGradle from './build-gradle/index.js';
-import pipfile from './pipfile/index.js';
-import openapi from './openapi/index.js';
+// Known-file plugins now live next to their base type: type-bound ones under
+// types/text/<basetype>/known/<id>/, and the filename-only / multi-type configs under the
+// shared types/text/known/<id>/. This registry stays the single import point.
+import packageJson from '../types/text/json/known/package-json/index.js';
+import cargoToml from '../types/text/toml/known/cargo-toml/index.js';
+import tsconfig from '../types/text/json/known/tsconfig/index.js';
+import dockerfile from '../types/text/known/dockerfile/index.js';
+import gitignore from '../types/text/known/gitignore/index.js';
+import dockerCompose from '../types/text/yaml/known/docker-compose/index.js';
+import requirementsTxt from '../types/text/known/requirements-txt/index.js';
+import goMod from '../types/text/known/go-mod/index.js';
+import composerJson from '../types/text/json/known/composer-json/index.js';
+import gemfile from '../types/text/known/gemfile/index.js';
+import codeowners from '../types/text/known/codeowners/index.js';
+import editorconfig from '../types/text/known/editorconfig/index.js';
+import pomXml from '../types/text/xml/known/pom-xml/index.js';
+import buildGradle from '../types/text/known/build-gradle/index.js';
+import pipfile from '../types/text/known/pipfile/index.js';
+import openapi from '../types/text/known/openapi/index.js';
 
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,

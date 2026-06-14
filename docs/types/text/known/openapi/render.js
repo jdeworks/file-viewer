@@ -1,7 +1,7 @@
 // Enhanced OpenAPI/Swagger view (parent pane, trusted DOM). Parses the spec (JSON directly, or
 // YAML via the vendored js-yaml) and renders the API info + every path's operations as a scannable
 // endpoint list with colour-coded HTTP methods. Pure data parsing — nothing is requested or run.
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace'];

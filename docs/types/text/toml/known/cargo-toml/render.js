@@ -1,7 +1,7 @@
 // Enhanced Cargo.toml view — rendered in the parent pane (trusted generated DOM). Dependency
 // names link to crates.io + docs.rs; links are href-only (no request until clicked), so the
 // zero-off-origin-at-runtime guarantee holds.
-import { parseTOML } from '../../types/text/toml/toml.js';
+import { parseTOML } from '../../toml.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ext = (href, text) => '<a class="pj-link" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + esc(text) + ' <span class="pj-ext">↗</span></a>';

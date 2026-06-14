@@ -1,5 +1,5 @@
 // Enhanced docker-compose view: one card per service. Parses YAML with the vendored js-yaml.
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
