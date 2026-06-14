@@ -57,14 +57,15 @@ export function mount(host, { onScore, onExit } = {}) {
   const rotateCW = (g) => g[0].map((_, c) => g.map((row) => row[c]).reverse());
   const rotateCCW = (g) => g[0].map((_, c) => g.map((row) => row[SIZE - 1 - c]));
 
-  // dir: 0 left, 1 up, 2 right, 3 down. Normalize to "left", collapse, rotate back.
+  // dir: 0 left, 1 up, 2 right, 3 down. Rotate so the target edge becomes left, collapse, rotate back.
+  // Pre-rotate (4-dir)%4 times CW (not dir times) so collapse-left aligns correctly with each direction.
   function move(dir) {
     if (dead) return;
     let g = grid;
-    for (let i = 0; i < dir; i++) g = rotateCW(g);
+    for (let i = 0; i < (4 - dir) % 4; i++) g = rotateCW(g);
     let moved = false, gained = 0;
     g = g.map((row) => { const [nr, gg, mv] = collapse(row); if (mv) moved = true; gained += gg; return nr; });
-    for (let i = 0; i < (4 - dir) % 4; i++) g = rotateCW(g);
+    for (let i = 0; i < dir; i++) g = rotateCW(g);
     if (!moved) return;
     prevGrid = grid.map((r) => [...r]);
     grid = g; score += gained;
