@@ -9,7 +9,7 @@
 export const MESSAGES1 = [
   {
     id: 'bell-nothing',
-    text: 'nothing here',
+    text: '🌑 nothing here',
     trigger: 'game-start',
     condition: () => true,
     maxCount: 1,
@@ -17,7 +17,7 @@ export const MESSAGES1 = [
   },
   {
     id: 'bell-firstsight',
-    text: 'I can see something',
+    text: '👁 I can see something',
     trigger: 'bit-earn',
     condition: (state) => state.bits >= 10,
     maxCount: 1,
@@ -25,7 +25,7 @@ export const MESSAGES1 = [
   },
   {
     id: 'bell-stronger',
-    text: 'I feel stronger already',
+    text: '⚡ I feel stronger already',
     trigger: 'buy',
     condition: (state) => (state.totalBought || 0) < 5,
     maxCount: undefined,
@@ -33,15 +33,15 @@ export const MESSAGES1 = [
   },
   {
     id: 'bell-reset',
-    text: 'where did everything go :(',
+    text: '🕳 where did everything go :(',
     trigger: 'bit-lose',
-    condition: (state) => state.bits === 0,
+    condition: (state) => state.bits < 10,
     maxCount: undefined,
     removeAfterFire: false,
   },
   {
     id: 'bell-halfway',
-    text: 'halfway there',
+    text: '🌗 halfway there',
     trigger: 'bit-earn',
     condition: (state) => (state.totalBits || 0) >= 500,
     maxCount: 1,
@@ -49,7 +49,7 @@ export const MESSAGES1 = [
   },
   {
     id: 'bell-patient',
-    text: 'patience has a cost',
+    text: '⏳ patience has a cost',
     trigger: 'buy',
     condition: (state) => (state.totalBought || 0) >= 10,
     maxCount: 1,

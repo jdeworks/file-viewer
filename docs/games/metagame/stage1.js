@@ -206,21 +206,14 @@ export function renderStage1(ctx) {
     cells.push(cell);
   }
 
-  function reveal(animOn = false) {
+  function reveal() {
     const n = Math.min(Math.floor(state.bits), GRID_CELLS);
-    for (let i = 0; i < GRID_CELLS; i++) {
-      const wasOn = cells[i].classList.contains('mg-s1-on');
-      cells[i].classList.toggle('mg-s1-on', i < n);
-      // Flash the cell that just got revealed (only the boundary cell, not all):
-      if (animOn && !wasOn && i < n && i === n - 1) {
-        cells[i].classList.remove('mg-s1-flash');
-        void cells[i].offsetWidth; // reflow
-        cells[i].classList.add('mg-s1-flash');
-      }
-    }
+    for (let i = 0; i < GRID_CELLS; i++) cells[i].classList.toggle('mg-s1-on', i < n);
     const done = n >= GRID_CELLS;
+    btn.style.opacity = done ? '' : String(n / GRID_CELLS);
     btn.classList.toggle('mg-s1-ready', done);
-    grid.classList.toggle('mg-s1-clear', done);   // pointer-events pass-through once clear
+    grid.classList.toggle('mg-s1-clear', done);
+    tap.style.pointerEvents = done ? 'none' : '';  // let button clicks through when fully revealed
   }
 
   function addBits() {
@@ -237,7 +230,7 @@ export function renderStage1(ctx) {
     }
     if (soundOn) clickTick();
     checkMessages('bit-earn', state, bs);
-    reveal(animOn);
+    reveal();
   }
   // Full-screen tap area: pointer (covers mouse + touch). The grid sits above the button but is
   // click-through (pointer-events:none on covered cells) until cleared.
@@ -246,8 +239,8 @@ export function renderStage1(ctx) {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (state.bits < GRID_CELLS) return;     // not revealed yet → ignore (shouldn't fire; covered)
-    if (t && buyTier(t.id)) {                // spends the tier cost (=100); raises click power
-      state.bits = 0;                        // …then wipe whatever's left — everything goes
+    if (t && buyTier(t.id)) {                // deducts 100 from state.bits; raises click power
+      // Keep remainder (bits > 100 after fast taps carry into the next cycle).
       // Compute totalBought for condition checks (counts across all resets).
       state.totalBought = (state.totalBought || 0) + 1;
       save(state);
