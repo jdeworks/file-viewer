@@ -23,36 +23,7 @@ import { mountPreview, captureBodyHtml } from './iframe.js';
 import { getModel, preloadModels, monacoOptions, renderSettings, persistGlobalKey, readGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
 import { initGames } from '../games/launcher.js';
-
-const $ = (id) => document.getElementById(id);
-const MAX_TREE_FILES = 20000;   // cap rendered tree rows so a huge file count can't freeze the tab
-const state = {
-  intake: null,
-  type: null,
-  settingsModel: null,   // WP03 settings model for the active type
-  rawview: null,         // WP13 RawView controller (owns original+current models, 4 modes)
-  preview: null,         // iframe controller
-  rawMode: 'current',    // original | current | diff | movediff
-  mode: 'split',         // desktop view mode: raw | split | preview
-  tab: 'raw',            // mobile active tab
-  syncing: false,
-  treeApi: null,         // folder tree controller (setActive)
-  htmlAllowScripts: false,
-  htmlAsked: false,
-  known: null,           // matched known-file enhancement (Layer 3), or null
-  forceBase: false,      // user toggled "show the plain view" -> bypass the enhancement
-  folderEdits: new Map(),    // path -> edited text for files opened from a loaded folder
-  currentFolderPath: null,   // path of the currently-open folder file (null for single files)
-};
-
-const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
-
-function toast(msg, ms = 2600) {
-  const t = $('toast');
-  t.textContent = msg; t.hidden = false;
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => (t.hidden = true), ms);
-}
+import { $, isMobile, MAX_TREE_FILES, state, toast } from './state.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
