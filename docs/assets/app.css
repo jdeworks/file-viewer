@@ -704,7 +704,10 @@ body {
   padding: 18px; font-size: 18px; font-weight: 700; cursor: pointer; transition: transform .05s; }
 .mg-compute:active { transform: scale(.97); }
 .mg-click { opacity: .85; font-size: 14px; font-weight: 600; margin-left: 6px; }
-.mg-snake .mg-claim { width: 100%; background: color-mix(in srgb, var(--accent) 18%, transparent);
+.mg-bonus { display: flex; flex-direction: column; gap: 6px; }
+.mg-bonus[hidden] { display: none; }
+.mg-bonus-title { font-size: 11px; color: var(--fg-2); text-align: center; }
+.mg-claim { width: 100%; background: color-mix(in srgb, var(--accent) 18%, transparent);
   border: 1px solid var(--accent); color: var(--fg); border-radius: 10px; padding: 10px; cursor: pointer; font-size: 13px; }
 .mg-shop { display: flex; flex-direction: column; gap: 8px; }
 .mg-buy { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center;

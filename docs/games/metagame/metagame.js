@@ -16,7 +16,11 @@ function fmt(n) {
 }
 const load = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch { return {}; } };
 const save = (st) => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(st)); } catch { /* private mode */ } };
-const snakeHigh = () => { try { return Number(localStorage.getItem('fv:games:hi:snake') || 0); } catch { return 0; } };
+// Arcade minigames feed a CROSS-STAGE bonus: each game's high score is claimable (the new points
+// since last claim) as a one-off boost to the CURRENT stage's resource. Works in every stage.
+const SCORE_GAMES = [{ id: 'snake', name: 'Snake' }, { id: '2048', name: '2048' }];
+const BONUS_PER_POINT = 25;
+const gameHigh = (id) => { try { return Number(localStorage.getItem('fv:games:hi:' + id) || 0); } catch { return 0; } };
 
 // Pixel canvas: bits become green pixels filling from the bottom (the canvas IS the progress bar);
 // owned machines are drawn as little sprites along the top. Buying spends bits → fewer raw pixels.
@@ -49,7 +53,7 @@ export function mount(host, { onExit } = {}) {
   const state = {
     bits: s.bits || 0,
     owned: s.owned || {},
-    snakeClaimed: !!s.snakeClaimed,
+    claimed: (s.claimed && typeof s.claimed === 'object') ? s.claimed : (s.snakeClaimed ? { snake: gameHigh('snake') } : {}),
     stage: s.stage || 1,
     defeated: Array.isArray(s.defeated) ? s.defeated : [],
     introStages: Array.isArray(s.introStages) ? s.introStages : (s.introSeen ? [1] : []),   // per-stage intro seen
@@ -108,7 +112,7 @@ export function mount(host, { onExit } = {}) {
       + '<button class="mg-compute" type="button">⚙ Compute<span class="mg-click"></span></button>'
       + '<div class="mg-mult" hidden>Buy: ' + [1, 10, 100, 'max'].map((m) => '<button class="mg-mult-b" data-m="' + m + '">×' + m + '</button>').join('') + '</div>'
       + '<button class="mg-faceboss" type="button" hidden>⚔ Confront ' + st.bossName + '</button>'
-      + '<div class="mg-snake" hidden></div>'
+      + '<div class="mg-bonus" hidden></div>'
       + '<div class="mg-shop"></div>'
       + '<button class="mg-back" type="button">‹ Back to arcade</button>'
       + '</div>';
@@ -146,12 +150,15 @@ export function mount(host, { onExit } = {}) {
         b.querySelector('.mg-owned').textContent = '×' + ownedOf(t.id);
         b.classList.toggle('mg-afford', state.bits >= c);
       }
-      const hi = snakeHigh(), snakeEl = $('.mg-snake');
-      if (hi > 0 && !state.snakeClaimed) {
-        snakeEl.hidden = false;
-        snakeEl.innerHTML = '<button class="mg-claim" type="button">Import Snake high score (' + hi + ') → +' + fmt(hi * 25) + ' ' + resName + '</button>';
-        snakeEl.querySelector('.mg-claim').onclick = () => { state.bits += hi * 25; state.snakeClaimed = true; save(state); paint(); };
-      } else snakeEl.hidden = true;
+      // Cross-stage arcade bonus: claim each game's new high-score points into this stage's resource.
+      const bonusEl = $('.mg-bonus');
+      const rows = SCORE_GAMES.map((g) => { const hi = gameHigh(g.id); const gain = (hi - (state.claimed[g.id] || 0)) * BONUS_PER_POINT; return { g, hi, gain }; }).filter((r) => r.gain > 0);
+      if (rows.length) {
+        bonusEl.hidden = false;
+        bonusEl.innerHTML = '<div class="mg-bonus-title">Arcade bonus · works every stage</div>'
+          + rows.map((r) => '<button class="mg-claim" type="button" data-g="' + r.g.id + '" data-hi="' + r.hi + '">Claim ' + r.g.name + ' (' + r.hi + ') → +' + fmt(r.gain) + ' ' + resName + '</button>').join('');
+        bonusEl.querySelectorAll('.mg-claim').forEach((b) => { b.onclick = () => { const id = b.dataset.g, hi = Number(b.dataset.hi); state.bits += (hi - (state.claimed[id] || 0)) * BONUS_PER_POINT; state.claimed[id] = hi; save(state); paint(); }; });
+      } else bonusEl.hidden = true;
     }
     paint();
     let acc = 0;

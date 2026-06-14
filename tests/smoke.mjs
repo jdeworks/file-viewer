@@ -1837,6 +1837,26 @@ try {
   if (beaten2.includes(2)) pass('meta-game stage 2: Config Demon defeated by editing his config (persisted)'); else fail('stage2 defeated: ' + JSON.stringify(beaten2));
   await page.click('.games-close');
 
+  // ── Meta-game cross-stage arcade bonus ── minigame high scores → claimable in any stage. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try {
+      localStorage.setItem('fv:games:hi:snake', '50');
+      localStorage.setItem('fv:games:hi:2048', '30');
+      localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 0, stage: 1, introStages: [1], claimed: {} }));
+    } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-bonus:not([hidden])', { timeout: 8000 });
+  const bonusClaims = await page.$$eval('.mg-bonus .mg-claim', (els) => els.map((e) => e.textContent));
+  if (bonusClaims.some((c) => /Snake/.test(c)) && bonusClaims.some((c) => /2048/.test(c))) pass('meta-game: arcade bonus claimable from each game'); else fail('bonus claims: ' + bonusClaims.join(' | '));
+  await page.click('.mg-bonus .mg-claim[data-g="snake"]');
+  const bitsAfterClaim = await page.$eval('.mg-bits', (e) => e.textContent);
+  if (/1\.25K/.test(bitsAfterClaim)) pass('meta-game: claiming a minigame bonus adds resource (' + bitsAfterClaim + ')'); else fail('bits after claim: ' + bitsAfterClaim);
+  await page.click('.games-close');
+
   // ── Graceful offline-miss ── cache-on-use only (no full precache), then open a viewer that
   // was never loaded online while offline → friendly note instead of a raw error.
   {
