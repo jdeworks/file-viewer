@@ -24,7 +24,7 @@ export const GAMES = [
     id: 'metagame',
     title: 'Bit Foundry',
     emoji: '⚙️',
-    blurb: 'Generate bits, automate the grind. The spine of the bigger game to come.',
+    blurb: 'a machine, dormant. tap to begin.',
     load: () => import('./metagame/metagame.js'),
   },
 ];

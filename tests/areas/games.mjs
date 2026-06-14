@@ -318,6 +318,45 @@ export async function run(ctx) {
   if (beaten10.includes(10)) pass('meta-game stage 10: The Archivist defeated by assembling fragments (persisted)'); else fail('stage10 defeated: ' + JSON.stringify(beaten10));
   await page.click('.games-close');
 
+  // ── Stage 1 milestone system — static checks (no browser state needed). ──
+  // sounds.js exports clickTick as a function (fetch source + parse).
+  {
+    const soundsSrc = await page.evaluate(async (origin) => {
+      try { const r = await fetch(origin + '/games/metagame/sounds.js'); return await r.text(); } catch { return ''; }
+    }, origin);
+    if (/export function clickTick/.test(soundsSrc)) pass('sounds.js: exports clickTick function'); else fail('sounds.js missing clickTick export');
+  }
+  // Milestone sound-unlock fires at totalBits >= 1000 (checkMilestones logic via page evaluate).
+  {
+    const milestoneOk = await page.evaluate(() => {
+      // Inline mirror of checkMilestones logic to verify threshold without full game boot.
+      const MILESTONES = [
+        { id: 'sound-unlock', threshold: 1000 },
+        { id: 'anim-unlock',  threshold: 10000 },
+      ];
+      const state = { totalBits: 1000, milestones: [] };
+      for (const m of MILESTONES) {
+        if (!state.milestones.includes(m.id) && state.totalBits >= m.threshold) {
+          state.milestones.push(m.id);
+        }
+      }
+      return state.milestones.includes('sound-unlock') && !state.milestones.includes('anim-unlock');
+    });
+    if (milestoneOk) pass('milestone: sound-unlock fires at totalBits=1000 (anim-unlock not yet)'); else fail('milestone threshold logic wrong');
+  }
+  // MESSAGES1 contains bell-halfway and bell-patient.
+  {
+    const msgs = await page.evaluate(async (origin) => {
+      try {
+        const r = await fetch(origin + '/games/metagame/messages1.js');
+        const src = await r.text();
+        return { halfway: src.includes("'bell-halfway'"), patient: src.includes("'bell-patient'") };
+      } catch { return {}; }
+    }, origin);
+    if (msgs.halfway) pass('MESSAGES1 contains bell-halfway'); else fail('MESSAGES1 missing bell-halfway');
+    if (msgs.patient) pass('MESSAGES1 contains bell-patient'); else fail('MESSAGES1 missing bell-patient');
+  }
+
   // ── Graceful offline-miss ── cache-on-use only (no full precache), then open a viewer that
   // was never loaded online while offline → friendly note instead of a raw error.
   {

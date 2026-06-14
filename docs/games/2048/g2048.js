@@ -21,6 +21,8 @@ export function mount(host, { onScore, onExit } = {}) {
   for (let i = 0; i < SIZE * SIZE; i++) {
     const bg = document.createElement('div');
     bg.className = 'g2048-bg-cell';
+    bg.style.gridRow    = (Math.floor(i / SIZE) + 1) + '';
+    bg.style.gridColumn = ((i % SIZE) + 1) + '';
     boardEl.appendChild(bg);
   }
 

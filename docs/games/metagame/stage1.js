@@ -7,9 +7,28 @@
 // resets bits to 0 and raises click power, so the reveal restarts (faster). The bell narrates it.
 
 import { MESSAGES1 } from './messages1.js';
+import { clickTick } from './sounds.js';
 
 const BELL_KEY = 'fv:games:mg:bell';
 const GRID_COLS = 20, GRID_ROWS = 5, GRID_CELLS = GRID_COLS * GRID_ROWS;   // 20×5 = 100
+
+const MILESTONES = [
+  { id: 'sound-unlock',  threshold: 1000,  msg: 'I can hear something' },
+  { id: 'anim-unlock',   threshold: 10000, msg: 'something changed'    },
+];
+
+function checkMilestones(state, bs, save) {
+  const achieved = state.milestones || [];
+  for (const m of MILESTONES) {
+    if (achieved.includes(m.id)) continue;
+    if ((state.totalBits || 0) >= m.threshold) {
+      state.milestones = achieved;
+      state.milestones.push(m.id);
+      bellAdd(m.id, m.msg, bs);
+      save(state);
+    }
+  }
+}
 
 /* ── Commentary bell: persisted message log with unread count + grouped display. ── */
 export function bellLoad() {
@@ -71,6 +90,7 @@ export function mountBell(host) {
       '<div class="mg-bell-msg">' + escapeHtml(m.text) + (m.count > 1 ? ' <span class="mg-bell-x">×' + m.count + '</span>' : '') + '</div>'
     ).join('');
   }
+  let onOutside = null;
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     const open = panel.hidden;
@@ -81,6 +101,16 @@ export function mountBell(host) {
       bs.lastReadCount = bs.messages.reduce((s, m) => s + m.count, 0);
       bellSave(bs);
       updateBellDot();
+      onOutside = (ev) => {
+        if (!panel.contains(ev.target) && ev.target !== btn) {
+          panel.hidden = true;
+          document.removeEventListener('click', onOutside, true);
+          onOutside = null;
+        }
+      };
+      document.addEventListener('click', onOutside, true);
+    } else {
+      if (onOutside) { document.removeEventListener('click', onOutside, true); onOutside = null; }
     }
   });
   updateBellDot();
@@ -138,6 +168,8 @@ export function removeStageMsgs(msgs) {
 const BOSS_AFTER = 5;
 export function renderStage1(ctx) {
   const { host, state, save, stage, clickPower, buyTier, onExit, attachChrome } = ctx;
+  let soundOn = (state.milestones || []).includes('sound-unlock');
+  let animOn  = (state.milestones || []).includes('anim-unlock');
   const t = (stage().tiers || [])[0];
   const bought = t ? (state.owned[t.id] || 0) : 0;
   const beaten = Array.isArray(state.defeated) && state.defeated.includes(1);
@@ -174,19 +206,38 @@ export function renderStage1(ctx) {
     cells.push(cell);
   }
 
-  function reveal() {
+  function reveal(animOn = false) {
     const n = Math.min(Math.floor(state.bits), GRID_CELLS);
-    for (let i = 0; i < GRID_CELLS; i++) cells[i].classList.toggle('mg-s1-on', i < n);
+    for (let i = 0; i < GRID_CELLS; i++) {
+      const wasOn = cells[i].classList.contains('mg-s1-on');
+      cells[i].classList.toggle('mg-s1-on', i < n);
+      // Flash the cell that just got revealed (only the boundary cell, not all):
+      if (animOn && !wasOn && i < n && i === n - 1) {
+        cells[i].classList.remove('mg-s1-flash');
+        void cells[i].offsetWidth; // reflow
+        cells[i].classList.add('mg-s1-flash');
+      }
+    }
     const done = n >= GRID_CELLS;
     btn.classList.toggle('mg-s1-ready', done);
     grid.classList.toggle('mg-s1-clear', done);   // pointer-events pass-through once clear
   }
 
   function addBits() {
-    state.bits += clickPower();
+    const cp = clickPower();
+    state.bits += cp;
+    state.totalBits = (state.totalBits || 0) + cp;
     const bs = bellLoad();
+    // Milestone check — may flip soundOn/animOn for THIS and future taps:
+    const prevMilestones = (state.milestones || []).length;
+    checkMilestones(state, bs, save);
+    if ((state.milestones || []).length > prevMilestones) {
+      soundOn = (state.milestones || []).includes('sound-unlock');
+      animOn  = (state.milestones || []).includes('anim-unlock');
+    }
+    if (soundOn) clickTick();
     checkMessages('bit-earn', state, bs);
-    reveal();
+    reveal(animOn);
   }
   // Full-screen tap area: pointer (covers mouse + touch). The grid sits above the button but is
   // click-through (pointer-events:none on covered cells) until cleared.
@@ -207,7 +258,7 @@ export function renderStage1(ctx) {
     }
   });
 
-  reveal();
+  reveal(animOn);
   attachChrome(host);
 }
 

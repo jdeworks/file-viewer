@@ -39,4 +39,20 @@ export const MESSAGES1 = [
     maxCount: undefined,
     removeAfterFire: false,
   },
+  {
+    id: 'bell-halfway',
+    text: 'halfway there',
+    trigger: 'bit-earn',
+    condition: (state) => (state.totalBits || 0) >= 500,
+    maxCount: 1,
+    removeAfterFire: true,
+  },
+  {
+    id: 'bell-patient',
+    text: 'patience has a cost',
+    trigger: 'buy',
+    condition: (state) => (state.totalBought || 0) >= 10,
+    maxCount: 1,
+    removeAfterFire: true,
+  },
 ];
