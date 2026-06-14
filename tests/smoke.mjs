@@ -1887,6 +1887,28 @@ try {
   if (beaten3.includes(3)) pass('meta-game stage 3: Kernel Panic defeated via a terminal command (persisted)'); else fail('stage3 defeated: ' + JSON.stringify(beaten3));
   await page.click('.games-close');
 
+  // ── Meta-game Stage 4 (Hex Hydra) ── defeat by flipping his FF (HP) byte in a hex view. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 5000, stage: 4, defeated: [1, 2, 3], introStages: [1, 2, 3, 4] })); } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-faceboss:not([hidden])', { timeout: 8000 });
+  await page.click('.mg-faceboss');
+  for (let i = 0; i < 8; i++) { const n = await page.$('.mg-dlg-next'); if (!n) break; await n.click(); await page.waitForTimeout(110); }
+  await page.waitForSelector('.mg-boss-hydra .mg-hp-cell', { timeout: 8000 });
+  pass('meta-game stage 4: Hex Hydra hex grid (FF = HP byte)');
+  for (let h = 2; h >= 0; h--) {
+    await page.click('.mg-boss-hydra .mg-hp-cell');
+    await page.waitForFunction((hp) => !!document.querySelector('.mg-dialog') || (document.querySelector('.mg-boss-hydra .mg-boss-name') || {}).textContent?.includes('HP ' + hp), h, { timeout: 4000 });
+  }
+  await page.waitForSelector('.mg-dialog', { timeout: 4000 });
+  const beaten4 = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame')) || {}).defeated || []; } catch { return []; } });
+  if (beaten4.includes(4)) pass('meta-game stage 4: Hex Hydra defeated by flipping its HP byte (persisted)'); else fail('stage4 defeated: ' + JSON.stringify(beaten4));
+  await page.click('.games-close');
+
   // ── Graceful offline-miss ── cache-on-use only (no full precache), then open a viewer that
   // was never loaded online while offline → friendly note instead of a raw error.
   {

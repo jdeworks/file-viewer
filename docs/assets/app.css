@@ -791,3 +791,8 @@ body {
 .mg-cmd { flex: 1; font: 13px ui-monospace, monospace; padding: 6px 8px; border: 1px solid #1f6f37;
   border-radius: 6px; background: #06140a; color: #7ee787; }
 .mg-cmd-run { background: #1f6f37; color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+/* Hex Hydra (stage 4) — clickable hex grid. */
+.mg-hex { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 8px 0; }
+.mg-hex-cell { font: 13px ui-monospace, monospace; padding: 6px 0; border: 1px solid var(--border);
+  border-radius: 4px; background: var(--bg); color: var(--fg); cursor: pointer; }
+.mg-hex-cell:hover { border-color: var(--accent); }

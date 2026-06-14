@@ -151,6 +151,47 @@ function mountKernelPanic(arena, { stage, onDefeat }) {
   return { destroy() { clearInterval(rp); } };
 }
 
+/* ── Stage 4 — Hex Hydra (binary/hex). Defeat = find his HP byte (reads FF) in the hex view and
+   flip it to 00. He relocates the byte each hit (cheats). ── */
+function mountHexHydra(arena, { stage, onDefeat }) {
+  const N = 24;
+  let hp = stage.hp, dead = false;
+  const bytes = Array.from({ length: N }, () => (Math.floor(Math.random() * 240)).toString(16).padStart(2, '0').toUpperCase());
+  let hpIdx = Math.floor(Math.random() * N);
+  bytes[hpIdx] = 'FF';
+  arena.innerHTML =
+    '<div class="mg-boss mg-boss-hydra">'
+    + '<div class="mg-boss-sprite">≈≋≈</div>'
+    + '<div class="mg-boss-name">' + esc(stage.bossName) + ' — HP ' + hp + '</div>'
+    + '<div class="mg-hex"></div>'
+    + '<div class="mg-boss-msg" role="status">Click the byte that reads FF.</div>'
+    + '</div>';
+  const bossEl = arena.querySelector('.mg-boss');
+  const hexEl = arena.querySelector('.mg-hex');
+  const nameEl = arena.querySelector('.mg-boss-name');
+  const msgEl = arena.querySelector('.mg-boss-msg');
+  function draw() {
+    hexEl.innerHTML = bytes.map((b, i) => '<button class="mg-hex-cell' + (i === hpIdx ? ' mg-hp-cell' : '') + '" type="button" data-i="' + i + '"' + (i === hpIdx ? ' data-hp="1"' : '') + '>' + b + '</button>').join('');
+    hexEl.querySelectorAll('.mg-hex-cell').forEach((c) => c.addEventListener('click', () => hit(Number(c.dataset.i))));
+    nameEl.textContent = stage.bossName + ' — HP ' + hp;
+  }
+  function hit(i) {
+    if (dead) return;
+    if (i !== hpIdx) { msgEl.textContent = 'That byte is just noise. Find the FF.'; return; }
+    bytes[hpIdx] = '00'; hp--;
+    bossEl.classList.remove('mg-hit'); void bossEl.offsetWidth; bossEl.classList.add('mg-hit');
+    if (hp <= 0) { draw(); return defeat(); }
+    // Relocate the HP byte (cheat: it moves each phase).
+    let j; do { j = Math.floor(Math.random() * N); } while (j === hpIdx);
+    hpIdx = j; bytes[hpIdx] = 'FF';
+    msgEl.textContent = 'Hit! It moved. Find the new FF. HP ' + hp;
+    draw();
+  }
+  function defeat() { dead = true; bossEl.classList.add('mg-boss-dead'); msgEl.textContent = 'The Hydra flatlines: 00 00 00.'; setTimeout(onDefeat, 750); }
+  draw();
+  return { destroy() {} };
+}
+
 export const STAGES = [
   {
     n: 1,
@@ -256,6 +297,38 @@ export const STAGES = [
     panics: 3,
     repanicMs: 6000,
     mountBoss: mountKernelPanic,
+  },
+  {
+    n: 4,
+    title: 'Hex Hydra',
+    goal: 600,
+    resource: { name: 'bytes', color: '#7ee787', theme: 'ascii' },     // still in the terminal
+    tiers: [
+      { id: 'click', name: 'Nibble', icon: '⬢', type: 'click', amount: 4, base: 40, mult: 1.5, desc: '+4 bytes per click' },
+      { id: 'dma', name: 'DMA channel', icon: '⇄', type: 'auto', rate: 3, base: 200, mult: 1.15, desc: 'streams 3 bytes/s' },
+      { id: 'bus', name: 'Memory bus', icon: '≣', type: 'auto', rate: 18, base: 2200, mult: 1.15, desc: 'streams 18 bytes/s' },
+      { id: 'core', name: 'Extra core', icon: '◉', type: 'auto', rate: 95, base: 24000, mult: 1.15, desc: 'streams 95 bytes/s' },
+    ],
+    intro: [
+      { speaker: 'SYS', text: 'Deeper in. Raw memory. A many-headed thing lives in the heap.' },
+      { speaker: 'SYS', text: 'You will not out-DPS it. Read its bytes. Reach 600 and open its memory.' },
+    ],
+    bossName: 'Hex Hydra',
+    bossIntro: [
+      { speaker: 'Hex Hydra', text: 'My health is HIDDEN in my bytes. You will never find it.' },
+      { speaker: 'Hex Hydra', text: 'And when you do — I move it. Good luck reading hex, meatware.' },
+    ],
+    hints: [
+      { speaker: '??? (a friendly daemon)', text: 'Everything here is bytes. This app has a HEX view…' },
+      { speaker: '??? (a friendly daemon)', text: 'His HP is the byte that reads FF. Everything else is noise.' },
+      { speaker: '??? (a friendly daemon)', text: 'Flip the FF to 00. He relocates it each hit — find it again, fast.' },
+    ],
+    victory: [
+      { speaker: 'Hex Hydra', text: 'FF… 00… you flipped my own bytes against me…' },
+      { speaker: 'SYS', text: 'Four heads down. You read the machine. That is the whole point. Keep going.' },
+    ],
+    hp: 3,
+    mountBoss: mountHexHydra,
   },
 ];
 
