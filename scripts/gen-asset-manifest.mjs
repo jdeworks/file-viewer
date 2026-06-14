@@ -20,12 +20,42 @@ async function walk(dir, out) {
 
 const files = [];
 await walk(DOCS, files);
-const assets = files.map((f) => f.path).filter((p) => !EXCLUDE.has(p)).sort();
+const kept = files.filter((f) => !EXCLUDE.has(f.path)).sort((a, b) => a.path.localeCompare(b.path));
+const assets = kept.map((f) => f.path);
+
+// Group assets into named BUNDLES so the cache-download modal can offer per-bundle offline saving
+// (each with a size). Core app shell, each vendored library, type renderers, known-files, games,
+// and examples are separate. Heavy = a big optional download the modal leaves unchecked by default.
+function bundleOf(path) {
+  if (path.startsWith('vendor/') && path.split('/').length > 2) return 'vendor:' + path.split('/')[1];
+  if (path.startsWith('examples/')) return 'examples';
+  if (path.startsWith('games/')) return 'games';
+  if (path.startsWith('types/')) return 'types';
+  if (path.startsWith('known/')) return 'known';
+  return 'core';            // index.html, core/, assets/, *.json, etc. — the app shell
+}
+const LABELS = {
+  core: 'Core app', types: 'File-type viewers', known: 'Known-file enhancers', games: 'Arcade games',
+  examples: 'Example files',
+};
+const labelFor = (id) => LABELS[id] || (id.startsWith('vendor:') ? id.slice(7) + ' (library)' : id);
+
+const groups = new Map();
+for (const f of kept) {
+  const id = bundleOf(f.path);
+  if (!groups.has(id)) groups.set(id, { id, label: labelFor(id), files: [], size: 0 });
+  const g = groups.get(id);
+  g.files.push(f.path); g.size += f.size;
+}
+const HEAVY_BYTES = 1.5 * 1024 * 1024;   // bundles over this are large optional downloads
+const bundles = [...groups.values()]
+  .map((g) => ({ ...g, heavy: g.size > HEAVY_BYTES }))
+  .sort((a, b) => (a.id === 'core' ? -1 : b.id === 'core' ? 1 : a.label.localeCompare(b.label)));
 
 // Version = hash of path+size pairs, so any change to the asset set bumps it.
 const hash = createHash('sha256');
-for (const p of assets) hash.update(p + ':' + files.find((f) => f.path === p).size + '\n');
+for (const f of kept) hash.update(f.path + ':' + f.size + '\n');
 const version = hash.digest('hex').slice(0, 12);
 
-await writeFile(join(DOCS, 'asset-manifest.json'), JSON.stringify({ version, assets }, null, 0) + '\n');
-console.log('asset-manifest.json: ' + assets.length + ' assets, version ' + version);
+await writeFile(join(DOCS, 'asset-manifest.json'), JSON.stringify({ version, assets, bundles }, null, 0) + '\n');
+console.log('asset-manifest.json: ' + assets.length + ' assets, ' + bundles.length + ' bundles, version ' + version);

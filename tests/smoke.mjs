@@ -67,6 +67,16 @@ const pass = (m) => console.log('✓ ' + m);
   const extra = manifest.assets.filter((p) => !onDisk.includes(p));
   if (!missing.length && !extra.length) pass('asset-manifest covers every file (' + manifest.assets.length + ') — offline precache complete');
   else fail('asset-manifest stale (run node scripts/gen-asset-manifest.mjs). missing=' + missing.join(',') + ' extra=' + extra.join(','));
+  // Bundles: every asset belongs to exactly one bundle, each bundle has a size, and the big libs
+  // are flagged heavy (so the cache-download modal can leave them unchecked by default).
+  const bundles = manifest.bundles || [];
+  const bundleFiles = bundles.flatMap((b) => b.files);
+  const allCovered = bundleFiles.length === manifest.assets.length && new Set(bundleFiles).size === manifest.assets.length;
+  const sized = bundles.every((b) => typeof b.size === 'number' && b.size >= 0);
+  const monaco = bundles.find((b) => b.id === 'vendor:monaco');
+  const core = bundles.find((b) => b.id === 'core');
+  if (allCovered && sized && monaco && monaco.heavy && core && !core.heavy) pass('asset-manifest grouped into ' + bundles.length + ' sized bundles (Monaco flagged heavy)');
+  else fail('manifest bundles: covered=' + allCovered + ' sized=' + sized + ' monacoHeavy=' + (monaco && monaco.heavy) + ' coreLight=' + (core && !core.heavy));
 }
 
 await new Promise((r) => server.listen(0, r));
