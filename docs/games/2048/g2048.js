@@ -14,90 +14,167 @@ export function mount(host, { onScore, onExit } = {}) {
     + '</div>';
   const boardEl = host.querySelector('.g2048-board');
   const scoreEl = host.querySelector('.g2048-score');
-  const overEl = host.querySelector('.g2048-over');
+  const overEl  = host.querySelector('.g2048-over');
   const overMsg = host.querySelector('.g2048-over-msg');
 
-  let grid, score, dead, prevGrid;
-
-  function reset() {
-    grid = Array.from({ length: SIZE }, () => new Array(SIZE).fill(0));
-    score = 0; dead = false; prevGrid = null;
-    addTile(); addTile();
-    overEl.hidden = true;
-    scoreEl.textContent = 'Score: 0';
-    draw();
+  // Build the permanent 16 background cells once.
+  for (let i = 0; i < SIZE * SIZE; i++) {
+    const bg = document.createElement('div');
+    bg.className = 'g2048-bg-cell';
+    boardEl.appendChild(bg);
   }
 
+  // Tile identity: each tile is { id, r, c, value }. tileEls maps id → DOM element.
+  let tiles = [], nextId = 1, score = 0, dead = false;
+  const tileEls = new Map();
+
+  function gridValue(r, c) {
+    return tiles.find((t) => t.r === r && t.c === c)?.value || 0;
+  }
   function empties() {
+    const occ = new Set(tiles.map((t) => t.r + ',' + t.c));
     const out = [];
-    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (!grid[r][c]) out.push([r, c]);
+    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++)
+      if (!occ.has(r + ',' + c)) out.push([r, c]);
     return out;
   }
   function addTile() {
     const e = empties();
     if (!e.length) return;
     const [r, c] = e[Math.floor(Math.random() * e.length)];
-    grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+    tiles.push({ id: nextId++, r, c, value: Math.random() < 0.9 ? 2 : 4 });
   }
 
-  // Collapse one row to the left, merging equal neighbours once. Returns [newRow, gained, moved].
-  function collapse(row) {
-    const nums = row.filter((x) => x);
+  // Collapse a row of tile-objects leftward. Returns { result, gained, moved }.
+  // Merges keep the first tile's id; the second tile's id goes into toRemove.
+  function collapseRow(row) {
+    const nums = row.filter((t) => t.value);
     const out = [];
-    let gained = 0;
-    for (let i = 0; i < nums.length; i++) {
-      if (i + 1 < nums.length && nums[i] === nums[i + 1]) { out.push(nums[i] * 2); gained += nums[i] * 2; i++; }
-      else out.push(nums[i]);
+    let gained = 0, i = 0;
+    while (i < nums.length) {
+      if (i + 1 < nums.length && nums[i].value === nums[i + 1].value) {
+        const nv = nums[i].value * 2;
+        gained += nv;
+        out.push({ id: nums[i].id, value: nv, mergedFrom: nums[i + 1].id });
+        i += 2;
+      } else {
+        out.push({ id: nums[i].id, value: nums[i].value });
+        i++;
+      }
     }
-    while (out.length < SIZE) out.push(0);
-    const moved = out.some((v, i) => v !== row[i]);
-    return [out, gained, moved];
+    while (out.length < SIZE) out.push({ id: null, value: 0 });
+    const moved = out.some((t, idx) => t.id !== (row[idx]?.id ?? null));
+    return { result: out, gained, moved };
   }
 
+  // rotateCW works on any 2-D array (values or tile-objects — just rearranges refs).
   const rotateCW = (g) => g[0].map((_, c) => g.map((row) => row[c]).reverse());
-  const rotateCCW = (g) => g[0].map((_, c) => g.map((row) => row[SIZE - 1 - c]));
 
-  // dir: 0 left, 1 up, 2 right, 3 down. Rotate so the target edge becomes left, collapse, rotate back.
-  // Pre-rotate (4-dir)%4 times CW (not dir times) so collapse-left aligns correctly with each direction.
   function move(dir) {
     if (dead) return;
-    let g = grid;
+
+    // Build SIZE×SIZE grid of tile-objects (null-id sentinel for empties).
+    let g = Array.from({ length: SIZE }, (_, r) =>
+      Array.from({ length: SIZE }, (_, c) => tiles.find((t) => t.r === r && t.c === c) || { id: null, value: 0 })
+    );
+
     for (let i = 0; i < (4 - dir) % 4; i++) g = rotateCW(g);
-    let moved = false, gained = 0;
-    g = g.map((row) => { const [nr, gg, mv] = collapse(row); if (mv) moved = true; gained += gg; return nr; });
+
+    let anyMoved = false, gained = 0;
+    const toRemove = new Set();
+    g = g.map((row) => {
+      const { result, gained: g2, moved } = collapseRow(row);
+      if (moved) anyMoved = true;
+      gained += g2;
+      result.forEach((s) => { if (s.mergedFrom) toRemove.add(s.mergedFrom); });
+      return result;
+    });
+
     for (let i = 0; i < dir; i++) g = rotateCW(g);
-    if (!moved) return;
-    prevGrid = grid.map((r) => [...r]);
-    grid = g; score += gained;
+
+    if (!anyMoved) return;
+
+    // FLIP — snapshot bounding rects before the DOM updates.
+    const oldRects = {};
+    tiles.forEach((t) => {
+      const el = tileEls.get(t.id);
+      if (el) oldRects[t.id] = el.getBoundingClientRect();
+    });
+
+    // Remove merged tiles from the data model.
+    tiles = tiles.filter((t) => !toRemove.has(t.id));
+
+    // Apply new positions / values from the collapsed grid.
+    g.forEach((row, r) => row.forEach((slot, c) => {
+      if (!slot.id) return;
+      const t = tiles.find((t2) => t2.id === slot.id);
+      if (t) { t.r = r; t.c = c; t.value = slot.value; }
+    }));
+
+    score += gained;
     addTile();
+
     scoreEl.textContent = 'Score: ' + score;
     onScore?.(score);
-    boardEl.classList.add('g2048-moving');
-    boardEl.addEventListener('animationend', () => boardEl.classList.remove('g2048-moving'), { once: true });
-    draw();
+    draw(oldRects);
     if (!canMove()) gameOver();
+  }
+
+  function draw(oldRects = {}) {
+    // Remove DOM elements for tiles that no longer exist.
+    for (const [id, el] of tileEls) {
+      if (!tiles.find((t) => t.id === id)) { el.remove(); tileEls.delete(id); }
+    }
+
+    tiles.forEach((t) => {
+      let el = tileEls.get(t.id);
+      const isNew = !el;
+      if (!el) {
+        el = document.createElement('div');
+        boardEl.appendChild(el);
+        tileEls.set(t.id, el);
+      }
+
+      el.className = 'g2048-cell g2048-v' + t.value + (isNew ? ' g2048-new' : '');
+      el.textContent = t.value;
+      el.style.gridRow    = (t.r + 1) + '';
+      el.style.gridColumn = (t.c + 1) + '';
+
+      // FLIP: animate from old position to new position.
+      const oldRect = oldRects[t.id];
+      if (oldRect && !isNew) {
+        const newRect = el.getBoundingClientRect();
+        const dx = oldRect.left - newRect.left;
+        const dy = oldRect.top  - newRect.top;
+        if (dx !== 0 || dy !== 0) {
+          el.style.transition = 'none';
+          el.style.transform  = `translate(${dx}px,${dy}px)`;
+          el.offsetHeight; // force reflow
+          el.style.transition = 'transform 0.12s ease';
+          el.style.transform  = '';
+        }
+      }
+    });
   }
 
   function canMove() {
     if (empties().length) return true;
     for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
-      if (c + 1 < SIZE && grid[r][c] === grid[r][c + 1]) return true;
-      if (r + 1 < SIZE && grid[r][c] === grid[r + 1][c]) return true;
+      const v = gridValue(r, c);
+      if (c + 1 < SIZE && v === gridValue(r, c + 1)) return true;
+      if (r + 1 < SIZE && v === gridValue(r + 1, c)) return true;
     }
     return false;
   }
   function gameOver() { dead = true; overMsg.textContent = 'Game over — score ' + score; overEl.hidden = false; }
 
-  function draw() {
-    boardEl.innerHTML = '';
-    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
-      const v = grid[r][c];
-      const cell = document.createElement('div');
-      const isNew = v !== 0 && (!prevGrid || prevGrid[r][c] !== v);
-      cell.className = 'g2048-cell' + (v ? ' g2048-v' + v : '') + (isNew ? ' g2048-new' : '');
-      cell.textContent = v || '';
-      boardEl.appendChild(cell);
-    }
+  function reset() {
+    tiles = []; nextId = 1; score = 0; dead = false;
+    tileEls.forEach((el) => el.remove()); tileEls.clear();
+    overEl.hidden = true;
+    scoreEl.textContent = 'Score: 0';
+    addTile(); addTile();
+    draw();
   }
 
   function onKey(e) {

@@ -51,8 +51,12 @@
 .g2048-hint { font-size: 11px; color: var(--fg-2); }
 .g2048-board { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
   width: min(360px, 86vw); aspect-ratio: 1; background: var(--bg-3); border-radius: 10px; padding: 8px; touch-action: none; }
+/* bg-cell: the 16 permanent empty-square backdrops (always present, never moved). */
+.g2048-bg-cell { border-radius: 6px; background: color-mix(in srgb, var(--fg) 6%, transparent); }
+/* g2048-cell: live tile elements (persistent across moves; FLIP-animated). */
 .g2048-cell { display: flex; align-items: center; justify-content: center; border-radius: 6px;
-  background: color-mix(in srgb, var(--fg) 6%, transparent); font: 700 clamp(16px, 5vw, 26px) ui-monospace, monospace; }
+  background: color-mix(in srgb, var(--fg) 6%, transparent); font: 700 clamp(16px, 5vw, 26px) ui-monospace, monospace;
+  z-index: 1; will-change: transform; }
 .g2048-v2 { background: #eee4da; color: #776e65; } .g2048-v4 { background: #ede0c8; color: #776e65; }
 .g2048-v8 { background: #f2b179; color: #fff; } .g2048-v16 { background: #f59563; color: #fff; }
 .g2048-v32 { background: #f67c5f; color: #fff; } .g2048-v64 { background: #f65e3b; color: #fff; }
@@ -70,11 +74,7 @@
   100% { transform: scale(1);   opacity: 1; }
 }
 .g2048-new { animation: g2048-pop 0.12s ease-out; }
-@keyframes g2048-slide {
-  0%   { transform: scale(0.97); }
-  100% { transform: scale(1); }
-}
-.g2048-board.g2048-moving { animation: g2048-slide 0.08s ease-out; }
+/* g2048-moving board animation removed; tiles use per-element FLIP transform instead. */
 
 /* Bit Foundry (meta-game incremental core). */
 .mg-wrap { display: flex; flex-direction: column; gap: 14px; width: min(420px, 100%); }
