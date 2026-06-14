@@ -189,6 +189,27 @@ try {
   const isZip = docxBytes[0] === 0x50 && docxBytes[1] === 0x4b;               // PK
   const hasDoc = docxBytes.includes(Buffer.from('word/document.xml'));
   if (/\.docx$/.test(docxDownload.suggestedFilename()) && isZip && hasDoc) pass('preview exported as a valid .docx (OOXML zip)'); else fail('docx: name=' + docxDownload.suggestedFilename() + ' zip=' + isZip + ' hasDoc=' + hasDoc);
+  // DOCX with an embedded data-URL <img> → real inline picture (word/media/* + image rels + drawing).
+  const docxImg = await page.evaluate(async () => {
+    const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const { buildDocx } = await import('/core/docx-export.js');
+    const blob = await buildDocx('<h1>Title</h1><p>Body text</p><p><img src="' + png + '"></p>');
+    const buf = await blob.arrayBuffer();
+    const zip = await new window.JSZip().loadAsync(buf);
+    const files = Object.keys(zip.files);
+    const doc = await zip.file('word/document.xml').async('string');
+    const rels = zip.file('word/_rels/document.xml.rels') ? await zip.file('word/_rels/document.xml.rels').async('string') : '';
+    const ct = await zip.file('[Content_Types].xml').async('string');
+    return {
+      hasMedia: files.some((f) => /^word\/media\/image1\.png$/.test(f)),
+      hasDrawing: /<w:drawing>/.test(doc) && /r:embed="rIdImg1"/.test(doc),
+      hasRel: /relationships\/image/.test(rels) && /media\/image1\.png/.test(rels),
+      hasPngType: /Extension="png"/.test(ct),
+    };
+  });
+  if (docxImg.hasMedia && docxImg.hasDrawing && docxImg.hasRel && docxImg.hasPngType)
+    pass('DOCX embeds data-URL image as an inline picture (media + rel + drawing)');
+  else fail('docx image embed: ' + JSON.stringify(docxImg));
 
   // Sandbox attribute is allow-scripts only (no allow-same-origin).
   const sandbox = await frame.getAttribute('sandbox');
