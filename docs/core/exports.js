@@ -39,6 +39,11 @@ export async function getExports(state, ctx) {
   if (state.lastBodyHtml) {
     out.push({ label: 'Print / Save as PDF', run: () => printBodyHtml(state.lastBodyHtml, { style: ctx.previewStyle }) });
     out.push({ label: 'Download as HTML', run: () => downloadStandaloneHtml(state, ctx) });
+    out.push({ label: 'Download as Word (.docx)', run: async () => {
+      const { buildDocx } = await import('./docx-export.js');
+      const base = (state.intake && state.intake.filename || 'document').replace(/\.[^.]+$/, '');
+      downloadBlob(await buildDocx(state.lastBodyHtml), base + '.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    } });
   }
   // Per-type exports (lazy-loaded only when the menu is opened).
   if (state.type && state.type.loadExports) {

@@ -177,6 +177,18 @@ try {
     page.click('#exportMenu .export-item:has-text("Download as HTML")'),
   ]);
   if (/\.html$/.test(htmlDownload.suggestedFilename())) pass('preview exported as standalone HTML (' + htmlDownload.suggestedFilename() + ')'); else fail('html export name: ' + htmlDownload.suggestedFilename());
+  // "Download as Word (.docx)" — a real OOXML zip built with JSZip (no heavy writer lib).
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const [docxDownload] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download as Word")'),
+  ]);
+  const docxPath = await docxDownload.path();
+  const docxBytes = await readFile(docxPath);
+  const isZip = docxBytes[0] === 0x50 && docxBytes[1] === 0x4b;               // PK
+  const hasDoc = docxBytes.includes(Buffer.from('word/document.xml'));
+  if (/\.docx$/.test(docxDownload.suggestedFilename()) && isZip && hasDoc) pass('preview exported as a valid .docx (OOXML zip)'); else fail('docx: name=' + docxDownload.suggestedFilename() + ' zip=' + isZip + ' hasDoc=' + hasDoc);
 
   // Sandbox attribute is allow-scripts only (no allow-same-origin).
   const sandbox = await frame.getAttribute('sandbox');
