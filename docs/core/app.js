@@ -25,6 +25,7 @@ import { previewStyle } from './settings-schema.js';
 import { initGames } from '../games/launcher.js';
 import { loadExamples } from './examples.js';
 import { startSideBySide, openSideBySide } from './sidebyside.js';
+import { buildMetadata } from './meta-drawer.js';
 import { $, isMobile, MAX_TREE_FILES, state, toast, themeIsDark, escapeHtml } from './state.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
@@ -828,33 +829,6 @@ function onSettingsChange(model, changedKey) {
   if (!changedKey || viewerRenderKey) renderPreview();
 }
 
-/* ─────────────────────────── Metadata ─────────────────────────── */
-
-async function buildMetadata() {
-  const body = $('metaBody');
-  const i = state.intake;
-  const rows = [
-    ['Name', i.filename],
-    ['Type', state.type.label],
-    ['Size', formatBytes(i.size)],
-    ['MIME', i.mimeType || '—'],
-    ['Modified', i.lastModified ? new Date(i.lastModified).toLocaleString() : '—'],
-  ];
-  if (state.type.loadMetadata) {
-    try { const m = await state.type.loadMetadata(); for (const r of await m.extract(i)) rows.push([r.label, r.value]); } catch {}
-  }
-  body.innerHTML = '';
-  for (const [k, v] of rows) {
-    const row = document.createElement('div'); row.className = 'meta-row';
-    row.innerHTML = `<span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v))}</span>`;
-    body.appendChild(row);
-  }
-  const note = document.createElement('p'); note.className = 'muted'; note.style.marginTop = '12px';
-  note.style.fontSize = '12px';
-  note.textContent = 'Note: browsers expose only the file’s modified time, never its OS creation time. “Created” dates come only from inside the file (e.g. PDF/EXIF).';
-  body.appendChild(note);
-}
-
 /* ─────────────────────────── Theme ─────────────────────────── */
 
 function applyTheme(dark) {
@@ -883,7 +857,6 @@ function closeDrawers() {
 /* ─────────────────────────── Helpers ─────────────────────────── */
 
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
-function formatBytes(n) { if (n < 1024) return n + ' B'; if (n < 1048576) return (n / 1024).toFixed(1) + ' KB'; return (n / 1048576).toFixed(2) + ' MB'; }
 
 /* ─────────────────────────── Wire up ─────────────────────────── */
 

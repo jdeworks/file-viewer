@@ -37,3 +37,4 @@ export function toast(msg, ms = 2600) {
 // theme off the root element (applyTheme, which stays in app.js, writes it).
 export const themeIsDark = () => document.documentElement.dataset.theme === 'dark';
 export const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+export const formatBytes = (n) => { if (n < 1024) return n + ' B'; if (n < 1048576) return (n / 1024).toFixed(1) + ' KB'; return (n / 1048576).toFixed(2) + ' MB'; };
