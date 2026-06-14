@@ -2,13 +2,18 @@
 // to inline data: URLs from the embedded image records (zero off-origin — no network fetch),
 // DOMPurify-sanitizes the HTML, and renders it via the shared sandboxed iframe like FB2/Markdown.
 // DRM'd or HUFF/CDIC-compressed books show a clear, friendly note instead of garbage.
+// Markup lives in sibling .html templates (error) filled via core/template.js.
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
+import { loadTemplate, fill, esc } from '../../../core/template.js';
 import { openMobi } from './mobilib.js';
+
+const ERROR = new URL('./error.html', import.meta.url);
 
 export async function render(intake, _ctx) {
   const result = openMobi(intake.bytes);
   if (!result.ok) {
-    return { bodyHtml: '<div class="json-error"><strong>Can’t display this MOBI</strong><br>' + escapeText(result.reason) + '</div>', hadUnsafe: false };
+    const errorTpl = await loadTemplate(ERROR);
+    return { bodyHtml: fill(errorTpl, { reason: result.reason }), hadUnsafe: false };
   }
   const DOMPurify = await loadGlobal(vendor('dompurify/purify.min.js'), 'DOMPurify');
 
@@ -20,7 +25,7 @@ export async function render(intake, _ctx) {
   // MOBI page breaks → horizontal rules; drop the publisher's <guide>/<mbp:*> cruft.
   html = html.replace(/<mbp:pagebreak\s*\/?>/gi, '<hr class="mobi-break">').replace(/<\/?mbp:[^>]*>/gi, '');
 
-  const title = result.title ? '<header class="mobi-head"><h1 class="mobi-booktitle">' + escapeText(result.title) + '</h1></header>' : '';
+  const title = result.title ? '<header class="mobi-head"><h1 class="mobi-booktitle">' + esc(result.title) + '</h1></header>' : '';
   DOMPurify.removed = [];
   const clean = DOMPurify.sanitize('<article class="mobi-book">' + title + html + '</article>', {
     ADD_ATTR: ['target'],
@@ -30,5 +35,3 @@ export async function render(intake, _ctx) {
   });
   return { bodyHtml: clean, hadUnsafe: DOMPurify.removed.length > 0 };
 }
-
-function escapeText(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }

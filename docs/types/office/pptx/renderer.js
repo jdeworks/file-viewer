@@ -1,6 +1,12 @@
 // PPTX preview: render each slide to a canvas (parent) and embed as an image in the
-// sandboxed iframe — same pattern as PDF. Slide cap reported, not silent.
+// sandboxed iframe — same pattern as PDF. Slide cap reported, not silent. Markup lives
+// in sibling .html templates (doc/slide) filled via core/template.js. The slide src is
+// a canvas dataURL (safe base64, no HTML-special chars) passed raw via {{&src}}.
 import { loadPptxViewer } from './pptxlib.js';
+import { loadTemplate, fill } from '../../../core/template.js';
+
+const DOC = new URL('./doc.html', import.meta.url);
+const SLIDE = new URL('./slide.html', import.meta.url);
 
 const MAX_SLIDES = 50;
 
@@ -25,11 +31,12 @@ export async function render(intake, ctx) {
   await viewer.loadFile(intake.bytes.slice());
   const count = viewer.getSlideCount();
   const max = Math.min(count, MAX_SLIDES);
-  const slides = [];
+  const [docTpl, slideTpl] = await Promise.all([loadTemplate(DOC), loadTemplate(SLIDE)]);
+  const rendered = [];
   for (let i = 0; i < max; i++) {
     await viewer.renderSlide(i, canvas, { quality: 'high' });
-    slides.push('<img class="pptx-slide" alt="Slide ' + (i + 1) + '" src="' + canvas.toDataURL('image/png') + '">');
+    rendered.push(fill(slideTpl, { alt: i + 1, src: canvas.toDataURL('image/png') }));
   }
   const note = count > max ? '<p class="pdf-note">Showing first ' + max + ' of ' + count + ' slides.</p>' : '';
-  return { bodyHtml: '<div class="pptx-doc">' + slides.join('\n') + note + '</div>', hadUnsafe: false };
+  return { bodyHtml: fill(docTpl, { slides: rendered.join('\n'), note }), hadUnsafe: false };
 }
