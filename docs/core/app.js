@@ -29,7 +29,7 @@ import { mapPreviewToRaw, mapRawToPreview, syncScrollFromRaw, syncScrollFromPrev
 import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare } from './compare.js';
 import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent } from './rawpane.js';
 import { buildMetadata } from './meta-drawer.js';
-import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey } from './folder.js';
+import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, flushFolderEdit } from './folder.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
@@ -62,11 +62,44 @@ async function loadIntake(intake) {
 // Create a new, empty file and open it in the editor. The name's extension drives type detection,
 // so "notes.md" opens as Markdown, "main.py" as Python code, etc. The surface for the
 // `import easteregg` unlock too (see onRawEdited).
-function createNewFile() {
+async function createNewFile() {
   const name = prompt('New file name (include an extension, e.g. notes.md, script.js, data.json):', 'untitled.txt');
   if (name == null) return;                         // cancelled
   const filename = (name.trim() || 'untitled.txt');
-  loadIntake(intakeFromText('', filename));
+  // If a file is already open, switch to folder mode so both files stay active in the tree.
+  if (state.type && !$('workspace').hidden) {
+    flushFolderEdit();
+    const prevName = state.intake.filename;
+    const prevText = state.rawview ? state.rawview.getValue() : (state.intake.text || '');
+    const prevFile = new File([prevText], prevName, { type: 'text/plain' });
+    const newFile = new File([''], filename, { type: 'text/plain' });
+    const entries = [{ file: prevFile, path: prevName }, { file: newFile, path: filename }];
+    state.treeEntries = entries;
+    state.folderEdits = new Map([[prevName, prevText]]);
+    state.folderExported = false;
+    const tree = buildTree(entries);
+    state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => {
+      const stashed = state.folderEdits.get(node.path);
+      const intake = stashed != null
+        ? intakeFromText(stashed, node.path.split('/').pop())
+        : intakeFromText('', node.path.split('/').pop());
+      state._skipDiscardGuard = true;
+      loadIntake(intake).then(() => { state.currentFolderPath = node.path; });
+    } });
+    $('ftRoot').textContent = 'New files';
+    $('ftRoot').title = 'New files';
+    $('repoBtn').hidden = true;
+    $('ftExportBtn').hidden = true;
+    $('ftSearch').hidden = true;
+    $('treeBtn').hidden = false;
+    setTree(true);
+    state._skipDiscardGuard = true;
+  }
+  await loadIntake(intakeFromText('', filename));
+  if (state.treeEntries) {
+    state.currentFolderPath = filename;
+    state.treeApi?.setActive?.(filename);
+  }
 }
 
 // Return to the intake screen to pick another file/folder (keeps any loaded tree).
@@ -426,6 +459,8 @@ function init() {
   // the games themselves are lazy-loaded on first unlock, so this costs ~nothing.
   const games = initGames({ onToast: toast });
   state.games = games;   // so onRawEdited can offer the `import easteregg` unlock
+  if (games.isUnlocked()) $('gamesBtn').hidden = false;
+  $('gamesBtn').addEventListener('click', () => games.open());
 
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
   window.__fv = {

@@ -62,6 +62,7 @@ export async function onRawEdited(value) {
   if (state.games && !state.games.isUnlocked() && /(^|\n)\s*import\s+easteregg\b/.test(value)) {
     state.games.unlock();
     state.games.open();
+    $('gamesBtn').hidden = false;
     toast('🎮 import easteregg — arcade unlocked!');
   }
   if (state.type?.capabilities.preview) await renderPreview();
