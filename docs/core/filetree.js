@@ -34,6 +34,11 @@ function fmtSize(n) {
   return (n / 1048576).toFixed(1) + ' MB';
 }
 
+// Module-level reference to the file node currently being dragged from the tree.
+let _dragNode = null;
+export function getDraggedTreeNode() { return _dragNode; }
+export const TREE_DRAG_TYPE = 'text/x-fv-tree-path';
+
 // entries: [{ file, path }]. Returns a nested tree.
 export function buildTree(entries) {
   const root = { name: '', dir: true, children: new Map() };
@@ -161,6 +166,7 @@ export function renderTree(host, root, { onOpen }) {
     } else {
       row.dataset.path = item.node.path;
       row.tabIndex = 0;
+      row.draggable = true;
       const id = quickType(item.node.name);
       row.innerHTML = '<span class="ft-dot" style="background:' + dotColor(id) + '"></span>'
         + '<span class="ft-name">' + escapeHtml(item.node.name) + '</span>'
@@ -168,6 +174,12 @@ export function renderTree(host, root, { onOpen }) {
       if (item.node === activeNode) row.classList.add('active');
       if (editedPaths.has(item.node.path)) row.classList.add('ft-edited');
       row.addEventListener('click', () => { setActive(item.node.path); onOpen(item.node); });
+      row.addEventListener('dragstart', (e) => {
+        _dragNode = item.node;
+        e.dataTransfer.setData(TREE_DRAG_TYPE, item.node.path);
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+      row.addEventListener('dragend', () => { _dragNode = null; });
     }
     return row;
   }

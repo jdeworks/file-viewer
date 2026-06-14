@@ -6,7 +6,7 @@
 import { REGISTRY, getType, FALLBACK_TYPE } from './registry.js';
 import { pickType } from './detect.js';
 import { wireIntake, intakeFromFile, intakeFromText, LARGE_FILE_BYTES } from './intake.js';
-import { buildTree, renderTree } from './filetree.js';
+import { buildTree, renderTree, getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
 import { findGitDir, isGitInternal, openRepo } from './git.js';
 import { matchKnown } from '../known/registry.js';
 import { renderRepoView } from './repoview.js';
@@ -99,6 +99,51 @@ async function createNewFile() {
   if (state.treeEntries) {
     state.currentFolderPath = filename;
     state.treeApi?.setActive?.(filename);
+  }
+}
+
+// Handle a file dragged from the folder tree and dropped onto the main workspace.
+// If a file is already open, enter dual-view so both files stay accessible side by side.
+async function onTreeFileDrop(node) {
+  if (!node) return;
+  if (state.type && !$('workspace').hidden && !state.treeEntries) {
+    // A single file is open and no folder tree exists yet: build a synthetic two-file tree
+    // so both files remain accessible side by side (mirrors the createNewFile dual-view path).
+    flushFolderEdit();
+    const prevName = state.intake.filename;
+    const prevText = state.rawview ? state.rawview.getValue() : (state.intake.text || '');
+    const prevFileObj = new File([prevText], prevName, { type: 'text/plain' });
+    const entries = [{ file: prevFileObj, path: prevName }, { file: node.file, path: node.path }];
+    state.treeEntries = entries;
+    state.folderEdits = new Map([[prevName, prevText]]);
+    state.folderExported = false;
+    const tree = buildTree(entries);
+    state.treeApi = renderTree($('ftBody'), tree, { onOpen: (n) => {
+      const stashed = state.folderEdits.get(n.path);
+      const getIntake = stashed != null
+        ? Promise.resolve(intakeFromText(stashed, n.path.split('/').pop()))
+        : intakeFromFile(n.file);
+      getIntake.then((i) => { state._skipDiscardGuard = true; loadIntake(i).then(() => { state.currentFolderPath = n.path; }); });
+    } });
+    $('ftRoot').textContent = 'Files';
+    $('ftRoot').title = 'Files';
+    $('repoBtn').hidden = true;
+    $('ftExportBtn').hidden = true;
+    $('ftSearch').hidden = true;
+    $('treeBtn').hidden = false;
+    setTree(true);
+    state._skipDiscardGuard = true;
+  }
+  // Open the dragged file (whether or not we just set up a tree above).
+  const stashed = state.folderEdits?.get(node.path);
+  const intake = stashed != null
+    ? intakeFromText(stashed, node.path.split('/').pop())
+    : await intakeFromFile(node.file);
+  state._skipDiscardGuard = true;
+  await loadIntake(intake);
+  if (state.treeEntries) {
+    state.currentFolderPath = node.path;
+    state.treeApi?.setActive?.(node.path);
   }
 }
 
@@ -197,6 +242,7 @@ async function activateType(type) {
   else { state.rawview?.dispose(); state.rawview = null; $('editor').innerHTML = ''; }
   if (canPreview) await renderPreview(); else clearPreview();
   applyLayout();
+  if (isMobile()) layoutTopbar();   // re-sync ⋯ visibility now that button hidden-states are set
 }
 
 /* ─────────────────────────── Preview (iframe) ─────────────────────────── */
@@ -371,6 +417,18 @@ function init() {
   wireIntake({
     dropZone: $('dropZone'), fileInput: $('fileInput'), folderInput: $('folderInput'),
     onIntake: loadIntake, onFolder: loadFolder, onError: (e) => toast('Could not read file: ' + e.message),
+  });
+
+  // Tree-to-workspace drag: when a file is dragged from the sidebar tree onto the workspace
+  // (editor or preview), enter dual-view mode if a file is already open.
+  $('workspace').addEventListener('dragover', (e) => {
+    if (e.dataTransfer?.types?.includes(TREE_DRAG_TYPE)) e.preventDefault();
+  });
+  $('workspace').addEventListener('drop', (e) => {
+    if (!e.dataTransfer?.types?.includes(TREE_DRAG_TYPE)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onTreeFileDrop(getDraggedTreeNode());
   });
   $('treeBtn').addEventListener('click', () => setTree($('fileTree').hidden));
   $('treeCloseBtn').addEventListener('click', () => setTree(false));

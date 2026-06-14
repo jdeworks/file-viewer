@@ -158,8 +158,13 @@ export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolde
   }
 
   // Global drop: accept a file/folder dropped anywhere, even after one is already open.
+  // Tree-to-workspace drags are handled separately (in app.js) and must not be processed here.
   window.addEventListener('dragover', (e) => { e.preventDefault(); });
-  window.addEventListener('drop', (e) => { e.preventDefault(); handleDrop(e); });
+  window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer?.types?.includes('text/x-fv-tree-path')) return;
+    handleDrop(e);
+  });
 
   // Paste: prefer a pasted file (image, etc.), else pasted text.
   window.addEventListener('paste', (e) => {
