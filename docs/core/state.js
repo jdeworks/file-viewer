@@ -32,3 +32,8 @@ export function toast(msg, ms = 2600) {
   clearTimeout(toast._t);
   toast._t = setTimeout(() => (t.hidden = true), ms);
 }
+
+// Shared pure helpers used across the shell + extracted modules. themeIsDark reads the current
+// theme off the root element (applyTheme, which stays in app.js, writes it).
+export const themeIsDark = () => document.documentElement.dataset.theme === 'dark';
+export const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
