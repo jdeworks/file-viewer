@@ -204,6 +204,22 @@ body {
   border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 12px; white-space: nowrap; }
 .compare-stop:hover { border-color: var(--accent); }
 .raw-pane.comparing .editor-host { top: 30px; }
+/* In-memory edit disclaimer banner — stacks below compare-bar when both are open. */
+.edit-disclaimer { position: absolute; top: 0; left: 0; right: 0; height: 28px; z-index: 4;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 10px;
+  background: var(--bg-2); border-bottom: 1px solid var(--border); font-size: 11.5px; color: var(--fg-2); }
+.edit-disclaimer[hidden] { display: none; }
+.raw-pane.has-disclaimer .editor-host { top: 28px; }
+.raw-pane.comparing .edit-disclaimer { top: 30px; }
+.raw-pane.comparing.has-disclaimer .editor-host { top: 58px; }
+.edit-disclaimer-msg strong { color: var(--fg); }
+.edit-disclaimer-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.edit-disclaimer-never { background: none; border: none; color: var(--fg-2); font-size: 11px;
+  cursor: pointer; padding: 2px 4px; text-decoration: underline; white-space: nowrap; }
+.edit-disclaimer-never:hover { color: var(--fg); }
+.edit-disclaimer-close { background: none; border: none; color: var(--fg-2); font-size: 13px;
+  cursor: pointer; padding: 2px 5px; line-height: 1; border-radius: 3px; }
+.edit-disclaimer-close:hover { background: var(--bg-3, var(--border)); color: var(--fg); }
 #compareBtn.active { color: var(--accent); }
 .preview-host { position: absolute; inset: 0; overflow: auto; background: var(--bg); }
 /* display:block kills the inline-iframe baseline gap that otherwise pushes content a few px

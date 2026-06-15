@@ -13,6 +13,30 @@ import { applyLayout } from './layout.js';
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
 
+const DISCLAIMER_KEY = 'fv:edit-disclaimer';
+
+// Show the in-memory edit banner (B). Wires the dismiss buttons once, idempotently.
+function setDisclaimerVisible(visible) {
+  const el = $('editDisclaimer');
+  if (!el) return;
+  el.hidden = !visible;
+  $('rawPane')?.classList.toggle('has-disclaimer', visible);
+}
+
+function showEditDisclaimer() {
+  if (localStorage.getItem(DISCLAIMER_KEY) === 'never') return;
+  const el = $('editDisclaimer');
+  if (!el) return;
+  setDisclaimerVisible(true);
+  if (el.dataset.wired) return;
+  el.dataset.wired = '1';
+  el.querySelector('.edit-disclaimer-close').addEventListener('click', () => setDisclaimerVisible(false));
+  el.querySelector('.edit-disclaimer-never').addEventListener('click', () => {
+    try { localStorage.setItem(DISCLAIMER_KEY, 'never'); } catch { /* private mode */ }
+    setDisclaimerVisible(false);
+  });
+}
+
 export async function buildRawView() {
   state.rawview?.dispose();
   // syntaxLanguage may be a function(intake) for types that pick the language per file (code).
@@ -46,6 +70,7 @@ export async function buildRawView() {
       : undefined,
   });
   syncRawModeButtons();
+  showEditDisclaimer();
 }
 
 // §7 #28 — fire ach-boss-cheat-found into the metagame save + bell when the cheat is disabled.
@@ -113,6 +138,14 @@ export async function onRawEdited(value) {
       // if alreadyDisabled: no-op (permanent disable).
     }
   }
+
+  // One-time toast (A): fire on the very first edit ever to explain the in-memory model.
+  try {
+    if (!localStorage.getItem(DISCLAIMER_KEY + ':toast')) {
+      localStorage.setItem(DISCLAIMER_KEY + ':toast', '1');
+      toast('ℹ Changes are in-memory — download to save them to your device.');
+    }
+  } catch { /* private mode */ }
 
   // Keep the working text in sync so download + preview reflect edits.
   state.intake = { ...state.intake, text: value };
