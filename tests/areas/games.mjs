@@ -133,7 +133,7 @@ export async function run(ctx) {
   // WP-S1-11 wires mountDefragmenter: clicking Confront → dialog → the boss LOBBY (taunt + Fight).
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => {
-    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 1e9, totalBits: 1e9, stage: 1, introStages: [1], owned: { 's1-cursor': 5 } })); } catch {}
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 1e9, totalBits: 1e9, stage: 1, introStages: [1], owned: { 's1-cursor': 5, 's1-mult': 1, 's1-box': 1, 's1-boost': 1, 's1-cluster': 1, 's1-array': 1, 's1-neural': 3, 's1-quantum': 1 } })); } catch {}
     window.__fv.games.unlock(); window.__fv.games.open();
   });
   await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
