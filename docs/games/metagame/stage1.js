@@ -261,11 +261,19 @@ export function renderStage1(ctx) {
   const timedTiers = tiers.filter((t) => t.type === 'timed');
   const beaten = Array.isArray(state.defeated) && state.defeated.includes(1);
 
+  // §8.1 / §10.2: all non-cursor sub-stages owned ≥1 AND bits ≥ bossTicket.
+  function allSubStagesOwned() {
+    return tiers.filter((t) => t.id !== 's1-cursor').every((t) => (state.owned[t.id] || 0) >= 1);
+  }
+  function canFightBoss() {
+    return allSubStagesOwned() && cfg.bossTicket && gte(state.bits, cfg.bossTicket);
+  }
+
   const tabVisible = {
     bits: () => true,
     managers: () => (state.owned['s1-box'] || 0) >= 1,
     achievements: () => (state.achievements || []).length >= 1,
-    reset: () => gte(state.bits, cfg.bossTicket),
+    reset: () => canFightBoss(),
   };
   const TAB_LABELS = { bits: '🧮 Bits', managers: '🛠 Managers', achievements: '🏆 Achievements', reset: '🌀 Reset' };
 
@@ -363,7 +371,10 @@ export function renderStage1(ctx) {
 
     // Buy-count selectors (per-row remembered active count; default ×1).
     panelsEl.querySelectorAll('.mg-s1-buyn').forEach((b) => b.addEventListener('click', () => {
-      buyCounts[b.dataset.id] = b.dataset.n === 'max' ? 'max' : Number(b.dataset.n);
+      const n = b.dataset.n === 'max' ? 'max' : Number(b.dataset.n);
+      buyCounts[b.dataset.id] = n;
+      state.buyMult = n;   // persist globally so it survives reload
+      save(state);
       paintShop();
     }));
     // Buy buttons.
@@ -379,9 +390,11 @@ export function renderStage1(ctx) {
     paintStats();
   }
 
-  // Selected buy count per tier (defaults to 1).
+  // Selected buy count per tier — persisted as a single global state.buyMult.
+  // Initialize all tiers from the saved value so the selection survives reloads.
   const buyCounts = {};
-  const countFor = (id) => buyCounts[id] || 1;
+  tiers.forEach((t) => { buyCounts[t.id] = state.buyMult ?? 1; });
+  const countFor = (id) => buyCounts[id] ?? 1;
 
   function effectiveN(t) {
     const sel = countFor(t.id);
@@ -481,7 +494,7 @@ export function renderStage1(ctx) {
       + (rate < 0 ? '-' : '') + toDisplay(fromNumber(Math.abs(rate))) + '/s</strong></span>';
     // Boss button: only when not yet beaten and the boss ticket is affordable.
     const bossBtn = panelsEl.querySelector('.mg-s1-boss');
-    if (bossBtn) bossBtn.hidden = beaten || !gte(state.bits, cfg.bossTicket);
+    if (bossBtn) bossBtn.hidden = beaten || !canFightBoss();
   }
 
   // ── Achievements tab ───────────────────────────────────────────────────────
