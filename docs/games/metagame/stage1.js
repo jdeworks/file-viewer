@@ -33,9 +33,11 @@ function bigToNum(bn) {
 // Each gate tracks progress toward the next unlock. The active gate is the first
 // one whose satisfied() returns false; when all are satisfied g8 stays active.
 const GATES = [
-  // g0: until Multiplier reachable — metric: totalBits, threshold: [0, 1]
-  { id: 'g0', metric: (s) => bigToNum(s.totalBits), from: 0, to: 1,
-    satisfied: (s) => bigToNum(s.totalBits) >= 1 },
+  // g0: cursor onboarding — fill 0→100 bits so the Compute button unlocks on first purchase.
+  // Satisfied once s1-cursor is owned (not when bits hit 100, so the gate stays active until
+  // the player actually clicks the button and the cycle restarts into g1).
+  { id: 'g0', metric: (s) => bigToNum(s.bits), from: 0, to: 100,
+    satisfied: (s) => (s.owned && (s.owned['s1-cursor'] || 0) >= 1) },
   // g1: until Bit Box reachable — metric: bits on hand, threshold: [0, 500]
   { id: 'g1', metric: (s) => bigToNum(s.bits), from: 0, to: 500,
     satisfied: (s) => bigToNum(s.bits) >= 500 || (s.owned && s.owned['s1-box'] >= 1) },
@@ -229,8 +231,10 @@ const BUY_COUNTS = [1, 10, 100, 1000, 'max'];
 
 // Visibility predicates for each tier in the shop (stagger gating — independent of affordability).
 const TIER_VISIBLE = {
-  's1-cursor':  () => true,
-  's1-mult':    (s) => (s.owned['s1-cursor'] || 0) >= 1,
+  // s1-cursor is the phase-1 "pixel button" tier; hidden once tabs unlock (not a shop item).
+  's1-cursor':  (s) => !s.tabsUnlocked,
+  // Multiplier visible in phase 2 (tabs unlocked) OR early if cursor was bought in phase 1.
+  's1-mult':    (s) => s.tabsUnlocked || (s.owned['s1-cursor'] || 0) >= 1,
   's1-box':     (s) => (s.owned['s1-mult'] || 0) >= 1,
   's1-boost':   (s) => gte(s.bits, { m: 500, e: 0 }) || (s.owned['s1-box'] || 0) >= 1,
   's1-cluster': (s) => (s.owned['s1-boost'] || 0) >= 1,
@@ -311,17 +315,17 @@ export function renderStage1(ctx) {
   }
 
   function reveal() {
-    const gate = activeGate(state);
-    const range = gate.to - gate.from;
-    const raw = range > 0 ? (gate.metric(state) - gate.from) / range : 0;
-    const progress = Math.max(0, Math.min(1, raw));
+    if (state.tabsUnlocked) return;   // phase 2: no pixel reveal
+    // Phase 1: simple bits/100 progress — 100 bits fully reveals the button.
+    const bits = bigToNum(state.bits);
+    const progress = Math.max(0, Math.min(1, bits / 100));
     const n = Math.floor(100 * progress);
     for (let i = 0; i < GRID_CELLS; i++) cells[i].classList.toggle('mg-s1-on', i < n);
     const done = n >= GRID_CELLS;
-    computeBtn.style.opacity = done ? '' : String(n / GRID_CELLS);
+    computeBtn.style.opacity = done ? '' : String(progress);
     computeBtn.classList.toggle('mg-s1-ready', done);
     grid.classList.toggle('mg-s1-clear', done);
-    tap.style.pointerEvents = done ? 'none' : '';   // let button clicks through when fully revealed
+    // Tap stays active at all times — clicking outside the button still adds bits even when ready.
   }
 
   // ── Tab framework ──────────────────────────────────────────────────────────
@@ -487,8 +491,10 @@ export function renderStage1(ctx) {
     const statsEl = panelsEl.querySelector('.mg-s1-stats');
     if (!statsEl) return;
     const rate = netRate(state, cfg);
+    // Floor bits for display so fractional passive accumulation doesn't show (e.g. "3.5" → "3").
+    const bitsDisplay = toDisplay(fromNumber(Math.floor(bigToNum(state.bits))));
     statsEl.innerHTML =
-      '<span class="mg-s1-stat">Bits: <strong>' + toDisplay(state.bits) + '</strong></span>'
+      '<span class="mg-s1-stat">Bits: <strong>' + bitsDisplay + '</strong></span>'
       + '<span class="mg-s1-stat">Total: <strong>' + toDisplay(state.totalBits) + '</strong></span>'
       + '<span class="mg-s1-stat' + (rate < 0 ? ' mg-s1-neg' : '') + '">Rate: <strong>'
       + (rate < 0 ? '-' : '') + toDisplay(fromNumber(Math.abs(rate))) + '/s</strong></span>';
@@ -720,9 +726,22 @@ export function renderStage1(ctx) {
 
   // Full re-render of the dynamic UI (tabs + active panel + reveal). Used after a buy.
   function renderAll() {
+    // Toggle phase: phase 1 = no tabs (pixel reveal only); phase 2 = tabs, no pixel button.
+    const wrapper = host.querySelector('.mg-wrap.mg-s1');
+    if (wrapper) wrapper.classList.toggle('mg-s1-phase1', !state.tabsUnlocked);
     renderTabs();
     renderPanel();
-    reveal();
+    if (!state.tabsUnlocked) reveal();
+  }
+
+  // ── Tab unlock: fires once when bits reach 250. Toggles phase → tab layout appears. ──
+  function checkTabUnlock() {
+    if (state.tabsUnlocked) return;
+    if (bigToNum(state.bits) >= 250) {
+      state.tabsUnlocked = true;
+      save(state);
+      renderAll();
+    }
   }
 
   // ── Pixel-reveal tap (onboarding) — adds bits via the real economy clickPower ──
@@ -742,16 +761,13 @@ export function renderStage1(ctx) {
     checkMessages('bit-earn', state, bs);
     checkAchievements(state, cfg, bs);
     reveal();
-    if (activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
+    if (state.tabsUnlocked && activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
+    checkTabUnlock();
   }
-  tap.addEventListener('pointerdown', addBits);
 
-  // ── Compute button: the onboarding "buy a cursor" gimmick. The cursor tier is free
-  //    (base {m:0,e:0}), so it can't be bought through the generic cost path — instead a full
-  //    reveal (GRID_CELLS bits worth of progress) "spends" a cycle and bumps owned[s1-cursor]. ──
-  computeBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (!computeBtn.classList.contains('mg-s1-ready')) return;   // grid not full → ignore
+  // ── Compute button purchase: costs 100 bits, grants +1 cursor (= +1 click power). ──
+  function doPurchase() {
+    if (!computeBtn.classList.contains('mg-s1-ready')) return;
     if (!cursorTier) return;
     const cost = fromNumber(GRID_CELLS);
     if (!gte(state.bits, cost)) return;
@@ -764,7 +780,22 @@ export function renderStage1(ctx) {
     checkMessages('bit-lose', state, bs);
     checkAchievements(state, cfg, bs);
     renderAll();
+  }
+
+  // ── Tap area: full-screen click handler. Clicking the revealed button = purchase;
+  //    clicking anywhere else (including pixels over the button) = addBits. ──
+  tap.addEventListener('pointerdown', (e) => {
+    if (computeBtn.classList.contains('mg-s1-ready')) {
+      const r = computeBtn.getBoundingClientRect();
+      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+        doPurchase();
+        return;
+      }
+    }
+    addBits();
   });
+  // Keyboard / accessibility: space/enter on the button calls doPurchase directly.
+  computeBtn.addEventListener('click', (e) => { e.stopPropagation(); doPurchase(); });
 
   // ── Game tick loop (§5.5) — single 100ms interval; cleared on re-render. ──
   if (renderStage1._tickId) { clearInterval(renderStage1._tickId); renderStage1._tickId = null; }
@@ -801,11 +832,15 @@ export function renderStage1(ctx) {
     if (timedDone) checkMessages('bit-earn', state, bellLoad());
     // 3b. Manager auto-fire + shutdown rule (§5.6/§6.3).
     runManagerAutoFire();
-    // 4. Reveal.
+    // 4. Reveal (phase 1 only; reveal() no-ops when tabsUnlocked).
     reveal();
-    // 5. Partial re-render of the live tab.
-    if (activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
-    else if (activeTab === 'managers') paintManagers();
+    // 4b. Tab unlock check (passive rate could push bits to 250 without a tap).
+    checkTabUnlock();
+    // 5. Partial re-render of the live tab (phase 2 only — tabs are hidden in phase 1).
+    if (state.tabsUnlocked) {
+      if (activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
+      else if (activeTab === 'managers') paintManagers();
+    }
     checkAchievements(state, cfg, bellLoad());
     // 6. Periodic save.
     if (++tickAcc >= 10) { tickAcc = 0; save(state); }

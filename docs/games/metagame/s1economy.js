@@ -96,8 +96,8 @@ export function achievMult(state) {
 // (additive); s1-quantum multiplies ×(1 + level).
 export function clickPower(state, cfg) {
   const owned = state.owned || {};
-  // Additive click power from s1-mult (type:'click_mult', amount:1 per level).
-  const additive = 1 + (owned['s1-mult'] || 0) * 1;
+  // Additive click power: base 1 + s1-cursor (each pixel-button purchase) + s1-mult (shop).
+  const additive = 1 + (owned['s1-cursor'] || 0) * 1 + (owned['s1-mult'] || 0) * 1;
   // Quantum Tap: multiplicative ×(1 + owned[s1-quantum]).
   const quantum = 1 + (owned['s1-quantum'] || 0);
   const pull = globalPull(state);

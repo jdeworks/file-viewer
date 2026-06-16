@@ -34,6 +34,7 @@ export function defaultState() {
     runStartedAt: Date.now(),
     introStages: [],
     claimed: {},
+    tabsUnlocked: false,   // phase 2 gate: tabs appear once bits ≥ 250
   };
 }
 
@@ -76,6 +77,7 @@ export function migrate(s) {
   s.claimed      ||= {};
   s.totalBought  ||= 0;
   s.buyMult       = s.buyMult ?? 1;
+  s.tabsUnlocked  = s.tabsUnlocked ?? false;
 
   s.version = 2;
   return s;
