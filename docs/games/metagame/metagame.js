@@ -4,7 +4,8 @@
 // stages.js; the dialog/hint box in dialog.js. Contract: mount(host, { onExit }) => { destroy() }.
 import { playDialog } from './dialog.js';
 import { STAGES, stageByNumber } from './stages.js';
-import { renderStage1, mountBell, bellLoad, bellAdd, updateBellDot, checkMessages, removeStageMsgs } from './stage1.js';
+import { renderStage1 } from './stage1.js';
+import { mountBell, bellLoad, bellAdd, updateBellDot, checkMessages, removeStageMsgs } from './s1bell.js';
 import { MESSAGES1 } from './messages1.js';
 import { loadState, saveState } from './s1state.js';
 import { gte, fromNumber } from './bignum.js';
@@ -189,10 +190,10 @@ export function mount(host, { onExit } = {}) {
   }
   function renderS1() {
     clearTransient();
-    // canFightBoss for Stage 1: all non-cursor sub-stages owned ≥1 AND bits ≥ bossTicket (§10.2).
+    // canFightBoss for Stage 1: all Stage 1 tiers owned ≥1 AND bits ≥ bossTicket (§10.2).
     const st1 = stage();
     const bossTicket = st1.bossTicket;
-    const allOwned = (st1.tiers || []).filter(t => t.id !== 's1-cursor').every(t => (state.owned[t.id] || 0) >= 1);
+    const allOwned = (st1.tiers || []).every(t => (state.owned[t.id] || 0) >= 1);
     const canFightBoss = allOwned && bossTicket && gte(state.bits, bossTicket);
     renderStage1({
       host, state, save, stage,

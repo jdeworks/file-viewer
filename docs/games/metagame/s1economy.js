@@ -27,7 +27,7 @@ export function totalCost(t, owned, n) {
   const B = t.base;     // BigNum
   const r = t.mult;     // plain number
   if (r === 1) {
-    // Degenerate flat-cost case (e.g. s1-cursor: mult:1, base:{m:0,e:0} → ZERO).
+    // Degenerate flat-cost case.
     return mulScalar(B, n);
   }
   const rk = Math.pow(r, owned);
@@ -50,7 +50,7 @@ export function maxAffordable(bits, t, owned) {
   const bits_num = toNumber(bits);
   const r = t.mult;
 
-  if (B_num === 0) return 0;   // free tier (s1-cursor) — avoid div-by-zero
+  if (B_num === 0) return 0;   // avoid div-by-zero for any intentionally free tier
   if (bits_num <= 0 || bits_num < B_num * Math.pow(r, owned)) return 0;
 
   if (r === 1) {
@@ -91,13 +91,11 @@ export function achievMult(state) {
 // 3. Click power (§1.4, §2.1) — returns plain number (scalar bits/tap)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// clickPower = (1 + Σ click/mult upgrades) × (1 + owned[s1-quantum]) × globalPull × achievMult
-// The constant 1 is the base 1 bit/tap (s1-cursor). s1-mult adds +amount per level
-// (additive); s1-quantum multiplies ×(1 + level).
+// clickPower = (1 + owned[s1-mult]) × (1 + owned[s1-quantum]) × globalPull × achievMult.
+// The constant 1 is the base 1 bit/tap; s1-mult adds +1 per level and s1-quantum multiplies.
 export function clickPower(state, cfg) {
   const owned = state.owned || {};
-  // Additive click power: base 1 + s1-cursor (each pixel-button purchase) + s1-mult (shop).
-  const additive = 1 + (owned['s1-cursor'] || 0) * 1 + (owned['s1-mult'] || 0) * 1;
+  const additive = 1 + (owned['s1-mult'] || 0);
   // Quantum Tap: multiplicative ×(1 + owned[s1-quantum]).
   const quantum = 1 + (owned['s1-quantum'] || 0);
   const pull = globalPull(state);

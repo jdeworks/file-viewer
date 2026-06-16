@@ -59,9 +59,13 @@ New modules created (all under `docs/games/metagame/`):
 | `s1state.js` | Stage 1 save schema, defaults, **base64 encode/decode**, migration. |
 | `achievements1.js` | The 29 (≥25) achievement definitions (data). |
 | `boss1.js` | `mountDefragmenter(arena,{stage,onDefeat})` — the click-contest boss. |
-| `stage1.js` (existing) | Grows: tabbed UI, sub-stage shop, timed bars, managers tab, achievements tab, reset tab, pixel grid generalization. Keeps the bell. |
+| `s1bell.js` | Shared metagame bell UI + event-message dispatch. |
+| `s1achievements.js` | Stage 1 milestone and achievement runtime. |
+| `s1managers.js` | Stage 1 Managers tab + manager auto-fire controller. |
+| `s1reset.js` | Stage 1 prestige/reset panel. |
+| `stage1.js` | Stage 1 orchestration renderer: intro reveal, tabs, Bits tab, timed buttons, and tick loop. |
 
-`stages.js` Stage 1 entry is rewritten to carry the new `tiers[]` (8 sub-stages), `managers[]`,
+`stages.js` Stage 1 entry is rewritten to carry the new `tiers[]` (7 sub-stages), `managers[]`,
 `bossTicket`, and `mountBoss: mountDefragmenter`. Stages 2–10 entries unchanged.
 
 ### 1.2 New `state` fields
@@ -151,7 +155,6 @@ Extended tier schema:
   duration_ms, // timed: fill time
   unlock,      // (state,cfg) => boolean
   bell,        // first-unlock bell message id
-  grid,        // pixel-reveal grid id this sub-stage's gate occupies (§3)
 }
 ```
 
@@ -159,20 +162,19 @@ Extended tier schema:
 
 | # | id | Name · icon | type | Unlock condition (field / threshold) | Base cost | Growth | Output formula | Timer | Grid id |
 |---|----|-------------|------|--------------------------------------|-----------|--------|----------------|-------|---------|
-| 1 | `s1-cursor` | Hand Cursor 🖐 | (base click) | always (start) | free | n/a | `+1 bit/tap` (the base in clickPower) | — | `g0` |
-| 2 | `s1-mult` | Multiplier ✖ | `click_mult` | `totalBits ≥ 1` ever | `100` | 1.12 | `+1 clickPower per level` | — | `g1` |
-| 3 | `s1-box` | Bit Box 🧰 | `timed` | `bits ≥ 500` on hand | `500` | 1.10 | `100 × owned × globalPull × achievMult` per cycle | 4000 ms | `g2` |
-| 4 | `s1-boost` | Signal Booster 📡 | `timed` | `owned['s1-box'] ≥ 1` | `2.5K` | 1.10 | `75 × owned × …` per cycle; **boost: +10%/lvl to Bit Box payout** | 5000 ms | `g3` |
-| 5 | `s1-cluster` | Core Cluster 🧊 | `timed` | `owned['s1-boost'] ≥ 1` | `12K` | 1.08 | `500 × owned × …` per cycle | 8000 ms | `g4` |
-| 6 | `s1-array` | Processing Array 🛰 | `passive` | `owned['s1-cluster'] ≥ 1` | `60K` | 1.07 | `0.5 × owned × globalPull × achievMult` bits/sec | — | `g5` |
-| 7 | `s1-neural` | Neural Net 🧠 | `click_mult` (mult node) | `totalBits ≥ 1M` ever | `500K` | 1.06 | `globalMult: ×(1 + 0.25 × level)` to **all timed payouts** | — | `g6` |
-| 8 | `s1-quantum` | Quantum Tap ⚛ | `click_mult` | `owned['s1-neural'] ≥ 3` | `5M` | 1.05 | `clickPower ×(1 + level)` (re-bases the tap; multiplicative on click) | — | `g7` |
+| 1 | `s1-mult` | Multiplier ✖ | `click_mult` | intro button / `totalBits ≥ 1` ever | `100` | 1.12 | `+1 clickPower per level` | — | `g1` |
+| 2 | `s1-box` | Bit Box 🧰 | `timed` | `bits ≥ 500` on hand | `500` | 1.10 | `100 × owned × globalPull × achievMult` per cycle | 4000 ms | `g2` |
+| 3 | `s1-boost` | Signal Booster 📡 | `timed` | `owned['s1-box'] ≥ 1` | `2.5K` | 1.10 | `75 × owned × …` per cycle; **boost: +10%/lvl to Bit Box payout** | 5000 ms | `g3` |
+| 4 | `s1-cluster` | Core Cluster 🧊 | `timed` | `owned['s1-boost'] ≥ 1` | `12K` | 1.08 | `500 × owned × …` per cycle | 8000 ms | `g4` |
+| 5 | `s1-array` | Processing Array 🛰 | `passive` | `owned['s1-cluster'] ≥ 1` | `60K` | 1.07 | `0.5 × owned × globalPull × achievMult` bits/sec | — | `g5` |
+| 6 | `s1-neural` | Neural Net 🧠 | `click_mult` (mult node) | `totalBits ≥ 1M` ever | `500K` | 1.06 | `globalMult: ×(1 + 0.25 × level)` to **all timed payouts** | — | `g6` |
+| 7 | `s1-quantum` | Quantum Tap ⚛ | `click_mult` | `owned['s1-neural'] ≥ 3` | `5M` | 1.05 | `clickPower ×(1 + level)` (re-bases the tap; multiplicative on click) | — | `g7` |
 
 **Notes on the two `click_mult` variants:**
 - `s1-mult` and `s1-quantum` are *click* multipliers: `s1-mult` adds (additive `amount`),
   `s1-quantum` multiplies (`×(1+level)`). Compute clickPower as:
   ```
-  clickPower = (1 + owned[s1-mult]·1 + owned[s1-cursor-extras…])
+  clickPower = (1 + owned[s1-mult]·1)
                × (1 + owned[s1-quantum])           // Quantum Tap multiplies
                × globalPull × achievMult
   ```
@@ -280,16 +282,12 @@ After a prestige (owned counts wiped) the active gate is `g0`/`g1` again and the
 refills as the player re-grinds — the reveal cinematics replay, on-brand with the empty-screen
 opening.
 
-### 3.5 Selecting the active gate
+### 3.5 Reveal progress
 
-```
-function activeGate(state, cfg):
-  for gate in GATES (g0…g8 in order):
-    if not gateSatisfied(gate, state): return gate
-  return g8   // all done → boss-ticket gate stays active
-```
-`gateSatisfied` is `metric(state) ≥ to` for that gate. `renderStage1` calls `activeGate` then
-`reveal(cellsRevealed)`.
+The intro reveal maps current on-hand `bits` to the current `s1-mult` price. A fresh screen shows
+only the tap surface; the first tap reveals the ghosted Multiplier button and first grid cell.
+When the 100-cell grid is full, the button becomes clickable and buys one `s1-mult`. The tabbed
+layout unlocks at `totalBits >= 150`; from there the reveal top stays hidden.
 
 ---
 
@@ -1137,11 +1135,11 @@ WPs are partitioned so non-overlapping file sets can run in parallel. Dependency
 | **WP-S1-03** | Achievement data | C `achievements1.js` | — | S | The 29 definitions (§7.1) as data with `condition(state,cfg)` predicates. No DOM. |
 | **WP-S1-04** | Save state + base64 | C `s1state.js` | WP-01 | M | Schema defaults (§9), `encodeSave`/`decodeSave` (§9.1), `migrate` v1→v2 (§9.2). |
 | **WP-S1-05** | Economy math | C `s1economy.js` | WP-01, WP-02 | L | `costOf`/`totalCost`/`maxAffordable` (§4), `clickPower`/`passiveRate`/`timedPayout` (§1.4,§5), `globalPull`/`achievMult` (§7,§8), `managerCostPerSec`/`netRate`/`autoInterval` (§6), `pullGain` (§8.3). Pure; takes `state`+cfg. |
-| **WP-S1-06** | Achievement runtime | M `stage1.js` (add `checkAchievements`), uses WP-03/05 | WP-03, WP-05 | S | `checkAchievements(state,cfg,bs)` pass: evaluate predicates, push ids, fire bells, apply via `achievMult`. Wire into event paths. |
-| **WP-S1-07** | Bell messages | M `messages1.js` | WP-02 | S | Add the §2.2 sub-stage unlock lines + `bell-reset-prestige`. Keep existing entries. |
-| **WP-S1-08** | Pixel-grid generalization | M `stage1.js` (`reveal`/gate logic) | WP-01, WP-02, WP-05 | M | `GATES` table (§3), `activeGate`, `metric`-based `cellsRevealed`. Replace raw-bits `reveal()`. Keep grid DOM + classes. |
+| **WP-S1-06** | Achievement runtime | C `s1achievements.js`, uses WP-03/05 | WP-03, WP-05 | S | `checkAchievements(state,cfg,bs)` pass: evaluate predicates, push ids, fire bells, apply via `achievMult`. Wire into event paths. |
+| **WP-S1-07** | Bell messages/runtime | C `s1bell.js`; M `messages1.js` | WP-02 | S | Add the §2.2 sub-stage unlock lines + `bell-reset-prestige`. Keep existing entries. Bell UI/event dispatch lives in `s1bell.js`. |
+| **WP-S1-08** | Pixel-grid intro reveal | M `stage1.js` (`reveal` logic) | WP-01, WP-02, WP-05 | M | Map current bits to the current `s1-mult` price, reveal 100 cells, and keep grid DOM + classes. |
 | **WP-S1-09** | Tabbed UI + shop + timed bars | M `stage1.js` (main render) | WP-04, WP-05, WP-07, WP-08 | L | Tabs (Bits/Managers/Achievements/Reset) with stagger gating (§ tabs); sub-stage shop with §4 buy-count selector (×1/10/100/1000/MAX) + affordability; timed buttons + progress bars + completion (§5); game-tick loop (§5.5). |
-| **WP-S1-10** | Managers tab + prestige tab | M `stage1.js` (manager + reset panels) | WP-05, WP-09 | L | Managers tab (§6.4): hire/level, Fire, running-cost, net-rate (red, hover-preview §4.4), shutdown/pause (§6.3). Reset tab (§8.5): confirm panel, prestige commit, pull display. |
+| **WP-S1-10** | Managers tab + prestige tab | C `s1managers.js`; C `s1reset.js` | WP-05, WP-09 | L | Managers tab (§6.4): hire/level, Fire, running-cost, net-rate (red, hover-preview §4.4), shutdown/pause (§6.3). Reset tab (§8.5): confirm panel, prestige commit, pull display. |
 | **WP-S1-11** | Boss: The Defragmenter + cheat-disable Monaco hook | C `boss1.js`; C `docs/examples/Overwriter.frag`; M `stages.js` (wire `mountBoss`); M `docs/core/rawpane.js` (`onRawEdited` cheat hook) | WP-01, WP-02 | L | `mountDefragmenter` (§10): split-screen arena, 20 s timer, shadow-tick scoring (§10B — per-tap `1.10`, auto-tick floor, seeded pre-scheduled bursts), burst flame/flash visuals, freeze→pause→WIN/LOSE reveal, win/lose handling (incl. `bossLossCount++` + `checkMessages('boss-loss')`), retry+5s cooldown. Cheat: read `fv:boss1:cheat` once at fight start (§10A.5); listen for `fv:boss-cheat-disable`; on first mount set `state.bossSeen` + seed `fv:boss1:cheat=btoa("true")` if unset (§10A.4) + fire `ach-boss-seen`. **Create `Overwriter.frag`** (§2.3, §10A.1 — ~60-line defrag-dump noise with buried `CHEAT='true'` near line 30–40) and register it in `examples/index.json`. **Monaco hook in `rawpane.js#onRawEdited`** (§10A.3 — filename `/overwriter/i` test, `/CHEAT\s*=\s*['"]?(\w*)['"]?/i` parse, truthy/falsy eval, `localStorage['fv:boss1:cheat'] = btoa(JSON.stringify(bool))`, dispatch `fv:boss-cheat-disable {detail:{stage:1}}` on falsy). Wire `ach-boss-cheat-found` to the event. **Boss taunt dialog** (§10C — reusable `<div class="boss-taunt">` with gear/skull avatar + speech bubble; lobby idle cycle every 8–12 s from the general pool + loss-gated taunts unlocked by `bossLossCount` at 3/5/7/10/12/15; arena event-triggered taunts on fight-start / burst-start / win / loss; define all taunt strings as a constants object in `boss1.js`, or in a separate `boss1-taunts.js` if `boss1.js` would exceed 500 LOC). |
 | **WP-S1-12** | Orchestrator integration + examples/asset wiring | M `metagame.js`; M `examples/index.json`; M `asset-manifest.json` | WP-04, WP-05, WP-09, WP-11 | M | Route Stage 1 through BigNum + `s1state` save/load (base64); keep stages 2–10 on plain numbers (branch on `stage().n===1`); pass new ctx (`save` via `encodeSave`, economy fns) into `renderStage1`; swap `BOSS_AFTER` gate for `canFightBoss`; ensure prestige does NOT advance stage, boss win DOES. **Add `Overwriter.frag` to `examples/index.json`** (category `Code`, mime `text/plain`) and to `asset-manifest.json` so it ships + is offline-cached; update the examples gallery if needed (it auto-renders from `index.json`). **Gallery-hide for disabled cheat** (§10A.3 step 5): when the gallery builds its list, skip the `Overwriter` entry whenever `localStorage.getItem('fv:boss1:cheat') === btoa(JSON.stringify(false))` — the static file + `index.json` entry stay; only the rendered list omits it. Persist `bossSeen`/`bossLossCount` through save/migration (§9). |
 
@@ -1173,18 +1171,18 @@ follow.
 > meaningfully depends on `mountDefragmenter` setting `bossSeen` first — build the hook + file early,
 > wire the boss-side read when `boss1.js` lands.
 
-> **`stage1.js` contention.** WP-06, WP-08, WP-09, WP-10, WP-11 all touch `stage1.js`. To parallelize,
-> split the new UI into submodules that `stage1.js` imports: `s1tabs.js` (shop+timed, WP-09),
-> `s1managers.js` (WP-10), and keep `checkAchievements`/grid in `stage1.js`. Recommended file split
-> for parallel safety:
-> - `stage1.js` → orchestrating render + grid (WP-08) + `checkAchievements` (WP-06)
-> - `s1tabs.js` (C, WP-09) → tab frame + shop + buy-count + timed bars + tick
-> - `s1managers.js` (C, WP-10) → managers tab + reset/prestige tab
+> **Stage 1 module split.** Keep `stage1.js` as the orchestration renderer. Put reusable or
+> self-contained pieces in small modules so future stages can plug in their own surfaces:
+> - `stage1.js` → intro reveal, tab routing, Bits tab, timed buttons, tick loop.
+> - `s1bell.js` → shared bell UI + event-message runtime.
+> - `s1achievements.js` → Stage 1 achievements/milestones.
+> - `s1managers.js` → managers tab + manager auto-fire.
+> - `s1reset.js` → reset/prestige panel.
 > - `boss1.js` (C, WP-11) → the boss + lobby/arena taunt dialog (taunt strings; or `boss1-taunts.js` if >500 LOC)
 > - `docs/core/rawpane.js` (M, WP-11) → the cheat-disable Monaco hook (app layer, not a game module)
 > - `docs/examples/Overwriter.frag` (C, WP-11) → the cheat-carrier example file
-> With this split, WP-09/10/11 own separate new files and only WP-06/08 share `stage1.js` (assign
-> together). This is the recommended decomposition.
+> Use the same controller-style pattern (`renderPanel`, `paint`, `runAutoFire`/tick hooks) for
+> future stage-specific tabs.
 
 ### 11.2 Definition of done (per WP)
 

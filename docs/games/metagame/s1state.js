@@ -34,7 +34,7 @@ export function defaultState() {
     runStartedAt: Date.now(),
     introStages: [],
     claimed: {},
-    tabsUnlocked: false,   // phase 2 gate: tabs appear once bits ≥ 250
+    tabsUnlocked: false,   // phase 2 gate: tabs appear once totalBits >= 150
   };
 }
 
@@ -78,6 +78,10 @@ export function migrate(s) {
   s.totalBought  ||= 0;
   s.buyMult       = s.buyMult ?? 1;
   s.tabsUnlocked  = s.tabsUnlocked ?? false;
+  if (s.owned['s1-cursor']) {
+    s.owned['s1-mult'] = (s.owned['s1-mult'] || 0) + s.owned['s1-cursor'];
+    delete s.owned['s1-cursor'];
+  }
 
   s.version = 2;
   return s;
@@ -111,6 +115,11 @@ export function loadState() {
   // Normalize BigNum fields in case they came from plain JSON or a migration.
   s.bits      = fromStore(s.bits);
   s.totalBits = fromStore(s.totalBits);
+  if (s.owned && s.owned['s1-cursor']) {
+    s.owned['s1-mult'] = (s.owned['s1-mult'] || 0) + s.owned['s1-cursor'];
+    delete s.owned['s1-cursor'];
+  }
+  if (!s.tabsUnlocked && s.totalBits.m * Math.pow(10, s.totalBits.e || 0) >= 150) s.tabsUnlocked = true;
 
   return s;
 }

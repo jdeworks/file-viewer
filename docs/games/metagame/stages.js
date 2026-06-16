@@ -219,33 +219,26 @@ export const STAGES = [
     title: 'Bit Foundry',
     resource: { name: 'bits', color: '#3fb950' },     // green data bits (IT theme)
 
-    // ── Tiers (8 sub-stages) — §2.1 ─────────────────────────────────────────────────────────
+    // ── Tiers (7 sub-stages) — §2.1 ─────────────────────────────────────────────────────────
     // BigNum costs use { m, e } shape (m × 10^e). Unlock predicates use _gte() (local stub
     // above) which is safe to call before bignum.js exists. At runtime s1economy.js uses
     // the real BigNum ops from bignum.js.
     tiers: [
-      // 1. Hand Cursor — free base tier; always unlocked; start owned:1
-      {
-        id: 's1-cursor', name: 'Hand Cursor', icon: '🖐', type: 'click_mult',
-        base: { m: 0, e: 0 }, mult: 1, amount: 1,
-        unlock: () => true,
-        bell: null, grid: 'g0',
-      },
-      // 2. Multiplier — +1 clickPower per level; unlocks at totalBits ≥ 1
+      // 1. Multiplier — +1 clickPower per level; intro button buys this directly.
       {
         id: 's1-mult', name: 'Multiplier', icon: '✖', type: 'click_mult',
         base: { m: 100, e: 0 }, mult: 1.12, amount: 1,
         unlock: (state) => _gte(state.totalBits, { m: 1, e: 0 }),
         bell: 'bell-mult', grid: 'g1',
       },
-      // 3. Bit Box — timed; 100 bits/cycle per owned; unlocks at bits ≥ 500
+      // 2. Bit Box — timed; 100 bits/cycle per owned; unlocks at bits ≥ 500
       {
         id: 's1-box', name: 'Bit Box', icon: '🧰', type: 'timed',
         base: { m: 500, e: 0 }, mult: 1.10, baseAmount: 100, duration_ms: 4000,
         unlock: (state) => _gte(state.bits, { m: 500, e: 0 }),
         bell: 'bell-box', grid: 'g2',
       },
-      // 4. Signal Booster — timed; boosts Bit Box +10%/level; unlocks at owned[s1-box] ≥ 1
+      // 3. Signal Booster — timed; boosts Bit Box +10%/level; unlocks at owned[s1-box] ≥ 1
       {
         id: 's1-boost', name: 'Signal Booster', icon: '📡', type: 'timed',
         base: { m: 2.5, e: 3 }, mult: 1.10, baseAmount: 75, duration_ms: 5000,
@@ -253,21 +246,21 @@ export const STAGES = [
         unlock: (state) => (state.owned['s1-box'] || 0) >= 1,
         bell: 'bell-boost', grid: 'g3',
       },
-      // 5. Core Cluster — timed; 500 bits/cycle per owned; unlocks at owned[s1-boost] ≥ 1
+      // 4. Core Cluster — timed; 500 bits/cycle per owned; unlocks at owned[s1-boost] ≥ 1
       {
         id: 's1-cluster', name: 'Core Cluster', icon: '🧊', type: 'timed',
         base: { m: 12, e: 3 }, mult: 1.08, baseAmount: 500, duration_ms: 8000,
         unlock: (state) => (state.owned['s1-boost'] || 0) >= 1,
         bell: 'bell-cluster', grid: 'g4',
       },
-      // 6. Processing Array — passive; 0.5 bits/sec per owned; unlocks at owned[s1-cluster] ≥ 1
+      // 5. Processing Array — passive; 0.5 bits/sec per owned; unlocks at owned[s1-cluster] ≥ 1
       {
         id: 's1-array', name: 'Processing Array', icon: '🛰', type: 'passive',
         base: { m: 60, e: 3 }, mult: 1.07, rate: 0.5,
         unlock: (state) => (state.owned['s1-cluster'] || 0) >= 1,
         bell: 'bell-array', grid: 'g5',
       },
-      // 7. Neural Net — globalMult node: ×(1 + 0.25·level) to all timed payouts;
+      // 6. Neural Net — globalMult node: ×(1 + 0.25·level) to all timed payouts;
       //    unlocks at totalBits ≥ 1 000 000
       {
         id: 's1-neural', name: 'Neural Net', icon: '🧠', type: 'click_mult',
@@ -276,7 +269,7 @@ export const STAGES = [
         unlock: (state) => _gte(state.totalBits, { m: 1, e: 6 }),
         bell: 'bell-neural', grid: 'g6',
       },
-      // 8. Quantum Tap — multiplicative click mult: clickPower ×(1 + owned);
+      // 7. Quantum Tap — multiplicative click mult: clickPower ×(1 + owned);
       //    unlocks at owned[s1-neural] ≥ 3
       {
         id: 's1-quantum', name: 'Quantum Tap', icon: '⚛', type: 'click_mult',

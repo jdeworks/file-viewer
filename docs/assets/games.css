@@ -189,8 +189,9 @@
 .mg-s1-tap { position: absolute; inset: 0; z-index: 3; cursor: pointer; touch-action: none; }
 /* The Compute button pinned to the bottom-centre, with the reveal grid laid exactly over it. */
 .mg-s1-stage { position: absolute; left: 50%; bottom: 10%; transform: translateX(-50%); z-index: 2; }
+.mg-s1-stage:has(.mg-s1-ready) { z-index: 4; }
 .mg-s1-btn { position: relative; display: block; pointer-events: none; }
-.mg-s1-btn.mg-s1-ready { pointer-events: auto; box-shadow: 0 0 22px 2px rgba(63,185,80,.5); }
+.mg-s1-btn.mg-s1-ready { z-index: 4; pointer-events: auto; box-shadow: 0 0 22px 2px rgba(63,185,80,.5); }
 /* 20×5 covering grid sits exactly over the button. Covered cells are opaque + block the button. */
 .mg-s1-grid { position: absolute; inset: 0; display: grid;
   grid-template-columns: repeat(20, 1fr); grid-template-rows: repeat(5, 1fr); }
@@ -203,6 +204,7 @@
 .mg-s1-phase1 .mg-s1-tabs,
 .mg-s1-phase1 .mg-s1-panels { display: none; }
 .mg-s1-phase1 .mg-s1-top { height: auto; flex: 1; min-height: 220px; }
+.mg-s1-empty .mg-s1-stage { display: none; }
 /* Phase 2: tabs are visible — hide the pixel-reveal top section. */
 .mg-s1:not(.mg-s1-phase1) .mg-s1-top { display: none; }
 
@@ -235,7 +237,7 @@
 .mg-s1-timed-bar { position: relative; height: 36px; border: 1px solid var(--border); border-radius: 10px;
   overflow: hidden; background: var(--bg-3); }
 .mg-s1-timed-bar[hidden] { display: none; }
-.mg-s1-timed-fill { position: absolute; inset: 0; width: 0; background: color-mix(in srgb, var(--accent) 35%, transparent);
+.mg-s1-timed-fill { position: absolute; inset: 0; width: 0; background: color-mix(in srgb, #2f81f7 45%, transparent);
   transition: width .1s linear; }
 .mg-s1-timed-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font: 700 13px ui-monospace, monospace; }

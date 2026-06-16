@@ -62,18 +62,20 @@ export async function run(ctx) {
   });
   await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
   await page.click('.games-card[data-game="metagame"]');
-  // Stage 1 lands straight on the pixel-reveal top + tabs — no intro dialog, no grind banner/rate.
+  // Stage 1 starts as an empty tap surface: no tabs, shop, score, visible button, or visible grid.
   await page.waitForSelector('.mg-s1', { timeout: 8000 });
   const s1Onboard = await page.evaluate(() => ({
     rate: !!document.querySelector('.mg-rate'),       // old grind rate readout — gone
     banner: !!document.querySelector('.mg-stage-banner'),
     dialog: !!document.querySelector('.mg-dialog'),
-    tabs: !!document.querySelector('.mg-s1-tabs'),
-    bitsTab: !!document.querySelector('.mg-s1-tab[data-tab="bits"].mg-s1-tab-on'),
-    cursorRow: !!document.querySelector('.mg-s1-shoprow[data-id="s1-cursor"]:not([hidden])'),
+    tabsVisible: [...document.querySelectorAll('.mg-s1-tab')].some((e) => e.checkVisibility()),
+    bitsTab: !!document.querySelector('.mg-s1-tab[data-tab="bits"].mg-s1-tab-on')?.checkVisibility(),
+    shopRow: !!document.querySelector('.mg-s1-shoprow:not([hidden])'),
+    buttonVisible: !!document.querySelector('.mg-s1-btn')?.checkVisibility(),
+    cellsVisible: [...document.querySelectorAll('.mg-s1-grid .mg-s1-cell')].some((e) => e.checkVisibility()),
   }));
-  if (!s1Onboard.rate && !s1Onboard.banner && !s1Onboard.dialog && s1Onboard.tabs && s1Onboard.bitsTab && s1Onboard.cursorRow)
-    pass('meta-game stage 1: pixel-reveal + Bits tab active with s1-cursor shop row (no grind banner/rate/intro)');
+  if (!s1Onboard.rate && !s1Onboard.banner && !s1Onboard.dialog && !s1Onboard.tabsVisible && !s1Onboard.bitsTab && !s1Onboard.shopRow && !s1Onboard.buttonVisible && !s1Onboard.cellsVisible)
+    pass('meta-game stage 1: fresh save starts empty (tap surface only)');
   else fail('stage 1 onboarding: ' + JSON.stringify(s1Onboard));
   // The reveal grid is 100 squares and the full-screen tap area exists.
   const s1Cells = await page.$$eval('.mg-s1-grid .mg-s1-cell', (els) => els.length);
@@ -86,54 +88,91 @@ export async function run(ctx) {
   const bellEmpty = await page.$eval('.mg-bell-panel', (e) => e.textContent);
   if (/nothing here/.test(bellEmpty)) pass('meta-game bell: "nothing here" when empty'); else fail('bell empty text: ' + bellEmpty);
   await page.click('.mg-bell-btn');                                  // close
-  // Tapping adds bits → reveals squares (gate-based: g0 totalBits→1, then g1 bits→500).
-  // After 12 taps clickPower=1 gives bits=12: with g1 active (range 500) that's ~2 cells lit.
-  // We just verify at least one cell reveals to prove the gate system is wired.
-  for (let i = 0; i < 12; i++) await page.click('.mg-s1-tap', { position: { x: 5, y: 5 } });
-  const s1Revealed = await page.$$eval('.mg-s1-grid .mg-s1-cell.mg-s1-on', (els) => els.length);
-  if (s1Revealed >= 1) pass('meta-game stage 1: taps reveal squares (' + s1Revealed + ' on)'); else fail('s1 revealed: ' + s1Revealed);
+  await page.click('.mg-s1-tap', { position: { x: 5, y: 5 } });
+  let s1Reveal = await page.evaluate(() => ({
+    visible: !!document.querySelector('.mg-s1-btn')?.checkVisibility(),
+    on: document.querySelectorAll('.mg-s1-grid .mg-s1-cell.mg-s1-on').length,
+    ready: document.querySelector('.mg-s1-btn')?.classList.contains('mg-s1-ready') || false,
+  }));
+  if (s1Reveal.visible && s1Reveal.on === 1 && !s1Reveal.ready) pass('meta-game stage 1: first tap reveals ghost button + first pixel'); else fail('s1 first reveal: ' + JSON.stringify(s1Reveal));
+  for (let i = 0; i < 98; i++) await page.click('.mg-s1-tap', { position: { x: 5, y: 5 } });
+  s1Reveal = await page.evaluate(() => ({
+    on: document.querySelectorAll('.mg-s1-grid .mg-s1-cell.mg-s1-on').length,
+    ready: document.querySelector('.mg-s1-btn')?.classList.contains('mg-s1-ready') || false,
+  }));
+  if (s1Reveal.on === 99 && !s1Reveal.ready) pass('meta-game stage 1: 99 bits reveals 99 cells, button not ready'); else fail('s1 99 reveal: ' + JSON.stringify(s1Reveal));
+  await page.click('.mg-s1-tap', { position: { x: 5, y: 5 } });
+  s1Reveal = await page.evaluate(() => ({
+    on: document.querySelectorAll('.mg-s1-grid .mg-s1-cell.mg-s1-on').length,
+    ready: document.querySelector('.mg-s1-btn')?.classList.contains('mg-s1-ready') || false,
+  }));
+  if (s1Reveal.on === 100 && s1Reveal.ready) pass('meta-game stage 1: 100 bits reveals all squares + enables button'); else fail('s1 100 reveal: ' + JSON.stringify(s1Reveal));
   await page.waitForSelector('.mg-bell-dot:not([hidden])', { timeout: 4000 });
   pass('meta-game bell: unread dot after first message');
   await page.click('.mg-bell-btn');
   const bellMsg = await page.$eval('.mg-bell-panel', (e) => e.textContent);
   if (/I can see something/.test(bellMsg)) pass('meta-game bell: opens message list ("I can see something")'); else fail('bell msg: ' + bellMsg);
-  await page.click('.games-close');
-
-  // ── Meta-game Stage 1 reveal/enable mechanic + debug toggle (gate-based state preset). ──
-  // Gate g2 (metric=bits, to=500) is active when g0+g1 are satisfied (totalBits≥1, bits≥500).
-  // With bits=500, totalBits=500: g2 active, progress=500/500=1.0 → 100 cells lit, btn ready.
-  // Buying deducts GRID_CELLS (100) → bits=400; g1 becomes active at 400/500=0.8 (btn not ready).
-  await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.evaluate(() => {
-    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 500, totalBits: 500, stage: 1, introStages: [1] })); } catch {}
-    window.__fv.games.unlock(); window.__fv.games.open();
-  });
-  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
-  await page.click('.games-card[data-game="metagame"]');
-  await page.waitForSelector('.mg-s1', { timeout: 8000 });
-  const allOn = await page.$$eval('.mg-s1-grid .mg-s1-cell.mg-s1-on', (els) => els.length);
-  const ready = await page.$eval('.mg-s1-btn', (e) => e.classList.contains('mg-s1-ready'));
-  if (allOn === 100 && ready) pass('meta-game stage 1: 100 bits reveals all squares + enables button'); else fail('s1 enable: on=' + allOn + ' ready=' + ready);
-  // Buying deducts GRID_CELLS bits, bumps owned[s1-cursor], and re-renders (grid no longer full).
+  await page.click('.mg-s1-tap', { position: { x: 5, y: 5 } });
+  pass('meta-game stage 1: clicking outside ready button is accepted as a tap');
   await page.click('.mg-s1-btn');
   await page.waitForFunction(() => !document.querySelector('.mg-s1-btn').classList.contains('mg-s1-ready'), null, { timeout: 4000 });
-  // Stage 1 save is now base64-encoded (s1state); decode before parsing.
   const afterBuy = await page.evaluate(() => { try { const raw = localStorage.getItem('fv:games:metagame'); return JSON.parse(decodeURIComponent(escape(atob(raw)))); } catch { try { return JSON.parse(localStorage.getItem('fv:games:metagame')); } catch { return {}; } } });
-  if ((afterBuy.owned || {})['s1-cursor'] === 1) pass('meta-game stage 1: buy resets bits + raises compute level'); else fail('s1 buy: ' + JSON.stringify(afterBuy));
-  // Stagger gating: buying s1-cursor reveals the s1-mult shop row (was hidden at the start).
-  const multVisible = await page.$('.mg-s1-shoprow[data-id="s1-mult"]:not([hidden])');
-  if (multVisible) pass('meta-game stage 1: s1-mult shop row unlocks after buying s1-cursor'); else fail('s1-mult row not visible after cursor buy');
+  if ((afterBuy.owned || {})['s1-mult'] === 1 && !((afterBuy.owned || {})['s1-cursor']) && Math.floor((afterBuy.bits || {}).m || 0) === 1) pass('meta-game stage 1: intro button buys Multiplier and subtracts current price'); else fail('s1 buy: ' + JSON.stringify(afterBuy));
+  const cellsBeforeMultTap = await page.$$eval('.mg-s1-grid .mg-s1-cell.mg-s1-on', (els) => els.length);
+  await page.click('.mg-s1-tap', { position: { x: 5, y: 5 } });
+  const cellsAfterMultTap = await page.$$eval('.mg-s1-grid .mg-s1-cell.mg-s1-on', (els) => els.length);
+  if (cellsAfterMultTap > cellsBeforeMultTap) pass('meta-game stage 1: Multiplier raises click power'); else fail('s1 click power reveal cells: ' + cellsBeforeMultTap + ' -> ' + cellsAfterMultTap);
+  for (let i = 0; i < 30; i++) {
+    const tabReady = await page.$eval('.mg-s1-tab[data-tab="bits"].mg-s1-tab-on', (e) => e.checkVisibility()).catch(() => false);
+    if (tabReady) break;
+    await page.click('.mg-s1-tap', { position: { x: 5, y: 5 } });
+  }
+  await page.waitForSelector('.mg-s1-tab[data-tab="bits"].mg-s1-tab-on', { timeout: 4000 });
+  const s1Tabs = await page.evaluate(() => ({
+    centerVisible: !!document.querySelector('.mg-s1-top')?.checkVisibility(),
+    multRow: !!document.querySelector('.mg-s1-shoprow[data-id="s1-mult"]:not([hidden])'),
+    cursorRow: !!document.querySelector('.mg-s1-shoprow[data-id="s1-cursor"]:not([hidden])'),
+    statsVisible: !!document.querySelector('.mg-s1-stats')?.checkVisibility(),
+    owned: document.querySelector('.mg-s1-shoprow[data-id="s1-mult"] .mg-owned')?.textContent || '',
+  }));
+  if (!s1Tabs.centerVisible && s1Tabs.multRow && !s1Tabs.cursorRow && !s1Tabs.statsVisible && s1Tabs.owned === '×1') pass('meta-game stage 1: tabs unlock at totalBits >= 150 with Multiplier row and hidden stats'); else fail('s1 tabs: ' + JSON.stringify(s1Tabs));
   // Debug toggle: hidden panel, gear button shows it.
   if (await page.$eval('.mg-debug', (e) => e.hidden)) pass('meta-game: debug panel hidden by default'); else fail('debug panel not hidden');
   await page.click('.mg-dbg-toggle');
   if (await page.$eval('.mg-debug', (e) => !e.hidden)) pass('meta-game: debug toggle reveals the panel'); else fail('debug toggle did not reveal');
   await page.click('.games-close');
 
+  // Bit Box remains the next timed unlock: cost 500, blue left-to-right fill, payout on completion.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 600, totalBits: 600, stage: 1, introStages: [1], owned: { 's1-mult': 1 }, tabsUnlocked: true })); } catch {}
+    window.__fv.games.unlock(); window.__fv.games.open();
+  });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-s1-shoprow[data-id="s1-box"]:not([hidden]) .mg-s1-buybtn:not([disabled])', { timeout: 8000 });
+  await page.click('.mg-s1-shoprow[data-id="s1-box"] .mg-s1-buybtn');
+  await page.waitForSelector('.mg-s1-timed[data-id="s1-box"] .mg-s1-timed-btn:not([hidden])', { timeout: 4000 });
+  await page.click('.mg-s1-timed[data-id="s1-box"] .mg-s1-timed-btn');
+  await page.waitForTimeout(500);
+  const boxFill = await page.$eval('.mg-s1-timed[data-id="s1-box"] .mg-s1-timed-fill', (e) => ({ width: parseFloat(e.style.width) || 0, color: getComputedStyle(e).backgroundColor }));
+  if (boxFill.width > 0 && /rgb/.test(boxFill.color)) pass('meta-game stage 1: Bit Box timed fill advances left-to-right'); else fail('s1 box fill: ' + JSON.stringify(boxFill));
+  await page.waitForFunction(() => {
+    try {
+      const raw = localStorage.getItem('fv:games:metagame');
+      const s = JSON.parse(decodeURIComponent(escape(atob(raw))));
+      return Math.floor((s.bits || {}).m || 0) >= 200;
+    } catch { return false; }
+  }, null, { timeout: 6000 });
+  const boxSave = await page.evaluate(() => { try { const raw = localStorage.getItem('fv:games:metagame'); return JSON.parse(decodeURIComponent(escape(atob(raw)))); } catch { return {}; } });
+  if (Math.floor((boxSave.bits || {}).m || 0) >= 200) pass('meta-game stage 1: Bit Box auto-credits payout on completion'); else fail('s1 box payout: ' + JSON.stringify(boxSave.bits));
+  await page.click('.games-close');
+
   // ── Meta-game Stage 1 boss (The Defragmenter) — Confront button at the boss ticket (1e9 bits). ──
   // WP-S1-11 wires mountDefragmenter: clicking Confront → dialog → the boss LOBBY (taunt + Fight).
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => {
-    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 1e9, totalBits: 1e9, stage: 1, introStages: [1], owned: { 's1-cursor': 5, 's1-mult': 1, 's1-box': 1, 's1-boost': 1, 's1-cluster': 1, 's1-array': 1, 's1-neural': 3, 's1-quantum': 1 } })); } catch {}
+    try { localStorage.setItem('fv:games:metagame', JSON.stringify({ bits: 1e9, totalBits: 1e9, stage: 1, introStages: [1], owned: { 's1-mult': 6, 's1-box': 1, 's1-boost': 1, 's1-cluster': 1, 's1-array': 1, 's1-neural': 3, 's1-quantum': 1 } })); } catch {}
     window.__fv.games.unlock(); window.__fv.games.open();
   });
   await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });

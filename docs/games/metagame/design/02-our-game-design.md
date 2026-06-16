@@ -12,7 +12,8 @@ data-driven, modular stage architecture.
 > - `clickPower()` = `1 + Σ(owned × amount)` over `type:'click'` tiers (`metagame.js`).
 > - `totalRate()` = `Σ(owned × rate)` over `type:'auto'` tiers; ticked every 100 ms (`metagame.js`).
 > - Stages are **pure data** in `stages.js` (`tiers[]`, `goal`, `resource`, dialog, `mountBoss`).
-> - Stage 1 has a **bespoke renderer** `renderStage1()` (`stage1.js`) + the commentary **bell**.
+> - Stage 1 has a **bespoke renderer** `renderStage1()` (`stage1.js`) plus small modules for bell,
+>   achievements, managers, and reset.
 > - `fmt()` currently stops at `Sx` and uses plain JS numbers — both replaced per `03`.
 >
 > The redesign **extends** the tier schema and adds **timed** and **manager** tier types plus a
@@ -48,12 +49,11 @@ Each is one entry in `stage.tiers[]` with an extended schema:
 
 | # | Name | Type | Unlocks at | Base cost | Output / effect | Growth |
 |---|------|------|-----------|-----------|-----------------|--------|
-| 1 | **Hand Cursor** (click) | click | start | free | +1 bit/tap (the base) | n/a |
-| 2 | **Multiplier** | click | 1 bit ever | 100 | +1 clickPower per level | 1.12 |
-| 3 | **Bit Box** | timed | 500 bits on hand | 500 | 4 s → +100 × level bits | 1.10 |
-| 4 | **Signal Booster** | timed | Bit Box owned ≥1 | 2,500 | 5 s → +75 × level bits; **+10%/lvl to Bit Box payout** | 1.10 |
-| 5 | **Core Cluster** | timed | Signal Booster owned ≥1 | 12,000 | 8 s → +500 × level bits | 1.08 |
-| 6 | **Processing Array** | auto | Core Cluster owned ≥1 | 60,000 | passive +0.5 × level bits/sec | 1.07 |
+| 1 | **Multiplier** | click | intro button / 1 bit ever | 100 | +1 clickPower per level | 1.12 |
+| 2 | **Bit Box** | timed | 500 bits on hand | 500 | 4 s → +100 × level bits | 1.10 |
+| 3 | **Signal Booster** | timed | Bit Box owned ≥1 | 2,500 | 5 s → +75 × level bits; **+10%/lvl to Bit Box payout** | 1.10 |
+| 4 | **Core Cluster** | timed | Signal Booster owned ≥1 | 12,000 | 8 s → +500 × level bits | 1.08 |
+| 5 | **Processing Array** | auto | Core Cluster owned ≥1 | 60,000 | passive +0.5 × level bits/sec | 1.07 |
 | 7 | **Neural Net** | mult | 1M bits ever | 500,000 | ×(1 + 0.25 × level) to **all timed payouts** | 1.06 |
 | 8 | **Quantum Tap** | click | Neural Net owned ≥3 | 5,000,000 | clickPower ×(1 + level) (re-bases the tap) | 1.05 |
 
