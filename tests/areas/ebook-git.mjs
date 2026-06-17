@@ -18,6 +18,25 @@ export async function run(ctx) {
   const sqQueryText = await page.$eval('#previewHost .sq-grid', (e) => e.textContent);
   if (/Aphex Twin/.test(sqQueryText) && /Bonobo/.test(sqQueryText) && !/Tycho/.test(sqQueryText)) pass('SQLite query executes (filtered result)'); else fail('sqlite query: ' + sqQueryText.replace(/\s+/g, ' ').slice(0, 80));
 
+  // ── Clip Studio Paint (.clip) ── SQLite-backed structure view with partial-support banner.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.clip');
+  await page.waitForSelector('#previewHost .clip-doc', { timeout: 25000 });
+  const clipType = await page.$eval('#typeSelect', (s) => s.value);
+  if (clipType === 'clip') pass('.clip detected as Clip Studio Paint'); else fail('clip type: ' + clipType);
+  const clipText = await page.$eval('#previewHost .clip-doc', (e) => e.textContent);
+  const clipThumb = await page.$eval('#previewHost .clip-thumb', (e) => e.getAttribute('src') || '');
+  if (/Layer pixel data is proprietary/.test(clipText) && /1600 x 1200 px/.test(clipText) && /Layers\s*3/.test(clipText) && /CanvasPreview/.test(clipText) && clipThumb.startsWith('blob:'))
+    pass('Clip Studio structure rendered with canvas, layers, tables, and thumbnail');
+  else fail('clip render: ' + clipText.replace(/\s+/g, ' ').slice(0, 200) + ' thumb=' + clipThumb.slice(0, 20));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const clipMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Canvas\s*1600 x 1200 px/.test(clipMeta) && /Layers\s*3/.test(clipMeta) && /Thumbnail\s*image\/png/.test(clipMeta))
+    pass('Clip Studio metadata includes canvas, layers, and thumbnail');
+  else fail('clip meta: ' + clipMeta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
+
   // ── FictionBook (.fb2) ── XML ebook → sanitized reading HTML with inline data: images. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.fb2');

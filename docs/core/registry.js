@@ -67,6 +67,7 @@ import plyType from '../types/3d/ply/index.js';
 import subtitleType from '../types/text/subtitle/index.js';
 import vcardType from '../types/vcard/index.js';
 import sqliteType from '../types/sqlite/index.js';
+import clipType from '../types/binary/clip/index.js';
 import iworkType from '../types/office/iwork/index.js';
 import zipType from '../types/zip/index.js';
 import archiveType from '../types/archive/index.js';
@@ -151,6 +152,7 @@ export const REGISTRY = [
   objType,
   gltfType,
   plyType,
+  clipType,
   sqliteType,
   epubType,
   comicType,

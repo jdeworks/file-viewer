@@ -72,6 +72,12 @@
     "category": "Data"
   },
   {
+    "label": "Sample.clip",
+    "file": "sample.clip",
+    "mime": "application/vnd.clip-studio.paint",
+    "category": "Image"
+  },
+  {
     "label": "Sample.json",
     "file": "sample.json",
     "mime": "application/json",
