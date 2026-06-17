@@ -498,5 +498,10 @@
     "label": "sample.wasm",
     "file": "sample.wasm",
     "category": "Other"
+  },
+  {
+    "label": "sample.npy",
+    "file": "sample.npy",
+    "category": "Other"
   }
 ]
