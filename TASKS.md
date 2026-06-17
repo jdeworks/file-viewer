@@ -702,6 +702,25 @@ Add smoke coverage for opening `sample.txt` and verifying a preview is available
 
 ---
 
+## TASK 20 — 2048 Score Screen Layering Bug
+
+**Status:** Not started  
+**Effort:** S (~30-60m)  
+**Files likely touched:**
+- `docs/games/2048/g2048.js`
+- `docs/assets/games.css`
+- `tests/areas/games.mjs`
+
+### Bug
+
+The 2048 score/end screen can render behind the score board, making the result partially hidden or visually broken.
+
+Fix the stacking/layout so modal or score-summary UI appears above the board and controls on desktop and mobile.
+
+Add smoke coverage that launches 2048, forces or plays to a score/end state if possible, and verifies the score screen is visible above the board without overlap.
+
+---
+
 ## Future / Backlog (do not start until Tasks 1-15 are done)
 
 These need fixtures, heavy deps, or deeper research:
