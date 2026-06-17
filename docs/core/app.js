@@ -318,6 +318,7 @@ async function activateType(type) {
   // Capabilities decide which surfaces exist. Some types are preview-only (PDF: no raw
   // editor), some raw-only (code), some both (markdown).
   const canRaw = type.capabilities.rawView;
+  $('previewOnlyBadge').hidden = canRaw !== false;
   // A matched known-file enhancement provides a preview even if the base type doesn't.
   const canPreview = type.capabilities.preview || (!!state.known && !state.forceBase);
   const canDiff = type.capabilities.diff && canRaw && !state.intake.isBinary;

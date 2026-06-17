@@ -5,6 +5,7 @@
 // The "Metagame" category is gated behind fv:games:unlocked.
 import { $ } from './state.js';
 import { intakeFromFile } from './intake.js';
+import { REGISTRY } from './registry.js';
 
 const EXAMPLE_CATEGORY_ORDER = ['Documents', 'Data', 'Office', 'Config', 'Code', 'Media', 'Archive & Binary', 'Secrets', 'Metagame'];
 const CATEGORY_ICONS = {
@@ -26,6 +27,50 @@ function saveLastCat(cat) {
 }
 function clearLastCat() {
   try { sessionStorage.removeItem(SS_KEY); } catch { /* ok */ }
+}
+
+function detectTypeForExample(ex) {
+  const fname = (ex.file || '').split('/').pop();
+  const intake = {
+    filename: fname,
+    mimeType: ex.mime || '',
+    bytes: new Uint8Array(0),
+    isBinary: false,   // forces binary detectors to return 0 immediately
+    text: '', textSample: '', isPaste: false, size: 0, lastModified: 0,
+  };
+  let best = null, bestConf = 0;
+  for (const t of REGISTRY) {
+    try { const c = t.detect(intake); if (c > bestConf) { bestConf = c; best = t; } } catch {}
+  }
+  return bestConf > 0.25 ? best : null;
+}
+
+function renderFilterBar(container) {
+  const stored = (() => { try { return sessionStorage.getItem('fv:examples:filter') || 'all'; } catch { return 'all'; } })();
+  const bar = document.createElement('div');
+  bar.className = 'ex-filter-bar';
+  for (const [val, label] of [['all', 'All'], ['edit', 'Editable'], ['view', 'View only']]) {
+    const chip = document.createElement('button');
+    chip.className = 'ex-filter-chip' + (stored === val ? ' active' : '');
+    chip.textContent = label;
+    chip.dataset.filter = val;
+    chip.onclick = () => applyFilter(container, val);
+    bar.appendChild(chip);
+  }
+  return bar;
+}
+
+function applyFilter(container, val) {
+  try { sessionStorage.setItem('fv:examples:filter', val); } catch {}
+  for (const b of container.querySelectorAll('.ex-file-btn')) {
+    const badge = b.querySelector('.ex-badge');
+    if (val === 'all') b.hidden = false;
+    else if (val === 'edit') b.hidden = !(badge?.classList.contains('ex-badge-edit'));
+    else b.hidden = !(badge?.classList.contains('ex-badge-view'));
+  }
+  for (const chip of container.querySelectorAll('.ex-filter-chip')) {
+    chip.classList.toggle('active', chip.dataset.filter === val);
+  }
 }
 
 export async function loadExamples(onPick) {
@@ -66,6 +111,14 @@ function renderGallery(host, list, onPick) {
         const fname = ex.file.split('/').pop();
         await onPick(await intakeFromFile(new File([buf], fname, { type: ex.mime || '' })));
       };
+      const type = detectTypeForExample(ex);
+      if (type) {
+        const badge = document.createElement('span');
+        badge.className = type.capabilities?.rawView ? 'ex-badge ex-badge-edit' : 'ex-badge ex-badge-view';
+        badge.title = type.capabilities?.rawView ? 'Editable in browser' : 'Preview only';
+        badge.textContent = type.capabilities?.rawView ? '✏' : '👁';
+        b.appendChild(badge);
+      }
       frag.appendChild(b);
     }
     return frag;
@@ -89,7 +142,10 @@ function renderGallery(host, list, onPick) {
     const row = document.createElement('div');
     row.className = 'ex-group-items';
     row.appendChild(renderFiles(cat));
+    host.appendChild(renderFilterBar(host));
     host.appendChild(row);
+    const stored = (() => { try { return sessionStorage.getItem('fv:examples:filter') || 'all'; } catch { return 'all'; } })();
+    applyFilter(host, stored);
   }
 
   function showAll() {
@@ -100,6 +156,8 @@ function renderGallery(host, list, onPick) {
     back.textContent = '← Folder view';
     back.onclick = () => showGrid();
     host.appendChild(back);
+
+    host.appendChild(renderFilterBar(host));
 
     for (const cat of cats) {
       const section = document.createElement('div');
@@ -114,6 +172,9 @@ function renderGallery(host, list, onPick) {
       section.appendChild(row);
       host.appendChild(section);
     }
+
+    const stored = (() => { try { return sessionStorage.getItem('fv:examples:filter') || 'all'; } catch { return 'all'; } })();
+    applyFilter(host, stored);
   }
 
   function showGrid() {
