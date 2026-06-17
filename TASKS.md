@@ -621,6 +621,54 @@ Design target:
 
 ---
 
+## TASK 18 — Metadata Extraction Research + Coverage Audit
+
+**Status:** Not started  
+**Effort:** L (~1-2 days research, follow-up implementation tasks likely)  
+**Files likely touched:**
+- `docs/core/meta-drawer.js`
+- metadata modules under `docs/types/**/metadata.js`
+- `docs/examples/index.json`
+- `tests/areas/*.mjs`
+- `TASKS.md` follow-up tasks
+
+### Goal
+
+Audit every registered file type, every known/enhanced renderer, and every missing/planned type to identify useful metadata that can be extracted locally with zero off-origin requests.
+
+This is a research/planning task first. Produce concrete follow-up implementation tasks grouped by file family and risk.
+
+### Required scope
+
+Include general metadata:
+- file size, extension, MIME, detected type/confidence
+- binary/text status, encoding, BOM, line ending style, trailing newline
+- line count, blank/comment line count where applicable
+- hash/fingerprint options if useful and local-only
+
+Include content-specific metadata examples:
+- CSV/TSV: delimiter, quote style, header presence, line break, row/column counts, inconsistent rows
+- plain text/Markdown/logs: lines, words, characters, headings, timestamps/severity where applicable
+- code: lines of code, comments, blanks, language, functions/classes, imports/dependencies, complexity metrics
+- JSON/YAML/TOML/XML/INI: node counts, depth, top-level keys/sections, schema-ish hints, duplicate or suspicious keys
+- images/media: dimensions, color mode, EXIF/ICC, duration/bitrate/codecs, orientation, alpha/animation
+- archives/folders: entry counts, compressed/uncompressed size, encrypted entries, top-level layout
+- documents/ebooks/office: pages/slides/sheets/chapters, title/author, embedded media/fonts, document dates where available
+- binary/executable/game formats: magic, architecture/version/header fields, safety-relevant flags when feasible
+
+### Coverage requirements
+
+For each type:
+- list current metadata fields
+- list useful missing metadata
+- note whether it requires parsing bytes, rendering, vendored libraries, or a new parser
+- note privacy/security concerns, especially secrets, certs, email, archives, and companion saves
+- identify samples needed to validate metadata extraction
+
+Add smoke/unit coverage targets for metadata extraction so regressions are caught.
+
+---
+
 ## Future / Backlog (do not start until Tasks 1-15 are done)
 
 These need fixtures, heavy deps, or deeper research:
