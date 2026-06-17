@@ -407,20 +407,28 @@ body {
   .raw-pane { border-right: 0; }
 }
 
-/* ── Layered image viewer (ORA / PSD) ── */
+/* ── Layered image viewer (ORA / PSD / XCF / KRA) ── */
 .layered-wrap { display: flex; height: 100%; overflow: hidden; }
+.layered-canvas-col { flex: 1 1 auto; display: flex; flex-direction: column; overflow: hidden; }
+.layered-toolbar { display: flex; align-items: center; gap: 4px; padding: 4px 8px; background: var(--bg-2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.layered-zoom-btn { font-size: 11px; padding: 2px 7px; background: var(--bg-3); border: 1px solid var(--border); border-radius: 4px; color: var(--fg); cursor: pointer; line-height: 1.6; }
+.layered-zoom-btn:hover { background: var(--bg); }
+.layered-zoom-label { font-size: 11px; color: var(--fg-2); margin-left: 4px; font-variant-numeric: tabular-nums; min-width: 3.5ch; }
 .layered-canvas-wrap { flex: 1 1 auto; overflow: auto; display: flex; align-items: flex-start; justify-content: center; padding: 16px; background: repeating-conic-gradient(#444 0% 25%, #333 0% 50%) 0 0 / 16px 16px; }
-.layered-canvas { display: block; max-width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,.5); }
-.layered-panel { flex: 0 0 200px; min-width: 160px; max-width: 260px; border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-.layered-panel-head { padding: 8px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--fg2); border-bottom: 1px solid var(--border); }
+.layered-canvas { display: block; box-shadow: 0 4px 24px rgba(0,0,0,.5); }
+.layered-panel { flex: 0 0 220px; min-width: 180px; max-width: 280px; border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.layered-panel-head { padding: 6px 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--fg-2); border-bottom: 1px solid var(--border); }
+.layered-panel-actions { display: flex; align-items: center; justify-content: space-between; }
 .layered-list { flex: 1 1 auto; overflow-y: auto; }
-.layered-layer { display: flex; align-items: center; gap: 6px; padding: 4px 8px; font-size: 12px; color: var(--fg); min-height: 26px; }
-.layered-layer:hover { background: var(--hover); }
-.layered-group { font-weight: 600; color: var(--fg2); }
-.layered-eye { background: none; border: none; cursor: pointer; padding: 0; font-size: 14px; line-height: 1; flex-shrink: 0; }
-.layered-eye-off { opacity: 0.4; }
-.layered-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.layered-arrow { flex-shrink: 0; color: var(--fg2); }
+.layered-layer { display: flex; align-items: center; gap: 5px; padding: 3px 8px; font-size: 12px; color: var(--fg); min-height: 28px; }
+.layered-layer:hover { background: var(--bg-3); }
+.layered-group { font-weight: 600; color: var(--fg-2); }
+.layered-eye { background: none; border: none; cursor: pointer; padding: 0; font-size: 13px; line-height: 1; flex-shrink: 0; }
+.layered-eye-off { opacity: 0.35; }
+.layered-arrow { background: none; border: none; cursor: pointer; padding: 0 2px; font-size: 11px; flex-shrink: 0; color: var(--fg-2); }
+.layered-thumb { width: 32px; height: 32px; flex-shrink: 0; border-radius: 2px; background: repeating-conic-gradient(#555 0% 25%, #444 0% 50%) 0 0 / 8px 8px; }
+.layered-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; min-width: 0; }
+.layered-opacity { width: 52px; flex-shrink: 0; }
 .layered-error { padding: 24px; color: var(--fg); }
 
 /* Reduce motion (Advanced setting): kill every transition + animation app-wide. */

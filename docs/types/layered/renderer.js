@@ -106,12 +106,31 @@ function drawLayers(ctx2d, ls) {
 
 // ── Layer list UI ─────────────────────────────────────────────────────────────
 
-function buildLayerList(container, layers, onToggle) {
+function makeThumbnail(l) {
+  if (!l.bitmap && !l.imageData) return null;
+  const th = document.createElement('canvas');
+  th.className = 'layered-thumb';
+  th.width = 32; th.height = 32;
+  const tctx = th.getContext('2d');
+  if (l.bitmap) {
+    tctx.drawImage(l.bitmap, 0, 0, l.bitmap.width, l.bitmap.height, 0, 0, 32, 32);
+  } else if (l.imageData) {
+    const tmp = document.createElement('canvas');
+    tmp.width = l.imageData.width; tmp.height = l.imageData.height;
+    tmp.getContext('2d').putImageData(l.imageData, 0, 0);
+    tctx.drawImage(tmp, 0, 0, tmp.width, tmp.height, 0, 0, 32, 32);
+  }
+  return th;
+}
+
+function buildLayerList(container, layers, onToggle, collapsedGroups = new Set()) {
   container.innerHTML = '';
+
   function renderLayer(l, depth) {
     const row = document.createElement('div');
     row.className = 'layered-layer' + (l.type === 'group' ? ' layered-group' : '');
     row.style.paddingLeft = (8 + depth * 14) + 'px';
+
     const eye = document.createElement('button');
     eye.className = 'layered-eye' + (l.visibility ? '' : ' layered-eye-off');
     eye.title = l.visibility ? 'Hide layer' : 'Show layer';
@@ -123,20 +142,47 @@ function buildLayerList(container, layers, onToggle) {
       eye.title = l.visibility ? 'Hide layer' : 'Show layer';
       onToggle();
     });
+
     const name = document.createElement('span');
     name.className = 'layered-name';
     name.textContent = l.name;
+
     if (l.type === 'group') {
-      const arrow = document.createElement('span');
+      const arrow = document.createElement('button');
       arrow.className = 'layered-arrow';
-      arrow.textContent = '▾ ';
+      arrow.textContent = collapsedGroups.has(l) ? '▸' : '▾';
+      arrow.title = collapsedGroups.has(l) ? 'Expand group' : 'Collapse group';
+      arrow.addEventListener('click', () => {
+        if (collapsedGroups.has(l)) collapsedGroups.delete(l);
+        else collapsedGroups.add(l);
+        buildLayerList(container, layers, onToggle, collapsedGroups);
+      });
       row.appendChild(eye); row.appendChild(arrow); row.appendChild(name);
     } else {
-      row.appendChild(eye); row.appendChild(name);
+      const thumb = makeThumbnail(l);
+      row.appendChild(eye);
+      if (thumb) row.appendChild(thumb);
+      row.appendChild(name);
+
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.min = '0'; slider.max = '100';
+      slider.value = String(Math.round((l.opacity ?? 1) * 100));
+      slider.className = 'layered-opacity';
+      slider.title = 'Opacity';
+      slider.addEventListener('input', () => {
+        l.opacity = slider.valueAsNumber / 100;
+        onToggle();
+      });
+      row.appendChild(slider);
     }
+
     container.appendChild(row);
-    if (l.children) l.children.forEach((c) => renderLayer(c, depth + 1));
+    if (l.children && !collapsedGroups.has(l)) {
+      l.children.forEach((c) => renderLayer(c, depth + 1));
+    }
   }
+
   layers.forEach((l) => renderLayer(l, 0));
 }
 
@@ -176,23 +222,88 @@ export async function render(intake, _ctx) {
 
   const format = detectFormat(intake);
 
+  // ── Canvas column (toolbar + scrollable canvas area) ──
+  const canvasCol = document.createElement('div');
+  canvasCol.className = 'layered-canvas-col';
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'layered-toolbar';
+
   const canvasWrap = document.createElement('div');
   canvasWrap.className = 'layered-canvas-wrap';
   const canvas = document.createElement('canvas');
   canvas.className = 'layered-canvas';
   canvasWrap.appendChild(canvas);
 
+  canvasCol.appendChild(toolbar);
+  canvasCol.appendChild(canvasWrap);
+
+  // ── Zoom controls ──
+  let currentZoom = 0; // 0 = fit
+
+  const zoomLabel = document.createElement('span');
+  zoomLabel.className = 'layered-zoom-label';
+
+  function getEffectiveZoom() {
+    if (currentZoom === 0) {
+      const avail = canvasWrap.clientWidth - 32;
+      return canvas.width > 0 ? Math.min(1, avail / canvas.width) : 1;
+    }
+    return currentZoom;
+  }
+
+  function applyZoom() {
+    const z = getEffectiveZoom();
+    canvas.style.width = (canvas.width * z) + 'px';
+    canvas.style.height = (canvas.height * z) + 'px';
+    zoomLabel.textContent = Math.round(z * 100) + '%';
+  }
+
+  function addZoomBtn(text, fn) {
+    const btn = document.createElement('button');
+    btn.className = 'layered-zoom-btn';
+    btn.textContent = text;
+    btn.addEventListener('click', fn);
+    toolbar.appendChild(btn);
+  }
+
+  addZoomBtn('Fit', () => { currentZoom = 0; applyZoom(); });
+  addZoomBtn('100%', () => { currentZoom = 1; applyZoom(); });
+  addZoomBtn('−', () => { currentZoom = Math.max(0.125, getEffectiveZoom() / Math.SQRT2); applyZoom(); });
+  addZoomBtn('+', () => { currentZoom = Math.min(8, getEffectiveZoom() * Math.SQRT2); applyZoom(); });
+  toolbar.appendChild(zoomLabel);
+
+  // ── Panel ──
   const panel = document.createElement('div');
   panel.className = 'layered-panel';
+
   const panelHead = document.createElement('div');
-  panelHead.className = 'layered-panel-head';
-  panelHead.textContent = 'Layers';
+  panelHead.className = 'layered-panel-head layered-panel-actions';
+  const headLabel = document.createElement('span');
+  headLabel.textContent = 'Layers';
+  const exportBtn = document.createElement('button');
+  exportBtn.className = 'layered-zoom-btn';
+  exportBtn.textContent = '⬇ PNG';
+  exportBtn.title = 'Export as PNG';
+  exportBtn.addEventListener('click', () => {
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (intake.name || 'image').replace(/\.[^.]+$/, '') + '.png';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }, 'image/png');
+  });
+  panelHead.appendChild(headLabel);
+  panelHead.appendChild(exportBtn);
+
   const layerList = document.createElement('div');
   layerList.className = 'layered-list';
   panel.appendChild(panelHead);
   panel.appendChild(layerList);
 
-  wrap.appendChild(canvasWrap);
+  wrap.appendChild(canvasCol);
   wrap.appendChild(panel);
 
   let layerData = null;
@@ -217,26 +328,17 @@ export async function render(intake, _ctx) {
 
       if (format === 'xcf') {
         drawXcfPlaceholder(canvas, W, H, layers);
-        return;
-      }
-
-      if (format === 'kra' && mergedBitmap) {
-        // Use merged image as base, then redraw visible layers on top
-        ctx2d.drawImage(mergedBitmap, 0, 0);
-        // Redraw only visible layers to reflect toggles
+      } else if (format === 'kra' && mergedBitmap) {
         canvas.width = W; canvas.height = H;
         ctx2d.clearRect(0, 0, W, H);
         drawLayers(ctx2d, layers);
-        return;
-      }
-
-      if (format === 'psd' && mergedImageData) {
+      } else if (format === 'psd' && mergedImageData) {
         drawLayers(ctx2d, layers);
-        return;
+      } else {
+        drawLayers(ctx2d, layers);
       }
 
-      // ORA and KRA without merged — composite from scratch
-      drawLayers(ctx2d, layers);
+      applyZoom();
     };
 
     recomposite();
