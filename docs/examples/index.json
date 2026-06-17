@@ -515,6 +515,11 @@
     "category": "Other"
   },
   {
+    "label": "sample.rdp",
+    "file": "sample.rdp",
+    "category": "Other"
+  },
+  {
     "label": "claude_desktop_config.json",
     "file": "claude_desktop_config.json",
     "category": "Other"
