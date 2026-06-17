@@ -53,6 +53,7 @@ const BUNDLE_GROUPS = {
   'vendor:pdfjs': 'Documents',
   'vendor:libarchive': 'Archives',
   'vendor:ffmpeg': 'Media',
+  'vendor:ruffle': 'Emulators',
   games: 'Games',
   examples: 'Content',
 };

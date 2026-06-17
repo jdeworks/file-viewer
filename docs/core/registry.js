@@ -73,6 +73,7 @@ import procreateType from '../types/image/procreate/index.js';
 import torrentType from '../types/binary/torrent/index.js';
 import gcodeType from '../types/text/gcode/index.js';
 import gitignoreType from '../types/text/gitignore/index.js';
+import ruffleType from '../types/emulator/ruffle/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -121,6 +122,7 @@ export const REGISTRY = [
   asciiartType,
   gcodeType,
   gitignoreType,
+  ruffleType,
   codeType,
   rawType,
 ];

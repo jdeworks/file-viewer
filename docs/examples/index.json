@@ -252,6 +252,11 @@
     "category": "Code"
   },
   {
+    "label": "sample.swf",
+    "file": "sample.swf",
+    "category": "Media"
+  },
+  {
     "label": "Sample.srt",
     "file": "sample.srt",
     "mime": "application/x-subrip",
