@@ -5,8 +5,7 @@
 // clearly-explained, opt-in "Add to Home Screen" hint. It never appears on Android/desktop,
 // where background audio + Media Session already work without installing.
 //
-// The Android/desktop install prompt is separately suppressed (suppressInstallPrompt) so the
-// no-install default holds everywhere else.
+// The manifest uses browser display so Android/desktop do not get a default app install prompt.
 
 const DISMISS_KEY = 'fv:iosAudioHint:dismissed';
 
@@ -19,12 +18,6 @@ export function isIos() {
 export function isStandalone() {
   return window.navigator.standalone === true
     || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-}
-
-// Stop Chrome/Edge (Android/desktop) from offering to install the app — keeps the no-install
-// promise. Call once at startup.
-export function suppressInstallPrompt() {
-  window.addEventListener('beforeinstallprompt', (e) => e.preventDefault());
 }
 
 // Show the iOS hint if appropriate. Safe to call repeatedly. No-op off iOS, when standalone,

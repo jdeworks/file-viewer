@@ -273,7 +273,8 @@ export async function run(ctx) {
   const iosHintDesktop = await page.$eval('#iosAudioHint', (e) => e.hidden);
   if (iosHintDesktop) pass('iOS audio hint NOT shown on desktop (no-install default holds)'); else fail('iOS hint showed on desktop');
   const appleMeta = await page.$('meta[name="apple-mobile-web-app-capable"]');
-  if (appleMeta) pass('iOS standalone meta + manifest present'); else fail('no apple-mobile-web-app-capable meta');
+  const manifestDisplay = await page.evaluate(async () => (await (await fetch('manifest.json')).json()).display);
+  if (appleMeta && manifestDisplay === 'browser') pass('iOS standalone meta present; manifest stays browser-mode'); else fail('install metadata: apple=' + !!appleMeta + ' display=' + manifestDisplay);
 
   // ── iOS background-audio exception ── on an iPhone UA, opening audio surfaces the opt-in hint.
   {
