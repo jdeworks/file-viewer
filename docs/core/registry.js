@@ -40,6 +40,7 @@ import jsonType from '../types/text/json/index.js';
 import harType from '../types/text/har/index.js';
 import ipynbType from '../types/ipynb/index.js';
 import imageType from '../types/image/index.js';
+import midiType from '../types/binary/midi/index.js';
 import mediaType from '../types/media/index.js';
 import codeType from '../types/text/code/index.js';
 import htmlType from '../types/html/index.js';
@@ -146,6 +147,7 @@ export const REGISTRY = [
   procreateType,
   sketchType,
   imageType,
+  midiType,
   mediaType,
   fontType,
   stlType,

@@ -176,6 +176,23 @@ export async function run(ctx) {
   ]);
   if (/\.webp$/.test(imgDownload.suggestedFilename())) pass('image converted + downloaded (' + imgDownload.suggestedFilename() + ')'); else fail('image download name: ' + imgDownload.suggestedFilename());
 
+  // ── MIDI sequence ── parses SMF header, tempo, tracks, GM programs, and note counts.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.mid');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const midiType = await page.$eval('#typeSelect', (s) => s.value);
+  if (midiType === 'midi') pass('.mid detected as MIDI Sequence'); else fail('midi type: ' + midiType);
+  const midif = await frameOf('iframe.fv-preview-frame');
+  await midif.waitForSelector('.midi-doc .midi-table', { timeout: 8000 });
+  const midiCards = await midif.$$eval('.midi-card', (els) => Object.fromEntries(els.map((e) => [e.querySelector('span')?.textContent || '', e.querySelector('strong')?.textContent || ''])));
+  const midiTable = await midif.$eval('.midi-table', (e) => e.textContent);
+  if (midiCards.Format === 'Type 1' && midiCards.Tracks === '2' && midiCards.PPQN === '480' && midiCards.BPM === '120' && /Lead/.test(midiTable) && /Acoustic Grand Piano/.test(midiTable)) pass('MIDI header + tracks parsed'); else fail('midi doc: ' + JSON.stringify({ midiCards, midiTable }).slice(0, 220));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const midiMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*Type 1/.test(midiMeta) && /Tracks\s*2/.test(midiMeta) && /Notes\s*2/.test(midiMeta) && /Unique pitches\s*2/.test(midiMeta)) pass('MIDI metadata includes parsed fields'); else fail('midi meta: ' + midiMeta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
+
   // ── Audio/Video (media) ── native player rendered in the pane via a blob: URL.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.wav');

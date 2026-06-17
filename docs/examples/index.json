@@ -454,6 +454,12 @@
     "category": "Media"
   },
   {
+    "label": "Sample.mid",
+    "file": "sample.mid",
+    "mime": "audio/midi",
+    "category": "Media"
+  },
+  {
     "label": "Sample.mp3",
     "file": "sample.mp3",
     "mime": "audio/mpeg",
