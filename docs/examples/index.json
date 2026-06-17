@@ -436,5 +436,11 @@
     "file": "sample.torrent",
     "mime": "application/x-bittorrent",
     "category": "Archive & Binary"
+  },
+  {
+    "label": "sample.ico",
+    "file": "sample.ico",
+    "mime": "image/x-icon",
+    "category": "Media"
   }
 ]

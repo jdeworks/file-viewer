@@ -431,6 +431,14 @@ body {
 .layered-opacity { width: 52px; flex-shrink: 0; }
 .layered-error { padding: 24px; color: var(--fg); }
 
+/* ── ICO / CUR icon viewer ── */
+.ico-wrap { padding: 16px 24px 24px; display: flex; flex-direction: column; align-items: center; gap: 16px; overflow: auto; background: var(--bg); }
+.ico-type-tag { font-size: 11px; color: var(--fg2); text-transform: uppercase; letter-spacing: .06em; align-self: flex-start; }
+.ico-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+.ico-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ico-canvas { display: block; background: repeating-conic-gradient(#444 0% 25%, #333 0% 50%) 0 0 / 8px 8px; border: 1px solid var(--border); }
+.ico-label { font-size: 11px; color: var(--fg2); font-family: monospace; }
+
 /* Reduce motion (Advanced setting): kill every transition + animation app-wide. */
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
   animation-duration: 0s !important;
