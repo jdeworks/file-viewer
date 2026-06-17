@@ -20,8 +20,9 @@ fi
 echo "→ LOC housekeeping report (advisory)…"
 ./scripts/loc-check.sh || true
 
-echo "→ unit tests (move-aware diff + parsers)…"
+echo "→ unit tests (move-aware diff + parsers + metadata)…"
 node tests/movediff.test.mjs
+node tests/metadata-normalize.test.mjs
 
 echo "→ smoke test (headless Chromium, zero off-origin)…"
 node tests/smoke.mjs

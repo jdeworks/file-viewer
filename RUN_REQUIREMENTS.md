@@ -30,6 +30,10 @@
 - JSON preview should render clean disclosure controls, avoid broken escaped glyphs, and support useful key sorting.
 - Sorting should be considered for structured/table-like types such as JSON, CSV, XLSX, text lines, and similar formats.
 - PWA install suppression should avoid noisy `beforeinstallprompt.preventDefault()` console messages where possible while preserving the no-install promise.
+- Metadata should include a file-type description/link explaining what the format is used for.
+- Sample tiles should expose a short hover description of what the sample demonstrates.
+- Password-protected formats such as PDF, SQLite, ZIP, and similar containers should have password-protected samples and unlock flows where the user can provide the password to view contents.
+- Sensitive file types that may contain protected data, such as `.env` and SSH config, should open in rendered-view mode by default and hide or blur values until explicitly revealed.
 
 ## Metadata
 
@@ -63,3 +67,4 @@
 
 - Maintain a concrete implementation backlog from the sample, metadata, and interaction audits.
 - Use the backlog to drive follow-up implementation increments until all items above are addressed.
+- As the final queue item, perform another thorough file-type check and produce an enhancement plan for more file types.
