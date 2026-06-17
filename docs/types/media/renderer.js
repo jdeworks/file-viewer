@@ -203,8 +203,16 @@ export async function render(intake, ctx = {}) {
       el.src = url2;
       el.load();
       el.play().catch(() => { /* autoplay block */ });
+      const outExt = info.kind === 'video' ? 'mp4' : 'm4a';
+      const baseName = (intake.filename || 'output').replace(/\.[^.]+$/, '');
+      const dlLink = document.createElement('a');
+      dlLink.href = url2;
+      dlLink.download = 'output_' + baseName + '.' + outExt;
+      dlLink.className = 'media-tx-download';
+      dlLink.textContent = '⬇ Download converted file';
       txPanel.innerHTML = '<span class="media-tx-icon">✓</span>'
         + '<span class="media-tx-msg">Transcoded — playing converted version.</span>';
+      txPanel.appendChild(dlLink);
     } catch (err) {
       txPanel.innerHTML = '<span class="media-tx-icon">⚠</span>'
         + '<span class="media-tx-msg">Transcoding failed: ' + err.message + '</span>';
