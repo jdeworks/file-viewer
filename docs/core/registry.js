@@ -90,6 +90,7 @@ import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
 import gitignoreType from '../types/text/gitignore/index.js';
 import gitattributesType from '../types/text/gitattributes/index.js';
+import editorconfigType from '../types/text/editorconfig/index.js';
 import sshConfigType from '../types/text/ssh-config/index.js';
 import rdpType from '../types/text/rdp/index.js';
 import mcpConfigType from '../types/text/mcp-config/index.js';
@@ -163,6 +164,7 @@ export const REGISTRY = [
   gcodeType,
   gitignoreType,
   gitattributesType,
+  editorconfigType,
   sshConfigType,
   rdpType,
   pemType,
