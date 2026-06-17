@@ -721,6 +721,50 @@ Add smoke coverage that launches 2048, forces or plays to a score/end state if p
 
 ---
 
+## TASK 21 — Bit Foundry Stage Navigation + Unlock Flow
+
+**Status:** Not started  
+**Effort:** M (~2-4h)  
+**Files likely touched:**
+- `docs/games/metagame/stage1.js`
+- `docs/games/metagame/stages/stage1/`
+- `docs/games/metagame/s1state.js`
+- `docs/games/metagame/s1bell.js`
+- `docs/assets/games.css`
+- `tests/areas/games.mjs`
+- stage 1 unit tests if present
+
+### Stage navigation
+
+Bit Foundry should not show all stages from the beginning, and stages should not be presented as a row of ordinary buttons.
+
+Design target:
+- only unlocked/current stages are visible
+- the current stage name becomes the page/section heading
+- locked future stages are hidden or shown as subtle progress, not clickable primary controls
+- the interaction model should feel like progressing through stages, not manually selecting every stage upfront
+
+### Bell placement
+
+The Bell is currently a button at the bottom of the screen. Move it to the top chrome next to "Back to arcade" so it is visible without competing with core click/upgrade actions.
+
+### Unlock semantics
+
+Stage/tab unlocks should use current score/bits reaching the threshold, not bits accumulated over time. Specifically, the 150-bit unlock should trigger when the score reaches 150 bits.
+
+Add tests for unlock threshold behavior:
+- score below 150 does not unlock
+- score reaches 150 unlocks the next stage/tab
+- spending or time accumulation does not falsely unlock if current score has not reached the threshold, unless explicitly intended and documented
+
+### Clickability regression
+
+After switching to a newly unlocked tab/stage, clicks stopped working. The player must still be able to click the main earning surface to get bits after a stage transition.
+
+Add smoke coverage that unlocks the next stage, switches/advances, clicks the earning surface again, and verifies bits increase.
+
+---
+
 ## Future / Backlog (do not start until Tasks 1-15 are done)
 
 These need fixtures, heavy deps, or deeper research:
