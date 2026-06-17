@@ -26,6 +26,7 @@
 // ── Intake object (passed to detect / render / extract) ─────────────────────────
 //   { filename, mimeType, bytes:Uint8Array, text, textSample, isPaste, size, lastModified }
 
+import pemType from '../types/text/pem/index.js';
 import rawType from '../types/text/raw/index.js';
 import urlType from '../types/text/url/index.js';
 import asciiartType from '../types/text/asciiart/index.js';
@@ -128,6 +129,7 @@ export const REGISTRY = [
   asciiartType,
   gcodeType,
   gitignoreType,
+  pemType,
   ruffleType,
   v86Type,
   emulatorjsType,

@@ -483,5 +483,10 @@
     "label": "sample.nes",
     "file": "sample.nes",
     "category": "Binary"
+  },
+  {
+    "label": "sample.pem",
+    "file": "sample.pem",
+    "category": "Other"
   }
 ]
