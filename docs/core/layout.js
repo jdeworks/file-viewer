@@ -108,6 +108,19 @@ export function initSplitDivider() {
   const divider = $('splitDivider'), panes = $('panes');
   const previewPane = $('previewPane'), rawPane = $('rawPane');
   let dragging = false;
+  let activePointerId = null;
+  let shieldedFrames = [];
+  const shieldFrames = () => {
+    shieldedFrames = [...previewPane.querySelectorAll('iframe')].map((frame) => ({
+      frame,
+      pointerEvents: frame.style.pointerEvents,
+    }));
+    for (const { frame } of shieldedFrames) frame.style.pointerEvents = 'none';
+  };
+  const restoreFrames = () => {
+    for (const { frame, pointerEvents } of shieldedFrames) frame.style.pointerEvents = pointerEvents;
+    shieldedFrames = [];
+  };
   const onMove = (e) => {
     if (!dragging) return;
     const rect = panes.getBoundingClientRect();
@@ -124,8 +137,14 @@ export function initSplitDivider() {
     if (!dragging) return;
     dragging = false;
     document.body.style.userSelect = '';
-    window.removeEventListener('pointermove', onMove);
-    window.removeEventListener('pointerup', onUp);
+    restoreFrames();
+    window.removeEventListener('pointermove', onMove, true);
+    window.removeEventListener('pointerup', onUp, true);
+    window.removeEventListener('pointercancel', onUp, true);
+    if (activePointerId != null) {
+      try { divider.releasePointerCapture(activePointerId); } catch {}
+      activePointerId = null;
+    }
     // Width already tracked live in onMove; on release, re-render so the iframe content
     // width matches and refresh the settings UI if it's open.
     const m = state.settingsModel;
@@ -139,9 +158,13 @@ export function initSplitDivider() {
   divider.addEventListener('pointerdown', (e) => {
     if (divider.hidden) return;
     dragging = true;
+    activePointerId = e.pointerId;
+    try { divider.setPointerCapture(e.pointerId); } catch {}
+    shieldFrames();
     document.body.style.userSelect = 'none';
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointermove', onMove, true);
+    window.addEventListener('pointerup', onUp, true);
+    window.addEventListener('pointercancel', onUp, true);
     e.preventDefault();
   });
 }

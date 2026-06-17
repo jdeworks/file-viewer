@@ -179,6 +179,37 @@ export async function run(ctx) {
   await page.waitForFunction(() => document.getElementById('compareBar').hidden, { timeout: 4000 });
   pass('two-file compare: "Stop comparing" exits');
 
+  // ── Split divider: drag must keep working across preview iframes and Monaco surfaces ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.ans');
+  await page.click('#viewMode button[data-mode="split"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
+  await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 15000 });
+  const splitBox = await (await page.$('#splitDivider')).boundingBox();
+  const previewBox = await (await page.$('#previewPane')).boundingBox();
+  if (splitBox && previewBox) {
+    const beforePreview = await page.$eval('#previewPane', (e) => e.getBoundingClientRect().width);
+    await page.mouse.move(splitBox.x + splitBox.width / 2, splitBox.y + splitBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(previewBox.x + previewBox.width - 40, splitBox.y + splitBox.height / 2, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(250);
+    const afterRight = await page.$eval('#previewPane', (e) => e.getBoundingClientRect().width);
+    if (afterRight < beforePreview - 80) pass('split divider drags across preview iframe'); else fail('split iframe drag width: ' + beforePreview + ' -> ' + afterRight);
+
+    const splitBox2 = await (await page.$('#splitDivider')).boundingBox();
+    const rawBox = await (await page.$('#rawPane')).boundingBox();
+    if (splitBox2 && rawBox) {
+      await page.mouse.move(splitBox2.x + splitBox2.width / 2, splitBox2.y + splitBox2.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(rawBox.x + 120, splitBox2.y + splitBox2.height / 2, { steps: 8 });
+      await page.mouse.up();
+      await page.waitForTimeout(250);
+      const afterLeft = await page.$eval('#previewPane', (e) => e.getBoundingClientRect().width);
+      if (afterLeft > afterRight + 80) pass('split divider drags back across Monaco pane'); else fail('split Monaco drag width: ' + afterRight + ' -> ' + afterLeft);
+    } else fail('split drag missing raw/divider boxes after iframe drag');
+  } else fail('split drag missing preview/divider boxes');
+
   // ── Side-by-side: view two files (incl. non-text) next to each other ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Welcome.md');
