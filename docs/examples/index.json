@@ -464,6 +464,11 @@
     "category": "Image"
   },
   {
+    "label": "sample.sketch",
+    "file": "sample.sketch",
+    "category": "Image"
+  },
+  {
     "label": "sample.gcode",
     "file": "sample.gcode",
     "mime": "text/x-gcode",
