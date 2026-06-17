@@ -1,0 +1,26 @@
+/* App navigation */
+"nav.home" = "Home";
+"nav.settings" = "Settings";
+"nav.profile" = "Profile";
+
+/* Onboarding */
+"onboarding.title" = "Welcome to MyApp";
+"onboarding.subtitle" = "The best app for %@";
+"onboarding.continue" = "Continue";
+"onboarding.skip" = "Skip";
+
+/* Errors */
+"error.network" = "No internet connection. Please try again.";
+"error.generic" = "Something went wrong (%d)";
+"error.not_found" = "Item not found";
+
+/* Actions */
+"action.save" = "Save";
+"action.cancel" = "Cancel";
+"action.delete" = "Delete %@";
+"action.share" = "Share";
+
+/* Accessibility */
+"a11y.close_button" = "Close";
+"a11y.back_button" = "Go back";
+"a11y.loading" = "Loading, please wait";
