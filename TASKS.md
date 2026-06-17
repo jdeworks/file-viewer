@@ -669,6 +669,39 @@ Add smoke/unit coverage targets for metadata extraction so regressions are caugh
 
 ---
 
+## TASK 19 — New File Autofocus + Readable Text Preview
+
+**Status:** Not started  
+**Effort:** S/M (~1-2h)  
+**Files likely touched:**
+- `docs/core/session-tree.js`
+- `docs/core/rawpane.js`
+- `docs/core/app.js`
+- `docs/types/text/raw/`
+- `docs/assets/preview-chrome.css`
+- `tests/areas/interactions.mjs`
+
+### New file autofocus
+
+When creating a new file, focus the editor automatically and place the cursor inside the empty document so the user can start typing immediately after confirming the filename.
+
+Add smoke coverage that creates a new file, types without first clicking the editor, and verifies the typed text is in the document.
+
+### Plain text readable preview
+
+Plain `.txt` / raw text files should have a readable preview in addition to the editable raw/code editor.
+
+Design target:
+- preserve raw editor and Download button
+- render text in a preview-friendly `<pre>` or prose layout with comfortable line length, wrapping, and theme support
+- keep whitespace meaningful but make long text easier to read than Monaco
+- include basic metadata in the preview when useful only if it does not duplicate the metadata drawer excessively
+- ensure binary/hex fallback is unchanged
+
+Add smoke coverage for opening `sample.txt` and verifying a preview is available and readable.
+
+---
+
 ## Future / Backlog (do not start until Tasks 1-15 are done)
 
 These need fixtures, heavy deps, or deeper research:
