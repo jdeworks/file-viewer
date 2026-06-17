@@ -29,6 +29,8 @@ body {
   padding-top: env(safe-area-inset-top);
 }
 .brand { font-weight: 600; white-space: nowrap; opacity: .9; }
+#offlineBadge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; background: #b45309; color: #fff; border-radius: 10px; font: 600 11px system-ui, sans-serif; white-space: nowrap; }
+#offlineBadge::before { content: '●'; font-size: 8px; }
 .spacer { flex: 1; }
 .file-id { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .file-name { max-width: 28vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-2); }

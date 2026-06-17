@@ -13,7 +13,7 @@ import { renderRepoView } from './repoview.js';
 import { createRawView } from './rawview.js';
 import { loadMonaco } from './monaco-loader.js';
 import { hexDump } from './hexdump.js';
-import { initOffline, offlineMissHtml } from './offline.js';
+import { initOffline, offlineMissHtml, initOfflineBadge } from './offline.js';
 import * as persistence from './persistence.js';
 import { suppressInstallPrompt } from './ios-audio.js';
 import { registerCodeMetrics } from '../types/text/code/codelens.js';
@@ -625,6 +625,7 @@ function init() {
 
   // Register the service worker + start the background offline precache (spinner → ✓).
   initOffline($('offlineStatus'));
+  initOfflineBadge();
 
   // Keep the no-install promise: never let Android/desktop offer to install the app. (The one
   // exception — an iOS-only "Add to Home Screen" hint for background audio — is opt-in and shown

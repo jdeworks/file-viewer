@@ -204,6 +204,15 @@ async function openCacheModal(onConfirm) {
   });
 }
 
+export function initOfflineBadge() {
+  const badge = document.getElementById('offlineBadge');
+  if (!badge) return;
+  badge.textContent = 'Offline';
+  if (!navigator.onLine) badge.hidden = false;
+  window.addEventListener('online', () => { badge.hidden = true; });
+  window.addEventListener('offline', () => { badge.hidden = false; });
+}
+
 // Friendly note for a renderer that couldn't load because we're offline and it was never
 // cached (cache-on-use never saw it). Points at the opt-in control.
 export function offlineMissHtml() {
