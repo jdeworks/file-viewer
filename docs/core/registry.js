@@ -70,6 +70,7 @@ import lrfType from '../types/ebook/lrf/index.js';
 import layeredType from '../types/layered/index.js';
 import icoType from '../types/image/ico/index.js';
 import torrentType from '../types/binary/torrent/index.js';
+import gcodeType from '../types/text/gcode/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -115,6 +116,7 @@ export const REGISTRY = [
   torrentType,
   urlType,
   asciiartType,
+  gcodeType,
   codeType,
   rawType,
 ];

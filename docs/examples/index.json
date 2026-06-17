@@ -442,5 +442,11 @@
     "file": "sample.ico",
     "mime": "image/x-icon",
     "category": "Media"
+  },
+  {
+    "label": "sample.gcode",
+    "file": "sample.gcode",
+    "mime": "text/x-gcode",
+    "category": "Data"
   }
 ]
