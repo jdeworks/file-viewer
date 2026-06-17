@@ -503,5 +503,10 @@
     "label": "sample.npy",
     "file": "sample.npy",
     "category": "Other"
+  },
+  {
+    "label": "sample.lnk",
+    "file": "sample.lnk",
+    "category": "Other"
   }
 ]
