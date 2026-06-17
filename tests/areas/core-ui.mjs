@@ -191,6 +191,22 @@ export async function run(ctx) {
   const groups = await page.$$eval('#settingsBody .set-group > summary', (els) => els.map((e) => e.textContent));
   if (groups.includes('Editor') && groups.includes('Preview')) pass('settings render by category (' + groups.join(', ') + ')');
   else fail('categories: ' + groups.join(', '));
+  const companionOrder = await page.$eval('#settingsBody .companion-download', (el) => {
+    const source = [...el.querySelectorAll('a')].find((a) => /source/i.test(a.textContent));
+    const download = [...el.querySelectorAll('a')].find((a) => /download/i.test(a.textContent));
+    const checksum = [...el.querySelectorAll('p')].find((p) => /SHA-256/i.test(p.textContent));
+    return {
+      hasSource: !!source && /\/tree\/dev\/companion$/.test(source.href),
+      hasChecksum: !!checksum,
+      hasDownload: !!download && /\/releases\/?$/.test(download.href),
+      sourceBeforeChecksum: !!source && !!checksum && (source.compareDocumentPosition(checksum) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+      checksumBeforeDownload: !!checksum && !!download && (checksum.compareDocumentPosition(download) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+    };
+  });
+  if (companionOrder.hasSource && companionOrder.hasChecksum && companionOrder.hasDownload
+    && companionOrder.sourceBeforeChecksum && companionOrder.checksumBeforeDownload) {
+    pass('companion download panel orders source, checksum, then release download');
+  } else fail('companion download panel order: ' + JSON.stringify(companionOrder));
 
   // Switch preset to Compact -> preview re-renders at 680px max width.
   const presetSel = await page.$('#settingsBody select');
