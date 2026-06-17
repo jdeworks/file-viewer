@@ -32,7 +32,7 @@ import { buildMetadata } from './meta-drawer.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, flushFolderEdit } from './folder.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
 import { recordMetagameViewerOpen, recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
-import { detectCompanion, findFile, findFolder, saveFile, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
+import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, renderCompanionSettings, detectCompanionOnStartup } from './companion-ui.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -58,7 +58,7 @@ async function loadIntake(intake) {
   setCompanionLinked(null);            // clear any prior linked path on new file open
   // When loading a single top-level file (not a folder-tree navigation), reset the folder root
   // so save doesn't accidentally compute paths against a stale folder.
-  if (!fromTree) companionFolderRoot = null;
+  if (!fromTree) resetCompanionFolderRoot();
   const { type, ranking } = pickType(intake);
   populateTypeSelect(ranking, type.id);
   await activateType(type);
@@ -517,458 +517,6 @@ function showMetaBtnEgg(msg, onDismiss) {
   ov.addEventListener('click', () => { ov.remove(); onDismiss?.(); }, { once: true });
 }
 
-/* ─────────────────────────── Companion (local save-back server) ─────────────────────────── */
-
-let companionAvailable = false;
-// Per-file resolved disk path (set after a successful findFile/save). Cleared on new file open.
-let companionLinkedPath = null;
-// Absolute path to the root of the currently-dropped folder on disk (resolved via find-folder).
-// Null when no folder is loaded or root resolution failed/was cancelled.
-let companionFolderRoot = null;
-
-function showCompanionIndicator() {
-  toast('Companion connected — save files back to disk with 💾', 3500);
-}
-
-// Show a picker dialog when find-folder returns multiple matching roots.
-// Returns the chosen absolute path, or null if the user cancels.
-function promptFolderRootPicker(matches) {
-  return new Promise((resolve) => {
-    const modal = document.createElement('dialog');
-    modal.innerHTML = `
-      <h3 style="margin-top:0">Multiple matching folders found</h3>
-      <p>Which folder on disk matches the dropped folder?</p>
-      <ul style="list-style:none;padding:0;margin:0 0 12px">
-        ${matches.map((m, i) => `<li style="margin:4px 0"><button data-idx="${i}" style="width:100%;text-align:left;padding:6px 10px;cursor:pointer">${escapeHtml(m)}</button></li>`).join('')}
-      </ul>
-      <button class="cancel-btn">Cancel</button>
-    `;
-    modal.addEventListener('click', (e) => {
-      if (e.target.dataset.idx !== undefined) {
-        resolve(matches[parseInt(e.target.dataset.idx)]);
-        modal.close();
-        modal.remove();
-      } else if (e.target.classList.contains('cancel-btn')) {
-        resolve(null);
-        modal.close();
-        modal.remove();
-      }
-    });
-    document.body.appendChild(modal);
-    modal.showModal();
-  });
-}
-
-// Attempt to resolve the absolute disk root for a folder drop.
-// Uses the first file's webkitRelativePath + size + lastModified to call find-folder.
-// Sets companionFolderRoot on success; leaves it null on failure or ambiguity (after cancel).
-async function resolveDroppedFolderRoot(files) {
-  if (!companionAvailable || !companionEnabled() || !files || !files.length) return;
-  const first = files[0];
-  if (!first.webkitRelativePath) return;
-  const relPath = first.webkitRelativePath; // e.g. "my-project/package.json"
-  const matches = await findFolder(relPath, first.size, first.lastModified).catch(() => []);
-  let root = null;
-  if (matches.length === 1) {
-    root = matches[0];
-  } else if (matches.length > 1) {
-    root = await promptFolderRootPicker(matches);
-  }
-  companionFolderRoot = root;
-  if (root) {
-    syncSaveBtn();
-    // If a folder-tree file is already open (e.g. root resolved after tree loaded and a file was
-    // auto-opened), start watching it now.
-    const fileHandle = state.intake?.file;
-    const currentAbsPath = absolutePathForFile(fileHandle);
-    if (currentAbsPath && state.currentFolderPath) startWatching(currentAbsPath);
-  }
-}
-
-// Given a File from a folder tree drop (with webkitRelativePath), return its absolute disk path.
-// Returns null if the folder root has not been resolved or the file has no relative path.
-function absolutePathForFile(file) {
-  if (!companionFolderRoot || !file?.webkitRelativePath) return null;
-  // webkitRelativePath: "my-project/src/index.js" — strip the leading folder name.
-  const relParts = file.webkitRelativePath.split('/');
-  const relFromRoot = relParts.slice(1).join('/'); // "src/index.js"
-  if (!relFromRoot) return null;
-  return `${companionFolderRoot}/${relFromRoot}`;
-}
-
-function setCompanionLinked(absPath) {
-  companionLinkedPath = absPath;
-  const el = $('companionLinked');
-  if (!el) return;
-  if (absPath) {
-    el.textContent = '📁 ' + absPath;
-    el.hidden = false;
-  } else {
-    el.hidden = true;
-  }
-  // Start/stop watching whenever the linked path changes.
-  if (absPath && companionAvailable) startWatching(absPath);
-  else stopWatching();
-}
-
-// ── File-watch / reload banner ──────────────────────────────────────────────
-
-let _watchCleanup = null;
-
-function startWatching(absolutePath) {
-  stopWatching();
-  _watchCleanup = watchFile(absolutePath, (event) => {
-    showReloadBanner(absolutePath, event.kind);
-  });
-}
-
-function stopWatching() {
-  if (_watchCleanup) { _watchCleanup(); _watchCleanup = null; }
-  // Remove any existing banner when the file link is cleared.
-  document.querySelector('.companion-reload-banner')?.remove();
-}
-
-async function reloadFromDisk(absolutePath) {
-  try {
-    const res = await fetch(`http://127.0.0.1:7700/file?path=${encodeURIComponent(absolutePath)}`);
-    if (!res.ok) { toast('Reload failed: ' + res.status); return; }
-    const blob = await res.blob();
-    const file = new File([blob], absolutePath.split('/').pop() || 'file', { type: blob.type });
-    // Use the existing intake pipeline so the viewer re-renders correctly.
-    const intake = await intakeFromFile(file);
-    // Preserve the folder context across the reload.
-    const savedFolderPath = state.currentFolderPath;
-    state._skipDiscardGuard = true;
-    await loadIntake(intake);
-    if (savedFolderPath) {
-      // Restore folder context (loadIntake always clears currentFolderPath).
-      state.currentFolderPath = savedFolderPath;
-      state.treeApi?.setActive?.(savedFolderPath);
-      // Re-start watching this file (loadIntake→setCompanionLinked(null) stopped the watch).
-      if (companionFolderRoot) startWatching(absolutePath);
-    } else {
-      setCompanionLinked(absolutePath);
-    }
-    toast('Reloaded from disk');
-  } catch (err) {
-    toast('Reload error: ' + err.message);
-  }
-}
-
-function showReloadBanner(absolutePath, kind) {
-  // Remove any previous banner first (deduplicate rapid change events).
-  document.querySelector('.companion-reload-banner')?.remove();
-
-  const banner = document.createElement('div');
-  banner.className = 'companion-reload-banner';
-  const msg = document.createElement('span');
-  msg.textContent = kind === 'remove' ? 'File deleted on disk' : 'File changed on disk';
-  const reloadBtn = document.createElement('button');
-  reloadBtn.className = 'reload-btn';
-  reloadBtn.textContent = 'Reload';
-  reloadBtn.addEventListener('click', () => { banner.remove(); reloadFromDisk(absolutePath); });
-  const dismissBtn = document.createElement('button');
-  dismissBtn.className = 'dismiss-btn';
-  dismissBtn.textContent = '✕';
-  dismissBtn.title = 'Dismiss';
-  dismissBtn.addEventListener('click', () => banner.remove());
-  banner.append(msg, reloadBtn, dismissBtn);
-  document.body.prepend(banner);
-}
-
-function syncSaveBtn() {
-  const btn = $('saveBtn');
-  if (!btn) return;
-  // Show the save button when companion is active AND a (non-binary) file is open.
-  // For folder-tree files, also require that the folder root has been resolved via find-folder.
-  const isFolderFile = !!(state.currentFolderPath && state.treeEntries && !state.sessionTree);
-  const folderSaveReady = isFolderFile ? !!companionFolderRoot : true;
-  const show = companionAvailable && !!state.intake && !state.intake.isBinary && folderSaveReady;
-  btn.hidden = !show;
-  if (show) layoutTopbar();
-}
-
-async function onSaveClick() {
-  if (!companionAvailable || !state.intake) return;
-  const { filename, size } = state.intake;
-  $('saveBtn').disabled = true;
-  try {
-    let absPath = null;
-
-    // --- Folder-tree file: resolve per-file absolute path ---
-    // When a folder root was resolved via find-folder AND this is a folder-tree file,
-    // compute the absolute path directly from webkitRelativePath. Never save the whole folder.
-    if (state.currentFolderPath && companionFolderRoot) {
-      const fileHandle = state.intake.file;
-      absPath = absolutePathForFile(fileHandle);
-      if (!absPath) {
-        // webkitRelativePath unavailable (e.g. synthetic tree entry) — fall through to findFile.
-      }
-    }
-
-    // --- Single file: use cached path or search by name+size ---
-    if (!absPath) {
-      absPath = companionLinkedPath;
-    }
-    if (!absPath) {
-      let matches;
-      try {
-        matches = await findFile(filename, size);
-      } catch (err) {
-        toast('Companion: could not search — ' + err.message);
-        return;
-      }
-      if (!matches || matches.length === 0) {
-        toast('File not found in watched folders. Check Companion settings.');
-        return;
-      }
-      if (matches.length === 1) {
-        absPath = matches[0];
-      } else {
-        // Multiple matches: let the user pick.
-        absPath = await pickCompanionPath(matches);
-        if (!absPath) return; // user cancelled
-      }
-    }
-
-    if (!confirm(`Save to:\n${absPath}?`)) return;
-    const bytes = state.rawview
-      ? new TextEncoder().encode(state.rawview.getValue())
-      : (state.intake.bytes || new TextEncoder().encode(state.intake.text || ''));
-    try {
-      await saveFile(absPath, bytes);
-      // For single files, cache the resolved path + start watch.
-      // For folder-tree files, the folder root is already watched; just confirm.
-      if (!state.currentFolderPath) setCompanionLinked(absPath);
-      state.downloadedSinceEdit = true;
-      toast('Saved to disk: ' + absPath);
-    } catch (err) {
-      toast('Save failed: ' + err.message);
-    }
-  } finally {
-    $('saveBtn').disabled = false;
-  }
-}
-
-// Show a small inline picker when multiple disk paths match and return the chosen one.
-function pickCompanionPath(paths) {
-  return new Promise((resolve) => {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;';
-    const card = document.createElement('div');
-    card.className = 'companion-picker';
-    const title = document.createElement('div');
-    title.className = 'companion-picker-title';
-    title.textContent = 'Multiple matches — choose a file to save:';
-    card.appendChild(title);
-    for (const p of paths) {
-      const btn = document.createElement('button');
-      btn.className = 'companion-picker-item';
-      btn.textContent = p;
-      btn.addEventListener('click', () => { overlay.remove(); resolve(p); });
-      card.appendChild(btn);
-    }
-    const cancel = document.createElement('button');
-    cancel.className = 'companion-picker-cancel';
-    cancel.textContent = 'Cancel';
-    cancel.addEventListener('click', () => { overlay.remove(); resolve(null); });
-    card.appendChild(cancel);
-    overlay.appendChild(card);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.remove(); resolve(null); } });
-    document.body.appendChild(overlay);
-  });
-}
-
-function appendCompanionDownloadPanel(panel) {
-  const info = document.createElement('div');
-  info.className = 'companion-download';
-
-  const title = document.createElement('div');
-  title.className = 'companion-folders-label';
-  title.textContent = 'Download Companion';
-
-  const description = document.createElement('p');
-  description.textContent = 'The Companion is a local app that lets this viewer save changed files back to disk.';
-
-  const source = document.createElement('a');
-  source.href = 'https://github.com/jdeworks/file-viewer/tree/dev/companion';
-  source.target = '_blank';
-  source.rel = 'noopener noreferrer';
-  source.textContent = 'View companion source code';
-
-  const checksum = document.createElement('p');
-  checksum.textContent = 'Before running a binary, compare its SHA-256 checksum on the release page.';
-
-  const download = document.createElement('a');
-  download.href = 'https://github.com/jdeworks/file-viewer/releases';
-  download.target = '_blank';
-  download.rel = 'noopener noreferrer';
-  download.textContent = 'Download from GitHub Releases';
-
-  info.append(title, description, source, checksum, download);
-  panel.appendChild(info);
-}
-
-// Render the Companion section in the settings drawer body.
-function renderCompanionSettings(container) {
-  // Remove any existing companion section first (re-render on each settings open).
-  const old = container.querySelector('.companion-panel');
-  if (old) old.remove();
-
-  const panel = document.createElement('details');
-  panel.className = 'set-group companion-panel';
-  panel.open = true;
-
-  const summary = document.createElement('summary');
-  summary.innerHTML = `Companion <span class="companion-status-dot ${companionAvailable ? 'connected' : ''}">${companionAvailable ? '● connected' : '○ not found'}</span>`;
-  panel.appendChild(summary);
-
-  // Enable toggle row
-  const enableRow = document.createElement('div');
-  enableRow.className = 'set-row';
-  const enableLabel = document.createElement('label');
-  enableLabel.textContent = 'Enable companion';
-  enableLabel.htmlFor = 'companionEnabledToggle';
-  const enableToggle = document.createElement('input');
-  enableToggle.type = 'checkbox';
-  enableToggle.id = 'companionEnabledToggle';
-  enableToggle.checked = companionEnabled();
-  enableToggle.addEventListener('change', async () => {
-    setCompanionEnabled(enableToggle.checked);
-    if (enableToggle.checked) {
-      const ok = await detectCompanion();
-      companionAvailable = ok;
-      document.body.classList.toggle('companion-active', ok);
-      summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
-      syncSaveBtn();
-      if (ok) showCompanionIndicator();
-      else toast('Companion not found — is it running on :7700?');
-      if (ok) refreshFolders();
-      else foldersList.innerHTML = '<span class="companion-folders-empty">Start the Companion app to manage folders.</span>';
-    } else {
-      companionAvailable = false;
-      stopWatching();
-      document.body.classList.remove('companion-active');
-      summary.innerHTML = `Companion <span class="companion-status-dot">○ not found</span>`;
-      syncSaveBtn();
-    }
-  });
-
-  // Test connection button
-  const testBtn = document.createElement('button');
-  testBtn.className = 'btn small';
-  testBtn.textContent = 'Test connection';
-  testBtn.addEventListener('click', async () => {
-    if (!companionEnabled()) { toast('Enable companion first.'); return; }
-    testBtn.disabled = true;
-    const ok = await detectCompanion();
-    testBtn.disabled = false;
-    companionAvailable = ok;
-    document.body.classList.toggle('companion-active', ok);
-    summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
-    syncSaveBtn();
-    toast(ok ? 'Companion connected ✓' : 'Companion not found — is it running?');
-  });
-
-  const enableControls = document.createElement('div');
-  enableControls.style.display = 'flex'; enableControls.style.gap = '8px'; enableControls.style.alignItems = 'center';
-  enableControls.append(enableToggle, testBtn);
-  enableRow.append(enableLabel, enableControls);
-  panel.appendChild(enableRow);
-
-  // Token row
-  const tokenRow = document.createElement('div');
-  tokenRow.className = 'set-row';
-  const tokenLabel = document.createElement('label');
-  tokenLabel.textContent = 'Token';
-  const tokenWrap = document.createElement('div');
-  tokenWrap.className = 'companion-token-wrap';
-  const tokenEl = document.createElement('input');
-  tokenEl.type = 'password';
-  tokenEl.className = 'companion-token-input companion-token-reveal';
-  tokenEl.placeholder = 'paste token here';
-  tokenEl.value = getToken() || '';
-  tokenEl.setAttribute('autocomplete', 'off');
-  tokenEl.setAttribute('spellcheck', 'false');
-  // Reveal on click (toggle password visibility) — no copy button per spec.
-  tokenEl.addEventListener('click', () => {
-    tokenEl.type = tokenEl.type === 'password' ? 'text' : 'password';
-  });
-  tokenEl.addEventListener('change', () => setToken(tokenEl.value));
-  tokenEl.addEventListener('input', () => setToken(tokenEl.value));
-  tokenWrap.appendChild(tokenEl);
-  tokenRow.append(tokenLabel, tokenWrap);
-  panel.appendChild(tokenRow);
-
-  // Watched folders
-  const foldersLabel = document.createElement('div');
-  foldersLabel.className = 'companion-folders-label';
-  foldersLabel.textContent = 'Watched folders';
-  panel.appendChild(foldersLabel);
-
-  const foldersList = document.createElement('div');
-  foldersList.className = 'companion-folders-list';
-  panel.appendChild(foldersList);
-
-  async function refreshFolders() {
-    foldersList.innerHTML = '<span class="companion-folders-loading">Loading…</span>';
-    try {
-      const paths = await getWatchedPaths();
-      foldersList.innerHTML = '';
-      if (!paths || paths.length === 0) {
-        foldersList.innerHTML = '<span class="companion-folders-empty">No watched folders.</span>';
-      } else {
-        for (const p of paths) {
-          const row = document.createElement('div');
-          row.className = 'companion-folder-row';
-          const pathSpan = document.createElement('span');
-          pathSpan.className = 'companion-folder-path';
-          pathSpan.textContent = p;
-          const removeBtn = document.createElement('button');
-          removeBtn.className = 'companion-folder-remove';
-          removeBtn.textContent = '✕';
-          removeBtn.title = 'Remove folder';
-          removeBtn.addEventListener('click', async () => {
-            try { await removeWatchedPath(p); await refreshFolders(); }
-            catch (err) { toast('Remove failed: ' + err.message); }
-          });
-          row.append(pathSpan, removeBtn);
-          foldersList.appendChild(row);
-        }
-      }
-    } catch {
-      foldersList.innerHTML = '<span class="companion-folders-empty">Could not load (companion offline?).</span>';
-    }
-  }
-
-  // Add folder row
-  const addRow = document.createElement('div');
-  addRow.className = 'companion-add-row';
-  const addInput = document.createElement('input');
-  addInput.type = 'text';
-  addInput.className = 'companion-add-input';
-  addInput.placeholder = '/absolute/path';
-  const addBtn = document.createElement('button');
-  addBtn.className = 'btn small';
-  addBtn.textContent = '+ Add';
-  addBtn.addEventListener('click', async () => {
-    const p = addInput.value.trim();
-    if (!p) return;
-    try { await addWatchedPath(p); addInput.value = ''; await refreshFolders(); }
-    catch (err) { toast('Add failed: ' + err.message); }
-  });
-  addInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); } });
-  addRow.append(addInput, addBtn);
-  panel.appendChild(addRow);
-
-  appendCompanionDownloadPanel(panel);
-
-  container.prepend(panel);  // put Companion section at the top of the settings drawer
-
-  if (companionAvailable) refreshFolders();
-  else foldersList.innerHTML = '<span class="companion-folders-empty">Start the Companion app to manage folders.</span>';
-}
-
 /* ─────────────────────────── Examples ─────────────────────────── */
 
 /* ─────────────────────────── Helpers ─────────────────────────── */
@@ -976,13 +524,14 @@ function renderCompanionSettings(container) {
 /* ─────────────────────────── Wire up ─────────────────────────── */
 
 function init() {
+  initCompanionUi({ loadIntake });
   // Inject the core-flow callbacks the folder module needs (one-way: app imports folder, folder
   // gets these via init — no circular import).
   initFolder({
     loadIntake, confirmDiscard,
     // Called after each folder-tree file opens so we can start watching its absolute disk path.
     onFolderFileOpened: (node) => {
-      if (!companionAvailable || !companionFolderRoot) return;
+      if (!isCompanionAvailable() || !hasCompanionFolderRoot()) return;
       const absPath = absolutePathForFile(node.file);
       if (!absPath) return;
       // Watch this specific file for changes on disk (replaces any prior single-file watch).
@@ -1003,7 +552,7 @@ function init() {
     onIntake: loadIntake,
     onFolder: async (entries) => {
       // Reset folder root before resolving a new one.
-      companionFolderRoot = null;
+      resetCompanionFolderRoot();
       await loadFolder(entries);
       // After the folder tree is built, resolve the companion root in the background.
       // Pass the raw File objects from entries so we can read webkitRelativePath + size/mtime.
@@ -1114,18 +663,7 @@ function init() {
   // by the media renderer, not an install prompt.)
   suppressInstallPrompt();
 
-  // Companion: only ping if the user has explicitly opted in (localStorage flag).
-  // Default = off → ZERO off-origin requests for new users and smoke tests.
-  if (companionEnabled()) {
-    detectCompanion().then((ok) => {
-      companionAvailable = ok;
-      if (ok) {
-        document.body.classList.add('companion-active');
-        showCompanionIndicator();
-        syncSaveBtn();
-      }
-    });
-  }
+  detectCompanionOnStartup();
 
   // Easter-egg games: attaches only a tiny Konami-code keydown listener at startup; the hub and
   // the games themselves are lazy-loaded on first unlock, so this costs ~nothing.
