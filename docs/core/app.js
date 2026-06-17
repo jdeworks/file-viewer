@@ -779,6 +779,36 @@ function pickCompanionPath(paths) {
   });
 }
 
+function appendCompanionDownloadPanel(panel) {
+  const info = document.createElement('div');
+  info.className = 'companion-download';
+
+  const title = document.createElement('div');
+  title.className = 'companion-folders-label';
+  title.textContent = 'Download Companion';
+
+  const description = document.createElement('p');
+  description.textContent = 'The Companion is a local app that lets this viewer save changed files back to disk.';
+
+  const source = document.createElement('a');
+  source.href = 'https://github.com/jdeworks/file-viewer/tree/dev/companion';
+  source.target = '_blank';
+  source.rel = 'noopener noreferrer';
+  source.textContent = 'View companion source code';
+
+  const checksum = document.createElement('p');
+  checksum.textContent = 'Before running a binary, compare its SHA-256 checksum on the release page.';
+
+  const download = document.createElement('a');
+  download.href = 'https://github.com/jdeworks/file-viewer/releases';
+  download.target = '_blank';
+  download.rel = 'noopener noreferrer';
+  download.textContent = 'Download from GitHub Releases';
+
+  info.append(title, description, source, checksum, download);
+  panel.appendChild(info);
+}
+
 // Render the Companion section in the settings drawer body.
 function renderCompanionSettings(container) {
   // Remove any existing companion section first (re-render on each settings open).
@@ -930,6 +960,8 @@ function renderCompanionSettings(container) {
   addInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); } });
   addRow.append(addInput, addBtn);
   panel.appendChild(addRow);
+
+  appendCompanionDownloadPanel(panel);
 
   container.prepend(panel);  // put Companion section at the top of the settings drawer
 
