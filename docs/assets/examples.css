@@ -41,7 +41,7 @@
   border-radius: 16px; padding: 4px 12px; cursor: pointer; margin-top: 4px;
 }
 .ex-showall-btn:hover { background: var(--bg-3); }
-.ex-filter-chip.active, .ex-cat-chip.active { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+.ex-filter-chip.active { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
 .ex-file-btn[hidden], .ex-group[hidden], .ex-folder-card[hidden] { display: none; }
 .ex-badge { margin-left: 6px; opacity: .75; }
 @media (max-height: 680px) { .examples { max-height: 34dvh; } }

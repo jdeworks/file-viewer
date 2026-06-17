@@ -62,7 +62,11 @@ function categoriesFor(ex) {
 }
 
 function readFilters() {
-  try { return JSON.parse(sessionStorage.getItem(FILTER_KEY) || '{}'); } catch { return {}; }
+  try {
+    const filters = JSON.parse(sessionStorage.getItem(FILTER_KEY) || '{}');
+    delete filters.cat;
+    return filters;
+  } catch { return {}; }
 }
 function saveFilters(filters) {
   try { sessionStorage.setItem(FILTER_KEY, JSON.stringify(filters)); } catch { /* ok */ }
@@ -92,7 +96,7 @@ function exampleInfo(ex) {
   };
 }
 
-function renderFilterBar(container, cats, showCategoryChips = true) {
+function renderFilterBar(container) {
   const filters = readFilters();
   const tools = document.createElement('div');
   tools.className = 'ex-tools';
@@ -126,31 +130,12 @@ function renderFilterBar(container, cats, showCategoryChips = true) {
   }
   tools.appendChild(kindRow);
 
-  if (showCategoryChips) {
-    const catRow = document.createElement('div');
-    catRow.className = 'ex-chip-row';
-    for (const cat of cats) {
-      const chip = document.createElement('button');
-      chip.className = 'ex-cat-chip';
-      chip.textContent = (CATEGORY_ICONS[cat] || '📂') + ' ' + cat;
-      chip.dataset.category = cat;
-      chip.onclick = () => {
-        const next = readFilters();
-        next.cat = next.cat === cat ? '' : cat;
-        saveFilters(next);
-        applyFilter(container);
-      };
-      catRow.appendChild(chip);
-    }
-    tools.appendChild(catRow);
-  }
   return tools;
 }
 
 function matchesFilters(el, filters) {
   const q = (filters.q || '').toLowerCase();
   if (q && !(el.dataset.search || '').includes(q)) return false;
-  if (filters.cat && !(el.dataset.categories || '').split('|').includes(filters.cat)) return false;
   const kind = filters.kind || '';
   if (kind === 'edit' && el.dataset.editable !== '1') return false;
   if (kind === 'view' && el.dataset.editable === '1') return false;
@@ -167,9 +152,6 @@ function applyFilter(container) {
   }
   for (const chip of container.querySelectorAll('.ex-filter-chip')) {
     chip.classList.toggle('active', (filters.kind || 'all') === chip.dataset.filter);
-  }
-  for (const chip of container.querySelectorAll('.ex-cat-chip')) {
-    chip.classList.toggle('active', filters.cat === chip.dataset.category);
   }
   for (const group of container.querySelectorAll('.ex-group')) {
     group.hidden = !group.querySelector('.ex-file-btn:not([hidden])');
@@ -253,7 +235,7 @@ function renderGallery(host, list, onPick) {
     const row = document.createElement('div');
     row.className = 'ex-group-items';
     row.appendChild(renderFiles(cat));
-    host.appendChild(renderFilterBar(host, cats, false));
+    host.appendChild(renderFilterBar(host));
     host.appendChild(row);
     applyFilter(host);
   }
@@ -267,7 +249,7 @@ function renderGallery(host, list, onPick) {
     back.onclick = () => showGrid();
     host.appendChild(back);
 
-    host.appendChild(renderFilterBar(host, cats));
+    host.appendChild(renderFilterBar(host));
 
     for (const cat of cats) {
       const section = document.createElement('div');
@@ -316,7 +298,7 @@ function renderGallery(host, list, onPick) {
     showall.textContent = 'Show all files';
     showall.onclick = () => showAll();
     host.appendChild(showall);
-    host.appendChild(renderFilterBar(host, cats));
+    host.appendChild(renderFilterBar(host));
     applyFilter(host);
   }
 

@@ -59,6 +59,9 @@ export async function run(ctx) {
   if (exGroups.includes('Documents') && exGroups.includes('Office') && exGroups.length >= 5)
     pass(`examples grouped by category (${exGroups.length} groups: ${exGroups.join(', ')})`);
   else fail('examples not grouped; labels: ' + JSON.stringify(exGroups));
+  const catChipCount = await page.$$eval('#examples .ex-cat-chip', (els) => els.length);
+  if (catChipCount === 0) pass('examples omit duplicate category filter chips');
+  else fail('examples category chips still rendered: ' + catChipCount);
 
   // Load the Welcome.md example.
   await openExample('Welcome.md');
