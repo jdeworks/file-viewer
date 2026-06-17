@@ -37,8 +37,12 @@ import { recordMetagameViewerOpen, recordStage2SearchResult } from '../games/met
 
 async function loadIntake(intake) {
   // Guard unsaved work — unless loadFolder already asked for this same action.
+  const fromTree = state._skipDiscardGuard;
   if (state._skipDiscardGuard) state._skipDiscardGuard = false;
   else if (!confirmDiscard()) return;
+  // Leaving folder context for a fresh top-level file open: discard stale folder state so
+  // old folderEdits don't trigger a false "unsaved changes" prompt on the next open.
+  if (!fromTree) { state.folderEdits = new Map(); state.folderExported = false; }
   if (intake.truncated) {
     const mb = (intake.size / 1048576).toFixed(0);
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
