@@ -71,6 +71,7 @@ import layeredType from '../types/layered/index.js';
 import icoType from '../types/image/ico/index.js';
 import procreateType from '../types/image/procreate/index.js';
 import torrentType from '../types/binary/torrent/index.js';
+import javaClassType from '../types/binary/class/index.js';
 import gcodeType from '../types/text/gcode/index.js';
 import gitignoreType from '../types/text/gitignore/index.js';
 import ruffleType from '../types/emulator/ruffle/index.js';
@@ -120,6 +121,7 @@ export const REGISTRY = [
   archiveType,
   zipType,
   torrentType,
+  javaClassType,
   urlType,
   asciiartType,
   gcodeType,

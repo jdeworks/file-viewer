@@ -443,6 +443,11 @@
     "category": "Archive & Binary"
   },
   {
+    "label": "sample.class",
+    "file": "sample.class",
+    "category": "Binary"
+  },
+  {
     "label": "sample.ico",
     "file": "sample.ico",
     "mime": "image/x-icon",
