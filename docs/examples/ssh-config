@@ -1,0 +1,32 @@
+# SSH Client Configuration
+# Generated for demo purposes
+
+Host bastion
+    HostName bastion.example.com
+    User ec2-user
+    IdentityFile ~/.ssh/id_ed25519
+    ServerAliveInterval 60
+
+Host prod
+    HostName prod-server.example.com
+    Port 2222
+    User deploy
+    IdentityFile ~/.ssh/id_ed25519
+    ProxyJump bastion
+    ForwardAgent yes
+
+Host staging
+    HostName staging.example.com
+    User deploy
+    IdentityFile ~/.ssh/id_ed25519
+    ProxyJump bastion
+
+Host dev-*
+    User developer
+    IdentityFile ~/.ssh/id_dev
+    ForwardAgent yes
+
+Host *
+    ServerAliveInterval 120
+    ServerAliveCountMax 3
+    AddKeysToAgent yes

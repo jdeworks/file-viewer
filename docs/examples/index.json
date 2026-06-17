@@ -508,5 +508,10 @@
     "label": "sample.lnk",
     "file": "sample.lnk",
     "category": "Other"
+  },
+  {
+    "label": "ssh-config",
+    "file": "ssh-config",
+    "category": "Other"
   }
 ]
