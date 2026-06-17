@@ -6,7 +6,7 @@
 import { REGISTRY, getType, FALLBACK_TYPE } from './registry.js';
 import { pickType } from './detect.js';
 import { wireIntake, intakeFromFile, intakeFromText, LARGE_FILE_BYTES } from './intake.js';
-import { buildTree, renderTree, getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
+import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
 import { findGitDir, isGitInternal, openRepo } from './git.js';
 import { matchKnown } from '../known/registry.js';
 import { renderRepoView } from './repoview.js';
@@ -29,10 +29,11 @@ import { mapPreviewToRaw, mapRawToPreview, syncScrollFromRaw, syncScrollFromPrev
 import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare } from './compare.js';
 import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent } from './rawpane.js';
 import { buildMetadata } from './meta-drawer.js';
-import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, flushFolderEdit } from './folder.js';
+import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey } from './folder.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
 import { recordMetagameViewerOpen, recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
 import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, renderCompanionSettings, detectCompanionOnStartup } from './companion-ui.js';
+import { initSessionTree, updateSessionTree, createNewFile, onTreeFileDrop } from './session-tree.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -68,139 +69,6 @@ async function loadIntake(intake) {
     toast(`Large file: showing the first ${shown} MB of ${total} MB.`, 6000);
   }
   updateSessionTree(intake);
-}
-
-// Track individually-opened files in a session sidebar so users can switch back to any prior file.
-// Only activates when 2+ distinct files have been opened without a real folder loaded.
-function updateSessionTree(intake) {
-  // A real folder or synthetic dual-view tree (createNewFile / onTreeFileDrop) owns the sidebar.
-  if (state.treeEntries && !state.sessionTree) return;
-
-  const alreadyTracked = state.sessionIntakes.has(intake.filename);
-  state.sessionIntakes.set(intake.filename, intake);
-
-  if (state.sessionIntakes.size < 2) return; // need at least 2 files to justify showing the tree
-
-  if (state.sessionTree && alreadyTracked) {
-    // Tree already shown and no new entry — just update the active marker.
-    state.treeApi?.setActive?.(intake.filename);
-    return;
-  }
-
-  // Build/rebuild the session tree. Each entry needs a File object for the tree row display;
-  // actual re-open uses the stored intake, not this File.
-  const entries = [...state.sessionIntakes.entries()].map(([name, si]) => ({
-    file: new File([si.bytes || (si.text != null ? si.text : '')], name),
-    path: name,
-  }));
-  state.treeEntries = entries;
-  state.sessionTree = true;
-
-  if (state.treeApi) state.treeApi.stop();
-  state.treeApi = renderTree($('ftBody'), buildTree(entries), { onOpen: (node) => {
-    const si = state.sessionIntakes.get(node.path);
-    if (!si) return;
-    state._skipDiscardGuard = true;
-    loadIntake(si);
-  } });
-  $('ftRoot').textContent = 'Session';
-  $('ftRoot').title = 'Session files';
-  $('repoBtn').hidden = true;
-  $('ftExportBtn').hidden = true;
-  $('ftSearch').hidden = true;
-  $('treeBtn').hidden = false;
-  setTree(true);
-  state.treeApi.setActive(intake.filename);
-}
-
-// Create a new, empty file and open it in the editor. The name's extension drives type detection,
-// so "notes.md" opens as Markdown, "main.py" as Python code, etc. The surface for the
-// `import easteregg` unlock too (see onRawEdited).
-async function createNewFile() {
-  const name = prompt('New file name (include an extension, e.g. notes.md, script.js, data.json):', 'untitled.txt');
-  if (name == null) return;                         // cancelled
-  const filename = (name.trim() || 'untitled.txt');
-  // If a file is already open, switch to folder mode so both files stay active in the tree.
-  if (state.type && !$('workspace').hidden) {
-    flushFolderEdit();
-    const prevName = state.intake.filename;
-    const prevText = state.rawview ? state.rawview.getValue() : (state.intake.text || '');
-    const prevFile = new File([prevText], prevName, { type: 'text/plain' });
-    const newFile = new File([''], filename, { type: 'text/plain' });
-    const entries = [{ file: prevFile, path: prevName }, { file: newFile, path: filename }];
-    state.sessionTree = false; state.sessionIntakes = new Map();
-    state.treeEntries = entries;
-    state.folderEdits = new Map([[prevName, prevText]]);
-    state.folderExported = false;
-    const tree = buildTree(entries);
-    state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => {
-      const stashed = state.folderEdits.get(node.path);
-      const intake = stashed != null
-        ? intakeFromText(stashed, node.path.split('/').pop())
-        : intakeFromText('', node.path.split('/').pop());
-      state._skipDiscardGuard = true;
-      loadIntake(intake).then(() => { state.currentFolderPath = node.path; });
-    } });
-    $('ftRoot').textContent = 'New files';
-    $('ftRoot').title = 'New files';
-    $('repoBtn').hidden = true;
-    $('ftExportBtn').hidden = true;
-    $('ftSearch').hidden = true;
-    $('treeBtn').hidden = false;
-    setTree(true);
-    state._skipDiscardGuard = true;
-  }
-  await loadIntake(intakeFromText('', filename));
-  if (state.treeEntries) {
-    state.currentFolderPath = filename;
-    state.treeApi?.setActive?.(filename);
-  }
-}
-
-// Handle a file dragged from the folder tree and dropped onto the main workspace.
-// If a file is already open, enter dual-view so both files stay accessible side by side.
-async function onTreeFileDrop(node) {
-  if (!node) return;
-  if (state.type && !$('workspace').hidden && !state.treeEntries) {
-    // A single file is open and no folder tree exists yet: build a synthetic two-file tree
-    // so both files remain accessible side by side (mirrors the createNewFile dual-view path).
-    flushFolderEdit();
-    const prevName = state.intake.filename;
-    const prevText = state.rawview ? state.rawview.getValue() : (state.intake.text || '');
-    const prevFileObj = new File([prevText], prevName, { type: 'text/plain' });
-    const entries = [{ file: prevFileObj, path: prevName }, { file: node.file, path: node.path }];
-    state.sessionTree = false; state.sessionIntakes = new Map();
-    state.treeEntries = entries;
-    state.folderEdits = new Map([[prevName, prevText]]);
-    state.folderExported = false;
-    const tree = buildTree(entries);
-    state.treeApi = renderTree($('ftBody'), tree, { onOpen: (n) => {
-      const stashed = state.folderEdits.get(n.path);
-      const getIntake = stashed != null
-        ? Promise.resolve(intakeFromText(stashed, n.path.split('/').pop()))
-        : intakeFromFile(n.file);
-      getIntake.then((i) => { state._skipDiscardGuard = true; loadIntake(i).then(() => { state.currentFolderPath = n.path; }); });
-    } });
-    $('ftRoot').textContent = 'Files';
-    $('ftRoot').title = 'Files';
-    $('repoBtn').hidden = true;
-    $('ftExportBtn').hidden = true;
-    $('ftSearch').hidden = true;
-    $('treeBtn').hidden = false;
-    setTree(true);
-    state._skipDiscardGuard = true;
-  }
-  // Open the dragged file (whether or not we just set up a tree above).
-  const stashed = state.folderEdits?.get(node.path);
-  const intake = stashed != null
-    ? intakeFromText(stashed, node.path.split('/').pop())
-    : await intakeFromFile(node.file);
-  state._skipDiscardGuard = true;
-  await loadIntake(intake);
-  if (state.treeEntries) {
-    state.currentFolderPath = node.path;
-    state.treeApi?.setActive?.(node.path);
-  }
 }
 
 // Return to the intake screen to pick another file/folder (keeps any loaded tree).
@@ -525,6 +393,7 @@ function showMetaBtnEgg(msg, onDismiss) {
 
 function init() {
   initCompanionUi({ loadIntake });
+  initSessionTree({ loadIntake });
   // Inject the core-flow callbacks the folder module needs (one-way: app imports folder, folder
   // gets these via init — no circular import).
   initFolder({
