@@ -37,6 +37,7 @@ import xlsxType from '../types/office/xlsx/index.js';
 import docxType from '../types/office/docx/index.js';
 import pptxType from '../types/office/pptx/index.js';
 import jsonType from '../types/text/json/index.js';
+import harType from '../types/text/har/index.js';
 import ipynbType from '../types/ipynb/index.js';
 import imageType from '../types/image/index.js';
 import mediaType from '../types/media/index.js';
@@ -135,6 +136,7 @@ export const REGISTRY = [
   mobiType,
   lrfType,
   mcpConfigType,
+  harType,
   jsonType,
   layeredType,
   heifType,

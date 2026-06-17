@@ -15,6 +15,47 @@ export async function run(ctx) {
   if (/Root type\s*object/.test(jsonMeta) && /Objects\s*\d+/.test(jsonMeta) && /Arrays\s*\d+/.test(jsonMeta)) pass('JSON metadata includes structure counts'); else fail('json meta: ' + jsonMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
 
+  // ── HAR ── JSON-shaped HTTP archive gets a waterfall, filters, sortable request table.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.har');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const harType = await page.$eval('#typeSelect', (s) => s.value);
+  if (harType === 'har') pass('.har detected as HTTP Archive'); else fail('har type: ' + harType);
+  const harf = await frameOf('iframe.fv-preview-frame');
+  await harf.waitForSelector('.har-doc .har-table tbody tr', { timeout: 8000 });
+  await page.waitForTimeout(250);
+  const harSummary = await harf.$eval('.har-summary', (e) => e.textContent);
+  const harRows = await harf.$$eval('.har-table tbody tr', (rows) => rows.length);
+  if (/6\s*Requests/.test(harSummary) && /Transferred/.test(harSummary) && /Total duration/.test(harSummary) && harRows === 6)
+    pass('HAR summary and request table rendered');
+  else fail('har summary=' + harSummary.replace(/\s+/g, ' ') + ' rows=' + harRows);
+  const harChartPainted = await harf.$eval('canvas.har-waterfall', (c) => {
+    const data = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let painted = 0;
+    for (let i = 0; i < data.length; i += 4) if (data[i + 3] && (data[i] < 245 || data[i + 1] < 245 || data[i + 2] < 245)) painted++;
+    return painted;
+  });
+  if (harChartPainted > 100) pass('HAR waterfall chart painted (' + harChartPainted + ' pixels)'); else fail('har chart painted=' + harChartPainted);
+  await harf.click('.har-filter[data-filter="xhr"]');
+  const harVisibleXhr = await harf.$$eval('.har-table tbody tr:not([hidden])', (rows) => rows.map((r) => r.textContent));
+  if (harVisibleXhr.length === 1 && /POST/.test(harVisibleXhr[0]) && /api\/search/.test(harVisibleXhr[0])) pass('HAR XHR filter narrows table'); else fail('har xhr rows=' + harVisibleXhr.join(' | '));
+  await harf.click('.har-filter[data-filter="all"]');
+  await harf.click('.har-table th[data-sort="status"]');
+  const harStatuses = await harf.$$eval('.har-table tbody tr:not([hidden]) .har-status', (els) => els.map((e) => e.textContent));
+  if (harStatuses[0] === '200' && harStatuses.at(-1) === '404') pass('HAR table sorts by status'); else fail('har statuses=' + harStatuses.join(','));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const harMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Entries\s*6/.test(harMeta) && /Creator\s*file-viewer fixture 1\.0/.test(harMeta) && /Pages\s*1/.test(harMeta))
+    pass('HAR metadata includes entries, creator, and pages');
+  else fail('har meta: ' + harMeta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.json');
+  const jDiffFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const jDiffF = await frameOf('iframe.fv-preview-frame');
+  await jDiffF.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+
   // Semantic JSON key-tree diff: edit working copy (add/remove/change a key + REORDER one)
   // then open Diff — reordering must NOT show as a change.
   await page.evaluate(() => {

@@ -78,6 +78,12 @@
     "category": "Data"
   },
   {
+    "label": "Sample.har",
+    "file": "sample.har",
+    "mime": "application/har+json",
+    "category": "Data"
+  },
+  {
     "label": "Sample.eml",
     "file": "sample.eml",
     "mime": "message/rfc822",
