@@ -8,6 +8,7 @@ const SECRET_TXT_FILE = 'secret.txt';
 const STAGE5_FILE = 'transmission_hum.mp3';
 const STAGE5_REQUIRED_MS = 14000;
 const STAGE6_FILE = 'protocols_of_the_entity.epub';
+const STAGE3_ASCII_FILE = 'entity_f_verification.png';
 const STAGE7_FILE = 'entity_f_verification.png';
 
 const FALSY_CHEAT_VALUES = new Set(['false', '0', 'no', 'off', '']);
@@ -41,6 +42,15 @@ export function recordSecretTxtOpen({ file, setAction = sharedSetAction } = {}) 
   setAction?.(0, 'archivist_breadcrumb_found', {
     source: 'viewer-open',
     file: SECRET_TXT_FILE,
+  });
+  return true;
+}
+
+export function recordStage3AsciiActivation({ file, setAction = sharedSetAction } = {}) {
+  if (basename(file) !== STAGE3_ASCII_FILE) return false;
+  setAction?.(3, 'ascii_awakening', {
+    source: 'ascii-mode',
+    file: STAGE3_ASCII_FILE,
   });
   return true;
 }

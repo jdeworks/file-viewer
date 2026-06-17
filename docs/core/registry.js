@@ -28,6 +28,7 @@
 
 import rawType from '../types/text/raw/index.js';
 import urlType from '../types/text/url/index.js';
+import asciiartType from '../types/text/asciiart/index.js';
 import markdownType from '../types/markdown/index.js';
 import pdfType from '../types/pdf/index.js';
 import csvType from '../types/text/csv/index.js';
@@ -107,6 +108,7 @@ export const REGISTRY = [
   archiveType,
   zipType,
   urlType,
+  asciiartType,
   codeType,
   rawType,
 ];

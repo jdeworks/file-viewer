@@ -153,6 +153,12 @@
 .imgv-zoom { margin-left: auto; font-size: 12px; color: var(--fg-2); font-variant-numeric: tabular-nums; }
 .imgv-stage { flex: 1; min-height: 0; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 12px; }
 .imgv-img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+.imgv-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+.imgv-bar select { font-size: 12px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
+.imgv-ascii-out { flex: 1; min-height: 0; overflow: auto; background: #0d0d0d; padding: 12px; }
+.imgv-ascii-pre { margin: 0; font: 13px/1.2 "Courier New", Courier, monospace; color: #ccc; white-space: pre; }
+.imgv-ss-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.85); display: flex; align-items: center; justify-content: center; z-index: 10; cursor: pointer; }
+.imgv-ss-inner pre { margin: 0; font: 14px/1.3 "Courier New", Courier, monospace; color: #0f0; white-space: pre; }
 /* Font specimen (parent pane — FontFace registers on this document). */
 .preview-host .font-doc { position: absolute; inset: 0; overflow: auto; padding: 24px clamp(16px, 5vw, 48px); background: var(--bg); }
 .font-name { font: 12px ui-monospace, monospace; color: var(--fg-2); margin-bottom: 18px; word-break: break-all; }
