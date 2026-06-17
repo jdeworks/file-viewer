@@ -66,6 +66,7 @@ import zipType from '../types/zip/index.js';
 import archiveType from '../types/archive/index.js';
 import epubType from '../types/ebook/epub/index.js';
 import comicType from '../types/ebook/comic/index.js';
+import djvuType from '../types/ebook/djvu/index.js';
 import fb2Type from '../types/ebook/fb2/index.js';
 import mobiType from '../types/ebook/mobi/index.js';
 import odfType from '../types/office/odf/index.js';
@@ -137,6 +138,7 @@ export const REGISTRY = [
   sqliteType,
   epubType,
   comicType,
+  djvuType,
   archiveType,
   iworkType,
   zipType,

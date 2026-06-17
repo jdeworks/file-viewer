@@ -30,6 +30,12 @@
     "category": "Documents"
   },
   {
+    "label": "Sample.djvu",
+    "file": "sample.djvu",
+    "mime": "image/vnd.djvu",
+    "category": "Documents"
+  },
+  {
     "label": "Sample.fb2",
     "file": "sample.fb2",
     "mime": "application/x-fictionbook+xml",
