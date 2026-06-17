@@ -104,7 +104,49 @@ export async function run(ctx) {
   const urlf = await frameOf('iframe.fv-preview-frame');
   await urlf.waitForSelector('.ui-table', { timeout: 8000 });
   const urlScheme = await urlf.$eval('.ui-table', (e) => e.textContent);
-  if (/https/.test(urlScheme) && /api\.example\.com/.test(urlScheme)) pass('URL inspector renders scheme + host'); else fail('url render: ' + urlScheme.slice(0, 120));
+  const rawIsCode = await urlf.$eval('.ui-raw-box', (e) => e.tagName);
+  if (/https/.test(urlScheme) && /api\.example\.com/.test(urlScheme) && rawIsCode === 'CODE') pass('URL inspector renders raw code block, scheme + host'); else fail('url render: ' + urlScheme.slice(0, 120) + ' raw=' + rawIsCode);
+
+  const openTextFile = async (name, text) => {
+    await page.evaluate(async ({ name, text }) => {
+      window.__fv.state._skipDiscardGuard = true;
+      await window.__fv.loadFolder([{ file: new File([text], name, { type: 'text/plain' }), path: name }]);
+    }, { name, text });
+    await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+    const typeId = await page.$eval('#typeSelect', (s) => s.value);
+    if (typeId !== 'url') fail(name + ' type: ' + typeId);
+    return frameOf('iframe.fv-preview-frame');
+  };
+
+  const mailFrame = await openTextFile('mailto.url', 'mailto:ada@example.com?subject=Hello%20Ada&cc=grace@example.com&body=Line%201%0ALine%202');
+  await mailFrame.waitForSelector('.ui-table', { timeout: 8000 });
+  const mailText = await mailFrame.$eval('.ui-table', (e) => e.textContent);
+  if (/mailto: address/.test(mailText) && /ada@example\.com/.test(mailText) && /Hello Ada/.test(mailText) && /Line 1/.test(mailText))
+    pass('URL inspector renders mailto fields');
+  else fail('mailto render: ' + mailText.replace(/\s+/g, ' ').slice(0, 160));
+
+  const dataFrame = await openTextFile('data.url', 'data:text/plain,Hello%20offline%20URL');
+  const dataText = await dataFrame.$eval('.ui-table', (e) => e.textContent);
+  if (/data: URI/.test(dataText) && /text\/plain/.test(dataText) && /Hello offline URL/.test(dataText))
+    pass('URL inspector decodes data:text URIs');
+  else fail('data uri render: ' + dataText.replace(/\s+/g, ' ').slice(0, 160));
+
+  const jwt = 'eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ.sig';
+  const oauthFrame = await openTextFile('oauth.url', 'https://example.com/callback?code=abc123&state=%7B%22csrf%22%3Atrue%7D&id_token=' + jwt + '#done');
+  await oauthFrame.waitForSelector('.ui-badge-jwt', { timeout: 8000 });
+  const oauthText = await oauthFrame.$eval('body', (e) => e.textContent);
+  if (/OAuth/.test(oauthText) && /JWT/.test(oauthText) && /URL-decoded/.test(oauthText) && /Pretty-print JSON/.test(oauthText) && /Payload/.test(oauthText) && /done/.test(oauthText))
+    pass('URL inspector highlights OAuth, JWT, decoded JSON, and fragment');
+  else fail('oauth url render: ' + oauthText.replace(/\s+/g, ' ').slice(0, 220));
+
+  const multiFrame = await openTextFile('links.url', [
+    'https://one.example/a?x=1',
+    'https://two.example/b?y=2',
+    'https://three.example/c?z=3',
+  ].join('\n'));
+  const multiCount = await multiFrame.$$eval('.ui-url-item', (els) => els.length);
+  const multiRows = await multiFrame.$$eval('.ui-table tbody tr', (els) => els.length);
+  if (multiCount === 3 && multiRows >= 4) pass('URL inspector lists multiple URLs in table + expandable details'); else fail('multi-url count=' + multiCount + ' rows=' + multiRows);
 
   // ── ASCII / ANSI art ── ANSI SGR colors + SAUCE metadata, no external deps. ──
   await page.goto(origin, { waitUntil: 'networkidle' });

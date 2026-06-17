@@ -34,10 +34,11 @@ function renderJwt(val) {
   return rows;
 }
 
-function renderParams(params) {
+function renderParams(params, rawSearch = '') {
   if (!params || [...params.entries()].length === 0) return '';
   const entries = [...params.entries()];
   let rows = `<tr><th colspan="2" class="ui-section-head">Query Parameters (${entries.length})</th></tr>`;
+  const decodedNote = /(?:%[0-9a-f]{2}|\+)/i.test(rawSearch) ? ` <span class="ui-badge ui-badge-decoded">URL-decoded</span>` : '';
   for (const [k, v] of entries) {
     const isOAuth = OAUTH_PARAMS.has(k);
     const isJwt = JWT_RE.test(v);
@@ -50,7 +51,7 @@ function renderParams(params) {
     // URL-encoded JSON: offer to pretty-print inline
     let decoded = v;
     try { decoded = decodeURIComponent(v); } catch { /* keep v */ }
-    if ((decoded.startsWith('{') || decoded.startsWith('[')) && decoded !== v) {
+    if (decoded.startsWith('{') || decoded.startsWith('[')) {
       try {
         const pretty = JSON.stringify(JSON.parse(decoded), null, 2);
         valueHtml += `<details class="ui-pretty"><summary>Pretty-print JSON</summary><pre>${esc(pretty)}</pre></details>`;
@@ -58,7 +59,7 @@ function renderParams(params) {
     }
 
     const rowClass = isOAuth ? ' class="ui-oauth-row"' : '';
-    rows += `<tr${rowClass}><td class="ui-key">${esc(k)}${badge}</td><td class="ui-val">${valueHtml}</td></tr>`;
+    rows += `<tr${rowClass}><td class="ui-key">${esc(k)}${badge}</td><td class="ui-val">${valueHtml}${decodedNote}</td></tr>`;
     if (isJwt) {
       const jwtRows = renderJwt(v);
       if (jwtRows) rows += jwtRows;
@@ -143,7 +144,7 @@ function renderSingleUrl(raw) {
     rows += `<tr><td class="ui-label ui-indent">path[${i}]</td><td>${esc(pathParts[i])}</td></tr>`;
   }
 
-  rows += renderParams(parsed.searchParams);
+  rows += renderParams(parsed.searchParams, parsed.search);
 
   if (fragment) {
     rows += `<tr><th colspan="2" class="ui-section-head">Fragment</th></tr>
@@ -156,6 +157,13 @@ function renderSingleUrl(raw) {
 function renderMultiUrl(lines) {
   const urls = lines.filter((l) => /^https?:\/\//i.test(l.trim())).map((l) => l.trim());
   let html = `<div class="ui-multi-head">Multiple URLs (${urls.length})</div>`;
+  html += `<table class="ui-table"><tbody><tr><th>#</th><th>URL</th><th>Host</th></tr>`;
+  for (let i = 0; i < urls.length; i++) {
+    let host = '';
+    try { host = new URL(urls[i]).hostname; } catch {}
+    html += `<tr><td class="ui-label">${i + 1}</td><td class="ui-val">${esc(urls[i])}</td><td>${esc(host)}</td></tr>`;
+  }
+  html += `</tbody></table>`;
   for (let i = 0; i < urls.length; i++) {
     html += `<details class="ui-url-item">
       <summary><span class="ui-url-num">#${i + 1}</span> <span class="ui-url-raw">${esc(urls[i])}</span></summary>
@@ -180,7 +188,7 @@ const CSS = `
 <style>
 body { font: 13px/1.5 system-ui, sans-serif; color: #1a1d21; background: #fff; margin: 0; padding: 12px; }
 @media (prefers-color-scheme: dark) { body { color: #e6e6e6; background: #1e1e1e; } .ui-table td,.ui-table th { border-color: #3a3a3d; } }
-.ui-raw-box { font-family: monospace; font-size: 12px; background: #f4f5f7; border: 1px solid #d8dce2; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; word-break: break-all; }
+.ui-raw-box { display: block; font-family: monospace; font-size: 12px; background: #f4f5f7; border: 1px solid #d8dce2; border-radius: 6px; padding: 8px 12px; margin: 0 0 12px; white-space: pre-wrap; word-break: break-all; }
 @media (prefers-color-scheme: dark) { .ui-raw-box { background: #252526; border-color: #3a3a3d; } }
 .ui-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
 .ui-table td, .ui-table th { border: 1px solid #d8dce2; padding: 5px 10px; vertical-align: top; }
@@ -195,7 +203,8 @@ body { font: 13px/1.5 system-ui, sans-serif; color: #1a1d21; background: #fff; m
 .ui-badge { font-size: 10px; padding: 1px 5px; border-radius: 4px; vertical-align: middle; font-weight: 600; margin-left: 4px; }
 .ui-badge-oauth { background: #e3f0ff; color: #2f6feb; }
 .ui-badge-jwt { background: #fff3cd; color: #664d00; }
-@media (prefers-color-scheme: dark) { .ui-badge-oauth { background: #0b1220; } .ui-badge-jwt { background: #2d2400; color: #c8a000; } }
+.ui-badge-decoded { background: #e7f8ec; color: #1a7f37; }
+@media (prefers-color-scheme: dark) { .ui-badge-oauth { background: #0b1220; } .ui-badge-jwt { background: #2d2400; color: #c8a000; } .ui-badge-decoded { background: #09230f; color: #56d364; } }
 .ui-copy-btn { font-size: 10px; margin-left: 4px; cursor: pointer; border: none; background: transparent; color: #5b6470; padding: 0 2px; }
 .ui-copy-btn:hover { color: #2f6feb; }
 .ui-copy-all-btn { font-size: 12px; padding: 4px 10px; border: 1px solid #d8dce2; border-radius: 6px; background: #f4f5f7; cursor: pointer; color: #1a1d21; margin-top: 4px; }
@@ -245,7 +254,7 @@ export async function render(intake, _ctx) {
   }
 
   const body = `${CSS}
-    <div class="ui-raw-box">${esc(rawDisplay)}${copyBtn(text)}</div>
+    <code class="ui-raw-box">${esc(rawDisplay)}${copyBtn(text)}</code>
     ${mainHtml}`;
 
   return { bodyHtml: body, hadUnsafe: false };
