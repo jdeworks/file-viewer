@@ -114,6 +114,11 @@
     "category": "Office"
   },
   {
+    "label": "sample.pages",
+    "file": "sample.pages",
+    "category": "Office"
+  },
+  {
     "label": "Sample.yaml",
     "file": "sample.yaml",
     "mime": "application/yaml",

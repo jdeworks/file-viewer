@@ -59,6 +59,7 @@ import plyType from '../types/3d/ply/index.js';
 import subtitleType from '../types/text/subtitle/index.js';
 import vcardType from '../types/vcard/index.js';
 import sqliteType from '../types/sqlite/index.js';
+import iworkType from '../types/office/iwork/index.js';
 import zipType from '../types/zip/index.js';
 import archiveType from '../types/archive/index.js';
 import epubType from '../types/ebook/epub/index.js';
@@ -119,6 +120,7 @@ export const REGISTRY = [
   epubType,
   comicType,
   archiveType,
+  iworkType,
   zipType,
   torrentType,
   javaClassType,
