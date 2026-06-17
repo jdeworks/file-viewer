@@ -68,6 +68,7 @@ import mobiType from '../types/ebook/mobi/index.js';
 import odfType from '../types/office/odf/index.js';
 import lrfType from '../types/ebook/lrf/index.js';
 import layeredType from '../types/layered/index.js';
+import torrentType from '../types/binary/torrent/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -109,6 +110,7 @@ export const REGISTRY = [
   comicType,
   archiveType,
   zipType,
+  torrentType,
   urlType,
   asciiartType,
   codeType,

@@ -430,5 +430,11 @@
     "file": "sample_old.png",
     "mime": "image/png",
     "category": "Secrets"
+  },
+  {
+    "label": "sample.torrent",
+    "file": "sample.torrent",
+    "mime": "application/x-bittorrent",
+    "category": "Archive & Binary"
   }
 ]
