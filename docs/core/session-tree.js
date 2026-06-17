@@ -28,6 +28,7 @@ export function updateSessionTree(intake) {
   }));
   state.treeEntries = entries;
   state.sessionTree = true;
+  state.folderMoves = new Map();
 
   if (state.treeApi) state.treeApi.stop();
   state.treeApi = renderTree($('ftBody'), buildTree(entries), { onOpen: (node) => {
@@ -60,6 +61,7 @@ export async function createNewFile() {
     state.sessionTree = false; state.sessionIntakes = new Map();
     state.treeEntries = entries;
     state.folderEdits = new Map([[prevName, prevText]]);
+    state.folderMoves = new Map();
     state.folderExported = false;
     const tree = buildTree(entries);
     state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => {
@@ -97,6 +99,7 @@ export async function onTreeFileDrop(node) {
     state.sessionTree = false; state.sessionIntakes = new Map();
     state.treeEntries = entries;
     state.folderEdits = new Map([[prevName, prevText]]);
+    state.folderMoves = new Map();
     state.folderExported = false;
     const tree = buildTree(entries);
     state.treeApi = renderTree($('ftBody'), tree, { onOpen: (n) => {

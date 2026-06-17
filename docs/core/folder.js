@@ -27,11 +27,17 @@ let _moveNoticed = false;
 
 // Record a file move (src → dest path). Transfers any in-memory edit to the new path.
 export function recordMove(src, dest) {
-  if (state.folderEdits.has(src)) {
-    state.folderEdits.set(dest, state.folderEdits.get(src));
-    state.folderEdits.delete(src);
+  const entry = state.treeEntries?.find((e) => e.path === src);
+  const origin = entry?.originalPath || src;
+  const currentDest = state.folderMoves.get(origin);
+  const editKey = state.folderEdits.has(src) ? src : (currentDest && state.folderEdits.has(currentDest) ? currentDest : null);
+  if (editKey) {
+    state.folderEdits.set(dest, state.folderEdits.get(editKey));
+    state.folderEdits.delete(editKey);
   }
-  state.folderMoves.set(src, dest);
+  if (dest === origin) state.folderMoves.delete(origin);
+  else state.folderMoves.set(origin, dest);
+  if (state.currentFolderPath === src) state.currentFolderPath = dest;
 }
 
 // Module-level re-entrant onMove handler so it can reference itself after a tree rebuild.
@@ -45,6 +51,7 @@ export async function loadFolder(entries) {
   state.repoEntries = git ? entries : null;
   state.repoHandle = null;
   let display = git ? entries.filter((e) => !isGitInternal(e.path)) : entries;
+  display = display.map((e) => ({ ...e, originalPath: e.originalPath || e.path }));
   $('ftNotice').hidden = true;
   state.treeEntries = display;                 // kept for arrow-key navigation lookups
   const rootName = git ? git.repoName : (display[0]?.path.split('/')[0] || 'Folder');
@@ -60,7 +67,8 @@ export async function loadFolder(entries) {
   _onMove = (src, destFolder) => {
     const fname = src.split('/').pop();
     const dest = destFolder ? destFolder + '/' + fname : fname;
-    if (state.treeEntries.some((e) => e.path === dest)) { toast('A file already exists at ' + dest); return; }
+    if (dest === src) return;
+    if (state.treeEntries.some((e) => e.path === dest && e.path !== src)) { toast('A file already exists at ' + dest); return; }
     recordMove(src, dest);
     const entry = state.treeEntries.find((e) => e.path === src);
     if (entry) entry.path = dest;
@@ -69,12 +77,12 @@ export async function loadFolder(entries) {
       onOpen: (node) => openTreeFile(node),
       onMove: _onMove,
     });
-    for (const movedDest of state.folderMoves.values()) state.treeApi.setMoved(movedDest);
+    for (const movedDest of state.folderMoves.values()) state.treeApi.setMoved(movedDest, movedDest);
     state.treeApi.setActive(dest);
     toast('Moved to ' + dest);
     if (!_moveNoticed) {
       _moveNoticed = true;
-      setTimeout(() => toast('Moves are in-memory only. Download the folder to save changes.'), 2700);
+      setTimeout(() => toast('Moves are in-memory only. Download the folder to save changes or run _moves.sh.'), 2700);
     }
   };
 
@@ -180,7 +188,7 @@ export async function exportFolder(changedOnly) {
   flushFolderEdit();
   const entries = state.treeEntries;
   if (!entries || !entries.length) return;
-  if (changedOnly && state.folderEdits.size === 0) { toast('No edited files to export yet.'); return; }
+  if (changedOnly && state.folderEdits.size === 0 && state.folderMoves.size === 0) { toast('No edited files or moves to export yet.'); return; }
   try {
     toast('Building .zip…', 1500);
     const { blob, count } = await exportFolderZip(entries, state.folderEdits, { changedOnly, moves: state.folderMoves });

@@ -45,7 +45,7 @@ async function loadIntake(intake) {
   else if (!confirmDiscard()) return;
   // Leaving folder context for a fresh top-level file open: discard stale folder state so
   // old folderEdits don't trigger a false "unsaved changes" prompt on the next open.
-  if (!fromTree) { state.folderEdits = new Map(); state.folderExported = false; }
+  if (!fromTree) { state.folderEdits = new Map(); state.folderMoves = new Map(); state.folderExported = false; }
   if (intake.truncated) {
     const mb = (intake.size / 1048576).toFixed(0);
     const shown = (intake.loadedBytes / 1048576).toFixed(0);

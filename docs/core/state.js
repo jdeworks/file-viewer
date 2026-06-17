@@ -21,6 +21,7 @@ export const state = {
   known: null,           // matched known-file enhancement (Layer 3), or null
   forceBase: false,      // user toggled "show the plain view" -> bypass the enhancement
   folderEdits: new Map(),    // path -> edited text for files opened from a loaded folder
+  folderMoves: new Map(),    // original path -> current path for virtual folder reordering
   currentFolderPath: null,   // path of the currently-open folder file (null for single files)
   sessionIntakes: new Map(), // filename -> intake for individually-opened files (session history)
   sessionTree: false,        // true when the sidebar is showing the session history tree

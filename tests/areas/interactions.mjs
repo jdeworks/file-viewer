@@ -149,6 +149,7 @@ export async function run(ctx) {
     // Go offline, hard-reload: the app must still load and render from cache.
     await octx.setOffline(true);
     await op.reload({ waitUntil: 'domcontentloaded' });
+    await op.waitForFunction(() => !!window.__fv?.openExampleByLabel, { timeout: 30000 });
     await openExample('Welcome.md', op);
     await op.waitForSelector('.monaco-editor', { timeout: 30000 });
     const offl = await op.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });

@@ -114,4 +114,48 @@ export async function run(ctx) {
   const treeVisible = await page.$eval('#fileTree', (el) => !el.hidden);
   if (treeVisible) pass('tree-drag: sidebar stays visible after drag (dual-view preserved)');
   else fail('tree-drag: sidebar hidden after drag');
+
+  await page.evaluate(async () => {
+    window.__fv.state._skipDiscardGuard = true;
+    await window.__fv.loadFolder([
+      { file: new File(['alpha'], 'a.txt', { type: 'text/plain' }), path: 'proj/src/a.txt' },
+      { file: new File(['beta'], 'b.txt', { type: 'text/plain' }), path: 'proj/dest/b.txt' },
+    ]);
+  });
+  await page.waitForSelector('#fileTree .ft-file[data-path="proj/src/a.txt"]', { timeout: 8000 });
+  await page.evaluate(() => {
+    const src = document.querySelector('#fileTree .ft-file[data-path="proj/src/a.txt"]');
+    const folders = [...document.querySelectorAll('#fileTree .ft-folder')];
+    const dest = folders.find((row) => row.textContent.includes('dest'));
+    const dt = new DataTransfer();
+    src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    dest.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    dest.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  });
+  await page.waitForSelector('#fileTree .ft-file[data-path="proj/dest/a.txt"].ft-moved', { timeout: 8000 });
+  const movedState = await page.evaluate(() => ({
+    move: window.__fv.state.folderMoves.get('proj/src/a.txt'),
+    indicator: document.querySelector('#fileTree .ft-file[data-path="proj/dest/a.txt"] .ft-move-dest')?.textContent || '',
+  }));
+  if (movedState.move === 'proj/dest/a.txt' && /proj\/dest\/a\.txt/.test(movedState.indicator))
+    pass('tree-drag: folder drop records virtual move + destination indicator');
+  else fail('tree-drag: move=' + movedState.move + ' indicator=' + movedState.indicator);
+
+  const movedZip = await page.evaluate(async () => {
+    const { exportFolderZip } = await import('./core/folder-export.js');
+    const { blob, count } = await exportFolderZip(window.__fv.state.treeEntries, window.__fv.state.folderEdits, {
+      changedOnly: true,
+      moves: window.__fv.state.folderMoves,
+    });
+    const zip = await window.JSZip.loadAsync(await blob.arrayBuffer());
+    return {
+      count,
+      hasMoved: !!zip.file('proj/dest/a.txt'),
+      hasOriginal: !!zip.file('proj/src/a.txt'),
+      movesScript: await zip.file('_moves.sh').async('string'),
+    };
+  });
+  if (movedZip.count === 1 && movedZip.hasMoved && !movedZip.hasOriginal && /mv 'proj\/src\/a\.txt' 'proj\/dest\/a\.txt'/.test(movedZip.movesScript))
+    pass('tree-drag: moved files export at resolved path with _moves.sh');
+  else fail('tree-drag: moved zip=' + JSON.stringify(movedZip));
 }

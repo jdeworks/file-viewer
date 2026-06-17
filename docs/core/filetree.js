@@ -50,7 +50,7 @@ export function buildTree(entries) {
       const last = i === parts.length - 1;
       const name = parts[i];
       if (last) {
-        node.children.set(name, { name, dir: false, file: e.file, path: e.path });
+        node.children.set(name, { name, dir: false, file: e.file, path: e.path, originalPath: e.originalPath || e.path });
       } else {
         if (!node.children.has(name)) node.children.set(name, { name, dir: true, children: new Map() });
         node = node.children.get(name);
@@ -97,7 +97,7 @@ export function renderTree(host, root, { onOpen, onMove }) {
   let activeNode = null;
   let filterFn = null;
   const editedPaths = new Set();
-  const movedPaths = new Set();
+  const movedPaths = new Map();
 
   // Rebuild the flat items array from current expand/filter state.
   function buildFlat() {
@@ -193,6 +193,7 @@ export function renderTree(host, root, { onOpen, onMove }) {
       const id = quickType(item.node.name);
       row.innerHTML = '<span class="ft-dot" style="background:' + dotColor(id) + '"></span>'
         + '<span class="ft-name">' + escapeHtml(item.node.name) + '</span>'
+        + (movedPaths.has(item.node.path) ? '<span class="ft-move-dest">→ ' + escapeHtml(movedPaths.get(item.node.path)) + '</span>' : '')
         + '<span class="ft-size">' + fmtSize(item.node.file.size) + '</span>';
       if (item.node === activeNode) row.classList.add('active');
       if (editedPaths.has(item.node.path)) row.classList.add('ft-edited');
@@ -202,7 +203,7 @@ export function renderTree(host, root, { onOpen, onMove }) {
       row.addEventListener('dragstart', (e) => {
         _dragNode = item.node;
         e.dataTransfer.setData(TREE_DRAG_TYPE, item.node.path);
-        e.dataTransfer.effectAllowed = 'copy';
+        e.dataTransfer.effectAllowed = 'move';
       });
       row.addEventListener('dragend', () => { _dragNode = null; });
     }
@@ -260,9 +261,19 @@ export function renderTree(host, root, { onOpen, onMove }) {
   }
 
   function setMoved(path, on = true) {
-    if (on) movedPaths.add(path); else movedPaths.delete(path);
+    if (on) movedPaths.set(path, typeof on === 'string' ? on : path); else movedPaths.delete(path);
     const row = inner.querySelector('[data-path="' + cssEscape(path) + '"]');
-    if (row) row.classList.toggle('ft-moved', on !== false);
+    if (row) {
+      row.classList.toggle('ft-moved', on !== false);
+      const size = row.querySelector('.ft-size');
+      row.querySelector('.ft-move-dest')?.remove();
+      if (on !== false && size) {
+        const badge = document.createElement('span');
+        badge.className = 'ft-move-dest';
+        badge.textContent = '→ ' + movedPaths.get(path);
+        row.insertBefore(badge, size);
+      }
+    }
   }
 
   function filter(matchFn) {

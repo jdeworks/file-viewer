@@ -86,6 +86,8 @@ body {
 /* Moved-file indicator in the tree (Feature E virtual folder reorg). */
 .ft-file.ft-moved .ft-name { font-style: italic; color: var(--fg-2); }
 .ft-file.ft-moved .ft-name::before { content: "→ "; color: var(--accent); font-style: normal; font-weight: 600; }
+.ft-move-dest { max-width: 44%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--accent); font-size: 11px; flex: 0 1 auto; }
 /* Session-history files (opened individually, not from a folder): dimmed + italic when not active. */
 .ft-file.ft-session:not(.active) .ft-dot { opacity: 0.4; }
 .ft-file.ft-session:not(.active) .ft-name { opacity: 0.65; font-style: italic; }
