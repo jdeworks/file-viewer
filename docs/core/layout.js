@@ -16,7 +16,7 @@ export function initLayout(deps) { renderPreview = deps.renderPreview; openSetti
 // On phones, keep only the essentials in the top bar (tree, file name, open, fullscreen)
 // and move the rest into the ⋯ popover. On desktop the controls return to their original
 // spots (same DOM nodes, so their handlers + hidden-state logic keep working).
-const OVERFLOW_IDS = ['typeSelect', 'rawMode', 'formatBtn', 'downloadBtn', 'screenshotBtn', 'sbsBtn', 'exportBtn', 'metaBtn', 'settingsBtn'];
+const OVERFLOW_IDS = ['typeSelect', 'rawMode', 'formatBtn', 'saveBtn', 'downloadBtn', 'screenshotBtn', 'sbsBtn', 'exportBtn', 'metaBtn', 'settingsBtn'];
 let overflowAnchors = null;
 export function layoutTopbar() {
   if (!overflowAnchors) {

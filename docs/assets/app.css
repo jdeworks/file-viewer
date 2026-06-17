@@ -481,3 +481,56 @@ body {
 
 /* preview-only badge in topbar */
 #previewOnlyBadge { display: inline-flex; align-items: center; padding: 1px 6px; background: var(--bg-muted, #f3f4f6); color: var(--text-muted, #6b7280); border-radius: 8px; font-size: 10px; font-weight: 500; white-space: nowrap; }
+
+/* ── Companion (local save-back) ── */
+/* Save button: visibility is managed via the hidden attribute (set by syncSaveBtn in app.js).
+   The companion-active class on body is the gate; CSS here is for reference / future use. */
+
+/* "Linked to disk" label in the topbar file-id area */
+.companion-linked {
+  font-size: 11px; color: var(--fg-2); white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; max-width: 28vw; cursor: default;
+}
+
+/* Status dot in companion settings summary */
+.companion-status-dot { font-size: 11px; margin-left: 6px; color: var(--fg-2); }
+.companion-status-dot.connected { color: #2f9e44; }
+
+/* Token input: blurred by default, click to reveal */
+.companion-token-wrap { flex: 1; }
+.companion-token-input { width: 100%; font-family: ui-monospace, monospace; font-size: 13px;
+  padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--fg); }
+.companion-token-reveal { filter: blur(4px); cursor: pointer; transition: filter .15s; }
+.companion-token-reveal:focus, .companion-token-reveal:hover { filter: blur(0); }
+
+/* Watched folders list */
+.companion-folders-label { font-size: 12px; font-weight: 600; color: var(--fg-2);
+  text-transform: uppercase; letter-spacing: .04em; margin: 10px 0 4px; }
+.companion-folders-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.companion-folder-row { display: flex; align-items: center; gap: 8px; padding: 4px 0;
+  border-bottom: 1px solid var(--border); }
+.companion-folder-path { flex: 1; font: 12px ui-monospace, monospace; color: var(--fg);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.companion-folder-remove { border: 0; background: transparent; color: var(--fg-2);
+  cursor: pointer; font-size: 13px; padding: 2px 4px; border-radius: 4px; }
+.companion-folder-remove:hover { color: var(--danger); background: var(--bg-3); }
+.companion-folders-loading, .companion-folders-empty { font-size: 12px; color: var(--fg-2); padding: 4px 0; }
+
+/* Add-folder input row */
+.companion-add-row { display: flex; gap: 6px; margin-top: 4px; }
+.companion-add-input { flex: 1; font: 13px ui-monospace, monospace; padding: 4px 8px;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); }
+.companion-add-input::placeholder { color: var(--fg-2); }
+
+/* Path picker overlay */
+.companion-picker { background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; max-width: min(480px, 92vw); width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,.3); display: flex; flex-direction: column; gap: 6px; }
+.companion-picker-title { font-size: 13px; font-weight: 600; color: var(--fg-2); margin-bottom: 6px; }
+.companion-picker-item { text-align: left; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--bg-2); color: var(--fg); cursor: pointer; font: 13px ui-monospace, monospace; }
+.companion-picker-item:hover { border-color: var(--accent); color: var(--accent); background: var(--bg-3); }
+.companion-picker-cancel { margin-top: 4px; padding: 7px 12px; border: 1px solid var(--border);
+  border-radius: 8px; background: transparent; color: var(--fg-2); cursor: pointer; font-size: 13px; }
+.companion-picker-cancel:hover { background: var(--bg-3); }
