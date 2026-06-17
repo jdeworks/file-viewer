@@ -136,6 +136,25 @@ export async function run(ctx) {
   // Sleep timer control present (long-form listening).
   const sleepOpts = await page.$$eval('#previewHost .media-sleep select option', (els) => els.map((e) => e.textContent));
   if (sleepOpts.includes('Off') && sleepOpts.includes('30 min')) pass('audio: sleep timer control present (Off … 60 min)'); else fail('sleep options: ' + sleepOpts.join(','));
+  const waveformCollapsed = await page.$eval('#previewHost .media-wv-panel', (e) => e.hidden);
+  const waveformBtn = await page.$eval('#previewHost .media-wv-toggle', (e) => e.textContent);
+  if (waveformCollapsed && /Show waveform/.test(waveformBtn)) pass('audio waveform: collapsed by default'); else fail('waveform collapsed=' + waveformCollapsed + ' btn=' + waveformBtn);
+  await page.click('#previewHost .media-wv-toggle');
+  await page.waitForSelector('#previewHost .media-wv-panel:not([hidden]) canvas.media-wv-canvas', { timeout: 12000 });
+  await page.waitForTimeout(500);
+  const waveformDrawn = await page.$eval('#previewHost canvas.media-wv-canvas', (canvas) => {
+    const ctx = canvas.getContext('2d');
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let painted = 0;
+    for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) painted++;
+    return { width: canvas.width, height: canvas.height, painted };
+  });
+  if (waveformDrawn.width > 0 && waveformDrawn.height > 0 && waveformDrawn.painted > 20)
+    pass('audio waveform: expands and paints canvas');
+  else fail('waveform canvas: ' + JSON.stringify(waveformDrawn));
+  await page.click('#previewHost .media-wv-toggle');
+  const waveformHidden = await page.$eval('#previewHost .media-wv-panel', (e) => e.hidden && !e.querySelector('canvas'));
+  if (waveformHidden) pass('audio waveform: collapse destroys canvas'); else fail('waveform did not destroy on collapse');
   // Folder playlist: load a 2-track folder via the seam → prev/next + position + shuffle appear.
   await page.evaluate(async () => {
     const r = await fetch('examples/sample.wav');

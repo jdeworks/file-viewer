@@ -26,9 +26,7 @@ export function connectGain(el) {
   } catch { return null; }
 }
 
-// Draw a waveform on canvas from intake audio bytes, return a controller with
-// update(el) (starts RAF position-line loop) and destroy() (cancels it).
-export async function renderWaveform(canvas, intake) {
+async function drawWaveform(canvas, file, { ownContext = false } = {}) {
   const ctx2d = canvas.getContext('2d');
   if (!ctx2d) return null;
   const W = canvas.width;
@@ -38,13 +36,11 @@ export async function renderWaveform(canvas, intake) {
   const SLICE = 60 * 256 * 128;
   let buf;
   try {
-    const src = intake.file
-      ? intake.file.slice(0, SLICE)
-      : new Blob([intake.bytes?.slice(0, SLICE) ?? new Uint8Array()]);
-    buf = await src.arrayBuffer();
+    buf = await file.slice(0, SLICE).arrayBuffer();
   } catch { return null; }
 
-  const ac = getAC();
+  let ac = null;
+  try { ac = ownContext ? new AudioContext() : getAC(); } catch {}
   if (!ac) return null;
 
   let audioBuffer;
@@ -101,7 +97,31 @@ export async function renderWaveform(canvas, intake) {
 
   function destroy() {
     if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    if (ownContext) ac.close().catch(() => {});
   }
 
   return { update, destroy };
+}
+
+export async function mountWaveform(container, file) {
+  container.textContent = '';
+  const canvas = document.createElement('canvas');
+  canvas.className = 'media-wv-canvas';
+  canvas.height = 120;
+  canvas.width = Math.max(320, Math.round(container.clientWidth || container.getBoundingClientRect().width || 400));
+  container.appendChild(canvas);
+  const controller = await drawWaveform(canvas, file, { ownContext: true });
+  const audioEl = container.closest('.media-doc')?.querySelector('audio.media-view');
+  if (controller && audioEl) controller.update(audioEl);
+  return {
+    destroy() {
+      controller?.destroy();
+      canvas.remove();
+    },
+  };
+}
+
+export async function renderWaveform(canvas, intake) {
+  const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
+  return drawWaveform(canvas, file);
 }

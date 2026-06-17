@@ -208,40 +208,36 @@ export async function render(intake, ctx = {}) {
     editorRevoke = editor.revoke;
   }
 
-  if (info.kind === 'audio') host.append(name, el, tools);
-  else host.append(el, name, tools);
-  host.append(hintPanel);
-  if (editorPanel) host.append(editorPanel);
-  if (trackListEl) host.append(trackListEl);
-
-  // ── Waveform panel (audio only, collapsed by default) ──
+  let waveformWrap = null;
   if (info.kind === 'audio') {
     const wvWrap = document.createElement('div');
     wvWrap.className = 'media-wv-wrap';
     const wvToggle = document.createElement('button');
     wvToggle.type = 'button';
     wvToggle.className = 'media-wv-toggle';
-    wvToggle.textContent = '▶ Waveform';
+    wvToggle.textContent = '▶ Show waveform';
     const wvPanel = document.createElement('div');
     wvPanel.className = 'media-wv-panel';
     wvPanel.hidden = true;
-    const wvCanvas = document.createElement('canvas');
-    wvCanvas.className = 'media-wv-canvas';
-    wvCanvas.height = 120;
-    wvPanel.appendChild(wvCanvas);
     wvWrap.append(wvToggle, wvPanel);
-    host.appendChild(wvWrap);
+    waveformWrap = wvWrap;
     wvToggle.addEventListener('click', async () => {
       wvPanel.hidden = !wvPanel.hidden;
-      wvToggle.textContent = (wvPanel.hidden ? '▶' : '▼') + ' Waveform';
+      wvToggle.textContent = wvPanel.hidden ? '▶ Show waveform' : '▼ Hide waveform';
+      if (wvPanel.hidden) { wvController?.destroy(); wvController = null; return; }
       if (!wvPanel.hidden && !wvController) {
-        wvCanvas.width = wvPanel.offsetWidth || 400;
-        const { renderWaveform } = await import('./waveform.js');
-        wvController = await renderWaveform(wvCanvas, intake);
-        if (wvController) wvController.update(el);
+        const { mountWaveform } = await import('./waveform.js');
+        const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
+        wvController = await mountWaveform(wvPanel, file);
       }
     });
   }
+
+  if (info.kind === 'audio') host.append(name, el, waveformWrap, tools);
+  else host.append(el, name, tools);
+  host.append(hintPanel);
+  if (editorPanel) host.append(editorPanel);
+  if (trackListEl) host.append(trackListEl);
 
   // ── Resume position ──
   const saved = loadState(intake);
