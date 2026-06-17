@@ -16,6 +16,7 @@ import * as ebookGit from './areas/ebook-git.mjs';
 import * as interactions from './areas/interactions.mjs';
 import * as games from './areas/games.mjs';
 import * as treeDrag from './areas/tree-drag.mjs';
+import * as examplesCatalog from './areas/examples-catalog.mjs';
 
 const ctx = await createHarness();
 try {
@@ -32,6 +33,7 @@ try {
   await interactions.run(ctx);
   await games.run(ctx);
   await treeDrag.run(ctx);
+  await examplesCatalog.run(ctx);
 } catch (e) {
   ctx.fail('exception: ' + e.message);
 } finally {

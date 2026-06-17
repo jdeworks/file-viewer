@@ -9,9 +9,25 @@
 //   const imgData = await worker.doc.getPage(p).getImageData().run(); // returns ImageData
 //   const text    = await worker.doc.getPage(p).getText().run();       // OCR text or ""
 
-import { loadGlobal, vendor } from '../../../core/script-loader.js';
+import { vendor } from '../../../core/script-loader.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let djvuLoadPromise = null;
+
+async function loadDjVu() {
+  if (window.DjVu) return window.DjVu;
+  if (djvuLoadPromise) return djvuLoadPromise;
+  djvuLoadPromise = (async () => {
+    const res = await fetch(vendor('djvu/djvu.js'));
+    if (!res.ok) throw new Error('Failed to load DjVu library (' + res.status + ')');
+    const code = await res.text();
+    const DjVu = new Function('window', 'self', code + '\nreturn DjVu;')(window, window);
+    if (!DjVu) throw new Error('DjVu missing after load');
+    window.DjVu = DjVu;
+    return DjVu;
+  })();
+  return djvuLoadPromise;
+}
 
 export async function render(intake, _ctx) {
   const host = document.createElement('div');
@@ -23,9 +39,9 @@ export async function render(intake, _ctx) {
   // Load the DjVu library (self-contained, exports window.DjVu)
   let DjVu;
   try {
-    DjVu = await loadGlobal(vendor('djvu/djvu.js'), 'DjVu');
+    DjVu = await loadDjVu();
   } catch (e) {
-    host.innerHTML = '<div class="djvu-error"><strong>Failed to load DjVu library</strong><br>' + esc(e.message) + '</div>';
+    host.innerHTML = '<div class="djvu-error"><strong>DjVu preview is partially supported</strong><br>The document was detected, but the in-browser DjVu decoder could not start: ' + esc(e.message) + '</div>';
     return { parentNode: host, revoke() {} };
   }
 

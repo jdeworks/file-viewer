@@ -38,12 +38,19 @@ function findProp(cfb, tag) {
   return null;
 }
 
+function bytes(content) {
+  if (content instanceof Uint8Array) return content;
+  if (content instanceof ArrayBuffer) return new Uint8Array(content);
+  return Uint8Array.from(content || []);
+}
+
 function decodeString(content, suffix) {
   if (!content?.length) return '';
+  const data = bytes(content);
   if (suffix === '001F') {
-    return new TextDecoder('utf-16le').decode(content).replace(/\0+$/, '');
+    return new TextDecoder('utf-16le').decode(data).replace(/\0+$/, '');
   }
-  return Array.from(content).map(b => String.fromCharCode(b)).join('').replace(/\0+$/, '');
+  return Array.from(data).map(b => String.fromCharCode(b)).join('').replace(/\0+$/, '');
 }
 
 function getProp(cfb, tag) {

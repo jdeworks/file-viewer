@@ -17,8 +17,15 @@ function readVarint(bytes, offset) {
   return { value: result, offset };
 }
 
-const TEXT_RE = /^[
- -~ -�]+$/;
+function isReadableText(text) {
+  for (const ch of text) {
+    const code = ch.codePointAt(0);
+    if (code === 9 || code === 10 || code === 13) continue;
+    if (code >= 32) continue;
+    return false;
+  }
+  return true;
+}
 
 function extractStrings(bytes, depth) {
   if (depth > 6) return [];
@@ -51,7 +58,7 @@ function extractStrings(bytes, depth) {
         try {
           const text = new TextDecoder('utf-8', { fatal: true }).decode(field);
           // Keep if it's at least 3 chars and looks like readable text
-          if (text.length >= 3 && TEXT_RE.test(text)) {
+          if (text.length >= 3 && isReadableText(text)) {
             strings.push(text);
           }
         } catch (_) { /* binary data, not text */ }

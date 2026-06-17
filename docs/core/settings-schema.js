@@ -91,6 +91,10 @@ export const VIEWER_DESCRIPTORS = [
     hint: 'Spacing between lines of rendered text.' },
   { key: 'previewPadding', label: 'Preview padding (px)', category: 'viewer-extended', type: 'number', min: 0, max: 80, default: 20,
     hint: 'Inner margin around the rendered content.' },
+  { key: 'readerFontFamily', label: 'Reader font', category: 'viewer-extended', type: 'select', options: ['serif', 'sans', 'mono'], default: 'serif',
+    hint: 'Typeface for long-form e-book and document reading views.' },
+  { key: 'readerTheme', label: 'Reader theme', category: 'viewer-extended', type: 'select', options: ['default', 'sepia', 'dark'], default: 'default',
+    hint: 'Reading color theme for iframe-based e-book previews.' },
 ];
 
 // Map flat values -> Monaco editor options.
@@ -125,6 +129,8 @@ export function previewStyle(v) {
     fontSize: Number(v.previewFontSize) || 16,
     lineHeight: Number(v.previewLineHeight) || 1.6,
     padding: v.previewPadding != null ? Number(v.previewPadding) : 20,
+    readerFontFamily: ['serif', 'sans', 'mono'].includes(v.readerFontFamily) ? v.readerFontFamily : 'serif',
+    readerTheme: ['default', 'sepia', 'dark'].includes(v.readerTheme) ? v.readerTheme : 'default',
   };
 }
 

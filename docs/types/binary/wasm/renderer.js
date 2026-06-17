@@ -379,7 +379,7 @@ export function render(intake) {
   // Header
   html += `<div class="header-card">`;
   html += `<span class="badge badge-main">WebAssembly Module</span>`;
-  html += `<span class="badge badge-version">v${versionNum2}</span>`;
+  html += `<span class="badge badge-version">v${versionNum}</span>`;
   html += `<span class="badge badge-size">${esc(fmtBytes(intake.size))}</span>`;
   html += `</div>`;
 

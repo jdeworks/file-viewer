@@ -59,17 +59,24 @@ try { BASE_CSS = await (await fetch(new URL("../assets/preview.css", import.meta
 catch { /* keep BASE_CSS empty — previews render unstyled but functional */ }
 
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
-  const darkClass = theme === 'dark' ? ' class="fv-dark"' : '';
+  const bodyClasses = [];
+  if (theme === 'dark') bodyClasses.push('fv-dark');
   const vars = [];
   if (Number.isFinite(style.maxWidth)) vars.push(`--fv-maxw:${style.maxWidth}px;`);
   if (Number.isFinite(style.fontSize)) vars.push(`--fv-fontsize:${style.fontSize}px;`);
   if (Number.isFinite(style.lineHeight)) vars.push(`--fv-lh:${style.lineHeight};`);
   if (Number.isFinite(style.padding)) vars.push(`--fv-pad:${style.padding}px;`);
+  if (style.readerFontFamily === 'sans') vars.push('--fv-reader-font:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;');
+  else if (style.readerFontFamily === 'mono') vars.push('--fv-reader-font:ui-monospace,SFMono-Regular,Menlo,monospace;');
+  else vars.push('--fv-reader-font:Georgia,"Times New Roman",serif;');
+  if (style.readerTheme === 'sepia') bodyClasses.push('fv-reader-sepia');
+  else if (style.readerTheme === 'dark') bodyClasses.push('fv-reader-dark');
   const rootStyle = vars.length ? `<style>:root{${vars.join('')}}</style>` : '';
+  const bodyClass = bodyClasses.length ? ' class="' + bodyClasses.join(' ') + '"' : '';
   return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
     + '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
     + '<style>' + BASE_CSS + '</style>\n' + rootStyle + extraHead + '\n</head>\n'
-    + '<body' + darkClass + '>\n' + bodyHtml + '\n'
+    + '<body' + bodyClass + '>\n' + bodyHtml + '\n'
     + '<script>' + BRIDGE + '</scr' + 'ipt>\n</body>\n</html>';
 }
 
