@@ -144,6 +144,31 @@ export async function run(ctx) {
   if (/Comments\s*\d+/.test(iniMeta) && /Duplicate keys\s*0/.test(iniMeta)) pass('INI metadata includes comments and duplicate-key count'); else fail('ini meta: ' + iniMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
 
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.env (environment variables)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const envMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
+  if (envMode === 'preview') pass('.env defaults to redacted preview mode'); else fail('env mode: ' + envMode);
+  const envf = await frameOf('iframe.fv-preview-frame');
+  await envf.waitForSelector('.env-secret-val', { timeout: 8000 });
+  const envText = await envf.$eval('body', (e) => e.textContent);
+  if (/sensitive \(redacted\)/i.test(envText) && !/(super_secret_password_123|sk_test_|whsec_)/.test(envText)) pass('.env preview redacts sensitive values by default'); else fail('env preview leaked or missed redaction: ' + envText.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#viewMode button[data-mode="raw"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
+  const rawMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
+  if (rawMode === 'raw') pass('.env raw view remains explicitly available'); else fail('env raw mode: ' + rawMode);
+
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('ssh-config');
+  await page.waitForSelector('#previewHost .sc-root', { timeout: 12000 });
+  const sshType = await page.$eval('#typeSelect', (s) => s.value);
+  const sshMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
+  if (sshType === 'ssh-config' && sshMode === 'preview') pass('SSH config defaults to rendered preview mode'); else fail('ssh type/mode: ' + sshType + '/' + sshMode);
+  await page.click('#viewMode button[data-mode="raw"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
+  const sshRawMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
+  if (sshRawMode === 'raw') pass('SSH config raw view remains explicitly available'); else fail('ssh raw mode: ' + sshRawMode);
+
   // ── Patch / unified diff ── colorized add/remove/hunk lines. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.patch');

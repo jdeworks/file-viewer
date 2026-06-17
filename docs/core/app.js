@@ -113,7 +113,8 @@ async function activateType(type) {
   $('tabbar').style.display = both && isMobile() ? 'flex' : 'none';
   $('screenshotBtn').hidden = !(type.capabilities.screenshot && canPreview);
   $('sbsBtn').hidden = !canPreview;            // view this file beside another
-  state.mode = both ? 'split' : (canPreview && !canRaw ? 'preview' : 'raw');
+  const preferredMode = ['raw', 'split', 'preview'].includes(type.preferredMode) ? type.preferredMode : 'split';
+  state.mode = both ? preferredMode : (canPreview && !canRaw ? 'preview' : 'raw');
   state.rawMode = 'current';
   resetCompare();                              // a fresh file drops any active two-file comparison
   // On phones, default to Preview when a type has one — reading beats Monaco-on-glass.

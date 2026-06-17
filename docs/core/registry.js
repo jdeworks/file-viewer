@@ -18,6 +18,7 @@
 //       screenshot:    boolean,         // rendered-content screenshot
 //     },
 //     syntaxLanguage: string|null,      // Monaco language id for highlighting
+//     preferredMode?: 'raw'|'split'|'preview', // optional desktop default when raw+preview exist
 //     loadRenderer() => Promise<{render}>,   // lazy: heavy deps live here, not at detect time
 //     loadMetadata() => Promise<{extract}>,  // lazy per-type metadata extractor (optional)
 //     about?: { description:string, usedFor?: [{label, description, href}] },

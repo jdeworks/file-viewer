@@ -12,6 +12,7 @@ export default {
     screenshot: false,
   },
   syntaxLanguage: null,
+  preferredMode: 'preview',
   loadRenderer: () => import('./renderer.js'),
   loadMetadata: () => import('./metadata.js').then((m) => ({ extract: m.extractMetadata })),
   settingsUrl: new URL('./settings.default.json', import.meta.url),
