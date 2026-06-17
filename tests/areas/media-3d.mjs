@@ -71,6 +71,24 @@ export async function run(ctx) {
   });
   if (glbPainted > 100) pass('GLB mesh rendered to canvas (' + glbPainted + ' painted pixels)'); else fail('glb painted pixels: ' + glbPainted);
 
+  // ── 3MF manufacturing model ── ZIP package with model XML, metadata, materials, and thumbnail. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.3mf');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const mf3Type = await page.$eval('#typeSelect', (s) => s.value);
+  if (mf3Type === '3mf') pass('.3mf detected as 3D Manufacturing Format'); else fail('3mf type: ' + mf3Type);
+  const mf3f = await frameOf('iframe.fv-preview-frame');
+  await mf3f.waitForSelector('.mf3-doc .mf3-table tbody tr', { timeout: 8000 });
+  const mf3Text = await mf3f.$eval('.mf3-doc', (e) => e.textContent);
+  if (/Calibration Bracket/.test(mf3Text) && /File Viewer Samples/.test(mf3Text) && /Unit:\s*millimeter/.test(mf3Text) && /Bracket Body/.test(mf3Text) && /Support Feet/.test(mf3Text) && /Safety Orange/.test(mf3Text)) pass('3MF model metadata, objects, and materials parsed'); else fail('3mf doc: ' + mf3Text.replace(/\s+/g, ' ').slice(0, 220));
+  const hasThumb = await mf3f.$eval('.mf3-thumb', (img) => img.getAttribute('src').startsWith('data:image/png;base64,'));
+  if (hasThumb) pass('3MF thumbnail inlined as data URL'); else fail('3mf thumbnail missing data URL');
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const mf3Meta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*3MF/.test(mf3Meta) && /Unit\s*millimeter/.test(mf3Meta) && /Objects\s*2/.test(mf3Meta) && /Materials\s*2/.test(mf3Meta)) pass('3MF metadata drawer includes parsed fields'); else fail('3mf meta: ' + mf3Meta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
+
   // ── PLY 3D viewer ── ASCII (gallery) + binary-little-endian (via file input). ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.ply');

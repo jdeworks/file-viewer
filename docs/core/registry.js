@@ -65,6 +65,7 @@ import stlType from '../types/3d/stl/index.js';
 import objType from '../types/3d/obj/index.js';
 import gltfType from '../types/3d/gltf/index.js';
 import plyType from '../types/3d/ply/index.js';
+import threemfType from '../types/3d/3mf/index.js';
 import subtitleType from '../types/text/subtitle/index.js';
 import vcardType from '../types/vcard/index.js';
 import sqliteType from '../types/sqlite/index.js';
@@ -154,6 +155,7 @@ export const REGISTRY = [
   objType,
   gltfType,
   plyType,
+  threemfType,
   clipType,
   sqliteType,
   epubType,

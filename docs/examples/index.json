@@ -430,6 +430,12 @@
     "category": "Media"
   },
   {
+    "label": "Sample.3mf",
+    "file": "sample.3mf",
+    "mime": "model/3mf",
+    "category": "Media"
+  },
+  {
     "label": "Sample.ply",
     "file": "sample.ply",
     "mime": "model/ply",

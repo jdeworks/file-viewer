@@ -28,7 +28,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf', '.har': 'application/har+json',
   '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain',
   '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.als': 'application/x-ableton-live-set', '.mid': 'audio/midi', '.midi': 'audio/midi', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
-  '.sqlite': 'application/vnd.sqlite3', '.clip': 'application/vnd.clip-studio.paint', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip', '.vcf': 'text/vcard', '.stl': 'model/stl', '.obj': 'model/obj', '.glb': 'model/gltf-binary', '.mbox': 'application/mbox', '.ply': 'model/ply' };
+  '.sqlite': 'application/vnd.sqlite3', '.clip': 'application/vnd.clip-studio.paint', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip', '.vcf': 'text/vcard', '.stl': 'model/stl', '.obj': 'model/obj', '.glb': 'model/gltf-binary', '.3mf': 'model/3mf', '.mbox': 'application/mbox', '.ply': 'model/ply' };
 
 export const fail = (m) => { console.error('✗ ' + m); process.exitCode = 1; };
 export const pass = (m) => console.log('✓ ' + m);
