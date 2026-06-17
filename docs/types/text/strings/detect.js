@@ -1,7 +1,5 @@
-import { isBinary } from '../../../core/detect.js';
-
 export function detect(intake) {
-  if (isBinary(intake)) return 0;
+  if (intake.isBinary) return 0;
   const ext = intake.filename?.toLowerCase().split('.').pop();
   const sample = intake.textSample || '';
 
