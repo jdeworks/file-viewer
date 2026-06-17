@@ -72,6 +72,10 @@ cp node_modules/@ffmpeg/core-st/dist/ffmpeg-core.js        "$VENDOR/ffmpeg/ffmpe
 cp node_modules/@ffmpeg/core-st/dist/ffmpeg-core.wasm      "$VENDOR/ffmpeg/ffmpeg-core.wasm"
 cp node_modules/@ffmpeg/core-st/dist/ffmpeg-core.worker.js "$VENDOR/ffmpeg/ffmpeg-core.worker.js"
 
+# --- ag-psd (ORA/PSD layer reader, UMD bundle). Loaded only for .psd/.ora files.
+mkdir -p "$VENDOR/ag-psd"
+cp node_modules/ag-psd/dist/bundle.js "$VENDOR/ag-psd/ag-psd.bundle.js"
+
 # Record pinned versions for provenance.
 node -e "const p=require('./package.json').devDependencies; require('fs').writeFileSync('$VENDOR/VERSIONS.json', JSON.stringify(p,null,2)+'\n')"
 
