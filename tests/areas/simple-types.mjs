@@ -111,6 +111,26 @@ export async function run(ctx) {
   ]);
   if (/\.geojson$/.test(geojsonDl.suggestedFilename())) pass('GPX → GeoJSON download (' + geojsonDl.suggestedFilename() + ')'); else fail('gpx→geojson: ' + geojsonDl.suggestedFilename());
 
+  // ── Ableton Live Set (.als) ── gzip XML decoded to project summary. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.als');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const alsTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (alsTypeId === 'als') pass('.als detected as Ableton Live Set'); else fail('als type: ' + alsTypeId);
+  const alsf = await frameOf('iframe.fv-preview-frame');
+  await alsf.waitForSelector('.als-doc .als-track', { timeout: 8000 });
+  const alsText = await alsf.$eval('.als-doc', (e) => e.textContent);
+  if (/128/.test(alsText) && /4\/4/.test(alsText) && /Drums/.test(alsText) && /Lead Synth/.test(alsText) && /Main Theme/.test(alsText) && /Wavetable/.test(alsText))
+    pass('Ableton set renders BPM, time signature, tracks, clips, and plugins');
+  else fail('als render: ' + alsText.replace(/\s+/g, ' ').slice(0, 220));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const alsMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/BPM\s*128/.test(alsMeta) && /Time signature\s*4\/4/.test(alsMeta) && /Audio tracks\s*1/.test(alsMeta) && /MIDI tracks\s*1/.test(alsMeta) && /Return tracks\s*1/.test(alsMeta) && /Clips\s*3/.test(alsMeta) && /Plugins\s*Drum Buss, Wavetable/.test(alsMeta))
+    pass('Ableton metadata includes tempo, track counts, clips, and plugins');
+  else fail('als meta: ' + alsMeta.replace(/\s+/g, ' ').slice(0, 220));
+  await page.click('#metaDrawer [data-close]');
+
   // ── ID3 metadata ── an MP3's tags surface in the info drawer. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.mp3');

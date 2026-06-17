@@ -436,6 +436,12 @@
     "category": "Media"
   },
   {
+    "label": "Sample.als",
+    "file": "sample.als",
+    "mime": "application/x-ableton-live-set",
+    "category": "Media"
+  },
+  {
     "label": "Sample.mp3",
     "file": "sample.mp3",
     "mime": "audio/mpeg",

@@ -51,6 +51,7 @@ import tomlType from '../types/text/toml/index.js';
 import plistType from '../types/text/plist/index.js';
 import stringsType from '../types/text/strings/index.js';
 import xmlType from '../types/text/xml/index.js';
+import alsType from '../types/text/als/index.js';
 import iniType from '../types/text/ini/index.js';
 import envType from '../types/text/env/index.js';
 import patchType from '../types/text/patch/index.js';
@@ -120,6 +121,7 @@ export const REGISTRY = [
   plistType,
   stringsType,
   xmlType,
+  alsType,
   envType,
   iniType,
   patchType,

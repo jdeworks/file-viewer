@@ -27,7 +27,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.wav': 'audio/wav', '.ipynb': 'application/json', '.svg': 'image/svg+xml', '.eml': 'message/rfc822', '.zip': 'application/zip', '.ics': 'text/calendar', '.yaml': 'application/yaml', '.toml': 'application/toml',
   '.xml': 'application/xml', '.epub': 'application/epub+zip', '.pdf': 'application/pdf',
   '.env': 'text/plain', '.ini': 'text/plain', '.patch': 'text/x-diff', '.log': 'text/plain',
-  '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
+  '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.als': 'application/x-ableton-live-set', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
   '.sqlite': 'application/vnd.sqlite3', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip', '.vcf': 'text/vcard', '.stl': 'model/stl', '.obj': 'model/obj', '.glb': 'model/gltf-binary', '.mbox': 'application/mbox', '.ply': 'model/ply' };
 
 export const fail = (m) => { console.error('✗ ' + m); process.exitCode = 1; };
