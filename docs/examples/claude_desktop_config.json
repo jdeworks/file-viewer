@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/example/Documents"],
+      "env": {}
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "BSAexamplekeyABC123"
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_exampletoken123456789",
+        "DEBUG": "false"
+      }
+    },
+    "local-analysis": {
+      "url": "http://localhost:3001/mcp",
+      "headers": {
+        "Authorization": "Bearer local-dev-token-example",
+        "X-Client-ID": "file-viewer"
+      }
+    }
+  }
+}
