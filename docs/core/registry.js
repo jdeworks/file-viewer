@@ -49,10 +49,12 @@ import icsType from '../types/ics/index.js';
 import yamlType from '../types/text/yaml/index.js';
 import tomlType from '../types/text/toml/index.js';
 import plistType from '../types/text/plist/index.js';
+import stringsType from '../types/text/strings/index.js';
 import xmlType from '../types/text/xml/index.js';
 import iniType from '../types/text/ini/index.js';
 import patchType from '../types/text/patch/index.js';
 import logType from '../types/text/log/index.js';
+import crashType from '../types/text/crash/index.js';
 import geoType from '../types/geo/index.js';
 import fontType from '../types/font/index.js';
 import stlType from '../types/3d/stl/index.js';
@@ -112,10 +114,12 @@ export const REGISTRY = [
   yamlType,
   tomlType,
   plistType,
+  stringsType,
   xmlType,
   iniType,
   patchType,
   logType,
+  crashType,
   subtitleType,
   vcardType,
   geoType,

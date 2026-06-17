@@ -1,0 +1,86 @@
+Incident Identifier: 3F8A1C24-7B3E-4D91-A2F5-0123456789AB
+CrashReporter Key:   7E9A3B1C2D4F5E6A7B8C9D0E1F2A3B4C5D6E7F80
+Hardware Model:      MacBookPro18,3
+Process:             MyApp [1234]
+Path:                /Applications/MyApp.app/Contents/MacOS/MyApp
+Identifier:          com.example.myapp
+Version:             2.3.1 (42)
+Code Type:           ARM-64 (Native)
+Parent Process:      launchd [1]
+Responsible:         MyApp [1234]
+User ID:             501
+
+Date/Time:           2026-06-17 10:30:45.000 +0200
+OS Version:          macOS 14.4.1 (23E224)
+Report Version:      12
+Anonymous UUID:      DEADBEEF-CAFE-BABE-DEAD-BEEFCAFEBABE
+
+Sleep/Wake UUID:     00000000-0000-0000-0000-000000000000
+
+Time Awake Since Boot: 12345 seconds
+Time Since Wake:     1234 seconds
+
+System Integrity Protection: enabled
+
+Crashed Thread:      0  Dispatch queue: com.apple.main-thread
+
+Exception Type:      EXC_BAD_ACCESS (SIGSEGV)
+Exception Codes:     KERN_INVALID_ADDRESS at 0x0000000000000000
+Exception Note:      EXC_CORPSE_NOTIFY
+
+Termination Signal:  Segmentation fault: 11
+Termination Reason:  Namespace SIGNAL, Code 11
+Terminating Process: exc handler [1234]
+
+VM Region Info: 0 is not in any region.  Bytes before following region: 4294967296
+      REGION TYPE                    START - END         [ VSIZE] PRT/MAX SHRMOD  REGION DETAIL
+      MALLOC_NANO (reserved)     0000000100000000-0000000200000000 [4.0G] rw-/rwx SM=NUL  ...(unreadable)
+
+Thread 0  Crashed::  Dispatch queue: com.apple.main-thread
+0   libsystem_kernel.dylib        	0x000000019e4c5b68 __pthread_kill + 8
+1   libsystem_pthread.dylib       	0x000000019e4f5b64 pthread_kill + 288
+2   libsystem_c.dylib             	0x000000019e41c134 abort + 180
+3   MyApp                         	0x0000000100012345 -[MyViewController loadData] + 156
+4   MyApp                         	0x0000000100008901 -[AppDelegate applicationDidFinishLaunching:] + 244
+5   AppKit                        	0x000000018d234567 -[NSApplication _sendFinishLaunchingNotification] + 208
+6   AppKit                        	0x000000018d123456 -[NSApplication run] + 600
+7   AppKit                        	0x000000018d098765 NSApplicationMain + 880
+8   dyld                          	0x000000010a001234 start + 2360
+
+Thread 1:
+0   libsystem_kernel.dylib        	0x000000019e4c5abc mach_msg2_trap + 8
+1   libsystem_kernel.dylib        	0x000000019e4c5b00 mach_msg2_internal + 80
+2   CoreFoundation                	0x000000018b3c4567 __CFRunLoopServiceMachPort + 160
+3   CoreFoundation                	0x000000018b3a9012 __CFRunLoopRun + 1236
+4   CoreFoundation                	0x000000018b3a8765 CFRunLoopRunSpecific + 608
+5   Foundation                    	0x000000018c1b2345 -[NSRunLoop(NSRunLoop) runMode:beforeDate:] + 212
+6   Foundation                    	0x000000018c1b1234 -[NSRunLoop(NSRunLoop) runUntilDate:] + 64
+7   AppKit                        	0x000000018d345678 -[NSEventThread main] + 144
+8   Foundation                    	0x000000018c0a9876 __NSThread__start__ + 716
+
+Thread 2:
+0   libsystem_kernel.dylib        	0x000000019e4c5abc mach_msg2_trap + 8
+1   libsystem_kernel.dylib        	0x000000019e4c5b00 mach_msg2_internal + 80
+2   libdispatch.dylib             	0x000000019e380123 _dispatch_mach_msg_recv + 124
+
+Thread 0 crashed with ARM Thread State (64-bit):
+    x0: 0x0000000000000000   x1: 0x0000000000000000   x2: 0x0000000000000000   x3: 0x0000000000000000
+    x4: 0x0000000000000000   x5: 0x0000000000000000   x6: 0x0000000000000000   x7: 0x0000000000000000
+    x8: 0x0000000100012340   x9: 0x000000019e4c5b60   x10: 0x0000000000000008  x11: 0x00000001a0bc1234
+   x12: 0x0000000000000000  x13: 0x0000000000000000  x14: 0x0000000000000000  x15: 0x0000000000000000
+   x16: 0x0000000000000148  x17: 0x000000019e4f5a80  x18: 0x0000000000000000  x19: 0x000000016f000200
+   x20: 0x000000016f000200  x21: 0x0000000000000006  x22: 0x0000000000000000  x23: 0x0000000000000000
+   x24: 0x0000000000000000  x25: 0x0000000000000000  x26: 0x0000000000000000  x27: 0x0000000000000000
+   x28: 0x0000000000000000   fp: 0x000000016f000200   lr: 0x000000019e4f5b64
+    sp: 0x000000016f0001e0   pc: 0x000000019e4c5b68 cpsr: 0x40001000
+
+Binary Images:
+       0x100000000 -        0x100123fff +com.example.myapp (2.3.1 - 42) <DEADBEEF-CAFE-BABE-DEAD-BEEFCAFE> /Applications/MyApp.app/Contents/MacOS/MyApp
+    0x19e000000 -     0x19e4fffff  libsystem_kernel.dylib (10002.102.7) <ABCDEF12-3456-7890-ABCD-EF12345678> /usr/lib/system/libsystem_kernel.dylib
+    0x19e4f0000 -     0x19e50ffff  libsystem_pthread.dylib (519.120.4) <12345678-ABCD-EF12-3456-7890ABCDEF12> /usr/lib/system/libsystem_pthread.dylib
+    0x19e410000 -     0x19e44ffff  libsystem_c.dylib (1592.100.35) <ABCD1234-5678-90EF-ABCD-1234567890EF> /usr/lib/system/libsystem_c.dylib
+    0x18b300000 -     0x18b8fffff  CoreFoundation (1971.1.2) <CAFE0000-DEAD-BEEF-CAFE-000000000001> /System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation
+    0x18c000000 -     0x18c6fffff  Foundation (2202.7.0) <CAFE0000-DEAD-BEEF-CAFE-000000000002> /System/Library/Frameworks/Foundation.framework/Versions/C/Foundation
+    0x18d000000 -     0x18e5fffff  AppKit (2487.30.108) <CAFE0000-DEAD-BEEF-CAFE-000000000003> /System/Library/Frameworks/AppKit.framework/Versions/C/AppKit
+    0x10a000000 -     0x10a0fffff  dyld (1125.5) <CAFE0000-DEAD-BEEF-CAFE-000000000004> /usr/lib/dyld
+    0x19e370000 -     0x19e3fffff  libdispatch.dylib (1325.120.2) <CAFE0000-DEAD-BEEF-CAFE-000000000005> /usr/lib/system/libdispatch.dylib

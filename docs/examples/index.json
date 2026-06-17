@@ -269,6 +269,12 @@
     "category": "Config"
   },
   {
+    "label": "Localizable.strings",
+    "file": "Localizable.strings",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
     "label": "Sample.patch",
     "file": "sample.patch",
     "mime": "text/x-diff",
@@ -277,6 +283,12 @@
   {
     "label": "Sample.log",
     "file": "sample.log",
+    "mime": "text/plain",
+    "category": "Code"
+  },
+  {
+    "label": "sample.crash",
+    "file": "sample.crash",
     "mime": "text/plain",
     "category": "Code"
   },
