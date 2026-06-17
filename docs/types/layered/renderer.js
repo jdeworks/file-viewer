@@ -1,4 +1,6 @@
 import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadXcf } from './decoders/xcf.js';
+import { loadKra } from './decoders/kra.js';
 
 function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
@@ -37,7 +39,6 @@ async function loadOra(intake) {
   const stackNode = doc.querySelector('stack');
   const layers = stackNode ? parseLayers(stackNode) : [];
 
-  // Load bitmaps for leaf layers
   async function loadBitmaps(ls) {
     await Promise.all(ls.map(async (l) => {
       if (l.type === 'group') { await loadBitmaps(l.children); return; }
@@ -55,7 +56,6 @@ async function loadOra(intake) {
 
 async function loadPsd(intake) {
   const agPsd = await loadGlobal(vendor('ag-psd/ag-psd.bundle.js'), 'agPsd');
-  // useImageData avoids creating canvases internally, giving us ImageData objects we composite ourselves.
   const buf = intake.bytes.buffer.slice(intake.bytes.byteOffset, intake.bytes.byteOffset + intake.bytes.byteLength);
   const psd = agPsd.readPsd(buf, { useImageData: true, skipLayerImageData: false });
 
@@ -71,6 +71,7 @@ async function loadPsd(intake) {
         name: l.name || 'Layer',
         type: 'layer',
         visibility: !l.hidden,
+        opacity: (l.opacity ?? 255) / 255,
         imageData: l.imageData,
         x: l.left || 0,
         y: l.top || 0,
@@ -79,46 +80,27 @@ async function loadPsd(intake) {
   }
 
   const layers = extractLayers(psd.children);
-  // merged composite from psd.canvas (ImageData on the document level)
-  const mergedImageData = psd.imageData;
-  return { W, H, layers, mergedImageData };
+  return { W, H, layers, mergedImageData: psd.imageData };
 }
 
 // ── Compositing ───────────────────────────────────────────────────────────────
 
-function composite(canvas, W, H, layers, mergedImageData) {
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, W, H);
-
-  function drawLayers(ls) {
-    for (const l of ls) {
-      if (!l.visibility) continue;
-      if (l.type === 'group') { drawLayers(l.children); continue; }
-      if (l.bitmap) {
-        ctx.globalAlpha = l.opacity ?? 1;
-        ctx.drawImage(l.bitmap, l.x, l.y);
-        ctx.globalAlpha = 1;
-      } else if (l.imageData) {
-        const tmp = document.createElement('canvas');
-        tmp.width = l.imageData.width; tmp.height = l.imageData.height;
-        tmp.getContext('2d').putImageData(l.imageData, 0, 0);
-        ctx.drawImage(tmp, l.x, l.y);
-      }
+function drawLayers(ctx2d, ls) {
+  for (const l of ls) {
+    if (!l.visibility) continue;
+    if (l.type === 'group') { drawLayers(ctx2d, l.children || []); continue; }
+    if (l.bitmap) {
+      ctx2d.globalAlpha = l.opacity ?? 1;
+      ctx2d.drawImage(l.bitmap, l.x, l.y);
+      ctx2d.globalAlpha = 1;
+    } else if (l.imageData) {
+      const tmp = document.createElement('canvas');
+      tmp.width = l.imageData.width; tmp.height = l.imageData.height;
+      tmp.getContext('2d').putImageData(l.imageData, 0, 0);
+      ctx2d.globalAlpha = l.opacity ?? 1;
+      ctx2d.drawImage(tmp, l.x, l.y);
+      ctx2d.globalAlpha = 1;
     }
-  }
-
-  // If we have a merged composite (PSD), use it as fallback base, then draw toggled layers on top.
-  // For ORA we composite from scratch.
-  if (mergedImageData) {
-    // Use merged image (it reflects all layers as originally saved)
-    const tmp = document.createElement('canvas');
-    tmp.width = W; tmp.height = H;
-    tmp.getContext('2d').putImageData(mergedImageData, 0, 0);
-    ctx.drawImage(tmp, 0, 0);
-  } else {
-    drawLayers(ls => ls, layers);
-    drawLayers(layers);
   }
 }
 
@@ -158,13 +140,41 @@ function buildLayerList(container, layers, onToggle) {
   layers.forEach((l) => renderLayer(l, 0));
 }
 
+// ── XCF placeholder canvas ────────────────────────────────────────────────────
+
+function drawXcfPlaceholder(canvas, W, H, layers) {
+  canvas.width = W || 400; canvas.height = H || 300;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#8888aa';
+  ctx.font = '14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('XCF — layer structure shown in panel', canvas.width / 2, canvas.height / 2 - 10);
+  ctx.fillStyle = '#666688';
+  ctx.font = '12px monospace';
+  ctx.fillText(`${layers.length} layer${layers.length !== 1 ? 's' : ''} · ${W}×${H}px`, canvas.width / 2, canvas.height / 2 + 14);
+  ctx.textAlign = 'start';
+}
+
 // ── Main render ───────────────────────────────────────────────────────────────
+
+function detectFormat(intake) {
+  const b = intake.bytes;
+  if (b[0] === 0x38 && b[1] === 0x42) return 'psd';
+  if (b[0] === 0x67 && b[1] === 0x69 && b[2] === 0x6d && b[3] === 0x70) return 'xcf';
+  if (b[0] === 0x50 && b[1] === 0x4b) {
+    const name = intake.name || '';
+    if (name.endsWith('.kra')) return 'kra';
+  }
+  return 'ora';
+}
 
 export async function render(intake, _ctx) {
   const wrap = document.createElement('div');
   wrap.className = 'layered-wrap';
 
-  const isPsd = intake.bytes[0] === 0x38 && intake.bytes[1] === 0x42;
+  const format = detectFormat(intake);
 
   const canvasWrap = document.createElement('div');
   canvasWrap.className = 'layered-canvas-wrap';
@@ -188,51 +198,45 @@ export async function render(intake, _ctx) {
   let layerData = null;
 
   try {
-    if (isPsd) {
+    if (format === 'psd') {
       layerData = await loadPsd(intake);
+    } else if (format === 'xcf') {
+      layerData = await Promise.resolve(loadXcf(intake.bytes));
+    } else if (format === 'kra') {
+      layerData = await loadKra(intake);
     } else {
       layerData = await loadOra(intake);
     }
 
-    const { W, H, layers, mergedImageData } = layerData;
+    const { W, H, layers, mergedImageData, mergedBitmap } = layerData;
 
     const recomposite = () => {
-      if (isPsd && mergedImageData) {
-        // PSD: redraw from scratch when layers are toggled
-        canvas.width = W; canvas.height = H;
-        const ctx2d = canvas.getContext('2d');
-        ctx2d.clearRect(0, 0, W, H);
-        function drawPsdLayers(ls) {
-          for (const l of ls) {
-            if (!l.visibility) continue;
-            if (l.type === 'group') { drawPsdLayers(l.children || []); continue; }
-            if (l.imageData) {
-              const tmp = document.createElement('canvas');
-              tmp.width = l.imageData.width; tmp.height = l.imageData.height;
-              tmp.getContext('2d').putImageData(l.imageData, 0, 0);
-              ctx2d.drawImage(tmp, l.x, l.y);
-            }
-          }
-        }
-        drawPsdLayers(layers);
-      } else {
-        // ORA: composite visible layers
-        canvas.width = W; canvas.height = H;
-        const ctx2d = canvas.getContext('2d');
-        ctx2d.clearRect(0, 0, W, H);
-        function drawOraLayers(ls) {
-          for (const l of ls) {
-            if (!l.visibility) continue;
-            if (l.type === 'group') { drawOraLayers(l.children || []); continue; }
-            if (l.bitmap) {
-              ctx2d.globalAlpha = l.opacity ?? 1;
-              ctx2d.drawImage(l.bitmap, l.x, l.y);
-              ctx2d.globalAlpha = 1;
-            }
-          }
-        }
-        drawOraLayers(layers);
+      canvas.width = W; canvas.height = H;
+      const ctx2d = canvas.getContext('2d');
+      ctx2d.clearRect(0, 0, W, H);
+
+      if (format === 'xcf') {
+        drawXcfPlaceholder(canvas, W, H, layers);
+        return;
       }
+
+      if (format === 'kra' && mergedBitmap) {
+        // Use merged image as base, then redraw visible layers on top
+        ctx2d.drawImage(mergedBitmap, 0, 0);
+        // Redraw only visible layers to reflect toggles
+        canvas.width = W; canvas.height = H;
+        ctx2d.clearRect(0, 0, W, H);
+        drawLayers(ctx2d, layers);
+        return;
+      }
+
+      if (format === 'psd' && mergedImageData) {
+        drawLayers(ctx2d, layers);
+        return;
+      }
+
+      // ORA and KRA without merged — composite from scratch
+      drawLayers(ctx2d, layers);
     };
 
     recomposite();
@@ -248,6 +252,7 @@ export async function render(intake, _ctx) {
         const freeBitmaps = (ls) => ls?.forEach((l) => { l.bitmap?.close?.(); if (l.children) freeBitmaps(l.children); });
         freeBitmaps(layerData.layers);
       }
+      if (layerData?.mergedBitmap) layerData.mergedBitmap.close?.();
     },
   };
 }
