@@ -170,10 +170,39 @@ body {
   color: var(--fg-2); opacity: 0.7; text-align: center;
 }
 .ex-group-items { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-.examples button {
+.examples button, .ex-file-btn {
   font-size: 12px; padding: 5px 10px; border-radius: 20px;
   border: 1px solid var(--border); background: var(--bg); color: var(--fg-2); cursor: pointer;
 }
+.ex-folder-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;
+  margin-bottom: 10px;
+}
+.ex-folder-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 14px 8px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--fg); cursor: pointer; text-align: center;
+  transition: background 0.12s, box-shadow 0.12s;
+}
+.ex-folder-card:hover { background: var(--bg-3); box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+.ex-folder-icon { font-size: 22px; line-height: 1; }
+.ex-folder-label { font-size: 11px; font-weight: 600; color: var(--fg); }
+.ex-folder-count {
+  font-size: 10px; background: var(--bg-3); border-radius: 10px;
+  padding: 1px 7px; color: var(--fg-2);
+}
+.ex-back-btn {
+  font-size: 12px; color: var(--accent); background: none; border: none; cursor: pointer;
+  padding: 0 0 8px 0; text-align: left; text-decoration: underline;
+}
+.ex-cat-head {
+  font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--fg);
+}
+.ex-showall-btn {
+  font-size: 11px; color: var(--fg-2); background: none; border: 1px solid var(--border);
+  border-radius: 16px; padding: 4px 12px; cursor: pointer; margin-top: 4px;
+}
+.ex-showall-btn:hover { background: var(--bg-3); }
 
 /* ── Workspace ── */
 .workspace { flex: 1; display: flex; flex-direction: column; min-height: 0; }

@@ -1,9 +1,9 @@
 export async function run(ctx) {
-  const { page, origin, frameOf, pass, fail } = ctx;
+  const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── JSON / Code / Image simple types (WP19) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.json' }).click();
+  await openExample('Sample.json');
   const jframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const jf = await frameOf('iframe.fv-preview-frame');
   await jf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
@@ -33,7 +33,7 @@ export async function run(ctx) {
 
   // ── YAML ── parse with js-yaml, render as a collapsible tree (reuses JSON tree styling).
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.yaml' }).click();
+  await openExample('Sample.yaml');
   const yframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const yf = await frameOf('iframe.fv-preview-frame');
   await yf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
@@ -53,7 +53,7 @@ export async function run(ctx) {
 
   // ── TOML ── hand-rolled parser, render as a collapsible tree (reuses JSON tree styling).
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.toml' }).click();
+  await openExample('Sample.toml');
   const tframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const tf = await frameOf('iframe.fv-preview-frame');
   await tf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
@@ -68,7 +68,7 @@ export async function run(ctx) {
 
   // ── XML ── element tree (reuses JSON tree styling) + structural diff. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.xml' }).click();
+  await openExample('Sample.xml');
   const xmlframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const xmlf = await frameOf('iframe.fv-preview-frame');
   await xmlf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
@@ -88,7 +88,7 @@ export async function run(ctx) {
 
   // ── INI / .env ── key-value tables grouped by section. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.ini' }).click();
+  await openExample('Sample.ini');
   const iniframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const inif = await frameOf('iframe.fv-preview-frame');
   await inif.waitForSelector('.kv-table', { timeout: 8000 });
@@ -105,7 +105,7 @@ export async function run(ctx) {
 
   // ── Patch / unified diff ── colorized add/remove/hunk lines. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.patch' }).click();
+  await openExample('Sample.patch');
   const patchframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const patchf = await frameOf('iframe.fv-preview-frame');
   await patchf.waitForSelector('.patch', { timeout: 8000 });
@@ -118,7 +118,7 @@ export async function run(ctx) {
 
   // ── Log ── severity highlighting + timestamps. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.log' }).click();
+  await openExample('Sample.log');
   const lframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const lf = await frameOf('iframe.fv-preview-frame');
   await lf.waitForSelector('.logv', { timeout: 8000 });

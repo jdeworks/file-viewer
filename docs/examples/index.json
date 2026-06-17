@@ -412,5 +412,23 @@
     "file": "Sample.7z",
     "mime": "application/x-7z-compressed",
     "category": "Archive & Binary"
+  },
+  {
+    "label": "sample.url",
+    "file": "sample.url",
+    "mime": "text/plain",
+    "category": "Code"
+  },
+  {
+    "label": "secret.txt",
+    "file": "secret.txt",
+    "mime": "text/plain",
+    "category": "Secrets"
+  },
+  {
+    "label": "sample_old.png",
+    "file": "sample_old.png",
+    "mime": "image/png",
+    "category": "Secrets"
   }
 ]

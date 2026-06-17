@@ -1,5 +1,5 @@
 export async function run(ctx) {
-  const { page, origin, pass, fail } = ctx;
+  const { page, origin, pass, fail, openExample } = ctx;
 
   // ── Tree-drag → dual view: dragging a tree file onto the workspace enters dual-view ──
   // Load a folder (two files), then simulate dragging one tree file onto the workspace.
@@ -9,7 +9,7 @@ export async function run(ctx) {
   // then use the folder-drop path via __fv.loadFolder).
   // Simpler: open welcome.md from examples first (single file open), then simulate a
   // tree-drag from a second file by directly calling into the app's internals.
-  await page.getByRole('button', { name: 'Welcome.md' }).click();
+  await openExample('Welcome.md');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 20000 });
 
   // Confirm no tree is visible yet (single file, no sidebar).

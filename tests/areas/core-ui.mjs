@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
 export async function run(ctx) {
-  const { page, origin, frameOf, pass, fail, ROOT } = ctx;
+  const { page, origin, frameOf, pass, fail, ROOT, openExample } = ctx;
 
 // Asset manifest must list every static file (so the offline precache is complete).
 {
@@ -55,13 +55,13 @@ export async function run(ctx) {
   pass('Monaco preloaded in the background during idle');
 
   // Examples gallery is grouped by category (tidy intake catalogue).
-  const exGroups = await page.$$eval('#examples .ex-group .ex-group-label', (els) => els.map((e) => e.textContent));
+  const exGroups = await page.$$eval('#examples .ex-folder-label', (els) => els.map((e) => e.textContent));
   if (exGroups.includes('Documents') && exGroups.includes('Office') && exGroups.length >= 5)
     pass(`examples grouped by category (${exGroups.length} groups: ${exGroups.join(', ')})`);
   else fail('examples not grouped; labels: ' + JSON.stringify(exGroups));
 
   // Load the Welcome.md example.
-  await page.getByRole('button', { name: 'Welcome.md' }).click();
+  await openExample('Welcome.md');
 
   // Monaco raw view appears.
   await page.waitForSelector('.monaco-editor', { timeout: 20000 });

@@ -444,6 +444,21 @@ function closeDrawers() {
   $('settingsDrawer').hidden = true; $('metaDrawer').hidden = true; $('scrim').hidden = true;
 }
 
+/* ─────────────────────────── metaBtn Easter egg ─────────────────────────── */
+
+let metaBtnClicks = 0;
+const META_BTN_MSGS = ['Stop it.', 'That hurts!', 'Why are you doing this?', 'Leave me alone!'];
+function showMetaBtnEgg(msg, onDismiss) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;';
+  const card = document.createElement('div');
+  card.style.cssText = 'background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:12px;padding:2rem 2.5rem;max-width:320px;text-align:center;font-size:1.1rem;font-weight:600;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.3);';
+  card.textContent = msg;
+  ov.appendChild(card);
+  document.body.appendChild(ov);
+  ov.addEventListener('click', () => { ov.remove(); onDismiss?.(); }, { once: true });
+}
+
 /* ─────────────────────────── Examples ─────────────────────────── */
 
 /* ─────────────────────────── Helpers ─────────────────────────── */
@@ -494,7 +509,12 @@ function init() {
   $('typeSelect').addEventListener('change', (e) => { const t = getType(e.target.value); if (t) activateType(t); });
   $('themeBtn').addEventListener('click', () => applyTheme(!themeIsDark()));
   $('settingsBtn').addEventListener('click', () => openDrawer('settingsDrawer', openSettings));
-  $('metaBtn').addEventListener('click', () => openDrawer('metaDrawer', buildMetadata));
+  $('metaBtn').addEventListener('click', () => {
+    metaBtnClicks++;
+    if (metaBtnClicks <= 4) openDrawer('metaDrawer', buildMetadata);
+    else if (metaBtnClicks <= 8) showMetaBtnEgg(META_BTN_MSGS[metaBtnClicks - 5]);
+    else showMetaBtnEgg('Ok, FINE. Take this and leave me alone.', () => { state.games?.unlock(); $('gamesBtn').hidden = false; state.games?.open(); });
+  });
   $('scrim').addEventListener('click', () => { closeDrawers(); if (isMobile()) setTree(false); });
   document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeDrawers));
   $('fullscreenBtn').addEventListener('click', () => {
@@ -568,10 +588,17 @@ function init() {
   if (games.isUnlocked()) $('gamesBtn').hidden = false;
   $('gamesBtn').addEventListener('click', () => games.open());
 
+  async function openExampleByLabel(label) {
+    const index = await fetch('examples/index.json').then((r) => r.ok ? r.json() : []).catch(() => []);
+    const entry = index.find((e) => e.label === label || e.file === label);
+    if (!entry) return false;
+    return openExampleFile(entry.file);
+  }
+
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
   window.__fv = {
     state, setRawMode, downloadCurrent, loadFolder, hasUnsavedWork, openRepoView,
-    openViewerFile, openFile: openViewerFile, openExampleFile, searchViewerFile,
+    openViewerFile, openFile: openViewerFile, openExampleFile, openExampleByLabel, searchViewerFile,
     persistence, games,
     screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };

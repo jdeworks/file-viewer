@@ -27,6 +27,7 @@
 //   { filename, mimeType, bytes:Uint8Array, text, textSample, isPaste, size, lastModified }
 
 import rawType from '../types/text/raw/index.js';
+import urlType from '../types/text/url/index.js';
 import markdownType from '../types/markdown/index.js';
 import pdfType from '../types/pdf/index.js';
 import csvType from '../types/text/csv/index.js';
@@ -105,6 +106,7 @@ export const REGISTRY = [
   comicType,
   archiveType,
   zipType,
+  urlType,
   codeType,
   rawType,
 ];

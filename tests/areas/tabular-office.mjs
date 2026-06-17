@@ -1,10 +1,10 @@
 export async function run(ctx) {
-  const { page, origin, frameOf, pass, fail } = ctx;
+  const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── PDF module (WP17) ── fresh load so the examples gallery is reachable. Renders in the
   // parent pane now (interactive lite editor), not the iframe.
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.pdf' }).click();
+  await openExample('Sample.pdf');
   await page.waitForSelector('#previewHost img.pdf-page', { timeout: 20000 });
   pass('PDF rendered to image pages');
   const hasEditor = await page.$('#editor .monaco-editor');
@@ -12,7 +12,7 @@ export async function run(ctx) {
 
   // ── PDF lite editor ── rotate/delete pages with pdf-lib, then download the edited PDF. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample (3 pages).pdf' }).click();
+  await openExample('Sample (3 pages).pdf');
   await page.waitForFunction(() => document.querySelectorAll('#previewHost img.pdf-page').length === 3, { timeout: 20000 });
   pass('PDF: multi-page document rendered (3 pages)');
   await page.click('#previewHost .pdf-edit');                         // enter edit mode
@@ -81,7 +81,7 @@ export async function run(ctx) {
 
   // ── CSV module + shared tabular renderer (WP19) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.csv' }).click();
+  await openExample('Sample.csv');
   const cframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const cf = await frameOf('iframe.fv-preview-frame');
   await cf.waitForSelector('table', { timeout: 10000 });
@@ -105,7 +105,7 @@ export async function run(ctx) {
 
   // ── Excel module (WP19) ── multi-sheet workbook via SheetJS on the tabular renderer.
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.xlsx' }).click();
+  await openExample('Sample.xlsx');
   const xframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const xf = await frameOf('iframe.fv-preview-frame');
   await xf.waitForSelector('.sheet table', { timeout: 12000 });
@@ -135,7 +135,7 @@ export async function run(ctx) {
 
   // ── Word module (WP19) ── mammoth -> sanitized HTML in the iframe.
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.docx' }).click();
+  await openExample('Sample.docx');
   const dframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const df = await frameOf('iframe.fv-preview-frame');
   await df.waitForSelector('.docx-body h1', { timeout: 12000 });
@@ -146,7 +146,7 @@ export async function run(ctx) {
 
   // ── OpenDocument text (.odt) ── unzip content.xml → sanitized reading HTML in the iframe. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.odt' }).click();
+  await openExample('Sample.odt');
   const odtframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const odtf = await frameOf('iframe.fv-preview-frame');
   await odtf.waitForSelector('.odf-doc', { timeout: 12000 });
@@ -159,7 +159,7 @@ export async function run(ctx) {
 
   // ── PowerPoint module (WP19) ── pptxviewjs renders slides to images in the iframe.
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.pptx' }).click();
+  await openExample('Sample.pptx');
   const ppframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 25000 });
   const ppf = await frameOf('iframe.fv-preview-frame');
   await ppf.waitForSelector('img.pptx-slide', { timeout: 25000 });

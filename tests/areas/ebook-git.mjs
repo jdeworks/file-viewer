@@ -1,11 +1,11 @@
 import zlib from 'node:zlib';
 
 export async function run(ctx) {
-  const { browser, page, origin, frameOf, pass, fail } = ctx;
+  const { browser, page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── SQLite browser ── sql.js (WASM, same-origin) table list + grid + query. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.sqlite' }).click();
+  await openExample('Sample.sqlite');
   await page.waitForSelector('#previewHost .sq-grid', { timeout: 25000 });
   const sqType = await page.$eval('#typeSelect', (s) => s.value);
   if (sqType === 'sqlite') pass('.sqlite detected as SQLite database'); else fail('sqlite type: ' + sqType);
@@ -20,7 +20,7 @@ export async function run(ctx) {
 
   // ── FictionBook (.fb2) ── XML ebook → sanitized reading HTML with inline data: images. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.fb2' }).click();
+  await openExample('Sample.fb2');
   const fb2frame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const fb2f = await frameOf('iframe.fv-preview-frame');
   await fb2f.waitForSelector('.fb2-book', { timeout: 10000 });
@@ -36,7 +36,7 @@ export async function run(ctx) {
 
   // ── MOBI / Kindle (.mobi) ── PalmDB parse + PalmDOC text → sanitized HTML, inline data: images. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.mobi' }).click();
+  await openExample('Sample.mobi');
   const mobiframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const mobif = await frameOf('iframe.fv-preview-frame');
   await mobif.waitForSelector('.mobi-book', { timeout: 10000 });
@@ -49,7 +49,7 @@ export async function run(ctx) {
 
   // ── Sony LRF ── recognized (BBeB), shown with a clear note instead of a raw hex dump. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.lrf' }).click();
+  await openExample('Sample.lrf');
   const lrfframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const lrff = await frameOf('iframe.fv-preview-frame');
   await lrff.waitForSelector('.comic-note', { timeout: 8000 });
@@ -59,7 +59,7 @@ export async function run(ctx) {
 
   // ── EPUB e-book (hand-rolled reader) ── unzip + spine + TOC, rendered in the pane. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.epub' }).click();
+  await openExample('Sample.epub');
   await page.waitForSelector('#previewHost .epub-doc', { timeout: 15000 });
   const epubType = await page.$eval('#typeSelect', (s) => s.value);
   if (epubType === 'epub') pass('.epub detected as E-book (outscores Archive)'); else fail('epub type: ' + epubType);
@@ -92,7 +92,7 @@ export async function run(ctx) {
   await page.waitForFunction(() => /The Middle/.test(document.querySelector('#previewHost .epub-content h1')?.textContent || ''), { timeout: 8000 });
   pass('EPUB next-chapter navigation works');
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.epub' }).click();
+  await openExample('Sample.epub');
   await page.waitForSelector('#previewHost .epub-content', { timeout: 15000 });
   const resumedH1 = await page.waitForFunction(() => {
     const t = document.querySelector('#previewHost .epub-content h1')?.textContent || '';
@@ -102,7 +102,7 @@ export async function run(ctx) {
 
   // ── Binary file → hex dump in the read-only editor ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.bin' }).click();
+  await openExample('Sample.bin');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
   const hexVal = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (/^00000000\s+([0-9a-f]{2} )+/m.test(hexVal)) pass('binary file rendered as hex dump (offset + hex columns)'); else fail('no hex dump: ' + hexVal.slice(0, 40));

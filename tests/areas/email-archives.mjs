@@ -1,9 +1,9 @@
 export async function run(ctx) {
-  const { page, origin, frameOf, pass, fail } = ctx;
+  const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── Calendar (.ics) ── parse iCalendar, render events chronologically.
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.ics' }).click();
+  await openExample('Sample.ics');
   const icframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const icf = await frameOf('iframe.fv-preview-frame');
   await icf.waitForSelector('.ics-event', { timeout: 8000 });
@@ -21,7 +21,7 @@ export async function run(ctx) {
 
   // ── Archive (.zip) ── list entries from the central directory (no extraction).
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.zip' }).click();
+  await openExample('Sample.zip');
   const zframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const zf = await frameOf('iframe.fv-preview-frame');
   await zf.waitForSelector('.zip-table tbody tr', { timeout: 12000 });
@@ -51,7 +51,7 @@ export async function run(ctx) {
 
   // ── Password-protected zip ── JSZip refuses it; we still list via our own central-dir parse + 🔒. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Locked.zip' }).click();
+  await openExample('Locked.zip');
   const lzframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const lzf = await frameOf('iframe.fv-preview-frame');
   await lzf.waitForSelector('.zip-table tbody tr', { timeout: 12000 });
@@ -63,7 +63,7 @@ export async function run(ctx) {
 
   // ── 7z archive ── with enableArchiveWasm off, shows the opt-in hint panel.
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.7z' }).click();
+  await openExample('Sample.7z');
   const szframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const szf = await frameOf('iframe.fv-preview-frame');
   await szf.waitForSelector('.zip-doc', { timeout: 12000 });
@@ -74,7 +74,7 @@ export async function run(ctx) {
 
   // ── Comic book (.cbz) ── zip of images → page reader (parent pane, blob image URLs, natural sort).
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.cbz' }).click();
+  await openExample('Sample.cbz');
   await page.waitForSelector('#previewHost .comic-doc .comic-page', { timeout: 15000 });
   const cbzType = await page.$eval('#typeSelect', (s) => s.value);
   if (cbzType === 'comic') pass('.cbz detected as Comic book'); else fail('cbz type: ' + cbzType);
@@ -91,7 +91,7 @@ export async function run(ctx) {
 
   // ── Email (.eml) ── parsed MIME: header card + sanitized HTML body, encoded subject decoded.
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.eml' }).click();
+  await openExample('Sample.eml');
   const eframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const ef = await frameOf('iframe.fv-preview-frame');
   await ef.waitForSelector('.eml-head', { timeout: 8000 });
@@ -109,7 +109,7 @@ export async function run(ctx) {
 
   // ── Mailbox (.mbox) ── split into messages, inbox list (reuses the eml MIME parser). ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.mbox' }).click();
+  await openExample('Sample.mbox');
   const mbframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const mbf = await frameOf('iframe.fv-preview-frame');
   await mbf.waitForSelector('.mbox-msg', { timeout: 8000 });
@@ -126,7 +126,7 @@ export async function run(ctx) {
 
   // ── Jupyter Notebook (.ipynb) ── markdown + code cells + saved outputs, sanitized.
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.ipynb' }).click();
+  await openExample('Sample.ipynb');
   const nframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const nf = await frameOf('iframe.fv-preview-frame');
   await nf.waitForSelector('.nb-notebook', { timeout: 10000 });
@@ -149,7 +149,7 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
 
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'example.js' }).click();
+  await openExample('example.js');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
   const codeType = await page.$eval('#typeSelect', (s) => s.value);
   if (codeType === 'code') pass('JS file detected as Code with syntax highlighting'); else fail('js type: ' + codeType);
@@ -160,7 +160,7 @@ export async function run(ctx) {
   if (okLens) pass('code metrics CodeLens: per-function LOC + complexity (fib=2, classify=7)'); else fail('codelens text: ' + lensText.slice(0, 160));
 
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'example.svg' }).click();
+  await openExample('example.svg');
   const sframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const sf = await frameOf('iframe.fv-preview-frame');
   await sf.waitForSelector('.img-doc svg', { timeout: 8000 });

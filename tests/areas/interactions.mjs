@@ -1,5 +1,5 @@
 export async function run(ctx) {
-  const { browser, page, origin, frameOf, pass, fail, consoleErrors, offOrigin } = ctx;
+  const { browser, page, origin, frameOf, pass, fail, consoleErrors, offOrigin, openExample } = ctx;
 
   // ── New empty file ── create from the intake screen; the extension drives the type.
   // (Runs BEFORE the persistent dialog handler below, so page.once can answer the name prompt.)
@@ -30,7 +30,7 @@ export async function run(ctx) {
   page.on('dialog', (d) => (acceptScripts ? d.accept() : d.dismiss()));
   // Default: dismiss -> sanitized, script must NOT run.
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.html' }).click();
+  await openExample('Sample.html');
   const hframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const hf = await frameOf('iframe.fv-preview-frame');
   await hf.waitForSelector('#safe', { timeout: 8000 });
@@ -40,7 +40,7 @@ export async function run(ctx) {
   // Opt in: accept -> scripts run in the sandbox.
   acceptScripts = true;
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.html' }).click();
+  await openExample('Sample.html');
   const hframe2 = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const hf2 = await frameOf('iframe.fv-preview-frame');
   await hf2.waitForSelector('#ran-script', { timeout: 8000 });
@@ -74,7 +74,7 @@ export async function run(ctx) {
   const hasOldOpen = await page.$('#openBtn');
   const hasInlineOpen = await page.$('#openInlineBtn');
   if (!hasOldOpen && hasInlineOpen) pass('duplicate top-bar open button removed (inline 📂 kept)'); else fail('openBtn present=' + !!hasOldOpen + ' inline=' + !!hasInlineOpen);
-  await page.getByRole('button', { name: 'Welcome.md' }).click();
+  await openExample('Welcome.md');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 20000 });
   const clean0 = await page.evaluate(() => window.__fv.hasUnsavedWork());
   await page.evaluate(() => { const rv = window.__fv.state.rawview; rv.setValue(rv.getValue() + '\nunsaved edit'); });
@@ -92,7 +92,7 @@ export async function run(ctx) {
   mpage.on('pageerror', (e) => consoleErrors.push('[mobile] pageerror: ' + e.message));
   mpage.on('request', (req) => { const u = req.url(); if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u); });
   await mpage.goto(origin, { waitUntil: 'networkidle' });
-  await mpage.getByRole('button', { name: 'Welcome.md' }).click();
+  await openExample('Welcome.md', mpage);
   const mframe = await mpage.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
   // Preview must NOT scroll horizontally on a phone (fixed to screen width).
   const mpf = await frameOf('iframe.fv-preview-frame');
@@ -149,7 +149,7 @@ export async function run(ctx) {
     // Go offline, hard-reload: the app must still load and render from cache.
     await octx.setOffline(true);
     await op.reload({ waitUntil: 'domcontentloaded' });
-    await op.getByRole('button', { name: 'Welcome.md' }).click();
+    await openExample('Welcome.md', op);
     await op.waitForSelector('.monaco-editor', { timeout: 30000 });
     const offl = await op.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
     await (await frameOf('iframe.fv-preview-frame')).waitForSelector('h1', { timeout: 10000 });
@@ -161,7 +161,7 @@ export async function run(ctx) {
 
   // ── Two-file Compare ("Compare with…") ── pick a 2nd file → diff current ↔ other ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.csv' }).click();
+  await openExample('Sample.csv');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
   const compareBtnShown = await page.$eval('#compareBtn', (e) => !e.closest('[hidden]'));
   if (compareBtnShown) pass('compare button available for an editable type'); else fail('compare button hidden for csv');
@@ -180,7 +180,7 @@ export async function run(ctx) {
 
   // ── Side-by-side: view two files (incl. non-text) next to each other ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Welcome.md' }).click();
+  await openExample('Welcome.md');
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 15000 });
   const sbsShown = await page.$eval('#sbsBtn', (e) => !e.hidden);
   if (sbsShown) pass('side-by-side button shown for a previewable file'); else fail('sbs button hidden');

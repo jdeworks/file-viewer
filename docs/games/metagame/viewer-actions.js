@@ -4,6 +4,7 @@ const STAGE1_FILE = 'Overwriter.frag';
 const STAGE2_FILE = 'cipher.txt';
 const STAGE2_QUERY = 'PASSAGE';
 const STAGE2_RESULT = 'PASSAGE:247';
+const SECRET_TXT_FILE = 'secret.txt';
 const STAGE5_FILE = 'transmission_hum.mp3';
 const STAGE5_REQUIRED_MS = 14000;
 const STAGE6_FILE = 'protocols_of_the_entity.epub';
@@ -29,6 +30,19 @@ function extractSearchResultText(result) {
   if (typeof result === 'string') return result;
   if (!result || typeof result !== 'object') return '';
   return result.result || result.text || result.value || result.line || result.match || '';
+}
+
+export function isSecretTxtFile(file) {
+  return basename(file) === SECRET_TXT_FILE;
+}
+
+export function recordSecretTxtOpen({ file, setAction = sharedSetAction } = {}) {
+  if (!isSecretTxtFile(file)) return false;
+  setAction?.(0, 'archivist_breadcrumb_found', {
+    source: 'viewer-open',
+    file: SECRET_TXT_FILE,
+  });
+  return true;
 }
 
 export function isStage1OverwriterFile(file) {
@@ -137,6 +151,7 @@ export function recordStage7MetadataInspection({ file, field, entity = 'F', setA
 export function recordMetagameViewerOpen({ file, path, opts = {}, setAction = sharedSetAction } = {}) {
   const target = file || path;
   const results = [
+    recordSecretTxtOpen({ file: target, setAction }),
     recordStage6CodexOpen({ file: target, setAction }),
     recordStage7MetadataInspection({
       file: target,

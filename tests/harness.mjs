@@ -83,7 +83,9 @@ export async function createHarness() {
     if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u);
   });
 
-  return { browser, server, page, origin, ROOT, frameOf, pass, fail, consoleErrors, offOrigin };
+  const openExample = (label, pg) => (pg || page).evaluate((l) => window.__fv.openExampleByLabel(l), label);
+
+  return { browser, server, page, origin, ROOT, frameOf, pass, fail, consoleErrors, offOrigin, openExample };
 }
 
 export async function finish(ctx) {

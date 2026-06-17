@@ -1,9 +1,9 @@
 export async function run(ctx) {
-  const { page, origin, frameOf, pass, fail } = ctx;
+  const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── vCard (.vcf) ── parse contacts into cards (name, email, phone). ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.vcf' }).click();
+  await openExample('Sample.vcf');
   const vcfframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const vcff = await frameOf('iframe.fv-preview-frame');
   await vcff.waitForSelector('.vcf-card', { timeout: 8000 });
@@ -30,7 +30,7 @@ export async function run(ctx) {
 
   // ── Subtitles (.srt/.vtt) ── parse cues into a timecoded list. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.srt' }).click();
+  await openExample('Sample.srt');
   const subframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const subf = await frameOf('iframe.fv-preview-frame');
   await subf.waitForSelector('.sub-cue', { timeout: 8000 });
@@ -47,7 +47,7 @@ export async function run(ctx) {
 
   // ── GeoJSON map ── pure inline SVG, no tiles (zero network). ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.geojson' }).click();
+  await openExample('Sample.geojson');
   const geoframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const geof = await frameOf('iframe.fv-preview-frame');
   await geof.waitForSelector('.geo-svg', { timeout: 8000 });
@@ -75,7 +75,7 @@ export async function run(ctx) {
 
   // ── ID3 metadata ── an MP3's tags surface in the info drawer. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.mp3' }).click();
+  await openExample('Sample.mp3');
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
   await page.click('#metaBtn');
   await page.waitForSelector('#metaDrawer:not([hidden]) #metaBody', { timeout: 6000 });
@@ -86,11 +86,23 @@ export async function run(ctx) {
 
   // ── Font specimen ── load the font via FontFace + render sample text in the parent pane. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.ttf' }).click();
+  await openExample('Sample.ttf');
   await page.waitForSelector('#previewHost .font-doc', { timeout: 12000 });
   const fontTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (fontTypeId === 'font') pass('.ttf detected as Font'); else fail('font type: ' + fontTypeId);
   const fontSamples = await page.$$eval('#previewHost .font-sample', (els) => els.length);
   const fontLoaded = await page.evaluate(() => [...document.fonts].some((f) => /^fvfont-/.test(f.family) && f.status === 'loaded'));
   if (fontSamples >= 6 && fontLoaded) pass('font specimen rendered + FontFace loaded (' + fontSamples + ' samples)'); else fail('font: samples=' + fontSamples + ' loaded=' + fontLoaded);
+
+  // ── URL Inspector ── detect + render a .url file. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  // Use __fv.openViewerFile to open the sample.url example directly
+  await page.evaluate(async () => { await window.__fv.openViewerFile('/docs/examples/sample.url'); });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const urlTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (urlTypeId === 'url') pass('.url file detected as URL Inspector'); else fail('url type: ' + urlTypeId);
+  const urlf = await frameOf('iframe.fv-preview-frame');
+  await urlf.waitForSelector('.ui-table', { timeout: 8000 });
+  const urlScheme = await urlf.$eval('.ui-table', (e) => e.textContent);
+  if (/https/.test(urlScheme) && /api\.example\.com/.test(urlScheme)) pass('URL inspector renders scheme + host'); else fail('url render: ' + urlScheme.slice(0, 120));
 }

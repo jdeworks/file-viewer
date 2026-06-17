@@ -3,11 +3,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 export async function run(ctx) {
-  const { browser, page, origin, frameOf, pass, fail } = ctx;
+  const { browser, page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── STL 3D viewer ── hand-rolled canvas renderer (zero dep), draws the mesh. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.stl' }).click();
+  await openExample('Sample.stl');
   await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
   const stlTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (stlTypeId === 'stl') pass('.stl detected as 3D model'); else fail('stl type: ' + stlTypeId);
@@ -36,7 +36,7 @@ export async function run(ctx) {
 
   // ── OBJ 3D viewer ── reuses the shared mesh viewer; polygons fan-triangulated. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.obj' }).click();
+  await openExample('Sample.obj');
   await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
   const objTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (objTypeId === 'obj') pass('.obj detected as 3D model'); else fail('obj type: ' + objTypeId);
@@ -55,7 +55,7 @@ export async function run(ctx) {
 
   // ── glTF/GLB 3D viewer ── binary GLB parsed (chunks + accessors + node transforms). ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.glb' }).click();
+  await openExample('Sample.glb');
   await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
   const glbTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (glbTypeId === 'gltf') pass('.glb detected as 3D model (glTF)'); else fail('glb type: ' + glbTypeId);
@@ -73,7 +73,7 @@ export async function run(ctx) {
 
   // ── PLY 3D viewer ── ASCII (gallery) + binary-little-endian (via file input). ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.ply' }).click();
+  await openExample('Sample.ply');
   await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
   const plyTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (plyTypeId === 'ply') pass('.ply detected as 3D model'); else fail('ply type: ' + plyTypeId);
@@ -97,7 +97,7 @@ export async function run(ctx) {
 
   // ── Raster image ── parent-pane viewer with fit-to-screen default + size-based zoom. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.png' }).click();
+  await openExample('Sample.png');
   await page.waitForSelector('#previewHost .imgv-img', { timeout: 12000 });
   const imgType = await page.$eval('#typeSelect', (s) => s.value);
   if (imgType === 'image') pass('.png detected as Image'); else fail('image type: ' + imgType);
@@ -123,7 +123,7 @@ export async function run(ctx) {
 
   // ── Audio/Video (media) ── native player rendered in the pane via a blob: URL.
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.wav' }).click();
+  await openExample('Sample.wav');
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
   const mediaType = await page.$eval('#typeSelect', (s) => s.value);
   if (mediaType === 'media') pass('.wav detected as Audio / Video'); else fail('media type: ' + mediaType);
@@ -174,7 +174,7 @@ export async function run(ctx) {
     });
     const ip = await ictx.newPage();
     await ip.goto(origin, { waitUntil: 'networkidle' });
-    await ip.getByRole('button', { name: 'Sample.wav' }).click();
+    await openExample('Sample.wav', ip);
     await ip.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
     const shown = await ip.waitForSelector('#iosAudioHint:not([hidden])', { timeout: 8000 }).catch(() => null);
     const hintText = shown ? await ip.$eval('#iosAudioHint', (e) => e.textContent) : '';
@@ -193,7 +193,7 @@ export async function run(ctx) {
   // ── ffmpeg.wasm transcoding opt-in ── opening a format that likely needs transcoding (AVI)
   // with enableFfmpeg OFF shows a hint panel pointing to Advanced settings.
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.avi' }).click();
+  await openExample('Sample.avi');
   await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
   const aviType = await page.$eval('#typeSelect', (s) => s.value);
   if (aviType === 'media') pass('AVI detected as media type'); else fail('AVI type: ' + aviType);

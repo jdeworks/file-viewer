@@ -1,9 +1,9 @@
 export async function run(ctx) {
-  const { page, origin, frameOf, pass, fail } = ctx;
+  const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── JSON ↔ YAML conversion exports (loadExports) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.json' }).click();
+  await openExample('Sample.json');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
@@ -16,7 +16,7 @@ export async function run(ctx) {
   if (/\.yaml$/.test(yamlDownload.suggestedFilename())) pass('JSON → YAML conversion download (' + yamlDownload.suggestedFilename() + ')'); else fail('json→yaml name: ' + yamlDownload.suggestedFilename());
 
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.yaml' }).click();
+  await openExample('Sample.yaml');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
@@ -30,7 +30,7 @@ export async function run(ctx) {
 
   // ── Subtitle SRT → VTT + TOML → JSON conversions (loadExports) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.srt' }).click();
+  await openExample('Sample.srt');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
@@ -43,7 +43,7 @@ export async function run(ctx) {
   if (/\.vtt$/.test(vttDl.suggestedFilename())) pass('subtitle SRT → VTT download (' + vttDl.suggestedFilename() + ')'); else fail('srt→vtt: ' + vttDl.suggestedFilename());
 
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: 'Sample.toml' }).click();
+  await openExample('Sample.toml');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
