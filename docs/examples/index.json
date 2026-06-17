@@ -468,5 +468,10 @@
     "label": "sample.img",
     "file": "sample.img",
     "category": "Binary"
+  },
+  {
+    "label": "sample.nes",
+    "file": "sample.nes",
+    "category": "Binary"
   }
 ]

@@ -75,6 +75,7 @@ import gcodeType from '../types/text/gcode/index.js';
 import gitignoreType from '../types/text/gitignore/index.js';
 import ruffleType from '../types/emulator/ruffle/index.js';
 import v86Type from '../types/emulator/v86/index.js';
+import emulatorjsType from '../types/emulator/emulatorjs/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -125,6 +126,7 @@ export const REGISTRY = [
   gitignoreType,
   ruffleType,
   v86Type,
+  emulatorjsType,
   codeType,
   rawType,
 ];

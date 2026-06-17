@@ -55,6 +55,7 @@ const BUNDLE_GROUPS = {
   'vendor:ffmpeg': 'Media',
   'vendor:ruffle': 'Emulators',
   'vendor:v86': 'Emulators',
+  'vendor:emulatorjs': 'Emulators',
   games: 'Games',
   examples: 'Content',
 };
