@@ -70,3 +70,28 @@ export async function removeWatchedPath(path) {
   });
   return res.json();
 }
+
+// Watch a specific absolute path for changes via SSE.  Only opens the
+// EventSource when the companion is enabled (isEnabled() is true) AND the
+// caller provides an absolutePath — so new users produce ZERO off-origin requests.
+// Returns a cleanup function that closes the EventSource.
+export function watchFile(absolutePath, onChanged) {
+  if (!isEnabled() || !absolutePath) return () => {};
+
+  const es = new EventSource(`${BASE}/watch`);
+
+  es.onmessage = (e) => {
+    try {
+      const event = JSON.parse(e.data);
+      if (event.path === absolutePath && event.kind !== 'other') {
+        onChanged(event);
+      }
+    } catch { /* ignore parse errors */ }
+  };
+
+  es.onerror = () => {
+    // EventSource reconnects automatically; suppress console noise.
+  };
+
+  return () => es.close();
+}

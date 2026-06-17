@@ -11,10 +11,12 @@ use tempfile::TempDir;
 use tower::ServiceExt;
 
 fn build_app(token: &str, watched: Vec<std::path::PathBuf>) -> Router {
+    let (watcher_tx, _) = tokio::sync::broadcast::channel(1);
     let state = AppState {
         token: token.to_string(),
         watched_paths: Arc::new(Mutex::new(watched)),
         debug: false,
+        watcher_tx,
     };
 
     let protected = Router::new()
@@ -30,6 +32,7 @@ fn build_app(token: &str, watched: Vec<std::path::PathBuf>) -> Router {
         .route("/find-folder", get(routes::get_find_folder))
         .route("/file", get(routes::get_file))
         .route("/files", get(routes::get_files))
+        .route("/watch", get(routes::watch_sse))
         .merge(protected)
         .with_state(state)
 }
@@ -258,4 +261,35 @@ async fn test_list_files() {
         .collect();
     assert!(names.contains(&"a.txt"));
     assert!(names.contains(&"subdir"));
+}
+
+// --- GET /watch (SSE) ---
+
+#[tokio::test]
+async fn test_watch_endpoint_exists() {
+    // GET /watch must respond 200 with Content-Type: text/event-stream.
+    // We don't try to consume the stream (it would block); we only inspect the
+    // response headers, which are sent immediately before the body is streamed.
+    let app = build_app("secret", vec![]);
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .uri("/watch")
+                .header(header::ACCEPT, "text/event-stream")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), StatusCode::OK);
+    let ct = resp
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    assert!(
+        ct.starts_with("text/event-stream"),
+        "expected text/event-stream, got: {ct}"
+    );
 }

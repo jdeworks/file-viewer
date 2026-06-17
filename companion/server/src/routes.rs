@@ -2,11 +2,16 @@ use axum::{
     body::Bytes,
     extract::{Query, State},
     http::{header, StatusCode},
-    response::{IntoResponse, Response},
+    response::{
+        sse::{Event as SseEvent, KeepAlive, Sse},
+        IntoResponse, Response,
+    },
     Json,
 };
+use futures_util::stream::Stream;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 
 use crate::{
     config::save_config,
@@ -298,4 +303,27 @@ pub async fn get_files(State(state): State<AppState>, Query(q): Query<FileQuery>
             (StatusCode::OK, Json(FilesResponse { entries })).into_response()
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// GET /watch  — Server-Sent Events stream for file change notifications.
+// No auth required: it only emits paths of files already inside watched dirs.
+// ---------------------------------------------------------------------------
+
+pub async fn watch_sse(
+    State(state): State<AppState>,
+) -> Sse<impl Stream<Item = Result<SseEvent, std::convert::Infallible>>> {
+    let rx = state.watcher_tx.subscribe();
+    let stream = BroadcastStream::new(rx)
+        .filter_map(|r| r.ok())
+        .map(|event| {
+            let data = serde_json::to_string(&event).unwrap_or_default();
+            Ok(SseEvent::default().data(data))
+        });
+
+    Sse::new(stream).keep_alive(
+        KeepAlive::new()
+            .interval(std::time::Duration::from_secs(15))
+            .text("ping"),
+    )
 }

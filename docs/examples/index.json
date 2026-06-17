@@ -251,7 +251,7 @@
     "category": "Config"
   },
   {
-    "label": "sample.env",
+    "label": "sample.env (environment variables)",
     "file": "sample.env",
     "mime": "text/plain",
     "category": "Config"

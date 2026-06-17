@@ -32,7 +32,7 @@ import { buildMetadata } from './meta-drawer.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, flushFolderEdit } from './folder.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
 import { recordMetagameViewerOpen, recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
-import { detectCompanion, findFile, saveFile, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath } from './companion.js';
+import { detectCompanion, findFile, saveFile, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -534,6 +534,64 @@ function setCompanionLinked(absPath) {
   } else {
     el.hidden = true;
   }
+  // Start/stop watching whenever the linked path changes.
+  if (absPath && companionAvailable) startWatching(absPath);
+  else stopWatching();
+}
+
+// ── File-watch / reload banner ──────────────────────────────────────────────
+
+let _watchCleanup = null;
+
+function startWatching(absolutePath) {
+  stopWatching();
+  _watchCleanup = watchFile(absolutePath, (event) => {
+    showReloadBanner(absolutePath, event.kind);
+  });
+}
+
+function stopWatching() {
+  if (_watchCleanup) { _watchCleanup(); _watchCleanup = null; }
+  // Remove any existing banner when the file link is cleared.
+  document.querySelector('.companion-reload-banner')?.remove();
+}
+
+async function reloadFromDisk(absolutePath) {
+  try {
+    const res = await fetch(`http://127.0.0.1:7700/file?path=${encodeURIComponent(absolutePath)}`);
+    if (!res.ok) { toast('Reload failed: ' + res.status); return; }
+    const blob = await res.blob();
+    const file = new File([blob], absolutePath.split('/').pop() || 'file', { type: blob.type });
+    // Use the existing intake pipeline so the viewer re-renders correctly.
+    const intake = await intakeFromFile(file);
+    state._skipDiscardGuard = true;
+    await loadIntake(intake);
+    setCompanionLinked(absolutePath);
+    toast('Reloaded from disk');
+  } catch (err) {
+    toast('Reload error: ' + err.message);
+  }
+}
+
+function showReloadBanner(absolutePath, kind) {
+  // Remove any previous banner first (deduplicate rapid change events).
+  document.querySelector('.companion-reload-banner')?.remove();
+
+  const banner = document.createElement('div');
+  banner.className = 'companion-reload-banner';
+  const msg = document.createElement('span');
+  msg.textContent = kind === 'remove' ? 'File deleted on disk' : 'File changed on disk';
+  const reloadBtn = document.createElement('button');
+  reloadBtn.className = 'reload-btn';
+  reloadBtn.textContent = 'Reload';
+  reloadBtn.addEventListener('click', () => { banner.remove(); reloadFromDisk(absolutePath); });
+  const dismissBtn = document.createElement('button');
+  dismissBtn.className = 'dismiss-btn';
+  dismissBtn.textContent = '✕';
+  dismissBtn.title = 'Dismiss';
+  dismissBtn.addEventListener('click', () => banner.remove());
+  banner.append(msg, reloadBtn, dismissBtn);
+  document.body.prepend(banner);
 }
 
 function syncSaveBtn() {
@@ -656,6 +714,7 @@ function renderCompanionSettings(container) {
       else foldersList.innerHTML = '<span class="companion-folders-empty">Start the Companion app to manage folders.</span>';
     } else {
       companionAvailable = false;
+      stopWatching();
       document.body.classList.remove('companion-active');
       summary.innerHTML = `Companion <span class="companion-status-dot">○ not found</span>`;
       syncSaveBtn();

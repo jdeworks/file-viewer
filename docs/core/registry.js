@@ -52,6 +52,7 @@ import plistType from '../types/text/plist/index.js';
 import stringsType from '../types/text/strings/index.js';
 import xmlType from '../types/text/xml/index.js';
 import iniType from '../types/text/ini/index.js';
+import envType from '../types/text/env/index.js';
 import patchType from '../types/text/patch/index.js';
 import logType from '../types/text/log/index.js';
 import crashType from '../types/text/crash/index.js';
@@ -117,6 +118,7 @@ export const REGISTRY = [
   plistType,
   stringsType,
   xmlType,
+  envType,
   iniType,
   patchType,
   logType,

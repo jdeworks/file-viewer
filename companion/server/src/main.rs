@@ -4,7 +4,9 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
-use file_viewer_companion::{auth::require_token, config::load_config, routes, AppState};
+use file_viewer_companion::{
+    auth::require_token, config::load_config, routes, watcher::FileWatcher, AppState,
+};
 use std::sync::{Arc, Mutex};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
@@ -31,10 +33,27 @@ async fn main() {
     println!("  (set COMPANION_TOKEN env var to use a fixed token)");
     println!("═══════════════════════════════════");
 
+    let watched_paths = Arc::new(Mutex::new(watched));
+
+    // Start the file watcher. On failure (e.g. inotify limit), warn and use a
+    // no-op broadcast channel so the rest of the server still starts.
+    let (watcher_tx, _watcher) = match FileWatcher::new(Arc::clone(&watched_paths)) {
+        Ok(fw) => {
+            let tx = fw.tx.clone();
+            (tx, Some(fw))
+        }
+        Err(e) => {
+            eprintln!("Warning: file watcher could not start: {e}");
+            let (tx, _) = tokio::sync::broadcast::channel(1);
+            (tx, None)
+        }
+    };
+
     let state = AppState {
         token,
-        watched_paths: Arc::new(Mutex::new(watched)),
+        watched_paths,
         debug,
+        watcher_tx,
     };
 
     let cors = CorsLayer::new()
@@ -60,9 +79,13 @@ async fn main() {
         .route("/find-folder", get(routes::get_find_folder))
         .route("/file", get(routes::get_file))
         .route("/files", get(routes::get_files))
+        .route("/watch", get(routes::watch_sse))
         .merge(protected)
         .layer(cors)
         .with_state(state);
+
+    // Keep _watcher alive for the lifetime of main so FS events keep flowing.
+    let _keep = _watcher;
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:7700")
         .await

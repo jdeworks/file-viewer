@@ -13,6 +13,7 @@ path = "src/lib.rs"
 
 [dependencies]
 axum = "0.7"
+futures-util = "0.3"
 tokio = { version = "1", features = ["full"] }
 tower-http = { version = "0.5", features = ["cors", "trace"] }
 serde = { version = "1", features = ["derive"] }
@@ -20,6 +21,8 @@ serde_json = "1"
 uuid = { version = "1", features = ["v4"] }
 dirs = "5"
 mime_guess = "2"
+notify = { version = "6", features = ["macos_fsevent"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
