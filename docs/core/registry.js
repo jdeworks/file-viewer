@@ -20,6 +20,7 @@
 //     syntaxLanguage: string|null,      // Monaco language id for highlighting
 //     loadRenderer() => Promise<{render}>,   // lazy: heavy deps live here, not at detect time
 //     loadMetadata() => Promise<{extract}>,  // lazy per-type metadata extractor (optional)
+//     about?: { description:string, usedFor?: [{label, description, href}] },
 //     settingsUrl: URL,                 // settings.default.json location
 //   }
 //

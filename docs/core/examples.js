@@ -6,6 +6,7 @@
 import { $ } from './state.js';
 import { intakeFromFile } from './intake.js';
 import { REGISTRY } from './registry.js';
+import { getTypeInfo, sampleDescription } from './type-info.js';
 
 const EXAMPLE_CATEGORY_ORDER = ['Documents', 'Ebook', 'Data', 'Office', 'Config', 'Code', 'Image', 'Media', '3D', 'Archive & Binary', 'Secrets', 'Binary', 'Emulator', 'Text', 'Other', 'Metagame'];
 const CATEGORY_ICONS = {
@@ -191,13 +192,16 @@ function renderGallery(host, list, onPick) {
       b.textContent = ex.label || ex.file;
       b.className = 'ex-file-btn';
       const info = exampleInfo(ex);
+      const tip = ex.description || sampleDescription(ex, getTypeInfo(info.type));
       const cats = categoriesFor(ex);
       b.dataset.categories = cats.join('|');
-      b.dataset.search = [ex.label, ex.file, ex.mime, info.typeLabel, cats.join(' ')].join(' ').toLowerCase();
+      b.dataset.search = [ex.label, ex.file, ex.mime, info.typeLabel, tip, cats.join(' ')].join(' ').toLowerCase();
       b.dataset.editable = info.editable ? '1' : '0';
       b.dataset.binary = info.binary ? '1' : '0';
       b.dataset.enhanced = info.enhanced ? '1' : '0';
       b.dataset.partial = info.partial ? '1' : '0';
+      b.title = tip;
+      b.setAttribute('aria-label', tip);
       b.onclick = async () => {
         const r = await fetch('examples/' + ex.file);
         const buf = new Uint8Array(await r.arrayBuffer());

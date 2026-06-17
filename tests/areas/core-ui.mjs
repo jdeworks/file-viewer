@@ -62,6 +62,11 @@ export async function run(ctx) {
   const catChipCount = await page.$$eval('#examples .ex-cat-chip', (els) => els.length);
   if (catChipCount === 0) pass('examples omit duplicate category filter chips');
   else fail('examples category chips still rendered: ' + catChipCount);
+  await page.click('#examples .ex-showall-btn');
+  await page.waitForSelector('#examples .ex-file-btn', { timeout: 4000 });
+  const welcomeTip = await page.$eval('#examples .ex-file-btn', (el) => el.getAttribute('title') || '');
+  if (/used for/i.test(welcomeTip)) pass('sample files expose hover descriptions');
+  else fail('sample hover description missing: ' + welcomeTip);
 
   // Load the Welcome.md example.
   await openExample('Welcome.md');
@@ -76,6 +81,12 @@ export async function run(ctx) {
   await f.waitForSelector('h1', { timeout: 10000 });
   const h1 = await f.$eval('h1', (el) => el.textContent);
   if (/Welcome to File Viewer/.test(h1)) pass('markdown rendered in sandboxed iframe'); else fail('h1 text: ' + h1);
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row a[target="_blank"][rel~="noopener"]', { timeout: 6000 });
+  const formatInfo = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Used for/.test(formatInfo) && /Format info\s*Markdown/.test(formatInfo)) pass('metadata drawer links to file-type information');
+  else fail('format info metadata missing: ' + formatInfo.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
 
   // Source map present (magic selector data attributes).
   const mapped = await f.$$eval('[data-fv-src]', (els) => els.length);

@@ -1,6 +1,7 @@
 // Metadata drawer: a small table of the active file's facts (name/type/size/mime/modified) plus any
 // per-type extracted metadata (EXIF, ID3, PDF info, …). Extracted from app.js; reads shared state.
 import { state, $, escapeHtml, formatBytes } from './state.js';
+import { getTypeInfo } from './type-info.js';
 
 const SENSITIVE_KEY_RE = /(SECRET|PASSWORD|TOKEN|KEY|PRIVATE)/i;
 
@@ -65,6 +66,33 @@ async function appendExtractedRows(rows, loader, intake) {
   for (const r of normalizeMetadata(result)) rows.push([r.label, r.value]);
 }
 
+function appendTextRow(body, key, value) {
+  const row = document.createElement('div');
+  row.className = 'meta-row';
+  row.innerHTML = `<span class="k">${escapeHtml(key)}</span><span class="v">${escapeHtml(String(value))}</span>`;
+  body.appendChild(row);
+}
+
+function appendTypeInfo(body) {
+  const info = getTypeInfo(state.type, state.known && !state.forceBase ? state.known : null);
+  appendTextRow(body, 'Used for', info.description);
+  const row = document.createElement('div');
+  row.className = 'meta-row';
+  const key = document.createElement('span');
+  key.className = 'k';
+  key.textContent = 'Format info';
+  const value = document.createElement('span');
+  value.className = 'v';
+  const link = document.createElement('a');
+  link.href = info.href;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = info.name;
+  value.appendChild(link);
+  row.append(key, value);
+  body.appendChild(row);
+}
+
 export async function buildMetadata() {
   const body = $('metaBody');
   const i = state.intake;
@@ -82,10 +110,9 @@ export async function buildMetadata() {
     try { await appendExtractedRows(rows, state.known.loadMetadata, i); } catch {}
   }
   body.innerHTML = '';
+  appendTypeInfo(body);
   for (const [k, v] of rows) {
-    const row = document.createElement('div'); row.className = 'meta-row';
-    row.innerHTML = `<span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v))}</span>`;
-    body.appendChild(row);
+    appendTextRow(body, k, v);
   }
   const note = document.createElement('p'); note.className = 'muted'; note.style.marginTop = '12px';
   note.style.fontSize = '12px';
