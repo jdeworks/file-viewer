@@ -5,7 +5,7 @@
 
 import { REGISTRY, getType } from './registry.js';
 import { pickType } from './detect.js';
-import { wireIntake, intakeFromFile, intakeFromText, LARGE_FILE_BYTES } from './intake.js';
+import { wireIntake, LARGE_FILE_BYTES } from './intake.js';
 import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
 import { findGitDir, isGitInternal, openRepo } from './git.js';
 import { matchKnown } from '../known/registry.js';
@@ -31,10 +31,10 @@ import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard,
 import { buildMetadata } from './meta-drawer.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey } from './folder.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
-import { recordMetagameViewerOpen, recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
 import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, renderCompanionSettings, detectCompanionOnStartup } from './companion-ui.js';
 import { initSessionTree, updateSessionTree, createNewFile, onTreeFileDrop } from './session-tree.js';
 import { populateTypeSelect } from './type-select.js';
+import { initViewerOpen, openExampleFile, openViewerFile, searchViewerFile } from './viewer-open.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -77,53 +77,6 @@ function showIntake() {
   $('intake').hidden = false;
   $('workspace').hidden = true;
   $('repoPanel').hidden = true;
-}
-
-async function openExampleFile(path, opts = {}) {
-  const clean = String(path || '').replace(/^\/?docs\/examples\//, '').replace(/^\/?examples\//, '');
-  if (!clean) return false;
-  const index = await fetch('examples/index.json').then((r) => r.ok ? r.json() : []).catch(() => []);
-  const meta = Array.isArray(index) ? index.find((entry) => entry.file === clean) : null;
-  const res = await fetch('examples/' + clean);
-  if (!res.ok) return false;
-  const buf = new Uint8Array(await res.arrayBuffer());
-  state._skipDiscardGuard = true;
-  await loadIntake(await intakeFromFile(new File([buf], clean.split('/').pop(), { type: opts.mime || meta?.mime || '' })));
-  return true;
-}
-
-async function openViewerFile(path, opts = {}) {
-  const target = String(path || '');
-  if (opts.text != null) {
-    state._skipDiscardGuard = true;
-    await loadIntake(intakeFromText(String(opts.text), target.split('/').pop() || opts.filename || 'generated.txt'));
-    recordMetagameViewerOpen({ path: target, opts });
-    return true;
-  }
-  if (target.includes('/docs/bts/') || target.includes('/bts/')) {
-    const clean = target.replace(/^\/?docs\/bts\//, '').replace(/^\/?bts\//, '');
-    const res = await fetch('bts/' + clean);
-    if (!res.ok) return false;
-    const text = await res.text();
-    state._skipDiscardGuard = true;
-    await loadIntake(intakeFromText(text, clean));
-    recordMetagameViewerOpen({ path: target, opts });
-    return true;
-  }
-  const opened = await openExampleFile(target, opts);
-  if (opened) recordMetagameViewerOpen({ path: target, opts });
-  return opened;
-}
-
-async function searchViewerFile(path, query, opts = {}) {
-  const target = String(path || '');
-  const clean = target.replace(/^\/?docs\/examples\//, '').replace(/^\/?examples\//, '');
-  const text = opts.text || (state.intake?.filename === clean.split('/').pop() ? state.rawview?.getValue?.() || state.intake.text : null);
-  const sourceText = text == null ? await fetch('examples/' + clean).then((r) => r.ok ? r.text() : '').catch(() => '') : text;
-  const line = sourceText.split(/\r?\n/).find((entry) => entry.includes(query));
-  const result = line && line.trim();
-  recordStage2SearchResult({ file: target || clean, query, result });
-  return { found: Boolean(result), result };
 }
 
 /* ─────────────────────────── Type activation ─────────────────────────── */
@@ -351,6 +304,7 @@ function showMetaBtnEgg(msg, onDismiss) {
 function init() {
   initCompanionUi({ loadIntake });
   initSessionTree({ loadIntake });
+  initViewerOpen({ loadIntake });
   // Inject the core-flow callbacks the folder module needs (one-way: app imports folder, folder
   // gets these via init — no circular import).
   initFolder({

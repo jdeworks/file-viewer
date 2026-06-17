@@ -1,0 +1,56 @@
+import { intakeFromFile, intakeFromText } from './intake.js';
+import { state } from './state.js';
+import { recordMetagameViewerOpen, recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
+
+let loadIntakeCallback = null;
+
+export function initViewerOpen({ loadIntake }) {
+  loadIntakeCallback = loadIntake;
+}
+
+export async function openExampleFile(path, opts = {}) {
+  const clean = String(path || '').replace(/^\/?docs\/examples\//, '').replace(/^\/?examples\//, '');
+  if (!clean) return false;
+  const index = await fetch('examples/index.json').then((r) => r.ok ? r.json() : []).catch(() => []);
+  const meta = Array.isArray(index) ? index.find((entry) => entry.file === clean) : null;
+  const res = await fetch('examples/' + clean);
+  if (!res.ok) return false;
+  const buf = new Uint8Array(await res.arrayBuffer());
+  state._skipDiscardGuard = true;
+  await loadIntakeCallback(await intakeFromFile(new File([buf], clean.split('/').pop(), { type: opts.mime || meta?.mime || '' })));
+  return true;
+}
+
+export async function openViewerFile(path, opts = {}) {
+  const target = String(path || '');
+  if (opts.text != null) {
+    state._skipDiscardGuard = true;
+    await loadIntakeCallback(intakeFromText(String(opts.text), target.split('/').pop() || opts.filename || 'generated.txt'));
+    recordMetagameViewerOpen({ path: target, opts });
+    return true;
+  }
+  if (target.includes('/docs/bts/') || target.includes('/bts/')) {
+    const clean = target.replace(/^\/?docs\/bts\//, '').replace(/^\/?bts\//, '');
+    const res = await fetch('bts/' + clean);
+    if (!res.ok) return false;
+    const text = await res.text();
+    state._skipDiscardGuard = true;
+    await loadIntakeCallback(intakeFromText(text, clean));
+    recordMetagameViewerOpen({ path: target, opts });
+    return true;
+  }
+  const opened = await openExampleFile(target, opts);
+  if (opened) recordMetagameViewerOpen({ path: target, opts });
+  return opened;
+}
+
+export async function searchViewerFile(path, query, opts = {}) {
+  const target = String(path || '');
+  const clean = target.replace(/^\/?docs\/examples\//, '').replace(/^\/?examples\//, '');
+  const text = opts.text || (state.intake?.filename === clean.split('/').pop() ? state.rawview?.getValue?.() || state.intake.text : null);
+  const sourceText = text == null ? await fetch('examples/' + clean).then((r) => r.ok ? r.text() : '').catch(() => '') : text;
+  const line = sourceText.split(/\r?\n/).find((entry) => entry.includes(query));
+  const result = line && line.trim();
+  recordStage2SearchResult({ file: target || clean, query, result });
+  return { found: Boolean(result), result };
+}
