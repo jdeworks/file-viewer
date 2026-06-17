@@ -84,6 +84,12 @@
     "category": "Data"
   },
   {
+    "label": "Sample.msg",
+    "file": "sample.msg",
+    "mime": "application/vnd.ms-outlook",
+    "category": "Data"
+  },
+  {
     "label": "Sample.ics",
     "file": "sample.ics",
     "mime": "text/calendar",

@@ -44,6 +44,7 @@ import codeType from '../types/text/code/index.js';
 import htmlType from '../types/html/index.js';
 import emlType from '../types/eml/index.js';
 import mboxType from '../types/mbox/index.js';
+import msgType from '../types/binary/msg/index.js';
 import icsType from '../types/ics/index.js';
 import yamlType from '../types/text/yaml/index.js';
 import tomlType from '../types/text/toml/index.js';
@@ -102,6 +103,7 @@ export const REGISTRY = [
   htmlType,
   emlType,
   mboxType,
+  msgType,
   icsType,
   kubeconfigType,
   yamlType,
