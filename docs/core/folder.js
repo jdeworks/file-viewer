@@ -10,6 +10,7 @@ import { buildTree, renderTree } from './filetree.js';
 import { intakeFromFile, intakeFromText } from './intake.js';
 import { exportFolderZip } from './folder-export.js';
 import { downloadBlob } from './exports.js';
+import { recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
 
 // Injected core-flow callbacks (set once by app.js init()).
 let loadIntake = () => {};
@@ -117,7 +118,11 @@ export async function searchTreeContents() {
     try {
       const text = await e.file.text();
       if (text.includes('\0')) continue;                  // looks binary
-      if (text.toLowerCase().includes(ql)) matched.add(e.path);
+      if (text.toLowerCase().includes(ql)) {
+        matched.add(e.path);
+        const line = text.split(/\r?\n/).find((entry) => entry.includes(q));
+        recordStage2SearchResult({ file: e.path, query: q, result: line && line.trim() });
+      }
     } catch { /* unreadable — skip */ }
   }
   const shown = state.treeApi.filter((path) => matched.has(path));

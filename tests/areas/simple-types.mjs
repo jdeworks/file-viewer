@@ -12,6 +12,11 @@ export async function run(ctx) {
   const vcfNames = await vcff.$$eval('.vcf-card .vcf-name', (els) => els.map((e) => e.textContent));
   const mailto = await vcff.$$eval('.vcf-card a[href^="mailto:"]', (els) => els.map((a) => a.getAttribute('href')));
   if (vcfNames.length === 2 && vcfNames.includes('Ada Lovelace') && mailto.some((h) => /ada@example\.com/.test(h))) pass('vCard contacts parsed (2 cards, mailto links)'); else fail('vcard names=' + vcfNames.join(',') + ' mailto=' + mailto.join(','));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const vcfMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Organizations\s*2/.test(vcfMeta) && /URLs\s*1/.test(vcfMeta)) pass('vCard metadata includes organizations and URLs'); else fail('vcard meta: ' + vcfMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
   // vCard → CSV export (contacts to a spreadsheet).
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
@@ -34,6 +39,11 @@ export async function run(ctx) {
   const cueCount = await subf.$$eval('.sub-cue', (els) => els.length);
   const firstTime = await subf.$eval('.sub-cue .sub-time', (e) => e.textContent);
   if (cueCount === 3 && /0:01\s*→\s*0:04/.test(firstTime)) pass('subtitle cues parsed with timecodes (' + cueCount + ' cues)'); else fail('subtitle cues=' + cueCount + ' first=' + firstTime);
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const subMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/First cue\s*0:01/.test(subMeta) && /Spoken time/.test(subMeta)) pass('subtitle metadata includes first cue and spoken time'); else fail('subtitle meta: ' + subMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
 
   // ── GeoJSON map ── pure inline SVG, no tiles (zero network). ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -47,6 +57,11 @@ export async function run(ctx) {
   const geoPolys = await geof.$$eval('.geo-svg .geo-poly', (els) => els.length);
   const geoPts = await geof.$$eval('.geo-svg .geo-pt', (els) => els.length);
   if (geoLines >= 1 && geoPolys >= 1 && geoPts >= 2) pass('GeoJSON drawn as SVG (' + geoLines + ' line, ' + geoPolys + ' polygon, ' + geoPts + ' points)'); else fail('geo svg: line=' + geoLines + ' poly=' + geoPolys + ' pt=' + geoPts);
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const geoMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*GeoJSON/.test(geoMeta) && /Bounds/.test(geoMeta)) pass('geo metadata includes format and bounds'); else fail('geo meta: ' + geoMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
   // GeoJSON → GPX export.
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });

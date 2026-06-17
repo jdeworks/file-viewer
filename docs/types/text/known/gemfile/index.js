@@ -5,4 +5,5 @@ export default {
   label: 'Gemfile',
   match: (intake) => /(^|\/)Gemfile$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

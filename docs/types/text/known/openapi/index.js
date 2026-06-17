@@ -9,4 +9,5 @@ export default {
   label: 'OpenAPI / Swagger',
   match: (intake, baseType) => (baseType.id === 'yaml' || baseType.id === 'json') && looksLikeSpec(intake),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

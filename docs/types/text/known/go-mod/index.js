@@ -5,4 +5,5 @@ export default {
   label: 'go.mod',
   match: (intake) => /(^|\/)go\.mod$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

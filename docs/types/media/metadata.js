@@ -1,5 +1,6 @@
 import { mediaInfo, blobUrl, probe } from './medialib.js';
 import { parseId3 } from './id3.js';
+import { parseMediaContainer } from './byte-metadata.js';
 
 function fmtDuration(s) {
   if (!isFinite(s) || s <= 0) return null;
@@ -21,6 +22,7 @@ export async function extract(intake) {
     if (dur) rows.push({ label: 'Duration', value: dur });
     if (p.w && p.h) rows.push({ label: 'Dimensions', value: p.w + ' × ' + p.h + ' px' });
   }
+  rows.push(...parseMediaContainer(intake.bytes));
   // ID3 tags for audio (the tag is at the file start, present even for streamed large files).
   if (info.kind === 'audio') {
     const tag = parseId3(intake.bytes);

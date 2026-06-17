@@ -7,5 +7,8 @@ export function extract(intake) {
     { label: 'Hunks', value: String(s.hunks) },
     { label: 'Added', value: '+' + s.added },
     { label: 'Removed', value: '−' + s.removed },
+    { label: 'New files', value: String(s.newFiles) },
+    { label: 'Deleted files', value: String(s.deletedFiles) },
+    { label: 'Renames', value: String(s.renames) },
   ];
 }

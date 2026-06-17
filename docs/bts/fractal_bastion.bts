@@ -1,0 +1,7 @@
+# Fractal Bastion BTS
+
+Stage 4 proves that generated files can be part of the puzzle surface without becoming a hidden save editor.
+
+The recursion points are created inside the stage state, rendered as `recursion_points.json`, and opened through the normal viewer bridge with virtual text. Reading that file canonicalizes `4.recursion_blueprint_read`; placing towers only matters after the file clue has been surfaced.
+
+The boss is intentionally simple. Its job is to validate the architecture: generated content, stage-local state, a canonical action flag, a boss gate, a defeat path, and a BTS unlock.

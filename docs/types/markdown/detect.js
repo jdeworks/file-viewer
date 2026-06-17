@@ -4,7 +4,7 @@ import { hasExtension, mimeMatches } from '../../core/detect.js';
 // filename we fall back to lightweight content heuristics.
 export function detect(intake) {
   if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'md', 'markdown', 'mdown', 'mkd')) return 0.95;
+  if (hasExtension(intake, 'md', 'markdown', 'mdown', 'mkd', 'bts')) return 0.95;
   if (mimeMatches(intake, 'markdown')) return 0.9;
 
   const t = intake.textSample || '';

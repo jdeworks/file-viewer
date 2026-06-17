@@ -3,10 +3,12 @@ import { computeMoveDiff, wordDiff } from '../docs/core/movediff.js';
 import { parseId3 } from '../docs/types/media/id3.js';
 import { parseExif } from '../docs/types/image/exif.js';
 import { intakeFromFile } from '../docs/core/intake.js';
-import { palmDocDecompress, openMobi } from '../docs/types/ebook/mobi/mobilib.js';
+import { palmDocDecompress, openMobi, parsePalmDB, readMobiHeader } from '../docs/types/ebook/mobi/mobilib.js';
+import { archiveKind, comicPagesFromNames } from '../docs/types/ebook/comic/comiclib.js';
 
 let failed = 0;
 const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!cond) failed++; };
+const throws = (fn) => { try { fn(); return false; } catch { return true; } };
 
 const P1 = 'The first paragraph stays put.\nIt has two lines.';
 const P2 = 'The second paragraph is the one that moves around the document.';
@@ -175,6 +177,17 @@ const P3 = 'A third paragraph at the bottom.';
   const kf8 = openMobi(buildMobi(8));
   ok(kf8.ok === false && /KF8|AZW3/.test(kf8.reason), 'MOBI: KF8/AZW3 detected + reported (not garbled)');
   ok(openMobi(buildMobi(6)).ok === true, 'MOBI: a version-6 book still parses');
+  const h = readMobiHeader(buildMobi(6));
+  ok(h && h.version === 6 && h.compression === 1 && h.records.length === 1, 'MOBI metadata header: version/compression/record count read');
+  ok(throws(() => parsePalmDB(new Uint8Array(20))), 'PalmDB metadata parser rejects truncated headers');
+}
+
+// Comic archive metadata helpers: container magic + page filename filtering without decoding images.
+{
+  ok(archiveKind(Uint8Array.from([0x50, 0x4b, 0x03, 0x04])) === 'zip', 'Comic metadata: CBZ zip magic detected');
+  ok(archiveKind(Uint8Array.from([0x52, 0x61, 0x72, 0x21])) === 'rar', 'Comic metadata: CBR rar magic detected');
+  const pages = comicPagesFromNames(['pages/10.jpg', 'pages/2.jpg', 'pages/.hidden.png', 'notes.txt', 'cover.webp']);
+  ok(pages.join('|') === 'cover.webp|pages/2.jpg|pages/10.jpg', 'Comic metadata: image pages filtered and natural-sorted');
 }
 
 console.log(failed ? `\nMOVEDIFF FAILED (${failed})` : '\nMOVEDIFF PASSED');

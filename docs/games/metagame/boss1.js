@@ -2,9 +2,8 @@
 //
 // A 20-second click-contest. The player taps a giant button; the boss "shadows" each tap with a
 // constant +1.10 edge, an auto-tick floor (so a fast tapper can't simply out-rate it), and a set
-// of pre-scheduled BURSTS. The bursts only have real teeth when a hidden CHEAT is active — the
-// cheat lives in localStorage['fv:boss1:cheat'] and is flipped by editing the shipped example file
-// `Overwriter.frag` in the Monaco editor (the disable hook lives in core/rawpane.js, §10A.3).
+// of pre-scheduled BURSTS. The bursts only have real teeth when the shared metagame action
+// `1.cheat_disabled` is missing.
 //
 // The boss reads the cheat ONCE at fight start (§10A.5). Disabling it mid-fight does not change an
 // in-progress fight — the player must disable it in the lobby, then start a fresh fight.
@@ -14,7 +13,6 @@
 // state/save/checkMessages/bellLoad/bellAdd are optional in this WP (WP-S1-12 wires the full ctx);
 // the boss degrades gracefully (no-op bell/save) when they are absent.
 
-const CHEAT_KEY = 'fv:boss1:cheat';
 const FIGHT_MS = 20000;
 const SHADOW_WEIGHT = 1.10;
 const BURST_MS = 800;
@@ -60,9 +58,11 @@ const TAUNTS = {
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-// Read the persisted cheat flag (btoa(JSON.stringify(bool))). Defaults false on any error.
-function readCheat() {
-  try { return JSON.parse(atob(localStorage.getItem(CHEAT_KEY) || '')); } catch { return false; }
+function readCheat(actions) {
+  if (actions && typeof actions.hasAction === 'function') {
+    return !actions.hasAction(1, 'cheat_disabled');
+  }
+  return true;
 }
 
 // Deterministic-within-a-fight, varied-per-attempt burst schedule (§10B.4).
@@ -146,6 +146,7 @@ export function mountDefragmenter(arena, opts = {}) {
   const checkMessages = typeof opts.checkMessages === 'function' ? opts.checkMessages : () => {};
   const bellLoad = typeof opts.bellLoad === 'function' ? opts.bellLoad : () => ({});
   const bellAdd = typeof opts.bellAdd === 'function' ? opts.bellAdd : () => {};
+  const actions = opts.actions || null;
 
   injectStyle();
 
@@ -157,16 +158,13 @@ export function mountDefragmenter(arena, opts = {}) {
   const on = (target, ev, fn) => { target.addEventListener(ev, fn); listeners.push([target, ev, fn]); };
 
   // Live cheat flag for the LOBBY display only (fight reads its own locked copy at start, §10A.5).
-  let lobbyCheat = readCheat();
+  let lobbyCheat = readCheat(actions);
 
   // ── §10A.4 — "boss seen" seeding (first mount only) ────────────────────────────────────────
   if (!state.bossSeen) {
     state.bossSeen = true;
     save(state);
-    if (!localStorage.getItem(CHEAT_KEY)) {
-      try { localStorage.setItem(CHEAT_KEY, btoa(JSON.stringify(true))); } catch { /* private mode */ }
-      lobbyCheat = readCheat();
-    }
+    lobbyCheat = readCheat(actions);
     fireAchievement('ach-boss-seen');
   }
 
@@ -232,7 +230,7 @@ export function mountDefragmenter(arena, opts = {}) {
 
   // ── FIGHT ──────────────────────────────────────────────────────────────────────────────────
   function startFight() {
-    const cheatActive = readCheat();              // §10A.5 — locked once, here.
+    const cheatActive = readCheat(actions);              // §10A.5 — locked once, here.
     const bursts = makeBurstSchedule(cheatActive);
     let userScore = 0, bossScore = 0, bossAcc = 0;
     let tapTimes = [];
@@ -445,14 +443,17 @@ export function mountDefragmenter(arena, opts = {}) {
 
   // ── cheat-disable event listener (lobby UI only; never mid-fight) ──────────────────────────
   function onCheatDisable() {
-    lobbyCheat = readCheat();
+    lobbyCheat = readCheat(actions);
     // Only refresh the lobby status if we're currently showing the lobby (not an active fight).
     if (arena.querySelector('.mg-defrag-lobby-btns') && !arena.querySelector('.mg-defrag-fight-on')) {
       const status = arena.querySelector('.mg-defrag-status');
       if (status) status.textContent = '⚙️ the cheat is gone. the next fight is fair.';
     }
   }
-  on(window, 'fv:boss-cheat-disable', onCheatDisable);
+  on(window, 'fv:games:action', (event) => {
+    const detail = event && event.detail || {};
+    if (detail.stage === 1 && detail.action === 'cheat_disabled') onCheatDisable();
+  });
 
   // ── lifecycle ──────────────────────────────────────────────────────────────────────────────
   function cleanup() {

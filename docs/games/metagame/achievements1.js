@@ -303,8 +303,7 @@ export const ACHIEVEMENTS1 = [
   },
 
   // --- Boss: cheat found (28) ---
-  // condition is always false — this achievement is fired directly by the fv:boss-cheat-disable
-  // event in WP-S1-11 (the boss cheat-disable handler), not by condition polling.
+  // Legacy Stage 1 achievement entry; canonical v3 unlocks use stage1.cheat_disabled.
   {
     id: 'ach-boss-cheat-found',
     name: 'Suspicious Activity 🕵️',

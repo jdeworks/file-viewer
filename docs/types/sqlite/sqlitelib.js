@@ -32,6 +32,34 @@ export async function openDb(bytes) {
   return new SQL.Database(bytes);
 }
 
+export function parseHeader(bytes) {
+  if (!bytes || bytes.length < 100) return null;
+  const sig = 'SQLite format 3\0';
+  for (let i = 0; i < sig.length; i++) if (bytes[i] !== sig.charCodeAt(i)) return null;
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const pageSizeRaw = dv.getUint16(16, false);
+  const pageSize = pageSizeRaw === 1 ? 65536 : pageSizeRaw;
+  const encodingId = dv.getUint32(56, false);
+  const encodings = { 1: 'UTF-8', 2: 'UTF-16le', 3: 'UTF-16be' };
+  const sqliteVersion = dv.getUint32(96, false);
+  const versionText = sqliteVersion
+    ? Math.floor(sqliteVersion / 1000000) + '.' + Math.floor((sqliteVersion % 1000000) / 1000) + '.' + (sqliteVersion % 1000)
+    : '';
+  return {
+    pageSize,
+    writeVersion: bytes[18],
+    readVersion: bytes[19],
+    pages: dv.getUint32(28, false),
+    freelistPages: dv.getUint32(36, false),
+    schemaFormat: dv.getUint32(44, false),
+    encoding: encodings[encodingId] || (encodingId ? 'Unknown (' + encodingId + ')' : ''),
+    userVersion: dv.getUint32(60, false),
+    applicationId: dv.getUint32(68, false),
+    sqliteVersion,
+    versionText,
+  };
+}
+
 // User tables (excluding sqlite internal tables), with row counts.
 export function listTables(db) {
   const res = db.exec("SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' ORDER BY type DESC, name");

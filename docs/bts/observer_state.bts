@@ -1,0 +1,7 @@
+# Observer State BTS
+
+Stage 9 models the Observer Effect as unstable online state.
+
+Reading `service-worker-notes.txt` reveals the offline control. Activating it records `9.offline_mode_activated`, fixes the boss seed, and converts an impossible timing challenge into a deterministic route.
+
+The implementation uses virtual notes text through the viewer bridge so the stage can exercise the same file-reading contract without introducing service worker side effects into the test harness.

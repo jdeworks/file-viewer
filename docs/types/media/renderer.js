@@ -13,6 +13,7 @@ import { loadState, saveState, clearState } from '../../core/persistence.js';
 import { showIosAudioHint, hideIosAudioHint } from '../../core/ios-audio.js';
 import { parseId3 } from './id3.js';
 import { likelyNeedsTranscode, transcode } from './transcoder.js';
+import { recordStage5MediaPlayback } from '../../games/metagame/viewer-actions.js';
 
 const SLEEP_OPTIONS = [0, 5, 15, 30, 45, 60];   // minutes; 0 = off
 const PLAYABLE = /\.(mp3|wav|m4a|m4b|aac|oga|ogg|opus|flac|weba|mp4|m4v|webm|ogv|mov|mkv)$/i;
@@ -206,12 +207,27 @@ export async function render(intake, ctx = {}) {
     }
   }, { once: true });
   let lastSave = 0;
+  let lastPlaybackTime = null;
+  let continuousPlaybackMs = 0;
   el.addEventListener('timeupdate', () => {
     const now = el.currentTime;
+    if (lastPlaybackTime !== null && !el.paused && !el.seeking) {
+      const delta = Math.max(0, Math.min(1.5, now - lastPlaybackTime));
+      continuousPlaybackMs += delta * 1000;
+      recordStage5MediaPlayback({
+        file: intake.filename,
+        continuousMs: continuousPlaybackMs,
+        active: true,
+        seeking: false,
+      });
+    }
+    lastPlaybackTime = now;
     if (Math.abs(now - lastSave) < 5) return;      // throttle writes
     lastSave = now;
     saveState(intake, { kind: 'media', time: now, duration: el.duration || 0 });
   });
+  el.addEventListener('pause', () => { lastPlaybackTime = null; continuousPlaybackMs = 0; });
+  el.addEventListener('seeking', () => { lastPlaybackTime = null; continuousPlaybackMs = 0; });
   el.addEventListener('ended', () => {
     clearState(intake);                  // this track finished — forget its position
     if (playlist) { go(1); return; }     // auto-advance to the next track (or a random one if shuffling)

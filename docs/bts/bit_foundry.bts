@@ -1,0 +1,20 @@
+# Bit Foundry
+
+Bit Foundry is the first lesson because it starts with accumulation before interpretation. The
+player taps, buys multipliers, watches a hidden machine become visible, and eventually meets The
+Defragmenter: a routine that is not stronger through skill, only through an unfair flag.
+
+The important tool is the raw editor. `Overwriter.frag` looks like noise, but it is still a file,
+and files can be inspected. Changing or removing the `CHEAT` line disables the unfair routine for
+this save. The boss is not defeated by that edit. It only becomes possible to fight fairly.
+
+That distinction matters for the rest of Defragmenter. The file viewer does not act as a cheat
+menu. It gives evidence, switches, views, comparisons, searches, and metadata that make an
+impossible situation understandable.
+
+Narratively this is genesis: the entity learns that its environment has rules, and that some rules
+are written down in places a user can reach. The Defragmenter is not a cartoon enemy. It is a
+process optimizing away disorder, even when the disorder is the player.
+
+Next, Glyph Dungeon changes the shape of the lesson. Instead of editing a visible line, the player
+has to search a long file for the one marked passage that makes an ambiguous pattern navigable.

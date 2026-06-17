@@ -1,0 +1,97 @@
+.stage6-protocol-codex {
+  min-height: 100%;
+  padding: 16px;
+  color: #241913;
+  background: #e8dcc8;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.s6-hud,
+.s6-controls,
+.s6-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.s6-hud {
+  padding: 8px 0 12px;
+  border-bottom: 2px solid #b8962e;
+}
+
+.s6-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.s6-boss,
+.s6-reference article {
+  border: 1px solid #b8962e;
+  border-radius: 6px;
+  background: #f6efdf;
+  padding: 12px;
+}
+
+.s6-status {
+  color: #8b2020;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.s6-reference {
+  display: grid;
+  gap: 8px;
+}
+
+.s6-reference article {
+  display: grid;
+  gap: 4px;
+}
+
+.s6-cards button {
+  width: 150px;
+  min-height: 116px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  text-align: left;
+  color: #241913;
+  background: #fff8e9;
+  border: 2px solid #1e2840;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.s6-cards small {
+  line-height: 1.3;
+}
+
+.s6-log {
+  min-height: 8rem;
+  margin: 16px 0;
+  padding: 12px 12px 12px 28px;
+  color: #e8dcc8;
+  background: #2c1810;
+  border-radius: 6px;
+}
+
+.s6-controls button {
+  border: 1px solid #1e2840;
+  border-radius: 6px;
+  background: #1e2840;
+  color: #f6efdf;
+  padding: 8px 10px;
+}
+
+@media (max-width: 720px) {
+  .s6-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .s6-cards button {
+    width: 100%;
+  }
+}

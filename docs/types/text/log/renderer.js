@@ -34,11 +34,14 @@ export async function render(intake, _ctx) {
 
 export function logStats(text) {
   const lines = (text || '').split(/\r?\n/);
-  let error = 0, warn = 0;
+  let error = 0, warn = 0, info = 0, debug = 0, timestamped = 0;
   for (const l of lines) {
     const lv = levelOf(l);
     if (lv === 'l-error') error++;
     else if (lv === 'l-warn') warn++;
+    else if (lv === 'l-info') info++;
+    else if (lv === 'l-debug') debug++;
+    if (TS.test(l)) timestamped++;
   }
-  return { lines: lines.length, error, warn };
+  return { lines: lines.length, error, warn, info, debug, timestamped };
 }

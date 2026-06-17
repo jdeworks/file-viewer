@@ -1,0 +1,65 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+import { imageEntryCount, listCentralDirectory } from '../docs/types/zip/ziplib.js';
+import { inspectArchive } from '../docs/types/archive/metadata.js';
+import { parseHeader } from '../docs/types/sqlite/sqlitelib.js';
+
+const root = new URL('../docs/examples/', import.meta.url);
+
+function tarHeader(name, size, type = '0') {
+  const block = new Uint8Array(512);
+  const enc = new TextEncoder();
+  block.set(enc.encode(name), 0);
+  block.set(enc.encode('0000644\0'), 100);
+  block.set(enc.encode('0000000\0'), 108);
+  block.set(enc.encode('0000000\0'), 116);
+  block.set(enc.encode(size.toString(8).padStart(11, '0') + '\0'), 124);
+  block.set(enc.encode('00000000000\0'), 136);
+  block.fill(0x20, 148, 156);
+  block[156] = type.charCodeAt(0);
+  block.set(enc.encode('ustar\0'), 257);
+  let sum = 0;
+  for (const b of block) sum += b;
+  block.set(enc.encode(sum.toString(8).padStart(6, '0') + '\0 '), 148);
+  return block;
+}
+
+function concat(...parts) {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let at = 0;
+  for (const part of parts) { out.set(part, at); at += part.length; }
+  return out;
+}
+
+const zip = listCentralDirectory(await readFile(new URL('sample.zip', root)));
+assert.equal(zip.files.length, 4);
+assert.equal(zip.folders.length, 2);
+assert.equal(zip.totalU, 576);
+assert.equal(zip.methods.get(8), 4);
+
+const cbz = listCentralDirectory(await readFile(new URL('sample.cbz', root)));
+assert.equal(cbz.files.length, 3);
+assert.equal(imageEntryCount(cbz.files), 3);
+
+const locked = listCentralDirectory(await readFile(new URL('sample-locked.zip', root)));
+assert.equal(locked.encrypted.size, 1);
+
+const sevenZip = inspectArchive(await readFile(new URL('Sample.7z', root)), 'Sample.7z');
+assert.equal(sevenZip.format, '7z');
+assert.equal(sevenZip.version, '0.4');
+
+const body = new Uint8Array(512);
+const tar = inspectArchive(concat(tarHeader('docs/', 0, '5'), tarHeader('docs/readme.txt', 5), body, new Uint8Array(1024)), 'sample.tar');
+assert.equal(tar.format, 'TAR');
+assert.equal(tar.files, 1);
+assert.equal(tar.folders, 1);
+assert.equal(tar.total, 5);
+
+const sqlite = parseHeader(await readFile(new URL('sample.sqlite', root)));
+assert.equal(sqlite.pageSize, 4096);
+assert.equal(sqlite.pages, 3);
+assert.equal(sqlite.encoding, 'UTF-8');
+assert.equal(sqlite.versionText, '3.45.2');
+
+console.log('archive metadata parser tests passed');

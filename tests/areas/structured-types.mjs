@@ -9,6 +9,11 @@ export async function run(ctx) {
   await jf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   const jkeys = await jf.$$eval('.json-tree .j-key', (els) => els.length);
   if (jkeys > 0) pass('JSON rendered as collapsible tree (' + jkeys + ' keys)'); else fail('no json keys');
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const jsonMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Root type\s*object/.test(jsonMeta) && /Objects\s*\d+/.test(jsonMeta) && /Arrays\s*\d+/.test(jsonMeta)) pass('JSON metadata includes structure counts'); else fail('json meta: ' + jsonMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
 
   // Semantic JSON key-tree diff: edit working copy (add/remove/change a key + REORDER one)
   // then open Diff — reordering must NOT show as a change.
@@ -36,6 +41,11 @@ export async function run(ctx) {
   if (yType === 'yaml') pass('.yaml detected as YAML'); else fail('yaml type: ' + yType);
   const yKeys = await yf.$$eval('.json-tree .j-key', (els) => els.map((e) => e.textContent));
   if (yKeys.includes('mobileFirst') && yKeys.includes('trust')) pass('YAML rendered as tree (' + yKeys.length + ' keys)'); else fail('yaml keys: ' + yKeys.join(','));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const yamlMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Mappings\s*\d+/.test(yamlMeta) && /Sequences\s*\d+/.test(yamlMeta)) pass('YAML metadata includes mapping/sequence counts'); else fail('yaml meta: ' + yamlMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
   const yBool = await yf.$$eval('.json-tree .j-bool', (els) => els.length);
   if (yBool > 0) pass('YAML scalar types preserved (booleans rendered)'); else fail('no yaml booleans');
   const yamlHasEditor = await page.$('#editor .monaco-editor');
@@ -87,6 +97,11 @@ export async function run(ctx) {
   const iniSecs = await inif.$$eval('.kv-section h3', (els) => els.map((e) => e.textContent));
   const iniKeys = await inif.$$eval('.kv-key', (els) => els.map((e) => e.textContent));
   if (iniSecs.some((s) => /server/.test(s)) && iniKeys.includes('port')) pass('INI rendered as sectioned key-value tables'); else fail('ini secs=' + iniSecs.join(',') + ' keys=' + iniKeys.join(','));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const iniMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Comments\s*\d+/.test(iniMeta) && /Duplicate keys\s*0/.test(iniMeta)) pass('INI metadata includes comments and duplicate-key count'); else fail('ini meta: ' + iniMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
 
   // ── Patch / unified diff ── colorized add/remove/hunk lines. ──
   await page.goto(origin, { waitUntil: 'networkidle' });

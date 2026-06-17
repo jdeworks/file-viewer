@@ -9,9 +9,15 @@ const td = (bytes, enc = 'utf-8') => new TextDecoder(enc, { fatal: false }).deco
 // PalmDB: parse the record offset table → array of Uint8Array records.
 export function parsePalmDB(bytes) {
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes.length < 78) throw new Error('PalmDB header is too short');
   const numRecords = dv.getUint16(76, false);
+  if (78 + numRecords * 8 > bytes.length) throw new Error('PalmDB record table is truncated');
   const offsets = [];
-  for (let i = 0; i < numRecords; i++) offsets.push(dv.getUint32(78 + i * 8, false));
+  for (let i = 0; i < numRecords; i++) {
+    const offset = dv.getUint32(78 + i * 8, false);
+    if (offset > bytes.length || (i && offset < offsets[i - 1])) throw new Error('PalmDB record offset is invalid');
+    offsets.push(offset);
+  }
   const records = [];
   for (let i = 0; i < numRecords; i++) {
     const start = offsets[i];
@@ -19,6 +25,38 @@ export function parsePalmDB(bytes) {
     records.push(bytes.subarray(start, end));
   }
   return records;
+}
+
+export function readMobiHeader(bytes) {
+  if (!bytes || bytes.length < 80) return null;
+  const records = parsePalmDB(bytes);
+  if (!records.length) return null;
+  const rec0 = records[0];
+  if (rec0.length < 16) return { records };
+  const dv = new DataView(rec0.buffer, rec0.byteOffset, rec0.byteLength);
+  const out = {
+    records,
+    compression: dv.getUint16(0, false),
+    textLength: dv.getUint32(4, false),
+    textRecordCount: dv.getUint16(8, false),
+    encryption: dv.getUint16(12, false),
+  };
+  const M = 16;
+  if (rec0.length >= 20 && td(rec0.subarray(16, 20)) === 'MOBI') {
+    const mobiHeaderLen = M + 8 <= rec0.length ? dv.getUint32(M + 4, false) : 0;
+    out.mobiType = M + 12 <= rec0.length ? dv.getUint32(M + 8, false) : 0;
+    out.textEncoding = M + 32 <= rec0.length ? dv.getUint32(M + 28, false) : 0;
+    out.version = M + 40 <= rec0.length ? dv.getUint32(M + 36, false) : 0;
+    out.firstImageIndex = M + 108 + 4 <= rec0.length ? dv.getUint32(M + 108, false) : 0xffffffff;
+    out.extraFlags = mobiHeaderLen > 244 && M + 242 + 2 <= rec0.length ? dv.getUint16(M + 242, false) : 0;
+    const fullNameOffset = M + 88 <= rec0.length ? dv.getUint32(M + 84, false) : 0;
+    const fullNameLength = M + 92 <= rec0.length ? dv.getUint32(M + 88, false) : 0;
+    const enc = out.textEncoding === 1252 ? 'windows-1252' : 'utf-8';
+    if (fullNameOffset && fullNameOffset + fullNameLength <= rec0.length) {
+      out.fullName = td(rec0.subarray(fullNameOffset, fullNameOffset + fullNameLength), enc);
+    }
+  }
+  return out;
 }
 
 // PalmDOC LZ77 decompression (MOBI compression type 2).
@@ -84,14 +122,15 @@ const imgMime = (b) => {
 // Open a MOBI/AZW → { ok, html, images: Map<recindexFromFirstImage, dataUrl>, title } or { ok:false, reason }.
 export function openMobi(bytes) {
   if (!bytes || bytes.length < 80) return { ok: false, reason: 'not a MOBI file (too short)' };
-  const records = parsePalmDB(bytes);
+  const header = readMobiHeader(bytes);
+  const records = header.records;
   if (!records.length) return { ok: false, reason: 'no records found' };
   const rec0 = records[0];
   const dv0 = new DataView(rec0.buffer, rec0.byteOffset, rec0.byteLength);
-  const compression = dv0.getUint16(0, false);
-  const textLength = dv0.getUint32(4, false);
-  const textRecordCount = dv0.getUint16(8, false);
-  const encryption = dv0.getUint16(12, false);
+  const compression = header.compression;
+  const textLength = header.textLength;
+  const textRecordCount = header.textRecordCount;
+  const encryption = header.encryption;
   if (encryption !== 0) return { ok: false, reason: 'this book is DRM-protected and cannot be read' };
   if (compression === 17480) return { ok: false, reason: 'this MOBI uses HUFF/CDIC compression, which is not supported yet' };
   if (compression !== 1 && compression !== 2) return { ok: false, reason: 'unsupported MOBI compression (' + compression + ')' };

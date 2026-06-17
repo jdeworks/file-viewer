@@ -1,0 +1,92 @@
+.stage5-signal-racer {
+  --s5-bg: #0d0815;
+  --s5-fg: #ffffff;
+  --s5-track: #1a1030;
+  --s5-line: #2a2050;
+  --s5-wall: #7a2090;
+  --s5-boost: #d4537e;
+  --s5-jammer: #ef9f27;
+  --s5-counter: #5dcaa5;
+  background: var(--s5-bg);
+  border: 1px solid var(--s5-line);
+  color: var(--s5-fg);
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  width: min(760px, 100%);
+}
+
+.s5-hud,
+.s5-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.s5-track {
+  aspect-ratio: 16 / 7;
+  background:
+    linear-gradient(90deg, transparent 31px, var(--s5-line) 32px),
+    linear-gradient(0deg, transparent 31px, var(--s5-line) 32px),
+    var(--s5-track);
+  background-size: 32px 32px;
+  border: 2px solid var(--s5-wall);
+  min-height: 180px;
+  position: relative;
+}
+
+.s5-track::before {
+  border: 2px solid #3a1060;
+  content: "";
+  inset: 18% 10%;
+  position: absolute;
+}
+
+.s5-car {
+  height: 18px;
+  position: absolute;
+  width: 9px;
+}
+
+.s5-car.player {
+  background: #ffffff;
+  left: 46%;
+  top: 58%;
+}
+
+.s5-car.jammer {
+  background: var(--s5-jammer);
+  left: 51%;
+  top: 45%;
+}
+
+.s5-wave-panel {
+  background: #120a20;
+  border: 1px solid var(--s5-line);
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+}
+
+.s5-wave-panel span {
+  color: var(--s5-counter);
+  font: 13px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.s5-hint {
+  color: #afa9ec;
+  font-size: 13px;
+}
+
+.s5-log {
+  margin: 0 0 0 18px;
+}
+
+.s5-controls button {
+  background: #1a1030;
+  border: 1px solid var(--s5-line);
+  color: var(--s5-fg);
+  cursor: pointer;
+  padding: 6px 9px;
+}

@@ -12,5 +12,9 @@ export async function extract(intake) {
     { label: 'Sections', value: String(doc.getElementsByTagName('section').length) },
     { label: 'Images', value: String(doc.getElementsByTagName('binary').length) },
   ];
+  const add = (label, value) => { if (value) rows.push({ label, value: String(value) }); };
+  add('Genres', [...ti?.getElementsByTagName('genre') || []].map((g) => (g.textContent || '').trim()).filter(Boolean).join(', '));
+  add('Date', t('date', ti || doc));
+  add('Sequence', [...ti?.getElementsByTagName('sequence') || []].map((s) => s.getAttribute('name')).filter(Boolean).join(', '));
   return rows;
 }

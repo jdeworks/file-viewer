@@ -6,6 +6,9 @@ export function extract(intake) {
   const headings = (text.match(/^#{1,6}\s+\S/gm) || []).length;
   const links = (text.match(/\[[^\]]+\]\([^)]+\)/g) || []).length;
   const codeBlocks = (text.match(/^```/gm) || []).length >> 1;
+  const images = (text.match(/!\[[^\]]*\]\([^)]+\)/g) || []).length;
+  const tables = (text.match(/^\s*\|.+\|\s*$/gm) || []).length;
+  const htmlBlocks = (text.match(/^\s*<\/?[a-z][\w-]*(?:\s|>|$)/gim) || []).length;
   // First H1 as a title, if present.
   const h1 = (text.match(/^#\s+(.+)$/m) || [])[1] || null;
   return [
@@ -14,7 +17,10 @@ export function extract(intake) {
     { label: 'Words', value: String(words) },
     { label: 'Headings', value: String(headings) },
     { label: 'Links', value: String(links) },
+    { label: 'Images', value: String(images) },
     { label: 'Code blocks', value: String(codeBlocks) },
+    { label: 'Table rows', value: String(tables) },
+    { label: 'HTML blocks', value: String(htmlBlocks) },
     { label: 'Read time', value: Math.max(1, Math.round(words / 200)) + ' min' },
   ].filter(Boolean);
 }

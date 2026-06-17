@@ -20,6 +20,7 @@ export async function extract(intake) {
   add('Title', info.Title);
   add('Author', info.Author);
   add('Subject', info.Subject);
+  add('Keywords', info.Keywords);
   add('Creator', info.Creator);
   add('Producer', info.Producer);
   add('PDF version', info.PDFFormatVersion);

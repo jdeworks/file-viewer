@@ -5,4 +5,5 @@ export default {
   label: 'Pipfile',
   match: (intake) => /(^|\/)Pipfile$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

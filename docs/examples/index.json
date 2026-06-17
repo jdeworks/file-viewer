@@ -270,6 +270,42 @@
     "category": "Code"
   },
   {
+    "label": "Glyph Dungeon cipher.txt",
+    "file": "metagame/stage2/cipher.txt",
+    "mime": "text/plain",
+    "category": "Metagame"
+  },
+  {
+    "label": "Signal Racer transmission_hum.mp3",
+    "file": "metagame/stage5/transmission_hum.mp3",
+    "mime": "audio/mpeg",
+    "category": "Metagame"
+  },
+  {
+    "label": "Protocol Codex protocols_of_the_entity.epub",
+    "file": "metagame/stage6/protocols_of_the_entity.epub",
+    "mime": "application/epub+zip",
+    "category": "Metagame"
+  },
+  {
+    "label": "Identity Arbiter Entity A image",
+    "file": "metagame/stage7/entity_a_verification.png",
+    "mime": "image/png",
+    "category": "Metagame"
+  },
+  {
+    "label": "Identity Arbiter Entity F image",
+    "file": "metagame/stage7/entity_f_verification.png",
+    "mime": "image/png",
+    "category": "Metagame"
+  },
+  {
+    "label": "Identity Arbiter metadata sidecar",
+    "file": "metagame/stage7/entity_metadata.json",
+    "mime": "application/json",
+    "category": "Metagame"
+  },
+  {
     "label": "Sample.html",
     "file": "sample.html",
     "mime": "text/html",

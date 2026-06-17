@@ -5,4 +5,5 @@ export default {
   label: '.gitignore',
   match: (intake) => /(^|\/)\.gitignore$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

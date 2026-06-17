@@ -1,0 +1,18 @@
+# Memory Grid
+
+Memory Grid starts from a simple premise: a memory is not safe just because it was once written.
+The stage uses a small nonogram-like grid and a leaking boss to introduce maintenance, comparison,
+and restoration.
+
+The canonical tool is the diff viewer. The player receives two generated logs,
+`memory_v1.log` and `memory_v2.log`. The first contains restoration chunks in changed sections.
+The second has those chunks missing. Reading either file alone is not enough; the useful fact is the
+difference between them.
+
+In this first slice, the boss asks for the restoration key assembled from the changed hunks. Entering
+the correct key sets `3.diff_key_restored`, unlocks the Memory Leak, fires the achievement, and makes
+the grid solvable. The unlock does not defeat the boss. It only restores the missing column clues.
+
+The full version of this stage can grow into the planned retention economy: fragments decay,
+registers accumulate, and solved grids become memories that need active care. This slice keeps the
+architecture focused while preserving the important contract for later work.

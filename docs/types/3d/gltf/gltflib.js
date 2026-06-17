@@ -97,11 +97,25 @@ export function parseGLTF(intake) {
   }
   const buffers = getBuffers(gltf, glbBin);
   const tris = [];
+  const stats = {
+    assetVersion: (gltf.asset && gltf.asset.version) || '',
+    generator: (gltf.asset && gltf.asset.generator) || '',
+    sceneCount: (gltf.scenes || []).length,
+    nodeCount: (gltf.nodes || []).length,
+    meshCount: (gltf.meshes || []).length,
+    materialCount: (gltf.materials || []).length,
+    animationCount: (gltf.animations || []).length,
+    bufferCount: (gltf.buffers || []).length,
+    externalBufferCount: (gltf.buffers || []).filter((b) => b.uri && !/^data:/.test(b.uri)).length,
+    primitiveCount: 0,
+    renderedPrimitiveCount: 0,
+  };
 
   const addMesh = (meshIdx, matrix) => {
     const mesh = gltf.meshes[meshIdx];
     if (!mesh) return;
     for (const prim of mesh.primitives || []) {
+      stats.primitiveCount++;
       if (prim.mode !== undefined && prim.mode !== 4) continue;          // TRIANGLES only
       if (prim.attributes.POSITION == null) continue;
       const pos = readAccessor(gltf, buffers, prim.attributes.POSITION);
@@ -109,6 +123,7 @@ export function parseGLTF(intake) {
       const verts = pos.map((p) => tp(matrix, p));
       const idx = prim.indices != null ? readAccessor(gltf, buffers, prim.indices) : verts.map((_, i) => i);
       if (!idx) continue;
+      stats.renderedPrimitiveCount++;
       for (let i = 0; i + 2 < idx.length; i += 3) {
         const a = verts[idx[i]], b = verts[idx[i + 1]], c = verts[idx[i + 2]];
         if (a && b && c) tris.push({ v: [a, b, c], n: vnorm(vcross(vsub(b, a), vsub(c, a))) });
@@ -129,5 +144,5 @@ export function parseGLTF(intake) {
   else if (gltf.nodes) gltf.nodes.forEach((_, i) => walk(i, IDENT));     // no scene — render all nodes
   else if (gltf.meshes) gltf.meshes.forEach((_, i) => addMesh(i, IDENT));
 
-  return { tris, ...bounds(tris) };
+  return { tris, ...stats, ...bounds(tris) };
 }

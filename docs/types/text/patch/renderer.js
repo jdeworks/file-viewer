@@ -27,12 +27,17 @@ export async function render(intake, _ctx) {
 // Quick stats for the metadata panel.
 export function patchStats(text) {
   const lines = (text || '').split(/\r?\n/);
-  let added = 0, removed = 0, files = 0, hunks = 0;
+  let added = 0, removed = 0, files = 0, hunks = 0, newFiles = 0, deletedFiles = 0, renames = 0;
+  let sawGitHeader = false;
   for (const l of lines) {
     if (/^\+(?!\+\+ )/.test(l)) added++;
     else if (/^-(?!-- )/.test(l)) removed++;
-    if (/^diff --git|^--- /.test(l)) files++;
+    if (/^diff --git/.test(l)) { files++; sawGitHeader = true; }
     if (/^@@/.test(l)) hunks++;
+    if (/^new file mode\b/.test(l)) newFiles++;
+    if (/^deleted file mode\b/.test(l)) deletedFiles++;
+    if (/^rename from\b/.test(l)) renames++;
   }
-  return { added, removed, files, hunks };
+  if (!sawGitHeader) files = lines.filter((l) => /^--- /.test(l)).length;
+  return { added, removed, files, hunks, newFiles, deletedFiles, renames };
 }

@@ -13,6 +13,11 @@ export async function run(ctx) {
   if (evTitles.length === 3 && evTitles[0] === 'Project kickoff') pass('calendar events parsed + sorted (' + evTitles.length + ')'); else fail('ics events: ' + evTitles.join(','));
   const rrule = await icf.$eval('.ics-rrule', (e) => e.textContent).catch(() => '');
   if (/weekly/i.test(rrule)) pass('recurrence rule shown (' + rrule.trim() + ')'); else fail('ics rrule: ' + rrule);
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const icsMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/All-day events\s*1/.test(icsMeta) && /Recurring events\s*1/.test(icsMeta)) pass('calendar metadata includes all-day and recurring counts'); else fail('ics meta: ' + icsMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
 
   // ── Archive (.zip) ── list entries from the central directory (no extraction).
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -96,6 +101,11 @@ export async function run(ctx) {
   if (/Hello from File Viewer/.test(emlHead) && /alice@example\.com/.test(emlHead)) pass('email header card (encoded subject decoded + From)'); else fail('eml head: ' + emlHead.slice(0, 80));
   const emlBody = await ef.$eval('.eml-html', (e) => e.innerHTML);
   if (/<b>File Viewer<\/b>/.test(emlBody) && !/<script/i.test(emlBody)) pass('email HTML body rendered + sanitized (script stripped)'); else fail('eml body: ' + emlBody.slice(0, 80));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const emlMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Body\s*HTML/.test(emlMeta) && /Attachments\s*0/.test(emlMeta)) pass('email metadata includes body kind and attachments'); else fail('eml meta: ' + emlMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
 
   // ── Mailbox (.mbox) ── split into messages, inbox list (reuses the eml MIME parser). ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -108,6 +118,11 @@ export async function run(ctx) {
   const mboxCount = await mbf.$$eval('.mbox-msg', (els) => els.length);
   const mboxFroms = await mbf.$$eval('.mbox-from', (els) => els.map((e) => e.textContent).join(' '));
   if (mboxCount === 3 && /Alice/.test(mboxFroms) && /Carol/.test(mboxFroms)) pass('mbox split into 3 messages with senders'); else fail('mbox count=' + mboxCount + ' froms=' + mboxFroms);
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const mboxMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Senders\s*3/.test(mboxMeta) && /HTML messages\s*\d+/.test(mboxMeta)) pass('mbox metadata includes sender and HTML counts'); else fail('mbox meta: ' + mboxMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
 
   // ── Jupyter Notebook (.ipynb) ── markdown + code cells + saved outputs, sanitized.
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -127,6 +142,11 @@ export async function run(ctx) {
   if (nbHtmlOut > 0) pass('notebook rich HTML output sanitized + rendered (' + nbHtmlOut + ' cells)'); else fail('no nb rich output table');
   const nbErr = await nf.$('.nb-error');
   if (nbErr) pass('notebook error output shown'); else fail('no nb error output');
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const nbMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Saved outputs\s*\d+/.test(nbMeta) && /Executed code cells\s*\d+/.test(nbMeta)) pass('notebook metadata includes execution and output counts'); else fail('notebook meta: ' + nbMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
 
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'example.js' }).click();

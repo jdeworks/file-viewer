@@ -31,9 +31,11 @@ function parseHeader(bytes) {
   const lines = text.slice(0, end).split(/\r?\n/);
   let format = 'ascii';
   const elements = [];
+  const comments = [];
   for (const line of lines) {
     const p = line.trim().split(/\s+/);
     if (p[0] === 'format') format = p[1];
+    else if (p[0] === 'comment') comments.push(line.trim().slice(8).trim());
     else if (p[0] === 'element') elements.push({ name: p[1], count: +p[2], props: [] });
     else if (p[0] === 'property' && elements.length) {
       const el = elements[elements.length - 1];
@@ -41,7 +43,7 @@ function parseHeader(bytes) {
       else el.props.push({ type: p[1], name: p[2] });
     }
   }
-  return { format, elements, dataOffset: headerEnd };
+  return { format, elements, comments, dataOffset: headerEnd };
 }
 
 function parseAsciiBody(bytes, header) {
@@ -101,5 +103,16 @@ export function parsePLY(intake) {
   const bytes = intake.bytes;
   const header = parseHeader(bytes);
   const tris = header.format === 'ascii' ? parseAsciiBody(bytes, header) : parseBinaryBody(bytes, header);
-  return { tris, format: header.format, ...bounds(tris) };
+  const vertex = header.elements.find((e) => e.name === 'vertex');
+  const face = header.elements.find((e) => e.name === 'face');
+  return {
+    tris,
+    format: header.format,
+    vertexCount: vertex ? vertex.count : 0,
+    faceCount: face ? face.count : 0,
+    elementCount: header.elements.length,
+    commentCount: header.comments.length,
+    comments: header.comments,
+    ...bounds(tris),
+  };
 }

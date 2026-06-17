@@ -1,0 +1,61 @@
+.stage9-observer-state {
+  min-height: 100%;
+  padding: 16px;
+  color: #fff;
+  background: #000;
+  font: 14px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.s9-hud,
+.s9-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.s9-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 16px;
+}
+
+.s9-arena,
+.s9-side,
+.s9-boss {
+  border: 1px solid #fff;
+  padding: 12px;
+  background: #000;
+}
+
+.s9-arena {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 16px;
+}
+
+.s9-side button,
+.s9-controls button {
+  margin: 0 8px 8px 0;
+}
+
+.s9-side pre {
+  white-space: pre-wrap;
+  border-top: 1px solid #5dcaa5;
+  padding-top: 12px;
+  color: #dffbf4;
+}
+
+.s9-log {
+  min-height: 7em;
+  padding-left: 24px;
+}
+
+@media (max-width: 760px) {
+  .s9-layout {
+    grid-template-columns: 1fr;
+  }
+}

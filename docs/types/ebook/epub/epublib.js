@@ -49,6 +49,16 @@ export async function parseEpub(intake) {
   const get = (sel) => { const el = opf.querySelector(sel); return el ? el.textContent.trim() : ''; };
   const title = get('metadata > title') || get('title') || intake.filename;
   const creator = get('metadata > creator') || get('creator') || '';
+  const metadata = {
+    title,
+    creator,
+    language: get('metadata > language') || get('language'),
+    publisher: get('metadata > publisher') || get('publisher'),
+    date: get('metadata > date') || get('date'),
+    identifier: get('metadata > identifier') || get('identifier'),
+    rights: get('metadata > rights') || get('rights'),
+    description: get('metadata > description') || get('description'),
+  };
 
   // manifest: id → { path (absolute zip path), type, props }
   const manifest = {};
@@ -86,7 +96,7 @@ export async function parseEpub(intake) {
   // Last resort: derive a flat TOC from the spine.
   if (!toc.length) toc = spine.map((s, i) => ({ label: 'Section ' + (i + 1), path: s.path, frag: '' }));
 
-  return { zip, title, creator, opfPath, manifest, spine, toc, readText, readU8 };
+  return { zip, title, creator, metadata, opfPath, manifest, spine, toc, readText, readU8 };
 }
 
 function parseNav(xhtml, navPath) {

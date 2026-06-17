@@ -3,8 +3,13 @@ export function extract(intake) {
   try { nb = JSON.parse(intake.text || ''); } catch { return [{ label: 'Valid notebook', value: 'no' }]; }
   const cells = nb.cells || (nb.worksheets && nb.worksheets[0] && nb.worksheets[0].cells) || [];
   let code = 0, markdown = 0, raw = 0;
+  let outputs = 0, executed = 0;
   for (const c of cells) {
-    if (c.cell_type === 'code') code++;
+    if (c.cell_type === 'code') {
+      code++;
+      outputs += (c.outputs || []).length;
+      if (c.execution_count != null || c.prompt_number != null) executed++;
+    }
     else if (c.cell_type === 'markdown') markdown++;
     else raw++;
   }
@@ -16,5 +21,8 @@ export function extract(intake) {
     { label: 'Kernel', value: ks.display_name || lang },
     { label: 'Cells', value: String(cells.length) },
     { label: 'Code / Markdown', value: code + ' / ' + markdown },
+    { label: 'Raw cells', value: String(raw) },
+    { label: 'Executed code cells', value: String(executed) },
+    { label: 'Saved outputs', value: String(outputs) },
   ];
 }

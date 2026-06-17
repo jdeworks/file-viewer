@@ -11,6 +11,7 @@
 //     match(intake, baseType) => boolean,  // cheap; runs after the base type is detected
 //     loadRenderer() => Promise<{render}>, // render(intake, ctx) -> { parentNode } | { bodyHtml }
 //     loadDiffRenderer?() => Promise<{render}>,   // optional custom diff (overrides the type's)
+//     loadMetadata?() => Promise<{extract}>,       // optional enhanced metadata rows
 //   }
 // Known-file plugins now live next to their base type: type-bound ones under
 // types/text/<basetype>/known/<id>/, and the filename-only / multi-type configs under the

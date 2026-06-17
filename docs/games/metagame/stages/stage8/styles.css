@@ -1,0 +1,76 @@
+.stage8-entropy-field {
+  min-height: 100%;
+  padding: 16px;
+  color: #ddd5c7;
+  background: #0e0e0e;
+  font: 14px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.s8-hud,
+.s8-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.s8-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 16px;
+}
+
+.s8-map,
+.s8-files,
+.s8-boss {
+  border: 1px solid #4a4a4a;
+  padding: 12px;
+  background: #171615;
+}
+
+.s8-node,
+.s8-debris {
+  display: block;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 8px;
+  border: 1px solid #4a4a4a;
+  color: inherit;
+  background: #20201d;
+  text-align: left;
+}
+
+.s8-node.is-active { border-color: #5c7a3e; }
+.s8-node.is-degrading { border-color: #8b7355; }
+.s8-node.is-failed { border-color: #7a3b2e; }
+
+.s8-debris {
+  border-style: dashed;
+  border-color: #8b7355;
+  cursor: grab;
+}
+
+.s8-drop {
+  margin-top: 12px;
+  padding: 18px;
+  border: 2px solid #5dcaa5;
+  color: #9fe1cb;
+  text-align: center;
+}
+
+.s8-files pre {
+  overflow: auto;
+  max-height: 220px;
+}
+
+.s8-log {
+  min-height: 7em;
+  padding-left: 24px;
+}
+
+@media (max-width: 760px) {
+  .s8-layout {
+    grid-template-columns: 1fr;
+  }
+}

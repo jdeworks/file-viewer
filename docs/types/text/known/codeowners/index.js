@@ -5,4 +5,5 @@ export default {
   label: 'CODEOWNERS',
   match: (intake) => /(^|\/)(\.github\/|\.gitlab\/|docs\/)?CODEOWNERS$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

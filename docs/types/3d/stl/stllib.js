@@ -14,6 +14,12 @@ function isBinary(bytes) {
   return bytes.length === 84 + count * 50;
 }
 
+function uniqueVertexCount(tris) {
+  const seen = new Set();
+  for (const tri of tris) for (const v of tri.v) seen.add(v.map((n) => Number(n).toPrecision(8)).join(','));
+  return seen.size;
+}
+
 function parseBinary(bytes) {
   const dv = new DataView(bytes.buffer, bytes.byteOffset);
   const count = dv.getUint32(80, true);
@@ -49,8 +55,9 @@ function parseAscii(text) {
 export function parseSTL(intake) {
   const bytes = intake.bytes;
   let tris;
+  let format = 'ascii';
   if (!intake.isBinary && /^\s*solid/i.test(intake.text || '') && /facet/i.test(intake.text || '')) tris = parseAscii(intake.text);
-  else if (isBinary(bytes)) tris = parseBinary(bytes);
+  else if (isBinary(bytes)) { format = 'binary'; tris = parseBinary(bytes); }
   else tris = parseAscii(new TextDecoder().decode(bytes));   // last resort
-  return { tris, ...bounds(tris) };
+  return { tris, format, vertexCount: uniqueVertexCount(tris), ...bounds(tris) };
 }

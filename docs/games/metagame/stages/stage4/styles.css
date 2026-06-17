@@ -1,0 +1,87 @@
+.stage4-fractal-bastion {
+  --s4-bg: #0a0a0f;
+  --s4-fg: #9fe1cb;
+  --s4-line: #2a2a60;
+  --s4-cyan: #5dcaa5;
+  --s4-magenta: #d4537e;
+  --s4-yellow: #ef9f27;
+  background: var(--s4-bg);
+  border: 1px solid var(--s4-line);
+  color: var(--s4-fg);
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  width: min(760px, 100%);
+}
+
+.s4-hud,
+.s4-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.s4-layout {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr minmax(180px, 240px);
+}
+
+.s4-board,
+.s4-panel {
+  background: #111118;
+  border: 1px solid var(--s4-line);
+}
+
+.s4-board {
+  color: var(--s4-cyan);
+  font: 13px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+  margin: 0;
+  min-height: 210px;
+  overflow: auto;
+  padding: 10px;
+}
+
+.s4-panel {
+  padding: 10px;
+}
+
+.s4-boss-title {
+  color: var(--s4-yellow);
+  font-weight: 700;
+}
+
+.s4-hint {
+  color: #fac775;
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.s4-points div {
+  border-top: 1px solid var(--s4-line);
+  padding: 5px 0;
+}
+
+.s4-points .covered {
+  color: var(--s4-cyan);
+  font-weight: 700;
+}
+
+.s4-log {
+  margin: 0 0 0 18px;
+}
+
+.s4-controls button {
+  background: #1a1a30;
+  border: 1px solid var(--s4-line);
+  color: var(--s4-fg);
+  cursor: pointer;
+  padding: 6px 9px;
+}
+
+@media (max-width: 760px) {
+  .s4-layout {
+    grid-template-columns: 1fr;
+  }
+}

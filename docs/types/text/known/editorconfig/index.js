@@ -5,4 +5,5 @@ export default {
   label: '.editorconfig',
   match: (intake) => /(^|\/)\.editorconfig$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

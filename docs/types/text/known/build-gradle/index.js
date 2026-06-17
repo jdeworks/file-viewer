@@ -5,4 +5,5 @@ export default {
   label: 'build.gradle',
   match: (intake) => /(^|\/)build\.gradle(\.kts)?$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

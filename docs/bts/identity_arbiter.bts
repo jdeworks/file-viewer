@@ -1,0 +1,7 @@
+# Identity Arbiter BTS
+
+Stage 7 tests a deduction gate where the answer is not the visible image but its metadata.
+
+Entity A and Entity F are tied until `GPSInfo` on Entity F is inspected. That records `7.exif_contradiction_found`, marks F as contradicted, and still requires the player to commit Entity A before the stage clears.
+
+The vertical slice keeps the evidence local and accessible while preserving the intended viewer action: look past the rendered surface and use metadata to resolve identity.

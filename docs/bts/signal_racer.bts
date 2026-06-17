@@ -1,0 +1,7 @@
+# Signal Racer BTS
+
+Stage 5 uses audio as a timing metaphor, but the implementation keeps the required action deterministic.
+
+The calibration loop records continuous listening against `transmission_hum.mp3` and unlocks `5.counter_wave_calibrated` after a full clean loop. The UI exposes a compact simulation control so tests and keyboard users can drive the same canonical path without depending on real media playback timing.
+
+The Jammer boss remains locked until that action exists. After calibration, the race resolves immediately as a vertical slice of the final design.

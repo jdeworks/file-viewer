@@ -8,6 +8,19 @@ export function fmtSize(n) {
   return (n / 1048576).toFixed(2) + ' MB';
 }
 
+const METHOD_NAMES = {
+  0: 'Stored',
+  8: 'Deflated',
+  9: 'Deflate64',
+  12: 'BZIP2',
+  14: 'LZMA',
+  98: 'PPMd',
+};
+
+export function compressionMethodName(method) {
+  return METHOD_NAMES[method] || ('Method ' + method);
+}
+
 export async function readZip(intake) {
   const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
   const zip = await JSZip.loadAsync(intake.bytes);
@@ -42,24 +55,33 @@ export function listCentralDirectory(bytes) {
   if (eocd < 0) return null;
   const count = dv.getUint16(eocd + 10, true);
   let p = dv.getUint32(eocd + 16, true);
+  if (p >= bytes.length) return null;
   const dec = new TextDecoder();
   const files = [], folders = [];
+  const methods = new Map();
   let totalU = 0, totalC = 0;
   for (let n = 0; n < count && p + 46 <= bytes.length; n++) {
     if (dv.getUint32(p, true) !== 0x02014b50) break;                  // 'PK\1\2' central-dir header
     const gp = dv.getUint16(p + 8, true);
+    const method = dv.getUint16(p + 10, true);
     const mt = dv.getUint16(p + 12, true), md = dv.getUint16(p + 14, true);
     const compressedSize = dv.getUint32(p + 20, true), uncompressedSize = dv.getUint32(p + 24, true);
     const fnLen = dv.getUint16(p + 28, true), exLen = dv.getUint16(p + 30, true), cmLen = dv.getUint16(p + 32, true);
+    if (p + 46 + fnLen + exLen + cmLen > bytes.length) break;
     const name = dec.decode(bytes.subarray(p + 46, p + 46 + fnLen));
     let date = null;
     if (md) date = new Date(1980 + ((md >> 9) & 0x7f), ((md >> 5) & 0xf) - 1, md & 0x1f, (mt >> 11) & 0x1f, (mt >> 5) & 0x3f, (mt & 0x1f) * 2);
-    const entry = { name, uncompressedSize, compressedSize, date, encrypted: !!(gp & 1), dir: name.endsWith('/') };
+    const entry = { name, uncompressedSize, compressedSize, date, encrypted: !!(gp & 1), dir: name.endsWith('/'), method };
     if (entry.dir) folders.push(entry); else { files.push(entry); totalU += uncompressedSize; totalC += compressedSize; }
+    methods.set(method, (methods.get(method) || 0) + 1);
     p += 46 + fnLen + exLen + cmLen;
   }
-  return { files, folders, totalU, totalC, ratio: totalU > 0 ? Math.round((1 - totalC / totalU) * 100) : 0, encrypted: new Set(files.filter((f) => f.encrypted).map((f) => f.name)) };
+  return { files, folders, totalU, totalC, ratio: totalU > 0 ? Math.round((1 - totalC / totalU) * 100) : 0, encrypted: new Set(files.filter((f) => f.encrypted).map((f) => f.name)), methods };
 }
 
 // Just the encrypted entry names (dependency-free).
 export function encryptedNames(bytes) { const cd = listCentralDirectory(bytes); return cd ? cd.encrypted : new Set(); }
+
+export function imageEntryCount(files) {
+  return files.filter((f) => /\.(avif|bmp|gif|jpe?g|png|webp)$/i.test(f.name || '')).length;
+}

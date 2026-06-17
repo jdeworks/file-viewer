@@ -1,0 +1,102 @@
+.stage7-identity-arbiter {
+  min-height: 100%;
+  padding: 16px;
+  color: #1a1a1a;
+  background: #f5ecd7;
+  font-family: ui-serif, Georgia, serif;
+}
+
+.s7-hud,
+.s7-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.s7-hud {
+  padding-bottom: 12px;
+  border-bottom: 2px solid #c0392b;
+}
+
+.s7-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.s7-candidate,
+.s7-evidence,
+.s7-meta button {
+  border: 1px solid #9d8f74;
+  border-radius: 6px;
+  background: #ede3cc;
+}
+
+.s7-candidate {
+  min-height: 132px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 10px;
+}
+
+.s7-candidate.is-contradicted {
+  border-color: #8b1a1a;
+  box-shadow: inset 0 0 0 2px #8b1a1a;
+}
+
+.s7-candidate.is-selected {
+  border-color: #2c4770;
+}
+
+.s7-candidate button,
+.s7-controls button,
+.s7-meta button {
+  border: 1px solid #2c4770;
+  border-radius: 6px;
+  background: #2c4770;
+  color: #fff8e8;
+  padding: 8px 10px;
+}
+
+.s7-evidence {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 360px);
+  gap: 14px;
+  padding: 12px;
+}
+
+.s7-status {
+  color: #8b1a1a;
+  font-weight: 700;
+}
+
+.s7-meta {
+  display: grid;
+  gap: 8px;
+}
+
+.s7-meta button {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  color: #1a1a1a;
+  background: #fff8e8;
+}
+
+.s7-log {
+  min-height: 8rem;
+  margin: 16px 0;
+  padding: 12px 12px 12px 28px;
+  color: #f5ecd7;
+  background: #1a1a1a;
+  border-radius: 6px;
+}
+
+@media (max-width: 720px) {
+  .s7-evidence {
+    grid-template-columns: 1fr;
+  }
+}

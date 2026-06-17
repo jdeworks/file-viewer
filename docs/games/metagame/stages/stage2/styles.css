@@ -1,0 +1,98 @@
+.stage2-glyph-dungeon {
+  --s2-bg: #0f0e0c;
+  --s2-fg: #ef9f27;
+  --s2-dim: #8f6b35;
+  --s2-panel: #181410;
+  --s2-border: #6f4d20;
+  background: var(--s2-bg);
+  color: var(--s2-fg);
+  display: grid;
+  gap: 10px;
+  min-height: 100%;
+  padding: 14px;
+  font: 14px/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.stage2-glyph-dungeon * {
+  box-sizing: border-box;
+}
+
+.s2-hud,
+.s2-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.s2-hud {
+  border-bottom: 1px solid var(--s2-border);
+  padding-bottom: 8px;
+}
+
+.s2-grid {
+  background: #070605;
+  border: 1px solid var(--s2-border);
+  color: var(--s2-fg);
+  margin: 0;
+  max-width: 100%;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px;
+  white-space: pre;
+}
+
+.s2-boss-panel {
+  background: var(--s2-panel);
+  border: 1px solid var(--s2-border);
+  padding: 10px;
+}
+
+.s2-boss-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.s2-hint {
+  color: #ffd186;
+  margin-top: 6px;
+}
+
+.s2-log {
+  border-left: 2px solid var(--s2-border);
+  color: #f5bf66;
+  margin: 0;
+  min-height: 5.5em;
+  padding-left: 28px;
+}
+
+.s2-controls button {
+  background: #21180d;
+  border: 1px solid var(--s2-border);
+  color: var(--s2-fg);
+  cursor: pointer;
+  font: inherit;
+  min-height: 34px;
+  padding: 6px 10px;
+}
+
+.s2-controls button:hover,
+.s2-controls button:focus-visible {
+  border-color: #ffc46f;
+  outline: 1px solid #ffc46f;
+}
+
+@media (max-width: 760px) {
+  .stage2-glyph-dungeon {
+    font-size: 12px;
+    padding: 10px;
+  }
+
+  .s2-grid {
+    font-size: 11px;
+  }
+
+  .s2-controls button {
+    flex: 1 1 42%;
+  }
+}

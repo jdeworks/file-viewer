@@ -20,6 +20,22 @@ export function archiveKind(bytes) {
   return 'unknown';
 }
 
+export function comicPagesFromNames(names) {
+  return names
+    .filter((n) => IMAGE_RE.test(n) && !n.split('/').pop().startsWith('.'))
+    .sort(naturalCmp);
+}
+
+export async function inspectComic(intake) {
+  const kind = archiveKind(intake.bytes);
+  if (kind !== 'zip') return { kind };
+  const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
+  const zip = await JSZip.loadAsync(intake.bytes);
+  const entries = Object.keys(zip.files).filter((n) => !zip.files[n].dir);
+  const pages = comicPagesFromNames(entries);
+  return { kind, files: entries.length, pages };
+}
+
 // Open a .cbz → { kind:'zip', pages:[{ name, blobUrl }] } with image pages natural-sorted. Blob
 // URLs are created for each page and must be revoked by the caller (renderer's revoke()).
 // For .cbr/.cb7 with enableArchiveWasm=true, calls archivelib to extract each image entry.
@@ -29,9 +45,7 @@ export async function openComic(intake, { enableArchiveWasm = false } = {}) {
   if (kind === 'zip') {
     const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
     const zip = await JSZip.loadAsync(intake.bytes);
-    const names = Object.keys(zip.files)
-      .filter((n) => !zip.files[n].dir && IMAGE_RE.test(n) && !n.split('/').pop().startsWith('.'))
-      .sort(naturalCmp);
+    const names = comicPagesFromNames(Object.keys(zip.files).filter((n) => !zip.files[n].dir));
     const pages = [];
     for (const name of names) {
       const blob = await zip.files[name].async('blob');

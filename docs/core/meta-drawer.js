@@ -15,6 +15,9 @@ export async function buildMetadata() {
   if (state.type.loadMetadata) {
     try { const m = await state.type.loadMetadata(); for (const r of await m.extract(i)) rows.push([r.label, r.value]); } catch {}
   }
+  if (state.known && !state.forceBase && state.known.loadMetadata) {
+    try { const m = await state.known.loadMetadata(); for (const r of await m.extract(i)) rows.push([r.label, r.value]); } catch {}
+  }
   body.innerHTML = '';
   for (const [k, v] of rows) {
     const row = document.createElement('div'); row.className = 'meta-row';

@@ -14,6 +14,11 @@ export async function run(ctx) {
   // The enhance chip is shown and reverts to the plain JSON tree.
   const chipShown = await page.$eval('#enhanceChip', (e) => !e.hidden && /package\.json/.test(e.textContent));
   if (chipShown) pass('enhance chip shows the active known-file'); else fail('enhance chip not shown');
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const pkgMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Package\s*demo-package/.test(pkgMeta) && /Dependencies\s*4/.test(pkgMeta)) pass('package.json metadata includes package and dependency counts'); else fail('package meta: ' + pkgMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
   await page.click('#enhanceChip .ec-toggle');
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 8000 });
   const pjFrame = await frameOf('#previewHost iframe.fv-preview-frame');
@@ -38,6 +43,11 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .kf-list', { timeout: 12000 });
   const dfBadges = await page.$$eval('#previewHost .kf-badge', (els) => els.map((e) => e.textContent));
   if (dfBadges.filter((b) => b === 'FROM').length === 2 && dfBadges.includes('HEALTHCHECK')) pass('Dockerfile: instructions broken down (2 FROM stages)'); else fail('dockerfile badges: ' + dfBadges.join(','));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const dfMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Instructions\s*\d+/.test(dfMeta) && /Build stages\s*2/.test(dfMeta)) pass('Dockerfile metadata comes from known-file extractor'); else fail('dockerfile meta: ' + dfMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
 
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'docker-compose.yml', exact: true }).click();
@@ -122,4 +132,9 @@ export async function run(ctx) {
   const oaMethods = await page.$$eval('#previewHost .oa-method', (els) => els.map((e) => e.textContent));
   const oaPaths = await page.$$eval('#previewHost .oa-path', (els) => els.map((e) => e.textContent));
   if (/Widget API/.test(oaTitle) && oaMethods.includes('DELETE') && oaPaths.includes('/widgets/{id}')) pass('OpenAPI: endpoints listed by method + path (' + oaMethods.length + ' ops)'); else fail('openapi: title=' + oaTitle + ' methods=' + oaMethods.join(',') + ' paths=' + oaPaths.join(','));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const oaMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/API title\s*Widget API/.test(oaMeta) && /Endpoints\s*6/.test(oaMeta)) pass('OpenAPI metadata includes title and endpoint count'); else fail('openapi meta: ' + oaMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
 }

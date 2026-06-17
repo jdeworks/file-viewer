@@ -5,4 +5,5 @@ export default {
   label: 'Dockerfile',
   match: (intake, baseType) => /(^|\/)Dockerfile(\.\w+)?$/i.test(intake.filename || '') || /(\.|^)dockerfile$/i.test((intake.filename || '').split('/').pop() || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

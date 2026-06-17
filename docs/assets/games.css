@@ -341,6 +341,26 @@
 .mg-dbg-jump:hover { border-color: var(--accent); color: var(--accent); }
 .mg-dbg-reset:hover { border-color: #e03131; color: #e03131; }
 
+/* Defragmenter v3 shell and Stage 2 vertical slice. */
+.mg-v3 { width: min(760px, 100%); }
+.mg-v3-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mg-v3-stages { display: flex; gap: 6px; flex-wrap: wrap; }
+.mg-v3-stage { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; cursor: pointer; font-size: 12px; }
+.mg-v3-stage:disabled { opacity: .45; cursor: not-allowed; }
+.mg-v3-host { display: flex; justify-content: center; }
+.mg-v3-panel { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.mg-v3-bell { align-self: flex-end; }
+.stage2-glyph-dungeon { width: min(720px, 100%); background: #0f0e0c; color: #ef9f27; border: 1px solid #5b3a10; border-radius: 8px; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.s2-hud { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; font-size: 12px; }
+.s2-grid { margin: 10px 0; padding: 10px; overflow: auto; border: 1px solid #5b3a10; background: #070604; color: #ef9f27; font: 12px/1.05 ui-monospace, monospace; }
+.s2-boss-panel { border: 1px solid #5b3a10; padding: 8px; margin-bottom: 8px; }
+.s2-boss-title { font-weight: 700; }
+.s2-hint { color: #f7d08b; font-size: 12px; margin-top: 4px; }
+.s2-log { min-height: 4.5em; margin: 0 0 10px 18px; color: #f7d08b; font-size: 12px; }
+.s2-controls { display: flex; gap: 6px; flex-wrap: wrap; }
+.s2-controls button { background: #23190b; border: 1px solid #8a5a18; color: #ef9f27; border-radius: 6px; padding: 6px 8px; cursor: pointer; font: inherit; font-size: 12px; }
+.s2-controls button[hidden] { display: none; }
+
 /* Hub fullscreen button. */
 .games-fs-btn { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
   border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 14px; line-height: 1; }

@@ -1,0 +1,22 @@
+# Glyph Dungeon
+
+Glyph Dungeon is the first replacement-stage proof. It uses a compact ASCII dungeon instead of the
+full long-form crawler, but the lock is canonical: the boss cannot be solved by opening the file or
+grinding stats. The required action is a search for `PASSAGE` in `cipher.txt`, producing the marked
+result `PASSAGE:247`.
+
+The tool lesson is search as a real act of interpretation. A long text file can contain the answer
+in plain sight while still being functionally unreadable by scrolling. Search turns the file from a
+wall of symbols into a navigable structure.
+
+The Ambiguous Expression stays locked until that action exists in the shared v3 save. Once the
+action fires, the north pillar opens a two-tile gap. The unlock does not defeat the boss; it changes
+the fight from impossible to legible.
+
+This stage represents childhood and syntax. The entity is `@`, surrounded by marks that are not yet
+language. It learns that symbols can be arranged, searched, and resolved into a passage.
+
+The implementation intentionally stops here before Stages 3-10. Stage 2 proves the architecture:
+stage-local state, shared action flags, achievements, bell messages, BTS access, and progression to
+Stage 3. The later stages should build on this contract instead of reviving the old placeholder
+bosses.

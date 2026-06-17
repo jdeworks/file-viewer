@@ -9,6 +9,7 @@ import { monacoOptions } from './settings.js';
 import { captureBodyHtml } from './iframe.js';
 import { mapRawToPreview, syncScrollFromRaw } from './sync.js';
 import { applyLayout } from './layout.js';
+import { recordStage1RawEdit } from '../games/metagame/viewer-actions.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
@@ -73,38 +74,6 @@ export async function buildRawView() {
   showEditDisclaimer();
 }
 
-// §7 #28 — fire ach-boss-cheat-found into the metagame save + bell when the cheat is disabled.
-// Done here (app layer) so it lands even when the boss module isn't mounted (the player normally
-// disables the cheat from the regular file viewer, not from inside the arena). Idempotent.
-function fireCheatFoundAchievement() {
-  try {
-    const SAVE_KEY = 'fv:games:metagame';
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return;
-    let st;
-    try { st = JSON.parse(raw); } catch { try { st = JSON.parse(decodeURIComponent(escape(atob(raw)))); } catch { return; } }
-    if (!st || typeof st !== 'object') return;
-    st.achievements = Array.isArray(st.achievements) ? st.achievements : [];
-    if (st.achievements.includes('ach-boss-cheat-found')) return;
-    st.achievements.push('ach-boss-cheat-found');
-    // Re-persist in whatever encoding the save was in (base64 round-trips through the same try-path).
-    let out;
-    try { JSON.parse(raw); out = JSON.stringify(st); }
-    catch { out = btoa(unescape(encodeURIComponent(JSON.stringify(st)))); }
-    localStorage.setItem(SAVE_KEY, out);
-    // Bell line (own key, plain JSON).
-    const BELL_KEY = 'fv:games:mg:bell';
-    let bs = {};
-    try { bs = JSON.parse(localStorage.getItem(BELL_KEY)) || {}; } catch { bs = {}; }
-    bs.messages = Array.isArray(bs.messages) ? bs.messages : [];
-    if (!bs.messages.some((m) => m.id === 'ach-boss-cheat-found')) {
-      bs.messages.push({ id: 'ach-boss-cheat-found', text: '🕵️ something was off. you fixed it.', count: 1, ts: Date.now() });
-      localStorage.setItem(BELL_KEY, JSON.stringify(bs));
-    }
-  } catch { /* private mode / malformed save — skip silently */ }
-}
-window.addEventListener('fv:boss-cheat-disable', fireCheatFoundAchievement);
-
 // §10A.3 — The Defragmenter cheat-disable toast. Prefer the app's toast; else a 3s DIY overlay.
 function showCheatToast(msg) {
   if (typeof toast === 'function') { toast(msg); return; }
@@ -117,26 +86,8 @@ function showCheatToast(msg) {
 }
 
 export async function onRawEdited(value) {
-  // §10A.3 — Defragmenter cheat hook: watch for CHEAT= edits in Overwriter.frag. Gated behind a
-  // cheap filename test so it costs nothing for normal files. Disable is PERMANENT (§10A.2): once
-  // the key latches to btoa("false") it is never written back to true.
-  if (state.intake && /overwriter/i.test(state.intake.filename || '')) {
-    const match = value.match(/CHEAT\s*=\s*['"]?(\w*)['"]?/i);
-    if (match) {
-      const token = (match[1] || '').toLowerCase();
-      const truthy = ['true', '1', 'yes', 'x', 'on'].includes(token);
-      const falsy = ['false', '0', 'no', 'off', ''].includes(token);
-      const disabledVal = btoa(JSON.stringify(false));
-      const alreadyDisabled = localStorage.getItem('fv:boss1:cheat') === disabledVal;
-      if (falsy && !alreadyDisabled) {
-        localStorage.setItem('fv:boss1:cheat', disabledVal);
-        window.dispatchEvent(new CustomEvent('fv:boss-cheat-disable', { detail: { stage: 1 } }));
-        showCheatToast('⚙️ The Defragmenter\'s cheat has been disabled.');
-      } else if (truthy && !alreadyDisabled) {
-        localStorage.setItem('fv:boss1:cheat', btoa(JSON.stringify(true)));
-      }
-      // if alreadyDisabled: no-op (permanent disable).
-    }
+  if (recordStage1RawEdit({ file: state.intake?.filename || '', text: value })) {
+    showCheatToast('The Defragmenter cheat routine has been disabled.');
   }
 
   // One-time toast (A): fire on the very first edit ever to explain the in-memory model.
