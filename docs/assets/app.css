@@ -81,6 +81,11 @@ body {
 .ft-export[hidden] { display: none; }
 /* Edited-file marker in the tree (folder edit-tracking): a * after the name. */
 .ft-file.ft-edited .ft-name::after { content: " *"; color: var(--accent); font-weight: 700; }
+/* Moved-file indicator in the tree (Feature E virtual folder reorg). */
+.ft-file.ft-moved .ft-name { font-style: italic; color: var(--fg-2); }
+.ft-file.ft-moved .ft-name::before { content: "→ "; color: var(--accent); font-style: normal; font-weight: 600; }
+/* Drop-target highlight when dragging a file over a folder row. */
+.ft-row.ft-drop-target { background: color-mix(in srgb, var(--accent) 22%, transparent) !important; outline: 1px solid var(--accent); outline-offset: -1px; }
 .ft-notice { padding: 7px 12px; font: 11px/1.4 system-ui, sans-serif; color: var(--fg-2);
   background: var(--bg-3); border-bottom: 1px solid var(--border); }
 .ft-notice[hidden] { display: none; }
@@ -203,6 +208,18 @@ body {
   border-radius: 16px; padding: 4px 12px; cursor: pointer; margin-top: 4px;
 }
 .ex-showall-btn:hover { background: var(--bg-3); }
+
+/* ── Media: waveform panel (Feature D) ── */
+.media-wv-wrap { margin: 0 12px 12px; }
+.media-wv-toggle { background: none; border: 1px solid var(--border); color: var(--fg-2); border-radius: 6px;
+  padding: 3px 10px; font-size: 11px; cursor: pointer; }
+.media-wv-toggle:hover { background: var(--bg-3); color: var(--fg); }
+.media-wv-panel { margin-top: 6px; border-radius: 8px; overflow: hidden; background: var(--bg-2);
+  border: 1px solid var(--border); }
+.media-wv-canvas { display: block; width: 100%; }
+/* Per-track gain slider (mixer) in the playlist track list. */
+.media-gain-slider { flex: 0 0 60px; height: 14px; cursor: pointer; accent-color: var(--accent);
+  vertical-align: middle; }
 
 /* ── Workspace ── */
 .workspace { flex: 1; display: flex; flex-direction: column; min-height: 0; }

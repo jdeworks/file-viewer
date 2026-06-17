@@ -56,6 +56,7 @@ export async function render(intake, ctx = {}) {
     host.innerHTML = '<p class="media-note">Unsupported media file.</p>';
     return { parentNode: host };
   }
+  let wvController = null;
   const url = blobUrl(intake, info.mime);
   const el = document.createElement(info.kind === 'video' ? 'video' : 'audio');
   el.className = 'media-view';
@@ -118,12 +119,38 @@ export async function render(intake, ctx = {}) {
       const n = document.createElement('span'); n.className = 'media-track-n'; n.textContent = String(i + 1);
       const label = document.createElement('span'); label.className = 'media-track-label';
       label.textContent = (item.path || item.file?.name || 'track').split('/').pop();
-      row.append(n, label);
+      // Gain slider (mixer): per-track volume preset, persisted in localStorage.
+      const gainKey = 'fv:gain:' + (item.path || item.file?.name || String(i));
+      const gainVal = parseInt(localStorage.getItem(gainKey) ?? '100', 10);
+      const gainSlider = document.createElement('input');
+      gainSlider.type = 'range'; gainSlider.min = '0'; gainSlider.max = '200';
+      gainSlider.value = String(gainVal); gainSlider.className = 'media-gain-slider';
+      gainSlider.title = 'Track volume (0–200%)';
+      gainSlider.addEventListener('input', () => {
+        const v = parseInt(gainSlider.value, 10);
+        localStorage.setItem(gainKey, String(v));
+        if (i === playlist.index) {
+          import('./waveform.js').then(({ connectGain }) => {
+            const g = connectGain(el); if (g) g.gain.value = v / 100;
+          });
+        }
+      });
+      row.append(n, label, gainSlider);
       row.addEventListener('click', () => goTo(i));
       trackListEl.appendChild(row);
       labels.push({ item, label });
     });
     enrichTrackTags(labels);   // fire-and-forget ID3 enrichment
+
+    // Apply the current track's saved gain immediately.
+    const curItem = playlist.items[playlist.index];
+    const curKey = 'fv:gain:' + (curItem.path || curItem.file?.name || String(playlist.index));
+    const curGain = parseInt(localStorage.getItem(curKey) ?? '100', 10);
+    if (curGain !== 100) {
+      import('./waveform.js').then(({ connectGain }) => {
+        const g = connectGain(el); if (g) g.gain.value = curGain / 100;
+      });
+    }
   }
   function goTo(i) {
     if (!playlist || i < 0 || i >= playlist.items.length || i === playlist.index) return;
@@ -198,6 +225,35 @@ export async function render(intake, ctx = {}) {
     host.append(txPanel);
   }
   if (trackListEl) host.append(trackListEl);
+
+  // ── Waveform panel (audio only, collapsed by default) ──
+  if (info.kind === 'audio') {
+    const wvWrap = document.createElement('div');
+    wvWrap.className = 'media-wv-wrap';
+    const wvToggle = document.createElement('button');
+    wvToggle.type = 'button';
+    wvToggle.className = 'media-wv-toggle';
+    wvToggle.textContent = '▶ Waveform';
+    const wvPanel = document.createElement('div');
+    wvPanel.className = 'media-wv-panel';
+    wvPanel.hidden = true;
+    const wvCanvas = document.createElement('canvas');
+    wvCanvas.className = 'media-wv-canvas';
+    wvCanvas.height = 120;
+    wvPanel.appendChild(wvCanvas);
+    wvWrap.append(wvToggle, wvPanel);
+    host.appendChild(wvWrap);
+    wvToggle.addEventListener('click', async () => {
+      wvPanel.hidden = !wvPanel.hidden;
+      wvToggle.textContent = (wvPanel.hidden ? '▶' : '▼') + ' Waveform';
+      if (!wvPanel.hidden && !wvController) {
+        wvCanvas.width = wvPanel.offsetWidth || 400;
+        const { renderWaveform } = await import('./waveform.js');
+        wvController = await renderWaveform(wvCanvas, intake);
+        if (wvController) wvController.update(el);
+      }
+    });
+  }
 
   // ── Resume position ──
   const saved = loadState(intake);
@@ -287,6 +343,7 @@ export async function render(intake, ctx = {}) {
       hideIosAudioHint();
       URL.revokeObjectURL(url);
       if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
+      if (wvController) { wvController.destroy(); wvController = null; }
     },
   };
 }

@@ -78,8 +78,9 @@ function collectFolderPaths(node, prefix, out) {
   }
 }
 
-// Render into `host`. onOpen(node) fires on a file click. Returns controller API.
-export function renderTree(host, root, { onOpen }) {
+// Render into `host`. onOpen(node) fires on a file click. onMove(srcPath, destFolderPath) fires
+// when a file is dropped onto a folder row. Returns controller API.
+export function renderTree(host, root, { onOpen, onMove }) {
   host.innerHTML = '';
   const inner = document.createElement('div');
   inner.className = 'ft-virtual-inner';
@@ -95,6 +96,7 @@ export function renderTree(host, root, { onOpen }) {
   let activeNode = null;
   let filterFn = null;
   const editedPaths = new Set();
+  const movedPaths = new Set();
 
   // Rebuild the flat items array from current expand/filter state.
   function buildFlat() {
@@ -163,6 +165,26 @@ export function renderTree(host, root, { onOpen }) {
         else openFolders.add(item.folderPath);
         buildFlat();
       });
+      // Drop target: accept dragged tree files → move into this folder.
+      if (onMove) {
+        row.addEventListener('dragover', (e) => {
+          if (![...e.dataTransfer.types].includes(TREE_DRAG_TYPE)) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          inner.querySelectorAll('.ft-drop-target').forEach((r) => r.classList.remove('ft-drop-target'));
+          row.classList.add('ft-drop-target');
+        });
+        row.addEventListener('dragleave', (e) => {
+          if (row.contains(e.relatedTarget)) return;
+          row.classList.remove('ft-drop-target');
+        });
+        row.addEventListener('drop', (e) => {
+          e.preventDefault();
+          row.classList.remove('ft-drop-target');
+          const srcPath = e.dataTransfer.getData(TREE_DRAG_TYPE);
+          if (srcPath && srcPath !== item.folderPath) onMove(srcPath, item.folderPath);
+        });
+      }
     } else {
       row.dataset.path = item.node.path;
       row.tabIndex = 0;
@@ -173,6 +195,7 @@ export function renderTree(host, root, { onOpen }) {
         + '<span class="ft-size">' + fmtSize(item.node.file.size) + '</span>';
       if (item.node === activeNode) row.classList.add('active');
       if (editedPaths.has(item.node.path)) row.classList.add('ft-edited');
+      if (movedPaths.has(item.node.path)) row.classList.add('ft-moved');
       row.addEventListener('click', () => { setActive(item.node.path); onOpen(item.node); });
       row.addEventListener('dragstart', (e) => {
         _dragNode = item.node;
@@ -234,6 +257,12 @@ export function renderTree(host, root, { onOpen }) {
     if (row) row.classList.toggle('ft-edited', on !== false);
   }
 
+  function setMoved(path, on = true) {
+    if (on) movedPaths.add(path); else movedPaths.delete(path);
+    const row = inner.querySelector('[data-path="' + cssEscape(path) + '"]');
+    if (row) row.classList.toggle('ft-moved', on !== false);
+  }
+
   function filter(matchFn) {
     filterFn = matchFn;
     buildFlat();
@@ -262,7 +291,7 @@ export function renderTree(host, root, { onOpen }) {
 
   buildFlat();
 
-  return { setActive, setEdited, filter, clearFilter, navigate, refresh, stop };
+  return { setActive, setEdited, setMoved, filter, clearFilter, navigate, refresh, stop };
 }
 
 function escapeHtml(s) { return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }

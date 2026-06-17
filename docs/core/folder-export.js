@@ -3,16 +3,24 @@
 // from their File handle (no full read in JS — JSZip streams the Blob). Vendored JSZip, no upload.
 import { loadGlobal, vendor } from './script-loader.js';
 
-// entries: [{ file, path }]. edits: Map<path, string> of edited text. Returns a Blob.
-export async function exportFolderZip(entries, edits, { changedOnly = false } = {}) {
+// entries: [{ file, path }]. edits: Map<path, string> of edited text.
+// moves: Map<originalPath, newPath> for in-memory virtual moves. Returns a Blob.
+export async function exportFolderZip(entries, edits, { changedOnly = false, moves = null } = {}) {
   const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
   const zip = new JSZip();
   let count = 0;
   for (const e of entries) {
     const edited = edits.get(e.path);
-    if (changedOnly && edited == null) continue;
-    zip.file(e.path, edited != null ? edited : e.file);   // JSZip accepts a string or a Blob/File
+    const moved = moves && moves.has(e.path);
+    if (changedOnly && edited == null && !moved) continue;
+    const zipPath = (moves && moves.get(e.path)) || e.path;
+    zip.file(zipPath, edited != null ? edited : e.file);   // JSZip accepts a string or a Blob/File
     count++;
+  }
+  if (moves && moves.size > 0) {
+    let sh = '#!/bin/bash\n# Folder reorganization — run this to apply moves on disk\n';
+    for (const [src, dest] of moves) sh += `mv "${src}" "${dest}"\n`;
+    zip.file('_moves.sh', sh);
   }
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
   return { blob, count };

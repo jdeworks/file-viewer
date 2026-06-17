@@ -17,6 +17,21 @@ let loadIntake = () => {};
 let confirmDiscard = () => true;
 export function initFolder(deps) { loadIntake = deps.loadIntake; confirmDiscard = deps.confirmDiscard; }
 
+// Track whether the one-time move disclaimer toast has been shown this folder session.
+let _moveNoticed = false;
+
+// Record a file move (src → dest path). Transfers any in-memory edit to the new path.
+export function recordMove(src, dest) {
+  if (state.folderEdits.has(src)) {
+    state.folderEdits.set(dest, state.folderEdits.get(src));
+    state.folderEdits.delete(src);
+  }
+  state.folderMoves.set(src, dest);
+}
+
+// Module-level re-entrant onMove handler so it can reference itself after a tree rebuild.
+let _onMove = null;
+
 export async function loadFolder(entries) {
   if (!confirmDiscard()) return;               // guard unsaved work before swapping folders
   // A .git dir makes this a repository: hide git internals from the tree, surface a
@@ -31,10 +46,34 @@ export async function loadFolder(entries) {
   $('ftRoot').textContent = rootName;
   $('ftRoot').title = rootName;
   state.folderEdits = new Map();               // fresh folder → no tracked edits yet
+  state.folderMoves = new Map();               // fresh folder → no in-memory moves yet
   state.currentFolderPath = null;
   state.folderExported = false;
+  _moveNoticed = false;
+
+  _onMove = (src, destFolder) => {
+    const fname = src.split('/').pop();
+    const dest = destFolder ? destFolder + '/' + fname : fname;
+    if (state.treeEntries.some((e) => e.path === dest)) { toast('A file already exists at ' + dest); return; }
+    recordMove(src, dest);
+    const entry = state.treeEntries.find((e) => e.path === src);
+    if (entry) entry.path = dest;
+    if (state.treeApi) state.treeApi.stop();
+    state.treeApi = renderTree($('ftBody'), buildTree(state.treeEntries), {
+      onOpen: (node) => openTreeFile(node),
+      onMove: _onMove,
+    });
+    for (const movedDest of state.folderMoves.values()) state.treeApi.setMoved(movedDest);
+    state.treeApi.setActive(dest);
+    toast('Moved to ' + dest);
+    if (!_moveNoticed) {
+      _moveNoticed = true;
+      setTimeout(() => toast('Moves are in-memory only. Download the folder to save changes.'), 2700);
+    }
+  };
+
   const tree = buildTree(display);
-  state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node) });
+  state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node), onMove: _onMove });
   $('treeBtn').hidden = false;
   $('repoBtn').hidden = !git;
   $('ftExportBtn').hidden = !!git;             // export the loaded folder (not for git repos)
@@ -137,7 +176,7 @@ export async function exportFolder(changedOnly) {
   if (changedOnly && state.folderEdits.size === 0) { toast('No edited files to export yet.'); return; }
   try {
     toast('Building .zip…', 1500);
-    const { blob, count } = await exportFolderZip(entries, state.folderEdits, { changedOnly });
+    const { blob, count } = await exportFolderZip(entries, state.folderEdits, { changedOnly, moves: state.folderMoves });
     const base = ($('ftRoot').textContent || 'folder').replace(/[^\w.-]+/g, '_');
     downloadBlob(blob, base + (changedOnly ? '-changed' : '') + '.zip');
     state.folderExported = true;       // edits are now saved out; clears the unsaved-work warning
