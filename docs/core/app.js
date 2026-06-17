@@ -32,7 +32,7 @@ import { buildMetadata } from './meta-drawer.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, flushFolderEdit } from './folder.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
 import { recordMetagameViewerOpen, recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
-import { detectCompanion, findFile, saveFile, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
+import { detectCompanion, findFile, findFolder, saveFile, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -56,6 +56,9 @@ async function loadIntake(intake) {
   state.currentFolderPath = null;      // single-file load by default; openTreeFile re-sets it
   state.intake = intake;
   setCompanionLinked(null);            // clear any prior linked path on new file open
+  // When loading a single top-level file (not a folder-tree navigation), reset the folder root
+  // so save doesn't accidentally compute paths against a stale folder.
+  if (!fromTree) companionFolderRoot = null;
   const { type, ranking } = pickType(intake);
   populateTypeSelect(ranking, type.id);
   await activateType(type);
@@ -519,9 +522,78 @@ function showMetaBtnEgg(msg, onDismiss) {
 let companionAvailable = false;
 // Per-file resolved disk path (set after a successful findFile/save). Cleared on new file open.
 let companionLinkedPath = null;
+// Absolute path to the root of the currently-dropped folder on disk (resolved via find-folder).
+// Null when no folder is loaded or root resolution failed/was cancelled.
+let companionFolderRoot = null;
 
 function showCompanionIndicator() {
   toast('Companion connected — save files back to disk with 💾', 3500);
+}
+
+// Show a picker dialog when find-folder returns multiple matching roots.
+// Returns the chosen absolute path, or null if the user cancels.
+function promptFolderRootPicker(matches) {
+  return new Promise((resolve) => {
+    const modal = document.createElement('dialog');
+    modal.innerHTML = `
+      <h3 style="margin-top:0">Multiple matching folders found</h3>
+      <p>Which folder on disk matches the dropped folder?</p>
+      <ul style="list-style:none;padding:0;margin:0 0 12px">
+        ${matches.map((m, i) => `<li style="margin:4px 0"><button data-idx="${i}" style="width:100%;text-align:left;padding:6px 10px;cursor:pointer">${escapeHtml(m)}</button></li>`).join('')}
+      </ul>
+      <button class="cancel-btn">Cancel</button>
+    `;
+    modal.addEventListener('click', (e) => {
+      if (e.target.dataset.idx !== undefined) {
+        resolve(matches[parseInt(e.target.dataset.idx)]);
+        modal.close();
+        modal.remove();
+      } else if (e.target.classList.contains('cancel-btn')) {
+        resolve(null);
+        modal.close();
+        modal.remove();
+      }
+    });
+    document.body.appendChild(modal);
+    modal.showModal();
+  });
+}
+
+// Attempt to resolve the absolute disk root for a folder drop.
+// Uses the first file's webkitRelativePath + size + lastModified to call find-folder.
+// Sets companionFolderRoot on success; leaves it null on failure or ambiguity (after cancel).
+async function resolveDroppedFolderRoot(files) {
+  if (!companionAvailable || !companionEnabled() || !files || !files.length) return;
+  const first = files[0];
+  if (!first.webkitRelativePath) return;
+  const relPath = first.webkitRelativePath; // e.g. "my-project/package.json"
+  const matches = await findFolder(relPath, first.size, first.lastModified).catch(() => []);
+  let root = null;
+  if (matches.length === 1) {
+    root = matches[0];
+  } else if (matches.length > 1) {
+    root = await promptFolderRootPicker(matches);
+  }
+  companionFolderRoot = root;
+  if (root) {
+    syncSaveBtn();
+    // If a folder-tree file is already open (e.g. root resolved after tree loaded and a file was
+    // auto-opened), start watching it now.
+    const fileHandle = state.intake?.file;
+    const currentAbsPath = absolutePathForFile(fileHandle);
+    if (currentAbsPath && state.currentFolderPath) startWatching(currentAbsPath);
+  }
+}
+
+// Given a File from a folder tree drop (with webkitRelativePath), return its absolute disk path.
+// Returns null if the folder root has not been resolved or the file has no relative path.
+function absolutePathForFile(file) {
+  if (!companionFolderRoot || !file?.webkitRelativePath) return null;
+  // webkitRelativePath: "my-project/src/index.js" — strip the leading folder name.
+  const relParts = file.webkitRelativePath.split('/');
+  const relFromRoot = relParts.slice(1).join('/'); // "src/index.js"
+  if (!relFromRoot) return null;
+  return `${companionFolderRoot}/${relFromRoot}`;
 }
 
 function setCompanionLinked(absPath) {
@@ -564,9 +636,19 @@ async function reloadFromDisk(absolutePath) {
     const file = new File([blob], absolutePath.split('/').pop() || 'file', { type: blob.type });
     // Use the existing intake pipeline so the viewer re-renders correctly.
     const intake = await intakeFromFile(file);
+    // Preserve the folder context across the reload.
+    const savedFolderPath = state.currentFolderPath;
     state._skipDiscardGuard = true;
     await loadIntake(intake);
-    setCompanionLinked(absolutePath);
+    if (savedFolderPath) {
+      // Restore folder context (loadIntake always clears currentFolderPath).
+      state.currentFolderPath = savedFolderPath;
+      state.treeApi?.setActive?.(savedFolderPath);
+      // Re-start watching this file (loadIntake→setCompanionLinked(null) stopped the watch).
+      if (companionFolderRoot) startWatching(absolutePath);
+    } else {
+      setCompanionLinked(absolutePath);
+    }
     toast('Reloaded from disk');
   } catch (err) {
     toast('Reload error: ' + err.message);
@@ -597,8 +679,11 @@ function showReloadBanner(absolutePath, kind) {
 function syncSaveBtn() {
   const btn = $('saveBtn');
   if (!btn) return;
-  // Show the save button only when companion is active AND a (non-binary) file is open.
-  const show = companionAvailable && !!state.intake && !state.intake.isBinary;
+  // Show the save button when companion is active AND a (non-binary) file is open.
+  // For folder-tree files, also require that the folder root has been resolved via find-folder.
+  const isFolderFile = !!(state.currentFolderPath && state.treeEntries && !state.sessionTree);
+  const folderSaveReady = isFolderFile ? !!companionFolderRoot : true;
+  const show = companionAvailable && !!state.intake && !state.intake.isBinary && folderSaveReady;
   btn.hidden = !show;
   if (show) layoutTopbar();
 }
@@ -608,8 +693,23 @@ async function onSaveClick() {
   const { filename, size } = state.intake;
   $('saveBtn').disabled = true;
   try {
-    // 1. If we already resolved a path for this file, skip the find step.
-    let absPath = companionLinkedPath;
+    let absPath = null;
+
+    // --- Folder-tree file: resolve per-file absolute path ---
+    // When a folder root was resolved via find-folder AND this is a folder-tree file,
+    // compute the absolute path directly from webkitRelativePath. Never save the whole folder.
+    if (state.currentFolderPath && companionFolderRoot) {
+      const fileHandle = state.intake.file;
+      absPath = absolutePathForFile(fileHandle);
+      if (!absPath) {
+        // webkitRelativePath unavailable (e.g. synthetic tree entry) — fall through to findFile.
+      }
+    }
+
+    // --- Single file: use cached path or search by name+size ---
+    if (!absPath) {
+      absPath = companionLinkedPath;
+    }
     if (!absPath) {
       let matches;
       try {
@@ -630,13 +730,16 @@ async function onSaveClick() {
         if (!absPath) return; // user cancelled
       }
     }
+
     if (!confirm(`Save to:\n${absPath}?`)) return;
     const bytes = state.rawview
       ? new TextEncoder().encode(state.rawview.getValue())
       : (state.intake.bytes || new TextEncoder().encode(state.intake.text || ''));
     try {
       await saveFile(absPath, bytes);
-      setCompanionLinked(absPath);
+      // For single files, cache the resolved path + start watch.
+      // For folder-tree files, the folder root is already watched; just confirm.
+      if (!state.currentFolderPath) setCompanionLinked(absPath);
       state.downloadedSinceEdit = true;
       toast('Saved to disk: ' + absPath);
     } catch (err) {
@@ -843,7 +946,18 @@ function renderCompanionSettings(container) {
 function init() {
   // Inject the core-flow callbacks the folder module needs (one-way: app imports folder, folder
   // gets these via init — no circular import).
-  initFolder({ loadIntake, confirmDiscard });
+  initFolder({
+    loadIntake, confirmDiscard,
+    // Called after each folder-tree file opens so we can start watching its absolute disk path.
+    onFolderFileOpened: (node) => {
+      if (!companionAvailable || !companionFolderRoot) return;
+      const absPath = absolutePathForFile(node.file);
+      if (!absPath) return;
+      // Watch this specific file for changes on disk (replaces any prior single-file watch).
+      startWatching(absPath);
+      syncSaveBtn(); // re-evaluate save button now that currentFolderPath + root are known
+    },
+  });
   initLayout({ renderPreview, openSettings });
   initRawPane({ renderPreview });
   initCompare({ syncRawModeButtons });
@@ -854,7 +968,17 @@ function init() {
 
   wireIntake({
     dropZone: $('dropZone'), fileInput: $('fileInput'), folderInput: $('folderInput'),
-    onIntake: loadIntake, onFolder: loadFolder, onError: (e) => toast('Could not read file: ' + e.message),
+    onIntake: loadIntake,
+    onFolder: async (entries) => {
+      // Reset folder root before resolving a new one.
+      companionFolderRoot = null;
+      await loadFolder(entries);
+      // After the folder tree is built, resolve the companion root in the background.
+      // Pass the raw File objects from entries so we can read webkitRelativePath + size/mtime.
+      const files = entries.map((e) => e.file).filter(Boolean);
+      resolveDroppedFolderRoot(files);
+    },
+    onError: (e) => toast('Could not read file: ' + e.message),
   });
 
   // Tree-to-workspace drag: when a file is dragged from the sidebar tree onto the workspace

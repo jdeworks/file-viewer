@@ -15,7 +15,12 @@ import { recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
 // Injected core-flow callbacks (set once by app.js init()).
 let loadIntake = () => {};
 let confirmDiscard = () => true;
-export function initFolder(deps) { loadIntake = deps.loadIntake; confirmDiscard = deps.confirmDiscard; }
+let onFolderFileOpened = null; // optional callback(node) called after a tree file opens
+export function initFolder(deps) {
+  loadIntake = deps.loadIntake;
+  confirmDiscard = deps.confirmDiscard;
+  onFolderFileOpened = deps.onFolderFileOpened || null;
+}
 
 // Track whether the one-time move disclaimer toast has been shown this folder session.
 let _moveNoticed = false;
@@ -117,6 +122,7 @@ async function openTreeFile(node) {
     state._skipDiscardGuard = true;    // folder edits are preserved in folderEdits — no discard prompt
     await loadIntake(intake);
     state.currentFolderPath = node.path;   // mark this as a folder file (loadIntake cleared it)
+    onFolderFileOpened?.(node);        // notify app.js so it can start per-file watch
     if (isMobile()) setTree(false);    // collapse the overlay after picking on phones
   } catch (err) {
     toast('Could not open ' + node.path);

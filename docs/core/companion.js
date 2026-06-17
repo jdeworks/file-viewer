@@ -38,6 +38,14 @@ export async function findFile(name, size) {
   return (await res.json()).matches; // string[]
 }
 
+export async function findFolder(relPath, size, mtime) {
+  if (!isEnabled()) return [];
+  const params = new URLSearchParams({ relPath, size, mtime });
+  const res = await fetch(`${BASE}/find-folder?${params}`);
+  if (!res.ok) throw new Error(`find-folder: ${res.status}`);
+  return (await res.json()).matches; // absolute root paths
+}
+
 export async function saveFile(absolutePath, bytes) {
   const res = await fetch(`${BASE}/file?path=${encodeURIComponent(absolutePath)}`, {
     method: 'POST',
