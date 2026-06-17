@@ -68,6 +68,7 @@ import comicType from '../types/ebook/comic/index.js';
 import fb2Type from '../types/ebook/fb2/index.js';
 import mobiType from '../types/ebook/mobi/index.js';
 import odfType from '../types/office/odf/index.js';
+import rtfType from '../types/text/rtf/index.js';
 import lrfType from '../types/ebook/lrf/index.js';
 import layeredType from '../types/layered/index.js';
 import icoType from '../types/image/ico/index.js';
@@ -97,6 +98,7 @@ export const REGISTRY = [
   docxType,
   pptxType,
   odfType,
+  rtfType,
   htmlType,
   emlType,
   mboxType,

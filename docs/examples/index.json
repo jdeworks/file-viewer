@@ -48,6 +48,12 @@
     "category": "Documents"
   },
   {
+    "label": "Sample.rtf",
+    "file": "sample.rtf",
+    "mime": "application/rtf",
+    "category": "Documents"
+  },
+  {
     "label": "Sample.csv",
     "file": "sample.csv",
     "mime": "text/csv",
