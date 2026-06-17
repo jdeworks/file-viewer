@@ -4,6 +4,7 @@
 // Virtual-scroll: only rows in the current viewport (+OVERSCAN) are in the DOM, so an
 // arbitrarily large file count never freezes the tab.
 import { LANGS, FILENAMES } from '../types/text/code/langmap.js';
+import { state } from './state.js';
 
 // Type guess from filename alone -> { id, dot color }. Cheap; the real detector runs on open.
 const TYPE_DOT = {
@@ -196,6 +197,7 @@ export function renderTree(host, root, { onOpen, onMove }) {
       if (item.node === activeNode) row.classList.add('active');
       if (editedPaths.has(item.node.path)) row.classList.add('ft-edited');
       if (movedPaths.has(item.node.path)) row.classList.add('ft-moved');
+      if (state.sessionTree) row.classList.add('ft-session');
       row.addEventListener('click', () => { setActive(item.node.path); onOpen(item.node); });
       row.addEventListener('dragstart', (e) => {
         _dragNode = item.node;

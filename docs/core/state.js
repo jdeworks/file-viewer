@@ -22,6 +22,8 @@ export const state = {
   forceBase: false,      // user toggled "show the plain view" -> bypass the enhancement
   folderEdits: new Map(),    // path -> edited text for files opened from a loaded folder
   currentFolderPath: null,   // path of the currently-open folder file (null for single files)
+  sessionIntakes: new Map(), // filename -> intake for individually-opened files (session history)
+  sessionTree: false,        // true when the sidebar is showing the session history tree
 };
 
 // Transient toast. Lives here (not app.js) because many extracted modules surface errors via it.

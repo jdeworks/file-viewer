@@ -48,6 +48,7 @@ export async function loadFolder(entries) {
   state.folderEdits = new Map();               // fresh folder → no tracked edits yet
   state.folderMoves = new Map();               // fresh folder → no in-memory moves yet
   state.currentFolderPath = null;
+  state.sessionTree = false; state.sessionIntakes = new Map(); // real folder takes over sidebar
   state.folderExported = false;
   _moveNoticed = false;
 

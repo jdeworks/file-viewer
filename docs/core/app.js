@@ -62,6 +62,50 @@ async function loadIntake(intake) {
     const total = (intake.size / 1048576).toFixed(0);
     toast(`Large file: showing the first ${shown} MB of ${total} MB.`, 6000);
   }
+  updateSessionTree(intake);
+}
+
+// Track individually-opened files in a session sidebar so users can switch back to any prior file.
+// Only activates when 2+ distinct files have been opened without a real folder loaded.
+function updateSessionTree(intake) {
+  // A real folder or synthetic dual-view tree (createNewFile / onTreeFileDrop) owns the sidebar.
+  if (state.treeEntries && !state.sessionTree) return;
+
+  const alreadyTracked = state.sessionIntakes.has(intake.filename);
+  state.sessionIntakes.set(intake.filename, intake);
+
+  if (state.sessionIntakes.size < 2) return; // need at least 2 files to justify showing the tree
+
+  if (state.sessionTree && alreadyTracked) {
+    // Tree already shown and no new entry — just update the active marker.
+    state.treeApi?.setActive?.(intake.filename);
+    return;
+  }
+
+  // Build/rebuild the session tree. Each entry needs a File object for the tree row display;
+  // actual re-open uses the stored intake, not this File.
+  const entries = [...state.sessionIntakes.entries()].map(([name, si]) => ({
+    file: new File([si.bytes || (si.text != null ? si.text : '')], name),
+    path: name,
+  }));
+  state.treeEntries = entries;
+  state.sessionTree = true;
+
+  if (state.treeApi) state.treeApi.stop();
+  state.treeApi = renderTree($('ftBody'), buildTree(entries), { onOpen: (node) => {
+    const si = state.sessionIntakes.get(node.path);
+    if (!si) return;
+    state._skipDiscardGuard = true;
+    loadIntake(si);
+  } });
+  $('ftRoot').textContent = 'Session';
+  $('ftRoot').title = 'Session files';
+  $('repoBtn').hidden = true;
+  $('ftExportBtn').hidden = true;
+  $('ftSearch').hidden = true;
+  $('treeBtn').hidden = false;
+  setTree(true);
+  state.treeApi.setActive(intake.filename);
 }
 
 // Create a new, empty file and open it in the editor. The name's extension drives type detection,
@@ -79,6 +123,7 @@ async function createNewFile() {
     const prevFile = new File([prevText], prevName, { type: 'text/plain' });
     const newFile = new File([''], filename, { type: 'text/plain' });
     const entries = [{ file: prevFile, path: prevName }, { file: newFile, path: filename }];
+    state.sessionTree = false; state.sessionIntakes = new Map();
     state.treeEntries = entries;
     state.folderEdits = new Map([[prevName, prevText]]);
     state.folderExported = false;
@@ -119,6 +164,7 @@ async function onTreeFileDrop(node) {
     const prevText = state.rawview ? state.rawview.getValue() : (state.intake.text || '');
     const prevFileObj = new File([prevText], prevName, { type: 'text/plain' });
     const entries = [{ file: prevFileObj, path: prevName }, { file: node.file, path: node.path }];
+    state.sessionTree = false; state.sessionIntakes = new Map();
     state.treeEntries = entries;
     state.folderEdits = new Map([[prevName, prevText]]);
     state.folderExported = false;

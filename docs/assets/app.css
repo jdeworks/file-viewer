@@ -84,6 +84,9 @@ body {
 /* Moved-file indicator in the tree (Feature E virtual folder reorg). */
 .ft-file.ft-moved .ft-name { font-style: italic; color: var(--fg-2); }
 .ft-file.ft-moved .ft-name::before { content: "→ "; color: var(--accent); font-style: normal; font-weight: 600; }
+/* Session-history files (opened individually, not from a folder): dimmed + italic when not active. */
+.ft-file.ft-session:not(.active) .ft-dot { opacity: 0.4; }
+.ft-file.ft-session:not(.active) .ft-name { opacity: 0.65; font-style: italic; }
 /* Drop-target highlight when dragging a file over a folder row. */
 .ft-row.ft-drop-target { background: color-mix(in srgb, var(--accent) 22%, transparent) !important; outline: 1px solid var(--accent); outline-offset: -1px; }
 .ft-notice { padding: 7px 12px; font: 11px/1.4 system-ui, sans-serif; color: var(--fg-2);
