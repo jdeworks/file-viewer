@@ -444,6 +444,11 @@
     "category": "Media"
   },
   {
+    "label": "sample.procreate",
+    "file": "sample.procreate",
+    "category": "Image"
+  },
+  {
     "label": "sample.gcode",
     "file": "sample.gcode",
     "mime": "text/x-gcode",

@@ -69,6 +69,7 @@ import odfType from '../types/office/odf/index.js';
 import lrfType from '../types/ebook/lrf/index.js';
 import layeredType from '../types/layered/index.js';
 import icoType from '../types/image/ico/index.js';
+import procreateType from '../types/image/procreate/index.js';
 import torrentType from '../types/binary/torrent/index.js';
 import gcodeType from '../types/text/gcode/index.js';
 import gitignoreType from '../types/text/gitignore/index.js';
@@ -102,6 +103,7 @@ export const REGISTRY = [
   jsonType,
   layeredType,
   icoType,
+  procreateType,
   imageType,
   mediaType,
   fontType,
