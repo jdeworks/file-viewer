@@ -488,5 +488,10 @@
     "label": "sample.pem",
     "file": "sample.pem",
     "category": "Other"
+  },
+  {
+    "label": "sample.wasm",
+    "file": "sample.wasm",
+    "category": "Other"
   }
 ]
