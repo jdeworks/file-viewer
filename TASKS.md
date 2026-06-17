@@ -484,6 +484,75 @@ GM instrument table: standard 128-name array (General MIDI Level 1 spec), no dep
 
 ---
 
+## TASK 16 — Sample Library Audit + Reader UX Fixes
+
+**Status:** Not started  
+**Effort:** L (~1-2 days)  
+**Files likely touched:**
+- `docs/examples/index.json`
+- `docs/examples/`
+- `docs/core/examples.js`
+- `docs/assets/app.css`
+- `tests/smoke.mjs` and/or `tests/areas/*.mjs`
+- ebook renderers under `docs/types/ebook/`
+- broken sample renderers as needed (`docs/types/binary/msg/`, `docs/types/ebook/djvu/`)
+
+### Sample library golden rule
+
+Every registered file type must have at least one dedicated sample file, and every known/enhanced view must have a dedicated sample too. If a type is intentionally unsupported or partial, the sample must still open and show a clear friendly partial-support message.
+
+Add smoke coverage that opens every sample in `docs/examples/index.json` and fails on preview crashes, console errors, missing renderers, or off-origin requests.
+
+### Better sample taxonomy
+
+Replace the single `category` model with multi-category/group metadata while preserving backward compatibility for existing UI code during the migration.
+
+Examples:
+- `sample.png` belongs to `Image` and `Media`
+- office/image hybrid formats can appear in both their file family and their render surface
+- secret/metagame artifacts can appear in `Secrets` plus their real type category
+
+Add filtering in the examples browser:
+- text search by label/file/type
+- category chips that support multi-category membership
+- filter by editable / preview-only / binary / enhanced / partial support
+- keep the examples panel scroll contained inside the inner app area
+
+### More samples
+
+Add simple dedicated samples for common programming languages and enhanced known-file renderers, including at minimum:
+- JavaScript, TypeScript, Python, Ruby, Go, Rust, Java, C, C++, C#, shell, SQL, HTML, CSS
+- each known enhancer: `package.json`, `tsconfig.json`, `Dockerfile`, `docker-compose.yml`, `Cargo.toml`, `requirements.txt`, `go.mod`, `composer.json`, `Gemfile`, `CODEOWNERS`, `.editorconfig`, `pom.xml`, `build.gradle`, `Pipfile`, OpenAPI
+
+Expand image coverage:
+- JPEG/JPG, PNG, GIF, WebP, BMP, TIFF, SVG, ICO
+- modern formats already supported or planned: HEIC/HEIF, AVIF, JXL if support exists or is added
+- design/layered formats: PSD/PSB, XCF, KRA, Sketch, Procreate, Clip Studio where supported or partial-supported
+
+### Layout bug
+
+Fix the sample file view so opening/browsing samples does not scroll the whole page and push the left sidebar away. Only the intended inner content region should scroll; the topbar and file tree should remain anchored.
+
+### Known broken samples / required notes
+
+Add a tracking note and smoke coverage for all file types because sample crashes have slipped through. Known failures to address:
+- `sample.msg`: currently fails with `Preview failed: Failed to execute 'decode' on 'TextDecoder': parameter 1 is not of type 'ArrayBuffer'.`
+- `sample.djvu`: currently fails with `Failed to load DjVu library` / `DjVu missing after load`
+
+Fix those renderers or change them to a clear partial-support message that passes smoke.
+
+### Ebook reader UX
+
+Improve all ebook readers (`epub`, `fb2`, `mobi`, `lrf`, comic where relevant) toward common ebook-reader behavior:
+- font family, font size, line height, margins, and theme controls
+- full-screen reading mode, especially on phones
+- mobile layout that uses the full viewport cleanly
+- slide-in settings pane for reader options
+- persistent per-book reader settings and position
+- make `sample.mobi` longer and investigate why it can start with blue selected/highlighted text
+
+---
+
 ## Future / Backlog (do not start until Tasks 1-15 are done)
 
 These need fixtures, heavy deps, or deeper research:
