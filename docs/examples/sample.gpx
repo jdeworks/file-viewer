@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="file-viewer" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Morning Loop</name>
+  </metadata>
+  <wpt lat="52.5200" lon="13.4050">
+    <name>Start</name>
+  </wpt>
+  <wpt lat="52.5220" lon="13.4090">
+    <name>Viewpoint</name>
+  </wpt>
+  <trk>
+    <name>Morning Loop</name>
+    <trkseg>
+      <trkpt lat="52.5200" lon="13.4050"><ele>35</ele><time>2026-06-17T07:00:00Z</time></trkpt>
+      <trkpt lat="52.5208" lon="13.4064"><ele>42</ele><time>2026-06-17T07:05:00Z</time></trkpt>
+      <trkpt lat="52.5215" lon="13.4076"><ele>38</ele><time>2026-06-17T07:10:00Z</time></trkpt>
+      <trkpt lat="52.5220" lon="13.4090"><ele>48</ele><time>2026-06-17T07:15:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

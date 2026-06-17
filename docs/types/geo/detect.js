@@ -5,9 +5,10 @@ import { hasExtension } from '../../core/detect.js';
 // viewer unless it carries the .geojson extension — the user can switch types.)
 export function detect(intake) {
   if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'geojson', 'gpx')) return 0.97;   // beat the JSON viewer for .geojson
+  if (hasExtension(intake, 'geojson')) return 0.97;   // beat the JSON viewer for .geojson
+  if (hasExtension(intake, 'gpx')) return 0.90;
   const t = intake.textSample || '';
-  if (/<gpx[\s>]/.test(t)) return 0.85;
+  if (/<gpx[\s>]/.test(t)) return 0.95;
   if (/"type"\s*:\s*"(FeatureCollection|Feature)"/.test(t) && /"coordinates"/.test(t)) return 0.55;
   return 0;
 }

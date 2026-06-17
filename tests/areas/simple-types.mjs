@@ -73,6 +73,44 @@ export async function run(ctx) {
   ]);
   if (/\.gpx$/.test(gpxDl.suggestedFilename())) pass('GeoJSON → GPX download (' + gpxDl.suggestedFilename() + ')'); else fail('geo→gpx: ' + gpxDl.suggestedFilename());
 
+  // ── GPX track viewer ── canvas map, elevation profile, stats, metadata, and GeoJSON export. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.gpx');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const gpxTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (gpxTypeId === 'geo') pass('.gpx detected as Map (GeoJSON/GPX)'); else fail('gpx type: ' + gpxTypeId);
+  const gpxf = await frameOf('iframe.fv-preview-frame');
+  await gpxf.waitForSelector('.gpx-doc canvas.gpx-map', { timeout: 8000 });
+  await gpxf.waitForSelector('.gpx-doc canvas.gpx-elevation', { timeout: 8000 });
+  await page.waitForTimeout(250);
+  const gpxCanvasPainted = await gpxf.$eval('canvas.gpx-map', (c) => {
+    const data = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let painted = 0;
+    for (let i = 0; i < data.length; i += 4) if (data[i + 3] && (data[i] < 230 || data[i + 1] < 230 || data[i + 2] < 230)) painted++;
+    return painted;
+  });
+  if (gpxCanvasPainted > 100) pass('GPX map canvas painted track (' + gpxCanvasPainted + ' pixels)'); else fail('gpx map painted=' + gpxCanvasPainted);
+  const gpxStats = await gpxf.$eval('.gpx-stats', (e) => e.textContent);
+  if (/Distance/.test(gpxStats) && /Elevation gain/.test(gpxStats) && /Duration\s*15 min/.test(gpxStats) && /Trackpoints\s*4/.test(gpxStats) && /Waypoints\s*2/.test(gpxStats))
+    pass('GPX stats include distance, gain/loss, duration, trackpoints, waypoints');
+  else fail('gpx stats: ' + gpxStats.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const gpxMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*GPX/.test(gpxMeta) && /Track name\s*Morning Loop/.test(gpxMeta) && /Creator\s*file-viewer/.test(gpxMeta) && /Distance/.test(gpxMeta) && /Elevation gain/.test(gpxMeta) && /Duration\s*15 min/.test(gpxMeta))
+    pass('GPX metadata includes track name, creator, stats, and bounds');
+  else fail('gpx meta: ' + gpxMeta.replace(/\s+/g, ' ').slice(0, 200));
+  await page.click('#metaDrawer [data-close]');
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const gpxExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
+  if (gpxExports.includes('Download as GeoJSON')) pass('GPX export offers GeoJSON'); else fail('gpx exports: ' + gpxExports.join(','));
+  const [geojsonDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("Download as GeoJSON")'),
+  ]);
+  if (/\.geojson$/.test(geojsonDl.suggestedFilename())) pass('GPX → GeoJSON download (' + geojsonDl.suggestedFilename() + ')'); else fail('gpx→geojson: ' + geojsonDl.suggestedFilename());
+
   // ── ID3 metadata ── an MP3's tags surface in the info drawer. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.mp3');

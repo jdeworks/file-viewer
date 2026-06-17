@@ -382,6 +382,12 @@
     "category": "Data"
   },
   {
+    "label": "Sample.gpx",
+    "file": "sample.gpx",
+    "mime": "application/gpx+xml",
+    "category": "Data"
+  },
+  {
     "label": "Sample.png",
     "file": "sample.png",
     "mime": "image/png",
