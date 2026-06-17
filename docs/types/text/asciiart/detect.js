@@ -3,18 +3,7 @@ import { hasExtension } from '../../../core/detect.js';
 const BLOCK_CHARS = /[█▓▒░═╔╗╚╝╠╣╦╩╬║─│┌┐└┘├┤┬┴┼]/g;
 
 export function detect(intake) {
-  if (intake.isBinary) {
-    // SAUCE00 can appear in binary files — check magic bytes
-    const bytes = intake.bytes;
-    if (bytes && bytes.length > 128) {
-      // SAUCE record is the last 128 bytes, starting with "SAUCE00"
-      const tail = bytes.slice(bytes.length - 128);
-      if (tail[0] === 0x53 && tail[1] === 0x41 && tail[2] === 0x55 && tail[3] === 0x43 && tail[4] === 0x45) {
-        return 0.95;
-      }
-    }
-    return 0;
-  }
+  if (intake.isBinary) return 0;
 
   const text = intake.textSample || intake.text || '';
   if (!text) return 0;
@@ -23,8 +12,8 @@ export function detect(intake) {
   if (hasExtension(intake, 'ans', 'asc')) return 0.90;
   if (hasExtension(intake, 'nfo', 'diz')) return 0.80;
 
-  // SAUCE00 in text file (appears at end of file as ASCII)
-  if (text.includes('SAUCE00')) return 0.95;
+  const sauceIdx = text.lastIndexOf('SAUCE00');
+  if (sauceIdx !== -1 && sauceIdx >= text.length - 200) return 0.95;
 
   // Content-based: count signals
   const lines = text.split(/\r?\n/);

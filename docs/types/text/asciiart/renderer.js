@@ -100,6 +100,22 @@ function parseAnsi(text) {
   return out.join('');
 }
 
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function parseSauce(text) {
+  const idx = text.lastIndexOf('SAUCE00');
+  if (idx === -1 || idx < text.length - 200) return null;
+  const r = text.slice(idx, idx + 128);
+  const clean = (s) => s.replace(/\0/g, '').trim();
+  return {
+    title: clean(r.slice(7, 42)),
+    author: clean(r.slice(42, 62)),
+    group: clean(r.slice(62, 82)),
+  };
+}
+
 const CSS = `
 <style>
 body { margin: 0; padding: 0; background: #0d0d0d; color: #ccc; font: 13px/1.2 "Courier New", Courier, monospace; }
@@ -107,6 +123,16 @@ body { margin: 0; padding: 0; background: #0d0d0d; color: #ccc; font: 13px/1.2 "
 .aa-notice { font-family: system-ui, sans-serif; font-size: 12px; color: #888; padding: 6px 10px;
   border-bottom: 1px solid #333; background: #1a1a1a; }
 @media (prefers-color-scheme: light) { .aa-notice { background: #eee; border-color: #ccc; } }
+.aa-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px;
+  border-bottom: 1px solid #333; background: #151515; font-family: system-ui, sans-serif; font-size: 12px; }
+.aa-sauce { color: #ccc; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aa-copy { border: 1px solid #444; border-radius: 4px; background: #222; color: #ddd; padding: 4px 8px; font: inherit; cursor: pointer; }
+.aa-copy:hover { background: #2d2d2d; }
+@media (prefers-color-scheme: light) {
+  .aa-head { background: #eee; border-color: #ccc; }
+  .aa-sauce { color: #333; }
+  .aa-copy { background: #fff; color: #222; border-color: #bbb; }
+}
 .aa-wrap { overflow: auto; padding: 12px; }
 .aa-pre { white-space: pre; font: 13px/1.2 "Courier New", Courier, monospace;
   tab-size: 8; -moz-tab-size: 8; }
@@ -115,12 +141,13 @@ body { margin: 0; padding: 0; background: #0d0d0d; color: #ccc; font: 13px/1.2 "
 
 export async function render(intake, _ctx) {
   let text = intake.text || '';
+  const rawText = text;
   let notice = '';
+  const sauce = parseSauce(text);
 
-  // Strip SAUCE record from end if present (last 128 bytes: "SAUCE00...")
   const sauceIdx = text.lastIndexOf('SAUCE00');
   if (sauceIdx !== -1 && sauceIdx > text.length - 200) {
-    text = text.slice(0, sauceIdx).replace(/\x1a$/, ''); // strip EOF char too
+    text = text.slice(0, sauceIdx).replace(/\x1a$/, '');
   }
 
   if (text.length > ANSI_SIZE_LIMIT) {
@@ -129,8 +156,25 @@ export async function render(intake, _ctx) {
   }
 
   const hasAnsi = /\x1b\[/.test(text);
-  const content = hasAnsi ? parseAnsi(text) : text.replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const content = hasAnsi ? parseAnsi(text) : esc(text);
+  const sauceBits = sauce ? [sauce.title, sauce.author, sauce.group].filter(Boolean).join(' · ') : '';
+  const header = '<div class="aa-head"><div class="aa-sauce">' + (sauceBits ? esc(sauceBits) : 'ASCII / ANSI art') + '</div><button class="aa-copy" type="button">Copy</button></div>';
+  const script = `<script>
+(() => {
+  const raw = ${JSON.stringify(rawText)};
+  const btn = document.querySelector('.aa-copy');
+  btn?.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(raw); btn.textContent = 'Copied'; }
+    catch {
+      const ta = document.createElement('textarea');
+      ta.value = raw; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove(); btn.textContent = 'Copied';
+    }
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1200);
+  });
+})();
+</script>`;
 
-  const bodyHtml = CSS + notice + '<div class="aa-wrap"><pre class="aa-pre">' + content + '</pre></div>';
+  const bodyHtml = CSS + header + notice + '<div class="aa-wrap"><pre class="aa-pre">' + content + '</pre></div>' + script;
   return { bodyHtml, hadUnsafe: false };
 }

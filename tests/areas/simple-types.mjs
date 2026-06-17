@@ -105,4 +105,44 @@ export async function run(ctx) {
   await urlf.waitForSelector('.ui-table', { timeout: 8000 });
   const urlScheme = await urlf.$eval('.ui-table', (e) => e.textContent);
   if (/https/.test(urlScheme) && /api\.example\.com/.test(urlScheme)) pass('URL inspector renders scheme + host'); else fail('url render: ' + urlScheme.slice(0, 120));
+
+  // ── ASCII / ANSI art ── ANSI SGR colors + SAUCE metadata, no external deps. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.evaluate(async () => {
+    const sauce = (() => {
+      const chars = Array(128).fill(' ');
+      const put = (off, s, len) => [...s.padEnd(len, ' ').slice(0, len)].forEach((ch, i) => { chars[off + i] = ch; });
+      put(0, 'SAUCE00', 7);
+      put(7, 'ANSI Sample', 35);
+      put(42, 'The Archivist', 20);
+      put(62, 'jdeworks', 20);
+      put(82, '20260617', 8);
+      return chars.join('');
+    })();
+    const text = [
+      '\x1b[38;5;196mRED\x1b[0m \x1b[48;2;0;64;128mTRUECOLOR BG\x1b[0m',
+      '╔════════════════════════════════════════╗',
+      '║              ASCII VIEWER              ║',
+      '╚════════════════════════════════════════╝',
+    ].join('\n') + '\x1a' + sauce;
+    window.__fv.state._skipDiscardGuard = true;
+    await window.__fv.loadFolder([{ file: new File([text], 'art.ans', { type: 'text/plain' }), path: 'art.ans' }]);
+  });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const ansiTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (ansiTypeId === 'asciiart') pass('.ans detected as ASCII / ANSI Art'); else fail('ansi type: ' + ansiTypeId);
+  const ansif = await frameOf('iframe.fv-preview-frame');
+  await ansif.waitForSelector('.aa-pre span[style*="color:#ff0000"]', { timeout: 8000 });
+  const ansiHeader = await ansif.$eval('.aa-sauce', (e) => e.textContent);
+  const copyText = await ansif.$eval('.aa-copy', (e) => e.textContent);
+  if (/ANSI Sample/.test(ansiHeader) && /The Archivist/.test(ansiHeader) && copyText === 'Copy')
+    pass('ANSI preview renders SAUCE header + Copy button');
+  else fail('ansi header=' + ansiHeader + ' copy=' + copyText);
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const ansiMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/ANSI color sequences\s*yes/.test(ansiMeta) && /Line count/.test(ansiMeta) && /Character count/.test(ansiMeta) && /SAUCE title\s*ANSI Sample/.test(ansiMeta))
+    pass('ANSI metadata includes dimensions, color count, chars, and SAUCE fields');
+  else fail('ansi meta: ' + ansiMeta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
 }

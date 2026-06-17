@@ -13,6 +13,6 @@ export default {
   },
   syntaxLanguage: 'plaintext',
   loadRenderer: () => import('./renderer.js'),
-  loadMetadata: () => import('./metadata.js'),
+  loadMetadata: () => import('./metadata.js').then((m) => ({ extract: m.extract })),
   settingsUrl: new URL('./settings.default.json', import.meta.url),
 };
