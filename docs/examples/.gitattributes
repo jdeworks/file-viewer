@@ -1,0 +1,45 @@
+# Default: normalize line endings
+*           text=auto
+
+# Shell scripts: always LF
+*.sh        text eol=lf
+*.bash      text eol=lf
+
+# Windows scripts: always CRLF
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+
+# Binary files: no text processing
+*.png       binary
+*.jpg       binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
+*.wasm      binary
+
+# Language-specific diff drivers
+*.cs        diff=csharp
+*.py        diff=python
+*.rs        diff=rust
+
+# Merge strategies
+package-lock.json  merge=ours
+yarn.lock          merge=ours
+Cargo.lock         merge=ours
+
+# Git LFS tracked files
+*.psd       filter=lfs diff=lfs merge=lfs -text
+*.sketch    filter=lfs diff=lfs merge=lfs -text
+
+# GitHub Linguist overrides
+vendor/**           linguist-vendored=true
+docs/vendor/**      linguist-vendored=true
+*.min.js            linguist-generated=true
+*.min.css           linguist-generated=true
+
+# Export ignore (excluded from releases/archives)
+.github/            export-ignore
+tests/              export-ignore
+*.test.js           export-ignore

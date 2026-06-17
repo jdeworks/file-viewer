@@ -185,6 +185,12 @@
     "category": "Config"
   },
   {
+    "label": ".gitattributes",
+    "file": ".gitattributes",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
     "label": "requirements.txt",
     "file": "requirements.txt",
     "mime": "text/plain",
