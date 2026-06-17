@@ -13,6 +13,7 @@ import { loadState, saveState, clearState } from '../../core/persistence.js';
 import { showIosAudioHint, hideIosAudioHint } from '../../core/ios-audio.js';
 import { parseId3 } from './id3.js';
 import { likelyNeedsTranscode, transcode } from './transcoder.js';
+import { buildEditorPanel } from './editor.js';
 import { recordStage5MediaPlayback } from '../../games/metagame/viewer-actions.js';
 
 const SLEEP_OPTIONS = [0, 5, 15, 30, 45, 60];   // minutes; 0 = off
@@ -165,73 +166,52 @@ export async function render(intake, ctx = {}) {
     goTo(i);
   }
 
-  // ── Transcoding panel (ffmpeg.wasm opt-in) ──
-  // Show a hint for formats that likely won't play natively. When the toggle is ON, offer
-  // a "Transcode" button that lazy-loads ffmpeg.wasm and converts in-browser.
+  // ── Media editor / transcoding panel (ffmpeg.wasm opt-in) ──
+  // When ffmpeg is enabled: full editor panel (Phase 2). Provides trim, extract
+  // audio, mute, screenshot, downscale, volume, speed, and WebM conversion.
+  // When disabled: show a plain hint for formats that can't play natively.
   const enableFfmpeg = !!ctx.settings?.enableFfmpeg;
   const needsConvert = likelyNeedsTranscode(intake);
+
+  // Legacy hint panel — shown only when ffmpeg is disabled but the file needs conversion.
+  const hintPanel = document.createElement('div');
+  hintPanel.className = 'media-tx-panel';
+  hintPanel.hidden = true;
+
+  function showConvertHint() {
+    hintPanel.innerHTML = '<span class="media-tx-icon">🎬</span>'
+      + '<span class="media-tx-msg">This format may not play natively. '
+      + (enableFfmpeg
+        ? 'Use the <strong>Media Editor</strong> below to convert it.'
+        : 'Enable <strong>Media transcoding</strong> in <em>Settings → Advanced</em>'
+          + ' to convert it (~23 MB download on first use).')
+      + '</span>';
+    hintPanel.hidden = false;
+  }
+  if (needsConvert) showConvertHint();
+  el.addEventListener('error', () => { if (hintPanel.hidden) showConvertHint(); }, { once: true });
+
+  // Full editor panel (Phase 2) — always built when ffmpeg is enabled.
+  let editorPanel = null;
+  let editorRevoke = null;
   let transcodedUrl = null;  // revoked on cleanup
-  const txPanel = document.createElement('div');
-  txPanel.className = 'media-tx-panel';
 
-  function showTranscodeHint() {
-    txPanel.innerHTML = enableFfmpeg
-      ? '<span class="media-tx-icon">🎬</span>'
-        + '<span class="media-tx-msg">This format may not play natively.</span>'
-        + '<button class="media-tx-btn" type="button">Transcode to '
-        + (info.kind === 'video' ? 'MP4' : 'M4A') + '</button>'
-      : '<span class="media-tx-icon">🎬</span>'
-        + '<span class="media-tx-msg">This format may not play natively. '
-        + 'Enable <strong>Media transcoding</strong> in '
-        + '<em>Settings → Advanced</em> to convert it (~23 MB download on first use).</span>';
-    txPanel.hidden = false;
-    const txBtn = txPanel.querySelector('.media-tx-btn');
-    if (txBtn) txBtn.addEventListener('click', startTranscode);
-  }
-
-  async function startTranscode() {
-    txPanel.innerHTML = '<span class="media-tx-icon media-tx-spin">⟳</span>'
-      + '<span class="media-tx-msg">Loading ffmpeg.wasm…</span>'
-      + '<span class="media-tx-progress" data-progress=""></span>';
-    const progressEl = txPanel.querySelector('.media-tx-progress');
-    try {
-      const url2 = await transcode(intake, info.kind, ({ ratio }) => {
-        if (progressEl) progressEl.textContent = Math.round((ratio || 0) * 100) + '%';
-      });
+  if (enableFfmpeg) {
+    const editor = buildEditorPanel(intake, el, (newUrl) => {
       if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
-      transcodedUrl = url2;
-      el.src = url2;
+      transcodedUrl = newUrl;
+      el.src = newUrl;
       el.load();
-      el.play().catch(() => { /* autoplay block */ });
-      const outExt = info.kind === 'video' ? 'mp4' : 'm4a';
-      const baseName = (intake.filename || 'output').replace(/\.[^.]+$/, '');
-      const dlLink = document.createElement('a');
-      dlLink.href = url2;
-      dlLink.download = 'output_' + baseName + '.' + outExt;
-      dlLink.className = 'media-tx-download';
-      dlLink.textContent = '⬇ Download converted file';
-      txPanel.innerHTML = '<span class="media-tx-icon">✓</span>'
-        + '<span class="media-tx-msg">Transcoded — playing converted version.</span>';
-      txPanel.appendChild(dlLink);
-    } catch (err) {
-      txPanel.innerHTML = '<span class="media-tx-icon">⚠</span>'
-        + '<span class="media-tx-msg">Transcoding failed: ' + err.message + '</span>';
-    }
+      el.play().catch(() => { /* autoplay blocked */ });
+    });
+    editorPanel = editor.el;
+    editorRevoke = editor.revoke;
   }
-
-  // Show hint up-front if the format is a known non-native one.
-  if (needsConvert) showTranscodeHint();
-  // Also show when native playback errors out (catches formats our list missed).
-  el.addEventListener('error', () => { if (txPanel.hidden !== false) showTranscodeHint(); }, { once: true });
 
   if (info.kind === 'audio') host.append(name, el, tools);
   else host.append(el, name, tools);
-  if (needsConvert || !txPanel.hidden) host.append(txPanel);
-  else {
-    // Panel hidden — still append so the error listener can un-hide it.
-    txPanel.hidden = true;
-    host.append(txPanel);
-  }
+  host.append(hintPanel);
+  if (editorPanel) host.append(editorPanel);
   if (trackListEl) host.append(trackListEl);
 
   // ── Waveform panel (audio only, collapsed by default) ──
@@ -351,6 +331,7 @@ export async function render(intake, ctx = {}) {
       hideIosAudioHint();
       URL.revokeObjectURL(url);
       if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
+      if (editorRevoke) editorRevoke();
       if (wvController) { wvController.destroy(); wvController = null; }
     },
   };

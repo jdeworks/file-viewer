@@ -193,6 +193,63 @@
   text-align: center; text-decoration: none; white-space: nowrap; }
 .preview-host .media-tx-download:hover { background: var(--accent); color: var(--accent-fg); }
 
+/* ── Media Editor panel (Phase 2) ── */
+.preview-host .media-ed-panel { display: flex; flex-direction: column; gap: 10px;
+  padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--bg-2); font-size: 13px; color: var(--fg-2);
+  max-width: min(560px, 100%); }
+.preview-host .media-ed-header { font-size: 12px; font-weight: 600; color: var(--fg);
+  text-transform: uppercase; letter-spacing: .06em; }
+.preview-host .media-ed-ops { display: flex; flex-wrap: wrap; gap: 6px; }
+.preview-host .media-ed-op { padding: 4px 11px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--bg-3); color: var(--fg-2);
+  cursor: pointer; font-size: 12px; transition: background .15s, color .15s; }
+.preview-host .media-ed-op:hover { border-color: var(--accent); color: var(--accent); }
+.preview-host .media-ed-op.active { background: var(--accent); color: var(--accent-fg);
+  border-color: var(--accent); font-weight: 600; }
+.preview-host .media-ed-ctx-area { display: flex; flex-direction: column; gap: 8px; }
+.preview-host .media-ed-ctx { display: flex; flex-direction: column; gap: 6px; }
+.preview-host .media-ed-ts-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.preview-host .media-ed-ts { font-size: 13px; padding: 4px 8px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+  font-family: var(--mono, monospace); width: 100px; }
+.preview-host .media-ed-ts:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.preview-host .media-ed-use-pos { padding: 3px 9px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg-3); color: var(--fg-2);
+  cursor: pointer; font-size: 11px; }
+.preview-host .media-ed-use-pos:hover { border-color: var(--accent); color: var(--accent); }
+.preview-host .media-ed-precise { display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--fg-2); cursor: pointer; }
+.preview-host .media-ed-radio-row { display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; font-size: 12px; }
+.preview-host .media-ed-radio-row label { display: flex; align-items: center; gap: 4px;
+  cursor: pointer; }
+.preview-host .media-ed-vol-slider { width: 120px; cursor: pointer; accent-color: var(--accent); }
+.preview-host .media-ed-vol-val { font-variant-numeric: tabular-nums; min-width: 28px; }
+.preview-host .media-ed-divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+.preview-host .media-ed-actions { display: flex; gap: 8px; align-items: center; }
+.preview-host .media-ed-run { padding: 5px 16px; border-radius: 6px;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg);
+  cursor: pointer; font-size: 12px; font-weight: 600; }
+.preview-host .media-ed-run:hover { opacity: .85; }
+.preview-host .media-ed-run:disabled { opacity: .5; cursor: default; }
+.preview-host .media-ed-cancel { padding: 5px 14px; border-radius: 6px;
+  border: 1px solid var(--border); background: transparent; color: var(--fg-2);
+  cursor: pointer; font-size: 12px; }
+.preview-host .media-ed-cancel:hover { border-color: var(--fg); color: var(--fg); }
+.preview-host .media-ed-btn { padding: 5px 14px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg-3); color: var(--fg);
+  cursor: pointer; font-size: 12px; }
+.preview-host .media-ed-progress-area { display: flex; align-items: center; gap: 8px; }
+.preview-host .media-ed-progress { flex: 1; height: 8px; border-radius: 4px;
+  accent-color: var(--accent); }
+.preview-host .media-ed-pct { font-size: 12px; font-variant-numeric: tabular-nums;
+  color: var(--accent); min-width: 34px; }
+.preview-host .media-ed-msg { font-size: 12px; color: var(--fg-2); }
+.preview-host .media-ed-result { display: flex; flex-direction: column; gap: 6px; }
+.preview-host .media-ed-done { font-size: 12px; color: var(--fg-2); }
+.preview-host .media-ed-error { font-size: 12px; color: #d73a49; }
+
 /* EPUB reader (hand-rolled): sidebar TOC + paged chapter content, rendered in the parent
    pane (blob: images need a real origin). Sanitized before it reaches the DOM. */
 .preview-host .epub-doc { position: absolute; inset: 0; display: flex; background: var(--bg); }
