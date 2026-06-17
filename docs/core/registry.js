@@ -75,6 +75,7 @@ import layeredType from '../types/layered/index.js';
 import icoType from '../types/image/ico/index.js';
 import procreateType from '../types/image/procreate/index.js';
 import sketchType from '../types/image/sketch/index.js';
+import heifType from '../types/image/heif/index.js';
 import torrentType from '../types/binary/torrent/index.js';
 import javaClassType from '../types/binary/class/index.js';
 import wasmType from '../types/binary/wasm/index.js';
@@ -122,6 +123,7 @@ export const REGISTRY = [
   mcpConfigType,
   jsonType,
   layeredType,
+  heifType,
   icoType,
   procreateType,
   sketchType,

@@ -352,6 +352,12 @@
     "category": "Media"
   },
   {
+    "label": "sample.heic",
+    "file": "sample.heic",
+    "mime": "image/heic",
+    "category": "Media"
+  },
+  {
     "label": "Sample.stl",
     "file": "sample.stl",
     "mime": "model/stl",
