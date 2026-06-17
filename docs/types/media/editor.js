@@ -3,10 +3,16 @@
 // The panel is always appended to the host; it starts hidden and reveals itself when
 // the user opens it (or when the format likely needs conversion).
 //
-// Operations: Trim, Extract Audio, Mute, Screenshot, Downscale, Volume, Speed, Convert WebM
+// Phase 2 ops: Trim, Extract Audio, Mute, Screenshot, Downscale, Volume, Speed, Convert WebM
+// Phase 3 ops: Loudness Normalize, GIF Export, WebP Export, Thumbnail Strip, Remove Metadata,
+//              Embed Subtitles, Concatenate, Replace Audio
 // All ffmpeg args are delegated to runOperation() in transcoder.js.
 
 import { loadFfmpeg, runOperation } from './transcoder.js';
+import {
+  ADVANCED_SINGLE_OPS, MULTI_FILE_OPS, MULTI_FILE_OP_IDS,
+  buildAdvancedInputsFor, collectAdvancedParams, buildSecondaryDropZone,
+} from './editor-advanced.js';
 
 // Format seconds → HH:MM:SS
 function fmtTime(sec) {
@@ -49,6 +55,10 @@ const OPERATIONS = [
   { id: 'volume',      label: 'Volume' },
   { id: 'speed',       label: 'Speed' },
   { id: 'webm',        label: 'Convert WebM' },
+  // Phase 3 — single-file
+  ...ADVANCED_SINGLE_OPS,
+  // Phase 3 — multi-file
+  ...MULTI_FILE_OPS,
 ];
 
 // Build contextual inputs for each operation. Returns a DOM element (or null if none needed).
@@ -162,6 +172,11 @@ function buildInputsFor(opId, mediaEl) {
   }
 
   // mute, webm: no contextual inputs
+  // Phase 3 single-file ops (gif, webp need timestamp inputs; rest need nothing)
+  // Multi-file ops: handled via secondary drop zone in buildEditorPanel
+  if (!MULTI_FILE_OP_IDS.has(opId)) {
+    return buildAdvancedInputsFor(opId, mediaEl);
+  }
   return null;
 }
 
@@ -194,7 +209,8 @@ function collectParams(ctxEl) {
     const checked = ctxEl.querySelector('input[name="speed"]:checked');
     return { rate: checked?.value || '0.5' };
   }
-  return {};
+  // Phase 3 advanced ops (gif, webp have timestamp inputs)
+  return collectAdvancedParams(ctxEl);
 }
 
 // Build and return the full editor panel element. `mediaEl` is the native <video>/<audio>.
@@ -236,6 +252,12 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
   ctxArea.className = 'media-ed-ctx-area';
   ctxArea.hidden = true;
 
+  // Secondary file drop zone (multi-file ops)
+  const secondaryArea = document.createElement('div');
+  secondaryArea.className = 'media-ed-secondary-area';
+  secondaryArea.hidden = true;
+  let secondaryDropZone = null;   // { el, getFile() } — rebuilt when op changes
+
   // Divider
   const divider = document.createElement('hr');
   divider.className = 'media-ed-divider';
@@ -267,7 +289,7 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
   resultArea.className = 'media-ed-result';
   resultArea.hidden = true;
 
-  panel.append(header, opGrid, ctxArea, divider, actionRow, progressArea, resultArea);
+  panel.append(header, opGrid, ctxArea, secondaryArea, divider, actionRow, progressArea, resultArea);
 
   function selectOp(id) {
     currentOp = id;
@@ -275,7 +297,7 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
     for (const [oid, btn] of Object.entries(opBtns)) {
       btn.classList.toggle('active', oid === id);
     }
-    // Build contextual inputs
+    // Build contextual inputs (single-file ops)
     ctxArea.innerHTML = '';
     currentCtx = buildInputsFor(id, mediaEl);
     if (currentCtx) {
@@ -283,6 +305,19 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
       ctxArea.hidden = false;
     } else {
       ctxArea.hidden = true;
+    }
+    // Build secondary drop zone for multi-file ops
+    secondaryArea.innerHTML = '';
+    secondaryDropZone = null;
+    if (MULTI_FILE_OP_IDS.has(id)) {
+      const opDef = MULTI_FILE_OPS.find((o) => o.id === id);
+      if (opDef) {
+        secondaryDropZone = buildSecondaryDropZone(opDef, () => { /* file selected */ });
+        secondaryArea.appendChild(secondaryDropZone.el);
+        secondaryArea.hidden = false;
+      }
+    } else {
+      secondaryArea.hidden = true;
     }
     // Reset result area
     resultArea.hidden = true;
@@ -333,6 +368,25 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
     resultArea.hidden = false;
   }
 
+  // Shows error with raw ffmpeg stderr in a <pre> for debugging (Phase 3).
+  function showErrorWithDetail(msg) {
+    resultArea.innerHTML = '';
+    const lines = msg.split('\n');
+    const headline = lines[0];
+    const detail   = lines.slice(1).join('\n').trim();
+    const err = document.createElement('span');
+    err.className = 'media-ed-error';
+    err.textContent = 'Error: ' + headline;
+    resultArea.appendChild(err);
+    if (detail) {
+      const pre = document.createElement('pre');
+      pre.className = 'media-ed-error-detail';
+      pre.textContent = detail;
+      resultArea.appendChild(pre);
+    }
+    resultArea.hidden = false;
+  }
+
   async function run() {
     if (!currentOp) { showError('Select an operation first.'); return; }
     const params = collectParams(currentCtx);
@@ -348,6 +402,19 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
       const ts = parseTimestamp(params.ts);
       if (!ts) { showError('Enter a valid timestamp (HH:MM:SS) for the screenshot.'); return; }
       params.ts = ts;
+    }
+    if (currentOp === 'gif' || currentOp === 'webp') {
+      const start = parseTimestamp(params.start);
+      const end   = parseTimestamp(params.end);
+      if (!start || !end) { showError('Enter valid timestamps (HH:MM:SS) for start and end.'); return; }
+      params.start = start; params.end = end;
+    }
+
+    // Validate secondary file for multi-file ops
+    if (MULTI_FILE_OP_IDS.has(currentOp)) {
+      const secondaryFile = secondaryDropZone?.getFile();
+      if (!secondaryFile) { showError('Drop or browse a secondary file before running.'); return; }
+      params.secondary = secondaryFile;
     }
 
     setRunning(true);
@@ -367,15 +434,16 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
       const { url, filename, bytes } = await runOperation(ff, currentOp, params, intake);
       blobUrls.push(url);
 
-      // For non-screenshot ops that produce video/audio, offer to play the result
-      if (currentOp !== 'screenshot') onNewUrl(url);
+      // For ops that produce playable media, offer to play the result
+      const nonPlayable = new Set(['screenshot', 'thumbstrip', 'gif', 'webp']);
+      if (!nonPlayable.has(currentOp)) onNewUrl(url);
 
       showResult(url, filename, bytes);
     } catch (err) {
       if (err?.message?.includes('ffmpeg exit')) {
         showError('Operation cancelled.');
       } else {
-        showError(err.message || String(err));
+        showErrorWithDetail(err.message || String(err));
       }
     } finally {
       ffInstance = null;

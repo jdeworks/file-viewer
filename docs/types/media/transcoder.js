@@ -98,7 +98,7 @@ async function readIntake(intake) {
 
 const MIME = {
   mp4: 'video/mp4', mp3: 'audio/mpeg', ogg: 'audio/ogg',
-  png: 'image/png', webm: 'video/webm',
+  png: 'image/png', webm: 'video/webm', gif: 'image/gif', webp: 'image/webp',
 };
 
 export async function runOperation(ff, opId, params, intake) {
@@ -192,6 +192,114 @@ export async function runOperation(ff, opId, params, intake) {
           '-c:a', 'libopus',
           outputName];
         break;
+      }
+
+      // ── Phase 3: additional single-file operations ──────────────────────────
+
+      case 'normalize': {
+        outputName = 'out.mp4'; outBase = base + '_norm';
+        args = ['-i', inputName, '-af', 'loudnorm', '-c:v', 'copy', outputName];
+        break;
+      }
+
+      case 'gif': {
+        const { start: gs, end: ge } = params;
+        outputName = 'clip.gif'; outBase = 'clip';
+        args = ['-ss', gs, '-to', ge, '-i', inputName,
+          '-vf', 'fps=10,scale=480:-1:flags=lanczos', outputName];
+        break;
+      }
+
+      case 'webp': {
+        const { start: ws, end: we } = params;
+        outputName = 'clip_anim.webp'; outBase = 'clip_anim';
+        args = ['-ss', ws, '-to', we, '-i', inputName,
+          '-vf', 'fps=10,scale=480:-1', outputName];
+        break;
+      }
+
+      case 'thumbstrip': {
+        outputName = base + '_strip.png'; outBase = base + '_strip';
+        args = ['-i', inputName, '-vf', 'fps=1/10,scale=160:-1,tile=5x2', outputName];
+        break;
+      }
+
+      case 'rmeta': {
+        outputName = 'out.mp4'; outBase = base + '_clean';
+        args = ['-i', inputName, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', outputName];
+        break;
+      }
+
+      // ── Phase 3: multi-file operations ──────────────────────────────────────
+      // For multi-file ops, params.secondary is the secondary File object.
+      // prepareMultiFile() writes both files to MEMFS and returns cleanup fn.
+
+      case 'subtitle': {
+        if (!params.secondary) throw new Error('No secondary subtitle file provided.');
+        const subFile = params.secondary;
+        const subExt = (subFile.name.includes('.') ? subFile.name.split('.').pop() : 'srt').toLowerCase();
+        const subName = 'secondary.' + subExt;
+        const subBytes = new Uint8Array(await subFile.arrayBuffer());
+        ff.FS('writeFile', subName, subBytes);
+        outputName = 'out.mp4'; outBase = base + '_sub';
+        args = ['-i', inputName, '-i', subName, '-c', 'copy', '-c:s', 'mov_text', outputName];
+        try {
+          await ff.run(...args);
+        } catch (err) {
+          throw new Error('Subtitle embedding requires MP4 container.\n\n' + (err.message || String(err)));
+        } finally {
+          try { ff.FS('unlink', subName); } catch { /* ignore */ }
+        }
+        // Read result and clean up before returning
+        const subResult = ff.FS('readFile', outputName);
+        const subBlob = new Blob([subResult.buffer], { type: 'video/mp4' });
+        return { url: URL.createObjectURL(subBlob), filename: outBase + '.mp4', bytes: subResult.byteLength };
+      }
+
+      case 'concat': {
+        if (!params.secondary) throw new Error('No secondary video file provided.');
+        const concatFile = params.secondary;
+        const concatExt = (concatFile.name.includes('.') ? concatFile.name.split('.').pop() : 'mp4').toLowerCase();
+        const concatSecName = 'secondary.' + concatExt;
+        const concatBytes = new Uint8Array(await concatFile.arrayBuffer());
+        ff.FS('writeFile', concatSecName, concatBytes);
+        const concatTxt = `file 'input.${srcExt}'\nfile '${concatSecName}'\n`;
+        ff.FS('writeFile', 'concat.txt', concatTxt);
+        outputName = 'combined.mp4'; outBase = 'combined';
+        args = ['-f', 'concat', '-safe', '0', '-i', 'concat.txt', '-c', 'copy', outputName];
+        try {
+          await ff.run(...args);
+        } catch (err) {
+          throw new Error(
+            'Videos must have same codec and resolution for stream-copy concatenation. Try re-encoding (may be slow).\n\n'
+            + (err.message || String(err))
+          );
+        } finally {
+          try { ff.FS('unlink', concatSecName); } catch { /* ignore */ }
+          try { ff.FS('unlink', 'concat.txt'); } catch { /* ignore */ }
+        }
+        const concatResult = ff.FS('readFile', outputName);
+        const concatBlob = new Blob([concatResult.buffer], { type: 'video/mp4' });
+        return { url: URL.createObjectURL(concatBlob), filename: 'combined.mp4', bytes: concatResult.byteLength };
+      }
+
+      case 'audioreplace': {
+        if (!params.secondary) throw new Error('No secondary audio file provided.');
+        const audioFile = params.secondary;
+        const audioExt = (audioFile.name.includes('.') ? audioFile.name.split('.').pop() : 'mp3').toLowerCase();
+        const audioSecName = 'secondary.' + audioExt;
+        const audioBytes = new Uint8Array(await audioFile.arrayBuffer());
+        ff.FS('writeFile', audioSecName, audioBytes);
+        outputName = 'out.mp4'; outBase = base + '_swapped';
+        args = ['-i', inputName, '-i', audioSecName, '-c:v', 'copy', '-map', '0:v', '-map', '1:a', outputName];
+        try {
+          await ff.run(...args);
+        } finally {
+          try { ff.FS('unlink', audioSecName); } catch { /* ignore */ }
+        }
+        const arResult = ff.FS('readFile', outputName);
+        const arBlob = new Blob([arResult.buffer], { type: 'video/mp4' });
+        return { url: URL.createObjectURL(arBlob), filename: outBase + '.mp4', bytes: arResult.byteLength };
       }
 
       default:

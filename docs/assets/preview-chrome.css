@@ -249,6 +249,32 @@
 .preview-host .media-ed-result { display: flex; flex-direction: column; gap: 6px; }
 .preview-host .media-ed-done { font-size: 12px; color: var(--fg-2); }
 .preview-host .media-ed-error { font-size: 12px; color: #d73a49; }
+.preview-host .media-ed-error-detail { font-size: 11px; color: #d73a49; opacity: .75;
+  white-space: pre-wrap; word-break: break-word; margin: 4px 0 0; padding: 6px 8px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 5px; max-height: 120px;
+  overflow: auto; }
+.preview-host .media-ed-warn { font-size: 11px; color: #b08800; margin: 2px 0 0;
+  padding: 5px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; }
+/* Phase 3 — secondary drop zone */
+.preview-host .media-ed-secondary-area { display: flex; flex-direction: column; gap: 6px; }
+.preview-host .media-ed-secondary-label { font-size: 11px; font-weight: 600; color: var(--fg);
+  text-transform: uppercase; letter-spacing: .06em; }
+.preview-host .media-ed-drop-zone { display: flex; flex-wrap: wrap; align-items: center;
+  gap: 8px; padding: 12px 14px; border: 2px dashed var(--border); border-radius: 8px;
+  background: var(--bg); cursor: pointer; transition: border-color .15s, background .15s; }
+.preview-host .media-ed-drop-zone.drag-over { border-color: var(--accent); background: var(--bg-2); }
+.preview-host .media-ed-drop-zone.has-file { border-color: var(--accent); border-style: solid; }
+.preview-host .media-ed-drop-hint { font-size: 12px; color: var(--fg-2); }
+.preview-host .media-ed-browse { display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 6px; border: 1px solid var(--accent);
+  color: var(--accent); cursor: pointer; font-size: 12px; font-weight: 600;
+  transition: background .15s; }
+.preview-host .media-ed-browse:hover { background: var(--accent); color: var(--accent-fg); }
+.preview-host .media-ed-file-input { position: absolute; opacity: 0; width: 0; height: 0;
+  pointer-events: none; }
+.preview-host .media-ed-drag-note { font-size: 11px; color: var(--fg-2); opacity: .7; }
+.preview-host .media-ed-secondary-status { font-size: 12px; color: var(--fg-2);
+  padding: 4px 6px; background: var(--bg-2); border-radius: 5px; }
 
 /* EPUB reader (hand-rolled): sidebar TOC + paged chapter content, rendered in the parent
    pane (blob: images need a real origin). Sanitized before it reaches the DOM. */
