@@ -1,7 +1,7 @@
 use axum::{
     body::Bytes,
     extract::{Query, State},
-    http::StatusCode,
+    http::{header, StatusCode},
     response::{IntoResponse, Response},
     Json,
 };
@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 use crate::{
+    config::save_config,
     finder::{find_file, find_folder},
     paths::validate_path,
     AppState,
@@ -72,8 +73,22 @@ pub async fn add_watched_path(
         )
             .into_response();
     }
-    state.watched_paths.lock().unwrap().push(pb);
-    (StatusCode::OK, Json(serde_json::json!({ "ok": true }))).into_response()
+    let paths = {
+        let mut locked = state.watched_paths.lock().unwrap();
+        if !locked.contains(&pb) {
+            locked.push(pb);
+        }
+        locked.clone()
+    };
+    if let Err(e) = save_config(&paths) {
+        tracing::warn!("Failed to save config: {e}");
+    }
+    let path_strs: Vec<String> = paths.iter().map(|p| p.display().to_string()).collect();
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({ "ok": true, "paths": path_strs })),
+    )
+        .into_response()
 }
 
 // ---------------------------------------------------------------------------
@@ -85,13 +100,18 @@ pub async fn remove_watched_path(
     Json(body): Json<WatchedPathBody>,
 ) -> Response {
     let pb = PathBuf::from(&body.path);
-    let mut paths = state.watched_paths.lock().unwrap();
-    let before = paths.len();
-    paths.retain(|p| p != &pb);
-    let removed = paths.len() < before;
+    let paths = {
+        let mut locked = state.watched_paths.lock().unwrap();
+        locked.retain(|p| p != &pb);
+        locked.clone()
+    };
+    if let Err(e) = save_config(&paths) {
+        tracing::warn!("Failed to save config: {e}");
+    }
+    let path_strs: Vec<String> = paths.iter().map(|p| p.display().to_string()).collect();
     (
         StatusCode::OK,
-        Json(serde_json::json!({ "ok": true, "removed": removed })),
+        Json(serde_json::json!({ "ok": true, "paths": path_strs })),
     )
         .into_response()
 }
@@ -168,13 +188,18 @@ pub async fn get_file(State(state): State<AppState>, Query(q): Query<FileQuery>)
             Json(serde_json::json!({ "error": e })),
         )
             .into_response(),
-        Ok(canonical) => match std::fs::read(&canonical) {
+        Ok(canonical) => match tokio::fs::read(&canonical).await {
             Err(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({ "error": e.to_string() })),
             )
                 .into_response(),
-            Ok(bytes) => bytes.into_response(),
+            Ok(bytes) => {
+                let mime = mime_guess::from_path(&canonical)
+                    .first_or_octet_stream()
+                    .to_string();
+                ([(header::CONTENT_TYPE, mime)], bytes).into_response()
+            }
         },
     }
 }
@@ -196,13 +221,81 @@ pub async fn post_file(
             Json(serde_json::json!({ "error": e })),
         )
             .into_response(),
-        Ok(canonical) => match std::fs::write(&canonical, &body) {
-            Err(e) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": e.to_string() })),
+        Ok(canonical) => {
+            let tmp_path = format!("{}.companion_tmp", canonical.display());
+            let byte_count = body.len();
+            if let Err(e) = tokio::fs::write(&tmp_path, &body).await {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({ "error": e.to_string() })),
+                )
+                    .into_response();
+            }
+            if let Err(e) = tokio::fs::rename(&tmp_path, &canonical).await {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({ "error": e.to_string() })),
+                )
+                    .into_response();
+            }
+            (
+                StatusCode::OK,
+                Json(serde_json::json!({ "ok": true, "bytes": byte_count })),
             )
-                .into_response(),
-            Ok(_) => (StatusCode::OK, Json(serde_json::json!({ "ok": true }))).into_response(),
-        },
+                .into_response()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// GET /files?path=
+// ---------------------------------------------------------------------------
+
+#[derive(Serialize)]
+pub struct DirEntry {
+    pub name: String,
+    pub size: u64,
+    #[serde(rename = "isDir")]
+    pub is_dir: bool,
+}
+
+#[derive(Serialize)]
+pub struct FilesResponse {
+    pub entries: Vec<DirEntry>,
+}
+
+pub async fn get_files(State(state): State<AppState>, Query(q): Query<FileQuery>) -> Response {
+    let watched = state.watched_paths.lock().unwrap().clone();
+    let pb = PathBuf::from(&q.path);
+    match validate_path(&pb, &watched) {
+        Err(e) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": e })),
+        )
+            .into_response(),
+        Ok(canonical) => {
+            let mut entries = Vec::new();
+            let mut read_dir = match tokio::fs::read_dir(&canonical).await {
+                Ok(rd) => rd,
+                Err(e) => {
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(serde_json::json!({ "error": e.to_string() })),
+                    )
+                        .into_response();
+                }
+            };
+            while let Ok(Some(entry)) = read_dir.next_entry().await {
+                let name = entry.file_name().to_string_lossy().into_owned();
+                let meta = match entry.metadata().await {
+                    Ok(m) => m,
+                    Err(_) => continue,
+                };
+                let is_dir = meta.is_dir();
+                let size = if is_dir { 0 } else { meta.len() };
+                entries.push(DirEntry { name, size, is_dir });
+            }
+            (StatusCode::OK, Json(FilesResponse { entries })).into_response()
+        }
     }
 }

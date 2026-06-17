@@ -1,0 +1,261 @@
+use axum::routing::{delete, get, post};
+use axum::{
+    body::Body,
+    http::{header, Method, Request, StatusCode},
+};
+use axum::{middleware, Router};
+use file_viewer_companion::{auth::require_token, routes, AppState};
+use std::fs;
+use std::sync::{Arc, Mutex};
+use tempfile::TempDir;
+use tower::ServiceExt;
+
+fn build_app(token: &str, watched: Vec<std::path::PathBuf>) -> Router {
+    let state = AppState {
+        token: token.to_string(),
+        watched_paths: Arc::new(Mutex::new(watched)),
+        debug: false,
+    };
+
+    let protected = Router::new()
+        .route("/watched-paths", post(routes::add_watched_path))
+        .route("/watched-paths", delete(routes::remove_watched_path))
+        .route("/file", post(routes::post_file))
+        .route_layer(middleware::from_fn_with_state(state.clone(), require_token));
+
+    Router::new()
+        .route("/ping", get(routes::ping))
+        .route("/watched-paths", get(routes::get_watched_paths))
+        .route("/find-file", get(routes::get_find_file))
+        .route("/find-folder", get(routes::get_find_folder))
+        .route("/file", get(routes::get_file))
+        .route("/files", get(routes::get_files))
+        .merge(protected)
+        .with_state(state)
+}
+
+// --- /ping ---
+
+#[tokio::test]
+async fn test_ping() {
+    let app = build_app("secret", vec![]);
+    let resp = app
+        .oneshot(Request::builder().uri("/ping").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(json["ok"], true);
+    assert_eq!(json["version"], "0.1.0");
+}
+
+// --- /watched-paths mutation ---
+
+#[tokio::test]
+async fn test_add_watched_path_requires_token() {
+    let tmp = TempDir::new().unwrap();
+    let app = build_app("secret", vec![]);
+    let body = serde_json::json!({ "path": tmp.path().to_str().unwrap() }).to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/watched-paths")
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_add_and_get_watched_path() {
+    let tmp = TempDir::new().unwrap();
+    let app = build_app("secret", vec![]);
+    let path_str = tmp.path().to_str().unwrap().to_string();
+    let body = serde_json::json!({ "path": &path_str }).to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/watched-paths")
+                .header(header::CONTENT_TYPE, "application/json")
+                .header("X-Companion-Token", "secret")
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body_bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+    assert_eq!(json["ok"], true);
+    let paths = json["paths"].as_array().unwrap();
+    assert!(paths.iter().any(|p| p.as_str().unwrap() == path_str));
+}
+
+// --- /find-file ---
+
+#[tokio::test]
+async fn test_find_file() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("test.bin");
+    let content = b"hello world";
+    fs::write(&file_path, content).unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .uri("/find-file?name=test.bin&size=11")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let matches = json["matches"].as_array().unwrap();
+    assert!(!matches.is_empty());
+    assert!(matches[0].as_str().unwrap().ends_with("test.bin"));
+}
+
+// --- /file read/write ---
+
+#[tokio::test]
+async fn test_post_and_get_file() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("data.txt");
+    // Write an initial file so validate_path (canonicalize) can find it
+    fs::write(&file_path, b"initial").unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+
+    // POST to write new content
+    let path_str = file_path.to_str().unwrap().to_string();
+    let resp = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::from("new content"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(json["ok"], true);
+    assert_eq!(json["bytes"], 11);
+
+    // GET to read back
+    let resp2 = app
+        .oneshot(
+            Request::builder()
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp2.status(), StatusCode::OK);
+    let bytes = axum::body::to_bytes(resp2.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    assert_eq!(&bytes[..], b"new content");
+}
+
+// --- 403 on out-of-watched-path access ---
+
+#[tokio::test]
+async fn test_file_outside_watched_returns_403() {
+    let tmp = TempDir::new().unwrap();
+    let other = TempDir::new().unwrap();
+    // The file exists but its dir is not watched
+    let file_path = other.path().join("secret.txt");
+    fs::write(&file_path, b"secret").unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = file_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+}
+
+// --- 401 on POST /file without token ---
+
+#[tokio::test]
+async fn test_post_file_requires_token() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("data.txt");
+    fs::write(&file_path, b"x").unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = file_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .body(Body::from("new content"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+// --- /files directory listing ---
+
+#[tokio::test]
+async fn test_list_files() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.txt"), b"aaa").unwrap();
+    fs::create_dir(tmp.path().join("subdir")).unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = tmp.path().to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .uri(format!("/files?path={}", urlencoding::encode(&path_str)))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let entries = json["entries"].as_array().unwrap();
+    let names: Vec<&str> = entries
+        .iter()
+        .map(|e| e["name"].as_str().unwrap())
+        .collect();
+    assert!(names.contains(&"a.txt"));
+    assert!(names.contains(&"subdir"));
+}
