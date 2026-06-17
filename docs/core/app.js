@@ -32,6 +32,7 @@ import { buildMetadata } from './meta-drawer.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, flushFolderEdit } from './folder.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
 import { recordMetagameViewerOpen, recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
+import { detectCompanion, findFile, saveFile, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath } from './companion.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -54,6 +55,7 @@ async function loadIntake(intake) {
   state.downloadedSinceEdit = true;    // fresh document — nothing unsaved yet
   state.currentFolderPath = null;      // single-file load by default; openTreeFile re-sets it
   state.intake = intake;
+  setCompanionLinked(null);            // clear any prior linked path on new file open
   const { type, ranking } = pickType(intake);
   populateTypeSelect(ranking, type.id);
   await activateType(type);
@@ -327,6 +329,7 @@ async function activateType(type) {
   $('rawMode').hidden = !canDiff;
   $('downloadBtn').hidden = !canDiff;
   $('formatBtn').hidden = !(canRaw && ['json', 'code'].includes(type.id));
+  syncSaveBtn();
   $('tabbar').style.display = both && isMobile() ? 'flex' : 'none';
   $('screenshotBtn').hidden = !(type.capabilities.screenshot && canPreview);
   $('sbsBtn').hidden = !canPreview;            // view this file beside another
@@ -449,6 +452,7 @@ function toggleEnhance() {
 
 function openSettings() {
   renderSettings($('settingsBody'), state.settingsModel, { onChange: onSettingsChange, toast });
+  renderCompanionSettings($('settingsBody'));
 }
 
 // Re-apply settings after any change. Editor options apply live; the preview only
@@ -508,6 +512,267 @@ function showMetaBtnEgg(msg, onDismiss) {
   ov.appendChild(card);
   document.body.appendChild(ov);
   ov.addEventListener('click', () => { ov.remove(); onDismiss?.(); }, { once: true });
+}
+
+/* ─────────────────────────── Companion (local save-back server) ─────────────────────────── */
+
+let companionAvailable = false;
+// Per-file resolved disk path (set after a successful findFile/save). Cleared on new file open.
+let companionLinkedPath = null;
+
+function showCompanionIndicator() {
+  toast('Companion connected — save files back to disk with 💾', 3500);
+}
+
+function setCompanionLinked(absPath) {
+  companionLinkedPath = absPath;
+  const el = $('companionLinked');
+  if (!el) return;
+  if (absPath) {
+    el.textContent = '📁 ' + absPath;
+    el.hidden = false;
+  } else {
+    el.hidden = true;
+  }
+}
+
+function syncSaveBtn() {
+  const btn = $('saveBtn');
+  if (!btn) return;
+  // Show the save button only when companion is active AND a (non-binary) file is open.
+  const show = companionAvailable && !!state.intake && !state.intake.isBinary;
+  btn.hidden = !show;
+  if (show) layoutTopbar();
+}
+
+async function onSaveClick() {
+  if (!companionAvailable || !state.intake) return;
+  const { filename, size } = state.intake;
+  $('saveBtn').disabled = true;
+  try {
+    // 1. If we already resolved a path for this file, skip the find step.
+    let absPath = companionLinkedPath;
+    if (!absPath) {
+      let matches;
+      try {
+        matches = await findFile(filename, size);
+      } catch (err) {
+        toast('Companion: could not search — ' + err.message);
+        return;
+      }
+      if (!matches || matches.length === 0) {
+        toast('File not found in watched folders. Check Companion settings.');
+        return;
+      }
+      if (matches.length === 1) {
+        absPath = matches[0];
+      } else {
+        // Multiple matches: let the user pick.
+        absPath = await pickCompanionPath(matches);
+        if (!absPath) return; // user cancelled
+      }
+    }
+    if (!confirm(`Save to:\n${absPath}?`)) return;
+    const bytes = state.rawview
+      ? new TextEncoder().encode(state.rawview.getValue())
+      : (state.intake.bytes || new TextEncoder().encode(state.intake.text || ''));
+    try {
+      await saveFile(absPath, bytes);
+      setCompanionLinked(absPath);
+      state.downloadedSinceEdit = true;
+      toast('Saved to disk: ' + absPath);
+    } catch (err) {
+      toast('Save failed: ' + err.message);
+    }
+  } finally {
+    $('saveBtn').disabled = false;
+  }
+}
+
+// Show a small inline picker when multiple disk paths match and return the chosen one.
+function pickCompanionPath(paths) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;';
+    const card = document.createElement('div');
+    card.className = 'companion-picker';
+    const title = document.createElement('div');
+    title.className = 'companion-picker-title';
+    title.textContent = 'Multiple matches — choose a file to save:';
+    card.appendChild(title);
+    for (const p of paths) {
+      const btn = document.createElement('button');
+      btn.className = 'companion-picker-item';
+      btn.textContent = p;
+      btn.addEventListener('click', () => { overlay.remove(); resolve(p); });
+      card.appendChild(btn);
+    }
+    const cancel = document.createElement('button');
+    cancel.className = 'companion-picker-cancel';
+    cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', () => { overlay.remove(); resolve(null); });
+    card.appendChild(cancel);
+    overlay.appendChild(card);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.remove(); resolve(null); } });
+    document.body.appendChild(overlay);
+  });
+}
+
+// Render the Companion section in the settings drawer body.
+function renderCompanionSettings(container) {
+  // Remove any existing companion section first (re-render on each settings open).
+  const old = container.querySelector('.companion-panel');
+  if (old) old.remove();
+
+  const panel = document.createElement('details');
+  panel.className = 'set-group companion-panel';
+  panel.open = true;
+
+  const summary = document.createElement('summary');
+  summary.innerHTML = `Companion <span class="companion-status-dot ${companionAvailable ? 'connected' : ''}">${companionAvailable ? '● connected' : '○ not found'}</span>`;
+  panel.appendChild(summary);
+
+  // Enable toggle row
+  const enableRow = document.createElement('div');
+  enableRow.className = 'set-row';
+  const enableLabel = document.createElement('label');
+  enableLabel.textContent = 'Enable companion';
+  enableLabel.htmlFor = 'companionEnabledToggle';
+  const enableToggle = document.createElement('input');
+  enableToggle.type = 'checkbox';
+  enableToggle.id = 'companionEnabledToggle';
+  enableToggle.checked = companionEnabled();
+  enableToggle.addEventListener('change', async () => {
+    setCompanionEnabled(enableToggle.checked);
+    if (enableToggle.checked) {
+      const ok = await detectCompanion();
+      companionAvailable = ok;
+      document.body.classList.toggle('companion-active', ok);
+      summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
+      syncSaveBtn();
+      if (ok) showCompanionIndicator();
+      else toast('Companion not found — is it running on :7700?');
+      if (ok) refreshFolders();
+      else foldersList.innerHTML = '<span class="companion-folders-empty">Start the Companion app to manage folders.</span>';
+    } else {
+      companionAvailable = false;
+      document.body.classList.remove('companion-active');
+      summary.innerHTML = `Companion <span class="companion-status-dot">○ not found</span>`;
+      syncSaveBtn();
+    }
+  });
+
+  // Test connection button
+  const testBtn = document.createElement('button');
+  testBtn.className = 'btn small';
+  testBtn.textContent = 'Test connection';
+  testBtn.addEventListener('click', async () => {
+    if (!companionEnabled()) { toast('Enable companion first.'); return; }
+    testBtn.disabled = true;
+    const ok = await detectCompanion();
+    testBtn.disabled = false;
+    companionAvailable = ok;
+    document.body.classList.toggle('companion-active', ok);
+    summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
+    syncSaveBtn();
+    toast(ok ? 'Companion connected ✓' : 'Companion not found — is it running?');
+  });
+
+  const enableControls = document.createElement('div');
+  enableControls.style.display = 'flex'; enableControls.style.gap = '8px'; enableControls.style.alignItems = 'center';
+  enableControls.append(enableToggle, testBtn);
+  enableRow.append(enableLabel, enableControls);
+  panel.appendChild(enableRow);
+
+  // Token row
+  const tokenRow = document.createElement('div');
+  tokenRow.className = 'set-row';
+  const tokenLabel = document.createElement('label');
+  tokenLabel.textContent = 'Token';
+  const tokenWrap = document.createElement('div');
+  tokenWrap.className = 'companion-token-wrap';
+  const tokenEl = document.createElement('input');
+  tokenEl.type = 'password';
+  tokenEl.className = 'companion-token-input companion-token-reveal';
+  tokenEl.placeholder = 'paste token here';
+  tokenEl.value = getToken() || '';
+  tokenEl.setAttribute('autocomplete', 'off');
+  tokenEl.setAttribute('spellcheck', 'false');
+  // Reveal on click (toggle password visibility) — no copy button per spec.
+  tokenEl.addEventListener('click', () => {
+    tokenEl.type = tokenEl.type === 'password' ? 'text' : 'password';
+  });
+  tokenEl.addEventListener('change', () => setToken(tokenEl.value));
+  tokenEl.addEventListener('input', () => setToken(tokenEl.value));
+  tokenWrap.appendChild(tokenEl);
+  tokenRow.append(tokenLabel, tokenWrap);
+  panel.appendChild(tokenRow);
+
+  // Watched folders
+  const foldersLabel = document.createElement('div');
+  foldersLabel.className = 'companion-folders-label';
+  foldersLabel.textContent = 'Watched folders';
+  panel.appendChild(foldersLabel);
+
+  const foldersList = document.createElement('div');
+  foldersList.className = 'companion-folders-list';
+  panel.appendChild(foldersList);
+
+  async function refreshFolders() {
+    foldersList.innerHTML = '<span class="companion-folders-loading">Loading…</span>';
+    try {
+      const paths = await getWatchedPaths();
+      foldersList.innerHTML = '';
+      if (!paths || paths.length === 0) {
+        foldersList.innerHTML = '<span class="companion-folders-empty">No watched folders.</span>';
+      } else {
+        for (const p of paths) {
+          const row = document.createElement('div');
+          row.className = 'companion-folder-row';
+          const pathSpan = document.createElement('span');
+          pathSpan.className = 'companion-folder-path';
+          pathSpan.textContent = p;
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'companion-folder-remove';
+          removeBtn.textContent = '✕';
+          removeBtn.title = 'Remove folder';
+          removeBtn.addEventListener('click', async () => {
+            try { await removeWatchedPath(p); await refreshFolders(); }
+            catch (err) { toast('Remove failed: ' + err.message); }
+          });
+          row.append(pathSpan, removeBtn);
+          foldersList.appendChild(row);
+        }
+      }
+    } catch {
+      foldersList.innerHTML = '<span class="companion-folders-empty">Could not load (companion offline?).</span>';
+    }
+  }
+
+  // Add folder row
+  const addRow = document.createElement('div');
+  addRow.className = 'companion-add-row';
+  const addInput = document.createElement('input');
+  addInput.type = 'text';
+  addInput.className = 'companion-add-input';
+  addInput.placeholder = '/absolute/path';
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn small';
+  addBtn.textContent = '+ Add';
+  addBtn.addEventListener('click', async () => {
+    const p = addInput.value.trim();
+    if (!p) return;
+    try { await addWatchedPath(p); addInput.value = ''; await refreshFolders(); }
+    catch (err) { toast('Add failed: ' + err.message); }
+  });
+  addInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); } });
+  addRow.append(addInput, addBtn);
+  panel.appendChild(addRow);
+
+  container.prepend(panel);  // put Companion section at the top of the settings drawer
+
+  if (companionAvailable) refreshFolders();
+  else foldersList.innerHTML = '<span class="companion-folders-empty">Start the Companion app to manage folders.</span>';
 }
 
 /* ─────────────────────────── Examples ─────────────────────────── */
@@ -595,6 +860,7 @@ function init() {
   $('compareInput').addEventListener('change', onComparePicked);
   $('compareBar').querySelector('.compare-stop').addEventListener('click', stopCompare);
   $('downloadBtn').addEventListener('click', downloadCurrent);
+  $('saveBtn').addEventListener('click', onSaveClick);
 
   // Viewport change must NOT rebuild the editor (would drop edits) — just relayout
   // and toggle which view controls apply (desktop split vs mobile tabs).
@@ -632,6 +898,19 @@ function init() {
   // exception — an iOS-only "Add to Home Screen" hint for background audio — is opt-in and shown
   // by the media renderer, not an install prompt.)
   suppressInstallPrompt();
+
+  // Companion: only ping if the user has explicitly opted in (localStorage flag).
+  // Default = off → ZERO off-origin requests for new users and smoke tests.
+  if (companionEnabled()) {
+    detectCompanion().then((ok) => {
+      companionAvailable = ok;
+      if (ok) {
+        document.body.classList.add('companion-active');
+        showCompanionIndicator();
+        syncSaveBtn();
+      }
+    });
+  }
 
   // Easter-egg games: attaches only a tiny Konami-code keydown listener at startup; the hub and
   // the games themselves are lazy-loaded on first unlock, so this costs ~nothing.

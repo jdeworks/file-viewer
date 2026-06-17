@@ -29,6 +29,7 @@
 
       <div class="file-id" id="fileId" hidden>
         <span class="file-name" id="fileName">—</span>
+        <span class="companion-linked" id="companionLinked" hidden></span>
         <select class="type-select" id="typeSelect" title="Detected type with match confidence (each type scored independently) — override if we guessed wrong"></select>
         <span id="previewOnlyBadge" hidden>Preview only</span>
         <button class="icon-btn" id="openInlineBtn" title="Open another file or folder" aria-label="Open another file or folder">📂</button>
@@ -54,6 +55,7 @@
       </div>
 
       <button class="icon-btn" id="formatBtn" title="Format document" aria-label="Format" hidden>{ }</button>
+      <button class="icon-btn save-btn" id="saveBtn" title="Save to disk via Companion" aria-label="Save to disk" hidden>💾</button>
       <button class="icon-btn" id="downloadBtn" title="Download" aria-label="Download" hidden>⤓</button>
       <button class="icon-btn" id="themeBtn" title="Toggle dark / light" aria-label="Toggle theme">◐</button>
       <button class="icon-btn" id="screenshotBtn" title="Screenshot preview" aria-label="Screenshot" hidden>▣</button>
