@@ -95,6 +95,61 @@ export async function run(ctx) {
   const plyBinInfo = await page.$eval('#previewHost .stl-info', (e) => e.textContent);
   if (/4 triangles/.test(plyBinInfo)) pass('binary PLY parsed (tetrahedron: 4 triangles)'); else fail('ply binary info: ' + plyBinInfo);
 
+  // ── Game ROM headers ── NES/SNES/Game Boy/N64 metadata without running emulators. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.nes');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const nesType = await page.$eval('#typeSelect', (s) => s.value);
+  if (nesType === 'gamerom') pass('NES detected as Game ROM Header'); else fail('nes type: ' + nesType);
+  let romf = await frameOf('iframe.fv-preview-frame');
+  await romf.waitForSelector('.rom-doc .rom-table', { timeout: 8000 });
+  let romText = await romf.$eval('.rom-doc', (e) => e.textContent);
+  if (/NES/.test(romText) && /PRG-ROM\s*1 bank/.test(romText) && /Mapper\s*0 \(NROM\)/.test(romText)) pass('NES header parsed (PRG/CHR/mapper)'); else fail('nes rom: ' + romText.replace(/\s+/g, ' ').slice(0, 180));
+
+  const writeRom = (name, buf) => {
+    const path = join(tmpdir(), 'fv-smoke-' + name);
+    writeFileSync(path, buf);
+    return path;
+  };
+  const putAscii = (buf, off, text, len = text.length) => Buffer.from(text.padEnd(len, '\0').slice(0, len), 'ascii').copy(buf, off);
+
+  const snes = Buffer.alloc(0x8000);
+  putAscii(snes, 0x7fc0, 'SNES DEMO', 21);
+  snes[0x7fc0 + 0x15] = 0x20; snes[0x7fc0 + 0x17] = 10; snes[0x7fc0 + 0x18] = 5; snes[0x7fc0 + 0x19] = 1;
+  await page.setInputFiles('#fileInput', writeRom('demo.sfc', snes));
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  romf = await frameOf('iframe.fv-preview-frame');
+  await romf.waitForSelector('.rom-doc .rom-table', { timeout: 8000 });
+  romText = await romf.$eval('.rom-doc', (e) => e.textContent);
+  if (/SNES/.test(romText) && /SNES DEMO/.test(romText) && /ROM type\s*LoROM/.test(romText) && /Video mode\s*NTSC/.test(romText)) pass('SNES header parsed (title/type/region)'); else fail('snes rom: ' + romText.replace(/\s+/g, ' ').slice(0, 180));
+
+  const gb = Buffer.alloc(0x150);
+  gb.set([0xce, 0xed, 0x66, 0x66], 0x104);
+  putAscii(gb, 0x134, 'GB DEMO', 15);
+  gb[0x143] = 0x80; gb[0x146] = 0x03; gb[0x147] = 0x13; gb[0x148] = 0x02; gb[0x149] = 0x03; gb[0x14a] = 0x01;
+  await page.setInputFiles('#fileInput', writeRom('demo.gbc', gb));
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  romf = await frameOf('iframe.fv-preview-frame');
+  await romf.waitForSelector('.rom-doc .rom-table', { timeout: 8000 });
+  romText = await romf.$eval('.rom-doc', (e) => e.textContent);
+  if (/Game Boy/.test(romText) && /GB DEMO/.test(romText) && /CGB compatible/.test(romText) && /MBC3 \+ RAM \+ Battery/.test(romText)) pass('Game Boy header parsed (CGB/cart/RAM)'); else fail('gb rom: ' + romText.replace(/\s+/g, ' ').slice(0, 180));
+
+  const n64 = Buffer.alloc(0x40);
+  n64.set([0x80, 0x37, 0x12, 0x40], 0);
+  n64.set([0x12, 0x34, 0x56, 0x78], 0x10); n64.set([0x9a, 0xbc, 0xde, 0xf0], 0x14);
+  putAscii(n64, 0x20, 'N64 DEMO', 20); putAscii(n64, 0x3b, 'NABE', 4);
+  await page.setInputFiles('#fileInput', writeRom('demo.z64', n64));
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  romf = await frameOf('iframe.fv-preview-frame');
+  await romf.waitForSelector('.rom-doc .rom-table', { timeout: 8000 });
+  romText = await romf.$eval('.rom-doc', (e) => e.textContent);
+  if (/Nintendo 64/.test(romText) && /N64 DEMO/.test(romText) && /CRC1\s*12345678/.test(romText) && /Game code\s*NABE/.test(romText)) pass('N64 header parsed (title/code/CRC)'); else fail('n64 rom: ' + romText.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const romMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*Nintendo 64/.test(romMeta) && /CRC2\s*9ABCDEF0/.test(romMeta)) pass('ROM metadata drawer includes parsed fields'); else fail('rom meta: ' + romMeta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
+
   // ── Raster image ── parent-pane viewer with fit-to-screen default + size-based zoom. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.png');
