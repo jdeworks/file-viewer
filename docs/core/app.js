@@ -3,7 +3,7 @@
 // Settings here are intentionally minimal; WP03 replaces buildSettings() with the
 // full descriptor-driven system. The contract this file consumes is frozen.
 
-import { REGISTRY, getType, FALLBACK_TYPE } from './registry.js';
+import { REGISTRY, getType } from './registry.js';
 import { pickType } from './detect.js';
 import { wireIntake, intakeFromFile, intakeFromText, LARGE_FILE_BYTES } from './intake.js';
 import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
@@ -34,6 +34,7 @@ import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './
 import { recordMetagameViewerOpen, recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
 import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, renderCompanionSettings, detectCompanionOnStartup } from './companion-ui.js';
 import { initSessionTree, updateSessionTree, createNewFile, onTreeFileDrop } from './session-tree.js';
+import { populateTypeSelect } from './type-select.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -61,7 +62,7 @@ async function loadIntake(intake) {
   // so save doesn't accidentally compute paths against a stale folder.
   if (!fromTree) resetCompanionFolderRoot();
   const { type, ranking } = pickType(intake);
-  populateTypeSelect(ranking, type.id);
+  populateTypeSelect(ranking, type.id, !!state.settingsModel?.values?.showAllTypes);
   await activateType(type);
   if (intake.truncated) {
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
@@ -126,50 +127,6 @@ async function searchViewerFile(path, query, opts = {}) {
 }
 
 /* ─────────────────────────── Type activation ─────────────────────────── */
-
-function populateTypeSelect(ranking, selectedId) {
-  const sel = $('typeSelect');
-  // Scores are INDEPENDENT per-type confidences (each detector returns 0..1 on its own),
-  // not a distribution that sums to 100%. The `raw`/Plain-text fallback only returns a
-  // tiny floor so it always ranks last-but-present — that's a tiebreaker, not a real
-  // match, so we never show it as a percentage. By default we list only plausible
-  // matches (≥1%); "Show all file types" reveals every registered type. The selected
-  // type is always shown (e.g. the fallback, or a manual override).
-  const showAll = !!state.settingsModel?.values?.showAllTypes;
-  const byScore = new Map(ranking.map((r) => [r.type.id, r.score]));
-  const rows = [];
-  for (const t of REGISTRY) {
-    const match = t === FALLBACK_TYPE ? 0 : (byScore.get(t.id) || 0);  // floor isn't a match
-    if (!showAll && match < 0.01 && t.id !== selectedId) continue;
-    rows.push({ t, match });
-  }
-  // The raw scores are independent confidences; normalize the shown matches so the
-  // displayed percentages always total 100% (largest-remainder rounding).
-  const matched = rows.filter((r) => r.match > 0);
-  const pcts = normalizePercents(matched.map((r) => r.match));
-  matched.forEach((r, i) => (r.pct = pcts[i]));
-
-  sel.innerHTML = '';
-  for (const r of rows) {
-    const opt = document.createElement('option');
-    opt.value = r.t.id;
-    opt.textContent = r.pct != null ? `${r.t.label} (${r.pct}%)` : r.t.label;
-    if (r.t.id === selectedId) opt.selected = true;
-    sel.appendChild(opt);
-  }
-}
-
-// Scale values to integer percentages that sum to exactly 100 (largest-remainder method).
-function normalizePercents(values) {
-  const sum = values.reduce((a, b) => a + b, 0);
-  if (!values.length || sum <= 0) return values.map(() => 0);
-  const raw = values.map((v) => (v / sum) * 100);
-  const out = raw.map((x) => Math.floor(x));
-  let rem = 100 - out.reduce((a, b) => a + b, 0);
-  const order = raw.map((x, i) => [x - Math.floor(x), i]).sort((a, b) => b[0] - a[0]);
-  for (let k = 0; k < order.length && rem > 0; k++, rem--) out[order[k][1]]++;
-  return out;
-}
 
 async function activateType(type) {
   state.type = type;
@@ -333,7 +290,7 @@ function onSettingsChange(model, changedKey) {
   // "Show all file types" is a global pref applied to the type dropdown immediately.
   if (changedKey === 'showAllTypes') {
     persistGlobalKey('showAllTypes', model.values.showAllTypes);
-    if (state.intake && state.type) populateTypeSelect(pickType(state.intake).ranking, state.type.id);
+    if (state.intake && state.type) populateTypeSelect(pickType(state.intake).ranking, state.type.id, !!state.settingsModel?.values?.showAllTypes);
   }
   // "Reduce motion" is a global pref that toggles a root class disabling all CSS animation.
   if (changedKey === 'reduceMotion') {
