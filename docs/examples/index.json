@@ -463,5 +463,10 @@
     "label": "sample.gitignore",
     "file": "sample.gitignore",
     "category": "Text"
+  },
+  {
+    "label": "sample.img",
+    "file": "sample.img",
+    "category": "Binary"
   }
 ]

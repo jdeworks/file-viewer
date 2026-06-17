@@ -74,6 +74,7 @@ import torrentType from '../types/binary/torrent/index.js';
 import gcodeType from '../types/text/gcode/index.js';
 import gitignoreType from '../types/text/gitignore/index.js';
 import ruffleType from '../types/emulator/ruffle/index.js';
+import v86Type from '../types/emulator/v86/index.js';
 
 // Order is fallback priority only when confidences tie. `raw` always present as last resort.
 export const REGISTRY = [
@@ -123,6 +124,7 @@ export const REGISTRY = [
   gcodeType,
   gitignoreType,
   ruffleType,
+  v86Type,
   codeType,
   rawType,
 ];

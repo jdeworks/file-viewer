@@ -54,6 +54,7 @@ const BUNDLE_GROUPS = {
   'vendor:libarchive': 'Archives',
   'vendor:ffmpeg': 'Media',
   'vendor:ruffle': 'Emulators',
+  'vendor:v86': 'Emulators',
   games: 'Games',
   examples: 'Content',
 };
