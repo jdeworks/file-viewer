@@ -518,5 +518,10 @@
     "label": "claude_desktop_config.json",
     "file": "claude_desktop_config.json",
     "category": "Other"
+  },
+  {
+    "label": "kubeconfig",
+    "file": "kubeconfig",
+    "category": "Other"
   }
 ]

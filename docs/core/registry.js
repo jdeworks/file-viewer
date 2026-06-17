@@ -82,6 +82,7 @@ import gcodeType from '../types/text/gcode/index.js';
 import gitignoreType from '../types/text/gitignore/index.js';
 import sshConfigType from '../types/text/ssh-config/index.js';
 import mcpConfigType from '../types/text/mcp-config/index.js';
+import kubeconfigType from '../types/text/kubeconfig/index.js';
 import ruffleType from '../types/emulator/ruffle/index.js';
 import v86Type from '../types/emulator/v86/index.js';
 import emulatorjsType from '../types/emulator/emulatorjs/index.js';
@@ -99,6 +100,7 @@ export const REGISTRY = [
   emlType,
   mboxType,
   icsType,
+  kubeconfigType,
   yamlType,
   tomlType,
   xmlType,
