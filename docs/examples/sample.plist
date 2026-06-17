@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>ApplicationIdentifier</key>
+	<string>com.example.myapp</string>
+	<key>CFBundleVersion</key>
+	<string>42</string>
+	<key>BuildDate</key>
+	<date>2026-06-17T10:30:00Z</date>
+	<key>FeatureFlags</key>
+	<dict>
+		<key>darkMode</key>
+		<true/>
+		<key>betaFeatures</key>
+		<false/>
+		<key>maxConnections</key>
+		<integer>10</integer>
+	</dict>
+	<key>AllowedHosts</key>
+	<array>
+		<string>localhost</string>
+		<string>api.example.com</string>
+		<string>cdn.example.com</string>
+	</array>
+	<key>CompressionLevel</key>
+	<real>0.75</real>
+</dict>
+</plist>

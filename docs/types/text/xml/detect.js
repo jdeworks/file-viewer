@@ -4,7 +4,7 @@ import { hasExtension, mimeMatches } from '../../../core/detect.js';
 // Strong on explicit XML extensions; a `<?xml` / root-element sniff catches the rest.
 export function detect(intake) {
   if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'xml', 'xsd', 'xsl', 'xslt', 'rss', 'atom', 'wsdl', 'plist', 'pom', 'csproj', 'props', 'targets', 'resx')) return 0.92;
+  if (hasExtension(intake, 'xml', 'xsd', 'xsl', 'xslt', 'rss', 'atom', 'wsdl', 'pom', 'csproj', 'props', 'targets', 'resx')) return 0.92;
   if (mimeMatches(intake, 'xml')) return 0.85;
   const t = (intake.textSample || '').trimStart();
   if (/^<\?xml[\s>]/.test(t)) return 0.8;
