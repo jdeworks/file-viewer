@@ -448,5 +448,10 @@
     "file": "sample.gcode",
     "mime": "text/x-gcode",
     "category": "Data"
+  },
+  {
+    "label": "sample.gitignore",
+    "file": "sample.gitignore",
+    "category": "Text"
   }
 ]

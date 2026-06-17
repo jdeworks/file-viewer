@@ -1,0 +1,73 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+vendor/
+.pnp
+.pnp.js
+
+# ── Build output ───────────────────────────────────────────────────────────────
+dist/
+build/
+out/
+.next/
+.nuxt/
+*.min.js
+*.min.css
+*.bundle.js
+
+# ── Environment & secrets ──────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.test
+
+# ── Logs ───────────────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── OS files ───────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+
+# ── IDE & editor ───────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ── Testing & coverage ─────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+.jest-cache/
+
+# ── Compiled / generated ───────────────────────────────────────────────────────
+*.pyc
+*.pyo
+__pycache__/
+*.class
+*.o
+*.a
+*.so
+*.dll
+*.exe
+
+# ── Package lock files (project-specific preference) ──────────────────────────
+# package-lock.json
+# yarn.lock
+
+# ── Temporary files ────────────────────────────────────────────────────────────
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
