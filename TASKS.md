@@ -553,6 +553,74 @@ Improve all ebook readers (`epub`, `fb2`, `mobi`, `lrf`, comic where relevant) t
 
 ---
 
+## TASK 17 — Diff Pane + Compare Workflow Redesign
+
+**Status:** Not started  
+**Effort:** L (~1-2 days)  
+**Files likely touched:**
+- `docs/core/layout.js`
+- `docs/core/compare.js`
+- `docs/core/sidebyside.js`
+- `docs/core/filetree.js`
+- `docs/core/movediff.js`
+- `docs/core/movediff-view.js`
+- `docs/assets/app.css`
+- `tests/areas/diff.mjs`
+- `tests/areas/interactions.mjs`
+- `tests/areas/tree-drag.mjs`
+
+### Pane drag regression
+
+Fix the pane resize drag interaction when the current view is a raw/preview split and the raw side is a Monaco diff editor. Monaco-to-Monaco diff resizing still works, but Monaco-to-preview resizing can stop responding to pointer movement.
+
+Add smoke coverage for:
+- normal Monaco editor + preview resize
+- Monaco diff editor + preview resize
+- Monaco diff editor + Monaco diff editor resize if still supported
+
+### Move-aware diff quality
+
+Improve move-aware diff classification for mixed edits. Current example:
+
+Original:
+```csv
+name,role,city,commits
+Ada Lovelace,Engineer,London,1843
+Alan Turing,Researcher,Manchester,1936
+Grace Hopper,Engineer,New York,1959
+Katherine Johnson,Mathematician,Hampton,1961
+Margaret Hamilton,Engineer,Boston,1969
+```
+
+Current:
+```csv
+name,role,city,commits
+Ada Lovelace,Engineer,London,1843
+Margaret Hamilton,Engineer,Boston,1969
+Alan Turing,Researcher,Manchester,1936
+Grace Hopper,Engineer,New York,1959
+Katherine Johnson,Mathematician,Hampton,1961
+hell
+```
+
+This should report one moved block plus one added line, not only `1 modified`.
+
+Add unit coverage for move plus unrelated insertion, move plus edit, adjacent line moves, and low-similarity additions that should not be classified as moves.
+
+### Compare workflow
+
+The "Compare with another file" action should not force a file picker when comparable files are already present in the folder/session sidebar.
+
+Design target:
+- entering compare mode opens an empty compare target state
+- dragging a sidebar file onto the compare target starts the diff
+- a picker remains available as a fallback, not the only path
+- comparing two files should show at most two panes total
+- users can choose whether the two panes are raw diff, self diff, or two previews
+- diff/compare mode should not show raw+preview for both files at once
+
+---
+
 ## Future / Backlog (do not start until Tasks 1-15 are done)
 
 These need fixtures, heavy deps, or deeper research:
