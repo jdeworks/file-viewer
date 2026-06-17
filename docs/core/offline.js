@@ -75,21 +75,43 @@ export function initOffline(statusEl) {
   }).catch(() => { /* offline support unavailable — stay online-only */ });
 }
 
-// Cache-download modal: pick which asset bundles to save for offline, each with its size.
-// Smart defaults: the core app shell is always on; non-heavy bundles are pre-checked; large
-// optional libraries (Monaco, pdf.js, …) are shown unchecked so they're opt-in. On confirm,
-// the selected bundles' files are handed to the SW to precache. Built on demand, no markup.
+// Cache-download modal: grouped, collapsible bundle picker with select-all, per-group meta, and
+// a running size total. Emulator bundles are hidden unless enableEmulators is on in Advanced settings.
 function fmtSize(n) {
   if (n < 1024) return n + ' B';
   if (n < 1048576) return (n / 1024).toFixed(0) + ' KB';
   return (n / 1048576).toFixed(1) + ' MB';
 }
 
+function emulatorsEnabled() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('fv:settings:global') || 'null');
+    return saved?.enableEmulators === true;
+  } catch { return false; }
+}
+
+const GROUP_ORDER = ['App shell', 'File viewers', 'Editor', 'Data & charts', 'Documents', 'Archives', 'Media', 'Games', 'Content', 'Emulators'];
+
 async function openCacheModal(onConfirm) {
   let bundles;
   try { bundles = (await (await fetch('asset-manifest.json', { cache: 'no-store' })).json()).bundles || []; }
-  catch { onConfirm(undefined); return; }                    // manifest unreachable → just cache all
+  catch { onConfirm(undefined); return; }
   if (!bundles.length) { onConfirm(undefined); return; }
+
+  // Filter emulator bundles unless enabled in Advanced settings
+  if (!emulatorsEnabled()) bundles = bundles.filter((b) => b.group !== 'Emulators');
+
+  // Group by b.group preserving GROUP_ORDER
+  const grouped = new Map();
+  for (const b of bundles) {
+    const g = b.group || 'Other';
+    if (!grouped.has(g)) grouped.set(g, []);
+    grouped.get(g).push(b);
+  }
+  const cats = [...grouped.keys()].sort((a, b) => {
+    const ia = GROUP_ORDER.indexOf(a), ib = GROUP_ORDER.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
+  });
 
   const root = document.createElement('div');
   root.className = 'cache-modal-backdrop';
@@ -97,31 +119,77 @@ async function openCacheModal(onConfirm) {
     '<div class="cache-modal" role="dialog" aria-label="Save for offline">'
     + '<header class="cm-head"><h2>Save for offline</h2><button class="cm-close" aria-label="Close">✕</button></header>'
     + '<p class="cm-intro">Choose what to cache so it works without a connection. Sizes are downloads.</p>'
-    + '<div class="cm-list"></div>'
+    + '<div class="cm-toolbar"><button class="cm-all">Select all</button><button class="cm-none">Deselect all</button><span class="cm-grand-total"></span></div>'
+    + '<div class="cm-groups"></div>'
     + '<footer class="cm-foot"><span class="cm-total"></span><button class="cm-save">Save selected</button></footer>'
     + '</div>';
   document.body.appendChild(root);
-  const listEl = root.querySelector('.cm-list');
-  const totalEl = root.querySelector('.cm-total');
 
-  listEl.innerHTML = bundles.map((b) => {
-    const isCore = b.id === 'core';
-    const checked = isCore || !b.heavy;                      // core always; heavy off by default
+  const groupsEl = root.querySelector('.cm-groups');
+  const totalEl = root.querySelector('.cm-total');
+  const grandEl = root.querySelector('.cm-grand-total');
+
+  function rowHtml(b) {
+    const isCore = b.id === 'core' || b.id === 'known';
+    const checked = isCore || !b.heavy;
     return '<label class="cm-row' + (b.heavy ? ' cm-row-heavy' : '') + '">'
       + '<input type="checkbox" class="cm-chk" data-id="' + b.id + '" data-size="' + b.size + '"'
       + (checked ? ' checked' : '') + (isCore ? ' disabled' : '') + '>'
       + '<span class="cm-label">' + (b.label || b.id) + (isCore ? ' <span class="cm-req">(required)</span>' : '') + '</span>'
       + (b.heavy ? '<span class="cm-heavy">large</span>' : '')
       + '<span class="cm-size">' + fmtSize(b.size) + '</span></label>';
-  }).join('');
-
-  function updateTotal() {
-    let total = 0;
-    for (const c of listEl.querySelectorAll('.cm-chk')) if (c.checked) total += Number(c.dataset.size) || 0;
-    totalEl.textContent = 'Selected: ' + fmtSize(total);
   }
-  updateTotal();
-  listEl.addEventListener('change', updateTotal);
+
+  // Build group sections
+  for (const cat of cats) {
+    const bs = grouped.get(cat);
+    const isAppShell = cat === 'App shell';
+    const sec = document.createElement('div');
+    sec.className = 'cm-group';
+    const head = document.createElement('div');
+    head.className = 'cm-group-head';
+    head.innerHTML = '<button class="cm-toggle">' + (isAppShell ? '▸' : '▾') + '</button>'
+      + '<span class="cm-group-label">' + cat + '</span>'
+      + '<span class="cm-group-meta"></span>';
+    const body = document.createElement('div');
+    body.className = 'cm-group-body' + (isAppShell ? ' cm-collapsed' : '');
+    body.innerHTML = bs.map(rowHtml).join('');
+    sec.appendChild(head);
+    sec.appendChild(body);
+    groupsEl.appendChild(sec);
+
+    head.addEventListener('click', () => {
+      const collapsed = body.classList.toggle('cm-collapsed');
+      head.querySelector('.cm-toggle').textContent = collapsed ? '▸' : '▾';
+    });
+  }
+
+  function updateTotals() {
+    let grand = 0;
+    for (const sec of groupsEl.querySelectorAll('.cm-group')) {
+      let sel = 0, tot = 0, selSize = 0;
+      for (const c of sec.querySelectorAll('.cm-chk')) {
+        tot++;
+        const sz = Number(c.dataset.size) || 0;
+        if (c.checked) { sel++; selSize += sz; grand += sz; }
+      }
+      const meta = sec.querySelector('.cm-group-meta');
+      if (meta) meta.textContent = sel + ' / ' + tot + ' selected · ' + fmtSize(selSize);
+    }
+    totalEl.textContent = 'Selected: ' + fmtSize(grand);
+    grandEl.textContent = 'Total: ' + fmtSize(grand);
+  }
+  updateTotals();
+  groupsEl.addEventListener('change', updateTotals);
+
+  root.querySelector('.cm-all').addEventListener('click', () => {
+    for (const c of root.querySelectorAll('.cm-chk:not(:disabled)')) c.checked = true;
+    updateTotals();
+  });
+  root.querySelector('.cm-none').addEventListener('click', () => {
+    for (const c of root.querySelectorAll('.cm-chk:not(:disabled)')) c.checked = false;
+    updateTotals();
+  });
 
   const close = () => root.remove();
   root.querySelector('.cm-close').addEventListener('click', close);
@@ -129,7 +197,7 @@ async function openCacheModal(onConfirm) {
   document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
   root.querySelector('.cm-save').addEventListener('click', () => {
     const chosen = new Set();
-    for (const c of listEl.querySelectorAll('.cm-chk')) if (c.checked || c.disabled) chosen.add(c.dataset.id);
+    for (const c of root.querySelectorAll('.cm-chk')) if (c.checked || c.disabled) chosen.add(c.dataset.id);
     const files = bundles.filter((b) => chosen.has(b.id)).flatMap((b) => b.files);
     close();
     onConfirm(files);

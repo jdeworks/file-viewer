@@ -338,6 +338,20 @@ body {
 .cm-head h2 { font-size: 16px; margin: 0; flex: 1; }
 .cm-close { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
 .cm-intro { padding: 12px 16px 4px; margin: 0; font-size: 12px; color: var(--fg-2); }
+.cm-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.cm-all, .cm-none { font-size: 12px; padding: 3px 8px; background: var(--btn-bg, var(--bg-2)); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--fg); }
+.cm-all:hover, .cm-none:hover { background: var(--hover); }
+.cm-grand-total { margin-left: auto; font-size: 12px; color: var(--fg-2); }
+.cm-groups { flex: 1 1 auto; overflow-y: auto; }
+.cm-group { border-bottom: 1px solid var(--border); }
+.cm-group:last-child { border-bottom: 0; }
+.cm-group-head { display: flex; align-items: center; gap: 8px; padding: 8px 16px; cursor: pointer; user-select: none; }
+.cm-group-head:hover { background: var(--hover); }
+.cm-toggle { background: none; border: none; cursor: pointer; font-size: 12px; color: var(--fg-2); padding: 0; width: 14px; flex-shrink: 0; }
+.cm-group-label { font-size: 12px; font-weight: 600; color: var(--fg); }
+.cm-group-meta { margin-left: auto; font-size: 11px; color: var(--fg-2); }
+.cm-group-body { padding: 0 16px; }
+.cm-group-body.cm-collapsed { display: none; }
 .cm-list { overflow: auto; padding: 6px 16px; }
 .cm-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
 .cm-row:last-child { border-bottom: 0; }

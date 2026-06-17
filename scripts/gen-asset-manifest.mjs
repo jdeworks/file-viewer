@@ -40,6 +40,24 @@ const LABELS = {
 };
 const labelFor = (id) => LABELS[id] || (id.startsWith('vendor:') ? id.slice(7) + ' (library)' : id);
 
+// Modal display group for each bundle. Future emulator bundles use group 'Emulators'.
+const BUNDLE_GROUPS = {
+  core: 'App shell', known: 'App shell',
+  types: 'File viewers',
+  'vendor:dompurify': 'File viewers', 'vendor:js-yaml': 'File viewers', 'vendor:markdown-it': 'File viewers',
+  'vendor:jszip': 'File viewers', 'vendor:papaparse': 'File viewers', 'vendor:pdf-lib': 'File viewers',
+  'vendor:pptxviewjs': 'File viewers', 'vendor:mammoth': 'File viewers', 'vendor:html2canvas': 'File viewers',
+  'vendor:ag-psd': 'File viewers',
+  'vendor:monaco': 'Editor',
+  'vendor:chartjs': 'Data & charts', 'vendor:xlsx': 'Data & charts', 'vendor:sql.js': 'Data & charts',
+  'vendor:pdfjs': 'Documents',
+  'vendor:libarchive': 'Archives',
+  'vendor:ffmpeg': 'Media',
+  games: 'Games',
+  examples: 'Content',
+};
+const groupFor = (id) => BUNDLE_GROUPS[id] || 'File viewers';
+
 const groups = new Map();
 for (const f of kept) {
   const id = bundleOf(f.path);
@@ -49,7 +67,7 @@ for (const f of kept) {
 }
 const HEAVY_BYTES = 1.5 * 1024 * 1024;   // bundles over this are large optional downloads
 const bundles = [...groups.values()]
-  .map((g) => ({ ...g, heavy: g.size > HEAVY_BYTES }))
+  .map((g) => ({ ...g, group: groupFor(g.id), heavy: g.size > HEAVY_BYTES }))
   .sort((a, b) => (a.id === 'core' ? -1 : b.id === 'core' ? 1 : a.label.localeCompare(b.label)));
 
 // Version = hash of path+size pairs, so any change to the asset set bumps it.
