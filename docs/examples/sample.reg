@@ -1,0 +1,26 @@
+Windows Registry Editor Version 5.00
+
+; Example Windows Registry export
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion]
+"ProgramFilesDir"="C:\\Program Files"
+"ProgramFilesDir (x86)"="C:\\Program Files (x86)"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\MyApp]
+"Version"=dword:00000002
+"InstallDate"="2026-06-17"
+"InstallPath"="C:\\Program Files\\MyApp"
+"Features"=hex(7):66,00,65,00,61,00,74,00,75,00,72,00,65,00,41,00,00,00,66,00,65,00,61,00,74,00,75,00,72,00,65,00,42,00,00,00,00,00
+"LicenseKey"=hex:4c,49,43,2d,31,32,33,34,2d,35,36,37,38
+
+[HKEY_CURRENT_USER\Software\MyApp\Settings]
+"Theme"="dark"
+"WindowWidth"=dword:00000500
+"WindowHeight"=dword:00000384
+"RecentFiles"=hex(7):43,00,3a,00,5c,00,66,00,69,00,6c,00,65,00,31,00,2e,00,74,00,78,00,74,00,00,00,00,00
+@="Default user settings"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run]
+"SecurityScan"="C:\\Program Files\\Security\\scan.exe /background"
+
+[-HKEY_LOCAL_MACHINE\SOFTWARE\OldApp]

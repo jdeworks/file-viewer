@@ -275,6 +275,12 @@
     "category": "Config"
   },
   {
+    "label": "sample.reg",
+    "file": "sample.reg",
+    "mime": "text/plain",
+    "category": "Config"
+  },
+  {
     "label": "Sample.patch",
     "file": "sample.patch",
     "mime": "text/x-diff",
