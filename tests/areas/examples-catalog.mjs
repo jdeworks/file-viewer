@@ -44,6 +44,34 @@ export async function run(ctx) {
   } else {
     pass('programming language samples indexed (' + requiredCodeSamples.length + ')');
   }
+  const sourcedSamples = ['sample.epub', 'sample.mobi', 'sample.png'];
+  const missingProvenance = sourcedSamples.filter((file) => {
+    const ex = byFile.get(file);
+    return !ex?.source || !ex?.license || !ex?.attribution || !/^https:\/\//.test(ex.source);
+  });
+  if (missingProvenance.length) {
+    fail('missing sample provenance: ' + missingProvenance.join(', '));
+  } else {
+    pass('sourced samples include provenance metadata (' + sourcedSamples.length + ')');
+  }
+  const quality = await page.evaluate(async () => {
+    const [epub, mobi, png] = await Promise.all([
+      fetch('examples/sample.epub').then((r) => r.arrayBuffer()),
+      fetch('examples/sample.mobi').then((r) => r.arrayBuffer()),
+      new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        img.onerror = () => resolve({ w: 0, h: 0 });
+        img.src = 'examples/sample.png';
+      }),
+    ]);
+    return { epub: epub.byteLength, mobi: mobi.byteLength, png };
+  });
+  if (quality.epub > 50_000 && quality.mobi > 20_000 && quality.png.w >= 256 && quality.png.h >= 256) {
+    pass('sourced ebook/image samples are non-placeholder assets');
+  } else {
+    fail('sample quality too low: ' + JSON.stringify(quality));
+  }
 
   for (const ex of examples) {
     const opened = await page.evaluate((file) => window.__fv.openExampleFile(file), ex.file);

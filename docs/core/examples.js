@@ -85,6 +85,14 @@ function isPartialExample(ex) {
   return !!ex.partial || PARTIAL_FILES.has((ex.file || '').split('/').pop());
 }
 
+function provenanceText(ex) {
+  const bits = [];
+  if (ex.license) bits.push('License: ' + ex.license);
+  if (ex.attribution) bits.push('Credit: ' + ex.attribution);
+  if (ex.source) bits.push('Source: ' + ex.source);
+  return bits.join('\n');
+}
+
 function exampleInfo(ex) {
   const type = ex.type ? REGISTRY.find((t) => t.id === ex.type) || detectTypeForExample(ex) : detectTypeForExample(ex);
   return {
@@ -192,10 +200,11 @@ function renderGallery(host, list, onPick) {
       b.textContent = ex.label || ex.file;
       b.className = 'ex-file-btn';
       const info = exampleInfo(ex);
-      const tip = ex.description || sampleDescription(ex, getTypeInfo(info.type));
+      const baseTip = ex.description || sampleDescription(ex, getTypeInfo(info.type));
+      const tip = [baseTip, provenanceText(ex)].filter(Boolean).join('\n');
       const cats = categoriesFor(ex);
       b.dataset.categories = cats.join('|');
-      b.dataset.search = [ex.label, ex.file, ex.mime, info.typeLabel, tip, cats.join(' ')].join(' ').toLowerCase();
+      b.dataset.search = [ex.label, ex.file, ex.mime, info.typeLabel, tip, ex.license, ex.attribution, cats.join(' ')].join(' ').toLowerCase();
       b.dataset.editable = info.editable ? '1' : '0';
       b.dataset.binary = info.binary ? '1' : '0';
       b.dataset.enhanced = info.enhanced ? '1' : '0';

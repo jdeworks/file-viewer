@@ -53,7 +53,11 @@
     "categories": [
       "Documents",
       "Ebook"
-    ]
+    ],
+    "description": "Public-domain short story EPUB: The Gift of the Magi by O. Henry.",
+    "source": "https://www.gutenberg.org/ebooks/7256",
+    "license": "Project Gutenberg public-domain ebook",
+    "attribution": "O. Henry; Project Gutenberg"
   },
   {
     "label": "Sample.djvu",
@@ -84,7 +88,11 @@
     "categories": [
       "Documents",
       "Ebook"
-    ]
+    ],
+    "description": "Older Mobipocket ebook fixture containing Project Gutenberg text from The Gift of the Magi.",
+    "source": "https://www.gutenberg.org/ebooks/7256",
+    "license": "Project Gutenberg public-domain text; embedded image CC0 1.0",
+    "attribution": "O. Henry; Project Gutenberg; Wikimedia Commons contributor"
   },
   {
     "label": "Sample.lrf",
@@ -965,7 +973,11 @@
     "categories": [
       "Image",
       "Media"
-    ]
+    ],
+    "description": "CC0 flower PNG with transparency and real image detail.",
+    "source": "https://commons.wikimedia.org/wiki/File:Red_flower_01.png",
+    "license": "CC0 1.0 Universal",
+    "attribution": "Wikimedia Commons contributor"
   },
   {
     "label": "sample.heic",

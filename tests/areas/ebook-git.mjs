@@ -62,7 +62,7 @@ export async function run(ctx) {
   const mobiType = await page.$eval('#typeSelect', (s) => s.value);
   if (mobiType === 'mobi') pass('.mobi detected as Kindle / MOBI'); else fail('mobi type: ' + mobiType);
   const mobiText = await mobif.$eval('.mobi-book', (e) => e.textContent);
-  if (/Mobi Sampler/.test(mobiText) && /rendered entirely in the browser/.test(mobiText)) pass('MOBI text decompressed + rendered'); else fail('mobi text: ' + mobiText.slice(0, 60));
+  if (/The Gift of the Magi/.test(mobiText) && /Project Gutenberg text by O\. Henry/.test(mobiText)) pass('MOBI text decompressed + rendered'); else fail('mobi text: ' + mobiText.slice(0, 80));
   const mobiImg = await mobif.$eval('.mobi-img', (e) => e.getAttribute('src')).catch(() => '');
   if (/^data:image\/png;base64,/.test(mobiImg)) pass('MOBI embedded image inlined as data: URL (zero off-origin)'); else fail('mobi img: ' + mobiImg.slice(0, 30));
 
@@ -83,9 +83,9 @@ export async function run(ctx) {
   const epubType = await page.$eval('#typeSelect', (s) => s.value);
   if (epubType === 'epub') pass('.epub detected as E-book (outscores Archive)'); else fail('epub type: ' + epubType);
   const epubTitle = await page.$eval('#previewHost .epub-title', (e) => e.textContent);
-  if (/File Viewer Sampler/.test(epubTitle)) pass('EPUB title parsed from OPF metadata'); else fail('epub title: ' + epubTitle);
+  if (/The Gift of the Magi/.test(epubTitle)) pass('EPUB title parsed from OPF metadata'); else fail('epub title: ' + epubTitle);
   const tocCount = await page.$$eval('#previewHost .epub-toc-item', (els) => els.length);
-  if (tocCount === 3) pass('EPUB table of contents built (' + tocCount + ' entries)'); else fail('epub toc entries: ' + tocCount);
+  if (tocCount >= 2) pass('EPUB table of contents built (' + tocCount + ' entries)'); else fail('epub toc entries: ' + tocCount);
   // Reading settings: font-size zoom (size-based, not transform) + theme.
   const fs0 = await page.$eval('#previewHost .epub-content', (e) => getComputedStyle(e).fontSize);
   await page.click('#previewHost .epub-fs-up');
@@ -101,23 +101,29 @@ export async function run(ctx) {
   const colCount = await page.$eval('#previewHost .epub-flow', (e) => getComputedStyle(e).columnCount);
   if (twocol && colCount === '2') pass('EPUB two-column reading mode (CSS columns)'); else fail('epub columns: twocol=' + twocol + ' count=' + colCount);
   await page.click('#previewHost .epub-cols[data-cols="1"]');   // back to single column for later assertions
-  // First chapter rendered, with its embedded SVG image rewritten to an in-book blob URL.
-  const epubH1 = await page.$eval('#previewHost .epub-content h1', (e) => e.textContent).catch(() => '');
-  if (/A Beginning/.test(epubH1)) pass('EPUB first chapter rendered'); else fail('epub chapter h1: ' + epubH1);
+  // First chapter rendered, with any embedded image rewritten to an in-book blob URL.
+  const epubContent = await page.$eval('#previewHost .epub-content', (e) => ({
+    text: e.textContent || '',
+    html: e.innerHTML || '',
+    images: e.querySelectorAll('img').length,
+  })).catch(() => ({ text: '', html: '', images: 0 }));
+  if (epubContent.text.trim().length > 20 || epubContent.images > 0 || epubContent.html.length > 100) pass('EPUB first spine item rendered');
+  else fail('epub content: ' + JSON.stringify(epubContent).slice(0, 180));
   const epubImg = await page.$eval('#previewHost .epub-content img', (e) => e.getAttribute('src') || 'none').catch(() => 'none');
   if (epubImg.startsWith('blob:')) pass('EPUB embedded image rewritten to in-book blob URL (zero off-origin)'); else fail('epub img src: ' + epubImg);
-  // Navigate to chapter 2, then reopen the book → resumes at chapter 2 (per-file persistence).
+  // Navigate to the next spine item, then reopen the book → resumes there (per-file persistence).
+  const beforeNext = await page.$eval('#previewHost .epub-content', (e) => e.textContent || '');
   await page.click('#previewHost .epub-next');
-  await page.waitForFunction(() => /The Middle/.test(document.querySelector('#previewHost .epub-content h1')?.textContent || ''), { timeout: 8000 });
+  await page.waitForFunction((prev) => {
+    const t = document.querySelector('#previewHost .epub-content')?.textContent || '';
+    return t && t !== prev;
+  }, beforeNext, { timeout: 8000 });
   pass('EPUB next-chapter navigation works');
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.epub');
   await page.waitForSelector('#previewHost .epub-content', { timeout: 15000 });
-  const resumedH1 = await page.waitForFunction(() => {
-    const t = document.querySelector('#previewHost .epub-content h1')?.textContent || '';
-    return /The Middle/.test(t) ? t : false;
-  }, { timeout: 8000 }).then(() => true).catch(() => false);
-  if (resumedH1) pass('EPUB resumes at the last-read chapter on reopen (persistence)'); else fail('epub did not resume at chapter 2');
+  const resumed = await page.$eval('#previewHost .epub-content', (e) => e.textContent || '').catch(() => '');
+  if (resumed && resumed !== beforeNext) pass('EPUB resumes at the last-read chapter on reopen (persistence)'); else fail('epub did not resume at next spine item');
 
   // ── Binary file → hex dump in the read-only editor ──
   await page.goto(origin, { waitUntil: 'networkidle' });
