@@ -436,7 +436,7 @@ Show a metadata card per format:
 
 ## TASK 14 — New Format: `.mid`/`.midi` MIDI File Viewer
 
-**Status:** Not started  
+**Status:** Already implemented — MIDI detection, parser/renderer, metadata, sample, and smoke coverage are present.
 **Effort:** S (~2h, zero deps)  
 **Files to create:** `docs/types/binary/midi/`
 
