@@ -1,5 +1,6 @@
 import {
   markdownHeading,
+  markdownLinkForPastedUrl,
   markdownTable,
   markdownWrap,
   sortMarkdownTable,
@@ -17,6 +18,10 @@ const bold = markdownWrap('name', '**', 'strong text');
 ok(bold.text === '**name**' && bold.selectStart === 2 && bold.selectEnd === 6, 'bold: wraps selected text and reports inner selection');
 const italic = markdownWrap('', '*', 'emphasis');
 ok(italic.text === '*emphasis*' && italic.selectStart === 1 && italic.selectEnd === 9, 'italic: inserts placeholder when selection is empty');
+
+ok(markdownLinkForPastedUrl('OpenAI', 'https://openai.com/') === '[OpenAI](https://openai.com/)', 'paste URL: selected text becomes markdown link');
+ok(markdownLinkForPastedUrl('', 'https://openai.com/') === null, 'paste URL: empty selection is left to normal paste');
+ok(markdownLinkForPastedUrl('label', 'not a url') === null, 'paste URL: non-URL paste is left unchanged');
 
 const table = markdownTable(2, 3);
 ok(table.split('\n').length === 4 && /\| Column 1 \| Column 2 \| Column 3 \|/.test(table), 'table: builds configurable rows and columns');

@@ -17,6 +17,13 @@ export function markdownWrap(text, marker, placeholder) {
   };
 }
 
+export function markdownLinkForPastedUrl(selection, pastedText) {
+  const label = String(selection || '').trim();
+  const url = String(pastedText || '').trim();
+  if (!label || !isLikelyUrl(url)) return null;
+  return `[${label}](${url})`;
+}
+
 export function markdownTable(rows = 3, cols = 3) {
   const rowCount = Math.max(1, Math.min(20, Number(rows) || 3));
   const colCount = Math.max(1, Math.min(10, Number(cols) || 3));
@@ -73,4 +80,14 @@ function compareCells(a, b) {
   const bn = Number(bv.replace(/,/g, ''));
   if (av && bv && Number.isFinite(an) && Number.isFinite(bn)) return an - bn;
   return av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+function isLikelyUrl(value) {
+  if (!/^(https?:\/\/|mailto:|ftp:\/\/)/i.test(value)) return false;
+  try {
+    const url = new URL(value);
+    return !!url.protocol && (url.protocol !== 'mailto:' || !!url.pathname);
+  } catch {
+    return false;
+  }
 }

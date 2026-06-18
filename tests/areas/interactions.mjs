@@ -42,6 +42,17 @@ export async function run(ctx) {
   await page.click('#markdownTools [data-md-action="italic"]');
   const mdItalic = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (mdItalic === '**bold** *italic*') pass('Markdown tools: italic wraps selected text'); else fail('italic result: ' + mdItalic);
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    rv.setValue('OpenAI docs');
+    rv.setSelection(1, 1, 1, 7);
+    const data = new DataTransfer();
+    data.setData('text/plain', 'https://openai.com/docs');
+    const event = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true });
+    document.querySelector('#editor .monaco-editor')?.dispatchEvent(event);
+  });
+  const mdPasteLink = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (mdPasteLink === '[OpenAI](https://openai.com/docs) docs') pass('Markdown paste: selected text plus URL becomes link'); else fail('paste link result: ' + mdPasteLink);
   page.once('dialog', (d) => d.accept('2,2'));
   await page.click('#markdownTools .md-tools-toggle');
   await page.click('#markdownTools [data-md-action="table"]');

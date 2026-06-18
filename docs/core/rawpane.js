@@ -10,7 +10,7 @@ import { captureBodyHtml } from './iframe.js';
 import { mapRawToPreview, syncScrollFromRaw } from './sync.js';
 import { applyLayout } from './layout.js';
 import { recordStage1RawEdit } from '../games/metagame/viewer-actions.js';
-import { markdownHeading, markdownTable, markdownWrap, sortMarkdownTable, tableSortOptions } from '../types/markdown/edit-actions.js';
+import { markdownHeading, markdownLinkForPastedUrl, markdownTable, markdownWrap, sortMarkdownTable, tableSortOptions } from '../types/markdown/edit-actions.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
@@ -149,6 +149,9 @@ export async function buildRawView() {
     onCursor: (line) => mapRawToPreview(line),
     onScroll: () => syncScrollFromRaw(),
     onContextMenu: state.type?.id === 'markdown' ? onMarkdownContextMenu : undefined,
+    onPaste: state.type?.id === 'markdown'
+      ? ({ text, selected }) => markdownLinkForPastedUrl(selected, text)
+      : undefined,
     onMoveDiff: async (moveHost, original, current) => {
       const { renderMoveDiff } = await import('./movediff-view.js');
       renderMoveDiff(moveHost, original, current, { threshold: 0.8 });

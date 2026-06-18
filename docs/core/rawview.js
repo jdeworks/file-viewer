@@ -10,7 +10,7 @@ function fill(el) { el.style.position = 'absolute'; el.style.inset = '0'; return
 
 export async function createRawView(host, {
   originalText, currentText, language, theme, options = {},
-  onChange, onCursor, onScroll, onContextMenu, onMoveDiff, onCustomDiff,
+  onChange, onCursor, onScroll, onContextMenu, onPaste, onMoveDiff, onCustomDiff,
 }) {
   const monaco = await loadMonaco();
   host.innerHTML = '';
@@ -47,6 +47,19 @@ export async function createRawView(host, {
   std.onContextMenu((e) => {
     if (mode === 'current') onContextMenu?.(e);
   });
+  const onDomPaste = (event) => {
+    if (mode !== 'current' || !onPaste) return;
+    const text = event.clipboardData?.getData('text/plain') || event.clipboardData?.getData('text') || '';
+    if (!text) return;
+    const range = std.getSelection();
+    const selected = modifiedModel.getValueInRange(range);
+    const replacement = onPaste({ text, selected });
+    if (replacement == null) return;
+    event.preventDefault();
+    event.stopPropagation();
+    replaceRange(range, replacement, { source: 'raw-paste' });
+  };
+  host.addEventListener('paste', onDomPaste, true);
 
   const isNarrow = () => window.matchMedia('(max-width: 760px)').matches;
 
@@ -145,7 +158,10 @@ export async function createRawView(host, {
     scrollInfo() { return { top: std.getScrollTop(), max: std.getScrollHeight() - std.getLayoutInfo().height }; },
     setScrollTop(t) { std.setScrollTop(t); },
     canSync: () => mode === 'current' || mode === 'original',
-    dispose() { std.dispose(); diff?.dispose(); originalModel.dispose(); modifiedModel.dispose(); compareModel?.dispose(); host.innerHTML = ''; },
+    dispose() {
+      host.removeEventListener('paste', onDomPaste, true);
+      std.dispose(); diff?.dispose(); originalModel.dispose(); modifiedModel.dispose(); compareModel?.dispose(); host.innerHTML = '';
+    },
   };
 
   function expandSelectionToLines(selection) {
