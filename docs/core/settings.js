@@ -113,6 +113,8 @@ export function syncModelPreset(model) {
 
 /* ─────────────────────────── UI ─────────────────────────── */
 
+const groupOpenState = new Map();
+
 // onChange(model) fires after any value/preset change so the app re-applies to editor+preview.
 export function renderSettings(container, model, { onChange, toast }) {
   container.innerHTML = '';
@@ -167,8 +169,11 @@ export function renderSettings(container, model, { onChange, toast }) {
     for (const cat of CATEGORY_ORDER) {
       const items = model.descriptors.filter((d) => d.category === cat);
       if (!items.length) continue;
-      const det = document.createElement('details'); det.className = 'set-group'; det.open = CATEGORY_OPEN[cat] !== false;
+      const det = document.createElement('details');
+      det.className = 'set-group';
+      det.open = groupOpenState.has(cat) ? groupOpenState.get(cat) : CATEGORY_OPEN[cat] !== false;
       const sum = document.createElement('summary'); sum.textContent = CATEGORY_LABEL[cat] || cat;
+      det.addEventListener('toggle', () => groupOpenState.set(cat, det.open));
       det.appendChild(sum);
       for (const d of items) {
         const row = document.createElement('div'); row.className = 'set-row';

@@ -250,6 +250,14 @@ export async function run(ctx) {
   // Advanced settings group exists and the "Reduce motion" toggle flips the root class.
   if (groups.includes('Advanced')) pass('settings expose an Advanced group'); else fail('no Advanced group: ' + groups.join(', '));
   await page.evaluate(() => { const d = [...document.querySelectorAll('#settingsBody .set-group > summary')].find((s) => s.textContent === 'Advanced'); if (d) d.parentElement.open = true; });
+  await page.click('#settingsDrawer [data-close]');
+  await page.click('#settingsBtn');
+  await page.waitForSelector('#settingsBody .set-group', { timeout: 5000 });
+  const advancedStillOpen = await page.evaluate(() => {
+    const d = [...document.querySelectorAll('#settingsBody .set-group > summary')].find((s) => s.textContent === 'Advanced');
+    return !!d?.parentElement?.open;
+  });
+  if (advancedStillOpen) pass('settings remember group open state within the session'); else fail('Advanced group did not stay open');
   await page.waitForSelector('#set-reduceMotion', { timeout: 3000 });
   await page.click('label[for="set-reduceMotion"]');
   await page.waitForTimeout(120);
