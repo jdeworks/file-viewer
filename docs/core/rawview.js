@@ -145,6 +145,7 @@ export async function createRawView(host, {
     setTheme(t) { monaco.editor.setTheme(t === 'dark' ? 'vs-dark' : 'vs'); },
     updateOptions(opts) { std.updateOptions(opts); diff?.updateOptions(opts); },
     layout() { std.layout(); diff?.layout(); if (mode === 'diff' || mode === 'movediff') diff?.updateOptions({ renderSideBySide: !isNarrow() }); },
+    focus() { std.focus(); },
     // Magic selector: highlight + reveal a 1-based inclusive line range on the std editor.
     decorate(startLine, endLine) {
       decorations = std.deltaDecorations(decorations, [{

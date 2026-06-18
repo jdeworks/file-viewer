@@ -54,6 +54,9 @@
   .markdown-body{max-width:100%;}
   .markdown-body .table-wrap{max-width:100%;margin:1em 0;}
   .markdown-body .table-wrap table{width:max-content;min-width:100%;}
+  .plain-doc{max-width:68ch;margin:0 auto;}
+  .plain-text{white-space:pre-wrap;word-break:break-word;overflow:visible;margin:0;font:15px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .plain-empty{color:#888;font-style:italic;}
   th,td{border:1px solid #0001;padding:4px 8px;text-align:left;white-space:nowrap;vertical-align:top;}
   thead th{position:sticky;top:0;background:#f3f4f6;z-index:1;}
   tbody tr:nth-child(even){background:#00000006;}

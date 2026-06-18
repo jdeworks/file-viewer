@@ -11,6 +11,9 @@ export async function run(ctx) {
   if (newType === 'markdown') pass('new file: created + typed from extension (notes.md → Markdown)'); else fail('new file type: ' + newType);
   const newName = await page.$eval('#fileName', (e) => e.textContent);
   if (newName === 'notes.md') pass('new file: named as entered'); else fail('new file name: ' + newName);
+  await page.keyboard.type('autofocused');
+  const typedWithoutClick = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (typedWithoutClick === 'autofocused') pass('new file: editor focused for immediate typing'); else fail('new file autofocus value: ' + typedWithoutClick);
 
   // ── Markdown editable text tools ── raw/split editor actions format selections, insert tables,
   // and extend the right-click path for sorting a selected Markdown table.
@@ -162,6 +165,17 @@ export async function run(ctx) {
   await page.waitForTimeout(350);
   await openExample('Sample.txt');
   await page.waitForFunction(() => document.querySelector('#fileName')?.textContent === 'sample.txt', { timeout: 8000 });
+  await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 12000 });
+  const txtFrame = await frameOf('iframe.fv-preview-frame');
+  await txtFrame.waitForSelector('.plain-doc .plain-text', { timeout: 8000 });
+  const txtPreview = await txtFrame.$eval('.plain-doc .plain-text', (e) => ({
+    text: e.textContent,
+    wrap: getComputedStyle(e).whiteSpace,
+    width: e.closest('.plain-doc').getBoundingClientRect().width,
+  }));
+  if (/Plain text sample/i.test(txtPreview.text) && txtPreview.wrap === 'pre-wrap' && txtPreview.width > 250)
+    pass('Plain text preview renders readable wrapped text');
+  else fail('plain text preview: ' + JSON.stringify(txtPreview));
   await page.waitForSelector('#ftBody [data-path="welcome.md"].ft-edited', { timeout: 8000 });
   await page.click('#ftBody [data-path="welcome.md"]');
   await page.waitForFunction(() => document.querySelector('#fileName')?.textContent === 'welcome.md', { timeout: 8000 });

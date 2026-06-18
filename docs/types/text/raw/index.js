@@ -1,6 +1,5 @@
 // Raw / plain-text fallback type. Always available so the viewer is never a dead end.
-// Declares rawView only — no preview, no execution. Binary files land here too (Monaco
-// will show the decoded text or, if binary, the shell shows a "binary" notice).
+// Binary files still land here as read-only hex in the raw pane.
 
 import { detect } from './detect.js';
 
@@ -10,13 +9,13 @@ export default {
   detect,
   capabilities: {
     rawView: true,
-    preview: false,
+    preview: true,
     diff: true,
     magicSelector: false,
-    screenshot: false,
+    screenshot: true,
   },
   syntaxLanguage: 'plaintext',
-  loadRenderer: null,
-  loadMetadata: null,
+  loadRenderer: () => import('./renderer.js'),
+  loadMetadata: () => import('./metadata.js'),
   settingsUrl: new URL('./settings.default.json', import.meta.url),
 };

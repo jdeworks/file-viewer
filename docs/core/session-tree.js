@@ -101,6 +101,7 @@ export async function createNewFile() {
     state.currentFolderPath = filename;
     state.treeApi?.setActive?.(filename);
   }
+  requestAnimationFrame(() => state.rawview?.focus?.());
 }
 
 export async function onTreeFileDrop(node) {
