@@ -76,11 +76,51 @@ export async function run(ctx) {
   pass('Monaco raw editor mounted');
 
   // Preview iframe renders the markdown (h1 "Welcome to File Viewer").
-  const frame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
-  const f = await frameOf('iframe.fv-preview-frame');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
+  let f = await frameOf('iframe.fv-preview-frame');
   await f.waitForSelector('h1', { timeout: 10000 });
   const h1 = await f.$eval('h1', (el) => el.textContent);
   if (/Welcome to File Viewer/.test(h1)) pass('markdown rendered in sandboxed iframe'); else fail('h1 text: ' + h1);
+  const defaultMaxW = await f.evaluate(() => getComputedStyle(document.body).maxWidth);
+  if (defaultMaxW === '820px') pass('default preview width is A4-like (820px)'); else fail('default preview maxWidth: ' + defaultMaxW);
+  const welcomeMarkdown = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  await page.evaluate(() => {
+    const headers = Array.from({ length: 12 }, (_, i) => 'Column ' + (i + 1)).join(' | ');
+    const sep = Array.from({ length: 12 }, () => '---').join(' | ');
+    const row = Array.from({ length: 12 }, (_, i) => 'wide-cell-' + (i + 1) + '-xxxxxxxxxxxxxxxx').join(' | ');
+    window.__fv.state.rawview.setValue('# Wide table\n\n| ' + headers + ' |\n| ' + sep + ' |\n| ' + row + ' |\n');
+  });
+  await page.waitForTimeout(500);
+  const wideFrame = await frameOf('iframe.fv-preview-frame');
+  await wideFrame.waitForSelector('.markdown-body .table-wrap table', { timeout: 5000 });
+  const tableFit = await wideFrame.evaluate(() => {
+    const body = document.body;
+    const wrap = document.querySelector('.markdown-body .table-wrap');
+    const table = document.querySelector('.markdown-body .table-wrap table');
+    return {
+      hasWrap: !!wrap,
+      bodyOverflow: body.scrollWidth - body.clientWidth,
+      wrapperScrolls: wrap.scrollWidth > wrap.clientWidth,
+      tableWiderThanWrapper: table.getBoundingClientRect().width > wrap.getBoundingClientRect().width,
+    };
+  });
+  if (tableFit.hasWrap && tableFit.bodyOverflow <= 1 && tableFit.wrapperScrolls && tableFit.tableWiderThanWrapper) {
+    pass('wide Markdown tables stay constrained inside the preview width');
+  } else fail('wide Markdown table containment: ' + JSON.stringify(tableFit));
+  await page.evaluate((text) => {
+    window.__fv.state.rawview.setValue(text);
+    window.__fv.state.intake = { ...window.__fv.state.intake, text };
+    window.__fv.state.downloadedSinceEdit = true;
+    window.__fv.state.sessionEdits.delete(window.__fv.state.intake?.filename);
+  }, welcomeMarkdown);
+  await page.waitForTimeout(500);
+  await page.evaluate(() => {
+    window.__fv.state.downloadedSinceEdit = true;
+    window.__fv.state.sessionEdits.delete(window.__fv.state.intake?.filename);
+    if (window.__fv.state.currentFolderPath) window.__fv.state.folderEdits.delete(window.__fv.state.currentFolderPath);
+  });
+  f = await frameOf('iframe.fv-preview-frame');
+  await f.waitForSelector('text=Welcome to File Viewer', { timeout: 5000 });
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row a[target="_blank"][rel~="noopener"]', { timeout: 6000 });
   const formatInfo = await page.$eval('#metaBody', (e) => e.textContent);
@@ -162,7 +202,7 @@ export async function run(ctx) {
   else fail('template helper: ' + JSON.stringify(tpl));
 
   // Sandbox attribute is allow-scripts only (no allow-same-origin).
-  const sandbox = await frame.getAttribute('sandbox');
+  const sandbox = await (await page.waitForSelector('iframe.fv-preview-frame', { timeout: 5000 })).getAttribute('sandbox');
   if (sandbox === 'allow-scripts') pass('iframe sandbox = allow-scripts only'); else fail('sandbox: ' + sandbox);
 
   // Dark-mode live Markdown refresh: replacing the iframe during edits must not fall back to

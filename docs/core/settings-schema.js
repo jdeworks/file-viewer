@@ -19,6 +19,7 @@ export const CATEGORY_LABEL = {
 export const CATEGORY_OPEN = { always: true, 'monaco-common': true, 'monaco-extended': false, 'viewer-common': true, 'viewer-extended': false, advanced: false };
 
 // Descriptor: { key, label, category, type:'bool'|'number'|'select', default, options?, min?, max?, hint? }
+export const DEFAULT_PREVIEW_MAX_WIDTH = 820;
 
 // General app preferences — shown for every type regardless of capabilities.
 export const GENERAL_DESCRIPTORS = [
@@ -81,7 +82,7 @@ export const MONACO_DESCRIPTORS = [
 
 // Shown for any type with capability.preview (generic; types add more via settings.schema).
 export const VIEWER_DESCRIPTORS = [
-  { key: 'previewMaxWidth', label: 'Preview width (px)', category: 'viewer-common', type: 'number', min: 320, max: 1600, default: 900,
+  { key: 'previewMaxWidth', label: 'Preview width (px)', category: 'viewer-common', type: 'number', min: 320, max: 1600, default: DEFAULT_PREVIEW_MAX_WIDTH,
     hint: 'Width of the rendered preview. On desktop split view this also sets the preview pane size — drag the divider between the panes to change it live.' },
   { key: 'previewFontSize', label: 'Preview font size (px)', category: 'viewer-common', type: 'number', min: 10, max: 28, default: 16,
     hint: 'Base text size of the rendered content (markdown, HTML, notebooks, …).' },
@@ -125,7 +126,7 @@ export function applyMonacoOptions(v) {
 // Map flat values -> preview CSS variables (consumed by the iframe template).
 export function previewStyle(v) {
   return {
-    maxWidth: Number(v.previewMaxWidth) || 900,
+    maxWidth: Number(v.previewMaxWidth) || DEFAULT_PREVIEW_MAX_WIDTH,
     fontSize: Number(v.previewFontSize) || 16,
     lineHeight: Number(v.previewLineHeight) || 1.6,
     padding: v.previewPadding != null ? Number(v.previewPadding) : 20,

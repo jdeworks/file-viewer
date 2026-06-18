@@ -28,6 +28,19 @@ async function ensureLibs() {
   return { md: mdInstance, DOMPurify };
 }
 
+function wrapMarkdownTables(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  for (const table of tpl.content.querySelectorAll('table')) {
+    if (table.parentElement?.classList.contains('table-wrap')) continue;
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap md-table-wrap';
+    table.replaceWith(wrap);
+    wrap.appendChild(table);
+  }
+  return tpl.innerHTML;
+}
+
 export async function render(intake, ctx) {
   const { md, DOMPurify } = await ensureLibs();
   // markdown-it parser options are user-tunable via settings (applied per render).
@@ -43,7 +56,7 @@ export async function render(intake, ctx) {
   });
   const hadUnsafe = DOMPurify.removed.length > 0;
   return {
-    bodyHtml: '<article class="markdown-body">' + clean + '</article>',
+    bodyHtml: '<article class="markdown-body">' + wrapMarkdownTables(clean) + '</article>',
     hadUnsafe,
     // sourceMap: data-fv-src carries "startLine:endLine" (0-based, end-exclusive).
     sourceMap: true,

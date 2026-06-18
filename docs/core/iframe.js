@@ -8,6 +8,7 @@
 //   - scripts (opt-in, WP07 confirm flow): user scripts allowed to run. Bridge still ours.
 //
 // The bridge talks to the parent only via postMessage (works despite the cross-origin sandbox).
+import { DEFAULT_PREVIEW_MAX_WIDTH } from './settings-schema.js';
 import { loadGlobal, vendor } from './script-loader.js';
 
 const BRIDGE = `
@@ -147,7 +148,7 @@ export function printBodyHtml(bodyHtml, { style = {} } = {}) {
   const printCss = '<style>@media print{html,body{background:#fff!important;color:#000!important;}}@page{margin:16mm;}body{max-width:none;}</style>';
   const tmp = document.createElement('iframe');
   tmp.setAttribute('aria-hidden', 'true');
-  tmp.style.cssText = 'position:fixed;left:-99999px;top:0;border:0;width:' + (Number(style.maxWidth) || 820) + 'px;height:1px;';
+  tmp.style.cssText = 'position:fixed;left:-99999px;top:0;border:0;width:' + (Number(style.maxWidth) || DEFAULT_PREVIEW_MAX_WIDTH) + 'px;height:1px;';
   tmp.srcdoc = buildSrcdoc({ bodyHtml, theme: 'light', style, extraHead: printCss });
   document.body.appendChild(tmp);
   tmp.onload = () => {
@@ -165,7 +166,7 @@ export function printBodyHtml(bodyHtml, { style = {} } = {}) {
 export async function captureBodyHtml(bodyHtml, { theme, style = {} }) {
   const html2canvas = await loadGlobal(vendor('html2canvas/html2canvas.min.js'), 'html2canvas');
   const tmp = document.createElement('iframe');
-  tmp.style.cssText = 'position:fixed;left:-99999px;top:0;border:0;width:' + (Number(style.maxWidth) || 900) + 'px;height:10px;';
+  tmp.style.cssText = 'position:fixed;left:-99999px;top:0;border:0;width:' + (Number(style.maxWidth) || DEFAULT_PREVIEW_MAX_WIDTH) + 'px;height:10px;';
   tmp.srcdoc = buildSrcdoc({ bodyHtml, theme, style });
   document.body.appendChild(tmp);
   try {

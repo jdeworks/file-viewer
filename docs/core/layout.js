@@ -4,7 +4,7 @@
 // so this module never imports app.js back (no circular dependency).
 import { state, $, isMobile, toast } from './state.js';
 import { hasExports, getExports } from './exports.js';
-import { previewStyle } from './settings-schema.js';
+import { DEFAULT_PREVIEW_MAX_WIDTH, previewStyle } from './settings-schema.js';
 import { syncModelPreset } from './settings.js';
 
 let renderPreview = () => {};
@@ -97,7 +97,7 @@ export function applyPreviewPaneWidth() {
   const previewPane = $('previewPane'), rawPane = $('rawPane');
   if (!splitActive) { previewPane.style.flex = ''; rawPane.style.flex = ''; return; }
   const total = $('panes').clientWidth || 0;
-  const want = Number(state.settingsModel?.values?.previewMaxWidth) || 900;
+  const want = Number(state.settingsModel?.values?.previewMaxWidth) || DEFAULT_PREVIEW_MAX_WIDTH;
   const maxPreview = Math.max(320, total - MIN_EDITOR_PX - DIVIDER_PX);
   const w = Math.max(320, Math.min(want, maxPreview));
   previewPane.style.flex = '0 0 ' + Math.round(w) + 'px';

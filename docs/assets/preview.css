@@ -6,7 +6,7 @@
   *{box-sizing:border-box;}
   html,body{margin:0;max-width:100%;overflow-x:hidden;}   /* mobile: only vertical scroll */
   body{font:var(--fv-fontsize,16px)/var(--fv-lh,1.6) system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-       padding:var(--fv-pad,20px);max-width:var(--fv-maxw,900px);margin:0 auto;
+       padding:var(--fv-pad,20px);max-width:var(--fv-maxw,820px);margin:0 auto;
        color:#1a1a1a;background:#fff;overflow-wrap:break-word;}
   body.fv-dark{color:#e6e6e6;background:#1e1e1e;}
   body.fv-reader-sepia{color:#3b2f22;background:#f4ecd8;}
@@ -50,6 +50,9 @@
   .tbl-meta,.tbl-note{font-family:system-ui,sans-serif;color:#888;font-size:12px;margin:2px 0;}
   .table-wrap{overflow-x:auto;border:1px solid #0002;border-radius:6px;}
   table{border-collapse:collapse;width:100%;}
+  .markdown-body{max-width:100%;}
+  .markdown-body .table-wrap{max-width:100%;margin:1em 0;}
+  .markdown-body .table-wrap table{width:max-content;min-width:100%;}
   th,td{border:1px solid #0001;padding:4px 8px;text-align:left;white-space:nowrap;vertical-align:top;}
   thead th{position:sticky;top:0;background:#f3f4f6;z-index:1;}
   tbody tr:nth-child(even){background:#00000006;}
