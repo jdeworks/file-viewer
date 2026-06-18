@@ -1084,6 +1084,66 @@
     "attribution": "Wikimedia Commons contributor"
   },
   {
+    "label": "Sample.jpg",
+    "file": "sample.jpg",
+    "mime": "image/jpeg",
+    "type": "image",
+    "category": "Media",
+    "categories": [
+      "Image",
+      "Media"
+    ],
+    "description": "Public-domain Hubble sample image in JPEG format.",
+    "source": "https://commons.wikimedia.org/wiki/File:DSS_Sample_Images_(1993-14-105).jpg",
+    "license": "Public domain (NASA/ESA Hubble material)",
+    "attribution": "NASA, ESA, and STScI"
+  },
+  {
+    "label": "Sample.gif",
+    "file": "sample.gif",
+    "mime": "image/gif",
+    "type": "image",
+    "category": "Media",
+    "categories": [
+      "Image",
+      "Media"
+    ],
+    "description": "Public-domain ranked-ballot example image in GIF format.",
+    "source": "https://commons.wikimedia.org/wiki/File:Rankballotoval.gif",
+    "license": "Public domain",
+    "attribution": "Tom Ruen"
+  },
+  {
+    "label": "Sample.webp",
+    "file": "sample.webp",
+    "mime": "image/webp",
+    "type": "image",
+    "category": "Media",
+    "categories": [
+      "Image",
+      "Media"
+    ],
+    "description": "Public-domain NASA Mars sample return illustration in WebP format.",
+    "source": "https://commons.wikimedia.org/wiki/File:Mars_sample_return_ascent_vehicle.webp",
+    "license": "Public domain (NASA material)",
+    "attribution": "NASA/JPL-Caltech"
+  },
+  {
+    "label": "Sample.bmp",
+    "file": "sample.bmp",
+    "mime": "image/bmp",
+    "type": "image",
+    "category": "Media",
+    "categories": [
+      "Image",
+      "Media"
+    ],
+    "description": "LGPL sample bitmap image of a blackbuck in BMP format.",
+    "source": "https://people.math.sc.edu/Burkardt/data/bmp/blackbuck.bmp",
+    "license": "GNU LGPL",
+    "attribution": "John Burkardt data directory"
+  },
+  {
     "label": "sample.heic",
     "file": "sample.heic",
     "mime": "image/heic",

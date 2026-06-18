@@ -83,6 +83,13 @@ export async function run(ctx) {
   } else {
     fail('sample quality too low: ' + JSON.stringify(quality));
   }
+  const imageFormatSamples = ['sample.jpg', 'sample.gif', 'sample.webp', 'sample.bmp'];
+  const missingImageFormats = imageFormatSamples.filter((file) => byFile.get(file)?.type !== 'image');
+  if (missingImageFormats.length) {
+    fail('missing dedicated image format samples: ' + missingImageFormats.join(', '));
+  } else {
+    pass('dedicated raster image format samples indexed (' + imageFormatSamples.length + ')');
+  }
 
   const seenTypes = new Set();
   for (const ex of examples) {
