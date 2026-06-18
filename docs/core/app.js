@@ -29,6 +29,7 @@ import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare }
 import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent } from './rawpane.js';
 import { buildMetadata } from './meta-drawer.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey } from './folder.js';
+import { clearArchiveTree, mountArchiveTree } from './archive-tree.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
 import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, renderCompanionSettings, detectCompanionOnStartup } from './companion-ui.js';
 import { initSessionTree, updateSessionTree, createNewFile, onTreeFileDrop, flushSessionEdit } from './session-tree.js';
@@ -52,7 +53,10 @@ async function loadIntake(intake) {
   }
   // Leaving folder context for a fresh top-level file open: discard stale folder state so
   // old folderEdits don't trigger a false "unsaved changes" prompt on the next open.
-  if (!fromTree) { state.folderEdits = new Map(); state.folderMoves = new Map(); state.folderExported = false; }
+  if (!fromTree) {
+    state.folderEdits = new Map(); state.folderMoves = new Map(); state.folderExported = false;
+    clearArchiveTree();
+  }
   if (intake.truncated) {
     const mb = (intake.size / 1048576).toFixed(0);
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
@@ -187,6 +191,7 @@ async function renderPreview() {
     updateExportButton();
     return;
   }
+  if (rendered.archiveTree) mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake);
   // Remember the sanitized body for screenshots + Print/Save-as-PDF (null for script full docs).
   state.lastBodyHtml = rendered.fullDoc ? null : rendered.bodyHtml;
   state.preview = mountPreview($('previewHost'), {
@@ -218,10 +223,15 @@ function clearPreview() {
 // detection/render path. No unsaved work exists for a binary container, so loading is safe.
 async function openInnerEntry(openEntry, name) {
   try {
+    if (state.archiveTree && state.archiveOpenNode) {
+      await state.archiveOpenNode(name);
+      return;
+    }
     const intake = await openEntry(name);
     if (!intake) { toast('Could not open ' + name); return; }
     state._skipDiscardGuard = true;   // container view holds no editable/unsaved work
     await loadIntake(intake);
+    state.treeApi?.setActive?.(name);
   } catch {
     toast('Could not open ' + name);
   }

@@ -33,6 +33,10 @@ export async function run(ctx) {
   if (/files/.test(zMeta) && /uncompressed/.test(zMeta)) pass('archive summary (counts + size)'); else fail('zip meta: ' + zMeta);
   const zipHasEditor = await page.$('#editor .monaco-editor');
   if (!zipHasEditor) pass('archive is preview-only (no raw editor)'); else fail('raw editor present for zip');
+  await page.waitForSelector('#fileTree:not([hidden]) #ftBody .ft-file', { timeout: 8000 });
+  const zipTreeRoot = await page.$eval('#ftRoot', (e) => e.textContent);
+  const zipTreeNames = await page.$$eval('#ftBody .ft-file .ft-name', (els) => els.map((e) => e.textContent));
+  if (/sample\.zip/i.test(zipTreeRoot) && zipTreeNames.includes('rows.csv')) pass('archive mounted as sidebar tree'); else fail('zip tree root=' + zipTreeRoot + ' names=' + zipTreeNames.join(','));
   // Open-file-inside-zip: entry names are clickable → the entry opens through normal detection.
   const openable = await zf.$$eval('.zip-table .z-open', (els) => els.map((e) => e.getAttribute('data-fv-open')));
   if (openable.includes('README.txt') && openable.includes('data/rows.csv')) pass('archive entries are clickable (open-inside-zip)'); else fail('zip openable: ' + openable.join(','));
@@ -43,6 +47,9 @@ export async function run(ctx) {
   const innerType = await page.$eval('#typeSelect', (s) => s.value);
   if (innerType === 'csv') pass('zip entry opened + re-detected (rows.csv → CSV)'); else fail('inner type: ' + innerType);
   pass('opened entry shows its own filename (rows.csv)');
+  const zipTreeStillOpen = await page.$eval('#fileTree', (e) => !e.hidden);
+  const zipTreeActive = await page.$eval('#ftBody .ft-row.active', (e) => e.getAttribute('data-path')).catch(() => '');
+  if (zipTreeStillOpen && zipTreeActive === 'data/rows.csv') pass('archive sidebar remains active after opening entry'); else fail('archive sidebar active=' + zipTreeActive + ' open=' + zipTreeStillOpen);
   const innerFrameEl = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
   const innerFrame = await frameOf('iframe.fv-preview-frame');
   await innerFrame.waitForSelector('table', { timeout: 10000 });

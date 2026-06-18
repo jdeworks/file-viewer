@@ -59,5 +59,15 @@ export async function render(intake, _ctx) {
       }
     : null;
 
-  return { bodyHtml: fill(docTpl, { banner, meta, hint, rows }), hadUnsafe: false, openEntry };
+  const archiveTree = canOpen ? {
+    rootName: intake.filename || 'Archive',
+    entries: z.files.map((f) => ({
+      name: f.name,
+      size: usize(f),
+      encrypted: encrypted.has(f.name),
+      dir: !!f.dir,
+    })),
+  } : null;
+
+  return { bodyHtml: fill(docTpl, { banner, meta, hint, rows }), hadUnsafe: false, openEntry, archiveTree };
 }
