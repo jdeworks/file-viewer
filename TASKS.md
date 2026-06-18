@@ -177,7 +177,7 @@ A short note (200-300 words) from "The Archivist" — a fictional entity from th
 
 ## TASK 5 — Feature E: Virtual Folder Drag-to-Reorder
 
-**Status:** Not started  
+**Status:** Already implemented — virtual folder moves, indicators, export, and smoke coverage are present.
 **Effort:** M (~2h)  
 **Files to modify:**
 - `docs/core/folder.js` — add `state.folderMoves: Map<originalPath, newPath>`, expose `recordMove(src, dest)`
