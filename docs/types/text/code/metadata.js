@@ -11,29 +11,28 @@ export function extract(intake) {
   const todos = (text.match(/\b(TODO|FIXME|XXX)\b/gi) || []).length;
   const lang = languageFor(intake);
   const out = [
-    { label: 'Language', value: languageLabelFor(lang) },
-    { label: 'Lines of code', value: String(codeLines) },
-    { label: 'Non-empty lines', value: String(nonEmpty) },
+    fact('Language', languageLabelFor(lang), 'Code metrics'),
+    fact('Lines of code', codeLines, 'Code metrics'),
     { label: 'Blank lines', value: String(blank) },
-    { label: 'Comment lines', value: String(commentLines) },
-    { label: 'Comment density', value: percent(commentLines, nonEmpty) },
-    { label: 'Characters', value: String(text.length) },
-    { label: 'Max indentation', value: String(maxIndent(lines)) },
-    { label: 'Max nesting', value: String(maxNesting(text, lang)) },
+    fact('Comment lines', commentLines, 'Code metrics'),
+    fact('Comment density', percent(commentLines, nonEmpty), 'Code metrics'),
+    fact('Non-empty lines', nonEmpty, 'Code shape'),
+    fact('Characters', text.length, 'Code shape'),
+    fact('Max indentation', maxIndent(lines), 'Code shape'),
+    fact('Max nesting', maxNesting(text, lang), 'Code shape'),
   ];
-  if (todos) out.push({ label: 'TODO/FIXME markers', value: String(todos) });
+  if (todos) out.push(fact('TODO/FIXME markers', todos, 'Code structure'));
   const moduleFacts = moduleMetrics(text, lang);
-  if (moduleFacts.imports) out.push({ label: 'Imports/includes', value: String(moduleFacts.imports) });
-  if (moduleFacts.entrypoints) out.push({ label: 'Entrypoints', value: String(moduleFacts.entrypoints) });
+  if (moduleFacts.imports) out.push(fact('Imports/includes', moduleFacts.imports, 'Code structure'));
+  if (moduleFacts.entrypoints) out.push(fact('Entrypoints', moduleFacts.entrypoints, 'Code structure'));
   if (lang === 'javascript' || lang === 'typescript') {
     const exports = moduleFacts.exports;
     const classes = (text.match(/^\s*(?:export\s+)?(?:default\s+)?class\s+[A-Za-z_$]/gm) || []).length;
     out.push(
-      { label: 'Exports', value: String(exports) },
-      { label: 'Classes', value: String(classes) },
+      fact('Exports', exports, 'Code structure'),
+      fact('Classes', classes, 'Code structure'),
     );
   }
-  // File-level code metrics summary (per-function detail shows as a CodeLens in the editor).
   const { functions, summary } = analyze(text, lang);
   if (summary && summary.count > 0) {
     const largest = functions.reduce((best, fn) => !best || fn.loc > best.loc ? fn : best, null);
@@ -41,17 +40,21 @@ export function extract(intake) {
     const avgLoc = Math.round((functions.reduce((sum, fn) => sum + fn.loc, 0) / functions.length) * 10) / 10;
     const complexFns = functions.filter((fn) => fn.complexity >= 10).length;
     out.push(
-      { label: 'Functions', value: String(summary.count) },
-      { label: 'Avg complexity', value: String(summary.avgComplexity) },
-      { label: 'Max complexity', value: String(summary.maxComplexity) },
-      { label: 'Complex functions', value: String(complexFns) },
-      { label: 'Avg function LOC', value: String(avgLoc) },
-      { label: 'Max function LOC', value: String(largest?.loc || 0) },
-      { label: 'Largest function', value: largest ? `${largest.name} (${largest.loc} LOC)` : 'none' },
-      { label: 'Most complex function', value: mostComplex ? `${mostComplex.name} (${mostComplex.complexity})` : 'none' },
+      fact('Functions', summary.count, 'Code metrics'),
+      fact('Avg complexity', summary.avgComplexity, 'Code metrics'),
+      fact('Max complexity', summary.maxComplexity, 'Code metrics'),
+      fact('Complex functions', complexFns, 'Code metrics'),
+      fact('Avg function LOC', avgLoc, 'Code metrics'),
+      fact('Max function LOC', largest?.loc || 0, 'Code metrics'),
+      fact('Largest function', largest ? `${largest.name} (${largest.loc} LOC)` : 'none', 'Code metrics'),
+      fact('Most complex function', mostComplex ? `${mostComplex.name} (${mostComplex.complexity})` : 'none', 'Code metrics'),
     );
   }
   return out;
+}
+
+function fact(label, value, section) {
+  return { label, value: String(value), section };
 }
 
 function percent(part, total) {

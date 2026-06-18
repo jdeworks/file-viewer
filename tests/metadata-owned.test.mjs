@@ -50,6 +50,10 @@ function numberValue(rows, label) {
   assert.equal(value(rows, 'Most complex function'), 'classify (7)');
   assert.equal(value(rows, 'Complex functions'), '0');
   assert.ok(Number(value(rows, 'Comment lines')) >= 3);
+  assert.equal(rows.find((r) => r.label === 'Language')?.section, 'Code metrics');
+  assert.equal(rows.find((r) => r.label === 'Exports')?.section, 'Code structure');
+  assert.equal(rows.find((r) => r.label === 'Max indentation')?.section, 'Code shape');
+  assert.equal(rows.find((r) => r.label === 'Blank lines')?.section, undefined);
 }
 
 {
