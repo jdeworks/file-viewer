@@ -199,7 +199,7 @@ A short note (200-300 words) from "The Archivist" — a fictional entity from th
 
 ## TASK 6 — Feature C: ASCII Art / ANSI Viewer
 
-**Status:** Not started  
+**Status:** Already implemented — ASCII/ANSI plugin, registry entry, sample, and smoke coverage are present.
 **Effort:** M (~3h)  
 **Files to create:**
 - `docs/types/text/asciiart/detect.js`
