@@ -2,6 +2,7 @@
 // per-type extracted metadata (EXIF, ID3, PDF info, …). Extracted from app.js; reads shared state.
 import { state, $, escapeHtml, formatBytes } from './state.js';
 import { getTypeInfo } from './type-info.js';
+import { genericMetadata } from './generic-metadata.js';
 
 const SENSITIVE_KEY_RE = /(SECRET|PASSWORD|TOKEN|KEY|PRIVATE)/i;
 
@@ -102,6 +103,7 @@ export async function buildMetadata() {
     ['Size', formatBytes(i.size)],
     ['MIME', i.mimeType || '—'],
     ['Modified', i.lastModified ? new Date(i.lastModified).toLocaleString() : '—'],
+    ...genericMetadata(i),
   ];
   if (state.type.loadMetadata) {
     try { await appendExtractedRows(rows, state.type.loadMetadata, i); } catch {}

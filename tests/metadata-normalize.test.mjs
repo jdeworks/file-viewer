@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { normalizeMetadata } from '../docs/core/meta-drawer.js';
+import { genericMetadata } from '../docs/core/generic-metadata.js';
 import { extractMetadata as sshMeta } from '../docs/types/text/ssh-config/metadata.js';
 import { extractMetadata as wasmMeta } from '../docs/types/binary/wasm/metadata.js';
 
@@ -8,6 +9,41 @@ function value(rows, label) {
   const row = rows.find((r) => r.label === label);
   assert.ok(row, 'missing row ' + label);
   return row.value;
+}
+
+{
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'src/app.ts',
+    mimeType: 'text/typescript',
+    bytes: new Uint8Array([0xef, 0xbb, 0xbf, 0x61, 0x0d, 0x0a, 0x0a, 0x62]),
+    text: 'a\r\n\nb',
+    isBinary: false,
+    size: 8,
+    loadedBytes: 8,
+  }));
+  assert.equal(value(rows, 'Extension'), 'ts');
+  assert.equal(value(rows, 'Content kind'), 'text');
+  assert.equal(value(rows, 'Byte order mark'), 'UTF-8');
+  assert.equal(value(rows, 'Line endings'), 'CRLF + LF');
+  assert.equal(value(rows, 'Line break count'), '2');
+  assert.equal(value(rows, 'Lines'), '3');
+  assert.equal(value(rows, 'Blank lines'), '1');
+  assert.equal(value(rows, 'Longest line'), '1');
+  assert.equal(value(rows, 'Trailing newline'), 'no');
+}
+
+{
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'disk.img',
+    bytes: new Uint8Array([0, 1, 2, 3]),
+    text: '',
+    isBinary: true,
+    size: 4096,
+    loadedBytes: 4,
+  }));
+  assert.equal(value(rows, 'Extension'), 'img');
+  assert.equal(value(rows, 'Content kind'), 'binary');
+  assert.equal(value(rows, 'Loaded bytes'), '4 of 4,096');
 }
 
 {

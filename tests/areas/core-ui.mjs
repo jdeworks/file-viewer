@@ -86,6 +86,8 @@ export async function run(ctx) {
   const formatInfo = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Used for/.test(formatInfo) && /Format info\s*Markdown/.test(formatInfo)) pass('metadata drawer links to file-type information');
   else fail('format info metadata missing: ' + formatInfo.replace(/\s+/g, ' ').slice(0, 160));
+  if (/Extension\s*md/.test(formatInfo) && /Line endings\s*LF/.test(formatInfo) && /Lines\s*\d+/.test(formatInfo)) pass('metadata drawer includes generic text facts');
+  else fail('generic text metadata missing: ' + formatInfo.replace(/\s+/g, ' ').slice(0, 220));
   await page.click('#metaDrawer [data-close]');
 
   // Source map present (magic selector data attributes).
