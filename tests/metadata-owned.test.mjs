@@ -14,6 +14,7 @@ import { extract as reqMeta } from '../docs/types/text/known/requirements-txt/me
 import { extract as codeownersMeta } from '../docs/types/text/known/codeowners/metadata.js';
 import { extract as editorconfigMeta } from '../docs/types/text/known/editorconfig/metadata.js';
 import { testExports as composeMeta } from '../docs/types/text/yaml/known/docker-compose/metadata.js';
+import { testExports as csvMeta } from '../docs/types/text/csv/metadata.js';
 
 const ROOT = new URL('../docs/examples/', import.meta.url);
 
@@ -116,6 +117,15 @@ function numberValue(rows, label) {
   assert.equal(value(rows, 'Named volume mounts'), '1');
   assert.equal(value(rows, 'Top-level secrets'), '1');
   assert.equal(value(rows, 'Issue hints'), '2');
+}
+
+{
+  const stats = csvMeta.rawCsvStats('a;b\r\n"c;d";e\r\n\r\n');
+  assert.equal(stats.lineEndings, 'CRLF');
+  assert.equal(stats.physicalLines, 3);
+  assert.equal(stats.blankPhysicalLines, 1);
+  assert.equal(stats.trailingNewline, true);
+  assert.equal(stats.quotedFieldsLikely, true);
 }
 
 {

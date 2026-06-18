@@ -92,6 +92,12 @@ export async function run(ctx) {
   // CSV is editable text -> raw editor + diff available.
   const csvHasEditor = await page.$('#editor .monaco-editor');
   if (csvHasEditor) pass('CSV has raw editor (editable text)'); else fail('CSV missing raw editor');
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const csvMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Delimiter\s*comma/.test(csvMeta) && /Line endings\s*LF/.test(csvMeta) && /Physical lines\s*6/.test(csvMeta)) pass('CSV metadata includes delimiter and raw line facts');
+  else fail('CSV metadata: ' + csvMeta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
   // CSV export (loadExports hook): menu offers JSON / Excel; JSON download actually fires.
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
