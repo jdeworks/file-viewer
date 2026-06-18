@@ -1,10 +1,11 @@
 // JSON exports: convert to YAML (via vendored js-yaml) or download a pretty / minified copy.
 import { downloadBlob } from '../../../core/exports.js';
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
+import { parseJsonLike } from './jsonparse.js';
 
 export function getExports(intake) {
   const base = (intake.filename || 'data').replace(/\.[^.]+$/, '');
-  const parse = () => JSON.parse(intake.text || 'null');
+  const parse = () => parseJsonLike(intake.text || 'null').data;
   return [
     { label: 'Download as YAML', run: async () => {
       const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');

@@ -1,6 +1,8 @@
+import { parseJsonLike } from './jsonparse.js';
+
 export function extract(intake) {
-  let data, ok = true;
-  try { data = JSON.parse(intake.text || ''); } catch { ok = false; }
+  let parsed, data, ok = true;
+  try { parsed = parseJsonLike(intake.text || '', ''); data = parsed.data; } catch { ok = false; }
   if (!ok) return [{ label: 'Valid JSON', value: 'no' }];
   let nodes = 0, maxDepth = 0, objects = 0, arrays = 0;
   (function walk(v, d) {
@@ -12,6 +14,7 @@ export function extract(intake) {
   const root = Array.isArray(data) ? 'array' : (data === null ? 'null' : typeof data);
   const out = [
     { label: 'Valid JSON', value: 'yes' },
+    { label: 'Parse mode', value: parsed.mode === 'jsonc' ? 'JSONC recovery' : 'strict JSON' },
     { label: 'Root type', value: root },
     { label: 'Total nodes', value: String(nodes) },
     { label: 'Max depth', value: String(maxDepth) },

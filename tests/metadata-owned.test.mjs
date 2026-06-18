@@ -23,6 +23,8 @@ import { extractMetadata as envMeta } from '../docs/types/text/env/metadata.js';
 import { testExports as composeMeta } from '../docs/types/text/yaml/known/docker-compose/metadata.js';
 import { testExports as composeRender } from '../docs/types/text/yaml/known/docker-compose/render.js';
 import { testExports as csvMeta } from '../docs/types/text/csv/metadata.js';
+import { parseJsonLike } from '../docs/types/text/json/jsonparse.js';
+import { extract as jsonMeta } from '../docs/types/text/json/metadata.js';
 
 const ROOT = new URL('../docs/examples/', import.meta.url);
 
@@ -74,6 +76,20 @@ function numberValue(rows, label) {
   const rows = envMeta({ filename: 'sample.env', text: src });
   assert.equal(value(rows, 'Total variables'), '20');
   assert.equal(value(rows, 'Sensitive variables'), '8');
+}
+
+{
+  const strict = parseJsonLike('{"url":"https://example.test/a//b","list":["keep,]"]}');
+  assert.equal(strict.mode, 'strict');
+  assert.equal(strict.data.url, 'https://example.test/a//b');
+  assert.equal(strict.data.list[0], 'keep,]');
+  const jsonc = '{\n  // comment\n  "name": "jsonc",\n  "items": [1, 2,],\n}\n';
+  const parsed = parseJsonLike(jsonc);
+  assert.equal(parsed.mode, 'jsonc');
+  assert.equal(parsed.data.items.length, 2);
+  const rows = jsonMeta({ filename: 'edge.jsonc', text: jsonc });
+  assert.equal(value(rows, 'Valid JSON'), 'yes');
+  assert.equal(value(rows, 'Parse mode'), 'JSONC recovery');
 }
 
 {

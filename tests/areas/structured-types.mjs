@@ -29,6 +29,24 @@ export async function run(ctx) {
   if (/Root type\s*object/.test(jsonMeta) && /Objects\s*\d+/.test(jsonMeta) && /Arrays\s*\d+/.test(jsonMeta)) pass('JSON metadata includes structure counts'); else fail('json meta: ' + jsonMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
 
+  await page.evaluate(() => window.__fv.openViewerFile('edge.jsonc', {
+    text: '{\n  // File Examples JSON comments edge case\n  "name": "jsonc",\n  "items": [1, 2,],\n}\n',
+  }));
+  await page.waitForSelector('iframe.fv-preview-frame[srcdoc*="json-warning"]', { timeout: 8000 });
+  const jsoncFrame = await frameOf('iframe.fv-preview-frame');
+  const jsoncWarning = await jsoncFrame.$eval('.json-warning', (e) => e.textContent);
+  const jsoncKeys = await jsoncFrame.$$eval('.json-tree .j-key', (els) => els.map((e) => e.textContent));
+  if (/Parsed as JSONC/.test(jsoncWarning) && jsoncKeys.includes('name') && jsoncKeys.includes('items')) pass('JSONC-style comments/trailing commas render with recovery warning');
+  else fail('jsonc warning=' + jsoncWarning + ' keys=' + jsoncKeys.join(','));
+  await page.evaluate(async () => {
+    const { buildMetadata } = await import('./core/meta-drawer.js');
+    await buildMetadata();
+  });
+  await page.waitForFunction(() => /edge\.jsonc/.test(document.querySelector('#metaBody')?.textContent || ''), null, { timeout: 6000 });
+  const jsoncMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Parse mode\s*JSONC recovery/.test(jsoncMeta)) pass('JSON metadata reports JSONC recovery mode');
+  else fail('jsonc meta: ' + jsoncMeta.replace(/\s+/g, ' ').slice(0, 180));
+
   // ── HAR ── JSON-shaped HTTP archive gets a waterfall, filters, sortable request table.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.har');

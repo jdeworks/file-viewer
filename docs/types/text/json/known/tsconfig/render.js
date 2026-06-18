@@ -1,5 +1,7 @@
 // Enhanced tsconfig.json view: a readable table of compilerOptions with a short description of
 // each known flag, plus the files/include/exclude and extends. Parent-pane (generated DOM).
+import { parseJsonLike } from '../../jsonparse.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // Short descriptions for the common compiler options (not exhaustive — unknown flags still show).
@@ -28,7 +30,7 @@ export async function render(intake, _ctx) {
   const host = document.createElement('div');
   host.className = 'pj-doc';
   let cfg;
-  try { cfg = JSON.parse((intake.text || '{}').replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')); }   // tolerate JSONC comments
+  try { cfg = parseJsonLike(intake.text || '{}', '{}').data; }
   catch (e) { host.innerHTML = '<p class="pj-err">Invalid JSON: ' + esc(e.message) + '</p>'; return { parentNode: host }; }
 
   const opts = cfg.compilerOptions && typeof cfg.compilerOptions === 'object' ? cfg.compilerOptions : {};

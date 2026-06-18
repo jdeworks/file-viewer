@@ -1,9 +1,8 @@
-function parseJsonc(text) {
-  try { return JSON.parse((text || '{}').replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')); } catch { return {}; }
-}
+import { parseJsonLike } from '../../jsonparse.js';
 
 export function extract(intake) {
-  const cfg = parseJsonc(intake.text);
+  let cfg;
+  try { cfg = parseJsonLike(intake.text || '{}', '{}').data; } catch { cfg = {}; }
   const opts = cfg.compilerOptions && typeof cfg.compilerOptions === 'object' ? cfg.compilerOptions : {};
   const refs = Array.isArray(cfg.references) ? cfg.references.length : 0;
   return [

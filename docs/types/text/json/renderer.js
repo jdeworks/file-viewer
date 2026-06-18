@@ -1,5 +1,7 @@
 // JSON preview: a collapsible tree (scriptless, via <details>/<summary>). Parse errors
 // surface a clear message with the position. Editable text, so raw + diff still apply.
+import { parseJsonLike } from './jsonparse.js';
+
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 function entriesFor(val, sortMode) {
@@ -31,12 +33,13 @@ function valueNode(key, val, sortMode) {
 }
 
 export async function render(intake, ctx) {
-  let data;
+  let parsed;
   try {
-    data = JSON.parse(intake.text || '');
+    parsed = parseJsonLike(intake.text || '', '');
   } catch (err) {
     return { bodyHtml: '<div class="json-error"><strong>Invalid JSON</strong><br>' + esc(err.message) + '</div>', hadUnsafe: false };
   }
   const sortMode = ['A-Z', 'Z-A'].includes(ctx?.settings?.jsonSortKeys) ? ctx.settings.jsonSortKeys : 'original';
-  return { bodyHtml: '<div class="json-tree" data-sort="' + esc(sortMode) + '">' + valueNode(null, data, sortMode) + '</div>', hadUnsafe: false };
+  const warn = parsed.mode === 'jsonc' ? '<div class="json-warning">' + esc(parsed.warnings.join(' ')) + '</div>' : '';
+  return { bodyHtml: warn + '<div class="json-tree" data-sort="' + esc(sortMode) + '">' + valueNode(null, parsed.data, sortMode) + '</div>', hadUnsafe: false };
 }
