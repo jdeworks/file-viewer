@@ -1,45 +1,22 @@
 // SSH Config viewer with command palette
 // Interactive parentNode renderer — clipboard, hover-reveal, tab switching
+import { firstValue, parseSSHConfig } from './parse.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-function parseSSHConfig(text) {
-  const lines = text.split('\n');
-  const blocks = [];
-  let current = null;
-  const globalSettings = {};
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-
-    const hostMatch = line.match(/^Host\s+(.+)$/i);
-    if (hostMatch) {
-      if (current) blocks.push(current);
-      current = { alias: hostMatch[1].trim(), settings: {} };
-    } else if (current) {
-      const kv = line.match(/^(\S+)\s+(.+)$/);
-      if (kv) current.settings[kv[1]] = kv[2].trim();
-    } else {
-      const kv = line.match(/^(\S+)\s+(.+)$/);
-      if (kv) globalSettings[kv[1]] = kv[2].trim();
-    }
-  }
-  if (current) blocks.push(current);
-
-  return { blocks, globalSettings };
-}
-
 function buildCommands(block) {
   const s = block.settings;
-  const alias = block.alias;
-  const hostname = s.Hostname || s.HostName || alias;
-  const user = s.User ? `${s.User}@` : '';
-  const port = s.Port ? ['-p', s.Port] : [];
-  const portSftp = s.Port ? ['-P', s.Port] : [];
-  const identity = s.IdentityFile ? ['-i', s.IdentityFile] : [];
-  const jump = s.ProxyJump ? ['-J', s.ProxyJump] : [];
-  const forwardAgent = s.ForwardAgent?.toLowerCase() === 'yes' ? ['-A'] : [];
+  const alias = firstUsablePattern(block);
+  const hostname = firstValue(s, 'HostName') || alias;
+  const userValue = firstValue(s, 'User');
+  const portValue = firstValue(s, 'Port');
+  const jumpValue = firstValue(s, 'ProxyJump');
+  const user = userValue ? `${userValue}@` : '';
+  const port = portValue ? ['-p', portValue] : [];
+  const portSftp = portValue ? ['-P', portValue] : [];
+  const identity = (s.identityfile || []).flatMap((value) => ['-i', value]);
+  const jump = jumpValue ? ['-J', jumpValue] : [];
+  const forwardAgent = firstValue(s, 'ForwardAgent').toLowerCase() === 'yes' ? ['-A'] : [];
 
   const sshFlags = [...port, ...identity, ...jump, ...forwardAgent].join(' ');
   const sftpFlags = [...portSftp, ...identity].join(' ');
@@ -56,11 +33,37 @@ function buildCommands(block) {
   };
 }
 
+function firstUsablePattern(block) {
+  return block.patterns.find((pattern) => pattern !== '*') || block.patterns[0] || 'host';
+}
+
+function blockLabel(block) {
+  return block.patterns.join(' ');
+}
+
+function displayDirective(key) {
+  const known = {
+    hostname: 'HostName',
+    identityfile: 'IdentityFile',
+    proxyjump: 'ProxyJump',
+    proxycommand: 'ProxyCommand',
+    forwardagent: 'ForwardAgent',
+    serveraliveinterval: 'ServerAliveInterval',
+    serveralivecountmax: 'ServerAliveCountMax',
+    addkeystoagent: 'AddKeysToAgent',
+    stricthostkeychecking: 'StrictHostKeyChecking',
+    localforward: 'LocalForward',
+    remoteforward: 'RemoteForward',
+    dynamicforward: 'DynamicForward',
+  };
+  return known[key] || key.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 const STYLES = `
 .sc-root {
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 13px;
-  color: var(--text, #111);
+  color: var(--fg, #111);
   background: var(--bg, #fff);
   min-height: 200px;
   padding: 0;
@@ -75,12 +78,12 @@ const STYLES = `
 .sc-title {
   font-weight: 600;
   font-size: 14px;
-  color: var(--text, #111);
+  color: var(--fg, #111);
 }
 .sc-count {
   font-size: 12px;
-  color: #888;
-  background: var(--border, #eee);
+  color: var(--fg-2, #666);
+  background: var(--bg-3, #eee);
   border-radius: 10px;
   padding: 2px 8px;
 }
@@ -96,14 +99,14 @@ const STYLES = `
   border-radius: 4px;
   border: 1px solid var(--border, #ddd);
   background: var(--bg, #fff);
-  color: var(--text, #111);
+  color: var(--fg, #111);
   cursor: pointer;
   font-size: 12px;
   font-family: monospace;
   transition: background 0.12s;
 }
 .sc-tab:hover {
-  background: var(--border, #eee);
+  background: var(--bg-3, #eee);
 }
 .sc-tab.active {
   background: var(--accent, #3b82f6);
@@ -128,21 +131,21 @@ const STYLES = `
   font-size: 12px;
 }
 .sc-settings-table td:first-child {
-  color: #888;
+  color: var(--fg-2, #666);
   width: 160px;
   font-family: monospace;
   white-space: nowrap;
 }
 .sc-settings-table td:last-child {
   font-family: monospace;
-  color: var(--text, #111);
+  color: var(--fg, #111);
   word-break: break-all;
 }
 .sc-host-label {
   padding: 10px 16px 4px;
   font-weight: 600;
   font-size: 13px;
-  color: var(--text, #111);
+  color: var(--fg, #111);
   letter-spacing: 0.02em;
 }
 .sc-host-label span {
@@ -157,7 +160,7 @@ const STYLES = `
   padding: 8px 16px 4px;
   font-size: 11px;
   font-weight: 600;
-  color: #888;
+  color: var(--fg-2, #666);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -171,11 +174,11 @@ const STYLES = `
   transition: background 0.1s;
 }
 .sc-cmd-row:hover {
-  background: var(--border, #f5f5f5);
+  background: var(--bg-2, #f5f5f5);
 }
 .sc-cmd-label {
   min-width: 110px;
-  color: #888;
+  color: var(--fg-2, #666);
   font-size: 11px;
   flex-shrink: 0;
 }
@@ -199,7 +202,7 @@ const STYLES = `
   border-radius: 4px;
   border: 1px solid var(--border, #ddd);
   background: var(--bg, #fff);
-  color: var(--text, #111);
+  color: var(--fg, #111);
   font-size: 11px;
   cursor: pointer;
   flex-shrink: 0;
@@ -219,7 +222,7 @@ const STYLES = `
 .sc-global-note {
   padding: 6px 16px 10px;
   font-size: 12px;
-  color: #888;
+  color: var(--fg-2, #666);
   font-style: italic;
 }
 .sc-hostname-link {
@@ -235,10 +238,10 @@ const STYLES = `
 
 export async function render(intake) {
   const text = intake.text ?? '';
-  const { blocks, globalSettings } = parseSSHConfig(text);
+  const { blocks } = parseSSHConfig(text);
 
-  const nonWildcard = blocks.filter((b) => b.alias !== '*');
-  const wildcardBlock = blocks.find((b) => b.alias === '*');
+  const nonWildcard = blocks.filter((b) => !b.patterns.includes('*'));
+  const wildcardBlock = blocks.find((b) => b.patterns.includes('*'));
   const allBlocks = [...nonWildcard, ...(wildcardBlock ? [wildcardBlock] : [])];
 
   // Build root element
@@ -275,12 +278,13 @@ export async function render(intake) {
   const tabs = [];
 
   allBlocks.forEach((block, i) => {
-    const isWild = block.alias === '*';
+    const isWild = block.patterns.includes('*');
+    const label = blockLabel(block);
 
     // Tab
     const tab = document.createElement('button');
     tab.className = 'sc-tab' + (i === 0 ? ' active' : '');
-    tab.textContent = isWild ? 'Host *' : block.alias;
+    tab.textContent = isWild ? 'Host *' : label;
     tab.dataset.index = String(i);
     tabsEl.appendChild(tab);
     tabs.push(tab);
@@ -295,7 +299,7 @@ export async function render(intake) {
     if (isWild) {
       labelDiv.innerHTML = `HOST: <span>*</span> <em style="font-weight:400;font-size:11px;color:#888">(Global defaults)</em>`;
     } else {
-      labelDiv.innerHTML = `HOST: <span>${esc(block.alias)}</span>`;
+      labelDiv.innerHTML = `HOST: <span>${esc(label)}</span>`;
     }
     panel.appendChild(labelDiv);
 
@@ -305,15 +309,15 @@ export async function render(intake) {
       const table = document.createElement('table');
       table.className = 'sc-settings-table';
       const tbody = document.createElement('tbody');
-      for (const [k, v] of entries) {
+      for (const [k, values] of entries) {
         const tr = document.createElement('tr');
-        let valHtml = esc(v);
+        let valHtml = values.map(esc).join('<br>');
 
         // If HostName looks like a URL, add an "Open in tab →" link
-        if ((k === 'HostName' || k === 'Hostname') && (v.startsWith('http://') || v.startsWith('https://'))) {
-          valHtml += ` <a class="sc-hostname-link" href="${esc(v)}" target="_blank" rel="noopener">Open in tab →</a>`;
+        if (k === 'hostname' && values.length === 1 && (values[0].startsWith('http://') || values[0].startsWith('https://'))) {
+          valHtml += ` <a class="sc-hostname-link" href="${esc(values[0])}" target="_blank" rel="noopener">Open in tab →</a>`;
         }
-        tr.innerHTML = `<td>${esc(k)}</td><td>${valHtml}</td>`;
+        tr.innerHTML = `<td>${esc(displayDirective(k))}</td><td>${valHtml}</td>`;
         tbody.appendChild(tr);
       }
       table.appendChild(tbody);

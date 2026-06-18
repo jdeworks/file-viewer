@@ -1,59 +1,9 @@
-function parseSSHConfig(text) {
-  const lines = text.split('\n');
-  const blocks = [];
-  const matchBlocks = [];
-  let current = null;
-  const globalSettings = {};
+import { parseSSHConfig, valuesFrom } from './parse.js';
 
-  function pushCurrent() {
-    if (!current) return;
-    if (current.kind === 'match') matchBlocks.push(current);
-    else blocks.push(current);
-  }
-
-  function addSetting(target, key, value) {
-    const canonical = key.toLowerCase();
-    if (!target[canonical]) target[canonical] = [];
-    target[canonical].push(value);
-  }
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-
-    const hostMatch = line.match(/^Host\s+(.+)$/i);
-    if (hostMatch) {
-      pushCurrent();
-      current = { kind: 'host', patterns: hostMatch[1].trim().split(/\s+/).filter(Boolean), settings: {} };
-      continue;
-    }
-
-    const matchMatch = line.match(/^Match\s+(.+)$/i);
-    if (matchMatch) {
-      pushCurrent();
-      current = { kind: 'match', criteria: matchMatch[1].trim(), settings: {} };
-      continue;
-    }
-
-    const includeMatch = line.match(/^Include\s+(.+)$/i);
-    if (includeMatch) {
-      addSetting(current ? current.settings : globalSettings, 'Include', includeMatch[1].trim());
-    } else if (current) {
-      const kv = line.match(/^(\S+)\s+(.+)$/);
-      if (kv) addSetting(current.settings, kv[1], kv[2].trim());
-    } else {
-      const kv = line.match(/^(\S+)\s+(.+)$/);
-      if (kv) addSetting(globalSettings, kv[1], kv[2].trim());
-    }
-  }
-  pushCurrent();
-
-  return { blocks, matchBlocks, globalSettings };
-}
-
-function valuesFrom(blocks, key) {
-  const canonical = key.toLowerCase();
-  return blocks.flatMap((block) => block.settings[canonical] || []);
+function hostAliases(blocks) {
+  return blocks
+    .filter((block) => !block.patterns.includes('*'))
+    .flatMap((block) => block.patterns);
 }
 
 function distinct(values) {
@@ -80,18 +30,48 @@ function listValue(values) {
   return values.length ? values.join(', ') : 'none';
 }
 
+function countValue(values) {
+  return String(values.length);
+}
+
+function securityNotes({ forwardAgentCount, forwardX11Count, strictHostKeyDisabledCount, proxyCommandCount }) {
+  const notes = [];
+  if (forwardAgentCount) notes.push(`${forwardAgentCount} host block${forwardAgentCount === 1 ? '' : 's'} enable agent forwarding`);
+  if (forwardX11Count) notes.push(`${forwardX11Count} host block${forwardX11Count === 1 ? '' : 's'} enable X11 forwarding`);
+  if (strictHostKeyDisabledCount) notes.push(`${strictHostKeyDisabledCount} block${strictHostKeyDisabledCount === 1 ? '' : 's'} disable strict host-key checking`);
+  if (proxyCommandCount) notes.push(`${proxyCommandCount} ProxyCommand entr${proxyCommandCount === 1 ? 'y' : 'ies'} may execute local commands`);
+  return notes.length ? notes.join('; ') : 'none';
+}
+
 export async function extractMetadata(intake) {
   const { blocks, matchBlocks, globalSettings } = parseSSHConfig(intake.text ?? '');
   const scopedBlocks = [...blocks, ...matchBlocks];
   const hostPatterns = distinct(blocks.flatMap((block) => block.patterns));
+  const aliases = distinct(hostAliases(blocks));
   const hostBlocks = blocks.filter((block) => !block.patterns.includes('*'));
+  const hostnames = distinct(valuesFrom(scopedBlocks, 'HostName'));
   const users = distinct(valuesFrom(scopedBlocks, 'User'));
   const ports = distinct(valuesFrom(scopedBlocks, 'Port'));
   const identityFiles = distinct(valuesFrom(scopedBlocks, 'IdentityFile'));
   const proxyJumpHosts = distinct(valuesFrom(scopedBlocks, 'ProxyJump').flatMap(splitProxyJump));
   const proxyCommandCount = valuesFrom(scopedBlocks, 'ProxyCommand').length;
+  const proxyCommands = distinct(valuesFrom(scopedBlocks, 'ProxyCommand'));
   const forwardAgentCount = valuesFrom(scopedBlocks, 'ForwardAgent').filter(yes).length;
+  const addKeysToAgent = distinct([
+    ...(globalSettings.addkeystoagent || []),
+    ...valuesFrom(scopedBlocks, 'AddKeysToAgent'),
+  ]);
+  const identityAgents = distinct(valuesFrom(scopedBlocks, 'IdentityAgent'));
+  const forwardX11Count = valuesFrom(scopedBlocks, 'ForwardX11').filter(yes).length;
   const strictHostKeyDisabledCount = valuesFrom(scopedBlocks, 'StrictHostKeyChecking').filter(disabledStrictHostKeyChecking).length;
+  const securityOptions = [
+    ...valuesFrom(scopedBlocks, 'StrictHostKeyChecking').map((value) => `StrictHostKeyChecking ${value}`),
+    ...valuesFrom(scopedBlocks, 'UserKnownHostsFile').map((value) => `UserKnownHostsFile ${value}`),
+    ...valuesFrom(scopedBlocks, 'VerifyHostKeyDNS').map((value) => `VerifyHostKeyDNS ${value}`),
+    ...valuesFrom(scopedBlocks, 'UpdateHostKeys').map((value) => `UpdateHostKeys ${value}`),
+    ...valuesFrom(scopedBlocks, 'PasswordAuthentication').map((value) => `PasswordAuthentication ${value}`),
+    ...valuesFrom(scopedBlocks, 'IdentitiesOnly').map((value) => `IdentitiesOnly ${value}`),
+  ];
   const forwardedPorts = [
     ...valuesFrom(scopedBlocks, 'LocalForward').map((value) => `local ${value}`),
     ...valuesFrom(scopedBlocks, 'RemoteForward').map((value) => `remote ${value}`),
@@ -102,21 +82,30 @@ export async function extractMetadata(intake) {
     ...valuesFrom(scopedBlocks, 'Include'),
   ]);
   const fields = [
-    { label: 'Host Count', value: String(hostBlocks.length) },
-    { label: 'Has Wildcard', value: blocks.some((block) => block.patterns.includes('*')) },
-    { label: 'Host Patterns', value: listValue(hostPatterns) },
-    { label: 'Distinct Users', value: listValue(users) },
+    { label: 'Host blocks', value: String(hostBlocks.length) },
+    { label: 'Host aliases', value: listValue(aliases) },
+    { label: 'Host patterns', value: listValue(hostPatterns) },
+    { label: 'Wildcard defaults', value: blocks.some((block) => block.patterns.includes('*')) },
+    { label: 'Hostnames', value: listValue(hostnames) },
+    { label: 'Users', value: listValue(users) },
     { label: 'Ports', value: listValue(ports) },
-    { label: 'Identity Files', value: listValue(identityFiles) },
-    { label: 'ProxyJump Hosts', value: listValue(proxyJumpHosts) },
-    { label: 'ProxyCommand Count', value: String(proxyCommandCount) },
-    { label: 'ForwardAgent Enabled Count', value: String(forwardAgentCount) },
-    { label: 'StrictHostKeyChecking Disabled Count', value: String(strictHostKeyDisabledCount) },
-    { label: 'Forwarded Ports', value: listValue(forwardedPorts) },
+    { label: 'Identity files', value: listValue(identityFiles) },
+    { label: 'Distinct identity files', value: countValue(identityFiles) },
+    { label: 'ProxyJump hosts', value: listValue(proxyJumpHosts) },
+    { label: 'ProxyCommand entries', value: String(proxyCommandCount) },
+    { label: 'ProxyCommands', value: listValue(proxyCommands) },
+    { label: 'ForwardAgent enabled', value: String(forwardAgentCount) },
+    { label: 'Add identities to agent', value: listValue(addKeysToAgent) },
+    { label: 'IdentityAgent', value: listValue(identityAgents) },
+    { label: 'ForwardX11 enabled', value: String(forwardX11Count) },
+    { label: 'Strict host checking disabled', value: String(strictHostKeyDisabledCount) },
+    { label: 'Security options', value: listValue(securityOptions) },
+    { label: 'Forwarded ports', value: listValue(forwardedPorts) },
+    { label: 'Security notes', value: securityNotes({ forwardAgentCount, forwardX11Count, strictHostKeyDisabledCount, proxyCommandCount }) },
     { label: 'Includes', value: listValue(includes) },
   ];
   if (matchBlocks.length) {
-    fields.push({ label: 'Match Blocks', value: listValue(matchBlocks.map((block) => block.criteria)) });
+    fields.push({ label: 'Match blocks', value: listValue(matchBlocks.map((block) => block.criteria)) });
   }
   return {
     fields,

@@ -90,27 +90,41 @@ function value(rows, label) {
       '  IdentityFile ~/.ssh/id_prod_backup',
       '  ProxyJump ops@bastion:2222,edge',
       '  ProxyCommand ssh bastion nc %h %p',
+      '  IdentityAgent ~/.ssh/agent.sock',
       '  StrictHostKeyChecking no',
+      '  UserKnownHostsFile /dev/null',
+      '  PasswordAuthentication no',
       '  LocalForward 127.0.0.1:5432 db:5432',
       'Match user git',
       '  User git',
+      '  AddKeysToAgent yes',
+      '  ForwardX11 yes',
       '  RemoteForward 8022 localhost:22',
       '  Include ~/.ssh/git.conf',
     ].join('\n'),
   }));
-  assert.equal(value(rows, 'Host Count'), '1');
-  assert.equal(value(rows, 'Has Wildcard'), 'yes');
-  assert.equal(value(rows, 'Host Patterns'), '*, prod, api');
-  assert.equal(value(rows, 'Distinct Users'), 'deploy, git');
+  assert.equal(value(rows, 'Host blocks'), '1');
+  assert.equal(value(rows, 'Wildcard defaults'), 'yes');
+  assert.equal(value(rows, 'Host patterns'), '*, prod, api');
+  assert.equal(value(rows, 'Users'), 'deploy, git');
   assert.equal(value(rows, 'Ports'), '2200');
-  assert.equal(value(rows, 'Identity Files'), '~/.ssh/id_prod, ~/.ssh/id_prod_backup');
-  assert.equal(value(rows, 'ProxyJump Hosts'), 'ops@bastion, edge');
-  assert.equal(value(rows, 'ProxyCommand Count'), '1');
-  assert.equal(value(rows, 'ForwardAgent Enabled Count'), '1');
-  assert.equal(value(rows, 'StrictHostKeyChecking Disabled Count'), '1');
-  assert.equal(value(rows, 'Forwarded Ports'), 'local 127.0.0.1:5432 db:5432, remote 8022 localhost:22');
+  assert.equal(value(rows, 'Identity files'), '~/.ssh/id_prod, ~/.ssh/id_prod_backup');
+  assert.equal(value(rows, 'Distinct identity files'), '2');
+  assert.equal(value(rows, 'ProxyJump hosts'), 'ops@bastion, edge');
+  assert.equal(value(rows, 'ProxyCommand entries'), '1');
+  assert.equal(value(rows, 'ProxyCommands'), 'ssh bastion nc %h %p');
+  assert.equal(value(rows, 'ForwardAgent enabled'), '1');
+  assert.equal(value(rows, 'Add identities to agent'), 'yes');
+  assert.equal(value(rows, 'IdentityAgent'), '~/.ssh/agent.sock');
+  assert.equal(value(rows, 'ForwardX11 enabled'), '1');
+  assert.equal(value(rows, 'Strict host checking disabled'), '1');
+  assert.equal(value(rows, 'Security options'), 'StrictHostKeyChecking no, UserKnownHostsFile /dev/null, PasswordAuthentication no');
+  assert.equal(value(rows, 'Forwarded ports'), 'local 127.0.0.1:5432 db:5432, remote 8022 localhost:22');
+  assert.match(value(rows, 'Security notes'), /agent forwarding/);
+  assert.match(value(rows, 'Security notes'), /X11 forwarding/);
+  assert.match(value(rows, 'Security notes'), /ProxyCommand/);
   assert.equal(value(rows, 'Includes'), '~/.ssh/conf.d/*.conf, ~/.ssh/git.conf');
-  assert.equal(value(rows, 'Match Blocks'), 'user git');
+  assert.equal(value(rows, 'Match blocks'), 'user git');
 }
 
 {

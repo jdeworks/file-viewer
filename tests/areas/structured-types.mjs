@@ -189,6 +189,26 @@ export async function run(ctx) {
   const sshType = await page.$eval('#typeSelect', (s) => s.value);
   const sshMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
   if (sshType === 'ssh-config' && sshMode === 'preview') pass('SSH config defaults to rendered preview mode'); else fail('ssh type/mode: ' + sshType + '/' + sshMode);
+  await page.evaluate(() => {
+    const tabs = [...document.querySelectorAll('#previewHost .sc-tab')];
+    tabs.find((tab) => tab.textContent === 'prod')?.click();
+  });
+  const sshCommand = await page.$$eval('#previewHost .sc-panel.active .sc-cmd-text', (els) => els.map((e) => e.textContent).find((text) => text.startsWith('ssh -p')) || '');
+  if (/ssh -p 2222 -i ~\/\.ssh\/id_ed25519 -J bastion -A deploy@prod-server\.example\.com/.test(sshCommand)) pass('SSH config preview builds full command from parsed directives'); else fail('ssh command: ' + sshCommand);
+  await page.evaluate(async () => {
+    const { buildMetadata } = await import('./core/meta-drawer.js');
+    await buildMetadata();
+  });
+  const sshMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Host blocks\s*4/.test(sshMeta) && /Identity files\s*~\/\.ssh\/id_ed25519, ~\/\.ssh\/id_dev/.test(sshMeta)
+    && /ProxyJump hosts\s*bastion/.test(sshMeta) && /ForwardAgent enabled\s*2/.test(sshMeta)
+    && /Security notes\s*2 host blocks enable agent forwarding/.test(sshMeta)) pass('SSH config metadata includes hosts, identities, jumps, and security notes');
+  else fail('ssh meta: ' + sshMeta.replace(/\s+/g, ' ').slice(0, 260));
+  const wasDark = await page.$eval('html', (e) => e.dataset.theme === 'dark');
+  if (!wasDark) await page.click('#themeBtn');
+  const sshTitleColor = await page.$eval('#previewHost .sc-title', (e) => getComputedStyle(e).color);
+  if (!/rgb\(17,\s*17,\s*17\)/.test(sshTitleColor)) pass('SSH config preview text follows dark theme'); else fail('ssh dark title color: ' + sshTitleColor);
+  if (!wasDark) await page.click('#themeBtn');
   await page.click('#viewMode button[data-mode="raw"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
   const sshRawMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
