@@ -6,6 +6,7 @@ import { state, $, toast, themeIsDark, debounce } from './state.js';
 import { createRawView } from './rawview.js';
 import { hexDump } from './hexdump.js';
 import { monacoOptions } from './settings.js';
+import { previewStyle } from './settings-schema.js';
 import { captureBodyHtml } from './iframe.js';
 import { mapRawToPreview, syncScrollFromRaw } from './sync.js';
 import { applyLayout } from './layout.js';
@@ -256,7 +257,7 @@ export async function takeScreenshot() {
   try {
     const url = await captureBodyHtml(state.lastBodyHtml, {
       theme: themeIsDark() ? 'dark' : 'light',
-      maxWidth: state.settingsModel.values.previewMaxWidth,
+      style: previewStyle(state.settingsModel.values),
     });
     const a = document.createElement('a');
     a.href = url;

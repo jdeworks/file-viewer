@@ -154,7 +154,11 @@ export function renderSettings(container, model, { onChange, toast }) {
       el.onchange = () => set(d.key, clampNum(Number(el.value), d));
     } else { // select
       el = document.createElement('select');
-      for (const o of d.options) el.add(new Option(String(o), String(o)));
+      for (const o of d.options) {
+        const value = typeof o === 'object' ? o.value : o;
+        const label = typeof o === 'object' ? o.label : o;
+        el.add(new Option(String(label), String(value)));
+      }
       el.value = String(v);
       el.onchange = () => set(d.key, coerce(el.value, v));
     }

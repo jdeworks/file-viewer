@@ -171,6 +171,63 @@ export async function run(ctx) {
   await page.evaluate(() => window.__fv.downloadCurrent());
   await page.waitForTimeout(150);
 
+  // ── Preview sizing quick modes ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Welcome.md');
+  await page.click('#viewMode button[data-mode="split"]');
+  await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 15000 });
+  await page.click('#settingsBtn');
+  await page.waitForSelector('#set-previewWidthMode', { timeout: 8000 });
+  async function previewBodyMetrics() {
+    const pf = await frameOf('iframe.fv-preview-frame');
+    await pf.waitForSelector('body', { timeout: 8000 });
+    return pf.evaluate(() => {
+      const bodyStyle = getComputedStyle(document.body);
+      const htmlStyle = getComputedStyle(document.documentElement);
+      return {
+        maxWidth: bodyStyle.maxWidth,
+        marginLeft: bodyStyle.marginLeft,
+        overflowX: htmlStyle.overflowX,
+      };
+    });
+  }
+  await page.selectOption('#set-previewWidthMode', 'page');
+  await page.waitForTimeout(150);
+  const pageSizing = await previewBodyMetrics();
+  if (pageSizing.maxWidth === '820px') pass('preview sizing: A4/page mode uses 820px content width'); else fail('page preview maxWidth: ' + pageSizing.maxWidth);
+  await page.selectOption('#set-previewWidthMode', 'phone');
+  await page.waitForTimeout(150);
+  const phoneSizing = await previewBodyMetrics();
+  const phonePane = await page.$eval('#previewPane', (e) => e.getBoundingClientRect().width);
+  if (phoneSizing.maxWidth === '390px' && phonePane < 430) pass('preview sizing: phone mode uses phone content and pane width'); else fail('phone sizing: max=' + phoneSizing.maxWidth + ' pane=' + Math.round(phonePane));
+  await page.selectOption('#set-previewWidthMode', 'available');
+  await page.waitForTimeout(150);
+  const availableSizing = await previewBodyMetrics();
+  if (availableSizing.maxWidth === 'none' && availableSizing.marginLeft === '0px' && availableSizing.overflowX === 'hidden') pass('preview sizing: available mode fills the pane without horizontal page scroll'); else fail('available sizing: ' + JSON.stringify(availableSizing));
+  await page.selectOption('#set-previewWidthMode', 'unrestricted');
+  await page.waitForTimeout(150);
+  const unrestrictedSizing = await previewBodyMetrics();
+  if (unrestrictedSizing.maxWidth === 'none' && unrestrictedSizing.overflowX === 'auto') pass('preview sizing: unrestricted mode removes width cap and allows x overflow'); else fail('unrestricted sizing: ' + JSON.stringify(unrestrictedSizing));
+  await page.selectOption('#set-previewWidthMode', 'custom');
+  await page.fill('#set-previewMaxWidth', '640');
+  await page.dispatchEvent('#set-previewMaxWidth', 'change');
+  await page.waitForTimeout(150);
+  const customSizing = await previewBodyMetrics();
+  const customMode = await page.evaluate(() => window.__fv.state.settingsModel.values.previewWidthMode);
+  if (customMode === 'custom' && customSizing.maxWidth === '640px') pass('preview sizing: custom mode keeps numeric preview width'); else fail('custom sizing: mode=' + customMode + ' max=' + customSizing.maxWidth);
+  const splitBoxForSizing = await (await page.$('#splitDivider')).boundingBox();
+  const previewBoxForSizing = await (await page.$('#previewPane')).boundingBox();
+  if (splitBoxForSizing && previewBoxForSizing) {
+    await page.mouse.move(splitBoxForSizing.x + splitBoxForSizing.width / 2, splitBoxForSizing.y + splitBoxForSizing.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(previewBoxForSizing.x + previewBoxForSizing.width - 35, splitBoxForSizing.y + splitBoxForSizing.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await page.waitForTimeout(250);
+    const dragMode = await page.evaluate(() => window.__fv.state.settingsModel.values.previewWidthMode);
+    if (dragMode === 'custom') pass('preview sizing: split divider writes back as custom numeric width'); else fail('split divider sizing mode: ' + dragMode);
+  } else fail('preview sizing: missing split divider boxes');
+  await page.click('#scrim');
+
   // ── Mobile hardening (WP06) ── phone viewport: Preview-first + ⋯ overflow menu.
   const mctx = await browser.newContext({ viewport: { width: 390, height: 780 }, isMobile: true, hasTouch: true });
   const mpage = await mctx.newPage();

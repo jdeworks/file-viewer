@@ -4,7 +4,7 @@
 // so this module never imports app.js back (no circular dependency).
 import { state, $, isMobile, toast } from './state.js';
 import { hasExports, getExports } from './exports.js';
-import { DEFAULT_PREVIEW_MAX_WIDTH, previewStyle } from './settings-schema.js';
+import { previewSizing, previewStyle } from './settings-schema.js';
 import { syncModelPreset } from './settings.js';
 
 let renderPreview = () => {};
@@ -97,7 +97,8 @@ export function applyPreviewPaneWidth() {
   const previewPane = $('previewPane'), rawPane = $('rawPane');
   if (!splitActive) { previewPane.style.flex = ''; rawPane.style.flex = ''; return; }
   const total = $('panes').clientWidth || 0;
-  const want = Number(state.settingsModel?.values?.previewMaxWidth) || DEFAULT_PREVIEW_MAX_WIDTH;
+  const sizing = previewSizing(state.settingsModel?.values);
+  const want = sizing.paneWidth || Math.round(total / 2);
   const maxPreview = Math.max(320, total - MIN_EDITOR_PX - DIVIDER_PX);
   const w = Math.max(320, Math.min(want, maxPreview));
   previewPane.style.flex = '0 0 ' + Math.round(w) + 'px';
@@ -129,7 +130,10 @@ export function initSplitDivider() {
     w = Math.max(320, Math.min(w, rect.width - MIN_EDITOR_PX - DIVIDER_PX));
     previewPane.style.flex = '0 0 ' + Math.round(w) + 'px';
     rawPane.style.flex = '1 1 auto';
-    if (state.settingsModel) state.settingsModel.values.previewMaxWidth = Math.round(w);  // keep the setting live
+    if (state.settingsModel) {
+      state.settingsModel.values.previewWidthMode = 'custom';
+      state.settingsModel.values.previewMaxWidth = Math.round(w);  // keep the setting live
+    }
     state.rawview?.layout();
     e.preventDefault();
   };
@@ -150,6 +154,7 @@ export function initSplitDivider() {
     const m = state.settingsModel;
     if (m) {
       m.values.previewMaxWidth = Math.round(previewPane.getBoundingClientRect().width);
+      m.values.previewWidthMode = 'custom';
       syncModelPreset(m);
       renderPreview();
       if (!$('settingsDrawer').hidden) openSettings();

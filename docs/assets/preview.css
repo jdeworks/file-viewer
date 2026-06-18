@@ -4,10 +4,11 @@
    same-origin file, which the service worker caches). Edit preview styling here. */
   :root{color-scheme:light dark;}
   *{box-sizing:border-box;}
-  html,body{margin:0;max-width:100%;overflow-x:hidden;}   /* mobile: only vertical scroll */
+  html,body{margin:0;max-width:100%;overflow-x:var(--fv-overflow-x,hidden);}
   body{font:var(--fv-fontsize,16px)/var(--fv-lh,1.6) system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
        padding:var(--fv-pad,20px);max-width:var(--fv-maxw,820px);margin:0 auto;
        color:#1a1a1a;background:#fff;overflow-wrap:break-word;}
+  body.fv-width-available,body.fv-width-unrestricted{margin:0;width:100%;}
   body.fv-dark{color:#e6e6e6;background:#1e1e1e;}
   body.fv-reader-sepia{color:#3b2f22;background:#f4ecd8;}
   body.fv-reader-dark{color:#e8e0cf;background:#171614;}

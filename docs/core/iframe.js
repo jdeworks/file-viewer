@@ -72,8 +72,11 @@ function earlyThemeStyle(theme) {
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
   const bodyClasses = [];
   if (theme === 'dark') bodyClasses.push('fv-dark');
+  if (['available', 'unrestricted', 'page', 'phone', 'custom'].includes(style.sizingMode)) bodyClasses.push('fv-width-' + style.sizingMode);
   const vars = [];
   if (Number.isFinite(style.maxWidth)) vars.push(`--fv-maxw:${style.maxWidth}px;`);
+  else vars.push('--fv-maxw:none;');
+  if (style.overflowX === 'auto') vars.push('--fv-overflow-x:auto;');
   if (Number.isFinite(style.fontSize)) vars.push(`--fv-fontsize:${style.fontSize}px;`);
   if (Number.isFinite(style.lineHeight)) vars.push(`--fv-lh:${style.lineHeight};`);
   if (Number.isFinite(style.padding)) vars.push(`--fv-pad:${style.padding}px;`);

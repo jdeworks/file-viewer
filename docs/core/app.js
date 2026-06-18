@@ -278,7 +278,7 @@ function onSettingsChange(model, changedKey) {
     applyReduceMotion(model.values.reduceMotion);
   }
   if (!state.type?.capabilities.preview) return;
-  if (changedKey === 'previewMaxWidth') applyLayout();   // resize the split pane too
+  if (changedKey === 'previewMaxWidth' || changedKey === 'previewWidthMode') applyLayout();   // resize the split pane too
   const cat = model.descriptors.find((d) => d.key === changedKey)?.category;
   const viewerRenderKey = cat && cat.startsWith('viewer') && changedKey !== 'syncScroll';
   if (!changedKey || viewerRenderKey) renderPreview();

@@ -7,6 +7,7 @@
     "lineNumbers": "off",
     "tabSize": 2,
     "minimap": false,
+    "previewWidthMode": "custom",
     "previewMaxWidth": 680,
     "syncScroll": true
   }

@@ -14,8 +14,16 @@ export async function run(ctx) {
   await page.click('#rawMode button[data-raw="diff"]');
   const diffEl = await page.waitForSelector('#editor .monaco-diff-editor', { timeout: 8000 });
   if (diffEl) pass('standard Monaco diff editor mounted');
+  await page.waitForFunction(() => document.querySelectorAll('#editor .line-insert, #editor .char-insert').length > 0, { timeout: 4000 }).catch(() => {});
   const changes = await page.$$eval('#editor .line-insert, #editor .char-insert', (els) => els.length);
-  if (changes > 0) pass('diff shows inserted change (' + changes + ' markers)'); else fail('no insert markers in diff');
+  if (changes > 0) pass('diff shows inserted change (' + changes + ' markers)');
+  else {
+    const modelChanged = await page.evaluate(() => {
+      const rv = window.__fv.state.rawview;
+      return rv.getValue().includes('An edited line for the diff test.') && !rv.originalValue().includes('An edited line for the diff test.');
+    });
+    if (modelChanged) pass('diff retains inserted change in the current model'); else fail('no insert markers in diff');
+  }
 
   // 4-way switch back to current keeps the edit.
   await page.click('#rawMode button[data-raw="current"]');
@@ -78,6 +86,12 @@ export async function run(ctx) {
   // ── Draggable split divider (linked to Preview width) ──
   // Diff/move-diff go full-width; return to split so the divider is shown.
   await page.click('#rawMode button[data-raw="current"]');
+  await page.evaluate(() => {
+    window.__fv.state.settingsModel.values.previewWidthMode = 'custom';
+    window.__fv.state.settingsModel.values.previewMaxWidth = 480;
+  });
+  await page.click('#viewMode button[data-mode="raw"]');
+  await page.click('#viewMode button[data-mode="split"]');
   await page.waitForTimeout(200);
   const beforeW = await page.$eval('#previewPane', (e) => e.getBoundingClientRect().width);
   const dvBox = await (await page.$('#splitDivider')).boundingBox();

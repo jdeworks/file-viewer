@@ -20,6 +20,8 @@ export const CATEGORY_OPEN = { always: true, 'monaco-common': true, 'monaco-exte
 
 // Descriptor: { key, label, category, type:'bool'|'number'|'select', default, options?, min?, max?, hint? }
 export const DEFAULT_PREVIEW_MAX_WIDTH = 820;
+export const PHONE_PREVIEW_WIDTH = 390;
+export const PREVIEW_WIDTH_MODES = ['available', 'unrestricted', 'page', 'phone', 'custom'];
 
 // General app preferences — shown for every type regardless of capabilities.
 export const GENERAL_DESCRIPTORS = [
@@ -82,8 +84,18 @@ export const MONACO_DESCRIPTORS = [
 
 // Shown for any type with capability.preview (generic; types add more via settings.schema).
 export const VIEWER_DESCRIPTORS = [
-  { key: 'previewMaxWidth', label: 'Preview width (px)', category: 'viewer-common', type: 'number', min: 320, max: 1600, default: DEFAULT_PREVIEW_MAX_WIDTH,
-    hint: 'Width of the rendered preview. On desktop split view this also sets the preview pane size — drag the divider between the panes to change it live.' },
+  { key: 'previewWidthMode', label: 'Preview sizing', category: 'viewer-common', type: 'select',
+    options: [
+      { value: 'page', label: 'A4 / page width' },
+      { value: 'available', label: 'Available width' },
+      { value: 'unrestricted', label: 'Unrestricted' },
+      { value: 'phone', label: 'Phone width' },
+      { value: 'custom', label: 'Custom width' },
+    ],
+    default: 'page',
+    hint: 'Quick sizing modes for rendered previews. Page and phone use fixed reading widths; available fills the pane; unrestricted removes the preview width cap.' },
+  { key: 'previewMaxWidth', label: 'Custom preview width (px)', category: 'viewer-common', type: 'number', min: 320, max: 1600, default: DEFAULT_PREVIEW_MAX_WIDTH,
+    hint: 'Numeric preview width used by Custom width mode. Dragging the split divider switches to Custom width and updates this value.' },
   { key: 'previewFontSize', label: 'Preview font size (px)', category: 'viewer-common', type: 'number', min: 10, max: 28, default: 16,
     hint: 'Base text size of the rendered content (markdown, HTML, notebooks, …).' },
   { key: 'syncScroll', label: 'Sync scroll', category: 'viewer-common', type: 'bool', default: true,
@@ -123,10 +135,28 @@ export function applyMonacoOptions(v) {
   };
 }
 
+function clampPreviewWidth(n) {
+  if (!Number.isFinite(n)) return DEFAULT_PREVIEW_MAX_WIDTH;
+  return Math.max(320, Math.min(1600, n));
+}
+
+export function previewSizing(v = {}) {
+  const mode = PREVIEW_WIDTH_MODES.includes(v.previewWidthMode) ? v.previewWidthMode : 'page';
+  const customWidth = clampPreviewWidth(Number(v.previewMaxWidth));
+  if (mode === 'available') return { mode, maxWidth: null, paneWidth: null, overflowX: 'hidden' };
+  if (mode === 'unrestricted') return { mode, maxWidth: null, paneWidth: null, overflowX: 'auto' };
+  if (mode === 'phone') return { mode, maxWidth: PHONE_PREVIEW_WIDTH, paneWidth: PHONE_PREVIEW_WIDTH, overflowX: 'hidden' };
+  if (mode === 'custom') return { mode, maxWidth: customWidth, paneWidth: customWidth, overflowX: 'hidden' };
+  return { mode: 'page', maxWidth: DEFAULT_PREVIEW_MAX_WIDTH, paneWidth: DEFAULT_PREVIEW_MAX_WIDTH, overflowX: 'hidden' };
+}
+
 // Map flat values -> preview CSS variables (consumed by the iframe template).
 export function previewStyle(v) {
+  const sizing = previewSizing(v);
   return {
-    maxWidth: Number(v.previewMaxWidth) || DEFAULT_PREVIEW_MAX_WIDTH,
+    sizingMode: sizing.mode,
+    maxWidth: sizing.maxWidth,
+    overflowX: sizing.overflowX,
     fontSize: Number(v.previewFontSize) || 16,
     lineHeight: Number(v.previewLineHeight) || 1.6,
     padding: v.previewPadding != null ? Number(v.previewPadding) : 20,
