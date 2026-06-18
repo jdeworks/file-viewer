@@ -31,6 +31,7 @@
 - Review each file type for useful interactions such as sorting, filtering, folding, toggling, zooming, searching, exporting, or safe online checks.
 - JSON preview should render clean disclosure controls, avoid broken escaped glyphs, and support useful key sorting.
 - Sorting should be considered for structured/table-like types such as JSON, CSV, XLSX, text lines, and similar formats.
+- Preview re-renders, especially Markdown edits in dark mode, should not briefly flash white during iframe refresh.
 - PWA install suppression should avoid noisy `beforeinstallprompt.preventDefault()` console messages where possible while preserving the no-install promise.
 - Metadata should include a file-type description/link explaining what the format is used for.
 - Sample tiles should expose a short hover description of what the sample demonstrates.
@@ -77,6 +78,7 @@
 - When a file clearly uses formatting that differs from the current editor settings, such as Python using four-space indents while the type default is two spaces, respect the file formatting automatically and show a toast explaining the temporary override.
 - Settings group open/closed state should be remembered within the session when switching file types and returning, without requiring persistence across reloads.
 - Settings should support both overlay and docked modes so users can tune editor/preview settings while seeing the file.
+- Raw/split editor views should offer common edit tools for editable text formats, especially non-code text, with specialized actions per format. Markdown should get an insert/format menu with selection-aware bold/italic/heading actions, table insertion with configurable rows and columns, selection-target transforms, and context/right-click extensions such as sorting a selected Markdown table by a chosen column.
 
 ## Ebooks And Long Reading
 
