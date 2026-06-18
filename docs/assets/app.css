@@ -76,11 +76,11 @@ body {
   background: var(--bg-2); border-right: 1px solid var(--border); }
 .ft-head { display: flex; align-items: center; justify-content: space-between; gap: 6px;
   padding: 8px 6px 8px 12px; border-bottom: 1px solid var(--border); }
-.ft-root { font: 600 11px/1 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .06em;
+.ft-root { flex: 1; font: 600 11px/1 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .06em;
   color: var(--fg-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ft-close { width: 26px; height: 26px; font-size: 18px; }
-.ft-export { width: 26px; height: 26px; font-size: 15px; margin-left: auto; }
-.ft-export[hidden] { display: none; }
+.ft-export, .ft-tree-action { width: 26px; height: 26px; font-size: 15px; }
+.ft-export[hidden], .ft-tree-action[hidden] { display: none; }
 /* Edited-file marker in the tree (folder edit-tracking): a * after the name. */
 .ft-file.ft-edited .ft-name::after { content: " *"; color: var(--accent); font-weight: 700; }
 /* Moved-file indicator in the tree (Feature E virtual folder reorg). */

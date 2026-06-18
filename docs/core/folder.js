@@ -106,6 +106,7 @@ export async function loadFolder(entries) {
     state.treeApi = renderTree($('ftBody'), buildTree(state.treeEntries), {
       onOpen: (node) => openTreeFile(node),
       onMove: _onMove,
+      initialOpenDepth: 0,
     });
     for (const movedDest of state.folderMoves.values()) state.treeApi.setMoved(movedDest, movedDest);
     state.treeApi.setActive(dest);
@@ -119,6 +120,8 @@ export async function loadFolder(entries) {
   $('treeBtn').hidden = false;
   $('repoBtn').hidden = !git;
   $('ftExportBtn').hidden = !!git;             // export the loaded folder (not for git repos)
+  $('ftExpandBtn').hidden = false;
+  $('ftCollapseBtn').hidden = false;
   $('ftSearch').hidden = !!git;                // filename/content search (not for git repos)
   $('ftSearchInput').value = '';
   $('ftSearchCount').textContent = '';
@@ -128,7 +131,7 @@ export async function loadFolder(entries) {
   showFolderLoading('Building file tree…', { progress: 0.45, detail: display.length.toLocaleString() + ' visible file' + (display.length === 1 ? '' : 's') });
   await nextFrame();
   const tree = buildTree(display);
-  state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node), onMove: _onMove });
+  state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node), onMove: _onMove, initialOpenDepth: 0 });
 
   try {
     showFolderLoading(git ? 'Reading git metadata…' : 'Opening default file…', { progress: 0.75 });
@@ -286,6 +289,8 @@ function applyTreeWidth(px) {
 export function initTreeResize() {
   const saved = Number(localStorage.getItem('fv:treeWidth'));
   if (saved) applyTreeWidth(saved);
+  $('ftExpandBtn').addEventListener('click', () => state.treeApi?.expandAll?.());
+  $('ftCollapseBtn').addEventListener('click', () => state.treeApi?.collapseAll?.());
   const handle = $('ftResize');
   let dragging = false;
   const onMove = (e) => {

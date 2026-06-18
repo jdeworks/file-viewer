@@ -122,6 +122,7 @@ export async function run(ctx) {
       { file: new File(['beta'], 'b.txt', { type: 'text/plain' }), path: 'proj/dest/b.txt' },
     ]);
   });
+  await page.click('#ftExpandBtn');
   await page.waitForSelector('#fileTree .ft-file[data-path="proj/src/a.txt"]', { timeout: 8000 });
   await page.evaluate(() => {
     const src = document.querySelector('#fileTree .ft-file[data-path="proj/src/a.txt"]');

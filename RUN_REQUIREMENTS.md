@@ -114,11 +114,12 @@
 - Add an opt-in "See live" webcam mode to the ASCII converter easter egg. It must request camera permission only after a user click, convert frames locally per animation frame, expose the same color/text-size controls, and never send camera frames off-origin.
 - Improve 2048 merge animation so tiles visibly slide into the merged cell before the new value appears, instead of looking like the merged number spawned in place.
 - Recheck 2048 win/end screen presentation; the score-screen layering fix did not fully cover the win-screen layout/state issue.
-- Keep Bit Foundry open items tracked and finish the remaining stage/heading/tab unlock/clickability/bell-placement issues before treating the metagame stage as complete.
+- Keep Bit Foundry open items tracked and finish the remaining stage/heading/tab unlock/clickability/bell-placement issues before treating the metagame stage as complete. Specifically: future stages should not be visible from the beginning, stage names should become the current heading rather than ordinary always-visible buttons, the bell belongs in the top chrome next to "Back to arcade", unlocks should be based on current score/bits reaching the threshold rather than lifetime bits where specified, switching into an unlocked tab/stage must not break click earning, and the player must retain a click target after transitions.
 - Add a Flappy Bird-style arcade/easter egg with local-only assets and the same lazy/unlocked loading pattern as the other games.
 
 ## Research Backlog
 
 - Maintain a concrete implementation backlog from the sample, metadata, and interaction audits.
+- Add a conversation-history audit task for the File Viewer backlog. Review the timeline of user-authored requests across this chat and accessible prior File Viewer/Claude conversations, focusing on product requirements, regressions, and decisions that may have been lost during context compaction; convert relevant findings into concrete backlog items before another broad implementation pass.
 - Use the backlog to drive follow-up implementation increments until all items above are addressed.
 - As the final queue item, perform another thorough file-type check and produce an enhancement plan for more file types.

@@ -68,20 +68,20 @@ function sortedChildren(node) {
 const ROW_H = 28;
 const OVERSCAN = 8;
 
-// Collect all folder paths in the tree (for pre-populating openFolders).
-function collectFolderPaths(node, prefix, out) {
+// Collect folder paths in the tree (for pre-populating openFolders).
+function collectFolderPaths(node, prefix, out, depth = 0, maxDepth = Infinity) {
   for (const c of sortedChildren(node)) {
     if (c.dir) {
       const fp = prefix ? prefix + '/' + c.name : c.name;
-      out.add(fp);
-      collectFolderPaths(c, fp, out);
+      if (depth <= maxDepth) out.add(fp);
+      collectFolderPaths(c, fp, out, depth + 1, maxDepth);
     }
   }
 }
 
 // Render into `host`. onOpen(node) fires on a file click. onMove(srcPath, destFolderPath) fires
 // when a file is dropped onto a folder row. Returns controller API.
-export function renderTree(host, root, { onOpen, onMove }) {
+export function renderTree(host, root, { onOpen, onMove, initialOpenDepth = Infinity }) {
   host.innerHTML = '';
   const inner = document.createElement('div');
   inner.className = 'ft-virtual-inner';
@@ -89,9 +89,9 @@ export function renderTree(host, root, { onOpen, onMove }) {
   inner.style.height = '0px';
   host.appendChild(inner);
 
-  // Pre-populate all folder paths so the tree starts fully expanded.
+  // Pre-populate folder paths for the initial expansion depth.
   const openFolders = new Set();
-  collectFolderPaths(root, '', openFolders);
+  collectFolderPaths(root, '', openFolders, 0, initialOpenDepth);
 
   let items = [];          // flat array of { node, depth, isFolder, folderPath }
   let activeNode = null;
@@ -241,6 +241,11 @@ export function renderTree(host, root, { onOpen, onMove }) {
     stopMarquee();
 
     activeNode = items.find((it) => !it.isFolder && it.node.path === path)?.node || null;
+    if (!activeNode && !filterFn) {
+      openAncestors(path);
+      buildFlat();
+      activeNode = items.find((it) => !it.isFolder && it.node.path === path)?.node || null;
+    }
 
     const newRow = inner.querySelector('[data-path="' + cssEscape(path) + '"]');
     if (newRow) { newRow.classList.add('active'); startMarquee(newRow); }
@@ -284,6 +289,25 @@ export function renderTree(host, root, { onOpen, onMove }) {
 
   function clearFilter() { filterFn = null; buildFlat(); }
 
+  function expandAll() {
+    collectFolderPaths(root, '', openFolders);
+    buildFlat();
+  }
+
+  function collapseAll() {
+    openFolders.clear();
+    buildFlat();
+  }
+
+  function openAncestors(path) {
+    const parts = path.split('/').filter(Boolean);
+    let cur = '';
+    for (let i = 0; i < parts.length - 1; i++) {
+      cur = cur ? cur + '/' + parts[i] : parts[i];
+      openFolders.add(cur);
+    }
+  }
+
   function navigate(dir) {
     const fileItems = items.filter((it) => !it.isFolder);
     if (!fileItems.length) return;
@@ -304,7 +328,7 @@ export function renderTree(host, root, { onOpen, onMove }) {
 
   buildFlat();
 
-  return { setActive, setEdited, setMoved, filter, clearFilter, navigate, refresh, stop };
+  return { setActive, setEdited, setMoved, filter, clearFilter, navigate, refresh, expandAll, collapseAll, stop };
 }
 
 function escapeHtml(s) { return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }

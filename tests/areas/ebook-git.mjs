@@ -149,7 +149,18 @@ export async function run(ctx) {
   await page.waitForSelector('#fileTree:not([hidden]) .ft-file', { timeout: 8000 });
   const fileRows = await page.$$eval('#fileTree .ft-file', (els) => els.length);
   const folderRows = await page.$$eval('#fileTree .ft-folder', (els) => els.length);
-  if (fileRows === 5 && folderRows >= 2) pass('folder tree built (' + fileRows + ' files, ' + folderRows + ' folders)'); else fail('tree rows: files=' + fileRows + ' folders=' + folderRows);
+  const nestedHidden = await page.$('#fileTree .ft-file[data-path="proj/src/app.js"]') === null;
+  if (fileRows === 2 && folderRows >= 3 && nestedHidden) pass('folder tree opens only the first level by default'); else fail('tree rows: files=' + fileRows + ' folders=' + folderRows + ' nestedHidden=' + nestedHidden);
+  await page.click('#ftExpandBtn');
+  await page.waitForSelector('#fileTree .ft-file[data-path="proj/src/app.js"]', { timeout: 5000 });
+  const expandedRows = await page.$$eval('#fileTree .ft-file', (els) => els.length);
+  if (expandedRows === 5) pass('folder tree expand-all reveals nested files'); else fail('expanded file rows: ' + expandedRows);
+  await page.click('#ftCollapseBtn');
+  await page.waitForTimeout(100);
+  const nestedCollapsed = await page.$('#fileTree .ft-file[data-path="proj/src/app.js"]') === null;
+  if (nestedCollapsed) pass('folder tree collapse-all hides nested files'); else fail('nested file still visible after collapse-all');
+  await page.click('#ftExpandBtn');
+  await page.waitForSelector('#fileTree .ft-file[data-path="proj/src/util.py"]', { timeout: 5000 });
   // README opened by default + marked active (async open, so wait for it).
   await page.waitForSelector('#fileTree .ft-file.active', { timeout: 8000 });
   const active = await page.$eval('#fileTree .ft-file.active .ft-name', (e) => e.textContent).catch(() => null);
