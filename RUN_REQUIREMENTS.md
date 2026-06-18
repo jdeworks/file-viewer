@@ -106,6 +106,10 @@
 
 - Promote the image-to-ASCII converter into a dedicated easter egg with controls for color mode, character set, font/text size, contrast, and resolution. It should apply to image formats such as `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`, `.ico`, `.heic`, `.avif`, `.svg`, layered/design samples such as `.psd`/`.xcf`/`.ora`/`.kra`/`.procreate` where supported, and eventually playable video/media formats such as `.mp4`, `.webm`, `.mov`, `.avi`, `.mkv`, `.mp3` album art, and `.wav` visualizations where useful.
 - Add an opt-in "See live" webcam mode to the ASCII converter easter egg. It must request camera permission only after a user click, convert frames locally per animation frame, expose the same color/text-size controls, and never send camera frames off-origin.
+- Improve 2048 merge animation so tiles visibly slide into the merged cell before the new value appears, instead of looking like the merged number spawned in place.
+- Recheck 2048 win/end screen presentation; the score-screen layering fix did not fully cover the win-screen layout/state issue.
+- Keep Bit Foundry open items tracked and finish the remaining stage/heading/tab unlock/clickability/bell-placement issues before treating the metagame stage as complete.
+- Add a Flappy Bird-style arcade/easter egg with local-only assets and the same lazy/unlocked loading pattern as the other games.
 
 ## Research Backlog
 
