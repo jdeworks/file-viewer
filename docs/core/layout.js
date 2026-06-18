@@ -110,17 +110,17 @@ export function initSplitDivider() {
   const previewPane = $('previewPane'), rawPane = $('rawPane');
   let dragging = false;
   let activePointerId = null;
-  let shieldedFrames = [];
-  const shieldFrames = () => {
-    shieldedFrames = [...previewPane.querySelectorAll('iframe')].map((frame) => ({
-      frame,
-      pointerEvents: frame.style.pointerEvents,
+  let shieldedNodes = [];
+  const shieldInteractiveSurfaces = () => {
+    shieldedNodes = [...previewPane.querySelectorAll('iframe'), $('editor')].filter(Boolean).map((node) => ({
+      node,
+      pointerEvents: node.style.pointerEvents,
     }));
-    for (const { frame } of shieldedFrames) frame.style.pointerEvents = 'none';
+    for (const { node } of shieldedNodes) node.style.pointerEvents = 'none';
   };
-  const restoreFrames = () => {
-    for (const { frame, pointerEvents } of shieldedFrames) frame.style.pointerEvents = pointerEvents;
-    shieldedFrames = [];
+  const restoreInteractiveSurfaces = () => {
+    for (const { node, pointerEvents } of shieldedNodes) node.style.pointerEvents = pointerEvents;
+    shieldedNodes = [];
   };
   const onMove = (e) => {
     if (!dragging) return;
@@ -141,7 +141,7 @@ export function initSplitDivider() {
     if (!dragging) return;
     dragging = false;
     document.body.style.userSelect = '';
-    restoreFrames();
+    restoreInteractiveSurfaces();
     window.removeEventListener('pointermove', onMove, true);
     window.removeEventListener('pointerup', onUp, true);
     window.removeEventListener('pointercancel', onUp, true);
@@ -165,7 +165,7 @@ export function initSplitDivider() {
     dragging = true;
     activePointerId = e.pointerId;
     try { divider.setPointerCapture(e.pointerId); } catch {}
-    shieldFrames();
+    shieldInteractiveSurfaces();
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', onMove, true);
     window.addEventListener('pointerup', onUp, true);

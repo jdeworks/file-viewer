@@ -107,6 +107,31 @@ export async function run(ctx) {
     if (Math.abs(pmw - afterW) < 40) pass('divider linked to Preview width setting (' + pmw + 'px)'); else fail('previewMaxWidth ' + pmw + ' vs pane ' + Math.round(afterW));
   } else fail('split divider not visible in desktop split');
 
+  // Monaco diff editor + preview split: dragging across the raw side must keep moving.
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    rv.setValue(rv.originalValue() + '\n\nDiff editor resize target.\n');
+    window.__fv.state.settingsModel.values.previewWidthMode = 'custom';
+    window.__fv.state.settingsModel.values.previewMaxWidth = 560;
+  });
+  await page.click('#viewMode button[data-mode="split"]');
+  await page.click('#rawMode button[data-raw="diff"]');
+  await page.waitForSelector('#editor .monaco-diff-editor', { timeout: 8000 });
+  await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 8000 });
+  const diffBefore = await page.$eval('#previewPane', (e) => e.getBoundingClientRect().width);
+  const diffDivider = await (await page.$('#splitDivider')).boundingBox();
+  const diffRaw = await (await page.$('#rawPane')).boundingBox();
+  if (diffDivider && diffRaw) {
+    await page.mouse.move(diffDivider.x + diffDivider.width / 2, diffDivider.y + diffDivider.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(diffRaw.x + 140, diffDivider.y + diffDivider.height / 2, { steps: 10 });
+    await page.mouse.up();
+    await page.waitForTimeout(250);
+    const diffAfter = await page.$eval('#previewPane', (e) => e.getBoundingClientRect().width);
+    if (diffAfter > diffBefore + 80) pass('split divider drags across Monaco diff editor (' + Math.round(diffBefore) + ' -> ' + Math.round(diffAfter) + 'px)');
+    else fail('diff divider drag: ' + Math.round(diffBefore) + ' -> ' + Math.round(diffAfter));
+  } else fail('split divider missing for Monaco diff split');
+
   // ── Inline open button (next to type dropdown) ──
   await page.click('#openInlineBtn');
   const intakeShown = await page.$eval('#intake', (e) => !e.hidden);
