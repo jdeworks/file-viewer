@@ -26,6 +26,13 @@ function splitBlocks(text) {
       start = -1;
     }
   }
+  const nonblank = lines.filter((l) => l.trim() !== '').length;
+  if (blocks.length <= 1 && nonblank > 1) {
+    return lines
+      .map((line, i) => ({ line, i }))
+      .filter((x) => x.line.trim() !== '')
+      .map((x) => ({ start: x.i, end: x.i + 1, lines: [x.line] }));
+  }
   return blocks;
 }
 

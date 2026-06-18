@@ -61,6 +61,30 @@ const P3 = 'A third paragraph at the bottom.';
   ok(r.stats.added === 1 && r.stats.unchanged === 2, 'append: 1 added, 2 unchanged');
 }
 
+// 5b. Line-oriented files without blank lines: row move plus unrelated insertion.
+{
+  const before = [
+    'name,role,city,commits',
+    'Ada Lovelace,Engineer,London,1843',
+    'Alan Turing,Researcher,Manchester,1936',
+    'Grace Hopper,Engineer,New York,1959',
+    'Katherine Johnson,Mathematician,Hampton,1961',
+    'Margaret Hamilton,Engineer,Boston,1969',
+  ].join('\n');
+  const after = [
+    'name,role,city,commits',
+    'Ada Lovelace,Engineer,London,1843',
+    'Margaret Hamilton,Engineer,Boston,1969',
+    'Alan Turing,Researcher,Manchester,1936',
+    'Grace Hopper,Engineer,New York,1959',
+    'Katherine Johnson,Mathematician,Hampton,1961',
+    'hell',
+  ].join('\n');
+  const r = computeMoveDiff(before, after);
+  ok(r.stats.moved === 1 && r.stats.added === 1, 'line file: moved row plus added row');
+  ok(r.stats.modified === 0 && r.stats.removed === 0, 'line file: no spurious modified/removed rows');
+}
+
 // 6. Word-level diff: a one-word change marks ONLY that word, not the whole sentence.
 {
   const wd = wordDiff('The quick brown fox jumps', 'The quick red fox jumps');
