@@ -144,7 +144,46 @@ function numberValue(rows, label) {
 {
   const rows = reqMeta({ filename: 'requirements.txt', text: await text('requirements.txt') });
   assert.equal(value(rows, 'Packages'), '8');
+  assert.equal(value(rows, 'Pinned'), '4');
+  assert.equal(value(rows, 'Constrained'), '2');
+  assert.equal(value(rows, 'Unpinned'), '2');
+  assert.equal(value(rows, 'Extras'), '1');
+  assert.equal(value(rows, 'Extras detail'), 'celery[redis]');
+  assert.equal(value(rows, 'Index URLs'), '1');
   assert.equal(value(rows, 'Included files'), '1');
+}
+
+{
+  const rows = reqMeta({
+    filename: 'requirements.txt',
+    text: [
+      'pkg==1.0',
+      'range>=1,<2',
+      'extra[redis]==2.0; python_version < "3.12"',
+      'plain',
+      'direct @ https://example.test/direct.whl',
+      '-r base.txt',
+      '-c constraints.txt',
+      '--index-url https://example.test/simple',
+      '--extra-index-url https://mirror.example/simple',
+      '--find-links ./wheels',
+      '--no-index',
+      '--hash=sha256:abc',
+      '-e git+https://example.test/repo.git#egg=editable',
+    ].join('\n'),
+  });
+  assert.equal(value(rows, 'Packages'), '5');
+  assert.equal(value(rows, 'Pinned'), '2');
+  assert.equal(value(rows, 'Constrained'), '1');
+  assert.equal(value(rows, 'Unpinned'), '1');
+  assert.equal(value(rows, 'Direct references'), '1');
+  assert.equal(value(rows, 'Environment markers'), '1');
+  assert.equal(value(rows, 'Index URLs'), '2');
+  assert.equal(value(rows, 'Find links'), '1');
+  assert.equal(value(rows, 'Editable installs'), '1');
+  assert.equal(value(rows, 'Constraint files'), '1');
+  assert.equal(value(rows, 'Hashes'), '1');
+  assert.equal(value(rows, 'Options'), '1');
 }
 
 {
