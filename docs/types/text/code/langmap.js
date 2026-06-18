@@ -16,6 +16,41 @@ export const LANGS = {
 // Bare filenames (no extension) that map to a language.
 export const FILENAMES = { dockerfile: 'dockerfile', makefile: 'makefile' };
 
+export const LANGUAGE_LABELS = {
+  javascript: 'JavaScript',
+  typescript: 'TypeScript',
+  python: 'Python',
+  ruby: 'Ruby',
+  go: 'Go',
+  rust: 'Rust',
+  java: 'Java',
+  cpp: 'C / C++',
+  csharp: 'C#',
+  php: 'PHP',
+  swift: 'Swift',
+  kotlin: 'Kotlin',
+  scala: 'Scala',
+  shell: 'Shell script',
+  powershell: 'PowerShell',
+  html: 'HTML',
+  xml: 'XML',
+  css: 'CSS',
+  scss: 'SCSS',
+  less: 'Less',
+  yaml: 'YAML',
+  ini: 'INI/config',
+  sql: 'SQL',
+  graphql: 'GraphQL',
+  lua: 'Lua',
+  r: 'R',
+  perl: 'Perl',
+  dart: 'Dart',
+  elixir: 'Elixir',
+  clojure: 'Clojure',
+  dockerfile: 'Dockerfile',
+  makefile: 'Makefile',
+};
+
 export function languageFor(intake) {
   const name = (intake.filename || '').toLowerCase();
   const base = name.split('/').pop();
@@ -30,4 +65,9 @@ export function isCode(intake) {
   if (FILENAMES[base]) return true;
   const ext = base.includes('.') ? base.split('.').pop() : '';
   return !!LANGS[ext];
+}
+
+export function languageLabelFor(intakeOrLang) {
+  const lang = typeof intakeOrLang === 'string' ? intakeOrLang : languageFor(intakeOrLang);
+  return LANGUAGE_LABELS[lang] || (lang && lang !== 'plaintext' ? lang : 'Code');
 }

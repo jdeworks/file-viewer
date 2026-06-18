@@ -23,6 +23,8 @@
 
 ## Preview And Interaction UX
 
+- Switching between files that remain available in the sidebar should retain in-memory edits instead of warning that they will be lost. The sidebar row should show an unsaved marker such as an asterisk plus a distinct filename color until the file is downloaded or saved.
+- Unsaved-work warnings should still appear when closing the page, opening an unrelated top-level file/folder, or otherwise leaving the retained edit context.
 - Fix split-view drag locking, including with `sample.ans` and iframe previews.
 - Continue redesigning compare/diff interactions so users can compare with files already in the folder/sidebar without being forced into a file picker.
 - Improve move-aware diff so moves plus unrelated insertions are reported correctly.
@@ -38,6 +40,13 @@
 ## Metadata
 
 - Perform a thorough metadata audit for every registered type and every enhanced known-file view.
+- Organize metadata into digestible sections instead of one long flat list:
+  - always-visible basics: what the file type is used for, format info link, name, detected type, and size;
+  - collapsed advanced file facts: MIME, modified time, extension, content kind, loaded bytes, BOM, and similar technical facts;
+  - collapsed generic text facts: line endings, line break count, logical lines, blank lines, longest line, trailing newline, and similar text-shape facts;
+  - open type-specific facts: the most useful facts for the detected format, with deeper details nested or collapsible where needed.
+- Deduplicate metadata across generic and type-specific extractors so repeated fields such as `Lines` are shown only once in the best section.
+- Code files should show the concrete language or format, such as Python, JavaScript, TypeScript, C, C++, C#, Go, Rust, Ruby, Shell, SQL, HTML, or CSS, instead of only the generic `Code` label.
 - Include generic metadata candidates: size, extension, MIME, detected type/confidence, binary/text status, encoding, BOM, line endings, line count, trailing newline, and local hashes/fingerprints where useful.
 - Add content-specific metadata where useful:
   - Text/code: lines, words, characters, blank/comment lines, language, functions/classes, imports/dependencies, complexity.
@@ -57,6 +66,15 @@
 - Docker Compose enhanced view should link image references where appropriate, explain `build: .`, distinguish bind mounts from named volumes, and surface potential issues.
 - Claude Desktop config should be treated as more than generic MCP config when it contains additional Claude-specific configuration.
 - SSH config dark-mode readability must be fixed.
+
+## Editor And Formatting
+
+- Monaco should use the concrete detected language for highlighting, and the UI should make that language visible and adjustable for code-like files.
+- Add editor controls for switching the Monaco language mode for the current file and saving that preference for the type when appropriate.
+- Formatting should use the best available local formatter for the language or a safe built-in fallback. Python should align with Black-style formatting where feasible, and other languages should use Monaco/browser-local formatting where available.
+- When a file clearly uses formatting that differs from the current editor settings, such as Python using four-space indents while the type default is two spaces, respect the file formatting automatically and show a toast explaining the temporary override.
+- Settings group open/closed state should be remembered within the session when switching file types and returning, without requiring persistence across reloads.
+- Settings should support both overlay and docked modes so users can tune editor/preview settings while seeing the file.
 
 ## Ebooks And Long Reading
 

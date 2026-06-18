@@ -39,7 +39,7 @@ function numberValue(rows, label) {
 {
   const src = await text('example.js');
   const rows = codeMeta({ filename: 'example.js', text: src });
-  assert.equal(value(rows, 'Language'), 'javascript');
+  assert.equal(value(rows, 'Language'), 'JavaScript');
   assert.equal(value(rows, 'Lines of code'), '14');
   assert.equal(value(rows, 'Functions'), '2');
   assert.equal(value(rows, 'Exports'), '1');

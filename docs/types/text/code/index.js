@@ -1,5 +1,5 @@
 import { detect } from './detect.js';
-import { languageFor } from './langmap.js';
+import { languageFor, languageLabelFor } from './langmap.js';
 
 export default {
   id: 'code',
@@ -13,6 +13,7 @@ export default {
     screenshot: false,
   },
   syntaxLanguage: (intake) => languageFor(intake),   // per-file Monaco language
+  displayLabel: (intake) => languageLabelFor(intake) + ' source code',
   loadRenderer: null,
   loadMetadata: () => import('./metadata.js'),
   settingsUrl: new URL('./settings.default.json', import.meta.url),

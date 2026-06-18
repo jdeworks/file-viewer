@@ -1,4 +1,4 @@
-import { languageFor } from './langmap.js';
+import { languageFor, languageLabelFor } from './langmap.js';
 import { analyze } from './metrics.js';
 
 export function extract(intake) {
@@ -11,8 +11,7 @@ export function extract(intake) {
   const todos = (text.match(/\b(TODO|FIXME|XXX)\b/gi) || []).length;
   const lang = languageFor(intake);
   const out = [
-    { label: 'Language', value: lang },
-    { label: 'Lines', value: String(lines.length) },
+    { label: 'Language', value: languageLabelFor(lang) },
     { label: 'Lines of code', value: String(codeLines) },
     { label: 'Non-empty lines', value: String(nonEmpty) },
     { label: 'Blank lines', value: String(blank) },
