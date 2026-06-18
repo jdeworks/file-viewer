@@ -16,7 +16,7 @@ export function extractMetadata(intake) {
   }
 
   return [
-    { label: 'Variables', value: String(varCount) },
-    { label: 'Sensitive', value: String(sensitiveCount) },
+    { label: 'Total variables', value: String(varCount) },
+    { label: 'Sensitive variables', value: String(sensitiveCount) },
   ];
 }

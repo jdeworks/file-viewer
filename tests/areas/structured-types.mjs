@@ -153,6 +153,17 @@ export async function run(ctx) {
   await envf.waitForSelector('.env-secret-val', { timeout: 8000 });
   const envText = await envf.$eval('body', (e) => e.textContent);
   if (/sensitive \(redacted\)/i.test(envText) && !/(super_secret_password_123|sk_test_|whsec_)/.test(envText)) pass('.env preview redacts sensitive values by default'); else fail('env preview leaked or missed redaction: ' + envText.replace(/\s+/g, ' ').slice(0, 160));
+  const envCentered = await envf.$eval('.env-doc', (e) => {
+    const body = document.body.getBoundingClientRect();
+    const doc = e.getBoundingClientRect();
+    return Math.abs((doc.left + doc.right) / 2 - (body.left + body.right) / 2) <= 2 && doc.width <= 980;
+  });
+  if (envCentered) pass('.env preview content is centered'); else fail('env preview not centered');
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const envMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Total variables\s*20/.test(envMeta) && /Sensitive variables\s*8/.test(envMeta)) pass('.env metadata includes variable and sensitive counts'); else fail('env meta: ' + envMeta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
   await page.click('#viewMode button[data-mode="raw"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
   const rawMode = await page.$eval('#panes', (e) => e.dataset.mode || '');

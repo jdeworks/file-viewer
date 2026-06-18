@@ -111,18 +111,19 @@ export async function render(intake, _ctx) {
   const STYLES = `
 <style>
 * { box-sizing: border-box; }
-body { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; margin: 0; padding: 16px; background: var(--bg, #fff); color: var(--fg, #111); }
-.env-stats { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; background: var(--surface, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 6px; margin-bottom: 12px; }
-.env-stat-num { font-size: 18px; font-weight: 700; color: var(--fg, #111); }
-.env-stat-label { font-size: 12px; color: #888; }
-.env-stat-sep { color: #ccc; }
+body { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; margin: 0 auto; padding: clamp(16px, 3vw, 28px); background: #fff; color: #111827; }
+.env-doc { width: min(100%, 980px); margin: 0 auto; }
+.env-stats { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 12px; }
+.env-stat-num { font-size: 18px; font-weight: 700; color: #111827; }
+.env-stat-label { font-size: 12px; color: #64748b; }
+.env-stat-sep { color: #cbd5e1; }
 .env-notice { display: flex; align-items: flex-start; gap: 8px; padding: 8px 12px; background: #fefce8; border: 1px solid #fde047; border-radius: 6px; margin-bottom: 12px; font-size: 12px; color: #713f12; }
 .env-notice-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border, #e2e8f0); border-radius: 6px; overflow: hidden; font-size: 12px; }
-thead th { text-align: left; padding: 7px 12px; background: var(--surface, #f8fafc); border-bottom: 1px solid var(--border, #e2e8f0); color: #888; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
-tbody tr { border-bottom: 1px solid var(--border, #f1f5f9); }
+table { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; font-size: 12px; }
+thead th { text-align: left; padding: 7px 12px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+tbody tr { border-bottom: 1px solid #f1f5f9; }
 tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: var(--hover, #f8fafc); }
+tbody tr:hover { background: #f8fafc; }
 td { padding: 7px 12px; vertical-align: top; }
 td.env-key-cell { font-family: monospace; font-size: 12px; white-space: nowrap; color: #1d4ed8; font-weight: 600; width: 1%; padding-right: 20px; }
 td.env-val-cell { font-family: monospace; font-size: 12px; word-break: break-all; }
@@ -141,6 +142,20 @@ tr.env-comment-row td::before { content: "# "; opacity: 0.6; }
 .env-url-icon { font-size: 11px; opacity: 0.6; margin-left: 4px; }
 .env-sensitive-icon { color: #9ca3af; font-size: 11px; }
 .env-empty { padding: 24px; text-align: center; color: #888; font-style: italic; }
+body.fv-dark { background: #1e1e1e; color: #e5e7eb; }
+body.fv-dark .env-stats { background: #252a31; border-color: #3b4552; }
+body.fv-dark .env-stat-num { color: #f8fafc; }
+body.fv-dark .env-stat-label, body.fv-dark thead th, body.fv-dark tr.env-comment-row td { color: #a8b3c2; }
+body.fv-dark .env-stat-sep { color: #5b6573; }
+body.fv-dark .env-notice { background: #3f3217; border-color: #8a6a18; color: #f8e7a1; }
+body.fv-dark table { border-color: #3b4552; }
+body.fv-dark thead th { background: #252a31; border-bottom-color: #3b4552; }
+body.fv-dark tbody tr { border-bottom-color: #2f3742; }
+body.fv-dark tbody tr:hover { background: #252a31; }
+body.fv-dark td.env-key-cell { color: #93c5fd; }
+body.fv-dark .env-secret-val, body.fv-dark .env-sensitive-icon, body.fv-dark .env-ellipsis { color: #a8b3c2; }
+body.fv-dark .env-reveal-btn, body.fv-dark .env-expand-btn { background: #252a31; border-color: #4b5563; color: #e5e7eb; }
+body.fv-dark .env-reveal-btn:hover, body.fv-dark .env-expand-btn:hover { background: #374151; }
 </style>`;
 
   const SCRIPT = `
@@ -224,7 +239,7 @@ function envExpand(btn) {
 <tbody>${rows.join('\n')}</tbody>
 </table>`;
 
-  const bodyHtml = STYLES + SCRIPT + `\n<div>\n${statsHtml}${noticeHtml}${tableHtml}\n</div>`;
+  const bodyHtml = STYLES + SCRIPT + `\n<div class="env-doc">\n${statsHtml}${noticeHtml}${tableHtml}\n</div>`;
 
   return { bodyHtml, hadUnsafe: false };
 }

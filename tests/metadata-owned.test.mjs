@@ -13,6 +13,7 @@ import { extract as goModMeta } from '../docs/types/text/known/go-mod/metadata.j
 import { extract as reqMeta } from '../docs/types/text/known/requirements-txt/metadata.js';
 import { extract as codeownersMeta } from '../docs/types/text/known/codeowners/metadata.js';
 import { extract as editorconfigMeta } from '../docs/types/text/known/editorconfig/metadata.js';
+import { extractMetadata as envMeta } from '../docs/types/text/env/metadata.js';
 import { testExports as composeMeta } from '../docs/types/text/yaml/known/docker-compose/metadata.js';
 import { testExports as csvMeta } from '../docs/types/text/csv/metadata.js';
 
@@ -48,6 +49,13 @@ function numberValue(rows, label) {
   assert.equal(value(rows, 'Most complex function'), 'classify (7)');
   assert.equal(value(rows, 'Complex functions'), '0');
   assert.ok(Number(value(rows, 'Comment lines')) >= 3);
+}
+
+{
+  const src = await text('sample.env');
+  const rows = envMeta({ filename: 'sample.env', text: src });
+  assert.equal(value(rows, 'Total variables'), '20');
+  assert.equal(value(rows, 'Sensitive variables'), '8');
 }
 
 {
