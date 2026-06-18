@@ -267,7 +267,7 @@ A short note (200-300 words) from "The Archivist" — a fictional entity from th
 
 ## TASK 8 — URL / Query String Inspector
 
-**Status:** Not started (type stub `urlType` exists in registry but may be minimal)  
+**Status:** Already implemented — full URL inspector, metadata, sample, and smoke coverage are present.
 **Effort:** S (~2h)
 
 Check `docs/types/text/url/` — if the renderer is already a full URL inspector, this task is DONE. If it's just a stub, implement the full viewer:
