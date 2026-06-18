@@ -112,7 +112,7 @@ Add a "Download Companion" section to the companion settings panel in `docs/core
 
 ## TASK 2 — LOC Cap Violations (split 4 over-limit files)
 
-**Status:** Not started  
+**Status:** Already implemented — listed hard-cap files are now under 500 LOC and split helpers exist.
 **Effort:** M (~3h)  
 **Files over hard cap (500 lines):**
 - `docs/core/app.js` — 1126 lines (split off companion UI + session tree logic)
