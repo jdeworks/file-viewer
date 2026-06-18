@@ -413,7 +413,7 @@ Show a metadata card per format:
 
 ## TASK 13 — New Format: `.clip` Clip Studio Paint (SQLite)
 
-**Status:** Not started  
+**Status:** Already implemented — Clip Studio detection, SQLite-backed structure renderer, metadata, sample, and smoke coverage are present.
 **Effort:** S (~1.5h, sql.js already vendored at `docs/vendor/sql.js/`)  
 **Files to create:** `docs/types/binary/clip/`
 
