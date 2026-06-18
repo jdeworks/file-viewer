@@ -78,6 +78,18 @@ export function isCode(intake) {
 }
 
 export function languageLabelFor(intakeOrLang) {
+  if (intakeOrLang && typeof intakeOrLang === 'object') {
+    const base = String(intakeOrLang.filename || '').split('/').pop().toLowerCase();
+    const ext = base.includes('.') ? base.split('.').pop() : '';
+    if (ext === 'c') return 'C';
+    if (ext === 'h') return 'C/C++ header';
+    if (['cpp', 'cc', 'cxx'].includes(ext)) return 'C++';
+    if (['hpp', 'hh'].includes(ext)) return 'C++ header';
+    if (ext === 'jsx') return 'JavaScript JSX';
+    if (ext === 'tsx') return 'TypeScript TSX';
+    if (ext === 'mjs') return 'JavaScript module';
+    if (ext === 'cjs') return 'JavaScript CommonJS';
+  }
   const lang = typeof intakeOrLang === 'string' ? intakeOrLang : languageFor(intakeOrLang);
   return LANGUAGE_LABELS[lang] || (lang && lang !== 'plaintext' ? lang : 'Code');
 }

@@ -24,6 +24,11 @@ for (let i = 0; i < FULL.length; i++) {
   const syntax = typeof full.syntaxLanguage === 'function' ? full.syntaxLanguage({ filename: 'main.py' }) : full.syntaxLanguage;
   const runtimeSyntax = typeof runtime.syntaxLanguage === 'function' ? runtime.syntaxLanguage({ filename: 'main.py' }) : runtime.syntaxLanguage;
   assert.equal(runtimeSyntax, syntax, `${full.id}.syntaxLanguage`);
+  if (full.id === 'code') {
+    assert.equal(runtime.displayLabel({ filename: 'main.py' }), full.displayLabel({ filename: 'main.py' }), 'code.displayLabel Python parity');
+    assert.equal(runtime.displayLabel({ filename: 'main.c' }), full.displayLabel({ filename: 'main.c' }), 'code.displayLabel C parity');
+    assert.equal(runtime.displayLabel({ filename: 'mesh.cpp' }), full.displayLabel({ filename: 'mesh.cpp' }), 'code.displayLabel C++ parity');
+  }
 }
 
 function intake(filename, { mimeType = '', text = '', bytes = new Uint8Array(), isBinary = false } = {}) {

@@ -74,7 +74,7 @@ async function loadIntake(intake) {
   // so save doesn't accidentally compute paths against a stale folder.
   if (!fromTree) resetCompanionFolderRoot();
   const { type, ranking } = pickType(intake);
-  populateTypeSelect(ranking, type.id, !!state.settingsModel?.values?.showAllTypes);
+  populateTypeSelect(ranking, type.id, !!state.settingsModel?.values?.showAllTypes, intake);
   await activateType(type);
   if (intake.truncated) {
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
@@ -270,7 +270,7 @@ function onSettingsChange(model, changedKey) {
   // "Show all file types" is a global pref applied to the type dropdown immediately.
   if (changedKey === 'showAllTypes') {
     persistGlobalKey('showAllTypes', model.values.showAllTypes);
-    if (state.intake && state.type) populateTypeSelect(pickType(state.intake).ranking, state.type.id, !!state.settingsModel?.values?.showAllTypes);
+    if (state.intake && state.type) populateTypeSelect(pickType(state.intake).ranking, state.type.id, !!state.settingsModel?.values?.showAllTypes, state.intake);
   }
   // "Reduce motion" is a global pref that toggles a root class disabling all CSS animation.
   if (changedKey === 'reduceMotion') {

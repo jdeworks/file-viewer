@@ -63,6 +63,13 @@ function numberValue(rows, label) {
 }
 
 {
+  assert.equal(value(codeMeta({ filename: 'main.py', text: 'def main():\n    pass\n' }), 'Language'), 'Python');
+  assert.equal(value(codeMeta({ filename: 'main.c', text: 'int main(void) { return 0; }\n' }), 'Language'), 'C');
+  assert.equal(value(codeMeta({ filename: 'mesh.cpp', text: 'int main() { return 0; }\n' }), 'Language'), 'C++');
+  assert.equal(value(codeMeta({ filename: 'Dashboard.tsx', text: 'export const View = () => <div />;\n' }), 'Language'), 'TypeScript TSX');
+}
+
+{
   const src = await text('sample.env');
   const rows = envMeta({ filename: 'sample.env', text: src });
   assert.equal(value(rows, 'Total variables'), '20');

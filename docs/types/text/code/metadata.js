@@ -11,7 +11,7 @@ export function extract(intake) {
   const todos = (text.match(/\b(TODO|FIXME|XXX)\b/gi) || []).length;
   const lang = languageFor(intake);
   const out = [
-    fact('Language', languageLabelFor(lang), 'Code metrics'),
+    fact('Language', languageLabelFor(intake), 'Code metrics'),
     fact('Lines of code', codeLines, 'Code metrics'),
     { label: 'Blank lines', value: String(blank) },
     fact('Comment lines', commentLines, 'Code metrics'),

@@ -170,6 +170,8 @@ export async function run(ctx) {
   await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
   const codeType = await page.$eval('#typeSelect', (s) => s.value);
   if (codeType === 'code') pass('JS file detected as Code with syntax highlighting'); else fail('js type: ' + codeType);
+  const codeOption = await page.$eval('#typeSelect option:checked', (o) => o.textContent);
+  if (/JavaScript source code/.test(codeOption)) pass('code dropdown shows concrete JavaScript type'); else fail('code dropdown label: ' + codeOption);
   // Per-function metrics CodeLens (LOC + cyclomatic complexity) — display-only overlay.
   await page.waitForFunction(() => document.querySelectorAll('#editor .codelens-decoration').length >= 2, { timeout: 15000 }).catch(() => {});
   const lensText = await page.$$eval('#editor .codelens-decoration', (els) => els.map((e) => e.innerText).join(' | '));
@@ -178,9 +180,19 @@ export async function run(ctx) {
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const codeMeta = await page.$eval('#metaBody', (e) => e.textContent);
-  if (/Lines of code\s*14/.test(codeMeta) && /Max complexity\s*7/.test(codeMeta) && /Most complex function\s*classify \(7\)/.test(codeMeta)) pass('code metadata includes LOC and complexity summary');
+  if (/Type\s*JavaScript source code/.test(codeMeta) && /Lines of code\s*14/.test(codeMeta) && /Max complexity\s*7/.test(codeMeta) && /Most complex function\s*classify \(7\)/.test(codeMeta)) pass('code metadata includes concrete type, LOC, and complexity summary');
   else fail('code metadata: ' + codeMeta.replace(/\s+/g, ' ').slice(0, 220));
   await page.click('#metaDrawer [data-close]');
+
+  await page.evaluate(() => window.__fv.openExampleFile('main.c'));
+  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'main.c', { timeout: 8000 });
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
+  const cLabels = await page.evaluate(() => ({
+    selected: document.querySelector('#typeSelect option:checked')?.textContent || '',
+    display: window.__fv.state.type.displayLabel(window.__fv.state.intake),
+  }));
+  if (/C source code/.test(cLabels.selected) && cLabels.display === 'C source code') pass('C sample UI shows C, not generic Code or C++');
+  else fail('C code labels: ' + JSON.stringify(cLabels));
 
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('example.svg');

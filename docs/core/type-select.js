@@ -1,7 +1,7 @@
 import { REGISTRY, FALLBACK_TYPE } from './registry-runtime.generated.js';
 import { $ } from './state.js';
 
-export function populateTypeSelect(ranking, selectedId, showAll) {
+export function populateTypeSelect(ranking, selectedId, showAll, intake = null) {
   const sel = $('typeSelect');
   const byScore = new Map(ranking.map((r) => [r.type.id, r.score]));
   const rows = [];
@@ -18,7 +18,8 @@ export function populateTypeSelect(ranking, selectedId, showAll) {
   for (const r of rows) {
     const opt = document.createElement('option');
     opt.value = r.t.id;
-    opt.textContent = r.pct != null ? `${r.t.label} (${r.pct}%)` : r.t.label;
+    const label = typeof r.t.displayLabel === 'function' && intake ? r.t.displayLabel(intake) : r.t.label;
+    opt.textContent = r.pct != null ? `${label} (${r.pct}%)` : label;
     if (r.t.id === selectedId) opt.selected = true;
     sel.appendChild(opt);
   }
