@@ -85,6 +85,44 @@ const P3 = 'A third paragraph at the bottom.';
   ok(r.stats.modified === 0 && r.stats.removed === 0, 'line file: no spurious modified/removed rows');
 }
 
+// 5c. Line-oriented moved row with a small edit -> moved-modified, not add/remove.
+{
+  const before = [
+    'name,role,city,commits',
+    'Ada Lovelace,Engineer,London,1843',
+    'Alan Turing,Researcher,Manchester,1936',
+    'Grace Hopper,Engineer,New York,1959',
+    'Margaret Hamilton,Engineer,Boston,1969',
+  ].join('\n');
+  const after = [
+    'name,role,city,commits',
+    'Ada Lovelace,Engineer,London,1843',
+    'Margaret Hamilton,Engineer,Cambridge,1969',
+    'Alan Turing,Researcher,Manchester,1936',
+    'Grace Hopper,Engineer,New York,1959',
+  ].join('\n');
+  const r = computeMoveDiff(before, after);
+  ok(r.stats['moved-modified'] === 1, 'line file: moved edited row classified moved-modified');
+  ok(r.stats.added === 0 && r.stats.removed === 0, 'line file: moved edited row is not add/remove');
+}
+
+// 5d. Adjacent row swap still reports a move without removals.
+{
+  const before = ['id,value', '1,alpha', '2,beta', '3,gamma'].join('\n');
+  const after = ['id,value', '2,beta', '1,alpha', '3,gamma'].join('\n');
+  const r = computeMoveDiff(before, after);
+  ok(r.stats.moved === 1 && r.stats.added === 0 && r.stats.removed === 0, 'line file: adjacent row move');
+}
+
+// 5e. Low-similarity replacement line remains an add/remove, not a move.
+{
+  const before = ['id,value', '1,alpha', '2,beta'].join('\n');
+  const after = ['id,value', '1,alpha', 'unrelated freeform sentence'].join('\n');
+  const r = computeMoveDiff(before, after);
+  ok(r.stats.moved === 0 && r.stats['moved-modified'] === 0, 'line file: low-similarity line is not a move');
+  ok(r.stats.added === 1 && r.stats.removed === 1, 'line file: low-similarity line is add/remove');
+}
+
 // 6. Word-level diff: a one-word change marks ONLY that word, not the whole sentence.
 {
   const wd = wordDiff('The quick brown fox jumps', 'The quick red fox jumps');

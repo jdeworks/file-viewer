@@ -37,18 +37,35 @@ function splitBlocks(text) {
 }
 
 const norm = (block) => block.lines.map((l) => l.trim()).join('\n');
-const tokens = (block) => norm(block).toLowerCase().split(/\s+/).filter(Boolean);
+const tokens = (block) => norm(block).toLowerCase().split(/[^\p{L}\p{N}_]+/u).filter(Boolean);
+
+function lcsSimilarity(a, b) {
+  if (a === b) return 1;
+  if (!a || !b) return 0;
+  const m = a.length, n = b.length;
+  if (m * n > 40_000) return 0;
+  let prev = new Uint16Array(n + 1);
+  let curr = new Uint16Array(n + 1);
+  for (let i = m - 1; i >= 0; i--) {
+    for (let j = n - 1; j >= 0; j--) {
+      curr[j] = a[i] === b[j] ? prev[j + 1] + 1 : Math.max(prev[j], curr[j + 1]);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return (2 * prev[0]) / (m + n);
+}
 
 // Token multiset similarity: 2*|intersection| / (|a|+|b|)  (Sørensen–Dice).
 function similarity(a, b) {
   const ta = tokens(a), tb = tokens(b);
-  if (!ta.length && !tb.length) return 1;
-  if (!ta.length || !tb.length) return 0;
+  const sa = norm(a).toLowerCase(), sb = norm(b).toLowerCase();
+  if (!ta.length && !tb.length) return lcsSimilarity(sa, sb);
+  if (!ta.length || !tb.length) return Math.max(0, lcsSimilarity(sa, sb));
   const counts = new Map();
   for (const t of ta) counts.set(t, (counts.get(t) || 0) + 1);
   let inter = 0;
   for (const t of tb) { const c = counts.get(t) || 0; if (c > 0) { inter++; counts.set(t, c - 1); } }
-  return (2 * inter) / (ta.length + tb.length);
+  return Math.max((2 * inter) / (ta.length + tb.length), lcsSimilarity(sa, sb));
 }
 
 // Max-WEIGHT increasing subsequence over target indices `seq`, weighted by `weight[i]`.
@@ -151,7 +168,7 @@ export function computeMoveDiff(originalText, currentText, { threshold = DEFAULT
   let moveId = 0;
   const pairs = paired.map((p, idx) => {
     const stationary = backbone.has(idx);
-    const exact = p.similarity >= 0.999;
+    const exact = norm(A[p.aIndex]) === norm(B[p.bIndex]);
     let kind;
     if (stationary) kind = exact ? 'unchanged' : 'modified';
     else kind = exact ? 'moved' : 'moved-modified';
