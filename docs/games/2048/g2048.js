@@ -12,6 +12,7 @@ export function mount(host, { onScore, onExit } = {}) {
     + '<div class="g2048-over" hidden><div class="g2048-over-box"><div class="g2048-over-msg"></div>'
     + '<button class="g2048-restart">Play again</button> <button class="g2048-quit">Back</button></div></div>'
     + '</div>';
+  const wrapEl = host.querySelector('.g2048-wrap');
   const boardEl = host.querySelector('.g2048-board');
   const scoreEl = host.querySelector('.g2048-score');
   const overEl  = host.querySelector('.g2048-over');
@@ -27,7 +28,7 @@ export function mount(host, { onScore, onExit } = {}) {
   }
 
   // Tile identity: each tile is { id, r, c, value }. tileEls maps id → DOM element.
-  let tiles = [], nextId = 1, score = 0, dead = false;
+  let tiles = [], nextId = 1, score = 0, dead = false, won = false;
   const tileEls = new Map();
 
   function gridValue(r, c) {
@@ -84,11 +85,17 @@ export function mount(host, { onScore, onExit } = {}) {
 
     let anyMoved = false, gained = 0;
     const toRemove = new Set();
+    const mergedIds = new Set();
     g = g.map((row) => {
       const { result, gained: g2, moved } = collapseRow(row);
       if (moved) anyMoved = true;
       gained += g2;
-      result.forEach((s) => { if (s.mergedFrom) toRemove.add(s.mergedFrom); });
+      result.forEach((s) => {
+        if (s.mergedFrom) {
+          toRemove.add(s.mergedFrom);
+          mergedIds.add(s.id);
+        }
+      });
       return result;
     });
 
@@ -118,11 +125,15 @@ export function mount(host, { onScore, onExit } = {}) {
 
     scoreEl.textContent = 'Score: ' + score;
     onScore?.(score);
-    draw(oldRects);
-    if (!canMove()) gameOver();
+    draw(oldRects, mergedIds);
+    if (!won && tiles.some((t) => t.value >= 2048)) {
+      gameWon();
+    } else if (!canMove()) {
+      gameOver();
+    }
   }
 
-  function draw(oldRects = {}) {
+  function draw(oldRects = {}, mergedIds = new Set()) {
     // Remove DOM elements for tiles that no longer exist.
     for (const [id, el] of tileEls) {
       if (!tiles.find((t) => t.id === id)) { el.remove(); tileEls.delete(id); }
@@ -137,7 +148,9 @@ export function mount(host, { onScore, onExit } = {}) {
         tileEls.set(t.id, el);
       }
 
-      el.className = 'g2048-cell g2048-v' + t.value + (isNew ? ' g2048-new' : '');
+      el.className = 'g2048-cell g2048-v' + t.value
+        + (isNew ? ' g2048-new' : '')
+        + (mergedIds.has(t.id) ? ' g2048-merge' : '');
       el.textContent = t.value;
       el.style.gridRow    = (t.r + 1) + '';
       el.style.gridColumn = (t.c + 1) + '';
@@ -168,15 +181,47 @@ export function mount(host, { onScore, onExit } = {}) {
     }
     return false;
   }
-  function gameOver() { dead = true; overMsg.textContent = 'Game over — score ' + score; overEl.hidden = false; }
+  function showResult(kind, msg) {
+    dead = true;
+    overMsg.textContent = msg;
+    overEl.dataset.result = kind;
+    overEl.hidden = false;
+  }
+  function gameWon() {
+    won = true;
+    showResult('win', 'You win — 2048 reached! Score ' + score);
+  }
+  function gameOver() { showResult('over', 'Game over — score ' + score); }
 
   function reset() {
-    tiles = []; nextId = 1; score = 0; dead = false;
+    tiles = []; nextId = 1; score = 0; dead = false; won = false;
     tileEls.forEach((el) => el.remove()); tileEls.clear();
     overEl.hidden = true;
+    overEl.dataset.result = '';
     scoreEl.textContent = 'Score: 0';
     addTile(); addTile();
     draw();
+  }
+
+  function seed(nextTiles, nextScore = 0, result = '') {
+    tiles = nextTiles.map((t, i) => ({
+      id: Number.isFinite(t.id) ? t.id : i + 1,
+      r: t.r,
+      c: t.c,
+      value: t.value,
+    }));
+    nextId = Math.max(0, ...tiles.map((t) => t.id)) + 1;
+    score = nextScore;
+    dead = false;
+    won = false;
+    tileEls.forEach((el) => el.remove());
+    tileEls.clear();
+    overEl.hidden = true;
+    overEl.dataset.result = '';
+    scoreEl.textContent = 'Score: ' + score;
+    draw();
+    if (result === 'win' || tiles.some((t) => t.value >= 2048)) gameWon();
+    else if (result === 'over' || !canMove()) gameOver();
   }
 
   function onKey(e) {
@@ -204,13 +249,17 @@ export function mount(host, { onScore, onExit } = {}) {
   host.querySelector('.g2048-quit').addEventListener('click', () => onExit?.());
 
   reset();
-  return {
+  const api = {
     destroy() {
       window.removeEventListener('keydown', onKey);
       host.removeEventListener('touchstart', onTouchStart);
       host.removeEventListener('touchend', onTouchEnd);
+      delete wrapEl.__g2048;
       host.innerHTML = '';
     },
     _move: move,   // test seam
+    _seed: seed,
   };
+  wrapEl.__g2048 = api;
+  return api;
 }

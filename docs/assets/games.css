@@ -45,12 +45,12 @@
 .snake-quit { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); }
 
 /* 2048 arcade game. */
-.g2048-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; touch-action: none; }
+.g2048-wrap { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; touch-action: none; }
 .g2048-hud { display: flex; justify-content: space-between; width: min(360px, 86vw); align-items: baseline; }
 .g2048-score { font-weight: 700; font-variant-numeric: tabular-nums; }
 .g2048-hint { font-size: 11px; color: var(--fg-2); }
 .g2048-board { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 8px;
-  width: min(320px, 86vw); aspect-ratio: 1; background: var(--bg-3); border-radius: 10px; padding: 8px; touch-action: none; }
+  width: min(320px, 86vw); aspect-ratio: 1; background: var(--bg-3); border-radius: 10px; padding: 8px; touch-action: none; z-index: 0; }
 /* bg-cell: the 16 permanent empty-square backdrops (always present, never moved). */
 .g2048-bg-cell { border-radius: 6px; background: color-mix(in srgb, var(--fg) 6%, transparent); }
 /* g2048-cell: live tile elements (persistent across moves; FLIP-animated). */
@@ -62,7 +62,8 @@
 .g2048-v32 { background: #f67c5f; color: #fff; } .g2048-v64 { background: #f65e3b; color: #fff; }
 .g2048-v128, .g2048-v256, .g2048-v512 { background: #edcf72; color: #fff; }
 .g2048-v1024, .g2048-v2048 { background: #edc22e; color: #fff; }
-.g2048-over { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.g2048-over { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
+  padding: 12px; background: color-mix(in srgb, var(--bg) 42%, transparent); border-radius: 10px; }
 .g2048-over[hidden] { display: none; }
 .g2048-over-box { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
 .g2048-over-msg { font-weight: 700; margin-bottom: 10px; }
@@ -74,6 +75,11 @@
   100% { transform: scale(1);   opacity: 1; }
 }
 .g2048-new { animation: g2048-pop 0.12s ease-out; }
+@keyframes g2048-merge-pulse {
+  0%, 100% { box-shadow: none; filter: none; }
+  45% { box-shadow: 0 0 0 3px rgba(255,255,255,.42), 0 0 14px rgba(237,194,46,.55); filter: brightness(1.08); }
+}
+.g2048-merge { animation: g2048-merge-pulse 0.16s ease-out; }
 /* g2048-moving board animation removed; tiles use per-element FLIP transform instead. */
 
 /* Bit Foundry (meta-game incremental core). */

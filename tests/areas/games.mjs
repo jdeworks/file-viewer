@@ -27,6 +27,67 @@ export async function run(ctx) {
   await page.waitForSelector('.g2048-board', { timeout: 8000 });
   const g2048BgCells = await page.$$eval('.g2048-bg-cell', (els) => els.length);
   if (g2048BgCells === 16) pass('2048 launches'); else fail('2048 board cells: ' + g2048BgCells);
+  async function assert2048ResultLayer(result, label) {
+    await page.waitForSelector(`.g2048-over[data-result="${result}"]:not([hidden])`, { timeout: 4000 });
+    const layer = await page.$eval('.g2048-wrap', (wrap) => {
+      const over = wrap.querySelector('.g2048-over');
+      const box = wrap.querySelector('.g2048-over-box');
+      const board = wrap.querySelector('.g2048-board');
+      const score = wrap.querySelector('.g2048-score');
+      const rect = (el) => {
+        const r = el.getBoundingClientRect();
+        return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+      };
+      const at = (r) => document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      const boardRect = rect(board);
+      const scoreRect = rect(score);
+      const boardTop = at(boardRect);
+      const scoreTop = at(scoreRect);
+      return {
+        message: wrap.querySelector('.g2048-over-msg')?.textContent || '',
+        overRect: rect(over),
+        boxRect: rect(box),
+        boardRect,
+        scoreRect,
+        overZ: getComputedStyle(over).zIndex,
+        boardTopInOverlay: Boolean(boardTop?.closest?.('.g2048-over')),
+        scoreTopInOverlay: Boolean(scoreTop?.closest?.('.g2048-over')),
+        boxVisible: box.offsetWidth > 0 && box.offsetHeight > 0,
+      };
+    });
+    const coversBoard = layer.overRect.left <= layer.boardRect.left
+      && layer.overRect.right >= layer.boardRect.right
+      && layer.overRect.top <= layer.boardRect.top
+      && layer.overRect.bottom >= layer.boardRect.bottom;
+    const coversScore = layer.overRect.left <= layer.scoreRect.left
+      && layer.overRect.right >= layer.scoreRect.right
+      && layer.overRect.top <= layer.scoreRect.top
+      && layer.overRect.bottom >= layer.scoreRect.bottom;
+    if (layer.boxVisible && coversBoard && coversScore && layer.boardTopInOverlay && layer.scoreTopInOverlay && Number(layer.overZ) > 0) {
+      pass(`2048 ${label} result overlay sits above board and score HUD`);
+    } else {
+      fail(`2048 ${label} result overlay layering invalid: ` + JSON.stringify(layer));
+    }
+  }
+  await page.$eval('.g2048-wrap', (wrap) => {
+    wrap.__g2048._seed([{ r: 0, c: 0, value: 2048 }], 4096, 'win');
+  });
+  await assert2048ResultLayer('win', 'win');
+  const g2048WinMessage = await page.$eval('.g2048-over-msg', (el) => el.textContent);
+  if (/you win/i.test(g2048WinMessage) && /2048/.test(g2048WinMessage)) pass('2048 exposes explicit 2048 win state'); else fail('2048 win message unexpected: ' + g2048WinMessage);
+  await page.$eval('.g2048-wrap', (wrap) => {
+    const values = [
+      2, 4, 2, 4,
+      4, 2, 4, 2,
+      2, 4, 2, 4,
+      4, 2, 4, 2,
+    ];
+    wrap.__g2048._seed(values.map((value, i) => ({ r: Math.floor(i / 4), c: i % 4, value })), 128, 'over');
+  });
+  await assert2048ResultLayer('over', 'game-over');
+  await page.setViewportSize({ width: 390, height: 740 });
+  await assert2048ResultLayer('over', 'mobile game-over');
+  await page.setViewportSize({ width: 1100, height: 800 });
   await page.click('.games-back');
 
   await page.click('.games-card[data-game="metagame"]');
