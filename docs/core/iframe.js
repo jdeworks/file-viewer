@@ -58,6 +58,16 @@ let BASE_CSS = "";
 try { BASE_CSS = await (await fetch(new URL("../assets/preview.css", import.meta.url))).text(); }
 catch { /* keep BASE_CSS empty — previews render unstyled but functional */ }
 
+function previewColors(theme) {
+  if (theme === 'dark') return { bg: '#1e1e1e', fg: '#e6e6e6', scheme: 'dark' };
+  return { bg: '#fff', fg: '#1a1a1a', scheme: 'light' };
+}
+
+function earlyThemeStyle(theme) {
+  const c = previewColors(theme);
+  return `<style>html{background:${c.bg};color-scheme:${c.scheme};}body{background:${c.bg};color:${c.fg};}</style>\n`;
+}
+
 function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
   const bodyClasses = [];
   if (theme === 'dark') bodyClasses.push('fv-dark');
@@ -75,6 +85,7 @@ function buildSrcdoc({ bodyHtml, theme, extraHead = '', style = {} }) {
   const bodyClass = bodyClasses.length ? ' class="' + bodyClasses.join(' ') + '"' : '';
   return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
     + '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+    + earlyThemeStyle(theme)
     + '<style>' + BASE_CSS + '</style>\n' + rootStyle + extraHead + '\n</head>\n'
     + '<body' + bodyClass + '>\n' + bodyHtml + '\n'
     + '<script>' + BRIDGE + '</scr' + 'ipt>\n</body>\n</html>';
@@ -92,6 +103,9 @@ export function mountPreview(container, { bodyHtml, fullDoc, theme, allowScripts
   const iframe = document.createElement('iframe');
   iframe.className = 'fv-preview-frame';
   iframe.title = 'Rendered preview';
+  const colors = previewColors(theme);
+  iframe.style.backgroundColor = colors.bg;
+  iframe.style.colorScheme = colors.scheme;
   // allow-scripts only. NEVER add allow-same-origin together with allow-scripts.
   iframe.setAttribute('sandbox', 'allow-scripts');
   // fullDoc: render the user's whole document (scripts run in the sandbox). Otherwise wrap

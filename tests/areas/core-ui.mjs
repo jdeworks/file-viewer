@@ -165,6 +165,52 @@ export async function run(ctx) {
   const sandbox = await frame.getAttribute('sandbox');
   if (sandbox === 'allow-scripts') pass('iframe sandbox = allow-scripts only'); else fail('sandbox: ' + sandbox);
 
+  // Dark-mode live Markdown refresh: replacing the iframe during edits must not fall back to
+  // the browser's white default while the new srcdoc commits.
+  const wasDark = await page.$eval('html', (e) => e.dataset.theme === 'dark');
+  const originalMarkdown = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (!wasDark) await page.click('#themeBtn');
+  await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark', { timeout: 4000 });
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    rv.setValue(rv.getValue() + '\n\nDark refresh sentinel');
+  });
+  let darkFrame = null;
+  for (let i = 0; i < 20; i++) {
+    darkFrame = await frameOf('iframe.fv-preview-frame');
+    try {
+      await darkFrame.waitForSelector('text=Dark refresh sentinel', { timeout: 500 });
+      break;
+    } catch (e) {
+      if (i === 19) throw e;
+      await page.waitForTimeout(100);
+    }
+  }
+  const refreshColors = await page.evaluate(() => {
+    const iframe = document.querySelector('iframe.fv-preview-frame');
+    return {
+      frameBg: getComputedStyle(iframe).backgroundColor,
+      frameScheme: getComputedStyle(iframe).colorScheme,
+    };
+  });
+  const docColors = await darkFrame.evaluate(() => ({
+    htmlBg: getComputedStyle(document.documentElement).backgroundColor,
+    bodyBg: getComputedStyle(document.body).backgroundColor,
+    bodyClass: document.body.className,
+  }));
+  const white = /rgb\(255,\s*255,\s*255\)/;
+  const noWhite = !white.test(refreshColors.frameBg) && !white.test(docColors.htmlBg) && !white.test(docColors.bodyBg);
+  if (noWhite && /dark/.test(refreshColors.frameScheme) && /\bfv-dark\b/.test(docColors.bodyClass)) {
+    pass('dark Markdown iframe refresh keeps dark background through replacement');
+  } else fail('dark refresh colors: ' + JSON.stringify({ ...refreshColors, ...docColors }));
+  await page.evaluate((text) => {
+    window.__fv.state.rawview.setValue(text);
+    window.__fv.state.downloadedSinceEdit = true;
+    window.__fv.state.sessionEdits.delete(window.__fv.state.intake?.filename);
+    if (window.__fv.state.currentFolderPath) window.__fv.state.folderEdits.delete(window.__fv.state.currentFolderPath);
+  }, originalMarkdown);
+  if (!wasDark) await page.click('#themeBtn');
+
   // Per-file persistence (foundation for stateful viewers): fingerprint stability + round-trip.
   const persist = await page.evaluate(() => {
     const p = window.__fv.persistence;
