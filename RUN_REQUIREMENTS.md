@@ -44,6 +44,7 @@
 - Review each file type for useful interactions such as sorting, filtering, folding, toggling, zooming, searching, exporting, or safe online checks.
 - JSON preview should render clean disclosure controls, avoid broken escaped glyphs, and support useful key sorting.
 - Sorting should be considered for structured/table-like types such as JSON, CSV, XLSX, text lines, and similar formats.
+- HTML previews should handle styling dependencies more intelligently while preserving the zero-off-origin default. Relative local CSS/JS/assets that are present in the loaded folder should be rewired to same-origin blob/data URLs where safe. For missing external libraries such as Tailwind CDN, provide explicit opt-in HTML settings for common external style/script presets and user-supplied head additions, with clear off-origin warnings, optional caching, and no automatic network requests. Add diagnostics that detect likely missing utility/style coverage, such as many class names without matching local CSS, and suggest configuring an HTML default head addition when appropriate.
 - Preview re-renders, especially Markdown edits in dark mode, should not briefly flash white during iframe refresh.
 - Preview width should be configurable in settings, default to an A4-page-like reading width, and constrain wide Markdown/table content instead of letting it expand indefinitely.
 - Preview sizing should offer quick modes in addition to numeric width: available width, unrestricted/no width restriction, A4/page width, and phone width.
