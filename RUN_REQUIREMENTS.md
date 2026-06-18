@@ -34,6 +34,7 @@
 - Sorting should be considered for structured/table-like types such as JSON, CSV, XLSX, text lines, and similar formats.
 - Preview re-renders, especially Markdown edits in dark mode, should not briefly flash white during iframe refresh.
 - Preview width should be configurable in settings, default to an A4-page-like reading width, and constrain wide Markdown/table content instead of letting it expand indefinitely.
+- Preview sizing should offer quick modes in addition to numeric width: available width, unrestricted/no width restriction, A4/page width, and phone width.
 - PWA install suppression should avoid noisy `beforeinstallprompt.preventDefault()` console messages where possible while preserving the no-install promise.
 - Metadata should include a file-type description/link explaining what the format is used for.
 - Sample tiles should expose a short hover description of what the sample demonstrates.
@@ -81,11 +82,18 @@
 - Settings group open/closed state should be remembered within the session when switching file types and returning, without requiring persistence across reloads.
 - Settings should support both overlay and docked modes so users can tune editor/preview settings while seeing the file.
 - Raw/split editor views should offer common edit tools for editable text formats, especially non-code text, with specialized actions per format. Markdown should get an insert/format menu with selection-aware bold/italic/heading actions, table insertion with configurable rows and columns, selection-target transforms, and context/right-click extensions such as sorting a selected Markdown table by a chosen column.
+- Research preview-side or WYSIWYG editing for formats where rendered editing can safely map back to source. Start with Markdown (`.md`, `.markdown`, `.mdown`, `.mkd`) for table cell highlighting/editing that maps to the raw side, then evaluate HTML (`.html`, `.htm`), rich text/document formats (`.rtf`, `.docx`, `.odt` where export is feasible), configuration/key-value text (`.env`, `.ini`, `.properties`, `.ssh/config`, `kubeconfig`, `.rdp`, `.reg`), notebook/structured text (`.ipynb`, `.json`, `.yaml`, `.yml`, `.toml`, `.xml`), and table formats (`.csv`, `.tsv`, `.xlsx`) for direct manipulation patterns.
+- Markdown paste handling should match common editor behavior: when pasting a URL into `.md`/`.markdown` with no selection, paste the URL as plain text; when text is selected, insert `[selected text](pasted-url)` and preserve undo/selection behavior.
 
 ## Ebooks And Long Reading
 
 - E-book readers should align with common reader behavior: font, size, line height, margins, theme, phone-friendly fullscreen, and settings access.
 - MOBI samples should be long enough to exercise reading behavior and should not start with accidental selected/highlighted-looking text.
+
+## Easter Eggs And Experimental Tools
+
+- Promote the image-to-ASCII converter into a dedicated easter egg with controls for color mode, character set, font/text size, contrast, and resolution. It should apply to image formats such as `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`, `.ico`, `.heic`, `.avif`, `.svg`, layered/design samples such as `.psd`/`.xcf`/`.ora`/`.kra`/`.procreate` where supported, and eventually playable video/media formats such as `.mp4`, `.webm`, `.mov`, `.avi`, `.mkv`, `.mp3` album art, and `.wav` visualizations where useful.
+- Add an opt-in "See live" webcam mode to the ASCII converter easter egg. It must request camera permission only after a user click, convert frames locally per animation frame, expose the same color/text-size controls, and never send camera frames off-origin.
 
 ## Research Backlog
 
