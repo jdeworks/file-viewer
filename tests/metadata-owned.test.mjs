@@ -15,6 +15,7 @@ import { extract as codeownersMeta } from '../docs/types/text/known/codeowners/m
 import { extract as editorconfigMeta } from '../docs/types/text/known/editorconfig/metadata.js';
 import { extractMetadata as envMeta } from '../docs/types/text/env/metadata.js';
 import { testExports as composeMeta } from '../docs/types/text/yaml/known/docker-compose/metadata.js';
+import { testExports as composeRender } from '../docs/types/text/yaml/known/docker-compose/render.js';
 import { testExports as csvMeta } from '../docs/types/text/csv/metadata.js';
 
 const ROOT = new URL('../docs/examples/', import.meta.url);
@@ -128,8 +129,14 @@ function numberValue(rows, label) {
   assert.equal(value(rows, 'Published ports'), '1');
   assert.equal(value(rows, 'Bind mounts'), '1');
   assert.equal(value(rows, 'Named volume mounts'), '1');
+  assert.equal(value(rows, 'Local build contexts'), '1');
   assert.equal(value(rows, 'Top-level secrets'), '1');
-  assert.equal(value(rows, 'Issue hints'), '2');
+  assert.equal(value(rows, 'Issue hints'), '3');
+  assert.equal(composeMeta.classifyVolume('./api:/app', { data: {} }), 'bind');
+  assert.equal(composeMeta.classifyVolume('data:/data', { data: {} }), 'named');
+  assert.equal(composeMeta.classifyVolume('../cache:/cache', { data: {} }), 'bind');
+  assert.equal(composeRender.imageLink('node:20-alpine'), 'https://hub.docker.com/_/node');
+  assert.equal(composeRender.imageLink('ghcr.io/acme/api:latest'), '');
 }
 
 {

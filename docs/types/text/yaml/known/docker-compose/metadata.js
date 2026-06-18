@@ -1,6 +1,5 @@
 import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
-
-const asArray = (value) => Array.isArray(value) ? value : value == null ? [] : [value];
+import { asArray, buildContext, classifyVolume, isLocalPath } from './shared.js';
 
 function countEnv(value) {
   if (Array.isArray(value)) return value.length;
@@ -12,22 +11,6 @@ function countRefs(value) {
   if (Array.isArray(value)) return value.length;
   if (value && typeof value === 'object') return Object.keys(value).length;
   return 0;
-}
-
-function classifyVolume(entry) {
-  if (typeof entry === 'string') {
-    const source = entry.split(':')[0] || '';
-    if (!source || source.startsWith('.') || source.startsWith('/') || source.startsWith('~')) return 'bind';
-    return 'named';
-  }
-  if (entry && typeof entry === 'object') {
-    if (entry.type === 'bind') return 'bind';
-    if (entry.type === 'volume') return 'named';
-    const source = entry.source || entry.src || '';
-    if (!source || source.startsWith('.') || source.startsWith('/') || source.startsWith('~')) return 'bind';
-    return 'named';
-  }
-  return 'other';
 }
 
 function summarize(data) {
@@ -48,25 +31,32 @@ function summarize(data) {
   let bindMounts = 0;
   let namedVolumes = 0;
   let missingRuntimeSource = 0;
+  let localBuildContexts = 0;
+  let localFileRefs = 0;
   for (const [name, svc] of Object.entries(services)) {
     if (!svc || typeof svc !== 'object') continue;
     if (svc.image) images.add(String(svc.image));
-    if (svc.build) buildServices.push(name);
+    if (svc.build) {
+      buildServices.push(name);
+      const context = buildContext(svc.build);
+      if (context && isLocalPath(context)) localBuildContexts += 1;
+    }
     if (!svc.image && !svc.build) missingRuntimeSource += 1;
     ports += countRefs(svc.ports);
     depends += countRefs(svc.depends_on);
     envVars += countEnv(svc.environment);
     envFiles += countRefs(svc.env_file);
+    localFileRefs += countRefs(svc.env_file);
     serviceNetworks += countRefs(svc.networks);
     serviceSecrets += countRefs(svc.secrets);
     for (const volume of asArray(svc.volumes)) {
       serviceVolumes += 1;
-      const kind = classifyVolume(volume);
+      const kind = classifyVolume(volume, topVolumes);
       if (kind === 'bind') bindMounts += 1;
       else if (kind === 'named') namedVolumes += 1;
     }
   }
-  const issueHints = missingRuntimeSource + bindMounts;
+  const issueHints = missingRuntimeSource + bindMounts + localBuildContexts + localFileRefs;
   return [
     { label: 'Services', value: String(names.length) },
     { label: 'Images', value: String(images.size) },
@@ -81,6 +71,8 @@ function summarize(data) {
     { label: 'Service volume mounts', value: String(serviceVolumes) },
     { label: 'Bind mounts', value: String(bindMounts) },
     { label: 'Named volume mounts', value: String(namedVolumes) },
+    { label: 'Local build contexts', value: String(localBuildContexts) },
+    { label: 'Local file refs', value: String(localFileRefs) },
     { label: 'Top-level secrets', value: String(Object.keys(topSecrets).length) },
     { label: 'Service secret refs', value: String(serviceSecrets) },
     { label: 'Issue hints', value: String(issueHints) },

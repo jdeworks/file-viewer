@@ -54,6 +54,13 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .kf-svc', { timeout: 12000 });
   const svcNames = await page.$$eval('#previewHost .kf-svc h3', (els) => els.map((e) => e.textContent));
   if (svcNames.includes('web') && svcNames.includes('api')) pass('docker-compose: a card per service (' + svcNames.join(', ') + ')'); else fail('compose services: ' + svcNames.join(','));
+  const composeHrefs = await page.$$eval('#previewHost .kf-svc a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
+  if (composeHrefs.some((h) => /hub\.docker\.com\/_\/node/.test(h))) pass('docker-compose: Docker Hub image links are href-only'); else fail('compose links: ' + composeHrefs.join(','));
+  const composeRel = await page.$eval('#previewHost .kf-svc a.pj-link', (a) => a.rel + '|' + a.target);
+  if (/noopener/.test(composeRel) && /_blank/.test(composeRel)) pass('docker-compose: image links are external-safe'); else fail('compose link rel/target: ' + composeRel);
+  const composeText = await page.$eval('#previewHost', (e) => e.textContent);
+  if (/current directory build context/.test(composeText) && /relative bind/.test(composeText) && /host-local paths/.test(composeText)) pass('docker-compose: build and local bind hints are visible');
+  else fail('compose text: ' + composeText.replace(/\s+/g, ' ').slice(0, 220));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const composeMeta = await page.$eval('#metaBody', (e) => e.textContent);
