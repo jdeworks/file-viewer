@@ -20,6 +20,8 @@
 - Metagame samples must not be visible before the metagame is unlocked.
 - Keep sample browsing useful: folder/category browsing and "show all" stay; text filtering stays; duplicate category chip filtering should be removed.
 - Add tests that open every indexed sample and catch preview crashes, bad detections, off-origin requests, and dark-mode readability regressions where feasible.
+- Build a real-world sample corpus from public/free sources, using `https://www.fileexamples.com/` extensively where licensing permits, plus other CC0/public-domain/free sources. Keep collected-but-unvetted files outside the shipped examples until they are validated, then promote useful files into `docs/examples/` with provenance metadata.
+- Treat `.example-files-internet/` as a local incoming triage folder for user-found examples. Analyze failures from that folder, including real-world GLB/glTF files that report errors such as "GLB has no JSON chunk", and convert parser gaps into focused tests before fixing them.
 
 ## Preview And Interaction UX
 
@@ -42,6 +44,8 @@
 - Password-protected formats such as PDF, SQLite, ZIP, and similar containers should have password-protected samples and unlock flows where the user can provide the password to view contents.
 - Sensitive file types that may contain protected data, such as `.env` and SSH config, should open in rendered-view mode by default and hide or blur values until explicitly revealed.
 - `.env` preview needs a dark/light theme pass and should be visually centered in the preview area. Metadata should include useful redaction-safe counts such as total variables and sensitive variables.
+- Perform a full light/dark theme audit across every renderer and enhanced view. MSG/email, SSH, env, archive, code-like previews, media controls, and iframe previews should all remain readable in both modes; add regression tests where feasible.
+- Investigate and suppress avoidable sandbox console noise such as `Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.` Renderers that intentionally need scripts should use the parent-node path or a trusted script-enabled opt-in; inert previews should not emit scripts.
 - Archives such as ZIP should be able to become a lazy folder in the sidebar when explicitly opened or clicked. Opening should happen off the main thread where possible, ask for a password when needed, show a spinner while reading, and expand only the next level by default instead of eagerly rendering the full tree.
 
 ## Metadata
