@@ -1,0 +1,12 @@
+$accent: #2563eb;
+$space: 0.75rem;
+
+.toolbar {
+  display: flex;
+  gap: $space;
+
+  button {
+    border: 1px solid $accent;
+    color: $accent;
+  }
+}

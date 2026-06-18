@@ -1,0 +1,19 @@
+@brand: #2563eb;
+@ink: #111827;
+@panel: #f8fafc;
+
+.toolbar {
+  display: flex;
+  gap: 0.5rem;
+  color: @ink;
+  background: @panel;
+
+  .button {
+    border: 1px solid darken(@panel, 12%);
+    color: @brand;
+
+    &:hover {
+      background: lighten(@brand, 42%);
+    }
+  }
+}

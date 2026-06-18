@@ -6,6 +6,44 @@ export async function run(ctx) {
     return res.ok ? res.json() : [];
   });
   if (examples.length > 100) pass('examples catalog loaded (' + examples.length + ' samples)'); else fail('examples catalog too small: ' + examples.length);
+  const requiredCodeSamples = [
+    'main.py',
+    'app.ts',
+    'Dashboard.tsx',
+    'Widget.jsx',
+    'server.go',
+    'worker.rs',
+    'Main.java',
+    'main.c',
+    'mesh.cpp',
+    'Program.cs',
+    'script.sh',
+    'query.sql',
+    'styles.css',
+    'theme.scss',
+    'theme.less',
+    'main.rb',
+    'index.php',
+    'App.swift',
+    'Main.kt',
+    'Job.scala',
+    'filter.lua',
+    'analysis.r',
+    'report.pl',
+    'app.dart',
+    'pipeline.ex',
+    'core.clj',
+    'schema.graphql',
+    'deploy.ps1',
+    'Makefile'
+  ];
+  const byFile = new Map(examples.map((ex) => [ex.file, ex]));
+  const missingCodeSamples = requiredCodeSamples.filter((file) => byFile.get(file)?.type !== 'code');
+  if (missingCodeSamples.length) {
+    fail('missing programming samples: ' + missingCodeSamples.join(', '));
+  } else {
+    pass('programming language samples indexed (' + requiredCodeSamples.length + ')');
+  }
 
   for (const ex of examples) {
     const opened = await page.evaluate((file) => window.__fv.openExampleFile(file), ex.file);

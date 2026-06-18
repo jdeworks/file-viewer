@@ -537,6 +537,328 @@
     ]
   },
   {
+    "label": "main.py",
+    "file": "main.py",
+    "mime": "text/x-python",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Python dataclass and aggregation example."
+  },
+  {
+    "label": "app.ts",
+    "file": "app.ts",
+    "mime": "text/typescript",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "TypeScript typed task filtering example."
+  },
+  {
+    "label": "Dashboard.tsx",
+    "file": "Dashboard.tsx",
+    "mime": "text/typescript-jsx",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "React TSX component with state and memoized rendering."
+  },
+  {
+    "label": "Widget.jsx",
+    "file": "Widget.jsx",
+    "mime": "text/jsx",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "React JSX component with expandable content."
+  },
+  {
+    "label": "server.go",
+    "file": "server.go",
+    "mime": "text/x-go",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Go HTTP health endpoint example."
+  },
+  {
+    "label": "worker.rs",
+    "file": "worker.rs",
+    "mime": "text/rust",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Rust word-count worker using a BTreeMap."
+  },
+  {
+    "label": "Main.java",
+    "file": "Main.java",
+    "mime": "text/x-java-source",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Java record and stream aggregation example."
+  },
+  {
+    "label": "main.c",
+    "file": "main.c",
+    "mime": "text/x-c",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "C function and formatted output example."
+  },
+  {
+    "label": "mesh.cpp",
+    "file": "mesh.cpp",
+    "mime": "text/x-c++src",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "C++ vector and struct mesh calculation example."
+  },
+  {
+    "label": "Program.cs",
+    "file": "Program.cs",
+    "mime": "text/x-csharp",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "C# record and LINQ summation example."
+  },
+  {
+    "label": "script.sh",
+    "file": "script.sh",
+    "mime": "text/x-shellscript",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Shell script with strict mode and file counting."
+  },
+  {
+    "label": "query.sql",
+    "file": "query.sql",
+    "mime": "application/sql",
+    "category": "Code",
+    "categories": [
+      "Code",
+      "Data"
+    ],
+    "type": "code",
+    "description": "SQL schema and grouped aggregate query."
+  },
+  {
+    "label": "styles.css",
+    "file": "styles.css",
+    "mime": "text/css",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "CSS custom properties and card hover styling."
+  },
+  {
+    "label": "theme.scss",
+    "file": "theme.scss",
+    "mime": "text/x-scss",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "SCSS variables and nested toolbar rules."
+  },
+  {
+    "label": "theme.less",
+    "file": "theme.less",
+    "mime": "text/x-less",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Less variables, nesting, and color function example."
+  },
+  {
+    "label": "main.rb",
+    "file": "main.rb",
+    "mime": "text/x-ruby",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Ruby report class grouping rows by team."
+  },
+  {
+    "label": "index.php",
+    "file": "index.php",
+    "mime": "application/x-httpd-php",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "PHP strict-typed status rendering example."
+  },
+  {
+    "label": "App.swift",
+    "file": "App.swift",
+    "mime": "text/x-swift",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Swift Codable release data example."
+  },
+  {
+    "label": "Main.kt",
+    "file": "Main.kt",
+    "mime": "text/x-kotlin",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Kotlin data class and extension function example."
+  },
+  {
+    "label": "Job.scala",
+    "file": "Job.scala",
+    "mime": "text/x-scala",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Scala case class and runnable job filter example."
+  },
+  {
+    "label": "filter.lua",
+    "file": "filter.lua",
+    "mime": "text/x-lua",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Lua table filtering function example."
+  },
+  {
+    "label": "analysis.r",
+    "file": "analysis.r",
+    "mime": "text/x-r-source",
+    "category": "Code",
+    "categories": [
+      "Code",
+      "Data"
+    ],
+    "type": "code",
+    "description": "R data frame and aggregate example."
+  },
+  {
+    "label": "report.pl",
+    "file": "report.pl",
+    "mime": "text/x-perl",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Perl event formatting loop example."
+  },
+  {
+    "label": "app.dart",
+    "file": "app.dart",
+    "mime": "text/x-dart",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Dart class and list iteration example."
+  },
+  {
+    "label": "pipeline.ex",
+    "file": "pipeline.ex",
+    "mime": "text/x-elixir",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Elixir pipeline normalization example."
+  },
+  {
+    "label": "core.clj",
+    "file": "core.clj",
+    "mime": "text/x-clojure",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Clojure namespace and slug generation example."
+  },
+  {
+    "label": "schema.graphql",
+    "file": "schema.graphql",
+    "mime": "application/graphql",
+    "category": "Code",
+    "categories": [
+      "Code",
+      "Data"
+    ],
+    "type": "code",
+    "description": "GraphQL schema for project sample metadata."
+  },
+  {
+    "label": "deploy.ps1",
+    "file": "deploy.ps1",
+    "mime": "text/x-powershell",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "PowerShell deployment loop example."
+  },
+  {
+    "label": "Makefile",
+    "file": "Makefile",
+    "mime": "text/x-makefile",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Makefile build, test, serve, and clean targets."
+  },
+  {
     "label": "Overwriter.frag",
     "file": "Overwriter.frag",
     "mime": "text/plain",

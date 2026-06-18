@@ -1,0 +1,15 @@
+type Query {
+  project(id: ID!): Project
+}
+
+type Project {
+  id: ID!
+  name: String!
+  samples: [Sample!]!
+}
+
+type Sample {
+  filename: String!
+  mime: String
+  enhanced: Boolean!
+}

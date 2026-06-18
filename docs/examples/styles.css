@@ -1,0 +1,14 @@
+:root {
+  color-scheme: light dark;
+  --accent: #2563eb;
+}
+
+.sample-card {
+  border: 1px solid color-mix(in srgb, var(--accent), transparent 70%);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.sample-card:is(:hover, :focus-within) {
+  box-shadow: 0 6px 18px rgb(0 0 0 / 12%);
+}
