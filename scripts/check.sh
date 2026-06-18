@@ -11,6 +11,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+echo "→ regenerating settings defaults (must be committed fresh)…"
+node scripts/gen-settings-defaults.mjs >/dev/null
+if ! git diff --quiet -- docs/core/settings-defaults.generated.json; then
+  echo "  settings-defaults.generated.json changed — stage it."
+  exit 1
+fi
+
 echo "→ regenerating asset-manifest.json (must be committed fresh)…"
 node scripts/gen-asset-manifest.mjs >/dev/null
 if ! git diff --quiet -- docs/asset-manifest.json; then
@@ -23,6 +30,7 @@ echo "→ LOC housekeeping report (advisory)…"
 echo "→ unit tests (move-aware diff + parsers + metadata)…"
 node tests/movediff.test.mjs
 node tests/markdown-edit-actions.test.mjs
+node tests/settings-defaults.test.mjs
 node tests/metadata-normalize.test.mjs
 node tests/metadata-owned.test.mjs
 

@@ -26,6 +26,37 @@ function knownOnly(values, descriptors) {
 }
 
 async function fetchPresets(type, descriptors) {
+  const generated = await fetchPresetsFromGenerated(type, descriptors);
+  if (generated) return generated;
+  return fetchPresetsFromUrls(type, descriptors);
+}
+
+let generatedDefaultsPromise = null;
+async function loadGeneratedDefaults() {
+  if (!generatedDefaultsPromise) {
+    generatedDefaultsPromise = fetch(new URL('./settings-defaults.generated.json', import.meta.url))
+      .then((r) => r.ok ? r.json() : null)
+      .catch(() => null);
+  }
+  return generatedDefaultsPromise;
+}
+
+async function fetchPresetsFromGenerated(type, descriptors) {
+  const generated = await loadGeneratedDefaults();
+  const entry = generated?.types?.[type.id];
+  if (!entry) return null;
+  const descriptorDefaults = {};
+  for (const d of descriptors) descriptorDefaults[d.key] = d.default;
+  const defaults = { ...descriptorDefaults, ...knownOnly(entry.defaults, descriptors) };
+  const presets = (entry.presets || []).map((p) => ({
+    id: p.id,
+    label: p.label || p.id,
+    values: { ...defaults, ...knownOnly(p.values, descriptors) },
+  }));
+  return presets.length ? { defaults, presets } : null;
+}
+
+async function fetchPresetsFromUrls(type, descriptors) {
   const defaults = {};
   for (const d of descriptors) defaults[d.key] = d.default;
   const declared = type.settings?.presets || [{ id: 'default', label: 'Default', url: type.settingsUrl }];
