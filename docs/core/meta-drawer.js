@@ -45,12 +45,31 @@ function labelFromKey(key) {
 
 export function normalizeMetadata(result) {
   if (!result) return [];
+  if (!Array.isArray(result) && result && typeof result === 'object' && Array.isArray(result.sections)) {
+    const rows = [];
+    if (Array.isArray(result.fields)) rows.push(...normalizeMetadata(result.fields));
+    for (const section of result.sections) {
+      const title = section.title || section.label || section.name;
+      const fields = section.fields || section.rows || [];
+      rows.push(...normalizeMetadata(fields).map((row) => ({
+        ...row,
+        section: row.section || title,
+        sectionOpen: row.sectionOpen ?? section.open,
+      })));
+    }
+    return rows;
+  }
   const source = Array.isArray(result) ? result : Array.isArray(result.fields) ? result.fields : result;
   if (Array.isArray(source)) {
     return source
       .map((r) => Array.isArray(r) ? { label: r[0], value: r[1] } : r)
       .filter((r) => r && r.label != null)
-      .map((r) => ({ label: String(r.label), value: displayValue(r.value, r.label) }));
+      .map((r) => ({
+        label: String(r.label),
+        value: displayValue(r.value, r.label),
+        ...(r.section ? { section: String(r.section) } : {}),
+        ...(r.sectionOpen != null ? { sectionOpen: !!r.sectionOpen } : {}),
+      }));
   }
   if (typeof source === 'object') {
     return Object.entries(source)
@@ -66,7 +85,7 @@ async function appendExtractedRows(rows, loader, intake) {
   const extract = m.extract || m.extractMetadata;
   if (!extract) return;
   const result = await extract(intake);
-  for (const r of normalizeMetadata(result)) rows.push([r.label, r.value]);
+  for (const r of normalizeMetadata(result)) rows.push(r);
 }
 
 function appendTextRow(body, key, value, className = '') {
@@ -115,11 +134,37 @@ function appendSection(body, title, rows, open = false) {
 function dedupeRows(rows) {
   const seen = new Set();
   const out = [];
-  for (const [label, value] of rows) {
-    const key = label.toLowerCase();
+  for (const row of rows) {
+    const key = `${row.section || ''}\u0000${row.label.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push([label, value]);
+    out.push(row);
+  }
+  return out;
+}
+
+function row(label, value, section = '') {
+  return { label, value, section };
+}
+
+function fallbackSection(label) {
+  if (ADVANCED_LABELS.has(label)) return 'Advanced file facts';
+  if (TEXT_FACT_LABELS.has(label)) return 'Text structure';
+  return 'Type-specific details';
+}
+
+function rowsForSection(rows, sectionTitle) {
+  return rows
+    .filter((r) => (r.section || fallbackSection(r.label)) === sectionTitle)
+    .map((r) => [r.label, r.value]);
+}
+
+function explicitSections(rows) {
+  const out = [];
+  for (const r of rows) {
+    if (!r.section || ['Type-specific details', 'Text structure', 'Advanced file facts'].includes(r.section)) continue;
+    if (out.some((s) => s.title === r.section)) continue;
+    out.push({ title: r.section, open: r.sectionOpen !== false });
   }
   return out;
 }
@@ -143,9 +188,9 @@ export async function buildMetadata() {
     ['Size', formatBytes(i.size)],
   ];
   const rows = [
-    ['MIME', i.mimeType || '—'],
-    ['Modified', i.lastModified ? new Date(i.lastModified).toLocaleString() : '—'],
-    ...genericMetadata(i),
+    row('MIME', i.mimeType || '—', 'Advanced file facts'),
+    row('Modified', i.lastModified ? new Date(i.lastModified).toLocaleString() : '—', 'Advanced file facts'),
+    ...genericMetadata(i).map(([label, value]) => row(label, value)),
   ];
   if (state.type.loadMetadata) {
     try { await appendExtractedRows(rows, state.type.loadMetadata, i); } catch {}
@@ -156,9 +201,12 @@ export async function buildMetadata() {
   body.innerHTML = '';
   appendTypeInfo(body, basics);
   const unique = dedupeRows(rows);
-  appendSection(body, 'Type-specific details', unique.filter(([k]) => !ADVANCED_LABELS.has(k) && !TEXT_FACT_LABELS.has(k)), true);
-  appendSection(body, 'Text structure', unique.filter(([k]) => TEXT_FACT_LABELS.has(k)), false);
-  appendSection(body, 'Advanced file facts', unique.filter(([k]) => ADVANCED_LABELS.has(k)), false);
+  appendSection(body, 'Type-specific details', rowsForSection(unique, 'Type-specific details'), true);
+  for (const section of explicitSections(unique)) {
+    appendSection(body, section.title, rowsForSection(unique, section.title), section.open);
+  }
+  appendSection(body, 'Text structure', rowsForSection(unique, 'Text structure'), false);
+  appendSection(body, 'Advanced file facts', rowsForSection(unique, 'Advanced file facts'), false);
   const note = document.createElement('p'); note.className = 'muted'; note.style.marginTop = '12px';
   note.style.fontSize = '12px';
   note.textContent = 'Note: browsers expose only the file’s modified time, never its OS creation time. “Created” dates come only from inside the file (e.g. PDF/EXIF).';

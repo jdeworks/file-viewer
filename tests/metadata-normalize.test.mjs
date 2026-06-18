@@ -77,6 +77,53 @@ function value(rows, label) {
 }
 
 {
+  const rows = normalizeMetadata([
+    { label: 'Language', value: 'Python', section: 'Code metrics' },
+    ['Lines', 12],
+  ]);
+  assert.equal(value(rows, 'Language'), 'Python');
+  assert.equal(rows.find((r) => r.label === 'Language').section, 'Code metrics');
+  assert.equal(value(rows, 'Lines'), '12');
+}
+
+{
+  const rows = normalizeMetadata({
+    fields: [{ label: 'Package', value: 'demo' }],
+    sections: [
+      {
+        title: 'Dependency health',
+        open: false,
+        fields: [
+          { label: 'Packages', value: 8 },
+          { label: 'Warnings', value: ['unpinned', 'pre-release'] },
+        ],
+      },
+      {
+        title: 'Text structure',
+        rows: [{ label: 'Lines', value: 24 }],
+      },
+    ],
+  });
+  assert.equal(value(rows, 'Package'), 'demo');
+  assert.equal(value(rows, 'Packages'), '8');
+  assert.equal(value(rows, 'Warnings'), 'unpinned, pre-release');
+  assert.equal(rows.find((r) => r.label === 'Packages').section, 'Dependency health');
+  assert.equal(rows.find((r) => r.label === 'Packages').sectionOpen, false);
+  assert.equal(rows.find((r) => r.label === 'Lines').section, 'Text structure');
+}
+
+{
+  const rows = normalizeMetadata([
+    { label: 'Lines', value: 10, section: 'Text structure' },
+    { label: 'Lines', value: 7, section: 'Code metrics' },
+  ]);
+  assert.deepEqual(rows.map((r) => `${r.section}:${r.label}=${r.value}`), [
+    'Text structure:Lines=10',
+    'Code metrics:Lines=7',
+  ]);
+}
+
+{
   const rows = normalizeMetadata(await sshMeta({
     text: [
       'Include ~/.ssh/conf.d/*.conf',
