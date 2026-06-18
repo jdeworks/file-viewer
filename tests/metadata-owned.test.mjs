@@ -40,8 +40,13 @@ function numberValue(rows, label) {
   const src = await text('example.js');
   const rows = codeMeta({ filename: 'example.js', text: src });
   assert.equal(value(rows, 'Language'), 'javascript');
+  assert.equal(value(rows, 'Lines of code'), '14');
   assert.equal(value(rows, 'Functions'), '2');
   assert.equal(value(rows, 'Exports'), '1');
+  assert.equal(value(rows, 'Avg function LOC'), '6');
+  assert.equal(value(rows, 'Max function LOC'), '7');
+  assert.equal(value(rows, 'Most complex function'), 'classify (7)');
+  assert.equal(value(rows, 'Complex functions'), '0');
   assert.ok(Number(value(rows, 'Comment lines')) >= 3);
 }
 

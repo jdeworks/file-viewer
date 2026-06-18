@@ -158,6 +158,12 @@ export async function run(ctx) {
   const lensText = await page.$$eval('#editor .codelens-decoration', (els) => els.map((e) => e.innerText).join(' | '));
   const okLens = /\bfib\b/.test(lensText) && /\bclassify\b/.test(lensText) && /complexity 2\b/.test(lensText) && /complexity 7\b/.test(lensText);
   if (okLens) pass('code metrics CodeLens: per-function LOC + complexity (fib=2, classify=7)'); else fail('codelens text: ' + lensText.slice(0, 160));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const codeMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Lines of code\s*14/.test(codeMeta) && /Max complexity\s*7/.test(codeMeta) && /Most complex function\s*classify \(7\)/.test(codeMeta)) pass('code metadata includes LOC and complexity summary');
+  else fail('code metadata: ' + codeMeta.replace(/\s+/g, ' ').slice(0, 220));
+  await page.click('#metaDrawer [data-close]');
 
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('example.svg');
