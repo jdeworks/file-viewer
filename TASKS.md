@@ -37,7 +37,7 @@ Then add ONE import + ONE entry to `docs/core/registry.js`.
 
 ## TASK 1 — Companion Release Build CI
 
-**Status:** Not started  
+**Status:** Already implemented — release workflow and companion download panel are present.
 **Effort:** M (~2h)  
 **Files:**
 - Create `.github/workflows/companion-build.yml`
