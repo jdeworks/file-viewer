@@ -52,6 +52,18 @@ export async function run(ctx) {
   // The inline <binary> image is embedded as a data: URL (zero off-origin — no network fetch).
   const fb2ImgSrc = await fb2f.$eval('.fb2-img', (e) => e.getAttribute('src')).catch(() => '');
   if (/^data:image\/png;base64,/.test(fb2ImgSrc)) pass('FB2 inline image embedded as a data: URL (zero off-origin)'); else fail('fb2 img src: ' + fb2ImgSrc.slice(0, 30));
+  await fb2f.waitForSelector('.fb2-reader .ebook-controls', { timeout: 8000 });
+  const fb2Size0 = await fb2f.$eval('.fb2-book', (e) => getComputedStyle(e).fontSize);
+  await fb2f.click('label[for="fb2-size-large"]');
+  await fb2f.click('label[for="fb2-theme-sepia"]');
+  await fb2f.click('label[for="fb2-font-sans"]');
+  const fb2Prefs = await fb2f.$eval('.fb2-book', (e) => {
+    const s = getComputedStyle(e);
+    return { size: s.fontSize, font: s.fontFamily, bg: s.backgroundColor };
+  });
+  if (parseFloat(fb2Prefs.size) > parseFloat(fb2Size0) && /system|Segoe|Roboto|sans/i.test(fb2Prefs.font) && fb2Prefs.bg !== 'rgba(0, 0, 0, 0)')
+    pass('FB2 reader controls adjust size, font, and theme');
+  else fail('fb2 reader controls: ' + JSON.stringify({ before: fb2Size0, after: fb2Prefs }));
 
   // ── MOBI / Kindle (.mobi) ── PalmDB parse + PalmDOC text → sanitized HTML, inline data: images. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -65,6 +77,18 @@ export async function run(ctx) {
   if (/The Gift of the Magi/.test(mobiText) && /Project Gutenberg text by O\. Henry/.test(mobiText)) pass('MOBI text decompressed + rendered'); else fail('mobi text: ' + mobiText.slice(0, 80));
   const mobiImg = await mobif.$eval('.mobi-img', (e) => e.getAttribute('src')).catch(() => '');
   if (/^data:image\/png;base64,/.test(mobiImg)) pass('MOBI embedded image inlined as data: URL (zero off-origin)'); else fail('mobi img: ' + mobiImg.slice(0, 30));
+  await mobif.waitForSelector('.mobi-reader .ebook-controls', { timeout: 8000 });
+  const mobiSize0 = await mobif.$eval('.mobi-book', (e) => getComputedStyle(e).fontSize);
+  await mobif.click('label[for="mobi-size-large"]');
+  await mobif.click('label[for="mobi-theme-sepia"]');
+  await mobif.click('label[for="mobi-font-sans"]');
+  const mobiPrefs = await mobif.$eval('.mobi-book', (e) => {
+    const s = getComputedStyle(e);
+    return { size: s.fontSize, font: s.fontFamily, bg: s.backgroundColor };
+  });
+  if (parseFloat(mobiPrefs.size) > parseFloat(mobiSize0) && /system|Segoe|Roboto|sans/i.test(mobiPrefs.font) && mobiPrefs.bg !== 'rgba(0, 0, 0, 0)')
+    pass('MOBI reader controls adjust size, font, and theme');
+  else fail('mobi reader controls: ' + JSON.stringify({ before: mobiSize0, after: mobiPrefs }));
 
   // ── Sony LRF ── recognized (BBeB), shown with a clear note instead of a raw hex dump. ──
   await page.goto(origin, { waitUntil: 'networkidle' });

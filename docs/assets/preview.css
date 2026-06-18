@@ -133,6 +133,30 @@
   body.fv-dark .fb2-epigraph,body.fv-dark .fb2-cite{color:#aab;}
   .fb2-poem{margin:16px 0;padding-left:14px;}
   .fb2-v{font-style:italic;text-indent:0;}
+  .ebook-reader{min-height:calc(100vh - (var(--fv-pad,20px) * 2));}
+  .ebook-choice{position:absolute;opacity:0;pointer-events:none;}
+  .ebook-controls{position:sticky;top:0;z-index:3;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:-4px auto 18px;padding:8px;background:#fffffff2;border:1px solid #0001;border-radius:8px;box-shadow:0 2px 10px #0001;max-width:42rem;}
+  .ebook-controls label{font:12px/1.2 system-ui,sans-serif;padding:5px 9px;border:1px solid #0002;border-radius:6px;background:#f8fafc;color:#1f2937;cursor:pointer;user-select:none;}
+  .ebook-size-normal:checked~.ebook-controls label[for$="size-normal"],
+  .ebook-size-large:checked~.ebook-controls label[for$="size-large"],
+  .ebook-font-serif:checked~.ebook-controls label[for$="font-serif"],
+  .ebook-font-sans:checked~.ebook-controls label[for$="font-sans"],
+  .ebook-theme-light:checked~.ebook-controls label[for$="theme-light"],
+  .ebook-theme-sepia:checked~.ebook-controls label[for$="theme-sepia"],
+  .ebook-theme-dark:checked~.ebook-controls label[for$="theme-dark"]{border-color:#4c9aff;color:#0b69c7;background:#eaf3ff;}
+  .ebook-size-normal:checked~:where(.fb2-book,.mobi-book){font-size:18px;}
+  .ebook-size-large:checked~:where(.fb2-book,.mobi-book){font-size:22px;}
+  .ebook-font-serif:checked~:where(.fb2-book,.mobi-book){font-family:Georgia,"Times New Roman",serif;}
+  .ebook-font-sans:checked~:where(.fb2-book,.mobi-book){font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
+  .ebook-theme-sepia:checked~:where(.fb2-book,.mobi-book){background:#f4ecd8;color:#4b3928;}
+  .ebook-theme-dark:checked~:where(.fb2-book,.mobi-book){background:#14171c;color:#c9d1d9;}
+  .ebook-theme-sepia:checked~:where(.fb2-book,.mobi-book),
+  .ebook-theme-dark:checked~:where(.fb2-book,.mobi-book){margin:0 auto;padding:var(--fv-pad,20px);min-height:100vh;}
+  .ebook-theme-dark:checked~.ebook-controls{background:#1f2630f2;border-color:#ffffff22;box-shadow:0 2px 10px #0006;}
+  .ebook-theme-dark:checked~.ebook-controls label{background:#111827;color:#d1d5db;border-color:#ffffff2a;}
+  .ebook-theme-dark:checked~.ebook-controls label[for$="theme-dark"]{background:#143250;color:#8ec5ff;border-color:#4c9aff;}
+  .ebook-theme-dark:checked~.fb2-book :where(.fb2-author,.fb2-subtitle){color:#aab5c6;}
+  .ebook-theme-dark:checked~.fb2-book :where(.fb2-epigraph,.fb2-cite){color:#c0cad8;}
   /* MOBI / AZW reader — sanitized book HTML with inline data: images. */
   .mobi-book{max-width:42rem;margin:0 auto;font-family:var(--fv-reader-font,Georgia,"Times New Roman",serif);}
   .mobi-head{text-align:center;margin:0 0 28px;padding-bottom:16px;border-bottom:1px solid #8883;}

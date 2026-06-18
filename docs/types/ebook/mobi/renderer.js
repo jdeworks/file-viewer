@@ -9,6 +9,22 @@ import { openMobi } from './mobilib.js';
 
 const ERROR = new URL('./error.html', import.meta.url);
 
+function readerShell(content) {
+  return '<div class="ebook-reader mobi-reader">'
+    + '<input class="ebook-choice ebook-size-normal" id="mobi-size-normal" name="mobi-size" type="radio" checked>'
+    + '<input class="ebook-choice ebook-size-large" id="mobi-size-large" name="mobi-size" type="radio">'
+    + '<input class="ebook-choice ebook-font-serif" id="mobi-font-serif" name="mobi-font" type="radio" checked>'
+    + '<input class="ebook-choice ebook-font-sans" id="mobi-font-sans" name="mobi-font" type="radio">'
+    + '<input class="ebook-choice ebook-theme-light" id="mobi-theme-light" name="mobi-theme" type="radio" checked>'
+    + '<input class="ebook-choice ebook-theme-sepia" id="mobi-theme-sepia" name="mobi-theme" type="radio">'
+    + '<input class="ebook-choice ebook-theme-dark" id="mobi-theme-dark" name="mobi-theme" type="radio">'
+    + '<div class="ebook-controls" aria-label="Reader settings">'
+    + '<label for="mobi-size-normal">A</label><label for="mobi-size-large">A+</label>'
+    + '<label for="mobi-font-serif">Serif</label><label for="mobi-font-sans">Sans</label>'
+    + '<label for="mobi-theme-light">Light</label><label for="mobi-theme-sepia">Sepia</label><label for="mobi-theme-dark">Dark</label>'
+    + '</div>' + content + '</div>';
+}
+
 export async function render(intake, _ctx) {
   const result = openMobi(intake.bytes);
   if (!result.ok) {
@@ -33,5 +49,5 @@ export async function render(intake, _ctx) {
     FORBID_TAGS: ['script', 'style', 'link', 'meta'],
     FORBID_ATTR: ['onerror', 'onload', 'onclick'],
   });
-  return { bodyHtml: clean, hadUnsafe: DOMPurify.removed.length > 0 };
+  return { bodyHtml: readerShell(clean), hadUnsafe: DOMPurify.removed.length > 0 };
 }

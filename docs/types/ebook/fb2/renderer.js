@@ -7,6 +7,22 @@ import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+function readerShell(content) {
+  return '<div class="ebook-reader fb2-reader">'
+    + '<input class="ebook-choice ebook-size-normal" id="fb2-size-normal" name="fb2-size" type="radio" checked>'
+    + '<input class="ebook-choice ebook-size-large" id="fb2-size-large" name="fb2-size" type="radio">'
+    + '<input class="ebook-choice ebook-font-serif" id="fb2-font-serif" name="fb2-font" type="radio" checked>'
+    + '<input class="ebook-choice ebook-font-sans" id="fb2-font-sans" name="fb2-font" type="radio">'
+    + '<input class="ebook-choice ebook-theme-light" id="fb2-theme-light" name="fb2-theme" type="radio" checked>'
+    + '<input class="ebook-choice ebook-theme-sepia" id="fb2-theme-sepia" name="fb2-theme" type="radio">'
+    + '<input class="ebook-choice ebook-theme-dark" id="fb2-theme-dark" name="fb2-theme" type="radio">'
+    + '<div class="ebook-controls" aria-label="Reader settings">'
+    + '<label for="fb2-size-normal">A</label><label for="fb2-size-large">A+</label>'
+    + '<label for="fb2-font-serif">Serif</label><label for="fb2-font-sans">Sans</label>'
+    + '<label for="fb2-theme-light">Light</label><label for="fb2-theme-sepia">Sepia</label><label for="fb2-theme-dark">Dark</label>'
+    + '</div>' + content + '</div>';
+}
+
 // Map a binary id → data: URL from the <binary> elements.
 function collectImages(doc) {
   const map = new Map();
@@ -91,5 +107,5 @@ export async function render(intake, _ctx) {
     FORBID_TAGS: ['script', 'style'],
     FORBID_ATTR: ['onerror', 'onload', 'onclick'],
   });
-  return { bodyHtml: clean, hadUnsafe: DOMPurify.removed.length > 0 };
+  return { bodyHtml: readerShell(clean), hadUnsafe: DOMPurify.removed.length > 0 };
 }
