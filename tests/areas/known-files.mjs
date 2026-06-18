@@ -54,6 +54,12 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .kf-svc', { timeout: 12000 });
   const svcNames = await page.$$eval('#previewHost .kf-svc h3', (els) => els.map((e) => e.textContent));
   if (svcNames.includes('web') && svcNames.includes('api')) pass('docker-compose: a card per service (' + svcNames.join(', ') + ')'); else fail('compose services: ' + svcNames.join(','));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const composeMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Services\s*2/.test(composeMeta) && /Build services\s*1/.test(composeMeta) && /Bind mounts\s*1/.test(composeMeta)) pass('docker-compose metadata includes stack and volume facts');
+  else fail('compose meta: ' + composeMeta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
 
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.gitignore');

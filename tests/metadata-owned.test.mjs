@@ -13,6 +13,7 @@ import { extract as goModMeta } from '../docs/types/text/known/go-mod/metadata.j
 import { extract as reqMeta } from '../docs/types/text/known/requirements-txt/metadata.js';
 import { extract as codeownersMeta } from '../docs/types/text/known/codeowners/metadata.js';
 import { extract as editorconfigMeta } from '../docs/types/text/known/editorconfig/metadata.js';
+import { testExports as composeMeta } from '../docs/types/text/yaml/known/docker-compose/metadata.js';
 
 const ROOT = new URL('../docs/examples/', import.meta.url);
 
@@ -97,6 +98,27 @@ function numberValue(rows, label) {
 }
 
 {
+  const rows = composeMeta.summarize({
+    services: {
+      web: { build: '.', ports: ['8080:80'], depends_on: ['api'] },
+      api: { image: 'node:20-alpine', environment: ['NODE_ENV=production'], volumes: ['./api:/app', 'data:/data'] },
+      worker: { command: 'node worker.js' },
+    },
+    volumes: { data: {} },
+    networks: { backend: {} },
+    secrets: { api_key: {} },
+  });
+  assert.equal(value(rows, 'Services'), '3');
+  assert.equal(value(rows, 'Images'), '1');
+  assert.equal(value(rows, 'Build services'), '1');
+  assert.equal(value(rows, 'Published ports'), '1');
+  assert.equal(value(rows, 'Bind mounts'), '1');
+  assert.equal(value(rows, 'Named volume mounts'), '1');
+  assert.equal(value(rows, 'Top-level secrets'), '1');
+  assert.equal(value(rows, 'Issue hints'), '2');
+}
+
+{
   const rows = reqMeta({ filename: 'requirements.txt', text: await text('requirements.txt') });
   assert.equal(value(rows, 'Packages'), '8');
   assert.equal(value(rows, 'Included files'), '1');
@@ -111,7 +133,7 @@ function numberValue(rows, label) {
 {
   const rows = editorconfigMeta({ filename: '.editorconfig', text: await text('.editorconfig') });
   assert.equal(value(rows, 'Root config'), 'yes');
-  assert.equal(value(rows, 'Sections'), '3');
+  assert.equal(value(rows, 'Sections'), '10');
 }
 
 console.log('metadata-owned: ok');

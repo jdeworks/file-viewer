@@ -78,11 +78,39 @@ function value(rows, label) {
 
 {
   const rows = normalizeMetadata(await sshMeta({
-    text: 'Host *\n  User deploy\nHost prod api\n  HostName prod.example\n  Port 2200\n  ProxyJump bastion\n',
+    text: [
+      'Include ~/.ssh/conf.d/*.conf',
+      'Host *',
+      '  User deploy',
+      '  ForwardAgent yes',
+      'Host prod api',
+      '  HostName prod.example',
+      '  Port 2200',
+      '  IdentityFile ~/.ssh/id_prod',
+      '  IdentityFile ~/.ssh/id_prod_backup',
+      '  ProxyJump ops@bastion:2222,edge',
+      '  ProxyCommand ssh bastion nc %h %p',
+      '  StrictHostKeyChecking no',
+      '  LocalForward 127.0.0.1:5432 db:5432',
+      'Match user git',
+      '  User git',
+      '  RemoteForward 8022 localhost:22',
+      '  Include ~/.ssh/git.conf',
+    ].join('\n'),
   }));
   assert.equal(value(rows, 'Host Count'), '1');
   assert.equal(value(rows, 'Has Wildcard'), 'yes');
-  assert.equal(value(rows, 'Hosts'), '1');
+  assert.equal(value(rows, 'Host Patterns'), '*, prod, api');
+  assert.equal(value(rows, 'Distinct Users'), 'deploy, git');
+  assert.equal(value(rows, 'Ports'), '2200');
+  assert.equal(value(rows, 'Identity Files'), '~/.ssh/id_prod, ~/.ssh/id_prod_backup');
+  assert.equal(value(rows, 'ProxyJump Hosts'), 'ops@bastion, edge');
+  assert.equal(value(rows, 'ProxyCommand Count'), '1');
+  assert.equal(value(rows, 'ForwardAgent Enabled Count'), '1');
+  assert.equal(value(rows, 'StrictHostKeyChecking Disabled Count'), '1');
+  assert.equal(value(rows, 'Forwarded Ports'), 'local 127.0.0.1:5432 db:5432, remote 8022 localhost:22');
+  assert.equal(value(rows, 'Includes'), '~/.ssh/conf.d/*.conf, ~/.ssh/git.conf');
+  assert.equal(value(rows, 'Match Blocks'), 'user git');
 }
 
 {

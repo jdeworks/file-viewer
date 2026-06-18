@@ -23,6 +23,7 @@ echo "→ LOC housekeeping report (advisory)…"
 echo "→ unit tests (move-aware diff + parsers + metadata)…"
 node tests/movediff.test.mjs
 node tests/metadata-normalize.test.mjs
+node tests/metadata-owned.test.mjs
 
 echo "→ smoke test (headless Chromium, zero off-origin)…"
 node tests/smoke.mjs

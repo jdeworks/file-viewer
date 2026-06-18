@@ -5,4 +5,5 @@ export default {
   label: 'docker-compose',
   match: (intake, baseType) => baseType.id === 'yaml' && /(^|\/)(docker-)?compose(\.\w+)?\.ya?ml$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };
