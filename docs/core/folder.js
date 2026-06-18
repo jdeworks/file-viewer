@@ -26,6 +26,34 @@ export function initFolder(deps) {
 let _moveNoticed = false;
 let _repoViewToken = 0;
 
+const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+export function showFolderLoading(message, { progress = null, detail = '' } = {}) {
+  const notice = $('ftNotice');
+  const label = document.createElement('div');
+  label.className = 'ft-loading-label';
+  label.textContent = message;
+  const bar = document.createElement('div');
+  bar.className = 'ft-loading-bar' + (Number.isFinite(progress) ? '' : ' indeterminate');
+  if (Number.isFinite(progress)) bar.style.setProperty('--p', Math.max(0, Math.min(1, progress)));
+  notice.className = 'ft-notice ft-loading';
+  notice.replaceChildren(label, bar);
+  if (detail) {
+    const extra = document.createElement('div');
+    extra.className = 'ft-loading-detail';
+    extra.textContent = detail;
+    notice.appendChild(extra);
+  }
+  notice.hidden = false;
+}
+
+export function hideFolderLoading() {
+  const notice = $('ftNotice');
+  notice.hidden = true;
+  notice.className = 'ft-notice';
+  notice.textContent = '';
+}
+
 // Record a file move (src → dest path). Transfers any in-memory edit to the new path.
 export function recordMove(src, dest) {
   const entry = state.treeEntries?.find((e) => e.path === src);
@@ -53,11 +81,12 @@ export async function loadFolder(entries) {
   state.repoHandle = null;
   let display = git ? entries.filter((e) => !isGitInternal(e.path)) : entries;
   display = display.map((e) => ({ ...e, originalPath: e.originalPath || e.path }));
-  $('ftNotice').hidden = true;
   state.treeEntries = display;                 // kept for arrow-key navigation lookups
   const rootName = git ? git.repoName : (display[0]?.path.split('/')[0] || 'Folder');
   $('ftRoot').textContent = rootName;
   $('ftRoot').title = rootName;
+  $('ftBody').innerHTML = '';
+  showFolderLoading('Preparing ' + rootName + '…', { progress: 0.1, detail: entries.length.toLocaleString() + ' file' + (entries.length === 1 ? '' : 's') });
   state.folderEdits = new Map();               // fresh folder → no tracked edits yet
   state.folderMoves = new Map();               // fresh folder → no in-memory moves yet
   state.currentFolderPath = null;
@@ -87,8 +116,6 @@ export async function loadFolder(entries) {
     }
   };
 
-  const tree = buildTree(display);
-  state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node), onMove: _onMove });
   $('treeBtn').hidden = false;
   $('repoBtn').hidden = !git;
   $('ftExportBtn').hidden = !!git;             // export the loaded folder (not for git repos)
@@ -96,12 +123,24 @@ export async function loadFolder(entries) {
   $('ftSearchInput').value = '';
   $('ftSearchCount').textContent = '';
   setTree(true);
+  await nextFrame();
 
-  if (git) {
-    await openRepoView({ auto: true });        // default to the commit/branch view
-  } else {
-    const pick = display.find((e) => /(^|\/)(readme|index)\.\w+$/i.test(e.path)) || display[0];
-    if (pick) { state._skipDiscardGuard = true; await openTreeFile({ file: pick.file, path: pick.path }); state.treeApi.setActive(pick.path); }
+  showFolderLoading('Building file tree…', { progress: 0.45, detail: display.length.toLocaleString() + ' visible file' + (display.length === 1 ? '' : 's') });
+  await nextFrame();
+  const tree = buildTree(display);
+  state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node), onMove: _onMove });
+
+  try {
+    showFolderLoading(git ? 'Reading git metadata…' : 'Opening default file…', { progress: 0.75 });
+    await nextFrame();
+    if (git) {
+      await openRepoView({ auto: true });        // default to the commit/branch view
+    } else {
+      const pick = display.find((e) => /(^|\/)(readme|index)\.\w+$/i.test(e.path)) || display[0];
+      if (pick) { state._skipDiscardGuard = true; await openTreeFile({ file: pick.file, path: pick.path }); state.treeApi.setActive(pick.path); }
+    }
+  } finally {
+    hideFolderLoading();
   }
 }
 

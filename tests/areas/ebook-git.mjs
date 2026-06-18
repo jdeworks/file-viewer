@@ -231,12 +231,15 @@ export async function run(ctx) {
   await page.waitForTimeout(100);
 
   // ── Huge-folder virtual scroll: all 20 010 entries load; only a viewport slice is in the DOM ──
-  await page.evaluate(() => {
+  const loadingSeen = await page.evaluate(() => {
     const entries = [];
     for (let i = 0; i < 20010; i++) entries.push({ file: new File(['x'], 'f' + i + '.txt', { type: '' }), path: 'big/f' + i + '.txt' });
     window.__fv.state._skipDiscardGuard = true;
     window.__fv.loadFolder(entries);
+    const notice = document.getElementById('ftNotice');
+    return !notice.hidden && /Preparing big|Building file tree/.test(notice.textContent);
   });
+  if (loadingSeen) pass('folder load shows progress feedback'); else fail('folder load progress not shown');
   await page.waitForFunction(() => window.__fv.state.treeEntries?.length === 20010, { timeout: 15000 });
   const ftNoticeHidden = await page.$eval('#ftNotice', (e) => e.hidden);
   const domRows = await page.$$eval('#fileTree .ft-row', (els) => els.length);

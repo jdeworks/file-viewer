@@ -96,6 +96,13 @@ body {
 .ft-notice { padding: 7px 12px; font: 11px/1.4 system-ui, sans-serif; color: var(--fg-2);
   background: var(--bg-3); border-bottom: 1px solid var(--border); }
 .ft-notice[hidden] { display: none; }
+.ft-loading { display: grid; gap: 6px; }
+.ft-loading-label { color: var(--fg); font-weight: 600; }
+.ft-loading-detail { font-size: 11px; color: var(--fg-2); }
+.ft-loading-bar { --p: 0; height: 4px; border-radius: 999px; overflow: hidden; background: var(--border); position: relative; }
+.ft-loading-bar::before { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 100%); background: var(--accent); border-radius: inherit; transition: width .18s ease; }
+.ft-loading-bar.indeterminate::before { width: 42%; animation: ft-load-slide 1.05s ease-in-out infinite; }
+@keyframes ft-load-slide { 0% { transform: translateX(-110%); } 100% { transform: translateX(250%); } }
 .ft-search { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--border); }
 .ft-search[hidden] { display: none; }
 .ft-search input { flex: 1; min-width: 0; font: 12px system-ui, sans-serif; padding: 5px 8px;

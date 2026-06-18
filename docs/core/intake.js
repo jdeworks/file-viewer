@@ -101,12 +101,16 @@ function readEntries(reader) {
     next();
   });
 }
-async function walkEntry(entry, prefix, out) {
+async function walkEntry(entry, prefix, out, onProgress) {
   const path = prefix ? prefix + '/' + entry.name : entry.name;
   if (entry.isFile) {
-    await new Promise((res) => entry.file((f) => { out.push({ file: f, path }); res(); }, () => res()));
+    await new Promise((res) => entry.file((f) => {
+      out.push({ file: f, path });
+      onProgress?.(out.length);
+      res();
+    }, () => res()));
   } else if (entry.isDirectory) {
-    for (const child of await readEntries(entry.createReader())) await walkEntry(child, path, out);
+    for (const child of await readEntries(entry.createReader())) await walkEntry(child, path, out, onProgress);
   }
 }
 
@@ -116,7 +120,7 @@ export function entriesFromFileList(fileList) {
 }
 
 // Wire intake: single file (picker/drop/paste) -> onIntake; folder (dir picker/drop) -> onFolder.
-export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolder, onError }) {
+export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolder, onError, onFolderStatus }) {
   const handleFile = async (file) => {
     try {
       if (!file) return;
@@ -128,8 +132,10 @@ export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolde
 
   fileInput?.addEventListener('change', (e) => handleFile(e.target.files?.[0]));
   folderInput?.addEventListener('change', (e) => {
+    onFolderStatus?.('Preparing selected folder…');
     const entries = entriesFromFileList(e.target.files || []);
     if (entries.length) onFolder?.(entries);
+    else onFolderStatus?.(null);
   });
 
   // Shared drop handler — folder if any directory entry, else first file.
@@ -139,8 +145,16 @@ export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolde
     const roots = items.map((i) => i.webkitGetAsEntry?.()).filter(Boolean);
     if (roots.some((r) => r.isDirectory) && onFolder) {
       const out = [];
-      for (const r of roots) await walkEntry(r, '', out);
+      let lastUpdate = 0;
+      onFolderStatus?.('Scanning dropped folder…', { detail: '0 files' });
+      const onProgress = (count) => {
+        if (count - lastUpdate < 200) return;
+        lastUpdate = count;
+        onFolderStatus?.('Scanning dropped folder…', { detail: count.toLocaleString() + ' files' });
+      };
+      for (const r of roots) await walkEntry(r, '', out, onProgress);
       if (out.length) return onFolder(out);
+      onFolderStatus?.(null);
     }
     const file = e.dataTransfer?.files?.[0];
     if (file) handleFile(file);

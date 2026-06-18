@@ -28,7 +28,7 @@ import { mapPreviewToRaw, mapRawToPreview, syncScrollFromRaw, syncScrollFromPrev
 import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare } from './compare.js';
 import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent } from './rawpane.js';
 import { buildMetadata } from './meta-drawer.js';
-import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey } from './folder.js';
+import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, showFolderLoading, hideFolderLoading } from './folder.js';
 import { clearArchiveTree, mountArchiveTree } from './archive-tree.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
 import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, renderCompanionSettings, detectCompanionOnStartup } from './companion-ui.js';
@@ -358,15 +358,16 @@ function init() {
     dropZone: $('dropZone'), fileInput: $('fileInput'), folderInput: $('folderInput'),
     onIntake: loadIntake,
     onFolder: async (entries) => {
-      // Reset folder root before resolving a new one.
       resetCompanionFolderRoot();
       await loadFolder(entries);
-      // After the folder tree is built, resolve the companion root in the background.
-      // Pass the raw File objects from entries so we can read webkitRelativePath + size/mtime.
-      const files = entries.map((e) => e.file).filter(Boolean);
-      resolveDroppedFolderRoot(files);
+      resolveDroppedFolderRoot(entries.map((e) => e.file).filter(Boolean));
     },
     onError: (e) => toast('Could not read file: ' + e.message),
+    onFolderStatus: (message, opts = {}) => {
+      if (!message) { hideFolderLoading(); return; }
+      $('ftRoot').textContent = 'Loading folder'; $('treeBtn').hidden = false; setTree(true);
+      showFolderLoading(message, opts);
+    },
   });
 
   // Tree-to-workspace drag: when a file is dragged from the sidebar tree onto the workspace
