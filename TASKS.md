@@ -137,7 +137,7 @@ For `app.js` specifically — good split candidates:
 
 ## TASK 3 — Feature A: Help Icon Easter Egg
 
-**Status:** Not started (but the pattern is ALREADY IMPLEMENTED in `app.js` lines 507–518 + 1011–1015)  
+**Status:** Already implemented — verified in `docs/core/app.js`.
 **Effort:** XS (~30 min)
 
 Looking at `docs/core/app.js` around line 507 and 1011 — the easter egg IS already built:
