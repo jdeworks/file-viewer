@@ -54,6 +54,7 @@ async function loadIntake(intake) {
     if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return;
   }
   state.downloadedSinceEdit = true;    // fresh document — nothing unsaved yet
+  state.binaryEdit = null;
   state.currentFolderPath = null;      // single-file load by default; openTreeFile re-sets it
   state.intake = intake;
   setCompanionLinked(null);            // clear any prior linked path on new file open
@@ -139,7 +140,15 @@ async function renderPreview() {
   let rendered;
   try {
     const mod = useKnown ? await state.known.loadRenderer() : await type.loadRenderer();
-    const ctx = { settings: state.settingsModel.values, folder: folderContext() };
+    const ctx = {
+      settings: state.settingsModel.values,
+      folder: folderContext(),
+      onBinaryEdit: (edit) => {
+        state.binaryEdit = edit || null;
+        state.downloadedSinceEdit = !edit?.dirty;
+        syncSaveBtn();
+      },
+    };
     if (type.id === 'html') ctx.allowScripts = state.htmlAllowScripts;
     rendered = await mod.render(state.intake, ctx);
   } catch (err) {

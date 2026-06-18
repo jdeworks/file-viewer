@@ -183,6 +183,19 @@ export async function run(ctx) {
   const zoomLabel = await page.$eval('#previewHost .imgv-zoom', (e) => e.textContent);
   const widthSet = await page.$eval('#previewHost .imgv-img', (e) => e.style.width);
   if (/%/.test(zoomLabel) && /px$/.test(widthSet)) pass('image zoom sets a real pixel width (' + zoomLabel + ')'); else fail('image zoom: label=' + zoomLabel + ' width=' + widthSet);
+  await page.fill('#previewHost .imgv-text-input', 'Sample label');
+  await page.click('#previewHost .imgv-text-apply');
+  await page.waitForFunction(() => window.__fv.state.binaryEdit?.dirty === true, null, { timeout: 8000 });
+  const editedBytes = await page.evaluate(async () => {
+    const bytes = await window.__fv.state.binaryEdit.getBytes();
+    return { len: bytes.length, sig: Array.from(bytes.slice(0, 4)) };
+  });
+  if (editedBytes.len > 1000 && editedBytes.sig.join(',') === '137,80,78,71') pass('image text edit produces dirty PNG bytes'); else fail('image edit bytes: ' + JSON.stringify(editedBytes));
+  const hasDirtyImage = await page.evaluate(() => window.__fv.hasUnsavedWork());
+  if (hasDirtyImage) pass('edited image counts as unsaved work'); else fail('edited image did not count as unsaved');
+  await page.evaluate(() => window.__fv.downloadCurrent());
+  const cleanAfterDownload = await page.evaluate(() => !window.__fv.hasUnsavedWork());
+  if (cleanAfterDownload) pass('edited image download clears unsaved state'); else fail('edited image stayed dirty after download');
   // Image export (loadExports hook): menu offers PNG/JPEG/WebP, and a conversion actually downloads.
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });

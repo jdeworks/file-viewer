@@ -121,6 +121,7 @@ export async function onRawEdited(value) {
 // since the last edit. Used to guard against silently discarding progress.
 export function hasUnsavedWork() {
   if (state.rawview?.isDirty() && !state.downloadedSinceEdit) return true;
+  if (state.binaryEdit?.dirty && !state.downloadedSinceEdit) return true;
   // Folder edits stashed but not yet exported also count — closing the tab would lose them.
   return state.folderEdits.size > 0 && !state.folderExported;
 }
@@ -163,8 +164,15 @@ export async function takeScreenshot() {
   }
 }
 
-export function downloadCurrent() {
-  const blob = new Blob([state.rawview ? state.rawview.getValue() : (state.intake.text || '')], { type: state.intake.mimeType || 'text/plain' });
+export async function downloadCurrent() {
+  let blob;
+  if (state.binaryEdit?.dirty && typeof state.binaryEdit.getBytes === 'function') {
+    const bytes = await state.binaryEdit.getBytes();
+    blob = new Blob([bytes], { type: state.binaryEdit.mimeType || state.intake.mimeType || 'application/octet-stream' });
+    state.binaryEdit.dirty = false;
+  } else {
+    blob = new Blob([state.rawview ? state.rawview.getValue() : (state.intake.text || '')], { type: state.intake.mimeType || 'text/plain' });
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = state.intake.filename || 'download.txt';

@@ -159,7 +159,8 @@ export function syncSaveBtn() {
   if (!btn) return;
   const isFolderFile = !!(state.currentFolderPath && state.treeEntries && !state.sessionTree);
   const folderSaveReady = isFolderFile ? !!companionFolderRoot : true;
-  const show = companionAvailable && !!state.intake && !state.intake.isBinary && folderSaveReady;
+  const canSaveBinaryEdit = !!(state.binaryEdit?.dirty && typeof state.binaryEdit.getBytes === 'function');
+  const show = companionAvailable && !!state.intake && (!state.intake.isBinary || canSaveBinaryEdit) && folderSaveReady;
   btn.hidden = !show;
   if (show) layoutTopbar();
 }
@@ -199,14 +200,20 @@ export async function onSaveClick() {
       }
     }
 
-    if (!confirm(`Save to:\n${absPath}?`)) return;
-    const bytes = state.rawview
-      ? new TextEncoder().encode(state.rawview.getValue())
-      : (state.intake.bytes || new TextEncoder().encode(state.intake.text || ''));
+    const isBinaryEdit = !!(state.binaryEdit?.dirty && typeof state.binaryEdit.getBytes === 'function');
+    const msg = isBinaryEdit
+      ? `Overwrite image on disk?\n\n${absPath}\n\nThis replaces the original file with the edited image bytes.`
+      : `Save to:\n${absPath}?`;
+    if (!confirm(msg)) return;
+    const bytes = isBinaryEdit
+      ? await state.binaryEdit.getBytes()
+      : (state.rawview ? new TextEncoder().encode(state.rawview.getValue()) : (state.intake.bytes || new TextEncoder().encode(state.intake.text || '')));
     try {
       await saveFile(absPath, bytes);
       if (!state.currentFolderPath) setCompanionLinked(absPath);
+      if (isBinaryEdit) state.binaryEdit.dirty = false;
       state.downloadedSinceEdit = true;
+      syncSaveBtn();
       toast('Saved to disk: ' + absPath);
     } catch (err) {
       toast('Save failed: ' + err.message);

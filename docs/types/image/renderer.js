@@ -7,8 +7,9 @@ import { isSvg, mimeFor, dimensions } from './imglib.js';
 import { recordStage3AsciiActivation } from '../../games/metagame/viewer-actions.js';
 
 const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const EDITABLE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
 
-export async function render(intake, _ctx) {
+export async function render(intake, ctx = {}) {
   if (isSvg(intake)) {
     const DOMPurify = await loadGlobal(vendor('dompurify/purify.min.js'), 'DOMPurify');
     DOMPurify.removed = [];
@@ -19,6 +20,7 @@ export async function render(intake, _ctx) {
   // Raster: parent pane + blob URL + fit/zoom controls + ASCII toggle.
   const mime = mimeFor(intake);
   const url = URL.createObjectURL(new Blob([intake.bytes], { type: mime }));
+  const canEdit = EDITABLE_MIME.has(mime);
   const host = document.createElement('div');
   host.className = 'imgv-doc';
   host.innerHTML =
@@ -40,6 +42,12 @@ export async function render(intake, _ctx) {
     + '<option value="blocks" selected>Blocks</option><option value="classic">Classic</option><option value="braille">Braille</option>'
     + '</select>'
     + '<button class="imgv-ascii-copy" title="Copy ASCII text" hidden>Copy</button>'
+    + (canEdit ? '<span class="imgv-sep"></span>'
+      + '<input class="imgv-text-input" type="text" placeholder="Text" aria-label="Image text">'
+      + '<input class="imgv-text-size" type="number" min="8" max="240" value="32" title="Font size">'
+      + '<input class="imgv-text-color" type="color" value="#ffffff" title="Text color">'
+      + '<button class="imgv-text-apply" title="Draw text on image">Draw text</button>'
+      + '<button class="imgv-text-reset" title="Reset image edits" hidden>Reset</button>' : '')
     + '</div>'
     + '<div class="imgv-stage"><img class="imgv-img" alt="' + esc(intake.filename) + '"></div>'
     + '<div class="imgv-ascii-out" hidden></div>';
@@ -52,7 +60,13 @@ export async function render(intake, _ctx) {
   const asciiCharset = host.querySelector('.imgv-ascii-charset');
   const asciiCopy = host.querySelector('.imgv-ascii-copy');
   const asciiOut = host.querySelector('.imgv-ascii-out');
+  const editInput = host.querySelector('.imgv-text-input');
+  const editSize = host.querySelector('.imgv-text-size');
+  const editColor = host.querySelector('.imgv-text-color');
+  const editApply = host.querySelector('.imgv-text-apply');
+  const editReset = host.querySelector('.imgv-text-reset');
   let natural = 0, fit = true, zoom = 1, asciiMode = false, asciiText = '';
+  let editedUrl = null, editedBlob = null;
 
   function apply() {
     host.querySelector('.imgv-fit').classList.toggle('active', fit);
@@ -130,5 +144,68 @@ export async function render(intake, _ctx) {
     if (asciiText) navigator.clipboard?.writeText(asciiText);
   });
 
-  return { parentNode: host, revoke: () => { URL.revokeObjectURL(url); host._ss?.stop(); } };
+  async function drawText() {
+    const text = (editInput?.value || '').trim();
+    if (!text) return;
+    const base = new Image();
+    base.decoding = 'async';
+    base.src = editedUrl || url;
+    await base.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = base.naturalWidth;
+    canvas.height = base.naturalHeight;
+    const g = canvas.getContext('2d');
+    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
+    g.drawImage(base, 0, 0);
+    const size = Math.max(8, Math.min(240, parseInt(editSize?.value, 10) || 32));
+    const pad = Math.max(12, Math.round(size * 0.6));
+    g.font = `700 ${size}px system-ui, sans-serif`;
+    g.textBaseline = 'bottom';
+    g.lineJoin = 'round';
+    g.strokeStyle = 'rgba(0,0,0,.72)';
+    g.lineWidth = Math.max(3, Math.round(size / 8));
+    g.fillStyle = editColor?.value || '#ffffff';
+    wrapText(g, text, pad, canvas.height - pad, canvas.width - pad * 2, size * 1.2);
+    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, mime, mime === 'image/jpeg' ? 0.92 : undefined));
+    if (!editedBlob) return;
+    if (editedUrl) URL.revokeObjectURL(editedUrl);
+    editedUrl = URL.createObjectURL(editedBlob);
+    img.src = editedUrl;
+    editReset.hidden = false;
+    ctx.onBinaryEdit?.({
+      dirty: true,
+      mimeType: mime,
+      getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()),
+    });
+  }
+
+  function wrapText(g, text, x, y, maxWidth, lineHeight) {
+    const words = text.split(/\s+/);
+    const lines = [];
+    let line = '';
+    for (const word of words) {
+      const next = line ? line + ' ' + word : word;
+      if (line && g.measureText(next).width > maxWidth) { lines.push(line); line = word; }
+      else line = next;
+    }
+    if (line) lines.push(line);
+    const startY = y - Math.max(0, lines.length - 1) * lineHeight;
+    lines.forEach((l, i) => {
+      const yy = startY + i * lineHeight;
+      g.strokeText(l, x, yy, maxWidth);
+      g.fillText(l, x, yy, maxWidth);
+    });
+  }
+
+  editApply?.addEventListener('click', () => { drawText().catch((e) => { editApply.title = e.message || String(e); }); });
+  editReset?.addEventListener('click', () => {
+    if (editedUrl) URL.revokeObjectURL(editedUrl);
+    editedUrl = null;
+    editedBlob = null;
+    img.src = url;
+    editReset.hidden = true;
+    ctx.onBinaryEdit?.(null);
+  });
+
+  return { parentNode: host, revoke: () => { URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); host._ss?.stop(); } };
 }

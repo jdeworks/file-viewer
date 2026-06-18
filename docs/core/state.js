@@ -11,6 +11,7 @@ export const state = {
   settingsModel: null,   // WP03 settings model for the active type
   rawview: null,         // WP13 RawView controller (owns original+current models, 4 modes)
   preview: null,         // iframe controller
+  binaryEdit: null,      // preview-owned edited bytes for binary formats that support saving
   rawMode: 'current',    // original | current | diff | movediff
   mode: 'split',         // desktop view mode: raw | split | preview
   tab: 'raw',            // mobile active tab
