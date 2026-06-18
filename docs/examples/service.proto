@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package viewer.samples.v1;
+
+message FileSummary {
+  string name = 1;
+  string mime_type = 2;
+  uint64 size_bytes = 3;
+  repeated string categories = 4;
+}
+
+message CatalogRequest {
+  string query = 1;
+  int32 page_size = 2;
+}
+
+message CatalogResponse {
+  repeated FileSummary files = 1;
+  string next_page_token = 2;
+}
+
+service SampleCatalog {
+  rpc ListFiles(CatalogRequest) returns (CatalogResponse);
+}

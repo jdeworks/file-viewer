@@ -69,6 +69,8 @@ export function normalizeMetadata(result) {
         value: displayValue(r.value, r.label),
         ...(r.section ? { section: String(r.section) } : {}),
         ...(r.sectionOpen != null ? { sectionOpen: !!r.sectionOpen } : {}),
+        ...(r.dedupeKey ? { dedupeKey: String(r.dedupeKey).toLowerCase() } : {}),
+        ...(Number.isFinite(r.priority) ? { priority: Number(r.priority) } : {}),
       }));
   }
   if (typeof source === 'object') {
@@ -131,13 +133,25 @@ function appendSection(body, title, rows, open = false) {
   body.appendChild(section);
 }
 
-function dedupeRows(rows) {
-  const seen = new Set();
+export function dedupeMetadataRows(rows) {
+  const explicit = new Map();
+  rows.forEach((row) => {
+    if (!row.dedupeKey) return;
+    const prev = explicit.get(row.dedupeKey);
+    if (!prev || (row.priority || 0) > (prev.priority || 0)) explicit.set(row.dedupeKey, { row, priority: row.priority || 0 });
+  });
+  const seenLabels = new Set();
+  const seenExplicit = new Set();
   const out = [];
   for (const row of rows) {
+    if (row.dedupeKey) {
+      if (explicit.get(row.dedupeKey)?.row !== row) continue;
+      if (seenExplicit.has(row.dedupeKey)) continue;
+      seenExplicit.add(row.dedupeKey);
+    }
     const key = `${row.section || ''}\u0000${row.label.toLowerCase()}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    if (seenLabels.has(key)) continue;
+    seenLabels.add(key);
     out.push(row);
   }
   return out;
@@ -200,7 +214,7 @@ export async function buildMetadata() {
   }
   body.innerHTML = '';
   appendTypeInfo(body, basics);
-  const unique = dedupeRows(rows);
+  const unique = dedupeMetadataRows(rows);
   appendSection(body, 'Type-specific details', rowsForSection(unique, 'Type-specific details'), true);
   for (const section of explicitSections(unique)) {
     appendSection(body, section.title, rowsForSection(unique, section.title), section.open);

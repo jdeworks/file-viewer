@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { normalizeMetadata } from '../docs/core/meta-drawer.js';
+import { dedupeMetadataRows, normalizeMetadata } from '../docs/core/meta-drawer.js';
 import { genericMetadata } from '../docs/core/generic-metadata.js';
 import { extractMetadata as sshMeta } from '../docs/types/text/ssh-config/metadata.js';
 import { extractMetadata as wasmMeta } from '../docs/types/binary/wasm/metadata.js';
@@ -120,6 +120,19 @@ function value(rows, label) {
   assert.deepEqual(rows.map((r) => `${r.section}:${r.label}=${r.value}`), [
     'Text structure:Lines=10',
     'Code metrics:Lines=7',
+  ]);
+}
+
+{
+  const rows = normalizeMetadata([
+    { label: 'Lines', value: 10, section: 'Text structure', dedupeKey: 'logical-lines', priority: 1 },
+    { label: 'Lines', value: 8, section: 'Code metrics', dedupeKey: 'logical-lines', priority: 2 },
+    { label: 'Line break count', value: 9, section: 'Text structure' },
+  ]);
+  const deduped = dedupeMetadataRows(rows);
+  assert.deepEqual(deduped.map((r) => `${r.section}:${r.label}=${r.value}`), [
+    'Code metrics:Lines=8',
+    'Text structure:Line break count=9',
   ]);
 }
 

@@ -35,7 +35,16 @@ export async function run(ctx) {
     'core.clj',
     'schema.graphql',
     'deploy.ps1',
-    'Makefile'
+    'Makefile',
+    'infra.tf',
+    'service.proto',
+    'build.bat',
+    'Panel.vue',
+    'Controller.m',
+    'analytics.fs',
+    'Module.vb',
+    'shader.wgsl',
+    'Escrow.sol'
   ];
   const byFile = new Map(examples.map((ex) => [ex.file, ex]));
   const missingCodeSamples = requiredCodeSamples.filter((file) => byFile.get(file)?.type !== 'code');

@@ -867,6 +867,109 @@
     "description": "Makefile build, test, serve, and clean targets."
   },
   {
+    "label": "infra.tf",
+    "file": "infra.tf",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code",
+      "Config"
+    ],
+    "type": "code",
+    "description": "Terraform bucket configuration with variables, locals, and outputs."
+  },
+  {
+    "label": "service.proto",
+    "file": "service.proto",
+    "mime": "text/x-protobuf",
+    "category": "Code",
+    "categories": [
+      "Code",
+      "Data"
+    ],
+    "type": "code",
+    "description": "Protocol Buffers messages and catalog service definition."
+  },
+  {
+    "label": "build.bat",
+    "file": "build.bat",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Windows batch script for serving the static docs folder."
+  },
+  {
+    "label": "Panel.vue",
+    "file": "Panel.vue",
+    "mime": "text/x-vue",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Vue single-file component with template, script setup, and scoped styles."
+  },
+  {
+    "label": "Controller.m",
+    "file": "Controller.m",
+    "mime": "text/x-objective-c",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Objective-C preview controller with properties and selection status."
+  },
+  {
+    "label": "analytics.fs",
+    "file": "analytics.fs",
+    "mime": "text/x-fsharp",
+    "category": "Code",
+    "categories": [
+      "Code",
+      "Data"
+    ],
+    "type": "code",
+    "description": "F# record list grouped and summarized by category."
+  },
+  {
+    "label": "Module.vb",
+    "file": "Module.vb",
+    "mime": "text/x-vb",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Visual Basic module formatting sample file sizes."
+  },
+  {
+    "label": "shader.wgsl",
+    "file": "shader.wgsl",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code",
+      "Media"
+    ],
+    "type": "code",
+    "description": "WGSL vertex and fragment shader pair for a colored preview."
+  },
+  {
+    "label": "Escrow.sol",
+    "file": "Escrow.sol",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "description": "Solidity escrow contract with timed release logic."
+  },
+  {
     "label": "Overwriter.frag",
     "file": "Overwriter.frag",
     "mime": "text/plain",
