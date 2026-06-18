@@ -382,7 +382,7 @@ Parse as JSON. Display:
 
 ## TASK 12 — New Format: Game ROM Headers (NES / SNES / GB)
 
-**Status:** Not started  
+**Status:** Already implemented — ROM header parsers, renderer, metadata, registry entry, and smoke coverage are present.
 **Effort:** S (~2h, zero deps)  
 **Files to create:**
 - `docs/types/binary/gamerom/detect.js`
