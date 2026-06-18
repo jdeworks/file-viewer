@@ -98,18 +98,65 @@ const KNOWN_INFO = {
   openapi: ['OpenAPI', 'describes HTTP APIs, schemas, operations, and examples.', 'https://spec.openapis.org/oas/latest.html'],
 };
 
-function fromEntry(entry) {
-  return { name: entry[0], description: entry[1], href: entry[2] };
+const FILE_EXAMPLES_GUIDES_BY_ID = {
+  pdf: 'pdf',
+  docx: 'docx',
+  json: 'json',
+  xml: 'xml',
+  html: 'html',
+  yaml: 'yaml',
+  csv: 'csv',
+  xlsx: 'xlsx',
+  zip: 'zip',
+};
+
+const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
+  pdf: 'pdf',
+  docx: 'docx',
+  json: 'json',
+  xml: 'xml',
+  html: 'html',
+  htm: 'html',
+  yml: 'yaml',
+  yaml: 'yaml',
+  csv: 'csv',
+  xlsx: 'xlsx',
+  png: 'png',
+  jpg: 'jpg',
+  jpeg: 'jpg',
+  svg: 'svg',
+  gif: 'gif',
+  webp: 'webp',
+  mp4: 'mp4',
+  m4v: 'mp4',
+  mp3: 'mp3',
+  zip: 'zip',
+};
+
+function fileExtension(intake) {
+  const name = String(intake?.filename || '');
+  const m = /\.([A-Za-z0-9]+)$/.exec(name);
+  return m ? m[1].toLowerCase() : '';
 }
 
-export function getTypeInfo(type, known = null) {
-  if (known && KNOWN_INFO[known.id]) return fromEntry(KNOWN_INFO[known.id]);
-  if (type && TYPE_INFO[type.id]) return fromEntry(TYPE_INFO[type.id]);
+function fileExamplesHref(type, intake) {
+  const slug = FILE_EXAMPLES_GUIDES_BY_EXTENSION[fileExtension(intake)] || FILE_EXAMPLES_GUIDES_BY_ID[type?.id];
+  return slug ? `https://www.fileexamples.com/formats/${slug}` : '';
+}
+
+function fromEntry(entry, type, intake) {
+  return { name: entry[0], description: entry[1], href: entry[2], fileExamplesHref: fileExamplesHref(type, intake) };
+}
+
+export function getTypeInfo(type, known = null, intake = null) {
+  if (known && KNOWN_INFO[known.id]) return fromEntry(KNOWN_INFO[known.id], type, intake);
+  if (type && TYPE_INFO[type.id]) return fromEntry(TYPE_INFO[type.id], type, intake);
   const label = type?.label || 'File format';
   return {
     name: label,
     description: 'used to store or exchange data in a format-specific structure.',
     href: 'https://en.wikipedia.org/wiki/File_format',
+    fileExamplesHref: fileExamplesHref(type, intake),
   };
 }
 

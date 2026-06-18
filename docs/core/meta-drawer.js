@@ -98,7 +98,7 @@ function appendTextRow(body, key, value, className = '') {
 }
 
 function appendTypeInfo(body, basics) {
-  const info = getTypeInfo(state.type, state.known && !state.forceBase ? state.known : null);
+  const info = getTypeInfo(state.type, state.known && !state.forceBase ? state.known : null, state.intake);
   appendTextRow(body, 'Used for', info.description);
   const row = document.createElement('div');
   row.className = 'meta-row';
@@ -113,6 +113,15 @@ function appendTypeInfo(body, basics) {
   link.rel = 'noopener noreferrer';
   link.textContent = info.name + ' ↗';
   value.appendChild(link);
+  if (info.fileExamplesHref) {
+    value.appendChild(document.createTextNode(' · '));
+    const guide = document.createElement('a');
+    guide.href = info.fileExamplesHref;
+    guide.target = '_blank';
+    guide.rel = 'noopener noreferrer';
+    guide.textContent = 'File Examples ↗';
+    value.appendChild(guide);
+  }
   row.append(key, value);
   body.appendChild(row);
   for (const [k, v] of basics) appendTextRow(body, k, v);

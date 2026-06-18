@@ -133,6 +133,24 @@ export async function run(ctx) {
   else fail('generic text metadata missing: ' + formatInfo.replace(/\s+/g, ' ').slice(0, 220));
   await page.click('#metaDrawer [data-close]');
 
+  await openExample('Sample.json');
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row a[href="https://www.fileexamples.com/formats/json"]', { timeout: 6000 });
+  const jsonFormatLinks = await page.$$eval('#metaBody .meta-row a', (links) => links.map((a) => ({
+    text: a.textContent,
+    href: a.href,
+    target: a.target,
+    rel: a.rel,
+  })));
+  const jsonGuide = jsonFormatLinks.find((a) => a.href === 'https://www.fileexamples.com/formats/json');
+  if (jsonGuide && /File Examples/.test(jsonGuide.text) && jsonGuide.target === '_blank' && /\bnoopener\b/.test(jsonGuide.rel)) pass('metadata drawer links to File Examples format guide');
+  else fail('File Examples format guide link missing or unsafe: ' + JSON.stringify(jsonFormatLinks));
+  await page.click('#metaDrawer [data-close]');
+  await openExample('Welcome.md');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
+  f = await frameOf('iframe.fv-preview-frame');
+  await f.waitForSelector('text=Welcome to File Viewer', { timeout: 5000 });
+
   // Source map present (magic selector data attributes).
   const mapped = await f.$$eval('[data-fv-src]', (els) => els.length);
   if (mapped > 0) pass(`source map present (${mapped} mapped blocks)`); else fail('no data-fv-src blocks');

@@ -88,7 +88,7 @@ export async function run(ctx) {
   await page.click('#rawMode button[data-raw="current"]');
   await page.evaluate(() => {
     window.__fv.state.settingsModel.values.previewWidthMode = 'custom';
-    window.__fv.state.settingsModel.values.previewMaxWidth = 480;
+    window.__fv.state.settingsModel.values.previewMaxWidth = 340;
   });
   await page.click('#viewMode button[data-mode="raw"]');
   await page.click('#viewMode button[data-mode="split"]');
@@ -112,7 +112,7 @@ export async function run(ctx) {
     const rv = window.__fv.state.rawview;
     rv.setValue(rv.originalValue() + '\n\nDiff editor resize target.\n');
     window.__fv.state.settingsModel.values.previewWidthMode = 'custom';
-    window.__fv.state.settingsModel.values.previewMaxWidth = 560;
+    window.__fv.state.settingsModel.values.previewMaxWidth = 340;
   });
   await page.click('#viewMode button[data-mode="split"]');
   await page.click('#rawMode button[data-raw="diff"]');
