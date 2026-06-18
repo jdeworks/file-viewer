@@ -47,6 +47,30 @@ function value(rows, label) {
 }
 
 {
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'invoice.pdf.exe',
+    bytes: new Uint8Array([0]),
+    text: '',
+    isBinary: true,
+    size: 1,
+    loadedBytes: 1,
+  }));
+  assert.equal(value(rows, 'Filename warnings'), 'double extension ending in active file type');
+}
+
+{
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'photo.jpg\u202e.exe',
+    bytes: new Uint8Array([0]),
+    text: '',
+    isBinary: true,
+    size: 1,
+    loadedBytes: 1,
+  }));
+  assert.equal(value(rows, 'Filename warnings'), 'Unicode direction controls, double extension ending in active file type');
+}
+
+{
   const rows = normalizeMetadata({ fields: [{ label: 'Rows', value: 4 }] });
   assert.equal(value(rows, 'Rows'), '4');
 }

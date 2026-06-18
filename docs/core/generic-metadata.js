@@ -5,6 +5,19 @@ function extensionOf(filename = '') {
   return i > 0 && i < base.length - 1 ? base.slice(i + 1).toLowerCase() : 'none';
 }
 
+function filenameWarnings(filename = '') {
+  const base = String(filename).split(/[\\/]/).pop() || '';
+  const warnings = [];
+  if (/[\u202a-\u202e\u2066-\u2069]/u.test(base)) warnings.push('Unicode direction controls');
+  const parts = base.split('.').filter(Boolean);
+  if (parts.length >= 3) {
+    const tail = parts.slice(-2).map((p) => p.toLowerCase());
+    const active = new Set(['bat', 'cmd', 'com', 'exe', 'hta', 'js', 'jse', 'msi', 'ps1', 'scr', 'sh', 'vbs', 'wsf']);
+    if (active.has(tail[1])) warnings.push('double extension ending in active file type');
+  }
+  return warnings;
+}
+
 function bomOf(bytes) {
   if (!bytes || bytes.length < 2) return 'none';
   if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) return 'UTF-8';
@@ -65,6 +78,8 @@ export function genericMetadata(intake) {
     ['Extension', extensionOf(intake.filename)],
     ['Content kind', intake.isBinary ? 'binary' : 'text'],
   ];
+  const warnings = filenameWarnings(intake.filename);
+  if (warnings.length) rows.push(['Filename warnings', warnings.join(', ')]);
   if (Number.isFinite(intake.loadedBytes) && Number.isFinite(intake.size) && intake.loadedBytes < intake.size) {
     rows.push(['Loaded bytes', `${intake.loadedBytes.toLocaleString()} of ${intake.size.toLocaleString()}`]);
   }
@@ -83,4 +98,4 @@ export function genericMetadata(intake) {
   return rows;
 }
 
-export const testExports = { extensionOf, bomOf, lineEndingStats, textStats };
+export const testExports = { extensionOf, filenameWarnings, bomOf, lineEndingStats, textStats };
