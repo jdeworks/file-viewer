@@ -152,6 +152,12 @@ body {
 .rc-date { color: var(--fg-2); font-size: 11.5px; }
 .rc-message { white-space: pre-wrap; word-break: break-word; background: var(--bg-2); border: 1px solid var(--border);
   border-radius: 8px; padding: 12px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.rc-files h3 { margin: 14px 0 8px; font-size: 13px; }
+.rc-file-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.rc-file-list li { display: flex; gap: 8px; padding: 6px 9px; border-top: 1px solid var(--border); font-size: 12px; }
+.rc-file-list li:first-child { border-top: 0; }
+.rc-status { font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); min-width: 16px; }
+.rc-path { word-break: break-all; }
 @media (max-width: 760px) { .repo-cols { flex-direction: column; } .repo-list { border-right: 0; border-bottom: 1px solid var(--border); flex-basis: auto; } }
 
 /* ── Intake ── */

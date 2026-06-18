@@ -248,23 +248,29 @@ export async function run(ctx) {
   // ── Git repository browser (in-browser .git reader) ──
   {
     const sha = 'b'.repeat(40);
+    const treeSha = 'a'.repeat(40);
+    const blobSha = 'e'.repeat(40);
     const content = 'tree ' + 'a'.repeat(40) + '\n'
       + 'author Tester <t@example.com> 1700000000 +0000\n'
       + 'committer Tester <t@example.com> 1700000000 +0000\n\n'
       + 'Initial commit\n';
     const store = Buffer.concat([Buffer.from('commit ' + Buffer.byteLength(content) + '\0'), Buffer.from(content)]);
     const obj = Array.from(zlib.deflateSync(store));     // zlib stream (DecompressionStream 'deflate')
+    const treeBody = Buffer.concat([Buffer.from('100644 README.md\0'), Buffer.from(blobSha, 'hex')]);
+    const treeStore = Buffer.concat([Buffer.from('tree ' + treeBody.length + '\0'), treeBody]);
+    const treeObj = Array.from(zlib.deflateSync(treeStore));
     await page.goto(origin, { waitUntil: 'networkidle' });
-    await page.evaluate(({ sha, obj }) => {
+    await page.evaluate(({ sha, treeSha, obj, treeObj }) => {
       const enc = (s) => new TextEncoder().encode(s);
       const mk = (name, bytes) => ({ file: new File([bytes], name.split('/').pop(), { type: '' }), path: name });
       window.__fv.loadFolder([
         mk('repo/.git/HEAD', enc('ref: refs/heads/main\n')),
         mk('repo/.git/refs/heads/main', enc(sha + '\n')),
         mk('repo/.git/objects/' + sha.slice(0, 2) + '/' + sha.slice(2), new Uint8Array(obj)),
+        mk('repo/.git/objects/' + treeSha.slice(0, 2) + '/' + treeSha.slice(2), new Uint8Array(treeObj)),
         mk('repo/README.md', enc('# Repo')),
       ]);
-    }, { sha, obj });
+    }, { sha, treeSha, obj, treeObj });
     await page.waitForSelector('#repoPanel:not([hidden]) .repo-commit', { timeout: 10000 });
     const branchVal = await page.$eval('#repoPanel .repo-branch', (s) => s.options[s.selectedIndex].textContent);
     if (/main/.test(branchVal)) pass('git: current branch detected (' + branchVal + ')'); else fail('git branch: ' + branchVal);
@@ -272,6 +278,9 @@ export async function run(ctx) {
     if (/Initial commit/.test(subj)) pass('git: loose commit object inflated + listed'); else fail('git subject: ' + subj);
     const detailTxt = await page.$eval('#repoPanel .repo-detail', (e) => e.textContent);
     if (/Tester/.test(detailTxt) && /Initial commit/.test(detailTxt)) pass('git: commit details (author + message)'); else fail('git detail: ' + detailTxt.slice(0, 60));
+    await page.waitForSelector('#repoPanel .rc-file-list .rc-path', { timeout: 5000 });
+    const changed = await page.$eval('#repoPanel .rc-file-list', (e) => e.textContent);
+    if (/A\s*README\.md/.test(changed)) pass('git: commit details include changed files'); else fail('git changed files: ' + changed);
     const treePaths = await page.$$eval('#fileTree .ft-file', (els) => els.map((e) => e.dataset.path));
     if (!treePaths.some((p) => p.includes('.git/'))) pass('git: .git internals hidden from the file tree'); else fail('.git shown in tree: ' + treePaths.join(','));
     const badge = await page.$('#repoBtn:not([hidden])');

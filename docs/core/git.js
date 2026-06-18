@@ -164,9 +164,9 @@ export async function openRepo(entries) {
   }
   if (head.branch && branches.has(head.branch)) head.sha = branches.get(head.branch);
 
-  // Build the packfile index: parse every .idx (sha → offset) and keep a lazy loader for each
-  // pack's bytes (loaded once, on first need).
-  const packs = [];                          // { offsets: Map, file: File, bytes: Uint8Array|null }
+  // Keep packfiles lazy: parsing every .idx can be slow on large repos, so do it only if a
+  // selected branch/commit is not available as a loose object.
+  const packs = [];                          // { idxFile, offsets, file, bytes }
   const shaToPack = new Map();               // sha → pack entry
   const packRe = new RegExp('^' + escapeRe(gitPrefix) + '/objects/pack/(pack-[0-9a-f]+)\\.idx$');
   for (const e of entries) {
@@ -174,13 +174,24 @@ export async function openRepo(entries) {
     if (!m) continue;
     const packFile = byPath.get(gitPrefix + '/objects/pack/' + m[1] + '.pack');
     if (!packFile) continue;
-    try {
-      const offsets = parseIdx(new Uint8Array(await e.file.arrayBuffer()));
-      if (!offsets) continue;
-      const pack = { offsets, file: packFile, bytes: null };
-      packs.push(pack);
-      for (const sha of offsets.keys()) shaToPack.set(sha, pack);
-    } catch { /* skip an unreadable pack */ }
+    packs.push({ idxFile: e.file, offsets: null, file: packFile, bytes: null });
+  }
+  let packIndexPromise = null;
+  async function ensurePackIndexes() {
+    if (!packIndexPromise) {
+      packIndexPromise = (async () => {
+        for (const pack of packs) {
+          if (pack.offsets) continue;
+          try {
+            pack.offsets = parseIdx(new Uint8Array(await pack.idxFile.arrayBuffer()));
+            if (!pack.offsets) continue;
+            for (const sha of pack.offsets.keys()) shaToPack.set(sha, pack);
+          } catch { pack.offsets = null; }
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+      })();
+    }
+    await packIndexPromise;
   }
   const packBytesOf = async (pack) => (pack.bytes ||= new Uint8Array(await pack.file.arrayBuffer()));
 
@@ -217,6 +228,7 @@ export async function openRepo(entries) {
         return { type, data: raw.subarray(nul + 1) };
       } catch { /* fall through to packs */ }
     }
+    if (packs.length && !shaToPack.has(sha)) await ensurePackIndexes();
     const pack = shaToPack.get(sha);
     if (pack) { try { return await readPackObjectAt(pack, pack.offsets.get(sha)); } catch { return null; } }
     return null;
@@ -228,9 +240,79 @@ export async function openRepo(entries) {
     return parseCommit(sha, dec.decode(obj.data));
   }
 
+  const treeCache = new Map();
+  function parseTree(data) {
+    const entries = [];
+    let p = 0;
+    while (p < data.length) {
+      const sp = data.indexOf(0x20, p);
+      const nul = data.indexOf(0, sp + 1);
+      if (sp < 0 || nul < 0 || nul + 21 > data.length) break;
+      const mode = dec.decode(data.subarray(p, sp));
+      const name = dec.decode(data.subarray(sp + 1, nul));
+      const sha = hex(data.subarray(nul + 1, nul + 21));
+      entries.push({ mode, name, sha, tree: mode === '40000' || mode === '040000' });
+      p = nul + 21;
+    }
+    return entries;
+  }
+
+  async function flattenTree(treeSha, prefix = '', out = new Map(), limit = 5000) {
+    if (!treeSha || out.size > limit) return out;
+    let entries = treeCache.get(treeSha);
+    if (!entries) {
+      const obj = await readObjectBySha(treeSha);
+      if (!obj || obj.type !== 'tree') return out;
+      entries = parseTree(obj.data);
+      treeCache.set(treeSha, entries);
+    }
+    for (const entry of entries) {
+      const p = prefix ? prefix + '/' + entry.name : entry.name;
+      if (entry.tree) await flattenTree(entry.sha, p, out, limit);
+      else out.set(p, { sha: entry.sha, mode: entry.mode });
+      if (out.size > limit) break;
+    }
+    return out;
+  }
+
+  const changedCache = new Map();
+  async function changedFiles(commit, limit = 200) {
+    const cacheKey = commit.sha + ':' + limit;
+    if (changedCache.has(cacheKey)) return changedCache.get(cacheKey);
+    const current = await flattenTree(commit.tree);
+    const parent = commit.parents[0] ? await readCommit(commit.parents[0]) : null;
+    const before = parent ? await flattenTree(parent.tree) : new Map();
+    const files = [];
+    for (const [path, now] of current) {
+      const old = before.get(path);
+      if (!old) files.push({ status: 'A', path });
+      else if (old.sha !== now.sha || old.mode !== now.mode) files.push({ status: 'M', path });
+      if (files.length >= limit) {
+        const result = { files, truncated: true };
+        changedCache.set(cacheKey, result);
+        return result;
+      }
+    }
+    for (const path of before.keys()) {
+      if (!current.has(path)) files.push({ status: 'D', path });
+      if (files.length >= limit) {
+        const result = { files, truncated: true };
+        changedCache.set(cacheKey, result);
+        return result;
+      }
+    }
+    files.sort((a, b) => a.path.localeCompare(b.path) || a.status.localeCompare(b.status));
+    const result = { files, truncated: false };
+    changedCache.set(cacheKey, result);
+    return result;
+  }
+
   // Walk first-parent from a tip SHA across BOTH loose and packed history. `packed` is true only
   // if the chain hit a commit we genuinely couldn't read (truncated/missing object).
+  const walkCache = new Map();
   async function walk(sha, limit = 50) {
+    const cacheKey = sha + ':' + limit;
+    if (walkCache.has(cacheKey)) return walkCache.get(cacheKey);
     const commits = [];
     let packed = false;
     const seen = new Set();
@@ -241,7 +323,9 @@ export async function openRepo(entries) {
       commits.push(c);
       sha = c.parents[0];
     }
-    return { commits, packed };
+    const result = { commits, packed };
+    walkCache.set(cacheKey, result);
+    return result;
   }
 
   return {
@@ -250,6 +334,6 @@ export async function openRepo(entries) {
       .sort((a, b) => (b.current - a.current) || a.name.localeCompare(b.name)),
     tags: [...tags].map(([name, sha]) => ({ name, sha })),
     reflog: parseReflog(await text('logs/HEAD') || ''),
-    readCommit, walk,
+    readCommit, walk, changedFiles,
   };
 }

@@ -39,8 +39,10 @@ export async function renderRepoView(host, repo) {
   cols.append(list, detail);
   wrap.appendChild(cols);
   host.appendChild(wrap);
+  let detailToken = 0;
 
-  function showDetail(c) {
+  async function showDetail(c) {
+    const token = ++detailToken;
     const sameIdent = c.committer && c.author && c.committer.name === c.author.name
       && c.committer.email === c.author.email && +c.committer.date === +c.author.date;
     detail.innerHTML =
@@ -54,7 +56,23 @@ export async function renderRepoView(host, repo) {
       + '<dt>Parents</dt><dd>' + (c.parents.length ? c.parents.map(short).join(', ') : '(root commit)') + '</dd>'
       + '<dt>Tree</dt><dd>' + esc(short(c.tree)) + '</dd>'
       + '</dl>'
-      + '<pre class="rc-message">' + esc(c.message.trimEnd()) + '</pre>';
+      + '<pre class="rc-message">' + esc(c.message.trimEnd()) + '</pre>'
+      + '<div class="rc-files"><h3>Changed files</h3><p class="repo-hint">Reading changed files…</p></div>';
+    const filesHost = detail.querySelector('.rc-files');
+    try {
+      const result = await repo.changedFiles(c);
+      if (token !== detailToken) return;
+      if (!result.files.length) {
+        filesHost.innerHTML = '<h3>Changed files</h3><p class="repo-hint">No file changes found.</p>';
+        return;
+      }
+      filesHost.innerHTML = '<h3>Changed files</h3><ul class="rc-file-list">'
+        + result.files.map((f) => '<li><span class="rc-status rc-status-' + esc(f.status.toLowerCase()) + '">' + esc(f.status)
+          + '</span><span class="rc-path">' + esc(f.path) + '</span></li>').join('')
+        + '</ul>' + (result.truncated ? '<p class="repo-note">Showing the first ' + result.files.length + ' changed files.</p>' : '');
+    } catch {
+      if (token === detailToken) filesHost.innerHTML = '<h3>Changed files</h3><p class="repo-hint">Could not read changed files.</p>';
+    }
   }
 
   function commitRow(id, subject, who) {
