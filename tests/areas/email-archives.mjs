@@ -55,6 +55,16 @@ export async function run(ctx) {
   await innerFrame.waitForSelector('table', { timeout: 10000 });
   const innerHasTable = await innerFrame.$$eval('table tbody tr', (els) => els.length);
   if (innerHasTable > 0) pass('zip entry rendered through its real renderer (CSV table, ' + innerHasTable + ' rows)'); else fail('inner CSV rows: ' + innerHasTable);
+  const ctxOpened = await page.evaluate(async () => {
+    const { folderContext } = await import('./core/folder.js');
+    const ctx = folderContext();
+    const readme = ctx.files.find((entry) => entry.path === 'README.txt');
+    if (!readme) return false;
+    await ctx.open(readme.file);
+    return document.getElementById('fileName')?.textContent === 'README.txt'
+      && window.__fv.state.currentFolderPath === 'README.txt';
+  });
+  if (ctxOpened) pass('archive folderContext opens sibling entries through archive tree'); else fail('archive folderContext sibling open failed');
 
   // ── Password-protected zip ── JSZip refuses it; we still list via our own central-dir parse + 🔒. ──
   await page.goto(origin, { waitUntil: 'networkidle' });

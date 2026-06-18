@@ -211,6 +211,10 @@ export function folderContext() {
     open: async (file) => {
       const node = files.find((f) => f.file === file);
       if (!node) return;
+      if (state.archiveTree && state.archiveOpenNode) {
+        await state.archiveOpenNode(node.path);
+        return;
+      }
       state._skipDiscardGuard = true;                 // media playback advance: nothing unsaved
       await loadIntake(await intakeFromFile(file));
       state.treeApi?.setActive?.(node.path);
