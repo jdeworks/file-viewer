@@ -56,6 +56,8 @@
 - Perform a full light/dark theme audit across every renderer and enhanced view. MSG/email, SSH, env, archive, code-like previews, media controls, and iframe previews should all remain readable in both modes; add regression tests where feasible.
 - Investigate and suppress avoidable sandbox console noise such as `Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.` Renderers that intentionally need scripts should use the parent-node path or a trusted script-enabled opt-in; inert previews should not emit scripts.
 - Archives such as ZIP should be able to become a lazy folder in the sidebar when explicitly opened or clicked. Opening should happen off the main thread where possible, ask for a password when needed, show a spinner while reading, and expand only the next level by default instead of eagerly rendering the full tree.
+- Folder and repository loading should show clear progress feedback for large drops. Prefer a determinate progress bar where the intake path can count files or phases; otherwise show a visible spinner/status message so large repositories do not appear unresponsive while the tree, git metadata, or folder root mapping is still being built.
+- Git repository commit details should link changed files back to the loaded folder when the file still exists, include added/removed line counts where locally computable, and offer a "load more" or infinite-scroll style continuation after the initial capped commit history instead of permanently stopping at the first page.
 
 ## Metadata
 
