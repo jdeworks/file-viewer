@@ -1,3 +1,5 @@
+import { REGISTRY } from '../../docs/core/registry.js';
+
 export async function run(ctx) {
   const { page, origin, pass, fail } = ctx;
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -82,11 +84,13 @@ export async function run(ctx) {
     fail('sample quality too low: ' + JSON.stringify(quality));
   }
 
+  const seenTypes = new Set();
   for (const ex of examples) {
     const opened = await page.evaluate((file) => window.__fv.openExampleFile(file), ex.file);
     if (!opened) { fail('sample did not open: ' + ex.file); continue; }
     await page.waitForFunction(() => document.querySelector('#fileName')?.textContent && !/—/.test(document.querySelector('#fileName')?.textContent || ''), { timeout: 10000 }).catch(() => {});
     const type = await page.$eval('#typeSelect', (s) => s.value).catch(() => '');
+    if (type) seenTypes.add(type);
     if (ex.type && type !== ex.type) fail('sample type mismatch: ' + ex.file + ' expected ' + ex.type + ' got ' + type);
     const previewText = await page.$eval('#previewHost', (e) => e.textContent || '').catch(() => '');
     const crashed = /Preview failed|Failed to execute|DjVu missing after load|Failed to load DjVu library|TypeError|ReferenceError/i.test(previewText);
@@ -94,4 +98,14 @@ export async function run(ctx) {
     await page.waitForTimeout(10);
   }
   pass('all indexed samples open without preview crashes');
+  const missingTypes = REGISTRY.map((t) => t.id).filter((id) => !seenTypes.has(id));
+  if (missingTypes.length) {
+    fail('registered types without indexed sample coverage: ' + missingTypes.join(', '));
+  } else {
+    pass('all registered types have indexed sample coverage (' + REGISTRY.length + ')');
+  }
+  if (ctx.consoleErrors.length) fail('sample catalog console/page errors:\n  ' + ctx.consoleErrors.join('\n  '));
+  else pass('sample catalog produced no console/page errors');
+  if (ctx.offOrigin.length) fail('sample catalog off-origin requests:\n  ' + ctx.offOrigin.join('\n  '));
+  else pass('sample catalog made zero off-origin requests');
 }

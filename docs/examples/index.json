@@ -30,6 +30,7 @@
     "label": "Sample.txt",
     "file": "sample.txt",
     "mime": "text/plain",
+    "type": "raw",
     "category": "Documents",
     "categories": [
       "Documents"
@@ -1437,6 +1438,7 @@
   {
     "label": "claude_desktop_config.json",
     "file": "claude_desktop_config.json",
+    "type": "mcp-config",
     "category": "Other",
     "categories": [
       "Other"
@@ -1445,6 +1447,7 @@
   {
     "label": "kubeconfig",
     "file": "kubeconfig",
+    "type": "kubeconfig",
     "category": "Other",
     "categories": [
       "Other"
