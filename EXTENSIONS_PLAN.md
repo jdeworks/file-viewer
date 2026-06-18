@@ -4,6 +4,24 @@
 
 Six extension directions, spanning from 1-hour Easter egg tweaks to multi-week format decoders. All features are pure browser-side (no server), follow the existing registry-based dispatch, and vendor all new dependencies into `docs/vendor/`. The per-increment contract applies to each: implement → smoke GREEN → `asset-manifest.json` regen → commit.
 
+## External Sample, Tool, And Edge-Case Audit
+
+Use File Examples as a recurring audit source for real-world samples, tool parity, and parser-hardening cases. Promote only validated/free samples into `docs/examples/`; keep unvetted incoming files in `.example-files-internet/` while investigating.
+
+High-value tool parity for this viewer:
+- validators/formatters: JSON, XML, CSV, YAML;
+- inspectors: MIME type, encoding, magic bytes, checksum;
+- converters: Base64/data URI, image format conversion, JSON<->CSV, text encoding repair;
+- editors/previews: Markdown preview/export, color helper, regex helper, file diff.
+
+High-value edge cases to convert into fixtures and recovery behavior:
+- JSON comments/trailing commas/single quotes/unquoted keys/NaN/Infinity, with JSONC/JSON5-like auto-detection and a visible warning when the viewer switches parser mode;
+- CSV UTF-8 BOM, mixed delimiters, inconsistent columns, and unescaped quotes;
+- XML wrong encoding declarations, unclosed tags, and mismatched tags;
+- PDFs with broken cross-reference tables;
+- truncated PNG, JPEG, and ZIP files;
+- generic encoding mismatch/mojibake cases.
+
 ---
 
 ## Feature G — URL / Query String Inspector

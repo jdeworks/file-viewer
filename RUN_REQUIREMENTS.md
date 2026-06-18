@@ -22,6 +22,8 @@
 - Add tests that open every indexed sample and catch preview crashes, bad detections, off-origin requests, and dark-mode readability regressions where feasible.
 - Build a real-world sample corpus from public/free sources, using `https://www.fileexamples.com/` extensively where licensing permits, plus other CC0/public-domain/free sources. Keep collected-but-unvetted files outside the shipped examples until they are validated, then promote useful files into `docs/examples/` with provenance metadata.
 - Treat `.example-files-internet/` as a local incoming triage folder for user-found examples. Analyze failures from that folder, including real-world GLB/glTF files that report errors such as "GLB has no JSON chunk", and convert parser gaps into focused tests before fixing them.
+- Use the File Examples tools and edge-case libraries as an implementation checklist. Relevant tool parity includes validators/formatters for JSON/XML/CSV/YAML, sample generation, MIME/encoding/magic-byte inspection, checksums, Base64/data URI handling, image conversion, JSON<->CSV conversion, text encoding repair, Markdown preview/export, color/regex helpers, and file diffing. Non-viewer workflows such as upload simulation should be skipped unless they map to local-only diagnostics.
+- Add edge-case fixtures and recovery paths for common malformed files. Start with JSON comments/trailing commas/single quotes/unquoted keys/NaN/Infinity by detecting JSONC/JSON5-like input, warning that the parser switched modes, and rendering with the best local reader; also cover mixed or inconsistent CSV delimiters, bad XML encodings/tags, broken PDF xrefs, truncated PNG/JPEG/ZIP files, BOM issues, and encoding mismatch/mojibake cases.
 
 ## Preview And Interaction UX
 
