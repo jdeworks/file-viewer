@@ -464,7 +464,7 @@ GM instrument table: standard 128-name array (General MIDI Level 1 spec), no dep
 
 ## TASK 15 — New Format: `.3mf` 3D Manufacturing Format
 
-**Status:** Not started  
+**Status:** Already implemented — 3MF detection, model/material/thumbnail renderer, metadata, sample, and smoke coverage are present.
 **Effort:** XS (~1h, jszip already vendored)  
 **Files to create:** `docs/types/3d/3mf/`
 
