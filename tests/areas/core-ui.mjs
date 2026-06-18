@@ -62,6 +62,9 @@ export async function run(ctx) {
   const catChipCount = await page.$$eval('#examples .ex-cat-chip', (els) => els.length);
   if (catChipCount === 0) pass('examples omit duplicate category filter chips');
   else fail('examples category chips still rendered: ' + catChipCount);
+  const moreHref = await page.$eval('#examples .ex-more a', (a) => a.href);
+  if (moreHref === 'https://www.fileexamples.com/') pass('examples link to external sample library');
+  else fail('examples external sample link missing: ' + moreHref);
   await page.click('#examples .ex-showall-btn');
   await page.waitForSelector('#examples .ex-file-btn', { timeout: 4000 });
   const welcomeTip = await page.$eval('#examples .ex-file-btn', (el) => el.getAttribute('title') || '');

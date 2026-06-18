@@ -271,6 +271,13 @@ export async function run(ctx) {
     // NOT auto-precache everything.
     await op.waitForSelector('#offlineStatus.idle', { timeout: 90000 });
     pass('offline precache is opt-in (pill rests at idle, no auto-precache)');
+    const offlinePos = await op.$eval('#offlineStatus', (e) => {
+      const s = getComputedStyle(e);
+      return { position: s.position, left: s.left, bottom: s.bottom, hidden: e.hidden };
+    });
+    if (!offlinePos.hidden && offlinePos.position === 'fixed' && offlinePos.left === '12px' && offlinePos.bottom === '12px')
+      pass('offline control stays fixed at bottom-left');
+    else fail('offline control position: ' + JSON.stringify(offlinePos));
     // Opt in: clicking the pill opens the cache-download modal (pick bundles + sizes).
     await op.click('#offlineStatus');
     await op.waitForSelector('.cache-modal', { timeout: 8000 });

@@ -44,4 +44,6 @@
 .ex-filter-chip.active { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
 .ex-file-btn[hidden], .ex-group[hidden], .ex-folder-card[hidden] { display: none; }
 .ex-badge { margin-left: 6px; opacity: .75; }
+.ex-more { margin: 2px 0 0; color: var(--fg-2); font-size: 11px; line-height: 1.4; text-align: center; }
+.ex-more a { color: var(--accent); }
 @media (max-height: 680px) { .examples { max-height: 34dvh; } }
