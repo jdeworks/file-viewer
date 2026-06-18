@@ -8,6 +8,7 @@ import { extract as stlMeta } from '../docs/types/3d/stl/metadata.js';
 import { extract as objMeta } from '../docs/types/3d/obj/metadata.js';
 import { extract as plyMeta } from '../docs/types/3d/ply/metadata.js';
 import { extract as gltfMeta } from '../docs/types/3d/gltf/metadata.js';
+import { parseGLTF } from '../docs/types/3d/gltf/gltflib.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as goModMeta } from '../docs/types/text/known/go-mod/metadata.js';
 import { extract as reqMeta } from '../docs/types/text/known/requirements-txt/metadata.js';
@@ -101,6 +102,40 @@ function numberValue(rows, label) {
   assert.equal(value(rows, 'Format'), 'GLB (binary glTF)');
   assert.equal(value(rows, 'Meshes'), '1');
   assert.equal(value(rows, 'Triangles'), '12');
+}
+
+function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e4f534a, payload = [] } = {}) {
+  const bytes = new Uint8Array(Math.max(length, 20));
+  const dv = new DataView(bytes.buffer);
+  dv.setUint32(0, 0x46546c67, true);
+  dv.setUint32(4, version, true);
+  dv.setUint32(8, length, true);
+  dv.setUint32(12, chunkLength, true);
+  dv.setUint32(16, chunkType, true);
+  bytes.set(payload, 20);
+  return bytes;
+}
+
+{
+  assert.throws(
+    () => parseGLTF({ filename: 'bad.glb', bytes: glbHeader({ length: 0 }), isBinary: true }),
+    /Invalid GLB length/,
+  );
+  assert.throws(
+    () => parseGLTF({ filename: 'bad.glb', bytes: glbHeader({ version: 1 }), isBinary: true }),
+    /Unsupported GLB version 1/,
+  );
+  assert.throws(
+    () => parseGLTF({ filename: 'bad.glb', bytes: glbHeader({ chunkType: 0x004e4942 }), isBinary: true }),
+    /first chunk is not JSON/,
+  );
+  assert.throws(
+    () => parseGLTF({ filename: 'bad.glb', bytes: glbHeader({ length: 20, chunkLength: 8 }), isBinary: true }),
+    /extends past end/,
+  );
+  const rows = gltfMeta({ filename: 'bad.glb', bytes: glbHeader({ length: 0 }), isBinary: true, size: 20 });
+  assert.equal(value(rows, 'glTF'), 'unreadable');
+  assert.match(value(rows, 'Parse error'), /Invalid GLB length/);
 }
 
 {

@@ -19,11 +19,20 @@ function decodeBase64(uri) {
 
 // Split a GLB into { json, bin }. GLB = 12-byte header + chunks (len, type, data).
 function parseGLB(bytes) {
+  if (!bytes || bytes.length < 20) throw new Error('GLB is too short to contain a header and JSON chunk');
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (dv.getUint32(0, true) !== 0x46546c67) throw new Error('not a GLB');   // 'glTF'
+  const version = dv.getUint32(4, true);
+  if (version !== 2) throw new Error('Unsupported GLB version ' + version + ' (expected 2)');
+  const declaredLength = dv.getUint32(8, true);
+  if (declaredLength !== bytes.length) {
+    throw new Error(`Invalid GLB length: header says ${declaredLength.toLocaleString()} bytes, file has ${bytes.length.toLocaleString()}`);
+  }
   let o = 12, json = null, bin = null;
   while (o + 8 <= bytes.length) {
     const len = dv.getUint32(o, true), type = dv.getUint32(o + 4, true);
+    if (o + 8 + len > bytes.length) throw new Error('GLB chunk extends past end of file');
+    if (o === 12 && type !== 0x4e4f534a) throw new Error('GLB first chunk is not JSON');
     const data = bytes.subarray(o + 8, o + 8 + len);
     if (type === 0x4e4f534a) json = JSON.parse(new TextDecoder().decode(data));     // 'JSON'
     else if (type === 0x004e4942) bin = data;                                        // 'BIN\0'

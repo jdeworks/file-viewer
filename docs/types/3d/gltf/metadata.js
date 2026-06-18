@@ -18,7 +18,10 @@ export function extract(intake) {
       { label: 'Triangles', value: m.tris.length.toLocaleString() },
       { label: 'Dimensions', value: m.size.map((s) => s.toFixed(2)).join(' × ') },
     ];
-  } catch {
-    return [{ label: 'glTF', value: 'unreadable' }];
+  } catch (e) {
+    return [
+      { label: 'glTF', value: 'unreadable' },
+      { label: 'Parse error', value: e.message || String(e) },
+    ];
   }
 }
