@@ -25,6 +25,7 @@ export const state = {
   folderMoves: new Map(),    // original path -> current path for virtual folder reordering
   currentFolderPath: null,   // path of the currently-open folder file (null for single files)
   sessionIntakes: new Map(), // filename -> intake for individually-opened files (session history)
+  sessionEdits: new Map(),   // filename -> edited text for individually-opened session files
   sessionTree: false,        // true when the sidebar is showing the session history tree
 };
 

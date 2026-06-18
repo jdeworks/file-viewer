@@ -106,6 +106,9 @@ export async function onRawEdited(value) {
     state.folderEdits.set(state.currentFolderPath, value);
     state.folderExported = false;      // a new edit invalidates any prior export
     state.treeApi?.setEdited?.(state.currentFolderPath, true);
+  } else if (state.sessionIntakes.has(state.intake?.filename)) {
+    state.sessionEdits.set(state.intake.filename, value);
+    state.treeApi?.setEdited?.(state.intake.filename, true);
   }
   // Easter-egg surface: typing `import easteregg` in any editable file unlocks the arcade.
   if (state.games && !state.games.isUnlocked() && /(^|\n)\s*import\s+easteregg\b/.test(value)) {
@@ -122,6 +125,7 @@ export async function onRawEdited(value) {
 export function hasUnsavedWork() {
   if (state.rawview?.isDirty() && !state.downloadedSinceEdit) return true;
   if (state.binaryEdit?.dirty && !state.downloadedSinceEdit) return true;
+  if (state.sessionEdits.size > 0) return true;
   // Folder edits stashed but not yet exported also count — closing the tab would lose them.
   return state.folderEdits.size > 0 && !state.folderExported;
 }
@@ -178,5 +182,11 @@ export async function downloadCurrent() {
   a.download = state.intake.filename || 'download.txt';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  if (state.sessionEdits.has(state.intake.filename)) {
+    const text = state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename);
+    state.sessionIntakes.set(state.intake.filename, { ...state.sessionIntakes.get(state.intake.filename), text });
+    state.sessionEdits.delete(state.intake.filename);
+    state.treeApi?.setEdited?.(state.intake.filename, false);
+  }
   state.downloadedSinceEdit = true;    // current edits are now saved to disk
 }

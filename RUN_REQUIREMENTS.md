@@ -36,6 +36,8 @@
 - Sample tiles should expose a short hover description of what the sample demonstrates.
 - Password-protected formats such as PDF, SQLite, ZIP, and similar containers should have password-protected samples and unlock flows where the user can provide the password to view contents.
 - Sensitive file types that may contain protected data, such as `.env` and SSH config, should open in rendered-view mode by default and hide or blur values until explicitly revealed.
+- `.env` preview needs a dark/light theme pass and should be visually centered in the preview area. Metadata should include useful redaction-safe counts such as total variables and sensitive variables.
+- Archives such as ZIP should be able to become a lazy folder in the sidebar when explicitly opened or clicked. Opening should happen off the main thread where possible, ask for a password when needed, show a spinner while reading, and expand only the next level by default instead of eagerly rendering the full tree.
 
 ## Metadata
 

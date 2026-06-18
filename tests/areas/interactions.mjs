@@ -23,7 +23,10 @@ export async function run(ctx) {
   await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
   pass('`import easteregg` in a new file unlocks the arcade');
   await page.click('.games-close');
-  await page.evaluate(() => { window.__fv.state.downloadedSinceEdit = true; });   // clear unsaved-work so the next navigation isn't blocked by beforeunload
+  await page.evaluate(() => {
+    window.__fv.state.downloadedSinceEdit = true;
+    window.__fv.state.sessionEdits.clear();
+  });   // clear unsaved-work so the next navigation isn't blocked by beforeunload
 
   // ── HTML type + script-confirm gate (WP07) ──
   let acceptScripts = false;
@@ -84,6 +87,22 @@ export async function run(ctx) {
   await page.waitForTimeout(150);
   const afterDl = await page.evaluate(() => window.__fv.hasUnsavedWork());
   if (!clean0 && dirty1 && !afterDl) pass('unsaved-work tracked (clean → edit → download clears it; gates discard + beforeunload)'); else fail('unsaved flags clean=' + clean0 + ' dirty=' + dirty1 + ' afterDownload=' + afterDl);
+
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Welcome.md');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 20000 });
+  await page.evaluate(() => { const rv = window.__fv.state.rawview; rv.setValue(rv.getValue() + '\nretained session edit'); });
+  await page.waitForTimeout(350);
+  await openExample('Sample.txt');
+  await page.waitForFunction(() => document.querySelector('#fileName')?.textContent === 'sample.txt', { timeout: 8000 });
+  await page.waitForSelector('#ftBody [data-path="welcome.md"].ft-edited', { timeout: 8000 });
+  await page.click('#ftBody [data-path="welcome.md"]');
+  await page.waitForFunction(() => document.querySelector('#fileName')?.textContent === 'welcome.md', { timeout: 8000 });
+  const retainedSessionText = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  const sessionDirty = await page.evaluate(() => window.__fv.hasUnsavedWork());
+  if (/retained session edit/.test(retainedSessionText) && sessionDirty) pass('session sidebar retains edited files with an unsaved marker'); else fail('session retained=' + /retained session edit/.test(retainedSessionText) + ' dirty=' + sessionDirty);
+  await page.evaluate(() => window.__fv.downloadCurrent());
+  await page.waitForTimeout(150);
 
   // ── Mobile hardening (WP06) ── phone viewport: Preview-first + ⋯ overflow menu.
   const mctx = await browser.newContext({ viewport: { width: 390, height: 780 }, isMobile: true, hasTouch: true });

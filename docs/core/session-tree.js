@@ -19,6 +19,7 @@ export function updateSessionTree(intake) {
 
   if (state.sessionTree && alreadyTracked) {
     state.treeApi?.setActive?.(intake.filename);
+    state.treeApi?.setEdited?.(intake.filename, state.sessionEdits.has(intake.filename));
     return;
   }
 
@@ -32,7 +33,9 @@ export function updateSessionTree(intake) {
 
   if (state.treeApi) state.treeApi.stop();
   state.treeApi = renderTree($('ftBody'), buildTree(entries), { onOpen: (node) => {
-    const si = state.sessionIntakes.get(node.path);
+    flushSessionEdit();
+    const edited = state.sessionEdits.get(node.path);
+    const si = edited != null ? intakeFromText(edited, node.path) : state.sessionIntakes.get(node.path);
     if (!si) return;
     state._skipDiscardGuard = true;
     loadIntakeCallback(si);
@@ -45,6 +48,18 @@ export function updateSessionTree(intake) {
   $('treeBtn').hidden = false;
   setTree(true);
   state.treeApi.setActive(intake.filename);
+  for (const path of state.sessionEdits.keys()) state.treeApi.setEdited(path, true);
+}
+
+export function flushSessionEdit() {
+  if (state.currentFolderPath || !state.rawview?.isDirty()) return false;
+  const filename = state.intake?.filename;
+  if (!filename || !state.sessionIntakes.has(filename)) return false;
+  const text = state.rawview.getValue();
+  state.sessionEdits.set(filename, text);
+  state.sessionIntakes.set(filename, { ...state.sessionIntakes.get(filename), text });
+  state.treeApi?.setEdited?.(filename, true);
+  return true;
 }
 
 export async function createNewFile() {
@@ -58,7 +73,7 @@ export async function createNewFile() {
     const prevFile = new File([prevText], prevName, { type: 'text/plain' });
     const newFile = new File([''], filename, { type: 'text/plain' });
     const entries = [{ file: prevFile, path: prevName }, { file: newFile, path: filename }];
-    state.sessionTree = false; state.sessionIntakes = new Map();
+    state.sessionTree = false; state.sessionIntakes = new Map(); state.sessionEdits = new Map();
     state.treeEntries = entries;
     state.folderEdits = new Map([[prevName, prevText]]);
     state.folderMoves = new Map();
@@ -96,7 +111,7 @@ export async function onTreeFileDrop(node) {
     const prevText = state.rawview ? state.rawview.getValue() : (state.intake.text || '');
     const prevFileObj = new File([prevText], prevName, { type: 'text/plain' });
     const entries = [{ file: prevFileObj, path: prevName }, { file: node.file, path: node.path }];
-    state.sessionTree = false; state.sessionIntakes = new Map();
+    state.sessionTree = false; state.sessionIntakes = new Map(); state.sessionEdits = new Map();
     state.treeEntries = entries;
     state.folderEdits = new Map([[prevName, prevText]]);
     state.folderMoves = new Map();

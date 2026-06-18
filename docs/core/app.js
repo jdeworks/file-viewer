@@ -31,7 +31,7 @@ import { buildMetadata } from './meta-drawer.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey } from './folder.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
 import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, renderCompanionSettings, detectCompanionOnStartup } from './companion-ui.js';
-import { initSessionTree, updateSessionTree, createNewFile, onTreeFileDrop } from './session-tree.js';
+import { initSessionTree, updateSessionTree, createNewFile, onTreeFileDrop, flushSessionEdit } from './session-tree.js';
 import { populateTypeSelect } from './type-select.js';
 import { initViewerOpen, openExampleFile, openViewerFile, searchViewerFile } from './viewer-open.js';
 
@@ -40,8 +40,16 @@ import { initViewerOpen, openExampleFile, openViewerFile, searchViewerFile } fro
 async function loadIntake(intake) {
   // Guard unsaved work — unless loadFolder already asked for this same action.
   const fromTree = state._skipDiscardGuard;
+  if (fromTree) flushSessionEdit();
   if (state._skipDiscardGuard) state._skipDiscardGuard = false;
-  else if (!confirmDiscard()) return;
+  else {
+    const retainedSessionEdit = flushSessionEdit();
+    const onlyRetainedSessionEdits = state.sessionEdits.size > 0
+      && state.folderEdits.size === 0
+      && !state.binaryEdit?.dirty
+      && !(state.rawview?.isDirty() && !retainedSessionEdit);
+    if (!onlyRetainedSessionEdits && !confirmDiscard()) return;
+  }
   // Leaving folder context for a fresh top-level file open: discard stale folder state so
   // old folderEdits don't trigger a false "unsaved changes" prompt on the next open.
   if (!fromTree) { state.folderEdits = new Map(); state.folderMoves = new Map(); state.folderExported = false; }

@@ -212,6 +212,11 @@ export async function onSaveClick() {
       await saveFile(absPath, bytes);
       if (!state.currentFolderPath) setCompanionLinked(absPath);
       if (isBinaryEdit) state.binaryEdit.dirty = false;
+      if (state.sessionEdits.has(state.intake.filename)) {
+        state.sessionIntakes.set(state.intake.filename, { ...state.sessionIntakes.get(state.intake.filename), text: state.rawview?.getValue?.() || state.sessionEdits.get(state.intake.filename) });
+        state.sessionEdits.delete(state.intake.filename);
+        state.treeApi?.setEdited?.(state.intake.filename, false);
+      }
       state.downloadedSinceEdit = true;
       syncSaveBtn();
       toast('Saved to disk: ' + absPath);
