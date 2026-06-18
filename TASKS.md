@@ -301,7 +301,7 @@ Layout for a single URL:
 
 ## TASK 9 — New Format: `.gpx` Track Viewer
 
-**Status:** Not started  
+**Status:** Already implemented — GPX detection, canvas map/profile, metadata, exports, sample, and smoke coverage are present.
 **Effort:** S (~2h, zero new deps — uses existing chart.js)  
 **Files to create:** `docs/types/geo/` (or add to existing `docs/types/geo/` if GPX detection is separate from GeoJSON)
 
