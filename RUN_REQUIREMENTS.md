@@ -35,6 +35,7 @@
 - Preview re-renders, especially Markdown edits in dark mode, should not briefly flash white during iframe refresh.
 - Preview width should be configurable in settings, default to an A4-page-like reading width, and constrain wide Markdown/table content instead of letting it expand indefinitely.
 - Preview sizing should offer quick modes in addition to numeric width: available width, unrestricted/no width restriction, A4/page width, and phone width.
+- Investigate and restore previously available PDF/image editing workflows where they regressed. PDF editing should support additive and destructive page operations such as adding blank pages, importing/merging other PDFs, importing images as pages, deleting or cutting pages, rotating pages, and saving/exporting the edited PDF. Image/media editing should likewise regain the dedicated edit view where applicable, including drawing text or annotations onto images and saving through the Companion with an overwrite warning.
 - PWA install suppression should avoid noisy `beforeinstallprompt.preventDefault()` console messages where possible while preserving the no-install promise.
 - Metadata should include a file-type description/link explaining what the format is used for.
 - Sample tiles should expose a short hover description of what the sample demonstrates.
