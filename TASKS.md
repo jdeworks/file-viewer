@@ -332,7 +332,7 @@ Display:
 
 ## TASK 10 — New Format: `.als` Ableton Live Set
 
-**Status:** Not started  
+**Status:** Already implemented — ALS detection, gzip/XML renderer, metadata, sample, and smoke coverage are present.
 **Effort:** S (~1.5h, zero new deps — `DecompressionStream` is native)  
 **Files to create:** `docs/types/text/als/` (treat as text sub-type since content is XML)
 
