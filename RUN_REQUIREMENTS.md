@@ -38,6 +38,7 @@
 - Fix split-view drag locking, including with `sample.ans` and iframe previews.
 - Continue redesigning compare/diff interactions so users can compare with files already in the folder/sidebar without being forced into a file picker.
 - Improve move-aware diff so moves plus unrelated insertions are reported correctly.
+- Audit and improve the non-Monaco/custom diff renderers. Some cases currently report or imply changes but do not highlight useful differences, or fail to detect visible changes at all; add regression fixtures for these cases and make the custom diff output provide clear value beyond the Monaco diff.
 - Review each file type for useful interactions such as sorting, filtering, folding, toggling, zooming, searching, exporting, or safe online checks.
 - JSON preview should render clean disclosure controls, avoid broken escaped glyphs, and support useful key sorting.
 - Sorting should be considered for structured/table-like types such as JSON, CSV, XLSX, text lines, and similar formats.

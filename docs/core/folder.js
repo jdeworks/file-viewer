@@ -24,6 +24,7 @@ export function initFolder(deps) {
 
 // Track whether the one-time move disclaimer toast has been shown this folder session.
 let _moveNoticed = false;
+let _repoViewToken = 0;
 
 // Record a file move (src → dest path). Transfers any in-memory edit to the new path.
 export function recordMove(src, dest) {
@@ -97,7 +98,7 @@ export async function loadFolder(entries) {
   setTree(true);
 
   if (git) {
-    await openRepoView();                      // default to the commit/branch view
+    await openRepoView({ auto: true });        // default to the commit/branch view
   } else {
     const pick = display.find((e) => /(^|\/)(readme|index)\.\w+$/i.test(e.path)) || display[0];
     if (pick) { state._skipDiscardGuard = true; await openTreeFile({ file: pick.file, path: pick.path }); state.treeApi.setActive(pick.path); }
@@ -105,22 +106,27 @@ export async function loadFolder(entries) {
 }
 
 // Render the git branch/commit browser into the repo panel (parent document).
-export async function openRepoView() {
+export async function openRepoView({ auto = false } = {}) {
   if (!state.repoEntries) return;
+  const token = ++_repoViewToken;
   $('intake').hidden = true; $('workspace').hidden = true;
   const panel = $('repoPanel'); panel.hidden = false;
   panel.innerHTML = '<p class="repo-hint">Reading repository…</p>';
   try {
     if (!state.repoHandle) state.repoHandle = await openRepo(state.repoEntries);
+    if (token !== _repoViewToken || (auto && state.currentFolderPath)) return;
     if (!state.repoHandle) { panel.innerHTML = '<p class="repo-hint">Not a git repository.</p>'; return; }
     await renderRepoView(panel, state.repoHandle);
+    if (token !== _repoViewToken || (auto && state.currentFolderPath)) panel.hidden = true;
   } catch (e) {
+    if (token !== _repoViewToken || (auto && state.currentFolderPath)) return;
     panel.innerHTML = '<p class="repo-hint">Could not read repository: ' + escapeHtml(e.message) + '</p>';
   }
 }
 
 async function openTreeFile(node) {
   try {
+    _repoViewToken++;
     flushFolderEdit();                 // stash any pending edit of the file we're leaving
     // If this folder file was edited earlier, reopen its edited text (edits persist across nav).
     const stashed = state.folderEdits.get(node.path);

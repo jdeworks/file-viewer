@@ -54,10 +54,14 @@ const samples = [
   intake('sample.glb', { bytes: new TextEncoder().encode('glTF'), isBinary: true }),
   intake('sample.mp3', { mimeType: 'audio/mpeg', isBinary: true }),
   intake('docker-compose.yml', { text: 'services:\n  web:\n    image: nginx\n' }),
+  intake('toolchain.txt', { mimeType: 'text/plain', text: '# host toolchain manifest\nuid=1000 gid=1000\npython3=Python 3.13.13\n' }),
 ];
 
 for (const sample of samples) {
   assert.deepEqual(winner(RUNTIME, sample), winner(FULL, sample), `winner parity for ${sample.filename}`);
 }
+
+assert.equal(winner(RUNTIME, samples.at(-1))[0], 'raw', '.txt with a comment-like heading stays Plain text');
+assert.equal(winner(RUNTIME, intake('notes.txt', { text: '# Heading\n\n- item\n' }))[0], 'markdown', '.txt with stronger Markdown structure can still rank as Markdown');
 
 console.log('registry runtime: ok');

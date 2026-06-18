@@ -317,6 +317,7 @@ const detect_raw=(()=>{
 // that ANY more specific type outranks it, but it still wins when nothing else matches.
 // (When even raw scores 0 — pure binary with no text — the shell still falls back to it.)
 function detect(intake) {
+  if (!intake.isBinary && hasExtension(intake, 'txt', 'text')) return 0.2;
   return intake.isBinary ? 0.01 : 0.05;
 }
 return detect;
