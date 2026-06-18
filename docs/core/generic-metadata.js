@@ -6,16 +6,39 @@ function extensionOf(filename = '') {
 }
 
 function filenameWarnings(filename = '') {
+  return filenameRisk(filename).warnings;
+}
+
+function filenameRisk(filename = '') {
   const base = String(filename).split(/[\\/]/).pop() || '';
   const warnings = [];
-  if (/[\u202a-\u202e\u2066-\u2069]/u.test(base)) warnings.push('Unicode direction controls');
+  let score = 0;
+  if (/[\u202a-\u202e\u2066-\u2069]/u.test(base)) {
+    warnings.push('Unicode direction controls can disguise the visible extension');
+    score += 45;
+  }
   const parts = base.split('.').filter(Boolean);
   if (parts.length >= 3) {
-    const tail = parts.slice(-2).map((p) => p.toLowerCase());
-    const active = new Set(['bat', 'cmd', 'com', 'exe', 'hta', 'js', 'jse', 'msi', 'ps1', 'scr', 'sh', 'vbs', 'wsf']);
-    if (active.has(tail[1])) warnings.push('double extension ending in active file type');
+    const lower = parts.map((p) => p.toLowerCase());
+    const tail = lower.slice(-2).join('.');
+    const active = new Set(['app', 'bat', 'cmd', 'com', 'cpl', 'exe', 'hta', 'jar', 'js', 'jse', 'msi', 'ps1', 'scr', 'sh', 'vbs', 'wsf']);
+    const commonCompound = new Set([
+      'config.js', 'config.ts', 'd.ts', 'min.css', 'min.js', 'module.css',
+      'spec.js', 'spec.ts', 'test.js', 'test.ts',
+    ]);
+    if (!(parts.length === 3 && commonCompound.has(tail))) {
+      if (active.has(lower[lower.length - 1])) {
+        warnings.push(`High-risk double extension ending in executable .${lower[lower.length - 1]}`);
+        score += 75;
+      } else {
+        warnings.push('Multiple extensions; verify the outer format is intentional');
+        score += 20;
+      }
+    }
   }
-  return warnings;
+  score = Math.min(100, score);
+  const level = score >= 70 ? 'high' : score >= 20 ? 'caution' : 'none';
+  return { score, level, warnings };
 }
 
 function bomOf(bytes) {
@@ -78,8 +101,13 @@ export function genericMetadata(intake) {
     ['Extension', extensionOf(intake.filename)],
     ['Content kind', intake.isBinary ? 'binary' : 'text'],
   ];
-  const warnings = filenameWarnings(intake.filename);
-  if (warnings.length) rows.push(['Filename warnings', warnings.join(', ')]);
+  const risk = filenameRisk(intake.filename);
+  if (risk.score) {
+    rows.push(
+      ['Filename risk', `${risk.level} (${risk.score}/100)`],
+      ['Filename warnings', risk.warnings.join(', ')],
+    );
+  }
   if (Number.isFinite(intake.loadedBytes) && Number.isFinite(intake.size) && intake.loadedBytes < intake.size) {
     rows.push(['Loaded bytes', `${intake.loadedBytes.toLocaleString()} of ${intake.size.toLocaleString()}`]);
   }
@@ -98,4 +126,4 @@ export function genericMetadata(intake) {
   return rows;
 }
 
-export const testExports = { extensionOf, filenameWarnings, bomOf, lineEndingStats, textStats };
+export const testExports = { extensionOf, filenameRisk, filenameWarnings, bomOf, lineEndingStats, textStats };

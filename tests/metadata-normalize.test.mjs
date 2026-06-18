@@ -55,7 +55,8 @@ function value(rows, label) {
     size: 1,
     loadedBytes: 1,
   }));
-  assert.equal(value(rows, 'Filename warnings'), 'double extension ending in active file type');
+  assert.equal(value(rows, 'Filename risk'), 'high (75/100)');
+  assert.equal(value(rows, 'Filename warnings'), 'High-risk double extension ending in executable .exe');
 }
 
 {
@@ -67,7 +68,33 @@ function value(rows, label) {
     size: 1,
     loadedBytes: 1,
   }));
-  assert.equal(value(rows, 'Filename warnings'), 'Unicode direction controls, double extension ending in active file type');
+  assert.equal(value(rows, 'Filename risk'), 'high (100/100)');
+  assert.equal(value(rows, 'Filename warnings'), 'Unicode direction controls can disguise the visible extension, High-risk double extension ending in executable .exe');
+}
+
+{
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'document.pdf.zip',
+    bytes: new Uint8Array([0]),
+    text: '',
+    isBinary: true,
+    size: 1,
+    loadedBytes: 1,
+  }));
+  assert.equal(value(rows, 'Filename risk'), 'caution (20/100)');
+  assert.equal(value(rows, 'Filename warnings'), 'Multiple extensions; verify the outer format is intentional');
+}
+
+{
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'jquery.min.js',
+    bytes: new Uint8Array([0x63]),
+    text: 'c',
+    isBinary: false,
+    size: 1,
+    loadedBytes: 1,
+  }));
+  assert.equal(rows.some((r) => r.label === 'Filename risk'), false);
 }
 
 {
