@@ -25,6 +25,7 @@
 
 - Switching between files that remain available in the sidebar should retain in-memory edits instead of warning that they will be lost. The sidebar row should show an unsaved marker such as an asterisk plus a distinct filename color until the file is downloaded or saved.
 - Unsaved-work warnings should still appear when closing the page, opening an unrelated top-level file/folder, or otherwise leaving the retained edit context.
+- Add a local working-document cache for easily serialized editable text files, independent of the Companion, saving automatically about every five minutes. It should use browser-local storage only, consider compression so large text files can fit, target roughly 20 MB text where feasible, and warn clearly when a file is too large or caching is disabled.
 - Fix split-view drag locking, including with `sample.ans` and iframe previews.
 - Continue redesigning compare/diff interactions so users can compare with files already in the folder/sidebar without being forced into a file picker.
 - Improve move-aware diff so moves plus unrelated insertions are reported correctly.
@@ -32,6 +33,7 @@
 - JSON preview should render clean disclosure controls, avoid broken escaped glyphs, and support useful key sorting.
 - Sorting should be considered for structured/table-like types such as JSON, CSV, XLSX, text lines, and similar formats.
 - Preview re-renders, especially Markdown edits in dark mode, should not briefly flash white during iframe refresh.
+- Preview width should be configurable in settings, default to an A4-page-like reading width, and constrain wide Markdown/table content instead of letting it expand indefinitely.
 - PWA install suppression should avoid noisy `beforeinstallprompt.preventDefault()` console messages where possible while preserving the no-install promise.
 - Metadata should include a file-type description/link explaining what the format is used for.
 - Sample tiles should expose a short hover description of what the sample demonstrates.
