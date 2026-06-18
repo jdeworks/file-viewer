@@ -159,7 +159,7 @@ $('metaBtn').addEventListener('click', () => {
 
 ## TASK 4 — Feature B: Easter Egg Sample Files
 
-**Status:** Not started  
+**Status:** Already implemented — `docs/examples/secret.txt` exists and is indexed.
 **Effort:** XS (~30 min)  
 **Files to create:**
 - `docs/examples/secret.txt` — in-character note from "The Archivist" (metagame lore)
