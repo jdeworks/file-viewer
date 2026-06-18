@@ -5,4 +5,5 @@ export default {
   label: 'composer.json',
   match: (intake, baseType) => baseType.id === 'json' && /(^|\/)composer\.json$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

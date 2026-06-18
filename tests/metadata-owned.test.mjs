@@ -10,6 +10,11 @@ import { extract as plyMeta } from '../docs/types/3d/ply/metadata.js';
 import { extract as gltfMeta } from '../docs/types/3d/gltf/metadata.js';
 import { parseGLTF } from '../docs/types/3d/gltf/gltflib.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
+import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
+import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
+import { extract as composerMeta } from '../docs/types/text/json/known/composer-json/metadata.js';
+import { extract as cargoMeta } from '../docs/types/text/toml/known/cargo-toml/metadata.js';
+import { extract as pomMeta } from '../docs/types/text/xml/known/pom-xml/metadata.js';
 import { extract as goModMeta } from '../docs/types/text/known/go-mod/metadata.js';
 import { extract as reqMeta } from '../docs/types/text/known/requirements-txt/metadata.js';
 import { extract as codeownersMeta } from '../docs/types/text/known/codeowners/metadata.js';
@@ -136,6 +141,46 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   const rows = gltfMeta({ filename: 'bad.glb', bytes: glbHeader({ length: 0 }), isBinary: true, size: 20 });
   assert.equal(value(rows, 'glTF'), 'unreadable');
   assert.match(value(rows, 'Parse error'), /Invalid GLB length/);
+}
+
+{
+  const rows = packageJsonMeta({ filename: 'package.json', text: await text('package.json') });
+  assert.equal(value(rows, 'Package'), 'demo-package');
+  assert.equal(value(rows, 'Dependencies'), '2');
+  assert.equal(value(rows, 'Dev dependencies'), '2');
+  assert.equal(value(rows, 'Scripts'), '3');
+}
+
+{
+  const rows = tsconfigMeta({ filename: 'tsconfig.json', text: await text('tsconfig.json') });
+  assert.equal(value(rows, 'Compiler options'), '9');
+  assert.equal(value(rows, 'Strict mode'), 'yes');
+  assert.equal(value(rows, 'Include patterns'), '1');
+  assert.equal(value(rows, 'Exclude patterns'), '2');
+}
+
+{
+  const rows = composerMeta({ filename: 'composer.json', text: await text('composer.json') });
+  assert.equal(value(rows, 'Package'), 'acme/file-service');
+  assert.equal(value(rows, 'Requirements'), '5');
+  assert.equal(value(rows, 'Dev requirements'), '2');
+  assert.equal(value(rows, 'Platform requirements'), '2');
+}
+
+{
+  const rows = cargoMeta({ filename: 'Cargo.toml', text: await text('Cargo.toml') });
+  assert.equal(value(rows, 'Package'), 'file-viewer-demo');
+  assert.equal(value(rows, 'Edition'), '2021');
+  assert.equal(value(rows, 'Dependencies'), '3');
+  assert.equal(value(rows, 'Dev dependencies'), '1');
+}
+
+{
+  const rows = pomMeta({ filename: 'pom.xml', text: await text('pom.xml') });
+  assert.equal(value(rows, 'Group ID'), 'com.acme');
+  assert.equal(value(rows, 'Artifact ID'), 'file-service');
+  assert.equal(value(rows, 'Dependencies'), '3');
+  assert.equal(value(rows, 'Dependency scopes'), '2');
 }
 
 {

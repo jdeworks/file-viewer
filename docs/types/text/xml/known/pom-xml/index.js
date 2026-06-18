@@ -5,4 +5,5 @@ export default {
   label: 'pom.xml (Maven)',
   match: (intake, baseType) => baseType.id === 'xml' && /(^|\/)pom\.xml$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

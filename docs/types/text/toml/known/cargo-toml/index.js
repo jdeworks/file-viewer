@@ -5,4 +5,5 @@ export default {
   label: 'Cargo.toml',
   match: (intake, baseType) => baseType.id === 'toml' && /(^|\/)Cargo\.toml$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

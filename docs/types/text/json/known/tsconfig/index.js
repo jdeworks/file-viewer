@@ -5,4 +5,5 @@ export default {
   label: 'tsconfig.json',
   match: (intake, baseType) => baseType.id === 'json' && /(^|\/)tsconfig(\.\w+)?\.json$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };

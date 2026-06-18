@@ -5,4 +5,5 @@ export default {
   label: 'package.json',
   match: (intake, baseType) => baseType.id === 'json' && /(^|\/)package\.json$/i.test(intake.filename || ''),
   loadRenderer: () => import('./render.js'),
+  loadMetadata: () => import('./metadata.js'),
 };
