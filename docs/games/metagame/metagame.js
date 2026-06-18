@@ -101,23 +101,23 @@ export function mount(host, { onExit } = {}) {
             <div class="mg-stage-banner">Defragmenter</div>
             <strong>${esc(registry.getStageMeta(saveData.currentStage)?.name || 'Stage')}</strong>
           </div>
-          <button class="mg-back" type="button" data-action="exit">Back to arcade</button>
+          <div class="mg-v3-head-actions">
+            <div class="mg-v3-bell"></div>
+            <button class="mg-back" type="button" data-action="exit">Back to arcade</button>
+          </div>
         </header>
         <nav class="mg-v3-stages" aria-label="Metagame stages"></nav>
         <main class="mg-v3-host"></main>
-        <div class="mg-v3-bell"></div>
         <div class="mg-v3-debug" hidden></div>
       </div>`;
     host.querySelector('[data-action="exit"]').addEventListener('click', () => onExit?.());
     const nav = host.querySelector('.mg-v3-stages');
-    nav.replaceChildren(...registry.listStages().map((mod) => {
+    nav.replaceChildren(...registry.listStages().filter((mod) => saveData.unlockedStages.includes(mod.stageMeta.id)).map((mod) => {
       const meta = mod.stageMeta;
-      const unlocked = saveData.unlockedStages.includes(meta.id);
       const defeated = saveData.defeated.includes(meta.id);
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'mg-v3-stage';
-      button.disabled = !unlocked;
       button.dataset.stage = String(meta.id);
       button.textContent = `${meta.id}. ${meta.name}${defeated ? ' *' : ''}`;
       button.addEventListener('click', () => selectStage(meta.id));

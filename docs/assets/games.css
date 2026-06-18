@@ -344,12 +344,13 @@
 /* Defragmenter v3 shell and Stage 2 vertical slice. */
 .mg-v3 { width: min(760px, 100%); }
 .mg-v3-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mg-v3-head-actions { display: flex; align-items: center; gap: 8px; }
 .mg-v3-stages { display: flex; gap: 6px; flex-wrap: wrap; }
 .mg-v3-stage { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; cursor: pointer; font-size: 12px; }
 .mg-v3-stage:disabled { opacity: .45; cursor: not-allowed; }
 .mg-v3-host { display: flex; justify-content: center; }
 .mg-v3-panel { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
-.mg-v3-bell { align-self: flex-end; }
+.mg-v3-bell { position: relative; }
 .stage2-glyph-dungeon { width: min(720px, 100%); background: #0f0e0c; color: #ef9f27; border: 1px solid #5b3a10; border-radius: 8px; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .s2-hud { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; font-size: 12px; }
 .s2-grid { margin: 10px 0; padding: 10px; overflow: auto; border: 1px solid #5b3a10; background: #070604; color: #ef9f27; font: 12px/1.05 ui-monospace, monospace; }

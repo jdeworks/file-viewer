@@ -64,7 +64,7 @@ export function renderStage1(ctx) {
     delete state.owned['s1-cursor'];
     save(state);
   }
-  if (!state.tabsUnlocked && bigToNum(state.totalBits) >= 150) {
+  if (!state.tabsUnlocked && bigToNum(state.bits) >= 150) {
     state.tabsUnlocked = true;
     save(state);
   }
@@ -187,12 +187,15 @@ export function renderStage1(ctx) {
   function renderBitsPanel() {
     panelsEl.innerHTML =
       '<div class="mg-s1-panel" data-panel="bits">'
+      + '<button class="mg-compute mg-s1-earn" type="button">Compute bits</button>'
       + '<div class="mg-shop">' + tiers.map(shopRowHtml).join('') + '</div>'
       + '<div class="mg-s1-timers">' + timedTiers.map(timedBtnHtml).join('') + '</div>'
       + '<div class="mg-s1-stats" hidden></div>'
       + '<button class="mg-faceboss mg-s1-boss" type="button" hidden>⚔ Confront ' + (cfg.bossName || 'the boss') + '</button>'
       + '</div>';
 
+    const earnBtn = panelsEl.querySelector('.mg-s1-earn');
+    if (earnBtn) earnBtn.addEventListener('click', addBits);
     // Buy-count selectors (per-row remembered active count; default ×1).
     panelsEl.querySelectorAll('.mg-s1-buyn').forEach((b) => b.addEventListener('click', () => {
       const n = b.dataset.n === 'max' ? 'max' : Number(b.dataset.n);
@@ -368,10 +371,10 @@ export function renderStage1(ctx) {
     if (!state.tabsUnlocked) reveal();
   }
 
-  // ── Tab unlock: fires once when totalBits reaches 150. Toggles phase -> tab layout appears. ──
+  // ── Tab unlock: fires once when current bits reaches 150. Toggles phase -> tab layout appears. ──
   function checkTabUnlock() {
     if (state.tabsUnlocked) return;
-    if (bigToNum(state.totalBits) >= 150) {
+    if (bigToNum(state.bits) >= 150) {
       state.tabsUnlocked = true;
       save(state);
       renderAll();

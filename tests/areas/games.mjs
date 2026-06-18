@@ -2,7 +2,12 @@ export async function run(ctx) {
   const { browser, page, origin, pass, fail, consoleErrors, offOrigin } = ctx;
 
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await page.evaluate(() => { try { localStorage.removeItem('fv:games:unlocked'); } catch {} });
+  await page.evaluate(() => {
+    try {
+      localStorage.removeItem('fv:games:unlocked');
+      localStorage.removeItem('fv:games:metagame:v3');
+    } catch {}
+  });
   const preOverlay = await page.$('.games-overlay');
   if (!preOverlay) pass('games hub not present before unlock (lazy-loaded)'); else fail('games overlay present before unlock');
 
@@ -27,12 +32,50 @@ export async function run(ctx) {
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.mg-v3', { timeout: 8000 });
   await page.waitForSelector('.mg-s1', { timeout: 8000 });
+  const freshStageButtons = await page.$$eval('.mg-v3-stage', (buttons) => buttons.map((button) => ({
+    stage: button.dataset.stage,
+    disabled: button.disabled,
+    text: button.textContent,
+  })));
+  if (freshStageButtons.length === 1 && freshStageButtons[0].stage === '1' && !freshStageButtons[0].disabled) {
+    pass('Defragmenter fresh start shows only unlocked Stage 1 navigation');
+  } else {
+    fail('Defragmenter fresh stage buttons unexpected: ' + JSON.stringify(freshStageButtons));
+  }
+  const bellInHeader = await page.$eval('.mg-v3-head', (head) => {
+    const bell = head.querySelector('.mg-v3-bell .mg-bell-btn');
+    const back = head.querySelector('[data-action="exit"]');
+    return Boolean(bell && back && bell.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+  if (bellInHeader) pass('Defragmenter bell control sits in header before Back to arcade'); else fail('Defragmenter bell control is not in header next to Back to arcade');
   const freshSave = await page.evaluate(() => JSON.parse(localStorage.getItem('fv:games:metagame:v3')));
   if (freshSave?.version === 3 && freshSave.unlockedStages?.includes(1) && freshSave.stageState?.[1]) {
     pass('Defragmenter initializes fresh v3 save with Stage 1');
   } else {
     fail('Defragmenter v3 save invalid: ' + JSON.stringify(freshSave));
   }
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
+    save.stageState[1].bits = { m: 149, e: 0 };
+    save.stageState[1].totalBits = { m: 0, e: 0 };
+    save.stageState[1].tabsUnlocked = false;
+    localStorage.setItem('fv:games:metagame:v3', JSON.stringify(save));
+  });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-s1-phase1 .mg-s1-tap', { timeout: 8000 });
+  await page.click('.mg-s1-tap', { position: { x: 8, y: 8 } });
+  await page.waitForSelector('.mg-s1-tab[data-tab="bits"]', { timeout: 4000 });
+  await page.waitForSelector('.mg-s1-earn', { timeout: 4000 });
+  const beforeEarnBits = await page.evaluate(() => JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState[1].bits.m);
+  await page.click('.mg-s1-earn');
+  await page.waitForFunction((before) => {
+    try {
+      return JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState[1].bits.m > before;
+    } catch { return false; }
+  }, beforeEarnBits, { timeout: 4000 });
+  pass('Stage 1 tabs unlock leaves a click target that still earns bits');
   await page.click('.games-close');
 
   await page.evaluate(async () => {
