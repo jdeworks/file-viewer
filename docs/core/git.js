@@ -218,7 +218,8 @@ export async function openRepo(entries) {
   }
 
   // Unified object read: try the loose store, then the packs. Returns { type, data } or null.
-  async function readObjectBySha(sha) {
+  const objectCache = new Map();
+  async function readObjectByShaUncached(sha) {
     const f = rel('objects/' + sha.slice(0, 2) + '/' + sha.slice(2));
     if (f) {
       try {
@@ -234,7 +235,22 @@ export async function openRepo(entries) {
     return null;
   }
 
+  async function readObjectBySha(sha) {
+    if (!/^[0-9a-f]{40}$/.test(sha || '')) return null;
+    if (!objectCache.has(sha)) objectCache.set(sha, readObjectByShaUncached(sha));
+    return objectCache.get(sha);
+  }
+
+  const commitCache = new Map();
   async function readCommit(sha) {
+    if (!/^[0-9a-f]{40}$/.test(sha || '')) return null;
+    if (commitCache.has(sha)) return commitCache.get(sha);
+    const promise = readCommitUncached(sha);
+    commitCache.set(sha, promise);
+    return promise;
+  }
+
+  async function readCommitUncached(sha) {
     const obj = await readObjectBySha(sha);
     if (!obj || obj.type !== 'commit') return null;
     return parseCommit(sha, dec.decode(obj.data));
@@ -257,7 +273,19 @@ export async function openRepo(entries) {
     return entries;
   }
 
+  const flatTreeCache = new Map();
   async function flattenTree(treeSha, prefix = '', out = new Map(), limit = 5000) {
+    if (!prefix && !out.size) {
+      const cacheKey = treeSha + ':' + limit;
+      if (flatTreeCache.has(cacheKey)) return flatTreeCache.get(cacheKey);
+      const result = await flattenTreeUncached(treeSha, prefix, out, limit);
+      flatTreeCache.set(cacheKey, result);
+      return result;
+    }
+    return flattenTreeUncached(treeSha, prefix, out, limit);
+  }
+
+  async function flattenTreeUncached(treeSha, prefix = '', out = new Map(), limit = 5000) {
     if (!treeSha || out.size > limit) return out;
     let entries = treeCache.get(treeSha);
     if (!entries) {
@@ -310,8 +338,12 @@ export async function openRepo(entries) {
   // Walk first-parent from a tip SHA across BOTH loose and packed history. `packed` is true only
   // if the chain hit a commit we genuinely couldn't read (truncated/missing object).
   const walkCache = new Map();
+  const walkKey = (sha, limit) => sha + ':' + limit;
+  function peekWalk(sha, limit = 50) {
+    return walkCache.get(walkKey(sha, limit)) || null;
+  }
   async function walk(sha, limit = 50) {
-    const cacheKey = sha + ':' + limit;
+    const cacheKey = walkKey(sha, limit);
     if (walkCache.has(cacheKey)) return walkCache.get(cacheKey);
     const commits = [];
     let packed = false;
@@ -334,6 +366,6 @@ export async function openRepo(entries) {
       .sort((a, b) => (b.current - a.current) || a.name.localeCompare(b.name)),
     tags: [...tags].map(([name, sha]) => ({ name, sha })),
     reflog: parseReflog(await text('logs/HEAD') || ''),
-    readCommit, walk, changedFiles,
+    readCommit, walk, peekWalk, changedFiles,
   };
 }

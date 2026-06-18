@@ -85,8 +85,9 @@ export async function renderRepoView(host, repo) {
   }
 
   async function load(sha) {
-    list.innerHTML = '<p class="repo-hint">Reading commits…</p>';
-    const { commits, packed } = await repo.walk(sha, 50);
+    const cached = repo.peekWalk?.(sha, 50);
+    if (!cached) list.innerHTML = '<p class="repo-hint">Reading commits…</p>';
+    const { commits, packed } = cached || await repo.walk(sha, 50);
     list.innerHTML = '';
     detail.innerHTML = '<p class="repo-hint">Select a commit to see its details.</p>';
 
