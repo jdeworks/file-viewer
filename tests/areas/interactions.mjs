@@ -12,6 +12,62 @@ export async function run(ctx) {
   const newName = await page.$eval('#fileName', (e) => e.textContent);
   if (newName === 'notes.md') pass('new file: named as entered'); else fail('new file name: ' + newName);
 
+  // ── Markdown editable text tools ── raw/split editor actions format selections, insert tables,
+  // and extend the right-click path for sorting a selected Markdown table.
+  const mdToolsShown = await page.$eval('#markdownTools', (e) => !e.hidden);
+  if (mdToolsShown) pass('Markdown tools menu shown for editable Markdown'); else fail('Markdown tools hidden');
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    rv.setValue('Title');
+    rv.setSelection(1, 1, 1, 1);
+  });
+  await page.click('#markdownTools .md-tools-toggle');
+  await page.click('#markdownTools [data-md-action="heading"]');
+  const mdHeading = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (mdHeading === '# Title') pass('Markdown tools: heading action formats current line'); else fail('heading result: ' + mdHeading);
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    rv.setValue('bold italic');
+    rv.setSelection(1, 1, 1, 5);
+  });
+  await page.click('#markdownTools .md-tools-toggle');
+  await page.click('#markdownTools [data-md-action="bold"]');
+  const mdBold = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (mdBold === '**bold** italic') pass('Markdown tools: bold wraps selected text'); else fail('bold result: ' + mdBold);
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    rv.setSelection(1, 10, 1, 16);
+  });
+  await page.click('#markdownTools .md-tools-toggle');
+  await page.click('#markdownTools [data-md-action="italic"]');
+  const mdItalic = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (mdItalic === '**bold** *italic*') pass('Markdown tools: italic wraps selected text'); else fail('italic result: ' + mdItalic);
+  page.once('dialog', (d) => d.accept('2,2'));
+  await page.click('#markdownTools .md-tools-toggle');
+  await page.click('#markdownTools [data-md-action="table"]');
+  const mdTableInserted = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (/\| Column 1 \| Column 2 \|/.test(mdTableInserted) && mdTableInserted.split('\n').length === 4) pass('Markdown tools: table prompt inserts requested dimensions'); else fail('table inserted: ' + mdTableInserted);
+  await page.evaluate(() => {
+    const table = [
+      '| Name | Score |',
+      '| --- | --- |',
+      '| Beta | 10 |',
+      '| Alpha | 2 |',
+    ].join('\n');
+    const rv = window.__fv.state.rawview;
+    rv.setValue(table);
+    rv.setSelection(1, 1, 4, 13);
+  });
+  await page.click('#editor .monaco-editor', { button: 'right' });
+  await page.waitForSelector('.md-context-menu', { timeout: 4000 });
+  await page.click('.md-context-menu button:has-text("Name")');
+  const mdSorted = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (/\| Alpha \| 2 \|\n\| Beta \| 10 \|/.test(mdSorted)) pass('Markdown context menu: sorts selected table by chosen column'); else fail('sorted table: ' + mdSorted);
+  await page.evaluate(() => {
+    window.__fv.state.downloadedSinceEdit = true;
+    window.__fv.state.sessionEdits.clear();
+  });
+
   // ── import easteregg unlock ── typing the magic line into a file opens the arcade. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => { try { localStorage.removeItem('fv:games:unlocked'); } catch {} });

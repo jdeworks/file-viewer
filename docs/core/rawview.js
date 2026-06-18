@@ -10,7 +10,7 @@ function fill(el) { el.style.position = 'absolute'; el.style.inset = '0'; return
 
 export async function createRawView(host, {
   originalText, currentText, language, theme, options = {},
-  onChange, onCursor, onScroll, onMoveDiff, onCustomDiff,
+  onChange, onCursor, onScroll, onContextMenu, onMoveDiff, onCustomDiff,
 }) {
   const monaco = await loadMonaco();
   host.innerHTML = '';
@@ -44,6 +44,9 @@ export async function createRawView(host, {
   modifiedModel.onDidChangeContent(() => onChange?.(modifiedModel.getValue()));
   std.onDidChangeCursorPosition((e) => { if (mode !== 'diff' && mode !== 'movediff') onCursor?.(e.position.lineNumber); });
   std.onDidScrollChange(() => { if (mode !== 'diff' && mode !== 'movediff') onScroll?.(); });
+  std.onContextMenu((e) => {
+    if (mode === 'current') onContextMenu?.(e);
+  });
 
   const isNarrow = () => window.matchMedia('(max-width: 760px)').matches;
 
@@ -86,6 +89,30 @@ export async function createRawView(host, {
     getValue: () => modifiedModel.getValue(),
     originalValue: () => originalModel.getValue(),
     setValue: (text) => modifiedModel.setValue(text),
+    selectionText() {
+      return modifiedModel.getValueInRange(std.getSelection());
+    },
+    replaceSelection(text, opts = {}) {
+      const selection = std.getSelection();
+      replaceRange(selection, text, opts);
+    },
+    selectionRange() {
+      return std.getSelection();
+    },
+    replaceRange(range, text, opts = {}) {
+      replaceRange(range, text, opts);
+    },
+    transformSelection(transform, opts = {}) {
+      const selection = opts.expandToLines ? expandSelectionToLines(std.getSelection()) : std.getSelection();
+      const selected = modifiedModel.getValueInRange(selection);
+      const result = transform(selected);
+      const next = typeof result === 'string' ? { text: result } : (result || { text: selected });
+      replaceRange(selection, next.text, { ...opts, ...next });
+    },
+    setSelection(startLine, startColumn, endLine, endColumn) {
+      std.setSelection(new monaco.Range(startLine, startColumn, endLine, endColumn));
+      std.focus();
+    },
     isDirty: () => originalModel.getValue() !== modifiedModel.getValue(),
     setLanguage(lang) { monaco.editor.setModelLanguage(originalModel, lang); monaco.editor.setModelLanguage(modifiedModel, lang); if (compareModel) monaco.editor.setModelLanguage(compareModel, lang); },
     // Compare the current file against another file's text (current ↔ other). Switches to diff.
@@ -120,4 +147,31 @@ export async function createRawView(host, {
     canSync: () => mode === 'current' || mode === 'original',
     dispose() { std.dispose(); diff?.dispose(); originalModel.dispose(); modifiedModel.dispose(); compareModel?.dispose(); host.innerHTML = ''; },
   };
+
+  function expandSelectionToLines(selection) {
+    const start = selection.startLineNumber;
+    const end = selection.isEmpty() ? start : selection.endLineNumber;
+    return new monaco.Range(start, 1, end, modifiedModel.getLineMaxColumn(end));
+  }
+
+  function replaceRange(range, text, opts = {}) {
+    const insert = String(text || '');
+    const startOffset = modifiedModel.getOffsetAt(range.getStartPosition());
+    std.executeEdits(opts.source || 'raw-editor', [{ range, text: insert, forceMoveMarkers: true }]);
+    const insertedStart = modifiedModel.getPositionAt(startOffset);
+    const insertedEnd = modifiedModel.getPositionAt(startOffset + insert.length);
+    if (Number.isFinite(opts.selectStart) && Number.isFinite(opts.selectEnd)) {
+      std.setSelection(new monaco.Range(
+        modifiedModel.getPositionAt(startOffset + opts.selectStart).lineNumber,
+        modifiedModel.getPositionAt(startOffset + opts.selectStart).column,
+        modifiedModel.getPositionAt(startOffset + opts.selectEnd).lineNumber,
+        modifiedModel.getPositionAt(startOffset + opts.selectEnd).column,
+      ));
+    } else if (opts.selectInserted) {
+      std.setSelection(new monaco.Range(insertedStart.lineNumber, insertedStart.column, insertedEnd.lineNumber, insertedEnd.column));
+    } else {
+      std.setPosition(insertedEnd);
+    }
+    std.focus();
+  }
 }

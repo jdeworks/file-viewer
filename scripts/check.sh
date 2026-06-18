@@ -22,6 +22,7 @@ echo "→ LOC housekeeping report (advisory)…"
 
 echo "→ unit tests (move-aware diff + parsers + metadata)…"
 node tests/movediff.test.mjs
+node tests/markdown-edit-actions.test.mjs
 node tests/metadata-normalize.test.mjs
 node tests/metadata-owned.test.mjs
 

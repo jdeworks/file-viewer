@@ -10,11 +10,13 @@ import { captureBodyHtml } from './iframe.js';
 import { mapRawToPreview, syncScrollFromRaw } from './sync.js';
 import { applyLayout } from './layout.js';
 import { recordStage1RawEdit } from '../games/metagame/viewer-actions.js';
+import { markdownHeading, markdownTable, markdownWrap, sortMarkdownTable, tableSortOptions } from '../types/markdown/edit-actions.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
 
 const DISCLAIMER_KEY = 'fv:edit-disclaimer';
+let markdownContextMenu = null;
 
 // Show the in-memory edit banner (B). Wires the dismiss buttons once, idempotently.
 function setDisclaimerVisible(visible) {
@@ -38,6 +40,98 @@ function showEditDisclaimer() {
   });
 }
 
+function setMarkdownToolsVisible(visible) {
+  const el = $('markdownTools');
+  if (!el) return;
+  el.hidden = !visible;
+  $('rawPane')?.classList.toggle('has-tools', visible);
+}
+
+function wireMarkdownTools() {
+  const el = $('markdownTools');
+  if (!el || el.dataset.wired) return;
+  el.dataset.wired = '1';
+  const menu = el.querySelector('.md-tools-menu');
+  const toggle = el.querySelector('.md-tools-toggle');
+  toggle.addEventListener('click', () => {
+    menu.hidden = !menu.hidden;
+    toggle.setAttribute('aria-expanded', String(!menu.hidden));
+  });
+  el.addEventListener('click', (e) => {
+    const action = e.target.closest('[data-md-action]')?.dataset.mdAction;
+    if (!action) return;
+    menu.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+    runMarkdownAction(action);
+  });
+  document.addEventListener('click', (e) => {
+    if (!menu.hidden && !e.target.closest('#markdownTools')) {
+      menu.hidden = true;
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
+function runMarkdownAction(action) {
+  if (!state.rawview || state.type?.id !== 'markdown') return;
+  if (action === 'heading') {
+    state.rawview.transformSelection((text) => markdownHeading(text, 1), { expandToLines: true, source: 'markdown-heading' });
+  } else if (action === 'bold') {
+    state.rawview.transformSelection((text) => markdownWrap(text, '**', 'strong text'), { source: 'markdown-bold' });
+  } else if (action === 'italic') {
+    state.rawview.transformSelection((text) => markdownWrap(text, '*', 'emphasis'), { source: 'markdown-italic' });
+  } else if (action === 'table') {
+    const dims = prompt('Insert table as rows, columns', '3,3');
+    if (dims == null) return;
+    const [rows, cols] = dims.split(/[,\sx]+/i).map((n) => Number(n)).filter((n) => Number.isFinite(n));
+    state.rawview.replaceSelection(markdownTable(rows || 3, cols || 3), { source: 'markdown-table', selectInserted: true });
+  }
+}
+
+function onMarkdownContextMenu(e) {
+  const selected = state.rawview?.selectionText?.() || '';
+  const options = tableSortOptions(selected);
+  if (!options.length) return;
+  const range = state.rawview.selectionRange?.();
+  e.event?.preventDefault?.();
+  e.event?.stopPropagation?.();
+  showMarkdownTableSortMenu(e.event?.browserEvent || e.event, options, { selected, range });
+}
+
+function showMarkdownTableSortMenu(event, options, selection) {
+  closeMarkdownContextMenu();
+  const menu = document.createElement('div');
+  menu.className = 'md-context-menu';
+  menu.setAttribute('role', 'menu');
+  const title = document.createElement('div');
+  title.className = 'md-context-title';
+  title.textContent = 'Sort table by';
+  menu.append(title);
+  for (const opt of options) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = opt.label;
+    btn.addEventListener('click', () => {
+      const sorted = sortMarkdownTable(selection.selected, opt.index);
+      if (sorted && selection.range) state.rawview.replaceRange(selection.range, sorted, { source: 'markdown-table-sort', selectInserted: true });
+      closeMarkdownContextMenu();
+    });
+    menu.append(btn);
+  }
+  document.body.append(menu);
+  const x = event?.clientX || 20;
+  const y = event?.clientY || 20;
+  menu.style.left = Math.min(x, window.innerWidth - 220) + 'px';
+  menu.style.top = Math.min(y, window.innerHeight - 180) + 'px';
+  markdownContextMenu = menu;
+  setTimeout(() => document.addEventListener('click', closeMarkdownContextMenu, { once: true }), 0);
+}
+
+function closeMarkdownContextMenu() {
+  markdownContextMenu?.remove();
+  markdownContextMenu = null;
+}
+
 export async function buildRawView() {
   state.rawview?.dispose();
   // syntaxLanguage may be a function(intake) for types that pick the language per file (code).
@@ -54,6 +148,7 @@ export async function buildRawView() {
     onChange: debounce((value) => onRawEdited(value), 250),
     onCursor: (line) => mapRawToPreview(line),
     onScroll: () => syncScrollFromRaw(),
+    onContextMenu: state.type?.id === 'markdown' ? onMarkdownContextMenu : undefined,
     onMoveDiff: async (moveHost, original, current) => {
       const { renderMoveDiff } = await import('./movediff-view.js');
       renderMoveDiff(moveHost, original, current, { threshold: 0.8 });
@@ -70,6 +165,8 @@ export async function buildRawView() {
         }
       : undefined,
   });
+  wireMarkdownTools();
+  setMarkdownToolsVisible(state.type?.id === 'markdown' && !state.intake.isBinary);
   syncRawModeButtons();
   showEditDisclaimer();
 }
