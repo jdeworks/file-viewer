@@ -3,7 +3,7 @@
 // Settings here are intentionally minimal; WP03 replaces buildSettings() with the
 // full descriptor-driven system. The contract this file consumes is frozen.
 
-import { REGISTRY, getType } from './registry.js';
+import { getType } from './registry-runtime.generated.js';
 import { pickType } from './detect.js';
 import { wireIntake, LARGE_FILE_BYTES } from './intake.js';
 import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';

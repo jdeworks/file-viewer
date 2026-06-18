@@ -5,7 +5,7 @@
 // The "Metagame" category is gated behind fv:games:unlocked.
 import { $ } from './state.js';
 import { intakeFromFile } from './intake.js';
-import { REGISTRY } from './registry.js';
+import { REGISTRY } from './registry-runtime.generated.js';
 import { getTypeInfo, sampleDescription } from './type-info.js';
 
 const EXAMPLE_CATEGORY_ORDER = ['Documents', 'Ebook', 'Data', 'Office', 'Config', 'Code', 'Image', 'Media', '3D', 'Archive & Binary', 'Secrets', 'Binary', 'Emulator', 'Text', 'Other', 'Metagame'];

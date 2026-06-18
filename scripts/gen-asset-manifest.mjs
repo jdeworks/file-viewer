@@ -27,7 +27,10 @@ const assets = kept.map((f) => f.path);
 // (each with a size). Core app shell, each vendored library, type renderers, known-files, games,
 // and examples are separate. Heavy = a big optional download the modal leaves unchecked by default.
 function bundleOf(path) {
-  if (path.startsWith('vendor/') && path.split('/').length > 2) return 'vendor:' + path.split('/')[1];
+  if (path.startsWith('vendor/')) {
+    const parts = path.split('/');
+    return 'vendor:' + (parts.length > 2 ? parts[1] : parts[1].replace(/(\.min)?\.[^.]+$/, ''));
+  }
   if (path.startsWith('examples/')) return 'examples';
   if (path.startsWith('games/')) return 'games';
   if (path.startsWith('types/')) return 'types';

@@ -1,4 +1,4 @@
-import { REGISTRY, FALLBACK_TYPE } from './registry.js';
+import { REGISTRY, FALLBACK_TYPE } from './registry-runtime.generated.js';
 import { $ } from './state.js';
 
 export function populateTypeSelect(ranking, selectedId, showAll) {

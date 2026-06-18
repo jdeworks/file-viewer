@@ -18,6 +18,13 @@ if ! git diff --quiet -- docs/core/settings-defaults.generated.json; then
   exit 1
 fi
 
+echo "→ regenerating runtime registry (must be committed fresh)…"
+node scripts/gen-registry-runtime.mjs >/dev/null
+if ! git diff --quiet -- docs/core/registry-runtime.generated.js docs/core/registry-detect.generated.*.js; then
+  echo "  runtime registry changed — stage it."
+  exit 1
+fi
+
 echo "→ regenerating asset-manifest.json (must be committed fresh)…"
 node scripts/gen-asset-manifest.mjs >/dev/null
 if ! git diff --quiet -- docs/asset-manifest.json; then
@@ -31,6 +38,7 @@ echo "→ unit tests (move-aware diff + parsers + metadata)…"
 node tests/movediff.test.mjs
 node tests/markdown-edit-actions.test.mjs
 node tests/settings-defaults.test.mjs
+node tests/registry-runtime.test.mjs
 node tests/metadata-normalize.test.mjs
 node tests/metadata-owned.test.mjs
 

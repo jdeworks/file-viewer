@@ -2,7 +2,7 @@
 // returns them sorted by confidence. The winner is auto-selected but always
 // user-overridable via the type dropdown (core/app.js).
 
-import { REGISTRY, FALLBACK_TYPE } from './registry.js';
+import { REGISTRY, FALLBACK_TYPE } from './registry-runtime.generated.js';
 
 export function detectAll(intake) {
   const scored = REGISTRY.map((type) => {
