@@ -360,7 +360,7 @@ Display:
 
 ## TASK 11 — New Format: `.har` HTTP Archive Viewer
 
-**Status:** Not started  
+**Status:** Already implemented — HAR detection, waterfall/table renderer, metadata, sample, and smoke coverage are present.
 **Effort:** S (~2h, uses existing chart.js)  
 **Files to create:** `docs/types/text/har/`
 
