@@ -236,7 +236,7 @@ A short note (200-300 words) from "The Archivist" — a fictional entity from th
 
 ## TASK 7 — Feature D: Audio Waveform
 
-**Status:** Not started  
+**Status:** Already implemented — waveform module, renderer integration, and smoke coverage are present.
 **Effort:** M (~2h)  
 **Files to create:**
 - `docs/types/media/waveform.js`
