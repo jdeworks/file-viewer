@@ -60,8 +60,8 @@
   .json-tree details{margin:0;}
   .json-tree summary{cursor:pointer;list-style:none;}
   .json-tree summary::-webkit-details-marker{display:none;}
-  .json-tree summary::before{content:"\\25be";display:inline-block;width:1em;color:#888;}
-  .json-tree details:not([open])>summary::before{content:"\\25b8";}
+  .json-tree summary::before{content:"▾";display:inline-block;width:1em;color:#888;}
+  .json-tree details:not([open])>summary::before{content:"▸";}
   .j-row,.j-node{padding-left:1.2em;}
   .j-children{padding-left:1.2em;border-left:1px solid #8884;margin-left:.3em;}
   .j-key{color:#0b69c7;} body.fv-dark .j-key{color:#7cb7ff;}

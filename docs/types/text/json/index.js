@@ -19,4 +19,10 @@ export default {
   // not in core. Module exports render(host, originalText, currentText).
   loadDiffRenderer: () => import('./jsondiff.js'),
   settingsUrl: new URL('./settings.default.json', import.meta.url),
+  settings: {
+    schema: [
+      { key: 'jsonSortKeys', label: 'Sort object keys', category: 'viewer-common', type: 'select', options: ['original', 'A-Z', 'Z-A'], default: 'original',
+        hint: 'Sort keys in the rendered preview only. Arrays and the editable source keep their original order.' },
+    ],
+  },
 };
