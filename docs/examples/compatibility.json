@@ -5319,6 +5319,143 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
+    },
+    "github-actions": {
+      "label": "GitHub Actions workflow",
+      "support": "supported",
+      "sampleFiles": [
+        "sample-workflow.yml"
+      ],
+      "extensions": [
+        ".yml",
+        ".yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false,
+      "baseType": "yaml"
+    },
+    "k8s-manifest": {
+      "label": "Kubernetes manifest",
+      "support": "supported",
+      "sampleFiles": [
+        "sample-k8s.yaml"
+      ],
+      "extensions": [
+        ".yaml",
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "baseType": "yaml"
+    },
+    "pubspec": {
+      "label": "Flutter / Dart pubspec",
+      "support": "supported",
+      "sampleFiles": [
+        "pubspec.yaml"
+      ],
+      "extensions": [
+        ".yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "baseType": "yaml"
+    },
+    "netlify-toml": {
+      "label": "Netlify Config",
+      "support": "supported",
+      "sampleFiles": [
+        "netlify.toml"
+      ],
+      "extensions": [
+        ".toml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "baseType": "toml"
+    },
+    "vercel-json": {
+      "label": "Vercel Config",
+      "support": "supported",
+      "sampleFiles": [
+        "vercel.json"
+      ],
+      "extensions": [
+        ".json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "baseType": "json"
     }
   }
 }

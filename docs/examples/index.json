@@ -2435,5 +2435,60 @@
       "Code",
       "security"
     ]
+  },
+  {
+    "file": "sample-workflow.yml",
+    "label": "GitHub Actions CI workflow (demo)",
+    "mime": "application/yaml",
+    "category": "Code",
+    "categories": [
+      "Code",
+      "devops"
+    ],
+    "enhanced": true
+  },
+  {
+    "file": "sample-k8s.yaml",
+    "label": "Kubernetes Deployment manifest (demo)",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "devops"
+    ],
+    "enhanced": true
+  },
+  {
+    "file": "pubspec.yaml",
+    "label": "Flutter pubspec.yaml (demo)",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "mobile"
+    ],
+    "enhanced": true
+  },
+  {
+    "file": "netlify.toml",
+    "label": "Netlify config (netlify.toml demo)",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "devops"
+    ],
+    "enhanced": true
+  },
+  {
+    "file": "vercel.json",
+    "label": "Vercel config (vercel.json demo)",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "devops"
+    ],
+    "enhanced": true
   }
 ]

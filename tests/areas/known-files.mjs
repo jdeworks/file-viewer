@@ -159,4 +159,46 @@ export async function run(ctx) {
   const oaMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/API title\s*Widget API/.test(oaMeta) && /Endpoints\s*6/.test(oaMeta)) pass('OpenAPI metadata includes title and endpoint count'); else fail('openapi meta: ' + oaMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
+
+  // ── GitHub Actions workflow viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('GitHub Actions CI workflow (demo)');
+  await page.waitForSelector('#previewHost .gha-doc, #previewHost [class*="gha"]', { timeout: 12000 });
+  const ghaText = await page.$eval('#previewHost', (e) => e.textContent);
+  if (/GitHub Actions/i.test(ghaText)) pass('GitHub Actions: badge shown'); else fail('gha badge: ' + ghaText.slice(0, 200));
+  if (/push|pull.request|workflow.dispatch/i.test(ghaText)) pass('GitHub Actions: triggers shown'); else fail('gha triggers: ' + ghaText.slice(0, 200));
+  if (/test|lint|build/i.test(ghaText)) pass('GitHub Actions: jobs shown'); else fail('gha jobs: ' + ghaText.slice(0, 200));
+
+  // ── Kubernetes manifest viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Kubernetes Deployment manifest (demo)');
+  await page.waitForSelector('#previewHost .k8s-doc, #previewHost [class*="k8s"]', { timeout: 12000 });
+  const k8sText = await page.$eval('#previewHost', (e) => e.textContent);
+  if (/Kubernetes/i.test(k8sText)) pass('Kubernetes: badge shown'); else fail('k8s badge: ' + k8sText.slice(0, 200));
+  if (/Deployment/i.test(k8sText)) pass('Kubernetes: kind shown'); else fail('k8s kind: ' + k8sText.slice(0, 200));
+  if (/web-app|production/i.test(k8sText)) pass('Kubernetes: name/namespace shown'); else fail('k8s meta: ' + k8sText.slice(0, 200));
+
+  // ── Flutter pubspec viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Flutter pubspec.yaml (demo)');
+  await page.waitForSelector('#previewHost .pubspec-doc, #previewHost [class*="pubspec"]', { timeout: 12000 });
+  const psText = await page.$eval('#previewHost', (e) => e.textContent);
+  if (/Flutter|Dart/i.test(psText)) pass('pubspec: badge shown'); else fail('pubspec badge: ' + psText.slice(0, 200));
+  if (/my.flutter.app|1\.2\.0/i.test(psText)) pass('pubspec: name/version shown'); else fail('pubspec name: ' + psText.slice(0, 200));
+
+  // ── Netlify config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Netlify config (netlify.toml demo)');
+  await page.waitForSelector('#previewHost .badge-netlify, #previewHost [class*="ntl"]', { timeout: 12000 });
+  const ntlText = await page.$eval('#previewHost', (e) => e.textContent);
+  if (/Netlify/i.test(ntlText)) pass('netlify.toml: badge shown'); else fail('netlify badge: ' + ntlText.slice(0, 200));
+  if (/npm run build|dist/i.test(ntlText)) pass('netlify.toml: build command shown'); else fail('netlify build: ' + ntlText.slice(0, 200));
+
+  // ── Vercel config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Vercel config (vercel.json demo)');
+  await page.waitForSelector('#previewHost .badge-vercel, #previewHost [class*="vcl"]', { timeout: 12000 });
+  const vclText = await page.$eval('#previewHost', (e) => e.textContent);
+  if (/Vercel/i.test(vclText)) pass('vercel.json: badge shown'); else fail('vercel badge: ' + vclText.slice(0, 200));
+  if (/nextjs|Next\.js/i.test(vclText)) pass('vercel.json: framework shown'); else fail('vercel framework: ' + vclText.slice(0, 200));
 }
