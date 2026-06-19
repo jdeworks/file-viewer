@@ -3080,6 +3080,18 @@
     "description": "Ruff Python linter configuration with rule selection, ignores, and format settings."
   },
   {
+    "label": "typos.toml (typos spell checker)",
+    "file": "typos.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
+    "knownFile": "typos"
+  },
+  {
     "label": "uv.toml (uv package manager)",
     "file": "uv.toml",
     "mime": "application/toml",
@@ -3327,6 +3339,39 @@
     "enhanced": true
   },
   {
+    "label": "Podfile",
+    "file": "Podfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "CocoaPods Podfile declaring iOS pod dependencies per target."
+  },
+  {
+    "label": "Fastfile",
+    "file": "Fastfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Fastlane Fastfile defining automation lanes for building, testing, and deploying mobile apps."
+  },
+  {
+    "label": "Snapfile",
+    "file": "Snapfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Fastlane Snapfile configuring screenshot devices, languages, and output settings."
+  },
+  {
     "label": "sonar-project.properties",
     "file": "sonar-project.properties",
     "mime": "text/plain",
@@ -3387,37 +3432,182 @@
     "enhanced": true
   },
   {
-    "label": "rush.json",
-    "file": "rush.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Rush monorepo configuration with version, projects, and npm settings."
-  },
-  {
-    "label": ".markdownlint.json",
-    "file": ".markdownlint.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Markdownlint rules config with disabled, enabled, and custom-configured rules."
-  },
-  {
-    "label": ".clang-format",
-    "file": ".clang-format",
+    "label": "Cloud Build config",
+    "file": "cloudbuild.yaml",
     "mime": "text/yaml",
     "category": "Config",
     "categories": [
       "Config"
+    ]
+  },
+  {
+    "label": "App Engine config",
+    "file": "app.yaml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "FUNDING.yml",
+    "file": "FUNDING.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "Jekyll _config.yml",
+    "file": "_config.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "Brewfile",
+    "file": "Brewfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
     ],
     "enhanced": true,
-    "description": "clang-format style config based on Google style with custom indent and column settings."
+    "description": "Homebrew Bundle package manifest with taps, formulae, casks, and MAS apps.",
+    "knownFile": "brewfile"
+  },
+  {
+    "label": "Earthfile (Earthly build)",
+    "file": "Earthfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Earthly Earthfile build target configuration with containerized CI build steps.",
+    "knownFile": "earthfile"
+  },
+  {
+    "label": "Matchfile (Fastlane Match)",
+    "file": "Matchfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Fastlane Match configuration for managing Apple code-signing certificates and provisioning profiles.",
+    "knownFile": "matchfile"
+  },
+  {
+    "label": "terraform.tfvars (Terraform variables)",
+    "file": "terraform.tfvars",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Terraform variable values file assigning values to infrastructure variables.",
+    "knownFile": "tfvars"
+  },
+  {
+    "label": "crowdin.yml (Crowdin config)",
+    "file": "crowdin.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Crowdin localization configuration with source file mappings and translation settings.",
+    "knownFile": "crowdin-yml"
+  },
+  {
+    "label": "LICENSE",
+    "file": "LICENSE",
+    "mime": "text/plain",
+    "category": "Documents",
+    "categories": [
+      "Documents"
+    ],
+    "enhanced": true,
+    "description": "MIT open-source license.",
+    "knownFile": "license"
+  },
+  {
+    "label": "example.gemspec",
+    "file": "example.gemspec",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Ruby gem specification with runtime and development dependencies.",
+    "knownFile": "gemspec"
+  },
+  {
+    "label": "ansible.cfg",
+    "file": "ansible.cfg",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Ansible configuration with defaults, privilege escalation, and inventory settings.",
+    "knownFile": "ansible-cfg"
+  },
+  {
+    "label": "deny.toml",
+    "file": "deny.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "cargo-deny"
+  },
+  {
+    "label": "cargo.config.toml",
+    "file": "cargo.config.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "cargo-config"
+  },
+  {
+    "label": ".htaccess",
+    "file": ".htaccess",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Apache per-directory configuration with URL rewriting and auth rules.",
+    "knownFile": "htaccess"
+  },
+  {
+    "label": "nginx.conf",
+    "file": "nginx.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Nginx web server configuration with server blocks, location rules, and proxy settings.",
+    "knownFile": "nginx-conf"
   },
   {
     "label": "moon.yml",
@@ -3428,97 +3618,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Moon workspace config with VCS, node/pnpm versions, typescript, and project globs."
-  },
-  {
-    "label": "Brewfile",
-    "file": "Brewfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "LICENSE",
-    "file": "LICENSE",
-    "mime": "text/plain",
-    "category": "Text",
-    "categories": [
-      "Text"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "ansible.cfg",
-    "file": "ansible.cfg",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "example.gemspec",
-    "file": "example.gemspec",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "typos.toml",
-    "file": "typos.toml",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "deny.toml",
-    "file": "deny.toml",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "cargo.config.toml",
-    "file": "cargo.config.toml",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".htaccess",
-    "file": ".htaccess",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "nginx.conf",
-    "file": "nginx.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
+    "description": "Moonrepo project configuration defining tasks, language, and project metadata.",
+    "knownFile": "moon-yml"
   },
   {
     "label": "Vagrantfile",
@@ -3528,7 +3629,9 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "description": "Vagrant VM configuration with Ubuntu base box, port forwarding, synced folders, and shell provisioners.",
+    "knownFile": "vagrantfile"
   },
   {
     "label": "Caddyfile",
@@ -3538,17 +3641,21 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "description": "Caddy web server configuration with HTTPS, reverse proxies, and file server blocks.",
+    "knownFile": "caddyfile"
   },
   {
     "label": "render.yaml",
     "file": "render.yaml",
-    "mime": "text/yaml",
+    "mime": "application/yaml",
     "category": "Config",
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "description": "Render.com deployment config with web service, worker, cron job, and a managed database.",
+    "knownFile": "render-yaml"
   },
   {
     "label": "railway.json",
@@ -3558,17 +3665,9 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
-  },
-  {
-    "label": "crowdin.yml",
-    "file": "crowdin.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
+    "enhanced": true,
+    "description": "Railway deployment configuration with Nixpacks build and healthcheck settings.",
+    "knownFile": "railway-json"
   },
   {
     "label": "Matchfile",
@@ -3577,8 +3676,7 @@
     "category": "Config",
     "categories": [
       "Config"
-    ],
-    "enhanced": true
+    ]
   },
   {
     "label": "Appfile",
@@ -3588,7 +3686,7 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "knownFile": "appfile"
   },
   {
     "label": ".ruby-version",
@@ -3598,7 +3696,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "ruby-version"
   },
   {
     "label": ".python-version",
@@ -3608,36 +3707,85 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "python-version"
   },
   {
-    "label": "Earthfile",
-    "file": "Earthfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".gitmodules",
     "file": ".gitmodules",
+    "label": ".gitmodules",
     "mime": "text/plain",
     "category": "Config",
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "description": "Git submodule configuration.",
+    "knownFile": "gitmodules"
   },
   {
-    "label": "terraform.tfvars",
-    "file": "terraform.tfvars",
+    "label": "rush.json",
+    "file": "rush.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Rush monorepo configuration with project list."
+  },
+  {
+    "label": ".markdownlint.json",
+    "file": ".markdownlint.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Markdownlint rules configuration."
+  },
+  {
+    "label": ".markdownlint.yml (Markdownlint YAML)",
+    "file": ".markdownlint.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Markdownlint YAML rules configuration with line length and element allow-lists."
+  },
+  {
+    "label": ".clang-format",
+    "file": ".clang-format",
     "mime": "text/plain",
     "category": "Config",
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "description": "Clang-Format C/C++ code formatting configuration."
+  },
+  {
+    "label": ".markdownlint.yml",
+    "file": ".markdownlint.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Markdownlint configuration in YAML format \u2014 rule overrides and custom settings for Markdown linting."
+  },
+  {
+    "label": ".markdownlint.yml",
+    "file": ".markdownlint.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Markdownlint configuration for linting Markdown files."
   }
 ]

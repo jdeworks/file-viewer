@@ -8553,16 +8553,20 @@
     "rush": {
       "label": "Rush monorepo config",
       "baseType": "json",
-      "support": "enhanced",
+      "support": "supported",
       "sampleFiles": [
         "rush.json"
       ],
-      "provenance": {
-        "sourced": 0,
-        "total": 1
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
       },
-      "realWorldQuality": "needs-review",
-      "notes": "Rush monorepo configuration viewer with projects list and package manager info.",
       "previewDepth": "basic",
       "metadataDepth": "basic",
       "editCapability": "none",
@@ -8571,21 +8575,25 @@
       "knownParserGaps": [],
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
-      "needsRealWorldSample": true
+      "needsRealWorldSample": false
     },
     "markdownlint": {
       "label": "Markdownlint config",
       "baseType": "json",
-      "support": "enhanced",
+      "support": "supported",
       "sampleFiles": [
         ".markdownlint.json"
       ],
-      "provenance": {
-        "sourced": 0,
-        "total": 1
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
       },
-      "realWorldQuality": "needs-review",
-      "notes": "Markdownlint config viewer grouping rules by enabled/disabled/configured.",
       "previewDepth": "basic",
       "metadataDepth": "basic",
       "editCapability": "none",
@@ -8594,21 +8602,25 @@
       "knownParserGaps": [],
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
-      "needsRealWorldSample": true
+      "needsRealWorldSample": false
     },
     "markdownlint-yaml": {
       "label": "Markdownlint config",
       "baseType": "yaml",
-      "support": "enhanced",
+      "support": "supported",
       "sampleFiles": [
-        ".markdownlint.json"
+        ".markdownlint.yml"
       ],
-      "provenance": {
-        "sourced": 0,
-        "total": 1
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
       },
-      "realWorldQuality": "needs-review",
-      "notes": "YAML variant of markdownlint config viewer.",
       "previewDepth": "basic",
       "metadataDepth": "basic",
       "editCapability": "none",
@@ -8617,21 +8629,25 @@
       "knownParserGaps": [],
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
-      "needsRealWorldSample": true
+      "needsRealWorldSample": false
     },
     "clang-format": {
       "label": "clang-format config",
       "baseType": "yaml",
-      "support": "enhanced",
+      "support": "supported",
       "sampleFiles": [
         ".clang-format"
       ],
-      "provenance": {
-        "sourced": 0,
-        "total": 1
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
       },
-      "realWorldQuality": "needs-review",
-      "notes": "clang-format style config viewer highlighting key settings.",
       "previewDepth": "basic",
       "metadataDepth": "basic",
       "editCapability": "none",
@@ -8640,21 +8656,25 @@
       "knownParserGaps": [],
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
-      "needsRealWorldSample": true
+      "needsRealWorldSample": false
     },
     "moonrepo": {
       "label": "Moon (Moonrepo)",
       "baseType": "yaml",
-      "support": "enhanced",
+      "support": "supported",
       "sampleFiles": [
         "moon.yml"
       ],
-      "provenance": {
-        "sourced": 0,
-        "total": 1
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
       },
-      "realWorldQuality": "needs-review",
-      "notes": "Moon workspace/project config viewer showing VCS, node, typescript and project settings.",
       "previewDepth": "basic",
       "metadataDepth": "basic",
       "editCapability": "none",
@@ -8663,7 +8683,88 @@
       "knownParserGaps": [],
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
-      "needsRealWorldSample": true
+      "needsRealWorldSample": false
+    },
+    "podfile": {
+      "label": "Podfile",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "Podfile"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "fastfile": {
+      "label": "Fastfile",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "Fastfile"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "snapfile": {
+      "label": "Snapfile",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "Snapfile"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

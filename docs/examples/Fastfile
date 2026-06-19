@@ -1,0 +1,26 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Run unit tests"
+  lane :test do
+    run_tests(
+      scheme: "MyApp",
+      devices: ["iPhone 15"],
+      clean: true
+    )
+  end
+
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    increment_build_number
+    build_app(scheme: "MyApp")
+    upload_to_testflight(skip_waiting_for_build_processing: true)
+  end
+
+  desc "Deploy to App Store"
+  lane :release do
+    capture_screenshots
+    build_app(scheme: "MyApp")
+    upload_to_app_store(force: true)
+  end
+end

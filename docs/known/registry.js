@@ -158,6 +158,9 @@ import pythonVersion from '../types/text/known/python-version/index.js';
 import earthfile from '../types/text/known/earthfile/index.js';
 import gitmodules from '../types/text/known/gitmodules/index.js';
 import tfvars from '../types/text/known/tfvars/index.js';
+import podfile from '../types/text/known/podfile/index.js';
+import fastfile from '../types/text/known/fastfile/index.js';
+import snapfile from '../types/text/known/snapfile/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -182,7 +185,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
   brewfile, license, ansibleCfg, gemspec, typos, cargoDeny, cargoConfig,
   htaccess, nginxConf, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
-  crowdinYml, matchfile, appfile, rubyVersion, pythonVersion, earthfile, gitmodules, tfvars];
+  crowdinYml, matchfile, appfile, rubyVersion, pythonVersion, earthfile, gitmodules, tfvars,
+  podfile, fastfile, snapfile];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
