@@ -39,6 +39,7 @@ node tests/movediff.test.mjs
 node tests/markdown-edit-actions.test.mjs
 node tests/settings-defaults.test.mjs
 node tests/registry-runtime.test.mjs
+node tests/example-compatibility.test.mjs
 node tests/metadata-normalize.test.mjs
 node tests/metadata-owned.test.mjs
 

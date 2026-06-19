@@ -486,7 +486,7 @@ GM instrument table: standard 128-name array (General MIDI Level 1 spec), no dep
 
 ## TASK 16 — Sample Library Audit + Reader UX Fixes
 
-**Status:** In progress — catalog smoke, multi-category examples, search/filtering, inner scroll containment, code/media/image/layered/font samples, MSG/DjVu regressions, and EPUB mobile settings drawer are implemented.
+**Status:** In progress — catalog smoke, multi-category examples, search/filtering, inner scroll containment, code/media/image/layered/font samples, MSG/DjVu regressions, EPUB mobile settings drawer, and initial compatibility matrix coverage are implemented.
 **Effort:** L (~1-2 days)  
 **Files likely touched:**
 - `docs/examples/index.json`
