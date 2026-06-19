@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: order-service
+  profiles:
+    active: production
+  datasource:
+    url: jdbc:postgresql://db:5432/orders
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    hikari:
+      maximum-pool-size: 20
+      connection-timeout: 30000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  cache:
+    type: redis
+  redis:
+    host: redis
+    port: 6379
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    root: INFO
+    com.example.orderservice: DEBUG
+    org.springframework: WARN
+    org.hibernate: WARN

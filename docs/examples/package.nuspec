@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Acme.Utilities</id>
+    <version>3.2.1</version>
+    <authors>Jane Smith, John Doe</authors>
+    <owners>Acme Corp</owners>
+    <licenseUrl>https://opensource.org/licenses/MIT</licenseUrl>
+    <projectUrl>https://github.com/acme/utilities</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A collection of utility extensions for .NET 8 including result types, pagination helpers, guard clauses, and async extensions.</description>
+    <tags>dotnet utilities extensions helpers async result pagination</tags>
+    <copyright>Copyright (c) 2024 Acme Corp</copyright>
+    <repository type="git" url="https://github.com/acme/utilities" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.0" />
+        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="8.0.0" />
+        <dependency id="System.Text.Json" version="8.0.4" />
+        <dependency id="Polly.Core" version="8.4.1" />
+      </group>
+      <group targetFramework="net6.0">
+        <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="6.0.0" />
+        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="6.0.0" />
+        <dependency id="System.Text.Json" version="6.0.9" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

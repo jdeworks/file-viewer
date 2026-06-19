@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+
+  <property name="LOG_PATH" value="/var/log/myapp" />
+  <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
+
+  <!-- Console appender -->
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>${LOG_PATTERN}</pattern>
+    </encoder>
+  </appender>
+
+  <!-- Rolling file appender -->
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_PATH}/app.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${LOG_PATH}/app.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>50MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+      <maxHistory>30</maxHistory>
+      <totalSizeCap>2GB</totalSizeCap>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${LOG_PATTERN}</pattern>
+    </encoder>
+  </appender>
+
+  <!-- Async wrapper for file appender -->
+  <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+    <discardingThreshold>0</discardingThreshold>
+    <queueSize>512</queueSize>
+    <appender-ref ref="FILE" />
+  </appender>
+
+  <!-- Named loggers -->
+  <logger name="com.example.myapp" level="DEBUG" additivity="false">
+    <appender-ref ref="CONSOLE" />
+    <appender-ref ref="ASYNC_FILE" />
+  </logger>
+
+  <logger name="org.springframework" level="WARN" />
+  <logger name="org.hibernate" level="WARN" />
+  <logger name="com.zaxxer.hikari" level="INFO" />
+
+  <!-- Spring profile-specific config -->
+  <springProfile name="development">
+    <logger name="com.example.myapp.db" level="TRACE" />
+  </springProfile>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE" />
+    <appender-ref ref="ASYNC_FILE" />
+  </root>
+
+</configuration>
