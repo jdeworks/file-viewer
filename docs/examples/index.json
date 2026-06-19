@@ -1917,5 +1917,23 @@
     "categories": [
       "Data"
     ]
+  },
+  {
+    "label": "Demo Beat (Hydrogen)",
+    "file": "sample.h2song",
+    "mime": "application/x-hydrogen",
+    "category": "Music",
+    "categories": [
+      "Music"
+    ]
+  },
+  {
+    "label": "Short Film Project (Premiere)",
+    "file": "sample.prproj",
+    "mime": "application/x-premiere-project",
+    "category": "Media",
+    "categories": [
+      "Media"
+    ]
   }
 ]

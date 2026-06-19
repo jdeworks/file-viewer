@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<song version="0.9.7" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hydrogen-music.org/xsd/song.xsd">
+  <name>Demo Beat</name>
+  <author>File Viewer Examples</author>
+  <license>CC0</license>
+  <bpm>120</bpm>
+  <volume>1.0</volume>
+  <isMuted>false</isMuted>
+  <resolution>48</resolution>
+  <loopEnabled>true</loopEnabled>
+  <patternModeMode>SONG</patternModeMode>
+  <song_mode>SONG</song_mode>
+  <username>fv-demo</username>
+  <lastupdated>2024-01-15</lastupdated>
+  <instrumentList>
+    <instrument>
+      <id>0</id>
+      <name>Kick</name>
+      <filename>kick.wav</filename>
+      <volume>1.0</volume>
+      <isMuted>false</isMuted>
+      <pan_L>1.0</pan_L>
+      <pan_R>1.0</pan_R>
+      <gain>1.0</gain>
+      <filterActive>false</filterActive>
+    </instrument>
+    <instrument>
+      <id>1</id>
+      <name>Snare</name>
+      <filename>snare.wav</filename>
+      <volume>0.9</volume>
+      <isMuted>false</isMuted>
+      <pan_L>1.0</pan_L>
+      <pan_R>1.0</pan_R>
+      <gain>1.0</gain>
+      <filterActive>false</filterActive>
+    </instrument>
+    <instrument>
+      <id>2</id>
+      <name>Hi-Hat Closed</name>
+      <filename>hihat-closed.wav</filename>
+      <volume>0.7</volume>
+      <isMuted>false</isMuted>
+      <pan_L>0.8</pan_L>
+      <pan_R>1.0</pan_R>
+      <gain>0.9</gain>
+      <filterActive>false</filterActive>
+    </instrument>
+    <instrument>
+      <id>3</id>
+      <name>Hi-Hat Open</name>
+      <filename>hihat-open.wav</filename>
+      <volume>0.65</volume>
+      <isMuted>false</isMuted>
+      <pan_L>0.7</pan_L>
+      <pan_R>1.0</pan_R>
+      <gain>0.85</gain>
+      <filterActive>false</filterActive>
+    </instrument>
+    <instrument>
+      <id>4</id>
+      <name>Crash</name>
+      <filename>crash.wav</filename>
+      <volume>0.75</volume>
+      <isMuted>false</isMuted>
+      <pan_L>0.5</pan_L>
+      <pan_R>1.0</pan_R>
+      <gain>0.8</gain>
+      <filterActive>false</filterActive>
+    </instrument>
+    <instrument>
+      <id>5</id>
+      <name>Tom Low</name>
+      <filename>tom-low.wav</filename>
+      <volume>0.8</volume>
+      <isMuted>false</isMuted>
+      <pan_L>1.0</pan_L>
+      <pan_R>0.6</pan_R>
+      <gain>0.9</gain>
+      <filterActive>false</filterActive>
+    </instrument>
+  </instrumentList>
+  <patternList>
+    <pattern>
+      <name>Verse Beat</name>
+      <info></info>
+      <category>Default</category>
+      <size>192</size>
+      <noteList>
+        <note><position>0</position><instrument>0</instrument><velocity>0.8</velocity></note>
+        <note><position>48</position><instrument>2</instrument><velocity>0.6</velocity></note>
+        <note><position>96</position><instrument>1</instrument><velocity>0.9</velocity></note>
+        <note><position>144</position><instrument>2</instrument><velocity>0.6</velocity></note>
+      </noteList>
+    </pattern>
+    <pattern>
+      <name>Chorus Fill</name>
+      <info></info>
+      <category>Default</category>
+      <size>192</size>
+      <noteList>
+        <note><position>0</position><instrument>0</instrument><velocity>0.9</velocity></note>
+        <note><position>24</position><instrument>2</instrument><velocity>0.5</velocity></note>
+        <note><position>48</position><instrument>2</instrument><velocity>0.5</velocity></note>
+        <note><position>72</position><instrument>1</instrument><velocity>0.8</velocity></note>
+        <note><position>96</position><instrument>4</instrument><velocity>0.7</velocity></note>
+        <note><position>144</position><instrument>5</instrument><velocity>0.75</velocity></note>
+      </noteList>
+    </pattern>
+  </patternList>
+</song>

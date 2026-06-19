@@ -392,4 +392,28 @@ export async function run(ctx) {
   if (hl7Badge === 'HL7') pass('HL7 badge shown'); else fail('hl7 badge: ' + hl7Badge);
   const hl7Segs = await hl7f.$$eval('.hl7-table tbody tr', (els) => els.length);
   if (hl7Segs >= 8) pass('HL7 segment table rows rendered'); else fail('hl7 segs: ' + hl7Segs);
+
+  // ── Hydrogen drum machine viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Demo Beat (Hydrogen)');
+  const h2f = await frameOf('iframe.fv-preview-frame');
+  await h2f.waitForSelector('.h2-preview', { timeout: 8000 });
+  const h2TypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (h2TypeId === 'hydrogen') pass('sample.h2song detected as Hydrogen type'); else fail('hydrogen type: ' + h2TypeId);
+  const h2Title = await h2f.$eval('.h2-title', (e) => e.textContent);
+  if (/Demo Beat/i.test(h2Title)) pass('Hydrogen song name shown'); else fail('h2 title: ' + h2Title);
+  const h2Chips = await h2f.$$('.h2-chip');
+  if (h2Chips.length >= 4) pass('Hydrogen instrument chips shown'); else fail('h2 chips: ' + h2Chips.length);
+
+  // ── Adobe Premiere .prproj viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Short Film Project (Premiere)');
+  const ppf = await frameOf('iframe.fv-preview-frame');
+  await ppf.waitForSelector('.prproj-preview', { timeout: 10000 });
+  const ppTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (ppTypeId === 'prproj') pass('sample.prproj detected as Premiere type'); else fail('prproj type: ' + ppTypeId);
+  const ppBadge = await ppf.$eval('.prproj-badge', (e) => e.textContent);
+  if (ppBadge === 'Premiere') pass('Premiere badge shown'); else fail('prproj badge: ' + ppBadge);
+  const ppStats = await ppf.$$('.prproj-stat');
+  if (ppStats.length >= 2) pass('Premiere project stats shown'); else fail('prproj stats: ' + ppStats.length);
 }

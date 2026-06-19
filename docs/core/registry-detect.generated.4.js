@@ -4,6 +4,37 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_hydrogen=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, 'h2song', 'h2pattern', 'h2drumkit')) return 0.9;
+  const t = intake.textSample || '';
+  if (/<hydrogen_drumkit>/i.test(t) || /<song version="[^"]*hydrogen/i.test(t)) return 0.97;
+  return 0;
+}
+return detect;
+})();
+
+const detect_prproj=(()=>{
+function detect(intake) {
+  // .prproj is a gzip-compressed XML file
+  if (hasExtension(intake, 'prproj')) {
+    if (intake.isBinary) {
+      const b = intake.bytes;
+      // Check gzip magic bytes: 1f 8b
+      if (b && b[0] === 0x1f && b[1] === 0x8b) return 0.98;
+      return 0.85;
+    }
+    // Text might be decompressed version
+    const t = intake.textSample || '';
+    if (/<PremiereData\b/.test(t) || /<Project\b/.test(t)) return 0.95;
+    return 0.7;
+  }
+  return 0;
+}
+return detect;
+})();
+
 const detect_gcode=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -206,4 +237,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
+export const DETECTORS={"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};

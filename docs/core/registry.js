@@ -115,6 +115,8 @@ import fitsType from '../types/text/fits/index.js';
 import kmlType from '../types/text/kml/index.js';
 import abcType from '../types/text/abc/index.js';
 import hl7Type from '../types/text/hl7/index.js';
+import hydrogenType from '../types/text/hydrogen/index.js';
+import prprojType from '../types/text/prproj/index.js';
 import ruffleType from '../types/emulator/ruffle/index.js';
 import v86Type from '../types/emulator/v86/index.js';
 import emulatorjsType from '../types/emulator/emulatorjs/index.js';
@@ -198,6 +200,8 @@ export const REGISTRY = [
   kmlType,
   abcType,
   hl7Type,
+  hydrogenType,
+  prprojType,
   gcodeType,
   gitignoreType,
   gitattributesType,
