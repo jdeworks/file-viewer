@@ -548,10 +548,10 @@ Fix those renderers or change them to a clear partial-support message that passe
 
 Improve all ebook readers (`epub`, `fb2`, `mobi`, `lrf`, comic where relevant) toward common ebook-reader behavior:
 - EPUB: implemented font family, font size, theme, columns, persisted position/preferences, and a phone slide-in settings/TOC drawer.
-- FB2/MOBI: implemented size, font, and theme controls; still need line-height/margin controls and persisted reader preferences.
+- FB2/MOBI: implemented size, font, theme, line-height, and margin controls; still need persisted reader preferences via a parent-message bridge that preserves the iframe sandbox.
 - Comic: implemented book/spread mode; still needs fuller reader settings if treated as an ebook reader.
 - LRF: intentionally friendly partial-support note only.
-- `sample.mobi`: longer Gutenberg-derived sample is present; add a decoded-text-length assertion and a regression check that it does not open with selected/blue text.
+- `sample.mobi`: longer Gutenberg-derived sample is present and covered by decoded-text-length plus no-selected/blue-text regression checks.
 
 ---
 
