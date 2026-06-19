@@ -501,4 +501,28 @@ export async function run(ctx) {
   const mypText = await page.$eval('#previewHost .myp-doc', (e) => e.textContent);
   if (/mypy/i.test(mypText)) pass('mypy.ini: badge shown'); else fail('mypy badge: ' + mypText.slice(0, 200));
   if (/3\.11|disallow|strict|override/i.test(mypText)) pass('mypy.ini: config shown'); else fail('mypy config: ' + mypText.slice(0, 200));
+
+  // ── angular.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Angular workspace');
+  await page.waitForSelector('#previewHost .ngw-doc', { timeout: 12000 });
+  const ngwText = await page.$eval('#previewHost .ngw-doc', (e) => e.textContent);
+  if (/Angular/i.test(ngwText)) pass('angular.json: badge shown'); else fail('angular badge: ' + ngwText.slice(0, 200));
+  if (/my-app|project|build|serve/i.test(ngwText)) pass('angular.json: projects shown'); else fail('angular projects: ' + ngwText.slice(0, 200));
+
+  // ── capacitor.config.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('capacitor.config.json');
+  await page.waitForSelector('#previewHost .cap-doc', { timeout: 12000 });
+  const capText = await page.$eval('#previewHost .cap-doc', (e) => e.textContent);
+  if (/Capacitor/i.test(capText)) pass('capacitor.config.json: badge shown'); else fail('capacitor badge: ' + capText.slice(0, 200));
+  if (/com\.example|SplashScreen|StatusBar/i.test(capText)) pass('capacitor.config.json: config shown'); else fail('capacitor config: ' + capText.slice(0, 200));
+
+  // ── .nycrc.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.nycrc.json');
+  await page.waitForSelector('#previewHost .nyc-doc', { timeout: 12000 });
+  const nycText = await page.$eval('#previewHost .nyc-doc', (e) => e.textContent);
+  if (/NYC/i.test(nycText)) pass('.nycrc.json: badge shown'); else fail('nyc badge: ' + nycText.slice(0, 200));
+  if (/80|90|branches|lines/i.test(nycText)) pass('.nycrc.json: thresholds shown'); else fail('nyc thresholds: ' + nycText.slice(0, 200));
 }

@@ -76,6 +76,9 @@ import preCommit from '../types/text/yaml/known/pre-commit/index.js';
 import pyrightconfig from '../types/text/json/known/pyrightconfig/index.js';
 import tox from '../types/text/known/tox/index.js';
 import mypy from '../types/text/known/mypy/index.js';
+import angularJson from '../types/text/json/known/angular/index.js';
+import capacitor from '../types/text/json/known/capacitor/index.js';
+import nycrc from '../types/text/json/known/nycrc/index.js';
 
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
@@ -87,7 +90,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   vscodeSettings, vscodeExtensions, vscodeLaunch, vscodeTasks,
   travis, circleci, amplify, codebuild,
   jsconfigJson, denoJson, nvmrc, browserslistrc,
-  preCommit, pyrightconfig, tox, mypy];
+  preCommit, pyrightconfig, tox, mypy,
+  angularJson, capacitor, nycrc];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
