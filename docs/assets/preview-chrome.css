@@ -159,6 +159,7 @@
 .imgv-text-input { width: min(180px, 34vw); font-size: 12px; padding: 4px 7px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); }
 .imgv-text-size { width: 64px; font-size: 12px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); }
 .imgv-text-color { width: 32px; height: 28px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+.imgv-bg-tol { accent-color: var(--accent); height: 28px; }
 .imgv-ascii-out { flex: 1; min-height: 0; overflow: auto; background: #0d0d0d; padding: 12px; }
 .imgv-ascii-pre { margin: 0; font: 13px/1.2 "Courier New", Courier, monospace; color: #ccc; white-space: pre; }
 .imgv-ss-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.85); display: flex; align-items: center; justify-content: center; z-index: 10; cursor: pointer; }

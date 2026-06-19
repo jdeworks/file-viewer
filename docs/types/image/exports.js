@@ -30,6 +30,7 @@ export function getExports(intake) {
     { label: 'Download as PNG', run: () => convertAndDownload(intake, 'image/png', 'png') },
     { label: 'Download as JPEG', run: () => convertAndDownload(intake, 'image/jpeg', 'jpg', 0.92) },
     { label: 'Download as WebP', run: () => convertAndDownload(intake, 'image/webp', 'webp', 0.92) },
+    { label: 'Download as AVIF', run: () => convertAndDownload(intake, 'image/avif', 'avif', 0.8) },
   ];
   if (isSvg(intake)) out.unshift({ label: 'Download original SVG', run: () => downloadBlob(intake.bytes, intake.filename || 'image.svg', 'image/svg+xml') });
   return out;

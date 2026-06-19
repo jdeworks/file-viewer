@@ -1,3 +1,5 @@
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -24,13 +26,13 @@ function scheduleChip(interval) {
   return `<span class="dbt-chip ${cls}">${esc(interval)}</span>`;
 }
 
-export function render(intake) {
-  // Dependabot YAML needs basic parsing — we have the raw text from YAML base type
-  // intake.parsed is the JS object when available (base type may parse YAML)
-  let cfg = intake.parsed;
-  if (!cfg) {
-    // Try to extract essential fields from the raw text with simple regex
-    cfg = {};
+export async function render(intake) {
+  let cfg = {};
+  try {
+    const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
+    cfg = jsyaml.load(intake.text || '') || {};
+  } catch {
+    cfg = intake.parsed || {};
   }
 
   const updates = Array.isArray(cfg.updates) ? cfg.updates : [];
@@ -41,7 +43,6 @@ export function render(intake) {
     const dir = u.directory || '/';
     const interval = u.schedule && u.schedule.interval;
     const labels = Array.isArray(u.labels) ? u.labels : [];
-    const automerge = u['auto-merge'] || u.automerge;
     return `<tr>
       <td><span class="dbt-eco">${esc(eco)}</span></td>
       <td><span class="dbt-dir">${esc(dir)}</span></td>
@@ -54,7 +55,7 @@ export function render(intake) {
   host.className = 'dbt-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="dbt-title"><span class="badge-dbt">Dependabot</span>Dependabot config</div>
-<div class="dbt-sub">${updates.length} update configuration${updates.length !== 1 ? 's' : ''}${version ? ` · version ${esc(version)}` : ''}</div>
+<div class="dbt-sub">${updates.length} update configuration${updates.length !== 1 ? 's' : ''}${version ? ` · version ${esc(String(version))}` : ''}</div>
 ${updates.length ? `<div class="dbt-sec"><h3>Update configurations</h3>
   <table class="dbt-table">
     <thead><tr><th>Ecosystem</th><th>Directory</th><th>Schedule</th><th>Labels</th></tr></thead>

@@ -1,0 +1,73 @@
+service: my-api-service
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  stage: dev
+  memorySize: 256
+  timeout: 30
+  environment:
+    NODE_ENV: dev
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+  - serverless-prune-plugin
+
+functions:
+  api:
+    handler: src/handlers/api.handler
+    description: Main REST API handler
+    events:
+      - httpApi:
+          path: /api/{proxy+}
+          method: ANY
+      - httpApi:
+          path: /api/health
+          method: GET
+
+  worker:
+    handler: src/handlers/worker.handler
+    description: Background job processor
+    timeout: 900
+    reservedConcurrency: 5
+    events:
+      - sqs:
+          arn: arn:aws:sqs:us-east-1:123456789:jobs-queue
+          batchSize: 10
+          functionResponseType: ReportBatchItemFailures
+
+  scheduler:
+    handler: src/handlers/scheduler.handler
+    description: Scheduled task runner
+    events:
+      - schedule:
+          rate: rate(5 minutes)
+          enabled: true
+          input:
+            task: cleanup
+      - schedule:
+          rate: cron(0 2 * * ? *)
+          enabled: true
+          input:
+            task: dailyReport
+
+resources:
+  Resources:
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: my-api-service-dev-users
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+    JobsQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: my-api-service-dev-jobs
+        VisibilityTimeout: 960

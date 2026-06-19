@@ -5796,6 +5796,403 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "wrangler": {
+      "label": "Wrangler config",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "wrangler.toml"
+      ],
+      "extensions": [
+        "wrangler.toml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [
+        "account_id truncated to first 8 chars to avoid accidental exposure"
+      ],
+      "knownParserGaps": [
+        "TOML parsed via base type; Worker environments shown as names only"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "fly-toml": {
+      "label": "Fly.io config",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "fly.toml"
+      ],
+      "extensions": [
+        "fly.toml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "TOML parsed via base type; health checks and machine configs not shown"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "cliff": {
+      "label": "git-cliff config",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "cliff.toml"
+      ],
+      "extensions": [
+        "cliff.toml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Tera template syntax not rendered; body/header shown as raw text excerpts"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "releaserc": {
+      "label": "semantic-release config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        ".releaserc.json"
+      ],
+      "extensions": [
+        ".releaserc",
+        ".releaserc.json",
+        "release.config.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Plugin-specific config objects shown as opaque; only plugin names extracted"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "lerna": {
+      "label": "Lerna config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "lerna.json"
+      ],
+      "extensions": [
+        "lerna.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "nx": {
+      "label": "Nx config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "nx.json"
+      ],
+      "extensions": [
+        "nx.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "biome": {
+      "label": "Biome config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "biome.json"
+      ],
+      "extensions": [
+        "biome.json",
+        "biome.jsonc"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "codecov": {
+      "label": "Codecov config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "codecov.yml"
+      ],
+      "extensions": [
+        "codecov.yml",
+        "codecov.yaml",
+        ".codecov.yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "serverless": {
+      "label": "Serverless Framework config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "serverless.yml"
+      ],
+      "extensions": [
+        "serverless.yml",
+        "serverless.yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Variable interpolation (${self:, ${opt:) shown as literal strings"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "azure-pipelines": {
+      "label": "Azure Pipelines config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "azure-pipelines.yml"
+      ],
+      "extensions": [
+        "azure-pipelines.yml",
+        "azure-pipelines.yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "vscode-settings": {
+      "label": "VS Code settings",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "vscode-settings.json"
+      ],
+      "extensions": [
+        "settings.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "vscode-extensions": {
+      "label": "VS Code extensions",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "vscode-extensions.json"
+      ],
+      "extensions": [
+        "extensions.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "vscode-launch": {
+      "label": "VS Code launch config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "vscode-launch.json"
+      ],
+      "extensions": [
+        "launch.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "vscode-tasks": {
+      "label": "VS Code tasks",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "vscode-tasks.json"
+      ],
+      "extensions": [
+        "tasks.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

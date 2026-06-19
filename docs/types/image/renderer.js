@@ -66,7 +66,13 @@ export async function render(intake, ctx = {}) {
       + '<span class="imgv-sep"></span>'
       + '<select class="imgv-export-fmt" title="Export format"><option value="">Original format</option>'
       + '<option value="image/png">PNG</option><option value="image/jpeg">JPEG</option><option value="image/webp">WebP</option>'
+      + '<option value="image/avif">AVIF</option>'
       + '</select>'
+      + '<span class="imgv-sep"></span>'
+      + '<button class="imgv-bg-btn" title="Remove background — click to sample a color, then flood-fill to transparent">✂ BG</button>'
+      + '<input class="imgv-bg-tol" type="range" min="0" max="80" value="20" title="Tolerance" hidden style="width:72px">'
+      + '<button class="imgv-bg-ok" hidden title="Apply background removal (saves as PNG)">Apply</button>'
+      + '<button class="imgv-bg-x" hidden title="Cancel background removal">✕</button>'
       + '<button class="imgv-text-reset" title="Reset all edits" hidden>Reset</button>' : '')
     + '</div>'
     + '<div class="imgv-stage"><img class="imgv-img" alt="' + esc(intake.filename) + '"><div class="imgv-note" hidden></div></div>'
@@ -93,9 +99,14 @@ export async function render(intake, ctx = {}) {
   const undoBtn = canEdit ? host.querySelector('.imgv-undo') : null;
   const exportFmt = canEdit ? host.querySelector('.imgv-export-fmt') : null;
   const editFont = canEdit ? host.querySelector('.imgv-text-font') : null;
+  const bgBtn = canEdit ? host.querySelector('.imgv-bg-btn') : null;
+  const bgTol = canEdit ? host.querySelector('.imgv-bg-tol') : null;
+  const bgOk = canEdit ? host.querySelector('.imgv-bg-ok') : null;
+  const bgX = canEdit ? host.querySelector('.imgv-bg-x') : null;
   let natural = 0, fit = true, zoom = 1, asciiMode = false, asciiText = '';
   let editedUrl = null, editedBlob = null;
   let drawMode = null, isEraserStroke = false;
+  let bgPickMode = false, bgSrcData = null, bgSrcW = 0, bgSrcH = 0, bgPickX = -1, bgPickY = -1, bgPreviewUrl = null;
   const undoStack = [];
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null;
 
@@ -383,5 +394,112 @@ export async function render(intake, ctx = {}) {
     });
   }
 
-  return { parentNode: host, revoke: () => { URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); undoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
+  // BG removal — flood-fill from a clicked pixel, making matched region transparent (PNG only)
+  function bgFloodFill(srcData, w, h, sx, sy, tol) {
+    const threshold = tol * 4.42;
+    const dst = new Uint8ClampedArray(srcData.data);
+    const si = (sy * w + sx) * 4;
+    const r0 = dst[si], g0 = dst[si + 1], b0 = dst[si + 2];
+    const visited = new Uint8Array(w * h);
+    const stack = [sy * w + sx];
+    while (stack.length) {
+      const pos = stack.pop();
+      if (visited[pos]) continue;
+      visited[pos] = 1;
+      const pi = pos * 4;
+      const dr = dst[pi] - r0, dg = dst[pi + 1] - g0, db = dst[pi + 2] - b0;
+      if (Math.sqrt(dr * dr + dg * dg + db * db) > threshold) continue;
+      dst[pi + 3] = 0;
+      const x = pos % w, y = (pos / w) | 0;
+      if (x > 0) stack.push(pos - 1);
+      if (x < w - 1) stack.push(pos + 1);
+      if (y > 0) stack.push(pos - w);
+      if (y < h - 1) stack.push(pos + w);
+    }
+    return new ImageData(dst, w, h);
+  }
+
+  function bgExitMode() {
+    bgPickMode = false;
+    bgPickX = bgPickY = -1;
+    bgSrcData = null;
+    if (bgPreviewUrl) { URL.revokeObjectURL(bgPreviewUrl); bgPreviewUrl = null; }
+    bgBtn?.classList.remove('active');
+    img.style.cursor = '';
+    if (bgTol) bgTol.hidden = true;
+    if (bgOk) bgOk.hidden = true;
+    if (bgX) bgX.hidden = true;
+  }
+
+  function bgRunPreview() {
+    if (!bgSrcData || bgPickX < 0) return;
+    const filled = bgFloodFill(bgSrcData, bgSrcW, bgSrcH, bgPickX, bgPickY, parseInt(bgTol.value, 10));
+    const c = document.createElement('canvas'); c.width = bgSrcW; c.height = bgSrcH;
+    c.getContext('2d').putImageData(filled, 0, 0);
+    c.toBlob((blob) => {
+      if (!blob) return;
+      if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl);
+      bgPreviewUrl = URL.createObjectURL(blob);
+      img.src = bgPreviewUrl;
+    }, 'image/png');
+  }
+
+  if (bgBtn) {
+    bgBtn.addEventListener('click', () => {
+      if (bgPickMode) { bgExitMode(); if (editedUrl) img.src = editedUrl; else img.src = url; return; }
+      bgPickMode = true;
+      bgPickX = bgPickY = -1;
+      bgSrcData = null;
+      bgBtn.classList.add('active');
+      img.style.cursor = 'crosshair';
+      bgBtn.title = 'Click the background color on the image';
+    });
+
+    img.addEventListener('click', async (e) => {
+      if (!bgPickMode) return;
+      if (bgPickX >= 0) return; // already picked, re-pick not allowed until cancel
+      const base = new Image(); base.decoding = 'async';
+      base.src = editedUrl || url;
+      await base.decode();
+      const c = document.createElement('canvas');
+      c.width = base.naturalWidth; c.height = base.naturalHeight;
+      const g = c.getContext('2d'); g.drawImage(base, 0, 0);
+      bgSrcData = g.getImageData(0, 0, c.width, c.height);
+      bgSrcW = c.width; bgSrcH = c.height;
+      const r = img.getBoundingClientRect();
+      bgPickX = Math.max(0, Math.min(bgSrcW - 1, Math.round((e.clientX - r.left) * bgSrcW / r.width)));
+      bgPickY = Math.max(0, Math.min(bgSrcH - 1, Math.round((e.clientY - r.top) * bgSrcH / r.height)));
+      if (bgTol) bgTol.hidden = false;
+      if (bgOk) bgOk.hidden = false;
+      if (bgX) bgX.hidden = false;
+      bgRunPreview();
+    });
+
+    bgTol?.addEventListener('input', bgRunPreview);
+
+    bgOk?.addEventListener('click', () => {
+      if (!bgSrcData || bgPickX < 0) return;
+      const filled = bgFloodFill(bgSrcData, bgSrcW, bgSrcH, bgPickX, bgPickY, parseInt(bgTol.value, 10));
+      const c = document.createElement('canvas'); c.width = bgSrcW; c.height = bgSrcH;
+      c.getContext('2d').putImageData(filled, 0, 0);
+      c.toBlob((blob) => {
+        if (!blob) return;
+        pushUndo();
+        if (editedUrl) URL.revokeObjectURL(editedUrl);
+        editedBlob = blob; editedUrl = URL.createObjectURL(blob);
+        img.src = editedUrl;
+        if (editReset) editReset.hidden = false;
+        if (exportFmt) exportFmt.value = 'image/png';
+        ctx.onBinaryEdit?.({ dirty: true, mimeType: 'image/png', getBytes: async () => new Uint8Array(await blob.arrayBuffer()) });
+        bgExitMode();
+      }, 'image/png');
+    });
+
+    bgX?.addEventListener('click', () => {
+      bgExitMode();
+      if (editedUrl) img.src = editedUrl; else img.src = url;
+    });
+  }
+
+  return { parentNode: host, revoke: () => { URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); undoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
 }

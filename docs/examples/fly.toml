@@ -1,0 +1,21 @@
+app = "my-app"
+primary_region = "iad"
+
+[build]
+  image = "node:20-alpine"
+
+[env]
+  PORT = "8080"
+  NODE_ENV = "production"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+[[mounts]]
+  source = "data"
+  destination = "/data"

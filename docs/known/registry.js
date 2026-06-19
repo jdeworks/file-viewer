@@ -50,12 +50,29 @@ import stylelint from '../types/text/json/known/stylelint/index.js';
 import babel from '../types/text/json/known/babel/index.js';
 import commitlint from '../types/text/json/known/commitlint/index.js';
 import lefthook from '../types/text/yaml/known/lefthook/index.js';
+import wrangler from '../types/text/toml/known/wrangler/index.js';
+import flyToml from '../types/text/toml/known/fly/index.js';
+import cliff from '../types/text/toml/known/cliff/index.js';
+import releaserc from '../types/text/json/known/releaserc/index.js';
+import lerna from '../types/text/json/known/lerna/index.js';
+import nx from '../types/text/json/known/nx/index.js';
+import biome from '../types/text/json/known/biome/index.js';
+import codecov from '../types/text/yaml/known/codecov/index.js';
+import serverless from '../types/text/yaml/known/serverless/index.js';
+import azurePipelines from '../types/text/yaml/known/azure-pipelines/index.js';
+import vscodeSettings from '../types/text/json/known/vscode-settings/index.js';
+import vscodeExtensions from '../types/text/json/known/vscode-extensions/index.js';
+import vscodeLaunch from '../types/text/json/known/vscode-launch/index.js';
+import vscodeTasks from '../types/text/json/known/vscode-tasks/index.js';
 
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
-  eslint, jest, stylelint, babel, commitlint, lefthook];
+  eslint, jest, stylelint, babel, commitlint, lefthook,
+  wrangler, flyToml, cliff, releaserc,
+  lerna, nx, biome, codecov, serverless, azurePipelines,
+  vscodeSettings, vscodeExtensions, vscodeLaunch, vscodeTasks];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

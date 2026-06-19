@@ -296,4 +296,113 @@ export async function run(ctx) {
   const lfhText = await page.$eval('#previewHost .lfh-doc', (e) => e.textContent);
   if (/Lefthook/i.test(lfhText)) pass('lefthook.yml: badge shown'); else fail('lefthook badge: ' + lfhText.slice(0, 200));
   if (/pre-commit|commit-msg|pre-push/i.test(lfhText)) pass('lefthook.yml: hook stages shown'); else fail('lefthook hooks: ' + lfhText.slice(0, 200));
+
+  // ── wrangler.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('wrangler.toml');
+  await page.waitForSelector('#previewHost .wgl-doc', { timeout: 12000 });
+  const wglText = await page.$eval('#previewHost .wgl-doc', (e) => e.textContent);
+  if (/Wrangler|Cloudflare/i.test(wglText)) pass('wrangler.toml: badge shown'); else fail('wrangler badge: ' + wglText.slice(0, 200));
+  if (/my-worker|MY_KV|example\.com/i.test(wglText)) pass('wrangler.toml: content shown'); else fail('wrangler content: ' + wglText.slice(0, 200));
+
+  // ── fly.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('fly.toml');
+  await page.waitForSelector('#previewHost .fly-doc', { timeout: 12000 });
+  const flyText = await page.$eval('#previewHost .fly-doc', (e) => e.textContent);
+  if (/Fly\.io/i.test(flyText)) pass('fly.toml: badge shown'); else fail('fly badge: ' + flyText.slice(0, 200));
+  if (/my-app|iad|8080/i.test(flyText)) pass('fly.toml: content shown'); else fail('fly content: ' + flyText.slice(0, 200));
+
+  // ── cliff.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cliff.toml');
+  await page.waitForSelector('#previewHost .clf-doc', { timeout: 12000 });
+  const clfText = await page.$eval('#previewHost .clf-doc', (e) => e.textContent);
+  if (/git-cliff/i.test(clfText)) pass('cliff.toml: badge shown'); else fail('cliff badge: ' + clfText.slice(0, 200));
+  if (/Features|Bug Fixes|commit/i.test(clfText)) pass('cliff.toml: parsers shown'); else fail('cliff content: ' + clfText.slice(0, 200));
+
+  // ── .releaserc.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.releaserc.json');
+  await page.waitForSelector('#previewHost .rls-doc', { timeout: 12000 });
+  const rlsText = await page.$eval('#previewHost .rls-doc', (e) => e.textContent);
+  if (/semantic-release/i.test(rlsText)) pass('.releaserc.json: badge shown'); else fail('releaserc badge: ' + rlsText.slice(0, 200));
+  if (/commit-analyzer|npm|github/i.test(rlsText)) pass('.releaserc.json: plugins shown'); else fail('releaserc plugins: ' + rlsText.slice(0, 200));
+
+  // ── lerna.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('lerna.json');
+  await page.waitForSelector('#previewHost .lrn-doc', { timeout: 12000 });
+  const lrnText = await page.$eval('#previewHost .lrn-doc', (e) => e.textContent);
+  if (/Lerna/i.test(lrnText)) pass('lerna.json: badge shown'); else fail('lerna badge: ' + lrnText.slice(0, 200));
+
+  // ── nx.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nx.json');
+  await page.waitForSelector('#previewHost .nx-doc', { timeout: 12000 });
+  const nxText = await page.$eval('#previewHost .nx-doc', (e) => e.textContent);
+  if (/Nx/i.test(nxText)) pass('nx.json: badge shown'); else fail('nx badge: ' + nxText.slice(0, 200));
+
+  // ── biome.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('biome.json');
+  await page.waitForSelector('#previewHost .bmo-doc', { timeout: 12000 });
+  const bmoText = await page.$eval('#previewHost .bmo-doc', (e) => e.textContent);
+  if (/Biome/i.test(bmoText)) pass('biome.json: badge shown'); else fail('biome badge: ' + bmoText.slice(0, 200));
+
+  // ── codecov.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('codecov.yml');
+  await page.waitForSelector('#previewHost .ccv-doc', { timeout: 12000 });
+  const ccvText = await page.$eval('#previewHost .ccv-doc', (e) => e.textContent);
+  if (/Codecov/i.test(ccvText)) pass('codecov.yml: badge shown'); else fail('codecov badge: ' + ccvText.slice(0, 200));
+  if (/80|70|unit|integration/i.test(ccvText)) pass('codecov.yml: targets or flags shown'); else fail('codecov content: ' + ccvText.slice(0, 200));
+
+  // ── serverless.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('serverless.yml');
+  await page.waitForSelector('#previewHost .sls-doc', { timeout: 12000 });
+  const slsText = await page.$eval('#previewHost .sls-doc', (e) => e.textContent);
+  if (/Serverless/i.test(slsText)) pass('serverless.yml: badge shown'); else fail('serverless badge: ' + slsText.slice(0, 200));
+  if (/api|worker|scheduler/i.test(slsText)) pass('serverless.yml: functions shown'); else fail('serverless functions: ' + slsText.slice(0, 200));
+
+  // ── azure-pipelines.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('azure-pipelines.yml');
+  await page.waitForSelector('#previewHost .azp-doc', { timeout: 12000 });
+  const azpText = await page.$eval('#previewHost .azp-doc', (e) => e.textContent);
+  if (/Azure Pipelines/i.test(azpText)) pass('azure-pipelines.yml: badge shown'); else fail('azure badge: ' + azpText.slice(0, 200));
+  if (/Build|Test|ubuntu/i.test(azpText)) pass('azure-pipelines.yml: stages and pool shown'); else fail('azure content: ' + azpText.slice(0, 200));
+
+  // ── vscode-settings.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vscode-settings.json');
+  await page.waitForSelector('#previewHost .vsc-settings-doc', { timeout: 12000 });
+  const vscText = await page.$eval('#previewHost .vsc-settings-doc', (e) => e.textContent);
+  if (/VS Code/i.test(vscText)) pass('vscode-settings.json: badge shown'); else fail('vscode badge: ' + vscText.slice(0, 200));
+  if (/formatOnSave|tabSize|fontSize/i.test(vscText)) pass('vscode-settings.json: settings shown'); else fail('vscode settings: ' + vscText.slice(0, 200));
+
+  // ── vscode-extensions.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vscode-extensions.json');
+  await page.waitForSelector('#previewHost .vsc-ext-doc', { timeout: 12000 });
+  const vscExtText = await page.$eval('#previewHost .vsc-ext-doc', (e) => e.textContent);
+  if (/VS Code/i.test(vscExtText)) pass('vscode-extensions.json: badge shown'); else fail('vscode-ext badge: ' + vscExtText.slice(0, 200));
+  if (/prettier|eslint|gitlens/i.test(vscExtText)) pass('vscode-extensions.json: extensions shown'); else fail('vscode-ext content: ' + vscExtText.slice(0, 200));
+
+  // ── vscode-launch.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vscode-launch.json');
+  await page.waitForSelector('#previewHost .vsc-launch-doc', { timeout: 12000 });
+  const vscLaunchText = await page.$eval('#previewHost .vsc-launch-doc', (e) => e.textContent);
+  if (/VS Code/i.test(vscLaunchText)) pass('vscode-launch.json: badge shown'); else fail('vscode-launch badge: ' + vscLaunchText.slice(0, 200));
+  if (/Debug Node|Chrome|node/i.test(vscLaunchText)) pass('vscode-launch.json: configs shown'); else fail('vscode-launch content: ' + vscLaunchText.slice(0, 200));
+
+  // ── vscode-tasks.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vscode-tasks.json');
+  await page.waitForSelector('#previewHost .vsc-tasks-doc', { timeout: 12000 });
+  const vscTasksText = await page.$eval('#previewHost .vsc-tasks-doc', (e) => e.textContent);
+  if (/VS Code/i.test(vscTasksText)) pass('vscode-tasks.json: badge shown'); else fail('vscode-tasks badge: ' + vscTasksText.slice(0, 200));
+  if (/build|test|lint/i.test(vscTasksText)) pass('vscode-tasks.json: tasks shown'); else fail('vscode-tasks content: ' + vscTasksText.slice(0, 200));
 }

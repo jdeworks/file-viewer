@@ -1,0 +1,28 @@
+{
+  "presets": [
+    ["@babel/preset-env", {
+      "targets": { "node": "current" },
+      "useBuiltIns": "usage",
+      "corejs": 3
+    }],
+    ["@babel/preset-react", { "runtime": "automatic" }],
+    "@babel/preset-typescript"
+  ],
+  "plugins": [
+    "@babel/plugin-transform-runtime",
+    ["@babel/plugin-proposal-decorators", { "legacy": true }],
+    "@babel/plugin-proposal-class-properties"
+  ],
+  "env": {
+    "test": {
+      "plugins": ["babel-plugin-istanbul"]
+    },
+    "production": {
+      "presets": ["minify"]
+    }
+  },
+  "assumptions": {
+    "setPublicClassFields": true,
+    "privateFieldsAsProperties": false
+  }
+}

@@ -1,0 +1,23 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: "*.{js,ts,tsx}"
+      run: npx eslint {staged_files}
+    type-check:
+      run: npx tsc --noEmit
+    format:
+      glob: "*.{js,ts,tsx,json,md}"
+      run: npx prettier --check {staged_files}
+
+commit-msg:
+  commands:
+    lint-commit:
+      run: npx commitlint --edit {1}
+
+pre-push:
+  commands:
+    tests:
+      run: npm test -- --passWithNoTests
+    build:
+      run: npm run build
