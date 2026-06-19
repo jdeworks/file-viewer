@@ -135,12 +135,21 @@ export async function run(ctx) {
     ['sample.sketch', 'sketch'],
     ['sample.ora', 'layered'],
     ['sample.kra', 'layered'],
+    ['sample.psd', 'layered'],
+    ['sample.psb', 'layered'],
+    ['sample.xcf', 'layered'],
   ]);
   const missingDesignTypes = [...designSamples].filter(([file, type]) => byFile.get(file)?.type !== type).map(([file]) => file);
   if (missingDesignTypes.length) {
     fail('design/layered samples missing explicit types: ' + missingDesignTypes.join(', '));
   } else {
     pass('design/layered samples expose explicit catalog types');
+  }
+  const xcfSample = byFile.get('sample.xcf');
+  if (xcfSample?.partial) {
+    pass('XCF sample documents partial structure-only support');
+  } else {
+    fail('XCF sample should be marked partial');
   }
 
   const seenTypes = new Set();

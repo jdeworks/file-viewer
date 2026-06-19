@@ -1539,6 +1539,52 @@
     "attribution": "File Viewer sample catalog"
   },
   {
+    "label": "Sample.psd",
+    "file": "sample.psd",
+    "mime": "image/vnd.adobe.photoshop",
+    "category": "Image",
+    "categories": [
+      "Image",
+      "Media"
+    ],
+    "type": "layered",
+    "description": "Photoshop PSD sample with semi-transparent layers for layer-list and compositing coverage.",
+    "source": "https://github.com/psd-tools/psd-tools/blob/main/tests/psd_files/semi-transparent-layers.psd",
+    "license": "MIT",
+    "attribution": "psd-tools test corpus"
+  },
+  {
+    "label": "Sample.psb",
+    "file": "sample.psb",
+    "mime": "image/vnd.adobe.photoshop",
+    "category": "Image",
+    "categories": [
+      "Image",
+      "Media"
+    ],
+    "type": "layered",
+    "description": "Large-document Photoshop PSB sample paired with the PSD layer fixture.",
+    "source": "https://github.com/psd-tools/psd-tools/blob/main/tests/psd_files/semi-transparent-layers.psb",
+    "license": "MIT",
+    "attribution": "psd-tools test corpus"
+  },
+  {
+    "label": "Sample.xcf",
+    "file": "sample.xcf",
+    "mime": "image/x-xcf",
+    "category": "Image",
+    "categories": [
+      "Image",
+      "Media"
+    ],
+    "type": "layered",
+    "partial": true,
+    "description": "GIMP XCF layer-mode sample; the viewer currently extracts layer structure and shows a placeholder canvas.",
+    "source": "https://commons.wikimedia.org/wiki/File:Gimp_layer_mode_test.xcf",
+    "license": "Beerware License",
+    "attribution": "McZusatz"
+  },
+  {
     "label": "sample.sketch",
     "file": "sample.sketch",
     "type": "sketch",
