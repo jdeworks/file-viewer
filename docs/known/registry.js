@@ -44,11 +44,15 @@ import renovate from '../types/text/json/known/renovate/index.js';
 import prettierrc from '../types/text/json/known/prettierrc/index.js';
 import turbo from '../types/text/json/known/turbo/index.js';
 import dependabot from '../types/text/yaml/known/dependabot/index.js';
+import eslint from '../types/text/json/known/eslint/index.js';
+import jest from '../types/text/json/known/jest/index.js';
+import stylelint from '../types/text/json/known/stylelint/index.js';
 
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
-  pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot];
+  pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
+  eslint, jest, stylelint];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

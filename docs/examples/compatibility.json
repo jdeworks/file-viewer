@@ -5621,6 +5621,93 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "eslint": {
+      "label": "ESLint config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        ".eslintrc.json"
+      ],
+      "extensions": [
+        ".eslintrc",
+        ".eslintrc.json",
+        "eslint.config.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Flat config (eslint.config.js array format) not parsed"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "jest": {
+      "label": "Jest config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "jest.config.json"
+      ],
+      "extensions": [
+        "jest.config.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "stylelint": {
+      "label": "Stylelint config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        ".stylelintrc.json"
+      ],
+      "extensions": [
+        ".stylelintrc",
+        ".stylelintrc.json",
+        "stylelint.config.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

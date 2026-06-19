@@ -1,0 +1,29 @@
+{
+  "extends": [
+    "stylelint-config-standard",
+    "stylelint-config-recommended-scss"
+  ],
+  "plugins": [
+    "stylelint-scss",
+    "stylelint-order"
+  ],
+  "ignoreFiles": [
+    "dist/**",
+    "node_modules/**",
+    "**/*.min.css"
+  ],
+  "rules": {
+    "color-no-invalid-hex": true,
+    "unit-no-unknown": true,
+    "property-no-unknown": true,
+    "selector-pseudo-class-no-unknown": [true, { "ignorePseudoClasses": ["global", "local"] }],
+    "block-no-empty": true,
+    "no-duplicate-selectors": true,
+    "color-named": "never",
+    "declaration-block-no-shorthand-property-overrides": true,
+    "order/properties-alphabetical-order": null,
+    "scss/at-import-no-partial-leading-underscore": true,
+    "scss/at-rule-no-unknown": true,
+    "max-nesting-depth": [3, { "ignore": ["blockless-at-rules"] }]
+  }
+}

@@ -248,4 +248,28 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .dbt-doc', { timeout: 12000 });
   const dbtText = await page.$eval('#previewHost .dbt-doc', (e) => e.textContent);
   if (/Dependabot/i.test(dbtText)) pass('dependabot.yml: badge shown'); else fail('dependabot badge: ' + dbtText.slice(0, 200));
+
+  // ── .eslintrc.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.eslintrc.json');
+  await page.waitForSelector('#previewHost .esl-doc', { timeout: 12000 });
+  const eslText = await page.$eval('#previewHost .esl-doc', (e) => e.textContent);
+  if (/ESLint/i.test(eslText)) pass('.eslintrc.json: badge shown'); else fail('eslint badge: ' + eslText.slice(0, 200));
+  if (/no-console|no-unused-vars|prefer-const/i.test(eslText)) pass('.eslintrc.json: rules shown'); else fail('eslint rules: ' + eslText.slice(0, 200));
+
+  // ── jest.config.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('jest.config.json');
+  await page.waitForSelector('#previewHost .jest-doc', { timeout: 12000 });
+  const jestText = await page.$eval('#previewHost .jest-doc', (e) => e.textContent);
+  if (/Jest/i.test(jestText)) pass('jest.config.json: badge shown'); else fail('jest badge: ' + jestText.slice(0, 200));
+  if (/jsdom|coverage/i.test(jestText)) pass('jest.config.json: env and coverage shown'); else fail('jest content: ' + jestText.slice(0, 200));
+
+  // ── .stylelintrc.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.stylelintrc.json');
+  await page.waitForSelector('#previewHost .stl-doc', { timeout: 12000 });
+  const stlText = await page.$eval('#previewHost .stl-doc', (e) => e.textContent);
+  if (/Stylelint/i.test(stlText)) pass('.stylelintrc.json: badge shown'); else fail('stylelint badge: ' + stlText.slice(0, 200));
+  if (/color-no-invalid-hex|block-no-empty/i.test(stlText)) pass('.stylelintrc.json: rules shown'); else fail('stylelint rules: ' + stlText.slice(0, 200));
 }

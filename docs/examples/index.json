@@ -2544,5 +2544,32 @@
     "categories": [
       "Config"
     ]
+  },
+  {
+    "label": ".eslintrc.json",
+    "file": ".eslintrc.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "jest.config.json",
+    "file": "jest.config.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": ".stylelintrc.json",
+    "file": ".stylelintrc.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
   }
 ]
