@@ -526,11 +526,10 @@ Add simple dedicated samples for common programming languages and enhanced known
 
 Expand image coverage:
 - JPEG/JPG, PNG, GIF, WebP, BMP, TIFF, SVG, ICO
-- modern formats already supported or planned: HEIC/HEIF, AVIF, JXL if support exists or is added
+- modern formats already supported or planned: HEIC/HEIF, AVIF, JXL where browser support permits
 - design/layered formats: PSD/PSB, XCF, KRA, Sketch, Procreate, Clip Studio where supported or partial-supported
 
 Remaining explicit sample gaps:
-- JXL: decide support policy, then add detection/sample or partial-support message.
 - PSD/PSB, XCF: renderer support exists for layered/design formats, but indexed samples are still missing.
 - Video: only AVI is covered; add browser-native MP4/WebM plus MOV/MKV partial or transcode-hint samples where appropriate.
 - Audio: add FLAC and M4A/AAC samples where browser/runtime support permits.
@@ -749,7 +748,10 @@ Add smoke coverage that launches 2048, forces or plays to a score/end state if p
 
 Bit Foundry should not show all stages from the beginning, and stages should not be presented as a row of ordinary buttons.
 
+Treat Bit Foundry, Bit Factory, and Defragmenter as tracking terms for the same metagame area unless the naming is intentionally split later.
+
 Design target:
+- document the intended sequence for when each stage, tab, bell, upgrade, and click surface appears
 - only unlocked/current stages are visible
 - the current stage name becomes the page/section heading
 - locked future stages are hidden or shown as subtle progress, not clickable primary controls
@@ -778,6 +780,13 @@ Add smoke coverage that unlocks the next stage, switches/advances, clicks the ea
 
 Coverage should include actually switching to another unlocked tab/stage and returning, not only unlocking a tab while staying on the original earning surface.
 
+### Remaining acceptance checks
+
+- Verify fresh saves show only the current/unlocked stage path, with future stages hidden or passive rather than clickable primary controls.
+- Verify stage unlock sequencing uses current bits/score thresholds and preserves progression when spending or returning from another unlocked stage.
+- Verify the Bell lives in the v3 header next to Back to arcade and Stage 1 economy messages feed that same v3 bell log.
+- Verify the primary earning click target still works after unlocking, switching to another available stage/tab, and returning.
+
 ---
 
 ## TASK 22 — Conversation History Backlog Audit
@@ -796,10 +805,12 @@ Review the timeline of user-authored File Viewer requests across this chat and a
 
 ### What to produce
 
-- A chronological list of user requests that still matter for implementation.
+- A chronological list of user-authored requests that still matter for implementation, grouped by message timeline rather than by assistant summary.
+- Include compacted/resumed context, but only as a source for user-authored requirements and decisions.
 - Concrete backlog items for anything not already represented in `TASKS.md` or `RUN_REQUIREMENTS.md`.
 - Deduplicated references where the same idea appears in multiple messages.
 - Explicit notes for Bit Foundry / Bit Factory behavior, sample-file coverage, metadata grouping, file interaction/editing features, FileExamples compatibility, security hardening, and performance/loading work.
+- Dedupe Bit Foundry / Bit Factory / Defragmenter naming and behavior requests against Task 21 before creating new work.
 - No broad transcript dump; keep only actionable requirements and decisions.
 
 ---
