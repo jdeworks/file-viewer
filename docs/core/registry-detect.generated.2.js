@@ -13,8 +13,9 @@ function detect(intake) {
     if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return 0.99;                   // GIF
     if (b[0] === 0x42 && b[1] === 0x4d) return 0.95;                                     // BMP
     if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 0.99; // WEBP
+    if ((b[0] === 0xff && b[1] === 0x0a) || (b[0] === 0 && b[1] === 0 && b[2] === 0 && b[3] === 0x0c && b[4] === 0x4a && b[5] === 0x58 && b[6] === 0x4c && b[7] === 0x20)) return 0.99; // JPEG XL
   }
-  if (hasExtension(intake, 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'avif', 'ico')) return 0.95;
+  if (hasExtension(intake, 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'avif', 'jxl', 'ico')) return 0.95;
   if (hasExtension(intake, 'svg')) return 0.92;
   if (mimeMatches(intake, 'image/')) return 0.9;
   const t = (intake.textSample || '').trim();

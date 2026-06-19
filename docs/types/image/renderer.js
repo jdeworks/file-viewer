@@ -49,10 +49,11 @@ export async function render(intake, ctx = {}) {
       + '<button class="imgv-text-apply" title="Draw text on image">Draw text</button>'
       + '<button class="imgv-text-reset" title="Reset image edits" hidden>Reset</button>' : '')
     + '</div>'
-    + '<div class="imgv-stage"><img class="imgv-img" alt="' + esc(intake.filename) + '"></div>'
+    + '<div class="imgv-stage"><img class="imgv-img" alt="' + esc(intake.filename) + '"><div class="imgv-note" hidden></div></div>'
     + '<div class="imgv-ascii-out" hidden></div>';
 
   const img = host.querySelector('.imgv-img');
+  const note = host.querySelector('.imgv-note');
   const zoomLabel = host.querySelector('.imgv-zoom');
   const asciiBtn = host.querySelector('.imgv-ascii-btn');
   const asciiCols = host.querySelector('.imgv-ascii-cols');
@@ -78,6 +79,14 @@ export async function render(intake, ctx = {}) {
   host.querySelector('.imgv-up').addEventListener('click', () => { fit = false; zoom = Math.min(16, zoom * 1.25); apply(); });
   host.querySelector('.imgv-dn').addEventListener('click', () => { fit = false; zoom = Math.max(0.1, zoom / 1.25); apply(); });
 
+  img.addEventListener('error', () => {
+    const ext = (intake.filename || '').split('.').pop()?.toLowerCase();
+    if (ext === 'jxl' || mime === 'image/jxl') {
+      note.hidden = false;
+      note.textContent = 'JPEG XL was detected, but this browser cannot decode image/jxl yet. Metadata and download still work; try Safari or a desktop viewer with JPEG XL support.';
+      img.hidden = true;
+    }
+  });
   img.src = url;
   apply();
   dimensions(url).then((d) => { if (d) { natural = d.w; apply(); } });

@@ -153,6 +153,7 @@
 .imgv-zoom { margin-left: auto; font-size: 12px; color: var(--fg-2); font-variant-numeric: tabular-nums; }
 .imgv-stage { flex: 1; min-height: 0; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 12px; }
 .imgv-img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+.imgv-note { max-width: 560px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); color: var(--fg-2); line-height: 1.5; text-align: center; }
 .imgv-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
 .imgv-bar select { font-size: 12px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
 .imgv-text-input { width: min(180px, 34vw); font-size: 12px; padding: 4px 7px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); }

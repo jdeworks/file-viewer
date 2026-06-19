@@ -103,6 +103,12 @@ export async function run(ctx) {
   } else {
     pass('dedicated HEIF/AVIF samples indexed (' + modernImageSamples.length + ')');
   }
+  const jxlSample = byFile.get('sample.jxl');
+  if (jxlSample?.type === 'image' && jxlSample.partial) {
+    pass('dedicated JPEG XL partial-support sample indexed');
+  } else {
+    fail('missing dedicated JPEG XL partial-support sample');
+  }
   const audioFormatSamples = ['sample.wav', 'sample.mp3', 'sample.ogg'];
   const missingAudioFormats = audioFormatSamples.filter((file) => byFile.get(file)?.type !== 'media');
   if (missingAudioFormats.length) {

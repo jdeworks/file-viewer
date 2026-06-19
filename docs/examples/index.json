@@ -1191,6 +1191,22 @@
     "attribution": "Wikimedia Commons contributor; converted to AVIF for this catalog"
   },
   {
+    "label": "Sample.jxl",
+    "file": "sample.jxl",
+    "mime": "image/jxl",
+    "type": "image",
+    "category": "Media",
+    "categories": [
+      "Image",
+      "Media"
+    ],
+    "partial": true,
+    "description": "JPEG XL wide-gamut browser support sample with explicit unsupported-browser fallback coverage.",
+    "source": "https://jpegxl.info/resources/jpeg-xl-test-page.html",
+    "license": "JPEG XL community sample; see source",
+    "attribution": "JPEG XL community test page"
+  },
+  {
     "label": "sample.heic",
     "file": "sample.heic",
     "mime": "image/heic",
