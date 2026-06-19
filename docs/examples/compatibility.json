@@ -3731,5 +3731,11 @@
     "firefox": true,
     "safari": true,
     "edge": true
+  },
+  "chat": {
+    "chrome": true,
+    "firefox": true,
+    "safari": true,
+    "edge": true
   }
 }

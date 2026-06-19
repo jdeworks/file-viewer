@@ -575,3 +575,17 @@
 .geo-geom { width: 80px; color: var(--fg-2); font-size: .85em; }
 .geo-chips { display: flex; flex-wrap: wrap; gap: 5px; } .geo-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font: 12px ui-monospace,monospace; }
 .geo-note { font-size: .8em; color: var(--fg-2); margin-top: 8px; }
+/* Chat exports (WhatsApp / Telegram / Discord / Messenger) */
+.chat-preview { padding: 12px; } .chat-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.chat-badge { color: #fff; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; }
+.chat-title { font-weight: 600; font-size: .95em; }
+.chat-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.chat-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; text-align: center; min-width: 60px; }
+.chat-stat-value { font: 700 16px/1 system-ui; color: var(--accent); } .chat-stat-label { font-size: .72em; color: var(--fg-2); margin-top: 3px; text-transform: uppercase; }
+.chat-dates { font-size: .8em; color: var(--fg-2); margin: 4px 0 12px; }
+.chat-section { margin-bottom: 12px; } .chat-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
+.chat-table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.chat-sender { padding: 3px 8px 3px 0; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-count { padding: 3px 8px; color: var(--fg-2); font: 12px ui-monospace,monospace; width: 60px; text-align: right; }
+.chat-bar-cell { padding: 3px 0; width: 100%; } .chat-bar { height: 8px; background: var(--accent); border-radius: 4px; min-width: 4px; opacity: .7; }
+.chat-note { font-size: .8em; color: var(--fg-2); margin-top: 6px; }

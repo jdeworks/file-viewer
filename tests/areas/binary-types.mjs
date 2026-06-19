@@ -28,4 +28,17 @@ export async function run(ctx) {
   if (geoStats.includes('5')) pass('GeoJSON feature count 5 shown'); else fail('geojson stats: ' + geoStats.join(','));
   const geoNames = await geof.$eval('.geo-table', (t) => t.textContent);
   if (/Golden Gate/i.test(geoNames)) pass('GeoJSON named feature Golden Gate shown'); else fail('geo table: ' + geoNames.slice(0, 200));
+
+  // ── Telegram chat export ─────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample-telegram.json');
+  const chatFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const chatf = await frameOf('iframe.fv-preview-frame');
+  await chatf.waitForSelector('.chat-preview', { timeout: 8000 });
+  const chatTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (chatTypeId === 'chat') pass('Telegram JSON detected as chat type'); else fail('chat typeId: ' + chatTypeId);
+  const chatBadge = await chatf.$eval('.chat-badge', (el) => el.textContent);
+  if (/Telegram/i.test(chatBadge)) pass('Telegram badge shown'); else fail('chat badge: ' + chatBadge);
+  const chatStats = await chatf.$$eval('.chat-stat-value', (els) => els.map((e) => e.textContent));
+  if (chatStats.includes('8')) pass('Telegram message count 8 shown'); else fail('chat stats: ' + chatStats.join(','));
 }

@@ -1,0 +1,48 @@
+{
+  "name": "Dev Team",
+  "type": "personal_chat",
+  "id": 1234567890,
+  "messages": [
+    {
+      "id": 1, "type": "message", "date": "2024-03-15T09:12:00",
+      "from": "Alice Chen", "from_id": "user101",
+      "text": "Good morning! Did everyone review the PR?"
+    },
+    {
+      "id": 2, "type": "message", "date": "2024-03-15T09:15:22",
+      "from": "Bob Smith", "from_id": "user202",
+      "text": "Yes, left some comments. The auth flow looks good but we need tests."
+    },
+    {
+      "id": 3, "type": "message", "date": "2024-03-15T09:18:05",
+      "from": "Alice Chen", "from_id": "user101",
+      "text": "On it! Adding unit tests now.",
+      "media_type": "photo", "file": "photo_2024-03-15.jpg"
+    },
+    {
+      "id": 4, "type": "message", "date": "2024-03-15T10:45:00",
+      "from": "Carol Davis", "from_id": "user303",
+      "text": "Deploy to staging done. Link: https://staging.example.com"
+    },
+    {
+      "id": 5, "type": "message", "date": "2024-03-15T11:02:33",
+      "from": "Bob Smith", "from_id": "user202",
+      "text": "Looks great! LGTM 👍"
+    },
+    {
+      "id": 6, "type": "message", "date": "2024-03-15T11:10:00",
+      "from": "Alice Chen", "from_id": "user101",
+      "text": "Merging. Thanks team!"
+    },
+    {
+      "id": 7, "type": "message", "date": "2024-03-16T09:00:00",
+      "from": "Carol Davis", "from_id": "user303",
+      "text": "Standup in 5 mins"
+    },
+    {
+      "id": 8, "type": "message", "date": "2024-03-16T14:30:00",
+      "from": "Bob Smith", "from_id": "user202",
+      "text": "Hotfix deployed. All good."
+    }
+  ]
+}

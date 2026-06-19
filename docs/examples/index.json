@@ -1945,5 +1945,10 @@
     "filename": "sample.geojson",
     "label": "GeoJSON (San Francisco landmarks)",
     "type": "geojson"
+  },
+  {
+    "filename": "sample-telegram.json",
+    "label": "Telegram Chat Export (JSON)",
+    "type": "chat"
   }
 ]

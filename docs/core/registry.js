@@ -111,6 +111,7 @@ import mcpConfigType from '../types/text/mcp-config/index.js';
 import kubeconfigType from '../types/text/kubeconfig/index.js';
 import kicadType from '../types/text/kicad/index.js';
 import geojsonType from '../types/text/geojson/index.js';
+import chatType from '../types/text/chat/index.js';
 import postscriptType from '../types/text/postscript/index.js';
 import acfType from '../types/text/acf/index.js';
 import fitsType from '../types/text/fits/index.js';
@@ -197,6 +198,7 @@ export const REGISTRY = [
   asciiartType,
   kicadType,
   geojsonType,
+  chatType,
   postscriptType,
   acfType,
   fitsType,
