@@ -1,0 +1,14 @@
+tap "homebrew/bundle"
+tap "homebrew/cask"
+
+brew "git"
+brew "node"
+brew "ripgrep"
+brew "jq"
+brew "gh"
+
+cask "visual-studio-code"
+cask "docker"
+cask "iterm2"
+
+mas "Xcode", id: 497799835

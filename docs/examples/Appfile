@@ -1,0 +1,4 @@
+app_identifier("com.example.myapp")
+apple_id("developer@example.com")
+itc_team_id("123456789")
+team_id("ABCDE12345")

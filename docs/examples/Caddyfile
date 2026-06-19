@@ -1,0 +1,27 @@
+# Global options
+{
+	email admin@example.com
+}
+
+example.com {
+	root * /var/www/html
+	file_server
+	encode gzip
+
+	header X-Frame-Options DENY
+	header X-Content-Type-Options nosniff
+
+	tls /etc/ssl/certs/cert.pem /etc/ssl/private/key.pem
+}
+
+api.example.com {
+	reverse_proxy localhost:3000
+
+	header Access-Control-Allow-Origin "*"
+}
+
+:8080 {
+	reverse_proxy localhost:4000 localhost:4001
+
+	redir /old /new 301
+}

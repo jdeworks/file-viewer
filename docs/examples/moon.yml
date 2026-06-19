@@ -1,0 +1,48 @@
+# https://moonrepo.dev/docs/config/project
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+project:
+  name: 'web-app'
+  description: 'Frontend web application'
+  type: 'application'
+  language: 'typescript'
+  owner: 'frontend-team'
+
+language: 'typescript'
+
+dependsOn:
+  - 'shared-ui'
+  - 'design-tokens'
+  - id: 'api-client'
+    scope: 'peer'
+
+tasks:
+  build:
+    command: 'vite build'
+    inputs:
+      - 'src/**/*'
+      - 'public/**/*'
+    outputs:
+      - 'dist/**/*'
+
+  dev:
+    command: 'vite dev'
+    local: true
+
+  test:
+    command: 'vitest run'
+    inputs:
+      - 'src/**/*.test.ts'
+    deps:
+      - 'build'
+
+  lint:
+    command: 'eslint src'
+    inputs:
+      - 'src/**/*.ts'
+      - 'src/**/*.tsx'
+
+  typecheck:
+    command: 'tsc --noEmit'
+    deps:
+      - '~:build'

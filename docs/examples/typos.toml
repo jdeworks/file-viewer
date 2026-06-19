@@ -1,0 +1,29 @@
+# typos spell checker configuration
+# https://github.com/crate-ci/typos
+
+[default]
+locale = "en-us"
+check-filename = true
+check-file = true
+
+[default.extend-identifiers]
+# Ignore specific identifiers that look like typos but aren't
+"fro" = "fro"
+"Noe" = "Noe"
+
+[default.extend-words]
+# Words to ignore
+"readded" = "readded"
+"moto" = "moto"
+
+[files]
+ignore-hidden = true
+extend-exclude = [
+  "vendor/",
+  "*.min.js",
+  "*.lock",
+]
+
+[type.po]
+extend-glob = ["*.po"]
+check-file = false

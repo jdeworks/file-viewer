@@ -1,0 +1,45 @@
+# Apache per-directory configuration
+Options -Indexes +FollowSymLinks
+AllowOverride None
+
+# Redirect old blog URLs
+Redirect 301 /blog/2020 /archive/2020
+RedirectMatch 302 ^/old-(.*)$ /new-$1
+
+# URL rewriting
+RewriteEngine On
+RewriteBase /
+
+# Force HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+# Remove .html extension
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.+)$ $1.html [L]
+
+# Proxy API requests
+RewriteRule ^api/(.*)$ http://localhost:3000/$1 [P,L]
+
+# Basic authentication for /admin
+<Directory "/admin">
+  AuthType Basic
+  AuthName "Admin Area"
+  AuthUserFile /etc/apache2/.htpasswd
+  Require valid-user
+</Directory>
+
+# Security headers
+Header always set X-Frame-Options "SAMEORIGIN"
+Header always set X-Content-Type-Options "nosniff"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+# Environment
+SetEnvIf User-Agent "^bot" IS_BOT=1
+SetEnvIf Remote_Addr "192\.168\." IS_LOCAL=1
+
+# Deny access to hidden files
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>

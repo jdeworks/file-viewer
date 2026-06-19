@@ -1,0 +1,8 @@
+[submodule "vendor/awesome-lib"]
+	path = vendor/awesome-lib
+	url = https://github.com/example/awesome-lib.git
+	branch = main
+
+[submodule "docs/theme"]
+	path = docs/theme
+	url = https://github.com/example/docs-theme.git

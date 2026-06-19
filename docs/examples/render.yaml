@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: web-app
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: node dist/server.js
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: main-db
+          property: connectionString
+      - key: API_KEY
+        sync: false
+
+  - type: worker
+    name: background-worker
+    runtime: node
+    buildCommand: npm install
+    startCommand: node workers/queue.js
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+  - type: cron
+    name: daily-cleanup
+    runtime: node
+    schedule: "0 2 * * *"
+    buildCommand: npm install
+    startCommand: node scripts/cleanup.js
+
+databases:
+  - name: main-db
+    databaseName: myapp_production
+    plan: starter

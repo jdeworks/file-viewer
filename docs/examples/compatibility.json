@@ -7989,6 +7989,566 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "brewfile": {
+      "label": "Brewfile",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "Brewfile"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "license": {
+      "label": "LICENSE",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "LICENSE"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "ansible-cfg": {
+      "label": "ansible.cfg",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "ansible.cfg"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "gemspec": {
+      "label": "Gemspec",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "example.gemspec"
+      ],
+      "extensions": [
+        ".gemspec"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "typos": {
+      "label": "typos spell checker config",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "typos.toml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "cargo-deny": {
+      "label": "cargo-deny config",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "deny.toml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "cargo-config": {
+      "label": "Cargo config",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "cargo.config.toml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "htaccess": {
+      "label": ".htaccess",
+      "baseType": "plain",
+      "support": "enhanced",
+      "sampleFiles": [
+        ".htaccess"
+      ],
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "realWorldQuality": "needs-review",
+      "notes": "Known-file enhancer with dedicated catalog sample.",
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "nginx-conf": {
+      "label": "nginx config",
+      "baseType": "plain",
+      "support": "enhanced",
+      "sampleFiles": [
+        "nginx.conf"
+      ],
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "realWorldQuality": "needs-review",
+      "notes": "Known-file enhancer with dedicated catalog sample.",
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "moon-yml": {
+      "label": "Moonrepo project",
+      "baseType": "yaml",
+      "support": "enhanced",
+      "sampleFiles": [
+        "moon.yml"
+      ],
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "realWorldQuality": "needs-review",
+      "notes": "Known-file enhancer with dedicated catalog sample.",
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "vagrantfile": {
+      "label": "Vagrantfile",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        "Vagrantfile"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "caddyfile": {
+      "label": "Caddyfile",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        "Caddyfile"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "render-yaml": {
+      "label": "Render.com config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "render.yaml"
+      ],
+      "extensions": [
+        ".yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "railway-json": {
+      "label": "Railway config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "railway.json"
+      ],
+      "extensions": [
+        ".json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "crowdin-yml": {
+      "label": "Crowdin config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "crowdin.yml"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "matchfile": {
+      "label": "Matchfile",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        "Matchfile"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "appfile": {
+      "label": "Appfile",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        "Appfile"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "ruby-version": {
+      "label": ".ruby-version",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        ".ruby-version"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "python-version": {
+      "label": ".python-version",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        ".python-version"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "earthfile": {
+      "label": "Earthfile (Earthly)",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "Earthfile"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "gitmodules": {
+      "support": "enhanced",
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "realWorldQuality": "needs-review",
+      "notes": "Known-file enhancer with dedicated catalog sample.",
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "label": ".gitmodules (submodules)",
+      "baseType": "plain",
+      "sampleFiles": [
+        ".gitmodules"
+      ]
+    },
+    "tfvars": {
+      "support": "enhanced",
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "realWorldQuality": "needs-review",
+      "notes": "Known-file enhancer with dedicated catalog sample.",
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "label": "Terraform variables (.tfvars)",
+      "baseType": "plain",
+      "sampleFiles": [
+        "terraform.tfvars"
+      ]
     }
   }
 }

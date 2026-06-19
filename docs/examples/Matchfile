@@ -1,0 +1,7 @@
+git_url("https://github.com/example/certificates")
+git_branch("main")
+storage_mode("git")
+type("development")
+app_identifier(["com.example.app", "com.example.app.extension"])
+username("developer@example.com")
+team_id("ABCDE12345")
