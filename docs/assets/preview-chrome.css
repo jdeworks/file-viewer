@@ -589,3 +589,10 @@
 .chat-count { padding: 3px 8px; color: var(--fg-2); font: 12px ui-monospace,monospace; width: 60px; text-align: right; }
 .chat-bar-cell { padding: 3px 0; width: 100%; } .chat-bar { height: 8px; background: var(--accent); border-radius: 4px; min-width: 4px; opacity: .7; }
 .chat-note { font-size: .8em; color: var(--fg-2); margin-top: 6px; }
+/* Guitar Pro tabs */
+.gp-preview { padding: 12px; } .gp-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.gp-badge { background: #7c2d12; color: #fed7aa; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .gp-format { font-weight: 600; font-size: .95em; }
+.gp-table { border-collapse: collapse; font-size: 13px; margin-bottom: 12px; } .gp-key { padding: 3px 14px 3px 0; color: var(--fg-2); white-space: nowrap; } .gp-table td { padding: 3px 0; }
+.gp-section { margin-bottom: 10px; } .gp-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
+.gp-chips { display: flex; flex-wrap: wrap; gap: 5px; } .gp-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font: 12px ui-monospace,monospace; }
+.gp-note { font-size: .85em; color: var(--fg-2); margin-top: 8px; }

@@ -3737,5 +3737,11 @@
     "firefox": true,
     "safari": true,
     "edge": true
+  },
+  "guitar-pro": {
+    "chrome": true,
+    "firefox": true,
+    "safari": true,
+    "edge": true
   }
 }

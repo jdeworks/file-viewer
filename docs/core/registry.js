@@ -112,6 +112,7 @@ import kubeconfigType from '../types/text/kubeconfig/index.js';
 import kicadType from '../types/text/kicad/index.js';
 import geojsonType from '../types/text/geojson/index.js';
 import chatType from '../types/text/chat/index.js';
+import guitarProType from '../types/text/guitar-pro/index.js';
 import postscriptType from '../types/text/postscript/index.js';
 import acfType from '../types/text/acf/index.js';
 import fitsType from '../types/text/fits/index.js';
@@ -199,6 +200,7 @@ export const REGISTRY = [
   kicadType,
   geojsonType,
   chatType,
+  guitarProType,
   postscriptType,
   acfType,
   fitsType,

@@ -1950,5 +1950,10 @@
     "filename": "sample-telegram.json",
     "label": "Telegram Chat Export (JSON)",
     "type": "chat"
+  },
+  {
+    "filename": "sample.gp5",
+    "label": "Guitar Pro 5 Tab (binary)",
+    "type": "guitar-pro"
   }
 ]

@@ -41,4 +41,16 @@ export async function run(ctx) {
   if (/Telegram/i.test(chatBadge)) pass('Telegram badge shown'); else fail('chat badge: ' + chatBadge);
   const chatStats = await chatf.$$eval('.chat-stat-value', (els) => els.map((e) => e.textContent));
   if (chatStats.includes('8')) pass('Telegram message count 8 shown'); else fail('chat stats: ' + chatStats.join(','));
+
+  // ── Guitar Pro ───────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.gp5');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const gpf = await frameOf('iframe.fv-preview-frame');
+  await gpf.waitForSelector('.gp-preview', { timeout: 8000 });
+  const gpTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (gpTypeId === 'guitar-pro') pass('.gp5 detected as guitar-pro type'); else fail('gp typeId: ' + gpTypeId);
+  const gpText = await gpf.$eval('.gp-preview', (el) => el.textContent);
+  if (/Guitar Pro/i.test(gpText)) pass('Guitar Pro format label shown'); else fail('gp text: ' + gpText.slice(0, 200));
+  if (/File Viewer Demo Tab/i.test(gpText)) pass('GP5 title parsed correctly'); else fail('gp title: ' + gpText.slice(0, 200));
 }
