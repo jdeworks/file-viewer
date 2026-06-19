@@ -1804,6 +1804,15 @@
     ]
   },
   {
+    "file": "sample.mcworld",
+    "label": "Minecraft World (demo)",
+    "mime": "application/x-mcworld",
+    "category": "Binary",
+    "categories": [
+      "Binary"
+    ]
+  },
+  {
     "label": "ssh-config",
     "file": "ssh-config",
     "category": "Other",

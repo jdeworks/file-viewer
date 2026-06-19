@@ -3615,6 +3615,45 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
+    },
+    "mcworld": {
+      "label": "Minecraft World (.mcworld)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.mcworld"
+      ],
+      "extensions": [
+        ".mcworld",
+        ".mctemplate",
+        ".mcpack"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "needs-review",
+      "notes": "ZIP-based; uses JSZip to list files, parse levelname.txt and partial Bedrock level.dat NBT (LE). No Java Edition level.dat support.",
+      "fileExamplesSlug": null,
+      "previewDepth": "structure-only",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Java Edition level.dat uses different NBT encoding (big-endian)",
+        "Chunk data not parsed (LevelDB)"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
     }
   },
   "knownFiles": {

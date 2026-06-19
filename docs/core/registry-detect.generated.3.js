@@ -160,6 +160,20 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_mcworld=(()=>{
+function detect(intake) {
+  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  const b = intake.bytes;
+  const isPk = b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
+  if (!isPk) return 0;
+  if (hasExtension(intake, 'mcworld', 'mctemplate', 'mcpack')) return 0.97;
+  const head = intake.textSample || '';
+  if (/level\.dat|levelname\.txt|db\/CURRENT|db\/MANIFEST/.test(head)) return 0.85;
+  return 0;
+}
+return detect;
+})();
+
 const detect_reg=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -310,17 +324,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_acf=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (!hasExtension(intake, 'acf')) return 0;
-  const t = intake.textSample || '';
-  // Valve KeyValues format — top-level key is typically "AppState"
-  if (/^\s*"AppState"\s*\{/.test(t)) return 0.98;
-  if (/^\s*"[^"]+"\s*\{/.test(t)) return 0.7;
-  return 0.5;
-}
-return detect;
-})();
-
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf};
+export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript};

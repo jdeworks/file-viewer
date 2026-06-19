@@ -3,6 +3,17 @@ import { isCode } from '../types/text/code/langmap.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_ruffle=(()=>{
+function detect(intake) {
+  if (/\.swf$/i.test(intake.filename)) return 0.98;
+  // Flash magic bytes: CWS (compressed), FWS (uncompressed), ZWS (zlib)
+  const b = intake.bytes;
+  if (b.length >= 3 && (b[0] === 0x43 || b[0] === 0x46 || b[0] === 0x5a) && b[1] === 0x57 && b[2] === 0x53) return 0.97;
+  return 0;
+}
+return detect;
+})();
+
 const detect_v86=(()=>{
 function detect(intake) {
   if (!intake.isBinary) return 0;
@@ -61,4 +72,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
+export const DETECTORS={"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
