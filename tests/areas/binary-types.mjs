@@ -155,4 +155,18 @@ export async function run(ctx) {
   if (/MBTiles/i.test(mbtText)) pass('MBTiles badge shown'); else fail('mbt badge missing');
   if (/File Viewer Demo Map/i.test(mbtText)) pass('MBTiles map name shown'); else fail('mbt name: ' + mbtText.slice(0, 300));
   if (/0.*4|minzoom|maxzoom|Zoom/i.test(mbtText)) pass('MBTiles zoom levels shown'); else fail('mbt zoom: ' + mbtText.slice(0, 300));
+
+  // ── PDB Protein Structure ─────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Demo Protein Structure (PDB)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const pdbf = await frameOf('iframe.fv-preview-frame');
+  await pdbf.waitForSelector('.badge-pdb', { timeout: 8000 });
+  const pdbTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (pdbTypeId === 'pdb') pass('.pdb detected as pdb type'); else fail('pdb typeId: ' + pdbTypeId);
+  const pdbText = await pdbf.$eval('body', (el) => el.textContent);
+  if (/PDB/i.test(pdbText)) pass('PDB badge shown'); else fail('pdb badge missing');
+  if (/DEMO/i.test(pdbText)) pass('PDB ID shown'); else fail('pdb id: ' + pdbText.slice(0, 300));
+  if (/Homo sapiens|HYDROLASE/i.test(pdbText)) pass('PDB organism/type shown'); else fail('pdb org: ' + pdbText.slice(0, 300));
+  if (/Chain|chain|1\.80|Residue|residue/i.test(pdbText)) pass('PDB structure info shown'); else fail('pdb struct: ' + pdbText.slice(0, 300));
 }

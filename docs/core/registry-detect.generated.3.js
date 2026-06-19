@@ -230,6 +230,23 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_pdb=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0; // VS .pdb files are binary
+  const head = (intake.textSample || '').slice(0, 600);
+  const hasHeader = /^HEADER\s/m.test(head);
+  const hasAtom = /^(?:ATOM|HETATM)\s/m.test(head);
+  if (hasExtension(intake, 'pdb', 'ent')) {
+    if (hasHeader || hasAtom) return 0.96;
+    return 0.5; // extension alone — might be VS pdb (but those are binary)
+  }
+  if (hasHeader && hasAtom) return 0.90;
+  if (hasHeader || hasAtom) return 0.50;
+  return 0;
+}
+return detect;
+})();
+
 const detect_reg=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -261,65 +278,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_asciiart=(()=>{
-const BLOCK_CHARS = /[█▓▒░═╔╗╚╝╠╣╦╩╬║─│┌┐└┘├┤┬┴┼]/g;
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-
-  const text = intake.textSample || intake.text || '';
-  if (!text) return 0;
-
-  // Extension-based detection
-  if (hasExtension(intake, 'ans', 'asc')) return 0.90;
-  if (hasExtension(intake, 'nfo', 'diz')) return 0.80;
-
-  const sauceIdx = text.lastIndexOf('SAUCE00');
-  if (sauceIdx !== -1 && sauceIdx >= text.length - 200) return 0.95;
-
-  // Content-based: count signals
-  const lines = text.split(/\r?\n/);
-  const totalLines = lines.filter((l) => l.length > 0).length;
-  if (totalLines < 3) return 0;
-
-  let signals = 0;
-
-  // Signal 1: >30% of non-empty lines are wider than 80 chars
-  const wideLines = lines.filter((l) => l.length > 80).length;
-  if (totalLines > 0 && wideLines / totalLines > 0.30) signals++;
-
-  // Signal 2: ANSI escape sequences present
-  const ansiCount = (text.match(/\x1b\[/g) || []).length;
-  if (ansiCount >= 3) signals++;
-
-  // Signal 3: density of block/box-drawing characters
-  const blockCount = (text.match(BLOCK_CHARS) || []).length;
-  if (blockCount >= 5) signals++;
-
-  // Signal 4: repeated use of pipe/backslash art (ASCII art without special chars)
-  const lineArt = lines.filter((l) => /[|\\\/]{3,}/.test(l)).length;
-  if (lineArt >= 3) signals++;
-
-  if (signals < 2) return 0;
-
-  // Scale: 2 signals → 0.60, 3 → 0.70, 4 → 0.75
-  const score = Math.min(0.75, 0.55 + signals * 0.07);
-  return score;
-}
-return detect;
-})();
-
-const detect_kicad=(()=>{
-const EXTS = ['kicad_sch', 'kicad_pcb', 'kicad_pro', 'kicad_mod', 'kicad_sym', 'kicad_wks', 'kicad_dru', 'kicad_prl'];
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, ...EXTS)) return 0.97;
-  const head = (intake.text || '').slice(0, 200);
-  if (/^\(kicad_sch\b|\(kicad_pcb\b|\(kicad_pro\b|\(kicad_symbol_lib\b|\(module\b/m.test(head)) return 0.9;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad};
+export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"reg":detect_reg,"url":detect_url};

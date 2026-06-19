@@ -3795,6 +3795,37 @@
         "Tile data not decoded — metadata display only",
         "Vector tile (PBF) schema not parsed"
       ]
+    },
+    "pdb": {
+      "label": "Protein Structure (.pdb)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.pdb"
+      ],
+      "extensions": [
+        ".pdb",
+        ".ent"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "full",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "fileExamplesSlug": "rcsb.org",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "3D visualization not yet implemented — text metadata only",
+        "Multi-model NMR ensembles show first model only"
+      ]
     }
   },
   "knownFiles": {

@@ -1901,6 +1901,16 @@
     ]
   },
   {
+    "label": "Demo Protein Structure (PDB)",
+    "file": "sample.pdb",
+    "mime": "chemical/x-pdb",
+    "category": "Science",
+    "categories": [
+      "Science",
+      "Data"
+    ]
+  },
+  {
     "label": "Sample variants (VCF)",
     "file": "sample-variants.vcf",
     "mime": "text/x-vcf",
