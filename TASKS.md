@@ -486,7 +486,7 @@ GM instrument table: standard 128-name array (General MIDI Level 1 spec), no dep
 
 ## TASK 16 — Sample Library Audit + Reader UX Fixes
 
-**Status:** In progress — catalog smoke, multi-category examples, search/filtering, inner scroll containment, code samples, font variants, `.jpg`/`.jpeg` image coverage, and MSG/DjVu regressions are implemented.
+**Status:** In progress — catalog smoke, multi-category examples, search/filtering, inner scroll containment, code/media/image/layered/font samples, MSG/DjVu regressions, and EPUB mobile settings drawer are implemented.
 **Effort:** L (~1-2 days)  
 **Files likely touched:**
 - `docs/examples/index.json`
@@ -547,12 +547,11 @@ Fix those renderers or change them to a clear partial-support message that passe
 ### Ebook reader UX
 
 Improve all ebook readers (`epub`, `fb2`, `mobi`, `lrf`, comic where relevant) toward common ebook-reader behavior:
-- font family, font size, line height, margins, and theme controls
-- full-screen reading mode, especially on phones
-- mobile layout that uses the full viewport cleanly
-- slide-in settings pane for reader options
-- persistent per-book reader settings and position
-- make `sample.mobi` longer and investigate why it can start with blue selected/highlighted text
+- EPUB: implemented font family, font size, theme, columns, persisted position/preferences, and a phone slide-in settings/TOC drawer.
+- FB2/MOBI: implemented size, font, and theme controls; still need line-height/margin controls and persisted reader preferences.
+- Comic: implemented book/spread mode; still needs fuller reader settings if treated as an ebook reader.
+- LRF: intentionally friendly partial-support note only.
+- `sample.mobi`: longer Gutenberg-derived sample is present; add a decoded-text-length assertion and a regression check that it does not open with selected/blue text.
 
 ---
 
