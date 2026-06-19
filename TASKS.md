@@ -815,7 +815,7 @@ Review the timeline of user-authored File Viewer requests across this chat and a
 
 ## TASK 23 — Performance, Security, and Loading Follow-up Queue
 
-**Status:** Not started
+**Status:** In progress — filename double-extension risk scoring is surfaced in metadata, including suspicious ZIP entry names.
 **Effort:** L (~1-2 days, likely multiple increments)
 **Files likely touched:**
 - `RUN_REQUIREMENTS.md`

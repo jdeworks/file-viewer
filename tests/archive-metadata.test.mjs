@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 import { imageEntryCount, listCentralDirectory } from '../docs/types/zip/ziplib.js';
 import { inspectArchive } from '../docs/types/archive/metadata.js';
+import { riskyArchiveEntries } from '../docs/types/zip/metadata.js';
 import { parseHeader } from '../docs/types/sqlite/sqlitelib.js';
 
 const root = new URL('../docs/examples/', import.meta.url);
@@ -44,6 +45,18 @@ assert.equal(imageEntryCount(cbz.files), 3);
 
 const locked = listCentralDirectory(await readFile(new URL('sample-locked.zip', root)));
 assert.equal(locked.encrypted.size, 1);
+
+const risky = riskyArchiveEntries([
+  { name: 'docs/readme.txt' },
+  { name: 'payload/invoice.pdf.exe' },
+  { name: 'payload/document.pdf.zip' },
+  { name: 'assets/jquery.min.js' },
+]);
+assert.equal(risky.score, 75);
+assert.equal(risky.entries.length, 2);
+assert.equal(risky.entries[0].name, 'payload/invoice.pdf.exe');
+assert.equal(risky.entries[0].level, 'high');
+assert.equal(risky.entries[1].level, 'caution');
 
 const sevenZip = inspectArchive(await readFile(new URL('Sample.7z', root)), 'Sample.7z');
 assert.equal(sevenZip.format, '7z');

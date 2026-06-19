@@ -7,6 +7,7 @@ import { META_SECTIONS } from './metadata-helpers.js';
 
 const SENSITIVE_KEY_RE = /(SECRET|PASSWORD|TOKEN|KEY|PRIVATE)/i;
 const ADVANCED_LABELS = new Set(['MIME', 'Modified', 'Extension', 'Content kind', 'Loaded bytes', 'Byte order mark']);
+const SECURITY_LABELS = new Set(['Filename risk', 'Filename warnings', 'Archive entry risk', 'Archive entry warnings']);
 const TEXT_FACT_LABELS = new Set(['Line endings', 'Line break count', 'Lines', 'Blank lines', 'Longest line', 'Trailing newline']);
 const BUILT_IN_SECTIONS = new Set(Object.values(META_SECTIONS));
 
@@ -178,6 +179,7 @@ function rowFromMetadata(entry) {
 
 function fallbackSection(label) {
   if (ADVANCED_LABELS.has(label)) return META_SECTIONS.advanced;
+  if (SECURITY_LABELS.has(label)) return META_SECTIONS.security;
   if (TEXT_FACT_LABELS.has(label)) return META_SECTIONS.text;
   return META_SECTIONS.type;
 }
@@ -231,6 +233,7 @@ export async function buildMetadata() {
   appendTypeInfo(body, basics);
   const unique = dedupeMetadataRows(rows);
   appendSection(body, META_SECTIONS.type, rowsForSection(unique, META_SECTIONS.type), true);
+  appendSection(body, META_SECTIONS.security, rowsForSection(unique, META_SECTIONS.security), true);
   for (const section of explicitSections(unique)) {
     appendSection(body, section.title, rowsForSection(unique, section.title), section.open);
   }

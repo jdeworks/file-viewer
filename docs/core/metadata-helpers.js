@@ -1,5 +1,6 @@
 export const META_SECTIONS = Object.freeze({
   type: 'Type-specific details',
+  security: 'Security and privacy',
   text: 'Text structure',
   advanced: 'Advanced file facts',
 });
@@ -15,6 +16,10 @@ export const META_KEYS = Object.freeze({
   blankLines: 'blank-lines',
   longestLine: 'longest-line',
   trailingNewline: 'trailing-newline',
+  filenameRisk: 'filename-risk',
+  filenameWarnings: 'filename-warnings',
+  archiveRisk: 'archive-risk',
+  archiveWarnings: 'archive-warnings',
 });
 
 export function metadataRow(label, value, { section = '', dedupeKey = '', priority } = {}) {
@@ -37,4 +42,8 @@ export function textFact(label, value, dedupeKey, priority = 1) {
 
 export function typeFact(label, value, priority = 1) {
   return metadataRow(label, value, { section: META_SECTIONS.type, priority });
+}
+
+export function securityFact(label, value, dedupeKey, priority = 1) {
+  return metadataRow(label, value, { section: META_SECTIONS.security, dedupeKey, priority });
 }

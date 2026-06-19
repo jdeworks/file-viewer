@@ -1,4 +1,4 @@
-import { META_KEYS, advancedFact, textFact } from './metadata-helpers.js';
+import { META_KEYS, advancedFact, securityFact, textFact } from './metadata-helpers.js';
 
 function extensionOf(filename = '') {
   const base = String(filename).split(/[\\/]/).pop() || '';
@@ -41,6 +41,10 @@ function filenameRisk(filename = '') {
   score = Math.min(100, score);
   const level = score >= 70 ? 'high' : score >= 20 ? 'caution' : 'none';
   return { score, level, warnings };
+}
+
+export function assessFilenameRisk(filename = '') {
+  return filenameRisk(filename);
 }
 
 function bomOf(bytes) {
@@ -106,8 +110,8 @@ export function genericMetadata(intake) {
   const risk = filenameRisk(intake.filename);
   if (risk.score) {
     rows.push(
-      ['Filename risk', `${risk.level} (${risk.score}/100)`],
-      ['Filename warnings', risk.warnings.join(', ')],
+      securityFact('Filename risk', `${risk.level} (${risk.score}/100)`, META_KEYS.filenameRisk),
+      securityFact('Filename warnings', risk.warnings.join(', '), META_KEYS.filenameWarnings),
     );
   }
   if (Number.isFinite(intake.loadedBytes) && Number.isFinite(intake.size) && intake.loadedBytes < intake.size) {

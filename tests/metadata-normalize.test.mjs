@@ -60,6 +60,8 @@ function value(rows, label) {
   }));
   assert.equal(value(rows, 'Filename risk'), 'high (75/100)');
   assert.equal(value(rows, 'Filename warnings'), 'High-risk double extension ending in executable .exe');
+  assert.equal(rows.find((r) => r.label === 'Filename risk').section, 'Security and privacy');
+  assert.equal(rows.find((r) => r.label === 'Filename warnings').section, 'Security and privacy');
 }
 
 {
