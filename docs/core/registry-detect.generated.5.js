@@ -3,6 +3,49 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_dwg=(()=>{
+// AutoCAD DWG files start with "AC" followed by a 4-digit version number.
+// Known versions: AC1006 (R10), AC1009 (R11/12), AC1012 (R13), AC1014 (R14),
+// AC1015 (2000), AC1018 (2004), AC1021 (2007), AC1024 (2010), AC1027 (2013),
+// AC1032 (2018), AC1035 (2023)
+const DWG_MAGIC = [0x41, 0x43]; // 'AC'
+
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isDwgExt = ext === 'dwg';
+
+  if (!b || b.length < 6) return isDwgExt ? 0.6 : 0;
+
+  const hasMagic = b[0] === DWG_MAGIC[0] && b[1] === DWG_MAGIC[1];
+  // version chars should be digits or letters: AC10xx / AC10xx
+  const isVersionBytes = hasMagic &&
+    b[2] >= 0x30 && b[2] <= 0x39 && // '0'-'9'
+    b[3] >= 0x30 && b[3] <= 0x39;
+
+  if (isDwgExt) return isVersionBytes ? 0.99 : hasMagic ? 0.85 : 0.65;
+  return isVersionBytes ? 0.96 : hasMagic ? 0.70 : 0;
+}
+return detect;
+})();
+
+const detect_step=(()=>{
+function detect(intake) {
+  const { filename, textSample } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isStepExt = ext === 'stp' || ext === 'step' || ext === 'p21';
+
+  if (!textSample) return isStepExt ? 0.6 : 0;
+
+  const first = textSample.trimStart().slice(0, 60);
+  const hasIsoMagic = first.startsWith('ISO-10303-21;');
+
+  if (isStepExt) return hasIsoMagic ? 0.98 : 0.65;
+  return hasIsoMagic ? 0.96 : 0;
+}
+return detect;
+})();
+
 const detect_sdf=(()=>{
 function hasExtension(intake, ...exts) {
   const name = (intake.filename || '').toLowerCase();
@@ -281,47 +324,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_prproj=(()=>{
-function detect(intake) {
-  // .prproj is a gzip-compressed XML file
-  if (hasExtension(intake, 'prproj')) {
-    if (intake.isBinary) {
-      const b = intake.bytes;
-      // Check gzip magic bytes: 1f 8b
-      if (b && b[0] === 0x1f && b[1] === 0x8b) return 0.98;
-      return 0.85;
-    }
-    // Text might be decompressed version
-    const t = intake.textSample || '';
-    if (/<PremiereData\b/.test(t) || /<Project\b/.test(t)) return 0.95;
-    return 0.7;
-  }
-  return 0;
-}
-return detect;
-})();
-
-const detect_gcode=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'gcode', 'gc', 'nc', 'ngc')) return 0.90;
-  const sample = (intake.text || '').slice(0, 2048);
-  const signals = ['G0 ', 'G1 ', 'G28', 'M104', 'M109', 'M140', ';LAYER:'];
-  const hits = signals.filter((s) => sample.includes(s)).length;
-  if (hits >= 2) return 0.80;
-  return 0;
-}
-return detect;
-})();
-
-const detect_gitignore=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const n = intake.filename || '';
-  if (/(?:^|\.)(?:gitignore|dockerignore|npmignore|eslintignore|prettierignore|hgignore)$/.test(n)) return 0.95;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore};
+export const DETECTORS={"dwg":detect_dwg,"step":detect_step,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen};

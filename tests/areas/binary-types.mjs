@@ -348,6 +348,18 @@ export async function run(ctx) {
   if (/DBF|dBase/i.test(dbfText)) pass('DBF badge shown'); else fail('dbf badge: ' + dbfText.slice(0, 300));
   if (/NAME|CITY|Alice/i.test(dbfText)) pass('DBF fields and records shown'); else fail('dbf fields: ' + dbfText.slice(0, 300));
 
+  // ── Blender 3D Scene ──────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Blender 3D scene (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const blendf = await frameOf('iframe.fv-preview-frame');
+  await blendf.waitForSelector('.badge-blend', { timeout: 8000 });
+  const blendTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (blendTypeId === 'blend') pass('.blend detected as blend type'); else fail('blend typeId: ' + blendTypeId);
+  const blendText = await blendf.$eval('body', (el) => el.textContent);
+  if (/Blender/i.test(blendText)) pass('Blender badge shown'); else fail('blend badge: ' + blendText.slice(0, 300));
+  if (/4\.2|420|version/i.test(blendText)) pass('Blender version shown'); else fail('blend version: ' + blendText.slice(0, 300));
+
   // ── STEP CAD Exchange ─────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('STEP CAD Exchange file (demo)');

@@ -4332,28 +4332,78 @@
     "dwg": {
       "label": "AutoCAD DWG Drawing",
       "support": "partial",
-      "sampleFiles": ["sample.dwg"],
-      "extensions": [".dwg"],
-      "capabilities": { "rawView": false, "preview": true, "diff": false, "magicSelector": false, "screenshot": false },
+      "sampleFiles": [
+        "sample.dwg"
+      ],
+      "extensions": [
+        ".dwg"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
       "previewDepth": "basic",
       "metadataDepth": "basic",
       "knownParserGaps": [
         "Drawing entities and geometry not parsed (requires ODA SDK or libdxfrw)",
         "Layer, block, and attribute data not decoded",
         "Only version string and header shown"
-      ]
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     },
     "step": {
       "label": "STEP CAD Exchange (ISO 10303-21)",
       "support": "full",
-      "sampleFiles": ["sample.stp"],
-      "extensions": [".stp", ".step", ".p21"],
-      "capabilities": { "rawView": true, "preview": true, "diff": false, "magicSelector": false, "screenshot": false },
+      "sampleFiles": [
+        "sample.stp"
+      ],
+      "extensions": [
+        ".stp",
+        ".step",
+        ".p21"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
       "previewDepth": "rich",
       "metadataDepth": "basic",
       "knownParserGaps": [
         "3D geometry not rendered (requires THREE.js STEP loader)",
         "Complex entity attribute values shown as counts only"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "blend": {
+      "label": "Blender 3D Scene",
+      "support": "partial",
+      "sampleFiles": ["sample.blend"],
+      "extensions": [".blend", ".blend1", ".blend2"],
+      "capabilities": { "rawView": false, "preview": true, "diff": false, "magicSelector": false, "screenshot": false },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "Scene objects, meshes, and materials not parsed (requires Blender or bpy)",
+        "DNA structure definitions not decoded",
+        "Only block type counts shown"
       ]
     }
   },

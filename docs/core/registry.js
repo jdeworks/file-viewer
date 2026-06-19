@@ -127,6 +127,7 @@ import exrType from '../types/binary/exr/index.js';
 import dbfType from '../types/binary/dbf/index.js';
 import dwgType from '../types/binary/dwg/index.js';
 import stepType from '../types/text/step/index.js';
+import blendType from '../types/binary/blend/index.js';
 import sdfType from '../types/text/sdf/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
@@ -246,6 +247,7 @@ export const REGISTRY = [
   dbfType,
   dwgType,
   stepType,
+  blendType,
   sdfType,
   regType,
   urlType,

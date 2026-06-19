@@ -2235,5 +2235,16 @@
       "Design",
       "3D"
     ]
+  },
+  {
+    "file": "sample.blend",
+    "label": "Blender 3D scene (demo)",
+    "mime": "application/x-blender",
+    "category": "3D",
+    "categories": [
+      "3D",
+      "binary",
+      "Design"
+    ]
   }
 ]
