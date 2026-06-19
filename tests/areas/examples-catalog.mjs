@@ -90,6 +90,13 @@ export async function run(ctx) {
   } else {
     pass('dedicated raster image format samples indexed (' + imageFormatSamples.length + ')');
   }
+  const modernImageSamples = ['sample.heic', 'sample.avif'];
+  const missingModernImages = modernImageSamples.filter((file) => byFile.get(file)?.type !== 'heif');
+  if (missingModernImages.length) {
+    fail('missing dedicated HEIF/AVIF samples: ' + missingModernImages.join(', '));
+  } else {
+    pass('dedicated HEIF/AVIF samples indexed (' + modernImageSamples.length + ')');
+  }
   const fontFormatSamples = ['sample.ttf', 'sample.otf', 'sample.woff', 'sample.woff2'];
   const missingFontFormats = fontFormatSamples.filter((file) => byFile.get(file)?.type !== 'font');
   if (missingFontFormats.length) {

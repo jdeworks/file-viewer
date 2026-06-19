@@ -1160,9 +1160,25 @@
     "attribution": "John Burkardt data directory"
   },
   {
+    "label": "Sample.avif",
+    "file": "sample.avif",
+    "mime": "image/avif",
+    "type": "heif",
+    "category": "Media",
+    "categories": [
+      "Image",
+      "Media"
+    ],
+    "description": "AVIF conversion of the CC0 flower PNG sample for modern image-container coverage.",
+    "source": "https://commons.wikimedia.org/wiki/File:Red_flower_01.png",
+    "license": "CC0 1.0 Universal",
+    "attribution": "Wikimedia Commons contributor; converted to AVIF for this catalog"
+  },
+  {
     "label": "sample.heic",
     "file": "sample.heic",
     "mime": "image/heic",
+    "type": "heif",
     "category": "Media",
     "categories": [
       "Image",
