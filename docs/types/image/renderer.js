@@ -43,11 +43,31 @@ export async function render(intake, ctx = {}) {
     + '</select>'
     + '<button class="imgv-ascii-copy" title="Copy ASCII text" hidden>Copy</button>'
     + (canEdit ? '<span class="imgv-sep"></span>'
-      + '<input class="imgv-text-input" type="text" placeholder="Text" aria-label="Image text">'
+      + '<input class="imgv-text-input" type="text" placeholder="Text overlay" aria-label="Image text">'
       + '<input class="imgv-text-size" type="number" min="8" max="240" value="32" title="Font size">'
+      + '<select class="imgv-text-font" title="Font family">'
+      + '<option value="system-ui,sans-serif">Sans-serif</option>'
+      + '<option value="Georgia,serif">Serif</option>'
+      + '<option value="monospace">Mono</option>'
+      + '<option value="Impact,sans-serif">Impact</option>'
+      + '<option value="cursive">Cursive</option>'
+      + '</select>'
       + '<input class="imgv-text-color" type="color" value="#ffffff" title="Text color">'
-      + '<button class="imgv-text-apply" title="Draw text on image">Draw text</button>'
-      + '<button class="imgv-text-reset" title="Reset image edits" hidden>Reset</button>' : '')
+      + '<button class="imgv-text-apply" title="Draw text on image">Add text</button>'
+      + '<span class="imgv-sep"></span>'
+      + '<button class="imgv-pencil" title="Pencil / brush draw mode">✏</button>'
+      + '<button class="imgv-eraser" title="Eraser mode">◻</button>'
+      + '<input class="imgv-draw-color" type="color" value="#ff0000" title="Brush color">'
+      + '<select class="imgv-draw-size" title="Brush size">'
+      + '<option value="3">3px</option><option value="8" selected>8px</option>'
+      + '<option value="20">20px</option><option value="40">40px</option>'
+      + '</select>'
+      + '<button class="imgv-undo" title="Undo last stroke" hidden>↩</button>'
+      + '<span class="imgv-sep"></span>'
+      + '<select class="imgv-export-fmt" title="Export format"><option value="">Original format</option>'
+      + '<option value="image/png">PNG</option><option value="image/jpeg">JPEG</option><option value="image/webp">WebP</option>'
+      + '</select>'
+      + '<button class="imgv-text-reset" title="Reset all edits" hidden>Reset</button>' : '')
     + '</div>'
     + '<div class="imgv-stage"><img class="imgv-img" alt="' + esc(intake.filename) + '"><div class="imgv-note" hidden></div></div>'
     + '<div class="imgv-ascii-out" hidden></div>';
@@ -66,8 +86,25 @@ export async function render(intake, ctx = {}) {
   const editColor = host.querySelector('.imgv-text-color');
   const editApply = host.querySelector('.imgv-text-apply');
   const editReset = host.querySelector('.imgv-text-reset');
+  const pencilBtn = canEdit ? host.querySelector('.imgv-pencil') : null;
+  const eraserBtn = canEdit ? host.querySelector('.imgv-eraser') : null;
+  const drawColorPicker = canEdit ? host.querySelector('.imgv-draw-color') : null;
+  const drawSizePicker = canEdit ? host.querySelector('.imgv-draw-size') : null;
+  const undoBtn = canEdit ? host.querySelector('.imgv-undo') : null;
+  const exportFmt = canEdit ? host.querySelector('.imgv-export-fmt') : null;
+  const editFont = canEdit ? host.querySelector('.imgv-text-font') : null;
   let natural = 0, fit = true, zoom = 1, asciiMode = false, asciiText = '';
   let editedUrl = null, editedBlob = null;
+  let drawMode = null, isEraserStroke = false;
+  const undoStack = [];
+  let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null;
+
+  function getExportMime() { return (exportFmt?.value) || mime; }
+
+  function pushUndo() {
+    undoStack.push({ blob: editedBlob || null, url: editedUrl || null });
+    if (undoBtn) undoBtn.hidden = false;
+  }
 
   function apply() {
     host.querySelector('.imgv-fit').classList.toggle('active', fit);
@@ -168,14 +205,17 @@ export async function render(intake, ctx = {}) {
     g.drawImage(base, 0, 0);
     const size = Math.max(8, Math.min(240, parseInt(editSize?.value, 10) || 32));
     const pad = Math.max(12, Math.round(size * 0.6));
-    g.font = `700 ${size}px system-ui, sans-serif`;
+    const fontFamily = editFont?.value || 'system-ui,sans-serif';
+    g.font = `700 ${size}px ${fontFamily}`;
     g.textBaseline = 'bottom';
     g.lineJoin = 'round';
     g.strokeStyle = 'rgba(0,0,0,.72)';
     g.lineWidth = Math.max(3, Math.round(size / 8));
     g.fillStyle = editColor?.value || '#ffffff';
     wrapText(g, text, pad, canvas.height - pad, canvas.width - pad * 2, size * 1.2);
-    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, mime, mime === 'image/jpeg' ? 0.92 : undefined));
+    const targetMime = getExportMime();
+    pushUndo();
+    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     if (!editedBlob) return;
     if (editedUrl) URL.revokeObjectURL(editedUrl);
     editedUrl = URL.createObjectURL(editedBlob);
@@ -183,7 +223,7 @@ export async function render(intake, ctx = {}) {
     editReset.hidden = false;
     ctx.onBinaryEdit?.({
       dirty: true,
-      mimeType: mime,
+      mimeType: targetMime,
       getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()),
     });
   }
@@ -208,6 +248,9 @@ export async function render(intake, ctx = {}) {
 
   editApply?.addEventListener('click', () => { drawText().catch((e) => { editApply.title = e.message || String(e); }); });
   editReset?.addEventListener('click', () => {
+    undoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
+    undoStack.length = 0;
+    if (undoBtn) undoBtn.hidden = true;
     if (editedUrl) URL.revokeObjectURL(editedUrl);
     editedUrl = null;
     editedBlob = null;
@@ -216,5 +259,129 @@ export async function render(intake, ctx = {}) {
     ctx.onBinaryEdit?.(null);
   });
 
-  return { parentNode: host, revoke: () => { URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); host._ss?.stop(); } };
+  // Pencil / eraser drawing tools
+  function buildOverlay() {
+    const stage = host.querySelector('.imgv-stage');
+    stage.style.position = 'relative';
+    drawOverlay = document.createElement('canvas');
+    drawOverlay.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;touch-action:none;';
+    stage.appendChild(drawOverlay);
+    drawOCtx = drawOverlay.getContext('2d');
+    img.addEventListener('load', () => {
+      if (drawOverlay && !isEraserStroke) { drawOverlay.width = img.naturalWidth || 1; drawOverlay.height = img.naturalHeight || 1; }
+    });
+    if (img.naturalWidth) { drawOverlay.width = img.naturalWidth; drawOverlay.height = img.naturalHeight; }
+    drawOverlay.addEventListener('mousedown', onPDown);
+    drawOverlay.addEventListener('mousemove', onPMove);
+    drawOverlay.addEventListener('mouseup', onPUp);
+    drawOverlay.addEventListener('mouseleave', () => { if (isPointerDown) { isPointerDown = false; commitDraw(); } });
+    drawOverlay.addEventListener('touchstart', onPDown, { passive: false });
+    drawOverlay.addEventListener('touchmove', onPMove, { passive: false });
+    drawOverlay.addEventListener('touchend', onPUp);
+  }
+
+  function setDrawMode(mode) {
+    drawMode = drawMode === mode ? null : mode;
+    pencilBtn?.classList.toggle('active', drawMode === 'pencil');
+    eraserBtn?.classList.toggle('active', drawMode === 'eraser');
+    if (!drawOverlay && drawMode) buildOverlay();
+    if (drawOverlay) {
+      drawOverlay.style.pointerEvents = drawMode ? 'auto' : 'none';
+      drawOverlay.style.cursor = drawMode === 'eraser' ? 'cell' : drawMode === 'pencil' ? 'crosshair' : '';
+    }
+  }
+
+  function ptToCanvas(e) {
+    const r = drawOverlay.getBoundingClientRect();
+    const sx = drawOverlay.width / r.width, sy = drawOverlay.height / r.height;
+    const src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - r.left) * sx, y: (src.clientY - r.top) * sy };
+  }
+
+  function applyStrokeStyle(sz) {
+    drawOCtx.globalCompositeOperation = isEraserStroke ? 'destination-out' : 'source-over';
+    drawOCtx.strokeStyle = drawColorPicker?.value || '#ff0000';
+    drawOCtx.fillStyle = drawColorPicker?.value || '#ff0000';
+    drawOCtx.lineWidth = sz; drawOCtx.lineCap = 'round'; drawOCtx.lineJoin = 'round';
+  }
+
+  async function onPDown(e) {
+    if (!drawMode || !drawOverlay) return;
+    e.preventDefault();
+    isPointerDown = true;
+    isEraserStroke = drawMode === 'eraser';
+    pushUndo();
+    if (isEraserStroke) {
+      // preload overlay with committed image so destination-out punches real pixels
+      const base = new Image(); base.decoding = 'async'; base.src = editedUrl || url;
+      await base.decode();
+      drawOverlay.width = base.naturalWidth; drawOverlay.height = base.naturalHeight;
+      if (mime === 'image/jpeg') { drawOCtx.fillStyle = '#fff'; drawOCtx.fillRect(0, 0, drawOverlay.width, drawOverlay.height); }
+      drawOCtx.drawImage(base, 0, 0);
+    } else if (!drawOverlay.width || !img.naturalWidth) {
+      drawOverlay.width = img.naturalWidth || 1; drawOverlay.height = img.naturalHeight || 1;
+    }
+    lastPt = ptToCanvas(e);
+    const sz = parseInt(drawSizePicker?.value || '8', 10);
+    applyStrokeStyle(sz);
+    drawOCtx.beginPath(); drawOCtx.arc(lastPt.x, lastPt.y, sz / 2, 0, Math.PI * 2); drawOCtx.fill();
+  }
+
+  function onPMove(e) {
+    if (!isPointerDown || !drawOCtx) return;
+    e.preventDefault();
+    const pt = ptToCanvas(e);
+    const sz = parseInt(drawSizePicker?.value || '8', 10);
+    applyStrokeStyle(sz);
+    drawOCtx.beginPath(); drawOCtx.moveTo(lastPt.x, lastPt.y); drawOCtx.lineTo(pt.x, pt.y); drawOCtx.stroke();
+    lastPt = pt;
+  }
+
+  async function commitDraw() {
+    if (!drawOverlay || !drawOverlay.width) return;
+    const targetMime = getExportMime();
+    let blob;
+    if (isEraserStroke) {
+      blob = await new Promise((r) => drawOverlay.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
+    } else {
+      const base = new Image(); base.decoding = 'async'; base.src = editedUrl || url;
+      await base.decode();
+      const c = document.createElement('canvas'); c.width = base.naturalWidth; c.height = base.naturalHeight;
+      const g = c.getContext('2d');
+      if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
+      g.drawImage(base, 0, 0); g.drawImage(drawOverlay, 0, 0);
+      blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
+    }
+    drawOCtx.clearRect(0, 0, drawOverlay.width, drawOverlay.height);
+    if (!blob) return;
+    if (editedUrl) URL.revokeObjectURL(editedUrl);
+    editedBlob = blob; editedUrl = URL.createObjectURL(blob);
+    img.src = editedUrl;
+    if (editReset) editReset.hidden = false;
+    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await blob.arrayBuffer()) });
+  }
+
+  async function onPUp(e) { if (isPointerDown) { isPointerDown = false; await commitDraw(); } }
+
+  if (pencilBtn) {
+    pencilBtn.addEventListener('click', () => setDrawMode('pencil'));
+    eraserBtn.addEventListener('click', () => setDrawMode('eraser'));
+    undoBtn?.addEventListener('click', async () => {
+      const prev = undoStack.pop();
+      if (!prev) return;
+      if (editedUrl && editedUrl !== prev.url) URL.revokeObjectURL(editedUrl);
+      editedBlob = prev.blob; editedUrl = prev.url;
+      if (editedUrl) {
+        img.src = editedUrl;
+        ctx.onBinaryEdit?.({ dirty: true, mimeType: getExportMime(), getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
+      } else {
+        img.src = url;
+        if (editReset) editReset.hidden = true;
+        ctx.onBinaryEdit?.(null);
+      }
+      if (undoBtn) undoBtn.hidden = undoStack.length === 0;
+    });
+  }
+
+  return { parentNode: host, revoke: () => { URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); undoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
 }
