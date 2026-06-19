@@ -25,7 +25,7 @@ import { loadExamples } from './examples.js';
 import { startSideBySide, openSideBySide } from './sidebyside.js';
 import { initLayout, layoutTopbar, toggleMoreMenu, closeMoreMenu, updateExportButton, closeExportMenu, toggleExportMenu, applyLayout, applyPreviewPaneWidth, initSplitDivider } from './layout.js';
 import { mapPreviewToRaw, mapRawToPreview, syncScrollFromRaw, syncScrollFromPreview } from './sync.js';
-import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare } from './compare.js';
+import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare, initCompareDropTarget } from './compare.js';
 import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent } from './rawpane.js';
 import { buildMetadata } from './meta-drawer.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, showFolderLoading, hideFolderLoading } from './folder.js';
@@ -429,7 +429,7 @@ function init() {
   document.querySelectorAll('#rawMode button:not(#compareBtn)').forEach((b) =>
     b.addEventListener('click', () => setRawMode(b.dataset.raw)));
   $('compareBtn').addEventListener('click', startCompare);
-  $('compareInput').addEventListener('change', onComparePicked);
+  $('compareInput').addEventListener('change', onComparePicked); initCompareDropTarget();
   $('compareBar').querySelector('.compare-stop').addEventListener('click', stopCompare);
   $('downloadBtn').addEventListener('click', downloadCurrent);
   $('saveBtn').addEventListener('click', onSaveClick);

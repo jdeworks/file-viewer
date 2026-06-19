@@ -557,7 +557,7 @@ Improve all ebook readers (`epub`, `fb2`, `mobi`, `lrf`, comic where relevant) t
 
 ## TASK 17 — Diff Pane + Compare Workflow Redesign
 
-**Status:** Not started  
+**Status:** In progress — move-aware line cases and split resizing have coverage; compare mode now opens an in-app drop target with picker fallback.  
 **Effort:** L (~1-2 days)  
 **Files likely touched:**
 - `docs/core/layout.js`
@@ -614,10 +614,10 @@ Add unit coverage for move plus unrelated insertion, move plus edit, adjacent li
 The "Compare with another file" action should not force a file picker when comparable files are already present in the folder/session sidebar.
 
 Design target:
-- entering compare mode opens an empty compare target state
-- dragging a sidebar file onto the compare target starts the diff
-- a picker remains available as a fallback, not the only path
-- comparing two files should show at most two panes total
+- entering compare mode opens an empty compare target state — implemented
+- dragging a sidebar file onto the compare target starts the diff — implemented
+- a picker remains available as a fallback, not the only path — implemented
+- comparing two files should show at most two panes total — implemented for raw diff mode
 - users can choose whether the two panes are raw diff, self diff, or two previews
 - diff/compare mode should not show raw+preview for both files at once
 

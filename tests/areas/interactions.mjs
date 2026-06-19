@@ -326,13 +326,34 @@ export async function run(ctx) {
 
   // ── Two-file Compare ("Compare with…") ── pick a 2nd file → diff current ↔ other ──
   await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Welcome.md');
   await openExample('Sample.csv');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
   const compareBtnShown = await page.$eval('#compareBtn', (e) => !e.closest('[hidden]'));
   if (compareBtnShown) pass('compare button available for an editable type'); else fail('compare button hidden for csv');
-  // Feed the comparison file through the hidden input (Playwright sets files directly — no dialog).
-  await page.setInputFiles('#compareInput', new URL('../../docs/examples/welcome.md', import.meta.url).pathname);
+  await page.click('#compareBtn');
   await page.waitForFunction(() => !document.getElementById('compareBar').hidden, { timeout: 8000 });
+  const targetLabel = await page.$eval('#compareBar .compare-label', (e) => e.textContent);
+  if (/Drop a sidebar file/.test(targetLabel) && /choose a file/i.test(targetLabel)) pass('two-file compare: opens in-app drop target before picker');
+  else fail('compare target label: ' + targetLabel);
+  const sidebarDropCompared = await page.evaluate(() => {
+    const bar = document.getElementById('compareBar');
+    const data = new DataTransfer();
+    data.setData('text/x-fv-tree-path', 'welcome.md');
+    bar.dispatchEvent(new DragEvent('dragover', { dataTransfer: data, bubbles: true, cancelable: true }));
+    bar.dispatchEvent(new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true }));
+    return true;
+  });
+  if (sidebarDropCompared) pass('two-file compare: sidebar file can be dropped on target');
+  await page.waitForFunction(() => /welcome\.md/i.test(document.querySelector('#compareBar .compare-label')?.textContent || ''), { timeout: 8000 });
+  await page.waitForSelector('#editor .monaco-diff-editor', { timeout: 10000 });
+  pass('two-file compare: sidebar drop starts Monaco diff');
+  await page.click('#compareBar .compare-stop');
+  await page.waitForFunction(() => document.getElementById('compareBar').hidden, { timeout: 4000 });
+  await page.click('#compareBtn');
+  // Feed the comparison file through the fallback input (Playwright sets files directly — no dialog).
+  await page.setInputFiles('#compareInput', new URL('../../docs/examples/welcome.md', import.meta.url).pathname);
+  await page.waitForFunction(() => /Comparing current.*welcome\.md/i.test(document.querySelector('#compareBar .compare-label')?.textContent || ''), { timeout: 8000 });
   const compLabel = await page.$eval('#compareBar .compare-label', (e) => e.textContent);
   if (/Comparing current/.test(compLabel) && /welcome\.md/i.test(compLabel)) pass('two-file compare: bar names the compared file'); else fail('compare label: ' + compLabel);
   await page.waitForSelector('#editor .monaco-diff-editor', { timeout: 10000 });

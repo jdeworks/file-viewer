@@ -229,10 +229,11 @@ body {
   display: flex; align-items: center; gap: 10px; padding: 0 10px; background: var(--bg-2);
   border-bottom: 1px solid var(--border); font-size: 12px; }
 .compare-bar[hidden] { display: none; }
+.compare-bar.drag-over { outline: 2px solid var(--accent); outline-offset: -2px; background: color-mix(in srgb, var(--accent) 14%, var(--bg-2)); }
 .compare-label { flex: 1; min-width: 0; color: var(--fg-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.compare-stop { background: var(--bg); border: 1px solid var(--border); color: var(--fg);
+.compare-pick, .compare-stop { background: var(--bg); border: 1px solid var(--border); color: var(--fg);
   border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 12px; white-space: nowrap; }
-.compare-stop:hover { border-color: var(--accent); }
+.compare-pick:hover, .compare-stop:hover { border-color: var(--accent); }
 .raw-pane.comparing .editor-host { top: 30px; }
 /* In-memory edit disclaimer banner — stacks below compare-bar when both are open. */
 .edit-disclaimer { position: absolute; top: 0; left: 0; right: 0; height: 28px; z-index: 4;
