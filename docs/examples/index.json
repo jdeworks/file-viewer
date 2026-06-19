@@ -3136,7 +3136,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "typos source code spell checker configuration — word overrides, file ignores, and check settings.",
+    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
     "knownFile": "typos"
   },
   {
@@ -3849,7 +3849,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Markdownlint configuration in YAML format — rule overrides and custom settings for Markdown linting."
+    "description": "Markdownlint configuration in YAML format \u2014 rule overrides and custom settings for Markdown linting."
   },
   {
     "label": ".markdownlint.yml",
@@ -5168,7 +5168,45 @@
     "categories": [
       "Config"
     ],
-    "description": "Grafana Loki log aggregation configuration."
+    "enhanced": true,
+    "description": "Grafana Loki log aggregation configuration: server, storage, schema, and limits.",
+    "knownFile": "loki-config"
+  },
+  {
+    "label": "promtail-config.yaml",
+    "file": "promtail-config.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Promtail config: Loki client endpoint, server port, and log scrape jobs.",
+    "knownFile": "promtail-config"
+  },
+  {
+    "label": "logstash.conf",
+    "file": "logstash.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Logstash pipeline: input sources, filter transforms, and output destinations.",
+    "knownFile": "logstash-conf"
+  },
+  {
+    "label": "fluent.conf",
+    "file": "fluent.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Fluentd config: sources, filters, and match/output rules.",
+    "knownFile": "fluentd-conf"
   },
   {
     "label": "mongod.conf",
@@ -5178,7 +5216,8 @@
     "categories": [
       "Config"
     ],
-    "description": "MongoDB server configuration: storage, networking, security, and logging."
+    "description": "MongoDB server configuration: storage, networking, security, and logging.",
+    "enhanced": true
   },
   {
     "label": "my.cnf (MySQL)",
@@ -5188,7 +5227,8 @@
     "categories": [
       "Config"
     ],
-    "description": "MySQL server configuration: port, buffer sizes, networking, and character sets."
+    "description": "MySQL server configuration: port, buffer sizes, networking, and character sets.",
+    "enhanced": true
   },
   {
     "label": "packages.config (NuGet)",
@@ -5210,7 +5250,19 @@
     "categories": [
       "Config"
     ],
-    "description": "PostgreSQL server configuration: connections, memory, logging, and performance tuning."
+    "description": "PostgreSQL server configuration: connections, memory, logging, and performance tuning.",
+    "enhanced": true
+  },
+  {
+    "label": "pgbouncer.ini",
+    "file": "pgbouncer.ini",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "PgBouncer connection pooler config: transaction pool mode, 1000 max client connections, 2 databases, auth settings."
   },
   {
     "label": "tauri.conf.json (Tauri)",
@@ -5355,5 +5407,101 @@
     "enhanced": true,
     "description": "Vector observability pipeline: sources, transforms, and sinks.",
     "knownFile": "vector-toml"
+  },
+  {
+    "label": "bitbucket-pipelines.yml",
+    "file": "bitbucket-pipelines.yml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Bitbucket Pipelines CI/CD config: Docker image, pipeline steps, and branch/PR triggers.",
+    "knownFile": "bitbucket-pipelines"
+  },
+  {
+    "label": "tekton-pipeline.yaml (Tekton)",
+    "file": "tekton-pipeline.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Tekton Pipeline manifest: params, tasks, workspaces, and results.",
+    "knownFile": "tekton-pipeline"
+  },
+  {
+    "label": "argo-cd-app.yaml (Argo CD)",
+    "file": "argo-cd-app.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Argo CD Application manifest: source repo, destination, and sync policy.",
+    "knownFile": "argo-cd-app"
+  },
+  {
+    "label": "flux-helm-release.yaml (Flux CD)",
+    "file": "flux-helm-release.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Flux CD HelmRelease: chart source, version, interval, and values.",
+    "knownFile": "flux-helm-release"
+  },
+  {
+    "label": ".pylintrc",
+    "file": ".pylintrc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Pylint static analysis config: 11 disabled codes, jobs=4, max-line-length=120, naming conventions.",
+    "knownFile": "pylintrc"
+  },
+  {
+    "label": ".flake8",
+    "file": ".flake8",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Flake8 style config: max-line-length=120, max-complexity=12, 7 ignored codes, per-file overrides.",
+    "knownFile": "flake8"
+  },
+  {
+    "label": "setup.cfg",
+    "file": "setup.cfg",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Python package config: myproject v1.4.2, 10 deps, pytest/mypy/flake8/isort tool sections.",
+    "knownFile": "setup-cfg"
+  },
+  {
+    "label": ".bandit",
+    "file": ".bandit",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Bandit security config: 10 skipped tests, 8 excluded dirs, severity=MEDIUM.",
+    "knownFile": "bandit-yaml"
   }
 ]

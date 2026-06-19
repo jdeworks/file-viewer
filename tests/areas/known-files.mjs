@@ -1598,4 +1598,44 @@ export async function run(ctx) {
   if (/Terraform/i.test(vtfText)) pass('versions.tf: Terraform badge shown'); else fail('versions-tf badge: ' + vtfText.slice(0, 200));
   if (/1\.5\.0/i.test(vtfText)) pass('versions.tf: required_version shown'); else fail('versions-tf version: ' + vtfText.slice(0, 200));
   if (/hashicorp\/aws|kubernetes/i.test(vtfText)) pass('versions.tf: providers shown'); else fail('versions-tf providers: ' + vtfText.slice(0, 300));
+
+  // ── mongod.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mongod.conf');
+  await page.waitForSelector('#previewHost .mg-doc', { timeout: 12000 });
+  const mgText = await page.$eval('#previewHost .mg-doc', (e) => e.textContent);
+  if (/MongoDB/i.test(mgText)) pass('mongod.conf: MongoDB badge shown'); else fail('mongod badge: ' + mgText.slice(0, 200));
+  if (/27017|\/var\/lib\/mongodb/i.test(mgText)) pass('mongod.conf: storage/network settings shown'); else fail('mongod storage: ' + mgText.slice(0, 300));
+  if (/rs0|replSet/i.test(mgText)) pass('mongod.conf: replication section shown'); else fail('mongod repl: ' + mgText.slice(0, 300));
+  if (/••••/.test(mgText)) pass('mongod.conf: keyFile value masked'); else fail('mongod masking: ' + mgText.slice(0, 300));
+
+  // ── my.cnf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('my.cnf');
+  await page.waitForSelector('#previewHost .my-doc', { timeout: 12000 });
+  const myText = await page.$eval('#previewHost .my-doc', (e) => e.textContent);
+  if (/MySQL/i.test(myText)) pass('my.cnf: MySQL badge shown'); else fail('my.cnf badge: ' + myText.slice(0, 200));
+  if (/3306|127\.0\.0\.1/i.test(myText)) pass('my.cnf: [mysqld] section shown (port/bind)'); else fail('my.cnf mysqld: ' + myText.slice(0, 300));
+  if (/256M|innodb_buffer_pool/i.test(myText)) pass('my.cnf: InnoDB buffer pool shown'); else fail('my.cnf innodb: ' + myText.slice(0, 300));
+  if (/utf8mb4|default-character-set/i.test(myText)) pass('my.cnf: character set shown'); else fail('my.cnf charset: ' + myText.slice(0, 300));
+
+  // ── postgresql.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('postgresql.conf');
+  await page.waitForSelector('#previewHost .pg-doc', { timeout: 12000 });
+  const pgText = await page.$eval('#previewHost .pg-doc', (e) => e.textContent);
+  if (/PostgreSQL/i.test(pgText)) pass('postgresql.conf: PostgreSQL badge shown'); else fail('postgresql badge: ' + pgText.slice(0, 200));
+  if (/5432|localhost/i.test(pgText)) pass('postgresql.conf: connections section shown'); else fail('postgresql conns: ' + pgText.slice(0, 300));
+  if (/128MB|shared_buffers/i.test(pgText)) pass('postgresql.conf: memory settings shown'); else fail('postgresql mem: ' + pgText.slice(0, 300));
+  if (/replica|wal_level/i.test(pgText)) pass('postgresql.conf: WAL section shown'); else fail('postgresql wal: ' + pgText.slice(0, 300));
+
+  // ── pgbouncer.ini viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pgbouncer.ini');
+  await page.waitForSelector('#previewHost .pb-doc', { timeout: 12000 });
+  const pbText = await page.$eval('#previewHost .pb-doc', (e) => e.textContent);
+  if (/PgBouncer/i.test(pbText)) pass('pgbouncer.ini: PgBouncer badge shown'); else fail('pgbouncer badge: ' + pbText.slice(0, 200));
+  if (/mydb|replica/i.test(pbText)) pass('pgbouncer.ini: [databases] section shown'); else fail('pgbouncer dbs: ' + pbText.slice(0, 300));
+  if (/transaction|pool_mode/i.test(pbText)) pass('pgbouncer.ini: pool_mode shown'); else fail('pgbouncer pool: ' + pbText.slice(0, 300));
+  if (/••••/.test(pbText)) pass('pgbouncer.ini: password in connection string masked'); else fail('pgbouncer masking: ' + pbText.slice(0, 300));
 }

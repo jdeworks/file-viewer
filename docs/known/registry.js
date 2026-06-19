@@ -273,6 +273,10 @@ import electronBuilder from '../types/text/yaml/known/electron-builder/index.js'
 import elmJson from '../types/text/json/known/elm-json/index.js';
 import externalSecrets from '../types/text/yaml/known/external-secrets/index.js';
 import fluentBit from '../types/text/known/fluent-bit/index.js';
+import logstashConf from '../types/text/known/logstash-conf/index.js';
+import fluentdConf from '../types/text/known/fluentd-conf/index.js';
+import lokiConfig from '../types/text/yaml/known/loki-config/index.js';
+import promtailConfig from '../types/text/yaml/known/promtail-config/index.js';
 import forgeConfig from '../types/text/known/forge-config/index.js';
 import gleamToml from '../types/text/toml/known/gleam-toml/index.js';
 import goWork from '../types/text/known/go-work/index.js';
@@ -286,6 +290,10 @@ import nimble from '../types/text/known/nimble/index.js';
 import packagesConfig from '../types/text/xml/known/packages-config/index.js';
 import podspec from '../types/text/known/podspec/index.js';
 import redisConf from '../types/text/known/redis-conf/index.js';
+import mongodConf from '../types/text/known/mongod-conf/index.js';
+import myCnf from '../types/text/known/my-cnf/index.js';
+import postgresqlConf from '../types/text/known/postgresql-conf/index.js';
+import pgbouncerIni from '../types/text/known/pgbouncer-ini/index.js';
 import shardYml from '../types/text/yaml/known/shard-yml/index.js';
 import tauriConf from '../types/text/json/known/tauri-conf/index.js';
 import traefikConfig from '../types/text/yaml/known/traefik-config/index.js';
@@ -295,6 +303,10 @@ import vectorToml from '../types/text/toml/known/vector-toml/index.js';
 import wailsJson from '../types/text/json/known/wails-json/index.js';
 import webConfig from '../types/text/xml/known/web-config/index.js';
 import xcconfig from '../types/text/known/xcconfig/index.js';
+import bitbucketPipelines from '../types/text/yaml/known/bitbucket-pipelines/index.js';
+import tektonPipeline from '../types/text/yaml/known/tekton-pipeline/index.js';
+import argoCdApp from '../types/text/yaml/known/argo-cd-app/index.js';
+import fluxHelmRelease from '../types/text/yaml/known/flux-helm-release/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -351,12 +363,13 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   shadowCljs, projectClj, depsEdn,
   atlantis, checkov, terraformDocs, infracost,
   androidManifest, appConfig, buildZigZon, cartfile,
-  electronBuilder, elmJson, externalSecrets, fluentBit, forgeConfig,
+  electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, forgeConfig,
   gleamToml, goWork, grafanaIni, growthbook,
   jekyllConfig, juliaProject, kongConfig, launchSettings,
-  nimble, packagesConfig, podspec, redisConf, shardYml,
+  nimble, packagesConfig, podspec, redisConf, mongodConf, myCnf, postgresqlConf, pgbouncerIni, shardYml,
   tauriConf, traefikConfig, unleashConfig, vaultHcl,
-  vectorToml, wailsJson, webConfig, xcconfig];
+  vectorToml, wailsJson, webConfig, xcconfig,
+  bitbucketPipelines, tektonPipeline, argoCdApp, fluxHelmRelease];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
     try { if (k.match(intake, baseType)) return k; } catch { /* a bad matcher never breaks detection */ }
