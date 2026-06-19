@@ -1062,12 +1062,12 @@
     ]
   },
   {
-    "label": "Sample.geojson",
     "file": "sample.geojson",
+    "label": "Sample.geojson",
     "mime": "application/geo+json",
-    "category": "Data",
+    "category": "Geo",
     "categories": [
-      "Data"
+      "Geo"
     ]
   },
   {
@@ -1937,33 +1937,48 @@
     ]
   },
   {
-    "filename": "sample.elf",
+    "file": "sample.elf",
     "label": "ELF Executable (x86-64 Linux stub)",
-    "type": "exe"
+    "mime": "application/x-elf",
+    "category": "Binary",
+    "categories": [
+      "Binary"
+    ]
   },
   {
-    "filename": "sample.geojson",
-    "label": "GeoJSON (San Francisco landmarks)",
-    "type": "geojson"
-  },
-  {
-    "filename": "sample-telegram.json",
+    "file": "sample-telegram.json",
     "label": "Telegram Chat Export (JSON)",
-    "type": "chat"
+    "mime": "application/json",
+    "category": "Data",
+    "categories": [
+      "Data"
+    ]
   },
   {
-    "filename": "sample.gp5",
+    "file": "sample.gp5",
     "label": "Guitar Pro 5 Tab (binary)",
-    "type": "guitar-pro"
+    "mime": "application/x-guitar-pro",
+    "category": "Music",
+    "categories": [
+      "Music"
+    ]
   },
   {
-    "filename": "sample.apk",
+    "file": "sample.apk",
     "label": "Android Package (APK stub)",
-    "type": "apk"
+    "mime": "application/vnd.android.package-archive",
+    "category": "Binary",
+    "categories": [
+      "Binary"
+    ]
   },
   {
-    "filename": "sample.iso",
+    "file": "sample.iso",
     "label": "ISO 9660 Disc Image (demo)",
-    "type": "iso"
+    "mime": "application/x-iso9660-image",
+    "category": "Binary",
+    "categories": [
+      "Binary"
+    ]
   }
 ]

@@ -227,6 +227,53 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_chat=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  const name = (intake.filename || '').toLowerCase();
+  const head = (intake.textSample || '').slice(0, 600);
+
+  // WhatsApp: _chat.txt with date pattern at the start of lines
+  if (name === '_chat.txt' || name.endsWith('_chat.txt')) return 0.97;
+  if (/^\[\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4},\s*\d{1,2}:\d{2}(:\d{2})?\]\s+\S+:/m.test(head)) return 0.92;
+  if (/^\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4},\s*\d{1,2}:\d{2}\s+-\s+\S+/m.test(head)) return 0.9;
+
+  // Telegram JSON export
+  if (/"type"\s*:\s*"personal_chat"/.test(head) && /"messages"/.test(head)) return 0.97;
+  if (/"type"\s*:\s*"saved_messages"/.test(head) && /"messages"/.test(head)) return 0.97;
+
+  // Discord JSON (DiscordChatExporter)
+  if (/"guild"/.test(head) && /"channel"/.test(head) && /"messages"/.test(head)) return 0.95;
+
+  // Facebook Messenger JSON
+  if (/"participants"/.test(head) && /"messages"/.test(head) && /"sender_name"/.test(head)) return 0.93;
+
+  if (!hasExtension(intake, 'txt', 'json')) return 0;
+  return 0;
+}
+return detect;
+})();
+
+const detect_guitar_pro=(()=>{
+function detect(intake) {
+  if (hasExtension(intake, 'gpx')) {
+    // GPX is a ZIP — check for PK magic
+    if (intake.bytes && intake.bytes[0] === 0x50 && intake.bytes[1] === 0x4b) return 0.9;
+    return 0.7;
+  }
+  if (!intake.isBinary) return 0;
+  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  // GP5 magic: "FICHIER GUITAR PRO v5"
+  // GP4: "FICHIER GUITAR PRO v4"
+  // GP3: "FICHIER GUITAR PRO v3"
+  const head = String.fromCharCode(...intake.bytes.slice(0, 32));
+  if (/FICHIER GUITAR PRO v[3-5]/.test(head)) return 0.98;
+  if (hasExtension(intake, 'gp3', 'gp4', 'gp5', 'gp')) return 0.7;
+  return 0;
+}
+return detect;
+})();
+
 const detect_postscript=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -274,51 +321,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_kml=(()=>{
-function detect(intake) {
-  if (intake.isBinary) {
-    // KMZ is a ZIP — handle by zip type; signal no detection here
-    if (hasExtension(intake, 'kmz')) return 0.1; // low score, zip type handles it
-    return 0;
-  }
-  if (hasExtension(intake, 'kml')) return 0.97;
-  const head = (intake.textSample || '').slice(0, 400);
-  if (/<kml[\s>]/.test(head) || /xmlns\.google\.com\/kml/.test(head)) return 0.95;
-  return 0;
-}
-return detect;
-})();
-
-const detect_abc=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'abc')) {
-    const t = intake.textSample || '';
-    // ABC notation starts with X: (index) and T: (title) fields
-    if (/^X:\s*\d/m.test(t) || /^T:\s*\S/m.test(t)) return 0.97;
-    return 0.75;
-  }
-  // Content sniff for ABC embedded in .txt or unknown
-  const t = intake.textSample || '';
-  if (/^X:\s*\d/m.test(t) && /^T:\s*\S/m.test(t) && /^K:\s*\w/m.test(t)) return 0.8;
-  return 0;
-}
-return detect;
-})();
-
-const detect_hl7=(()=>{
-// HL7 v2.x messages start with MSH segment using pipe delimiter
-const MSH_RE = /^MSH\|[\^~\\&]\|/m;
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const ext = (intake.filename || '').split('.').pop().toLowerCase();
-  if (['hl7', 'hl7v2', 'msh'].includes(ext)) return 0.92;
-  const t = intake.textSample || '';
-  if (MSH_RE.test(t)) return 0.96;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7};
+export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits};

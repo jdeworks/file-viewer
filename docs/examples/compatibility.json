@@ -3086,7 +3086,7 @@
       "editCapability": "basic",
       "exportCapability": "download",
       "securityLimitations": [
-        "PostScript execution not supported \u2014 metadata display only"
+        "PostScript execution not supported — metadata display only"
       ],
       "knownParserGaps": [
         "No rendering of PostScript graphics"
@@ -3189,7 +3189,7 @@
       },
       "partialSamples": [],
       "realWorldQuality": "synthetic",
-      "notes": "Parses KML placemarks, folders, geometry types. No map rendering \u2014 shows structured list.",
+      "notes": "Parses KML placemarks, folders, geometry types. No map rendering — shows structured list.",
       "fileExamplesSlug": null,
       "previewDepth": "basic",
       "metadataDepth": "basic",
@@ -3344,6 +3344,201 @@
       "securityLimitations": [],
       "knownParserGaps": [
         "Effect and transition details not shown"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "exe": {
+      "label": "Executable (ELF / PE / Mach-O)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.elf"
+      ],
+      "extensions": [
+        ".elf",
+        ".exe",
+        ".dll",
+        ".dylib",
+        ".so"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Parses ELF (Linux), PE32/PE32+ (Windows EXE/DLL), and Mach-O (macOS) binary headers.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Only reads first 4 bytes of 64-bit entry point",
+        "No section listing"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "chat": {
+      "label": "Chat Export (WhatsApp / Telegram / Discord)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample-telegram.json"
+      ],
+      "extensions": [
+        ".txt",
+        ".json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Parses Telegram/Discord/Messenger JSON and WhatsApp text exports.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Facebook Export uses different schema variants"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "guitar-pro": {
+      "label": "Guitar Pro Tab",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.gp5"
+      ],
+      "extensions": [
+        ".gp3",
+        ".gp4",
+        ".gp5",
+        ".gpx"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Parses GP3/4/5 binary headers for title/artist/album; GPX (ZIP+XML) reads score.gpif.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "No tablature rendering",
+        "GPX requires jszip (already vendored)"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "apk": {
+      "label": "Android Package (APK/AAB)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.apk"
+      ],
+      "extensions": [
+        ".apk",
+        ".aab",
+        ".xapk"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Shows DEX count, native ABIs, asset count, resource and signing status from ZIP structure.",
+      "fileExamplesSlug": null,
+      "previewDepth": "structure-only",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "No AndroidManifest.xml parsing (AXML binary format)",
+        "No permission listing"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "iso": {
+      "label": "ISO 9660 Disc Image",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.iso"
+      ],
+      "extensions": [
+        ".iso",
+        ".img"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Reads Primary Volume Descriptor at sector 16; shows volume ID, publisher, size, creation date.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "No file listing",
+        "Joliet/El Torito extensions not parsed"
       ],
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
@@ -3719,41 +3914,5 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
     }
-  },
-  "exe": {
-    "chrome": true,
-    "firefox": true,
-    "safari": true,
-    "edge": true
-  },
-  "geojson": {
-    "chrome": true,
-    "firefox": true,
-    "safari": true,
-    "edge": true
-  },
-  "chat": {
-    "chrome": true,
-    "firefox": true,
-    "safari": true,
-    "edge": true
-  },
-  "guitar-pro": {
-    "chrome": true,
-    "firefox": true,
-    "safari": true,
-    "edge": true
-  },
-  "apk": {
-    "chrome": true,
-    "firefox": true,
-    "safari": true,
-    "edge": true
-  },
-  "iso": {
-    "chrome": true,
-    "firefox": true,
-    "safari": true,
-    "edge": true
   }
 }

@@ -1,3 +1,4 @@
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 export async function render(intake) {
@@ -6,7 +7,7 @@ export async function render(intake) {
     return { bodyHtml: '<div class="apk-preview"><p class="apk-note">Too small to parse.</p></div>' };
   }
 
-  const { JSZip } = await import('../../../../vendor/jszip/jszip.min.js');
+  const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
   let zip;
   try {
     zip = await JSZip.loadAsync(bytes);
