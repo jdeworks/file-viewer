@@ -783,6 +783,7 @@ Coverage should include actually switching to another unlocked tab/stage and ret
 - Verify stage unlock sequencing uses current bits/score thresholds and preserves progression when spending or returning from another unlocked stage.
 - Verify the Bell lives in the v3 header next to Back to arcade and Stage 1 economy messages feed that same v3 bell log.
 - Verify the primary earning click target still works after unlocking, switching to another available stage/tab, and returning.
+- Audit Bit Factory / Bit Foundry responsiveness after stage transitions: click/update loops, render frequency, save writes, and timers should stay responsive during long sessions and on low-power devices.
 
 ---
 
@@ -809,6 +810,34 @@ Review the timeline of user-authored File Viewer requests across this chat and a
 - Explicit notes for Bit Foundry / Bit Factory behavior, sample-file coverage, metadata grouping, file interaction/editing features, FileExamples compatibility, security hardening, and performance/loading work.
 - Dedupe Bit Foundry / Bit Factory / Defragmenter naming and behavior requests against Task 21 before creating new work.
 - No broad transcript dump; keep only actionable requirements and decisions.
+
+---
+
+## TASK 23 — Performance, Security, and Loading Follow-up Queue
+
+**Status:** Not started
+**Effort:** L (~1-2 days, likely multiple increments)
+**Files likely touched:**
+- `RUN_REQUIREMENTS.md`
+- `docs/core/folder.js`
+- `docs/core/filetree.js`
+- `docs/core/git.js`
+- `docs/core/generic-metadata.js`
+- `docs/core/meta-drawer.js`
+- `docs/core/offline.js`
+- `tests/areas/*.mjs`
+
+### Goal
+
+Turn the broad performance/security/loading backlog into concrete implementation increments with regression coverage.
+
+### Required scope
+
+- Cache expensive git-folder analysis per dropped repository/session where safe: commit summaries, file mapping, root detection, and computed stats. Avoid recomputing on file selection, view switches, branch clicks, or metadata drawer opens; invalidate when a new folder is loaded.
+- Apply lazy expansion to ordinary large folders, not only archives: initially render top-level entries, defer child directory scans/tree node construction until expansion where feasible, preserve search behavior through background indexing/progress, and keep the UI interactive during large repository drops.
+- Add explicit filename risk scoring for double extensions and spoofing signals, including `invoice.pdf.exe`, active extensions hidden behind document-like names, archive-contained suspicious names, Unicode direction controls, MIME/magic mismatches, and suspicious executable content. Surface score and reasons in metadata/warnings.
+- Add a clear offline/unavailable modal for optional internet-backed checks and external-resource opt-ins. It should explain that the core viewer remains local, identify the attempted feature, and offer retry/cancel without noisy console errors.
+- Keep zero off-origin at runtime unless the user has explicitly opted into a specific internet-backed action with a clear explanation of what data or URL would be sent.
 
 ---
 
