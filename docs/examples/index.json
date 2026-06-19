@@ -1786,6 +1786,15 @@
     ]
   },
   {
+    "file": "sample.dmp",
+    "label": "Windows Minidump (demo)",
+    "mime": "application/x-dmp",
+    "category": "Binary",
+    "categories": [
+      "Binary"
+    ]
+  },
+  {
     "label": "ssh-config",
     "file": "ssh-config",
     "category": "Other",

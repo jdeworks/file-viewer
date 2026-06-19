@@ -102,6 +102,7 @@ import javaClassType from '../types/binary/class/index.js';
 import wasmType from '../types/binary/wasm/index.js';
 import npyType from '../types/binary/npy/index.js';
 import lnkType from '../types/binary/lnk/index.js';
+import dmpType from '../types/binary/dmp/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
 import gitignoreType from '../types/text/gitignore/index.js';
@@ -195,6 +196,7 @@ export const REGISTRY = [
   wasmType,
   npyType,
   lnkType,
+  dmpType,
   regType,
   urlType,
   asciiartType,

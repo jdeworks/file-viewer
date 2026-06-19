@@ -64,4 +64,17 @@ export async function run(ctx) {
   const isoText = await isof.$eval('.iso-preview', (el) => el.textContent);
   if (/FILEVIEWER_DEMO/i.test(isoText)) pass('ISO volume ID shown'); else fail('iso content: ' + isoText.slice(0, 200));
   if (/FILE VIEWER PROJECT/i.test(isoText)) pass('ISO publisher shown'); else fail('iso publisher: ' + isoText.slice(0, 200));
+
+  // ── Windows Minidump ─────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Windows Minidump (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const dmpf = await frameOf('iframe.fv-preview-frame');
+  await dmpf.waitForSelector('.badge-mdmp', { timeout: 8000 });
+  const dmpTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (dmpTypeId === 'dmp') pass('.dmp detected as dmp type'); else fail('dmp typeId: ' + dmpTypeId);
+  const dmpText = await dmpf.$eval('body', (el) => el.textContent);
+  if (/MINIDUMP/i.test(dmpText)) pass('MINIDUMP badge shown'); else fail('dmp badge missing');
+  if (/Windows 11/i.test(dmpText)) pass('DMP OS Windows 11 shown'); else fail('dmp os: ' + dmpText.slice(0, 300));
+  if (/x64|AMD64/i.test(dmpText)) pass('DMP architecture x64 shown'); else fail('dmp arch: ' + dmpText.slice(0, 300));
 }

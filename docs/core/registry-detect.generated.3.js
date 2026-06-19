@@ -135,6 +135,18 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_dmp=(()=>{
+function detect(intake) {
+  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  const b = intake.bytes;
+  // MDMP magic: 4D 44 4D 50
+  if (b[0] === 0x4D && b[1] === 0x44 && b[2] === 0x4D && b[3] === 0x50) return 0.98;
+  if (hasExtension(intake, 'dmp') || hasExtension(intake, 'mdmp')) return 0.6;
+  return 0;
+}
+return detect;
+})();
+
 const detect_reg=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -298,27 +310,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_fits=(()=>{
-function detect(intake) {
-  if (hasExtension(intake, 'fits', 'fit', 'fts')) {
-    // FITS header: "SIMPLE  =                    T" in first 30 bytes
-    if (intake.isBinary) {
-      const head = intake.bytes ? String.fromCharCode(...intake.bytes.slice(0, 30)) : '';
-      if (/^SIMPLE\s+=\s+T/.test(head)) return 0.99;
-      return 0.8; // extension match, assume FITS
-    }
-    const head = (intake.text || '').slice(0, 30);
-    if (/^SIMPLE\s+=\s+T/.test(head)) return 0.99;
-    return 0.8;
-  }
-  // Content sniff (text only)
-  if (!intake.isBinary) {
-    const head = (intake.text || '').slice(0, 30);
-    if (/^SIMPLE\s+=\s+T/.test(head)) return 0.95;
-  }
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits};
+export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf};

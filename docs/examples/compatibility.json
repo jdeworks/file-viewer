@@ -3543,6 +3543,41 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
+    },
+    "dmp": {
+      "label": "Windows Minidump (.dmp)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.dmp"
+      ],
+      "extensions": [
+        ".dmp",
+        ".mdmp"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "needs-review",
+      "notes": "Pure-JS MDMP header parser; shows OS version, architecture, exception code, process ID",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
     }
   },
   "knownFiles": {
