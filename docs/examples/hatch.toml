@@ -1,0 +1,29 @@
+[build.targets.wheel]
+packages = ["src/myapp"]
+
+[build.targets.sdist]
+include = ["src", "tests", "README.md"]
+
+[envs.default]
+dependencies = [
+  "pytest",
+  "pytest-cov",
+]
+
+[envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "pytest --cov=myapp {args:tests}"
+cov-report = "coverage report"
+
+[envs.lint]
+dependencies = ["black", "ruff"]
+
+[envs.lint.scripts]
+fmt = "black ."
+lint = "ruff check ."
+
+[version]
+source = "vcs"
+
+[publish.index]
+repo = "main"

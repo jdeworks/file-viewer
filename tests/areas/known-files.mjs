@@ -854,4 +854,114 @@ export async function run(ctx) {
   const tvrText = await page.$eval('#previewHost .tvr-doc', (e) => e.textContent);
   if (/asdf|tool.version/i.test(tvrText)) pass('.tool-versions: badge shown'); else fail('tool-versions badge: ' + tvrText.slice(0, 200));
   if (/node|python|ruby/i.test(tvrText)) pass('.tool-versions: tools shown'); else fail('tool-versions tools: ' + tvrText.slice(0, 200));
+
+  // ── .gitattributes viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.gitattributes');
+  await page.waitForSelector('#previewHost .gat-doc', { timeout: 12000 });
+  const gatText = await page.$eval('#previewHost .gat-doc', (e) => e.textContent);
+  if (/gitattributes/i.test(gatText)) pass('.gitattributes: title shown'); else fail('gitattributes title: ' + gatText.slice(0, 200));
+  const gatPats = await page.$$eval('#previewHost .gat-doc .kf-pat code', (els) => els.map((e) => e.textContent));
+  if (gatPats.some((p) => /\*/.test(p))) pass('.gitattributes: patterns shown'); else fail('gitattributes patterns: ' + gatPats.join(','));
+
+  // ── .mailmap viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.mailmap');
+  await page.waitForSelector('#previewHost .mm-doc', { timeout: 12000 });
+  const mmText = await page.$eval('#previewHost .mm-doc', (e) => e.textContent);
+  if (/mailmap/i.test(mmText)) pass('.mailmap: title shown'); else fail('mailmap title: ' + mmText.slice(0, 200));
+  const mmNames = await page.$$eval('#previewHost .mm-doc .mm-name', (els) => els.map((e) => e.textContent));
+  if (mmNames.length > 0) pass('.mailmap: canonical names shown'); else fail('mailmap names: ' + mmText.slice(0, 200));
+
+  // ── .npmignore viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.npmignore');
+  await page.waitForSelector('#previewHost .nig-doc', { timeout: 12000 });
+  const nigText = await page.$eval('#previewHost .nig-doc', (e) => e.textContent);
+  if (/npmignore/i.test(nigText)) pass('.npmignore: title shown'); else fail('npmignore title: ' + nigText.slice(0, 200));
+  const nigPats = await page.$$eval('#previewHost .nig-doc .kf-pat code', (els) => els.map((e) => e.textContent));
+  if (nigPats.some((p) => /node_modules|test|dist/.test(p))) pass('.npmignore: patterns shown'); else fail('npmignore patterns: ' + nigPats.join(','));
+
+  // ── .dockerignore viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.dockerignore');
+  await page.waitForSelector('#previewHost .dig-doc', { timeout: 12000 });
+  const digText = await page.$eval('#previewHost .dig-doc', (e) => e.textContent);
+  if (/dockerignore/i.test(digText)) pass('.dockerignore: title shown'); else fail('dockerignore title: ' + digText.slice(0, 200));
+  const digPats = await page.$$eval('#previewHost .dig-doc .kf-pat code', (els) => els.map((e) => e.textContent));
+  if (digPats.some((p) => /node_modules|\.git|dist/.test(p))) pass('.dockerignore: patterns shown'); else fail('dockerignore patterns: ' + digPats.join(','));
+
+  // ── AppVeyor CI viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('appveyor.yml');
+  await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
+  const avyChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
+  if (/AppVeyor/i.test(avyChipText)) pass('appveyor.yml: badge shown'); else fail('appveyor chip: ' + avyChipText.slice(0, 200));
+  await page.waitForSelector('#previewHost .avy-doc', { timeout: 12000 });
+  const avyText = await page.$eval('#previewHost .avy-doc', (e) => e.textContent);
+  if (/AppVeyor/i.test(avyText)) pass('appveyor.yml: label shown'); else fail('appveyor label: ' + avyText.slice(0, 200));
+  if (/Visual Studio|Build Script|build step/i.test(avyText)) pass('appveyor.yml: build info shown'); else fail('appveyor build info: ' + avyText.slice(0, 200));
+
+  // ── RuboCop viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.rubocop.yml');
+  await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
+  const rbcChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
+  if (/RuboCop/i.test(rbcChipText)) pass('.rubocop.yml: badge shown'); else fail('rubocop chip: ' + rbcChipText.slice(0, 200));
+  await page.waitForSelector('#previewHost .rbc-doc', { timeout: 12000 });
+  const rbcText = await page.$eval('#previewHost .rbc-doc', (e) => e.textContent);
+  if (/RuboCop/i.test(rbcText)) pass('.rubocop.yml: label shown'); else fail('rubocop label: ' + rbcText.slice(0, 200));
+  if (/Ruby|3\.2|TargetRuby/i.test(rbcText)) pass('.rubocop.yml: ruby version shown'); else fail('rubocop ruby version: ' + rbcText.slice(0, 200));
+
+  // ── Taskfile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Taskfile.yml');
+  await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
+  const tkfChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
+  if (/Taskfile/i.test(tkfChipText)) pass('Taskfile.yml: badge shown'); else fail('taskfile chip: ' + tkfChipText.slice(0, 200));
+  await page.waitForSelector('#previewHost .tkf-doc', { timeout: 12000 });
+  const tkfText = await page.$eval('#previewHost .tkf-doc', (e) => e.textContent);
+  if (/Taskfile/i.test(tkfText)) pass('Taskfile.yml: label shown'); else fail('taskfile label: ' + tkfText.slice(0, 200));
+  if (/build|test|clean/i.test(tkfText)) pass('Taskfile.yml: tasks shown'); else fail('taskfile tasks: ' + tkfText.slice(0, 200));
+
+  // ── MkDocs viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mkdocs.yml');
+  await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
+  const mdkChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
+  if (/MkDocs/i.test(mdkChipText)) pass('mkdocs.yml: badge shown'); else fail('mkdocs chip: ' + mdkChipText.slice(0, 200));
+  await page.waitForSelector('#previewHost .mdk-doc', { timeout: 12000 });
+  const mdkText = await page.$eval('#previewHost .mdk-doc', (e) => e.textContent);
+  if (/MkDocs/i.test(mdkText)) pass('mkdocs.yml: label shown'); else fail('mkdocs label: ' + mdkText.slice(0, 200));
+  if (/My Project Docs|material|Getting Started/i.test(mdkText)) pass('mkdocs.yml: site info shown'); else fail('mkdocs site info: ' + mdkText.slice(0, 200));
+
+  // ── Gemfile.lock viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Gemfile.lock');
+  await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
+  const gflChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
+  if (/Gemfile|Bundler/i.test(gflChipText)) pass('Gemfile.lock: chip shown'); else fail('gemfile-lock chip: ' + gflChipText.slice(0, 200));
+  await page.waitForSelector('#previewHost .gfl-doc', { timeout: 12000 });
+  const gflText = await page.$eval('#previewHost .gfl-doc', (e) => e.textContent);
+  if (/GEM|BUNDLED|Gemfile|rails/i.test(gflText)) pass('Gemfile.lock: content shown'); else fail('gemfile-lock content: ' + gflText.slice(0, 200));
+
+  // ── SonarQube config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sonar-project.properties');
+  await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
+  const snrChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
+  if (/Sonar/i.test(snrChipText)) pass('sonar-project.properties: chip shown'); else fail('sonar chip: ' + snrChipText.slice(0, 200));
+  await page.waitForSelector('#previewHost .snr-doc', { timeout: 12000 });
+  const snrText = await page.$eval('#previewHost .snr-doc', (e) => e.textContent);
+  if (/sonar|project/i.test(snrText)) pass('sonar-project.properties: content shown'); else fail('sonar content: ' + snrText.slice(0, 200));
+
+  // ── Hatch config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('hatch.toml');
+  await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
+  const htcChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
+  if (/Hatch/i.test(htcChipText)) pass('hatch.toml: chip shown'); else fail('hatch chip: ' + htcChipText.slice(0, 200));
+  await page.waitForSelector('#previewHost .htc-doc', { timeout: 12000 });
+  const htcText = await page.$eval('#previewHost .htc-doc', (e) => e.textContent);
+  if (/Hatch|build|env/i.test(htcText)) pass('hatch.toml: content shown'); else fail('hatch content: ' + htcText.slice(0, 200));
 }

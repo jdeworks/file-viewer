@@ -121,9 +121,16 @@ import envrc from '../types/text/known/envrc/index.js';
 import miseConfig from '../types/text/toml/known/mise/index.js';
 import toolVersions from '../types/text/known/tool-versions/index.js';
 import gitattributes from '../types/text/known/gitattributes/index.js';
+import gemfileLock from '../types/text/known/gemfile-lock/index.js';
+import sonar from '../types/text/known/sonar/index.js';
+import hatch from '../types/text/toml/known/hatch/index.js';
 import mailmap from '../types/text/known/mailmap/index.js';
 import npmignore from '../types/text/known/npmignore/index.js';
 import dockerignore from '../types/text/known/dockerignore/index.js';
+import appveyor from '../types/text/yaml/known/appveyor/index.js';
+import rubocop from '../types/text/yaml/known/rubocop/index.js';
+import taskfile from '../types/text/yaml/known/taskfile/index.js';
+import mkdocsYml from '../types/text/yaml/known/mkdocs/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -142,7 +149,9 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   firebase, expo, tailwind, postcss, husky, lintStaged, nestCli, swcrc,
   packageLock, composerLock, pnpmLock, cargoLock, poetryLock, goSum,
   makefileKf, justfile, procfile, envrc, miseConfig, toolVersions,
-  gitattributes, mailmap, npmignore, dockerignore];
+  gitattributes, gemfileLock, sonar, hatch,
+  mailmap, npmignore, dockerignore,
+  appveyor, rubocop, taskfile, mkdocsYml];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

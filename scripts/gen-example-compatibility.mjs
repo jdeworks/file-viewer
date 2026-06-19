@@ -133,23 +133,29 @@ function extractTypeIds(registrySrc) {
 
 /** Extract known-file id strings from known/registry.js source. */
 function extractKnownIds(registrySrc) {
+  return extractKnownItems(registrySrc).map((item) => item.id);
+}
+
+/** Extract known-file {id, relPath} objects from known/registry.js source. */
+function extractKnownItems(registrySrc) {
   const exportMatch = registrySrc.match(/export const KNOWN\s*=\s*\[([^\]]+)\]/s);
   if (!exportMatch) return [];
   const body = exportMatch[1];
   const names = [...body.matchAll(/\b(\w+)\b/g)].map((m) => m[1]).filter((n) => n !== 'KNOWN');
 
-  const idMap = {};
+  const itemMap = {};
   for (const varName of names) {
     // Match imports like: import packageJson from '../types/.../known/package-json/index.js';
     const importMatch = registrySrc.match(
       new RegExp(`import\\s+${varName}\\s+from\\s+['"]\\.\\./types/([^'"]+)/index\\.js['"]`)
     );
     if (importMatch) {
-      const segments = importMatch[1].split('/');
-      idMap[varName] = segments[segments.length - 1];
+      const relPath = importMatch[1]; // e.g. "text/yaml/known/appveyor"
+      const segments = relPath.split('/');
+      itemMap[varName] = { id: segments[segments.length - 1], relPath };
     }
   }
-  return names.map((n) => idMap[n]).filter(Boolean);
+  return names.map((n) => itemMap[n]).filter(Boolean);
 }
 
 function computeSampleSource(row) {
@@ -242,6 +248,7 @@ function enrichKnownRow(existing) {
 const registrySrc     = await readFile(resolve(ROOT, 'docs/core/registry.js'),  'utf8');
 const knownRegistrySrc= await readFile(resolve(ROOT, 'docs/known/registry.js'), 'utf8');
 const compat          = JSON.parse(await readFile(resolve(ROOT, 'docs/examples/compatibility.json'), 'utf8'));
+const examplesIndex   = JSON.parse(await readFile(resolve(ROOT, 'docs/examples/index.json'), 'utf8'));
 
 const typeIds  = extractTypeIds(registrySrc);
 const knownIds = extractKnownIds(knownRegistrySrc);
@@ -262,6 +269,41 @@ for (const id of typeIds) {
 const updatedKnown = {};
 for (const [id, row] of Object.entries(compat.knownFiles)) {
   updatedKnown[id] = enrichKnownRow(row);
+}
+// Scaffold any NEW known files from the registry that have no compat row yet.
+// Use the plugin's actual `id` field (from index.js), not the folder name.
+const catalogFileSet = new Set(examplesIndex.map((e) => e.file));
+for (const knownItem of extractKnownItems(knownRegistrySrc)) {
+  // Read the index.js to get the real plugin id, label, and base type
+  let pluginId = knownItem.id; // folder name fallback
+  let label = knownItem.id;
+  let baseType = 'yaml';
+  let matchFilenames = [];
+  try {
+    const indexSrc = await readFile(resolve(ROOT, 'docs/types', knownItem.relPath, 'index.js'), 'utf8');
+    const idMatch = indexSrc.match(/\bid\s*:\s*['"]([^'"]+)['"]/);
+    if (idMatch) pluginId = idMatch[1];
+    const labelMatch = indexSrc.match(/\blabel\s*:\s*['"]([^'"]+)['"]/);
+    if (labelMatch) label = labelMatch[1];
+    const baseMatch = knownItem.relPath.match(/text\/([^/]+)\/known\//);
+    if (baseMatch) baseType = baseMatch[1];
+    else if (knownItem.relPath.includes('text/known/')) baseType = 'raw';
+    // Extract filenames from match function for sampleFiles hint
+    const nameMatches = [...indexSrc.matchAll(/name\s*===?\s*['"]([^'"]+)['"]/g)].map((m) => m[1]);
+    matchFilenames = nameMatches;
+  } catch { /* skip */ }
+  if (updatedKnown[pluginId]) continue;
+  // Find matching example files in the catalog
+  const sampleFiles = matchFilenames.filter((f) => catalogFileSet.has(f));
+  updatedKnown[pluginId] = enrichKnownRow({
+    label,
+    baseType,
+    support: 'supported',
+    sampleFiles,
+    extensions: ['.yml'],
+    capabilities: { rawView: true, preview: true, diff: true, magicSelector: false, screenshot: true },
+  });
+  console.log(`  Scaffolded new known-file row: ${pluginId} (sampleFiles: [${sampleFiles.join(', ')}])`);
 }
 
 const output = {

@@ -46,13 +46,13 @@ export function parseVCards(text) {
     if (!line) continue;
     const pl = parseLine(line);
     if (!pl) continue;
-    if (pl.name === 'BEGIN' && /vcard/i.test(pl.value)) { cur = { emails: [], tels: [], urls: [], adrs: [], fn: '', org: '', title: '', note: '', bday: '', hasPhoto: false }; continue; }
+    if (pl.name === 'BEGIN' && /vcard/i.test(pl.value)) { cur = { emails: [], tels: [], urls: [], adrs: [], fn: '', firstName: '', lastName: '', org: '', title: '', note: '', bday: '', hasPhoto: false }; continue; }
     if (pl.name === 'END') { if (cur && (cur.fn || cur.emails.length || cur.tels.length)) cards.push(cur); cur = null; continue; }
     if (!cur) continue;
     const v = unescapeText(pl.value);
     switch (pl.name) {
       case 'FN': cur.fn = v; break;
-      case 'N': if (!cur.fn) { const p = v.split(';'); cur.fn = [p[3], p[1], p[2], p[0], p[4]].filter(Boolean).join(' ').trim(); } break;
+      case 'N': { const p = v.split(';'); cur.firstName = [p[3], p[1], p[2]].filter(Boolean).join(' ').trim(); cur.lastName = p[0] || ''; if (!cur.fn) { cur.fn = [cur.firstName, cur.lastName].filter(Boolean).join(' ').trim(); } break; }
       case 'ORG': cur.org = v.split(';').filter(Boolean).join(' · '); break;
       case 'TITLE': cur.title = v; break;
       case 'EMAIL': if (v) cur.emails.push({ type: typeLabel(pl.params), value: v }); break;

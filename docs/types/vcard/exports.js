@@ -2,17 +2,21 @@
 import { downloadBlob } from '../../core/exports.js';
 import { parseVCards } from './vcardlib.js';
 
-const COLS = ['Name', 'Org', 'Title', 'Email', 'Phone', 'URL', 'Address', 'Birthday', 'Note'];
+const COLS = ['Full Name', 'First Name', 'Last Name', 'Email', 'Phone', 'Organization', 'Title', 'Address', 'URL', 'Note'];
 const cell = (s) => { s = String(s == null ? '' : s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 
 function toRow(c) {
   return {
-    Name: c.fn, Org: c.org, Title: c.title,
-    Email: c.emails.map((e) => e.value).join('; '),
-    Phone: c.tels.map((t) => t.value).join('; '),
-    URL: c.urls.join('; '),
-    Address: c.adrs.map((a) => a.value).join('; '),
-    Birthday: c.bday, Note: c.note,
+    'Full Name': c.fn,
+    'First Name': c.firstName,
+    'Last Name': c.lastName,
+    'Email': c.emails.map((e) => e.value).join('; '),
+    'Phone': c.tels.map((t) => t.value).join('; '),
+    'Organization': c.org,
+    'Title': c.title,
+    'Address': c.adrs.map((a) => a.value).join('; '),
+    'URL': c.urls.join('; '),
+    'Note': c.note,
   };
 }
 

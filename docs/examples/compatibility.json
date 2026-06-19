@@ -7797,6 +7797,198 @@
       "testCoverage": "none",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "appveyor": {
+      "label": "AppVeyor CI config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "appveyor.yml"
+      ],
+      "extensions": [
+        "appveyor.yml",
+        ".appveyor.yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "rubocop": {
+      "label": "RuboCop config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        ".rubocop.yml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "structure-only",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "taskfile": {
+      "label": "Taskfile (Task runner)",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "Taskfile.yml"
+      ],
+      "extensions": [
+        ".yml",
+        ".yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "structure-only",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "mkdocs": {
+      "label": "MkDocs config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "mkdocs.yml"
+      ],
+      "extensions": [
+        ".yml",
+        ".yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "structure-only",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "gemfile-lock": {
+      "label": "Gemfile.lock (Bundler)",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "Gemfile.lock"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "sonar": {
+      "label": "SonarQube config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "sonar-project.properties"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "hatch": {
+      "label": "Hatch (Python build)",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "hatch.toml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

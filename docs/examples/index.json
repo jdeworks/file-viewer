@@ -2439,26 +2439,6 @@
     ]
   },
   {
-    "file": "Dockerfile",
-    "label": "Dockerfile (multi-stage demo)",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code",
-      "devops"
-    ]
-  },
-  {
-    "file": "docker-compose.yml",
-    "label": "docker-compose.yml (demo)",
-    "mime": "text/yaml",
-    "category": "Code",
-    "categories": [
-      "Code",
-      "devops"
-    ]
-  },
-  {
     "file": "sample.sarif",
     "label": "SARIF security scan results (demo)",
     "mime": "application/json",
@@ -3337,30 +3317,73 @@
     ]
   },
   {
-    "label": ".mailmap",
-    "file": ".mailmap",
+    "label": "Gemfile.lock",
+    "file": "Gemfile.lock",
     "mime": "text/plain",
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true
   },
   {
-    "label": ".npmignore",
-    "file": ".npmignore",
+    "label": "sonar-project.properties",
+    "file": "sonar-project.properties",
     "mime": "text/plain",
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true
   },
   {
-    "label": ".dockerignore",
-    "file": ".dockerignore",
-    "mime": "text/plain",
+    "label": "hatch.toml",
+    "file": "hatch.toml",
+    "mime": "text/x-toml",
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "appveyor.yml",
+    "file": "appveyor.yml",
+    "mime": "application/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": ".rubocop.yml",
+    "file": ".rubocop.yml",
+    "mime": "application/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "Taskfile.yml",
+    "file": "Taskfile.yml",
+    "mime": "application/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "mkdocs.yml",
+    "file": "mkdocs.yml",
+    "mime": "application/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
   }
 ]
