@@ -135,6 +135,9 @@ import pycType from '../types/binary/pyc/index.js';
 import lmmsType from '../types/binary/lmms/index.js';
 import f3dType from '../types/binary/f3d/index.js';
 import debType from '../types/binary/deb/index.js';
+import rpmType from '../types/binary/rpm/index.js';
+import nupkgType from '../types/binary/nupkg/index.js';
+import ipaType from '../types/binary/ipa/index.js';
 import qifType from '../types/text/qif/index.js';
 import mt940Type from '../types/text/mt940/index.js';
 import gffType from '../types/text/gff/index.js';
@@ -272,6 +275,9 @@ export const REGISTRY = [
   lmmsType,
   f3dType,
   debType,
+  rpmType,
+  nupkgType,
+  ipaType,
   qifType,
   mt940Type,
   sdfType,

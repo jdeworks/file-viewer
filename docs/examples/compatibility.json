@@ -4850,6 +4850,105 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
+    },
+    "rpm": {
+      "label": "RPM Package",
+      "support": "partial",
+      "sampleFiles": [
+        "sample.rpm"
+      ],
+      "extensions": [
+        ".rpm",
+        ".src.rpm"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "Payload/archive not extracted",
+        "GPG signature not verified",
+        "Dependency flags not decoded"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "nupkg": {
+      "label": "Package (NuGet/VSIX/Wheel/JAR)",
+      "support": "partial",
+      "sampleFiles": [
+        "sample.nupkg",
+        "sample.vsix",
+        "sample.whl"
+      ],
+      "extensions": [
+        ".nupkg",
+        ".vsix",
+        ".whl",
+        ".jar"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "Package contents not browsable beyond first 20 entries",
+        "JAR class count only (no manifest for all JARs)"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "ipa": {
+      "label": "iOS App (IPA)",
+      "support": "partial",
+      "sampleFiles": [
+        "sample.ipa"
+      ],
+      "extensions": [
+        ".ipa"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "Binary executable not parsed",
+        "Code signature not verified",
+        "Assets.car not decoded",
+        "Extensions not listed"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
     }
   },
   "knownFiles": {

@@ -2323,6 +2323,60 @@
     ]
   },
   {
+    "file": "sample.rpm",
+    "label": "RPM package (demo)",
+    "mime": "application/x-rpm",
+    "category": "code",
+    "categories": [
+      "code",
+      "binary"
+    ]
+  },
+  {
+    "file": "sample.nupkg",
+    "label": "NuGet package (demo)",
+    "mime": "application/zip",
+    "category": "code",
+    "categories": [
+      "code",
+      "binary",
+      "archive"
+    ]
+  },
+  {
+    "file": "sample.vsix",
+    "label": "VS Extension (demo)",
+    "mime": "application/zip",
+    "category": "code",
+    "categories": [
+      "code",
+      "binary",
+      "archive"
+    ]
+  },
+  {
+    "file": "sample.whl",
+    "label": "Python Wheel (demo)",
+    "mime": "application/zip",
+    "category": "code",
+    "categories": [
+      "code",
+      "binary",
+      "archive"
+    ]
+  },
+  {
+    "file": "sample.ipa",
+    "label": "iOS App (IPA demo)",
+    "mime": "application/octet-stream",
+    "category": "code",
+    "categories": [
+      "code",
+      "binary",
+      "mobile"
+    ]
+  },
+  {
     "file": "sample.qif",
     "label": "QIF financial data (demo)",
     "mime": "application/x-qif",

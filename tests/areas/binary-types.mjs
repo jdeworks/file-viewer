@@ -503,4 +503,63 @@ export async function run(ctx) {
   const qifText = await qiff.$eval('body', (el) => el.textContent);
   if (/QIF|Quicken/i.test(qifText)) pass('QIF badge shown'); else fail('qif badge: ' + qifText.slice(0, 300));
   if (/transaction|Bank|Grocery/i.test(qifText)) pass('QIF transactions shown'); else fail('qif txns: ' + qifText.slice(0, 300));
+
+  // ── RPM Package ───────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('RPM package (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const rpmf = await frameOf('iframe.fv-preview-frame');
+  await rpmf.waitForSelector('.badge-rpm', { timeout: 8000 });
+  const rpmTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (rpmTypeId === 'rpm') pass('.rpm detected as rpm type'); else fail('rpm typeId: ' + rpmTypeId);
+  const rpmText = await rpmf.$eval('body', (el) => el.textContent);
+  if (/RPM/i.test(rpmText)) pass('RPM badge shown'); else fail('rpm badge: ' + rpmText.slice(0, 300));
+  if (/hello-world|Binary|x86_64/i.test(rpmText)) pass('RPM package info shown'); else fail('rpm pkg: ' + rpmText.slice(0, 300));
+
+  // ── NuGet Package ─────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('NuGet package (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 14000 });
+  const nupkgf = await frameOf('iframe.fv-preview-frame');
+  await nupkgf.waitForSelector('.badge-nupkg', { timeout: 10000 });
+  const nupkgTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (nupkgTypeId === 'nupkg') pass('.nupkg detected as nupkg type'); else fail('nupkg typeId: ' + nupkgTypeId);
+  const nupkgText = await nupkgf.$eval('body', (el) => el.textContent);
+  if (/NuGet/i.test(nupkgText)) pass('NuGet badge shown'); else fail('nupkg badge: ' + nupkgText.slice(0, 300));
+  if (/DemoLibrary|Newtonsoft|package/i.test(nupkgText)) pass('NuGet package info shown'); else fail('nupkg pkg: ' + nupkgText.slice(0, 300));
+
+  // ── VSIX Extension ────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('VS Extension (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 14000 });
+  const vsixf = await frameOf('iframe.fv-preview-frame');
+  await vsixf.waitForSelector('.badge-vsix', { timeout: 10000 });
+  const vsixTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (vsixTypeId === 'nupkg') pass('.vsix detected as nupkg type'); else fail('vsix typeId: ' + vsixTypeId);
+  const vsixText = await vsixf.$eval('body', (el) => el.textContent);
+  if (/VS Extension|Extension/i.test(vsixText)) pass('VSIX badge shown'); else fail('vsix badge: ' + vsixText.slice(0, 300));
+
+  // ── Python Wheel ──────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Python Wheel (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 14000 });
+  const whlf = await frameOf('iframe.fv-preview-frame');
+  await whlf.waitForSelector('.badge-whl', { timeout: 10000 });
+  const whlTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (whlTypeId === 'nupkg') pass('.whl detected as nupkg type'); else fail('whl typeId: ' + whlTypeId);
+  const whlText = await whlf.$eval('body', (el) => el.textContent);
+  if (/Python Wheel/i.test(whlText)) pass('Python Wheel badge shown'); else fail('whl badge: ' + whlText.slice(0, 300));
+  if (/demo.package|requests|package/i.test(whlText)) pass('Wheel package info shown'); else fail('whl pkg: ' + whlText.slice(0, 300));
+
+  // ── iOS IPA ───────────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('iOS App (IPA demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 14000 });
+  const ipaf = await frameOf('iframe.fv-preview-frame');
+  await ipaf.waitForSelector('.badge-ipa', { timeout: 10000 });
+  const ipaTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (ipaTypeId === 'ipa') pass('.ipa detected as ipa type'); else fail('ipa typeId: ' + ipaTypeId);
+  const ipaText = await ipaf.$eval('body', (el) => el.textContent);
+  if (/iOS App/i.test(ipaText)) pass('IPA badge shown'); else fail('ipa badge: ' + ipaText.slice(0, 300));
+  if (/Demo App|com\.example|15\.0/i.test(ipaText)) pass('IPA app info shown'); else fail('ipa info: ' + ipaText.slice(0, 300));
 }

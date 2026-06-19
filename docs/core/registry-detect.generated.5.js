@@ -298,27 +298,18 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_qif=(()=>{
-// QIF (Quicken Interchange Format): starts with !Type: or !Account or !Option
-// https://en.wikipedia.org/wiki/Quicken_Interchange_Format
-
+const detect_rpm=(()=>{
 function detect(intake) {
-  const { filename, textSample } = intake;
-  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
-  const isQifExt = ext === 'qif' || ext === 'qfx';
-
-  if (!textSample) return isQifExt ? 0.4 : 0;
-
-  const s = textSample.trimStart();
-  if (s.startsWith('!Type:') || s.startsWith('!type:')) {
-    return isQifExt ? 0.99 : 0.95;
-  }
-  if (s.startsWith('!Account') || s.startsWith('!account') || s.startsWith('!Option')) {
-    return isQifExt ? 0.99 : 0.90;
-  }
-  return isQifExt ? 0.5 : 0;
+  const { filename, bytes: b } = intake;
+  const ext = (filename || '').split('.').pop().toLowerCase();
+  const isRpm = ext === 'rpm' || ext === 'srpm';
+  if (!b || b.length < 4) return isRpm ? 0.6 : 0;
+  // RPM magic: ED AB EE DB
+  const isRpmMagic = b[0] === 0xed && b[1] === 0xab && b[2] === 0xee && b[3] === 0xdb;
+  if (isRpmMagic) return isRpm ? 0.99 : 0.97;
+  return isRpm ? 0.3 : 0;
 }
 return detect;
 })();
 
-export const DETECTORS={"exr":detect_exr,"dbf":detect_dbf,"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"lmms":detect_lmms,"f3d":detect_f3d,"deb":detect_deb,"qif":detect_qif};
+export const DETECTORS={"exr":detect_exr,"dbf":detect_dbf,"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"lmms":detect_lmms,"f3d":detect_f3d,"deb":detect_deb,"rpm":detect_rpm};

@@ -3,6 +3,62 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_nupkg=(()=>{
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const name = (filename || '').toLowerCase();
+  const ext = name.split('.').pop();
+  // nupkg, vsix, whl (Python wheel), jar (Java archive)
+  const isKnownExt = ext === 'nupkg' || ext === 'vsix' || ext === 'whl' || ext === 'jar';
+  // All are ZIP files: PK\x03\x04
+  if (!b || b.length < 4) return isKnownExt ? 0.6 : 0;
+  const isPK = b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
+  if (!isPK) return isKnownExt ? 0.3 : 0;
+  if (ext === 'nupkg') return 0.99;
+  if (ext === 'vsix') return 0.99;
+  if (ext === 'whl') return 0.99;
+  if (ext === 'jar') return 0.95;
+  return 0;
+}
+return detect;
+})();
+
+const detect_ipa=(()=>{
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = (filename || '').split('.').pop().toLowerCase();
+  const isIpa = ext === 'ipa';
+  if (!b || b.length < 4) return isIpa ? 0.6 : 0;
+  const isPK = b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
+  if (!isPK) return isIpa ? 0.3 : 0;
+  return isIpa ? 0.99 : 0;
+}
+return detect;
+})();
+
+const detect_qif=(()=>{
+// QIF (Quicken Interchange Format): starts with !Type: or !Account or !Option
+// https://en.wikipedia.org/wiki/Quicken_Interchange_Format
+
+function detect(intake) {
+  const { filename, textSample } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isQifExt = ext === 'qif' || ext === 'qfx';
+
+  if (!textSample) return isQifExt ? 0.4 : 0;
+
+  const s = textSample.trimStart();
+  if (s.startsWith('!Type:') || s.startsWith('!type:')) {
+    return isQifExt ? 0.99 : 0.95;
+  }
+  if (s.startsWith('!Account') || s.startsWith('!account') || s.startsWith('!Option')) {
+    return isQifExt ? 0.99 : 0.90;
+  }
+  return isQifExt ? 0.5 : 0;
+}
+return detect;
+})();
+
 const detect_mt940=(()=>{
 // MT940/MT942: SWIFT bank statement format
 // Starts with :20: (transaction reference) optionally preceded by {1: or similar FIN tags
@@ -260,67 +316,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_abc=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'abc')) {
-    const t = intake.textSample || '';
-    // ABC notation starts with X: (index) and T: (title) fields
-    if (/^X:\s*\d/m.test(t) || /^T:\s*\S/m.test(t)) return 0.97;
-    return 0.75;
-  }
-  // Content sniff for ABC embedded in .txt or unknown
-  const t = intake.textSample || '';
-  if (/^X:\s*\d/m.test(t) && /^T:\s*\S/m.test(t) && /^K:\s*\w/m.test(t)) return 0.8;
-  return 0;
-}
-return detect;
-})();
-
-const detect_hl7=(()=>{
-// HL7 v2.x messages start with MSH segment using pipe delimiter
-const MSH_RE = /^MSH\|[\^~\\&]\|/m;
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const ext = (intake.filename || '').split('.').pop().toLowerCase();
-  if (['hl7', 'hl7v2', 'msh'].includes(ext)) return 0.92;
-  const t = intake.textSample || '';
-  if (MSH_RE.test(t)) return 0.96;
-  return 0;
-}
-return detect;
-})();
-
-const detect_hydrogen=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'h2song', 'h2pattern', 'h2drumkit')) return 0.9;
-  const t = intake.textSample || '';
-  if (/<hydrogen_drumkit>/i.test(t) || /<song version="[^"]*hydrogen/i.test(t)) return 0.97;
-  return 0;
-}
-return detect;
-})();
-
-const detect_prproj=(()=>{
-function detect(intake) {
-  // .prproj is a gzip-compressed XML file
-  if (hasExtension(intake, 'prproj')) {
-    if (intake.isBinary) {
-      const b = intake.bytes;
-      // Check gzip magic bytes: 1f 8b
-      if (b && b[0] === 0x1f && b[1] === 0x8b) return 0.98;
-      return 0.85;
-    }
-    // Text might be decompressed version
-    const t = intake.textSample || '';
-    if (/<PremiereData\b/.test(t) || /<Project\b/.test(t)) return 0.95;
-    return 0.7;
-  }
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj};
+export const DETECTORS={"nupkg":detect_nupkg,"ipa":detect_ipa,"qif":detect_qif,"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml};
