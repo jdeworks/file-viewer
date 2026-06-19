@@ -100,6 +100,18 @@ export async function run(ctx) {
   const lrfNote = await lrff.$eval('.comic-note', (e) => e.textContent);
   if (lrfType === 'lrf' && /Sony/.test(lrfNote)) pass('.lrf recognized as Sony LRF with a friendly note'); else fail('lrf: type=' + lrfType + ' note=' + lrfNote.slice(0, 40));
 
+  // ── DjVu ── either renders through the decoder or shows the intentional partial-support message.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.djvu');
+  await page.waitForSelector('#previewHost .djvu-viewer', { timeout: 15000 });
+  const djvuType = await page.$eval('#typeSelect', (s) => s.value);
+  const djvuText = await page.$eval('#previewHost .djvu-viewer', (e) => e.textContent || '');
+  const djvuCanvas = await page.$eval('#previewHost .djvu-canvas', (c) => c.width > 1 && c.height > 1).catch(() => false);
+  const djvuPartial = /DjVu preview is partially supported|Could not parse DjVu document/.test(djvuText);
+  const djvuOldCrash = /Failed to load DjVu library|DjVu missing after load|Preview failed/i.test(djvuText);
+  if (djvuType === 'djvu' && (djvuCanvas || djvuPartial) && !djvuOldCrash) pass('DjVu sample renders or shows friendly partial-support message');
+  else fail('djvu: type=' + djvuType + ' canvas=' + djvuCanvas + ' text=' + djvuText.replace(/\s+/g, ' ').slice(0, 180));
+
   // ── EPUB e-book (hand-rolled reader) ── unzip + spine + TOC, rendered in the pane. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.epub');

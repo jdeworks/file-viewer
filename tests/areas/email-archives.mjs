@@ -124,6 +124,16 @@ export async function run(ctx) {
   if (/Body\s*HTML/.test(emlMeta) && /Attachments\s*0/.test(emlMeta)) pass('email metadata includes body kind and attachments'); else fail('eml meta: ' + emlMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
 
+  // ── Outlook .msg ── CFB-backed email preview; regression for Uint8Array/TextDecoder handling.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.msg');
+  await page.waitForSelector('#previewHost .msg-badge', { timeout: 15000 });
+  const msgType = await page.$eval('#typeSelect', (s) => s.value);
+  if (msgType === 'msg') pass('.msg detected as Outlook Email'); else fail('msg type: ' + msgType);
+  const msgText = await page.$eval('#previewHost', (e) => e.textContent || '');
+  const msgCrashed = /Preview failed|TextDecoder|parameter 1 is not of type|TypeError|ReferenceError/i.test(msgText);
+  if (/Outlook Email/.test(msgText) && !msgCrashed) pass('MSG preview opens without TextDecoder crash'); else fail('msg preview: ' + msgText.replace(/\s+/g, ' ').slice(0, 180));
+
   // ── Mailbox (.mbox) ── split into messages, inbox list (reuses the eml MIME parser). ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.mbox');
