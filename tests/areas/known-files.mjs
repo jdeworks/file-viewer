@@ -1395,5 +1395,46 @@ export async function run(ctx) {
   if (/Component|API|System|Group|User/i.test(catText)) pass('catalog-info.yaml: entity kind shown'); else fail('catalog-info kind: ' + catText.slice(0, 200));
   if (/order-service|payment-service/i.test(catText)) pass('catalog-info.yaml: entity name shown'); else fail('catalog-info name: ' + catText.slice(0, 200));
   if (/production|experimental|deprecated/i.test(catText)) pass('catalog-info.yaml: lifecycle shown'); else fail('catalog-info lifecycle: ' + catText.slice(0, 200));
-}
+
+  // ── docusaurus.config.js viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('docusaurus.config.js');
+  await page.waitForSelector('#previewHost .dcs-doc', { timeout: 12000 });
+  const dcsText = await page.$eval('#previewHost .dcs-doc', (e) => e.textContent);
+  if (/Docusaurus/i.test(dcsText)) pass('docusaurus.config.js: Docusaurus badge shown'); else fail('docusaurus badge: ' + dcsText.slice(0, 200));
+  if (/My Awesome Docs/i.test(dcsText)) pass('docusaurus.config.js: site title shown'); else fail('docusaurus title: ' + dcsText.slice(0, 200));
+  if (/my-org\.github\.io/i.test(dcsText)) pass('docusaurus.config.js: URL shown'); else fail('docusaurus url: ' + dcsText.slice(0, 300));
+  if (/Docs|Blog|API|Changelog/i.test(dcsText)) pass('docusaurus.config.js: navbar items shown'); else fail('docusaurus nav: ' + dcsText.slice(0, 300));
+
+  // ── vitepress.config.ts viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vitepress.config.ts');
+  await page.waitForSelector('#previewHost .vp-doc', { timeout: 12000 });
+  const vpText = await page.$eval('#previewHost .vp-doc', (e) => e.textContent);
+  if (/VitePress/i.test(vpText)) pass('vitepress.config.ts: VitePress badge shown'); else fail('vitepress badge: ' + vpText.slice(0, 200));
+  if (/My VitePress Site/i.test(vpText)) pass('vitepress.config.ts: site title shown'); else fail('vitepress title: ' + vpText.slice(0, 200));
+  if (/Guide|Reference|Examples|Blog/i.test(vpText)) pass('vitepress.config.ts: nav items shown'); else fail('vitepress nav: ' + vpText.slice(0, 300));
+  if (/Introduction|Writing|Customization/i.test(vpText)) pass('vitepress.config.ts: sidebar sections shown'); else fail('vitepress sidebar: ' + vpText.slice(0, 300));
+
+  // ── conf.py (Sphinx) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('conf.py');
+  await page.waitForSelector('#previewHost .sphinx-doc', { timeout: 12000 });
+  const sphinxText = await page.$eval('#previewHost .sphinx-doc', (e) => e.textContent);
+  if (/Sphinx/i.test(sphinxText)) pass('conf.py: Sphinx badge shown'); else fail('sphinx badge: ' + sphinxText.slice(0, 200));
+  if (/MyPythonLib/i.test(sphinxText)) pass('conf.py: project name shown'); else fail('sphinx project: ' + sphinxText.slice(0, 200));
+  if (/Alice Smith/i.test(sphinxText)) pass('conf.py: author shown'); else fail('sphinx author: ' + sphinxText.slice(0, 200));
+  if (/furo/i.test(sphinxText)) pass('conf.py: HTML theme shown'); else fail('sphinx theme: ' + sphinxText.slice(0, 300));
+  if (/autodoc|napoleon|viewcode/i.test(sphinxText)) pass('conf.py: extensions shown'); else fail('sphinx extensions: ' + sphinxText.slice(0, 300));
+
+  // ── Doxyfile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Doxyfile');
+  await page.waitForSelector('#previewHost .doxy-doc', { timeout: 12000 });
+  const doxyText = await page.$eval('#previewHost .doxy-doc', (e) => e.textContent);
+  if (/Doxygen/i.test(doxyText)) pass('Doxyfile: Doxygen badge shown'); else fail('doxygen badge: ' + doxyText.slice(0, 200));
+  if (/MyC\+\+ Library/i.test(doxyText)) pass('Doxyfile: project name shown'); else fail('doxygen project: ' + doxyText.slice(0, 200));
+  if (/3\.1\.0/i.test(doxyText)) pass('Doxyfile: version shown'); else fail('doxygen version: ' + doxyText.slice(0, 200));
+  if (/YES|NO/i.test(doxyText)) pass('Doxyfile: boolean flags shown'); else fail('doxygen flags: ' + doxyText.slice(0, 300));
+  if (/src|include|examples/i.test(doxyText)) pass('Doxyfile: input directories shown'); else fail('doxygen input: ' + doxyText.slice(0, 300));
 }
