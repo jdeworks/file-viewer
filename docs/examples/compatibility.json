@@ -4395,16 +4395,130 @@
     "blend": {
       "label": "Blender 3D Scene",
       "support": "partial",
-      "sampleFiles": ["sample.blend"],
-      "extensions": [".blend", ".blend1", ".blend2"],
-      "capabilities": { "rawView": false, "preview": true, "diff": false, "magicSelector": false, "screenshot": false },
+      "sampleFiles": [
+        "sample.blend"
+      ],
+      "extensions": [
+        ".blend",
+        ".blend1",
+        ".blend2"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
       "previewDepth": "basic",
       "metadataDepth": "basic",
       "knownParserGaps": [
         "Scene objects, meshes, and materials not parsed (requires Blender or bpy)",
         "DNA structure definitions not decoded",
         "Only block type counts shown"
-      ]
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "fbx": {
+      "label": "FBX 3D Animation",
+      "support": "partial",
+      "sampleFiles": [
+        "sample.fbx"
+      ],
+      "extensions": [
+        ".fbx"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "Mesh, skinning, and animation data not parsed (requires FBX SDK or three.js FBXLoader)",
+        "Property values inside nodes not decoded",
+        "Only root node list shown"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "mat": {
+      "label": "MATLAB MAT-file",
+      "support": "full",
+      "sampleFiles": [
+        "sample.mat"
+      ],
+      "extensions": [
+        ".mat"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "Only v5 format supported (v4 and v7.3/HDF5-based not parsed)",
+        "Cell arrays and struct contents not expanded",
+        "Compressed (v7+) data elements not decompressed"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "nifti": {
+      "label": "NIfTI",
+      "support": "full",
+      "sampleFiles": [
+        "sample.nii"
+      ],
+      "extensions": [
+        ".nii",
+        ".hdr",
+        ".img"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "NIfTI-2 format (540-byte header) detected but not fully parsed",
+        "Voxel data not rendered (requires WebGL + niivue)",
+        "Gzipped .nii.gz files not supported"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   },
   "knownFiles": {

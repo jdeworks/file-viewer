@@ -2246,5 +2246,38 @@
       "binary",
       "Design"
     ]
+  },
+  {
+    "file": "sample.fbx",
+    "label": "FBX 3D animation (demo)",
+    "mime": "application/octet-stream",
+    "category": "3D",
+    "categories": [
+      "3D",
+      "binary",
+      "Design"
+    ]
+  },
+  {
+    "file": "sample.mat",
+    "label": "MATLAB MAT-file (demo)",
+    "mime": "application/x-matlab-data",
+    "category": "scientific",
+    "categories": [
+      "scientific",
+      "data",
+      "binary"
+    ]
+  },
+  {
+    "file": "sample.nii",
+    "label": "NIfTI neuroimaging (demo)",
+    "mime": "application/x-nifti",
+    "category": "scientific",
+    "categories": [
+      "scientific",
+      "medical",
+      "binary"
+    ]
   }
 ]

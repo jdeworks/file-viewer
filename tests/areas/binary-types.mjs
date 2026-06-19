@@ -348,6 +348,30 @@ export async function run(ctx) {
   if (/DBF|dBase/i.test(dbfText)) pass('DBF badge shown'); else fail('dbf badge: ' + dbfText.slice(0, 300));
   if (/NAME|CITY|Alice/i.test(dbfText)) pass('DBF fields and records shown'); else fail('dbf fields: ' + dbfText.slice(0, 300));
 
+  // ── MATLAB MAT-file ───────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('MATLAB MAT-file (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const matf = await frameOf('iframe.fv-preview-frame');
+  await matf.waitForSelector('.badge-mat', { timeout: 8000 });
+  const matTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (matTypeId === 'mat') pass('.mat detected as mat type'); else fail('mat typeId: ' + matTypeId);
+  const matText = await matf.$eval('body', (el) => el.textContent);
+  if (/MAT|MATLAB/i.test(matText)) pass('MAT badge shown'); else fail('mat badge: ' + matText.slice(0, 300));
+  if (/pi_vals|counts|greeting/i.test(matText)) pass('MAT variables shown'); else fail('mat vars: ' + matText.slice(0, 300));
+
+  // ── FBX 3D Animation ──────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('FBX 3D animation (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const fbxf = await frameOf('iframe.fv-preview-frame');
+  await fbxf.waitForSelector('.badge-fbx', { timeout: 8000 });
+  const fbxTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (fbxTypeId === 'fbx') pass('.fbx detected as fbx type'); else fail('fbx typeId: ' + fbxTypeId);
+  const fbxText = await fbxf.$eval('body', (el) => el.textContent);
+  if (/FBX/i.test(fbxText)) pass('FBX badge shown'); else fail('fbx badge: ' + fbxText.slice(0, 300));
+  if (/7400|7\.4|FBXHeader/i.test(fbxText)) pass('FBX version and nodes shown'); else fail('fbx nodes: ' + fbxText.slice(0, 300));
+
   // ── Blender 3D Scene ──────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Blender 3D scene (demo)');
@@ -407,4 +431,16 @@ export async function run(ctx) {
   const hdf5Text = await hdf5f.$eval('body', (el) => el.textContent);
   if (/HDF5/i.test(hdf5Text)) pass('HDF5 badge shown'); else fail('hdf5 badge: ' + hdf5Text.slice(0, 300));
   if (/Superblock/i.test(hdf5Text)) pass('HDF5 superblock info shown'); else fail('hdf5 superblock: ' + hdf5Text.slice(0, 300));
+
+  // ── NIfTI Neuroimaging ────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('NIfTI neuroimaging (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const niftif = await frameOf('iframe.fv-preview-frame');
+  await niftif.waitForSelector('.badge-nifti', { timeout: 8000 });
+  const niftiTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (niftiTypeId === 'nifti') pass('.nii detected as nifti type'); else fail('nifti typeId: ' + niftiTypeId);
+  const niftiText = await niftif.$eval('body', (el) => el.textContent);
+  if (/NIfTI/i.test(niftiText)) pass('NIfTI badge shown'); else fail('nifti badge: ' + niftiText.slice(0, 300));
+  if (/3D|64.*64|dimensions/i.test(niftiText)) pass('NIfTI dimension info shown'); else fail('nifti dims: ' + niftiText.slice(0, 300));
 }

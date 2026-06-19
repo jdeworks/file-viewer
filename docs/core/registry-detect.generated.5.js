@@ -46,6 +46,120 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_blend=(()=>{
+// Blender .blend files start with:
+//   bytes 0-6:  "BLENDER" (ASCII)
+//   byte 7:     pointer size: '_' = 4 bytes, '-' = 8 bytes
+//   byte 8:     endianness: 'v' = little-endian, 'V' = big-endian
+//   bytes 9-11: version number (e.g. "400" for Blender 4.0.0)
+const BLENDER_MAGIC = [0x42, 0x4c, 0x45, 0x4e, 0x44, 0x45, 0x52]; // "BLENDER"
+
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isBlendExt = ext === 'blend' || ext === 'blend1' || ext === 'blend2';
+
+  if (!b || b.length < 12) return isBlendExt ? 0.6 : 0;
+
+  const hasMagic = BLENDER_MAGIC.every((v, i) => b[i] === v);
+  const validPtr = b[7] === 0x5f || b[7] === 0x2d; // '_' or '-'
+  const validEnd = b[8] === 0x76 || b[8] === 0x56; // 'v' or 'V'
+  const structural = hasMagic && validPtr && validEnd;
+
+  if (isBlendExt) return structural ? 0.99 : hasMagic ? 0.80 : 0.65;
+  return structural ? 0.98 : 0;
+}
+return detect;
+})();
+
+const detect_fbx=(()=>{
+// Binary FBX magic: "Kaydara FBX Binary  \x00\x1a\x00" (23 bytes)
+// ASCII FBX starts with "; FBX" or "FBX\r\n" (but is handled via code/raw for now)
+const BINARY_MAGIC = [
+  0x4b, 0x61, 0x79, 0x64, 0x61, 0x72, 0x61, 0x20, // "Kaydara "
+  0x46, 0x42, 0x58, 0x20, 0x42, 0x69, 0x6e, 0x61, // "FBX Bina"
+  0x72, 0x79, 0x20, 0x20, 0x00, 0x1a, 0x00,         // "ry  \0\x1a\0"
+];
+
+function detect(intake) {
+  const { filename, bytes: b, textSample } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isFbxExt = ext === 'fbx';
+
+  if (!b || b.length < 23) {
+    // ASCII FBX fallback
+    if (isFbxExt && textSample && /^;\s*FBX/m.test(textSample)) return 0.92;
+    return isFbxExt ? 0.6 : 0;
+  }
+
+  const hasMagic = BINARY_MAGIC.every((v, i) => b[i] === v);
+  if (isFbxExt) return hasMagic ? 0.99 : 0.65;
+  return hasMagic ? 0.97 : 0;
+}
+return detect;
+})();
+
+const detect_mat=(()=>{
+// MATLAB MAT-file format versions:
+// v5: "MATLAB 5.0 MAT-file" in first 116 bytes (descriptive text field)
+// v4: no magic, very old format — extension-only detection
+// HDF5-based (v7.3+): uses HDF5 container with attribute "MATLAB_class" — handled by HDF5 type
+
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isMatExt = ext === 'mat';
+
+  if (!b || b.length < 128) return isMatExt ? 0.6 : 0;
+
+  // MATLAB v5: first 4 bytes of descriptive text start with "MATL"
+  const headerText = new TextDecoder('ascii', { fatal: false }).decode(b.slice(0, 20));
+  const isV5 = headerText.startsWith('MATLAB 5.0 MAT-file');
+
+  // Check endian indicator at byte 126-127: 'MI' = big-endian, 'IM' = little-endian
+  const endian = (b[126] === 0x4d && b[127] === 0x49) || (b[126] === 0x49 && b[127] === 0x4d);
+  const structural = isV5 && endian;
+
+  if (isMatExt) return structural ? 0.99 : isV5 ? 0.85 : 0.65;
+  return structural ? 0.97 : 0;
+}
+return detect;
+})();
+
+const detect_nifti=(()=>{
+// NIfTI-1: magic at offset 344 = "n+1\0" (single file) or "ni1\0" (header only)
+//           sizeof_hdr (int32 LE at offset 0) must be 348
+// NIfTI-2: magic at offset 0 = "n+2\0" or "ni2\0"
+//           sizeof_hdr (int32 LE at offset 0) must be 540
+// ANALYZE 7.5: sizeof_hdr = 348 but magic = "          " (no NIfTI magic)
+
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isNiftiExt = ext === 'nii' || ext === 'hdr' || ext === 'img';
+
+  if (!b || b.length < 350) return isNiftiExt ? 0.5 : 0;
+
+  // NIfTI-1: sizeof_hdr = 348
+  const sizeofHdr = b[0] | (b[1] << 8) | (b[2] << 16) | (b[3] << 24);
+  const isV1Hdr = sizeofHdr === 348;
+  const magic1 = new TextDecoder('ascii', { fatal: false }).decode(b.slice(344, 348));
+  const isV1Magic = magic1 === 'n+1\x00' || magic1 === 'ni1\x00';
+
+  if (b.length >= 544) {
+    const sizeofHdr2 = b[0] | (b[1] << 8) | (b[2] << 16) | (b[3] << 24);
+    const magic2 = new TextDecoder('ascii', { fatal: false }).decode(b.slice(4, 8));
+    const isV2 = sizeofHdr2 === 540 && (magic2 === 'n+2\x00' || magic2 === 'ni2\x00');
+    if (isNiftiExt) return isV2 ? 0.99 : isV1Magic && isV1Hdr ? 0.99 : 0.65;
+    return isV2 ? 0.97 : isV1Magic && isV1Hdr ? 0.97 : 0;
+  }
+
+  if (isNiftiExt) return isV1Magic && isV1Hdr ? 0.99 : 0.65;
+  return isV1Magic && isV1Hdr ? 0.97 : 0;
+}
+return detect;
+})();
+
 const detect_sdf=(()=>{
 function hasExtension(intake, ...exts) {
   const name = (intake.filename || '').toLowerCase();
@@ -203,125 +317,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_guitar_pro=(()=>{
-function detect(intake) {
-  if (hasExtension(intake, 'gpx')) {
-    // GPX is a ZIP — check for PK magic
-    if (intake.bytes && intake.bytes[0] === 0x50 && intake.bytes[1] === 0x4b) return 0.9;
-    return 0.7;
-  }
-  if (!intake.isBinary) return 0;
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
-  // GP5 magic: "FICHIER GUITAR PRO v5"
-  // GP4: "FICHIER GUITAR PRO v4"
-  // GP3: "FICHIER GUITAR PRO v3"
-  const head = String.fromCharCode(...intake.bytes.slice(0, 32));
-  if (/FICHIER GUITAR PRO v[3-5]/.test(head)) return 0.98;
-  if (hasExtension(intake, 'gp3', 'gp4', 'gp5', 'gp')) return 0.7;
-  return 0;
-}
-return detect;
-})();
-
-const detect_postscript=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'ps', 'eps', 'ai')) return 0.85;
-  const head = (intake.textSample || '').slice(0, 120);
-  if (/^%!PS(-Adobe)?/.test(head)) return 0.97;
-  return 0;
-}
-return detect;
-})();
-
-const detect_acf=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (!hasExtension(intake, 'acf')) return 0;
-  const t = intake.textSample || '';
-  // Valve KeyValues format — top-level key is typically "AppState"
-  if (/^\s*"AppState"\s*\{/.test(t)) return 0.98;
-  if (/^\s*"[^"]+"\s*\{/.test(t)) return 0.7;
-  return 0.5;
-}
-return detect;
-})();
-
-const detect_fits=(()=>{
-function detect(intake) {
-  if (hasExtension(intake, 'fits', 'fit', 'fts')) {
-    // FITS header: "SIMPLE  =                    T" in first 30 bytes
-    if (intake.isBinary) {
-      const head = intake.bytes ? String.fromCharCode(...intake.bytes.slice(0, 30)) : '';
-      if (/^SIMPLE\s+=\s+T/.test(head)) return 0.99;
-      return 0.8; // extension match, assume FITS
-    }
-    const head = (intake.text || '').slice(0, 30);
-    if (/^SIMPLE\s+=\s+T/.test(head)) return 0.99;
-    return 0.8;
-  }
-  // Content sniff (text only)
-  if (!intake.isBinary) {
-    const head = (intake.text || '').slice(0, 30);
-    if (/^SIMPLE\s+=\s+T/.test(head)) return 0.95;
-  }
-  return 0;
-}
-return detect;
-})();
-
-const detect_kml=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0; // KMZ handled by kmz type
-  if (hasExtension(intake, 'kml')) return 0.97;
-  const head = (intake.textSample || '').slice(0, 400);
-  if (/<kml[\s>]/.test(head) || /xmlns\.google\.com\/kml/.test(head)) return 0.95;
-  return 0;
-}
-return detect;
-})();
-
-const detect_abc=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'abc')) {
-    const t = intake.textSample || '';
-    // ABC notation starts with X: (index) and T: (title) fields
-    if (/^X:\s*\d/m.test(t) || /^T:\s*\S/m.test(t)) return 0.97;
-    return 0.75;
-  }
-  // Content sniff for ABC embedded in .txt or unknown
-  const t = intake.textSample || '';
-  if (/^X:\s*\d/m.test(t) && /^T:\s*\S/m.test(t) && /^K:\s*\w/m.test(t)) return 0.8;
-  return 0;
-}
-return detect;
-})();
-
-const detect_hl7=(()=>{
-// HL7 v2.x messages start with MSH segment using pipe delimiter
-const MSH_RE = /^MSH\|[\^~\\&]\|/m;
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const ext = (intake.filename || '').split('.').pop().toLowerCase();
-  if (['hl7', 'hl7v2', 'msh'].includes(ext)) return 0.92;
-  const t = intake.textSample || '';
-  if (MSH_RE.test(t)) return 0.96;
-  return 0;
-}
-return detect;
-})();
-
-const detect_hydrogen=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'h2song', 'h2pattern', 'h2drumkit')) return 0.9;
-  const t = intake.textSample || '';
-  if (/<hydrogen_drumkit>/i.test(t) || /<song version="[^"]*hydrogen/i.test(t)) return 0.97;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"dwg":detect_dwg,"step":detect_step,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen};
+export const DETECTORS={"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat};

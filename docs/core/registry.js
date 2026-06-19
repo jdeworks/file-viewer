@@ -128,6 +128,9 @@ import dbfType from '../types/binary/dbf/index.js';
 import dwgType from '../types/binary/dwg/index.js';
 import stepType from '../types/text/step/index.js';
 import blendType from '../types/binary/blend/index.js';
+import fbxType from '../types/binary/fbx/index.js';
+import matType from '../types/binary/mat/index.js';
+import niftiType from '../types/binary/nifti/index.js';
 import sdfType from '../types/text/sdf/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
@@ -248,6 +251,9 @@ export const REGISTRY = [
   dwgType,
   stepType,
   blendType,
+  fbxType,
+  matType,
+  niftiType,
   sdfType,
   regType,
   urlType,
