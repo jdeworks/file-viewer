@@ -1060,4 +1060,12 @@ export async function run(ctx) {
   const cmakeText = await page.$eval('#previewHost .cmake-doc', (e) => e.textContent);
   if (/CMake/i.test(cmakeText)) pass('CMakeLists.txt: badge shown'); else fail('cmake badge: ' + cmakeText.slice(0, 200));
   if (/myapp|mylib|OpenSSL|MyApp/i.test(cmakeText)) pass('CMakeLists.txt: targets or deps shown'); else fail('cmake targets: ' + cmakeText.slice(0, 200));
+
+  // ── Jenkinsfile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Jenkinsfile');
+  await page.waitForSelector('#previewHost .jkf-doc', { timeout: 12000 });
+  const jkfText = await page.$eval('#previewHost .jkf-doc', (e) => e.textContent);
+  if (/Jenkins/i.test(jkfText)) pass('Jenkinsfile: badge shown'); else fail('jenkins badge: ' + jkfText.slice(0, 200));
+  if (/Install|Lint|Test|Build|Deploy/i.test(jkfText)) pass('Jenkinsfile: stages shown'); else fail('jenkins stages: ' + jkfText.slice(0, 200));
 }

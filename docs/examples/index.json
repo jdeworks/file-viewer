@@ -3829,5 +3829,17 @@
       "Config"
     ],
     "enhanced": true
+  },
+  {
+    "label": "Jenkinsfile",
+    "file": "Jenkinsfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Jenkins declarative pipeline with Install, Lint, Test, Build, and Deploy stages.",
+    "knownFile": "jenkinsfile"
   }
 ]
