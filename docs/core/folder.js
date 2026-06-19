@@ -72,7 +72,7 @@ export function recordMove(src, dest) {
 // Module-level re-entrant onMove handler so it can reference itself after a tree rebuild.
 let _onMove = null;
 
-export async function loadFolder(entries) {
+export async function loadFolder(entries, { repoWalkLimit } = {}) {
   if (!confirmDiscard()) return;               // guard unsaved work before swapping folders
   // A .git dir makes this a repository: hide git internals from the tree, surface a
   // branch/commit browser, and default to it instead of opening a file.
@@ -137,7 +137,7 @@ export async function loadFolder(entries) {
     showFolderLoading(git ? 'Reading git metadata…' : 'Opening default file…', { progress: 0.75 });
     await nextFrame();
     if (git) {
-      await openRepoView({ auto: true });        // default to the commit/branch view
+      await openRepoView({ auto: true, walkLimit: repoWalkLimit });  // default to the commit/branch view
     } else {
       const pick = display.find((e) => /(^|\/)(readme|index)\.\w+$/i.test(e.path)) || display[0];
       if (pick) { state._skipDiscardGuard = true; await openTreeFile({ file: pick.file, path: pick.path }); state.treeApi.setActive(pick.path); }
@@ -148,7 +148,7 @@ export async function loadFolder(entries) {
 }
 
 // Render the git branch/commit browser into the repo panel (parent document).
-export async function openRepoView({ auto = false } = {}) {
+export async function openRepoView({ auto = false, walkLimit } = {}) {
   if (!state.repoEntries) return;
   const token = ++_repoViewToken;
   $('intake').hidden = true; $('workspace').hidden = true;
@@ -166,6 +166,7 @@ export async function openRepoView({ auto = false } = {}) {
         state.treeApi?.setActive?.(path);
         await openTreeFile({ file: entry.file, path: entry.path });
       },
+      walkLimit,
     });
     if (token !== _repoViewToken || (auto && state.currentFolderPath)) panel.hidden = true;
   } catch (e) {

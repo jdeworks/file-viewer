@@ -470,4 +470,57 @@ export async function run(ctx) {
     const deltaSubj = await page.$eval('#repoPanel .repo-commit .rc-subject', (e) => e.textContent);
     if (/Delta-resolved subject/.test(deltaSubj)) pass('git Phase 2: OFS_DELTA resolved against base object'); else fail('delta subject: ' + deltaSubj);
   }
+
+  // ── Git: load-more pagination ── two loose commits; walkLimit=1 so first load returns only HEAD.
+  {
+    const deflate = (s) => {
+      const raw = Buffer.from(typeof s === 'string' ? s : s);
+      return Array.from(zlib.deflateSync(raw));
+    };
+    const makeCommitObj = (content) => {
+      const store = Buffer.concat([Buffer.from('commit ' + Buffer.byteLength(content) + '\0'), Buffer.from(content)]);
+      return Array.from(zlib.deflateSync(store));
+    };
+    const sha1 = 'f'.repeat(40);  // HEAD — Second commit
+    const sha2 = '9'.repeat(40);  // Parent — First commit (root)
+    const rootContent = 'tree ' + 'a'.repeat(40) + '\nauthor T <t@e> 1700000100 +0000\ncommitter T <t@e> 1700000100 +0000\n\nRoot commit\n';
+    const headContent = 'tree ' + 'a'.repeat(40) + '\nparent ' + sha2 + '\nauthor T <t@e> 1700000200 +0000\ncommitter T <t@e> 1700000200 +0000\n\nSecond commit\n';
+    const rootObj = makeCommitObj(rootContent);
+    const headObj = makeCommitObj(headContent);
+
+    await page.goto(origin, { waitUntil: 'networkidle' });
+    await page.evaluate(({ sha1, sha2, headObj, rootObj }) => {
+      const enc = (s) => new TextEncoder().encode(s);
+      const mk = (name, bytes) => ({ file: new File([bytes], name.split('/').pop(), { type: '' }), path: name });
+      window.__fv.loadFolder([
+        mk('repo/.git/HEAD', enc('ref: refs/heads/main\n')),
+        mk('repo/.git/refs/heads/main', enc(sha1 + '\n')),
+        mk('repo/.git/objects/' + sha1.slice(0, 2) + '/' + sha1.slice(2), new Uint8Array(headObj)),
+        mk('repo/.git/objects/' + sha2.slice(0, 2) + '/' + sha2.slice(2), new Uint8Array(rootObj)),
+        mk('repo/README.md', enc('# Repo')),
+      ], { repoWalkLimit: 1 });
+    }, { sha1, sha2, headObj, rootObj });
+    await page.waitForSelector('#repoPanel:not([hidden]) .repo-commit', { timeout: 10000 });
+
+    // With walkLimit=1: only HEAD commit visible, load-more button should appear
+    const commitCountBefore = await page.$$eval('#repoPanel .repo-commit', (els) => els.length);
+    const loadMoreVisible = await page.$('#repoPanel .repo-load-more') !== null;
+    if (commitCountBefore === 1 && loadMoreVisible) {
+      pass('git load-more: only HEAD commit shown initially, load-more button present');
+    } else {
+      fail('git load-more initial state: commits=' + commitCountBefore + ' loadMoreVisible=' + loadMoreVisible);
+    }
+
+    // Click load-more → second commit appears, button disappears
+    await page.click('#repoPanel .repo-load-more');
+    await page.waitForFunction(() => document.querySelectorAll('#repoPanel .repo-commit').length >= 2, { timeout: 5000 });
+    const commitCountAfter = await page.$$eval('#repoPanel .repo-commit', (els) => els.length);
+    const loadMoreGone = await page.$('#repoPanel .repo-load-more') === null;
+    const subjects = await page.$$eval('#repoPanel .repo-commit .rc-subject', (els) => els.map((e) => e.textContent));
+    if (commitCountAfter === 2 && loadMoreGone && subjects[0] === 'Second commit' && subjects[1] === 'Root commit') {
+      pass('git load-more: second page loads, button removed, commits in order');
+    } else {
+      fail('git load-more after click: commits=' + commitCountAfter + ' gone=' + loadMoreGone + ' subjects=' + subjects.join('|'));
+    }
+  }
 }

@@ -152,6 +152,9 @@ body {
 .rc-subject { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rc-who { color: var(--fg-2); font-size: 11.5px; white-space: nowrap; }
 .repo-note, .repo-hint { color: var(--fg-2); font-size: 12px; padding: 10px 14px; }
+.repo-load-more { display: block; width: 100%; padding: 10px 14px; background: none; border: 0; border-top: 1px solid var(--border); color: var(--accent); font-size: 12px; cursor: pointer; text-align: center; }
+.repo-load-more:hover { background: var(--bg-2); }
+.repo-load-more:disabled { color: var(--fg-2); cursor: default; }
 .rc-sha { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); word-break: break-all; margin-bottom: 10px; }
 .rc-meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; font-size: 13px; }
 .rc-meta dt { color: var(--fg-2); }

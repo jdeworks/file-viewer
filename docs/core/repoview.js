@@ -15,6 +15,7 @@ function relTime(d) {
 }
 
 export async function renderRepoView(host, repo, options = {}) {
+  const WALK_LIMIT = options.walkLimit || 50;
   host.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'repo-view';
@@ -99,11 +100,53 @@ export async function renderRepoView(host, repo, options = {}) {
     return row;
   }
 
+  let loadMoreBtn = null;
+
+  function appendCommits(commits) {
+    for (const c of commits) {
+      const row = commitRow(short(c.sha), c.subject, (c.author && c.author.name) + ' · ' + relTime(c.author && c.author.date));
+      const select = () => {
+        list.querySelectorAll('.repo-commit.active').forEach((n) => n.classList.remove('active'));
+        row.classList.add('active');
+        showDetail(c);
+      };
+      row.addEventListener('click', select);
+      row.addEventListener('keydown', (e) => { if (e.key === 'Enter') select(); });
+      list.insertBefore(row, loadMoreBtn);
+    }
+  }
+
+  function setLoadMore(nextSha) {
+    if (loadMoreBtn) { loadMoreBtn.remove(); loadMoreBtn = null; }
+    if (!nextSha) return;
+    const btn = document.createElement('button');
+    btn.className = 'repo-load-more';
+    btn.textContent = 'Load 50 more commits';
+    btn.onclick = async () => {
+      btn.disabled = true;
+      btn.textContent = 'Loading…';
+      const { commits, packed } = await repo.walk(nextSha, WALK_LIMIT);
+      appendCommits(commits);
+      const next = (!packed && commits.length > 0 && commits[commits.length - 1].parents.length > 0)
+        ? commits[commits.length - 1].parents[0] : null;
+      setLoadMore(next);
+      if (packed) {
+        const note = document.createElement('p');
+        note.className = 'repo-note';
+        note.textContent = 'Older history is packed and not expanded.';
+        list.appendChild(note);
+      }
+    };
+    loadMoreBtn = btn;
+    list.appendChild(btn);
+  }
+
   async function load(sha) {
-    const cached = repo.peekWalk?.(sha, 50);
+    const cached = repo.peekWalk?.(sha, WALK_LIMIT);
     if (!cached) list.innerHTML = '<p class="repo-hint">Reading commits…</p>';
-    const { commits, packed } = cached || await repo.walk(sha, 50);
+    const { commits, packed } = cached || await repo.walk(sha, WALK_LIMIT);
     list.innerHTML = '';
+    loadMoreBtn = null;
     detail.innerHTML = '<p class="repo-hint">Select a commit to see its details.</p>';
 
     if (!commits.length) {
@@ -122,24 +165,19 @@ export async function renderRepoView(host, repo, options = {}) {
       return;
     }
 
-    commits.forEach((c, i) => {
-      const row = commitRow(short(c.sha), c.subject, (c.author && c.author.name) + ' · ' + relTime(c.author && c.author.date));
-      const select = () => {
-        list.querySelectorAll('.repo-commit.active').forEach((n) => n.classList.remove('active'));
-        row.classList.add('active');
-        showDetail(c);
-      };
-      row.addEventListener('click', select);
-      row.addEventListener('keydown', (e) => { if (e.key === 'Enter') select(); });
-      list.appendChild(row);
-      if (i === 0) select();
-    });
-    if (packed) {
+    appendCommits(commits);
+    if (!packed && commits.length > 0 && commits[commits.length - 1].parents.length > 0) {
+      setLoadMore(commits[commits.length - 1].parents[0]);
+    } else if (packed) {
       const note = document.createElement('p');
       note.className = 'repo-note';
       note.textContent = 'Older history is packed and not expanded.';
       list.appendChild(note);
     }
+
+    // Auto-select first commit
+    const first = list.querySelector('.repo-commit');
+    if (first) first.click();
   }
 
   branchSel.addEventListener('change', () => load(branchSel.value));
