@@ -188,6 +188,22 @@ export async function run(ctx) {
     } catch { return false; }
   }, beforeEarnBits, { timeout: 4000 });
   pass('Stage 1 tabs unlock leaves a click target that still earns bits');
+  // After tabs unlock: switching to another tab and back must not break the earn button.
+  const achTab = await page.$('.mg-s1-tab[data-tab="achievements"]');
+  if (achTab) {
+    await page.click('.mg-s1-tab[data-tab="achievements"]');
+    await page.waitForSelector('.mg-s1-panel[data-panel="achievements"]', { timeout: 4000 });
+    await page.click('.mg-s1-tab[data-tab="bits"]');
+    await page.waitForSelector('.mg-s1-earn', { timeout: 4000 });
+    const bitsBeforeSwitch = await page.evaluate(() => JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState[1].bits.m);
+    await page.click('.mg-s1-earn');
+    await page.waitForFunction((before) => {
+      try { return JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState[1].bits.m > before; } catch { return false; }
+    }, bitsBeforeSwitch, { timeout: 4000 });
+    pass('Stage 1 earn button works after switching to achievements tab and back');
+  } else {
+    fail('Stage 1 achievements tab not visible after tab unlock with 10M totalBits');
+  }
   await page.click('.games-close');
 
   await page.evaluate(async () => {
