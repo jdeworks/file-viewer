@@ -261,6 +261,40 @@ import tsupConfig from '../types/text/known/tsup-config/index.js';
 import rspackConfig from '../types/text/known/rspack-config/index.js';
 import parcelrc from '../types/text/json/known/parcelrc/index.js';
 import bunfigToml from '../types/text/toml/known/bunfig/index.js';
+import atlantis from '../types/text/yaml/known/atlantis/index.js';
+import checkov from '../types/text/yaml/known/checkov/index.js';
+import terraformDocs from '../types/text/yaml/known/terraform-docs/index.js';
+import infracost from '../types/text/yaml/known/infracost/index.js';
+import androidManifest from '../types/text/xml/known/android-manifest/index.js';
+import appConfig from '../types/text/xml/known/app-config/index.js';
+import buildZigZon from '../types/text/known/build-zig-zon/index.js';
+import cartfile from '../types/text/known/cartfile/index.js';
+import electronBuilder from '../types/text/yaml/known/electron-builder/index.js';
+import elmJson from '../types/text/json/known/elm-json/index.js';
+import externalSecrets from '../types/text/yaml/known/external-secrets/index.js';
+import fluentBit from '../types/text/known/fluent-bit/index.js';
+import forgeConfig from '../types/text/known/forge-config/index.js';
+import gleamToml from '../types/text/toml/known/gleam-toml/index.js';
+import goWork from '../types/text/known/go-work/index.js';
+import grafanaIni from '../types/text/ini/known/grafana-ini/index.js';
+import growthbook from '../types/text/json/known/growthbook/index.js';
+import jekyllConfig from '../types/text/yaml/known/jekyll-config/index.js';
+import juliaProject from '../types/text/toml/known/julia-project/index.js';
+import kongConfig from '../types/text/yaml/known/kong-config/index.js';
+import launchSettings from '../types/text/json/known/launch-settings/index.js';
+import nimble from '../types/text/known/nimble/index.js';
+import packagesConfig from '../types/text/xml/known/packages-config/index.js';
+import podspec from '../types/text/known/podspec/index.js';
+import redisConf from '../types/text/known/redis-conf/index.js';
+import shardYml from '../types/text/yaml/known/shard-yml/index.js';
+import tauriConf from '../types/text/json/known/tauri-conf/index.js';
+import traefikConfig from '../types/text/yaml/known/traefik-config/index.js';
+import unleashConfig from '../types/text/known/unleash-config/index.js';
+import vaultHcl from '../types/text/known/vault-hcl/index.js';
+import vectorToml from '../types/text/toml/known/vector-toml/index.js';
+import wailsJson from '../types/text/json/known/wails-json/index.js';
+import webConfig from '../types/text/xml/known/web-config/index.js';
+import xcconfig from '../types/text/known/xcconfig/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -313,7 +347,16 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   cursorRules, claudeMd, copilotInstructions, aiderConf,
   phpunit, phpstan, phpCsFixer, behat,
   terragrunt, tflint, tfLock, versionsTf,
-  tsupConfig, rspackConfig, parcelrc, bunfigToml];
+  tsupConfig, rspackConfig, parcelrc, bunfigToml,
+  shadowCljs, projectClj, depsEdn,
+  atlantis, checkov, terraformDocs, infracost,
+  androidManifest, appConfig, buildZigZon, cartfile,
+  electronBuilder, elmJson, externalSecrets, fluentBit, forgeConfig,
+  gleamToml, goWork, grafanaIni, growthbook,
+  jekyllConfig, juliaProject, kongConfig, launchSettings,
+  nimble, packagesConfig, podspec, redisConf, shardYml,
+  tauriConf, traefikConfig, unleashConfig, vaultHcl,
+  vectorToml, wailsJson, webConfig, xcconfig];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
     try { if (k.match(intake, baseType)) return k; } catch { /* a bad matcher never breaks detection */ }
