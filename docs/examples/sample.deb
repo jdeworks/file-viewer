@@ -1,0 +1,16 @@
+!<arch>
+debian-binary   0           0     0     644     4         `
+2.0
+control.tar     0           0     0     644     295       `
+Package: hello-world
+Version: 1.0.0
+Architecture: amd64
+Maintainer: Demo User <demo@example.com>
+Homepage: https://example.com
+Installed-Size: 28
+Description: A demo Debian package
+ This is a sample .deb file for demonstration purposes.
+ It contains no actual software.
+Depends: libc6 (>= 2.17)
+
+data.tar        0           0     0     644     0         `

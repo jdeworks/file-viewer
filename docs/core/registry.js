@@ -132,6 +132,10 @@ import fbxType from '../types/binary/fbx/index.js';
 import matType from '../types/binary/mat/index.js';
 import niftiType from '../types/binary/nifti/index.js';
 import pycType from '../types/binary/pyc/index.js';
+import lmmsType from '../types/binary/lmms/index.js';
+import f3dType from '../types/binary/f3d/index.js';
+import debType from '../types/binary/deb/index.js';
+import qifType from '../types/text/qif/index.js';
 import sdfType from '../types/text/sdf/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
@@ -256,6 +260,10 @@ export const REGISTRY = [
   matType,
   niftiType,
   pycType,
+  lmmsType,
+  f3dType,
+  debType,
+  qifType,
   sdfType,
   regType,
   urlType,

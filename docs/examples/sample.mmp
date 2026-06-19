@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE lmms-project>
+<lmms-project version="1.0" type="song" creator="LMMS" creatorversion="1.2.2">
+	<head bpm="128" mastervol="100" masterpit="0" name="Demo Beat" timesig_numerator="4" timesig_denominator="4" />
+	<song>
+		<track type="0" pos="0" muted="0" name="Bass Synth" ch="0" usemasterpit="1" usemastervol="1">
+			<instrumenttrack vol="100" pan="0" pitchrange="2" usemasterpit="1">
+			</instrumenttrack>
+		</track>
+		<track type="0" pos="0" muted="0" name="Lead Synth" ch="1" usemasterpit="1" usemastervol="1">
+			<instrumenttrack vol="80" pan="0" pitchrange="2" usemasterpit="1">
+			</instrumenttrack>
+		</track>
+		<track type="0" pos="0" muted="0" name="Pad" ch="2" usemasterpit="1" usemastervol="1">
+			<instrumenttrack vol="90" pan="0" pitchrange="2" usemasterpit="1">
+			</instrumenttrack>
+		</track>
+		<track type="1" pos="0" muted="0" name="Beat+Bassline 0">
+		</track>
+	</song>
+</lmms-project>

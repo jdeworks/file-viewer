@@ -455,4 +455,52 @@ export async function run(ctx) {
   const pycText = await pycf.$eval('body', (el) => el.textContent);
   if (/PYC|Python/i.test(pycText)) pass('PYC badge shown'); else fail('pyc badge: ' + pycText.slice(0, 300));
   if (/3\.11|3495/i.test(pycText)) pass('Python version shown'); else fail('pyc version: ' + pycText.slice(0, 300));
+
+  // ── LMMS Music Project ────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('LMMS music project (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const lmmsf = await frameOf('iframe.fv-preview-frame');
+  await lmmsf.waitForSelector('.badge-lmms', { timeout: 8000 });
+  const lmmsTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (lmmsTypeId === 'lmms') pass('.mmp detected as lmms type'); else fail('lmms typeId: ' + lmmsTypeId);
+  const lmmsText = await lmmsf.$eval('body', (el) => el.textContent);
+  if (/LMMS/i.test(lmmsText)) pass('LMMS badge shown'); else fail('lmms badge: ' + lmmsText.slice(0, 300));
+  if (/128|BPM|Demo Beat/i.test(lmmsText)) pass('LMMS BPM or name shown'); else fail('lmms bpm: ' + lmmsText.slice(0, 300));
+
+  // ── Fusion 360 Design (.f3d) ──────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Fusion 360 design (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const f3df = await frameOf('iframe.fv-preview-frame');
+  await f3df.waitForSelector('.badge-f3d', { timeout: 8000 });
+  const f3dTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (f3dTypeId === 'f3d') pass('.f3d detected as f3d type'); else fail('f3d typeId: ' + f3dTypeId);
+  const f3dText = await f3df.$eval('body', (el) => el.textContent);
+  if (/F3D|Fusion/i.test(f3dText)) pass('F3D badge shown'); else fail('f3d badge: ' + f3dText.slice(0, 300));
+  if (/Sample Widget|manifest|archive/i.test(f3dText)) pass('F3D contents shown'); else fail('f3d contents: ' + f3dText.slice(0, 300));
+
+  // ── Debian Package (.deb) ─────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Debian package (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const debf = await frameOf('iframe.fv-preview-frame');
+  await debf.waitForSelector('.badge-deb', { timeout: 8000 });
+  const debTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (debTypeId === 'deb') pass('.deb detected as deb type'); else fail('deb typeId: ' + debTypeId);
+  const debText = await debf.$eval('body', (el) => el.textContent);
+  if (/DEB|Debian/i.test(debText)) pass('DEB badge shown'); else fail('deb badge: ' + debText.slice(0, 300));
+  if (/hello-world|Package|debian-binary/i.test(debText)) pass('DEB package info shown'); else fail('deb pkg: ' + debText.slice(0, 300));
+
+  // ── QIF Financial Data ────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('QIF financial data (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const qiff = await frameOf('iframe.fv-preview-frame');
+  await qiff.waitForSelector('.badge-qif', { timeout: 8000 });
+  const qifTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (qifTypeId === 'qif') pass('.qif detected as qif type'); else fail('qif typeId: ' + qifTypeId);
+  const qifText = await qiff.$eval('body', (el) => el.textContent);
+  if (/QIF|Quicken/i.test(qifText)) pass('QIF badge shown'); else fail('qif badge: ' + qifText.slice(0, 300));
+  if (/transaction|Bank|Grocery/i.test(qifText)) pass('QIF transactions shown'); else fail('qif txns: ' + qifText.slice(0, 300));
 }

@@ -2289,5 +2289,47 @@
       "code",
       "binary"
     ]
+  },
+  {
+    "file": "sample.mmp",
+    "label": "LMMS music project (demo)",
+    "mime": "application/xml",
+    "category": "audio",
+    "categories": [
+      "audio",
+      "creative"
+    ]
+  },
+  {
+    "file": "sample.f3d",
+    "label": "Fusion 360 design (demo)",
+    "mime": "application/zip",
+    "category": "Design",
+    "categories": [
+      "Design",
+      "3D",
+      "binary"
+    ]
+  },
+  {
+    "file": "sample.deb",
+    "label": "Debian package (demo)",
+    "mime": "application/vnd.debian.binary-package",
+    "category": "code",
+    "categories": [
+      "code",
+      "binary",
+      "archive"
+    ]
+  },
+  {
+    "file": "sample.qif",
+    "label": "QIF financial data (demo)",
+    "mime": "application/x-qif",
+    "category": "Data",
+    "categories": [
+      "Data",
+      "financial"
+    ]
   }
 ]

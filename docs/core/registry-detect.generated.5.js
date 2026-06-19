@@ -181,6 +181,100 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_lmms=(()=>{
+// LMMS .mmp: plain XML starting with <lmms-project or <?xml
+// LMMS .mmpz: gzip-compressed .mmp (magic: 1f 8b)
+
+function detect(intake) {
+  const { filename, bytes: b, textSample } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isLmmsExt = ext === 'mmp' || ext === 'mmpz';
+
+  if (!b || b.length < 4) return isLmmsExt ? 0.5 : 0;
+
+  // .mmpz: gzip magic
+  const isGzip = b[0] === 0x1f && b[1] === 0x8b;
+  if (isGzip && ext === 'mmpz') return 0.95;
+  if (isGzip && isLmmsExt) return 0.95;
+
+  // .mmp: XML with lmms-project root
+  if (textSample) {
+    const s = textSample.trimStart();
+    if (s.includes('<lmms-project')) return isLmmsExt ? 0.99 : 0.92;
+    if (s.includes('<?xml') && isLmmsExt) return 0.80;
+  }
+  return isLmmsExt ? 0.5 : 0;
+}
+return detect;
+})();
+
+const detect_f3d=(()=>{
+// Fusion 360 .f3d: ZIP file (PK magic) with specific internal structure
+// Also .f3z (assembly) shares the same format
+
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isF3dExt = ext === 'f3d' || ext === 'f3z';
+
+  if (!b || b.length < 4) return isF3dExt ? 0.5 : 0;
+
+  const isPkZip = b[0] === 0x50 && b[1] === 0x4b && (b[2] === 0x03 || b[2] === 0x05 || b[2] === 0x07);
+  if (isF3dExt) return isPkZip ? 0.97 : 0.4;
+  return 0;
+}
+return detect;
+})();
+
+const detect_deb=(()=>{
+// Debian .deb: ar archive magic "!<arch>\n" followed by debian-binary member
+
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isDebExt = ext === 'deb' || ext === 'udeb';
+
+  if (!b || b.length < 8) return isDebExt ? 0.5 : 0;
+
+  // ar magic: "!<arch>\n" = 21 3C 61 72 63 68 3E 0A
+  const isArMagic = b[0] === 0x21 && b[1] === 0x3c && b[2] === 0x61 && b[3] === 0x72
+    && b[4] === 0x63 && b[5] === 0x68 && b[6] === 0x3e && b[7] === 0x0a;
+
+  if (!isArMagic) return isDebExt ? 0.3 : 0;
+
+  // Look for "debian-binary" in the first entry name (at offset 8)
+  if (b.length >= 24) {
+    const name = new TextDecoder('ascii', { fatal: false }).decode(b.slice(8, 24)).trimEnd();
+    if (name.startsWith('debian-binary')) return isDebExt ? 0.99 : 0.97;
+  }
+  return isDebExt ? 0.85 : 0.4;
+}
+return detect;
+})();
+
+const detect_qif=(()=>{
+// QIF (Quicken Interchange Format): starts with !Type: or !Account or !Option
+// https://en.wikipedia.org/wiki/Quicken_Interchange_Format
+
+function detect(intake) {
+  const { filename, textSample } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isQifExt = ext === 'qif' || ext === 'qfx';
+
+  if (!textSample) return isQifExt ? 0.4 : 0;
+
+  const s = textSample.trimStart();
+  if (s.startsWith('!Type:') || s.startsWith('!type:')) {
+    return isQifExt ? 0.99 : 0.95;
+  }
+  if (s.startsWith('!Account') || s.startsWith('!account') || s.startsWith('!Option')) {
+    return isQifExt ? 0.99 : 0.90;
+  }
+  return isQifExt ? 0.5 : 0;
+}
+return detect;
+})();
+
 const detect_sdf=(()=>{
 function hasExtension(intake, ...exts) {
   const name = (intake.filename || '').toLowerCase();
@@ -231,84 +325,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_url=(()=>{
-// URL / query-string inspector: high score for https:// URLs, stepping down through other
-// schemes, bare query strings, multi-URL files, and .url/.webloc extensions.
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const t = (intake.textSample || '').trim();
-  if (!t) return 0;
-
-  if (/^https?:\/\//i.test(t)) return 0.90;
-  if (/^(?:(?:ftp|file|blob|git):\/\/|(?:data|mailto|tel|ssh):)/i.test(t)) return 0.85;
-  if (/^\?[^=\n]+=[^&\n]/.test(t)) return 0.80;
-  const multiUrl = (t.match(/^https?:\/\//gmi) || []).length;
-  if (multiUrl >= 3) return 0.75;
-  if (hasExtension(intake, 'url', 'webloc')) return 0.70;
-  return 0;
-}
-return detect;
-})();
-
-const detect_asciiart=(()=>{
-const BLOCK_CHARS = /[█▓▒░═╔╗╚╝╠╣╦╩╬║─│┌┐└┘├┤┬┴┼]/g;
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-
-  const text = intake.textSample || intake.text || '';
-  if (!text) return 0;
-
-  // Extension-based detection
-  if (hasExtension(intake, 'ans', 'asc')) return 0.90;
-  if (hasExtension(intake, 'nfo', 'diz')) return 0.80;
-
-  const sauceIdx = text.lastIndexOf('SAUCE00');
-  if (sauceIdx !== -1 && sauceIdx >= text.length - 200) return 0.95;
-
-  // Content-based: count signals
-  const lines = text.split(/\r?\n/);
-  const totalLines = lines.filter((l) => l.length > 0).length;
-  if (totalLines < 3) return 0;
-
-  let signals = 0;
-
-  // Signal 1: >30% of non-empty lines are wider than 80 chars
-  const wideLines = lines.filter((l) => l.length > 80).length;
-  if (totalLines > 0 && wideLines / totalLines > 0.30) signals++;
-
-  // Signal 2: ANSI escape sequences present
-  const ansiCount = (text.match(/\x1b\[/g) || []).length;
-  if (ansiCount >= 3) signals++;
-
-  // Signal 3: density of block/box-drawing characters
-  const blockCount = (text.match(BLOCK_CHARS) || []).length;
-  if (blockCount >= 5) signals++;
-
-  // Signal 4: repeated use of pipe/backslash art (ASCII art without special chars)
-  const lineArt = lines.filter((l) => /[|\\\/]{3,}/.test(l)).length;
-  if (lineArt >= 3) signals++;
-
-  if (signals < 2) return 0;
-
-  // Scale: 2 signals → 0.60, 3 → 0.70, 4 → 0.75
-  const score = Math.min(0.75, 0.55 + signals * 0.07);
-  return score;
-}
-return detect;
-})();
-
-const detect_kicad=(()=>{
-const EXTS = ['kicad_sch', 'kicad_pcb', 'kicad_pro', 'kicad_mod', 'kicad_sym', 'kicad_wks', 'kicad_dru', 'kicad_prl'];
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, ...EXTS)) return 0.97;
-  const head = (intake.text || '').slice(0, 200);
-  if (/^\(kicad_sch\b|\(kicad_pcb\b|\(kicad_pro\b|\(kicad_symbol_lib\b|\(module\b/m.test(head)) return 0.9;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad};
+export const DETECTORS={"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"lmms":detect_lmms,"f3d":detect_f3d,"deb":detect_deb,"qif":detect_qif,"sdf":detect_sdf,"reg":detect_reg};

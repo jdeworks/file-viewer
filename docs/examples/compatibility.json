@@ -4542,6 +4542,127 @@
       "knownParserGaps": [
         "Bytecode disassembly not shown (requires Python dis module)",
         "Source code not recoverable from this viewer"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "lmms": {
+      "label": "LMMS Project",
+      "support": "full",
+      "sampleFiles": [
+        "sample.mmp"
+      ],
+      "extensions": [
+        ".mmp",
+        ".mmpz"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "Instrument plugin parameters not shown (vendor-specific)",
+        "Automation curve data not displayed",
+        ".mmpz decompression requires DecompressionStream API"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "f3d": {
+      "label": "Fusion 360",
+      "support": "full",
+      "sampleFiles": [
+        "sample.f3d"
+      ],
+      "extensions": [
+        ".f3d",
+        ".f3z"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "3D geometry not rendered (requires Fusion 360 API)",
+        "Design history and timeline not parsed",
+        "Component tree requires deep JSON traversal"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "deb": {
+      "label": "Debian Package",
+      "support": "full",
+      "sampleFiles": [
+        "sample.deb"
+      ],
+      "extensions": [
+        ".deb",
+        ".udeb"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "control.tar.gz decompression not implemented (shown as raw)",
+        "data.tar contents not browsable",
+        "Checksums and signatures not verified"
+      ]
+    },
+    "qif": {
+      "label": "QIF Financial",
+      "support": "full",
+      "sampleFiles": [
+        "sample.qif"
+      ],
+      "extensions": [
+        ".qif",
+        ".qfx"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "Split transactions not expanded",
+        "Investment transaction fields (Q, O, I, etc.) not parsed",
+        "Multiple account sections not fully differentiated"
       ]
     }
   },

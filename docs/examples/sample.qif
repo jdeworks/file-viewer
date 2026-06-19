@@ -1,0 +1,31 @@
+!Type:Bank
+D01/15/2024
+T-42.50
+PGrocery Store
+MWeekly groceries
+LFood:Groceries
+^
+D01/20/2024
+T-89.99
+PElectric Company
+MJanuary bill
+LUtilities:Electric
+^
+D01/25/2024
+T3500.00
+PEmployer Inc
+MSalary deposit
+LIncome:Salary
+^
+D02/01/2024
+T-1200.00
+PApartment LLC
+MFebruary rent
+LHousing:Rent
+^
+D02/05/2024
+T-35.00
+PNetflix
+MStreaming subscription
+LEntertainment:Subscriptions
+^
