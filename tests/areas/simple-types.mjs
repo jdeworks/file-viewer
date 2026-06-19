@@ -259,6 +259,29 @@ export async function run(ctx) {
   const jsonlCols = await jsonlf.$$eval('.jsonl-table th', (ths) => ths.map((th) => th.textContent));
   if (jsonlCols.includes('timestamp') && jsonlCols.includes('level') && jsonlCols.includes('message')) pass('JSONL table shows shared schema columns'); else fail('jsonl cols: ' + jsonlCols.join(','));
 
+  // ── Bioinformatics viewer (FASTA / VCF) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample gene sequences (FASTA)');
+  const fastaf = await frameOf('iframe.fv-preview-frame');
+  await fastaf.waitForSelector('.bio-preview', { timeout: 8000 });
+  const fastaTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (fastaTypeId === 'bio') pass('sample.fasta detected as bioinformatics type'); else fail('bio fasta type: ' + fastaTypeId);
+  const fastaBadge = await fastaf.$eval('.bio-badge', (e) => e.textContent);
+  const fastaRows = await fastaf.$$('.bio-seq-row');
+  if (fastaBadge === 'FASTA' && fastaRows.length >= 3) pass('FASTA sequences listed with FASTA badge'); else fail('fasta badge=' + fastaBadge + ' rows=' + fastaRows.length);
+  const fastaStats = await fastaf.$eval('.bio-header', (e) => e.textContent);
+  if (/3\s*sequences/i.test(fastaStats)) pass('FASTA sequence count shown in header'); else fail('fasta stats: ' + fastaStats.replace(/\s+/g, ' ').slice(0, 80));
+
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample variants (VCF)');
+  const vcff2 = await frameOf('iframe.fv-preview-frame');
+  await vcff2.waitForSelector('.bio-preview', { timeout: 8000 });
+  const vcfTypeId2 = await page.$eval('#typeSelect', (s) => s.value);
+  if (vcfTypeId2 === 'bio') pass('sample-variants.vcf detected as bioinformatics type'); else fail('bio vcf type: ' + vcfTypeId2);
+  const vcfBadge = await vcff2.$eval('.bio-badge', (e) => e.textContent);
+  const vcfVarRows = await vcff2.$$('.bio-table tbody tr');
+  if (vcfBadge === 'VCF' && vcfVarRows.length >= 5) pass('VCF variants table shown with VCF badge'); else fail('vcf badge=' + vcfBadge + ' rows=' + vcfVarRows.length);
+
   // ── MusicXML music notation viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Ode to Joy Theme (MusicXML)');

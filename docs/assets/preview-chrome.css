@@ -453,24 +453,6 @@
 .ofx-note { color: var(--fg-2); font-size: .82rem; margin-top: 8px; }
 .ofx-empty { color: var(--fg-2); padding: 16px; text-align: center; font-size: .9rem; }
 
-/* MusicXML score viewer */
-.mxml-preview { font-family: system-ui, sans-serif; padding: 16px; max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
-.mxml-header { text-align: center; display: flex; flex-direction: column; gap: 4px; }
-.mxml-title { font-size: 1.4rem; font-weight: 700; }
-.mxml-composer { font-size: 1rem; color: var(--fg-2); }
-.mxml-lyricist { font-size: .9rem; color: var(--fg-2); }
-.mxml-copyright { font-size: .78rem; color: var(--fg-2); }
-.mxml-untitled { font-size: 1rem; color: var(--fg-2); font-style: italic; }
-.mxml-error { color: #dc2626; font-size: .9rem; padding: 12px; }
-.mxml-section { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
-.mxml-label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); }
-.mxml-parts { display: flex; flex-wrap: wrap; gap: 6px; }
-.mxml-part-chip { background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; font-size: .82rem; }
-.mxml-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
-.mxml-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.mxml-stat-value { font-size: 1.1rem; font-weight: 600; }
-.mxml-stat-label { font-size: .72rem; color: var(--fg-2); text-transform: uppercase; letter-spacing: .04em; }
-
 /* MusicXML */
 .mxml-preview { padding: 12px; }
 .mxml-header { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
@@ -484,3 +466,12 @@
 .mxml-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; }
 .mxml-stat-value { font-weight: 600; font-size: 1.05em; }
 .mxml-stat-label { font-size: .75em; color: var(--fg-2); }
+
+/* Bioinformatics (FASTA/FASTQ/VCF) */
+.bio-preview { padding: 12px; } .bio-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.bio-badge { background: var(--accent); color: #fff; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; }
+.bio-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: .82em; } .bio-section { margin-bottom: 14px; }
+.bio-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
+.bio-seq-row { border-bottom: 1px solid var(--border); padding: 4px 0; } .bio-seq-name,.bio-seq-bases { font: 12px ui-monospace,monospace; } .bio-seq-name { color: var(--accent); } .bio-seq-len { font-size: .75em; color: var(--fg-2); }
+.bio-table { border-collapse: collapse; font-size: 12px; width: 100%; } .bio-table th { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--border); color: var(--fg-2); font-size: 11px; } .bio-table td { padding: 3px 8px; border-bottom: 1px solid var(--border); font: 12px ui-monospace,monospace; }
+.bio-ref { color: #16a34a; } .bio-alt { color: #dc2626; } .bio-chips { display: flex; flex-wrap: wrap; gap: 5px; } .bio-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font-size: .8em; } .bio-chip-more { color: var(--fg-2); } .bio-empty { color: var(--fg-2); padding: 20px; text-align: center; }

@@ -1836,5 +1836,23 @@
     "categories": [
       "Media"
     ]
+  },
+  {
+    "label": "Sample gene sequences (FASTA)",
+    "file": "sample.fasta",
+    "mime": "text/x-fasta",
+    "category": "Data",
+    "categories": [
+      "Data"
+    ]
+  },
+  {
+    "label": "Sample variants (VCF)",
+    "file": "sample-variants.vcf",
+    "mime": "text/x-vcf",
+    "category": "Data",
+    "categories": [
+      "Data"
+    ]
   }
 ]

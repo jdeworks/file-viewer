@@ -43,6 +43,7 @@ import harType from '../types/text/har/index.js';
 import jsonlType from '../types/text/jsonl/index.js';
 import ofxType from '../types/text/ofx/index.js';
 import musicxmlType from '../types/text/musicxml/index.js';
+import bioType from '../types/text/bio/index.js';
 import ipynbType from '../types/ipynb/index.js';
 import imageType from '../types/image/index.js';
 import midiType from '../types/binary/midi/index.js';
@@ -150,6 +151,7 @@ export const REGISTRY = [
   harType,
   jsonlType,
   ofxType,
+  bioType,
   jsonType,
   layeredType,
   tiffType,

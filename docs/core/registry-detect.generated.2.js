@@ -3,6 +3,44 @@ import { mediaInfo } from '../types/media/medialib.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_layered=(()=>{
+// PSD = 8BPS magic; XCF = "gimp xcf " magic; ORA/KRA = ZIP (PK) + extension.
+function detect(intake) {
+  if (!intake.isBinary) return 0;
+  const b = intake.bytes;
+  if (!b || b.length < 9) return 0;
+  // PSD magic: 8BPS
+  if (b[0] === 0x38 && b[1] === 0x42 && b[2] === 0x50 && b[3] === 0x53) return 0.97;
+  // XCF magic: "gimp xcf "
+  if (b[0] === 0x67 && b[1] === 0x69 && b[2] === 0x6d && b[3] === 0x70 &&
+      b[4] === 0x20 && b[5] === 0x78 && b[6] === 0x63 && b[7] === 0x66 &&
+      b[8] === 0x20) return 0.99;
+  // ZIP-based formats by extension
+  if (b[0] === 0x50 && b[1] === 0x4b) {
+    if (hasExtension(intake, 'ora')) return 0.95;
+    if (hasExtension(intake, 'kra')) return 0.97;
+  }
+  return 0;
+}
+return detect;
+})();
+
+const detect_tiff=(()=>{
+function detect(intake) {
+  const b = intake.bytes;
+  if (b?.length >= 4) {
+    const le = b[0] === 0x49 && b[1] === 0x49 && b[2] === 0x2a && b[3] === 0x00;
+    const be = b[0] === 0x4d && b[1] === 0x4d && b[2] === 0x00 && b[3] === 0x2a;
+    const big = (b[0] === 0x49 && b[1] === 0x49 && b[2] === 0x2b && b[3] === 0x00)
+      || (b[0] === 0x4d && b[1] === 0x4d && b[2] === 0x00 && b[3] === 0x2b);
+    if (le || be || big) return 0.99;
+  }
+  if (hasExtension(intake, 'tif', 'tiff')) return 0.9;
+  return 0;
+}
+return detect;
+})();
+
 const detect_heif=(()=>{
 function detect(intake) {
   if (!intake.isBinary) return 0;
@@ -271,55 +309,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_archive=(()=>{
-// 7z / RAR / tar family archives. These are claimed here at high confidence so they route to
-// the archive listing renderer rather than the zip renderer or raw fallback. Zip (.zip) stays
-// with the zip type (which has its own JSZip-based reader and central-directory fallback).
-function detect(intake) {
-  if (hasExtension(intake, '7z', 'rar', 'tar', 'tgz')) return 0.92;
-  // Compound extensions — check the filename directly.
-  const name = (intake.filename || '').toLowerCase();
-  if (name.endsWith('.tar.gz') || name.endsWith('.tar.bz2') || name.endsWith('.tar.xz') || name.endsWith('.tar.zst')) return 0.92;
-  const b = intake.bytes;
-  if (b && b.length >= 6) {
-    // 7z magic: 37 7A BC AF 27 1C
-    if (b[0] === 0x37 && b[1] === 0x7a && b[2] === 0xbc && b[3] === 0xaf) return 0.55;
-    // RAR magic: 52 61 72 21 1A 07
-    if (b[0] === 0x52 && b[1] === 0x61 && b[2] === 0x72 && b[3] === 0x21) return 0.55;
-    // tar magic: 'ustar' at offset 257
-    if (b.length >= 262 && b[257] === 0x75 && b[258] === 0x73 && b[259] === 0x74 && b[260] === 0x61 && b[261] === 0x72) return 0.55;
-  }
-  return 0;
-}
-return detect;
-})();
-
-const detect_iwork=(()=>{
-const EXTS = { '.pages': 'Pages', '.numbers': 'Numbers', '.keynote': 'Keynote' };
-
-function detect(intake) {
-  if (!intake.isBinary) return 0;
-  const ext = '.' + (intake.filename || '').split('.').pop().toLowerCase();
-  if (!EXTS[ext]) return 0;
-  // must have ZIP magic: 50 4B 03 04
-  const b = intake.bytes;
-  if (b.length < 4 || b[0] !== 0x50 || b[1] !== 0x4B || b[2] !== 0x03 || b[3] !== 0x04) return 0;
-  return 0.92;
-}
-return detect;
-})();
-
-const detect_zip=(()=>{
-// Zip-family archives. Office formats (.docx/.xlsx/.pptx) are also zips but win on their
-// own extensions, so only claim generic archive extensions strongly; PK magic is a weak
-// fallback so a mis-named archive still lands here rather than as raw bytes.
-function detect(intake) {
-  if (hasExtension(intake, 'zip', 'jar', 'epub', 'apk', 'war', 'cbz', 'whl', 'nupkg')) return 0.9;
-  const b = intake.bytes;
-  if (b && b.length >= 4 && b[0] === 0x50 && b[1] === 0x4b && (b[2] === 0x03 || b[2] === 0x05 || b[2] === 0x07)) return 0.45;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip};
+export const DETECTORS={"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu};

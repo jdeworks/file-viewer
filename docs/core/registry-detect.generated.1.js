@@ -116,7 +116,11 @@ const detect_vcard=(()=>{
 // vCard contact files (.vcf / .vcard).
 function detect(intake) {
   if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'vcf', 'vcard')) return 0.95;
+  if (hasExtension(intake, 'vcf', 'vcard')) {
+    // Yield to bioinformatics type if content looks like genomic VCF
+    if (/^##fileformat=VCF/i.test(intake.textSample || '')) return 0;
+    return 0.95;
+  }
   if (mimeMatches(intake, 'vcard', 'x-vcard')) return 0.9;
   if (/^BEGIN:VCARD/im.test(intake.textSample || '')) return 0.85;
   return 0;
@@ -267,6 +271,30 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_bio=(()=>{
+const FASTA_EXT = ['fa', 'fasta', 'fna', 'faa', 'ffn', 'frn', 'fsa', 'mpfa'];
+const FASTQ_EXT = ['fq', 'fastq'];
+const VCF_EXT = ['bcf'];
+const GFF_EXT = ['gff', 'gff3', 'gtf'];
+const BED_EXT = ['bed'];
+
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, ...FASTA_EXT)) return 0.92;
+  if (hasExtension(intake, ...FASTQ_EXT)) return 0.92;
+  if (hasExtension(intake, ...VCF_EXT)) return 0.92;
+  if (hasExtension(intake, ...GFF_EXT)) return 0.88;
+  if (hasExtension(intake, ...BED_EXT)) return 0.82;
+  const head = (intake.text || '').slice(0, 600);
+  if (/^>[\w\s]/.test(head)) return 0.75;           // FASTA >header
+  if (/^@[\w\s]/.test(head) && /^\+/m.test(head)) return 0.7;  // FASTQ @header + +
+  if (/^##fileformat=VCF/i.test(head)) return 0.85; // VCF meta
+  if (/^##gff-version/i.test(head)) return 0.82;    // GFF
+  return 0;
+}
+return detect;
+})();
+
 const detect_json=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -280,42 +308,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_layered=(()=>{
-// PSD = 8BPS magic; XCF = "gimp xcf " magic; ORA/KRA = ZIP (PK) + extension.
-function detect(intake) {
-  if (!intake.isBinary) return 0;
-  const b = intake.bytes;
-  if (!b || b.length < 9) return 0;
-  // PSD magic: 8BPS
-  if (b[0] === 0x38 && b[1] === 0x42 && b[2] === 0x50 && b[3] === 0x53) return 0.97;
-  // XCF magic: "gimp xcf "
-  if (b[0] === 0x67 && b[1] === 0x69 && b[2] === 0x6d && b[3] === 0x70 &&
-      b[4] === 0x20 && b[5] === 0x78 && b[6] === 0x63 && b[7] === 0x66 &&
-      b[8] === 0x20) return 0.99;
-  // ZIP-based formats by extension
-  if (b[0] === 0x50 && b[1] === 0x4b) {
-    if (hasExtension(intake, 'ora')) return 0.95;
-    if (hasExtension(intake, 'kra')) return 0.97;
-  }
-  return 0;
-}
-return detect;
-})();
-
-const detect_tiff=(()=>{
-function detect(intake) {
-  const b = intake.bytes;
-  if (b?.length >= 4) {
-    const le = b[0] === 0x49 && b[1] === 0x49 && b[2] === 0x2a && b[3] === 0x00;
-    const be = b[0] === 0x4d && b[1] === 0x4d && b[2] === 0x00 && b[3] === 0x2a;
-    const big = (b[0] === 0x49 && b[1] === 0x49 && b[2] === 0x2b && b[3] === 0x00)
-      || (b[0] === 0x4d && b[1] === 0x4d && b[2] === 0x00 && b[3] === 0x2b);
-    if (le || be || big) return 0.99;
-  }
-  if (hasExtension(intake, 'tif', 'tiff')) return 0.9;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff};
+export const DETECTORS={"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"bio":detect_bio,"json":detect_json};

@@ -2973,6 +2973,47 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
+    },
+    "bio": {
+      "label": "Bioinformatics (FASTA/FASTQ/VCF)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.fasta",
+        "sample-variants.vcf"
+      ],
+      "extensions": [
+        ".fasta",
+        ".fa",
+        ".fq",
+        ".fastq",
+        ".vcf",
+        ".gff",
+        ".bed"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 2
+      },
+      "partialSamples": [],
+      "realWorldQuality": "needs-review",
+      "notes": "FASTA, FASTQ, VCF, GFF, BED formats. Renders sequence table + nucleotide composition bar chart.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
     }
   },
   "knownFiles": {
