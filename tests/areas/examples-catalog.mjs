@@ -103,6 +103,13 @@ export async function run(ctx) {
   } else {
     pass('dedicated HEIF/AVIF samples indexed (' + modernImageSamples.length + ')');
   }
+  const audioFormatSamples = ['sample.wav', 'sample.mp3', 'sample.ogg'];
+  const missingAudioFormats = audioFormatSamples.filter((file) => byFile.get(file)?.type !== 'media');
+  if (missingAudioFormats.length) {
+    fail('missing dedicated audio format samples: ' + missingAudioFormats.join(', '));
+  } else {
+    pass('dedicated audio format samples indexed (' + audioFormatSamples.length + ')');
+  }
   const fontFormatSamples = ['sample.ttf', 'sample.otf', 'sample.woff', 'sample.woff2'];
   const missingFontFormats = fontFormatSamples.filter((file) => byFile.get(file)?.type !== 'font');
   if (missingFontFormats.length) {

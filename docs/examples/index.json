@@ -1265,6 +1265,7 @@
     "label": "Sample.wav",
     "file": "sample.wav",
     "mime": "audio/wav",
+    "type": "media",
     "category": "Media",
     "categories": [
       "Media"
@@ -1292,10 +1293,26 @@
     "label": "Sample.mp3",
     "file": "sample.mp3",
     "mime": "audio/mpeg",
+    "type": "media",
     "category": "Media",
     "categories": [
       "Media"
-    ]
+    ],
+    "description": "Short MP3 audio sample for native audio playback and ID3 metadata checks."
+  },
+  {
+    "label": "Sample.ogg",
+    "file": "sample.ogg",
+    "mime": "audio/ogg",
+    "type": "media",
+    "category": "Media",
+    "categories": [
+      "Media"
+    ],
+    "description": "Ogg Vorbis example audio file for native browser audio playback coverage.",
+    "source": "https://commons.wikimedia.org/wiki/File:Example.ogg",
+    "license": "Public domain",
+    "attribution": "Wikimedia Commons example audio file"
   },
   {
     "label": "Sample.ttf",
