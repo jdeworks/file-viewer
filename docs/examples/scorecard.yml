@@ -1,0 +1,57 @@
+format: json
+output: scorecard-results.json
+loglevel: info
+
+checks:
+  - name: Binary-Artifacts
+    enabled: true
+  - name: Branch-Protection
+    enabled: true
+  - name: CI-Tests
+    enabled: true
+  - name: CII-Best-Practices
+    enabled: true
+  - name: Code-Review
+    enabled: true
+  - name: Contributors
+    enabled: true
+  - name: Dangerous-Workflow
+    enabled: true
+  - name: Dependency-Update-Tool
+    enabled: true
+  - name: Fuzzing
+    enabled: true
+  - name: License
+    enabled: true
+  - name: Maintained
+    enabled: true
+  - name: Packaging
+    enabled: false
+  - name: Pinned-Dependencies
+    enabled: true
+  - name: SAST
+    enabled: true
+  - name: Security-Policy
+    enabled: true
+  - name: Signed-Releases
+    enabled: false
+  - name: Token-Permissions
+    enabled: true
+  - name: Vulnerabilities
+    enabled: true
+
+probes:
+  - blocksDeleteOnBranches
+  - blocksForcePushOnBranches
+  - branchProtectionAppliesToAdmins
+  - codeApproved
+  - fuzzed
+  - hasPermissiveLicense
+  - hasRecentCommits
+  - notArchived
+  - notCreatedRecently
+  - pinsDependencies
+  - requiresApproversForPullRequests
+  - requiresCodeOwnersReview
+  - runsStatusChecksBeforeMerging
+  - sastToolRunsOnAllCommits

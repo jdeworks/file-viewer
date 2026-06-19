@@ -206,6 +206,10 @@ import sentryProps from '../types/text/known/sentry-props/index.js';
 import otelCollector from '../types/text/yaml/known/otel-collector/index.js';
 import logback from '../types/text/xml/known/logback/index.js';
 import log4j2 from '../types/text/xml/known/log4j2/index.js';
+import scorecard from '../types/text/yaml/known/scorecard/index.js';
+import socketSecurity from '../types/text/yaml/known/socket-security/index.js';
+import trivyConfig from '../types/text/yaml/known/trivy-config/index.js';
+import snykConfig from '../types/text/known/snyk-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -245,7 +249,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   readthedocs, citationCff, yamllint, coderabbit,
   ionicConfig, metroConfig, reactNativeConfig,
   dotnetGlobal, prismaSchema, nugetConfig,
-  sentryProps, otelCollector, logback, log4j2];
+  sentryProps, otelCollector, logback, log4j2,
+  scorecard, socketSecurity, trivyConfig, snykConfig];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

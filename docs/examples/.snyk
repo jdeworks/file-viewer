@@ -1,0 +1,43 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.25.0
+
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  SNYK-JS-AXIOS-1579269:
+    - "*":
+        reason: No fix available, low severity in test environment
+        expires: 2026-12-31T00:00:00.000Z
+        created: 2026-01-15T10:22:13.893Z
+  SNYK-JS-LODASH-567746:
+    - "*":
+        reason: Prototype pollution only exploitable with user-controlled input
+        expires: 2026-06-30T00:00:00.000Z
+        created: 2025-11-01T08:00:00.000Z
+  SNYK-JS-MINIMIST-2429795:
+    - "*":
+        reason: Used only in build scripts, not production
+        expires: 2026-09-01T00:00:00.000Z
+        created: 2026-02-10T09:00:00.000Z
+  npm:node-fetch:20130328:
+    - "*":
+        reason: Dependency of dev tool, not in production bundle
+        expires: 2026-08-01T00:00:00.000Z
+        created: 2025-12-20T14:30:00.000Z
+  SNYK-PYTHON-REQUESTS-6928867:
+    - "*":
+        reason: Patched in our fork, upstream fix pending
+        expires: 2026-07-15T00:00:00.000Z
+        created: 2026-03-01T11:00:00.000Z
+
+# patches apply the minimum changes required to fix a vulnerability
+patch:
+  npm:tar:20180913:
+    - npm:tar:20180913:
+        patched: "2019-10-08T11:06:23.032Z"
+  SNYK-JS-SEMVER-3247795:
+    - SNYK-JS-SEMVER-3247795:
+        patched: "2023-07-01T00:00:00.000Z"
+
+language-settings:
+  javascript:
+    packageManager: npm

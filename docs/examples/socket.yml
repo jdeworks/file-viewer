@@ -1,0 +1,42 @@
+version: 2
+
+# Ignore specific package paths from Socket analysis
+ignore:
+  - "test/**"
+  - "**/__mocks__/**"
+  - "**/fixtures/**"
+  - "scripts/dev-tools/**"
+
+# Issue action rules
+issues:
+  malware: error
+  vulnerability: error
+  typosquat: error
+  protestware: error
+  unmaintained: warn
+  deprecated: warn
+  new-author: warn
+  bot-packages: warn
+  native-module: warn
+  minified-code: ignore
+  network-import: warn
+  dynamic-require: ignore
+  eval: warn
+  obfuscated-code: error
+  install-script: warn
+  telemetry: warn
+  license: warn
+  fs-access: defer
+
+# Deferred packages (allow after manual review)
+defer:
+  - "lodash"
+  - "moment"
+
+# Enabled feature checks
+enable:
+  license-policy: true
+  supply-chain-risk: true
+  quality-risk: true
+  maintenance-risk: true
+  vulnerability-risk: true

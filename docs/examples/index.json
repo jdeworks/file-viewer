@@ -4263,5 +4263,38 @@
     ],
     "enhanced": true,
     "description": "React Native CLI config: 3 native dependencies (vector-icons, camera, maps), iOS/Android platform dirs, font and image assets."
+  },
+  {
+    "label": "project.clj",
+    "file": "project.clj",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Leiningen project: my-clojure-app v0.3.1, Compojure/Ring web app, 7 dependencies including next.jdbc and PostgreSQL, lein-ring plugin, dev/test/uberjar profiles."
+  },
+  {
+    "label": "deps.edn",
+    "file": "deps.edn",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Clojure CLI deps.edn: reitit + ring web stack, next.jdbc with PostgreSQL, 4 aliases (dev nREPL, kaocha test runner, tools.build, clj-kondo lint)."
+  },
+  {
+    "label": "shadow-cljs.edn",
+    "file": "shadow-cljs.edn",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Shadow-cljs config: Reagent + re-frame ClojureScript app, browser build target, dev HTTP server on port 3000, browser-test build."
   }
 ]
