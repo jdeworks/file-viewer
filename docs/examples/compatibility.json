@@ -3086,7 +3086,7 @@
       "editCapability": "basic",
       "exportCapability": "download",
       "securityLimitations": [
-        "PostScript execution not supported \u2014 metadata display only"
+        "PostScript execution not supported — metadata display only"
       ],
       "knownParserGaps": [
         "No rendering of PostScript graphics"
@@ -3189,7 +3189,7 @@
       },
       "partialSamples": [],
       "realWorldQuality": "synthetic",
-      "notes": "Parses KML placemarks, folders, geometry types. No map rendering \u2014 shows structured list.",
+      "notes": "Parses KML placemarks, folders, geometry types. No map rendering — shows structured list.",
       "fileExamplesSlug": null,
       "previewDepth": "basic",
       "metadataDepth": "basic",
@@ -3685,7 +3685,7 @@
       "editCapability": "none",
       "exportCapability": "download",
       "securityLimitations": [
-        "PHI warning shown; no automatic redaction \u2014 user must handle compliance"
+        "PHI warning shown; no automatic redaction — user must handle compliance"
       ],
       "knownParserGaps": [
         "Implicit VR not supported",
