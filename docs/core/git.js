@@ -8,6 +8,7 @@
 
 const dec = new TextDecoder();
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const TEXT_DIFF_LIMIT = 512 * 1024;
 
 // Locate the .git dir from a flat [{file, path}] list. Returns { gitPrefix, repoName } or null.
 export function findGitDir(entries) {
@@ -139,7 +140,7 @@ function parseReflog(txt) {
 export async function openRepo(entries) {
   const found = findGitDir(entries);
   if (!found) return null;
-  const { gitPrefix, repoName } = found;
+  const { gitPrefix, repoName, repoRoot } = found;
   const byPath = new Map(entries.map((e) => [e.path, e.file]));
   const rel = (p) => byPath.get(gitPrefix + '/' + p);
   const text = async (p) => { const f = rel(p); return f ? (await f.text()) : null; };
@@ -304,6 +305,44 @@ export async function openRepo(entries) {
   }
 
   const changedCache = new Map();
+  function lineCount(text) {
+    if (!text) return 0;
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    return lines.length && lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
+  }
+  async function blobText(sha) {
+    const obj = await readObjectBySha(sha);
+    if (!obj || obj.type !== 'blob' || obj.data.length > TEXT_DIFF_LIMIT) return null;
+    const text = dec.decode(obj.data);
+    return text.includes('\0') ? null : text;
+  }
+  function lineDelta(beforeText, afterText) {
+    if (beforeText == null && afterText == null) return {};
+    if (beforeText == null) return { additions: lineCount(afterText), deletions: 0 };
+    if (afterText == null) return { additions: 0, deletions: lineCount(beforeText) };
+    const before = beforeText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    const after = afterText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    if (before[before.length - 1] === '') before.pop();
+    if (after[after.length - 1] === '') after.pop();
+    let start = 0;
+    while (start < before.length && start < after.length && before[start] === after[start]) start += 1;
+    let bEnd = before.length - 1;
+    let aEnd = after.length - 1;
+    while (bEnd >= start && aEnd >= start && before[bEnd] === after[aEnd]) { bEnd -= 1; aEnd -= 1; }
+    return {
+      additions: Math.max(0, aEnd - start + 1),
+      deletions: Math.max(0, bEnd - start + 1),
+    };
+  }
+  async function withLineDelta(file, beforeEntry, afterEntry) {
+    try {
+      const beforeText = beforeEntry ? await blobText(beforeEntry.sha) : null;
+      const afterText = afterEntry ? await blobText(afterEntry.sha) : null;
+      return { ...file, ...lineDelta(beforeText, afterText) };
+    } catch {
+      return file;
+    }
+  }
   async function changedFiles(commit, limit = 200) {
     const cacheKey = commit.sha + ':' + limit;
     if (changedCache.has(cacheKey)) return changedCache.get(cacheKey);
@@ -313,8 +352,8 @@ export async function openRepo(entries) {
     const files = [];
     for (const [path, now] of current) {
       const old = before.get(path);
-      if (!old) files.push({ status: 'A', path });
-      else if (old.sha !== now.sha || old.mode !== now.mode) files.push({ status: 'M', path });
+      if (!old) files.push(await withLineDelta({ status: 'A', path }, null, now));
+      else if (old.sha !== now.sha || old.mode !== now.mode) files.push(await withLineDelta({ status: 'M', path }, old, now));
       if (files.length >= limit) {
         const result = { files, truncated: true };
         changedCache.set(cacheKey, result);
@@ -322,7 +361,7 @@ export async function openRepo(entries) {
       }
     }
     for (const path of before.keys()) {
-      if (!current.has(path)) files.push({ status: 'D', path });
+      if (!current.has(path)) files.push(await withLineDelta({ status: 'D', path }, before.get(path), null));
       if (files.length >= limit) {
         const result = { files, truncated: true };
         changedCache.set(cacheKey, result);
@@ -361,7 +400,7 @@ export async function openRepo(entries) {
   }
 
   return {
-    repoName, head,
+    repoName, repoRoot, head,
     branches: [...branches].map(([name, sha]) => ({ name, sha, current: name === head.branch }))
       .sort((a, b) => (b.current - a.current) || a.name.localeCompare(b.name)),
     tags: [...tags].map(([name, sha]) => ({ name, sha })),

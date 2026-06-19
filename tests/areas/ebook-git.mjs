@@ -297,8 +297,11 @@ export async function run(ctx) {
     const treeBody = Buffer.concat([Buffer.from('100644 README.md\0'), Buffer.from(blobSha, 'hex')]);
     const treeStore = Buffer.concat([Buffer.from('tree ' + treeBody.length + '\0'), treeBody]);
     const treeObj = Array.from(zlib.deflateSync(treeStore));
+    const blobBody = '# Repo\n';
+    const blobStore = Buffer.concat([Buffer.from('blob ' + Buffer.byteLength(blobBody) + '\0'), Buffer.from(blobBody)]);
+    const blobObj = Array.from(zlib.deflateSync(blobStore));
     await page.goto(origin, { waitUntil: 'networkidle' });
-    await page.evaluate(({ sha, treeSha, obj, treeObj }) => {
+    await page.evaluate(({ sha, treeSha, blobSha, obj, treeObj, blobObj }) => {
       const enc = (s) => new TextEncoder().encode(s);
       const mk = (name, bytes) => ({ file: new File([bytes], name.split('/').pop(), { type: '' }), path: name });
       window.__fv.loadFolder([
@@ -306,9 +309,10 @@ export async function run(ctx) {
         mk('repo/.git/refs/heads/main', enc(sha + '\n')),
         mk('repo/.git/objects/' + sha.slice(0, 2) + '/' + sha.slice(2), new Uint8Array(obj)),
         mk('repo/.git/objects/' + treeSha.slice(0, 2) + '/' + treeSha.slice(2), new Uint8Array(treeObj)),
+        mk('repo/.git/objects/' + blobSha.slice(0, 2) + '/' + blobSha.slice(2), new Uint8Array(blobObj)),
         mk('repo/README.md', enc('# Repo')),
       ]);
-    }, { sha, treeSha, obj, treeObj });
+    }, { sha, treeSha, blobSha, obj, treeObj, blobObj });
     await page.waitForSelector('#repoPanel:not([hidden]) .repo-commit', { timeout: 10000 });
     const branchVal = await page.$eval('#repoPanel .repo-branch', (s) => s.options[s.selectedIndex].textContent);
     if (/main/.test(branchVal)) pass('git: current branch detected (' + branchVal + ')'); else fail('git branch: ' + branchVal);
@@ -319,6 +323,15 @@ export async function run(ctx) {
     await page.waitForSelector('#repoPanel .rc-file-list .rc-path', { timeout: 5000 });
     const changed = await page.$eval('#repoPanel .rc-file-list', (e) => e.textContent);
     if (/A\s*README\.md/.test(changed)) pass('git: commit details include changed files'); else fail('git changed files: ' + changed);
+    if (/\+1\s*-0/.test(changed)) pass('git: commit details include line delta counts'); else fail('git changed delta: ' + changed);
+    const linkedPath = await page.$eval('#repoPanel .rc-path-link', (e) => e.textContent);
+    if (linkedPath === 'README.md') pass('git: changed file is linked when present in folder'); else fail('git link path: ' + linkedPath);
+    await page.click('#repoPanel .rc-path-link');
+    await page.waitForSelector('#workspace:not([hidden])', { timeout: 5000 });
+    const activeGitFile = await page.$eval('#fileTree .ft-file.active', (e) => e.dataset.path);
+    if (activeGitFile === 'repo/README.md') pass('git: changed-file link opens file from folder'); else fail('git active after link: ' + activeGitFile);
+    await page.click('#repoBtn');
+    await page.waitForSelector('#repoPanel:not([hidden]) .repo-commit', { timeout: 5000 });
     const treePaths = await page.$$eval('#fileTree .ft-file', (els) => els.map((e) => e.dataset.path));
     if (!treePaths.some((p) => p.includes('.git/'))) pass('git: .git internals hidden from the file tree'); else fail('.git shown in tree: ' + treePaths.join(','));
     const badge = await page.$('#repoBtn:not([hidden])');

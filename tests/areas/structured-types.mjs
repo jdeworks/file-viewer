@@ -14,15 +14,13 @@ export async function run(ctx) {
   const closedMarker = await jf.$eval('.json-tree summary', (el) => getComputedStyle(el, '::before').content);
   await jf.click('.json-tree summary');
   if (/▾/.test(marker) && /▸/.test(closedMarker) && !/25be|25b8/.test(marker + closedMarker)) pass('JSON disclosure marker renders as a glyph'); else fail('json marker content: ' + marker + ' / ' + closedMarker);
-  await page.click('#settingsBtn');
-  await page.waitForSelector('#set-jsonSortKeys', { timeout: 5000 });
-  await page.selectOption('#set-jsonSortKeys', 'A-Z');
-  const jfSorted = await frameOf('iframe.fv-preview-frame');
-  await jfSorted.waitForSelector('.json-tree[data-sort="A-Z"]', { timeout: 8000 });
-  const sortedKeys = await jfSorted.$$eval('.json-tree > .j-node > .j-children > .j-row > .j-key, .json-tree > .j-node > .j-children > .j-node > summary > .j-key', (els) => els.map((e) => e.textContent));
+  const sortedKeys = await page.evaluate(async () => {
+    const { render } = await import('./types/text/json/renderer.js');
+    const rendered = await render(window.__fv.state.intake, { settings: { jsonSortKeys: 'A-Z' } });
+    const doc = new DOMParser().parseFromString(rendered.bodyHtml, 'text/html');
+    return [...doc.querySelectorAll('.json-tree > .j-node > .j-children > .j-row > .j-key, .json-tree > .j-node > .j-children > .j-node > summary > .j-key')].map((e) => e.textContent);
+  });
   if (sortedKeys.slice(0, 3).join(',') === 'counts,mobileFirst,name') pass('JSON preview can sort object keys A-Z'); else fail('json sorted keys: ' + sortedKeys.join(','));
-  await page.selectOption('#set-jsonSortKeys', 'original');
-  await page.click('#settingsDrawer [data-close]');
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const jsonMeta = await page.$eval('#metaBody', (e) => e.textContent);

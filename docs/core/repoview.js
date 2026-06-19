@@ -14,7 +14,7 @@ function relTime(d) {
   return 'just now';
 }
 
-export async function renderRepoView(host, repo) {
+export async function renderRepoView(host, repo, options = {}) {
   host.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'repo-view';
@@ -40,6 +40,19 @@ export async function renderRepoView(host, repo) {
   wrap.appendChild(cols);
   host.appendChild(wrap);
   let detailToken = 0;
+  const repoPath = (path) => repo.repoRoot ? repo.repoRoot + '/' + path : path;
+  const canOpenPath = (path) => typeof options.canOpenFile === 'function' && options.canOpenFile(repoPath(path));
+  const deltaText = (f) => Number.isFinite(f.additions) || Number.isFinite(f.deletions)
+    ? '<span class="rc-delta"><span class="rc-add">+' + esc(f.additions || 0) + '</span> <span class="rc-del">-' + esc(f.deletions || 0) + '</span></span>'
+    : '';
+  function fileRow(f) {
+    const linked = f.status !== 'D' && canOpenPath(f.path);
+    const path = linked
+      ? '<button type="button" class="rc-path rc-path-link" data-path="' + esc(repoPath(f.path)) + '">' + esc(f.path) + '</button>'
+      : '<span class="rc-path">' + esc(f.path) + '</span>';
+    return '<li><span class="rc-status rc-status-' + esc(f.status.toLowerCase()) + '">' + esc(f.status)
+      + '</span>' + path + deltaText(f) + '</li>';
+  }
 
   async function showDetail(c) {
     const token = ++detailToken;
@@ -67,9 +80,11 @@ export async function renderRepoView(host, repo) {
         return;
       }
       filesHost.innerHTML = '<h3>Changed files</h3><ul class="rc-file-list">'
-        + result.files.map((f) => '<li><span class="rc-status rc-status-' + esc(f.status.toLowerCase()) + '">' + esc(f.status)
-          + '</span><span class="rc-path">' + esc(f.path) + '</span></li>').join('')
+        + result.files.map(fileRow).join('')
         + '</ul>' + (result.truncated ? '<p class="repo-note">Showing the first ' + result.files.length + ' changed files.</p>' : '');
+      filesHost.querySelectorAll('.rc-path-link').forEach((button) => {
+        button.addEventListener('click', () => options.openFile?.(button.dataset.path));
+      });
     } catch {
       if (token === detailToken) filesHost.innerHTML = '<h3>Changed files</h3><p class="repo-hint">Could not read changed files.</p>';
     }
