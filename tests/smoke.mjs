@@ -13,6 +13,7 @@ import * as exports from './areas/exports.mjs';
 import * as emailArchives from './areas/email-archives.mjs';
 import * as media3d from './areas/media-3d.mjs';
 import * as ebookGit from './areas/ebook-git.mjs';
+import * as git from './areas/git.mjs';
 import * as interactions from './areas/interactions.mjs';
 import * as games from './areas/games.mjs';
 import * as treeDrag from './areas/tree-drag.mjs';
@@ -30,6 +31,7 @@ try {
   await emailArchives.run(ctx);
   await media3d.run(ctx);
   await ebookGit.run(ctx);
+  await git.run(ctx);
   await interactions.run(ctx);
   await games.run(ctx);
   await treeDrag.run(ctx);
