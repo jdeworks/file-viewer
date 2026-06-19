@@ -1052,4 +1052,12 @@ export async function run(ctx) {
   const rdxText = await page.$eval('#previewHost .rdx-doc', (e) => e.textContent);
   if (/Netlify/i.test(rdxText)) pass('_redirects: badge shown'); else fail('redirects badge: ' + rdxText.slice(0, 200));
   if (/301|\/old-blog|\/api/i.test(rdxText)) pass('_redirects: rules shown'); else fail('redirects content: ' + rdxText.slice(0, 200));
+
+  // ── CMakeLists.txt viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('CMakeLists.txt');
+  await page.waitForSelector('#previewHost .cmake-doc', { timeout: 12000 });
+  const cmakeText = await page.$eval('#previewHost .cmake-doc', (e) => e.textContent);
+  if (/CMake/i.test(cmakeText)) pass('CMakeLists.txt: badge shown'); else fail('cmake badge: ' + cmakeText.slice(0, 200));
+  if (/myapp|mylib|OpenSSL|MyApp/i.test(cmakeText)) pass('CMakeLists.txt: targets or deps shown'); else fail('cmake targets: ' + cmakeText.slice(0, 200));
 }

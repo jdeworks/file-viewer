@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+
+    environment {
+        NODE_ENV = 'production'
+        APP_NAME = 'my-app'
+        REGISTRY = 'docker.io/myorg'
+    }
+
+    stages {
+        stage('Install') {
+            steps {
+                sh 'npm ci'
+            }
+        }
+        stage('Lint') {
+            steps {
+                sh 'npm run lint'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh 'npm test -- --ci --coverage'
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'npm run build'
+                sh "docker build -t ${REGISTRY}/${APP_NAME}:${BUILD_NUMBER} ."
+            }
+        }
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh "docker push ${REGISTRY}/${APP_NAME}:${BUILD_NUMBER}"
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+    }
+}

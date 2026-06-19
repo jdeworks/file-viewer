@@ -6,8 +6,11 @@ import { parseCsv } from './renderer.js';
 
 function rowsToJson(rows, header) {
   if (!rows.length) return [];
-  if (!header) return rows;
-  const keys = rows[0].map((k, i) => String(k == null || k === '' ? 'col' + (i + 1) : k));
+  if (!header) {
+    const keys = rows[0].map((_, i) => 'col' + i);
+    return rows.map((r) => Object.fromEntries(keys.map((k, i) => [k, r[i] == null ? '' : r[i]])));
+  }
+  const keys = rows[0].map((k, i) => String(k == null || k === '' ? 'col' + i : k));
   return rows.slice(1).map((r) => Object.fromEntries(keys.map((k, i) => [k, r[i] == null ? '' : r[i]])));
 }
 
