@@ -37,6 +37,78 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_cbor=(()=>{
+function hasExtension(intake, ...exts) {
+  const name = (intake.filename || '').toLowerCase();
+  return exts.some((e) => name.endsWith('.' + e));
+}
+
+// CBOR has no universal magic — rely on extension + basic structural validity
+function looksLikeCbor(bytes) {
+  if (!bytes || bytes.length === 0) return false;
+  const major = (bytes[0] >> 5) & 0x7;
+  // Major types 0-7 are all valid; but text/binary files have text-range bytes at offset 0
+  // CBOR map (0xa0..0xbf) or array (0x80..0x9f) at offset 0 is a strong signal
+  const b0 = bytes[0];
+  if ((b0 >= 0xa0 && b0 <= 0xbf) || (b0 >= 0x80 && b0 <= 0x9f)) return true;
+  // Also: unsigned int (0x00..0x1f), negative int (0x20..0x3f), byte string (0x40..0x5f)
+  // text string (0x60..0x7f), float (0xe0..0xf8), simple (0xf4=false,0xf5=true,0xf6=null)
+  if (b0 === 0xf4 || b0 === 0xf5 || b0 === 0xf6) return true;
+  if (major >= 0 && major <= 6) return true;
+  return false;
+}
+
+function detect(intake) {
+  if (intake.isBinary === false) return 0; // CBOR is always binary
+  const b = intake.bytes;
+  if (!b || b.length === 0) return 0;
+
+  if (hasExtension(intake, 'cbor')) {
+    return looksLikeCbor(b) ? 0.95 : 0.75;
+  }
+  // CBOR has no magic — extension-only detection
+  return 0;
+}
+return detect;
+})();
+
+const detect_arrow=(()=>{
+function hasAscii(b, off, s) {
+  for (let i = 0; i < s.length; i++) if (b[off + i] !== s.charCodeAt(i)) return false;
+  return true;
+}
+
+function hasExtension(intake, ...exts) {
+  const name = (intake.filename || '').toLowerCase();
+  return exts.some((e) => name.endsWith('.' + e));
+}
+
+function detect(intake) {
+  const b = intake.bytes;
+  if (!b || b.length < 8) return 0;
+
+  // Arrow IPC file format: starts with continuation marker + 'ARROW1\0\0' magic
+  // The first 4 bytes are 0xFFFFFFFF (continuation), next 4 vary; then at offset 4: schema length
+  // More reliably: the magic 'ARROW1' appears at offset 0 after the magic pad bytes
+  // Actually: Arrow IPC File: starts with magic 'ARROW1' at byte 0 (6 bytes) + \0\0 padding = 8 bytes
+  if (hasAscii(b, 0, 'ARROW1')) {
+    return hasExtension(intake, 'arrow', 'ipc') ? 0.98 : 0.92;
+  }
+
+  // Feather v1: 'FEA1' magic at offset 0 and at the last 4 bytes
+  if (hasAscii(b, 0, 'FEA1')) {
+    return hasExtension(intake, 'feather', 'arrow') ? 0.98 : 0.92;
+  }
+
+  // Feather v2 uses Arrow IPC format (ARROW1 magic)
+
+  const ext = hasExtension(intake, 'arrow', 'feather', 'ipc');
+  if (ext) return 0.5;
+  return 0;
+}
+return detect;
+})();
+
 const detect_sdf=(()=>{
 function hasExtension(intake, ...exts) {
   const name = (intake.filename || '').toLowerCase();
@@ -238,81 +310,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_fits=(()=>{
-function detect(intake) {
-  if (hasExtension(intake, 'fits', 'fit', 'fts')) {
-    // FITS header: "SIMPLE  =                    T" in first 30 bytes
-    if (intake.isBinary) {
-      const head = intake.bytes ? String.fromCharCode(...intake.bytes.slice(0, 30)) : '';
-      if (/^SIMPLE\s+=\s+T/.test(head)) return 0.99;
-      return 0.8; // extension match, assume FITS
-    }
-    const head = (intake.text || '').slice(0, 30);
-    if (/^SIMPLE\s+=\s+T/.test(head)) return 0.99;
-    return 0.8;
-  }
-  // Content sniff (text only)
-  if (!intake.isBinary) {
-    const head = (intake.text || '').slice(0, 30);
-    if (/^SIMPLE\s+=\s+T/.test(head)) return 0.95;
-  }
-  return 0;
-}
-return detect;
-})();
-
-const detect_kml=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0; // KMZ handled by kmz type
-  if (hasExtension(intake, 'kml')) return 0.97;
-  const head = (intake.textSample || '').slice(0, 400);
-  if (/<kml[\s>]/.test(head) || /xmlns\.google\.com\/kml/.test(head)) return 0.95;
-  return 0;
-}
-return detect;
-})();
-
-const detect_abc=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'abc')) {
-    const t = intake.textSample || '';
-    // ABC notation starts with X: (index) and T: (title) fields
-    if (/^X:\s*\d/m.test(t) || /^T:\s*\S/m.test(t)) return 0.97;
-    return 0.75;
-  }
-  // Content sniff for ABC embedded in .txt or unknown
-  const t = intake.textSample || '';
-  if (/^X:\s*\d/m.test(t) && /^T:\s*\S/m.test(t) && /^K:\s*\w/m.test(t)) return 0.8;
-  return 0;
-}
-return detect;
-})();
-
-const detect_hl7=(()=>{
-// HL7 v2.x messages start with MSH segment using pipe delimiter
-const MSH_RE = /^MSH\|[\^~\\&]\|/m;
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const ext = (intake.filename || '').split('.').pop().toLowerCase();
-  if (['hl7', 'hl7v2', 'msh'].includes(ext)) return 0.92;
-  const t = intake.textSample || '';
-  if (MSH_RE.test(t)) return 0.96;
-  return 0;
-}
-return detect;
-})();
-
-const detect_hydrogen=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'h2song', 'h2pattern', 'h2drumkit')) return 0.9;
-  const t = intake.textSample || '';
-  if (/<hydrogen_drumkit>/i.test(t) || /<song version="[^"]*hydrogen/i.test(t)) return 0.97;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"bsp":detect_bsp,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen};
+export const DETECTORS={"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf};

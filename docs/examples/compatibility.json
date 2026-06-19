@@ -4015,6 +4015,69 @@
         "Texture extraction not supported",
         "BSP tree/vis data not decoded"
       ]
+    },
+    "cbor": {
+      "label": "CBOR Binary Data",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.cbor"
+      ],
+      "extensions": [
+        ".cbor"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false,
+      "fileExamplesSlug": "cbor",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "No indefinite-length collection streaming display",
+        "BigInt (64-bit) values may lose precision above 2^53"
+      ]
+    },
+    "arrow": {
+      "label": "Apache Arrow / Feather",
+      "support": "partial",
+      "sampleFiles": [
+        "sample.arrow"
+      ],
+      "extensions": [
+        ".arrow",
+        ".feather",
+        ".ipc"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "fileExamplesSlug": "arrow",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Column types not decoded (FlatBuffers schema not fully parsed)",
+        "Row data not displayed",
+        "Feather v2 uses Arrow IPC format — same support level"
+      ]
     }
   },
   "knownFiles": {

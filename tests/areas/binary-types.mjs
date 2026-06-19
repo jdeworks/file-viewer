@@ -247,4 +247,29 @@ export async function run(ctx) {
   if (/Quake BSP/i.test(bspText)) pass('BSP badge shown'); else fail('bsp badge: ' + bspText.slice(0, 300));
   if (/Quake|GoldSrc/i.test(bspText)) pass('BSP game engine shown'); else fail('bsp engine: ' + bspText.slice(0, 300));
   if (/File Viewer Demo|monster_soldier|info_player/i.test(bspText)) pass('BSP entity info shown'); else fail('bsp entities: ' + bspText.slice(0, 300));
+
+  // ── CBOR Binary Data ──────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('CBOR API Response (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const cborf = await frameOf('iframe.fv-preview-frame');
+  await cborf.waitForSelector('.badge-cbor', { timeout: 8000 });
+  const cborTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (cborTypeId === 'cbor') pass('.cbor detected as cbor type'); else fail('cbor typeId: ' + cborTypeId);
+  const cborText = await cborf.$eval('body', (el) => el.textContent);
+  if (/CBOR/i.test(cborText)) pass('CBOR badge shown'); else fail('cbor badge: ' + cborText.slice(0, 300));
+  if (/Map\{|Alice|items/i.test(cborText)) pass('CBOR decoded content shown'); else fail('cbor content: ' + cborText.slice(0, 300));
+  if (/310 bytes|Top-level/i.test(cborText)) pass('CBOR metadata shown'); else fail('cbor meta: ' + cborText.slice(0, 300));
+
+  // ── Apache Arrow IPC File ─────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Apache Arrow IPC File (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const arrf = await frameOf('iframe.fv-preview-frame');
+  await arrf.waitForSelector('.badge-arrow', { timeout: 8000 });
+  const arrTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (arrTypeId === 'arrow') pass('.arrow detected as arrow type'); else fail('arrow typeId: ' + arrTypeId);
+  const arrText = await arrf.$eval('body', (el) => el.textContent);
+  if (/Apache Arrow/i.test(arrText)) pass('Arrow badge shown'); else fail('arrow badge: ' + arrText.slice(0, 300));
+  if (/Arrow IPC|Feather/i.test(arrText)) pass('Arrow format shown'); else fail('arrow format: ' + arrText.slice(0, 300));
 }

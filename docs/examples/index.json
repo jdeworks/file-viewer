@@ -2112,5 +2112,26 @@
       "game",
       "binary"
     ]
+  },
+  {
+    "file": "sample.cbor",
+    "label": "CBOR API Response (demo)",
+    "mime": "application/cbor",
+    "category": "data",
+    "categories": [
+      "data",
+      "binary"
+    ]
+  },
+  {
+    "file": "sample.arrow",
+    "label": "Apache Arrow IPC File (demo)",
+    "mime": "application/vnd.apache.arrow.file",
+    "category": "data",
+    "categories": [
+      "data",
+      "binary",
+      "scientific"
+    ]
   }
 ]
