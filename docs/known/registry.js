@@ -210,6 +210,11 @@ import scorecard from '../types/text/yaml/known/scorecard/index.js';
 import socketSecurity from '../types/text/yaml/known/socket-security/index.js';
 import trivyConfig from '../types/text/yaml/known/trivy-config/index.js';
 import snykConfig from '../types/text/known/snyk-config/index.js';
+import gradleProps from '../types/text/known/gradle-props/index.js';
+import gradleWrapper from '../types/text/known/gradle-wrapper/index.js';
+import settingsGradle from '../types/text/known/settings-gradle/index.js';
+import springApp from '../types/text/known/spring-app/index.js';
+import springAppYml from '../types/text/yaml/known/spring-app/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -250,7 +255,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   ionicConfig, metroConfig, reactNativeConfig,
   dotnetGlobal, prismaSchema, nugetConfig,
   sentryProps, otelCollector, logback, log4j2,
-  scorecard, socketSecurity, trivyConfig, snykConfig];
+  scorecard, socketSecurity, trivyConfig, snykConfig,
+  gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
