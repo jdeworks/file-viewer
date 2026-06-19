@@ -90,6 +90,13 @@ export async function run(ctx) {
   } else {
     pass('dedicated raster image format samples indexed (' + imageFormatSamples.length + ')');
   }
+  const fontFormatSamples = ['sample.ttf', 'sample.otf', 'sample.woff', 'sample.woff2'];
+  const missingFontFormats = fontFormatSamples.filter((file) => byFile.get(file)?.type !== 'font');
+  if (missingFontFormats.length) {
+    fail('missing dedicated font format samples: ' + missingFontFormats.join(', '));
+  } else {
+    pass('dedicated font format samples indexed (' + fontFormatSamples.length + ')');
+  }
 
   const seenTypes = new Set();
   for (const ex of examples) {

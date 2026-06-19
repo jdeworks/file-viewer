@@ -1253,10 +1253,60 @@
     "label": "Sample.ttf",
     "file": "sample.ttf",
     "mime": "font/ttf",
+    "type": "font",
     "category": "Media",
     "categories": [
       "Media"
-    ]
+    ],
+    "description": "Ubuntu Mono TrueType specimen for checking installed-font metadata and live glyph rendering.",
+    "source": "https://design.ubuntu.com/font/",
+    "license": "Ubuntu Font Licence 1.0",
+    "attribution": "Ubuntu Font Family by Canonical Ltd."
+  },
+  {
+    "label": "Sample.otf",
+    "file": "sample.otf",
+    "mime": "font/otf",
+    "type": "font",
+    "category": "Media",
+    "categories": [
+      "Media",
+      "Font"
+    ],
+    "description": "Source Serif 4 OpenType/CFF specimen for testing OTF font previews and metadata.",
+    "source": "https://github.com/adobe-fonts/source-serif/releases/tag/4.005R",
+    "license": "SIL Open Font License 1.1",
+    "attribution": "Source Serif 4 by Adobe Fonts"
+  },
+  {
+    "label": "Sample.woff",
+    "file": "sample.woff",
+    "mime": "font/woff",
+    "type": "font",
+    "category": "Media",
+    "categories": [
+      "Media",
+      "Font"
+    ],
+    "description": "WOFF webfont derived from the Ubuntu Mono sample for browser FontFace loading.",
+    "source": "https://design.ubuntu.com/font/",
+    "license": "Ubuntu Font Licence 1.0",
+    "attribution": "Ubuntu Font Family by Canonical Ltd.; converted to WOFF for this catalog"
+  },
+  {
+    "label": "Sample.woff2",
+    "file": "sample.woff2",
+    "mime": "font/woff2",
+    "type": "font",
+    "category": "Media",
+    "categories": [
+      "Media",
+      "Font"
+    ],
+    "description": "WOFF2 webfont derived from the Ubuntu Mono sample for modern compressed font coverage.",
+    "source": "https://design.ubuntu.com/font/",
+    "license": "Ubuntu Font Licence 1.0",
+    "attribution": "Ubuntu Font Family by Canonical Ltd.; converted to WOFF2 for this catalog"
   },
   {
     "label": "Sample.avi",
