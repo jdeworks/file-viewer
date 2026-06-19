@@ -1,0 +1,34 @@
+## Aider configuration file
+## See: https://aider.chat/docs/config/aider_conf.html
+
+# Main model for coding tasks
+model: claude-3-5-sonnet-20241022
+
+# Weaker/cheaper model for simple tasks and commits
+weak_model: claude-3-5-haiku-20241022
+
+# Edit format: diff, whole, or udiff
+edit_format: diff
+
+# Git integration
+auto_commits: true
+auto_lint: true
+auto_test: false
+git: true
+gitignore: true
+
+# Output settings
+stream: true
+pretty: true
+show_diffs: false
+dark_mode: false
+
+# Repo map settings (tokens used for the map)
+map_tokens: 2048
+map_refresh: auto
+
+# Prompt caching
+cache_prompts: true
+
+# Max tokens for chat history
+max_chat_history_tokens: 8192

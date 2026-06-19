@@ -1,0 +1,29 @@
+# Project Rules
+
+## Language & Framework
+- Use TypeScript for all new files
+- This is a React 18 + Vite project
+- Prefer functional components with hooks over class components
+- Use Tailwind CSS for styling; avoid custom CSS unless necessary
+
+## Code Style
+- Follow the ESLint config in this repo (no unused vars, consistent returns)
+- Prefer `const` over `let`; avoid `var`
+- Use named exports, not default exports for components
+- Keep components small and focused (< 150 lines)
+
+## File Organization
+- Components go in `src/components/`
+- Hooks go in `src/hooks/`
+- API calls go in `src/api/`
+- Types go in `src/types/`
+
+## Testing
+- Write unit tests for utility functions using Vitest
+- Use React Testing Library for component tests
+- Test files should be co-located with the source file: `Foo.test.tsx`
+
+## Git
+- Commit messages follow Conventional Commits format
+- Never commit `.env` or secrets
+- Run `pnpm lint` and `pnpm test` before committing
