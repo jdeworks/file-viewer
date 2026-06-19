@@ -41,11 +41,14 @@ import vercelJson from '../types/text/json/known/vercel/index.js';
 import pyprojectToml from '../types/text/toml/known/pyproject/index.js';
 import npmrc from '../types/text/known/npmrc/index.js';
 import renovate from '../types/text/json/known/renovate/index.js';
+import prettierrc from '../types/text/json/known/prettierrc/index.js';
+import turbo from '../types/text/json/known/turbo/index.js';
+import dependabot from '../types/text/yaml/known/dependabot/index.js';
 
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
-  pyprojectToml, npmrc, renovate];
+  pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

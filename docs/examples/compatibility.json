@@ -5535,6 +5535,92 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "prettierrc": {
+      "label": "Prettier config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        ".prettierrc.json"
+      ],
+      "extensions": [
+        ".prettierrc",
+        ".prettierrc.json",
+        "prettier.config.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "turbo": {
+      "label": "Turborepo config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "turbo.json"
+      ],
+      "extensions": [
+        "turbo.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "dependabot": {
+      "label": "Dependabot config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "dependabot.yml"
+      ],
+      "extensions": [
+        "dependabot.yml",
+        "dependabot.yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "YAML parsed via base type; schedule/label detail available only when parsed object supplied"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

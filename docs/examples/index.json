@@ -2517,5 +2517,32 @@
     "categories": [
       "Config"
     ]
+  },
+  {
+    "label": ".prettierrc.json",
+    "file": ".prettierrc.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "turbo.json",
+    "file": "turbo.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "dependabot.yml",
+    "file": "dependabot.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
   }
 ]

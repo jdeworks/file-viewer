@@ -225,4 +225,27 @@ export async function run(ctx) {
   const rnvText = await page.$eval('#previewHost .rnv-doc', (e) => e.textContent);
   if (/Renovate/i.test(rnvText)) pass('renovate.json: badge shown'); else fail('renovate badge: ' + rnvText.slice(0, 200));
   if (/package rule|automerge|schedule/i.test(rnvText)) pass('renovate.json: rules/settings shown'); else fail('renovate content: ' + rnvText.slice(0, 200));
+
+  // ── .prettierrc.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.prettierrc.json');
+  await page.waitForSelector('#previewHost .prt-doc', { timeout: 12000 });
+  const prtText = await page.$eval('#previewHost .prt-doc', (e) => e.textContent);
+  if (/Prettier/i.test(prtText)) pass('.prettierrc.json: badge shown'); else fail('prettierrc badge: ' + prtText.slice(0, 200));
+  if (/single quote|tab width|trailing comma/i.test(prtText)) pass('.prettierrc.json: options shown'); else fail('prettierrc options: ' + prtText.slice(0, 200));
+
+  // ── turbo.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('turbo.json');
+  await page.waitForSelector('#previewHost .turbo-doc', { timeout: 12000 });
+  const turboText = await page.$eval('#previewHost .turbo-doc', (e) => e.textContent);
+  if (/Turbo/i.test(turboText)) pass('turbo.json: badge shown'); else fail('turbo badge: ' + turboText.slice(0, 200));
+  if (/build|test|lint/i.test(turboText)) pass('turbo.json: tasks shown'); else fail('turbo tasks: ' + turboText.slice(0, 200));
+
+  // ── dependabot.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dependabot.yml');
+  await page.waitForSelector('#previewHost .dbt-doc', { timeout: 12000 });
+  const dbtText = await page.$eval('#previewHost .dbt-doc', (e) => e.textContent);
+  if (/Dependabot/i.test(dbtText)) pass('dependabot.yml: badge shown'); else fail('dependabot badge: ' + dbtText.slice(0, 200));
 }
