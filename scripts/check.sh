@@ -25,6 +25,9 @@ if ! git diff --quiet -- docs/core/registry-runtime.generated.js docs/core/regis
   exit 1
 fi
 
+echo "→ running compatibility matrix generator…"
+node scripts/gen-example-compatibility.mjs
+
 echo "→ regenerating asset-manifest.json (must be committed fresh)…"
 node scripts/gen-asset-manifest.mjs >/dev/null
 if ! git diff --quiet -- docs/asset-manifest.json; then
