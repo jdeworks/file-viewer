@@ -1,4 +1,5 @@
 import { parseCsv } from './renderer.js';
+import { META_KEYS, textFact, typeFact } from '../../../core/metadata-helpers.js';
 
 function rawCsvStats(text) {
   let crlf = 0, lf = 0, cr = 0, quoted = 0;
@@ -40,18 +41,18 @@ export async function extract(intake) {
   const ragged = rows.filter((r) => (r || []).length !== cols).length;
   const dname = { ',': 'comma', ';': 'semicolon', '\t': 'tab', '|': 'pipe' }[delimiter] || delimiter;
   const out = [
-    { label: 'Rows', value: String(rows.length) },
-    { label: 'Columns', value: String(cols) },
-    { label: 'Delimiter', value: dname },
-    { label: 'Line endings', value: raw.lineEndings },
-    { label: 'Physical lines', value: String(raw.physicalLines) },
-    { label: 'Blank physical lines', value: String(raw.blankPhysicalLines) },
-    { label: 'Trailing newline', value: raw.trailingNewline ? 'yes' : 'no' },
-    { label: 'Quoted fields', value: raw.quotedFieldsLikely ? 'yes' : 'no' },
-    { label: 'Empty cells', value: String(empty) },
+    typeFact('Rows', String(rows.length)),
+    typeFact('Columns', String(cols)),
+    typeFact('Delimiter', dname),
+    textFact('Line endings', raw.lineEndings, META_KEYS.lineEndings, 0),
+    textFact('Physical lines', String(raw.physicalLines)),
+    textFact('Blank physical lines', String(raw.blankPhysicalLines)),
+    textFact('Trailing newline', raw.trailingNewline ? 'yes' : 'no', META_KEYS.trailingNewline, 0),
+    typeFact('Quoted fields', raw.quotedFieldsLikely ? 'yes' : 'no'),
+    typeFact('Empty cells', String(empty)),
   ];
-  if (ragged) out.push({ label: 'Ragged rows', value: String(ragged) });
-  if (rows.length && rows[0]) out.push({ label: 'Header fields', value: String(rows[0].filter((c) => String(c || '').trim()).length) });
+  if (ragged) out.push(typeFact('Ragged rows', String(ragged)));
+  if (rows.length && rows[0]) out.push(typeFact('Header fields', String(rows[0].filter((c) => String(c || '').trim()).length)));
   return out;
 }
 

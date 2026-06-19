@@ -1,5 +1,6 @@
 import { languageFor, languageLabelFor } from './langmap.js';
 import { analyze } from './metrics.js';
+import { META_KEYS, metadataRow, textFact } from '../../../core/metadata-helpers.js';
 
 export function extract(intake) {
   const text = intake.text || '';
@@ -13,7 +14,7 @@ export function extract(intake) {
   const out = [
     fact('Language', languageLabelFor(intake), 'Code metrics'),
     fact('Lines of code', codeLines, 'Code metrics'),
-    { label: 'Blank lines', value: String(blank) },
+    textFact('Blank lines', String(blank), META_KEYS.blankLines, 0),
     fact('Comment lines', commentLines, 'Code metrics'),
     fact('Comment density', percent(commentLines, nonEmpty), 'Code metrics'),
     fact('Non-empty lines', nonEmpty, 'Code shape'),
@@ -54,7 +55,7 @@ export function extract(intake) {
 }
 
 function fact(label, value, section) {
-  return { label, value: String(value), section };
+  return metadataRow(label, String(value), { section });
 }
 
 function percent(part, total) {

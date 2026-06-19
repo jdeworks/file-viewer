@@ -61,7 +61,7 @@ function numberValue(rows, label) {
   assert.equal(rows.find((r) => r.label === 'Language')?.section, 'Code metrics');
   assert.equal(rows.find((r) => r.label === 'Exports')?.section, 'Code structure');
   assert.equal(rows.find((r) => r.label === 'Max indentation')?.section, 'Code shape');
-  assert.equal(rows.find((r) => r.label === 'Blank lines')?.section, undefined);
+  assert.equal(rows.find((r) => r.label === 'Blank lines')?.section, 'Text structure');
 }
 
 {

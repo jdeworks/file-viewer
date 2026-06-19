@@ -1,4 +1,6 @@
 // Markdown-specific metadata, on top of the generic name/size/lastModified the shell shows.
+import { META_KEYS, textFact, typeFact } from '../../core/metadata-helpers.js';
+
 export function extract(intake) {
   const text = intake.text || '';
   const lines = text.split('\n');
@@ -12,15 +14,15 @@ export function extract(intake) {
   // First H1 as a title, if present.
   const h1 = (text.match(/^#\s+(.+)$/m) || [])[1] || null;
   return [
-    h1 ? { label: 'Title', value: h1 } : null,
-    { label: 'Lines', value: String(lines.length) },
-    { label: 'Words', value: String(words) },
-    { label: 'Headings', value: String(headings) },
-    { label: 'Links', value: String(links) },
-    { label: 'Images', value: String(images) },
-    { label: 'Code blocks', value: String(codeBlocks) },
-    { label: 'Table rows', value: String(tables) },
-    { label: 'HTML blocks', value: String(htmlBlocks) },
-    { label: 'Read time', value: Math.max(1, Math.round(words / 200)) + ' min' },
+    h1 ? typeFact('Title', h1) : null,
+    textFact('Lines', String(lines.length), META_KEYS.logicalLines, 0),
+    typeFact('Words', String(words)),
+    typeFact('Headings', String(headings)),
+    typeFact('Links', String(links)),
+    typeFact('Images', String(images)),
+    typeFact('Code blocks', String(codeBlocks)),
+    typeFact('Table rows', String(tables)),
+    typeFact('HTML blocks', String(htmlBlocks)),
+    typeFact('Read time', Math.max(1, Math.round(words / 200)) + ' min'),
   ].filter(Boolean);
 }

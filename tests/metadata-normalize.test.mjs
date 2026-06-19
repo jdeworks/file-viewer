@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 
 import { dedupeMetadataRows, normalizeMetadata } from '../docs/core/meta-drawer.js';
+import { META_KEYS, textFact } from '../docs/core/metadata-helpers.js';
 import { genericMetadata } from '../docs/core/generic-metadata.js';
+import { extract as markdownMeta } from '../docs/types/markdown/metadata.js';
+import { extract as codeMeta } from '../docs/types/text/code/metadata.js';
 import { extractMetadata as sshMeta } from '../docs/types/text/ssh-config/metadata.js';
 import { extractMetadata as wasmMeta } from '../docs/types/binary/wasm/metadata.js';
 
@@ -185,6 +188,33 @@ function value(rows, label) {
     'Code metrics:Lines=8',
     'Text structure:Line break count=9',
   ]);
+}
+
+{
+  const rows = normalizeMetadata([
+    ...genericMetadata({
+      filename: 'README.md',
+      bytes: new TextEncoder().encode('# Title\n\nbody\n'),
+      text: '# Title\n\nbody\n',
+      isBinary: false,
+      size: 14,
+      loadedBytes: 14,
+    }),
+    ...markdownMeta({ text: '# Title\n\nbody\n' }),
+  ]);
+  const deduped = dedupeMetadataRows(rows);
+  assert.equal(deduped.filter((r) => r.dedupeKey === META_KEYS.logicalLines).length, 1);
+  assert.equal(value(deduped, 'Lines'), '3');
+}
+
+{
+  const rows = normalizeMetadata([
+    textFact('Blank lines', 2, META_KEYS.blankLines),
+    ...codeMeta({ filename: 'main.py', text: 'def main():\n\n    return 1\n' }),
+  ]);
+  const deduped = dedupeMetadataRows(rows);
+  assert.equal(deduped.filter((r) => r.dedupeKey === META_KEYS.blankLines).length, 1);
+  assert.equal(value(deduped, 'Blank lines'), '2');
 }
 
 {

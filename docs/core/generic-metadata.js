@@ -1,3 +1,5 @@
+import { META_KEYS, advancedFact, textFact } from './metadata-helpers.js';
+
 function extensionOf(filename = '') {
   const base = String(filename).split(/[\\/]/).pop() || '';
   if (!base || base.startsWith('.') && base.indexOf('.', 1) === -1) return 'none';
@@ -98,8 +100,8 @@ function textStats(text) {
 
 export function genericMetadata(intake) {
   const rows = [
-    ['Extension', extensionOf(intake.filename)],
-    ['Content kind', intake.isBinary ? 'binary' : 'text'],
+    advancedFact('Extension', extensionOf(intake.filename), META_KEYS.extension),
+    advancedFact('Content kind', intake.isBinary ? 'binary' : 'text', META_KEYS.contentKind),
   ];
   const risk = filenameRisk(intake.filename);
   if (risk.score) {
@@ -109,18 +111,18 @@ export function genericMetadata(intake) {
     );
   }
   if (Number.isFinite(intake.loadedBytes) && Number.isFinite(intake.size) && intake.loadedBytes < intake.size) {
-    rows.push(['Loaded bytes', `${intake.loadedBytes.toLocaleString()} of ${intake.size.toLocaleString()}`]);
+    rows.push(advancedFact('Loaded bytes', `${intake.loadedBytes.toLocaleString()} of ${intake.size.toLocaleString()}`, META_KEYS.loadedBytes));
   }
-  rows.push(['Byte order mark', bomOf(intake.bytes)]);
+  rows.push(advancedFact('Byte order mark', bomOf(intake.bytes), META_KEYS.bom));
   if (!intake.isBinary) {
     const stats = textStats(intake.text || '');
     rows.push(
-      ['Line endings', stats.endings.label],
-      ['Line break count', stats.endings.total],
-      ['Lines', stats.lines],
-      ['Blank lines', stats.blankLines],
-      ['Longest line', stats.longestLine],
-      ['Trailing newline', stats.trailingNewline],
+      textFact('Line endings', stats.endings.label, META_KEYS.lineEndings),
+      textFact('Line break count', stats.endings.total, META_KEYS.lineBreakCount),
+      textFact('Lines', stats.lines, META_KEYS.logicalLines),
+      textFact('Blank lines', stats.blankLines, META_KEYS.blankLines),
+      textFact('Longest line', stats.longestLine, META_KEYS.longestLine),
+      textFact('Trailing newline', stats.trailingNewline, META_KEYS.trailingNewline),
     );
   }
   return rows;

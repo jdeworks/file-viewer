@@ -3,10 +3,12 @@
 import { state, $, escapeHtml, formatBytes } from './state.js';
 import { getTypeInfo } from './type-info.js';
 import { genericMetadata } from './generic-metadata.js';
+import { META_SECTIONS } from './metadata-helpers.js';
 
 const SENSITIVE_KEY_RE = /(SECRET|PASSWORD|TOKEN|KEY|PRIVATE)/i;
 const ADVANCED_LABELS = new Set(['MIME', 'Modified', 'Extension', 'Content kind', 'Loaded bytes', 'Byte order mark']);
 const TEXT_FACT_LABELS = new Set(['Line endings', 'Line break count', 'Lines', 'Blank lines', 'Longest line', 'Trailing newline']);
+const BUILT_IN_SECTIONS = new Set(Object.values(META_SECTIONS));
 
 function sanitizeObject(value) {
   if (Array.isArray(value)) return value.map(sanitizeObject);
@@ -170,10 +172,14 @@ function row(label, value, section = '') {
   return { label, value, section };
 }
 
+function rowFromMetadata(entry) {
+  return Array.isArray(entry) ? row(entry[0], entry[1]) : entry;
+}
+
 function fallbackSection(label) {
-  if (ADVANCED_LABELS.has(label)) return 'Advanced file facts';
-  if (TEXT_FACT_LABELS.has(label)) return 'Text structure';
-  return 'Type-specific details';
+  if (ADVANCED_LABELS.has(label)) return META_SECTIONS.advanced;
+  if (TEXT_FACT_LABELS.has(label)) return META_SECTIONS.text;
+  return META_SECTIONS.type;
 }
 
 function rowsForSection(rows, sectionTitle) {
@@ -185,7 +191,7 @@ function rowsForSection(rows, sectionTitle) {
 function explicitSections(rows) {
   const out = [];
   for (const r of rows) {
-    if (!r.section || ['Type-specific details', 'Text structure', 'Advanced file facts'].includes(r.section)) continue;
+    if (!r.section || BUILT_IN_SECTIONS.has(r.section)) continue;
     if (out.some((s) => s.title === r.section)) continue;
     out.push({ title: r.section, open: r.sectionOpen !== false });
   }
@@ -211,9 +217,9 @@ export async function buildMetadata() {
     ['Size', formatBytes(i.size)],
   ];
   const rows = [
-    row('MIME', i.mimeType || '—', 'Advanced file facts'),
-    row('Modified', i.lastModified ? new Date(i.lastModified).toLocaleString() : '—', 'Advanced file facts'),
-    ...genericMetadata(i).map(([label, value]) => row(label, value)),
+    row('MIME', i.mimeType || '—', META_SECTIONS.advanced),
+    row('Modified', i.lastModified ? new Date(i.lastModified).toLocaleString() : '—', META_SECTIONS.advanced),
+    ...genericMetadata(i).map(rowFromMetadata),
   ];
   if (state.type.loadMetadata) {
     try { await appendExtractedRows(rows, state.type.loadMetadata, i); } catch {}
@@ -224,12 +230,12 @@ export async function buildMetadata() {
   body.innerHTML = '';
   appendTypeInfo(body, basics);
   const unique = dedupeMetadataRows(rows);
-  appendSection(body, 'Type-specific details', rowsForSection(unique, 'Type-specific details'), true);
+  appendSection(body, META_SECTIONS.type, rowsForSection(unique, META_SECTIONS.type), true);
   for (const section of explicitSections(unique)) {
     appendSection(body, section.title, rowsForSection(unique, section.title), section.open);
   }
-  appendSection(body, 'Text structure', rowsForSection(unique, 'Text structure'), false);
-  appendSection(body, 'Advanced file facts', rowsForSection(unique, 'Advanced file facts'), false);
+  appendSection(body, META_SECTIONS.text, rowsForSection(unique, META_SECTIONS.text), false);
+  appendSection(body, META_SECTIONS.advanced, rowsForSection(unique, META_SECTIONS.advanced), false);
   const note = document.createElement('p'); note.className = 'muted'; note.style.marginTop = '12px';
   note.style.fontSize = '12px';
   note.textContent = 'Note: browsers expose only the file’s modified time, never its OS creation time. “Created” dates come only from inside the file (e.g. PDF/EXIF).';
