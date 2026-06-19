@@ -8869,6 +8869,81 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "bazel": {
+      "label": "Bazel BUILD / WORKSPACE",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "bazelrc": {
+      "label": ".bazelrc",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "ninja-build": {
+      "label": "Ninja build file",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

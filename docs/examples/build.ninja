@@ -1,0 +1,28 @@
+ninja_required_version = 1.8
+
+cc = clang
+cflags = -Wall -Wextra -O2
+ldflags = -lpthread
+
+rule cc_compile
+  command = $cc $cflags -c $in -o $out
+  description = CC $out
+
+rule cc_link
+  command = $cc $ldflags $in -o $out
+  description = LINK $out
+
+rule cc_lib
+  command = ar rcs $out $in
+  description = AR $out
+
+build build/main.o: cc_compile src/main.c
+build build/util.o: cc_compile src/util.c
+build build/parser.o: cc_compile src/parser.c
+build build/logger.o: cc_compile src/logger.c
+
+build build/libutil.a: cc_lib build/util.o build/parser.o build/logger.o
+
+build myapp: cc_link build/main.o build/libutil.a
+
+default myapp

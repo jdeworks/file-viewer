@@ -165,6 +165,9 @@ import supabaseConfig from '../types/text/toml/known/supabase-config/index.js';
 import netlifyRedirects from '../types/text/known/redirects/index.js';
 import cmake from '../types/text/known/cmake/index.js';
 import jenkinsfile from '../types/text/known/jenkinsfile/index.js';
+import bazel from '../types/text/known/bazel/index.js';
+import bazelrc from '../types/text/known/bazelrc/index.js';
+import ninjaBuild from '../types/text/known/ninja-build/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -192,7 +195,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   crowdinYml, matchfile, appfile, rubyVersion, pythonVersion, earthfile, gitmodules, tfvars,
   podfile, fastfile, snapfile,
   supabaseConfig, netlifyRedirects,
-  cmake, jenkinsfile];
+  cmake, jenkinsfile,
+  bazel, bazelrc, ninjaBuild];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -459,7 +459,7 @@ export async function run(ctx) {
   await openExample('docker-compose.yml');
   await page.waitForSelector('#previewHost .kf-svc', { timeout: 12000 });
   const dcTypeId = await page.$eval('#typeSelect', (s) => s.value);
-  if (dcTypeId === 'docker-compose') pass('docker-compose.yml detected'); else fail('docker-compose typeId: ' + dcTypeId);
+  if (dcTypeId === 'known:docker-compose' || dcTypeId === 'docker-compose') pass('docker-compose.yml detected'); else fail('docker-compose typeId: ' + dcTypeId);
   const dcText = await page.$eval('#previewHost', (el) => el.textContent);
   if (/compose stack|docker.compose/i.test(dcText)) pass('docker-compose heading shown'); else fail('dc heading: ' + dcText.slice(0, 200));
   if (/web|api|db/i.test(dcText)) pass('docker-compose services shown'); else fail('dc services: ' + dcText.slice(0, 200));

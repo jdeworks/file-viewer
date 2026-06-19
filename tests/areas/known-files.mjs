@@ -1068,4 +1068,28 @@ export async function run(ctx) {
   const jkfText = await page.$eval('#previewHost .jkf-doc', (e) => e.textContent);
   if (/Jenkins/i.test(jkfText)) pass('Jenkinsfile: badge shown'); else fail('jenkins badge: ' + jkfText.slice(0, 200));
   if (/Install|Lint|Test|Build|Deploy/i.test(jkfText)) pass('Jenkinsfile: stages shown'); else fail('jenkins stages: ' + jkfText.slice(0, 200));
+
+  // ── BUILD.bazel viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('BUILD.bazel');
+  await page.waitForSelector('#previewHost .bzl-doc', { timeout: 12000 });
+  const bzlText = await page.$eval('#previewHost .bzl-doc', (e) => e.textContent);
+  if (/Bazel/i.test(bzlText)) pass('BUILD.bazel: Bazel badge shown'); else fail('bazel badge: ' + bzlText.slice(0, 200));
+  if (/server|lib|py_binary|py_library|py_test/i.test(bzlText)) pass('BUILD.bazel: targets shown'); else fail('bazel targets: ' + bzlText.slice(0, 200));
+
+  // ── .bazelrc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.bazelrc');
+  await page.waitForSelector('#previewHost .brc-doc', { timeout: 12000 });
+  const brcText = await page.$eval('#previewHost .brc-doc', (e) => e.textContent);
+  if (/Bazel/i.test(brcText)) pass('.bazelrc: Bazel badge shown'); else fail('bazelrc badge: ' + brcText.slice(0, 200));
+  if (/build|test|common|remote/i.test(brcText)) pass('.bazelrc: option groups shown'); else fail('bazelrc groups: ' + brcText.slice(0, 200));
+
+  // ── build.ninja viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('build.ninja');
+  await page.waitForSelector('#previewHost .nj-doc', { timeout: 12000 });
+  const njText = await page.$eval('#previewHost .nj-doc', (e) => e.textContent);
+  if (/Ninja/i.test(njText)) pass('build.ninja: Ninja badge shown'); else fail('ninja badge: ' + njText.slice(0, 200));
+  if (/cc_compile|cc_link|myapp|build\./i.test(njText)) pass('build.ninja: rules or targets shown'); else fail('ninja targets: ' + njText.slice(0, 200));
 }
