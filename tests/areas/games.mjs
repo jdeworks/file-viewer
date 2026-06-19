@@ -27,6 +27,45 @@ export async function run(ctx) {
   await page.waitForSelector('.g2048-board', { timeout: 8000 });
   const g2048BgCells = await page.$$eval('.g2048-bg-cell', (els) => els.length);
   if (g2048BgCells === 16) pass('2048 launches'); else fail('2048 board cells: ' + g2048BgCells);
+  const g2048MergeAnim = await page.$eval('.g2048-wrap', (wrap) => {
+    wrap.__g2048._seed([
+      { id: 1, r: 0, c: 1, value: 2 },
+      { id: 2, r: 0, c: 2, value: 2 },
+      { id: 3, r: 1, c: 2, value: 4 },
+    ], 0);
+    wrap.__g2048._move(0);
+    const source = wrap.querySelector('.g2048-merge-source');
+    const moved = wrap.querySelector('.g2048-cell[style*="transition"]');
+    const texts = [...wrap.querySelectorAll('.g2048-cell')].map((el) => el.textContent);
+    return {
+      sourceText: source?.textContent || '',
+      sourceOpacity: source ? getComputedStyle(source).opacity : '',
+      twos: texts.filter((text) => text === '2').length,
+      fours: texts.filter((text) => text === '4').length,
+      moveTransition: moved ? getComputedStyle(moved).transitionProperty : '',
+    };
+  });
+  await page.waitForTimeout(180);
+  const g2048MergeSettled = await page.$eval('.g2048-wrap', (wrap) => {
+    const merged = wrap.querySelector('.g2048-cell.g2048-merge');
+    const texts = [...wrap.querySelectorAll('.g2048-cell')].map((el) => el.textContent);
+    return {
+      sourceCount: wrap.querySelectorAll('.g2048-merge-source').length,
+      fours: texts.filter((text) => text === '4').length,
+      mergeAnimation: merged ? getComputedStyle(merged).animationName : '',
+    };
+  });
+  if (g2048MergeAnim.sourceText === '2'
+    && g2048MergeAnim.twos >= 2
+    && g2048MergeAnim.fours >= 1
+    && /transform/.test(g2048MergeAnim.moveTransition)
+    && g2048MergeSettled.sourceCount === 0
+    && g2048MergeSettled.fours >= 2
+    && /g2048-merge-pulse/.test(g2048MergeSettled.mergeAnimation)) {
+    pass('2048 merge move slides source tiles before showing merged value');
+  } else {
+    fail('2048 merge animation missing: ' + JSON.stringify({ during: g2048MergeAnim, after: g2048MergeSettled }));
+  }
   async function assert2048ResultLayer(result, label) {
     await page.waitForSelector(`.g2048-over[data-result="${result}"]:not([hidden])`, { timeout: 4000 });
     const layer = await page.$eval('.g2048-wrap', (wrap) => {

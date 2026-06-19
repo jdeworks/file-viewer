@@ -80,6 +80,7 @@
   45% { box-shadow: 0 0 0 3px rgba(255,255,255,.42), 0 0 14px rgba(237,194,46,.55); filter: brightness(1.08); }
 }
 .g2048-merge { animation: g2048-merge-pulse 0.16s ease-out; }
+.g2048-merge-source { z-index: 2; pointer-events: none; }
 /* g2048-moving board animation removed; tiles use per-element FLIP transform instead. */
 
 /* Bit Foundry (meta-game incremental core). */

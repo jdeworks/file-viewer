@@ -86,6 +86,7 @@ export function mount(host, { onScore, onExit } = {}) {
     let anyMoved = false, gained = 0;
     const toRemove = new Set();
     const mergedIds = new Set();
+    const mergePairs = new Map();
     g = g.map((row) => {
       const { result, gained: g2, moved } = collapseRow(row);
       if (moved) anyMoved = true;
@@ -94,6 +95,7 @@ export function mount(host, { onScore, onExit } = {}) {
         if (s.mergedFrom) {
           toRemove.add(s.mergedFrom);
           mergedIds.add(s.id);
+          mergePairs.set(s.id, s.mergedFrom);
         }
       });
       return result;
@@ -105,9 +107,11 @@ export function mount(host, { onScore, onExit } = {}) {
 
     // FLIP — snapshot bounding rects before the DOM updates.
     const oldRects = {};
+    const previousValues = new Map();
     tiles.forEach((t) => {
       const el = tileEls.get(t.id);
       if (el) oldRects[t.id] = el.getBoundingClientRect();
+      previousValues.set(t.id, t.value);
     });
 
     // Remove merged tiles from the data model.
@@ -125,7 +129,7 @@ export function mount(host, { onScore, onExit } = {}) {
 
     scoreEl.textContent = 'Score: ' + score;
     onScore?.(score);
-    draw(oldRects, mergedIds);
+    draw(oldRects, mergedIds, mergePairs, previousValues);
     if (!won && tiles.some((t) => t.value >= 2048)) {
       gameWon();
     } else if (!canMove()) {
@@ -133,10 +137,11 @@ export function mount(host, { onScore, onExit } = {}) {
     }
   }
 
-  function draw(oldRects = {}, mergedIds = new Set()) {
+  function draw(oldRects = {}, mergedIds = new Set(), mergePairs = new Map(), previousValues = new Map()) {
+    const mergeSources = new Set(mergePairs.values());
     // Remove DOM elements for tiles that no longer exist.
     for (const [id, el] of tileEls) {
-      if (!tiles.find((t) => t.id === id)) { el.remove(); tileEls.delete(id); }
+      if (!tiles.find((t) => t.id === id) && !mergeSources.has(id)) { el.remove(); tileEls.delete(id); }
     }
 
     tiles.forEach((t) => {
@@ -148,10 +153,12 @@ export function mount(host, { onScore, onExit } = {}) {
         tileEls.set(t.id, el);
       }
 
-      el.className = 'g2048-cell g2048-v' + t.value
+      const deferMerge = mergedIds.has(t.id) && previousValues.has(t.id);
+      const displayValue = deferMerge ? previousValues.get(t.id) : t.value;
+      el.className = 'g2048-cell g2048-v' + displayValue
         + (isNew ? ' g2048-new' : '')
-        + (mergedIds.has(t.id) ? ' g2048-merge' : '');
-      el.textContent = t.value;
+        + (mergedIds.has(t.id) && !deferMerge ? ' g2048-merge' : '');
+      el.textContent = displayValue;
       el.style.gridRow    = (t.r + 1) + '';
       el.style.gridColumn = (t.c + 1) + '';
 
@@ -169,7 +176,38 @@ export function mount(host, { onScore, onExit } = {}) {
           el.style.transform  = '';
         }
       }
+      if (deferMerge) {
+        setTimeout(() => {
+          if (!tileEls.get(t.id)) return;
+          el.className = 'g2048-cell g2048-v' + t.value + ' g2048-merge';
+          el.textContent = t.value;
+        }, 125);
+      }
     });
+
+    for (const [keptId, removedId] of mergePairs) {
+      const src = tileEls.get(removedId);
+      const kept = tiles.find((t) => t.id === keptId);
+      const oldRect = oldRects[removedId];
+      if (!src || !kept || !oldRect) continue;
+      src.className = 'g2048-cell g2048-v' + (previousValues.get(removedId) || src.textContent) + ' g2048-merge-source';
+      src.style.gridRow = (kept.r + 1) + '';
+      src.style.gridColumn = (kept.c + 1) + '';
+      const newRect = src.getBoundingClientRect();
+      const dx = oldRect.left - newRect.left;
+      const dy = oldRect.top - newRect.top;
+      src.style.transition = 'none';
+      src.style.transform = `translate(${dx}px,${dy}px)`;
+      src.style.opacity = '1';
+      src.offsetHeight;
+      src.style.transition = 'transform 0.12s ease, opacity 0.12s ease';
+      src.style.transform = '';
+      src.style.opacity = '0';
+      setTimeout(() => {
+        src.remove();
+        tileEls.delete(removedId);
+      }, 150);
+    }
   }
 
   function canMove() {

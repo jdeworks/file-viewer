@@ -706,7 +706,7 @@ Smoke coverage opens `sample.txt` and verifies a readable preview is available.
 
 ## TASK 20 — 2048 Score Screen Layering Bug
 
-**Status:** Partly implemented — overlay/win smoke coverage exists; merge animation and win-state polish remain open.
+**Status:** Partly implemented — overlay/win smoke coverage exists and merge animation is smoke-covered; remaining work is win-state polish if manual QA still finds layout issues.
 **Effort:** S (~30-60m)  
 **Files likely touched:**
 - `docs/games/2048/g2048.js`
@@ -723,8 +723,8 @@ Add smoke coverage that launches 2048, forces or plays to a score/end state if p
 
 ### Remaining work
 
-- Add merge animation so tiles visibly slide into the merged cell before the new value appears.
-- Recheck the 2048 win/end-screen state and layout after the layering fix, including mobile.
+- Merge animation uses FLIP movement plus a merge pulse and is covered by smoke.
+- Recheck the 2048 win/end-screen state and layout after the layering fix, including mobile, if manual QA still finds an issue.
 
 ---
 
