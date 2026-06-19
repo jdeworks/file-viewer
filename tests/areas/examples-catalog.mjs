@@ -183,4 +183,48 @@ export async function run(ctx) {
   else pass('sample catalog produced no console/page errors');
   if (ctx.offOrigin.length) fail('sample catalog off-origin requests:\n  ' + ctx.offOrigin.join('\n  '));
   else pass('sample catalog made zero off-origin requests');
+
+  // Quality badges: sourced and partial examples display visual indicators
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  const sourcedBadgeOk = await page.evaluate(async () => {
+    // Open a category that contains sourced examples (Image category has sample.png)
+    const cards = Array.from(document.querySelectorAll('.ex-folder-card'));
+    const imageCard = cards.find((c) => c.dataset.categories === 'Image');
+    if (!imageCard) return { ok: false, reason: 'Image category card not found' };
+    imageCard.click();
+    await new Promise((r) => setTimeout(r, 100));
+    // sample.png should have a sourced badge
+    const btns = Array.from(document.querySelectorAll('.ex-file-btn'));
+    const pngBtn = btns.find((b) => (b.dataset.search || '').includes('sample.png'));
+    if (!pngBtn) return { ok: false, reason: 'sample.png button not found in Image category' };
+    const badge = pngBtn.querySelector('.ex-badge-sourced');
+    if (!badge) return { ok: false, reason: 'no sourced badge on sample.png' };
+    return { ok: true };
+  });
+  if (sourcedBadgeOk.ok) pass('sourced badge visible on sample.png in examples gallery');
+  else fail('sourced badge missing: ' + sourcedBadgeOk.reason);
+
+  await page.evaluate(() => { try { sessionStorage.clear(); } catch {} });
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  const partialBadgeOk = await page.evaluate(async () => {
+    // Show all files and look for any .ex-badge-partial badge (djvu or lrf are partial)
+    const showAll = document.querySelector('.ex-showall-btn');
+    if (!showAll) return { ok: false, reason: 'show-all button not found' };
+    showAll.click();
+    await new Promise((r) => setTimeout(r, 200));
+    const partialBadges = document.querySelectorAll('.ex-badge-partial');
+    if (!partialBadges.length) return { ok: false, reason: 'no partial badges found in full gallery' };
+    // Verify a known partial file (djvu or lrf) has the badge
+    const btns = Array.from(document.querySelectorAll('.ex-file-btn'));
+    const djvuBtn = btns.find((b) => {
+      const s = (b.dataset.search || '');
+      return s.includes('djvu') || s.includes('sample.lrf');
+    });
+    if (!djvuBtn) return { ok: false, reason: 'no djvu/lrf button found in show-all view' };
+    const badge = djvuBtn.querySelector('.ex-badge-partial');
+    if (!badge) return { ok: false, reason: 'no partial badge on djvu/lrf button' };
+    return { ok: true };
+  });
+  if (partialBadgeOk.ok) pass('partial badge visible on partial-support samples in examples gallery');
+  else fail('partial badge missing: ' + partialBadgeOk.reason);
 }

@@ -232,6 +232,20 @@ function renderGallery(host, list, onPick) {
         badge.textContent = info.editable ? '✏' : '👁';
         b.appendChild(badge);
       }
+      if (ex.source && ex.license) {
+        const qb = document.createElement('span');
+        qb.className = 'ex-badge ex-badge-sourced';
+        qb.title = 'Real-world sourced sample' + (ex.license ? ' (' + ex.license + ')' : '');
+        qb.textContent = '✓';
+        b.appendChild(qb);
+      } else if (info.partial) {
+        const qb = document.createElement('span');
+        qb.className = 'ex-badge ex-badge-partial';
+        qb.title = 'Partial support — may not render fully';
+        qb.textContent = '⚠';
+        b.appendChild(qb);
+      }
+      b.dataset.sourced = (ex.source && ex.license) ? '1' : '0';
       frag.appendChild(b);
     }
     return frag;
