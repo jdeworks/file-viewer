@@ -96,6 +96,7 @@ import heifType from '../types/image/heif/index.js';
 import torrentType from '../types/binary/torrent/index.js';
 import gameromType from '../types/binary/gamerom/index.js';
 import exeType from '../types/binary/exe/index.js';
+import apkType from '../types/binary/apk/index.js';
 import javaClassType from '../types/binary/class/index.js';
 import wasmType from '../types/binary/wasm/index.js';
 import npyType from '../types/binary/npy/index.js';
@@ -218,6 +219,7 @@ export const REGISTRY = [
   pemType,
   gameromType,
   exeType,
+  apkType,
   ruffleType,
   v86Type,
   emulatorjsType,

@@ -3743,5 +3743,11 @@
     "firefox": true,
     "safari": true,
     "edge": true
+  },
+  "apk": {
+    "chrome": true,
+    "firefox": true,
+    "safari": true,
+    "edge": true
   }
 }

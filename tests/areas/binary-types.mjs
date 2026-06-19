@@ -53,4 +53,16 @@ export async function run(ctx) {
   const gpText = await gpf.$eval('.gp-preview', (el) => el.textContent);
   if (/Guitar Pro/i.test(gpText)) pass('Guitar Pro format label shown'); else fail('gp text: ' + gpText.slice(0, 200));
   if (/File Viewer Demo Tab/i.test(gpText)) pass('GP5 title parsed correctly'); else fail('gp title: ' + gpText.slice(0, 200));
+
+  // ── APK ───────────────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.apk');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const apkf = await frameOf('iframe.fv-preview-frame');
+  await apkf.waitForSelector('.apk-preview', { timeout: 12000 });
+  const apkTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (apkTypeId === 'apk') pass('.apk detected as apk type'); else fail('apk typeId: ' + apkTypeId);
+  const apkText = await apkf.$eval('.apk-preview', (el) => el.textContent);
+  if (/classes\.dex/i.test(apkText)) pass('APK classes.dex shown'); else fail('apk content: ' + apkText.slice(0, 200));
+  if (/arm64-v8a|x86_64/i.test(apkText)) pass('APK native ABI shown'); else fail('apk abi: ' + apkText.slice(0, 200));
 }

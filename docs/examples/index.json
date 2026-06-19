@@ -1955,5 +1955,10 @@
     "filename": "sample.gp5",
     "label": "Guitar Pro 5 Tab (binary)",
     "type": "guitar-pro"
+  },
+  {
+    "filename": "sample.apk",
+    "label": "Android Package (APK stub)",
+    "type": "apk"
   }
 ]

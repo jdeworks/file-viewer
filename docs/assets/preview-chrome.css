@@ -596,3 +596,9 @@
 .gp-section { margin-bottom: 10px; } .gp-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
 .gp-chips { display: flex; flex-wrap: wrap; gap: 5px; } .gp-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font: 12px ui-monospace,monospace; }
 .gp-note { font-size: .85em; color: var(--fg-2); margin-top: 8px; }
+/* Android APK / AAB packages */
+.apk-preview { padding: 12px; } .apk-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.apk-badge { background: #14532d; color: #86efac; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .apk-title { font-weight: 600; font-size: .9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
+.apk-table { border-collapse: collapse; font-size: 13px; margin-bottom: 10px; width: 100%; } .apk-table td { padding: 3px 6px; border-bottom: 1px solid var(--border); }
+.apk-key { color: var(--fg-2); white-space: nowrap; width: 120px; }
+.apk-note { font-size: .8em; color: var(--fg-2); margin-top: 6px; } .apk-signer { font: 11px ui-monospace,monospace; }
