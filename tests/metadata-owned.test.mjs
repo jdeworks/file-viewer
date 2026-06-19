@@ -132,6 +132,27 @@ function numberValue(rows, label) {
   assert.equal(value(rows, 'Triangles'), '12');
 }
 
+{
+  const positions = Buffer.alloc(36);
+  [0, 0, 0, 1, 0, 0, 0, 1, 0].forEach((n, i) => positions.writeFloatLE(n, i * 4));
+  const doc = {
+    asset: { version: '2.0' },
+    buffers: [{ uri: 'data:application/octet-stream;base64,' + positions.toString('base64'), byteLength: positions.length }],
+    bufferViews: [{ buffer: 0, byteOffset: 0, byteLength: positions.length }],
+    accessors: [{ bufferView: 0, componentType: 5126, count: 3, type: 'VEC3' }],
+    materials: [{ pbrMetallicRoughness: { baseColorFactor: [0.8, 0.2, 0.1, 1] } }],
+    meshes: [{ primitives: [{ attributes: { POSITION: 0 }, material: 0 }] }],
+    nodes: [{ mesh: 0 }],
+    scenes: [{ nodes: [0] }],
+    scene: 0,
+  };
+  const intake = { filename: 'colored.gltf', text: JSON.stringify(doc), bytes: new TextEncoder().encode(JSON.stringify(doc)), isBinary: false, size: 1 };
+  const model = parseGLTF(intake);
+  assert.deepEqual(model.tris[0].color, [0.8, 0.2, 0.1, 1]);
+  const rows = gltfMeta(intake);
+  assert.equal(value(rows, 'Base-color materials'), '1');
+}
+
 function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e4f534a, payload = [] } = {}) {
   const bytes = new Uint8Array(Math.max(length, 20));
   const dv = new DataView(bytes.buffer);

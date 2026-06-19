@@ -3,7 +3,7 @@
 // painted back-to-front (painter's algorithm). Drag (mouse/touch) to orbit. Used by the STL and
 // OBJ viewers (and any future mesh format) — each supplies a normalized model + an info string.
 //
-// model: { tris: [{ v: [[x,y,z],[x,y,z],[x,y,z]], n: [x,y,z] }], size: [x,y,z], center: [x,y,z] }
+// model: { tris: [{ v: [[x,y,z],[x,y,z],[x,y,z]], n: [x,y,z], color?: [r,g,b,a] }], size, center }
 
 export function mountMeshView(model, infoText) {
   const host = document.createElement('div');
@@ -20,6 +20,11 @@ export function mountMeshView(model, infoText) {
   const baseRotX = -1.1, baseRotY = 0.6;
   let rotX = baseRotX, rotY = baseRotY;
   const light = (() => { const l = [0.4, 0.5, 0.8]; const n = Math.hypot(...l); return l.map((x) => x / n); })();
+  function faceFill(color, shade) {
+    const lit = 0.25 + 0.75 * shade;
+    if (!color) return 'rgb(' + Math.round(70 * lit + 40) + ',' + Math.round(120 * lit + 40) + ',' + Math.round(200 * lit + 30) + ')';
+    return 'rgba(' + Math.round(255 * color[0] * lit) + ',' + Math.round(255 * color[1] * lit) + ',' + Math.round(255 * color[2] * lit) + ',' + (color[3] ?? 1) + ')';
+  }
   const scaleFit = () => {
     const maxDim = Math.max(model.size[0], model.size[1], model.size[2]) || 1;
     return 0.42 * Math.min(canvas.width, canvas.height) / maxDim;
@@ -41,12 +46,11 @@ export function mountMeshView(model, infoText) {
     for (const t of model.tris) {
       const a = rot(t.v[0], true), b = rot(t.v[1], true), c = rot(t.v[2], true);
       const n = rot(t.n, false);
-      faces.push({ a, b, c, shade: Math.max(0, n[0] * light[0] + n[1] * light[1] + n[2] * light[2]), depth: (a[2] + b[2] + c[2]) / 3 });
+      faces.push({ a, b, c, color: t.color, shade: Math.max(0, n[0] * light[0] + n[1] * light[1] + n[2] * light[2]), depth: (a[2] + b[2] + c[2]) / 3 });
     }
     faces.sort((p, q) => p.depth - q.depth);
     for (const f of faces) {
-      const lit = 0.25 + 0.75 * f.shade;
-      ctx.fillStyle = 'rgb(' + Math.round(70 * lit + 40) + ',' + Math.round(120 * lit + 40) + ',' + Math.round(200 * lit + 30) + ')';
+      ctx.fillStyle = faceFill(f.color, f.shade);
       ctx.beginPath();
       ctx.moveTo(cx + f.a[0] * s, cy - f.a[1] * s);
       ctx.lineTo(cx + f.b[0] * s, cy - f.b[1] * s);

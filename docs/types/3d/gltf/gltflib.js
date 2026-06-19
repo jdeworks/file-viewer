@@ -1,8 +1,9 @@
 // glTF 2.0 / GLB parser → triangle mesh for the shared mesh viewer. Self-contained files only:
 // GLB (binary, embeds its buffer) and .gltf whose buffers use data: URIs — an external .bin can't
 // be fetched (single-file open + zero-off-origin), so those primitives are skipped. Reads the
-// POSITION accessor + indices for TRIANGLE primitives, applies the scene node transforms, and
-// computes flat per-face normals. No materials/animation/sparse-accessor support. Pure JS.
+// POSITION accessor + indices for TRIANGLE primitives, applies scene node transforms, preserves
+// PBR baseColorFactor materials, and computes flat per-face normals. No animation/sparse-accessor
+// support. Pure JS.
 import { bounds } from '../../../core/meshview.js';
 
 const CT = { 5120: 'getInt8', 5121: 'getUint8', 5122: 'getInt16', 5123: 'getUint16', 5125: 'getUint32', 5126: 'getFloat32' };
@@ -95,6 +96,16 @@ function tp(m, p) { return [m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], m[1
 function vsub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
 function vcross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
 function vnorm(a) { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }
+function materialColor(material) {
+  const factor = material?.pbrMetallicRoughness?.baseColorFactor;
+  if (!Array.isArray(factor) || factor.length < 3) return null;
+  return [
+    Math.max(0, Math.min(1, Number(factor[0]) || 0)),
+    Math.max(0, Math.min(1, Number(factor[1]) || 0)),
+    Math.max(0, Math.min(1, Number(factor[2]) || 0)),
+    Math.max(0, Math.min(1, factor[3] == null ? 1 : Number(factor[3]) || 0)),
+  ];
+}
 
 export function parseGLTF(intake) {
   let gltf, glbBin = null;
@@ -116,6 +127,7 @@ export function parseGLTF(intake) {
     animationCount: (gltf.animations || []).length,
     bufferCount: (gltf.buffers || []).length,
     externalBufferCount: (gltf.buffers || []).filter((b) => b.uri && !/^data:/.test(b.uri)).length,
+    materialColorCount: (gltf.materials || []).filter((m) => materialColor(m)).length,
     primitiveCount: 0,
     renderedPrimitiveCount: 0,
   };
@@ -132,10 +144,11 @@ export function parseGLTF(intake) {
       const verts = pos.map((p) => tp(matrix, p));
       const idx = prim.indices != null ? readAccessor(gltf, buffers, prim.indices) : verts.map((_, i) => i);
       if (!idx) continue;
+      const color = materialColor((gltf.materials || [])[prim.material]);
       stats.renderedPrimitiveCount++;
       for (let i = 0; i + 2 < idx.length; i += 3) {
         const a = verts[idx[i]], b = verts[idx[i + 1]], c = verts[idx[i + 2]];
-        if (a && b && c) tris.push({ v: [a, b, c], n: vnorm(vcross(vsub(b, a), vsub(c, a))) });
+        if (a && b && c) tris.push({ v: [a, b, c], n: vnorm(vcross(vsub(b, a), vsub(c, a))), color });
       }
     }
   };
