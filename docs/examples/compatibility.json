@@ -3054,6 +3054,197 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
+    },
+    "postscript": {
+      "label": "PostScript / EPS",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.eps"
+      ],
+      "extensions": [
+        ".ps",
+        ".eps",
+        ".ai"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Parses DSC (Document Structuring Conventions) comments only. PostScript execution not supported.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [
+        "PostScript execution not supported — metadata display only"
+      ],
+      "knownParserGaps": [
+        "No rendering of PostScript graphics"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "acf": {
+      "label": "Steam App Manifest (ACF)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.acf"
+      ],
+      "extensions": [
+        ".acf"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Parses Valve KeyValues format. Shows game name, App ID, install state, depot info.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "fits": {
+      "label": "FITS Astronomy Image",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.fits"
+      ],
+      "extensions": [
+        ".fits",
+        ".fit",
+        ".fts"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Parses FITS ASCII header cards. Image data rendering not supported.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "No image data rendering"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "kml": {
+      "label": "KML Map",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.kml"
+      ],
+      "extensions": [
+        ".kml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Parses KML placemarks, folders, geometry types. No map rendering — shows structured list.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "No map tile rendering",
+        "KMZ (zipped KML) shown as archive"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "abc": {
+      "label": "ABC Music Notation",
+      "support": "supported",
+      "sampleFiles": ["sample.abc"],
+      "extensions": [".abc"],
+      "capabilities": { "rawView": true, "preview": true, "diff": true, "magicSelector": false, "screenshot": true },
+      "provenance": { "sourced": 0, "total": 1 },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Parses ABC tune headers (X/T/C/K/M/Q). No audio playback or score rendering.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": ["No score rendering", "No audio playback"],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "hl7": {
+      "label": "HL7 v2 Health Message",
+      "support": "supported",
+      "sampleFiles": ["sample.hl7"],
+      "extensions": [".hl7"],
+      "capabilities": { "rawView": true, "preview": true, "diff": true, "magicSelector": false, "screenshot": true },
+      "provenance": { "sourced": 0, "total": 1 },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Parses HL7 v2.x pipe-delimited segments. Shows segment table with type labels.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": ["HL7 FHIR (JSON/XML) not supported"],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   },
   "knownFiles": {

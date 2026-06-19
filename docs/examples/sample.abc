@@ -1,0 +1,42 @@
+% ABC Music Notation — File Viewer Example
+% Contains three traditional tunes
+
+X:1
+T:Scarborough Fair
+C:Traditional English
+Z:File Viewer Examples
+R:Dorian ballad
+M:3/4
+L:1/8
+Q:1/4=72
+K:Dm
+|: A,2 | D3 E F2 | E4 DC | A,6- | A,4 A,2 |
+D3 E FG | A4 G2 | F6- | F4 EF |
+G3 A AG | F4 ED | E6- | E4 D2 |
+F3 G FE | D4 F2 | A6- | A4 :|
+
+X:2
+T:Greensleeves
+C:Traditional
+R:Waltz
+M:3/4
+L:1/8
+Q:1/4=80
+K:Amin
+|: A2 | c3 d c2 | B4 G2 | G3 A B2 | G4 E2 |
+E3 F G2 | A4 ^G2 | A3 B ^c2 | e4 e2 |
+e3 f e2 | d4 B2 | B3 c B2 | A4 A2 |
+^G3 A B2 | e4 d2 | d3 c B2 | A4 :|
+
+X:3
+T:The Lark in the Morning
+C:Traditional Irish
+R:Jig
+M:6/8
+L:1/8
+Q:3/8=100
+K:G
+|: D | G2G GAB | A2A AFD | G2G GAB | d3 B2A |
+G2G GAB | A2A ABc | dBG AFD | G3 G2 :|
+|: d | ege dBd | gfe dBA | g2g gab | a3 f2d |
+g2g gab | aba agf | gfg def | g3 g2 :|

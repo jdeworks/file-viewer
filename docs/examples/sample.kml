@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Silicon Valley Tech Map</name>
+    <description>A sample KML file demonstrating the File Viewer KML reader.</description>
+
+    <Style id="landmark">
+      <IconStyle>
+        <color>ff0000ff</color>
+        <scale>1.2</scale>
+      </IconStyle>
+      <LabelStyle>
+        <color>ff0000ff</color>
+      </LabelStyle>
+    </Style>
+
+    <Folder>
+      <name>Tech Landmarks</name>
+      <Placemark>
+        <name>Googleplex</name>
+        <description>Google Headquarters, Mountain View, CA</description>
+        <styleUrl>#landmark</styleUrl>
+        <Point>
+          <coordinates>-122.0840575,37.4219999,0</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Apple Park</name>
+        <description>Apple Campus, Cupertino, CA</description>
+        <styleUrl>#landmark</styleUrl>
+        <Point>
+          <coordinates>-122.0096088,37.3348169,0</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Meta HQ</name>
+        <description>Meta Platforms Headquarters, Menlo Park, CA</description>
+        <styleUrl>#landmark</styleUrl>
+        <Point>
+          <coordinates>-122.1483033,37.4845019,0</coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+
+    <Folder>
+      <name>Boundaries</name>
+      <Placemark>
+        <name>Silicon Valley Outline</name>
+        <description>Approximate boundary of Silicon Valley</description>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <coordinates>
+                -122.4194,37.7749,0
+                -121.8863,37.3387,0
+                -121.9701,37.0522,0
+                -122.2869,37.0700,0
+                -122.4194,37.7749,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>US-101 Corridor</name>
+        <description>US Highway 101 through Silicon Valley</description>
+        <LineString>
+          <coordinates>
+            -122.0840575,37.4219999,0
+            -121.9452,37.2967,0
+            -121.9023,37.1855,0
+            -121.8863,37.0694,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>

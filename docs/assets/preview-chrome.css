@@ -487,3 +487,58 @@
 .kicad-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
 .kicad-chips { display: flex; flex-wrap: wrap; gap: 5px; } .kicad-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font: 12px ui-monospace,monospace; } .kicad-chip-more { color: var(--fg-2); }
 .kicad-table { border-collapse: collapse; font-size: 13px; } .kicad-key { padding: 3px 12px 3px 0; color: var(--fg-2); white-space: nowrap; vertical-align: top; } .kicad-table td { padding: 3px 0; }
+/* PostScript / EPS */
+.ps-preview { padding: 12px; } .ps-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ps-badge { background: #7c3aed; color: #fff; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .ps-kind { font-weight: 600; font-size: .95em; }
+.ps-table { border-collapse: collapse; font-size: 13px; } .ps-key { padding: 3px 14px 3px 0; color: var(--fg-2); white-space: nowrap; vertical-align: top; } .ps-table td { padding: 3px 0; }
+.ps-note { font-size: .8em; color: var(--fg-2); margin-top: 10px; font-style: italic; }
+/* Steam ACF (Valve KeyValues) */
+.acf-preview { padding: 12px; } .acf-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.acf-badge { background: #1b2838; color: #66c0f4; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .acf-title { font-weight: 600; font-size: .95em; }
+.acf-table { border-collapse: collapse; font-size: 13px; } .acf-key { padding: 3px 14px 3px 0; color: var(--fg-2); white-space: nowrap; vertical-align: top; } .acf-table td { padding: 3px 0; }
+.acf-section { margin-top: 12px; } .acf-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
+.acf-chips { display: flex; flex-wrap: wrap; gap: 5px; } .acf-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font: 12px ui-monospace,monospace; } .acf-chip-more { color: var(--fg-2); }
+.acf-note { font-size: .8em; color: var(--fg-2); }
+/* FITS astronomy */
+.fits-preview { padding: 12px; } .fits-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.fits-badge { background: #0f172a; color: #38bdf8; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .fits-subhead { font-weight: 600; font-size: .95em; }
+.fits-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.fits-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; text-align: center; min-width: 60px; }
+.fits-stat-value { font: 700 15px/1 ui-monospace,monospace; color: var(--accent); }
+.fits-stat-label { font-size: .72em; color: var(--fg-2); margin-top: 3px; text-transform: uppercase; letter-spacing: .04em; }
+.fits-table { border-collapse: collapse; font-size: 12px; margin-bottom: 10px; } .fits-key { padding: 2px 14px 2px 0; color: var(--accent); font: 12px ui-monospace,monospace; white-space: nowrap; vertical-align: top; } .fits-table td { padding: 2px 0; } .fits-comment { color: var(--fg-2); font-size: .85em; }
+.fits-all summary { cursor: pointer; font-size: .8em; color: var(--fg-2); margin-bottom: 6px; } .fits-note { font-size: .8em; color: var(--fg-2); }
+/* KML map */
+.kml-preview { padding: 12px; } .kml-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.kml-badge { background: #166534; color: #bbf7d0; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .kml-title { font-weight: 600; font-size: .95em; }
+.kml-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.kml-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; text-align: center; min-width: 54px; }
+.kml-stat-value { font: 700 16px/1 system-ui; color: var(--accent); } .kml-stat-label { font-size: .72em; color: var(--fg-2); margin-top: 3px; text-transform: uppercase; }
+.kml-desc-text { font-size: .85em; color: var(--fg-2); margin-bottom: 10px; }
+.kml-table { border-collapse: collapse; font-size: 13px; width: 100%; } .kml-table th { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--border); color: var(--fg-2); font-size: 11px; } .kml-table td { padding: 3px 8px; border-bottom: 1px solid var(--border); }
+.kml-geom { font-size: 14px; width: 24px; } .kml-desc { color: var(--fg-2); font-size: .85em; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kml-note { font-size: .8em; color: var(--fg-2); margin-top: 8px; }
+/* ABC music notation */
+.abc-preview { padding: 12px; } .abc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.abc-badge { background: #92400e; color: #fde68a; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .abc-subtitle { color: var(--fg-2); font-size: .85em; }
+.abc-tunes { display: flex; flex-direction: column; gap: 8px; }
+.abc-tune { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
+.abc-tune-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.abc-index { font: 700 11px ui-monospace,monospace; color: var(--fg-2); }
+.abc-tune-title { font-weight: 600; font-size: .95em; }
+.abc-composer { font-size: .8em; color: var(--fg-2); margin-bottom: 4px; }
+.abc-pills { display: flex; flex-wrap: wrap; gap: 4px; } .abc-pill { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: .78em; color: var(--fg-2); }
+.abc-note { font-size: .8em; color: var(--fg-2); margin-top: 8px; }
+/* HL7 health messages */
+.hl7-preview { padding: 12px; } .hl7-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.hl7-badge { background: #0c4a6e; color: #7dd3fc; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .hl7-subtitle { font-weight: 600; font-size: .9em; }
+.hl7-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.hl7-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; text-align: center; min-width: 60px; }
+.hl7-stat-value { font: 700 16px/1 system-ui; color: var(--accent); } .hl7-stat-label { font-size: .72em; color: var(--fg-2); margin-top: 3px; text-transform: uppercase; }
+.hl7-table { border-collapse: collapse; font-size: 12px; width: 100%; margin-bottom: 10px; }
+.hl7-table th { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--border); color: var(--fg-2); font-size: 11px; } .hl7-table td { padding: 3px 8px; border-bottom: 1px solid var(--border); }
+.hl7-key { color: var(--fg-2); white-space: nowrap; vertical-align: top; }
+.hl7-summary { margin-bottom: 12px; }
+.hl7-seg-section { margin-top: 8px; } .hl7-seg-title { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
+.hl7-seg-name { font: 700 12px ui-monospace,monospace; color: var(--accent); width: 48px; white-space: nowrap; } .hl7-seg-label { color: var(--fg-2); font-size: .85em; width: 160px; } .hl7-seg-preview { font: 11px ui-monospace,monospace; color: var(--fg-2); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hl7-note { font-size: .8em; color: var(--fg-2); margin-top: 8px; }

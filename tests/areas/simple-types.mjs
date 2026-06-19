@@ -320,4 +320,76 @@ export async function run(ctx) {
   if (kicadStats.length >= 3) pass('KiCad PCB stats shown (footprints, nets, tracks)'); else fail('kicad stats count: ' + kicadStats.length);
   const kicadTitle = await kicadf.$eval('.kicad-title', (e) => e.textContent);
   if (/LED Blinker/i.test(kicadTitle)) pass('KiCad PCB title shown'); else fail('kicad title: ' + kicadTitle);
+
+  // ── PostScript / EPS viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Hello PostScript (EPS)');
+  const psf = await frameOf('iframe.fv-preview-frame');
+  await psf.waitForSelector('.ps-preview', { timeout: 8000 });
+  const psTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (psTypeId === 'postscript') pass('sample.eps detected as PostScript type'); else fail('postscript type: ' + psTypeId);
+  const psBadge = await psf.$eval('.ps-badge', (e) => e.textContent);
+  if (/PS/i.test(psBadge)) pass('PostScript DSC version badge shown'); else fail('ps badge: ' + psBadge);
+  const psTitle = await psf.$eval('.ps-table', (e) => e.textContent);
+  if (/Hello PostScript/i.test(psTitle)) pass('PostScript title from DSC comments shown'); else fail('ps table: ' + psTitle.slice(0, 100));
+
+  // ── Steam ACF viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Steam App Manifest (ACF)');
+  const acff = await frameOf('iframe.fv-preview-frame');
+  await acff.waitForSelector('.acf-preview', { timeout: 8000 });
+  const acfTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (acfTypeId === 'acf') pass('sample.acf detected as Steam ACF type'); else fail('acf type: ' + acfTypeId);
+  const acfTitle = await acff.$eval('.acf-title', (e) => e.textContent);
+  if (/Spacewar/i.test(acfTitle)) pass('ACF game name shown'); else fail('acf title: ' + acfTitle);
+  const acfRows = await acff.$eval('.acf-table', (e) => e.textContent);
+  if (/480/.test(acfRows)) pass('ACF App ID shown in table'); else fail('acf table: ' + acfRows.slice(0, 100));
+
+  // ── FITS astronomy image viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Helix Nebula (FITS)');
+  const fitsf = await frameOf('iframe.fv-preview-frame');
+  await fitsf.waitForSelector('.fits-preview', { timeout: 8000 });
+  const fitsTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (fitsTypeId === 'fits') pass('sample.fits detected as FITS type'); else fail('fits type: ' + fitsTypeId);
+  const fitsBadge = await fitsf.$eval('.fits-badge', (e) => e.textContent);
+  if (fitsBadge === 'FITS') pass('FITS badge shown'); else fail('fits badge: ' + fitsBadge);
+  const fitsSubhead = await fitsf.$eval('.fits-subhead', (e) => e.textContent);
+  if (/NGC.?7293|Helix/i.test(fitsSubhead)) pass('FITS object name shown'); else fail('fits subhead: ' + fitsSubhead);
+
+  // ── KML map viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Silicon Valley Map (KML)');
+  const kmlf = await frameOf('iframe.fv-preview-frame');
+  await kmlf.waitForSelector('.kml-preview', { timeout: 8000 });
+  const kmlTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (kmlTypeId === 'kml') pass('sample.kml detected as KML type'); else fail('kml type: ' + kmlTypeId);
+  const kmlTitle = await kmlf.$eval('.kml-title', (e) => e.textContent);
+  if (/Silicon Valley/i.test(kmlTitle)) pass('KML document name shown'); else fail('kml title: ' + kmlTitle);
+  const kmlRows = await kmlf.$$eval('.kml-table tbody tr', (els) => els.length);
+  if (kmlRows >= 4) pass('KML placemark table rows rendered'); else fail('kml rows: ' + kmlRows);
+
+  // ── ABC music notation viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Folk Tunes (ABC)');
+  const abcf = await frameOf('iframe.fv-preview-frame');
+  await abcf.waitForSelector('.abc-preview', { timeout: 8000 });
+  const abcTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (abcTypeId === 'abc') pass('sample.abc detected as ABC type'); else fail('abc type: ' + abcTypeId);
+  const abcSubtitle = await abcf.$eval('.abc-subtitle', (e) => e.textContent);
+  if (/3 tune/i.test(abcSubtitle)) pass('ABC 3 tunes counted'); else fail('abc subtitle: ' + abcSubtitle);
+  const abcFirstTitle = await abcf.$eval('.abc-tune-title', (e) => e.textContent);
+  if (/Scarborough/i.test(abcFirstTitle)) pass('ABC first tune title shown'); else fail('abc title: ' + abcFirstTitle);
+
+  // ── HL7 health message viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Patient Admission (HL7)');
+  const hl7f = await frameOf('iframe.fv-preview-frame');
+  await hl7f.waitForSelector('.hl7-preview', { timeout: 8000 });
+  const hl7TypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (hl7TypeId === 'hl7') pass('sample.hl7 detected as HL7 type'); else fail('hl7 type: ' + hl7TypeId);
+  const hl7Badge = await hl7f.$eval('.hl7-badge', (e) => e.textContent);
+  if (hl7Badge === 'HL7') pass('HL7 badge shown'); else fail('hl7 badge: ' + hl7Badge);
+  const hl7Segs = await hl7f.$$eval('.hl7-table tbody tr', (els) => els.length);
+  if (hl7Segs >= 8) pass('HL7 segment table rows rendered'); else fail('hl7 segs: ' + hl7Segs);
 }

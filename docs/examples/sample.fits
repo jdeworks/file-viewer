@@ -1,0 +1,25 @@
+SIMPLE  =                    T / file conforms to FITS standard
+BITPIX  =                  -32 / 32-bit floating point values
+NAXIS   =                    2 / number of array dimensions
+NAXIS1  =                  512 / length of axis 1
+NAXIS2  =                  512 / length of axis 2
+EXTEND  =                    T / extensions permitted
+OBJECT  = 'NGC_7293'           / object name: Helix Nebula
+TELESCOP= 'HST     '           / Hubble Space Telescope
+INSTRUME= 'ACS/WFC '           / instrument: Advanced Camera for Surveys
+OBSERVER= 'File Viewer Examples' / observer name
+DATE-OBS= '2024-01-15T09:30:00' / observation date and time (UTC)
+EXPTIME =                1200.0 / total exposure time (seconds)
+FILTER  = 'F502N   '           / filter name
+BSCALE  =               1.0000 / data scaling factor
+BZERO   =               0.0000 / zero point
+BUNIT   = 'counts/s'           / brightness unit
+EQUINOX =               2000.0 / coordinate epoch
+RADESYS = 'FK5     '           / coordinate reference frame
+RA_TARG =    337.4108333333333 / right ascension of target (degrees)
+DEC_TARG=    -20.8372222222222 / declination of target (degrees)
+ORIGIN  = 'STScI   '           / institution
+COMMENT This is a synthetic FITS header for demonstration purposes.
+COMMENT Real FITS files contain binary image data after the header.
+HISTORY Created by File Viewer Examples 2024-01-15
+END

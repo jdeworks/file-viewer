@@ -1863,5 +1863,59 @@
     "categories": [
       "Data"
     ]
+  },
+  {
+    "label": "Hello PostScript (EPS)",
+    "file": "sample.eps",
+    "mime": "application/postscript",
+    "category": "Data",
+    "categories": [
+      "Data"
+    ]
+  },
+  {
+    "label": "Steam App Manifest (ACF)",
+    "file": "sample.acf",
+    "mime": "text/x-steam-acf",
+    "category": "Data",
+    "categories": [
+      "Data"
+    ]
+  },
+  {
+    "label": "Helix Nebula (FITS)",
+    "file": "sample.fits",
+    "mime": "image/fits",
+    "category": "Data",
+    "categories": [
+      "Data"
+    ]
+  },
+  {
+    "label": "Silicon Valley Map (KML)",
+    "file": "sample.kml",
+    "mime": "application/vnd.google-earth.kml+xml",
+    "category": "Geo",
+    "categories": [
+      "Geo"
+    ]
+  },
+  {
+    "label": "Folk Tunes (ABC)",
+    "file": "sample.abc",
+    "mime": "text/vnd.abc",
+    "category": "Music",
+    "categories": [
+      "Music"
+    ]
+  },
+  {
+    "label": "Patient Admission (HL7)",
+    "file": "sample.hl7",
+    "mime": "application/hl7-v2",
+    "category": "Data",
+    "categories": [
+      "Data"
+    ]
   }
 ]

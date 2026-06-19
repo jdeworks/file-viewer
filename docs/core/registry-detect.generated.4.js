@@ -4,6 +4,86 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_gcode=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, 'gcode', 'gc', 'nc', 'ngc')) return 0.90;
+  const sample = (intake.text || '').slice(0, 2048);
+  const signals = ['G0 ', 'G1 ', 'G28', 'M104', 'M109', 'M140', ';LAYER:'];
+  const hits = signals.filter((s) => sample.includes(s)).length;
+  if (hits >= 2) return 0.80;
+  return 0;
+}
+return detect;
+})();
+
+const detect_gitignore=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  const n = intake.filename || '';
+  if (/(?:^|\.)(?:gitignore|dockerignore|npmignore|eslintignore|prettierignore|hgignore)$/.test(n)) return 0.95;
+  return 0;
+}
+return detect;
+})();
+
+const detect_gitattributes=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  const base = (intake.filename || '').split('/').pop().split('\\').pop().toLowerCase();
+  if (base === '.gitattributes') return 0.97;
+  // Content heuristic: lines like "*.ext  text eol=lf" or "path binary"
+  const sample = intake.textSample || '';
+  const kvLines = sample.split('\n').filter(l => {
+    const t = l.trim();
+    return t && !t.startsWith('#') && /^[^\s]+\s+(text|binary|eol=|diff=|merge=|linguist-|export-)/.test(t);
+  });
+  if (kvLines.length >= 2) return 0.7;
+  return 0;
+}
+return detect;
+})();
+
+const detect_editorconfig=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  const base = (intake.filename || '').split('/').pop().split('\\').pop().toLowerCase();
+  if (base === '.editorconfig') return 0.98;
+  // Content: has [*] or [*.ext] section + indent_style or indent_size
+  const sample = intake.textSample || '';
+  if (/^\[[\*\?!{\w.,\-/]+\]/m.test(sample) && /indent_(style|size)\s*=/m.test(sample)) return 0.8;
+  return 0;
+}
+return detect;
+})();
+
+const detect_ssh_config=(()=>{
+function detect(intake) {
+  if (intake.bytes?.[0] > 127) return 0; // not ASCII/UTF-8 text
+  const name = intake.filename?.toLowerCase() ?? '';
+  const text = intake.textSample ?? '';
+
+  // Strong SSH config keywords in content
+  const hasHostBlock = /^host\s+\S/im.test(text);
+  const hasSSHKeywords = /^\s+(hostname|identityfile|proxyjump|forwardagent|serveraliveinterval|user\s+\S)\s/im.test(text);
+
+  // Named exactly "config" or ends with "/config" + SSH content → very likely
+  const isConfigFile = name === 'config' || name.endsWith('/config');
+  if (isConfigFile && hasHostBlock) return 0.92;
+  if (isConfigFile && hasSSHKeywords) return 0.85;
+
+  // ".ssh-config" or "ssh-config" as extension/name
+  if (name.endsWith('.ssh-config') || name === 'ssh-config') return hasHostBlock ? 0.92 : 0.7;
+
+  // Strong content signal alone
+  if (hasHostBlock && hasSSHKeywords) return 0.75;
+  if (hasHostBlock && /^\s+port\s+\d+/im.test(text)) return 0.65;
+
+  return 0;
+}
+return detect;
+})();
+
 const detect_rdp=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -126,4 +206,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
+export const DETECTORS={"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};

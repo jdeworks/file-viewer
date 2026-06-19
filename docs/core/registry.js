@@ -109,6 +109,12 @@ import rdpType from '../types/text/rdp/index.js';
 import mcpConfigType from '../types/text/mcp-config/index.js';
 import kubeconfigType from '../types/text/kubeconfig/index.js';
 import kicadType from '../types/text/kicad/index.js';
+import postscriptType from '../types/text/postscript/index.js';
+import acfType from '../types/text/acf/index.js';
+import fitsType from '../types/text/fits/index.js';
+import kmlType from '../types/text/kml/index.js';
+import abcType from '../types/text/abc/index.js';
+import hl7Type from '../types/text/hl7/index.js';
 import ruffleType from '../types/emulator/ruffle/index.js';
 import v86Type from '../types/emulator/v86/index.js';
 import emulatorjsType from '../types/emulator/emulatorjs/index.js';
@@ -186,6 +192,12 @@ export const REGISTRY = [
   urlType,
   asciiartType,
   kicadType,
+  postscriptType,
+  acfType,
+  fitsType,
+  kmlType,
+  abcType,
+  hl7Type,
   gcodeType,
   gitignoreType,
   gitattributesType,

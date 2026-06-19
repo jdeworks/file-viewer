@@ -227,84 +227,98 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_gcode=(()=>{
+const detect_postscript=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'gcode', 'gc', 'nc', 'ngc')) return 0.90;
-  const sample = (intake.text || '').slice(0, 2048);
-  const signals = ['G0 ', 'G1 ', 'G28', 'M104', 'M109', 'M140', ';LAYER:'];
-  const hits = signals.filter((s) => sample.includes(s)).length;
-  if (hits >= 2) return 0.80;
+  if (hasExtension(intake, 'ps', 'eps', 'ai')) return 0.85;
+  const head = (intake.textSample || '').slice(0, 120);
+  if (/^%!PS(-Adobe)?/.test(head)) return 0.97;
   return 0;
 }
 return detect;
 })();
 
-const detect_gitignore=(()=>{
+const detect_acf=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
-  const n = intake.filename || '';
-  if (/(?:^|\.)(?:gitignore|dockerignore|npmignore|eslintignore|prettierignore|hgignore)$/.test(n)) return 0.95;
+  if (!hasExtension(intake, 'acf')) return 0;
+  const t = intake.textSample || '';
+  // Valve KeyValues format — top-level key is typically "AppState"
+  if (/^\s*"AppState"\s*\{/.test(t)) return 0.98;
+  if (/^\s*"[^"]+"\s*\{/.test(t)) return 0.7;
+  return 0.5;
+}
+return detect;
+})();
+
+const detect_fits=(()=>{
+function detect(intake) {
+  if (hasExtension(intake, 'fits', 'fit', 'fts')) {
+    // FITS header: "SIMPLE  =                    T" in first 30 bytes
+    if (intake.isBinary) {
+      const head = intake.bytes ? String.fromCharCode(...intake.bytes.slice(0, 30)) : '';
+      if (/^SIMPLE\s+=\s+T/.test(head)) return 0.99;
+      return 0.8; // extension match, assume FITS
+    }
+    const head = (intake.text || '').slice(0, 30);
+    if (/^SIMPLE\s+=\s+T/.test(head)) return 0.99;
+    return 0.8;
+  }
+  // Content sniff (text only)
+  if (!intake.isBinary) {
+    const head = (intake.text || '').slice(0, 30);
+    if (/^SIMPLE\s+=\s+T/.test(head)) return 0.95;
+  }
   return 0;
 }
 return detect;
 })();
 
-const detect_gitattributes=(()=>{
+const detect_kml=(()=>{
+function detect(intake) {
+  if (intake.isBinary) {
+    // KMZ is a ZIP — handle by zip type; signal no detection here
+    if (hasExtension(intake, 'kmz')) return 0.1; // low score, zip type handles it
+    return 0;
+  }
+  if (hasExtension(intake, 'kml')) return 0.97;
+  const head = (intake.textSample || '').slice(0, 400);
+  if (/<kml[\s>]/.test(head) || /xmlns\.google\.com\/kml/.test(head)) return 0.95;
+  return 0;
+}
+return detect;
+})();
+
+const detect_abc=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
-  const base = (intake.filename || '').split('/').pop().split('\\').pop().toLowerCase();
-  if (base === '.gitattributes') return 0.97;
-  // Content heuristic: lines like "*.ext  text eol=lf" or "path binary"
-  const sample = intake.textSample || '';
-  const kvLines = sample.split('\n').filter(l => {
-    const t = l.trim();
-    return t && !t.startsWith('#') && /^[^\s]+\s+(text|binary|eol=|diff=|merge=|linguist-|export-)/.test(t);
-  });
-  if (kvLines.length >= 2) return 0.7;
+  if (hasExtension(intake, 'abc')) {
+    const t = intake.textSample || '';
+    // ABC notation starts with X: (index) and T: (title) fields
+    if (/^X:\s*\d/m.test(t) || /^T:\s*\S/m.test(t)) return 0.97;
+    return 0.75;
+  }
+  // Content sniff for ABC embedded in .txt or unknown
+  const t = intake.textSample || '';
+  if (/^X:\s*\d/m.test(t) && /^T:\s*\S/m.test(t) && /^K:\s*\w/m.test(t)) return 0.8;
   return 0;
 }
 return detect;
 })();
 
-const detect_editorconfig=(()=>{
+const detect_hl7=(()=>{
+// HL7 v2.x messages start with MSH segment using pipe delimiter
+const MSH_RE = /^MSH\|[\^~\\&]\|/m;
+
 function detect(intake) {
   if (intake.isBinary) return 0;
-  const base = (intake.filename || '').split('/').pop().split('\\').pop().toLowerCase();
-  if (base === '.editorconfig') return 0.98;
-  // Content: has [*] or [*.ext] section + indent_style or indent_size
-  const sample = intake.textSample || '';
-  if (/^\[[\*\?!{\w.,\-/]+\]/m.test(sample) && /indent_(style|size)\s*=/m.test(sample)) return 0.8;
+  const ext = (intake.filename || '').split('.').pop().toLowerCase();
+  if (['hl7', 'hl7v2', 'msh'].includes(ext)) return 0.92;
+  const t = intake.textSample || '';
+  if (MSH_RE.test(t)) return 0.96;
   return 0;
 }
 return detect;
 })();
 
-const detect_ssh_config=(()=>{
-function detect(intake) {
-  if (intake.bytes?.[0] > 127) return 0; // not ASCII/UTF-8 text
-  const name = intake.filename?.toLowerCase() ?? '';
-  const text = intake.textSample ?? '';
-
-  // Strong SSH config keywords in content
-  const hasHostBlock = /^host\s+\S/im.test(text);
-  const hasSSHKeywords = /^\s+(hostname|identityfile|proxyjump|forwardagent|serveraliveinterval|user\s+\S)\s/im.test(text);
-
-  // Named exactly "config" or ends with "/config" + SSH content → very likely
-  const isConfigFile = name === 'config' || name.endsWith('/config');
-  if (isConfigFile && hasHostBlock) return 0.92;
-  if (isConfigFile && hasSSHKeywords) return 0.85;
-
-  // ".ssh-config" or "ssh-config" as extension/name
-  if (name.endsWith('.ssh-config') || name === 'ssh-config') return hasHostBlock ? 0.92 : 0.7;
-
-  // Strong content signal alone
-  if (hasHostBlock && hasSSHKeywords) return 0.75;
-  if (hasHostBlock && /^\s+port\s+\d+/im.test(text)) return 0.65;
-
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config};
+export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7};

@@ -1,0 +1,64 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%Title: (File Viewer Example — Hello PostScript)
+%%Creator: (File Viewer Examples 1.0)
+%%CreationDate: (D:20240115120000+00'00')
+%%For: (File Viewer Demo)
+%%BoundingBox: 0 0 400 300
+%%HiResBoundingBox: 0 0 400 300
+%%Pages: 1
+%%DocumentFonts: Helvetica Times-Roman Courier
+%%LanguageLevel: 2
+%%DocumentData: Clean7Bit
+%%EndComments
+
+%%BeginProlog
+%%EndProlog
+
+%%Page: 1 1
+
+% --- Background ---
+0.95 0.97 1.0 setrgbcolor
+0 0 400 300 rectfill
+
+% --- Title text ---
+0.1 0.2 0.5 setrgbcolor
+/Helvetica-Bold findfont 28 scalefont setfont
+60 240 moveto
+(Hello, PostScript!) show
+
+% --- Subtitle ---
+0.4 0.4 0.4 setrgbcolor
+/Helvetica findfont 13 scalefont setfont
+60 215 moveto
+(An Encapsulated PostScript example file) show
+
+% --- Color rectangles ---
+0.9 0.2 0.2 setrgbcolor
+60 140 80 60 rectfill
+
+0.2 0.7 0.3 setrgbcolor
+160 140 80 60 rectfill
+
+0.2 0.4 0.9 setrgbcolor
+260 140 80 60 rectfill
+
+% --- Labels ---
+1 1 1 setrgbcolor
+/Helvetica findfont 11 scalefont setfont
+78 165 moveto (Red) show
+178 165 moveto (Green) show
+276 165 moveto (Blue) show
+
+% --- Border ---
+0.3 0.3 0.3 setrgbcolor
+2 setlinewidth
+5 5 390 290 rectstroke
+
+% --- Credit line ---
+0.6 0.6 0.6 setrgbcolor
+/Times-Roman findfont 9 scalefont setfont
+130 15 moveto
+(File Viewer Examples — github.com/jdeworks/file-viewer) show
+
+showpage
+%%EOF
