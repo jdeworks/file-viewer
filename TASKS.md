@@ -704,7 +704,7 @@ Add smoke coverage for opening `sample.txt` and verifying a preview is available
 
 ## TASK 20 — 2048 Score Screen Layering Bug
 
-**Status:** Not started  
+**Status:** Partly implemented — overlay/win smoke coverage exists; merge animation and win-state polish remain open.
 **Effort:** S (~30-60m)  
 **Files likely touched:**
 - `docs/games/2048/g2048.js`
@@ -719,11 +719,16 @@ Fix the stacking/layout so modal or score-summary UI appears above the board and
 
 Add smoke coverage that launches 2048, forces or plays to a score/end state if possible, and verifies the score screen is visible above the board without overlap.
 
+### Remaining work
+
+- Add merge animation so tiles visibly slide into the merged cell before the new value appears.
+- Recheck the 2048 win/end-screen state and layout after the layering fix, including mobile.
+
 ---
 
 ## TASK 21 — Bit Foundry Stage Navigation + Unlock Flow
 
-**Status:** Not started  
+**Status:** Partly implemented — v3 shell hides locked stages and header bell exists; Stage 1 polish and regression coverage remain open.
 **Effort:** M (~2-4h)  
 **Files likely touched:**
 - `docs/games/metagame/stage1.js`
@@ -748,6 +753,8 @@ Design target:
 
 The Bell is currently a button at the bottom of the screen. Move it to the top chrome next to "Back to arcade" so it is visible without competing with core click/upgrade actions.
 
+The v3 shell header bell is present, but Stage 1 still has legacy bell/message plumbing. Unify Stage 1 economy messages with the v3 header bell log so the visible bell shows the relevant notifications.
+
 ### Unlock semantics
 
 Stage/tab unlocks should use current score/bits reaching the threshold, not bits accumulated over time. Specifically, the 150-bit unlock should trigger when the score reaches 150 bits.
@@ -762,6 +769,32 @@ Add tests for unlock threshold behavior:
 After switching to a newly unlocked tab/stage, clicks stopped working. The player must still be able to click the main earning surface to get bits after a stage transition.
 
 Add smoke coverage that unlocks the next stage, switches/advances, clicks the earning surface again, and verifies bits increase.
+
+Coverage should include actually switching to another unlocked tab/stage and returning, not only unlocking a tab while staying on the original earning surface.
+
+---
+
+## TASK 22 — Conversation History Backlog Audit
+
+**Status:** Not started
+**Effort:** M-L (~3-6h)
+**Files likely touched:**
+- `RUN_REQUIREMENTS.md`
+- `TASKS.md`
+- `docs/metadata-overview.md`
+- new planning/backlog markdown only if it materially improves tracking
+
+### Goal
+
+Review the timeline of user-authored File Viewer requests across this chat and accessible prior File Viewer conversations, including relevant Claude conversations if available. Focus on product requirements, regressions, edge cases, and decisions that may have been lost during context compaction.
+
+### What to produce
+
+- A chronological list of user requests that still matter for implementation.
+- Concrete backlog items for anything not already represented in `TASKS.md` or `RUN_REQUIREMENTS.md`.
+- Deduplicated references where the same idea appears in multiple messages.
+- Explicit notes for Bit Foundry / Bit Factory behavior, sample-file coverage, metadata grouping, file interaction/editing features, FileExamples compatibility, security hardening, and performance/loading work.
+- No broad transcript dump; keep only actionable requirements and decisions.
 
 ---
 
