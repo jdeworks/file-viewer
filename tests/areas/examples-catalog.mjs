@@ -163,7 +163,7 @@ export async function run(ctx) {
   for (const ex of examples) {
     const opened = await page.evaluate((file) => window.__fv.openExampleFile(file), ex.file);
     if (!opened) { fail('sample did not open: ' + ex.file); continue; }
-    await page.waitForFunction(() => document.querySelector('#fileName')?.textContent && !/—/.test(document.querySelector('#fileName')?.textContent || ''), { timeout: 10000 }).catch(() => {});
+    await page.waitForFunction(() => document.querySelector('#fileName')?.textContent && !/—/.test(document.querySelector('#fileName')?.textContent || ''), null, { timeout: 10000 }).catch(() => {});
     const type = await page.$eval('#typeSelect', (s) => s.value).catch(() => '');
     if (type) seenTypes.add(type);
     if (ex.type && type !== ex.type) fail('sample type mismatch: ' + ex.file + ' expected ' + ex.type + ' got ' + type);

@@ -170,7 +170,7 @@ export async function run(ctx) {
     }
 
     await page.click('#repoPanel .repo-load-more');
-    await page.waitForFunction(() => document.querySelectorAll('#repoPanel .repo-commit').length >= 2, { timeout: 5000 });
+    await page.waitForFunction(() => document.querySelectorAll('#repoPanel .repo-commit').length >= 2, null, { timeout: 5000 });
     const commitCountAfter = await page.$$eval('#repoPanel .repo-commit', (els) => els.length);
     const loadMoreGone = await page.$('#repoPanel .repo-load-more') === null;
     const subjects = await page.$$eval('#repoPanel .repo-commit .rc-subject', (els) => els.map((e) => e.textContent));

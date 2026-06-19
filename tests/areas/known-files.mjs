@@ -996,4 +996,60 @@ export async function run(ctx) {
   const moonText = await page.$eval('#previewHost .moon-doc', (e) => e.textContent);
   if (/Moon/i.test(moonText)) pass('moon.yml: badge shown'); else fail('moon badge: ' + moonText.slice(0, 200));
   if (/language|tasks|project|schema|vcs|pnpm/i.test(moonText)) pass('moon.yml: content shown'); else fail('moon content: ' + moonText.slice(0, 200));
+
+  // ── crowdin.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('crowdin.yml');
+  await page.waitForSelector('#previewHost .cwd-doc', { timeout: 12000 });
+  const cwdText = await page.$eval('#previewHost .cwd-doc', (e) => e.textContent);
+  if (/Crowdin/i.test(cwdText)) pass('crowdin.yml: badge shown'); else fail('crowdin badge: ' + cwdText.slice(0, 200));
+  if (/source|translation|mapping/i.test(cwdText)) pass('crowdin.yml: file mappings shown'); else fail('crowdin content: ' + cwdText.slice(0, 200));
+
+  // ── Matchfile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Matchfile');
+  await page.waitForSelector('#previewHost .mf-doc', { timeout: 12000 });
+  const mfText = await page.$eval('#previewHost .mf-doc', (e) => e.textContent);
+  if (/Match/i.test(mfText)) pass('Matchfile: badge shown'); else fail('matchfile badge: ' + mfText.slice(0, 200));
+  if (/git|storage|com\.example|development/i.test(mfText)) pass('Matchfile: certificate config shown'); else fail('matchfile content: ' + mfText.slice(0, 200));
+
+  // ── Appfile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Appfile');
+  await page.waitForSelector('#previewHost .af-doc', { timeout: 12000 });
+  const afText = await page.$eval('#previewHost .af-doc', (e) => e.textContent);
+  if (/Fastlane|Appfile/i.test(afText)) pass('Appfile: badge shown'); else fail('appfile badge: ' + afText.slice(0, 200));
+  if (/com\.example|apple_id|team/i.test(afText)) pass('Appfile: app config shown'); else fail('appfile content: ' + afText.slice(0, 200));
+
+  // ── .ruby-version viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.ruby-version');
+  await page.waitForSelector('#previewHost .rv-doc', { timeout: 12000 });
+  const rvText = await page.$eval('#previewHost .rv-doc', (e) => e.textContent);
+  if (/Ruby/i.test(rvText)) pass('.ruby-version: badge shown'); else fail('ruby-version badge: ' + rvText.slice(0, 200));
+  if (/rbenv|rvm|asdf/i.test(rvText)) pass('.ruby-version: install commands shown'); else fail('ruby-version content: ' + rvText.slice(0, 200));
+
+  // ── .python-version viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.python-version');
+  await page.waitForSelector('#previewHost .pv-doc', { timeout: 12000 });
+  const pvText = await page.$eval('#previewHost .pv-doc', (e) => e.textContent);
+  if (/Python/i.test(pvText)) pass('.python-version: badge shown'); else fail('python-version badge: ' + pvText.slice(0, 200));
+  if (/pyenv|asdf|3\.\d/i.test(pvText)) pass('.python-version: version and install commands shown'); else fail('python-version content: ' + pvText.slice(0, 200));
+
+  // ── Supabase config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('supabase-config.toml');
+  await page.waitForSelector('#previewHost .sbc-doc', { timeout: 12000 });
+  const sbcText = await page.$eval('#previewHost .sbc-doc', (e) => e.textContent);
+  if (/Supabase/i.test(sbcText)) pass('supabase config.toml: badge shown'); else fail('supabase badge: ' + sbcText.slice(0, 200));
+  if (/my-supabase-project|54321|54322/i.test(sbcText)) pass('supabase config.toml: settings shown'); else fail('supabase content: ' + sbcText.slice(0, 200));
+
+  // ── Netlify _redirects viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('_redirects');
+  await page.waitForSelector('#previewHost .rdx-doc', { timeout: 12000 });
+  const rdxText = await page.$eval('#previewHost .rdx-doc', (e) => e.textContent);
+  if (/Netlify/i.test(rdxText)) pass('_redirects: badge shown'); else fail('redirects badge: ' + rdxText.slice(0, 200));
+  if (/301|\/old-blog|\/api/i.test(rdxText)) pass('_redirects: rules shown'); else fail('redirects content: ' + rdxText.slice(0, 200));
 }

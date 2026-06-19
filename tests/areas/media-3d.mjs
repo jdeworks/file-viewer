@@ -280,7 +280,7 @@ export async function run(ctx) {
   if (curIdx === 0) pass('audio album: current track highlighted'); else fail('current track idx: ' + curIdx);
   // Click the 2nd track → it becomes the current track (app re-renders for the new file).
   await page.click('#previewHost .media-tracklist .media-track:nth-child(2)');
-  await page.waitForFunction(() => /2\s*\/\s*2/.test(document.querySelector('#previewHost .media-track-pos')?.textContent || ''), { timeout: 8000 });
+  await page.waitForFunction(() => /2\s*\/\s*2/.test(document.querySelector('#previewHost .media-track-pos')?.textContent || ''), null, { timeout: 8000 });
   pass('audio album: clicking a track plays it (now 2 / 2)');
   // iOS install exception: the Add-to-Home-Screen hint must NOT appear on desktop (no-install default).
   const iosHintDesktop = await page.$eval('#iosAudioHint', (e) => e.hidden);

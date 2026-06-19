@@ -137,7 +137,7 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
   await page.click('#metaBtn');
   await page.waitForSelector('#metaDrawer:not([hidden]) #metaBody', { timeout: 6000 });
-  await page.waitForFunction(() => /Demo Artist/.test(document.querySelector('#metaBody')?.textContent || ''), { timeout: 6000 }).catch(() => {});
+  await page.waitForFunction(() => /Demo Artist/.test(document.querySelector('#metaBody')?.textContent || ''), null, { timeout: 6000 }).catch(() => {});
   const metaText = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Demo Artist/.test(metaText) && /Demo Track/.test(metaText)) pass('ID3 tags surfaced in metadata (artist + title)'); else fail('id3 meta: ' + metaText.replace(/\s+/g, ' ').slice(0, 100));
   await page.click('#metaDrawer [data-close]').catch(() => {});
@@ -445,7 +445,7 @@ export async function run(ctx) {
   // ── Dockerfile viewer ──
   // Known-file enhancement takes over for Dockerfiles (returns parentNode with .kf-list, no iframe)
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('Dockerfile (multi-stage demo)');
+  await openExample('Dockerfile');
   await page.waitForSelector('#previewHost .kf-list', { timeout: 12000 });
   const dfTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (dfTypeId === 'dockerfile') pass('Dockerfile detected'); else fail('dockerfile typeId: ' + dfTypeId);
@@ -456,7 +456,7 @@ export async function run(ctx) {
   // ── docker-compose viewer ──
   // Known-file enhancement takes over (returns parentNode with .kf-svc, no iframe)
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('docker-compose.yml (demo)');
+  await openExample('docker-compose.yml');
   await page.waitForSelector('#previewHost .kf-svc', { timeout: 12000 });
   const dcTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (dcTypeId === 'docker-compose') pass('docker-compose.yml detected'); else fail('docker-compose typeId: ' + dcTypeId);

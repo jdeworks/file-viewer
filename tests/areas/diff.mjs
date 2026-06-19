@@ -14,7 +14,7 @@ export async function run(ctx) {
   await page.click('#rawMode button[data-raw="diff"]');
   const diffEl = await page.waitForSelector('#editor .monaco-diff-editor', { timeout: 8000 });
   if (diffEl) pass('standard Monaco diff editor mounted');
-  await page.waitForFunction(() => document.querySelectorAll('#editor .line-insert, #editor .char-insert').length > 0, { timeout: 4000 }).catch(() => {});
+  await page.waitForFunction(() => document.querySelectorAll('#editor .line-insert, #editor .char-insert').length > 0, null, { timeout: 4000 }).catch(() => {});
   const changes = await page.$$eval('#editor .line-insert, #editor .char-insert', (els) => els.length);
   if (changes > 0) pass('diff shows inserted change (' + changes + ' markers)');
   else {

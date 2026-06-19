@@ -1,8 +1,16 @@
+---
 BasedOnStyle: Google
-IndentWidth: 2
-TabWidth: 2
-UseTab: Never
+IndentWidth: 4
 ColumnLimit: 100
-AllowShortFunctionsOnASingleLine: Inline
+Language: Cpp
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
 BreakBeforeBraces: Attach
+PointerAlignment: Left
 SpaceBeforeParens: ControlStatements
+SortIncludes: CaseSensitive
+IncludeBlocks: Preserve
+---
+Language: ObjC
+BasedOnStyle: Google
+ColumnLimit: 120

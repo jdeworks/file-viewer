@@ -14,7 +14,7 @@ export async function run(ctx) {
   // Run a query and read the grid.
   await page.fill('#previewHost .sq-sql', "SELECT name FROM artists WHERE country='UK' ORDER BY name");
   await page.click('#previewHost .sq-run');
-  await page.waitForFunction(() => /Aphex Twin/.test(document.querySelector('#previewHost .sq-grid')?.textContent || ''), { timeout: 8000 }).catch(() => {});
+  await page.waitForFunction(() => /Aphex Twin/.test(document.querySelector('#previewHost .sq-grid')?.textContent || ''), null, { timeout: 8000 }).catch(() => {});
   const sqQueryText = await page.$eval('#previewHost .sq-grid', (e) => e.textContent);
   if (/Aphex Twin/.test(sqQueryText) && /Bonobo/.test(sqQueryText) && !/Tycho/.test(sqQueryText)) pass('SQLite query executes (filtered result)'); else fail('sqlite query: ' + sqQueryText.replace(/\s+/g, ' ').slice(0, 80));
 
@@ -283,7 +283,7 @@ export async function run(ctx) {
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
   await page.click('#editor .monaco-editor');
   await page.keyboard.type('// an edit\n');
-  await page.waitForFunction(() => document.querySelector('#fileTree .ft-file[data-path="proj/src/app.js"]')?.classList.contains('ft-edited'), { timeout: 5000 }).catch(() => {});
+  await page.waitForFunction(() => document.querySelector('#fileTree .ft-file[data-path="proj/src/app.js"]')?.classList.contains('ft-edited'), null, { timeout: 5000 }).catch(() => {});
   const edited = await page.$eval('#fileTree .ft-file[data-path="proj/src/app.js"]', (e) => e.classList.contains('ft-edited'));
   if (edited) pass('folder edit tracked (* marker on the edited file)'); else fail('no ft-edited marker after edit');
   // The edit survives navigating away and back (stashed in folderEdits).
@@ -315,7 +315,7 @@ export async function run(ctx) {
   // Content search: "Project" appears only INSIDE README.md (not in any filename).
   await page.fill('#ftSearchInput', 'Project');
   await page.keyboard.press('Enter');
-  await page.waitForFunction(() => /file/.test(document.getElementById('ftSearchCount').textContent), { timeout: 5000 });
+  await page.waitForFunction(() => /file/.test(document.getElementById('ftSearchCount').textContent), null, { timeout: 5000 });
   const readmeVisible = await page.$('#fileTree .ft-file[data-path="proj/README.md"]') !== null;
   const appHidden2 = await page.$('#fileTree .ft-file[data-path="proj/src/app.js"]') === null;
   if (readmeVisible && appHidden2) pass('folder search: content search matches inside files'); else fail('content search: readme=' + readmeVisible + ' appHidden=' + appHidden2);
@@ -332,7 +332,7 @@ export async function run(ctx) {
     return !notice.hidden && /Preparing big|Building file tree/.test(notice.textContent);
   });
   if (loadingSeen) pass('folder load shows progress feedback'); else fail('folder load progress not shown');
-  await page.waitForFunction(() => window.__fv.state.treeEntries?.length === 20010, { timeout: 15000 });
+  await page.waitForFunction(() => window.__fv.state.treeEntries?.length === 20010, null, { timeout: 15000 });
   const ftNoticeHidden = await page.$eval('#ftNotice', (e) => e.hidden);
   const domRows = await page.$$eval('#fileTree .ft-row', (els) => els.length);
   const loadedCount = await page.evaluate(() => window.__fv.state.treeEntries.length);

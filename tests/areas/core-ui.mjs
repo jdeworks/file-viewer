@@ -51,7 +51,7 @@ export async function run(ctx) {
   const editorAtStartup = await page.$('#editor .monaco-editor');
   if (!editorAtStartup) pass('startup is lazy (no editor mounted before opening a file)'); else fail('Monaco editor mounted at startup');
   // ...but Monaco is warmed in the background (idle) so the first open is instant.
-  await page.waitForFunction(() => !!window.monaco, { timeout: 12000 });
+  await page.waitForFunction(() => !!window.monaco, null, { timeout: 12000 });
   pass('Monaco preloaded in the background during idle');
 
   // Examples gallery is grouped by category (tidy intake catalogue).
@@ -231,7 +231,7 @@ export async function run(ctx) {
   const wasDark = await page.$eval('html', (e) => e.dataset.theme === 'dark');
   const originalMarkdown = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (!wasDark) await page.click('#themeBtn');
-  await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark', { timeout: 4000 });
+  await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark', null, { timeout: 4000 });
   await page.evaluate(() => {
     const rv = window.__fv.state.rawview;
     rv.setValue(rv.getValue() + '\n\nDark refresh sentinel');

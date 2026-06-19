@@ -104,7 +104,7 @@ export async function run(ctx) {
   });
 
   // Wait for sample.csv to become the active file.
-  await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'sample.csv', { timeout: 8000 })
+  await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'sample.csv', null, { timeout: 8000 })
     .catch(() => {});
   const activeName = await page.evaluate(() => window.__fv?.state?.intake?.filename);
   if (activeName === 'sample.csv') pass('tree-drag: dragged file becomes active file');

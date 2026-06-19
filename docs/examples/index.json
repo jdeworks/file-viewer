@@ -3372,6 +3372,28 @@
     "description": "Fastlane Snapfile configuring screenshot devices, languages, and output settings."
   },
   {
+    "label": "supabase/config.toml",
+    "file": "supabase-config.toml",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Supabase project configuration defining database, API, auth, and storage settings."
+  },
+  {
+    "label": "_redirects",
+    "file": "_redirects",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Netlify _redirects file with URL redirect and rewrite rules."
+  },
+  {
     "label": "sonar-project.properties",
     "file": "sonar-project.properties",
     "mime": "text/plain",
@@ -3787,5 +3809,25 @@
     ],
     "enhanced": true,
     "description": "Markdownlint configuration for linting Markdown files."
+  },
+  {
+    "label": "Dockerfile (multi-stage demo)",
+    "file": "Dockerfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "docker-compose.yml (demo)",
+    "file": "docker-compose.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
   }
 ]

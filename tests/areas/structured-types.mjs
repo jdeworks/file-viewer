@@ -148,11 +148,11 @@ export async function run(ctx) {
   const xTags = await xmlf.$$eval('.json-tree .j-key', (els) => els.map((e) => e.textContent));
   if (xTags.some((t) => /<catalog>/.test(t)) && xTags.some((t) => /<book>/.test(t))) pass('XML rendered as element tree (' + xTags.length + ' nodes)'); else fail('xml tags: ' + xTags.slice(0, 6).join(','));
   // Structural diff: change one element's text → flagged; reindenting ignored.
-  await page.waitForFunction(() => !!window.__fv?.state?.rawview, { timeout: 8000 });
+  await page.waitForFunction(() => !!window.__fv?.state?.rawview, null, { timeout: 8000 });
   const xmlOrig = await page.evaluate(() => window.__fv.state.rawview.originalValue());
   await page.evaluate((o) => window.__fv.state.rawview.setValue(o.replace('Midnight Rain', 'Midnight Sun')), xmlOrig);
   await page.click('#rawMode button[data-raw="diff"]');
-  await page.waitForFunction(() => /\bchanged\b/.test(document.querySelector('.jsondiff .jd-head')?.textContent || ''), { timeout: 6000 }).catch(() => {});
+  await page.waitForFunction(() => /\bchanged\b/.test(document.querySelector('.jsondiff .jd-head')?.textContent || ''), null, { timeout: 6000 }).catch(() => {});
   const xmlDiffHead = await page.$eval('.jsondiff .jd-head', (e) => e.textContent);
   if (/changed/.test(xmlDiffHead)) pass('XML structural diff flags a changed text node'); else fail('xml diff: ' + xmlDiffHead.slice(0, 80));
   await page.click('#rawMode button[data-raw="current"]');

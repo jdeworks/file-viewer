@@ -43,7 +43,7 @@ export async function run(ctx) {
   await zf.click('.zip-table .z-open[data-fv-open="data/rows.csv"]');
   // The extracted CSV is re-detected and rendered in a fresh preview iframe (as a CSV table).
   // Wait for the new intake to load (filename swaps to the entry's own name) before asserting.
-  await page.waitForFunction(() => document.getElementById('fileName').textContent === 'rows.csv', { timeout: 12000 });
+  await page.waitForFunction(() => document.getElementById('fileName').textContent === 'rows.csv', null, { timeout: 12000 });
   const innerType = await page.$eval('#typeSelect', (s) => s.value);
   if (innerType === 'csv') pass('zip entry opened + re-detected (rows.csv → CSV)'); else fail('inner type: ' + innerType);
   pass('opened entry shows its own filename (rows.csv)');
@@ -196,7 +196,7 @@ export async function run(ctx) {
   const codeOption = await page.$eval('#typeSelect option:checked', (o) => o.textContent);
   if (/JavaScript source code/.test(codeOption)) pass('code dropdown shows concrete JavaScript type'); else fail('code dropdown label: ' + codeOption);
   // Per-function metrics CodeLens (LOC + cyclomatic complexity) — display-only overlay.
-  await page.waitForFunction(() => document.querySelectorAll('#editor .codelens-decoration').length >= 2, { timeout: 15000 }).catch(() => {});
+  await page.waitForFunction(() => document.querySelectorAll('#editor .codelens-decoration').length >= 2, null, { timeout: 15000 }).catch(() => {});
   const lensText = await page.$$eval('#editor .codelens-decoration', (els) => els.map((e) => e.innerText).join(' | '));
   const okLens = /\bfib\b/.test(lensText) && /\bclassify\b/.test(lensText) && /complexity 2\b/.test(lensText) && /complexity 7\b/.test(lensText);
   if (okLens) pass('code metrics CodeLens: per-function LOC + complexity (fib=2, classify=7)'); else fail('codelens text: ' + lensText.slice(0, 160));
@@ -208,7 +208,7 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
 
   await page.evaluate(() => window.__fv.openExampleFile('main.c'));
-  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'main.c', { timeout: 8000 });
+  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'main.c', null, { timeout: 8000 });
   await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
   const cLabels = await page.evaluate(() => ({
     selected: document.querySelector('#typeSelect option:checked')?.textContent || '',

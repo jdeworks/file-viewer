@@ -161,6 +161,8 @@ import tfvars from '../types/text/known/tfvars/index.js';
 import podfile from '../types/text/known/podfile/index.js';
 import fastfile from '../types/text/known/fastfile/index.js';
 import snapfile from '../types/text/known/snapfile/index.js';
+import supabaseConfig from '../types/text/toml/known/supabase-config/index.js';
+import netlifyRedirects from '../types/text/known/redirects/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -186,7 +188,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   brewfile, license, ansibleCfg, gemspec, typos, cargoDeny, cargoConfig,
   htaccess, nginxConf, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
   crowdinYml, matchfile, appfile, rubyVersion, pythonVersion, earthfile, gitmodules, tfvars,
-  podfile, fastfile, snapfile];
+  podfile, fastfile, snapfile,
+  supabaseConfig, netlifyRedirects];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

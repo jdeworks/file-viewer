@@ -120,7 +120,7 @@ export async function run(ctx) {
   pass('HTML scripts run after explicit opt-in (sandboxed)');
 
   // ── HTML structural diff (Layer-2 DOM diff) ── reindenting is ignored; real edits are flagged.
-  await page.waitForFunction(() => !!window.__fv?.state?.rawview, { timeout: 8000 });
+  await page.waitForFunction(() => !!window.__fv?.state?.rawview, null, { timeout: 8000 });
   const htmlOrig = await page.evaluate(() => window.__fv.state.rawview.originalValue());
   // Whitespace-only reformat → no structural difference.
   await page.evaluate((o) => window.__fv.state.rawview.setValue(o.replace(/>\s+</g, '>\n      <')), htmlOrig);
@@ -136,7 +136,7 @@ export async function run(ctx) {
   }, htmlOrig);
   await page.click('#rawMode button[data-raw="diff"]');
   // The custom diff re-renders async; wait for the head to reflect the change (not the stale render).
-  await page.waitForFunction(() => /\badded\b/.test(document.querySelector('.jsondiff .jd-head')?.textContent || ''), { timeout: 6000 }).catch(() => {});
+  await page.waitForFunction(() => /\badded\b/.test(document.querySelector('.jsondiff .jd-head')?.textContent || ''), null, { timeout: 6000 }).catch(() => {});
   const htmlChgHead = await page.$eval('.jsondiff .jd-head', (e) => e.textContent);
   const htmlAddedKeys = await page.$$eval('.jsondiff .jd-added .jd-key', (els) => els.map((e) => e.textContent));
   if (/added/.test(htmlChgHead) && htmlAddedKeys.some((k) => /p#fv-added/.test(k))) pass('HTML structural diff flags an added element (p#fv-added)'); else fail('html change diff: ' + htmlChgHead + ' keys=' + htmlAddedKeys.join(','));
@@ -164,7 +164,7 @@ export async function run(ctx) {
   await page.evaluate(() => { const rv = window.__fv.state.rawview; rv.setValue(rv.getValue() + '\nretained session edit'); });
   await page.waitForTimeout(350);
   await openExample('Sample.txt');
-  await page.waitForFunction(() => document.querySelector('#fileName')?.textContent === 'sample.txt', { timeout: 8000 });
+  await page.waitForFunction(() => document.querySelector('#fileName')?.textContent === 'sample.txt', null, { timeout: 8000 });
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 12000 });
   const txtFrame = await frameOf('iframe.fv-preview-frame');
   await txtFrame.waitForSelector('.plain-doc .plain-text', { timeout: 8000 });
@@ -178,7 +178,7 @@ export async function run(ctx) {
   else fail('plain text preview: ' + JSON.stringify(txtPreview));
   await page.waitForSelector('#ftBody [data-path="welcome.md"].ft-edited', { timeout: 8000 });
   await page.click('#ftBody [data-path="welcome.md"]');
-  await page.waitForFunction(() => document.querySelector('#fileName')?.textContent === 'welcome.md', { timeout: 8000 });
+  await page.waitForFunction(() => document.querySelector('#fileName')?.textContent === 'welcome.md', null, { timeout: 8000 });
   const retainedSessionText = await page.evaluate(() => window.__fv.state.rawview.getValue());
   const sessionDirty = await page.evaluate(() => window.__fv.hasUnsavedWork());
   if (/retained session edit/.test(retainedSessionText) && sessionDirty) pass('session sidebar retains edited files with an unsaved marker'); else fail('session retained=' + /retained session edit/.test(retainedSessionText) + ' dirty=' + sessionDirty);
@@ -332,7 +332,7 @@ export async function run(ctx) {
   const compareBtnShown = await page.$eval('#compareBtn', (e) => !e.closest('[hidden]'));
   if (compareBtnShown) pass('compare button available for an editable type'); else fail('compare button hidden for csv');
   await page.click('#compareBtn');
-  await page.waitForFunction(() => !document.getElementById('compareBar').hidden, { timeout: 8000 });
+  await page.waitForFunction(() => !document.getElementById('compareBar').hidden, null, { timeout: 8000 });
   const targetLabel = await page.$eval('#compareBar .compare-label', (e) => e.textContent);
   if (/Drop a sidebar file/.test(targetLabel) && /choose a file/i.test(targetLabel)) pass('two-file compare: opens in-app drop target before picker');
   else fail('compare target label: ' + targetLabel);
@@ -345,15 +345,15 @@ export async function run(ctx) {
     return true;
   });
   if (sidebarDropCompared) pass('two-file compare: sidebar file can be dropped on target');
-  await page.waitForFunction(() => /welcome\.md/i.test(document.querySelector('#compareBar .compare-label')?.textContent || ''), { timeout: 8000 });
+  await page.waitForFunction(() => /welcome\.md/i.test(document.querySelector('#compareBar .compare-label')?.textContent || ''), null, { timeout: 8000 });
   await page.waitForSelector('#editor .monaco-diff-editor', { timeout: 10000 });
   pass('two-file compare: sidebar drop starts Monaco diff');
   await page.click('#compareBar .compare-stop');
-  await page.waitForFunction(() => document.getElementById('compareBar').hidden, { timeout: 4000 });
+  await page.waitForFunction(() => document.getElementById('compareBar').hidden, null, { timeout: 4000 });
   await page.click('#compareBtn');
   // Feed the comparison file through the fallback input (Playwright sets files directly — no dialog).
   await page.setInputFiles('#compareInput', new URL('../../docs/examples/welcome.md', import.meta.url).pathname);
-  await page.waitForFunction(() => /Comparing current.*welcome\.md/i.test(document.querySelector('#compareBar .compare-label')?.textContent || ''), { timeout: 8000 });
+  await page.waitForFunction(() => /Comparing current.*welcome\.md/i.test(document.querySelector('#compareBar .compare-label')?.textContent || ''), null, { timeout: 8000 });
   const compLabel = await page.$eval('#compareBar .compare-label', (e) => e.textContent);
   if (/Comparing current/.test(compLabel) && /welcome\.md/i.test(compLabel)) pass('two-file compare: bar names the compared file'); else fail('compare label: ' + compLabel);
   await page.waitForSelector('#editor .monaco-diff-editor', { timeout: 10000 });
@@ -361,7 +361,7 @@ export async function run(ctx) {
   const falseDirty = await page.evaluate(() => window.__fv.hasUnsavedWork());
   if (!falseDirty) pass('two-file compare: edit-tracking untouched (no false unsaved-work)'); else fail('compare created false unsaved work');
   await page.click('#compareBar .compare-stop');
-  await page.waitForFunction(() => document.getElementById('compareBar').hidden, { timeout: 4000 });
+  await page.waitForFunction(() => document.getElementById('compareBar').hidden, null, { timeout: 4000 });
   pass('two-file compare: "Stop comparing" exits');
 
   // ── Split divider: drag must keep working across preview iframes and Monaco surfaces ──
@@ -406,7 +406,7 @@ export async function run(ctx) {
   const sbsPanes = await page.$$eval('.sbs-pane', (els) => els.length);
   const sbsNames = await page.$$eval('.sbs-name', (els) => els.map((e) => e.textContent));
   if (sbsPanes === 2 && sbsNames.some((n) => /welcome\.md/i.test(n)) && sbsNames.some((n) => /sample\.csv/i.test(n))) pass('side-by-side: two named panes (current + picked)'); else fail('sbs panes=' + sbsPanes + ' names=' + sbsNames.join(','));
-  await page.waitForFunction(() => document.querySelectorAll('.sbs-host iframe').length === 2, { timeout: 12000 });
+  await page.waitForFunction(() => document.querySelectorAll('.sbs-host iframe').length === 2, null, { timeout: 12000 });
   pass('side-by-side: both files rendered independently');
   await page.click('.sbs-close');
   if (!(await page.$('.sbs-overlay'))) pass('side-by-side closes'); else fail('sbs did not close');

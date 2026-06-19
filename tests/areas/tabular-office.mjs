@@ -13,13 +13,13 @@ export async function run(ctx) {
   // ── PDF lite editor ── rotate/delete pages with pdf-lib, then download the edited PDF. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample (3 pages).pdf');
-  await page.waitForFunction(() => document.querySelectorAll('#previewHost img.pdf-page').length === 3, { timeout: 20000 });
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost img.pdf-page').length === 3, null, { timeout: 20000 });
   pass('PDF: multi-page document rendered (3 pages)');
   await page.click('#previewHost .pdf-edit');                         // enter edit mode
   await page.waitForSelector('#previewHost .pdf-pagectl', { timeout: 8000 });
   // Delete the first page → 2 pages remain + "modified" + download enabled.
   await page.click('#previewHost .pdf-page-wrap .pdf-pagectl button[data-act="del"]');
-  await page.waitForFunction(() => document.querySelectorAll('#previewHost img.pdf-page').length === 2, { timeout: 10000 });
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost img.pdf-page').length === 2, null, { timeout: 10000 });
   const info = await page.$eval('#previewHost .pdf-info', (e) => e.textContent);
   const dlVisible = await page.$eval('#previewHost .pdf-download', (e) => !e.hidden);
   if (/modified/.test(info) && dlVisible) pass('PDF edit: page deleted (3→2), marked modified, download enabled'); else fail('pdf edit: info=' + info + ' dl=' + dlVisible);
@@ -35,7 +35,7 @@ export async function run(ctx) {
   if (/Page 1 deleted/.test(pdfChanges)) pass('PDF edit: changes summary lists the edit'); else fail('pdf changes: ' + pdfChanges);
   // Rotate the (now first) page → summary also notes a rotation.
   await page.click('#previewHost .pdf-page-wrap .pdf-pagectl button[data-act="rr"]');
-  await page.waitForFunction(() => /rotated/.test(document.querySelector('#previewHost .pdf-changes')?.textContent || ''), { timeout: 8000 }).catch(() => {});
+  await page.waitForFunction(() => /rotated/.test(document.querySelector('#previewHost .pdf-changes')?.textContent || ''), null, { timeout: 8000 }).catch(() => {});
   const pdfChanges2 = await page.$eval('#previewHost .pdf-changes', (e) => e.textContent);
   if (/rotated 90/.test(pdfChanges2)) pass('PDF edit: rotation reflected in changes summary'); else fail('pdf changes2: ' + pdfChanges2);
   // Insert an image as a new page: pick sample.png → page count grows + summary notes it.

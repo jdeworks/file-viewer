@@ -1,0 +1,9 @@
+# Netlify _redirects sample
+
+/old-blog/*    /blog/:splat    301
+/api/*         https://api.example.com/:splat    200
+/docs          /documentation    302
+/home          /                 301
+/legacy/page   /new/page         301!
+/gone          /                 410
+/not-found     /404.html         404
