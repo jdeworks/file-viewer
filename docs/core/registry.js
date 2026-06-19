@@ -84,6 +84,7 @@ import odfType from '../types/office/odf/index.js';
 import rtfType from '../types/text/rtf/index.js';
 import lrfType from '../types/ebook/lrf/index.js';
 import layeredType from '../types/layered/index.js';
+import tiffType from '../types/image/tiff/index.js';
 import icoType from '../types/image/ico/index.js';
 import procreateType from '../types/image/procreate/index.js';
 import sketchType from '../types/image/sketch/index.js';
@@ -145,6 +146,7 @@ export const REGISTRY = [
   harType,
   jsonType,
   layeredType,
+  tiffType,
   heifType,
   icoType,
   procreateType,

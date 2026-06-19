@@ -90,6 +90,12 @@ export async function run(ctx) {
   } else {
     pass('dedicated raster image format samples indexed (' + imageFormatSamples.length + ')');
   }
+  const tiffSample = byFile.get('sample.tiff');
+  if (tiffSample?.type === 'tiff' && tiffSample.partial) {
+    pass('dedicated TIFF partial-support sample indexed');
+  } else {
+    fail('missing dedicated TIFF partial-support sample');
+  }
   const modernImageSamples = ['sample.heic', 'sample.avif'];
   const missingModernImages = modernImageSamples.filter((file) => byFile.get(file)?.type !== 'heif');
   if (missingModernImages.length) {

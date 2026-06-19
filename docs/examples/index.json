@@ -1160,6 +1160,22 @@
     "attribution": "John Burkardt data directory"
   },
   {
+    "label": "Sample.tiff",
+    "file": "sample.tiff",
+    "mime": "image/tiff",
+    "type": "tiff",
+    "category": "Media",
+    "categories": [
+      "Image",
+      "Media"
+    ],
+    "partial": true,
+    "description": "TIFF conversion of the CC0 flower PNG sample for metadata-focused TIFF coverage.",
+    "source": "https://commons.wikimedia.org/wiki/File:Red_flower_01.png",
+    "license": "CC0 1.0 Universal",
+    "attribution": "Wikimedia Commons contributor; converted to TIFF for this catalog"
+  },
+  {
     "label": "Sample.avif",
     "file": "sample.avif",
     "mime": "image/avif",
