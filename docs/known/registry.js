@@ -47,12 +47,15 @@ import dependabot from '../types/text/yaml/known/dependabot/index.js';
 import eslint from '../types/text/json/known/eslint/index.js';
 import jest from '../types/text/json/known/jest/index.js';
 import stylelint from '../types/text/json/known/stylelint/index.js';
+import babel from '../types/text/json/known/babel/index.js';
+import commitlint from '../types/text/json/known/commitlint/index.js';
+import lefthook from '../types/text/yaml/known/lefthook/index.js';
 
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
-  eslint, jest, stylelint];
+  eslint, jest, stylelint, babel, commitlint, lefthook];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -5708,6 +5708,94 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "babel": {
+      "label": "Babel config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "babel.config.json"
+      ],
+      "extensions": [
+        "babel.config.json",
+        ".babelrc",
+        ".babelrc.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "commitlint": {
+      "label": "commitlint config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        ".commitlintrc.json"
+      ],
+      "extensions": [
+        ".commitlintrc",
+        ".commitlintrc.json",
+        "commitlint.config.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "lefthook": {
+      "label": "Lefthook config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "lefthook.yml"
+      ],
+      "extensions": [
+        "lefthook.yml",
+        "lefthook.yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "YAML parsed via base type; detail available only when parsed object supplied"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

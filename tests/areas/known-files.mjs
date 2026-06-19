@@ -272,4 +272,28 @@ export async function run(ctx) {
   const stlText = await page.$eval('#previewHost .stl-doc', (e) => e.textContent);
   if (/Stylelint/i.test(stlText)) pass('.stylelintrc.json: badge shown'); else fail('stylelint badge: ' + stlText.slice(0, 200));
   if (/color-no-invalid-hex|block-no-empty/i.test(stlText)) pass('.stylelintrc.json: rules shown'); else fail('stylelint rules: ' + stlText.slice(0, 200));
+
+  // ── babel.config.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('babel.config.json');
+  await page.waitForSelector('#previewHost .bbl-doc', { timeout: 12000 });
+  const bblText = await page.$eval('#previewHost .bbl-doc', (e) => e.textContent);
+  if (/Babel/i.test(bblText)) pass('babel.config.json: badge shown'); else fail('babel badge: ' + bblText.slice(0, 200));
+  if (/@babel\/preset-env|@babel\/preset-react/i.test(bblText)) pass('babel.config.json: presets shown'); else fail('babel presets: ' + bblText.slice(0, 200));
+
+  // ── .commitlintrc.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.commitlintrc.json');
+  await page.waitForSelector('#previewHost .cml-doc', { timeout: 12000 });
+  const cmlText = await page.$eval('#previewHost .cml-doc', (e) => e.textContent);
+  if (/commitlint/i.test(cmlText)) pass('.commitlintrc.json: badge shown'); else fail('commitlint badge: ' + cmlText.slice(0, 200));
+  if (/type-enum|header-max-length/i.test(cmlText)) pass('.commitlintrc.json: rules shown'); else fail('commitlint rules: ' + cmlText.slice(0, 200));
+
+  // ── lefthook.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('lefthook.yml');
+  await page.waitForSelector('#previewHost .lfh-doc', { timeout: 12000 });
+  const lfhText = await page.$eval('#previewHost .lfh-doc', (e) => e.textContent);
+  if (/Lefthook/i.test(lfhText)) pass('lefthook.yml: badge shown'); else fail('lefthook badge: ' + lfhText.slice(0, 200));
+  if (/pre-commit|commit-msg|pre-push/i.test(lfhText)) pass('lefthook.yml: hook stages shown'); else fail('lefthook hooks: ' + lfhText.slice(0, 200));
 }

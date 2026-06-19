@@ -2571,5 +2571,32 @@
     "categories": [
       "Config"
     ]
+  },
+  {
+    "label": "babel.config.json",
+    "file": "babel.config.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": ".commitlintrc.json",
+    "file": ".commitlintrc.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "lefthook.yml",
+    "file": "lefthook.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
   }
 ]
