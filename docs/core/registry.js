@@ -136,6 +136,8 @@ import lmmsType from '../types/binary/lmms/index.js';
 import f3dType from '../types/binary/f3d/index.js';
 import debType from '../types/binary/deb/index.js';
 import qifType from '../types/text/qif/index.js';
+import mt940Type from '../types/text/mt940/index.js';
+import gffType from '../types/text/gff/index.js';
 import sdfType from '../types/text/sdf/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
@@ -201,6 +203,7 @@ export const REGISTRY = [
   jsonlType,
   ofxType,
   bioType,
+  gffType,
   jsonType,
   layeredType,
   tiffType,
@@ -264,6 +267,7 @@ export const REGISTRY = [
   f3dType,
   debType,
   qifType,
+  mt940Type,
   sdfType,
   regType,
   urlType,

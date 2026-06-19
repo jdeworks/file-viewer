@@ -295,17 +295,31 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_json=(()=>{
+const detect_gff=(()=>{
+// GFF3: General Feature Format v3 — starts with ##gff-version 3
+// GFF2/GTF: starts with ##gff-version 2 or tab-delimited with 9 columns starting with seqname
+
 function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'json', 'jsonc', 'geojson', 'json5')) return 0.96;
-  if (mimeMatches(intake, 'json')) return 0.9;
-  // Content: starts like JSON (cheap — no full parse in the detector).
-  const t = (intake.textSample || '').trim();
-  if ((t.startsWith('{') && t.includes('"')) || t.startsWith('[')) return 0.5;
+  const { filename, textSample } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isGffExt = ext === 'gff' || ext === 'gff3' || ext === 'gtf' || ext === 'gff2';
+
+  if (!textSample) return isGffExt ? 0.4 : 0;
+
+  const s = textSample.trimStart();
+  if (/^##gff-version\s+3/i.test(s)) return isGffExt ? 0.99 : 0.96;
+  if (/^##gff-version\s+2/i.test(s)) return isGffExt ? 0.99 : 0.94;
+  if (/^##gff-version/i.test(s)) return isGffExt ? 0.97 : 0.90;
+
+  // GTF/GFF2: 9 tab-separated columns with gene_id / transcript_id in col 9
+  if (isGffExt) {
+    const firstData = s.split('\n').find(l => !l.startsWith('#') && l.includes('\t'));
+    if (firstData && firstData.split('\t').length >= 9) return 0.85;
+    return 0.5;
+  }
   return 0;
 }
 return detect;
 })();
 
-export const DETECTORS={"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"bio":detect_bio,"json":detect_json};
+export const DETECTORS={"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"bio":detect_bio,"gff":detect_gff};

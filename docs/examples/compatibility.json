@@ -3017,6 +3017,42 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
     },
+    "gff": {
+      "label": "GFF/GTF Genomic",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.gff3"
+      ],
+      "extensions": [
+        ".gff",
+        ".gff3",
+        ".gtf"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "needs-review",
+      "notes": "GFF2/GFF3/GTF genome annotation files. Feature type breakdown, sequence/chromosome list, sequence-region directives.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
     "kicad": {
       "label": "KiCad EDA File",
       "support": "supported",
@@ -4638,7 +4674,14 @@
         "control.tar.gz decompression not implemented (shown as raw)",
         "data.tar contents not browsable",
         "Checksums and signatures not verified"
-      ]
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     },
     "qif": {
       "label": "QIF Financial",
@@ -4663,6 +4706,39 @@
         "Split transactions not expanded",
         "Investment transaction fields (Q, O, I, etc.) not parsed",
         "Multiple account sections not fully differentiated"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "mt940": {
+      "label": "MT940 Bank Statement",
+      "support": "full",
+      "sampleFiles": [
+        "sample.mt940"
+      ],
+      "extensions": [
+        ".mt940",
+        ".mt942",
+        ".sta"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "MT942 intraday statement format not differentiated",
+        ":86: narrative lines not fully structured",
+        "Multi-statement files show only first statement summary"
       ]
     }
   },

@@ -1,0 +1,17 @@
+##gff-version 3
+##sequence-region chr1 1 248956422
+#!genome-build GRCh38.p14
+chr1	Ensembl	gene	11869	14409	.	+	.	ID=ENSG00000290825;Name=DDX11L2;biotype=lncRNA
+chr1	Ensembl	mRNA	11869	14409	.	+	.	ID=ENST00000456328;Parent=ENSG00000290825
+chr1	Ensembl	exon	11869	12227	.	+	.	Parent=ENST00000456328;exon_number=1
+chr1	Ensembl	exon	12613	12721	.	+	.	Parent=ENST00000456328;exon_number=2
+chr1	Ensembl	exon	13221	14409	.	+	.	Parent=ENST00000456328;exon_number=3
+chr1	Ensembl	gene	14696	24886	.	-	.	ID=ENSG00000227232;Name=WASH7P;biotype=unprocessed_pseudogene
+chr1	Ensembl	mRNA	14696	24886	.	-	.	ID=ENST00000488147;Parent=ENSG00000227232
+chr1	Ensembl	exon	14696	14829	.	-	.	Parent=ENST00000488147;exon_number=11
+chr1	Ensembl	exon	15005	15038	.	-	.	Parent=ENST00000488147;exon_number=10
+chr1	Ensembl	exon	15796	15947	.	-	.	Parent=ENST00000488147;exon_number=9
+chr1	Ensembl	CDS	65565	65573	.	+	0	ID=CDS1;Parent=ENST00000335137
+chr1	Ensembl	CDS	69037	70108	.	+	0	ID=CDS2;Parent=ENST00000335137
+chr1	Ensembl	UTR	65220	65564	.	+	.	Parent=ENST00000335137
+##FASTA

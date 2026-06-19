@@ -3,6 +3,19 @@ import { mediaInfo } from '../types/media/medialib.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_json=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, 'json', 'jsonc', 'geojson', 'json5')) return 0.96;
+  if (mimeMatches(intake, 'json')) return 0.9;
+  // Content: starts like JSON (cheap — no full parse in the detector).
+  const t = (intake.textSample || '').trim();
+  if ((t.startsWith('{') && t.includes('"')) || t.startsWith('[')) return 0.5;
+  return 0;
+}
+return detect;
+})();
+
 const detect_layered=(()=>{
 // PSD = 8BPS magic; XCF = "gimp xcf " magic; ORA/KRA = ZIP (PK) + extension.
 function detect(intake) {
@@ -309,4 +322,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu};
+export const DETECTORS={"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu};

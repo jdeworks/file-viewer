@@ -2331,5 +2331,25 @@
       "Data",
       "financial"
     ]
+  },
+  {
+    "file": "sample.mt940",
+    "label": "MT940 bank statement (demo)",
+    "mime": "text/plain",
+    "category": "Data",
+    "categories": [
+      "Data",
+      "financial"
+    ]
+  },
+  {
+    "file": "sample.gff3",
+    "label": "GFF3 genome annotation (demo)",
+    "mime": "text/plain",
+    "category": "Scientific",
+    "categories": [
+      "Scientific",
+      "bioinformatics"
+    ]
   }
 ]

@@ -416,4 +416,29 @@ export async function run(ctx) {
   if (ppBadge === 'Premiere') pass('Premiere badge shown'); else fail('prproj badge: ' + ppBadge);
   const ppStats = await ppf.$$('.prproj-stat');
   if (ppStats.length >= 2) pass('Premiere project stats shown'); else fail('prproj stats: ' + ppStats.length);
+
+  // ── MT940 Bank Statement ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('MT940 bank statement (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const mt940f = await frameOf('iframe.fv-preview-frame');
+  await mt940f.waitForSelector('.badge-mt940', { timeout: 8000 });
+  const mt940TypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (mt940TypeId === 'mt940') pass('.mt940 detected as mt940 type'); else fail('mt940 typeId: ' + mt940TypeId);
+  const mt940Text = await mt940f.$eval('body', (el) => el.textContent);
+  if (/MT940|Statement/i.test(mt940Text)) pass('MT940 badge shown'); else fail('mt940 badge: ' + mt940Text.slice(0, 300));
+  if (/DE89|EUR|balance/i.test(mt940Text)) pass('MT940 account\/balance shown'); else fail('mt940 acct: ' + mt940Text.slice(0, 300));
+
+  // ── GFF/GTF Genomic Features ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('GFF3 genome annotation (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const gfff = await frameOf('iframe.fv-preview-frame');
+  await gfff.waitForSelector('.badge-gff', { timeout: 8000 });
+  const gffTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (gffTypeId === 'gff') pass('.gff3 detected as gff type'); else fail('gff typeId: ' + gffTypeId);
+  const gffText = await gfff.$eval('body', (el) => el.textContent);
+  if (/GFF3?/i.test(gffText)) pass('GFF badge shown'); else fail('gff badge: ' + gffText.slice(0, 300));
+  if (/gene|exon|CDS|mRNA/i.test(gffText)) pass('GFF feature types shown'); else fail('gff features: ' + gffText.slice(0, 300));
+  if (/chr\d|chromosome/i.test(gffText)) pass('GFF chromosome info shown'); else fail('gff chrom: ' + gffText.slice(0, 300));
 }

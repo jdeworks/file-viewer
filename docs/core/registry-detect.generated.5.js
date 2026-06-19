@@ -275,54 +275,26 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_sdf=(()=>{
-function hasExtension(intake, ...exts) {
-  const name = (intake.filename || '').toLowerCase();
-  return exts.some((e) => name.endsWith('.' + e));
-}
+const detect_mt940=(()=>{
+// MT940/MT942: SWIFT bank statement format
+// Starts with :20: (transaction reference) optionally preceded by {1: or similar FIN tags
 
 function detect(intake) {
-  if (intake.isBinary) return 0;
-  const sample = (intake.textSample || intake.text || '').slice(0, 1200);
-  const lines = sample.split('\n');
+  const { filename, textSample } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isMtExt = ext === 'mt940' || ext === 'mt942' || ext === 'sta' || ext === 'mt';
 
-  // Counts line is 4th line (index 3): "aaabbblll..." starting with atom/bond counts
-  const hasMolCounts = lines.length >= 4 && /^\s*\d+\s+\d+\s+\d+/.test(lines[3]);
-  // V2000/V3000 tag
-  const hasVersion = /\bV[23]000\b/.test(sample);
-  // SDF terminator
-  const hasSdfEnd = /^\$\$\$\$$/m.test(sample);
-  // M  END is the molfile terminator
-  const hasMEnd = /^M\s{2}END/m.test(sample);
+  if (!textSample) return isMtExt ? 0.4 : 0;
 
-  const isMolLike = hasMolCounts || (hasVersion && hasMEnd);
-
-  if (hasExtension(intake, 'sdf', 'sd')) {
-    if (isMolLike || hasSdfEnd) return 0.95;
-    return 0.5;
+  const s = textSample.trimStart();
+  // MT940/942 always starts with :20: or a FIN wrapper
+  if (/^:20:/.test(s) || /^\{1:[^}]+\}\{2:[^}]+\}\{4:\s*:20:/s.test(s)) {
+    return isMtExt ? 0.99 : 0.92;
   }
-  if (hasExtension(intake, 'mol')) {
-    if (isMolLike) return 0.95;
-    return 0.5;
-  }
-
-  if (isMolLike && hasSdfEnd) return 0.85;
-  if (isMolLike && hasMEnd) return 0.70;
-  return 0;
+  if (isMtExt && /^:\d{2}[A-Z]?:/.test(s)) return 0.75;
+  return isMtExt ? 0.4 : 0;
 }
 return detect;
 })();
 
-const detect_reg=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const sample = intake.textSample || '';
-  if (sample.startsWith('Windows Registry Editor Version 5.00') ||
-      sample.startsWith('REGEDIT4')) return 0.98;
-  if (intake.filename?.toLowerCase().endsWith('.reg')) return 0.65;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"lmms":detect_lmms,"f3d":detect_f3d,"deb":detect_deb,"qif":detect_qif,"sdf":detect_sdf,"reg":detect_reg};
+export const DETECTORS={"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"lmms":detect_lmms,"f3d":detect_f3d,"deb":detect_deb,"qif":detect_qif,"mt940":detect_mt940};
