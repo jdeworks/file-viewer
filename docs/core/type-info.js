@@ -57,7 +57,7 @@ const TYPE_INFO = {
   iwork: ['Apple iWork', 'used by Pages, Numbers, and Keynote documents.', 'https://en.wikipedia.org/wiki/IWork'],
   zip: ['ZIP archive', 'used to package and compress files, sometimes with encryption.', 'https://en.wikipedia.org/wiki/ZIP_(file_format)'],
   torrent: ['BitTorrent metadata', 'used to describe files, trackers, and piece hashes for BitTorrent.', 'https://en.wikipedia.org/wiki/Torrent_file'],
-  class: ['Java class', 'used for compiled Java bytecode loaded by the JVM.', 'https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-4.html'],
+  'java-class': ['Java class', 'used for compiled Java bytecode loaded by the JVM.', 'https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-4.html'],
   wasm: ['WebAssembly', 'used for portable low-level modules that run in browsers and runtimes.', 'https://webassembly.org/'],
   npy: ['NumPy array', 'used to store Python NumPy arrays and array archives.', 'https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html'],
   lnk: ['Windows shortcut', 'used by Windows Shell to point to files, folders, apps, or URLs.', 'https://learn.microsoft.com/openspecs/windows_protocols/ms-shllink/'],
