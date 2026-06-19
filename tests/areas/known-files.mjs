@@ -525,4 +525,44 @@ export async function run(ctx) {
   const nycText = await page.$eval('#previewHost .nyc-doc', (e) => e.textContent);
   if (/NYC/i.test(nycText)) pass('.nycrc.json: badge shown'); else fail('nyc badge: ' + nycText.slice(0, 200));
   if (/80|90|branches|lines/i.test(nycText)) pass('.nycrc.json: thresholds shown'); else fail('nyc thresholds: ' + nycText.slice(0, 200));
+
+  // ── devcontainer.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('devcontainer.json');
+  await page.waitForSelector('#previewHost .dvc-doc', { timeout: 12000 });
+  const dvcText = await page.$eval('#previewHost .dvc-doc', (e) => e.textContent);
+  if (/Dev Container/i.test(dvcText)) pass('devcontainer.json: badge shown'); else fail('devcontainer badge: ' + dvcText.slice(0, 200));
+  if (/Node\.js|typescript|3000|5432/i.test(dvcText)) pass('devcontainer.json: config shown'); else fail('devcontainer config: ' + dvcText.slice(0, 200));
+
+  // ── knip.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('knip.json');
+  await page.waitForSelector('#previewHost .knp-doc', { timeout: 12000 });
+  const knpText = await page.$eval('#previewHost .knp-doc', (e) => e.textContent);
+  if (/Knip/i.test(knpText)) pass('knip.json: badge shown'); else fail('knip badge: ' + knpText.slice(0, 200));
+  if (/typescript|eslint|jest|src/i.test(knpText)) pass('knip.json: content shown'); else fail('knip content: ' + knpText.slice(0, 200));
+
+  // ── .mocharc.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.mocharc.json');
+  await page.waitForSelector('#previewHost .moc-doc', { timeout: 12000 });
+  const mocText = await page.$eval('#previewHost .moc-doc', (e) => e.textContent);
+  if (/Mocha/i.test(mocText)) pass('.mocharc.json: badge shown'); else fail('mocha badge: ' + mocText.slice(0, 200));
+  if (/spec|timeout|reporter|bdd/i.test(mocText)) pass('.mocharc.json: config shown'); else fail('mocha config: ' + mocText.slice(0, 200));
+
+  // ── .gitlab-ci.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.gitlab-ci.yml');
+  await page.waitForSelector('#previewHost .glb-doc', { timeout: 12000 });
+  const glbText = await page.$eval('#previewHost .glb-doc', (e) => e.textContent);
+  if (/GitLab/i.test(glbText)) pass('.gitlab-ci.yml: badge shown'); else fail('gitlab-ci badge: ' + glbText.slice(0, 200));
+  if (/install|lint|test|build|deploy/i.test(glbText)) pass('.gitlab-ci.yml: stages/jobs shown'); else fail('gitlab-ci jobs: ' + glbText.slice(0, 200));
+
+  // ── pnpm-workspace.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pnpm-workspace.yaml');
+  await page.waitForSelector('#previewHost .pnw-doc', { timeout: 12000 });
+  const pnwText = await page.$eval('#previewHost .pnw-doc', (e) => e.textContent);
+  if (/pnpm/i.test(pnwText)) pass('pnpm-workspace.yaml: badge shown'); else fail('pnpm-workspace badge: ' + pnwText.slice(0, 200));
+  if (/packages|apps|catalog|react/i.test(pnwText)) pass('pnpm-workspace.yaml: workspaces shown'); else fail('pnpm-workspace content: ' + pnwText.slice(0, 200));
 }

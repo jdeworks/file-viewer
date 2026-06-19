@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/knip/schema.json",
+  "entry": ["src/index.ts", "src/main.ts"],
+  "project": ["src/**/*.ts"],
+  "ignoreDependencies": ["@types/node", "ts-node"],
+  "ignoreExportsUsedInFile": false,
+  "ignoreBinaries": ["dotenv"],
+  "plugins": {
+    "typescript": true,
+    "eslint": true,
+    "jest": true,
+    "next": true
+  },
+  "ignore": ["**/*.d.ts", "src/generated/**"],
+  "workspaces": {
+    "packages/*": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "apps/*": {
+      "entry": ["src/main.ts", "pages/**/*.tsx"],
+      "project": ["src/**/*.ts", "pages/**/*.tsx"]
+    }
+  }
+}

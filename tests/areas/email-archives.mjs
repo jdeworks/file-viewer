@@ -78,6 +78,19 @@ export async function run(ctx) {
   const lockBanner = await lzf.$eval('.zip-locked', (e) => e.textContent).catch(() => '');
   if (lockBadge === 1 && /password-protected/.test(lockBanner)) pass('password-protected entry flagged (lock badge + banner)'); else fail('lock badge=' + lockBadge + ' banner=' + lockBanner.slice(0, 50));
 
+  // ── Archive repack ── edit a zip entry in memory, download the modified archive ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.zip');
+  await page.waitForSelector('#fileTree:not([hidden]) #ftBody .ft-file', { timeout: 8000 });
+  const repackExportShown = await page.$eval('#ftExportBtn', (e) => !e.hidden);
+  if (repackExportShown) pass('archive export button shown when zip loaded'); else fail('archive export button hidden');
+  await page.evaluate(() => { window.__fv.state.folderEdits.set('README.txt', 'Edited by smoke test'); });
+  const [repackDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 12000 }),
+    page.click('#ftExportBtn'),
+  ]);
+  if (/^edited-/.test(repackDl.suggestedFilename())) pass('archive repacked and downloaded (' + repackDl.suggestedFilename() + ')'); else fail('repack filename: ' + repackDl.suggestedFilename());
+
   // ── 7z archive ── with enableArchiveWasm off, shows the opt-in hint panel.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.7z');

@@ -79,6 +79,19 @@ import mypy from '../types/text/known/mypy/index.js';
 import angularJson from '../types/text/json/known/angular/index.js';
 import capacitor from '../types/text/json/known/capacitor/index.js';
 import nycrc from '../types/text/json/known/nycrc/index.js';
+import devcontainer from '../types/text/json/known/devcontainer/index.js';
+import knip from '../types/text/json/known/knip/index.js';
+import mocha from '../types/text/json/known/mocha/index.js';
+import gitlabCi from '../types/text/yaml/known/gitlab-ci/index.js';
+import pnpmWorkspace from '../types/text/yaml/known/pnpm-workspace/index.js';
+import vitest from '../types/text/json/known/vitest/index.js';
+import graphqlConfig from '../types/text/json/known/graphql-config/index.js';
+import apollo from '../types/text/json/known/apollo/index.js';
+import storybook from '../types/text/json/known/storybook/index.js';
+import drone from '../types/text/yaml/known/drone/index.js';
+import buildkite from '../types/text/yaml/known/buildkite/index.js';
+import skaffold from '../types/text/yaml/known/skaffold/index.js';
+import hadolint from '../types/text/yaml/known/hadolint/index.js';
 
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
@@ -91,7 +104,9 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   travis, circleci, amplify, codebuild,
   jsconfigJson, denoJson, nvmrc, browserslistrc,
   preCommit, pyrightconfig, tox, mypy,
-  angularJson, capacitor, nycrc];
+  angularJson, capacitor, nycrc, devcontainer, knip, mocha, gitlabCi, pnpmWorkspace,
+  vitest, graphqlConfig, apollo, storybook,
+  drone, buildkite, skaffold, hadolint];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

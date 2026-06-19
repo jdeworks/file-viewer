@@ -1,0 +1,15 @@
+{
+  "spec": "test/**/*.spec.js",
+  "require": [
+    "@babel/register",
+    "source-map-support/register"
+  ],
+  "timeout": 5000,
+  "reporter": "spec",
+  "parallel": true,
+  "recursive": true,
+  "exit": true,
+  "ignore": ["test/fixtures/**"],
+  "extension": ["js", "mjs"],
+  "ui": "bdd"
+}
