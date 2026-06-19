@@ -373,7 +373,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   nimble, packagesConfig, podspec, redisConf, mongodConf, myCnf, postgresqlConf, pgbouncerIni, shardYml,
   tauriConf, traefikConfig, unleashConfig, vaultHcl,
   vectorToml, wailsJson, webConfig, xcconfig,
-  bitbucketPipelines, tektonPipeline, argoCdApp, fluxHelmRelease];
+  bitbucketPipelines, tektonPipeline, argoCdApp, fluxHelmRelease,
+  semgrepConfig, codeclimateConfig, gitleaksConfig, osvScanner];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
     try { if (k.match(intake, baseType)) return k; } catch { /* a bad matcher never breaks detection */ }

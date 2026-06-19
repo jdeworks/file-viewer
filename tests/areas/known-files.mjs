@@ -1679,4 +1679,43 @@ export async function run(ctx) {
   if (/B101|B311|B506/i.test(bdText)) pass('.bandit: skipped test IDs shown'); else fail('bandit skips: ' + bdText.slice(0, 300));
   if (/tests|migrations|venv/i.test(bdText)) pass('.bandit: excluded dirs shown'); else fail('bandit exclude: ' + bdText.slice(0, 300));
   if (/MEDIUM|severity/i.test(bdText)) pass('.bandit: severity filter shown'); else fail('bandit severity: ' + bdText.slice(0, 300));
+
+  // ── .semgrep.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.semgrep.yml');
+  await page.waitForSelector('#previewHost .sgr-doc', { timeout: 12000 });
+  const sgrText = await page.$eval('#previewHost .sgr-doc', (e) => e.textContent);
+  if (/Semgrep/i.test(sgrText)) pass('.semgrep.yml: Semgrep badge shown'); else fail('semgrep badge: ' + sgrText.slice(0, 200));
+  if (/rule/i.test(sgrText)) pass('.semgrep.yml: rule count shown'); else fail('semgrep rules: ' + sgrText.slice(0, 300));
+  if (/hardcoded-password|sql-injection|ERROR|WARNING/i.test(sgrText)) pass('.semgrep.yml: rule ids and severity shown'); else fail('semgrep rule content: ' + sgrText.slice(0, 300));
+
+  // ── .gitleaks.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.gitleaks.toml');
+  await page.waitForSelector('#previewHost .gl-doc', { timeout: 12000 });
+  const glText = await page.$eval('#previewHost .gl-doc', (e) => e.textContent);
+  if (/Gitleaks/i.test(glText)) pass('.gitleaks.toml: Gitleaks badge shown'); else fail('gitleaks badge: ' + glText.slice(0, 200));
+  if (/rule/i.test(glText)) pass('.gitleaks.toml: rules section shown'); else fail('gitleaks rules: ' + glText.slice(0, 300));
+  if (/aws-access-key|github-pat|stripe/i.test(glText)) pass('.gitleaks.toml: rule ids shown'); else fail('gitleaks rule ids: ' + glText.slice(0, 300));
+  if (/allowlist/i.test(glText)) pass('.gitleaks.toml: allowlists shown'); else fail('gitleaks allowlists: ' + glText.slice(0, 300));
+
+  // ── osv-scanner.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('osv-scanner.toml');
+  await page.waitForSelector('#previewHost .osv-doc', { timeout: 12000 });
+  const osvText = await page.$eval('#previewHost .osv-doc', (e) => e.textContent);
+  if (/OSV-Scanner/i.test(osvText)) pass('osv-scanner.toml: OSV-Scanner badge shown'); else fail('osv-scanner badge: ' + osvText.slice(0, 200));
+  if (/ignored vuln/i.test(osvText)) pass('osv-scanner.toml: ignored vulnerabilities section shown'); else fail('osv-scanner vulns: ' + osvText.slice(0, 300));
+  if (/GHSA-|CVE-/i.test(osvText)) pass('osv-scanner.toml: vulnerability IDs shown'); else fail('osv-scanner ids: ' + osvText.slice(0, 300));
+  if (/1\.21\.0/i.test(osvText)) pass('osv-scanner.toml: GoVersionOverride shown'); else fail('osv-scanner go version: ' + osvText.slice(0, 300));
+
+  // ── .codeclimate.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.codeclimate.yml');
+  await page.waitForSelector('#previewHost .cc-doc', { timeout: 12000 });
+  const ccText = await page.$eval('#previewHost .cc-doc', (e) => e.textContent);
+  if (/Code Climate/i.test(ccText)) pass('.codeclimate.yml: Code Climate badge shown'); else fail('codeclimate badge: ' + ccText.slice(0, 200));
+  if (/engine|plugin/i.test(ccText)) pass('.codeclimate.yml: engines/plugins section shown'); else fail('codeclimate engines: ' + ccText.slice(0, 300));
+  if (/eslint|duplication|fixme/i.test(ccText)) pass('.codeclimate.yml: engine names shown'); else fail('codeclimate engine names: ' + ccText.slice(0, 300));
+  if (/exclude/i.test(ccText)) pass('.codeclimate.yml: exclude patterns shown'); else fail('codeclimate excludes: ' + ccText.slice(0, 300));
 }

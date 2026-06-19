@@ -1,0 +1,64 @@
+image: node:18
+
+pipelines:
+  default:
+    - step:
+        name: Install dependencies
+        script:
+          - npm ci
+          - npm run lint
+          - npm test
+        caches:
+          - node
+
+    - step:
+        name: Build
+        script:
+          - npm run build
+          - npm run bundle:analyze
+        artifacts:
+          - dist/**
+
+    - step:
+        name: Security scan
+        script:
+          - npm audit --audit-level=high
+          - npx snyk test
+
+  branches:
+    main:
+      - step:
+          name: Deploy to production
+          deployment: production
+          script:
+            - npm ci --production
+            - npm run build
+            - ./scripts/deploy.sh production
+          trigger: manual
+
+    develop:
+      - step:
+          name: Deploy to staging
+          deployment: staging
+          script:
+            - npm ci --production
+            - npm run build
+            - ./scripts/deploy.sh staging
+
+  pull-requests:
+    '**':
+      - step:
+          name: PR checks
+          script:
+            - npm ci
+            - npm run lint
+            - npm test -- --coverage
+            - npm run build
+
+  tags:
+    v*:
+      - step:
+          name: Publish release
+          script:
+            - npm ci --production
+            - npm publish --access public

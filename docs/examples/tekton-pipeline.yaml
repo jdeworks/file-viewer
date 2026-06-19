@@ -1,0 +1,89 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: build-and-deploy
+  namespace: ci
+spec:
+  params:
+    - name: git-url
+      type: string
+      description: Git repository URL
+    - name: git-revision
+      type: string
+      default: main
+      description: Git revision (branch, tag, or SHA)
+    - name: image-name
+      type: string
+      description: Docker image name to build and push
+    - name: image-tag
+      type: string
+      default: latest
+
+  workspaces:
+    - name: source
+      description: Source code workspace
+    - name: docker-credentials
+      description: Docker registry credentials
+
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      workspaces:
+        - name: output
+          workspace: source
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+
+    - name: run-tests
+      runAfter:
+        - fetch-source
+      taskRef:
+        name: npm
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: ARGS
+          value: [test, --coverage]
+
+    - name: build-image
+      runAfter:
+        - run-tests
+      taskRef:
+        name: kaniko
+        kind: ClusterTask
+      workspaces:
+        - name: source
+          workspace: source
+        - name: dockerconfig
+          workspace: docker-credentials
+      params:
+        - name: IMAGE
+          value: $(params.image-name):$(params.image-tag)
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: CONTEXT
+          value: ./
+
+    - name: deploy
+      runAfter:
+        - build-image
+      taskRef:
+        name: kubernetes-actions
+        kind: Task
+      params:
+        - name: script
+          value: |
+            kubectl set image deployment/myapp \
+              app=$(params.image-name):$(params.image-tag)
+
+  results:
+    - name: image-digest
+      description: Digest of the built image
+      value: $(tasks.build-image.results.IMAGE_DIGEST)

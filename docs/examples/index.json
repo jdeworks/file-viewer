@@ -5419,5 +5419,53 @@
     "enhanced": true,
     "description": "Bandit security config: 10 skipped tests, 8 excluded dirs, severity=MEDIUM.",
     "knownFile": "bandit-yaml"
+  },
+  {
+    "label": "environment.yml (Conda)",
+    "file": "environment.yml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Conda environment spec: name, channels, Python version, and dependencies.",
+    "knownFile": "conda-env"
+  },
+  {
+    "label": "pip.conf",
+    "file": "pip.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "pip configuration: index server, trusted hosts, and install options.",
+    "knownFile": "pip-conf"
+  },
+  {
+    "label": ".node-version",
+    "file": ".node-version",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Node.js version pin for fnm, volta, nvm, and mise.",
+    "knownFile": "node-version-file"
+  },
+  {
+    "label": "docker-bake.hcl",
+    "file": "docker-bake.hcl",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Docker Buildx Bake build definition: targets, tags, platforms, and cache config.",
+    "knownFile": "docker-bake"
   }
 ]
