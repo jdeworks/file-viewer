@@ -1,0 +1,45 @@
+[user]
+	name = Jane Developer
+	email = jane@example.com
+	signingkey = ABCDEF1234567890
+
+[core]
+	editor = vim
+	autocrlf = input
+	excludesfile = ~/.gitignore_global
+
+[alias]
+	st = status
+	co = checkout
+	br = branch
+	lg = log --oneline --graph --decorate
+	unstage = reset HEAD --
+
+[pull]
+	rebase = false
+
+[push]
+	default = current
+	autoSetupRemote = true
+
+[init]
+	defaultBranch = main
+
+[credential]
+	helper = osxkeychain
+
+[color]
+	ui = auto
+
+[merge]
+	tool = vimdiff
+	conflictstyle = diff3
+
+[diff]
+	tool = vimdiff
+
+[gpg]
+	format = ssh
+
+[commit]
+	gpgsign = false

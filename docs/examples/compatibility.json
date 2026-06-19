@@ -8872,11 +8872,13 @@
     },
     "bazel": {
       "label": "Bazel BUILD / WORKSPACE",
-      "baseType": "raw",
+      "baseType": "plain",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "BUILD.bazel"
+      ],
       "extensions": [
-        ".yml"
+        ".bazel"
       ],
       "capabilities": {
         "rawView": true,
@@ -8885,7 +8887,7 @@
         "magicSelector": false,
         "screenshot": true
       },
-      "previewDepth": "basic",
+      "previewDepth": "rich",
       "metadataDepth": "basic",
       "editCapability": "none",
       "exportCapability": "download",
@@ -8897,12 +8899,12 @@
     },
     "bazelrc": {
       "label": ".bazelrc",
-      "baseType": "raw",
+      "baseType": "plain",
       "support": "supported",
-      "sampleFiles": [],
-      "extensions": [
-        ".yml"
+      "sampleFiles": [
+        ".bazelrc"
       ],
+      "extensions": [],
       "capabilities": {
         "rawView": true,
         "preview": true,
@@ -8910,7 +8912,7 @@
         "magicSelector": false,
         "screenshot": true
       },
-      "previewDepth": "basic",
+      "previewDepth": "rich",
       "metadataDepth": "basic",
       "editCapability": "none",
       "exportCapability": "download",
@@ -8922,9 +8924,38 @@
     },
     "ninja-build": {
       "label": "Ninja build file",
-      "baseType": "raw",
+      "baseType": "plain",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "build.ninja"
+      ],
+      "extensions": [
+        ".ninja"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "gitconfig": {
+      "label": "Git config",
+      "baseType": "ini",
+      "support": "supported",
+      "sampleFiles": [
+        ".gitconfig"
+      ],
       "extensions": [
         ".yml"
       ],
