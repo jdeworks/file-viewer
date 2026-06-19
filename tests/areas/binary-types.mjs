@@ -15,4 +15,17 @@ export async function run(ctx) {
   const elfText = elfRows.join(' ');
   if (/x86-64/i.test(elfText)) pass('ELF architecture x86-64 shown'); else fail('elf rows: ' + elfText.slice(0, 200));
   if (/64-bit/i.test(elfText)) pass('ELF 64-bit width shown'); else fail('elf rows (bit): ' + elfText.slice(0, 200));
+
+  // ── GeoJSON ──────────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.geojson');
+  const geoFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const geof = await frameOf('iframe.fv-preview-frame');
+  await geof.waitForSelector('.geo-preview', { timeout: 8000 });
+  const geoTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (geoTypeId === 'geojson') pass('.geojson detected as geojson type'); else fail('geojson typeId: ' + geoTypeId);
+  const geoStats = await geof.$$eval('.geo-stat-value', (els) => els.map((e) => e.textContent));
+  if (geoStats.includes('5')) pass('GeoJSON feature count 5 shown'); else fail('geojson stats: ' + geoStats.join(','));
+  const geoNames = await geof.$eval('.geo-table', (t) => t.textContent);
+  if (/Golden Gate/i.test(geoNames)) pass('GeoJSON named feature Golden Gate shown'); else fail('geo table: ' + geoNames.slice(0, 200));
 }

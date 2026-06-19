@@ -564,3 +564,14 @@
 .exe-hardening { margin-top: 10px; } .exe-harden-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
 .exe-harden-chip { display: inline-block; background: #052e16; color: #86efac; border: 1px solid #166534; border-radius: 4px; padding: 1px 7px; font-size: .8em; margin: 2px; }
 .exe-note { font-size: .85em; color: var(--fg-2); margin-top: 8px; }
+/* GeoJSON / TopoJSON */
+.geo-preview { padding: 12px; } .geo-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.geo-badge { background: #14532d; color: #86efac; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .geo-title { font-weight: 600; font-size: .95em; }
+.geo-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.geo-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; text-align: center; min-width: 60px; }
+.geo-stat-value { font: 700 16px/1 system-ui; color: var(--accent); } .geo-stat-label { font-size: .72em; color: var(--fg-2); margin-top: 3px; text-transform: uppercase; }
+.geo-section { margin-bottom: 12px; } .geo-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
+.geo-table { border-collapse: collapse; font-size: 13px; width: 100%; } .geo-table th { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--border); color: var(--fg-2); font-size: 11px; } .geo-table td { padding: 3px 8px; border-bottom: 1px solid var(--border); }
+.geo-geom { width: 80px; color: var(--fg-2); font-size: .85em; }
+.geo-chips { display: flex; flex-wrap: wrap; gap: 5px; } .geo-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font: 12px ui-monospace,monospace; }
+.geo-note { font-size: .8em; color: var(--fg-2); margin-top: 8px; }

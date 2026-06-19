@@ -1,15 +1,39 @@
 {
   "type": "FeatureCollection",
+  "bbox": [-122.5, 37.7, -122.3, 37.85],
   "features": [
-    { "type": "Feature", "properties": { "name": "Route" }, "geometry": {
-      "type": "LineString",
-      "coordinates": [[13.405,52.52],[13.42,52.50],[13.45,52.49],[13.46,52.51]] } },
-    { "type": "Feature", "properties": { "name": "Park" }, "geometry": {
-      "type": "Polygon",
-      "coordinates": [[[13.41,52.515],[13.43,52.515],[13.43,52.505],[13.41,52.505],[13.41,52.515]]] } },
-    { "type": "Feature", "properties": { "name": "Start" }, "geometry": {
-      "type": "Point", "coordinates": [13.405,52.52] } },
-    { "type": "Feature", "properties": { "name": "End" }, "geometry": {
-      "type": "Point", "coordinates": [13.46,52.51] } }
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.4194, 37.7749] },
+      "properties": { "name": "San Francisco City Hall", "category": "government", "year": 1915 }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.4784, 37.8199] },
+      "properties": { "name": "Golden Gate Bridge", "category": "landmark", "year": 1937 }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.3888, 37.7275] },
+      "properties": { "name": "SFO Airport", "category": "transport", "iata": "SFO" }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-122.5, 37.7], [-122.3, 37.7], [-122.3, 37.85], [-122.5, 37.85], [-122.5, 37.7]
+        ]]
+      },
+      "properties": { "name": "San Francisco County", "category": "boundary", "area_km2": 121 }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[-122.4194, 37.7749], [-122.4784, 37.8199]]
+      },
+      "properties": { "name": "City Hall to Golden Gate", "category": "route", "distance_km": 8.5 }
+    }
   ]
 }

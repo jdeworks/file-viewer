@@ -3725,5 +3725,11 @@
     "firefox": true,
     "safari": true,
     "edge": true
+  },
+  "geojson": {
+    "chrome": true,
+    "firefox": true,
+    "safari": true,
+    "edge": true
   }
 }

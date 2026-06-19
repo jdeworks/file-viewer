@@ -1940,5 +1940,10 @@
     "filename": "sample.elf",
     "label": "ELF Executable (x86-64 Linux stub)",
     "type": "exe"
+  },
+  {
+    "filename": "sample.geojson",
+    "label": "GeoJSON (San Francisco landmarks)",
+    "type": "geojson"
   }
 ]
