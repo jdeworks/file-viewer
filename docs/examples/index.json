@@ -1854,5 +1854,14 @@
     "categories": [
       "Data"
     ]
+  },
+  {
+    "label": "LED Blinker PCB (KiCad)",
+    "file": "sample.kicad_pcb",
+    "mime": "text/x-kicad-pcb",
+    "category": "Data",
+    "categories": [
+      "Data"
+    ]
   }
 ]

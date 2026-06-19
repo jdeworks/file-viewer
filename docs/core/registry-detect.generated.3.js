@@ -214,6 +214,19 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_kicad=(()=>{
+const EXTS = ['kicad_sch', 'kicad_pcb', 'kicad_pro', 'kicad_mod', 'kicad_sym', 'kicad_wks', 'kicad_dru', 'kicad_prl'];
+
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, ...EXTS)) return 0.97;
+  const head = (intake.text || '').slice(0, 200);
+  if (/^\(kicad_sch\b|\(kicad_pcb\b|\(kicad_pro\b|\(kicad_symbol_lib\b|\(module\b/m.test(head)) return 0.9;
+  return 0;
+}
+return detect;
+})();
+
 const detect_gcode=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -294,23 +307,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_rdp=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-
-  const name = (intake.filename ?? '').toLowerCase();
-  const text = intake.textSample ?? '';
-
-  const hasExt = name.endsWith('.rdp');
-  const hasContent = /^full address:s:/im.test(text);
-
-  if (hasExt && hasContent) return 0.95;
-  if (hasExt) return 0.7;
-  if (hasContent) return 0.6;
-
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp};
+export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config};

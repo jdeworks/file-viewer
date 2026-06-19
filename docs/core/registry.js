@@ -108,6 +108,7 @@ import sshConfigType from '../types/text/ssh-config/index.js';
 import rdpType from '../types/text/rdp/index.js';
 import mcpConfigType from '../types/text/mcp-config/index.js';
 import kubeconfigType from '../types/text/kubeconfig/index.js';
+import kicadType from '../types/text/kicad/index.js';
 import ruffleType from '../types/emulator/ruffle/index.js';
 import v86Type from '../types/emulator/v86/index.js';
 import emulatorjsType from '../types/emulator/emulatorjs/index.js';
@@ -184,6 +185,7 @@ export const REGISTRY = [
   regType,
   urlType,
   asciiartType,
+  kicadType,
   gcodeType,
   gitignoreType,
   gitattributesType,

@@ -475,3 +475,15 @@
 .bio-seq-row { border-bottom: 1px solid var(--border); padding: 4px 0; } .bio-seq-name,.bio-seq-bases { font: 12px ui-monospace,monospace; } .bio-seq-name { color: var(--accent); } .bio-seq-len { font-size: .75em; color: var(--fg-2); }
 .bio-table { border-collapse: collapse; font-size: 12px; width: 100%; } .bio-table th { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--border); color: var(--fg-2); font-size: 11px; } .bio-table td { padding: 3px 8px; border-bottom: 1px solid var(--border); font: 12px ui-monospace,monospace; }
 .bio-ref { color: #16a34a; } .bio-alt { color: #dc2626; } .bio-chips { display: flex; flex-wrap: wrap; gap: 5px; } .bio-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font-size: .8em; } .bio-chip-more { color: var(--fg-2); } .bio-empty { color: var(--fg-2); padding: 20px; text-align: center; }
+/* KiCad EDA */
+.kicad-preview { padding: 12px; } .kicad-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.kicad-badge { background: #1d4ed8; color: #fff; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; }
+.kicad-title { font-weight: 600; font-size: .95em; }
+.kicad-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.kicad-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; text-align: center; min-width: 60px; }
+.kicad-stat-value { font: 700 18px/1 system-ui; color: var(--accent); }
+.kicad-stat-label { font-size: .72em; color: var(--fg-2); margin-top: 3px; text-transform: uppercase; letter-spacing: .04em; }
+.kicad-section { margin-bottom: 14px; }
+.kicad-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
+.kicad-chips { display: flex; flex-wrap: wrap; gap: 5px; } .kicad-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font: 12px ui-monospace,monospace; } .kicad-chip-more { color: var(--fg-2); }
+.kicad-table { border-collapse: collapse; font-size: 13px; } .kicad-key { padding: 3px 12px 3px 0; color: var(--fg-2); white-space: nowrap; vertical-align: top; } .kicad-table td { padding: 3px 0; }

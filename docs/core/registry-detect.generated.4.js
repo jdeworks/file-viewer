@@ -4,6 +4,25 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_rdp=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+
+  const name = (intake.filename ?? '').toLowerCase();
+  const text = intake.textSample ?? '';
+
+  const hasExt = name.endsWith('.rdp');
+  const hasContent = /^full address:s:/im.test(text);
+
+  if (hasExt && hasContent) return 0.95;
+  if (hasExt) return 0.7;
+  if (hasContent) return 0.6;
+
+  return 0;
+}
+return detect;
+})();
+
 const detect_pem=(()=>{
 function detect(intake) {
   const ext = intake.filename?.split('.').pop()?.toLowerCase();
@@ -107,4 +126,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"pem":detect_pem,"gamerom":detect_gamerom,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
+export const DETECTORS={"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};

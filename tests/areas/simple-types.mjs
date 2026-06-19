@@ -306,4 +306,18 @@ export async function run(ctx) {
   if (/\*{4}\d{4}/.test(ofxAcct) && /CHECKING/i.test(ofxAcct)) pass('OFX account card shows masked account number and type'); else fail('ofx acct: ' + ofxAcct.replace(/\s+/g, ' ').slice(0, 100));
   const ofxRows = await ofxf.$$eval('.ofx-table tbody tr', (els) => els.length);
   if (ofxRows >= 4) pass('OFX transaction table shows expected rows'); else fail('ofx txn rows: ' + ofxRows);
+
+  // ── KiCad EDA PCB viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('LED Blinker PCB (KiCad)');
+  const kicadf = await frameOf('iframe.fv-preview-frame');
+  await kicadf.waitForSelector('.kicad-preview', { timeout: 8000 });
+  const kicadTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (kicadTypeId === 'kicad') pass('sample.kicad_pcb detected as KiCad EDA type'); else fail('kicad type: ' + kicadTypeId);
+  const kicadBadge = await kicadf.$eval('.kicad-badge', (e) => e.textContent);
+  if (kicadBadge === 'PCB Layout') pass('KiCad PCB badge shown'); else fail('kicad badge: ' + kicadBadge);
+  const kicadStats = await kicadf.$$('.kicad-stat');
+  if (kicadStats.length >= 3) pass('KiCad PCB stats shown (footprints, nets, tracks)'); else fail('kicad stats count: ' + kicadStats.length);
+  const kicadTitle = await kicadf.$eval('.kicad-title', (e) => e.textContent);
+  if (/LED Blinker/i.test(kicadTitle)) pass('KiCad PCB title shown'); else fail('kicad title: ' + kicadTitle);
 }
