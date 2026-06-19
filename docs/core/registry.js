@@ -113,6 +113,7 @@ import pdbType from '../types/text/pdb/index.js';
 import pcapType from '../types/binary/pcap/index.js';
 import xyzType from '../types/text/xyz/index.js';
 import shapefileType from '../types/binary/shapefile/index.js';
+import wadType from '../types/binary/wad/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
 import gitignoreType from '../types/text/gitignore/index.js';
@@ -217,6 +218,7 @@ export const REGISTRY = [
   pcapType,
   xyzType,
   shapefileType,
+  wadType,
   regType,
   urlType,
   asciiartType,

@@ -295,6 +295,18 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_wad=(()=>{
+function detect(intake) {
+  if (!intake.bytes || intake.bytes.length < 12) return 0;
+  const b = intake.bytes;
+  const magic = String.fromCharCode(b[0], b[1], b[2], b[3]);
+  if (magic === 'IWAD' || magic === 'PWAD') return 0.98;
+  if (hasExtension(intake, 'wad')) return 0.6;
+  return 0;
+}
+return detect;
+})();
+
 const detect_reg=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -307,4 +319,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"reg":detect_reg};
+export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad,"reg":detect_reg};

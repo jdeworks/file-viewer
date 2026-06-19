@@ -208,4 +208,17 @@ export async function run(ctx) {
   if (/Shapefile/i.test(shpText)) pass('Shapefile badge shown'); else fail('shp badge missing');
   if (/Polygon/i.test(shpText)) pass('Shapefile shape type shown'); else fail('shp type: ' + shpText.slice(0, 300));
   if (/40\.|74\./i.test(shpText)) pass('Shapefile bounding box shown'); else fail('shp bbox: ' + shpText.slice(0, 300));
+
+  // ── Doom WAD Archive ──────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Doom Patch WAD (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const wadf = await frameOf('iframe.fv-preview-frame');
+  await wadf.waitForSelector('.badge-wad', { timeout: 8000 });
+  const wadTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (wadTypeId === 'wad') pass('.wad detected as wad type'); else fail('wad typeId: ' + wadTypeId);
+  const wadText = await wadf.$eval('body', (el) => el.textContent);
+  if (/PWAD|IWAD/i.test(wadText)) pass('WAD type badge shown'); else fail('wad badge: ' + wadText.slice(0, 300));
+  if (/Patch WAD|Internal WAD/i.test(wadText)) pass('WAD type description shown'); else fail('wad desc: ' + wadText.slice(0, 300));
+  if (/MAP01|Lumps|THINGS|LINEDEFS/i.test(wadText)) pass('WAD lump info shown'); else fail('wad lumps: ' + wadText.slice(0, 300));
 }

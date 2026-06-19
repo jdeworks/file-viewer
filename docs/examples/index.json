@@ -2083,5 +2083,14 @@
       "Geo",
       "Science"
     ]
+  },
+  {
+    "label": "Doom Patch WAD (demo)",
+    "file": "sample.wad",
+    "mime": "application/x-doom-wad",
+    "category": "Games",
+    "categories": [
+      "Games"
+    ]
   }
 ]

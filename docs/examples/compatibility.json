@@ -3921,6 +3921,37 @@
         "No map rendering — bounding box and record count only",
         ".shx index file not used"
       ]
+    },
+    "wad": {
+      "label": "Doom WAD Game Archive",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.wad"
+      ],
+      "extensions": [
+        ".wad"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "fileExamplesSlug": null,
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Lump data not decoded — lump listing only",
+        "BLOCKMAP/REJECT/BSP data not displayed",
+        "No sprite/texture extraction"
+      ]
     }
   },
   "knownFiles": {
