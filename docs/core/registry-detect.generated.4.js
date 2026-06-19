@@ -109,6 +109,66 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_cif=(()=>{
+function hasExtension(intake, ...exts) {
+  const name = (intake.filename || '').toLowerCase();
+  return exts.some((e) => name.endsWith('.' + e));
+}
+
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  const sample = (intake.textSample || intake.text || '').slice(0, 1500);
+
+  // CIF files start with 'data_' block headers and use '_key value' pairs
+  const hasDataBlock = /^data_/m.test(sample);
+  const hasCifKey = /^_[a-z_]+\./m.test(sample) || /^_cell_|^_atom_|^_symmetry_|^_diffrn_/m.test(sample);
+  const hasLoop = /^loop_/m.test(sample);
+
+  if (hasExtension(intake, 'cif', 'mmcif', 'cif2')) {
+    if (hasDataBlock || hasCifKey) return 0.96;
+    return 0.6;
+  }
+
+  if (hasDataBlock && hasCifKey) return 0.88;
+  if (hasDataBlock && hasLoop) return 0.70;
+  return 0;
+}
+return detect;
+})();
+
+const detect_parquet=(()=>{
+function hasAscii(b, off, s) {
+  if (off + s.length > b.length) return false;
+  for (let i = 0; i < s.length; i++) if (b[off + i] !== s.charCodeAt(i)) return false;
+  return true;
+}
+
+function hasExtension(intake, ...exts) {
+  const name = (intake.filename || '').toLowerCase();
+  return exts.some((e) => name.endsWith('.' + e));
+}
+
+function detect(intake) {
+  const b = intake.bytes;
+  if (!b || b.length < 8) return 0;
+
+  // Parquet magic: 'PAR1' at byte 0 AND at last 4 bytes
+  const hasMagicStart = hasAscii(b, 0, 'PAR1');
+  const hasMagicEnd = hasAscii(b, b.length - 4, 'PAR1');
+
+  if (hasMagicStart && hasMagicEnd) {
+    return hasExtension(intake, 'parquet') ? 0.99 : 0.96;
+  }
+  if (hasMagicStart || hasMagicEnd) {
+    return hasExtension(intake, 'parquet') ? 0.85 : 0.60;
+  }
+
+  if (hasExtension(intake, 'parquet')) return 0.4;
+  return 0;
+}
+return detect;
+})();
+
 const detect_sdf=(()=>{
 function hasExtension(intake, ...exts) {
   const name = (intake.filename || '').toLowerCase();
@@ -266,48 +326,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_guitar_pro=(()=>{
-function detect(intake) {
-  if (hasExtension(intake, 'gpx')) {
-    // GPX is a ZIP — check for PK magic
-    if (intake.bytes && intake.bytes[0] === 0x50 && intake.bytes[1] === 0x4b) return 0.9;
-    return 0.7;
-  }
-  if (!intake.isBinary) return 0;
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
-  // GP5 magic: "FICHIER GUITAR PRO v5"
-  // GP4: "FICHIER GUITAR PRO v4"
-  // GP3: "FICHIER GUITAR PRO v3"
-  const head = String.fromCharCode(...intake.bytes.slice(0, 32));
-  if (/FICHIER GUITAR PRO v[3-5]/.test(head)) return 0.98;
-  if (hasExtension(intake, 'gp3', 'gp4', 'gp5', 'gp')) return 0.7;
-  return 0;
-}
-return detect;
-})();
-
-const detect_postscript=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'ps', 'eps', 'ai')) return 0.85;
-  const head = (intake.textSample || '').slice(0, 120);
-  if (/^%!PS(-Adobe)?/.test(head)) return 0.97;
-  return 0;
-}
-return detect;
-})();
-
-const detect_acf=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (!hasExtension(intake, 'acf')) return 0;
-  const t = intake.textSample || '';
-  // Valve KeyValues format — top-level key is typically "AppState"
-  if (/^\s*"AppState"\s*\{/.test(t)) return 0.98;
-  if (/^\s*"[^"]+"\s*\{/.test(t)) return 0.7;
-  return 0.5;
-}
-return detect;
-})();
-
-export const DETECTORS={"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf};
+export const DETECTORS={"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat};

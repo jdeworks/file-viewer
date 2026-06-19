@@ -4078,6 +4078,70 @@
         "Row data not displayed",
         "Feather v2 uses Arrow IPC format — same support level"
       ]
+    },
+    "cif": {
+      "label": "CIF Crystallographic Data",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.cif"
+      ],
+      "extensions": [
+        ".cif",
+        ".mmcif",
+        ".cif2"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false,
+      "fileExamplesSlug": "cif",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "No 3D crystal structure rendering",
+        "Large atom tables truncated in display",
+        "CIF 2.0 features not fully supported"
+      ]
+    },
+    "parquet": {
+      "label": "Apache Parquet",
+      "support": "partial",
+      "sampleFiles": [
+        "sample.parquet"
+      ],
+      "extensions": [
+        ".parquet"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "fileExamplesSlug": "parquet",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Thrift footer not fully decoded (no column types)",
+        "Row data not displayed",
+        "Row group statistics not shown"
+      ]
     }
   },
   "knownFiles": {

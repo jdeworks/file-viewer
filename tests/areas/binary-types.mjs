@@ -272,4 +272,30 @@ export async function run(ctx) {
   const arrText = await arrf.$eval('body', (el) => el.textContent);
   if (/Apache Arrow/i.test(arrText)) pass('Arrow badge shown'); else fail('arrow badge: ' + arrText.slice(0, 300));
   if (/Arrow IPC|Feather/i.test(arrText)) pass('Arrow format shown'); else fail('arrow format: ' + arrText.slice(0, 300));
+
+  // ── CIF Crystallographic Data ─────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Aspirin Crystal Structure (CIF)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const ciff = await frameOf('iframe.fv-preview-frame');
+  await ciff.waitForSelector('.badge-cif', { timeout: 8000 });
+  const cifTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (cifTypeId === 'cif') pass('.cif detected as cif type'); else fail('cif typeId: ' + cifTypeId);
+  const cifText = await ciff.$eval('body', (el) => el.textContent);
+  if (/CIF/i.test(cifText)) pass('CIF badge shown'); else fail('cif badge: ' + cifText.slice(0, 300));
+  if (/Aspirin|C9 H8 O4|acetyloxy/i.test(cifText)) pass('CIF compound info shown'); else fail('cif compound: ' + cifText.slice(0, 300));
+  if (/Space Group|P 1 21|Unit Cell/i.test(cifText)) pass('CIF crystal data shown'); else fail('cif crystal: ' + cifText.slice(0, 300));
+
+  // ── Apache Parquet ────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Apache Parquet Dataset (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const parqf = await frameOf('iframe.fv-preview-frame');
+  await parqf.waitForSelector('.badge-parquet', { timeout: 8000 });
+  const parqTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (parqTypeId === 'parquet') pass('.parquet detected as parquet type'); else fail('parquet typeId: ' + parqTypeId);
+  const parqText = await parqf.$eval('body', (el) => el.textContent);
+  if (/Parquet/i.test(parqText)) pass('Parquet badge shown'); else fail('parquet badge: ' + parqText.slice(0, 300));
+  if (/PAR1|Parquet/i.test(parqText)) pass('Parquet format confirmed'); else fail('parquet format: ' + parqText.slice(0, 300));
+  if (/name|salary|department/i.test(parqText)) pass('Parquet field names shown'); else fail('parquet fields: ' + parqText.slice(0, 300));
 }

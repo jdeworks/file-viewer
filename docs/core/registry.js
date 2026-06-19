@@ -117,6 +117,8 @@ import wadType from '../types/binary/wad/index.js';
 import bspType from '../types/binary/bsp/index.js';
 import cborType from '../types/binary/cbor/index.js';
 import arrowType from '../types/binary/arrow/index.js';
+import cifType from '../types/text/cif/index.js';
+import parquetType from '../types/binary/parquet/index.js';
 import sdfType from '../types/text/sdf/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
@@ -226,6 +228,8 @@ export const REGISTRY = [
   bspType,
   cborType,
   arrowType,
+  cifType,
+  parquetType,
   sdfType,
   regType,
   urlType,

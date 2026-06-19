@@ -2133,5 +2133,26 @@
       "binary",
       "scientific"
     ]
+  },
+  {
+    "file": "sample.cif",
+    "label": "Aspirin Crystal Structure (CIF)",
+    "mime": "chemical/x-cif",
+    "category": "chemical",
+    "categories": [
+      "chemical",
+      "scientific"
+    ]
+  },
+  {
+    "file": "sample.parquet",
+    "label": "Apache Parquet Dataset (demo)",
+    "mime": "application/vnd.apache.parquet",
+    "category": "data",
+    "categories": [
+      "data",
+      "binary",
+      "scientific"
+    ]
   }
 ]
