@@ -530,10 +530,8 @@ Expand image coverage:
 - design/layered formats: PSD/PSB, XCF, KRA, Sketch, Procreate, Clip Studio where supported or partial-supported
 
 Remaining explicit sample gaps:
-- TIFF/TIF: add detector/support policy and sample.
-- AVIF: detector exists, but a dedicated sample is still missing.
 - JXL: decide support policy, then add detection/sample or partial-support message.
-- PSD/PSB, XCF, KRA: renderer support exists for layered/design formats, but indexed samples are still missing.
+- PSD/PSB, XCF: renderer support exists for layered/design formats, but indexed samples are still missing.
 - Video: only AVI is covered; add browser-native MP4/WebM plus MOV/MKV partial or transcode-hint samples where appropriate.
 - Audio: add FLAC, OGG, M4A/AAC samples where browser/runtime support permits.
 
