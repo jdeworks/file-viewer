@@ -533,7 +533,7 @@ Remaining explicit sample gaps:
 - JXL: decide support policy, then add detection/sample or partial-support message.
 - PSD/PSB, XCF: renderer support exists for layered/design formats, but indexed samples are still missing.
 - Video: only AVI is covered; add browser-native MP4/WebM plus MOV/MKV partial or transcode-hint samples where appropriate.
-- Audio: add FLAC, OGG, M4A/AAC samples where browser/runtime support permits.
+- Audio: add FLAC and M4A/AAC samples where browser/runtime support permits.
 
 ### Layout bug
 
