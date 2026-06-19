@@ -1,0 +1,26 @@
+{
+  "content": [
+    "./src/**/*.{js,ts,jsx,tsx}",
+    "./public/index.html"
+  ],
+  "darkMode": "class",
+  "theme": {
+    "extend": {
+      "colors": {
+        "brand": "#3b82f6",
+        "surface": "#f8fafc"
+      },
+      "fontFamily": {
+        "sans": ["Inter", "system-ui", "sans-serif"]
+      },
+      "spacing": {
+        "128": "32rem"
+      }
+    }
+  },
+  "plugins": [
+    "@tailwindcss/forms",
+    "@tailwindcss/typography",
+    "@tailwindcss/aspect-ratio"
+  ]
+}

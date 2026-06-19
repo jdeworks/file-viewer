@@ -3170,5 +3170,53 @@
       "Config"
     ],
     "enhanced": true
+  },
+  {
+    "label": "package-lock.json",
+    "file": "package-lock.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": ["Config"],
+    "enhanced": true
+  },
+  {
+    "label": "composer.lock",
+    "file": "composer.lock",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": ["Config"],
+    "enhanced": true
+  },
+  {
+    "label": "pnpm-lock.yaml",
+    "file": "pnpm-lock.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": ["Config"],
+    "enhanced": true
+  },
+  {
+    "label": "Cargo.lock",
+    "file": "Cargo.lock",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": ["Config"],
+    "enhanced": true
+  },
+  {
+    "label": "poetry.lock",
+    "file": "poetry.lock",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": ["Config"],
+    "enhanced": true
+  },
+  {
+    "label": "go.sum",
+    "file": "go.sum",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": ["Config"],
+    "enhanced": true
   }
 ]

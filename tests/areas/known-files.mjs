@@ -629,4 +629,68 @@ export async function run(ctx) {
   const hdlText = await page.$eval('#previewHost .hdl-doc', (e) => e.textContent);
   if (/Hadolint/i.test(hdlText)) pass('.hadolint.yaml: badge shown'); else fail('hadolint badge: ' + hdlText.slice(0, 200));
   if (/DL3008|DL3009|ignore|threshold/i.test(hdlText)) pass('.hadolint.yaml: ignored rules and threshold shown'); else fail('hadolint rules: ' + hdlText.slice(0, 200));
+
+  // ── firebase.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('firebase.json');
+  await page.waitForSelector('#previewHost .fbs-doc', { timeout: 12000 });
+  const fbsText = await page.$eval('#previewHost .fbs-doc', (e) => e.textContent);
+  if (/Firebase/i.test(fbsText)) pass('firebase.json: badge shown'); else fail('firebase badge: ' + fbsText.slice(0, 200));
+  if (/dist|hosting|functions|emulators/i.test(fbsText)) pass('firebase.json: config sections shown'); else fail('firebase config: ' + fbsText.slice(0, 200));
+
+  // ── app.json (Expo) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('app.json (Expo)');
+  await page.waitForSelector('#previewHost .exp-doc', { timeout: 12000 });
+  const expText = await page.$eval('#previewHost .exp-doc', (e) => e.textContent);
+  if (/Expo/i.test(expText)) pass('app.json (Expo): badge shown'); else fail('expo badge: ' + expText.slice(0, 200));
+  if (/MyAwesomeApp|51\.0\.0|ios|android/i.test(expText)) pass('app.json (Expo): app config shown'); else fail('expo config: ' + expText.slice(0, 200));
+
+  // ── tailwind.config.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('tailwind.config.json');
+  await page.waitForSelector('#previewHost .twl-doc', { timeout: 12000 });
+  const twlText = await page.$eval('#previewHost .twl-doc', (e) => e.textContent);
+  if (/Tailwind/i.test(twlText)) pass('tailwind.config.json: badge shown'); else fail('tailwind badge: ' + twlText.slice(0, 200));
+  if (/content|theme|plugins|class/i.test(twlText)) pass('tailwind.config.json: config shown'); else fail('tailwind config: ' + twlText.slice(0, 200));
+
+  // ── postcss.config.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('postcss.config.json');
+  await page.waitForSelector('#previewHost .pcs-doc', { timeout: 12000 });
+  const pcsText = await page.$eval('#previewHost .pcs-doc', (e) => e.textContent);
+  if (/PostCSS/i.test(pcsText)) pass('postcss.config.json: badge shown'); else fail('postcss badge: ' + pcsText.slice(0, 200));
+  if (/tailwindcss|autoprefixer|cssnano/i.test(pcsText)) pass('postcss.config.json: plugins shown'); else fail('postcss plugins: ' + pcsText.slice(0, 200));
+
+  // ── .huskyrc.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.huskyrc.json');
+  await page.waitForSelector('#previewHost .hsk-doc', { timeout: 12000 });
+  const hskText = await page.$eval('#previewHost .hsk-doc', (e) => e.textContent);
+  if (/Husky/i.test(hskText)) pass('.huskyrc.json: badge shown'); else fail('husky badge: ' + hskText.slice(0, 200));
+  if (/pre-commit|commit-msg|lint-staged/i.test(hskText)) pass('.huskyrc.json: hooks shown'); else fail('husky hooks: ' + hskText.slice(0, 200));
+
+  // ── .lintstagedrc.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.lintstagedrc.json');
+  await page.waitForSelector('#previewHost .lst-doc', { timeout: 12000 });
+  const lstText = await page.$eval('#previewHost .lst-doc', (e) => e.textContent);
+  if (/lint-staged/i.test(lstText)) pass('.lintstagedrc.json: badge shown'); else fail('lint-staged badge: ' + lstText.slice(0, 200));
+  if (/eslint|prettier|stylelint/i.test(lstText)) pass('.lintstagedrc.json: glob rules shown'); else fail('lint-staged rules: ' + lstText.slice(0, 200));
+
+  // ── nest-cli.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nest-cli.json');
+  await page.waitForSelector('#previewHost .nst-doc', { timeout: 12000 });
+  const nstText = await page.$eval('#previewHost .nst-doc', (e) => e.textContent);
+  if (/NestJS/i.test(nstText)) pass('nest-cli.json: badge shown'); else fail('nest-cli badge: ' + nstText.slice(0, 200));
+  if (/monorepo|api|auth|library/i.test(nstText)) pass('nest-cli.json: projects shown'); else fail('nest-cli projects: ' + nstText.slice(0, 200));
+
+  // ── .swcrc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.swcrc');
+  await page.waitForSelector('#previewHost .swc-doc', { timeout: 12000 });
+  const swcText = await page.$eval('#previewHost .swc-doc', (e) => e.textContent);
+  if (/SWC/i.test(swcText)) pass('.swcrc: badge shown'); else fail('swcrc badge: ' + swcText.slice(0, 200));
+  if (/typescript|es2020|es6|source maps/i.test(swcText)) pass('.swcrc: compiler config shown'); else fail('swcrc config: ' + swcText.slice(0, 200));
 }

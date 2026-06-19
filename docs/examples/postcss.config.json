@@ -1,0 +1,11 @@
+{
+  "plugins": {
+    "tailwindcss": {},
+    "autoprefixer": {},
+    "cssnano": {
+      "preset": "default"
+    },
+    "postcss-import": {},
+    "postcss-nested": {}
+  }
+}

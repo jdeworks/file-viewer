@@ -6740,7 +6740,9 @@
       "label": "Vitest config",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "vitest.config.json"
+      ],
       "extensions": [
         "vitest.config.json"
       ],
@@ -6765,7 +6767,9 @@
       "label": "GraphQL Config",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "graphql.config.json"
+      ],
       "extensions": [
         ".graphqlrc.json",
         ".graphqlrc"
@@ -6791,7 +6795,9 @@
       "label": "Apollo Config",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "apollo.config.json"
+      ],
       "extensions": [
         "apollo.config.json"
       ],
@@ -6816,7 +6822,9 @@
       "label": "Storybook config",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "storybook.main.json"
+      ],
       "extensions": [
         ".storybook/main.json"
       ],
@@ -6841,7 +6849,9 @@
       "label": "Drone CI config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".drone.yml"
+      ],
       "extensions": [
         ".drone.yml"
       ],
@@ -6866,7 +6876,9 @@
       "label": "Buildkite pipeline",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "buildkite.yml"
+      ],
       "extensions": [
         ".buildkite/pipeline.yml"
       ],
@@ -6891,7 +6903,9 @@
       "label": "Skaffold config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "skaffold.yaml"
+      ],
       "extensions": [
         "skaffold.yaml"
       ],
@@ -6916,7 +6930,9 @@
       "label": "Hadolint config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".hadolint.yaml"
+      ],
       "extensions": [
         ".hadolint.yaml",
         ".hadolint.yml"

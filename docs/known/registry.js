@@ -84,6 +84,12 @@ import knip from '../types/text/json/known/knip/index.js';
 import mocha from '../types/text/json/known/mocha/index.js';
 import gitlabCi from '../types/text/yaml/known/gitlab-ci/index.js';
 import pnpmWorkspace from '../types/text/yaml/known/pnpm-workspace/index.js';
+import packageLock from '../types/text/json/known/package-lock/index.js';
+import composerLock from '../types/text/json/known/composer-lock/index.js';
+import pnpmLock from '../types/text/yaml/known/pnpm-lock/index.js';
+import cargoLock from '../types/text/toml/known/cargo-lock/index.js';
+import poetryLock from '../types/text/toml/known/poetry-lock/index.js';
+import goSum from '../types/text/known/go-sum/index.js';
 import vitest from '../types/text/json/known/vitest/index.js';
 import graphqlConfig from '../types/text/json/known/graphql-config/index.js';
 import apollo from '../types/text/json/known/apollo/index.js';
@@ -124,7 +130,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   vitest, graphqlConfig, apollo, storybook,
   drone, buildkite, skaffold, hadolint,
   helmChart, kustomize, ansiblePlaybook, pulumi, packer, ruff, uv, kubeHelmValues,
-  firebase, expo, tailwind, postcss, husky, lintStaged, nestCli, swcrc];
+  firebase, expo, tailwind, postcss, husky, lintStaged, nestCli, swcrc,
+  packageLock, composerLock, pnpmLock, cargoLock, poetryLock, goSum];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
