@@ -1,0 +1,29 @@
+apiVersion: v2
+name: my-app
+description: A Helm chart for deploying my-app on Kubernetes
+type: application
+version: 1.4.2
+appVersion: "2.0.0"
+icon: https://example.com/icon.png
+
+maintainers:
+  - name: platform-team
+    email: platform@example.com
+
+dependencies:
+  - name: postgresql
+    version: "~14.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: redis
+    version: "~18.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+
+keywords:
+  - web
+  - api
+  - nodejs
+
+sources:
+  - https://github.com/example/my-app

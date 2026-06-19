@@ -1,0 +1,55 @@
+# Project task runner — justfile
+# https://github.com/casey/just
+
+# Default recipe lists available commands
+default:
+  @just --list
+
+# Install dependencies
+install:
+  npm install
+
+# Build for production
+build:
+  npm run build
+
+# Run development server
+dev:
+  npm run dev
+
+# Run all tests
+test: lint unit integration
+  @echo "All tests passed"
+
+# Run unit tests only
+unit:
+  npm test -- --testPathPattern=unit
+
+# Run integration tests
+integration:
+  npm test -- --testPathPattern=integration
+
+# Lint source files
+lint:
+  npm run lint
+  npm run typecheck
+
+# Format source files
+fmt:
+  prettier --write "src/**/*.{ts,tsx,js,jsx}"
+
+# Clean build artifacts
+clean:
+  rm -rf dist/ .cache/ coverage/
+
+# Deploy to production
+deploy: build
+  npm run deploy:prod
+
+# Run database migrations
+migrate db="development":
+  DATABASE_URL={{db}} npx prisma migrate dev
+
+# Generate code from OpenAPI spec
+codegen:
+  openapi-generator-cli generate -i openapi.yaml -g typescript-fetch -o src/api

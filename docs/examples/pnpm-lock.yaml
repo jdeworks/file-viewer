@@ -1,0 +1,36 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      react:
+        specifier: ^18.2.0
+        version: 18.2.0
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.2.0(react@18.2.0)
+    devDependencies:
+      typescript:
+        specifier: ^5.2.2
+        version: 5.2.2
+
+packages:
+
+  react@18.2.0:
+    resolution: {integrity: sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fQ==}
+    engines: {node: '>=0.10.0'}
+
+  react-dom@18.2.0:
+    resolution: {integrity: sha512-6IMTriUmvsjHUjNtEDudZfuDQUoWXVxKHhlEGSk81n4YFS+r/Kl99wXiwlVXtPBtJenozv2P+hxDsw9eA7Xfw==}
+    peerDependencies:
+      react: ^18.2.0
+
+  typescript@5.2.2:
+    resolution: {integrity: sha512-mI4WrpHsbgIEObE+GX3+XPTIuhN8aJkBCNE5L7GKAiK04p+z6f8x13xyDdxHNQzpLp9O2q0mNjQMEdVVLKYg==}
+    engines: {node: '>=14.17'}
+    hasBin: true
