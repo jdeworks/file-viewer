@@ -405,4 +405,100 @@ export async function run(ctx) {
   const vscTasksText = await page.$eval('#previewHost .vsc-tasks-doc', (e) => e.textContent);
   if (/VS Code/i.test(vscTasksText)) pass('vscode-tasks.json: badge shown'); else fail('vscode-tasks badge: ' + vscTasksText.slice(0, 200));
   if (/build|test|lint/i.test(vscTasksText)) pass('vscode-tasks.json: tasks shown'); else fail('vscode-tasks content: ' + vscTasksText.slice(0, 200));
+
+  // ── travis.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('travis.yml');
+  await page.waitForSelector('#previewHost .trv-doc', { timeout: 12000 });
+  const trvText = await page.$eval('#previewHost .trv-doc', (e) => e.textContent);
+  if (/Travis CI/i.test(trvText)) pass('travis.yml: badge shown'); else fail('travis badge: ' + trvText.slice(0, 200));
+  if (/node_js|node|python|ruby/i.test(trvText)) pass('travis.yml: language shown'); else fail('travis language: ' + trvText.slice(0, 200));
+
+  // ── circleci.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('circleci.yml');
+  await page.waitForSelector('#previewHost .cci-doc', { timeout: 12000 });
+  const cciText = await page.$eval('#previewHost .cci-doc', (e) => e.textContent);
+  if (/CircleCI/i.test(cciText)) pass('circleci.yml: badge shown'); else fail('circleci badge: ' + cciText.slice(0, 200));
+  if (/build|test|deploy|job/i.test(cciText)) pass('circleci.yml: jobs shown'); else fail('circleci jobs: ' + cciText.slice(0, 200));
+
+  // ── amplify.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('amplify.yml');
+  await page.waitForSelector('#previewHost .amp-doc', { timeout: 12000 });
+  const ampText = await page.$eval('#previewHost .amp-doc', (e) => e.textContent);
+  if (/AWS Amplify/i.test(ampText)) pass('amplify.yml: badge shown'); else fail('amplify badge: ' + ampText.slice(0, 200));
+  if (/preBuild|build|npm/i.test(ampText)) pass('amplify.yml: build phases shown'); else fail('amplify phases: ' + ampText.slice(0, 200));
+
+  // ── buildspec.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('buildspec.yml');
+  await page.waitForSelector('#previewHost .cod-doc', { timeout: 12000 });
+  const codText = await page.$eval('#previewHost .cod-doc', (e) => e.textContent);
+  if (/CodeBuild/i.test(codText)) pass('buildspec.yml: badge shown'); else fail('codebuild badge: ' + codText.slice(0, 200));
+  if (/install|build|npm/i.test(codText)) pass('buildspec.yml: phases shown'); else fail('codebuild phases: ' + codText.slice(0, 200));
+
+  // ── jsconfig.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('jsconfig.json');
+  await page.waitForSelector('#previewHost .jsc-doc', { timeout: 12000 });
+  const jscText = await page.$eval('#previewHost .jsc-doc', (e) => e.textContent);
+  if (/jsconfig/i.test(jscText)) pass('jsconfig.json: title shown'); else fail('jsconfig title: ' + jscText.slice(0, 200));
+  if (/ES2020|target|checkJs/i.test(jscText)) pass('jsconfig.json: options shown'); else fail('jsconfig options: ' + jscText.slice(0, 200));
+
+  // ── deno.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('deno.json');
+  await page.waitForSelector('#previewHost .den-doc', { timeout: 12000 });
+  const denText = await page.$eval('#previewHost .den-doc', (e) => e.textContent);
+  if (/Deno/i.test(denText)) pass('deno.json: badge shown'); else fail('deno badge: ' + denText.slice(0, 200));
+  if (/imports|tasks|hono|std/i.test(denText)) pass('deno.json: imports or tasks shown'); else fail('deno content: ' + denText.slice(0, 200));
+
+  // ── .nvmrc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nvmrc');
+  await page.waitForSelector('#previewHost .nvm-doc', { timeout: 12000 });
+  const nvmText = await page.$eval('#previewHost .nvm-doc', (e) => e.textContent);
+  if (/Node\.js|nvmrc/i.test(nvmText)) pass('nvmrc: badge shown'); else fail('nvmrc badge: ' + nvmText.slice(0, 200));
+  if (/v20|20\.11|lts/i.test(nvmText)) pass('nvmrc: version shown'); else fail('nvmrc version: ' + nvmText.slice(0, 200));
+
+  // ── .browserslistrc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('browserslistrc');
+  await page.waitForSelector('#previewHost .brl-doc', { timeout: 12000 });
+  const brlText = await page.$eval('#previewHost .brl-doc', (e) => e.textContent);
+  if (/Browserslist/i.test(brlText)) pass('browserslistrc: badge shown'); else fail('browserslist badge: ' + brlText.slice(0, 200));
+  if (/last|Firefox|chrome/i.test(brlText)) pass('browserslistrc: queries shown'); else fail('browserslist queries: ' + brlText.slice(0, 200));
+
+  // ── pre-commit-config.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pre-commit-config.yaml');
+  await page.waitForSelector('#previewHost .prc-doc', { timeout: 12000 });
+  const prcText = await page.$eval('#previewHost .prc-doc', (e) => e.textContent);
+  if (/pre-commit/i.test(prcText)) pass('pre-commit-config.yaml: badge shown'); else fail('pre-commit badge: ' + prcText.slice(0, 200));
+  if (/trailing|yaml|json|repo/i.test(prcText)) pass('pre-commit-config.yaml: hooks shown'); else fail('pre-commit hooks: ' + prcText.slice(0, 200));
+
+  // ── pyrightconfig.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pyrightconfig.json');
+  await page.waitForSelector('#previewHost .pyr-doc', { timeout: 12000 });
+  const pyrText = await page.$eval('#previewHost .pyr-doc', (e) => e.textContent);
+  if (/Pyright/i.test(pyrText)) pass('pyrightconfig.json: badge shown'); else fail('pyright badge: ' + pyrText.slice(0, 200));
+  if (/standard|3\.11|typeCheck/i.test(pyrText)) pass('pyrightconfig.json: config shown'); else fail('pyright config: ' + pyrText.slice(0, 200));
+
+  // ── tox.ini viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('tox.ini');
+  await page.waitForSelector('#previewHost .tox-doc', { timeout: 12000 });
+  const toxText = await page.$eval('#previewHost .tox-doc', (e) => e.textContent);
+  if (/tox/i.test(toxText)) pass('tox.ini: badge shown'); else fail('tox badge: ' + toxText.slice(0, 200));
+  if (/py39|py3|lint|type/i.test(toxText)) pass('tox.ini: environments shown'); else fail('tox envs: ' + toxText.slice(0, 200));
+
+  // ── mypy.ini viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mypy.ini');
+  await page.waitForSelector('#previewHost .myp-doc', { timeout: 12000 });
+  const mypText = await page.$eval('#previewHost .myp-doc', (e) => e.textContent);
+  if (/mypy/i.test(mypText)) pass('mypy.ini: badge shown'); else fail('mypy badge: ' + mypText.slice(0, 200));
+  if (/3\.11|disallow|strict|override/i.test(mypText)) pass('mypy.ini: config shown'); else fail('mypy config: ' + mypText.slice(0, 200));
 }

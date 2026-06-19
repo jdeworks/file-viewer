@@ -1,0 +1,31 @@
+language: node_js
+node_js:
+  - "20"
+  - "18"
+  - "16"
+os:
+  - linux
+dist: jammy
+services:
+  - redis
+cache:
+  directories:
+    - node_modules
+branches:
+  only:
+    - main
+    - /^release-.*/
+env:
+  global:
+    - NODE_ENV=test
+    - CI=true
+script:
+  - npm run lint
+  - npm test
+  - npm run build
+after_success:
+  - npm run coverage
+notifications:
+  email:
+    on_success: never
+    on_failure: always

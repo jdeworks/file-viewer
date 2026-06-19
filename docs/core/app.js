@@ -158,6 +158,9 @@ async function renderPreview() {
       settings: state.settingsModel.values,
       folder: folderContext(),
       onBinaryEdit: (edit) => {
+        if (state.archiveTree && state.currentFolderPath && edit?.dirty) {
+          (state.binaryEdits = state.binaryEdits || new Map()).set(state.currentFolderPath, edit);
+        }
         state.binaryEdit = edit || null;
         state.downloadedSinceEdit = !edit?.dirty;
         syncSaveBtn();
@@ -193,7 +196,7 @@ async function renderPreview() {
     updateExportButton();
     return;
   }
-  if (rendered.archiveTree) mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake);
+  if (rendered.archiveTree) mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake, state.intake);
   // Remember the sanitized body for screenshots + Print/Save-as-PDF (null for script full docs).
   state.lastBodyHtml = rendered.fullDoc ? null : rendered.bodyHtml;
   state.preview = mountPreview($('previewHost'), {

@@ -79,6 +79,16 @@ export function listCentralDirectory(bytes) {
   return { files, folders, totalU, totalC, ratio: totalU > 0 ? Math.round((1 - totalC / totalU) * 100) : 0, encrypted: new Set(files.filter((f) => f.encrypted).map((f) => f.name)), methods };
 }
 
+// Repack a zip: load original, apply text + binary edits, return new Blob.
+// textEdits: Map<entryName, string>; binaryEdits: Map<entryName, {getBytes:()=>Promise<Uint8Array>}>
+export async function repackZip(intake, textEdits, binaryEdits) {
+  const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
+  const zip = await JSZip.loadAsync(intake.bytes);
+  for (const [name, text] of (textEdits || new Map())) zip.file(name, text);
+  for (const [name, edit] of (binaryEdits || new Map())) zip.file(name, await edit.getBytes());
+  return zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+}
+
 // Just the encrypted entry names (dependency-free).
 export function encryptedNames(bytes) { const cd = listCentralDirectory(bytes); return cd ? cd.encrypted : new Set(); }
 

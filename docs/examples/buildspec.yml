@@ -1,0 +1,29 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - npm ci
+  pre_build:
+    commands:
+      - npm run lint
+      - echo "Running pre-build checks..."
+  build:
+    commands:
+      - npm run build
+      - npm test -- --coverage
+      - echo "Build completed on $(date)"
+  post_build:
+    commands:
+      - echo "Uploading test reports..."
+      - aws s3 cp coverage/ s3://my-bucket/coverage/ --recursive
+artifacts:
+  files:
+    - dist/**/*
+    - package.json
+  name: my-app-$(date +%Y-%m-%d)
+cache:
+  paths:
+    - /root/.npm/**/*
+    - node_modules/**/*

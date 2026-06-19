@@ -10,6 +10,7 @@ import { buildTree, renderTree } from './filetree.js';
 import { intakeFromFile, intakeFromText } from './intake.js';
 import { exportFolderZip } from './folder-export.js';
 import { downloadBlob } from './exports.js';
+import { repackZip } from '../types/zip/ziplib.js';
 import { recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
 
 // Injected core-flow callbacks (set once by app.js init()).
@@ -241,7 +242,9 @@ export async function searchTreeContents() {
 }
 
 // Build + download the loaded folder as a .zip (edits applied), preserving structure.
+// When in archive mode, repacks the original zip with edits applied instead.
 export async function exportFolder(changedOnly) {
+  if (state.archiveTree) { await repackArchive(); return; }
   flushFolderEdit();
   const entries = state.treeEntries;
   if (!entries || !entries.length) return;
@@ -255,6 +258,25 @@ export async function exportFolder(changedOnly) {
     toast(`Exported ${count} file${count === 1 ? '' : 's'} as .zip.`);
   } catch (e) {
     toast('Could not export folder: ' + e.message);
+  }
+}
+
+async function repackArchive() {
+  flushFolderEdit();
+  if (!state.archiveIntake) { toast('Cannot repack: original archive not available.'); return; }
+  const textEdits = state.folderEdits || new Map();
+  const binaryEdits = state.binaryEdits || new Map();
+  if (textEdits.size === 0 && binaryEdits.size === 0) { toast('No edits to export yet.'); return; }
+  try {
+    toast('Repacking archive…', 1500);
+    const blob = await repackZip(state.archiveIntake, textEdits, binaryEdits);
+    const base = ($('ftRoot').textContent || 'archive').replace(/[^\w.-]+/g, '_');
+    downloadBlob(blob, 'edited-' + base);
+    state.folderExported = true;
+    const n = textEdits.size + binaryEdits.size;
+    toast('Archive saved with ' + n + ' edit' + (n === 1 ? '' : 's') + '.');
+  } catch (e) {
+    toast('Could not repack archive: ' + e.message);
   }
 }
 

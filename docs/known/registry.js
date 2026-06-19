@@ -64,6 +64,18 @@ import vscodeSettings from '../types/text/json/known/vscode-settings/index.js';
 import vscodeExtensions from '../types/text/json/known/vscode-extensions/index.js';
 import vscodeLaunch from '../types/text/json/known/vscode-launch/index.js';
 import vscodeTasks from '../types/text/json/known/vscode-tasks/index.js';
+import travis from '../types/text/yaml/known/travis/index.js';
+import circleci from '../types/text/yaml/known/circleci/index.js';
+import amplify from '../types/text/yaml/known/amplify/index.js';
+import codebuild from '../types/text/yaml/known/codebuild/index.js';
+import jsconfigJson from '../types/text/json/known/jsconfig/index.js';
+import denoJson from '../types/text/json/known/deno/index.js';
+import nvmrc from '../types/text/known/nvmrc/index.js';
+import browserslistrc from '../types/text/known/browserslist/index.js';
+import preCommit from '../types/text/yaml/known/pre-commit/index.js';
+import pyrightconfig from '../types/text/json/known/pyrightconfig/index.js';
+import tox from '../types/text/known/tox/index.js';
+import mypy from '../types/text/known/mypy/index.js';
 
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
@@ -72,7 +84,10 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   eslint, jest, stylelint, babel, commitlint, lefthook,
   wrangler, flyToml, cliff, releaserc,
   lerna, nx, biome, codecov, serverless, azurePipelines,
-  vscodeSettings, vscodeExtensions, vscodeLaunch, vscodeTasks];
+  vscodeSettings, vscodeExtensions, vscodeLaunch, vscodeTasks,
+  travis, circleci, amplify, codebuild,
+  jsconfigJson, denoJson, nvmrc, browserslistrc,
+  preCommit, pyrightconfig, tox, mypy];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

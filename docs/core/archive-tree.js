@@ -3,7 +3,7 @@ import { flushFolderEdit, setTree } from './folder.js';
 import { intakeFromText } from './intake.js';
 import { $, isMobile, state, toast } from './state.js';
 
-export function mountArchiveTree(archive, openEntry, loadIntake) {
+export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) {
   const entries = (archive.entries || [])
     .filter((entry) => entry?.name && !entry.dir)
     .map((entry) => ({
@@ -21,6 +21,8 @@ export function mountArchiveTree(archive, openEntry, loadIntake) {
   state.treeEntries = entries;
   state.folderEdits = new Map();
   state.folderMoves = new Map();
+  state.binaryEdits = new Map();
+  state.archiveIntake = archiveIntake || null;
   state.currentFolderPath = null;
   state.sessionTree = false;
   state.archiveTree = true;
@@ -31,7 +33,8 @@ export function mountArchiveTree(archive, openEntry, loadIntake) {
   $('ftRoot').title = 'Archive: ' + rootName;
   $('treeBtn').hidden = false;
   $('repoBtn').hidden = true;
-  $('ftExportBtn').hidden = true;
+  $('ftExportBtn').hidden = !archiveIntake;
+  $('ftExportBtn').title = 'Download archive with your edits applied';
   $('ftSearch').hidden = false;
   $('ftSearchInput').value = '';
   $('ftSearchCount').textContent = '';
@@ -50,6 +53,10 @@ export function mountArchiveTree(archive, openEntry, loadIntake) {
     }
     try {
       flushFolderEdit();
+      // Flush any pending binary edit (e.g. image edit) before switching entries.
+      if (state.currentFolderPath && state.binaryEdit?.dirty) {
+        (state.binaryEdits = state.binaryEdits || new Map()).set(state.currentFolderPath, state.binaryEdit);
+      }
       const stashed = state.folderEdits.get(node.path);
       const intake = stashed != null
         ? intakeFromText(stashed, node.file.name)
@@ -82,5 +89,7 @@ export function clearArchiveTree() {
   state.treeEntries = null;
   state.archiveTree = false;
   state.archiveOpenNode = null;
+  state.archiveIntake = null;
+  state.binaryEdits = null;
   setTree(false);
 }

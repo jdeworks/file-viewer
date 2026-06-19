@@ -2724,5 +2724,140 @@
     "categories": [
       "Config"
     ]
+  },
+  {
+    "label": "Travis CI config",
+    "file": "travis.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "CircleCI config",
+    "file": "circleci.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "AWS Amplify config",
+    "file": "amplify.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "AWS CodeBuild buildspec",
+    "file": "buildspec.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "jsconfig.json",
+    "file": "jsconfig.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "Deno config",
+    "file": "deno.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": ".nvmrc",
+    "file": "nvmrc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": ".browserslistrc",
+    "file": "browserslistrc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "pre-commit config",
+    "file": "pre-commit-config.yaml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "Pyright config",
+    "file": "pyrightconfig.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "tox.ini",
+    "file": "tox.ini",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "mypy config",
+    "file": "mypy.ini",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "Angular workspace",
+    "file": "angular.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "capacitor.config.json",
+    "file": "capacitor.config.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": ".nycrc.json",
+    "file": ".nycrc.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
   }
 ]

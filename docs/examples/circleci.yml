@@ -1,0 +1,60 @@
+version: 2.1
+orbs:
+  node: circleci/node@5
+
+workflows:
+  build-and-test:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
+      - deploy:
+          requires:
+            - test
+          filters:
+            branches:
+              only: main
+
+jobs:
+  build:
+    executor:
+      name: node/default
+      tag: "20.11"
+    steps:
+      - checkout
+      - node/install-packages
+      - run:
+          name: Build
+          command: npm run build
+      - persist_to_workspace:
+          root: .
+          paths:
+            - dist
+
+  test:
+    executor:
+      name: node/default
+      tag: "20.11"
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - node/install-packages
+      - run:
+          name: Run tests
+          command: npm test
+      - store_test_results:
+          path: test-results
+
+  deploy:
+    executor:
+      name: node/default
+      tag: "20.11"
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Deploy to production
+          command: npm run deploy
