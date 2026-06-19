@@ -186,6 +186,22 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_netcdf=(()=>{
+function detect(intake) {
+  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  const b = intake.bytes;
+  // NetCDF-3 classic: "CDF\x01" or "CDF\x02"
+  if (b[0] === 0x43 && b[1] === 0x44 && b[2] === 0x46 && (b[3] === 0x01 || b[3] === 0x02)) return 0.98;
+  // NetCDF-4 (HDF5-based): HDF5 signature "\x89HDF\r\n\x1a\n"
+  if (b[0] === 0x89 && b[1] === 0x48 && b[2] === 0x44 && b[3] === 0x46) {
+    if (hasExtension(intake, 'nc', 'nc4', 'netcdf')) return 0.85;
+  }
+  if (hasExtension(intake, 'nc', 'nc4', 'netcdf')) return 0.6;
+  return 0;
+}
+return detect;
+})();
+
 const detect_reg=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -305,24 +321,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_guitar_pro=(()=>{
-function detect(intake) {
-  if (hasExtension(intake, 'gpx')) {
-    // GPX is a ZIP — check for PK magic
-    if (intake.bytes && intake.bytes[0] === 0x50 && intake.bytes[1] === 0x4b) return 0.9;
-    return 0.7;
-  }
-  if (!intake.isBinary) return 0;
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
-  // GP5 magic: "FICHIER GUITAR PRO v5"
-  // GP4: "FICHIER GUITAR PRO v4"
-  // GP3: "FICHIER GUITAR PRO v3"
-  const head = String.fromCharCode(...intake.bytes.slice(0, 32));
-  if (/FICHIER GUITAR PRO v[3-5]/.test(head)) return 0.98;
-  if (hasExtension(intake, 'gp3', 'gp4', 'gp5', 'gp')) return 0.7;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro};
+export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat};

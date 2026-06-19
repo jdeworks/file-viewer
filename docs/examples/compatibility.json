@@ -3696,6 +3696,46 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
+    },
+    "netcdf": {
+      "label": "NetCDF Scientific Data (.nc)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.nc"
+      ],
+      "extensions": [
+        ".nc",
+        ".nc4",
+        ".netcdf"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "needs-review",
+      "notes": "Pure-JS NetCDF-3 (CDF\\x01/\\x02) header parser: dimensions, variables (with shape), global attributes. NetCDF-4/HDF5 shows info banner only.",
+      "fileExamplesSlug": null,
+      "previewDepth": "structure-only",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "NetCDF-4 (HDF5) not parsed",
+        "Data values not shown (header only)",
+        "Large variable attributes truncated"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
     }
   },
   "knownFiles": {

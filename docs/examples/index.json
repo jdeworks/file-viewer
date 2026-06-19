@@ -1822,6 +1822,15 @@
     ]
   },
   {
+    "file": "sample.nc",
+    "label": "NetCDF Climate Dataset (demo)",
+    "mime": "application/x-netcdf",
+    "category": "Binary",
+    "categories": [
+      "Binary"
+    ]
+  },
+  {
     "label": "ssh-config",
     "file": "ssh-config",
     "category": "Other",

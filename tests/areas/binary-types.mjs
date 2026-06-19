@@ -116,4 +116,17 @@ export async function run(ctx) {
   if (/DICOM/i.test(dcmText)) pass('DICOM badge shown'); else fail('dcm badge missing');
   if (/CT|Computed Tomography/i.test(dcmText)) pass('DICOM modality CT shown'); else fail('dcm mod: ' + dcmText.slice(0, 300));
   if (/512|Demo Hospital/i.test(dcmText)) pass('DICOM image info shown'); else fail('dcm info: ' + dcmText.slice(0, 300));
+
+  // ── NetCDF Scientific Data ────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('NetCDF Climate Dataset (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const ncf = await frameOf('iframe.fv-preview-frame');
+  await ncf.waitForSelector('.badge-nc', { timeout: 8000 });
+  const ncTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (ncTypeId === 'netcdf') pass('.nc detected as netcdf type'); else fail('nc typeId: ' + ncTypeId);
+  const ncText = await ncf.$eval('body', (el) => el.textContent);
+  if (/NetCDF/i.test(ncText)) pass('NetCDF badge shown'); else fail('nc badge missing');
+  if (/temperature|lat|lon/i.test(ncText)) pass('NetCDF variables shown'); else fail('nc vars: ' + ncText.slice(0, 300));
+  if (/CF-1\.8|Demo Climate/i.test(ncText)) pass('NetCDF global attributes shown'); else fail('nc attrs: ' + ncText.slice(0, 300));
 }

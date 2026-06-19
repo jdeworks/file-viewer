@@ -3,6 +3,26 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_guitar_pro=(()=>{
+function detect(intake) {
+  if (hasExtension(intake, 'gpx')) {
+    // GPX is a ZIP — check for PK magic
+    if (intake.bytes && intake.bytes[0] === 0x50 && intake.bytes[1] === 0x4b) return 0.9;
+    return 0.7;
+  }
+  if (!intake.isBinary) return 0;
+  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  // GP5 magic: "FICHIER GUITAR PRO v5"
+  // GP4: "FICHIER GUITAR PRO v4"
+  // GP3: "FICHIER GUITAR PRO v3"
+  const head = String.fromCharCode(...intake.bytes.slice(0, 32));
+  if (/FICHIER GUITAR PRO v[3-5]/.test(head)) return 0.98;
+  if (hasExtension(intake, 'gp3', 'gp4', 'gp5', 'gp')) return 0.7;
+  return 0;
+}
+return detect;
+})();
+
 const detect_postscript=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -292,19 +312,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_apk=(()=>{
-function detect(intake) {
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
-  const b = intake.bytes;
-  const isPk = b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
-  if (!isPk) return 0;
-  if (hasExtension(intake, 'apk', 'aab', 'xapk')) return 0.97;
-  // Sniff for APK-specific files in text sample
-  const head = intake.textSample || '';
-  if (/AndroidManifest\.xml|classes\.dex|META-INF\//.test(head)) return 0.9;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk};
+export const DETECTORS={"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe};
