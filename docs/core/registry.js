@@ -108,6 +108,7 @@ import mcworldType from '../types/binary/mcworld/index.js';
 import dicomType from '../types/binary/dicom/index.js';
 import netcdfType from '../types/binary/netcdf/index.js';
 import kmzType from '../types/binary/kmz/index.js';
+import mbtilesType from '../types/binary/mbtiles/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
 import gitignoreType from '../types/text/gitignore/index.js';
@@ -207,6 +208,7 @@ export const REGISTRY = [
   dicomType,
   netcdfType,
   kmzType,
+  mbtilesType,
   regType,
   urlType,
   asciiartType,

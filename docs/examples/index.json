@@ -134,6 +134,15 @@
     ]
   },
   {
+    "label": "File Viewer Demo Map (MBTiles)",
+    "file": "sample.mbtiles",
+    "mime": "application/x-sqlite3",
+    "category": "Geo",
+    "categories": [
+      "Geo"
+    ]
+  },
+  {
     "label": "Sample.clip",
     "file": "sample.clip",
     "mime": "application/vnd.clip-studio.paint",

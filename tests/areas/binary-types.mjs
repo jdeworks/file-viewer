@@ -142,4 +142,17 @@ export async function run(ctx) {
   if (/KMZ/i.test(kmzText)) pass('KMZ badge shown'); else fail('kmz badge missing');
   if (/Eiffel Tower|Statue of Liberty|Sydney Opera/i.test(kmzText)) pass('KMZ placemark names shown'); else fail('kmz placemarks: ' + kmzText.slice(0, 300));
   if (/File Viewer Demo KMZ/i.test(kmzText)) pass('KMZ document name shown'); else fail('kmz name: ' + kmzText.slice(0, 300));
+
+  // ── MBTiles Map Tileset ───────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('File Viewer Demo Map (MBTiles)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const mbtf = await frameOf('iframe.fv-preview-frame');
+  await mbtf.waitForSelector('.badge-mbt', { timeout: 12000 });
+  const mbtTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (mbtTypeId === 'mbtiles') pass('.mbtiles detected as mbtiles type'); else fail('mbt typeId: ' + mbtTypeId);
+  const mbtText = await mbtf.$eval('body', (el) => el.textContent);
+  if (/MBTiles/i.test(mbtText)) pass('MBTiles badge shown'); else fail('mbt badge missing');
+  if (/File Viewer Demo Map/i.test(mbtText)) pass('MBTiles map name shown'); else fail('mbt name: ' + mbtText.slice(0, 300));
+  if (/0.*4|minzoom|maxzoom|Zoom/i.test(mbtText)) pass('MBTiles zoom levels shown'); else fail('mbt zoom: ' + mbtText.slice(0, 300));
 }

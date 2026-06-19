@@ -3765,6 +3765,36 @@
       "knownParserGaps": [
         "Embedded overlays and network links not rendered"
       ]
+    },
+    "mbtiles": {
+      "label": "MBTiles Map Tileset",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.mbtiles"
+      ],
+      "extensions": [
+        ".mbtiles"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false,
+      "fileExamplesSlug": null,
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Tile data not decoded — metadata display only",
+        "Vector tile (PBF) schema not parsed"
+      ]
     }
   },
   "knownFiles": {

@@ -213,6 +213,23 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_mbtiles=(()=>{
+function hasSqliteMagic(intake) {
+  const b = intake.bytes;
+  if (!b || b.length < 16) return false;
+  const sig = 'SQLite format 3\0';
+  for (let i = 0; i < sig.length; i++) if (b[i] !== sig.charCodeAt(i)) return false;
+  return true;
+}
+
+function detect(intake) {
+  if (!hasSqliteMagic(intake)) return 0;
+  if (hasExtension(intake, 'mbtiles')) return 0.97;
+  return 0;
+}
+return detect;
+})();
+
 const detect_reg=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -305,4 +322,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad};
+export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad};
