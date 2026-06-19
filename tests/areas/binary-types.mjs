@@ -311,4 +311,16 @@ export async function run(ctx) {
   if (/Apache Avro/i.test(avroText)) pass('Avro badge shown'); else fail('avro badge: ' + avroText.slice(0, 300));
   if (/Employee|com\.example/i.test(avroText)) pass('Avro schema name shown'); else fail('avro schema: ' + avroText.slice(0, 300));
   if (/salary|department|hire_date/i.test(avroText)) pass('Avro schema fields shown'); else fail('avro fields: ' + avroText.slice(0, 300));
+
+  // ── HDF5 Scientific Data ─────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('HDF5 Scientific Dataset (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const hdf5f = await frameOf('iframe.fv-preview-frame');
+  await hdf5f.waitForSelector('.badge-hdf5', { timeout: 8000 });
+  const hdf5TypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (hdf5TypeId === 'hdf5') pass('.h5 detected as hdf5 type'); else fail('hdf5 typeId: ' + hdf5TypeId);
+  const hdf5Text = await hdf5f.$eval('body', (el) => el.textContent);
+  if (/HDF5/i.test(hdf5Text)) pass('HDF5 badge shown'); else fail('hdf5 badge: ' + hdf5Text.slice(0, 300));
+  if (/Superblock/i.test(hdf5Text)) pass('HDF5 superblock info shown'); else fail('hdf5 superblock: ' + hdf5Text.slice(0, 300));
 }

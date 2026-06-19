@@ -196,6 +196,30 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_hdf5=(()=>{
+function hasExtension(intake, ...exts) {
+  const name = (intake.filename || '').toLowerCase();
+  return exts.some((e) => name.endsWith('.' + e));
+}
+
+// HDF5 magic: 0x89 'H' 'D' 'F' '\r' '\n' 0x1a '\n' (8 bytes)
+const HDF5_MAGIC = [0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a];
+
+function detect(intake) {
+  const b = intake.bytes;
+  if (!b || b.length < 8) return 0;
+
+  const matches = HDF5_MAGIC.every((v, i) => b[i] === v);
+  if (matches) {
+    return hasExtension(intake, 'h5', 'hdf5', 'hdf', 'he5', 'nc') ? 0.98 : 0.95;
+  }
+
+  if (hasExtension(intake, 'h5', 'hdf5', 'hdf', 'he5')) return 0.35;
+  return 0;
+}
+return detect;
+})();
+
 const detect_sdf=(()=>{
 function hasExtension(intake, ...exts) {
   const name = (intake.filename || '').toLowerCase();
@@ -265,65 +289,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_asciiart=(()=>{
-const BLOCK_CHARS = /[█▓▒░═╔╗╚╝╠╣╦╩╬║─│┌┐└┘├┤┬┴┼]/g;
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-
-  const text = intake.textSample || intake.text || '';
-  if (!text) return 0;
-
-  // Extension-based detection
-  if (hasExtension(intake, 'ans', 'asc')) return 0.90;
-  if (hasExtension(intake, 'nfo', 'diz')) return 0.80;
-
-  const sauceIdx = text.lastIndexOf('SAUCE00');
-  if (sauceIdx !== -1 && sauceIdx >= text.length - 200) return 0.95;
-
-  // Content-based: count signals
-  const lines = text.split(/\r?\n/);
-  const totalLines = lines.filter((l) => l.length > 0).length;
-  if (totalLines < 3) return 0;
-
-  let signals = 0;
-
-  // Signal 1: >30% of non-empty lines are wider than 80 chars
-  const wideLines = lines.filter((l) => l.length > 80).length;
-  if (totalLines > 0 && wideLines / totalLines > 0.30) signals++;
-
-  // Signal 2: ANSI escape sequences present
-  const ansiCount = (text.match(/\x1b\[/g) || []).length;
-  if (ansiCount >= 3) signals++;
-
-  // Signal 3: density of block/box-drawing characters
-  const blockCount = (text.match(BLOCK_CHARS) || []).length;
-  if (blockCount >= 5) signals++;
-
-  // Signal 4: repeated use of pipe/backslash art (ASCII art without special chars)
-  const lineArt = lines.filter((l) => /[|\\\/]{3,}/.test(l)).length;
-  if (lineArt >= 3) signals++;
-
-  if (signals < 2) return 0;
-
-  // Scale: 2 signals → 0.60, 3 → 0.70, 4 → 0.75
-  const score = Math.min(0.75, 0.55 + signals * 0.07);
-  return score;
-}
-return detect;
-})();
-
-const detect_kicad=(()=>{
-const EXTS = ['kicad_sch', 'kicad_pcb', 'kicad_pro', 'kicad_mod', 'kicad_sym', 'kicad_wks', 'kicad_dru', 'kicad_prl'];
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, ...EXTS)) return 0.97;
-  const head = (intake.text || '').slice(0, 200);
-  if (/^\(kicad_sch\b|\(kicad_pcb\b|\(kicad_pro\b|\(kicad_symbol_lib\b|\(module\b/m.test(head)) return 0.9;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad};
+export const DETECTORS={"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"hdf5":detect_hdf5,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url};

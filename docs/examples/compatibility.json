@@ -4172,6 +4172,40 @@
         "Data records not decoded (no Avro binary encoder)",
         "Deflate/Snappy compressed blocks not decompressed"
       ]
+    },
+    "hdf5": {
+      "label": "HDF5 Scientific Data",
+      "support": "partial",
+      "sampleFiles": [
+        "sample.h5"
+      ],
+      "extensions": [
+        ".h5",
+        ".hdf5",
+        ".hdf",
+        ".he5"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "fileExamplesSlug": "hdf5",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Dataset contents not read (requires h5wasm ~2MB)",
+        "Group hierarchy not traversed",
+        "Attributes not decoded"
+      ]
     }
   },
   "knownFiles": {

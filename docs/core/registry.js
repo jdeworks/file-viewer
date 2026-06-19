@@ -120,6 +120,7 @@ import arrowType from '../types/binary/arrow/index.js';
 import cifType from '../types/text/cif/index.js';
 import parquetType from '../types/binary/parquet/index.js';
 import avroType from '../types/binary/avro/index.js';
+import hdf5Type from '../types/binary/hdf5/index.js';
 import sdfType from '../types/text/sdf/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
@@ -232,6 +233,7 @@ export const REGISTRY = [
   cifType,
   parquetType,
   avroType,
+  hdf5Type,
   sdfType,
   regType,
   urlType,
