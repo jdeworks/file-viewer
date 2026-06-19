@@ -120,14 +120,26 @@ export async function run(ctx) {
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
     save.stageState[1].bits = { m: 149, e: 0 };
-    save.stageState[1].totalBits = { m: 0, e: 0 };
+    save.stageState[1].totalBits = { m: 10, e: 6 };
     save.stageState[1].tabsUnlocked = false;
     localStorage.setItem('fv:games:metagame:v3', JSON.stringify(save));
   });
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.mg-s1-phase1 .mg-s1-tap', { timeout: 8000 });
+  const totalOnlyUnlocked = await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
+    const tabs = document.querySelector('.mg-s1-tabs');
+    const tabsVisible = tabs && getComputedStyle(tabs).display !== 'none';
+    return Boolean(save.stageState[1].tabsUnlocked || tabsVisible);
+  });
+  if (!totalOnlyUnlocked) pass('Stage 1 tabs stay locked when only lifetime bits exceed 150'); else fail('Stage 1 tabs unlocked from totalBits alone');
   await page.click('.mg-s1-tap', { position: { x: 8, y: 8 } });
   await page.waitForSelector('.mg-s1-tab[data-tab="bits"]', { timeout: 4000 });
+  const bellLogHasStage1Message = await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
+    return (save.bell?.log || []).some((entry) => entry.stage === 1 && /^stage1\./.test(entry.id));
+  });
+  if (bellLogHasStage1Message) pass('Stage 1 economy messages feed the v3 header bell log'); else fail('Stage 1 messages missing from v3 bell log');
   await page.waitForSelector('.mg-s1-earn', { timeout: 4000 });
   const beforeEarnBits = await page.evaluate(() => JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState[1].bits.m);
   await page.click('.mg-s1-earn');

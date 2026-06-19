@@ -730,7 +730,7 @@ Add smoke coverage that launches 2048, forces or plays to a score/end state if p
 
 ## TASK 21 — Bit Foundry Stage Navigation + Unlock Flow
 
-**Status:** Partly implemented — v3 shell hides locked stages and header bell exists; Stage 1 polish and regression coverage remain open.
+**Status:** Partly implemented — v3 shell hides locked stages, header bell exists, Stage 1 messages feed the v3 bell log, and current-bits unlock coverage exists; Stage nav presentation and deeper clickability coverage remain open.
 **Effort:** M (~2-4h)  
 **Files likely touched:**
 - `docs/games/metagame/stage1.js`
@@ -758,16 +758,16 @@ Design target:
 
 The Bell is currently a button at the bottom of the screen. Move it to the top chrome next to "Back to arcade" so it is visible without competing with core click/upgrade actions.
 
-The v3 shell header bell is present, but Stage 1 still has legacy bell/message plumbing. Unify Stage 1 economy messages with the v3 header bell log so the visible bell shows the relevant notifications.
+The v3 shell header bell is present, and Stage 1 economy messages now bridge into the v3 header bell log. Continue removing or consolidating legacy bell plumbing when it no longer serves compatibility.
 
 ### Unlock semantics
 
 Stage/tab unlocks should use current score/bits reaching the threshold, not bits accumulated over time. Specifically, the 150-bit unlock should trigger when the score reaches 150 bits.
 
 Add tests for unlock threshold behavior:
-- score below 150 does not unlock
+- score below 150 does not unlock — implemented for high lifetime bits with 149 current bits
 - score reaches 150 unlocks the next stage/tab
-- spending or time accumulation does not falsely unlock if current score has not reached the threshold, unless explicitly intended and documented
+- spending or time accumulation does not falsely unlock if current score has not reached the threshold, unless explicitly intended and documented — partially covered by high lifetime bits with low current bits
 
 ### Clickability regression
 
@@ -781,7 +781,7 @@ Coverage should include actually switching to another unlocked tab/stage and ret
 
 - Verify fresh saves show only the current/unlocked stage path, with future stages hidden or passive rather than clickable primary controls.
 - Verify stage unlock sequencing uses current bits/score thresholds and preserves progression when spending or returning from another unlocked stage.
-- Verify the Bell lives in the v3 header next to Back to arcade and Stage 1 economy messages feed that same v3 bell log.
+- Verify the Bell lives in the v3 header next to Back to arcade and Stage 1 economy messages feed that same v3 bell log — implemented.
 - Verify the primary earning click target still works after unlocking, switching to another available stage/tab, and returning.
 - Audit Bit Factory / Bit Foundry responsiveness after stage transitions: click/update loops, render frequency, save writes, and timers should stay responsive during long sessions and on low-power devices.
 

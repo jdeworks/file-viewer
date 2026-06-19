@@ -44,6 +44,7 @@ export function mountStage(ctx = {}) {
       host,
       state,
       save,
+      bell: ctx.bell,
       stage: () => stageConfig,
       onExit: ctx.onExit,
       onBoss: () => {

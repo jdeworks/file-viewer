@@ -100,7 +100,7 @@ function loadActiveMessages(bs) {
   return MESSAGES1.filter((m) => !removed.has(m.id));
 }
 
-export function checkMessages(eventType, state, bs) {
+export function checkMessages(eventType, state, bs, v3Bell = null) {
   if (!activeMessages) activeMessages = loadActiveMessages(bs);
   let changed = false;
   for (const msg of activeMessages.slice()) {
@@ -108,6 +108,7 @@ export function checkMessages(eventType, state, bs) {
     if (msg.maxCount !== undefined && (bs.fired[msg.id] || 0) >= msg.maxCount) continue;
     if (!msg.condition(state)) continue;
     bellAdd(msg.id, msg.text, bs);
+    v3Bell?.showBell?.(`stage1.${msg.id}`, msg.text, { stage: 1, once: false });
     bs.fired[msg.id] = (bs.fired[msg.id] || 0) + 1;
     if (msg.removeAfterFire) {
       bs.removed = bs.removed || [];

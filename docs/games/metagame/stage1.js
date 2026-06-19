@@ -51,7 +51,7 @@ const TIER_VISIBLE = {
 };
 
 export function renderStage1(ctx) {
-  const { host, state, save, stage, onExit, attachChrome } = ctx;
+  const { host, state, save, stage, onExit, attachChrome, bell } = ctx;
   const cfg = stage();   // Stage 1 config from stages.js
 
   // ── State normalization on mount (legacy plain numbers → BigNum until WP-S1-12 lands) ──
@@ -237,8 +237,8 @@ export function renderStage1(ctx) {
     const got = buyTier(state, cfg, id, n, save);
     if (got > 0) {
       const bs = bellLoad();
-      checkMessages('buy', state, bs);
-      checkMessages('bit-lose', state, bs);
+      checkMessages('buy', state, bs, bell);
+      checkMessages('bit-lose', state, bs, bell);
       checkAchievements(state, cfg, bs);
       renderAll();
     }
@@ -395,7 +395,7 @@ export function renderStage1(ctx) {
       animOn  = (state.milestones || []).includes('anim-unlock');
     }
     if (soundOn) clickTick();
-    checkMessages('bit-earn', state, bs);
+    checkMessages('bit-earn', state, bs, bell);
     checkAchievements(state, cfg, bs);
     reveal();
     if (state.tabsUnlocked && activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
@@ -414,8 +414,8 @@ export function renderStage1(ctx) {
     state.totalBought = (state.totalBought || 0) + 1;
     save(state);
     const bs = bellLoad();
-    checkMessages('buy', state, bs);
-    checkMessages('bit-lose', state, bs);
+    checkMessages('buy', state, bs, bell);
+    checkMessages('bit-lose', state, bs, bell);
     checkAchievements(state, cfg, bs);
     renderAll();
   }
@@ -467,7 +467,7 @@ export function renderStage1(ctx) {
         timedDone = true;
       }
     }
-    if (timedDone) checkMessages('bit-earn', state, bellLoad());
+    if (timedDone) checkMessages('bit-earn', state, bellLoad(), bell);
     // 3b. Manager auto-fire + shutdown rule (§5.6/§6.3).
     managersController.runAutoFire();
     // 4. Reveal (phase 1 only; reveal() no-ops when tabsUnlocked).
