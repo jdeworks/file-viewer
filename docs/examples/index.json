@@ -3429,5 +3429,215 @@
     ],
     "enhanced": true,
     "description": "Moon workspace config with VCS, node/pnpm versions, typescript, and project globs."
+  },
+  {
+    "label": "Brewfile",
+    "file": "Brewfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "LICENSE",
+    "file": "LICENSE",
+    "mime": "text/plain",
+    "category": "Text",
+    "categories": [
+      "Text"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "ansible.cfg",
+    "file": "ansible.cfg",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "example.gemspec",
+    "file": "example.gemspec",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "typos.toml",
+    "file": "typos.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "deny.toml",
+    "file": "deny.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "cargo.config.toml",
+    "file": "cargo.config.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": ".htaccess",
+    "file": ".htaccess",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "nginx.conf",
+    "file": "nginx.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "Vagrantfile",
+    "file": "Vagrantfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "Caddyfile",
+    "file": "Caddyfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "render.yaml",
+    "file": "render.yaml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "railway.json",
+    "file": "railway.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "crowdin.yml",
+    "file": "crowdin.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "Matchfile",
+    "file": "Matchfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "Appfile",
+    "file": "Appfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": ".ruby-version",
+    "file": ".ruby-version",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": ".python-version",
+    "file": ".python-version",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "Earthfile",
+    "file": "Earthfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": ".gitmodules",
+    "file": ".gitmodules",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "terraform.tfvars",
+    "file": "terraform.tfvars",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
   }
 ]

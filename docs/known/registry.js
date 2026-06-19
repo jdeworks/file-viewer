@@ -136,6 +136,28 @@ import markdownlintJson from '../types/text/json/known/markdownlint/index.js';
 import markdownlintYaml from '../types/text/yaml/known/markdownlint/index.js';
 import clangFormat from '../types/text/yaml/known/clang-format/index.js';
 import moonrepo from '../types/text/yaml/known/moonrepo/index.js';
+import brewfile from '../types/text/known/brewfile/index.js';
+import license from '../types/text/known/license/index.js';
+import ansibleCfg from '../types/text/known/ansible-cfg/index.js';
+import gemspec from '../types/text/known/gemspec/index.js';
+import typos from '../types/text/toml/known/typos/index.js';
+import cargoDeny from '../types/text/toml/known/cargo-deny/index.js';
+import cargoConfig from '../types/text/toml/known/cargo-config/index.js';
+import htaccess from '../types/text/known/htaccess/index.js';
+import nginxConf from '../types/text/known/nginx-conf/index.js';
+import moonYml from '../types/text/yaml/known/moon/index.js';
+import vagrantfile from '../types/text/known/vagrantfile/index.js';
+import caddyfile from '../types/text/known/caddyfile/index.js';
+import renderYaml from '../types/text/yaml/known/render-yaml/index.js';
+import railwayJson from '../types/text/json/known/railway-json/index.js';
+import crowdinYml from '../types/text/yaml/known/crowdin-yml/index.js';
+import matchfile from '../types/text/known/matchfile/index.js';
+import appfile from '../types/text/known/appfile/index.js';
+import rubyVersion from '../types/text/known/ruby-version/index.js';
+import pythonVersion from '../types/text/known/python-version/index.js';
+import earthfile from '../types/text/known/earthfile/index.js';
+import gitmodules from '../types/text/known/gitmodules/index.js';
+import tfvars from '../types/text/known/tfvars/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -157,7 +179,10 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   gitattributes, gemfileLock, sonar, hatch,
   mailmap, npmignore, dockerignore,
   appveyor, rubocop, taskfile, mkdocsYml,
-  rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo];
+  rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
+  brewfile, license, ansibleCfg, gemspec, typos, cargoDeny, cargoConfig,
+  htaccess, nginxConf, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
+  crowdinYml, matchfile, appfile, rubyVersion, pythonVersion, earthfile, gitmodules, tfvars];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
