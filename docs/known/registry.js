@@ -249,6 +249,14 @@ import gaeApp from '../types/text/yaml/known/gae-app/index.js';
 import cloudbuild from '../types/text/yaml/known/cloudbuild/index.js';
 import googleServices from '../types/text/json/known/google-services/index.js';
 import catalogInfo from '../types/text/yaml/known/catalog-info/index.js';
+import phpunit from '../types/text/xml/known/phpunit/index.js';
+import phpstan from '../types/text/known/phpstan/index.js';
+import phpCsFixer from '../types/text/known/php-cs-fixer/index.js';
+import behat from '../types/text/yaml/known/behat/index.js';
+import terragrunt from '../types/text/known/terragrunt/index.js';
+import tflint from '../types/text/known/tflint/index.js';
+import tfLock from '../types/text/known/tf-lock/index.js';
+import versionsTf from '../types/text/known/versions-tf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -297,8 +305,10 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   docusaurusConfig, vitepressConfig, sphinxConf, doxyfile,
   drizzleConfig, knexfile, alembic, flywayConf,
   wdioConfig, artilleryYml, k6Config, gatlingConf,
-  gaeApp, cloudbuild, googleServices, catalogInfo];
-
+  gaeApp, cloudbuild, googleServices, catalogInfo,
+  cursorRules, claudeMd, copilotInstructions, aiderConf,
+  phpunit, phpstan, phpCsFixer, behat,
+  terragrunt, tflint, tfLock, versionsTf];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
     try { if (k.match(intake, baseType)) return k; } catch { /* a bad matcher never breaks detection */ }

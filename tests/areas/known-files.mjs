@@ -1474,4 +1474,92 @@ export async function run(ctx) {
   if (/claude-3-5-sonnet/i.test(adrText)) pass('aider.conf.yml: model shown'); else fail('aider.conf.yml model: ' + adrText.slice(0, 200));
   if (/diff/i.test(adrText)) pass('aider.conf.yml: edit format shown'); else fail('aider.conf.yml edit format: ' + adrText.slice(0, 200));
   if (/auto.commit|Auto.commit/i.test(adrText)) pass('aider.conf.yml: auto-commits setting shown'); else fail('aider.conf.yml auto-commits: ' + adrText.slice(0, 300));
+
+  // ── tauri.conf.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('tauri.conf.json');
+  await page.waitForSelector('#previewHost .tauri-doc', { timeout: 12000 });
+  const tauriText = await page.$eval('#previewHost .tauri-doc', (e) => e.textContent);
+  if (/Tauri/i.test(tauriText)) pass('tauri.conf.json: Tauri badge shown'); else fail('tauri badge: ' + tauriText.slice(0, 200));
+  if (/MyTauriApp/i.test(tauriText)) pass('tauri.conf.json: productName shown'); else fail('tauri productName: ' + tauriText.slice(0, 200));
+  if (/1\.2\.0/i.test(tauriText)) pass('tauri.conf.json: version shown'); else fail('tauri version: ' + tauriText.slice(0, 200));
+  if (/com\.example\.mytauriapp/i.test(tauriText)) pass('tauri.conf.json: bundle identifier shown'); else fail('tauri identifier: ' + tauriText.slice(0, 300));
+  if (/deb|appimage|msi|nsis|dmg/i.test(tauriText)) pass('tauri.conf.json: bundle targets shown'); else fail('tauri targets: ' + tauriText.slice(0, 300));
+  if (/main|splash/i.test(tauriText)) pass('tauri.conf.json: windows listed'); else fail('tauri windows: ' + tauriText.slice(0, 300));
+
+  // ── electron-builder.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('electron-builder.yml');
+  await page.waitForSelector('#previewHost .eb-doc', { timeout: 12000 });
+  const ebText = await page.$eval('#previewHost .eb-doc', (e) => e.textContent);
+  if (/Electron Builder/i.test(ebText)) pass('electron-builder.yml: Electron Builder badge shown'); else fail('electron-builder badge: ' + ebText.slice(0, 200));
+  if (/com\.example\.myelectronapp/i.test(ebText)) pass('electron-builder.yml: appId shown'); else fail('electron-builder appId: ' + ebText.slice(0, 200));
+  if (/My Electron App/i.test(ebText)) pass('electron-builder.yml: productName shown'); else fail('electron-builder productName: ' + ebText.slice(0, 200));
+  if (/linux|win|mac/i.test(ebText)) pass('electron-builder.yml: platform targets shown'); else fail('electron-builder platforms: ' + ebText.slice(0, 300));
+
+  // ── forge.config.js viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('forge.config.js');
+  await page.waitForSelector('#previewHost .fg-doc', { timeout: 12000 });
+  const fgText = await page.$eval('#previewHost .fg-doc', (e) => e.textContent);
+  if (/Electron Forge/i.test(fgText)) pass('forge.config.js: Electron Forge badge shown'); else fail('forge badge: ' + fgText.slice(0, 200));
+  if (/MyElectronApp/i.test(fgText)) pass('forge.config.js: app name shown'); else fail('forge name: ' + fgText.slice(0, 200));
+  if (/maker|squirrel|deb|rpm/i.test(fgText)) pass('forge.config.js: makers shown'); else fail('forge makers: ' + fgText.slice(0, 300));
+  if (/plugin|publisher/i.test(fgText)) pass('forge.config.js: plugins or publishers shown'); else fail('forge plugins: ' + fgText.slice(0, 300));
+
+  // ── wails.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('wails.json');
+  await page.waitForSelector('#previewHost .wails-doc', { timeout: 12000 });
+  const wailsText = await page.$eval('#previewHost .wails-doc', (e) => e.textContent);
+  if (/Wails/i.test(wailsText)) pass('wails.json: Wails badge shown'); else fail('wails badge: ' + wailsText.slice(0, 200));
+  if (/MyWailsApp/i.test(wailsText)) pass('wails.json: app name shown'); else fail('wails name: ' + wailsText.slice(0, 200));
+  if (/v2\.9\.1/i.test(wailsText)) pass('wails.json: wailsVersion shown'); else fail('wails version: ' + wailsText.slice(0, 200));
+  if (/frontend/i.test(wailsText)) pass('wails.json: frontend dir shown'); else fail('wails frontend: ' + wailsText.slice(0, 200));
+  if (/desktop/i.test(wailsText)) pass('wails.json: outputType shown'); else fail('wails outputType: ' + wailsText.slice(0, 200));
+
+  // ── web.config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('web.config');
+  await page.waitForSelector('#previewHost .wc-doc', { timeout: 12000 });
+  const wcText = await page.$eval('#previewHost .wc-doc', (e) => e.textContent);
+  if (/ASP\.NET/i.test(wcText)) pass('web.config: ASP.NET badge shown'); else fail('web.config badge: ' + wcText.slice(0, 200));
+  if (/DefaultConnection|ReadOnlyDb/i.test(wcText)) pass('web.config: connection strings shown'); else fail('web.config connections: ' + wcText.slice(0, 200));
+  if (/ApiBaseUrl|EmailSender/i.test(wcText)) pass('web.config: app settings shown'); else fail('web.config appSettings: ' + wcText.slice(0, 200));
+  if (/Forms|Custom/i.test(wcText)) pass('web.config: auth mode or HTTP errors shown'); else fail('web.config auth/errors: ' + wcText.slice(0, 300));
+  const wcMasked = await page.$eval('#previewHost .wc-doc .masked', (e) => e.textContent);
+  if (/••••/.test(wcMasked)) pass('web.config: secrets masked'); else fail('web.config masking: ' + wcMasked);
+
+  // ── app.config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('app.config');
+  await page.waitForSelector('#previewHost .ac-doc', { timeout: 12000 });
+  const acText = await page.$eval('#previewHost .ac-doc', (e) => e.textContent);
+  if (/\.NET/i.test(acText)) pass('app.config: .NET badge shown'); else fail('app.config badge: ' + acText.slice(0, 200));
+  if (/v4\.0|4\.8/i.test(acText)) pass('app.config: runtime version shown'); else fail('app.config runtime: ' + acText.slice(0, 200));
+  if (/MyAppDb|ReportsDb/i.test(acText)) pass('app.config: connection strings shown'); else fail('app.config connections: ' + acText.slice(0, 200));
+  if (/Environment|LogLevel|SmtpHost/i.test(acText)) pass('app.config: app settings shown'); else fail('app.config appSettings: ' + acText.slice(0, 200));
+  const acMasked = await page.$eval('#previewHost .ac-doc .masked', (e) => e.textContent);
+  if (/••••/.test(acMasked)) pass('app.config: secrets masked'); else fail('app.config masking: ' + acMasked);
+
+  // ── packages.config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('packages.config');
+  await page.waitForSelector('#previewHost .pc-doc', { timeout: 12000 });
+  const pcText = await page.$eval('#previewHost .pc-doc', (e) => e.textContent);
+  if (/NuGet/i.test(pcText)) pass('packages.config: NuGet badge shown'); else fail('packages.config badge: ' + pcText.slice(0, 200));
+  if (/14 package/i.test(pcText)) pass('packages.config: package count shown'); else fail('packages.config count: ' + pcText.slice(0, 200));
+  if (/Newtonsoft\.Json|EntityFramework|AutoMapper/i.test(pcText)) pass('packages.config: package ids shown'); else fail('packages.config ids: ' + pcText.slice(0, 200));
+  if (/13\.0\.3|net48/i.test(pcText)) pass('packages.config: version and target framework shown'); else fail('packages.config version/tf: ' + pcText.slice(0, 200));
+
+  // ── launchSettings.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('launchSettings.json');
+  await page.waitForSelector('#previewHost .ls-doc', { timeout: 12000 });
+  const lsText = await page.$eval('#previewHost .ls-doc', (e) => e.textContent);
+  if (/ASP\.NET Core/i.test(lsText)) pass('launchSettings.json: ASP.NET Core badge shown'); else fail('launchSettings badge: ' + lsText.slice(0, 200));
+  if (/4 launch profile/i.test(lsText)) pass('launchSettings.json: profile count shown'); else fail('launchSettings count: ' + lsText.slice(0, 200));
+  if (/https|IIS Express|Docker/i.test(lsText)) pass('launchSettings.json: profiles shown'); else fail('launchSettings profiles: ' + lsText.slice(0, 200));
+  if (/localhost:5000|localhost:7001/i.test(lsText)) pass('launchSettings.json: application URLs shown'); else fail('launchSettings URLs: ' + lsText.slice(0, 300));
+  if (/ASPNETCORE_ENVIRONMENT|Development/i.test(lsText)) pass('launchSettings.json: environment variables shown'); else fail('launchSettings env: ' + lsText.slice(0, 300));
 }
