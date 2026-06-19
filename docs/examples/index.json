@@ -919,6 +919,18 @@
     "description": "Makefile build, test, serve, and clean targets."
   },
   {
+    "label": "CMakeLists.txt",
+    "file": "CMakeLists.txt",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "enhanced": true,
+    "description": "CMake build configuration with project, targets, and dependencies."
+  },
+  {
     "label": "infra.tf",
     "file": "infra.tf",
     "mime": "text/plain",

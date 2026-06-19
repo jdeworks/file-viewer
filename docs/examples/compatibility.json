@@ -8820,11 +8820,13 @@
     },
     "cmake": {
       "label": "CMakeLists.txt",
-      "baseType": "raw",
+      "baseType": "plain",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "CMakeLists.txt"
+      ],
       "extensions": [
-        ".yml"
+        "CMakeLists.txt"
       ],
       "capabilities": {
         "rawView": true,
@@ -8833,7 +8835,7 @@
         "magicSelector": false,
         "screenshot": true
       },
-      "previewDepth": "basic",
+      "previewDepth": "rich",
       "metadataDepth": "basic",
       "editCapability": "none",
       "exportCapability": "download",
@@ -8845,12 +8847,12 @@
     },
     "jenkinsfile": {
       "label": "Jenkinsfile",
-      "baseType": "raw",
+      "baseType": "text",
       "support": "supported",
-      "sampleFiles": [],
-      "extensions": [
-        ".yml"
+      "sampleFiles": [
+        "Jenkinsfile"
       ],
+      "extensions": [],
       "capabilities": {
         "rawView": true,
         "preview": true,
