@@ -298,6 +298,7 @@
   background: var(--bg-2); }
 .epub-bar button { font-size: 13px; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border);
   background: var(--bg); color: var(--fg); cursor: pointer; }
+.epub-menu { display: none; }
 .epub-pos { font-size: 12px; color: var(--fg-2); margin-left: auto; }
 .epub-content { flex: 1; overflow: auto; padding: 28px clamp(16px, 8vw, 80px); line-height: 1.65;
   font-size: 17px; max-width: 100%; }
@@ -320,9 +321,16 @@
 .epub-content h1, .epub-content h2, .epub-content h3 { line-height: 1.25; }
 .epub-content a { color: var(--accent); }
 .epub-empty, .epub-content .epub-empty { color: var(--fg-2); }
+.epub-backdrop { display: none; }
 @media (max-width: 760px) {
-  .epub-side { width: 150px; flex-basis: 150px; }
+  .epub-side { position: absolute; z-index: 5; inset: 0 auto 0 0; width: min(82vw, 300px); flex-basis: auto;
+    transform: translateX(-105%); transition: transform .18s ease; box-shadow: 8px 0 28px rgba(0,0,0,.28); }
+  .epub-side-open .epub-side { transform: translateX(0); }
+  .epub-menu { display: inline-flex; }
   .epub-content { font-size: 16px; padding: 20px 16px; }
+  .epub-backdrop { position: absolute; inset: 0; z-index: 4; display: none; border: 0; padding: 0;
+    background: rgba(0,0,0,.32); cursor: pointer; }
+  .epub-side-open .epub-backdrop { display: block; }
 }
 
 /* SQLite browser (parent pane): table list + data grid + query box. */

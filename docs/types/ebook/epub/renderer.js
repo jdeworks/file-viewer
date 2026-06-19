@@ -43,10 +43,11 @@ export async function render(intake, _ctx) {
     + '</div>'
     + '<nav class="epub-toc"></nav></aside>'
     + '<div class="epub-main">'
-    + '<div class="epub-bar"><button class="epub-prev" title="Previous">‹ Prev</button>'
+    + '<div class="epub-bar"><button class="epub-menu" title="Reader settings and table of contents" aria-label="Reader settings and table of contents">☰</button><button class="epub-prev" title="Previous">‹ Prev</button>'
     + '<span class="epub-pos"></span>'
     + '<button class="epub-next" title="Next">Next ›</button></div>'
-    + '<div class="epub-content" tabindex="0"></div></div>';
+    + '<div class="epub-content" tabindex="0"></div></div>'
+    + '<button class="epub-backdrop" type="button" aria-label="Close reader settings"></button>';
 
   host.querySelector('.epub-title').textContent = book.title || intake.filename;
   host.querySelector('.epub-author').textContent = book.creator || '';
@@ -185,6 +186,9 @@ export async function render(intake, _ctx) {
 
   host.querySelector('.epub-prev').addEventListener('click', () => show(current - 1));
   host.querySelector('.epub-next').addEventListener('click', () => show(current + 1));
+  host.querySelector('.epub-menu').addEventListener('click', () => host.classList.toggle('epub-side-open'));
+  host.querySelector('.epub-backdrop').addEventListener('click', () => host.classList.remove('epub-side-open'));
+  tocEl.addEventListener('click', () => host.classList.remove('epub-side-open'));
   contentEl.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight') show(current + 1);
     else if (e.key === 'ArrowLeft') show(current - 1);

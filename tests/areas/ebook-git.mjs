@@ -161,6 +161,39 @@ export async function run(ctx) {
   const resumed = await page.$eval('#previewHost .epub-content', (e) => e.textContent || '').catch(() => '');
   if (resumed && resumed !== beforeNext) pass('EPUB resumes at the last-read chapter on reopen (persistence)'); else fail('epub did not resume at next spine item');
 
+  await page.setViewportSize({ width: 390, height: 740 });
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.epub');
+  await page.waitForSelector('#previewHost .epub-doc', { timeout: 15000 });
+  const mobileClosed = await page.$eval('#previewHost .epub-doc', (doc) => {
+    const side = doc.querySelector('.epub-side');
+    const content = doc.querySelector('.epub-content');
+    const sideBox = side.getBoundingClientRect();
+    const contentBox = content.getBoundingClientRect();
+    return {
+      menu: getComputedStyle(doc.querySelector('.epub-menu')).display,
+      sideLeft: sideBox.left,
+      contentWidth: Math.round(contentBox.width),
+      docWidth: Math.round(doc.getBoundingClientRect().width),
+    };
+  });
+  if (mobileClosed.menu !== 'none' && mobileClosed.sideLeft < -10 && mobileClosed.contentWidth >= mobileClosed.docWidth - 2) pass('EPUB mobile reader uses full-width content with slide-in settings closed');
+  else fail('epub mobile closed: ' + JSON.stringify(mobileClosed));
+  await page.click('#previewHost .epub-menu');
+  await page.waitForFunction(() => {
+    const doc = document.querySelector('#previewHost .epub-doc');
+    const side = doc?.querySelector('.epub-side');
+    return doc?.classList.contains('epub-side-open') && side?.getBoundingClientRect().left >= -1;
+  }, { timeout: 4000 });
+  const mobileOpen = await page.$eval('#previewHost .epub-doc', (doc) => {
+    const sideBox = doc.querySelector('.epub-side').getBoundingClientRect();
+    const backdrop = getComputedStyle(doc.querySelector('.epub-backdrop')).display;
+    return { open: doc.classList.contains('epub-side-open'), sideLeft: Math.round(sideBox.left), backdrop };
+  });
+  if (mobileOpen.open && mobileOpen.sideLeft >= -1 && mobileOpen.backdrop !== 'none') pass('EPUB mobile settings pane slides in over the reader');
+  else fail('epub mobile open: ' + JSON.stringify(mobileOpen));
+  await page.setViewportSize({ width: 1100, height: 800 });
+
   // ── Binary file → hex dump in the read-only editor ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.bin');
