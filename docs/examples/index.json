@@ -137,6 +137,7 @@
     "label": "Sample.clip",
     "file": "sample.clip",
     "mime": "application/vnd.clip-studio.paint",
+    "type": "clip",
     "category": "Image",
     "categories": [
       "Image",
@@ -1271,7 +1272,8 @@
     "type": "font",
     "category": "Media",
     "categories": [
-      "Media"
+      "Media",
+      "Font"
     ],
     "description": "Ubuntu Mono TrueType specimen for checking installed-font metadata and live glyph rendering.",
     "source": "https://design.ubuntu.com/font/",
@@ -1438,6 +1440,7 @@
   {
     "label": "sample.procreate",
     "file": "sample.procreate",
+    "type": "procreate",
     "category": "Image",
     "categories": [
       "Image",
@@ -1458,6 +1461,7 @@
   {
     "label": "sample.sketch",
     "file": "sample.sketch",
+    "type": "sketch",
     "category": "Image",
     "categories": [
       "Image",

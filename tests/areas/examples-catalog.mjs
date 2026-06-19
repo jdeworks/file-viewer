@@ -97,6 +97,24 @@ export async function run(ctx) {
   } else {
     pass('dedicated font format samples indexed (' + fontFormatSamples.length + ')');
   }
+  const missingFontCategory = fontFormatSamples.filter((file) => !((byFile.get(file)?.categories || []).includes('Font')));
+  if (missingFontCategory.length) {
+    fail('font samples missing Font category: ' + missingFontCategory.join(', '));
+  } else {
+    pass('font samples carry Font category');
+  }
+  const designSamples = new Map([
+    ['sample.clip', 'clip'],
+    ['sample.procreate', 'procreate'],
+    ['sample.sketch', 'sketch'],
+    ['sample.ora', 'layered'],
+  ]);
+  const missingDesignTypes = [...designSamples].filter(([file, type]) => byFile.get(file)?.type !== type).map(([file]) => file);
+  if (missingDesignTypes.length) {
+    fail('design/layered samples missing explicit types: ' + missingDesignTypes.join(', '));
+  } else {
+    pass('design/layered samples expose explicit catalog types');
+  }
 
   const seenTypes = new Set();
   for (const ex of examples) {
