@@ -1,35 +1,25 @@
 load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
-load("@pip_deps//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "lib",
+    srcs = ["lib.py"],
+    deps = [
+        "//common:utils",
+        "@pip//requests",
+    ],
+)
 
 py_binary(
     name = "server",
     srcs = ["server.py"],
-    deps = [
-        ":lib",
-        requirement("flask"),
-        requirement("gunicorn"),
-    ],
-)
-
-py_library(
-    name = "lib",
-    srcs = glob(["lib/**/*.py"]),
-    deps = [
-        requirement("requests"),
-        requirement("pydantic"),
-    ],
+    deps = [":lib"],
 )
 
 py_test(
-    name = "server_test",
-    srcs = ["server_test.py"],
-    deps = [
-        ":lib",
-        requirement("pytest"),
-    ],
-)
-
-filegroup(
-    name = "data",
-    srcs = glob(["data/**"]),
+    name = "lib_test",
+    srcs = ["lib_test.py"],
+    deps = [":lib"],
+    size = "small",
 )

@@ -1,26 +1,14 @@
-# Common options
-common --enable_bzlmod
+# Common flags for all commands
+common --enable_platform_specific_config
 
-# Build options
+# Build flags
 build --compilation_mode=opt
-build --cpu=k8
-build --crosstool_top=//tools/cc:toolchain
+build --cxxopt=-std=c++17
 
-# Test options
-build:test --compilation_mode=dbg
+# Test flags
 test --test_output=errors
 test --test_timeout=60
 
-# Remote cache
-build:remote --remote_cache=grpcs://cache.example.com
-build:remote --remote_upload_local_results=true
-
-# Address sanitizer config
-build:asan --strip=never
-build:asan --copt=-fsanitize=address
-build:asan --copt=-fno-omit-frame-pointer
-build:asan --linkopt=-fsanitize=address
-
-# CI settings
-build:ci --spawn_strategy=local
-test:ci --test_output=all
+# Remote execution
+build:remote --remote_executor=grpcs://remote.example.com
+build:remote --remote_cache=https://cache.example.com

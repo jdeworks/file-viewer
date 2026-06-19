@@ -931,6 +931,42 @@
     "description": "CMake build configuration with project, targets, and dependencies."
   },
   {
+    "label": "BUILD.bazel",
+    "file": "BUILD.bazel",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "enhanced": true,
+    "description": "Bazel BUILD file with py_library, py_binary, and py_test targets."
+  },
+  {
+    "label": ".bazelrc",
+    "file": ".bazelrc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "type": "code",
+    "enhanced": true,
+    "description": "Bazel RC configuration with build, test, and remote execution flags."
+  },
+  {
+    "label": "build.ninja",
+    "file": "build.ninja",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "type": "code",
+    "enhanced": true,
+    "description": "Ninja build file with compile rules, object targets, and link step."
+  },
+  {
     "label": "infra.tf",
     "file": "infra.tf",
     "mime": "text/plain",
@@ -3853,5 +3889,49 @@
     "enhanced": true,
     "description": "Jenkins declarative pipeline with Install, Lint, Test, Build, and Deploy stages.",
     "knownFile": "jenkinsfile"
+  },
+  {
+    "label": "BUILD.bazel",
+    "file": "BUILD.bazel",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Bazel build rules file."
+  },
+  {
+    "label": ".bazelrc",
+    "file": ".bazelrc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Bazel configuration file."
+  },
+  {
+    "label": "build.ninja",
+    "file": "build.ninja",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Ninja build system rules file."
+  },
+  {
+    "label": ".gitconfig",
+    "file": ".gitconfig",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Git global configuration file."
   }
 ]

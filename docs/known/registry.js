@@ -157,6 +157,7 @@ import rubyVersion from '../types/text/known/ruby-version/index.js';
 import pythonVersion from '../types/text/known/python-version/index.js';
 import earthfile from '../types/text/known/earthfile/index.js';
 import gitmodules from '../types/text/known/gitmodules/index.js';
+import gitconfig from '../types/text/known/gitconfig/index.js';
 import tfvars from '../types/text/known/tfvars/index.js';
 import podfile from '../types/text/known/podfile/index.js';
 import fastfile from '../types/text/known/fastfile/index.js';
@@ -192,7 +193,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
   brewfile, license, ansibleCfg, gemspec, typos, cargoDeny, cargoConfig,
   htaccess, nginxConf, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
-  crowdinYml, matchfile, appfile, rubyVersion, pythonVersion, earthfile, gitmodules, tfvars,
+  crowdinYml, matchfile, appfile, rubyVersion, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,
   supabaseConfig, netlifyRedirects,
   cmake, jenkinsfile,

@@ -1092,4 +1092,13 @@ export async function run(ctx) {
   const njText = await page.$eval('#previewHost .nj-doc', (e) => e.textContent);
   if (/Ninja/i.test(njText)) pass('build.ninja: Ninja badge shown'); else fail('ninja badge: ' + njText.slice(0, 200));
   if (/cc_compile|cc_link|myapp|build\./i.test(njText)) pass('build.ninja: rules or targets shown'); else fail('ninja targets: ' + njText.slice(0, 200));
+
+  // ── .gitconfig viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.gitconfig');
+  await page.waitForSelector('#previewHost .gcf-doc', { timeout: 12000 });
+  const gcfText = await page.$eval('#previewHost .gcf-doc', (e) => e.textContent);
+  if (/Git/i.test(gcfText)) pass('.gitconfig: Git badge shown'); else fail('gitconfig badge: ' + gcfText.slice(0, 200));
+  if (/user|remote|alias|core/i.test(gcfText)) pass('.gitconfig: sections shown'); else fail('gitconfig sections: ' + gcfText.slice(0, 200));
+  if (/jane@example\.com|Jane Developer/i.test(gcfText)) pass('.gitconfig: user identity shown'); else fail('gitconfig user: ' + gcfText.slice(0, 200));
 }
