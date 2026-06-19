@@ -202,6 +202,10 @@ import reactNativeConfig from '../types/text/known/react-native-config/index.js'
 import dotnetGlobal from '../types/text/json/known/dotnet-global/index.js';
 import prismaSchema from '../types/text/known/prisma-schema/index.js';
 import nugetConfig from '../types/text/xml/known/nuget-config/index.js';
+import sentryProps from '../types/text/known/sentry-props/index.js';
+import otelCollector from '../types/text/yaml/known/otel-collector/index.js';
+import logback from '../types/text/xml/known/logback/index.js';
+import log4j2 from '../types/text/xml/known/log4j2/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -240,7 +244,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   goreleaser, golangciLint, bufConfig, heroku,
   readthedocs, citationCff, yamllint, coderabbit,
   ionicConfig, metroConfig, reactNativeConfig,
-  dotnetGlobal, prismaSchema, nugetConfig];
+  dotnetGlobal, prismaSchema, nugetConfig,
+  sentryProps, otelCollector, logback, log4j2];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
