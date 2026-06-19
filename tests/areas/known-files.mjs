@@ -1223,4 +1223,35 @@ export async function run(ctx) {
   if (/Conan/i.test(conanText)) pass('conanfile.txt: Conan badge shown'); else fail('conan badge: ' + conanText.slice(0, 200));
   if (/boost|fmt|nlohmann_json/i.test(conanText)) pass('conanfile.txt: requires listed'); else fail('conan requires: ' + conanText.slice(0, 300));
   if (/CMakeDeps|CMakeToolchain/i.test(conanText)) pass('conanfile.txt: generators shown'); else fail('conan generators: ' + conanText.slice(0, 200));
+
+  // ── prometheus.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('prometheus.yml');
+  await page.waitForSelector('#previewHost .prom-doc', { timeout: 12000 });
+  const promText = await page.$eval('#previewHost .prom-doc', (e) => e.textContent);
+  if (/Prometheus/i.test(promText)) pass('prometheus.yml: Prometheus badge shown'); else fail('prometheus badge: ' + promText.slice(0, 200));
+  if (/node-exporter|prometheus/i.test(promText)) pass('prometheus.yml: scrape jobs shown'); else fail('prometheus scrape jobs: ' + promText.slice(0, 200));
+  if (/15s/i.test(promText)) pass('prometheus.yml: scrape_interval shown'); else fail('prometheus interval: ' + promText.slice(0, 200));
+  if (/alertmanager/i.test(promText)) pass('prometheus.yml: alertmanager target shown'); else fail('prometheus alertmanager: ' + promText.slice(0, 200));
+
+  // ── alertmanager.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('alertmanager.yml');
+  await page.waitForSelector('#previewHost .am-doc', { timeout: 12000 });
+  const amText = await page.$eval('#previewHost .am-doc', (e) => e.textContent);
+  if (/Alertmanager/i.test(amText)) pass('alertmanager.yml: Alertmanager badge shown'); else fail('alertmanager badge: ' + amText.slice(0, 200));
+  if (/default-receiver|pagerduty-critical/i.test(amText)) pass('alertmanager.yml: receivers shown'); else fail('alertmanager receivers: ' + amText.slice(0, 200));
+  if (/Slack|PagerDuty/i.test(amText)) pass('alertmanager.yml: receiver types shown'); else fail('alertmanager types: ' + amText.slice(0, 200));
+  if (/group_wait|30s/i.test(amText)) pass('alertmanager.yml: route settings shown'); else fail('alertmanager route: ' + amText.slice(0, 200));
+
+  // ── datadog.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('datadog.yaml');
+  await page.waitForSelector('#previewHost .dd-doc', { timeout: 12000 });
+  const ddText = await page.$eval('#previewHost .dd-doc', (e) => e.textContent);
+  if (/Datadog/i.test(ddText)) pass('datadog.yaml: Datadog badge shown'); else fail('datadog badge: ' + ddText.slice(0, 200));
+  if (/datadoghq\.com/i.test(ddText)) pass('datadog.yaml: site shown'); else fail('datadog site: ' + ddText.slice(0, 200));
+  if (/env:production|service:myapp/i.test(ddText)) pass('datadog.yaml: tags shown'); else fail('datadog tags: ' + ddText.slice(0, 200));
+  if (/Log collection|APM/i.test(ddText)) pass('datadog.yaml: feature flags shown'); else fail('datadog features: ' + ddText.slice(0, 200));
+}
 }

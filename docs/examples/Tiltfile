@@ -1,0 +1,20 @@
+# Tiltfile — Kubernetes dev loop configuration
+docker_build('my-app', '.',
+  live_update=[
+    sync('./src', '/app/src'),
+    run('npm install', trigger=['./package.json']),
+  ]
+)
+
+k8s_yaml(['k8s/deployment.yaml', 'k8s/service.yaml'])
+
+k8s_resource('my-app',
+  port_forwards=['3000:3000', '9229:9229'],
+  labels=['app']
+)
+
+local_resource('unit-tests',
+  cmd='npm test',
+  deps=['./src', './tests'],
+  labels=['tests']
+)

@@ -9196,7 +9196,9 @@
       "label": "Prometheus config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "prometheus.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -9221,7 +9223,9 @@
       "label": "Alertmanager config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "alertmanager.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -9246,7 +9250,9 @@
       "label": "Datadog agent config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "datadog.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -9379,7 +9385,9 @@
       "label": "Air (Go)",
       "baseType": "toml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".air.toml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -9404,7 +9412,9 @@
       "label": "Spectral",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".spectral.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -9429,7 +9439,9 @@
       "label": "Tiltfile",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "Tiltfile"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -9454,7 +9466,9 @@
       "label": "Meson build",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "meson.build"
+      ],
       "extensions": [
         ".yml"
       ],
