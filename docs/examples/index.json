@@ -1935,5 +1935,10 @@
     "categories": [
       "Media"
     ]
+  },
+  {
+    "filename": "sample.elf",
+    "label": "ELF Executable (x86-64 Linux stub)",
+    "type": "exe"
   }
 ]

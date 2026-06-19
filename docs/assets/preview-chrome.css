@@ -557,3 +557,10 @@
 .prproj-stat-value { font: 700 16px/1 system-ui; color: var(--accent); } .prproj-stat-label { font-size: .72em; color: var(--fg-2); margin-top: 3px; text-transform: uppercase; }
 .prproj-table { border-collapse: collapse; font-size: 13px; margin-bottom: 10px; } .prproj-key { padding: 3px 14px 3px 0; color: var(--fg-2); white-space: nowrap; } .prproj-table td { padding: 3px 0; }
 .prproj-note { font-size: .8em; color: var(--fg-2); margin-top: 10px; font-style: italic; }
+/* ELF / PE / Mach-O executables */
+.exe-preview { padding: 12px; } .exe-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.exe-badge { background: #1a2e1a; color: #86efac; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .exe-format { font-weight: 600; font-size: .95em; }
+.exe-table { border-collapse: collapse; font-size: 13px; margin-bottom: 12px; width: 100%; } .exe-table td { padding: 3px 0; border-bottom: 1px solid var(--border); } .exe-key { padding: 3px 14px 3px 0; color: var(--fg-2); white-space: nowrap; }
+.exe-hardening { margin-top: 10px; } .exe-harden-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
+.exe-harden-chip { display: inline-block; background: #052e16; color: #86efac; border: 1px solid #166534; border-radius: 4px; padding: 1px 7px; font-size: .8em; margin: 2px; }
+.exe-note { font-size: .85em; color: var(--fg-2); margin-top: 8px; }
