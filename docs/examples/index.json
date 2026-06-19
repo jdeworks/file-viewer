@@ -3136,7 +3136,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
+    "description": "typos source code spell checker configuration — word overrides, file ignores, and check settings.",
     "knownFile": "typos"
   },
   {
@@ -3845,7 +3845,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Markdownlint configuration in YAML format \u2014 rule overrides and custom settings for Markdown linting."
+    "description": "Markdownlint configuration in YAML format — rule overrides and custom settings for Markdown linting."
   },
   {
     "label": ".markdownlint.yml",
@@ -4186,5 +4186,49 @@
     ],
     "enhanced": true,
     "description": "Meson build definition: myapp 1.2.0 in C and C++, shared library, 2 executables, 4 dependencies, 3 subdirectories, 3 tests."
+  },
+  {
+    "label": ".goreleaser.yaml",
+    "file": ".goreleaser.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "GoReleaser config: 3 build targets (linux/darwin/windows), archive format, GitHub release, Docker images, Homebrew tap, and changelog."
+  },
+  {
+    "label": ".golangci.yml",
+    "file": ".golangci.yml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "GolangCI-Lint config: 10 linters enabled, 5-minute timeout, go1.21 target, cyclomatic complexity limit, and exclude rules."
+  },
+  {
+    "label": "buf.yaml",
+    "file": "buf.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Buf Protobuf tool config v1: lint rules (MINIMAL), breaking detection (FILE), module and dependency settings."
+  },
+  {
+    "label": "heroku.yml",
+    "file": "heroku.yml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Heroku deployment config: Docker builds for web and worker, release migration command, setup addons (PostgreSQL, Redis)."
   }
 ]

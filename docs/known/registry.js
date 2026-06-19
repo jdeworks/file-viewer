@@ -188,6 +188,14 @@ import airConfig from '../types/text/toml/known/air-config/index.js';
 import spectral from '../types/text/yaml/known/spectral/index.js';
 import tiltfile from '../types/text/known/tiltfile/index.js';
 import mesonBuild from '../types/text/known/meson-build/index.js';
+import goreleaser from '../types/text/yaml/known/goreleaser/index.js';
+import golangciLint from '../types/text/yaml/known/golangci-lint/index.js';
+import bufConfig from '../types/text/yaml/known/buf-config/index.js';
+import heroku from '../types/text/yaml/known/heroku/index.js';
+import readthedocs from '../types/text/yaml/known/readthedocs/index.js';
+import citationCff from '../types/text/yaml/known/citation-cff/index.js';
+import yamllint from '../types/text/yaml/known/yamllint/index.js';
+import coderabbit from '../types/text/yaml/known/coderabbit/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -222,7 +230,9 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   vcpkg, cmakePresets, conanfile,
   prometheusConfig, alertmanager, datadogConfig,
   viteConfig, webpackConfig, rollupConfig, nextConfig,
-  airConfig, spectral, tiltfile, mesonBuild];
+  airConfig, spectral, tiltfile, mesonBuild,
+  goreleaser, golangciLint, bufConfig, heroku,
+  readthedocs, citationCff, yamllint, coderabbit];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
