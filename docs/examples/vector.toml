@@ -1,0 +1,32 @@
+[sources.app_logs]
+type = "file"
+include = ["/var/log/app/*.log"]
+
+[sources.metrics]
+type = "host_metrics"
+scrape_interval_secs = 15
+
+[transforms.parse_logs]
+type    = "remap"
+inputs  = ["app_logs"]
+source  = '''
+. = parse_json!(.message)
+.timestamp = parse_timestamp!(.timestamp, format: "%Y-%m-%dT%H:%M:%SZ")
+'''
+
+[transforms.filter_errors]
+type   = "filter"
+inputs = ["parse_logs"]
+condition = '.level == "error"'
+
+[sinks.elasticsearch]
+type    = "elasticsearch"
+inputs  = ["filter_errors"]
+endpoint = "https://elastic.example.com:9200"
+index   = "app-logs-%Y.%m.%d"
+compression = "gzip"
+
+[sinks.prometheus]
+type   = "prometheus_exporter"
+inputs = ["metrics"]
+address = "0.0.0.0:9598"

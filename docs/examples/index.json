@@ -3136,7 +3136,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
+    "description": "typos source code spell checker configuration — word overrides, file ignores, and check settings.",
     "knownFile": "typos"
   },
   {
@@ -3849,7 +3849,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Markdownlint configuration in YAML format \u2014 rule overrides and custom settings for Markdown linting."
+    "description": "Markdownlint configuration in YAML format — rule overrides and custom settings for Markdown linting."
   },
   {
     "label": ".markdownlint.yml",
@@ -5099,5 +5099,261 @@
     "enhanced": true,
     "description": "Terraform version constraints and required provider declarations.",
     "knownFile": "versions-tf"
+  },
+  {
+    "label": "app.config (.NET)",
+    "file": "app.config",
+    "mime": "text/xml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": ".NET Framework app.config: connection strings, app settings, and runtime configuration.",
+    "knownFile": "app-config"
+  },
+  {
+    "label": "appsettings.json (ASP.NET)",
+    "file": "appsettings.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "ASP.NET Core application settings: logging, connection strings, and environment configuration.",
+    "knownFile": "appsettings"
+  },
+  {
+    "label": "electron-builder.yml",
+    "file": "electron-builder.yml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Electron Builder packaging config: app ID, targets, icons, and installers.",
+    "knownFile": "electron-builder"
+  },
+  {
+    "label": "forge.config.js (Electron Forge)",
+    "file": "forge.config.js",
+    "mime": "text/javascript",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Electron Forge packaging config: plugins, makers, and publishers.",
+    "knownFile": "forge-config"
+  },
+  {
+    "label": "launchSettings.json (ASP.NET)",
+    "file": "launchSettings.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "ASP.NET Core launch profiles: URLs, environment variables, and IIS Express settings.",
+    "knownFile": "launch-settings"
+  },
+  {
+    "label": "loki-config.yaml",
+    "file": "loki-config.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "description": "Grafana Loki log aggregation configuration."
+  },
+  {
+    "label": "mongod.conf",
+    "file": "mongod.conf",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "description": "MongoDB server configuration: storage, networking, security, and logging."
+  },
+  {
+    "label": "my.cnf (MySQL)",
+    "file": "my.cnf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "description": "MySQL server configuration: port, buffer sizes, networking, and character sets."
+  },
+  {
+    "label": "packages.config (NuGet)",
+    "file": "packages.config",
+    "mime": "text/xml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "NuGet packages.config: legacy .NET Framework package references.",
+    "knownFile": "packages-config"
+  },
+  {
+    "label": "postgresql.conf",
+    "file": "postgresql.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "description": "PostgreSQL server configuration: connections, memory, logging, and performance tuning."
+  },
+  {
+    "label": "tauri.conf.json (Tauri)",
+    "file": "tauri.conf.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Tauri desktop app config: bundle settings, permissions, and window options.",
+    "knownFile": "tauri-conf"
+  },
+  {
+    "label": "wails.json (Wails)",
+    "file": "wails.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Wails desktop app config: name, output type, and build settings.",
+    "knownFile": "wails-json"
+  },
+  {
+    "label": "web.config (IIS/ASP.NET)",
+    "file": "web.config",
+    "mime": "text/xml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "IIS/ASP.NET web.config: authentication, connection strings, HTTP handlers.",
+    "knownFile": "web-config"
+  },
+  {
+    "label": "elm.json (Elm)",
+    "file": "elm.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Elm project manifest: type, Elm version, direct and indirect dependencies.",
+    "knownFile": "elm-json"
+  },
+  {
+    "label": "gleam.toml (Gleam)",
+    "file": "gleam.toml",
+    "mime": "text/x-toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Gleam package manifest: name, version, target, and dependencies.",
+    "knownFile": "gleam-toml"
+  },
+  {
+    "label": "example.nimble (Nim)",
+    "file": "example.nimble",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Nim package (Nimble): version, author, license, and dependencies.",
+    "knownFile": "nimble"
+  },
+  {
+    "label": "fluent-bit.conf",
+    "file": "fluent-bit.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Fluent Bit config: service, inputs, filters, and outputs.",
+    "knownFile": "fluent-bit"
+  },
+  {
+    "label": "external-secrets.yaml",
+    "file": "external-secrets.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "External Secrets Operator: ExternalSecret syncing from AWS Secrets Manager.",
+    "knownFile": "external-secrets"
+  },
+  {
+    "label": "growthbook.json",
+    "file": "growthbook.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "GrowthBook SDK config: API host, client key, and feature flag rules.",
+    "knownFile": "growthbook"
+  },
+  {
+    "label": "unleash.config.js",
+    "file": "unleash.config.js",
+    "mime": "text/javascript",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Unleash feature toggle client config: URL, app name, and environment.",
+    "knownFile": "unleash-config"
+  },
+  {
+    "label": "vault.hcl (HashiCorp Vault)",
+    "file": "vault.hcl",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "HashiCorp Vault server config: storage backend, listener, and TLS.",
+    "knownFile": "vault-hcl"
+  },
+  {
+    "label": "vector.toml (Vector)",
+    "file": "vector.toml",
+    "mime": "text/x-toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Vector observability pipeline: sources, transforms, and sinks.",
+    "knownFile": "vector-toml"
   }
 ]

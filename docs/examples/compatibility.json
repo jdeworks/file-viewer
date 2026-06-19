@@ -11574,7 +11574,9 @@
       "label": "Android Manifest",
       "baseType": "xml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "AndroidManifest.xml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11599,7 +11601,9 @@
       "label": ".NET App Config",
       "baseType": "xml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "app.config"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11624,7 +11628,9 @@
       "label": "Zig Package Manifest",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "build.zig.zon"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11649,7 +11655,9 @@
       "label": "Carthage Cartfile",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "Cartfile"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11674,7 +11682,9 @@
       "label": "Electron Builder",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "electron-builder.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11699,7 +11709,9 @@
       "label": "Elm Package / Application",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "elm.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11724,7 +11736,9 @@
       "label": "External Secrets",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "external-secrets.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11749,7 +11763,9 @@
       "label": "Fluent Bit config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "fluent-bit.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11774,7 +11790,9 @@
       "label": "Electron Forge Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "forge.config.js"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11799,7 +11817,9 @@
       "label": "Gleam Package",
       "baseType": "toml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "gleam.toml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11824,7 +11844,9 @@
       "label": "Go Workspace",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "go.work"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11849,7 +11871,9 @@
       "label": "Grafana config",
       "baseType": "ini",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "grafana.ini"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11874,7 +11898,9 @@
       "label": "GrowthBook config",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "growthbook.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11899,7 +11925,9 @@
       "label": "Jekyll Config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "_config.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11924,7 +11952,9 @@
       "label": "Julia Project",
       "baseType": "toml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "Project.toml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11949,7 +11979,9 @@
       "label": "Kong Gateway config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "kong.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11974,7 +12006,9 @@
       "label": "ASP.NET Core Launch Settings",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "launchSettings.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11999,7 +12033,9 @@
       "label": "Nim Package",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "example.nimble"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -12024,7 +12060,9 @@
       "label": "NuGet packages.config",
       "baseType": "xml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "packages.config"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -12049,7 +12087,9 @@
       "label": "CocoaPods Podspec",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "Example.podspec"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -12074,7 +12114,9 @@
       "label": "Redis config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "redis.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -12099,7 +12141,9 @@
       "label": "Crystal Shard",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "shard.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -12124,7 +12168,9 @@
       "label": "Tauri Config",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "tauri.conf.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -12149,7 +12195,9 @@
       "label": "Traefik proxy config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "traefik.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -12174,7 +12222,9 @@
       "label": "Unleash config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "unleash.config.js"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -12199,7 +12249,9 @@
       "label": "Vault config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "vault.hcl"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -12224,7 +12276,9 @@
       "label": "Vector config",
       "baseType": "toml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "vector.toml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -12249,7 +12303,9 @@
       "label": "Wails Config",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "wails.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -12274,7 +12330,9 @@
       "label": "IIS/ASP.NET Config",
       "baseType": "xml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "web.config"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -12299,7 +12357,9 @@
       "label": "Xcode Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "Release.xcconfig"
+      ],
       "extensions": [
         ".yml"
       ],

@@ -1,0 +1,26 @@
+{
+  "apiHost": "https://cdn.growthbook.io",
+  "clientKey": "sdk-abc123xyz",
+  "decryptionKey": "",
+  "features": {
+    "dark-mode": {
+      "defaultValue": false,
+      "rules": [
+        {
+          "condition": { "plan": "premium" },
+          "force": true
+        }
+      ]
+    },
+    "new-checkout-flow": {
+      "defaultValue": "control",
+      "rules": [
+        {
+          "variations": ["control", "variant-a", "variant-b"],
+          "weights": [0.5, 0.25, 0.25],
+          "key": "checkout-experiment"
+        }
+      ]
+    }
+  }
+}
