@@ -5456,6 +5456,85 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": true,
       "baseType": "json"
+    },
+    "pyproject-toml": {
+      "label": "pyproject.toml",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "pyproject.toml"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Parses Hatch and Poetry styles; may miss some custom build backends"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "npmrc": {
+      "label": ".npmrc",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        ".npmrc"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [
+        "Auth tokens and passwords are redacted in the enhanced view"
+      ],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "renovate": {
+      "label": "Renovate config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "renovate.json"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

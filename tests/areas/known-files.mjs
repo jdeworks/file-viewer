@@ -201,4 +201,28 @@ export async function run(ctx) {
   const vclText = await page.$eval('#previewHost', (e) => e.textContent);
   if (/Vercel/i.test(vclText)) pass('vercel.json: badge shown'); else fail('vercel badge: ' + vclText.slice(0, 200));
   if (/nextjs|Next\.js/i.test(vclText)) pass('vercel.json: framework shown'); else fail('vercel framework: ' + vclText.slice(0, 200));
+
+  // ── pyproject.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pyproject.toml');
+  await page.waitForSelector('#previewHost .ppy-doc', { timeout: 12000 });
+  const ppyText = await page.$eval('#previewHost .ppy-doc', (e) => e.textContent);
+  if (/Python/i.test(ppyText)) pass('pyproject.toml: badge shown'); else fail('pyproject badge: ' + ppyText.slice(0, 200));
+  if (/my-library|hatchling|ruff|pytest/i.test(ppyText)) pass('pyproject.toml: content shown'); else fail('pyproject content: ' + ppyText.slice(0, 200));
+
+  // ── .npmrc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.npmrc');
+  await page.waitForSelector('#previewHost .npmrc-doc', { timeout: 12000 });
+  const npmrcText = await page.$eval('#previewHost .npmrc-doc', (e) => e.textContent);
+  if (/npm/i.test(npmrcText)) pass('.npmrc: badge shown'); else fail('npmrc badge: ' + npmrcText.slice(0, 200));
+  if (!/secrettoken|publictoken/i.test(npmrcText)) pass('.npmrc: auth tokens redacted'); else fail('npmrc tokens not redacted');
+
+  // ── renovate.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('renovate.json');
+  await page.waitForSelector('#previewHost .rnv-doc', { timeout: 12000 });
+  const rnvText = await page.$eval('#previewHost .rnv-doc', (e) => e.textContent);
+  if (/Renovate/i.test(rnvText)) pass('renovate.json: badge shown'); else fail('renovate badge: ' + rnvText.slice(0, 200));
+  if (/package rule|automerge|schedule/i.test(rnvText)) pass('renovate.json: rules/settings shown'); else fail('renovate content: ' + rnvText.slice(0, 200));
 }

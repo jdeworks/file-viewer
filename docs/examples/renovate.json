@@ -1,0 +1,40 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    "group:allNonMajor"
+  ],
+  "schedule": ["before 6am on Monday"],
+  "timezone": "Europe/Berlin",
+  "labels": ["dependencies", "renovate"],
+  "automerge": false,
+  "prHourlyLimit": 4,
+  "prConcurrentLimit": 10,
+  "baseBranches": ["main", "next"],
+  "ignoreDeps": ["lodash", "moment"],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["patch", "minor"],
+      "matchDepTypes": ["devDependencies"],
+      "automerge": true,
+      "labels": ["auto-merge"]
+    },
+    {
+      "matchPackagePatterns": ["^@types/"],
+      "groupName": "TypeScript type definitions",
+      "automerge": true
+    },
+    {
+      "matchPackageNames": ["node"],
+      "matchDepTypes": ["engines"],
+      "enabled": false
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "labels": ["major-update"],
+      "minimumReleaseAge": "3 days"
+    }
+  ]
+}

@@ -38,10 +38,14 @@ import k8sManifest from '../types/text/yaml/known/k8s-manifest/index.js';
 import pubspec from '../types/text/yaml/known/pubspec/index.js';
 import netlifyToml from '../types/text/toml/known/netlify/index.js';
 import vercelJson from '../types/text/json/known/vercel/index.js';
+import pyprojectToml from '../types/text/toml/known/pyproject/index.js';
+import npmrc from '../types/text/known/npmrc/index.js';
+import renovate from '../types/text/json/known/renovate/index.js';
 
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
-  buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson];
+  buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
+  pyprojectToml, npmrc, renovate];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

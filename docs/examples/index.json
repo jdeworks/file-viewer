@@ -2490,5 +2490,32 @@
       "devops"
     ],
     "enhanced": true
+  },
+  {
+    "label": "pyproject.toml",
+    "file": "pyproject.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": ".npmrc",
+    "file": ".npmrc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "renovate.json",
+    "file": "renovate.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
   }
 ]

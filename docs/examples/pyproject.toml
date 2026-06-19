@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling>=1.21.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "my-library"
+version = "2.1.0"
+description = "A versatile Python utility library"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+  { name = "Jane Developer", email = "jane@example.com" }
+]
+dependencies = [
+  "requests>=2.31.0",
+  "pydantic>=2.0",
+  "httpx>=0.25.0",
+  "rich>=13.0.0",
+  "click>=8.1.0",
+  "tomli>=2.0.1; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "ruff>=0.1.0", "mypy>=1.0"]
+docs = ["mkdocs>=1.5", "mkdocstrings[python]"]
+
+[tool.hatch.version]
+path = "src/my_library/__init__.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "I", "N", "UP"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
