@@ -199,6 +199,9 @@ import coderabbit from '../types/text/yaml/known/coderabbit/index.js';
 import ionicConfig from '../types/text/json/known/ionic-config/index.js';
 import metroConfig from '../types/text/known/metro-config/index.js';
 import reactNativeConfig from '../types/text/known/react-native-config/index.js';
+import dotnetGlobal from '../types/text/json/known/dotnet-global/index.js';
+import prismaSchema from '../types/text/known/prisma-schema/index.js';
+import nugetConfig from '../types/text/xml/known/nuget-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -236,7 +239,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   airConfig, spectral, tiltfile, mesonBuild,
   goreleaser, golangciLint, bufConfig, heroku,
   readthedocs, citationCff, yamllint, coderabbit,
-  ionicConfig, metroConfig, reactNativeConfig];
+  ionicConfig, metroConfig, reactNativeConfig,
+  dotnetGlobal, prismaSchema, nugetConfig];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
