@@ -125,6 +125,8 @@ import msgpackType from '../types/binary/msgpack/index.js';
 import bsonType from '../types/binary/bson/index.js';
 import exrType from '../types/binary/exr/index.js';
 import dbfType from '../types/binary/dbf/index.js';
+import dwgType from '../types/binary/dwg/index.js';
+import stepType from '../types/text/step/index.js';
 import sdfType from '../types/text/sdf/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
@@ -242,6 +244,8 @@ export const REGISTRY = [
   bsonType,
   exrType,
   dbfType,
+  dwgType,
+  stepType,
   sdfType,
   regType,
   urlType,

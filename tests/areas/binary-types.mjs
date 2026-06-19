@@ -348,6 +348,30 @@ export async function run(ctx) {
   if (/DBF|dBase/i.test(dbfText)) pass('DBF badge shown'); else fail('dbf badge: ' + dbfText.slice(0, 300));
   if (/NAME|CITY|Alice/i.test(dbfText)) pass('DBF fields and records shown'); else fail('dbf fields: ' + dbfText.slice(0, 300));
 
+  // ── STEP CAD Exchange ─────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('STEP CAD Exchange file (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const stepf = await frameOf('iframe.fv-preview-frame');
+  await stepf.waitForSelector('.badge-step', { timeout: 8000 });
+  const stepTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (stepTypeId === 'step') pass('.stp detected as step type'); else fail('step typeId: ' + stepTypeId);
+  const stepText = await stepf.$eval('body', (el) => el.textContent);
+  if (/STEP/i.test(stepText)) pass('STEP badge shown'); else fail('step badge: ' + stepText.slice(0, 300));
+  if (/AP214|schema/i.test(stepText)) pass('STEP schema shown'); else fail('step schema: ' + stepText.slice(0, 300));
+
+  // ── AutoCAD DWG ───────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('AutoCAD DWG drawing (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const dwgf = await frameOf('iframe.fv-preview-frame');
+  await dwgf.waitForSelector('.badge-dwg', { timeout: 8000 });
+  const dwgTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (dwgTypeId === 'dwg') pass('.dwg detected as dwg type'); else fail('dwg typeId: ' + dwgTypeId);
+  const dwgText = await dwgf.$eval('body', (el) => el.textContent);
+  if (/DWG|AutoCAD/i.test(dwgText)) pass('DWG badge shown'); else fail('dwg badge: ' + dwgText.slice(0, 300));
+  if (/AC1015|2000/i.test(dwgText)) pass('DWG version info shown'); else fail('dwg version: ' + dwgText.slice(0, 300));
+
   // ── OpenEXR ───────────────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('OpenEXR HDR image (demo)');

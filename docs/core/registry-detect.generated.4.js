@@ -273,54 +273,50 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_sdf=(()=>{
-function hasExtension(intake, ...exts) {
-  const name = (intake.filename || '').toLowerCase();
-  return exts.some((e) => name.endsWith('.' + e));
-}
+const detect_exr=(()=>{
+// OpenEXR magic: 0x76 0x2F 0x31 0x01
+const MAGIC = [0x76, 0x2f, 0x31, 0x01];
 
 function detect(intake) {
-  if (intake.isBinary) return 0;
-  const sample = (intake.textSample || intake.text || '').slice(0, 1200);
-  const lines = sample.split('\n');
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isExrExt = ext === 'exr';
 
-  // Counts line is 4th line (index 3): "aaabbblll..." starting with atom/bond counts
-  const hasMolCounts = lines.length >= 4 && /^\s*\d+\s+\d+\s+\d+/.test(lines[3]);
-  // V2000/V3000 tag
-  const hasVersion = /\bV[23]000\b/.test(sample);
-  // SDF terminator
-  const hasSdfEnd = /^\$\$\$\$$/m.test(sample);
-  // M  END is the molfile terminator
-  const hasMEnd = /^M\s{2}END/m.test(sample);
+  if (!b || b.length < 4) return isExrExt ? 0.6 : 0;
+  const hasMagic = MAGIC.every((v, i) => b[i] === v);
 
-  const isMolLike = hasMolCounts || (hasVersion && hasMEnd);
-
-  if (hasExtension(intake, 'sdf', 'sd')) {
-    if (isMolLike || hasSdfEnd) return 0.95;
-    return 0.5;
-  }
-  if (hasExtension(intake, 'mol')) {
-    if (isMolLike) return 0.95;
-    return 0.5;
-  }
-
-  if (isMolLike && hasSdfEnd) return 0.85;
-  if (isMolLike && hasMEnd) return 0.70;
-  return 0;
+  if (isExrExt) return hasMagic ? 0.99 : 0.65;
+  return hasMagic ? 0.97 : 0;
 }
 return detect;
 })();
 
-const detect_reg=(()=>{
+const detect_dbf=(()=>{
+// dBASE/DBF version byte values:
+// 0x02 = dBASE II, 0x03 = dBASE III+, 0x04 = dBASE IV, 0x05 = dBASE V,
+// 0x7b = Visual Objects, 0x83 = dBASE III+ with memo, 0x8b = dBASE IV with memo,
+// 0xf5 = FoxPro with memo, 0x30 = Visual FoxPro, 0x31 = VFP with autoincrement,
+// 0x32 = VFP with varchar
+const KNOWN_VERSIONS = new Set([0x02, 0x03, 0x04, 0x05, 0x07, 0x30, 0x31, 0x32, 0x7b, 0x82, 0x83, 0x8b, 0x8e, 0xcb, 0xf5]);
+
 function detect(intake) {
-  if (intake.isBinary) return 0;
-  const sample = intake.textSample || '';
-  if (sample.startsWith('Windows Registry Editor Version 5.00') ||
-      sample.startsWith('REGEDIT4')) return 0.98;
-  if (intake.filename?.toLowerCase().endsWith('.reg')) return 0.65;
-  return 0;
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isDbfExt = ext === 'dbf';
+
+  if (!b || b.length < 32) return isDbfExt ? 0.6 : 0;
+
+  const version = b[0];
+  const knownVersion = KNOWN_VERSIONS.has(version);
+  // header size and record size must be reasonable
+  const headerSize = b[8] | (b[9] << 8);
+  const recordSize = b[10] | (b[11] << 8);
+  const structural = knownVersion && headerSize >= 32 && headerSize <= 65535 && recordSize >= 1 && recordSize <= 65535;
+
+  if (isDbfExt) return structural ? 0.97 : knownVersion ? 0.80 : 0.65;
+  return structural ? 0.70 : 0;
 }
 return detect;
 })();
 
-export const DETECTORS={"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"hdf5":detect_hdf5,"msgpack":detect_msgpack,"bson":detect_bson,"sdf":detect_sdf,"reg":detect_reg};
+export const DETECTORS={"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"hdf5":detect_hdf5,"msgpack":detect_msgpack,"bson":detect_bson,"exr":detect_exr,"dbf":detect_dbf};

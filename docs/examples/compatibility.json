@@ -4271,28 +4271,89 @@
     "exr": {
       "label": "OpenEXR Image",
       "support": "partial",
-      "sampleFiles": ["sample.exr"],
-      "extensions": [".exr"],
-      "capabilities": { "rawView": false, "preview": true, "diff": false, "magicSelector": false, "screenshot": false },
+      "sampleFiles": [
+        "sample.exr"
+      ],
+      "extensions": [
+        ".exr"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
       "previewDepth": "basic",
       "metadataDepth": "basic",
       "knownParserGaps": [
         "Pixel data not decoded (requires openexr-js ~large)",
         "Deep compositing and multi-layer channels not traversed",
         "Half-float and integer pixel types not rendered"
-      ]
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     },
     "dbf": {
       "label": "dBase / DBF Database",
       "support": "full",
-      "sampleFiles": ["sample.dbf"],
-      "extensions": [".dbf"],
-      "capabilities": { "rawView": false, "preview": true, "diff": false, "magicSelector": false, "screenshot": false },
+      "sampleFiles": [
+        "sample.dbf"
+      ],
+      "extensions": [
+        ".dbf"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
       "previewDepth": "rich",
       "metadataDepth": "rich",
       "knownParserGaps": [
         "Memo field (.dbt/.fpt) content not loaded — only field names shown",
         "Limited to first 20 records in preview"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "dwg": {
+      "label": "AutoCAD DWG Drawing",
+      "support": "partial",
+      "sampleFiles": ["sample.dwg"],
+      "extensions": [".dwg"],
+      "capabilities": { "rawView": false, "preview": true, "diff": false, "magicSelector": false, "screenshot": false },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "Drawing entities and geometry not parsed (requires ODA SDK or libdxfrw)",
+        "Layer, block, and attribute data not decoded",
+        "Only version string and header shown"
+      ]
+    },
+    "step": {
+      "label": "STEP CAD Exchange (ISO 10303-21)",
+      "support": "full",
+      "sampleFiles": ["sample.stp"],
+      "extensions": [".stp", ".step", ".p21"],
+      "capabilities": { "rawView": true, "preview": true, "diff": false, "magicSelector": false, "screenshot": false },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "3D geometry not rendered (requires THREE.js STEP loader)",
+        "Complex entity attribute values shown as counts only"
       ]
     }
   },

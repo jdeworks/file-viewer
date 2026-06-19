@@ -3,6 +3,56 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_sdf=(()=>{
+function hasExtension(intake, ...exts) {
+  const name = (intake.filename || '').toLowerCase();
+  return exts.some((e) => name.endsWith('.' + e));
+}
+
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  const sample = (intake.textSample || intake.text || '').slice(0, 1200);
+  const lines = sample.split('\n');
+
+  // Counts line is 4th line (index 3): "aaabbblll..." starting with atom/bond counts
+  const hasMolCounts = lines.length >= 4 && /^\s*\d+\s+\d+\s+\d+/.test(lines[3]);
+  // V2000/V3000 tag
+  const hasVersion = /\bV[23]000\b/.test(sample);
+  // SDF terminator
+  const hasSdfEnd = /^\$\$\$\$$/m.test(sample);
+  // M  END is the molfile terminator
+  const hasMEnd = /^M\s{2}END/m.test(sample);
+
+  const isMolLike = hasMolCounts || (hasVersion && hasMEnd);
+
+  if (hasExtension(intake, 'sdf', 'sd')) {
+    if (isMolLike || hasSdfEnd) return 0.95;
+    return 0.5;
+  }
+  if (hasExtension(intake, 'mol')) {
+    if (isMolLike) return 0.95;
+    return 0.5;
+  }
+
+  if (isMolLike && hasSdfEnd) return 0.85;
+  if (isMolLike && hasMEnd) return 0.70;
+  return 0;
+}
+return detect;
+})();
+
+const detect_reg=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  const sample = intake.textSample || '';
+  if (sample.startsWith('Windows Registry Editor Version 5.00') ||
+      sample.startsWith('REGEDIT4')) return 0.98;
+  if (intake.filename?.toLowerCase().endsWith('.reg')) return 0.65;
+  return 0;
+}
+return detect;
+})();
+
 const detect_url=(()=>{
 // URL / query-string inspector: high score for https:// URLs, stepping down through other
 // schemes, bare query strings, multi-URL files, and .url/.webloc extensions.
@@ -274,34 +324,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_gitattributes=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const base = (intake.filename || '').split('/').pop().split('\\').pop().toLowerCase();
-  if (base === '.gitattributes') return 0.97;
-  // Content heuristic: lines like "*.ext  text eol=lf" or "path binary"
-  const sample = intake.textSample || '';
-  const kvLines = sample.split('\n').filter(l => {
-    const t = l.trim();
-    return t && !t.startsWith('#') && /^[^\s]+\s+(text|binary|eol=|diff=|merge=|linguist-|export-)/.test(t);
-  });
-  if (kvLines.length >= 2) return 0.7;
-  return 0;
-}
-return detect;
-})();
-
-const detect_editorconfig=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const base = (intake.filename || '').split('/').pop().split('\\').pop().toLowerCase();
-  if (base === '.editorconfig') return 0.98;
-  // Content: has [*] or [*.ext] section + indent_style or indent_size
-  const sample = intake.textSample || '';
-  if (/^\[[\*\?!{\w.,\-/]+\]/m.test(sample) && /indent_(style|size)\s*=/m.test(sample)) return 0.8;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig};
+export const DETECTORS={"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore};

@@ -4,6 +4,36 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_gitattributes=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  const base = (intake.filename || '').split('/').pop().split('\\').pop().toLowerCase();
+  if (base === '.gitattributes') return 0.97;
+  // Content heuristic: lines like "*.ext  text eol=lf" or "path binary"
+  const sample = intake.textSample || '';
+  const kvLines = sample.split('\n').filter(l => {
+    const t = l.trim();
+    return t && !t.startsWith('#') && /^[^\s]+\s+(text|binary|eol=|diff=|merge=|linguist-|export-)/.test(t);
+  });
+  if (kvLines.length >= 2) return 0.7;
+  return 0;
+}
+return detect;
+})();
+
+const detect_editorconfig=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  const base = (intake.filename || '').split('/').pop().split('\\').pop().toLowerCase();
+  if (base === '.editorconfig') return 0.98;
+  // Content: has [*] or [*.ext] section + indent_style or indent_size
+  const sample = intake.textSample || '';
+  if (/^\[[\*\?!{\w.,\-/]+\]/m.test(sample) && /indent_(style|size)\s*=/m.test(sample)) return 0.8;
+  return 0;
+}
+return detect;
+})();
+
 const detect_ssh_config=(()=>{
 function detect(intake) {
   if (intake.bytes?.[0] > 127) return 0; // not ASCII/UTF-8 text
@@ -223,4 +253,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk,"iso":detect_iso,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
+export const DETECTORS={"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk,"iso":detect_iso,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};

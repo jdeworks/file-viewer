@@ -2215,5 +2215,25 @@
       "data",
       "binary"
     ]
+  },
+  {
+    "file": "sample.dwg",
+    "label": "AutoCAD DWG drawing (demo)",
+    "mime": "image/vnd.dwg",
+    "category": "Design",
+    "categories": [
+      "Design",
+      "binary"
+    ]
+  },
+  {
+    "file": "sample.stp",
+    "label": "STEP CAD Exchange file (demo)",
+    "mime": "model/step",
+    "category": "Design",
+    "categories": [
+      "Design",
+      "3D"
+    ]
   }
 ]
