@@ -169,6 +169,11 @@ import jenkinsfile from '../types/text/known/jenkinsfile/index.js';
 import bazel from '../types/text/known/bazel/index.js';
 import bazelrc from '../types/text/known/bazelrc/index.js';
 import ninjaBuild from '../types/text/known/ninja-build/index.js';
+import packageSwift from '../types/text/known/package-swift/index.js';
+import mixExs from '../types/text/known/mix-exs/index.js';
+import buildSbt from '../types/text/known/build-sbt/index.js';
+import playwrightConfig from '../types/text/known/playwright-config/index.js';
+import cypressConfig from '../types/text/known/cypress-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -197,7 +202,9 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   podfile, fastfile, snapfile,
   supabaseConfig, netlifyRedirects,
   cmake, jenkinsfile,
-  bazel, bazelrc, ninjaBuild];
+  bazel, bazelrc, ninjaBuild,
+  packageSwift, mixExs, buildSbt,
+  playwrightConfig, cypressConfig];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

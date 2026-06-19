@@ -1101,4 +1101,24 @@ export async function run(ctx) {
   if (/Git/i.test(gcfText)) pass('.gitconfig: Git badge shown'); else fail('gitconfig badge: ' + gcfText.slice(0, 200));
   if (/user|remote|alias|core/i.test(gcfText)) pass('.gitconfig: sections shown'); else fail('gitconfig sections: ' + gcfText.slice(0, 200));
   if (/jane@example\.com|Jane Developer/i.test(gcfText)) pass('.gitconfig: user identity shown'); else fail('gitconfig user: ' + gcfText.slice(0, 200));
+
+  // ── playwright.config.ts viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('playwright.config.ts');
+  await page.waitForSelector('#previewHost .pw-doc', { timeout: 12000 });
+  const pwText = await page.$eval('#previewHost .pw-doc', (e) => e.textContent);
+  if (/Playwright/i.test(pwText)) pass('playwright.config.ts: Playwright badge shown'); else fail('playwright badge: ' + pwText.slice(0, 200));
+  if (/chromium|firefox|webkit/i.test(pwText)) pass('playwright.config.ts: browsers shown'); else fail('playwright browsers: ' + pwText.slice(0, 200));
+  if (/baseURL|localhost/i.test(pwText)) pass('playwright.config.ts: base URL shown'); else fail('playwright baseURL: ' + pwText.slice(0, 200));
+  if (/web server/i.test(pwText)) pass('playwright.config.ts: web server indicator shown'); else fail('playwright webserver: ' + pwText.slice(0, 200));
+
+  // ── cypress.config.js viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cypress.config.js');
+  await page.waitForSelector('#previewHost .cy-doc', { timeout: 12000 });
+  const cyText = await page.$eval('#previewHost .cy-doc', (e) => e.textContent);
+  if (/Cypress/i.test(cyText)) pass('cypress.config.js: Cypress badge shown'); else fail('cypress badge: ' + cyText.slice(0, 200));
+  if (/localhost:4000/i.test(cyText)) pass('cypress.config.js: base URL shown'); else fail('cypress baseURL: ' + cyText.slice(0, 200));
+  if (/component/i.test(cyText)) pass('cypress.config.js: component testing section shown'); else fail('cypress component: ' + cyText.slice(0, 200));
+  if (/env var/i.test(cyText)) pass('cypress.config.js: env var count shown'); else fail('cypress env: ' + cyText.slice(0, 200));
 }

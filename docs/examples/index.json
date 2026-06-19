@@ -1,3937 +1,4036 @@
 [
-  {
-    "label": "Welcome.md",
-    "file": "welcome.md",
-    "mime": "text/markdown",
-    "category": "Documents",
-    "categories": [
-      "Documents"
-    ]
-  },
-  {
-    "label": "Sample.pdf",
-    "file": "sample.pdf",
-    "mime": "application/pdf",
-    "category": "Documents",
-    "categories": [
-      "Documents"
-    ]
-  },
-  {
-    "label": "Sample (3 pages).pdf",
-    "file": "sample-pages.pdf",
-    "mime": "application/pdf",
-    "category": "Documents",
-    "categories": [
-      "Documents"
-    ]
-  },
-  {
-    "label": "Sample.txt",
-    "file": "sample.txt",
-    "mime": "text/plain",
-    "type": "raw",
-    "category": "Documents",
-    "categories": [
-      "Documents"
-    ]
-  },
-  {
-    "label": "Sample.ans",
-    "file": "sample.ans",
-    "mime": "text/plain",
-    "category": "Text",
-    "categories": [
-      "Text"
-    ],
-    "type": "asciiart"
-  },
-  {
-    "label": "Sample.epub",
-    "file": "sample.epub",
-    "mime": "application/epub+zip",
-    "category": "Documents",
-    "categories": [
-      "Documents",
-      "Ebook"
-    ],
-    "description": "Public-domain short story EPUB: The Gift of the Magi by O. Henry.",
-    "source": "https://www.gutenberg.org/ebooks/7256",
-    "license": "Project Gutenberg public-domain ebook",
-    "attribution": "O. Henry; Project Gutenberg"
-  },
-  {
-    "label": "Sample.djvu",
-    "file": "sample.djvu",
-    "mime": "image/vnd.djvu",
-    "category": "Documents",
-    "categories": [
-      "Documents",
-      "Ebook"
-    ],
-    "partial": true
-  },
-  {
-    "label": "Sample.fb2",
-    "file": "sample.fb2",
-    "mime": "application/x-fictionbook+xml",
-    "category": "Documents",
-    "categories": [
-      "Documents",
-      "Ebook"
-    ]
-  },
-  {
-    "label": "Sample.mobi",
-    "file": "sample.mobi",
-    "mime": "application/x-mobipocket-ebook",
-    "category": "Documents",
-    "categories": [
-      "Documents",
-      "Ebook"
-    ],
-    "description": "Older Mobipocket ebook fixture containing Project Gutenberg text from The Gift of the Magi.",
-    "source": "https://www.gutenberg.org/ebooks/7256",
-    "license": "Project Gutenberg public-domain text; embedded image CC0 1.0",
-    "attribution": "O. Henry; Project Gutenberg; Wikimedia Commons contributor"
-  },
-  {
-    "label": "Sample.lrf",
-    "file": "sample.lrf",
-    "mime": "application/x-sony-bbeb",
-    "category": "Documents",
-    "categories": [
-      "Documents",
-      "Ebook"
-    ],
-    "partial": true
-  },
-  {
-    "label": "Sample.rtf",
-    "file": "sample.rtf",
-    "mime": "application/rtf",
-    "category": "Documents",
-    "categories": [
-      "Documents"
-    ]
-  },
-  {
-    "label": "Sample.csv",
-    "file": "sample.csv",
-    "mime": "text/csv",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Sample.sqlite",
-    "file": "sample.sqlite",
-    "mime": "application/vnd.sqlite3",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "File Viewer Demo Map (MBTiles)",
-    "file": "sample.mbtiles",
-    "mime": "application/x-sqlite3",
-    "category": "Geo",
-    "categories": [
-      "Geo"
-    ]
-  },
-  {
-    "label": "Sample.clip",
-    "file": "sample.clip",
-    "mime": "application/vnd.clip-studio.paint",
-    "type": "clip",
-    "category": "Image",
-    "categories": [
-      "Image",
-      "Media"
-    ]
-  },
-  {
-    "label": "Sample.json",
-    "file": "sample.json",
-    "mime": "application/json",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Sample.har",
-    "file": "sample.har",
-    "mime": "application/har+json",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Sample.jsonl",
-    "file": "sample.jsonl",
-    "mime": "application/x-ndjson",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Sample.eml",
-    "file": "sample.eml",
-    "mime": "message/rfc822",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Sample.mbox",
-    "file": "sample.mbox",
-    "mime": "application/mbox",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Sample.msg",
-    "file": "sample.msg",
-    "mime": "application/vnd.ms-outlook",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Sample.ics",
-    "file": "sample.ics",
-    "mime": "text/calendar",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Sample.vcf",
-    "file": "sample.vcf",
-    "mime": "text/vcard",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Sample.xlsx",
-    "file": "sample.xlsx",
-    "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "category": "Office",
-    "categories": [
-      "Office"
-    ]
-  },
-  {
-    "label": "Sample.docx",
-    "file": "sample.docx",
-    "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "category": "Office",
-    "categories": [
-      "Office"
-    ]
-  },
-  {
-    "label": "Sample.odt",
-    "file": "sample.odt",
-    "mime": "application/vnd.oasis.opendocument.text",
-    "category": "Office",
-    "categories": [
-      "Office"
-    ]
-  },
-  {
-    "label": "Sample.pptx",
-    "file": "sample.pptx",
-    "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    "category": "Office",
-    "categories": [
-      "Office"
-    ]
-  },
-  {
-    "label": "sample.pages",
-    "file": "sample.pages",
-    "category": "Office",
-    "categories": [
-      "Office"
-    ]
-  },
-  {
-    "label": "Sample.yaml",
-    "file": "sample.yaml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Sample.toml",
-    "file": "sample.toml",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "package.json",
-    "file": "package.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "tsconfig.json",
-    "file": "tsconfig.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "Cargo.toml",
-    "file": "Cargo.toml",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "Dockerfile",
-    "file": "Dockerfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "docker-compose.yml",
-    "file": "docker-compose.yml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".gitignore",
-    "file": ".gitignore",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": ".gitattributes",
-    "file": ".gitattributes",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".mailmap",
-    "file": ".mailmap",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".npmignore",
-    "file": ".npmignore",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".dockerignore",
-    "file": ".dockerignore",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "requirements.txt",
-    "file": "requirements.txt",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "go.mod",
-    "file": "go.mod",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "composer.json",
-    "file": "composer.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "Gemfile",
-    "file": "Gemfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "build.gradle",
-    "file": "build.gradle",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "Pipfile",
-    "file": "Pipfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "openapi.yaml",
-    "file": "openapi.yaml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "CODEOWNERS",
-    "file": "CODEOWNERS",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".editorconfig",
-    "file": ".editorconfig",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "pom.xml",
-    "file": "pom.xml",
-    "mime": "application/xml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "Sample.xml",
-    "file": "sample.xml",
-    "mime": "application/xml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "sample.env (environment variables)",
-    "file": "sample.env",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Secrets",
-      "Config"
-    ]
-  },
-  {
-    "label": "Sample.ini",
-    "file": "sample.ini",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "sample.plist",
-    "file": "sample.plist",
-    "mime": "application/x-plist",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Localizable.strings",
-    "file": "Localizable.strings",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "sample.reg",
-    "file": "sample.reg",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Sample.patch",
-    "file": "sample.patch",
-    "mime": "text/x-diff",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ]
-  },
-  {
-    "label": "Sample.log",
-    "file": "sample.log",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ]
-  },
-  {
-    "label": "sample.crash",
-    "file": "sample.crash",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ]
-  },
-  {
-    "label": "sample.swf",
-    "file": "sample.swf",
-    "category": "Media",
-    "categories": [
-      "Binary",
-      "Emulator"
-    ]
-  },
-  {
-    "label": "Sample.srt",
-    "file": "sample.srt",
-    "mime": "application/x-subrip",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ]
-  },
-  {
-    "label": "example.js",
-    "file": "example.js",
-    "mime": "text/javascript",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ]
-  },
-  {
-    "label": "main.py",
-    "file": "main.py",
-    "mime": "text/x-python",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Python dataclass and aggregation example."
-  },
-  {
-    "label": "app.ts",
-    "file": "app.ts",
-    "mime": "text/typescript",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "TypeScript typed task filtering example."
-  },
-  {
-    "label": "Dashboard.tsx",
-    "file": "Dashboard.tsx",
-    "mime": "text/typescript-jsx",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "React TSX component with state and memoized rendering."
-  },
-  {
-    "label": "Widget.jsx",
-    "file": "Widget.jsx",
-    "mime": "text/jsx",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "React JSX component with expandable content."
-  },
-  {
-    "label": "server.go",
-    "file": "server.go",
-    "mime": "text/x-go",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Go HTTP health endpoint example."
-  },
-  {
-    "label": "worker.rs",
-    "file": "worker.rs",
-    "mime": "text/rust",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Rust word-count worker using a BTreeMap."
-  },
-  {
-    "label": "Main.java",
-    "file": "Main.java",
-    "mime": "text/x-java-source",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Java record and stream aggregation example."
-  },
-  {
-    "label": "main.c",
-    "file": "main.c",
-    "mime": "text/x-c",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "C function and formatted output example."
-  },
-  {
-    "label": "mesh.cpp",
-    "file": "mesh.cpp",
-    "mime": "text/x-c++src",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "C++ vector and struct mesh calculation example."
-  },
-  {
-    "label": "Program.cs",
-    "file": "Program.cs",
-    "mime": "text/x-csharp",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "C# record and LINQ summation example."
-  },
-  {
-    "label": "script.sh",
-    "file": "script.sh",
-    "mime": "text/x-shellscript",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Shell script with strict mode and file counting."
-  },
-  {
-    "label": "query.sql",
-    "file": "query.sql",
-    "mime": "application/sql",
-    "category": "Code",
-    "categories": [
-      "Code",
-      "Data"
-    ],
-    "type": "code",
-    "description": "SQL schema and grouped aggregate query."
-  },
-  {
-    "label": "styles.css",
-    "file": "styles.css",
-    "mime": "text/css",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "CSS custom properties and card hover styling."
-  },
-  {
-    "label": "theme.scss",
-    "file": "theme.scss",
-    "mime": "text/x-scss",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "SCSS variables and nested toolbar rules."
-  },
-  {
-    "label": "theme.less",
-    "file": "theme.less",
-    "mime": "text/x-less",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Less variables, nesting, and color function example."
-  },
-  {
-    "label": "main.rb",
-    "file": "main.rb",
-    "mime": "text/x-ruby",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Ruby report class grouping rows by team."
-  },
-  {
-    "label": "index.php",
-    "file": "index.php",
-    "mime": "application/x-httpd-php",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "PHP strict-typed status rendering example."
-  },
-  {
-    "label": "App.swift",
-    "file": "App.swift",
-    "mime": "text/x-swift",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Swift Codable release data example."
-  },
-  {
-    "label": "Main.kt",
-    "file": "Main.kt",
-    "mime": "text/x-kotlin",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Kotlin data class and extension function example."
-  },
-  {
-    "label": "Job.scala",
-    "file": "Job.scala",
-    "mime": "text/x-scala",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Scala case class and runnable job filter example."
-  },
-  {
-    "label": "filter.lua",
-    "file": "filter.lua",
-    "mime": "text/x-lua",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Lua table filtering function example."
-  },
-  {
-    "label": "analysis.r",
-    "file": "analysis.r",
-    "mime": "text/x-r-source",
-    "category": "Code",
-    "categories": [
-      "Code",
-      "Data"
-    ],
-    "type": "code",
-    "description": "R data frame and aggregate example."
-  },
-  {
-    "label": "report.pl",
-    "file": "report.pl",
-    "mime": "text/x-perl",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Perl event formatting loop example."
-  },
-  {
-    "label": "app.dart",
-    "file": "app.dart",
-    "mime": "text/x-dart",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Dart class and list iteration example."
-  },
-  {
-    "label": "pipeline.ex",
-    "file": "pipeline.ex",
-    "mime": "text/x-elixir",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Elixir pipeline normalization example."
-  },
-  {
-    "label": "core.clj",
-    "file": "core.clj",
-    "mime": "text/x-clojure",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Clojure namespace and slug generation example."
-  },
-  {
-    "label": "schema.graphql",
-    "file": "schema.graphql",
-    "mime": "application/graphql",
-    "category": "Code",
-    "categories": [
-      "Code",
-      "Data"
-    ],
-    "type": "code",
-    "description": "GraphQL schema for project sample metadata."
-  },
-  {
-    "label": "deploy.ps1",
-    "file": "deploy.ps1",
-    "mime": "text/x-powershell",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "PowerShell deployment loop example."
-  },
-  {
-    "label": "Makefile",
-    "file": "Makefile",
-    "mime": "text/x-makefile",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "enhanced": true,
-    "description": "Makefile build, test, serve, and clean targets."
-  },
-  {
-    "label": "CMakeLists.txt",
-    "file": "CMakeLists.txt",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "enhanced": true,
-    "description": "CMake build configuration with project, targets, and dependencies."
-  },
-  {
-    "label": "BUILD.bazel",
-    "file": "BUILD.bazel",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "enhanced": true,
-    "description": "Bazel BUILD file with py_library, py_binary, and py_test targets."
-  },
-  {
-    "label": ".bazelrc",
-    "file": ".bazelrc",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "type": "code",
-    "enhanced": true,
-    "description": "Bazel RC configuration with build, test, and remote execution flags."
-  },
-  {
-    "label": "build.ninja",
-    "file": "build.ninja",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "enhanced": true,
-    "description": "Ninja build file with compile rules, object targets, and link step."
-  },
-  {
-    "label": "infra.tf",
-    "file": "infra.tf",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code",
-      "Config"
-    ],
-    "type": "code",
-    "description": "Terraform bucket configuration with variables, locals, and outputs."
-  },
-  {
-    "label": "service.proto",
-    "file": "service.proto",
-    "mime": "text/x-protobuf",
-    "category": "Code",
-    "categories": [
-      "Code",
-      "Data"
-    ],
-    "type": "code",
-    "description": "Protocol Buffers messages and catalog service definition."
-  },
-  {
-    "label": "build.bat",
-    "file": "build.bat",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Windows batch script for serving the static docs folder."
-  },
-  {
-    "label": "Panel.vue",
-    "file": "Panel.vue",
-    "mime": "text/x-vue",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Vue single-file component with template, script setup, and scoped styles."
-  },
-  {
-    "label": "Controller.m",
-    "file": "Controller.m",
-    "mime": "text/x-objective-c",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Objective-C preview controller with properties and selection status."
-  },
-  {
-    "label": "analytics.fs",
-    "file": "analytics.fs",
-    "mime": "text/x-fsharp",
-    "category": "Code",
-    "categories": [
-      "Code",
-      "Data"
-    ],
-    "type": "code",
-    "description": "F# record list grouped and summarized by category."
-  },
-  {
-    "label": "Module.vb",
-    "file": "Module.vb",
-    "mime": "text/x-vb",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Visual Basic module formatting sample file sizes."
-  },
-  {
-    "label": "shader.wgsl",
-    "file": "shader.wgsl",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code",
-      "Media"
-    ],
-    "type": "code",
-    "description": "WGSL vertex and fragment shader pair for a colored preview."
-  },
-  {
-    "label": "Escrow.sol",
-    "file": "Escrow.sol",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ],
-    "type": "code",
-    "description": "Solidity escrow contract with timed release logic."
-  },
-  {
-    "label": "Overwriter.frag",
-    "file": "Overwriter.frag",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ]
-  },
-  {
-    "label": "Glyph Dungeon cipher.txt",
-    "file": "metagame/stage2/cipher.txt",
-    "mime": "text/plain",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Signal Racer transmission_hum.mp3",
-    "file": "metagame/stage5/transmission_hum.mp3",
-    "mime": "audio/mpeg",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Protocol Codex protocols_of_the_entity.epub",
-    "file": "metagame/stage6/protocols_of_the_entity.epub",
-    "mime": "application/epub+zip",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Identity Arbiter Entity A image",
-    "file": "metagame/stage7/entity_a_verification.png",
-    "mime": "image/png",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Identity Arbiter Entity F image",
-    "file": "metagame/stage7/entity_f_verification.png",
-    "mime": "image/png",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Identity Arbiter metadata sidecar",
-    "file": "metagame/stage7/entity_metadata.json",
-    "mime": "application/json",
-    "category": "Metagame",
-    "categories": [
-      "Metagame"
-    ]
-  },
-  {
-    "label": "Sample.html",
-    "file": "sample.html",
-    "mime": "text/html",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ]
-  },
-  {
-    "label": "Sample.ipynb",
-    "file": "sample.ipynb",
-    "mime": "application/x-ipynb+json",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ]
-  },
-  {
-    "file": "sample.geojson",
-    "label": "Sample.geojson",
-    "mime": "application/geo+json",
-    "category": "Geo",
-    "categories": [
-      "Geo"
-    ]
-  },
-  {
-    "label": "Sample.gpx",
-    "file": "sample.gpx",
-    "mime": "application/gpx+xml",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Sample.png",
-    "file": "sample.png",
-    "mime": "image/png",
-    "category": "Media",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "description": "CC0 flower PNG with transparency and real image detail.",
-    "source": "https://commons.wikimedia.org/wiki/File:Red_flower_01.png",
-    "license": "CC0 1.0 Universal",
-    "attribution": "Wikimedia Commons contributor"
-  },
-  {
-    "label": "Sample.jpg",
-    "file": "sample.jpg",
-    "mime": "image/jpeg",
-    "type": "image",
-    "category": "Media",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "description": "Public-domain Hubble sample image in JPEG format.",
-    "source": "https://commons.wikimedia.org/wiki/File:DSS_Sample_Images_(1993-14-105).jpg",
-    "license": "Public domain (NASA/ESA Hubble material)",
-    "attribution": "NASA, ESA, and STScI"
-  },
-  {
-    "label": "Sample.jpeg",
-    "file": "sample.jpeg",
-    "mime": "image/jpeg",
-    "type": "image",
-    "category": "Media",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "description": "Public-domain Hubble sample image with the long .jpeg extension.",
-    "source": "https://commons.wikimedia.org/wiki/File:DSS_Sample_Images_(1993-14-105).jpg",
-    "license": "Public domain (NASA/ESA Hubble material)",
-    "attribution": "NASA, ESA, and STScI"
-  },
-  {
-    "label": "Sample.gif",
-    "file": "sample.gif",
-    "mime": "image/gif",
-    "type": "image",
-    "category": "Media",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "description": "Public-domain ranked-ballot example image in GIF format.",
-    "source": "https://commons.wikimedia.org/wiki/File:Rankballotoval.gif",
-    "license": "Public domain",
-    "attribution": "Tom Ruen"
-  },
-  {
-    "label": "Sample.webp",
-    "file": "sample.webp",
-    "mime": "image/webp",
-    "type": "image",
-    "category": "Media",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "description": "Public-domain NASA Mars sample return illustration in WebP format.",
-    "source": "https://commons.wikimedia.org/wiki/File:Mars_sample_return_ascent_vehicle.webp",
-    "license": "Public domain (NASA material)",
-    "attribution": "NASA/JPL-Caltech"
-  },
-  {
-    "label": "Sample.bmp",
-    "file": "sample.bmp",
-    "mime": "image/bmp",
-    "type": "image",
-    "category": "Media",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "description": "LGPL sample bitmap image of a blackbuck in BMP format.",
-    "source": "https://people.math.sc.edu/Burkardt/data/bmp/blackbuck.bmp",
-    "license": "GNU LGPL",
-    "attribution": "John Burkardt data directory"
-  },
-  {
-    "label": "Sample.tiff",
-    "file": "sample.tiff",
-    "mime": "image/tiff",
-    "type": "tiff",
-    "category": "Media",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "partial": true,
-    "description": "TIFF conversion of the CC0 flower PNG sample for metadata-focused TIFF coverage.",
-    "source": "https://commons.wikimedia.org/wiki/File:Red_flower_01.png",
-    "license": "CC0 1.0 Universal",
-    "attribution": "Wikimedia Commons contributor; converted to TIFF for this catalog"
-  },
-  {
-    "label": "Sample.avif",
-    "file": "sample.avif",
-    "mime": "image/avif",
-    "type": "heif",
-    "category": "Media",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "description": "AVIF conversion of the CC0 flower PNG sample for modern image-container coverage.",
-    "source": "https://commons.wikimedia.org/wiki/File:Red_flower_01.png",
-    "license": "CC0 1.0 Universal",
-    "attribution": "Wikimedia Commons contributor; converted to AVIF for this catalog"
-  },
-  {
-    "label": "Sample.jxl",
-    "file": "sample.jxl",
-    "mime": "image/jxl",
-    "type": "image",
-    "category": "Media",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "partial": true,
-    "description": "JPEG XL wide-gamut browser support sample with explicit unsupported-browser fallback coverage.",
-    "source": "https://jpegxl.info/resources/jpeg-xl-test-page.html",
-    "license": "JPEG XL community sample; see source",
-    "attribution": "JPEG XL community test page"
-  },
-  {
-    "label": "sample.heic",
-    "file": "sample.heic",
-    "mime": "image/heic",
-    "type": "heif",
-    "category": "Media",
-    "categories": [
-      "Image",
-      "Media"
-    ]
-  },
-  {
-    "label": "Sample.stl",
-    "file": "sample.stl",
-    "mime": "model/stl",
-    "category": "Media",
-    "categories": [
-      "Media",
-      "3D"
-    ]
-  },
-  {
-    "label": "Sample.obj",
-    "file": "sample.obj",
-    "mime": "model/obj",
-    "category": "Media",
-    "categories": [
-      "Media",
-      "3D"
-    ]
-  },
-  {
-    "label": "Sample.glb",
-    "file": "sample.glb",
-    "mime": "model/gltf-binary",
-    "category": "Media",
-    "categories": [
-      "Media",
-      "3D"
-    ]
-  },
-  {
-    "label": "Sample.3mf",
-    "file": "sample.3mf",
-    "mime": "model/3mf",
-    "category": "Media",
-    "categories": [
-      "Media",
-      "3D"
-    ]
-  },
-  {
-    "label": "Sample.ply",
-    "file": "sample.ply",
-    "mime": "model/ply",
-    "category": "Media",
-    "categories": [
-      "Media",
-      "3D"
-    ]
-  },
-  {
-    "label": "example.svg",
-    "file": "example.svg",
-    "mime": "image/svg+xml",
-    "category": "Media",
-    "categories": [
-      "Image",
-      "Media"
-    ]
-  },
-  {
-    "label": "Sample.wav",
-    "file": "sample.wav",
-    "mime": "audio/wav",
-    "type": "media",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ]
-  },
-  {
-    "label": "Sample.als",
-    "file": "sample.als",
-    "mime": "application/x-ableton-live-set",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ]
-  },
-  {
-    "label": "Sample.mid",
-    "file": "sample.mid",
-    "mime": "audio/midi",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ]
-  },
-  {
-    "label": "Sample.mp3",
-    "file": "sample.mp3",
-    "mime": "audio/mpeg",
-    "type": "media",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ],
-    "description": "Short MP3 audio sample for native audio playback and ID3 metadata checks."
-  },
-  {
-    "label": "Sample.ogg",
-    "file": "sample.ogg",
-    "mime": "audio/ogg",
-    "type": "media",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ],
-    "description": "Ogg Vorbis example audio file for native browser audio playback coverage.",
-    "source": "https://commons.wikimedia.org/wiki/File:Example.ogg",
-    "license": "Public domain",
-    "attribution": "Wikimedia Commons example audio file"
-  },
-  {
-    "label": "Sample.mp4",
-    "file": "sample.mp4",
-    "mime": "video/mp4",
-    "type": "media",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ],
-    "description": "Tiny MP4 video test clip for native video playback coverage.",
-    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/tiny-clip.mp4",
-    "license": "BSD-3-Clause",
-    "attribution": "Chromium media test data"
-  },
-  {
-    "label": "Sample.webm",
-    "file": "sample.webm",
-    "mime": "video/webm",
-    "type": "media",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ],
-    "description": "Small WebM video test clip for native browser playback coverage.",
-    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/bear.webm",
-    "license": "BSD-3-Clause",
-    "attribution": "Chromium media test data"
-  },
-  {
-    "label": "Sample.mov",
-    "file": "sample.mov",
-    "mime": "video/quicktime",
-    "type": "media",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ],
-    "partial": true,
-    "description": "QuickTime MOV sample; playback depends on browser codec support.",
-    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/bear_pcm_s16be.mov",
-    "license": "BSD-3-Clause",
-    "attribution": "Chromium media test data"
-  },
-  {
-    "label": "Sample.mkv",
-    "file": "sample.mkv",
-    "mime": "video/x-matroska",
-    "type": "media",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ],
-    "partial": true,
-    "description": "Matroska MKV sample; the viewer detects it and shows a transcode hint if native playback fails.",
-    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/testsrc-no-durations-h264.mkv",
-    "license": "BSD-3-Clause",
-    "attribution": "Chromium media test data"
-  },
-  {
-    "label": "Sample.flac",
-    "file": "sample.flac",
-    "mime": "audio/flac",
-    "type": "media",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ],
-    "description": "Small FLAC audio fixture for lossless audio detection and playback coverage.",
-    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/sfx.flac",
-    "license": "BSD-3-Clause",
-    "attribution": "Chromium media test data"
-  },
-  {
-    "label": "Sample.m4a",
-    "file": "sample.m4a",
-    "mime": "audio/mp4",
-    "type": "media",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ],
-    "description": "Small M4A audio fixture for MPEG-4 audio container coverage.",
-    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/sfx.m4a",
-    "license": "BSD-3-Clause",
-    "attribution": "Chromium media test data"
-  },
-  {
-    "label": "Sample.aac",
-    "file": "sample.aac",
-    "mime": "audio/aac",
-    "type": "media",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ],
-    "description": "AAC ADTS audio sample for standalone AAC detection and playback coverage.",
-    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/bear-audio-lc-aac.aac",
-    "license": "BSD-3-Clause",
-    "attribution": "Chromium media test data"
-  },
-  {
-    "label": "Sample.ttf",
-    "file": "sample.ttf",
-    "mime": "font/ttf",
-    "type": "font",
-    "category": "Media",
-    "categories": [
-      "Media",
-      "Font"
-    ],
-    "description": "Ubuntu Mono TrueType specimen for checking installed-font metadata and live glyph rendering.",
-    "source": "https://design.ubuntu.com/font/",
-    "license": "Ubuntu Font Licence 1.0",
-    "attribution": "Ubuntu Font Family by Canonical Ltd."
-  },
-  {
-    "label": "Sample.otf",
-    "file": "sample.otf",
-    "mime": "font/otf",
-    "type": "font",
-    "category": "Media",
-    "categories": [
-      "Media",
-      "Font"
-    ],
-    "description": "Source Serif 4 OpenType/CFF specimen for testing OTF font previews and metadata.",
-    "source": "https://github.com/adobe-fonts/source-serif/releases/tag/4.005R",
-    "license": "SIL Open Font License 1.1",
-    "attribution": "Source Serif 4 by Adobe Fonts"
-  },
-  {
-    "label": "Sample.woff",
-    "file": "sample.woff",
-    "mime": "font/woff",
-    "type": "font",
-    "category": "Media",
-    "categories": [
-      "Media",
-      "Font"
-    ],
-    "description": "WOFF webfont derived from the Ubuntu Mono sample for browser FontFace loading.",
-    "source": "https://design.ubuntu.com/font/",
-    "license": "Ubuntu Font Licence 1.0",
-    "attribution": "Ubuntu Font Family by Canonical Ltd.; converted to WOFF for this catalog"
-  },
-  {
-    "label": "Sample.woff2",
-    "file": "sample.woff2",
-    "mime": "font/woff2",
-    "type": "font",
-    "category": "Media",
-    "categories": [
-      "Media",
-      "Font"
-    ],
-    "description": "WOFF2 webfont derived from the Ubuntu Mono sample for modern compressed font coverage.",
-    "source": "https://design.ubuntu.com/font/",
-    "license": "Ubuntu Font Licence 1.0",
-    "attribution": "Ubuntu Font Family by Canonical Ltd.; converted to WOFF2 for this catalog"
-  },
-  {
-    "label": "Sample.avi",
-    "file": "Sample.avi",
-    "mime": "video/x-msvideo",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ]
-  },
-  {
-    "label": "Sample.bin",
-    "file": "sample.bin",
-    "mime": "application/octet-stream",
-    "category": "Archive & Binary",
-    "categories": [
-      "Archive & Binary"
-    ]
-  },
-  {
-    "label": "Sample.zip",
-    "file": "sample.zip",
-    "mime": "application/zip",
-    "category": "Archive & Binary",
-    "categories": [
-      "Archive & Binary"
-    ]
-  },
-  {
-    "label": "Locked.zip",
-    "file": "sample-locked.zip",
-    "mime": "application/zip",
-    "category": "Archive & Binary",
-    "categories": [
-      "Archive & Binary"
-    ]
-  },
-  {
-    "label": "Sample.cbz",
-    "file": "sample.cbz",
-    "mime": "application/vnd.comicbook+zip",
-    "category": "Archive & Binary",
-    "categories": [
-      "Documents",
-      "Ebook",
-      "Archive & Binary"
-    ]
-  },
-  {
-    "label": "Sample.7z",
-    "file": "Sample.7z",
-    "mime": "application/x-7z-compressed",
-    "category": "Archive & Binary",
-    "categories": [
-      "Archive & Binary"
-    ]
-  },
-  {
-    "label": "sample.url",
-    "file": "sample.url",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ]
-  },
-  {
-    "label": "secret.txt",
-    "file": "secret.txt",
-    "mime": "text/plain",
-    "category": "Secrets",
-    "categories": [
-      "Secrets",
-      "Text"
-    ]
-  },
-  {
-    "label": "sample_old.png",
-    "file": "sample_old.png",
-    "mime": "image/png",
-    "category": "Secrets",
-    "categories": [
-      "Image",
-      "Media"
-    ]
-  },
-  {
-    "label": "sample.torrent",
-    "file": "sample.torrent",
-    "mime": "application/x-bittorrent",
-    "category": "Archive & Binary",
-    "categories": [
-      "Archive & Binary"
-    ]
-  },
-  {
-    "label": "sample.class",
-    "file": "sample.class",
-    "category": "Binary",
-    "categories": [
-      "Binary"
-    ],
-    "type": "java-class",
-    "description": "Minimal valid Java class (public class Sample extends Object, Java 17 / major version 61)"
-  },
-  {
-    "label": "sample.ico",
-    "file": "sample.ico",
-    "mime": "image/x-icon",
-    "category": "Media",
-    "categories": [
-      "Image",
-      "Media"
-    ]
-  },
-  {
-    "label": "sample.procreate",
-    "file": "sample.procreate",
-    "type": "procreate",
-    "category": "Image",
-    "categories": [
-      "Image",
-      "Media"
-    ]
-  },
-  {
-    "label": "Sample.ora",
-    "file": "sample.ora",
-    "mime": "image/openraster",
-    "category": "Image",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "type": "layered"
-  },
-  {
-    "label": "Sample.kra",
-    "file": "sample.kra",
-    "mime": "application/x-krita",
-    "category": "Image",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "type": "layered",
-    "description": "Small Krita-style layered sample with separate background, shape, and annotation layers.",
-    "source": "Generated in-repo from simple geometric CC0 sample content",
-    "license": "CC0 1.0 Universal",
-    "attribution": "File Viewer sample catalog"
-  },
-  {
-    "label": "Sample.psd",
-    "file": "sample.psd",
-    "mime": "image/vnd.adobe.photoshop",
-    "category": "Image",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "type": "layered",
-    "description": "Photoshop PSD sample with semi-transparent layers for layer-list and compositing coverage.",
-    "source": "https://github.com/psd-tools/psd-tools/blob/main/tests/psd_files/semi-transparent-layers.psd",
-    "license": "MIT",
-    "attribution": "psd-tools test corpus"
-  },
-  {
-    "label": "Sample.psb",
-    "file": "sample.psb",
-    "mime": "image/vnd.adobe.photoshop",
-    "category": "Image",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "type": "layered",
-    "description": "Large-document Photoshop PSB sample paired with the PSD layer fixture.",
-    "source": "https://github.com/psd-tools/psd-tools/blob/main/tests/psd_files/semi-transparent-layers.psb",
-    "license": "MIT",
-    "attribution": "psd-tools test corpus"
-  },
-  {
-    "label": "Sample.xcf",
-    "file": "sample.xcf",
-    "mime": "image/x-xcf",
-    "category": "Image",
-    "categories": [
-      "Image",
-      "Media"
-    ],
-    "type": "layered",
-    "partial": true,
-    "description": "GIMP XCF layer-mode sample; the viewer currently extracts layer structure and shows a placeholder canvas.",
-    "source": "https://commons.wikimedia.org/wiki/File:Gimp_layer_mode_test.xcf",
-    "license": "Beerware License",
-    "attribution": "McZusatz"
-  },
-  {
-    "label": "sample.sketch",
-    "file": "sample.sketch",
-    "type": "sketch",
-    "category": "Image",
-    "categories": [
-      "Image",
-      "Media"
-    ]
-  },
-  {
-    "label": "sample.gcode",
-    "file": "sample.gcode",
-    "mime": "text/x-gcode",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "sample.gitignore",
-    "file": "sample.gitignore",
-    "category": "Text",
-    "categories": [
-      "Text"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "sample.img",
-    "file": "sample.img",
-    "category": "Binary",
-    "categories": [
-      "Binary",
-      "Emulator"
-    ]
-  },
-  {
-    "label": "sample.nes",
-    "file": "sample.nes",
-    "category": "Binary",
-    "categories": [
-      "Binary",
-      "Emulator"
-    ]
-  },
-  {
-    "label": "Sample.gba",
-    "file": "sample.gba",
-    "mime": "application/octet-stream",
-    "category": "Binary",
-    "categories": [
-      "Binary",
-      "Emulator"
-    ],
-    "type": "emulatorjs"
-  },
-  {
-    "label": "sample.pem",
-    "file": "sample.pem",
-    "category": "Other",
-    "categories": [
-      "Secrets",
-      "Config"
-    ]
-  },
-  {
-    "label": "sample.wasm",
-    "file": "sample.wasm",
-    "category": "Other",
-    "categories": [
-      "Other"
-    ]
-  },
-  {
-    "label": "sample.npy",
-    "file": "sample.npy",
-    "category": "Other",
-    "categories": [
-      "Other"
-    ]
-  },
-  {
-    "label": "sample.lnk",
-    "file": "sample.lnk",
-    "category": "Other",
-    "categories": [
-      "Other"
-    ]
-  },
-  {
-    "file": "sample.dmp",
-    "label": "Windows Minidump (demo)",
-    "mime": "application/x-dmp",
-    "category": "Binary",
-    "categories": [
-      "Binary"
-    ]
-  },
-  {
-    "file": "sample.dxf",
-    "label": "AutoCAD DXF Drawing (demo)",
-    "mime": "application/dxf",
-    "category": "Design",
-    "categories": [
-      "Design"
-    ]
-  },
-  {
-    "file": "sample.mcworld",
-    "label": "Minecraft World (demo)",
-    "mime": "application/x-mcworld",
-    "category": "Binary",
-    "categories": [
-      "Binary"
-    ]
-  },
-  {
-    "file": "sample.dcm",
-    "label": "DICOM Medical Image (demo)",
-    "mime": "application/dicom",
-    "category": "Binary",
-    "categories": [
-      "Binary"
-    ]
-  },
-  {
-    "file": "sample.nc",
-    "label": "NetCDF Climate Dataset (demo)",
-    "mime": "application/x-netcdf",
-    "category": "Binary",
-    "categories": [
-      "Binary"
-    ]
-  },
-  {
-    "label": "ssh-config",
-    "file": "ssh-config",
-    "category": "Other",
-    "categories": [
-      "Other"
-    ]
-  },
-  {
-    "label": "sample.rdp",
-    "file": "sample.rdp",
-    "category": "Other",
-    "categories": [
-      "Other"
-    ]
-  },
-  {
-    "label": "claude_desktop_config.json",
-    "file": "claude_desktop_config.json",
-    "type": "mcp-config",
-    "category": "Other",
-    "categories": [
-      "Other"
-    ]
-  },
-  {
-    "label": "kubeconfig",
-    "file": "kubeconfig",
-    "type": "kubeconfig",
-    "category": "Other",
-    "categories": [
-      "Other"
-    ]
-  },
-  {
-    "label": "Sample.ofx",
-    "file": "sample.ofx",
-    "mime": "application/x-ofx",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Ode to Joy Theme (MusicXML)",
-    "file": "sample.musicxml",
-    "mime": "application/vnd.recordare.musicxml+xml",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ]
-  },
-  {
-    "label": "Sample gene sequences (FASTA)",
-    "file": "sample.fasta",
-    "mime": "text/x-fasta",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Ethanol Molecule (XYZ)",
-    "file": "sample.xyz",
-    "mime": "chemical/x-xyz",
-    "category": "Science",
-    "categories": [
-      "Science",
-      "Data"
-    ]
-  },
-  {
-    "label": "Demo Protein Structure (PDB)",
-    "file": "sample.pdb",
-    "mime": "chemical/x-pdb",
-    "category": "Science",
-    "categories": [
-      "Science",
-      "Data"
-    ]
-  },
-  {
-    "label": "Sample variants (VCF)",
-    "file": "sample-variants.vcf",
-    "mime": "text/x-vcf",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "LED Blinker PCB (KiCad)",
-    "file": "sample.kicad_pcb",
-    "mime": "text/x-kicad-pcb",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Hello PostScript (EPS)",
-    "file": "sample.eps",
-    "mime": "application/postscript",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Steam App Manifest (ACF)",
-    "file": "sample.acf",
-    "mime": "text/x-steam-acf",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Helix Nebula (FITS)",
-    "file": "sample.fits",
-    "mime": "image/fits",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Silicon Valley Map (KML)",
-    "file": "sample.kml",
-    "mime": "application/vnd.google-earth.kml+xml",
-    "category": "Geo",
-    "categories": [
-      "Geo"
-    ]
-  },
-  {
-    "label": "World Cities (KMZ)",
-    "file": "sample.kmz",
-    "mime": "application/vnd.google-earth.kmz",
-    "category": "Geo",
-    "categories": [
-      "Geo"
-    ]
-  },
-  {
-    "label": "Folk Tunes (ABC)",
-    "file": "sample.abc",
-    "mime": "text/vnd.abc",
-    "category": "Music",
-    "categories": [
-      "Music"
-    ]
-  },
-  {
-    "label": "Patient Admission (HL7)",
-    "file": "sample.hl7",
-    "mime": "application/hl7-v2",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "label": "Demo Beat (Hydrogen)",
-    "file": "sample.h2song",
-    "mime": "application/x-hydrogen",
-    "category": "Music",
-    "categories": [
-      "Music"
-    ]
-  },
-  {
-    "label": "Short Film Project (Premiere)",
-    "file": "sample.prproj",
-    "mime": "application/x-premiere-project",
-    "category": "Media",
-    "categories": [
-      "Media"
-    ]
-  },
-  {
-    "file": "sample.elf",
-    "label": "ELF Executable (x86-64 Linux stub)",
-    "mime": "application/x-elf",
-    "category": "Binary",
-    "categories": [
-      "Binary"
-    ]
-  },
-  {
-    "file": "sample-telegram.json",
-    "label": "Telegram Chat Export (JSON)",
-    "mime": "application/json",
-    "category": "Data",
-    "categories": [
-      "Data"
-    ]
-  },
-  {
-    "file": "sample.gp5",
-    "label": "Guitar Pro 5 Tab (binary)",
-    "mime": "application/x-guitar-pro",
-    "category": "Music",
-    "categories": [
-      "Music"
-    ]
-  },
-  {
-    "file": "sample.apk",
-    "label": "Android Package (APK stub)",
-    "mime": "application/vnd.android.package-archive",
-    "category": "Binary",
-    "categories": [
-      "Binary"
-    ]
-  },
-  {
-    "file": "sample.iso",
-    "label": "ISO 9660 Disc Image (demo)",
-    "mime": "application/x-iso9660-image",
-    "category": "Binary",
-    "categories": [
-      "Binary"
-    ]
-  },
-  {
-    "label": "Network Capture Demo (PCAP)",
-    "file": "sample.pcap",
-    "mime": "application/vnd.tcpdump.pcap",
-    "category": "System",
-    "categories": [
-      "System",
-      "Data"
-    ]
-  },
-  {
-    "label": "NYC Borough Boundary (Shapefile)",
-    "file": "sample.shp",
-    "mime": "application/octet-stream",
-    "category": "Geo",
-    "categories": [
-      "Geo",
-      "Science"
-    ]
-  },
-  {
-    "label": "Doom Patch WAD (demo)",
-    "file": "sample.wad",
-    "mime": "application/x-doom-wad",
-    "category": "Games",
-    "categories": [
-      "Games"
-    ]
-  },
-  {
-    "file": "sample.sdf",
-    "label": "Aspirin Molecule (SDF)",
-    "mime": "chemical/x-mdl-sdfile",
-    "category": "chemical",
-    "categories": [
-      "chemical",
-      "scientific"
-    ]
-  },
-  {
-    "file": "sample.bsp",
-    "label": "Quake BSP Game Map (demo)",
-    "mime": "application/octet-stream",
-    "category": "game",
-    "categories": [
-      "game",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.cbor",
-    "label": "CBOR API Response (demo)",
-    "mime": "application/cbor",
-    "category": "data",
-    "categories": [
-      "data",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.arrow",
-    "label": "Apache Arrow IPC File (demo)",
-    "mime": "application/vnd.apache.arrow.file",
-    "category": "data",
-    "categories": [
-      "data",
-      "binary",
-      "scientific"
-    ]
-  },
-  {
-    "file": "sample.cif",
-    "label": "Aspirin Crystal Structure (CIF)",
-    "mime": "chemical/x-cif",
-    "category": "chemical",
-    "categories": [
-      "chemical",
-      "scientific"
-    ]
-  },
-  {
-    "file": "sample.parquet",
-    "label": "Apache Parquet Dataset (demo)",
-    "mime": "application/vnd.apache.parquet",
-    "category": "data",
-    "categories": [
-      "data",
-      "binary",
-      "scientific"
-    ]
-  },
-  {
-    "file": "sample.avro",
-    "label": "Avro Employee Schema (demo)",
-    "mime": "application/avro-binary",
-    "category": "data",
-    "categories": [
-      "data",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.h5",
-    "label": "HDF5 Scientific Dataset (demo)",
-    "mime": "application/x-hdf5",
-    "category": "scientific",
-    "categories": [
-      "scientific",
-      "binary",
-      "data"
-    ]
-  },
-  {
-    "file": "sample.msgpack",
-    "label": "MessagePack data (demo)",
-    "mime": "application/x-msgpack",
-    "category": "data",
-    "categories": [
-      "data",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.bson",
-    "label": "BSON document (demo)",
-    "mime": "application/bson",
-    "category": "data",
-    "categories": [
-      "data",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.exr",
-    "label": "OpenEXR HDR image (demo)",
-    "mime": "image/x-exr",
-    "category": "Image",
-    "categories": [
-      "Image",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.dbf",
-    "label": "dBase DBF database (demo)",
-    "mime": "application/dbf",
-    "category": "data",
-    "categories": [
-      "data",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.dwg",
-    "label": "AutoCAD DWG drawing (demo)",
-    "mime": "image/vnd.dwg",
-    "category": "Design",
-    "categories": [
-      "Design",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.stp",
-    "label": "STEP CAD Exchange file (demo)",
-    "mime": "model/step",
-    "category": "Design",
-    "categories": [
-      "Design",
-      "3D"
-    ]
-  },
-  {
-    "file": "sample.blend",
-    "label": "Blender 3D scene (demo)",
-    "mime": "application/x-blender",
-    "category": "3D",
-    "categories": [
-      "3D",
-      "binary",
-      "Design"
-    ]
-  },
-  {
-    "file": "sample.fbx",
-    "label": "FBX 3D animation (demo)",
-    "mime": "application/octet-stream",
-    "category": "3D",
-    "categories": [
-      "3D",
-      "binary",
-      "Design"
-    ]
-  },
-  {
-    "file": "sample.mat",
-    "label": "MATLAB MAT-file (demo)",
-    "mime": "application/x-matlab-data",
-    "category": "scientific",
-    "categories": [
-      "scientific",
-      "data",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.nii",
-    "label": "NIfTI neuroimaging (demo)",
-    "mime": "application/x-nifti",
-    "category": "scientific",
-    "categories": [
-      "scientific",
-      "medical",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.pyc",
-    "label": "Python bytecode (demo)",
-    "mime": "application/x-python-bytecode",
-    "category": "code",
-    "categories": [
-      "code",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.mmp",
-    "label": "LMMS music project (demo)",
-    "mime": "application/xml",
-    "category": "audio",
-    "categories": [
-      "audio",
-      "creative"
-    ]
-  },
-  {
-    "file": "sample.f3d",
-    "label": "Fusion 360 design (demo)",
-    "mime": "application/zip",
-    "category": "Design",
-    "categories": [
-      "Design",
-      "3D",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.deb",
-    "label": "Debian package (demo)",
-    "mime": "application/vnd.debian.binary-package",
-    "category": "code",
-    "categories": [
-      "code",
-      "binary",
-      "archive"
-    ]
-  },
-  {
-    "file": "sample.rpm",
-    "label": "RPM package (demo)",
-    "mime": "application/x-rpm",
-    "category": "code",
-    "categories": [
-      "code",
-      "binary"
-    ]
-  },
-  {
-    "file": "sample.nupkg",
-    "label": "NuGet package (demo)",
-    "mime": "application/zip",
-    "category": "code",
-    "categories": [
-      "code",
-      "binary",
-      "archive"
-    ]
-  },
-  {
-    "file": "sample.vsix",
-    "label": "VS Extension (demo)",
-    "mime": "application/zip",
-    "category": "code",
-    "categories": [
-      "code",
-      "binary",
-      "archive"
-    ]
-  },
-  {
-    "file": "sample.whl",
-    "label": "Python Wheel (demo)",
-    "mime": "application/zip",
-    "category": "code",
-    "categories": [
-      "code",
-      "binary",
-      "archive"
-    ]
-  },
-  {
-    "file": "sample.ipa",
-    "label": "iOS App (IPA demo)",
-    "mime": "application/octet-stream",
-    "category": "code",
-    "categories": [
-      "code",
-      "binary",
-      "mobile"
-    ]
-  },
-  {
-    "file": "sample.qif",
-    "label": "QIF financial data (demo)",
-    "mime": "application/x-qif",
-    "category": "Data",
-    "categories": [
-      "Data",
-      "financial"
-    ]
-  },
-  {
-    "file": "sample.mt940",
-    "label": "MT940 bank statement (demo)",
-    "mime": "text/plain",
-    "category": "Data",
-    "categories": [
-      "Data",
-      "financial"
-    ]
-  },
-  {
-    "file": "sample.gff3",
-    "label": "GFF3 genome annotation (demo)",
-    "mime": "text/plain",
-    "category": "Scientific",
-    "categories": [
-      "Scientific",
-      "bioinformatics"
-    ]
-  },
-  {
-    "file": "sample.sarif",
-    "label": "SARIF security scan results (demo)",
-    "mime": "application/json",
-    "category": "Code",
-    "categories": [
-      "Code",
-      "security"
-    ]
-  },
-  {
-    "file": "sample-workflow.yml",
-    "label": "GitHub Actions CI workflow (demo)",
-    "mime": "application/yaml",
-    "category": "Code",
-    "categories": [
-      "Code",
-      "devops"
-    ],
-    "enhanced": true
-  },
-  {
-    "file": "sample-k8s.yaml",
-    "label": "Kubernetes Deployment manifest (demo)",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config",
-      "devops"
-    ],
-    "enhanced": true
-  },
-  {
-    "file": "pubspec.yaml",
-    "label": "Flutter pubspec.yaml (demo)",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config",
-      "mobile"
-    ],
-    "enhanced": true
-  },
-  {
-    "file": "netlify.toml",
-    "label": "Netlify config (netlify.toml demo)",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config",
-      "devops"
-    ],
-    "enhanced": true
-  },
-  {
-    "file": "vercel.json",
-    "label": "Vercel config (vercel.json demo)",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config",
-      "devops"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "pyproject.toml",
-    "file": "pyproject.toml",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": ".npmrc",
-    "file": ".npmrc",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "renovate.json",
-    "file": "renovate.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": ".prettierrc.json",
-    "file": ".prettierrc.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "turbo.json",
-    "file": "turbo.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "dependabot.yml",
-    "file": "dependabot.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": ".eslintrc.json",
-    "file": ".eslintrc.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "jest.config.json",
-    "file": "jest.config.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": ".stylelintrc.json",
-    "file": ".stylelintrc.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "babel.config.json",
-    "file": "babel.config.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": ".commitlintrc.json",
-    "file": ".commitlintrc.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "lefthook.yml",
-    "file": "lefthook.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "wrangler.toml",
-    "file": "wrangler.toml",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "fly.toml",
-    "file": "fly.toml",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "cliff.toml",
-    "file": "cliff.toml",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": ".releaserc.json",
-    "file": ".releaserc.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "lerna.json",
-    "file": "lerna.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "nx.json",
-    "file": "nx.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "biome.json",
-    "file": "biome.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "codecov.yml",
-    "file": "codecov.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "serverless.yml",
-    "file": "serverless.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "azure-pipelines.yml",
-    "file": "azure-pipelines.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "vscode-settings.json",
-    "file": "vscode-settings.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "vscode-extensions.json",
-    "file": "vscode-extensions.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "vscode-launch.json",
-    "file": "vscode-launch.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "vscode-tasks.json",
-    "file": "vscode-tasks.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Travis CI config",
-    "file": "travis.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "CircleCI config",
-    "file": "circleci.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "AWS Amplify config",
-    "file": "amplify.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "AWS CodeBuild buildspec",
-    "file": "buildspec.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "jsconfig.json",
-    "file": "jsconfig.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Deno config",
-    "file": "deno.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": ".nvmrc",
-    "file": "nvmrc",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": ".browserslistrc",
-    "file": "browserslistrc",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "pre-commit config",
-    "file": "pre-commit-config.yaml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Pyright config",
-    "file": "pyrightconfig.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "tox.ini",
-    "file": "tox.ini",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "mypy config",
-    "file": "mypy.ini",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Angular workspace",
-    "file": "angular.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "capacitor.config.json",
-    "file": "capacitor.config.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".nycrc.json",
-    "file": ".nycrc.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "devcontainer.json",
-    "file": "devcontainer.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "knip.json",
-    "file": "knip.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".mocharc.json",
-    "file": ".mocharc.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".gitlab-ci.yml",
-    "file": ".gitlab-ci.yml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "pnpm-workspace.yaml",
-    "file": "pnpm-workspace.yaml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "vitest.config.json",
-    "file": "vitest.config.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "graphql.config.json",
-    "file": "graphql.config.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "apollo.config.json",
-    "file": "apollo.config.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "storybook.main.json (.storybook/main.json)",
-    "file": "storybook.main.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".drone.yml",
-    "file": ".drone.yml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config",
-      "devops"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "buildkite.yml",
-    "file": "buildkite.yml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config",
-      "devops"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "skaffold.yaml",
-    "file": "skaffold.yaml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config",
-      "devops"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".hadolint.yaml",
-    "file": ".hadolint.yaml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "Chart.yaml (Helm chart)",
-    "file": "Chart.yaml",
-    "mime": "application/yaml",
-    "category": "DevOps",
-    "categories": [
-      "DevOps",
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Helm chart metadata with name, version, and chart dependencies."
-  },
-  {
-    "label": "kustomization.yaml (Kustomize)",
-    "file": "kustomization.yaml",
-    "mime": "application/yaml",
-    "category": "DevOps",
-    "categories": [
-      "DevOps",
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Kustomize overlay with resources, strategic merge patches, and ConfigMap generators."
-  },
-  {
-    "label": "ansible-playbook.yml (Ansible)",
-    "file": "ansible-playbook.yml",
-    "mime": "application/yaml",
-    "category": "DevOps",
-    "categories": [
-      "DevOps",
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Ansible playbook targeting web servers and database servers with task lists."
-  },
-  {
-    "label": "Pulumi.yaml (Pulumi project)",
-    "file": "Pulumi.yaml",
-    "mime": "application/yaml",
-    "category": "DevOps",
-    "categories": [
-      "DevOps",
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Pulumi cloud infrastructure project with Node.js runtime and config keys."
-  },
-  {
-    "label": "packer.json (HashiCorp Packer)",
-    "file": "packer.json",
-    "mime": "application/json",
-    "category": "DevOps",
-    "categories": [
-      "DevOps",
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Packer machine image template with AWS EBS builder and shell provisioners."
-  },
-  {
-    "label": "ruff.toml (Ruff linter)",
-    "file": "ruff.toml",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Ruff Python linter configuration with rule selection, ignores, and format settings."
-  },
-  {
-    "label": "typos.toml (typos spell checker)",
-    "file": "typos.toml",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
-    "knownFile": "typos"
-  },
-  {
-    "label": "uv.toml (uv package manager)",
-    "file": "uv.toml",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "uv Python package manager configuration with Python version and index settings."
-  },
-  {
-    "label": "values.yaml (Helm values)",
-    "file": "values.yaml",
-    "mime": "application/yaml",
-    "category": "DevOps",
-    "categories": [
-      "DevOps",
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Helm chart values file with image, service, ingress, and resource configuration."
-  },
-  {
-    "label": "firebase.json",
-    "file": "firebase.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config",
-      "DevOps"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "app.json (Expo)",
-    "file": "app.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "tailwind.config.json",
-    "file": "tailwind.config.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "postcss.config.json",
-    "file": "postcss.config.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".huskyrc.json",
-    "file": ".huskyrc.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".lintstagedrc.json",
-    "file": ".lintstagedrc.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "nest-cli.json",
-    "file": "nest-cli.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".swcrc",
-    "file": ".swcrc",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "package-lock.json",
-    "file": "package-lock.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "composer.lock",
-    "file": "composer.lock",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "pnpm-lock.yaml",
-    "file": "pnpm-lock.yaml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "Cargo.lock",
-    "file": "Cargo.lock",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "poetry.lock",
-    "file": "poetry.lock",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "go.sum",
-    "file": "go.sum",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "Justfile",
-    "file": "Justfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Just command runner with build, test, fmt, and release recipes."
-  },
-  {
-    "label": "Procfile",
-    "file": "Procfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Heroku/foreman Procfile defining web, worker, scheduler, and release processes."
-  },
-  {
-    "label": ".envrc",
-    "file": ".envrc",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "direnv environment configuration with exports and layout directives."
-  },
-  {
-    "label": "mise.toml",
-    "file": "mise.toml",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "mise tool version manager configuration with tools, tasks, and env vars."
-  },
-  {
-    "label": ".tool-versions",
-    "file": ".tool-versions",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "asdf .tool-versions pinning node, python, ruby, and go versions."
-  },
-  {
-    "label": "Helm Chart.yaml",
-    "file": "chart.yaml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Justfile",
-    "file": "justfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Gemfile.lock",
-    "file": "Gemfile.lock",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "Podfile",
-    "file": "Podfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "CocoaPods Podfile declaring iOS pod dependencies per target."
-  },
-  {
-    "label": "Fastfile",
-    "file": "Fastfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Fastlane Fastfile defining automation lanes for building, testing, and deploying mobile apps."
-  },
-  {
-    "label": "Snapfile",
-    "file": "Snapfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Fastlane Snapfile configuring screenshot devices, languages, and output settings."
-  },
-  {
-    "label": "supabase/config.toml",
-    "file": "supabase-config.toml",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Supabase project configuration defining database, API, auth, and storage settings."
-  },
-  {
-    "label": "_redirects",
-    "file": "_redirects",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Netlify _redirects file with URL redirect and rewrite rules."
-  },
-  {
-    "label": "sonar-project.properties",
-    "file": "sonar-project.properties",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "hatch.toml",
-    "file": "hatch.toml",
-    "mime": "text/x-toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "appveyor.yml",
-    "file": "appveyor.yml",
-    "mime": "application/x-yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": ".rubocop.yml",
-    "file": ".rubocop.yml",
-    "mime": "application/x-yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "Taskfile.yml",
-    "file": "Taskfile.yml",
-    "mime": "application/x-yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "mkdocs.yml",
-    "file": "mkdocs.yml",
-    "mime": "application/x-yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "Cloud Build config",
-    "file": "cloudbuild.yaml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "App Engine config",
-    "file": "app.yaml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "FUNDING.yml",
-    "file": "FUNDING.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Jekyll _config.yml",
-    "file": "_config.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Brewfile",
-    "file": "Brewfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Homebrew Bundle package manifest with taps, formulae, casks, and MAS apps.",
-    "knownFile": "brewfile"
-  },
-  {
-    "label": "Earthfile (Earthly build)",
-    "file": "Earthfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Earthly Earthfile build target configuration with containerized CI build steps.",
-    "knownFile": "earthfile"
-  },
-  {
-    "label": "Matchfile (Fastlane Match)",
-    "file": "Matchfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Fastlane Match configuration for managing Apple code-signing certificates and provisioning profiles.",
-    "knownFile": "matchfile"
-  },
-  {
-    "label": "terraform.tfvars (Terraform variables)",
-    "file": "terraform.tfvars",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Terraform variable values file assigning values to infrastructure variables.",
-    "knownFile": "tfvars"
-  },
-  {
-    "label": "crowdin.yml (Crowdin config)",
-    "file": "crowdin.yml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Crowdin localization configuration with source file mappings and translation settings.",
-    "knownFile": "crowdin-yml"
-  },
-  {
-    "label": "LICENSE",
-    "file": "LICENSE",
-    "mime": "text/plain",
-    "category": "Documents",
-    "categories": [
-      "Documents"
-    ],
-    "enhanced": true,
-    "description": "MIT open-source license.",
-    "knownFile": "license"
-  },
-  {
-    "label": "example.gemspec",
-    "file": "example.gemspec",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Ruby gem specification with runtime and development dependencies.",
-    "knownFile": "gemspec"
-  },
-  {
-    "label": "ansible.cfg",
-    "file": "ansible.cfg",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Ansible configuration with defaults, privilege escalation, and inventory settings.",
-    "knownFile": "ansible-cfg"
-  },
-  {
-    "label": "deny.toml",
-    "file": "deny.toml",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "cargo-deny"
-  },
-  {
-    "label": "cargo.config.toml",
-    "file": "cargo.config.toml",
-    "mime": "application/toml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "cargo-config"
-  },
-  {
-    "label": ".htaccess",
-    "file": ".htaccess",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Apache per-directory configuration with URL rewriting and auth rules.",
-    "knownFile": "htaccess"
-  },
-  {
-    "label": "nginx.conf",
-    "file": "nginx.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Nginx web server configuration with server blocks, location rules, and proxy settings.",
-    "knownFile": "nginx-conf"
-  },
-  {
-    "label": "moon.yml",
-    "file": "moon.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Moonrepo project configuration defining tasks, language, and project metadata.",
-    "knownFile": "moon-yml"
-  },
-  {
-    "label": "Vagrantfile",
-    "file": "Vagrantfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Vagrant VM configuration with Ubuntu base box, port forwarding, synced folders, and shell provisioners.",
-    "knownFile": "vagrantfile"
-  },
-  {
-    "label": "Caddyfile",
-    "file": "Caddyfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Caddy web server configuration with HTTPS, reverse proxies, and file server blocks.",
-    "knownFile": "caddyfile"
-  },
-  {
-    "label": "render.yaml",
-    "file": "render.yaml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Render.com deployment config with web service, worker, cron job, and a managed database.",
-    "knownFile": "render-yaml"
-  },
-  {
-    "label": "railway.json",
-    "file": "railway.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Railway deployment configuration with Nixpacks build and healthcheck settings.",
-    "knownFile": "railway-json"
-  },
-  {
-    "label": "Matchfile",
-    "file": "Matchfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Appfile",
-    "file": "Appfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "knownFile": "appfile"
-  },
-  {
-    "label": ".ruby-version",
-    "file": ".ruby-version",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "ruby-version"
-  },
-  {
-    "label": ".python-version",
-    "file": ".python-version",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "python-version"
-  },
-  {
-    "file": ".gitmodules",
-    "label": ".gitmodules",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Git submodule configuration.",
-    "knownFile": "gitmodules"
-  },
-  {
-    "label": "rush.json",
-    "file": "rush.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Rush monorepo configuration with project list."
-  },
-  {
-    "label": ".markdownlint.json",
-    "file": ".markdownlint.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Markdownlint rules configuration."
-  },
-  {
-    "label": ".markdownlint.yml (Markdownlint YAML)",
-    "file": ".markdownlint.yml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Markdownlint YAML rules configuration with line length and element allow-lists."
-  },
-  {
-    "label": ".clang-format",
-    "file": ".clang-format",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Clang-Format C/C++ code formatting configuration."
-  },
-  {
-    "label": ".markdownlint.yml",
-    "file": ".markdownlint.yml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Markdownlint configuration in YAML format \u2014 rule overrides and custom settings for Markdown linting."
-  },
-  {
-    "label": ".markdownlint.yml",
-    "file": ".markdownlint.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Markdownlint configuration for linting Markdown files."
-  },
-  {
-    "label": "Dockerfile (multi-stage demo)",
-    "file": "Dockerfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "docker-compose.yml (demo)",
-    "file": "docker-compose.yml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "Jenkinsfile",
-    "file": "Jenkinsfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Jenkins declarative pipeline with Install, Lint, Test, Build, and Deploy stages.",
-    "knownFile": "jenkinsfile"
-  },
-  {
-    "label": "BUILD.bazel",
-    "file": "BUILD.bazel",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Bazel build rules file."
-  },
-  {
-    "label": ".bazelrc",
-    "file": ".bazelrc",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Bazel configuration file."
-  },
-  {
-    "label": "build.ninja",
-    "file": "build.ninja",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Ninja build system rules file."
-  },
-  {
-    "label": ".gitconfig",
-    "file": ".gitconfig",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Git global configuration file."
-  }
+    {
+        "label": "Welcome.md",
+        "file": "welcome.md",
+        "mime": "text/markdown",
+        "category": "Documents",
+        "categories": [
+            "Documents"
+        ]
+    },
+    {
+        "label": "Sample.pdf",
+        "file": "sample.pdf",
+        "mime": "application/pdf",
+        "category": "Documents",
+        "categories": [
+            "Documents"
+        ]
+    },
+    {
+        "label": "Sample (3 pages).pdf",
+        "file": "sample-pages.pdf",
+        "mime": "application/pdf",
+        "category": "Documents",
+        "categories": [
+            "Documents"
+        ]
+    },
+    {
+        "label": "Sample.txt",
+        "file": "sample.txt",
+        "mime": "text/plain",
+        "type": "raw",
+        "category": "Documents",
+        "categories": [
+            "Documents"
+        ]
+    },
+    {
+        "label": "Sample.ans",
+        "file": "sample.ans",
+        "mime": "text/plain",
+        "category": "Text",
+        "categories": [
+            "Text"
+        ],
+        "type": "asciiart"
+    },
+    {
+        "label": "Sample.epub",
+        "file": "sample.epub",
+        "mime": "application/epub+zip",
+        "category": "Documents",
+        "categories": [
+            "Documents",
+            "Ebook"
+        ],
+        "description": "Public-domain short story EPUB: The Gift of the Magi by O. Henry.",
+        "source": "https://www.gutenberg.org/ebooks/7256",
+        "license": "Project Gutenberg public-domain ebook",
+        "attribution": "O. Henry; Project Gutenberg"
+    },
+    {
+        "label": "Sample.djvu",
+        "file": "sample.djvu",
+        "mime": "image/vnd.djvu",
+        "category": "Documents",
+        "categories": [
+            "Documents",
+            "Ebook"
+        ],
+        "partial": true
+    },
+    {
+        "label": "Sample.fb2",
+        "file": "sample.fb2",
+        "mime": "application/x-fictionbook+xml",
+        "category": "Documents",
+        "categories": [
+            "Documents",
+            "Ebook"
+        ]
+    },
+    {
+        "label": "Sample.mobi",
+        "file": "sample.mobi",
+        "mime": "application/x-mobipocket-ebook",
+        "category": "Documents",
+        "categories": [
+            "Documents",
+            "Ebook"
+        ],
+        "description": "Older Mobipocket ebook fixture containing Project Gutenberg text from The Gift of the Magi.",
+        "source": "https://www.gutenberg.org/ebooks/7256",
+        "license": "Project Gutenberg public-domain text; embedded image CC0 1.0",
+        "attribution": "O. Henry; Project Gutenberg; Wikimedia Commons contributor"
+    },
+    {
+        "label": "Sample.lrf",
+        "file": "sample.lrf",
+        "mime": "application/x-sony-bbeb",
+        "category": "Documents",
+        "categories": [
+            "Documents",
+            "Ebook"
+        ],
+        "partial": true
+    },
+    {
+        "label": "Sample.rtf",
+        "file": "sample.rtf",
+        "mime": "application/rtf",
+        "category": "Documents",
+        "categories": [
+            "Documents"
+        ]
+    },
+    {
+        "label": "Sample.csv",
+        "file": "sample.csv",
+        "mime": "text/csv",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Sample.sqlite",
+        "file": "sample.sqlite",
+        "mime": "application/vnd.sqlite3",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "File Viewer Demo Map (MBTiles)",
+        "file": "sample.mbtiles",
+        "mime": "application/x-sqlite3",
+        "category": "Geo",
+        "categories": [
+            "Geo"
+        ]
+    },
+    {
+        "label": "Sample.clip",
+        "file": "sample.clip",
+        "mime": "application/vnd.clip-studio.paint",
+        "type": "clip",
+        "category": "Image",
+        "categories": [
+            "Image",
+            "Media"
+        ]
+    },
+    {
+        "label": "Sample.json",
+        "file": "sample.json",
+        "mime": "application/json",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Sample.har",
+        "file": "sample.har",
+        "mime": "application/har+json",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Sample.jsonl",
+        "file": "sample.jsonl",
+        "mime": "application/x-ndjson",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Sample.eml",
+        "file": "sample.eml",
+        "mime": "message/rfc822",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Sample.mbox",
+        "file": "sample.mbox",
+        "mime": "application/mbox",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Sample.msg",
+        "file": "sample.msg",
+        "mime": "application/vnd.ms-outlook",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Sample.ics",
+        "file": "sample.ics",
+        "mime": "text/calendar",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Sample.vcf",
+        "file": "sample.vcf",
+        "mime": "text/vcard",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Sample.xlsx",
+        "file": "sample.xlsx",
+        "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "category": "Office",
+        "categories": [
+            "Office"
+        ]
+    },
+    {
+        "label": "Sample.docx",
+        "file": "sample.docx",
+        "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "category": "Office",
+        "categories": [
+            "Office"
+        ]
+    },
+    {
+        "label": "Sample.odt",
+        "file": "sample.odt",
+        "mime": "application/vnd.oasis.opendocument.text",
+        "category": "Office",
+        "categories": [
+            "Office"
+        ]
+    },
+    {
+        "label": "Sample.pptx",
+        "file": "sample.pptx",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "category": "Office",
+        "categories": [
+            "Office"
+        ]
+    },
+    {
+        "label": "sample.pages",
+        "file": "sample.pages",
+        "category": "Office",
+        "categories": [
+            "Office"
+        ]
+    },
+    {
+        "label": "Sample.yaml",
+        "file": "sample.yaml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "Sample.toml",
+        "file": "sample.toml",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "package.json",
+        "file": "package.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "tsconfig.json",
+        "file": "tsconfig.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "Cargo.toml",
+        "file": "Cargo.toml",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "Dockerfile",
+        "file": "Dockerfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "docker-compose.yml",
+        "file": "docker-compose.yml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".gitignore",
+        "file": ".gitignore",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": ".gitattributes",
+        "file": ".gitattributes",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".mailmap",
+        "file": ".mailmap",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".npmignore",
+        "file": ".npmignore",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".dockerignore",
+        "file": ".dockerignore",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "requirements.txt",
+        "file": "requirements.txt",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "go.mod",
+        "file": "go.mod",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "composer.json",
+        "file": "composer.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "Gemfile",
+        "file": "Gemfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "build.gradle",
+        "file": "build.gradle",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "Pipfile",
+        "file": "Pipfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "openapi.yaml",
+        "file": "openapi.yaml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "CODEOWNERS",
+        "file": "CODEOWNERS",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".editorconfig",
+        "file": ".editorconfig",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "pom.xml",
+        "file": "pom.xml",
+        "mime": "application/xml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "Sample.xml",
+        "file": "sample.xml",
+        "mime": "application/xml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "sample.env (environment variables)",
+        "file": "sample.env",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Secrets",
+            "Config"
+        ]
+    },
+    {
+        "label": "Sample.ini",
+        "file": "sample.ini",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "sample.plist",
+        "file": "sample.plist",
+        "mime": "application/x-plist",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "Localizable.strings",
+        "file": "Localizable.strings",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "sample.reg",
+        "file": "sample.reg",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "Sample.patch",
+        "file": "sample.patch",
+        "mime": "text/x-diff",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ]
+    },
+    {
+        "label": "Sample.log",
+        "file": "sample.log",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ]
+    },
+    {
+        "label": "sample.crash",
+        "file": "sample.crash",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ]
+    },
+    {
+        "label": "sample.swf",
+        "file": "sample.swf",
+        "category": "Media",
+        "categories": [
+            "Binary",
+            "Emulator"
+        ]
+    },
+    {
+        "label": "Sample.srt",
+        "file": "sample.srt",
+        "mime": "application/x-subrip",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ]
+    },
+    {
+        "label": "example.js",
+        "file": "example.js",
+        "mime": "text/javascript",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ]
+    },
+    {
+        "label": "main.py",
+        "file": "main.py",
+        "mime": "text/x-python",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Python dataclass and aggregation example."
+    },
+    {
+        "label": "app.ts",
+        "file": "app.ts",
+        "mime": "text/typescript",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "TypeScript typed task filtering example."
+    },
+    {
+        "label": "Dashboard.tsx",
+        "file": "Dashboard.tsx",
+        "mime": "text/typescript-jsx",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "React TSX component with state and memoized rendering."
+    },
+    {
+        "label": "Widget.jsx",
+        "file": "Widget.jsx",
+        "mime": "text/jsx",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "React JSX component with expandable content."
+    },
+    {
+        "label": "server.go",
+        "file": "server.go",
+        "mime": "text/x-go",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Go HTTP health endpoint example."
+    },
+    {
+        "label": "worker.rs",
+        "file": "worker.rs",
+        "mime": "text/rust",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Rust word-count worker using a BTreeMap."
+    },
+    {
+        "label": "Main.java",
+        "file": "Main.java",
+        "mime": "text/x-java-source",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Java record and stream aggregation example."
+    },
+    {
+        "label": "main.c",
+        "file": "main.c",
+        "mime": "text/x-c",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "C function and formatted output example."
+    },
+    {
+        "label": "mesh.cpp",
+        "file": "mesh.cpp",
+        "mime": "text/x-c++src",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "C++ vector and struct mesh calculation example."
+    },
+    {
+        "label": "Program.cs",
+        "file": "Program.cs",
+        "mime": "text/x-csharp",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "C# record and LINQ summation example."
+    },
+    {
+        "label": "script.sh",
+        "file": "script.sh",
+        "mime": "text/x-shellscript",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Shell script with strict mode and file counting."
+    },
+    {
+        "label": "query.sql",
+        "file": "query.sql",
+        "mime": "application/sql",
+        "category": "Code",
+        "categories": [
+            "Code",
+            "Data"
+        ],
+        "type": "code",
+        "description": "SQL schema and grouped aggregate query."
+    },
+    {
+        "label": "styles.css",
+        "file": "styles.css",
+        "mime": "text/css",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "CSS custom properties and card hover styling."
+    },
+    {
+        "label": "theme.scss",
+        "file": "theme.scss",
+        "mime": "text/x-scss",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "SCSS variables and nested toolbar rules."
+    },
+    {
+        "label": "theme.less",
+        "file": "theme.less",
+        "mime": "text/x-less",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Less variables, nesting, and color function example."
+    },
+    {
+        "label": "main.rb",
+        "file": "main.rb",
+        "mime": "text/x-ruby",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Ruby report class grouping rows by team."
+    },
+    {
+        "label": "index.php",
+        "file": "index.php",
+        "mime": "application/x-httpd-php",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "PHP strict-typed status rendering example."
+    },
+    {
+        "label": "App.swift",
+        "file": "App.swift",
+        "mime": "text/x-swift",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Swift Codable release data example."
+    },
+    {
+        "label": "Main.kt",
+        "file": "Main.kt",
+        "mime": "text/x-kotlin",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Kotlin data class and extension function example."
+    },
+    {
+        "label": "Job.scala",
+        "file": "Job.scala",
+        "mime": "text/x-scala",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Scala case class and runnable job filter example."
+    },
+    {
+        "label": "filter.lua",
+        "file": "filter.lua",
+        "mime": "text/x-lua",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Lua table filtering function example."
+    },
+    {
+        "label": "analysis.r",
+        "file": "analysis.r",
+        "mime": "text/x-r-source",
+        "category": "Code",
+        "categories": [
+            "Code",
+            "Data"
+        ],
+        "type": "code",
+        "description": "R data frame and aggregate example."
+    },
+    {
+        "label": "report.pl",
+        "file": "report.pl",
+        "mime": "text/x-perl",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Perl event formatting loop example."
+    },
+    {
+        "label": "app.dart",
+        "file": "app.dart",
+        "mime": "text/x-dart",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Dart class and list iteration example."
+    },
+    {
+        "label": "pipeline.ex",
+        "file": "pipeline.ex",
+        "mime": "text/x-elixir",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Elixir pipeline normalization example."
+    },
+    {
+        "label": "core.clj",
+        "file": "core.clj",
+        "mime": "text/x-clojure",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Clojure namespace and slug generation example."
+    },
+    {
+        "label": "schema.graphql",
+        "file": "schema.graphql",
+        "mime": "application/graphql",
+        "category": "Code",
+        "categories": [
+            "Code",
+            "Data"
+        ],
+        "type": "code",
+        "description": "GraphQL schema for project sample metadata."
+    },
+    {
+        "label": "deploy.ps1",
+        "file": "deploy.ps1",
+        "mime": "text/x-powershell",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "PowerShell deployment loop example."
+    },
+    {
+        "label": "Makefile",
+        "file": "Makefile",
+        "mime": "text/x-makefile",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "enhanced": true,
+        "description": "Makefile build, test, serve, and clean targets."
+    },
+    {
+        "label": "CMakeLists.txt",
+        "file": "CMakeLists.txt",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "enhanced": true,
+        "description": "CMake build configuration with project, targets, and dependencies."
+    },
+    {
+        "label": "BUILD.bazel",
+        "file": "BUILD.bazel",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "enhanced": true,
+        "description": "Bazel BUILD file with py_library, py_binary, and py_test targets."
+    },
+    {
+        "label": ".bazelrc",
+        "file": ".bazelrc",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "type": "code",
+        "enhanced": true,
+        "description": "Bazel RC configuration with build, test, and remote execution flags."
+    },
+    {
+        "label": "build.ninja",
+        "file": "build.ninja",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "enhanced": true,
+        "description": "Ninja build file with compile rules, object targets, and link step."
+    },
+    {
+        "label": "infra.tf",
+        "file": "infra.tf",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code",
+            "Config"
+        ],
+        "type": "code",
+        "description": "Terraform bucket configuration with variables, locals, and outputs."
+    },
+    {
+        "label": "service.proto",
+        "file": "service.proto",
+        "mime": "text/x-protobuf",
+        "category": "Code",
+        "categories": [
+            "Code",
+            "Data"
+        ],
+        "type": "code",
+        "description": "Protocol Buffers messages and catalog service definition."
+    },
+    {
+        "label": "build.bat",
+        "file": "build.bat",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Windows batch script for serving the static docs folder."
+    },
+    {
+        "label": "Panel.vue",
+        "file": "Panel.vue",
+        "mime": "text/x-vue",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Vue single-file component with template, script setup, and scoped styles."
+    },
+    {
+        "label": "Controller.m",
+        "file": "Controller.m",
+        "mime": "text/x-objective-c",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Objective-C preview controller with properties and selection status."
+    },
+    {
+        "label": "analytics.fs",
+        "file": "analytics.fs",
+        "mime": "text/x-fsharp",
+        "category": "Code",
+        "categories": [
+            "Code",
+            "Data"
+        ],
+        "type": "code",
+        "description": "F# record list grouped and summarized by category."
+    },
+    {
+        "label": "Module.vb",
+        "file": "Module.vb",
+        "mime": "text/x-vb",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Visual Basic module formatting sample file sizes."
+    },
+    {
+        "label": "shader.wgsl",
+        "file": "shader.wgsl",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code",
+            "Media"
+        ],
+        "type": "code",
+        "description": "WGSL vertex and fragment shader pair for a colored preview."
+    },
+    {
+        "label": "Escrow.sol",
+        "file": "Escrow.sol",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "type": "code",
+        "description": "Solidity escrow contract with timed release logic."
+    },
+    {
+        "label": "Overwriter.frag",
+        "file": "Overwriter.frag",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ]
+    },
+    {
+        "label": "Glyph Dungeon cipher.txt",
+        "file": "metagame/stage2/cipher.txt",
+        "mime": "text/plain",
+        "category": "Metagame",
+        "categories": [
+            "Metagame"
+        ]
+    },
+    {
+        "label": "Signal Racer transmission_hum.mp3",
+        "file": "metagame/stage5/transmission_hum.mp3",
+        "mime": "audio/mpeg",
+        "category": "Metagame",
+        "categories": [
+            "Metagame"
+        ]
+    },
+    {
+        "label": "Protocol Codex protocols_of_the_entity.epub",
+        "file": "metagame/stage6/protocols_of_the_entity.epub",
+        "mime": "application/epub+zip",
+        "category": "Metagame",
+        "categories": [
+            "Metagame"
+        ]
+    },
+    {
+        "label": "Identity Arbiter Entity A image",
+        "file": "metagame/stage7/entity_a_verification.png",
+        "mime": "image/png",
+        "category": "Metagame",
+        "categories": [
+            "Metagame"
+        ]
+    },
+    {
+        "label": "Identity Arbiter Entity F image",
+        "file": "metagame/stage7/entity_f_verification.png",
+        "mime": "image/png",
+        "category": "Metagame",
+        "categories": [
+            "Metagame"
+        ]
+    },
+    {
+        "label": "Identity Arbiter metadata sidecar",
+        "file": "metagame/stage7/entity_metadata.json",
+        "mime": "application/json",
+        "category": "Metagame",
+        "categories": [
+            "Metagame"
+        ]
+    },
+    {
+        "label": "Sample.html",
+        "file": "sample.html",
+        "mime": "text/html",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ]
+    },
+    {
+        "label": "Sample.ipynb",
+        "file": "sample.ipynb",
+        "mime": "application/x-ipynb+json",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ]
+    },
+    {
+        "file": "sample.geojson",
+        "label": "Sample.geojson",
+        "mime": "application/geo+json",
+        "category": "Geo",
+        "categories": [
+            "Geo"
+        ]
+    },
+    {
+        "label": "Sample.gpx",
+        "file": "sample.gpx",
+        "mime": "application/gpx+xml",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Sample.png",
+        "file": "sample.png",
+        "mime": "image/png",
+        "category": "Media",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "description": "CC0 flower PNG with transparency and real image detail.",
+        "source": "https://commons.wikimedia.org/wiki/File:Red_flower_01.png",
+        "license": "CC0 1.0 Universal",
+        "attribution": "Wikimedia Commons contributor"
+    },
+    {
+        "label": "Sample.jpg",
+        "file": "sample.jpg",
+        "mime": "image/jpeg",
+        "type": "image",
+        "category": "Media",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "description": "Public-domain Hubble sample image in JPEG format.",
+        "source": "https://commons.wikimedia.org/wiki/File:DSS_Sample_Images_(1993-14-105).jpg",
+        "license": "Public domain (NASA/ESA Hubble material)",
+        "attribution": "NASA, ESA, and STScI"
+    },
+    {
+        "label": "Sample.jpeg",
+        "file": "sample.jpeg",
+        "mime": "image/jpeg",
+        "type": "image",
+        "category": "Media",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "description": "Public-domain Hubble sample image with the long .jpeg extension.",
+        "source": "https://commons.wikimedia.org/wiki/File:DSS_Sample_Images_(1993-14-105).jpg",
+        "license": "Public domain (NASA/ESA Hubble material)",
+        "attribution": "NASA, ESA, and STScI"
+    },
+    {
+        "label": "Sample.gif",
+        "file": "sample.gif",
+        "mime": "image/gif",
+        "type": "image",
+        "category": "Media",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "description": "Public-domain ranked-ballot example image in GIF format.",
+        "source": "https://commons.wikimedia.org/wiki/File:Rankballotoval.gif",
+        "license": "Public domain",
+        "attribution": "Tom Ruen"
+    },
+    {
+        "label": "Sample.webp",
+        "file": "sample.webp",
+        "mime": "image/webp",
+        "type": "image",
+        "category": "Media",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "description": "Public-domain NASA Mars sample return illustration in WebP format.",
+        "source": "https://commons.wikimedia.org/wiki/File:Mars_sample_return_ascent_vehicle.webp",
+        "license": "Public domain (NASA material)",
+        "attribution": "NASA/JPL-Caltech"
+    },
+    {
+        "label": "Sample.bmp",
+        "file": "sample.bmp",
+        "mime": "image/bmp",
+        "type": "image",
+        "category": "Media",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "description": "LGPL sample bitmap image of a blackbuck in BMP format.",
+        "source": "https://people.math.sc.edu/Burkardt/data/bmp/blackbuck.bmp",
+        "license": "GNU LGPL",
+        "attribution": "John Burkardt data directory"
+    },
+    {
+        "label": "Sample.tiff",
+        "file": "sample.tiff",
+        "mime": "image/tiff",
+        "type": "tiff",
+        "category": "Media",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "partial": true,
+        "description": "TIFF conversion of the CC0 flower PNG sample for metadata-focused TIFF coverage.",
+        "source": "https://commons.wikimedia.org/wiki/File:Red_flower_01.png",
+        "license": "CC0 1.0 Universal",
+        "attribution": "Wikimedia Commons contributor; converted to TIFF for this catalog"
+    },
+    {
+        "label": "Sample.avif",
+        "file": "sample.avif",
+        "mime": "image/avif",
+        "type": "heif",
+        "category": "Media",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "description": "AVIF conversion of the CC0 flower PNG sample for modern image-container coverage.",
+        "source": "https://commons.wikimedia.org/wiki/File:Red_flower_01.png",
+        "license": "CC0 1.0 Universal",
+        "attribution": "Wikimedia Commons contributor; converted to AVIF for this catalog"
+    },
+    {
+        "label": "Sample.jxl",
+        "file": "sample.jxl",
+        "mime": "image/jxl",
+        "type": "image",
+        "category": "Media",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "partial": true,
+        "description": "JPEG XL wide-gamut browser support sample with explicit unsupported-browser fallback coverage.",
+        "source": "https://jpegxl.info/resources/jpeg-xl-test-page.html",
+        "license": "JPEG XL community sample; see source",
+        "attribution": "JPEG XL community test page"
+    },
+    {
+        "label": "sample.heic",
+        "file": "sample.heic",
+        "mime": "image/heic",
+        "type": "heif",
+        "category": "Media",
+        "categories": [
+            "Image",
+            "Media"
+        ]
+    },
+    {
+        "label": "Sample.stl",
+        "file": "sample.stl",
+        "mime": "model/stl",
+        "category": "Media",
+        "categories": [
+            "Media",
+            "3D"
+        ]
+    },
+    {
+        "label": "Sample.obj",
+        "file": "sample.obj",
+        "mime": "model/obj",
+        "category": "Media",
+        "categories": [
+            "Media",
+            "3D"
+        ]
+    },
+    {
+        "label": "Sample.glb",
+        "file": "sample.glb",
+        "mime": "model/gltf-binary",
+        "category": "Media",
+        "categories": [
+            "Media",
+            "3D"
+        ]
+    },
+    {
+        "label": "Sample.3mf",
+        "file": "sample.3mf",
+        "mime": "model/3mf",
+        "category": "Media",
+        "categories": [
+            "Media",
+            "3D"
+        ]
+    },
+    {
+        "label": "Sample.ply",
+        "file": "sample.ply",
+        "mime": "model/ply",
+        "category": "Media",
+        "categories": [
+            "Media",
+            "3D"
+        ]
+    },
+    {
+        "label": "example.svg",
+        "file": "example.svg",
+        "mime": "image/svg+xml",
+        "category": "Media",
+        "categories": [
+            "Image",
+            "Media"
+        ]
+    },
+    {
+        "label": "Sample.wav",
+        "file": "sample.wav",
+        "mime": "audio/wav",
+        "type": "media",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ]
+    },
+    {
+        "label": "Sample.als",
+        "file": "sample.als",
+        "mime": "application/x-ableton-live-set",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ]
+    },
+    {
+        "label": "Sample.mid",
+        "file": "sample.mid",
+        "mime": "audio/midi",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ]
+    },
+    {
+        "label": "Sample.mp3",
+        "file": "sample.mp3",
+        "mime": "audio/mpeg",
+        "type": "media",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ],
+        "description": "Short MP3 audio sample for native audio playback and ID3 metadata checks."
+    },
+    {
+        "label": "Sample.ogg",
+        "file": "sample.ogg",
+        "mime": "audio/ogg",
+        "type": "media",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ],
+        "description": "Ogg Vorbis example audio file for native browser audio playback coverage.",
+        "source": "https://commons.wikimedia.org/wiki/File:Example.ogg",
+        "license": "Public domain",
+        "attribution": "Wikimedia Commons example audio file"
+    },
+    {
+        "label": "Sample.mp4",
+        "file": "sample.mp4",
+        "mime": "video/mp4",
+        "type": "media",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ],
+        "description": "Tiny MP4 video test clip for native video playback coverage.",
+        "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/tiny-clip.mp4",
+        "license": "BSD-3-Clause",
+        "attribution": "Chromium media test data"
+    },
+    {
+        "label": "Sample.webm",
+        "file": "sample.webm",
+        "mime": "video/webm",
+        "type": "media",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ],
+        "description": "Small WebM video test clip for native browser playback coverage.",
+        "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/bear.webm",
+        "license": "BSD-3-Clause",
+        "attribution": "Chromium media test data"
+    },
+    {
+        "label": "Sample.mov",
+        "file": "sample.mov",
+        "mime": "video/quicktime",
+        "type": "media",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ],
+        "partial": true,
+        "description": "QuickTime MOV sample; playback depends on browser codec support.",
+        "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/bear_pcm_s16be.mov",
+        "license": "BSD-3-Clause",
+        "attribution": "Chromium media test data"
+    },
+    {
+        "label": "Sample.mkv",
+        "file": "sample.mkv",
+        "mime": "video/x-matroska",
+        "type": "media",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ],
+        "partial": true,
+        "description": "Matroska MKV sample; the viewer detects it and shows a transcode hint if native playback fails.",
+        "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/testsrc-no-durations-h264.mkv",
+        "license": "BSD-3-Clause",
+        "attribution": "Chromium media test data"
+    },
+    {
+        "label": "Sample.flac",
+        "file": "sample.flac",
+        "mime": "audio/flac",
+        "type": "media",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ],
+        "description": "Small FLAC audio fixture for lossless audio detection and playback coverage.",
+        "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/sfx.flac",
+        "license": "BSD-3-Clause",
+        "attribution": "Chromium media test data"
+    },
+    {
+        "label": "Sample.m4a",
+        "file": "sample.m4a",
+        "mime": "audio/mp4",
+        "type": "media",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ],
+        "description": "Small M4A audio fixture for MPEG-4 audio container coverage.",
+        "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/sfx.m4a",
+        "license": "BSD-3-Clause",
+        "attribution": "Chromium media test data"
+    },
+    {
+        "label": "Sample.aac",
+        "file": "sample.aac",
+        "mime": "audio/aac",
+        "type": "media",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ],
+        "description": "AAC ADTS audio sample for standalone AAC detection and playback coverage.",
+        "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/bear-audio-lc-aac.aac",
+        "license": "BSD-3-Clause",
+        "attribution": "Chromium media test data"
+    },
+    {
+        "label": "Sample.ttf",
+        "file": "sample.ttf",
+        "mime": "font/ttf",
+        "type": "font",
+        "category": "Media",
+        "categories": [
+            "Media",
+            "Font"
+        ],
+        "description": "Ubuntu Mono TrueType specimen for checking installed-font metadata and live glyph rendering.",
+        "source": "https://design.ubuntu.com/font/",
+        "license": "Ubuntu Font Licence 1.0",
+        "attribution": "Ubuntu Font Family by Canonical Ltd."
+    },
+    {
+        "label": "Sample.otf",
+        "file": "sample.otf",
+        "mime": "font/otf",
+        "type": "font",
+        "category": "Media",
+        "categories": [
+            "Media",
+            "Font"
+        ],
+        "description": "Source Serif 4 OpenType/CFF specimen for testing OTF font previews and metadata.",
+        "source": "https://github.com/adobe-fonts/source-serif/releases/tag/4.005R",
+        "license": "SIL Open Font License 1.1",
+        "attribution": "Source Serif 4 by Adobe Fonts"
+    },
+    {
+        "label": "Sample.woff",
+        "file": "sample.woff",
+        "mime": "font/woff",
+        "type": "font",
+        "category": "Media",
+        "categories": [
+            "Media",
+            "Font"
+        ],
+        "description": "WOFF webfont derived from the Ubuntu Mono sample for browser FontFace loading.",
+        "source": "https://design.ubuntu.com/font/",
+        "license": "Ubuntu Font Licence 1.0",
+        "attribution": "Ubuntu Font Family by Canonical Ltd.; converted to WOFF for this catalog"
+    },
+    {
+        "label": "Sample.woff2",
+        "file": "sample.woff2",
+        "mime": "font/woff2",
+        "type": "font",
+        "category": "Media",
+        "categories": [
+            "Media",
+            "Font"
+        ],
+        "description": "WOFF2 webfont derived from the Ubuntu Mono sample for modern compressed font coverage.",
+        "source": "https://design.ubuntu.com/font/",
+        "license": "Ubuntu Font Licence 1.0",
+        "attribution": "Ubuntu Font Family by Canonical Ltd.; converted to WOFF2 for this catalog"
+    },
+    {
+        "label": "Sample.avi",
+        "file": "Sample.avi",
+        "mime": "video/x-msvideo",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ]
+    },
+    {
+        "label": "Sample.bin",
+        "file": "sample.bin",
+        "mime": "application/octet-stream",
+        "category": "Archive & Binary",
+        "categories": [
+            "Archive & Binary"
+        ]
+    },
+    {
+        "label": "Sample.zip",
+        "file": "sample.zip",
+        "mime": "application/zip",
+        "category": "Archive & Binary",
+        "categories": [
+            "Archive & Binary"
+        ]
+    },
+    {
+        "label": "Locked.zip",
+        "file": "sample-locked.zip",
+        "mime": "application/zip",
+        "category": "Archive & Binary",
+        "categories": [
+            "Archive & Binary"
+        ]
+    },
+    {
+        "label": "Sample.cbz",
+        "file": "sample.cbz",
+        "mime": "application/vnd.comicbook+zip",
+        "category": "Archive & Binary",
+        "categories": [
+            "Documents",
+            "Ebook",
+            "Archive & Binary"
+        ]
+    },
+    {
+        "label": "Sample.7z",
+        "file": "Sample.7z",
+        "mime": "application/x-7z-compressed",
+        "category": "Archive & Binary",
+        "categories": [
+            "Archive & Binary"
+        ]
+    },
+    {
+        "label": "sample.url",
+        "file": "sample.url",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ]
+    },
+    {
+        "label": "secret.txt",
+        "file": "secret.txt",
+        "mime": "text/plain",
+        "category": "Secrets",
+        "categories": [
+            "Secrets",
+            "Text"
+        ]
+    },
+    {
+        "label": "sample_old.png",
+        "file": "sample_old.png",
+        "mime": "image/png",
+        "category": "Secrets",
+        "categories": [
+            "Image",
+            "Media"
+        ]
+    },
+    {
+        "label": "sample.torrent",
+        "file": "sample.torrent",
+        "mime": "application/x-bittorrent",
+        "category": "Archive & Binary",
+        "categories": [
+            "Archive & Binary"
+        ]
+    },
+    {
+        "label": "sample.class",
+        "file": "sample.class",
+        "category": "Binary",
+        "categories": [
+            "Binary"
+        ],
+        "type": "java-class",
+        "description": "Minimal valid Java class (public class Sample extends Object, Java 17 / major version 61)"
+    },
+    {
+        "label": "sample.ico",
+        "file": "sample.ico",
+        "mime": "image/x-icon",
+        "category": "Media",
+        "categories": [
+            "Image",
+            "Media"
+        ]
+    },
+    {
+        "label": "sample.procreate",
+        "file": "sample.procreate",
+        "type": "procreate",
+        "category": "Image",
+        "categories": [
+            "Image",
+            "Media"
+        ]
+    },
+    {
+        "label": "Sample.ora",
+        "file": "sample.ora",
+        "mime": "image/openraster",
+        "category": "Image",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "type": "layered"
+    },
+    {
+        "label": "Sample.kra",
+        "file": "sample.kra",
+        "mime": "application/x-krita",
+        "category": "Image",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "type": "layered",
+        "description": "Small Krita-style layered sample with separate background, shape, and annotation layers.",
+        "source": "Generated in-repo from simple geometric CC0 sample content",
+        "license": "CC0 1.0 Universal",
+        "attribution": "File Viewer sample catalog"
+    },
+    {
+        "label": "Sample.psd",
+        "file": "sample.psd",
+        "mime": "image/vnd.adobe.photoshop",
+        "category": "Image",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "type": "layered",
+        "description": "Photoshop PSD sample with semi-transparent layers for layer-list and compositing coverage.",
+        "source": "https://github.com/psd-tools/psd-tools/blob/main/tests/psd_files/semi-transparent-layers.psd",
+        "license": "MIT",
+        "attribution": "psd-tools test corpus"
+    },
+    {
+        "label": "Sample.psb",
+        "file": "sample.psb",
+        "mime": "image/vnd.adobe.photoshop",
+        "category": "Image",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "type": "layered",
+        "description": "Large-document Photoshop PSB sample paired with the PSD layer fixture.",
+        "source": "https://github.com/psd-tools/psd-tools/blob/main/tests/psd_files/semi-transparent-layers.psb",
+        "license": "MIT",
+        "attribution": "psd-tools test corpus"
+    },
+    {
+        "label": "Sample.xcf",
+        "file": "sample.xcf",
+        "mime": "image/x-xcf",
+        "category": "Image",
+        "categories": [
+            "Image",
+            "Media"
+        ],
+        "type": "layered",
+        "partial": true,
+        "description": "GIMP XCF layer-mode sample; the viewer currently extracts layer structure and shows a placeholder canvas.",
+        "source": "https://commons.wikimedia.org/wiki/File:Gimp_layer_mode_test.xcf",
+        "license": "Beerware License",
+        "attribution": "McZusatz"
+    },
+    {
+        "label": "sample.sketch",
+        "file": "sample.sketch",
+        "type": "sketch",
+        "category": "Image",
+        "categories": [
+            "Image",
+            "Media"
+        ]
+    },
+    {
+        "label": "sample.gcode",
+        "file": "sample.gcode",
+        "mime": "text/x-gcode",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "sample.gitignore",
+        "file": "sample.gitignore",
+        "category": "Text",
+        "categories": [
+            "Text"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "sample.img",
+        "file": "sample.img",
+        "category": "Binary",
+        "categories": [
+            "Binary",
+            "Emulator"
+        ]
+    },
+    {
+        "label": "sample.nes",
+        "file": "sample.nes",
+        "category": "Binary",
+        "categories": [
+            "Binary",
+            "Emulator"
+        ]
+    },
+    {
+        "label": "Sample.gba",
+        "file": "sample.gba",
+        "mime": "application/octet-stream",
+        "category": "Binary",
+        "categories": [
+            "Binary",
+            "Emulator"
+        ],
+        "type": "emulatorjs"
+    },
+    {
+        "label": "sample.pem",
+        "file": "sample.pem",
+        "category": "Other",
+        "categories": [
+            "Secrets",
+            "Config"
+        ]
+    },
+    {
+        "label": "sample.wasm",
+        "file": "sample.wasm",
+        "category": "Other",
+        "categories": [
+            "Other"
+        ]
+    },
+    {
+        "label": "sample.npy",
+        "file": "sample.npy",
+        "category": "Other",
+        "categories": [
+            "Other"
+        ]
+    },
+    {
+        "label": "sample.lnk",
+        "file": "sample.lnk",
+        "category": "Other",
+        "categories": [
+            "Other"
+        ]
+    },
+    {
+        "file": "sample.dmp",
+        "label": "Windows Minidump (demo)",
+        "mime": "application/x-dmp",
+        "category": "Binary",
+        "categories": [
+            "Binary"
+        ]
+    },
+    {
+        "file": "sample.dxf",
+        "label": "AutoCAD DXF Drawing (demo)",
+        "mime": "application/dxf",
+        "category": "Design",
+        "categories": [
+            "Design"
+        ]
+    },
+    {
+        "file": "sample.mcworld",
+        "label": "Minecraft World (demo)",
+        "mime": "application/x-mcworld",
+        "category": "Binary",
+        "categories": [
+            "Binary"
+        ]
+    },
+    {
+        "file": "sample.dcm",
+        "label": "DICOM Medical Image (demo)",
+        "mime": "application/dicom",
+        "category": "Binary",
+        "categories": [
+            "Binary"
+        ]
+    },
+    {
+        "file": "sample.nc",
+        "label": "NetCDF Climate Dataset (demo)",
+        "mime": "application/x-netcdf",
+        "category": "Binary",
+        "categories": [
+            "Binary"
+        ]
+    },
+    {
+        "label": "ssh-config",
+        "file": "ssh-config",
+        "category": "Other",
+        "categories": [
+            "Other"
+        ]
+    },
+    {
+        "label": "sample.rdp",
+        "file": "sample.rdp",
+        "category": "Other",
+        "categories": [
+            "Other"
+        ]
+    },
+    {
+        "label": "claude_desktop_config.json",
+        "file": "claude_desktop_config.json",
+        "type": "mcp-config",
+        "category": "Other",
+        "categories": [
+            "Other"
+        ]
+    },
+    {
+        "label": "kubeconfig",
+        "file": "kubeconfig",
+        "type": "kubeconfig",
+        "category": "Other",
+        "categories": [
+            "Other"
+        ]
+    },
+    {
+        "label": "Sample.ofx",
+        "file": "sample.ofx",
+        "mime": "application/x-ofx",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Ode to Joy Theme (MusicXML)",
+        "file": "sample.musicxml",
+        "mime": "application/vnd.recordare.musicxml+xml",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ]
+    },
+    {
+        "label": "Sample gene sequences (FASTA)",
+        "file": "sample.fasta",
+        "mime": "text/x-fasta",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Ethanol Molecule (XYZ)",
+        "file": "sample.xyz",
+        "mime": "chemical/x-xyz",
+        "category": "Science",
+        "categories": [
+            "Science",
+            "Data"
+        ]
+    },
+    {
+        "label": "Demo Protein Structure (PDB)",
+        "file": "sample.pdb",
+        "mime": "chemical/x-pdb",
+        "category": "Science",
+        "categories": [
+            "Science",
+            "Data"
+        ]
+    },
+    {
+        "label": "Sample variants (VCF)",
+        "file": "sample-variants.vcf",
+        "mime": "text/x-vcf",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "LED Blinker PCB (KiCad)",
+        "file": "sample.kicad_pcb",
+        "mime": "text/x-kicad-pcb",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Hello PostScript (EPS)",
+        "file": "sample.eps",
+        "mime": "application/postscript",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Steam App Manifest (ACF)",
+        "file": "sample.acf",
+        "mime": "text/x-steam-acf",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Helix Nebula (FITS)",
+        "file": "sample.fits",
+        "mime": "image/fits",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Silicon Valley Map (KML)",
+        "file": "sample.kml",
+        "mime": "application/vnd.google-earth.kml+xml",
+        "category": "Geo",
+        "categories": [
+            "Geo"
+        ]
+    },
+    {
+        "label": "World Cities (KMZ)",
+        "file": "sample.kmz",
+        "mime": "application/vnd.google-earth.kmz",
+        "category": "Geo",
+        "categories": [
+            "Geo"
+        ]
+    },
+    {
+        "label": "Folk Tunes (ABC)",
+        "file": "sample.abc",
+        "mime": "text/vnd.abc",
+        "category": "Music",
+        "categories": [
+            "Music"
+        ]
+    },
+    {
+        "label": "Patient Admission (HL7)",
+        "file": "sample.hl7",
+        "mime": "application/hl7-v2",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "label": "Demo Beat (Hydrogen)",
+        "file": "sample.h2song",
+        "mime": "application/x-hydrogen",
+        "category": "Music",
+        "categories": [
+            "Music"
+        ]
+    },
+    {
+        "label": "Short Film Project (Premiere)",
+        "file": "sample.prproj",
+        "mime": "application/x-premiere-project",
+        "category": "Media",
+        "categories": [
+            "Media"
+        ]
+    },
+    {
+        "file": "sample.elf",
+        "label": "ELF Executable (x86-64 Linux stub)",
+        "mime": "application/x-elf",
+        "category": "Binary",
+        "categories": [
+            "Binary"
+        ]
+    },
+    {
+        "file": "sample-telegram.json",
+        "label": "Telegram Chat Export (JSON)",
+        "mime": "application/json",
+        "category": "Data",
+        "categories": [
+            "Data"
+        ]
+    },
+    {
+        "file": "sample.gp5",
+        "label": "Guitar Pro 5 Tab (binary)",
+        "mime": "application/x-guitar-pro",
+        "category": "Music",
+        "categories": [
+            "Music"
+        ]
+    },
+    {
+        "file": "sample.apk",
+        "label": "Android Package (APK stub)",
+        "mime": "application/vnd.android.package-archive",
+        "category": "Binary",
+        "categories": [
+            "Binary"
+        ]
+    },
+    {
+        "file": "sample.iso",
+        "label": "ISO 9660 Disc Image (demo)",
+        "mime": "application/x-iso9660-image",
+        "category": "Binary",
+        "categories": [
+            "Binary"
+        ]
+    },
+    {
+        "label": "Network Capture Demo (PCAP)",
+        "file": "sample.pcap",
+        "mime": "application/vnd.tcpdump.pcap",
+        "category": "System",
+        "categories": [
+            "System",
+            "Data"
+        ]
+    },
+    {
+        "label": "NYC Borough Boundary (Shapefile)",
+        "file": "sample.shp",
+        "mime": "application/octet-stream",
+        "category": "Geo",
+        "categories": [
+            "Geo",
+            "Science"
+        ]
+    },
+    {
+        "label": "Doom Patch WAD (demo)",
+        "file": "sample.wad",
+        "mime": "application/x-doom-wad",
+        "category": "Games",
+        "categories": [
+            "Games"
+        ]
+    },
+    {
+        "file": "sample.sdf",
+        "label": "Aspirin Molecule (SDF)",
+        "mime": "chemical/x-mdl-sdfile",
+        "category": "chemical",
+        "categories": [
+            "chemical",
+            "scientific"
+        ]
+    },
+    {
+        "file": "sample.bsp",
+        "label": "Quake BSP Game Map (demo)",
+        "mime": "application/octet-stream",
+        "category": "game",
+        "categories": [
+            "game",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.cbor",
+        "label": "CBOR API Response (demo)",
+        "mime": "application/cbor",
+        "category": "data",
+        "categories": [
+            "data",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.arrow",
+        "label": "Apache Arrow IPC File (demo)",
+        "mime": "application/vnd.apache.arrow.file",
+        "category": "data",
+        "categories": [
+            "data",
+            "binary",
+            "scientific"
+        ]
+    },
+    {
+        "file": "sample.cif",
+        "label": "Aspirin Crystal Structure (CIF)",
+        "mime": "chemical/x-cif",
+        "category": "chemical",
+        "categories": [
+            "chemical",
+            "scientific"
+        ]
+    },
+    {
+        "file": "sample.parquet",
+        "label": "Apache Parquet Dataset (demo)",
+        "mime": "application/vnd.apache.parquet",
+        "category": "data",
+        "categories": [
+            "data",
+            "binary",
+            "scientific"
+        ]
+    },
+    {
+        "file": "sample.avro",
+        "label": "Avro Employee Schema (demo)",
+        "mime": "application/avro-binary",
+        "category": "data",
+        "categories": [
+            "data",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.h5",
+        "label": "HDF5 Scientific Dataset (demo)",
+        "mime": "application/x-hdf5",
+        "category": "scientific",
+        "categories": [
+            "scientific",
+            "binary",
+            "data"
+        ]
+    },
+    {
+        "file": "sample.msgpack",
+        "label": "MessagePack data (demo)",
+        "mime": "application/x-msgpack",
+        "category": "data",
+        "categories": [
+            "data",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.bson",
+        "label": "BSON document (demo)",
+        "mime": "application/bson",
+        "category": "data",
+        "categories": [
+            "data",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.exr",
+        "label": "OpenEXR HDR image (demo)",
+        "mime": "image/x-exr",
+        "category": "Image",
+        "categories": [
+            "Image",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.dbf",
+        "label": "dBase DBF database (demo)",
+        "mime": "application/dbf",
+        "category": "data",
+        "categories": [
+            "data",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.dwg",
+        "label": "AutoCAD DWG drawing (demo)",
+        "mime": "image/vnd.dwg",
+        "category": "Design",
+        "categories": [
+            "Design",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.stp",
+        "label": "STEP CAD Exchange file (demo)",
+        "mime": "model/step",
+        "category": "Design",
+        "categories": [
+            "Design",
+            "3D"
+        ]
+    },
+    {
+        "file": "sample.blend",
+        "label": "Blender 3D scene (demo)",
+        "mime": "application/x-blender",
+        "category": "3D",
+        "categories": [
+            "3D",
+            "binary",
+            "Design"
+        ]
+    },
+    {
+        "file": "sample.fbx",
+        "label": "FBX 3D animation (demo)",
+        "mime": "application/octet-stream",
+        "category": "3D",
+        "categories": [
+            "3D",
+            "binary",
+            "Design"
+        ]
+    },
+    {
+        "file": "sample.mat",
+        "label": "MATLAB MAT-file (demo)",
+        "mime": "application/x-matlab-data",
+        "category": "scientific",
+        "categories": [
+            "scientific",
+            "data",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.nii",
+        "label": "NIfTI neuroimaging (demo)",
+        "mime": "application/x-nifti",
+        "category": "scientific",
+        "categories": [
+            "scientific",
+            "medical",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.pyc",
+        "label": "Python bytecode (demo)",
+        "mime": "application/x-python-bytecode",
+        "category": "code",
+        "categories": [
+            "code",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.mmp",
+        "label": "LMMS music project (demo)",
+        "mime": "application/xml",
+        "category": "audio",
+        "categories": [
+            "audio",
+            "creative"
+        ]
+    },
+    {
+        "file": "sample.f3d",
+        "label": "Fusion 360 design (demo)",
+        "mime": "application/zip",
+        "category": "Design",
+        "categories": [
+            "Design",
+            "3D",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.deb",
+        "label": "Debian package (demo)",
+        "mime": "application/vnd.debian.binary-package",
+        "category": "code",
+        "categories": [
+            "code",
+            "binary",
+            "archive"
+        ]
+    },
+    {
+        "file": "sample.rpm",
+        "label": "RPM package (demo)",
+        "mime": "application/x-rpm",
+        "category": "code",
+        "categories": [
+            "code",
+            "binary"
+        ]
+    },
+    {
+        "file": "sample.nupkg",
+        "label": "NuGet package (demo)",
+        "mime": "application/zip",
+        "category": "code",
+        "categories": [
+            "code",
+            "binary",
+            "archive"
+        ]
+    },
+    {
+        "file": "sample.vsix",
+        "label": "VS Extension (demo)",
+        "mime": "application/zip",
+        "category": "code",
+        "categories": [
+            "code",
+            "binary",
+            "archive"
+        ]
+    },
+    {
+        "file": "sample.whl",
+        "label": "Python Wheel (demo)",
+        "mime": "application/zip",
+        "category": "code",
+        "categories": [
+            "code",
+            "binary",
+            "archive"
+        ]
+    },
+    {
+        "file": "sample.ipa",
+        "label": "iOS App (IPA demo)",
+        "mime": "application/octet-stream",
+        "category": "code",
+        "categories": [
+            "code",
+            "binary",
+            "mobile"
+        ]
+    },
+    {
+        "file": "sample.qif",
+        "label": "QIF financial data (demo)",
+        "mime": "application/x-qif",
+        "category": "Data",
+        "categories": [
+            "Data",
+            "financial"
+        ]
+    },
+    {
+        "file": "sample.mt940",
+        "label": "MT940 bank statement (demo)",
+        "mime": "text/plain",
+        "category": "Data",
+        "categories": [
+            "Data",
+            "financial"
+        ]
+    },
+    {
+        "file": "sample.gff3",
+        "label": "GFF3 genome annotation (demo)",
+        "mime": "text/plain",
+        "category": "Scientific",
+        "categories": [
+            "Scientific",
+            "bioinformatics"
+        ]
+    },
+    {
+        "file": "sample.sarif",
+        "label": "SARIF security scan results (demo)",
+        "mime": "application/json",
+        "category": "Code",
+        "categories": [
+            "Code",
+            "security"
+        ]
+    },
+    {
+        "file": "sample-workflow.yml",
+        "label": "GitHub Actions CI workflow (demo)",
+        "mime": "application/yaml",
+        "category": "Code",
+        "categories": [
+            "Code",
+            "devops"
+        ],
+        "enhanced": true
+    },
+    {
+        "file": "sample-k8s.yaml",
+        "label": "Kubernetes Deployment manifest (demo)",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config",
+            "devops"
+        ],
+        "enhanced": true
+    },
+    {
+        "file": "pubspec.yaml",
+        "label": "Flutter pubspec.yaml (demo)",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config",
+            "mobile"
+        ],
+        "enhanced": true
+    },
+    {
+        "file": "netlify.toml",
+        "label": "Netlify config (netlify.toml demo)",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config",
+            "devops"
+        ],
+        "enhanced": true
+    },
+    {
+        "file": "vercel.json",
+        "label": "Vercel config (vercel.json demo)",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config",
+            "devops"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "pyproject.toml",
+        "file": "pyproject.toml",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": ".npmrc",
+        "file": ".npmrc",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "renovate.json",
+        "file": "renovate.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": ".prettierrc.json",
+        "file": ".prettierrc.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "turbo.json",
+        "file": "turbo.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "dependabot.yml",
+        "file": "dependabot.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": ".eslintrc.json",
+        "file": ".eslintrc.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "jest.config.json",
+        "file": "jest.config.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": ".stylelintrc.json",
+        "file": ".stylelintrc.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "babel.config.json",
+        "file": "babel.config.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": ".commitlintrc.json",
+        "file": ".commitlintrc.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "lefthook.yml",
+        "file": "lefthook.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "wrangler.toml",
+        "file": "wrangler.toml",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "fly.toml",
+        "file": "fly.toml",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "cliff.toml",
+        "file": "cliff.toml",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": ".releaserc.json",
+        "file": ".releaserc.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "lerna.json",
+        "file": "lerna.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "nx.json",
+        "file": "nx.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "biome.json",
+        "file": "biome.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "codecov.yml",
+        "file": "codecov.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "serverless.yml",
+        "file": "serverless.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "azure-pipelines.yml",
+        "file": "azure-pipelines.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "vscode-settings.json",
+        "file": "vscode-settings.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "vscode-extensions.json",
+        "file": "vscode-extensions.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "vscode-launch.json",
+        "file": "vscode-launch.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "vscode-tasks.json",
+        "file": "vscode-tasks.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "Travis CI config",
+        "file": "travis.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "CircleCI config",
+        "file": "circleci.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "AWS Amplify config",
+        "file": "amplify.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "AWS CodeBuild buildspec",
+        "file": "buildspec.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "jsconfig.json",
+        "file": "jsconfig.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "Deno config",
+        "file": "deno.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": ".nvmrc",
+        "file": "nvmrc",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": ".browserslistrc",
+        "file": "browserslistrc",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "pre-commit config",
+        "file": "pre-commit-config.yaml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "Pyright config",
+        "file": "pyrightconfig.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "tox.ini",
+        "file": "tox.ini",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "mypy config",
+        "file": "mypy.ini",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "Angular workspace",
+        "file": "angular.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "capacitor.config.json",
+        "file": "capacitor.config.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".nycrc.json",
+        "file": ".nycrc.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "devcontainer.json",
+        "file": "devcontainer.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "knip.json",
+        "file": "knip.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".mocharc.json",
+        "file": ".mocharc.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".gitlab-ci.yml",
+        "file": ".gitlab-ci.yml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "pnpm-workspace.yaml",
+        "file": "pnpm-workspace.yaml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "vitest.config.json",
+        "file": "vitest.config.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "graphql.config.json",
+        "file": "graphql.config.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "apollo.config.json",
+        "file": "apollo.config.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "storybook.main.json (.storybook/main.json)",
+        "file": "storybook.main.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".drone.yml",
+        "file": ".drone.yml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config",
+            "devops"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "buildkite.yml",
+        "file": "buildkite.yml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config",
+            "devops"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "skaffold.yaml",
+        "file": "skaffold.yaml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config",
+            "devops"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".hadolint.yaml",
+        "file": ".hadolint.yaml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "Chart.yaml (Helm chart)",
+        "file": "Chart.yaml",
+        "mime": "application/yaml",
+        "category": "DevOps",
+        "categories": [
+            "DevOps",
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Helm chart metadata with name, version, and chart dependencies."
+    },
+    {
+        "label": "kustomization.yaml (Kustomize)",
+        "file": "kustomization.yaml",
+        "mime": "application/yaml",
+        "category": "DevOps",
+        "categories": [
+            "DevOps",
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Kustomize overlay with resources, strategic merge patches, and ConfigMap generators."
+    },
+    {
+        "label": "ansible-playbook.yml (Ansible)",
+        "file": "ansible-playbook.yml",
+        "mime": "application/yaml",
+        "category": "DevOps",
+        "categories": [
+            "DevOps",
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Ansible playbook targeting web servers and database servers with task lists."
+    },
+    {
+        "label": "Pulumi.yaml (Pulumi project)",
+        "file": "Pulumi.yaml",
+        "mime": "application/yaml",
+        "category": "DevOps",
+        "categories": [
+            "DevOps",
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Pulumi cloud infrastructure project with Node.js runtime and config keys."
+    },
+    {
+        "label": "packer.json (HashiCorp Packer)",
+        "file": "packer.json",
+        "mime": "application/json",
+        "category": "DevOps",
+        "categories": [
+            "DevOps",
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Packer machine image template with AWS EBS builder and shell provisioners."
+    },
+    {
+        "label": "ruff.toml (Ruff linter)",
+        "file": "ruff.toml",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Ruff Python linter configuration with rule selection, ignores, and format settings."
+    },
+    {
+        "label": "typos.toml (typos spell checker)",
+        "file": "typos.toml",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
+        "knownFile": "typos"
+    },
+    {
+        "label": "uv.toml (uv package manager)",
+        "file": "uv.toml",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "uv Python package manager configuration with Python version and index settings."
+    },
+    {
+        "label": "values.yaml (Helm values)",
+        "file": "values.yaml",
+        "mime": "application/yaml",
+        "category": "DevOps",
+        "categories": [
+            "DevOps",
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Helm chart values file with image, service, ingress, and resource configuration."
+    },
+    {
+        "label": "firebase.json",
+        "file": "firebase.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config",
+            "DevOps"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "app.json (Expo)",
+        "file": "app.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "tailwind.config.json",
+        "file": "tailwind.config.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "postcss.config.json",
+        "file": "postcss.config.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".huskyrc.json",
+        "file": ".huskyrc.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".lintstagedrc.json",
+        "file": ".lintstagedrc.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "nest-cli.json",
+        "file": "nest-cli.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".swcrc",
+        "file": ".swcrc",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "package-lock.json",
+        "file": "package-lock.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "composer.lock",
+        "file": "composer.lock",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "pnpm-lock.yaml",
+        "file": "pnpm-lock.yaml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "Cargo.lock",
+        "file": "Cargo.lock",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "poetry.lock",
+        "file": "poetry.lock",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "go.sum",
+        "file": "go.sum",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "Justfile",
+        "file": "Justfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Just command runner with build, test, fmt, and release recipes."
+    },
+    {
+        "label": "Procfile",
+        "file": "Procfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Heroku/foreman Procfile defining web, worker, scheduler, and release processes."
+    },
+    {
+        "label": ".envrc",
+        "file": ".envrc",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "direnv environment configuration with exports and layout directives."
+    },
+    {
+        "label": "mise.toml",
+        "file": "mise.toml",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "mise tool version manager configuration with tools, tasks, and env vars."
+    },
+    {
+        "label": ".tool-versions",
+        "file": ".tool-versions",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "asdf .tool-versions pinning node, python, ruby, and go versions."
+    },
+    {
+        "label": "Helm Chart.yaml",
+        "file": "chart.yaml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "Justfile",
+        "file": "justfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "Gemfile.lock",
+        "file": "Gemfile.lock",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "Podfile",
+        "file": "Podfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "CocoaPods Podfile declaring iOS pod dependencies per target."
+    },
+    {
+        "label": "Fastfile",
+        "file": "Fastfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Fastlane Fastfile defining automation lanes for building, testing, and deploying mobile apps."
+    },
+    {
+        "label": "Snapfile",
+        "file": "Snapfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Fastlane Snapfile configuring screenshot devices, languages, and output settings."
+    },
+    {
+        "label": "supabase/config.toml",
+        "file": "supabase-config.toml",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Supabase project configuration defining database, API, auth, and storage settings."
+    },
+    {
+        "label": "_redirects",
+        "file": "_redirects",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Netlify _redirects file with URL redirect and rewrite rules."
+    },
+    {
+        "label": "sonar-project.properties",
+        "file": "sonar-project.properties",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "hatch.toml",
+        "file": "hatch.toml",
+        "mime": "text/x-toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "appveyor.yml",
+        "file": "appveyor.yml",
+        "mime": "application/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": ".rubocop.yml",
+        "file": ".rubocop.yml",
+        "mime": "application/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "Taskfile.yml",
+        "file": "Taskfile.yml",
+        "mime": "application/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "mkdocs.yml",
+        "file": "mkdocs.yml",
+        "mime": "application/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "Cloud Build config",
+        "file": "cloudbuild.yaml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "App Engine config",
+        "file": "app.yaml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "FUNDING.yml",
+        "file": "FUNDING.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "Jekyll _config.yml",
+        "file": "_config.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "Brewfile",
+        "file": "Brewfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Homebrew Bundle package manifest with taps, formulae, casks, and MAS apps.",
+        "knownFile": "brewfile"
+    },
+    {
+        "label": "Earthfile (Earthly build)",
+        "file": "Earthfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Earthly Earthfile build target configuration with containerized CI build steps.",
+        "knownFile": "earthfile"
+    },
+    {
+        "label": "Matchfile (Fastlane Match)",
+        "file": "Matchfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Fastlane Match configuration for managing Apple code-signing certificates and provisioning profiles.",
+        "knownFile": "matchfile"
+    },
+    {
+        "label": "terraform.tfvars (Terraform variables)",
+        "file": "terraform.tfvars",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Terraform variable values file assigning values to infrastructure variables.",
+        "knownFile": "tfvars"
+    },
+    {
+        "label": "crowdin.yml (Crowdin config)",
+        "file": "crowdin.yml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Crowdin localization configuration with source file mappings and translation settings.",
+        "knownFile": "crowdin-yml"
+    },
+    {
+        "label": "LICENSE",
+        "file": "LICENSE",
+        "mime": "text/plain",
+        "category": "Documents",
+        "categories": [
+            "Documents"
+        ],
+        "enhanced": true,
+        "description": "MIT open-source license.",
+        "knownFile": "license"
+    },
+    {
+        "label": "example.gemspec",
+        "file": "example.gemspec",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Ruby gem specification with runtime and development dependencies.",
+        "knownFile": "gemspec"
+    },
+    {
+        "label": "ansible.cfg",
+        "file": "ansible.cfg",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Ansible configuration with defaults, privilege escalation, and inventory settings.",
+        "knownFile": "ansible-cfg"
+    },
+    {
+        "label": "deny.toml",
+        "file": "deny.toml",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "knownFile": "cargo-deny"
+    },
+    {
+        "label": "cargo.config.toml",
+        "file": "cargo.config.toml",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "knownFile": "cargo-config"
+    },
+    {
+        "label": ".htaccess",
+        "file": ".htaccess",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Apache per-directory configuration with URL rewriting and auth rules.",
+        "knownFile": "htaccess"
+    },
+    {
+        "label": "nginx.conf",
+        "file": "nginx.conf",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Nginx web server configuration with server blocks, location rules, and proxy settings.",
+        "knownFile": "nginx-conf"
+    },
+    {
+        "label": "moon.yml",
+        "file": "moon.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Moonrepo project configuration defining tasks, language, and project metadata.",
+        "knownFile": "moon-yml"
+    },
+    {
+        "label": "Vagrantfile",
+        "file": "Vagrantfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Vagrant VM configuration with Ubuntu base box, port forwarding, synced folders, and shell provisioners.",
+        "knownFile": "vagrantfile"
+    },
+    {
+        "label": "Caddyfile",
+        "file": "Caddyfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Caddy web server configuration with HTTPS, reverse proxies, and file server blocks.",
+        "knownFile": "caddyfile"
+    },
+    {
+        "label": "render.yaml",
+        "file": "render.yaml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Render.com deployment config with web service, worker, cron job, and a managed database.",
+        "knownFile": "render-yaml"
+    },
+    {
+        "label": "railway.json",
+        "file": "railway.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Railway deployment configuration with Nixpacks build and healthcheck settings.",
+        "knownFile": "railway-json"
+    },
+    {
+        "label": "Matchfile",
+        "file": "Matchfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "label": "Appfile",
+        "file": "Appfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "knownFile": "appfile"
+    },
+    {
+        "label": ".ruby-version",
+        "file": ".ruby-version",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "knownFile": "ruby-version"
+    },
+    {
+        "label": ".python-version",
+        "file": ".python-version",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "knownFile": "python-version"
+    },
+    {
+        "file": ".gitmodules",
+        "label": ".gitmodules",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Git submodule configuration.",
+        "knownFile": "gitmodules"
+    },
+    {
+        "label": "rush.json",
+        "file": "rush.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Rush monorepo configuration with project list."
+    },
+    {
+        "label": ".markdownlint.json",
+        "file": ".markdownlint.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Markdownlint rules configuration."
+    },
+    {
+        "label": ".markdownlint.yml (Markdownlint YAML)",
+        "file": ".markdownlint.yml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Markdownlint YAML rules configuration with line length and element allow-lists."
+    },
+    {
+        "label": ".clang-format",
+        "file": ".clang-format",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Clang-Format C/C++ code formatting configuration."
+    },
+    {
+        "label": ".markdownlint.yml",
+        "file": ".markdownlint.yml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Markdownlint configuration in YAML format \u2014 rule overrides and custom settings for Markdown linting."
+    },
+    {
+        "label": ".markdownlint.yml",
+        "file": ".markdownlint.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Markdownlint configuration for linting Markdown files."
+    },
+    {
+        "label": "Dockerfile (multi-stage demo)",
+        "file": "Dockerfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "docker-compose.yml (demo)",
+        "file": "docker-compose.yml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true
+    },
+    {
+        "label": "Jenkinsfile",
+        "file": "Jenkinsfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Jenkins declarative pipeline with Install, Lint, Test, Build, and Deploy stages.",
+        "knownFile": "jenkinsfile"
+    },
+    {
+        "label": "BUILD.bazel",
+        "file": "BUILD.bazel",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Bazel build rules file."
+    },
+    {
+        "label": ".bazelrc",
+        "file": ".bazelrc",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Bazel configuration file."
+    },
+    {
+        "label": "build.ninja",
+        "file": "build.ninja",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Ninja build system rules file."
+    },
+    {
+        "label": ".gitconfig",
+        "file": ".gitconfig",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Git global configuration file."
+    },
+    {
+        "label": "playwright.config.ts",
+        "file": "playwright.config.ts",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Playwright end-to-end test configuration."
+    },
+    {
+        "label": "cypress.config.js",
+        "file": "cypress.config.js",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Cypress end-to-end and component test configuration."
+    },
+    {
+        "label": "vite.config.js",
+        "file": "vite.config.js",
+        "mime": "text/javascript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Vite build configuration with React plugin, dev server port, and build target."
+    },
+    {
+        "label": "webpack.config.js",
+        "file": "webpack.config.js",
+        "mime": "text/javascript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Webpack bundler configuration with loaders, HtmlWebpackPlugin, and MiniCssExtractPlugin."
+    },
+    {
+        "label": "rollup.config.js",
+        "file": "rollup.config.js",
+        "mime": "text/javascript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Rollup module bundler configuration with ESM and CJS outputs and TypeScript support."
+    },
+    {
+        "label": "next.config.js",
+        "file": "next.config.js",
+        "mime": "text/javascript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Next.js configuration with App Router, image domains, i18n, and redirects."
+    },
+    {
+        "label": "Package.swift",
+        "file": "Package.swift",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "enhanced": true,
+        "description": "Swift Package Manager manifest with products, targets, and dependencies."
+    },
+    {
+        "label": "mix.exs",
+        "file": "mix.exs",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "enhanced": true,
+        "description": "Elixir Mix build file with project config, deps, and OTP application."
+    },
+    {
+        "label": "build.sbt",
+        "file": "build.sbt",
+        "mime": "text/plain",
+        "category": "Code",
+        "categories": [
+            "Code"
+        ],
+        "enhanced": true,
+        "description": "SBT build definition for a Scala 3 project with library dependencies."
+    }
 ]
