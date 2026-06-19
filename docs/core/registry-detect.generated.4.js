@@ -3,6 +3,17 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_postscript=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, 'ps', 'eps', 'ai')) return 0.85;
+  const head = (intake.textSample || '').slice(0, 120);
+  if (/^%!PS(-Adobe)?/.test(head)) return 0.97;
+  return 0;
+}
+return detect;
+})();
+
 const detect_acf=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -296,28 +307,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_iso=(()=>{
-function detect(intake) {
-  if (!intake.bytes) return 0;
-  const b = intake.bytes;
-  if (hasExtension(intake, 'iso', 'img')) {
-    // ISO 9660 primary volume descriptor at offset 32769 (sector 16 * 2048 + 1)
-    if (b.length > 32774) {
-      const magic = String.fromCharCode(b[32769], b[32770], b[32771], b[32772], b[32773]);
-      if (magic === 'CD001') return 0.98;
-    }
-    // For .img files, only if we confirmed CD001
-    if (hasExtension(intake, 'iso')) return 0.6;
-    return 0;
-  }
-  // Check for CD001 magic regardless of extension (sector 16)
-  if (b.length > 32774) {
-    const magic = String.fromCharCode(b[32769], b[32770], b[32771], b[32772], b[32773]);
-    if (magic === 'CD001') return 0.95;
-  }
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk,"iso":detect_iso};
+export const DETECTORS={"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk};

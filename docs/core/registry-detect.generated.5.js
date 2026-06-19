@@ -3,6 +3,30 @@ import { isCode } from '../types/text/code/langmap.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_iso=(()=>{
+function detect(intake) {
+  if (!intake.bytes) return 0;
+  const b = intake.bytes;
+  if (hasExtension(intake, 'iso', 'img')) {
+    // ISO 9660 primary volume descriptor at offset 32769 (sector 16 * 2048 + 1)
+    if (b.length > 32774) {
+      const magic = String.fromCharCode(b[32769], b[32770], b[32771], b[32772], b[32773]);
+      if (magic === 'CD001') return 0.98;
+    }
+    // For .img files, only if we confirmed CD001
+    if (hasExtension(intake, 'iso')) return 0.6;
+    return 0;
+  }
+  // Check for CD001 magic regardless of extension (sector 16)
+  if (b.length > 32774) {
+    const magic = String.fromCharCode(b[32769], b[32770], b[32771], b[32772], b[32773]);
+    if (magic === 'CD001') return 0.95;
+  }
+  return 0;
+}
+return detect;
+})();
+
 const detect_ruffle=(()=>{
 function detect(intake) {
   if (/\.swf$/i.test(intake.filename)) return 0.98;
@@ -72,4 +96,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
+export const DETECTORS={"iso":detect_iso,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};

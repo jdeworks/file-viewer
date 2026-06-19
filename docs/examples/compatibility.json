@@ -3654,6 +3654,48 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
+    },
+    "dicom": {
+      "label": "DICOM Medical Image (.dcm)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.dcm"
+      ],
+      "extensions": [
+        ".dcm",
+        ".dicom"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "needs-review",
+      "notes": "Pure-JS Explicit VR LE DICOM tag parser; shows modality, study date, patient info (PHI warning), image dimensions. No pixel data rendering.",
+      "fileExamplesSlug": null,
+      "previewDepth": "metadata-only",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [
+        "PHI warning shown; no automatic redaction \u2014 user must handle compliance"
+      ],
+      "knownParserGaps": [
+        "Implicit VR not supported",
+        "Compressed transfer syntaxes not decoded",
+        "Pixel data not rendered",
+        "Multi-frame DICOM not handled"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
     }
   },
   "knownFiles": {

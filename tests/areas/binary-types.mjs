@@ -103,4 +103,17 @@ export async function run(ctx) {
   if (/Minecraft/i.test(mcText)) pass('Minecraft badge shown'); else fail('mc badge missing');
   if (/File Viewer Demo World/i.test(mcText)) pass('MC world name shown'); else fail('mc name: ' + mcText.slice(0, 300));
   if (/level\.dat|levelname\.txt/i.test(mcText)) pass('MC key files listed'); else fail('mc files: ' + mcText.slice(0, 300));
+
+  // ── DICOM Medical Image ───────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('DICOM Medical Image (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const dcmf = await frameOf('iframe.fv-preview-frame');
+  await dcmf.waitForSelector('.badge-dcm', { timeout: 8000 });
+  const dcmTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (dcmTypeId === 'dicom') pass('.dcm detected as dicom type'); else fail('dcm typeId: ' + dcmTypeId);
+  const dcmText = await dcmf.$eval('body', (el) => el.textContent);
+  if (/DICOM/i.test(dcmText)) pass('DICOM badge shown'); else fail('dcm badge missing');
+  if (/CT|Computed Tomography/i.test(dcmText)) pass('DICOM modality CT shown'); else fail('dcm mod: ' + dcmText.slice(0, 300));
+  if (/512|Demo Hospital/i.test(dcmText)) pass('DICOM image info shown'); else fail('dcm info: ' + dcmText.slice(0, 300));
 }

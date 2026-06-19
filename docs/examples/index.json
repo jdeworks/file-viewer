@@ -1813,6 +1813,15 @@
     ]
   },
   {
+    "file": "sample.dcm",
+    "label": "DICOM Medical Image (demo)",
+    "mime": "application/dicom",
+    "category": "Binary",
+    "categories": [
+      "Binary"
+    ]
+  },
+  {
     "label": "ssh-config",
     "file": "ssh-config",
     "category": "Other",
