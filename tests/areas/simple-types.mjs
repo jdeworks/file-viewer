@@ -245,4 +245,17 @@ export async function run(ctx) {
     pass('ANSI metadata includes dimensions, color count, chars, and SAUCE fields');
   else fail('ansi meta: ' + ansiMeta.replace(/\s+/g, ' ').slice(0, 180));
   await page.click('#metaDrawer [data-close]');
+
+  // ── JSONL / NDJSON viewer ── summary card + table columns. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.jsonl');
+  const jsonlFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const jsonlf = await frameOf('iframe.fv-preview-frame');
+  await jsonlf.waitForSelector('.jsonl-preview', { timeout: 8000 });
+  const jsonlTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (jsonlTypeId === 'jsonl') pass('sample.jsonl detected as JSON Lines'); else fail('jsonl type: ' + jsonlTypeId);
+  const jsonlSummary = await jsonlf.$eval('.jsonl-summary', (e) => e.textContent);
+  if (/5\s*records/.test(jsonlSummary) && /lines/.test(jsonlSummary)) pass('JSONL summary card shows record and line counts'); else fail('jsonl summary: ' + jsonlSummary.replace(/\s+/g, ' ').slice(0, 100));
+  const jsonlCols = await jsonlf.$$eval('.jsonl-table th', (ths) => ths.map((th) => th.textContent));
+  if (jsonlCols.includes('timestamp') && jsonlCols.includes('level') && jsonlCols.includes('message')) pass('JSONL table shows shared schema columns'); else fail('jsonl cols: ' + jsonlCols.join(','));
 }

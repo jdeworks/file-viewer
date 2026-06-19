@@ -415,3 +415,23 @@
 .movediff.narrow .md-cols { flex-direction: column; }
 .movediff.narrow .md-original { border-right: 0; border-bottom: 1px solid var(--border); }
 .movediff.narrow .md-arrows { display: none; }
+
+/* JSONL / NDJSON viewer */
+.jsonl-preview { font-family: system-ui, sans-serif; padding: 14px; max-width: 1100px; margin: 0 auto; }
+.jsonl-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.jsonl-stat { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: .85rem; }
+.jsonl-stat strong { font-size: 1.1rem; margin-right: 4px; }
+.jsonl-stat-err { border-color: #f97316; }
+.jsonl-stat-err strong { color: #f97316; }
+.jsonl-errors { background: rgba(249,115,22,.08); border: 1px solid #f97316; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: .85rem; }
+.jsonl-errors ul { margin: 6px 0 0; padding-left: 18px; }
+.jsonl-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.jsonl-table th { background: var(--bg-2); border-bottom: 2px solid var(--border); padding: 7px 10px; text-align: left; white-space: nowrap; font-weight: 600; }
+.jsonl-table td { border-bottom: 1px solid var(--border); padding: 6px 10px; vertical-align: top; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jsonl-null { color: var(--fg-2); }
+.jsonl-bool { color: #2563eb; }
+.jsonl-num { color: #16a34a; }
+.jsonl-obj { color: var(--fg-2); font-size: .8rem; }
+.jsonl-block { background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 8px; overflow-x: auto; font-size: .83rem; }
+.jsonl-note { color: var(--fg-2); font-size: .82rem; margin-top: 10px; }
+.jsonl-empty { color: var(--fg-2); padding: 20px; text-align: center; }

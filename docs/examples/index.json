@@ -163,6 +163,15 @@
     ]
   },
   {
+    "label": "Sample.jsonl",
+    "file": "sample.jsonl",
+    "mime": "application/x-ndjson",
+    "category": "Data",
+    "categories": [
+      "Data"
+    ]
+  },
+  {
     "label": "Sample.eml",
     "file": "sample.eml",
     "mime": "message/rfc822",

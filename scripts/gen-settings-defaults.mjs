@@ -27,7 +27,7 @@ async function readJson(url) {
 async function generatedEntry(type) {
   const descriptors = descriptorsFor(type);
   const defaults = defaultsFor(descriptors);
-  const declared = type.settings?.presets || [{ id: 'default', label: 'Default', url: type.settingsUrl }];
+  const declared = type.settings?.presets || (type.settingsUrl ? [{ id: 'default', label: 'Default', url: type.settingsUrl }] : []);
   const presets = [];
 
   for (const preset of declared) {

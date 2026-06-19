@@ -1,0 +1,5 @@
+{"timestamp":"2026-06-19T08:00:01Z","level":"INFO","service":"api","message":"Server started","port":3000}
+{"timestamp":"2026-06-19T08:00:15Z","level":"INFO","service":"api","message":"Request received","method":"GET","path":"/health"}
+{"timestamp":"2026-06-19T08:01:02Z","level":"WARN","service":"db","message":"Slow query detected","duration_ms":1243,"query":"SELECT * FROM events"}
+{"timestamp":"2026-06-19T08:02:30Z","level":"ERROR","service":"api","message":"Request failed","method":"POST","path":"/upload","error":"File too large"}
+{"timestamp":"2026-06-19T08:05:00Z","level":"INFO","service":"api","message":"Scheduled backup completed","files":42,"size_mb":128}

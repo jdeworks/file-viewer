@@ -19,7 +19,15 @@ function filenameRisk(filename = '') {
     warnings.push('Unicode direction controls can disguise the visible extension');
     score += 45;
   }
+  if (/[\u200b\u200c\u200d\ufeff]/u.test(base)) {
+    warnings.push('Zero-width characters in filename may conceal true length or extension');
+    score += 35;
+  }
   const parts = base.split('.').filter(Boolean);
+  if (parts.length >= 2 && parts.slice(1).some((p) => /\s/.test(p))) {
+    warnings.push('Whitespace inside an extension segment may hide the true file type');
+    score += 30;
+  }
   if (parts.length >= 3) {
     const lower = parts.map((p) => p.toLowerCase());
     const tail = lower.slice(-2).join('.');

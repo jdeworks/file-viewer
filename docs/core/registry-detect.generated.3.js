@@ -4,6 +4,20 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_wasm=(()=>{
+function detect(intake) {
+  if (!intake.isBinary) return 0;
+  const b = intake.bytes;
+  if (!b || b.length < 8) return 0;
+  // Magic: \0asm
+  if (b[0] === 0x00 && b[1] === 0x61 && b[2] === 0x73 && b[3] === 0x6d) return 0.99;
+  // Extension fallback
+  if (hasExtension(intake, 'wasm')) return 0.5;
+  return 0;
+}
+return detect;
+})();
+
 const detect_npy=(()=>{
 function detect(intake) {
   if (!intake.isBinary) return 0;
@@ -312,15 +326,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_raw=(()=>{
-// Raw is the universal floor. It always returns a tiny non-zero score for text so
-// that ANY more specific type outranks it, but it still wins when nothing else matches.
-// (When even raw scores 0 — pure binary with no text — the shell still falls back to it.)
-function detect(intake) {
-  if (!intake.isBinary && hasExtension(intake, 'txt', 'text')) return 0.2;
-  return intake.isBinary ? 0.01 : 0.05;
-}
-return detect;
-})();
-
-export const DETECTORS={"npy":detect_npy,"lnk":detect_lnk,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
+export const DETECTORS={"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code};

@@ -345,4 +345,38 @@ function value(rows, label) {
   assert.equal(rows.find((r) => r.label === 'Filename warnings')?.dedupeKey, META_KEYS.filenameWarnings, 'Filename warnings dedupeKey');
 }
 
+// Zero-width characters in filename trigger risk
+{
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'report​.pdf',
+    bytes: new Uint8Array([0x25, 0x50, 0x44, 0x46]),
+    text: '',
+    isBinary: true,
+    size: 4,
+    loadedBytes: 4,
+  }));
+  const risk = rows.find((r) => r.label === 'Filename risk');
+  assert.ok(risk, 'Filename risk row present for zero-width char');
+  assert.ok(/caution|high/.test(risk.value), 'Zero-width char in filename flags caution or high: ' + risk.value);
+  const warn = rows.find((r) => r.label === 'Filename warnings');
+  assert.ok(warn && /zero-width/i.test(warn.value), 'Zero-width warning message present: ' + warn?.value);
+}
+
+// Whitespace-embedded extension triggers risk
+{
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'invoice.pdf .exe',
+    bytes: new Uint8Array([0x4d, 0x5a]),
+    text: '',
+    isBinary: true,
+    size: 2,
+    loadedBytes: 2,
+  }));
+  const risk = rows.find((r) => r.label === 'Filename risk');
+  assert.ok(risk, 'Filename risk row present for whitespace extension');
+  assert.ok(/caution|high/.test(risk.value), 'Whitespace extension flags caution or high: ' + risk.value);
+  const warn = rows.find((r) => r.label === 'Filename warnings');
+  assert.ok(warn && /whitespace/i.test(warn.value), 'Whitespace warning message present: ' + warn?.value);
+}
+
 console.log('metadata normalize: ok');

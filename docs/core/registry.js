@@ -40,6 +40,7 @@ import docxType from '../types/office/docx/index.js';
 import pptxType from '../types/office/pptx/index.js';
 import jsonType from '../types/text/json/index.js';
 import harType from '../types/text/har/index.js';
+import jsonlType from '../types/text/jsonl/index.js';
 import ipynbType from '../types/ipynb/index.js';
 import imageType from '../types/image/index.js';
 import midiType from '../types/binary/midi/index.js';
@@ -144,6 +145,7 @@ export const REGISTRY = [
   lrfType,
   mcpConfigType,
   harType,
+  jsonlType,
   jsonType,
   layeredType,
   tiffType,

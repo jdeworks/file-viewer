@@ -3,6 +3,30 @@ import { mediaInfo } from '../types/media/medialib.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_procreate=(()=>{
+function detect(intake) {
+  if (!intake.isBinary) return 0;
+  // Procreate files are ZIPs — .procreate extension is the only reliable signal
+  if (/\.procreate$/i.test(intake.filename || '')) return 0.97;
+  return 0;
+}
+return detect;
+})();
+
+const detect_sketch=(()=>{
+function detect(intake) {
+  if (!intake.isBinary) return 0;
+  const b = intake.bytes;
+  const ext = (intake.filename || '').split('.').pop()?.toLowerCase();
+  // ZIP magic: PK\x03\x04
+  const isZip = b && b.length > 4 && b[0] === 0x50 && b[1] === 0x4B && b[2] === 0x03 && b[3] === 0x04;
+  if (ext === 'sketch' && isZip) return 0.95;
+  if (ext === 'sketch') return 0.7;
+  return 0;
+}
+return detect;
+})();
+
 const detect_image=(()=>{
 // Raster images detect by magic bytes; SVG (text) by content/extension.
 function detect(intake) {
@@ -295,18 +319,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_wasm=(()=>{
-function detect(intake) {
-  if (!intake.isBinary) return 0;
-  const b = intake.bytes;
-  if (!b || b.length < 8) return 0;
-  // Magic: \0asm
-  if (b[0] === 0x00 && b[1] === 0x61 && b[2] === 0x73 && b[3] === 0x6d) return 0.99;
-  // Extension fallback
-  if (hasExtension(intake, 'wasm')) return 0.5;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm};
+export const DETECTORS={"procreate":detect_procreate,"sketch":detect_sketch,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class};

@@ -2865,6 +2865,41 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "jsonl": {
+      "label": "JSON Lines (JSONL)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.jsonl"
+      ],
+      "extensions": [
+        ".jsonl",
+        ".ndjson"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Table view with schema detection; shows key distribution across records.",
+      "fileExamplesSlug": "ndjson",
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   },
   "knownFiles": {

@@ -215,6 +215,27 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_jsonl=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, 'jsonl', 'ndjson')) return 0.92;
+  // Content heuristic: two separate JSON values on consecutive lines (don't fire on .json)
+  if (!hasExtension(intake, 'json')) {
+    const lines = (intake.text || '').split('\n').filter((l) => l.trim() && !l.trim().startsWith('#'));
+    if (lines.length >= 2) {
+      try {
+        JSON.parse(lines[0]);
+        JSON.parse(lines[1]);
+        const s = lines[0].trim()[0];
+        if (s === '{' || s === '[') return 0.55;
+      } catch {}
+    }
+  }
+  return 0;
+}
+return detect;
+})();
+
 const detect_json=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -298,28 +319,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_procreate=(()=>{
-function detect(intake) {
-  if (!intake.isBinary) return 0;
-  // Procreate files are ZIPs — .procreate extension is the only reliable signal
-  if (/\.procreate$/i.test(intake.filename || '')) return 0.97;
-  return 0;
-}
-return detect;
-})();
-
-const detect_sketch=(()=>{
-function detect(intake) {
-  if (!intake.isBinary) return 0;
-  const b = intake.bytes;
-  const ext = (intake.filename || '').split('.').pop()?.toLowerCase();
-  // ZIP magic: PK\x03\x04
-  const isZip = b && b.length > 4 && b[0] === 0x50 && b[1] === 0x4B && b[2] === 0x03 && b[3] === 0x04;
-  if (ext === 'sketch' && isZip) return 0.95;
-  if (ext === 'sketch') return 0.7;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch};
+export const DETECTORS={"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico};
