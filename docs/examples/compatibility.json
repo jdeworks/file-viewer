@@ -3736,6 +3736,35 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
+    },
+    "kmz": {
+      "label": "KMZ Map Archive",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.kmz"
+      ],
+      "extensions": [
+        ".kmz"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false,
+      "fileExamplesSlug": null,
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Embedded overlays and network links not rendered"
+      ]
     }
   },
   "knownFiles": {

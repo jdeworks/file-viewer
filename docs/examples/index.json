@@ -1946,6 +1946,15 @@
     ]
   },
   {
+    "label": "World Cities (KMZ)",
+    "file": "sample.kmz",
+    "mime": "application/vnd.google-earth.kmz",
+    "category": "Geo",
+    "categories": [
+      "Geo"
+    ]
+  },
+  {
     "label": "Folk Tunes (ABC)",
     "file": "sample.abc",
     "mime": "text/vnd.abc",

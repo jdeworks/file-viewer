@@ -129,4 +129,17 @@ export async function run(ctx) {
   if (/NetCDF/i.test(ncText)) pass('NetCDF badge shown'); else fail('nc badge missing');
   if (/temperature|lat|lon/i.test(ncText)) pass('NetCDF variables shown'); else fail('nc vars: ' + ncText.slice(0, 300));
   if (/CF-1\.8|Demo Climate/i.test(ncText)) pass('NetCDF global attributes shown'); else fail('nc attrs: ' + ncText.slice(0, 300));
+
+  // ── KMZ Compressed Map ────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('World Cities (KMZ)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const kmzf = await frameOf('iframe.fv-preview-frame');
+  await kmzf.waitForSelector('.badge-kmz', { timeout: 8000 });
+  const kmzTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (kmzTypeId === 'kmz') pass('.kmz detected as kmz type'); else fail('kmz typeId: ' + kmzTypeId);
+  const kmzText = await kmzf.$eval('body', (el) => el.textContent);
+  if (/KMZ/i.test(kmzText)) pass('KMZ badge shown'); else fail('kmz badge missing');
+  if (/Eiffel Tower|Statue of Liberty|Sydney Opera/i.test(kmzText)) pass('KMZ placemark names shown'); else fail('kmz placemarks: ' + kmzText.slice(0, 300));
+  if (/File Viewer Demo KMZ/i.test(kmzText)) pass('KMZ document name shown'); else fail('kmz name: ' + kmzText.slice(0, 300));
 }

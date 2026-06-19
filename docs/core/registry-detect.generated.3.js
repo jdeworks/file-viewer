@@ -202,6 +202,17 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_kmz=(()=>{
+function detect(intake) {
+  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  const b = intake.bytes;
+  if (!(b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04)) return 0;
+  if (hasExtension(intake, 'kmz')) return 0.97;
+  return 0;
+}
+return detect;
+})();
+
 const detect_reg=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -294,31 +305,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_chat=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const name = (intake.filename || '').toLowerCase();
-  const head = (intake.textSample || '').slice(0, 600);
-
-  // WhatsApp: _chat.txt with date pattern at the start of lines
-  if (name === '_chat.txt' || name.endsWith('_chat.txt')) return 0.97;
-  if (/^\[\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4},\s*\d{1,2}:\d{2}(:\d{2})?\]\s+\S+:/m.test(head)) return 0.92;
-  if (/^\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4},\s*\d{1,2}:\d{2}\s+-\s+\S+/m.test(head)) return 0.9;
-
-  // Telegram JSON export
-  if (/"type"\s*:\s*"personal_chat"/.test(head) && /"messages"/.test(head)) return 0.97;
-  if (/"type"\s*:\s*"saved_messages"/.test(head) && /"messages"/.test(head)) return 0.97;
-
-  // Discord JSON (DiscordChatExporter)
-  if (/"guild"/.test(head) && /"channel"/.test(head) && /"messages"/.test(head)) return 0.95;
-
-  // Facebook Messenger JSON
-  if (/"participants"/.test(head) && /"messages"/.test(head) && /"sender_name"/.test(head)) return 0.93;
-
-  if (!hasExtension(intake, 'txt', 'json')) return 0;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat};
+export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad};
