@@ -121,6 +121,7 @@ export async function run(ctx) {
     ['sample.procreate', 'procreate'],
     ['sample.sketch', 'sketch'],
     ['sample.ora', 'layered'],
+    ['sample.kra', 'layered'],
   ]);
   const missingDesignTypes = [...designSamples].filter(([file, type]) => byFile.get(file)?.type !== type).map(([file]) => file);
   if (missingDesignTypes.length) {

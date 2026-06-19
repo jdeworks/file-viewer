@@ -1491,6 +1491,21 @@
     "type": "layered"
   },
   {
+    "label": "Sample.kra",
+    "file": "sample.kra",
+    "mime": "application/x-krita",
+    "category": "Image",
+    "categories": [
+      "Image",
+      "Media"
+    ],
+    "type": "layered",
+    "description": "Small Krita-style layered sample with separate background, shape, and annotation layers.",
+    "source": "Generated in-repo from simple geometric CC0 sample content",
+    "license": "CC0 1.0 Universal",
+    "attribution": "File Viewer sample catalog"
+  },
+  {
     "label": "sample.sketch",
     "file": "sample.sketch",
     "type": "sketch",
