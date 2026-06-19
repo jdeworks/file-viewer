@@ -5,7 +5,7 @@ export default {
     if (baseType.id !== 'yaml') return false;
     const name = (intake.filename || '').split('/').pop().toLowerCase();
     const knownNames = new Set(['playbook.yml', 'playbook.yaml', 'site.yml', 'site.yaml', 'main.yml', 'main.yaml']);
-    if (!knownNames.has(name)) return false;
+    if (!knownNames.has(name) && !name.includes('ansible')) return false;
     const text = intake.textSample || intake.text || '';
     // Must have hosts key at top level or as list element
     return /^\s*-?\s*hosts\s*:/m.test(text);

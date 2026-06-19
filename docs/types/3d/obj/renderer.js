@@ -4,6 +4,7 @@ import { mountMeshView } from '../../../core/meshview.js';
 
 export async function render(intake, _ctx) {
   const model = parseOBJ(intake.text || '');
+  model._filename = intake.filename;
   const info = model.tris.length.toLocaleString() + ' triangles · ' + model.vertexCount.toLocaleString() + ' vertices · '
     + model.size.map((s) => s.toFixed(1)).join(' × ');
   return mountMeshView(model, info);

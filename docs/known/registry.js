@@ -120,6 +120,10 @@ import procfile from '../types/text/known/procfile/index.js';
 import envrc from '../types/text/known/envrc/index.js';
 import miseConfig from '../types/text/toml/known/mise/index.js';
 import toolVersions from '../types/text/known/tool-versions/index.js';
+import gitattributes from '../types/text/known/gitattributes/index.js';
+import mailmap from '../types/text/known/mailmap/index.js';
+import npmignore from '../types/text/known/npmignore/index.js';
+import dockerignore from '../types/text/known/dockerignore/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -137,7 +141,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   helmChart, kustomize, ansiblePlaybook, pulumi, packer, ruff, uv, kubeHelmValues,
   firebase, expo, tailwind, postcss, husky, lintStaged, nestCli, swcrc,
   packageLock, composerLock, pnpmLock, cargoLock, poetryLock, goSum,
-  makefileKf, justfile, procfile, envrc, miseConfig, toolVersions];
+  makefileKf, justfile, procfile, envrc, miseConfig, toolVersions,
+  gitattributes, mailmap, npmignore, dockerignore];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

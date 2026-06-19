@@ -12,6 +12,7 @@ export async function render(intake, _ctx) {
     host.innerHTML = '<div class="json-error"><strong>Could not read STL</strong><br>' + (e.message || e) + '</div>';
     return { parentNode: host };
   }
+  model._filename = intake.filename;
   const info = model.tris.length.toLocaleString() + ' triangles · ' + model.size.map((s) => s.toFixed(1)).join(' × ');
   return mountMeshView(model, info);
 }

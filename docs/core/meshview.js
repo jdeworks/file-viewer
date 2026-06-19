@@ -10,7 +10,10 @@ export function mountMeshView(model, infoText) {
   host.className = 'stl-doc';
   if (!model.tris.length) { host.innerHTML = '<p class="stl-empty">No triangles found.</p>'; return { parentNode: host }; }
 
-  host.innerHTML = '<div class="stl-bar"><span class="stl-info"></span><button class="stl-reset" title="Reset view">Reset</button></div>'
+  host.innerHTML = '<div class="stl-bar"><span class="stl-info"></span>'
+    + '<input type="color" class="stl-color" value="#4978c8" title="Mesh color">'
+    + '<button class="stl-dl-ply" title="Download colored PLY">&#8595; PLY</button>'
+    + '<button class="stl-reset" title="Reset view">Reset</button></div>'
     + '<div class="stl-stage"><canvas class="stl-canvas"></canvas></div>';
   const canvas = host.querySelector('.stl-canvas');
   const stage = host.querySelector('.stl-stage');
@@ -19,8 +22,10 @@ export function mountMeshView(model, infoText) {
 
   const baseRotX = -1.1, baseRotY = 0.6;
   let rotX = baseRotX, rotY = baseRotY;
+  let overrideColor = null;
   const light = (() => { const l = [0.4, 0.5, 0.8]; const n = Math.hypot(...l); return l.map((x) => x / n); })();
-  function faceFill(color, shade) {
+  function faceFill(triColor, shade) {
+    const color = overrideColor || triColor;
     const lit = 0.25 + 0.75 * shade;
     if (!color) return 'rgb(' + Math.round(70 * lit + 40) + ',' + Math.round(120 * lit + 40) + ',' + Math.round(200 * lit + 30) + ')';
     return 'rgba(' + Math.round(255 * color[0] * lit) + ',' + Math.round(255 * color[1] * lit) + ',' + Math.round(255 * color[2] * lit) + ',' + (color[3] ?? 1) + ')';
@@ -76,6 +81,25 @@ export function mountMeshView(model, infoText) {
   canvas.addEventListener('pointermove', (e) => { if (!dragging) return; rotY += (e.clientX - px) * 0.01; rotX += (e.clientY - py) * 0.01; px = e.clientX; py = e.clientY; schedule(); });
   canvas.addEventListener('pointerup', () => { dragging = false; });
   host.querySelector('.stl-reset').addEventListener('click', () => { rotX = baseRotX; rotY = baseRotY; schedule(); });
+  host.querySelector('.stl-color').addEventListener('input', (e) => {
+    const h = e.target.value;
+    overrideColor = [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255, 1];
+    schedule();
+  });
+  host.querySelector('.stl-dl-ply').addEventListener('click', () => {
+    const [r, g, b] = overrideColor ? overrideColor.map((c) => Math.round(c * 255)) : [73, 120, 200];
+    const lines = ['ply', 'format ascii 1.0', 'element vertex ' + model.tris.length * 3,
+      'property float x', 'property float y', 'property float z',
+      'property uchar red', 'property uchar green', 'property uchar blue',
+      'element face ' + model.tris.length, 'property list uchar int vertex_indices', 'end_header'];
+    let vi = 0;
+    for (const t of model.tris) for (const v of t.v) lines.push(v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + r + ' ' + g + ' ' + b);
+    for (let i = 0; i < model.tris.length; i++) { lines.push('3 ' + vi + ' ' + (vi + 1) + ' ' + (vi + 2)); vi += 3; }
+    const blob = new Blob([lines.join('\n')], { type: 'application/octet-stream' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = (model._filename ? model._filename.replace(/\.[^.]+$/, '') : 'model') + '-colored.ply';
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+  });
 
   const ro = new ResizeObserver(resize);
   ro.observe(stage);
