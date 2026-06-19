@@ -160,6 +160,27 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_pyc=(()=>{
+// Python bytecode: magic uint16 LE followed by \r\n at bytes [2-3]
+// Known magic ranges: 3000-3600 (Python 3.x), 62061-62211 (Python 2.7), etc.
+
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isPycExt = ext === 'pyc' || ext === 'pyo';
+
+  if (!b || b.length < 16) return isPycExt ? 0.5 : 0;
+
+  if (b[2] !== 0x0d || b[3] !== 0x0a) return isPycExt ? 0.3 : 0;
+
+  const magic = b[0] | (b[1] << 8);
+  const known = (magic >= 3000 && magic <= 3600) || (magic >= 20000 && magic <= 65000);
+  if (isPycExt) return known ? 0.99 : 0.75;
+  return known ? 0.85 : 0;
+}
+return detect;
+})();
+
 const detect_sdf=(()=>{
 function hasExtension(intake, ...exts) {
   const name = (intake.filename || '').toLowerCase();
@@ -290,31 +311,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_chat=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const name = (intake.filename || '').toLowerCase();
-  const head = (intake.textSample || '').slice(0, 600);
-
-  // WhatsApp: _chat.txt with date pattern at the start of lines
-  if (name === '_chat.txt' || name.endsWith('_chat.txt')) return 0.97;
-  if (/^\[\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4},\s*\d{1,2}:\d{2}(:\d{2})?\]\s+\S+:/m.test(head)) return 0.92;
-  if (/^\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4},\s*\d{1,2}:\d{2}\s+-\s+\S+/m.test(head)) return 0.9;
-
-  // Telegram JSON export
-  if (/"type"\s*:\s*"personal_chat"/.test(head) && /"messages"/.test(head)) return 0.97;
-  if (/"type"\s*:\s*"saved_messages"/.test(head) && /"messages"/.test(head)) return 0.97;
-
-  // Discord JSON (DiscordChatExporter)
-  if (/"guild"/.test(head) && /"channel"/.test(head) && /"messages"/.test(head)) return 0.95;
-
-  // Facebook Messenger JSON
-  if (/"participants"/.test(head) && /"messages"/.test(head) && /"sender_name"/.test(head)) return 0.93;
-
-  if (!hasExtension(intake, 'txt', 'json')) return 0;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat};
+export const DETECTORS={"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad};

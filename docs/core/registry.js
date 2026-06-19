@@ -131,6 +131,7 @@ import blendType from '../types/binary/blend/index.js';
 import fbxType from '../types/binary/fbx/index.js';
 import matType from '../types/binary/mat/index.js';
 import niftiType from '../types/binary/nifti/index.js';
+import pycType from '../types/binary/pyc/index.js';
 import sdfType from '../types/text/sdf/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
@@ -254,6 +255,7 @@ export const REGISTRY = [
   fbxType,
   matType,
   niftiType,
+  pycType,
   sdfType,
   regType,
   urlType,

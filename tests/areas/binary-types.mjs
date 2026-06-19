@@ -443,4 +443,16 @@ export async function run(ctx) {
   const niftiText = await niftif.$eval('body', (el) => el.textContent);
   if (/NIfTI/i.test(niftiText)) pass('NIfTI badge shown'); else fail('nifti badge: ' + niftiText.slice(0, 300));
   if (/3D|64.*64|dimensions/i.test(niftiText)) pass('NIfTI dimension info shown'); else fail('nifti dims: ' + niftiText.slice(0, 300));
+
+  // ── Python Bytecode (.pyc) ────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Python bytecode (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const pycf = await frameOf('iframe.fv-preview-frame');
+  await pycf.waitForSelector('.badge-pyc', { timeout: 8000 });
+  const pycTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (pycTypeId === 'pyc') pass('.pyc detected as pyc type'); else fail('pyc typeId: ' + pycTypeId);
+  const pycText = await pycf.$eval('body', (el) => el.textContent);
+  if (/PYC|Python/i.test(pycText)) pass('PYC badge shown'); else fail('pyc badge: ' + pycText.slice(0, 300));
+  if (/3\.11|3495/i.test(pycText)) pass('Python version shown'); else fail('pyc version: ' + pycText.slice(0, 300));
 }

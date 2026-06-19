@@ -2279,5 +2279,15 @@
       "medical",
       "binary"
     ]
+  },
+  {
+    "file": "sample.pyc",
+    "label": "Python bytecode (demo)",
+    "mime": "application/x-python-bytecode",
+    "category": "code",
+    "categories": [
+      "code",
+      "binary"
+    ]
   }
 ]
