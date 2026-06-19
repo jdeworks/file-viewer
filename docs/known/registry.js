@@ -257,6 +257,10 @@ import terragrunt from '../types/text/known/terragrunt/index.js';
 import tflint from '../types/text/known/tflint/index.js';
 import tfLock from '../types/text/known/tf-lock/index.js';
 import versionsTf from '../types/text/known/versions-tf/index.js';
+import tsupConfig from '../types/text/known/tsup-config/index.js';
+import rspackConfig from '../types/text/known/rspack-config/index.js';
+import parcelrc from '../types/text/json/known/parcelrc/index.js';
+import bunfigToml from '../types/text/toml/known/bunfig/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -309,7 +313,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   cursorRules, claudeMd, copilotInstructions, aiderConf,
   phpunit, phpstan, phpCsFixer, behat,
   terragrunt, tflint, tfLock, versionsTf,
-  cursorRules, claudeMd, copilotInstructions, aiderConf];
+  tsupConfig, rspackConfig, parcelrc, bunfigToml];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
     try { if (k.match(intake, baseType)) return k; } catch { /* a bad matcher never breaks detection */ }

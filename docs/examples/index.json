@@ -5051,5 +5051,53 @@
     "categories": [
       "Config"
     ]
+  },
+  {
+    "label": "terragrunt.hcl (Terragrunt)",
+    "file": "terragrunt.hcl",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Terragrunt IaC wrapper config: module source, includes, inputs, and dependencies.",
+    "knownFile": "terragrunt"
+  },
+  {
+    "label": ".tflint.hcl (TFLint)",
+    "file": ".tflint.hcl",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "TFLint Terraform linter config: rules, plugins, and settings.",
+    "knownFile": "tflint"
+  },
+  {
+    "label": ".terraform.lock.hcl",
+    "file": ".terraform.lock.hcl",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Terraform provider lock file with pinned versions and integrity hashes.",
+    "knownFile": "tf-lock"
+  },
+  {
+    "label": "versions.tf (Terraform)",
+    "file": "versions.tf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Terraform version constraints and required provider declarations.",
+    "knownFile": "versions-tf"
   }
 ]

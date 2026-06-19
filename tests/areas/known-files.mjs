@@ -1562,4 +1562,40 @@ export async function run(ctx) {
   if (/https|IIS Express|Docker/i.test(lsText)) pass('launchSettings.json: profiles shown'); else fail('launchSettings profiles: ' + lsText.slice(0, 200));
   if (/localhost:5000|localhost:7001/i.test(lsText)) pass('launchSettings.json: application URLs shown'); else fail('launchSettings URLs: ' + lsText.slice(0, 300));
   if (/ASPNETCORE_ENVIRONMENT|Development/i.test(lsText)) pass('launchSettings.json: environment variables shown'); else fail('launchSettings env: ' + lsText.slice(0, 300));
+
+  // ── terragrunt.hcl viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('terragrunt.hcl');
+  await page.waitForSelector('#previewHost .tgr-doc', { timeout: 12000 });
+  const tgrText = await page.$eval('#previewHost .tgr-doc', (e) => e.textContent);
+  if (/Terragrunt/i.test(tgrText)) pass('terragrunt.hcl: Terragrunt badge shown'); else fail('terragrunt badge: ' + tgrText.slice(0, 200));
+  if (/api-service|modules/i.test(tgrText)) pass('terragrunt.hcl: source shown'); else fail('terragrunt source: ' + tgrText.slice(0, 200));
+  if (/vpc|database/i.test(tgrText)) pass('terragrunt.hcl: dependencies shown'); else fail('terragrunt deps: ' + tgrText.slice(0, 200));
+
+  // ── .tflint.hcl viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.tflint.hcl');
+  await page.waitForSelector('#previewHost .tfl-doc', { timeout: 12000 });
+  const tflText = await page.$eval('#previewHost .tfl-doc', (e) => e.textContent);
+  if (/TFLint/i.test(tflText)) pass('.tflint.hcl: TFLint badge shown'); else fail('tflint badge: ' + tflText.slice(0, 200));
+  if (/aws|terraform/i.test(tflText)) pass('.tflint.hcl: plugins shown'); else fail('tflint plugins: ' + tflText.slice(0, 200));
+  if (/enabled|disabled/i.test(tflText)) pass('.tflint.hcl: rule states shown'); else fail('tflint rules: ' + tflText.slice(0, 300));
+
+  // ── .terraform.lock.hcl viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.terraform.lock.hcl');
+  await page.waitForSelector('#previewHost .tfl-lock-doc', { timeout: 12000 });
+  const tflLockText = await page.$eval('#previewHost .tfl-lock-doc', (e) => e.textContent);
+  if (/Terraform Lock/i.test(tflLockText)) pass('.terraform.lock.hcl: badge shown'); else fail('tf-lock badge: ' + tflLockText.slice(0, 200));
+  if (/hashicorp\/aws|5\.31/i.test(tflLockText)) pass('.terraform.lock.hcl: provider shown'); else fail('tf-lock provider: ' + tflLockText.slice(0, 200));
+  if (/hash/i.test(tflLockText)) pass('.terraform.lock.hcl: hash count shown'); else fail('tf-lock hashes: ' + tflLockText.slice(0, 300));
+
+  // ── versions.tf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('versions.tf');
+  await page.waitForSelector('#previewHost .vtf-doc', { timeout: 12000 });
+  const vtfText = await page.$eval('#previewHost .vtf-doc', (e) => e.textContent);
+  if (/Terraform/i.test(vtfText)) pass('versions.tf: Terraform badge shown'); else fail('versions-tf badge: ' + vtfText.slice(0, 200));
+  if (/1\.5\.0/i.test(vtfText)) pass('versions.tf: required_version shown'); else fail('versions-tf version: ' + vtfText.slice(0, 200));
+  if (/hashicorp\/aws|kubernetes/i.test(vtfText)) pass('versions.tf: providers shown'); else fail('versions-tf providers: ' + vtfText.slice(0, 300));
 }
