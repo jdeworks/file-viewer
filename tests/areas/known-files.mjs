@@ -1437,4 +1437,41 @@ export async function run(ctx) {
   if (/3\.1\.0/i.test(doxyText)) pass('Doxyfile: version shown'); else fail('doxygen version: ' + doxyText.slice(0, 200));
   if (/YES|NO/i.test(doxyText)) pass('Doxyfile: boolean flags shown'); else fail('doxygen flags: ' + doxyText.slice(0, 300));
   if (/src|include|examples/i.test(doxyText)) pass('Doxyfile: input directories shown'); else fail('doxygen input: ' + doxyText.slice(0, 300));
+
+  // ── .cursorrules viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.cursorrules');
+  await page.waitForSelector('#previewHost .cr-doc', { timeout: 12000 });
+  const crText = await page.$eval('#previewHost .cr-doc', (e) => e.textContent);
+  if (/Cursor/i.test(crText)) pass('.cursorrules: Cursor badge shown'); else fail('.cursorrules badge: ' + crText.slice(0, 200));
+  if (/section/i.test(crText)) pass('.cursorrules: sections shown'); else fail('.cursorrules sections: ' + crText.slice(0, 200));
+  if (/TypeScript|Framework|Code Style/i.test(crText)) pass('.cursorrules: content sections shown'); else fail('.cursorrules content: ' + crText.slice(0, 300));
+
+  // ── CLAUDE.md viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('CLAUDE.md');
+  await page.waitForSelector('#previewHost .cm-doc', { timeout: 12000 });
+  const cmText = await page.$eval('#previewHost .cm-doc', (e) => e.textContent);
+  if (/Claude Code/i.test(cmText)) pass('CLAUDE.md: Claude Code badge shown'); else fail('CLAUDE.md badge: ' + cmText.slice(0, 200));
+  if (/section/i.test(cmText)) pass('CLAUDE.md: sections shown'); else fail('CLAUDE.md sections: ' + cmText.slice(0, 200));
+  if (/monorepo|Next\.js|Fastify|TypeScript/i.test(cmText)) pass('CLAUDE.md: project content shown'); else fail('CLAUDE.md content: ' + cmText.slice(0, 300));
+
+  // ── copilot-instructions.md viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('copilot-instructions.md');
+  await page.waitForSelector('#previewHost .ci-doc', { timeout: 12000 });
+  const ciText = await page.$eval('#previewHost .ci-doc', (e) => e.textContent);
+  if (/GitHub Copilot/i.test(ciText)) pass('copilot-instructions.md: GitHub Copilot badge shown'); else fail('copilot-instructions badge: ' + ciText.slice(0, 200));
+  if (/section/i.test(ciText)) pass('copilot-instructions.md: sections shown'); else fail('copilot-instructions sections: ' + ciText.slice(0, 200));
+  if (/TypeScript|React|Naming|Error/i.test(ciText)) pass('copilot-instructions.md: content sections shown'); else fail('copilot-instructions content: ' + ciText.slice(0, 300));
+
+  // ── aider.conf.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('aider.conf.yml');
+  await page.waitForSelector('#previewHost .adr-doc', { timeout: 12000 });
+  const adrText = await page.$eval('#previewHost .adr-doc', (e) => e.textContent);
+  if (/Aider/i.test(adrText)) pass('aider.conf.yml: Aider badge shown'); else fail('aider.conf.yml badge: ' + adrText.slice(0, 200));
+  if (/claude-3-5-sonnet/i.test(adrText)) pass('aider.conf.yml: model shown'); else fail('aider.conf.yml model: ' + adrText.slice(0, 200));
+  if (/diff/i.test(adrText)) pass('aider.conf.yml: edit format shown'); else fail('aider.conf.yml edit format: ' + adrText.slice(0, 200));
+  if (/auto.commit|Auto.commit/i.test(adrText)) pass('aider.conf.yml: auto-commits setting shown'); else fail('aider.conf.yml auto-commits: ' + adrText.slice(0, 300));
 }
