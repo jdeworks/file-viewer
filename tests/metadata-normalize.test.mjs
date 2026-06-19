@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { dedupeMetadataRows, normalizeMetadata } from '../docs/core/meta-drawer.js';
-import { META_KEYS, textFact } from '../docs/core/metadata-helpers.js';
+import { META_KEYS, META_SECTIONS, textFact, securityFact } from '../docs/core/metadata-helpers.js';
 import { genericMetadata } from '../docs/core/generic-metadata.js';
 import { extract as markdownMeta } from '../docs/types/markdown/metadata.js';
 import { extract as codeMeta } from '../docs/types/text/code/metadata.js';
@@ -276,6 +276,73 @@ function value(rows, label) {
   assert.equal(value(rows, 'Format'), 'WebAssembly');
   assert.equal(value(rows, 'Version'), '1');
   assert.equal(value(rows, 'Section Count'), '0');
+}
+
+// Section routing: generic metadata rows carry explicit section attributes
+{
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'hello.txt',
+    bytes: new TextEncoder().encode('hello\nworld\n'),
+    text: 'hello\nworld\n',
+    isBinary: false,
+    size: 12,
+    loadedBytes: 12,
+  }));
+  // Advanced file facts
+  assert.equal(rows.find((r) => r.label === 'Extension')?.section, META_SECTIONS.advanced, 'Extension in Advanced file facts');
+  assert.equal(rows.find((r) => r.label === 'Content kind')?.section, META_SECTIONS.advanced, 'Content kind in Advanced file facts');
+  assert.equal(rows.find((r) => r.label === 'Byte order mark')?.section, META_SECTIONS.advanced, 'BOM in Advanced file facts');
+  // Text structure
+  assert.equal(rows.find((r) => r.label === 'Lines')?.section, META_SECTIONS.text, 'Lines in Text structure');
+  assert.equal(rows.find((r) => r.label === 'Line endings')?.section, META_SECTIONS.text, 'Line endings in Text structure');
+  assert.equal(rows.find((r) => r.label === 'Blank lines')?.section, META_SECTIONS.text, 'Blank lines in Text structure');
+  assert.equal(rows.find((r) => r.label === 'Trailing newline')?.section, META_SECTIONS.text, 'Trailing newline in Text structure');
+}
+
+// Dedupe keys are present on generic metadata rows
+{
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'code.py',
+    bytes: new TextEncoder().encode('x = 1\n'),
+    text: 'x = 1\n',
+    isBinary: false,
+    size: 6,
+    loadedBytes: 6,
+  }));
+  assert.equal(rows.find((r) => r.label === 'Extension')?.dedupeKey, META_KEYS.extension, 'Extension dedupeKey');
+  assert.equal(rows.find((r) => r.label === 'Content kind')?.dedupeKey, META_KEYS.contentKind, 'Content kind dedupeKey');
+  assert.equal(rows.find((r) => r.label === 'Byte order mark')?.dedupeKey, META_KEYS.bom, 'BOM dedupeKey');
+  assert.equal(rows.find((r) => r.label === 'Line endings')?.dedupeKey, META_KEYS.lineEndings, 'Line endings dedupeKey');
+  assert.equal(rows.find((r) => r.label === 'Lines')?.dedupeKey, META_KEYS.logicalLines, 'Lines dedupeKey');
+  assert.equal(rows.find((r) => r.label === 'Blank lines')?.dedupeKey, META_KEYS.blankLines, 'Blank lines dedupeKey');
+}
+
+// Archive entry risk rows normalize into Security and privacy
+{
+  const rows = normalizeMetadata([
+    securityFact('Archive entry risk', '2 high, 1 caution', META_KEYS.archiveRisk),
+    securityFact('Archive entry warnings', 'invoice.pdf.exe, bad.js', META_KEYS.archiveWarnings),
+  ]);
+  assert.equal(rows.find((r) => r.label === 'Archive entry risk')?.section, META_SECTIONS.security, 'Archive entry risk in Security and privacy');
+  assert.equal(rows.find((r) => r.label === 'Archive entry warnings')?.section, META_SECTIONS.security, 'Archive entry warnings in Security and privacy');
+  assert.equal(rows.find((r) => r.label === 'Archive entry risk')?.dedupeKey, META_KEYS.archiveRisk, 'Archive entry risk dedupeKey');
+  assert.equal(rows.find((r) => r.label === 'Archive entry warnings')?.dedupeKey, META_KEYS.archiveWarnings, 'Archive entry warnings dedupeKey');
+}
+
+// Filename risk rows are in Security and privacy (regression guard)
+{
+  const rows = normalizeMetadata(genericMetadata({
+    filename: 'payload.pdf.exe',
+    bytes: new Uint8Array([0]),
+    text: '',
+    isBinary: true,
+    size: 1,
+    loadedBytes: 1,
+  }));
+  assert.equal(rows.find((r) => r.label === 'Filename risk')?.section, META_SECTIONS.security, 'Filename risk in Security and privacy');
+  assert.equal(rows.find((r) => r.label === 'Filename warnings')?.section, META_SECTIONS.security, 'Filename warnings in Security and privacy');
+  assert.equal(rows.find((r) => r.label === 'Filename risk')?.dedupeKey, META_KEYS.filenameRisk, 'Filename risk dedupeKey');
+  assert.equal(rows.find((r) => r.label === 'Filename warnings')?.dedupeKey, META_KEYS.filenameWarnings, 'Filename warnings dedupeKey');
 }
 
 console.log('metadata normalize: ok');
