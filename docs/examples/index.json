@@ -1590,7 +1590,9 @@
     "category": "Binary",
     "categories": [
       "Binary"
-    ]
+    ],
+    "type": "java-class",
+    "description": "Minimal valid Java class (public class Sample extends Object, Java 17 / major version 61)"
   },
   {
     "label": "sample.ico",
