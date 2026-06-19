@@ -1358,5 +1358,42 @@ export async function run(ctx) {
   if (/src\/main|src\/dev/i.test(scText)) pass('shadow-cljs.edn: source paths shown'); else fail('shadow-cljs paths: ' + scText.slice(0, 200));
   if (/app|tests|browser/i.test(scText)) pass('shadow-cljs.edn: builds shown'); else fail('shadow-cljs builds: ' + scText.slice(0, 300));
   if (/3000/i.test(scText)) pass('shadow-cljs.edn: dev HTTP port shown'); else fail('shadow-cljs port: ' + scText.slice(0, 200));
+
+  // ── app.yaml (Google App Engine) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('app.yaml');
+  await page.waitForSelector('#previewHost .gae-doc', { timeout: 12000 });
+  const gaeText = await page.$eval('#previewHost .gae-doc', (e) => e.textContent);
+  if (/App Engine/i.test(gaeText)) pass('app.yaml: App Engine badge shown'); else fail('gae-app badge: ' + gaeText.slice(0, 200));
+  if (/nodejs20|python311|java17|ruby/i.test(gaeText)) pass('app.yaml: runtime shown'); else fail('gae-app runtime: ' + gaeText.slice(0, 200));
+  if (/standard|flex/i.test(gaeText)) pass('app.yaml: environment shown'); else fail('gae-app env: ' + gaeText.slice(0, 200));
+
+  // ── cloudbuild.yaml (Google Cloud Build) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cloudbuild.yaml');
+  await page.waitForSelector('#previewHost .gcb-doc', { timeout: 12000 });
+  const gcbText = await page.$eval('#previewHost .gcb-doc', (e) => e.textContent);
+  if (/Cloud Build/i.test(gcbText)) pass('cloudbuild.yaml: Cloud Build badge shown'); else fail('cloudbuild badge: ' + gcbText.slice(0, 200));
+  if (/step|npm|docker|node/i.test(gcbText)) pass('cloudbuild.yaml: build steps shown'); else fail('cloudbuild steps: ' + gcbText.slice(0, 300));
+  if (/1200s|machineType|E2_HIGHCPU/i.test(gcbText)) pass('cloudbuild.yaml: timeout and machine type shown'); else fail('cloudbuild options: ' + gcbText.slice(0, 300));
+
+  // ── google-services.json (Firebase) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('google-services.json');
+  await page.waitForSelector('#previewHost .gs-doc', { timeout: 12000 });
+  const gsText = await page.$eval('#previewHost .gs-doc', (e) => e.textContent);
+  if (/Firebase/i.test(gsText)) pass('google-services.json: Firebase badge shown'); else fail('google-services badge: ' + gsText.slice(0, 200));
+  if (/myapp-production|project/i.test(gsText)) pass('google-services.json: project ID shown'); else fail('google-services project: ' + gsText.slice(0, 200));
+  if (/com\.example\.myapp|package_name|app client/i.test(gsText)) pass('google-services.json: app client shown'); else fail('google-services client: ' + gsText.slice(0, 300));
+
+  // ── catalog-info.yaml (Backstage) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('catalog-info.yaml');
+  await page.waitForSelector('#previewHost .cat-doc', { timeout: 12000 });
+  const catText = await page.$eval('#previewHost .cat-doc', (e) => e.textContent);
+  if (/Backstage/i.test(catText)) pass('catalog-info.yaml: Backstage badge shown'); else fail('catalog-info badge: ' + catText.slice(0, 200));
+  if (/Component|API|System|Group|User/i.test(catText)) pass('catalog-info.yaml: entity kind shown'); else fail('catalog-info kind: ' + catText.slice(0, 200));
+  if (/order-service|payment-service/i.test(catText)) pass('catalog-info.yaml: entity name shown'); else fail('catalog-info name: ' + catText.slice(0, 200));
+  if (/production|experimental|deprecated/i.test(catText)) pass('catalog-info.yaml: lifecycle shown'); else fail('catalog-info lifecycle: ' + catText.slice(0, 200));
 }
 }

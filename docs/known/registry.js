@@ -184,6 +184,10 @@ import viteConfig from '../types/text/known/vite-config/index.js';
 import webpackConfig from '../types/text/known/webpack-config/index.js';
 import rollupConfig from '../types/text/known/rollup-config/index.js';
 import nextConfig from '../types/text/known/next-config/index.js';
+import astroConfig from '../types/text/known/astro-config/index.js';
+import svelteConfig from '../types/text/known/svelte-config/index.js';
+import nuxtConfig from '../types/text/known/nuxt-config/index.js';
+import remixConfig from '../types/text/known/remix-config/index.js';
 import airConfig from '../types/text/toml/known/air-config/index.js';
 import spectral from '../types/text/yaml/known/spectral/index.js';
 import tiltfile from '../types/text/known/tiltfile/index.js';
@@ -222,6 +226,17 @@ import stackYaml from '../types/text/yaml/known/stack-yaml/index.js';
 import cabal from '../types/text/known/cabal/index.js';
 import packageResolved from '../types/text/json/known/package-resolved/index.js';
 import rebarConfig from '../types/text/known/rebar-config/index.js';
+import docusaurusConfig from '../types/text/known/docusaurus-config/index.js';
+import vitepressConfig from '../types/text/known/vitepress-config/index.js';
+import sphinxConf from '../types/text/known/sphinx-conf/index.js';
+import doxyfile from '../types/text/known/doxyfile/index.js';
+import drizzleConfig from '../types/text/known/drizzle-config/index.js';
+import knexfile from '../types/text/known/knexfile/index.js';
+import alembic from '../types/text/ini/known/alembic/index.js';
+import flywayConf from '../types/text/known/flyway-conf/index.js';
+import projectClj from '../types/text/known/project-clj/index.js';
+import depsEdn from '../types/text/known/deps-edn/index.js';
+import shadowCljs from '../types/text/known/shadow-cljs/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -256,6 +271,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   vcpkg, cmakePresets, conanfile,
   prometheusConfig, alertmanager, datadogConfig,
   viteConfig, webpackConfig, rollupConfig, nextConfig,
+  astroConfig, svelteConfig, nuxtConfig, remixConfig,
   airConfig, spectral, tiltfile, mesonBuild,
   goreleaser, golangciLint, bufConfig, heroku,
   readthedocs, citationCff, yamllint, coderabbit,
@@ -265,7 +281,9 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   scorecard, socketSecurity, trivyConfig, snykConfig,
   gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml,
   csproj, directoryBuild, nuspec,
-  stackYaml, cabal, packageResolved, rebarConfig];
+  stackYaml, cabal, packageResolved, rebarConfig,
+  docusaurusConfig, vitepressConfig, sphinxConf, doxyfile,
+  drizzleConfig, knexfile, alembic, flywayConf];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

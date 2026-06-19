@@ -3502,22 +3502,26 @@
         "enhanced": true
     },
     {
-        "label": "Cloud Build config",
+        "label": "cloudbuild.yaml",
         "file": "cloudbuild.yaml",
         "mime": "text/yaml",
         "category": "Config",
         "categories": [
             "Config"
-        ]
+        ],
+        "enhanced": true,
+        "description": "Google Cloud Build config: 4 build steps (npm install, test, docker build, push), E2_HIGHCPU_8 machine type."
     },
     {
-        "label": "App Engine config",
+        "label": "app.yaml",
         "file": "app.yaml",
         "mime": "text/yaml",
         "category": "Config",
         "categories": [
             "Config"
-        ]
+        ],
+        "enhanced": true,
+        "description": "Google App Engine config: nodejs20 runtime, standard env, 2 handlers, automatic scaling."
     },
     {
         "label": "FUNDING.yml",
@@ -4417,5 +4421,115 @@
         ],
         "enhanced": true,
         "description": "Snyk policy file: patches and ignores for known npm vulnerabilities with expiry dates."
+    },
+    {
+        "label": "phpunit.xml",
+        "file": "phpunit.xml",
+        "mime": "text/xml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "PHPUnit config: test suite definitions, bootstrap, coverage source paths, strict mode settings."
+    },
+    {
+        "label": "phpstan.neon",
+        "file": "phpstan.neon",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "PHPStan static analysis config: level 8, paths, strict-rules extension, excludes, and custom error ignores."
+    },
+    {
+        "label": ".php-cs-fixer.php",
+        "file": ".php-cs-fixer.php",
+        "mime": "application/x-httpd-php",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "PHP CS Fixer config: PSR-12 rules, PHP 8.1 target, custom fixers for strict types and array syntax."
+    },
+    {
+        "label": "behat.yml",
+        "file": "behat.yml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Behat BDD config: default suite with Mink contexts, Selenium2 driver, base URL, feature paths."
+    },
+    {
+        "label": "google-services.json",
+        "file": "google-services.json",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Firebase/Google Services for Android: project myapp-production, 1 app client (com.example.myapp), OAuth client, API key, App Invites service."
+    },
+    {
+        "label": "catalog-info.yaml",
+        "file": "catalog-info.yaml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Backstage catalog entity: Component order-service, production lifecycle, owned by team-commerce, dependsOn 2 resources, providesApis order-api."
+    },
+    {
+        "label": "Cartfile",
+        "file": "Cartfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Carthage dependency file listing GitHub, git, and binary dependencies with version constraints for iOS/macOS."
+    },
+    {
+        "label": "Example.podspec",
+        "file": "Example.podspec",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "CocoaPods pod specification: MyAwesomePod v1.4.2, iOS 15 target, Alamofire/RxSwift/SnapKit dependencies."
+    },
+    {
+        "label": "AndroidManifest.xml",
+        "file": "AndroidManifest.xml",
+        "mime": "text/xml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Android app manifest for com.example.myapp v3.1.0: 9 permissions including camera and location, 4 activities, 2 services."
+    },
+    {
+        "label": "Release.xcconfig",
+        "file": "Release.xcconfig",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Xcode release build configuration: Swift 5.9, iOS 16 deployment target, manual code signing, optimizer flags."
     }
 ]

@@ -1,0 +1,21 @@
+{:source-paths ["src/main" "src/dev"]
+
+ :dependencies [[thheller/shadow-cljs "2.26.2"]
+                [reagent "1.2.0"]
+                [re-frame "1.3.0"]
+                [cljs-http "0.1.46"]]
+
+ :dev-http {3000 "public"}
+
+ :builds
+ {:app {:target :browser
+        :output-dir "public/js"
+        :asset-path "/js"
+        :modules {:main {:init-fn my-app.core/init
+                         :entries [my-app.core]}}
+        :devtools {:after-load my-app.core/reload
+                   :http-port 3000}}
+
+  :tests {:target :browser-test
+          :output-dir "public/test"
+          :test-dir "src/test"}}}
