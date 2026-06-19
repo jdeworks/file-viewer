@@ -308,7 +308,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   gaeApp, cloudbuild, googleServices, catalogInfo,
   cursorRules, claudeMd, copilotInstructions, aiderConf,
   phpunit, phpstan, phpCsFixer, behat,
-  terragrunt, tflint, tfLock, versionsTf];
+  terragrunt, tflint, tfLock, versionsTf,
+  cursorRules, claudeMd, copilotInstructions, aiderConf];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
     try { if (k.match(intake, baseType)) return k; } catch { /* a bad matcher never breaks detection */ }
