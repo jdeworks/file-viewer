@@ -1099,6 +1099,21 @@
     "attribution": "NASA, ESA, and STScI"
   },
   {
+    "label": "Sample.jpeg",
+    "file": "sample.jpeg",
+    "mime": "image/jpeg",
+    "type": "image",
+    "category": "Media",
+    "categories": [
+      "Image",
+      "Media"
+    ],
+    "description": "Public-domain Hubble sample image with the long .jpeg extension.",
+    "source": "https://commons.wikimedia.org/wiki/File:DSS_Sample_Images_(1993-14-105).jpg",
+    "license": "Public domain (NASA/ESA Hubble material)",
+    "attribution": "NASA, ESA, and STScI"
+  },
+  {
     "label": "Sample.gif",
     "file": "sample.gif",
     "mime": "image/gif",
