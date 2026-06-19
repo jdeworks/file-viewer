@@ -530,8 +530,7 @@ Expand image coverage:
 - design/layered formats: PSD/PSB, XCF, KRA, Sketch, Procreate, Clip Studio where supported or partial-supported
 
 Remaining explicit sample gaps:
-- Video: only AVI is covered; add browser-native MP4/WebM plus MOV/MKV partial or transcode-hint samples where appropriate.
-- Audio: add FLAC and M4A/AAC samples where browser/runtime support permits.
+- Continue using the catalog smoke sweep to catch new missing samples as file types are added.
 
 ### Layout bug
 
