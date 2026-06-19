@@ -266,6 +266,23 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_musicxml=(()=>{
+function detect(intake) {
+  if (intake.isBinary && !hasExtension(intake, 'mxl')) return 0;
+  if (hasExtension(intake, 'musicxml')) return 0.95;
+  if (hasExtension(intake, 'mxl')) return 0.9;
+  if (hasExtension(intake, 'xml')) {
+    const head = (intake.text || '').slice(0, 1200);
+    if (/<score-partwise|<score-timewise/i.test(head)) return 0.8;
+    return 0;
+  }
+  const head = (intake.text || '').slice(0, 1200);
+  if (/<score-partwise|<score-timewise/i.test(head)) return 0.6;
+  return 0;
+}
+return detect;
+})();
+
 const detect_xml=(()=>{
 // XML family (but NOT .svg — that's the image type, and not the Office/zip XML containers).
 // Strong on explicit XML extensions; a `<?xml` / root-element sniff catches the rest.
@@ -293,24 +310,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_env=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const filename = intake.filename?.toLowerCase() || '';
-  const base = filename.split('/').pop().split('\\').pop();
-
-  // Exact matches for .env* filenames — higher priority than INI (0.9)
-  if (base === '.env' || base.startsWith('.env.') || base.endsWith('.env')) return 0.95;
-
-  // Content heuristic: majority of non-empty non-comment lines are KEY=VALUE
-  const lines = (intake.textSample || '').split('\n').filter((l) => l.trim() && !l.trim().startsWith('#'));
-  if (lines.length === 0) return 0;
-  const kvLines = lines.filter((l) => /^(?:export\s+)?[A-Z_][A-Z0-9_]*\s*=/.test(l.trim()));
-  if (kvLines.length / lines.length >= 0.7 && kvLines.length >= 3) return 0.75;
-
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"markdown":detect_markdown,"pdf":detect_pdf,"csv":detect_csv,"xlsx":detect_xlsx,"docx":detect_docx,"pptx":detect_pptx,"odf":detect_odf,"rtf":detect_rtf,"html":detect_html,"eml":detect_eml,"mbox":detect_mbox,"msg":detect_msg,"ics":detect_ics,"kubeconfig":detect_kubeconfig,"yaml":detect_yaml,"toml":detect_toml,"plist":detect_plist,"strings":detect_strings,"xml":detect_xml,"als":detect_als,"env":detect_env};
+export const DETECTORS={"markdown":detect_markdown,"pdf":detect_pdf,"csv":detect_csv,"xlsx":detect_xlsx,"docx":detect_docx,"pptx":detect_pptx,"odf":detect_odf,"rtf":detect_rtf,"html":detect_html,"eml":detect_eml,"mbox":detect_mbox,"msg":detect_msg,"ics":detect_ics,"kubeconfig":detect_kubeconfig,"yaml":detect_yaml,"toml":detect_toml,"plist":detect_plist,"strings":detect_strings,"musicxml":detect_musicxml,"xml":detect_xml,"als":detect_als};

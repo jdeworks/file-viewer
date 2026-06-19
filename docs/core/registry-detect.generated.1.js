@@ -3,6 +3,26 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_env=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  const filename = intake.filename?.toLowerCase() || '';
+  const base = filename.split('/').pop().split('\\').pop();
+
+  // Exact matches for .env* filenames — higher priority than INI (0.9)
+  if (base === '.env' || base.startsWith('.env.') || base.endsWith('.env')) return 0.95;
+
+  // Content heuristic: majority of non-empty non-comment lines are KEY=VALUE
+  const lines = (intake.textSample || '').split('\n').filter((l) => l.trim() && !l.trim().startsWith('#'));
+  if (lines.length === 0) return 0;
+  const kvLines = lines.filter((l) => /^(?:export\s+)?[A-Z_][A-Z0-9_]*\s*=/.test(l.trim()));
+  if (kvLines.length / lines.length >= 0.7 && kvLines.length >= 3) return 0.75;
+
+  return 0;
+}
+return detect;
+})();
+
 const detect_ini=(()=>{
 // INI / .env / .properties / .cfg / .conf key-value config files.
 function detect(intake) {
@@ -298,22 +318,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_heif=(()=>{
-function detect(intake) {
-  if (!intake.isBinary) return 0;
-  const b = intake.bytes;
-  if (b && b.length >= 12) {
-    // Check ftyp box at offset 4-7
-    if (b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) {
-      const brand = String.fromCharCode(b[8], b[9], b[10], b[11]);
-      if (['heic', 'heix', 'mif1', 'msf1', 'hevc', 'heim', 'heis', 'avif'].includes(brand)) return 0.99;
-    }
-  }
-  const ext = intake.filename?.toLowerCase().split('.').pop();
-  if (['heic', 'heif', 'hif'].includes(ext)) return 0.7;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif};
+export const DETECTORS={"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff};

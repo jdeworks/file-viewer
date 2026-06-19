@@ -259,6 +259,19 @@ export async function run(ctx) {
   const jsonlCols = await jsonlf.$$eval('.jsonl-table th', (ths) => ths.map((th) => th.textContent));
   if (jsonlCols.includes('timestamp') && jsonlCols.includes('level') && jsonlCols.includes('message')) pass('JSONL table shows shared schema columns'); else fail('jsonl cols: ' + jsonlCols.join(','));
 
+  // ── MusicXML music notation viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Ode to Joy Theme (MusicXML)');
+  const mxmlf = await frameOf('iframe.fv-preview-frame');
+  await mxmlf.waitForSelector('.mxml-preview', { timeout: 8000 });
+  const mxmlTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (mxmlTypeId === 'musicxml') pass('sample.musicxml detected as MusicXML Score'); else fail('musicxml type: ' + mxmlTypeId);
+  const mxmlTitle = await mxmlf.$eval('.mxml-title', (e) => e.textContent);
+  const mxmlComposer = await mxmlf.$eval('.mxml-composer', (e) => e.textContent);
+  if (/Ode to Joy/i.test(mxmlTitle) && /Beethoven/i.test(mxmlComposer)) pass('MusicXML score header shows title and composer'); else fail('mxml header: ' + mxmlTitle + ' / ' + mxmlComposer);
+  const mxmlParts = await mxmlf.$$eval('.mxml-part-chip', (els) => els.map((e) => e.textContent));
+  if (mxmlParts.length >= 2 && mxmlParts.some((p) => /violin/i.test(p)) && mxmlParts.some((p) => /piano/i.test(p))) pass('MusicXML instrumentation list shows parts'); else fail('mxml parts: ' + mxmlParts.join(', '));
+
   // ── OFX / QFX financial viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('sample.ofx');

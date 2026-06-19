@@ -3,6 +3,24 @@ import { mediaInfo } from '../types/media/medialib.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_heif=(()=>{
+function detect(intake) {
+  if (!intake.isBinary) return 0;
+  const b = intake.bytes;
+  if (b && b.length >= 12) {
+    // Check ftyp box at offset 4-7
+    if (b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) {
+      const brand = String.fromCharCode(b[8], b[9], b[10], b[11]);
+      if (['heic', 'heix', 'mif1', 'msf1', 'hevc', 'heim', 'heis', 'avif'].includes(brand)) return 0.99;
+    }
+  }
+  const ext = intake.filename?.toLowerCase().split('.').pop();
+  if (['heic', 'heif', 'hif'].includes(ext)) return 0.7;
+  return 0;
+}
+return detect;
+})();
+
 const detect_ico=(()=>{
 function detect(intake) {
   if (!intake.isBinary) return 0;
@@ -304,18 +322,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_torrent=(()=>{
-function detect(intake) {
-  if (!intake.isBinary) return 0;
-  const b = intake.bytes;
-  if (!b || b.length < 2) return 0;
-  const hasExt = hasExtension(intake, 'torrent');
-  const isBencodeDict = b[0] === 0x64; // 'd' — bencode dict
-  if (hasExt) return isBencodeDict ? 0.95 : 0.85;
-  if (isBencodeDict) return 0.35;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent};
+export const DETECTORS={"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip};

@@ -1827,5 +1827,14 @@
     "categories": [
       "Data"
     ]
+  },
+  {
+    "label": "Ode to Joy Theme (MusicXML)",
+    "file": "sample.musicxml",
+    "mime": "application/vnd.recordare.musicxml+xml",
+    "category": "Media",
+    "categories": [
+      "Media"
+    ]
   }
 ]

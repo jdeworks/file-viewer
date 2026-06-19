@@ -3,6 +3,20 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_torrent=(()=>{
+function detect(intake) {
+  if (!intake.isBinary) return 0;
+  const b = intake.bytes;
+  if (!b || b.length < 2) return 0;
+  const hasExt = hasExtension(intake, 'torrent');
+  const isBencodeDict = b[0] === 0x64; // 'd' — bencode dict
+  if (hasExt) return isBencodeDict ? 0.95 : 0.85;
+  if (isBencodeDict) return 0.35;
+  return 0;
+}
+return detect;
+})();
+
 const detect_java_class=(()=>{
 function detect(intake) {
   if (!intake.isBinary) return 0;
@@ -308,4 +322,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"ruffle":detect_ruffle,"v86":detect_v86};
+export const DETECTORS={"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"ruffle":detect_ruffle,"v86":detect_v86};

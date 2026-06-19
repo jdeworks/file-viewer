@@ -452,3 +452,35 @@
 .ofx-neg { color: #dc2626; }
 .ofx-note { color: var(--fg-2); font-size: .82rem; margin-top: 8px; }
 .ofx-empty { color: var(--fg-2); padding: 16px; text-align: center; font-size: .9rem; }
+
+/* MusicXML score viewer */
+.mxml-preview { font-family: system-ui, sans-serif; padding: 16px; max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.mxml-header { text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.mxml-title { font-size: 1.4rem; font-weight: 700; }
+.mxml-composer { font-size: 1rem; color: var(--fg-2); }
+.mxml-lyricist { font-size: .9rem; color: var(--fg-2); }
+.mxml-copyright { font-size: .78rem; color: var(--fg-2); }
+.mxml-untitled { font-size: 1rem; color: var(--fg-2); font-style: italic; }
+.mxml-error { color: #dc2626; font-size: .9rem; padding: 12px; }
+.mxml-section { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+.mxml-label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); }
+.mxml-parts { display: flex; flex-wrap: wrap; gap: 6px; }
+.mxml-part-chip { background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; font-size: .82rem; }
+.mxml-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+.mxml-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.mxml-stat-value { font-size: 1.1rem; font-weight: 600; }
+.mxml-stat-label { font-size: .72rem; color: var(--fg-2); text-transform: uppercase; letter-spacing: .04em; }
+
+/* MusicXML */
+.mxml-preview { padding: 12px; }
+.mxml-header { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+.mxml-title { font-size: 1.2em; font-weight: 600; margin-bottom: 2px; }
+.mxml-composer { color: var(--fg-2); font-style: italic; margin-bottom: 4px; }
+.mxml-section { margin-bottom: 12px; }
+.mxml-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
+.mxml-parts { display: flex; flex-wrap: wrap; gap: 6px; }
+.mxml-part-chip { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); border-radius: 4px; padding: 2px 8px; font-size: .8em; }
+.mxml-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.mxml-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; }
+.mxml-stat-value { font-weight: 600; font-size: 1.05em; }
+.mxml-stat-label { font-size: .75em; color: var(--fg-2); }
