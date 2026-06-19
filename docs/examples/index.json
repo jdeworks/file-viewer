@@ -2154,5 +2154,15 @@
       "binary",
       "scientific"
     ]
+  },
+  {
+    "file": "sample.avro",
+    "label": "Avro Employee Schema (demo)",
+    "mime": "application/avro-binary",
+    "category": "data",
+    "categories": [
+      "data",
+      "binary"
+    ]
   }
 ]

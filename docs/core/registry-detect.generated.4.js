@@ -169,6 +169,33 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_avro=(()=>{
+function hasAscii(b, off, s) {
+  if (off + s.length > b.length) return false;
+  for (let i = 0; i < s.length; i++) if (b[off + i] !== s.charCodeAt(i)) return false;
+  return true;
+}
+
+function hasExtension(intake, ...exts) {
+  const name = (intake.filename || '').toLowerCase();
+  return exts.some((e) => name.endsWith('.' + e));
+}
+
+function detect(intake) {
+  const b = intake.bytes;
+  if (!b || b.length < 4) return 0;
+
+  // Avro object container file magic: 0x4F 0x62 0x6A 0x01 = 'Obj\x01'
+  if (hasAscii(b, 0, 'Obj') && b[3] === 0x01) {
+    return hasExtension(intake, 'avro') ? 0.99 : 0.95;
+  }
+
+  if (hasExtension(intake, 'avro')) return 0.45;
+  return 0;
+}
+return detect;
+})();
+
 const detect_sdf=(()=>{
 function hasExtension(intake, ...exts) {
   const name = (intake.filename || '').toLowerCase();
@@ -299,31 +326,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_chat=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const name = (intake.filename || '').toLowerCase();
-  const head = (intake.textSample || '').slice(0, 600);
-
-  // WhatsApp: _chat.txt with date pattern at the start of lines
-  if (name === '_chat.txt' || name.endsWith('_chat.txt')) return 0.97;
-  if (/^\[\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4},\s*\d{1,2}:\d{2}(:\d{2})?\]\s+\S+:/m.test(head)) return 0.92;
-  if (/^\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4},\s*\d{1,2}:\d{2}\s+-\s+\S+/m.test(head)) return 0.9;
-
-  // Telegram JSON export
-  if (/"type"\s*:\s*"personal_chat"/.test(head) && /"messages"/.test(head)) return 0.97;
-  if (/"type"\s*:\s*"saved_messages"/.test(head) && /"messages"/.test(head)) return 0.97;
-
-  // Discord JSON (DiscordChatExporter)
-  if (/"guild"/.test(head) && /"channel"/.test(head) && /"messages"/.test(head)) return 0.95;
-
-  // Facebook Messenger JSON
-  if (/"participants"/.test(head) && /"messages"/.test(head) && /"sender_name"/.test(head)) return 0.93;
-
-  if (!hasExtension(intake, 'txt', 'json')) return 0;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat};
+export const DETECTORS={"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad};

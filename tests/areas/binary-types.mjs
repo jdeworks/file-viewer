@@ -298,4 +298,17 @@ export async function run(ctx) {
   if (/Parquet/i.test(parqText)) pass('Parquet badge shown'); else fail('parquet badge: ' + parqText.slice(0, 300));
   if (/PAR1|Parquet/i.test(parqText)) pass('Parquet format confirmed'); else fail('parquet format: ' + parqText.slice(0, 300));
   if (/name|salary|department/i.test(parqText)) pass('Parquet field names shown'); else fail('parquet fields: ' + parqText.slice(0, 300));
+
+  // ── Apache Avro ───────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Avro Employee Schema (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const avrof = await frameOf('iframe.fv-preview-frame');
+  await avrof.waitForSelector('.badge-avro', { timeout: 8000 });
+  const avroTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (avroTypeId === 'avro') pass('.avro detected as avro type'); else fail('avro typeId: ' + avroTypeId);
+  const avroText = await avrof.$eval('body', (el) => el.textContent);
+  if (/Apache Avro/i.test(avroText)) pass('Avro badge shown'); else fail('avro badge: ' + avroText.slice(0, 300));
+  if (/Employee|com\.example/i.test(avroText)) pass('Avro schema name shown'); else fail('avro schema: ' + avroText.slice(0, 300));
+  if (/salary|department|hire_date/i.test(avroText)) pass('Avro schema fields shown'); else fail('avro fields: ' + avroText.slice(0, 300));
 }

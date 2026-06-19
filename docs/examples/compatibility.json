@@ -4142,6 +4142,36 @@
         "Row data not displayed",
         "Row group statistics not shown"
       ]
+    },
+    "avro": {
+      "label": "Apache Avro",
+      "support": "partial",
+      "sampleFiles": [
+        "sample.avro"
+      ],
+      "extensions": [
+        ".avro"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "rich",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "fileExamplesSlug": "avro",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Data records not decoded (no Avro binary encoder)",
+        "Deflate/Snappy compressed blocks not decompressed"
+      ]
     }
   },
   "knownFiles": {

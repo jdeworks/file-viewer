@@ -3,6 +3,33 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_chat=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  const name = (intake.filename || '').toLowerCase();
+  const head = (intake.textSample || '').slice(0, 600);
+
+  // WhatsApp: _chat.txt with date pattern at the start of lines
+  if (name === '_chat.txt' || name.endsWith('_chat.txt')) return 0.97;
+  if (/^\[\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4},\s*\d{1,2}:\d{2}(:\d{2})?\]\s+\S+:/m.test(head)) return 0.92;
+  if (/^\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4},\s*\d{1,2}:\d{2}\s+-\s+\S+/m.test(head)) return 0.9;
+
+  // Telegram JSON export
+  if (/"type"\s*:\s*"personal_chat"/.test(head) && /"messages"/.test(head)) return 0.97;
+  if (/"type"\s*:\s*"saved_messages"/.test(head) && /"messages"/.test(head)) return 0.97;
+
+  // Discord JSON (DiscordChatExporter)
+  if (/"guild"/.test(head) && /"channel"/.test(head) && /"messages"/.test(head)) return 0.95;
+
+  // Facebook Messenger JSON
+  if (/"participants"/.test(head) && /"messages"/.test(head) && /"sender_name"/.test(head)) return 0.93;
+
+  if (!hasExtension(intake, 'txt', 'json')) return 0;
+  return 0;
+}
+return detect;
+})();
+
 const detect_guitar_pro=(()=>{
 function detect(intake) {
   if (hasExtension(intake, 'gpx')) {
@@ -277,50 +304,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_exe=(()=>{
-function detect(intake) {
-  if (!intake.isBinary || !intake.bytes) return 0;
-  const b = intake.bytes;
-  if (b.length < 4) return 0;
-
-  // ELF: \x7fELF
-  if (b[0] === 0x7f && b[1] === 0x45 && b[2] === 0x4c && b[3] === 0x46) return 0.98;
-
-  // PE/COFF: MZ magic (Windows)
-  if (b[0] === 0x4d && b[1] === 0x5a) return 0.85;
-
-  // Mach-O: check all 4 magic variants
-  const m32be = b[0] === 0xfe && b[1] === 0xed && b[2] === 0xfa && b[3] === 0xce;
-  const m64be = b[0] === 0xfe && b[1] === 0xed && b[2] === 0xfa && b[3] === 0xcf;
-  const m32le = b[0] === 0xce && b[1] === 0xfa && b[2] === 0xed && b[3] === 0xfe;
-  const m64le = b[0] === 0xcf && b[1] === 0xfa && b[2] === 0xed && b[3] === 0xfe;
-  // CAFEBABE: Mach-O fat binary, but ALSO Java .class — distinguish by major version at [6:8]
-  const mFat  = b[0] === 0xca && b[1] === 0xfe && b[2] === 0xba && b[3] === 0xbe;
-  if (m32be || m64be || m32le || m64le) return 0.98;
-  if (mFat && b.length >= 8) {
-    const major = (b[6] << 8) | b[7];
-    if (major >= 45 && major <= 70) return 0; // Java class file (major 45=Java1.1 … 70=Java26)
-    return 0.98;
-  }
-
-  return 0;
-}
-return detect;
-})();
-
-const detect_apk=(()=>{
-function detect(intake) {
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
-  const b = intake.bytes;
-  const isPk = b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
-  if (!isPk) return 0;
-  if (hasExtension(intake, 'apk', 'aab', 'xapk')) return 0.97;
-  // Sniff for APK-specific files in text sample
-  const head = intake.textSample || '';
-  if (/AndroidManifest\.xml|classes\.dex|META-INF\//.test(head)) return 0.9;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk};
+export const DETECTORS={"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom};
