@@ -11277,7 +11277,9 @@
       "label": "Terragrunt Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "terragrunt.hcl"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11302,7 +11304,9 @@
       "label": "TFLint Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".tflint.hcl"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11327,7 +11331,9 @@
       "label": "Terraform Lock File",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".terraform.lock.hcl"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -11352,7 +11358,9 @@
       "label": "Terraform Versions",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "versions.tf"
+      ],
       "extensions": [
         ".yml"
       ],
