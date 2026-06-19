@@ -3136,7 +3136,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "typos source code spell checker configuration — word overrides, file ignores, and check settings.",
+    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
     "knownFile": "typos"
   },
   {
@@ -5467,5 +5467,49 @@
     "enhanced": true,
     "description": "Docker Buildx Bake build definition: targets, tags, platforms, and cache config.",
     "knownFile": "docker-bake"
+  },
+  {
+    "label": ".semgrep.yml",
+    "file": ".semgrep.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Semgrep static analysis config: custom rules and rulesets for security and code quality scanning."
+  },
+  {
+    "label": ".codeclimate.yml",
+    "file": ".codeclimate.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Code Climate config: code quality analysis engines and exclude patterns."
+  },
+  {
+    "label": ".gitleaks.toml",
+    "file": ".gitleaks.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Gitleaks secret scanning config: rules for detecting secrets in git repositories."
+  },
+  {
+    "label": "osv-scanner.toml",
+    "file": "osv-scanner.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "OSV-Scanner config: vulnerability scanning config for open source dependencies."
   }
 ]

@@ -311,6 +311,10 @@ import semgrepConfig from '../types/text/yaml/known/semgrep-config/index.js';
 import codeclimateConfig from '../types/text/yaml/known/codeclimate-config/index.js';
 import gitleaksConfig from '../types/text/toml/known/gitleaks-config/index.js';
 import osvScanner from '../types/text/toml/known/osv-scanner/index.js';
+import condaEnv from '../types/text/yaml/known/conda-env/index.js';
+import pipConf from '../types/text/known/pip-conf/index.js';
+import nodeVersionFile from '../types/text/known/node-version-file/index.js';
+import dockerBake from '../types/text/known/docker-bake/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,

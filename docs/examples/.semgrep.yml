@@ -1,0 +1,65 @@
+rules:
+  - id: hardcoded-password
+    message: Hardcoded password detected — use environment variables or a secrets manager
+    severity: ERROR
+    languages: [python, javascript, typescript]
+    pattern: |
+      $VAR = "password123"
+
+  - id: sql-injection-risk
+    message: Potential SQL injection — use parameterized queries instead of string concatenation
+    severity: ERROR
+    languages: [python, java, javascript]
+    patterns:
+      - pattern: |
+          $QUERY = "SELECT * FROM " + $INPUT
+      - pattern: |
+          cursor.execute("SELECT " + $INPUT)
+
+  - id: insecure-random
+    message: Use of insecure random number generator — use secrets module for cryptographic purposes
+    severity: WARNING
+    languages: [python]
+    pattern: |
+      import random
+
+  - id: open-redirect
+    message: Open redirect vulnerability — validate and restrict redirect URLs
+    severity: WARNING
+    languages: [python, javascript, typescript, java]
+    pattern: |
+      redirect($USER_INPUT)
+
+  - id: command-injection
+    message: Possible command injection — sanitize user input before passing to shell
+    severity: ERROR
+    languages: [python, javascript, go]
+    patterns:
+      - pattern: |
+          subprocess.call($CMD + $INPUT, shell=True)
+      - pattern: |
+          os.system($INPUT)
+
+  - id: missing-auth-check
+    message: Endpoint may be missing authentication check
+    severity: WARNING
+    languages: [python]
+    pattern: |
+      @app.route(...)
+      def $FUNC(...):
+          ...
+
+  - id: debug-mode-enabled
+    message: Debug mode should not be enabled in production
+    severity: INFO
+    languages: [python]
+    pattern: |
+      app.run(debug=True)
+
+  - id: weak-hash
+    message: Weak cryptographic hash — use SHA-256 or stronger
+    severity: WARNING
+    languages: [python, javascript, java]
+    pattern-either:
+      - pattern: hashlib.md5(...)
+      - pattern: hashlib.sha1(...)

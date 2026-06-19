@@ -1,0 +1,32 @@
+GoVersionOverride = "1.21.0"
+
+[[IgnoreVulns]]
+id = "GHSA-xg2h-wx96-xgxr"
+reason = "Risk accepted — only affects unused code path in dev build"
+ignoreUntil = 2025-01-01T00:00:00Z
+
+[[IgnoreVulns]]
+id = "CVE-2023-44487"
+reason = "Mitigated by reverse proxy rate limiting; not directly exposed"
+ignoreUntil = 2024-06-30T00:00:00Z
+
+[[IgnoreVulns]]
+id = "GHSA-fxg5-wq6x-vr4w"
+reason = "False positive — dependency version locked to patched release"
+
+[[IgnoreVulns]]
+id = "CVE-2022-41723"
+reason = "Upstream fix backported to internal fork"
+ignoreUntil = 2024-12-31T00:00:00Z
+
+[[IgnoreVulns]]
+id = "GHSA-m425-mq94-257g"
+reason = "Only affects gRPC reflection API which is disabled in production"
+
+[Maven]
+offline = false
+
+[[Maven.registries]]
+url = "https://repo1.maven.org/maven2"
+username = ""
+password = ""

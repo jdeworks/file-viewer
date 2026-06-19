@@ -1,0 +1,62 @@
+title = "Gitleaks config"
+description = "Custom secrets detection rules for this project"
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key ID"
+regex = '''(?i)(aws_access_key_id|aws_access_key)\s*=\s*['"]?([A-Z0-9]{20})['"]?'''
+tags = ["aws", "credentials", "cloud"]
+
+[[rules]]
+id = "aws-secret-key"
+description = "AWS Secret Access Key"
+regex = '''(?i)(aws_secret_access_key|aws_secret_key)\s*=\s*['"]?([A-Za-z0-9/+=]{40})['"]?'''
+tags = ["aws", "credentials", "cloud"]
+
+[[rules]]
+id = "github-pat"
+description = "GitHub Personal Access Token"
+regex = '''ghp_[0-9a-zA-Z]{36}'''
+tags = ["github", "token", "vcs"]
+
+[[rules]]
+id = "github-fine-grained-pat"
+description = "GitHub Fine-Grained Personal Access Token"
+regex = '''github_pat_[a-zA-Z0-9_]{82}'''
+tags = ["github", "token", "vcs"]
+
+[[rules]]
+id = "stripe-secret-key"
+description = "Stripe Secret API Key"
+regex = '''sk_(live|test)_[0-9a-zA-Z]{24,}'''
+tags = ["stripe", "payment", "api-key"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic high-entropy API key or secret"
+regex = '''(?i)(api_key|apikey|secret_key|secret)\s*[=:]\s*['"]?[a-zA-Z0-9_\-]{32,}['"]?'''
+tags = ["generic", "api-key"]
+
+[[rules]]
+id = "private-key-pem"
+description = "PEM-encoded private key block"
+regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'''
+tags = ["private-key", "cryptography"]
+
+[[allowlists]]
+id = "test-fixtures"
+description = "Ignore test fixture files with fake credentials"
+paths = [
+  '''tests/fixtures/.*''',
+  '''spec/support/.*''',
+  '''__tests__/.*''',
+]
+
+[[allowlists]]
+id = "example-values"
+description = "Ignore obvious placeholder values"
+regexes = [
+  '''EXAMPLE_KEY_HERE''',
+  '''your[-_]api[-_]key''',
+  '''<YOUR_.*>''',
+]
