@@ -215,6 +215,13 @@ import gradleWrapper from '../types/text/known/gradle-wrapper/index.js';
 import settingsGradle from '../types/text/known/settings-gradle/index.js';
 import springApp from '../types/text/known/spring-app/index.js';
 import springAppYml from '../types/text/yaml/known/spring-app/index.js';
+import csproj from '../types/text/xml/known/csproj/index.js';
+import directoryBuild from '../types/text/xml/known/directory-build/index.js';
+import nuspec from '../types/text/xml/known/nuspec/index.js';
+import stackYaml from '../types/text/yaml/known/stack-yaml/index.js';
+import cabal from '../types/text/known/cabal/index.js';
+import packageResolved from '../types/text/json/known/package-resolved/index.js';
+import rebarConfig from '../types/text/known/rebar-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -256,7 +263,9 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   dotnetGlobal, prismaSchema, nugetConfig,
   sentryProps, otelCollector, logback, log4j2,
   scorecard, socketSecurity, trivyConfig, snykConfig,
-  gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml];
+  gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml,
+  csproj, directoryBuild, nuspec,
+  stackYaml, cabal, packageResolved, rebarConfig];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

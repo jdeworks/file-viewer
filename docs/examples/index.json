@@ -4373,5 +4373,49 @@
         ],
         "enhanced": true,
         "description": "NuGet config: clears default package sources and adds nuget.org v3 as the sole feed."
+    },
+    {
+        "label": "scorecard.yml",
+        "file": "scorecard.yml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "OpenSSF Scorecard config: policy and checks configuration for supply-chain security scoring."
+    },
+    {
+        "label": "socket.yml",
+        "file": "socket.yml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Socket Security config: version 2, issue type policies and alert settings for npm dependency security."
+    },
+    {
+        "label": "trivy.yaml",
+        "file": "trivy.yaml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Trivy vulnerability scanner config: severity filters, ignored CVEs, and scan targets."
+    },
+    {
+        "label": ".snyk",
+        "file": ".snyk",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Snyk policy file: patches and ignores for known npm vulnerabilities with expiry dates."
     }
 ]

@@ -1284,5 +1284,79 @@ export async function run(ctx) {
   if (/react-native-vector-icons|react-native-camera|react-native-maps/i.test(rncText)) pass('react-native.config.js: dependencies shown'); else fail('rnc deps: ' + rncText.slice(0, 300));
   if (/ios|android/i.test(rncText)) pass('react-native.config.js: platforms shown'); else fail('rnc platforms: ' + rncText.slice(0, 200));
   if (/fonts|images|assets/i.test(rncText)) pass('react-native.config.js: assets shown'); else fail('rnc assets: ' + rncText.slice(0, 200));
+
+  // ── stack.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('stack.yaml');
+  await page.waitForSelector('#previewHost .stk-doc', { timeout: 12000 });
+  const stkText = await page.$eval('#previewHost .stk-doc', (e) => e.textContent);
+  if (/Haskell Stack/i.test(stkText)) pass('stack.yaml: Haskell Stack badge shown'); else fail('stack badge: ' + stkText.slice(0, 200));
+  if (/lts-21\.25/i.test(stkText)) pass('stack.yaml: resolver shown'); else fail('stack resolver: ' + stkText.slice(0, 200));
+  if (/my-lib|my-app/i.test(stkText)) pass('stack.yaml: local packages shown'); else fail('stack packages: ' + stkText.slice(0, 300));
+  if (/amazonka|async-pool/i.test(stkText)) pass('stack.yaml: extra deps shown'); else fail('stack extra-deps: ' + stkText.slice(0, 300));
+
+  // ── example.cabal viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('example.cabal');
+  await page.waitForSelector('#previewHost .cabal-doc', { timeout: 12000 });
+  const cabalText = await page.$eval('#previewHost .cabal-doc', (e) => e.textContent);
+  if (/Cabal/i.test(cabalText)) pass('example.cabal: Cabal badge shown'); else fail('cabal badge: ' + cabalText.slice(0, 200));
+  if (/my-haskell-app/i.test(cabalText)) pass('example.cabal: package name shown'); else fail('cabal name: ' + cabalText.slice(0, 200));
+  if (/0\.1\.0\.0/i.test(cabalText)) pass('example.cabal: version shown'); else fail('cabal version: ' + cabalText.slice(0, 200));
+  if (/executable|library|test-suite|benchmark/i.test(cabalText)) pass('example.cabal: components shown'); else fail('cabal components: ' + cabalText.slice(0, 300));
+  if (/aeson|mtl|containers/i.test(cabalText)) pass('example.cabal: build dependencies shown'); else fail('cabal deps: ' + cabalText.slice(0, 300));
+
+  // ── Package.resolved viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Package.resolved');
+  await page.waitForSelector('#previewHost .pkgr-doc', { timeout: 12000 });
+  const pkgrText = await page.$eval('#previewHost .pkgr-doc', (e) => e.textContent);
+  if (/Swift/i.test(pkgrText)) pass('Package.resolved: Swift badge shown'); else fail('package-resolved badge: ' + pkgrText.slice(0, 200));
+  if (/alamofire|kingfisher/i.test(pkgrText)) pass('Package.resolved: pinned packages shown'); else fail('package-resolved pins: ' + pkgrText.slice(0, 300));
+  if (/5\.8\.1|1\.3\.0/i.test(pkgrText)) pass('Package.resolved: package versions shown'); else fail('package-resolved versions: ' + pkgrText.slice(0, 300));
+
+  // ── rebar.config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('rebar.config');
+  await page.waitForSelector('#previewHost .rebar-doc', { timeout: 12000 });
+  const rebarText = await page.$eval('#previewHost .rebar-doc', (e) => e.textContent);
+  if (/Erlang\/rebar3/i.test(rebarText)) pass('rebar.config: Erlang/rebar3 badge shown'); else fail('rebar badge: ' + rebarText.slice(0, 200));
+  if (/cowboy|eredis|poolboy/i.test(rebarText)) pass('rebar.config: dependencies shown'); else fail('rebar deps: ' + rebarText.slice(0, 300));
+  if (/25\.0/i.test(rebarText)) pass('rebar.config: minimum OTP version shown'); else fail('rebar otp version: ' + rebarText.slice(0, 200));
+  if (/prod|test|dev/i.test(rebarText)) pass('rebar.config: profiles shown'); else fail('rebar profiles: ' + rebarText.slice(0, 300));
+  if (/dialyzer/i.test(rebarText)) pass('rebar.config: dialyzer shown'); else fail('rebar dialyzer: ' + rebarText.slice(0, 200));
+
+  // ── project.clj (Leiningen) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('project.clj');
+  await page.waitForSelector('#previewHost .lein-doc', { timeout: 12000 });
+  const leinText = await page.$eval('#previewHost .lein-doc', (e) => e.textContent);
+  if (/Leiningen/i.test(leinText)) pass('project.clj: Leiningen badge shown'); else fail('lein badge: ' + leinText.slice(0, 200));
+  if (/my-clojure-app/i.test(leinText)) pass('project.clj: project name shown'); else fail('lein name: ' + leinText.slice(0, 200));
+  if (/0\.3\.1/i.test(leinText)) pass('project.clj: version shown'); else fail('lein version: ' + leinText.slice(0, 200));
+  if (/compojure|ring|cheshire|next\.jdbc/i.test(leinText)) pass('project.clj: dependencies listed'); else fail('lein deps: ' + leinText.slice(0, 300));
+  if (/lein-ring/i.test(leinText)) pass('project.clj: plugins shown'); else fail('lein plugins: ' + leinText.slice(0, 300));
+  if (/dev|test|uberjar/i.test(leinText)) pass('project.clj: profiles shown'); else fail('lein profiles: ' + leinText.slice(0, 300));
+
+  // ── deps.edn (Clojure CLI) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('deps.edn');
+  await page.waitForSelector('#previewHost .deps-doc', { timeout: 12000 });
+  const depsText = await page.$eval('#previewHost .deps-doc', (e) => e.textContent);
+  if (/Clojure CLI/i.test(depsText)) pass('deps.edn: Clojure CLI badge shown'); else fail('deps badge: ' + depsText.slice(0, 200));
+  if (/reitit|ring|next\.jdbc/i.test(depsText)) pass('deps.edn: dependencies listed'); else fail('deps deps: ' + depsText.slice(0, 300));
+  if (/src|resources/i.test(depsText)) pass('deps.edn: source paths shown'); else fail('deps paths: ' + depsText.slice(0, 200));
+  if (/dev|test|build|lint/i.test(depsText)) pass('deps.edn: aliases shown'); else fail('deps aliases: ' + depsText.slice(0, 300));
+
+  // ── shadow-cljs.edn viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('shadow-cljs.edn');
+  await page.waitForSelector('#previewHost .sc-doc', { timeout: 12000 });
+  const scText = await page.$eval('#previewHost .sc-doc', (e) => e.textContent);
+  if (/Shadow-cljs/i.test(scText)) pass('shadow-cljs.edn: Shadow-cljs badge shown'); else fail('shadow-cljs badge: ' + scText.slice(0, 200));
+  if (/reagent|re-frame|shadow-cljs/i.test(scText)) pass('shadow-cljs.edn: dependencies listed'); else fail('shadow-cljs deps: ' + scText.slice(0, 300));
+  if (/src\/main|src\/dev/i.test(scText)) pass('shadow-cljs.edn: source paths shown'); else fail('shadow-cljs paths: ' + scText.slice(0, 200));
+  if (/app|tests|browser/i.test(scText)) pass('shadow-cljs.edn: builds shown'); else fail('shadow-cljs builds: ' + scText.slice(0, 300));
+  if (/3000/i.test(scText)) pass('shadow-cljs.edn: dev HTTP port shown'); else fail('shadow-cljs port: ' + scText.slice(0, 200));
 }
 }

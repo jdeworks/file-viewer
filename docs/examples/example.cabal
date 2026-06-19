@@ -1,0 +1,64 @@
+cabal-version:      3.0
+name:               my-haskell-app
+version:            0.1.0.0
+synopsis:           A sample Haskell application
+description:
+  A comprehensive example application demonstrating Haskell Cabal
+  build configuration with multiple components and dependencies.
+
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Jane Haskell
+maintainer:         jane@example.com
+category:           Application
+build-type:         Simple
+extra-source-files: CHANGELOG.md
+
+common warnings
+    ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates
+
+library
+    import:           warnings
+    exposed-modules:  MyLib
+                    , MyLib.Types
+                    , MyLib.Utils
+    build-depends:    base ^>=4.17,
+                      text ^>=2.0,
+                      bytestring ^>=0.11,
+                      containers ^>=0.6,
+                      aeson ^>=2.1,
+                      mtl ^>=2.3,
+                      transformers ^>=0.6,
+                      unordered-containers ^>=0.2
+    hs-source-dirs:   src
+    default-language: GHC2021
+
+executable my-haskell-app
+    import:           warnings
+    main-is:          Main.hs
+    build-depends:    base ^>=4.17,
+                      my-haskell-app,
+                      optparse-applicative ^>=0.18
+    hs-source-dirs:   app
+    default-language: GHC2021
+
+test-suite my-haskell-app-test
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          MyLibTest.hs
+    build-depends:    base ^>=4.17,
+                      my-haskell-app,
+                      hspec ^>=2.11,
+                      QuickCheck ^>=2.14
+
+benchmark my-haskell-app-bench
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   bench
+    main-is:          Main.hs
+    build-depends:    base ^>=4.17,
+                      my-haskell-app,
+                      criterion ^>=1.6
