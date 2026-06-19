@@ -2900,6 +2900,44 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "ofx": {
+      "label": "OFX / QFX Financial",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.ofx"
+      ],
+      "extensions": [
+        ".ofx",
+        ".qfx",
+        ".ofc"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Parses OFX 1.x SGML and OFX 2.x XML; shows account info, transaction table, balance. Account number masked to last 4 digits.",
+      "fileExamplesSlug": "ofx",
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [
+        "Account number masked to last 4 digits"
+      ],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   },
   "knownFiles": {

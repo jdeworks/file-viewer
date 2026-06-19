@@ -435,3 +435,20 @@
 .jsonl-block { background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 8px; overflow-x: auto; font-size: .83rem; }
 .jsonl-note { color: var(--fg-2); font-size: .82rem; margin-top: 10px; }
 .jsonl-empty { color: var(--fg-2); padding: 20px; text-align: center; }
+
+/* OFX / QFX financial viewer */
+.ofx-preview { font-family: system-ui, sans-serif; padding: 14px; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.ofx-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+.ofx-row { display: flex; gap: 12px; align-items: baseline; font-size: .9rem; }
+.ofx-label { color: var(--fg-2); min-width: 90px; font-size: .82rem; flex-shrink: 0; }
+.ofx-val { color: var(--fg); }
+.ofx-mono { font-family: ui-monospace, monospace; }
+.ofx-date { color: var(--fg-2); font-size: .82rem; }
+.ofx-section { margin: 0 0 8px; font-size: .95rem; font-weight: 600; }
+.ofx-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.ofx-table th { background: var(--bg-2); border-bottom: 2px solid var(--border); padding: 7px 10px; text-align: left; white-space: nowrap; font-weight: 600; }
+.ofx-table td { border-bottom: 1px solid var(--border); padding: 6px 10px; }
+.ofx-pos { color: #16a34a; }
+.ofx-neg { color: #dc2626; }
+.ofx-note { color: var(--fg-2); font-size: .82rem; margin-top: 8px; }
+.ofx-empty { color: var(--fg-2); padding: 16px; text-align: center; font-size: .9rem; }

@@ -1818,5 +1818,14 @@
     "categories": [
       "Other"
     ]
+  },
+  {
+    "label": "Sample.ofx",
+    "file": "sample.ofx",
+    "mime": "application/x-ofx",
+    "category": "Data",
+    "categories": [
+      "Data"
+    ]
   }
 ]

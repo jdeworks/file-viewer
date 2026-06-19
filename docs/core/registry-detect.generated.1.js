@@ -236,6 +236,17 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_ofx=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, 'ofx', 'qfx', 'ofc')) return 0.92;
+  const head = (intake.text || '').slice(0, 500);
+  if (/OFXHEADER:/i.test(head) || /<OFX[\s>]/i.test(head) || /<\?OFX/i.test(head)) return 0.7;
+  return 0;
+}
+return detect;
+})();
+
 const detect_json=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -305,18 +316,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_ico=(()=>{
-function detect(intake) {
-  if (!intake.isBinary) return 0;
-  const b = intake.bytes;
-  if (!b || b.length < 4) return 0;
-  if (b[0] === 0 && b[1] === 0 && b[2] === 1 && b[3] === 0) return 0.99; // ICO magic
-  if (b[0] === 0 && b[1] === 0 && b[2] === 2 && b[3] === 0) return 0.99; // CUR magic
-  if (hasExtension(intake, 'ico')) return 0.80;
-  if (hasExtension(intake, 'cur')) return 0.80;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico};
+export const DETECTORS={"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif};
