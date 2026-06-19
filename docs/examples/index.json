@@ -4230,5 +4230,38 @@
     ],
     "enhanced": true,
     "description": "Heroku deployment config: Docker builds for web and worker, release migration command, setup addons (PostgreSQL, Redis)."
+  },
+  {
+    "label": "ionic.config.json",
+    "file": "ionic.config.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Ionic framework project config: app name my-ionic-app, ID com.example.myionicapp, ionic-react type, Capacitor + Cordova integrations."
+  },
+  {
+    "label": "metro.config.js",
+    "file": "metro.config.js",
+    "mime": "text/javascript",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Metro bundler config for React Native: SVG transformer, TypeScript source extensions, custom resolver, server on port 8081."
+  },
+  {
+    "label": "react-native.config.js",
+    "file": "react-native.config.js",
+    "mime": "text/javascript",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "React Native CLI config: 3 native dependencies (vector-icons, camera, maps), iOS/Android platform dirs, font and image assets."
   }
 ]

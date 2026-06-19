@@ -196,6 +196,9 @@ import readthedocs from '../types/text/yaml/known/readthedocs/index.js';
 import citationCff from '../types/text/yaml/known/citation-cff/index.js';
 import yamllint from '../types/text/yaml/known/yamllint/index.js';
 import coderabbit from '../types/text/yaml/known/coderabbit/index.js';
+import ionicConfig from '../types/text/json/known/ionic-config/index.js';
+import metroConfig from '../types/text/known/metro-config/index.js';
+import reactNativeConfig from '../types/text/known/react-native-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -232,7 +235,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   viteConfig, webpackConfig, rollupConfig, nextConfig,
   airConfig, spectral, tiltfile, mesonBuild,
   goreleaser, golangciLint, bufConfig, heroku,
-  readthedocs, citationCff, yamllint, coderabbit];
+  readthedocs, citationCff, yamllint, coderabbit,
+  ionicConfig, metroConfig, reactNativeConfig];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

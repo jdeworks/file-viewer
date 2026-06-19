@@ -1,0 +1,16 @@
+{
+  "name": "my-ionic-app",
+  "appId": "com.example.myionicapp",
+  "type": "ionic-react",
+  "defaultProject": "app",
+  "integrations": {
+    "capacitor": {},
+    "cordova": {}
+  },
+  "projects": {
+    "app": {
+      "type": "ionic-react",
+      "root": "."
+    }
+  }
+}

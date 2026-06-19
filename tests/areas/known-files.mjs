@@ -1253,5 +1253,36 @@ export async function run(ctx) {
   if (/datadoghq\.com/i.test(ddText)) pass('datadog.yaml: site shown'); else fail('datadog site: ' + ddText.slice(0, 200));
   if (/env:production|service:myapp/i.test(ddText)) pass('datadog.yaml: tags shown'); else fail('datadog tags: ' + ddText.slice(0, 200));
   if (/Log collection|APM/i.test(ddText)) pass('datadog.yaml: feature flags shown'); else fail('datadog features: ' + ddText.slice(0, 200));
+
+  // ── ionic.config.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('ionic.config.json');
+  await page.waitForSelector('#previewHost .ion-doc', { timeout: 12000 });
+  const ionicText = await page.$eval('#previewHost .ion-doc', (e) => e.textContent);
+  if (/Ionic/i.test(ionicText)) pass('ionic.config.json: Ionic badge shown'); else fail('ionic badge: ' + ionicText.slice(0, 200));
+  if (/my-ionic-app/i.test(ionicText)) pass('ionic.config.json: app name shown'); else fail('ionic app name: ' + ionicText.slice(0, 200));
+  if (/com\.example\.myionicapp/i.test(ionicText)) pass('ionic.config.json: app ID shown'); else fail('ionic app ID: ' + ionicText.slice(0, 200));
+  if (/capacitor|cordova/i.test(ionicText)) pass('ionic.config.json: integrations shown'); else fail('ionic integrations: ' + ionicText.slice(0, 300));
+  if (/ionic.?react/i.test(ionicText)) pass('ionic.config.json: project type shown'); else fail('ionic type: ' + ionicText.slice(0, 200));
+
+  // ── metro.config.js viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('metro.config.js');
+  await page.waitForSelector('#previewHost .metro-doc', { timeout: 12000 });
+  const metroText = await page.$eval('#previewHost .metro-doc', (e) => e.textContent);
+  if (/Metro/i.test(metroText)) pass('metro.config.js: Metro badge shown'); else fail('metro badge: ' + metroText.slice(0, 200));
+  if (/8081/i.test(metroText)) pass('metro.config.js: server port shown'); else fail('metro port: ' + metroText.slice(0, 200));
+  if (/SVG/i.test(metroText)) pass('metro.config.js: SVG support shown'); else fail('metro SVG: ' + metroText.slice(0, 200));
+  if (/svg|ts|tsx/i.test(metroText)) pass('metro.config.js: source extensions shown'); else fail('metro extensions: ' + metroText.slice(0, 300));
+
+  // ── react-native.config.js viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('react-native.config.js');
+  await page.waitForSelector('#previewHost .rnc-doc', { timeout: 12000 });
+  const rncText = await page.$eval('#previewHost .rnc-doc', (e) => e.textContent);
+  if (/React Native CLI/i.test(rncText)) pass('react-native.config.js: React Native CLI badge shown'); else fail('rnc badge: ' + rncText.slice(0, 200));
+  if (/react-native-vector-icons|react-native-camera|react-native-maps/i.test(rncText)) pass('react-native.config.js: dependencies shown'); else fail('rnc deps: ' + rncText.slice(0, 300));
+  if (/ios|android/i.test(rncText)) pass('react-native.config.js: platforms shown'); else fail('rnc platforms: ' + rncText.slice(0, 200));
+  if (/fonts|images|assets/i.test(rncText)) pass('react-native.config.js: assets shown'); else fail('rnc assets: ' + rncText.slice(0, 200));
 }
 }
