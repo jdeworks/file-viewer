@@ -131,6 +131,11 @@ import appveyor from '../types/text/yaml/known/appveyor/index.js';
 import rubocop from '../types/text/yaml/known/rubocop/index.js';
 import taskfile from '../types/text/yaml/known/taskfile/index.js';
 import mkdocsYml from '../types/text/yaml/known/mkdocs/index.js';
+import rush from '../types/text/json/known/rush/index.js';
+import markdownlintJson from '../types/text/json/known/markdownlint/index.js';
+import markdownlintYaml from '../types/text/yaml/known/markdownlint/index.js';
+import clangFormat from '../types/text/yaml/known/clang-format/index.js';
+import moonrepo from '../types/text/yaml/known/moonrepo/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -151,7 +156,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   makefileKf, justfile, procfile, envrc, miseConfig, toolVersions,
   gitattributes, gemfileLock, sonar, hatch,
   mailmap, npmignore, dockerignore,
-  appveyor, rubocop, taskfile, mkdocsYml];
+  appveyor, rubocop, taskfile, mkdocsYml,
+  rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

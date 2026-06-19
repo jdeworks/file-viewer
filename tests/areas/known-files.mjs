@@ -964,4 +964,36 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .htc-doc', { timeout: 12000 });
   const htcText = await page.$eval('#previewHost .htc-doc', (e) => e.textContent);
   if (/Hatch|build|env/i.test(htcText)) pass('hatch.toml: content shown'); else fail('hatch content: ' + htcText.slice(0, 200));
+
+  // ── rush.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('rush.json');
+  await page.waitForSelector('#previewHost .rsh-doc', { timeout: 12000 });
+  const rshText = await page.$eval('#previewHost .rsh-doc', (e) => e.textContent);
+  if (/Rush/i.test(rshText)) pass('rush.json: badge shown'); else fail('rush badge: ' + rshText.slice(0, 200));
+  if (/5\.109|rushVersion|@acme/i.test(rshText)) pass('rush.json: version and projects shown'); else fail('rush content: ' + rshText.slice(0, 200));
+
+  // ── .markdownlint.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.markdownlint.json');
+  await page.waitForSelector('#previewHost .mdl-doc', { timeout: 12000 });
+  const mdlText = await page.$eval('#previewHost .mdl-doc', (e) => e.textContent);
+  if (/markdownlint/i.test(mdlText)) pass('.markdownlint.json: badge shown'); else fail('markdownlint badge: ' + mdlText.slice(0, 200));
+  if (/MD013|MD033|disabled|enabled/i.test(mdlText)) pass('.markdownlint.json: rules shown'); else fail('markdownlint rules: ' + mdlText.slice(0, 200));
+
+  // ── .clang-format viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.clang-format');
+  await page.waitForSelector('#previewHost .clf-doc', { timeout: 12000 });
+  const clangFmtText = await page.$eval('#previewHost .clf-doc', (e) => e.textContent);
+  if (/clang-format/i.test(clangFmtText)) pass('.clang-format: badge shown'); else fail('clang-format badge: ' + clangFmtText.slice(0, 200));
+  if (/Google|IndentWidth|ColumnLimit/i.test(clangFmtText)) pass('.clang-format: style settings shown'); else fail('clang-format settings: ' + clangFmtText.slice(0, 200));
+
+  // ── moon.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('moon.yml');
+  await page.waitForSelector('#previewHost .moon-doc', { timeout: 12000 });
+  const moonText = await page.$eval('#previewHost .moon-doc', (e) => e.textContent);
+  if (/Moon/i.test(moonText)) pass('moon.yml: badge shown'); else fail('moon badge: ' + moonText.slice(0, 200));
+  if (/language|tasks|project|schema|vcs|pnpm/i.test(moonText)) pass('moon.yml: content shown'); else fail('moon content: ' + moonText.slice(0, 200));
 }

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
+  "rushVersion": "5.109.0",
+  "npmVersion": "10.2.4",
+  "nodeSupportedVersionRange": ">=18.0.0 <22.0.0",
+  "projectFolderMaxDepth": 4,
+  "projects": [
+    { "packageName": "@acme/web", "projectFolder": "apps/web", "shouldPublish": false },
+    { "packageName": "@acme/api", "projectFolder": "apps/api", "shouldPublish": false },
+    { "packageName": "@acme/ui", "projectFolder": "packages/ui", "shouldPublish": true },
+    { "packageName": "@acme/utils", "projectFolder": "packages/utils", "shouldPublish": true }
+  ]
+}

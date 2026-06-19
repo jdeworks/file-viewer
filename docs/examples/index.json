@@ -3385,5 +3385,49 @@
       "Config"
     ],
     "enhanced": true
+  },
+  {
+    "label": "rush.json",
+    "file": "rush.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Rush monorepo configuration with version, projects, and npm settings."
+  },
+  {
+    "label": ".markdownlint.json",
+    "file": ".markdownlint.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Markdownlint rules config with disabled, enabled, and custom-configured rules."
+  },
+  {
+    "label": ".clang-format",
+    "file": ".clang-format",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "clang-format style config based on Google style with custom indent and column settings."
+  },
+  {
+    "label": "moon.yml",
+    "file": "moon.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Moon workspace config with VCS, node/pnpm versions, typescript, and project globs."
   }
 ]
