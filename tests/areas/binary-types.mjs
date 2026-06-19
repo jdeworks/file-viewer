@@ -65,4 +65,16 @@ export async function run(ctx) {
   const apkText = await apkf.$eval('.apk-preview', (el) => el.textContent);
   if (/classes\.dex/i.test(apkText)) pass('APK classes.dex shown'); else fail('apk content: ' + apkText.slice(0, 200));
   if (/arm64-v8a|x86_64/i.test(apkText)) pass('APK native ABI shown'); else fail('apk abi: ' + apkText.slice(0, 200));
+
+  // ── ISO 9660 ─────────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.iso');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const isof = await frameOf('iframe.fv-preview-frame');
+  await isof.waitForSelector('.iso-preview', { timeout: 8000 });
+  const isoTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (isoTypeId === 'iso') pass('.iso detected as iso type'); else fail('iso typeId: ' + isoTypeId);
+  const isoText = await isof.$eval('.iso-preview', (el) => el.textContent);
+  if (/FILEVIEWER_DEMO/i.test(isoText)) pass('ISO volume ID shown'); else fail('iso content: ' + isoText.slice(0, 200));
+  if (/FILE VIEWER PROJECT/i.test(isoText)) pass('ISO publisher shown'); else fail('iso publisher: ' + isoText.slice(0, 200));
 }

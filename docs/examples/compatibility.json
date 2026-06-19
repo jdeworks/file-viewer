@@ -3749,5 +3749,11 @@
     "firefox": true,
     "safari": true,
     "edge": true
+  },
+  "iso": {
+    "chrome": true,
+    "firefox": true,
+    "safari": true,
+    "edge": true
   }
 }

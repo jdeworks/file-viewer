@@ -602,3 +602,10 @@
 .apk-table { border-collapse: collapse; font-size: 13px; margin-bottom: 10px; width: 100%; } .apk-table td { padding: 3px 6px; border-bottom: 1px solid var(--border); }
 .apk-key { color: var(--fg-2); white-space: nowrap; width: 120px; }
 .apk-note { font-size: .8em; color: var(--fg-2); margin-top: 6px; } .apk-signer { font: 11px ui-monospace,monospace; }
+/* ISO 9660 disc images */
+.iso-preview { padding: 12px; } .iso-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.iso-badge { background: #1e293b; color: #94a3b8; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .iso-title { font-weight: 600; font-size: .95em; font-family: ui-monospace,monospace; }
+.iso-table { border-collapse: collapse; font-size: 13px; margin-bottom: 12px; width: 100%; } .iso-table td { padding: 3px 6px; border-bottom: 1px solid var(--border); }
+.iso-key { color: var(--fg-2); white-space: nowrap; width: 120px; }
+.iso-section { margin-bottom: 10px; } .iso-label { font-size: .75em; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-2); margin-bottom: 6px; }
+.iso-chips { display: flex; flex-wrap: wrap; gap: 5px; } .iso-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font: 12px ui-monospace,monospace; }

@@ -1960,5 +1960,10 @@
     "filename": "sample.apk",
     "label": "Android Package (APK stub)",
     "type": "apk"
+  },
+  {
+    "filename": "sample.iso",
+    "label": "ISO 9660 Disc Image (demo)",
+    "type": "iso"
   }
 ]
