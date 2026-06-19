@@ -1121,4 +1121,41 @@ export async function run(ctx) {
   if (/localhost:4000/i.test(cyText)) pass('cypress.config.js: base URL shown'); else fail('cypress baseURL: ' + cyText.slice(0, 200));
   if (/component/i.test(cyText)) pass('cypress.config.js: component testing section shown'); else fail('cypress component: ' + cyText.slice(0, 200));
   if (/env var/i.test(cyText)) pass('cypress.config.js: env var count shown'); else fail('cypress env: ' + cyText.slice(0, 200));
+
+  // ── .goreleaser.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.goreleaser.yaml');
+  await page.waitForSelector('#previewHost .grl-doc', { timeout: 12000 });
+  const grlText = await page.$eval('#previewHost .grl-doc', (e) => e.textContent);
+  if (/GoReleaser/i.test(grlText)) pass('.goreleaser.yaml: GoReleaser badge shown'); else fail('goreleaser badge: ' + grlText.slice(0, 200));
+  if (/myapp/i.test(grlText)) pass('.goreleaser.yaml: project name shown'); else fail('goreleaser project: ' + grlText.slice(0, 200));
+  if (/linux|darwin|windows/i.test(grlText)) pass('.goreleaser.yaml: build targets shown'); else fail('goreleaser builds: ' + grlText.slice(0, 200));
+  if (/tar\.gz|zip/i.test(grlText)) pass('.goreleaser.yaml: archive formats shown'); else fail('goreleaser archives: ' + grlText.slice(0, 200));
+
+  // ── .golangci.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.golangci.yml');
+  await page.waitForSelector('#previewHost .gcl-doc', { timeout: 12000 });
+  const gclText = await page.$eval('#previewHost .gcl-doc', (e) => e.textContent);
+  if (/golangci-lint/i.test(gclText)) pass('.golangci.yml: golangci-lint badge shown'); else fail('golangci badge: ' + gclText.slice(0, 200));
+  if (/errcheck|gosimple|govet/i.test(gclText)) pass('.golangci.yml: enabled linters shown'); else fail('golangci linters: ' + gclText.slice(0, 200));
+  if (/5m/i.test(gclText)) pass('.golangci.yml: timeout shown'); else fail('golangci timeout: ' + gclText.slice(0, 200));
+
+  // ── buf.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('buf.yaml');
+  await page.waitForSelector('#previewHost .buf-doc', { timeout: 12000 });
+  const bufText = await page.$eval('#previewHost .buf-doc', (e) => e.textContent);
+  if (/Buf/i.test(bufText)) pass('buf.yaml: Buf badge shown'); else fail('buf badge: ' + bufText.slice(0, 200));
+  if (/v2/i.test(bufText)) pass('buf.yaml: version shown'); else fail('buf version: ' + bufText.slice(0, 200));
+  if (/googleapis|grpc-gateway/i.test(bufText)) pass('buf.yaml: dependencies shown'); else fail('buf deps: ' + bufText.slice(0, 200));
+
+  // ── heroku.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('heroku.yml');
+  await page.waitForSelector('#previewHost .hku-doc', { timeout: 12000 });
+  const hkuText = await page.$eval('#previewHost .hku-doc', (e) => e.textContent);
+  if (/Heroku/i.test(hkuText)) pass('heroku.yml: Heroku badge shown'); else fail('heroku badge: ' + hkuText.slice(0, 200));
+  if (/Dockerfile/i.test(hkuText)) pass('heroku.yml: Docker build shown'); else fail('heroku docker: ' + hkuText.slice(0, 200));
+  if (/web|worker|scheduler/i.test(hkuText)) pass('heroku.yml: process types shown'); else fail('heroku processes: ' + hkuText.slice(0, 200));
 }

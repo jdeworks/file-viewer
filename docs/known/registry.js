@@ -174,6 +174,9 @@ import mixExs from '../types/text/known/mix-exs/index.js';
 import buildSbt from '../types/text/known/build-sbt/index.js';
 import playwrightConfig from '../types/text/known/playwright-config/index.js';
 import cypressConfig from '../types/text/known/cypress-config/index.js';
+import vcpkg from '../types/text/json/known/vcpkg/index.js';
+import cmakePresets from '../types/text/json/known/cmake-presets/index.js';
+import conanfile from '../types/text/known/conanfile/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -204,7 +207,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   cmake, jenkinsfile,
   bazel, bazelrc, ninjaBuild,
   packageSwift, mixExs, buildSbt,
-  playwrightConfig, cypressConfig];
+  playwrightConfig, cypressConfig,
+  vcpkg, cmakePresets, conanfile];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

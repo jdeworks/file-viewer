@@ -4032,5 +4032,49 @@
         ],
         "enhanced": true,
         "description": "SBT build definition for a Scala 3 project with library dependencies."
+    },
+    {
+        "label": ".readthedocs.yaml",
+        "file": ".readthedocs.yaml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "ReadTheDocs build configuration for documentation hosting."
+    },
+    {
+        "label": "CITATION.cff",
+        "file": "CITATION.cff",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Citation File Format for software and dataset citations."
+    },
+    {
+        "label": ".yamllint.yml",
+        "file": ".yamllint.yml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "yamllint configuration for YAML style checking."
+    },
+    {
+        "label": ".coderabbit.yaml",
+        "file": ".coderabbit.yaml",
+        "mime": "application/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "CodeRabbit AI code review configuration."
     }
 ]

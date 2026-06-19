@@ -8980,7 +8980,9 @@
       "label": "Swift Package",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "Package.swift"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -9005,7 +9007,9 @@
       "label": "Elixir/Mix",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "mix.exs"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -9030,7 +9034,9 @@
       "label": "Scala/SBT",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "build.sbt"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -9055,7 +9061,9 @@
       "label": "Playwright Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "playwright.config.ts"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -9080,7 +9088,9 @@
       "label": "Cypress Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "cypress.config.js"
+      ],
       "extensions": [
         ".yml"
       ],
