@@ -625,7 +625,7 @@ Design target:
 
 ## TASK 18 — Metadata Extraction Research + Coverage Audit
 
-**Status:** Not started  
+**Status:** Implemented — new-file editor autofocus, readable plain-text preview, and session-sidebar unsaved markers are covered by smoke tests.  
 **Effort:** L (~1-2 days research, follow-up implementation tasks likely)  
 **Files likely touched:**
 - `docs/core/meta-drawer.js`
@@ -687,7 +687,7 @@ Add smoke/unit coverage targets for metadata extraction so regressions are caugh
 
 When creating a new file, focus the editor automatically and place the cursor inside the empty document so the user can start typing immediately after confirming the filename.
 
-Add smoke coverage that creates a new file, types without first clicking the editor, and verifies the typed text is in the document.
+Smoke coverage creates a new file, types without first clicking the editor, and verifies the typed text is in the document.
 
 ### Plain text readable preview
 
@@ -700,7 +700,7 @@ Design target:
 - include basic metadata in the preview when useful only if it does not duplicate the metadata drawer excessively
 - ensure binary/hex fallback is unchanged
 
-Add smoke coverage for opening `sample.txt` and verifying a preview is available and readable.
+Smoke coverage opens `sample.txt` and verifies a readable preview is available.
 
 ---
 
