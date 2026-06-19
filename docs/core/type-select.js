@@ -1,7 +1,8 @@
 import { REGISTRY, FALLBACK_TYPE } from './registry-runtime.generated.js';
 import { $ } from './state.js';
 
-export function populateTypeSelect(ranking, selectedId, showAll, intake = null) {
+// selectedId may be 'known:X' (known-file override) or a base type id.
+export function populateTypeSelect(ranking, selectedId, showAll, intake = null, knownCandidates = []) {
   const sel = $('typeSelect');
   const byScore = new Map(ranking.map((r) => [r.type.id, r.score]));
   const rows = [];
@@ -15,14 +16,44 @@ export function populateTypeSelect(ranking, selectedId, showAll, intake = null) 
   matched.forEach((r, i) => (r.pct = pcts[i]));
 
   sel.innerHTML = '';
-  for (const r of rows) {
-    const opt = document.createElement('option');
-    opt.value = r.t.id;
-    const label = typeof r.t.displayLabel === 'function' && intake ? r.t.displayLabel(intake) : r.t.label;
-    opt.textContent = r.pct != null ? `${label} (${r.pct}%)` : label;
-    if (r.t.id === selectedId) opt.selected = true;
-    sel.appendChild(opt);
+
+  if (knownCandidates.length > 0) {
+    // Known-file enhanced views as first optgroup (selectable via type picker)
+    const grp = document.createElement('optgroup');
+    grp.label = '✦ Enhanced views';
+    for (const { known } of knownCandidates) {
+      const opt = document.createElement('option');
+      opt.value = 'known:' + known.id;
+      opt.textContent = '✦ ' + known.label;
+      grp.appendChild(opt);
+    }
+    sel.appendChild(grp);
+    // Base types in a second group
+    const baseGrp = document.createElement('optgroup');
+    baseGrp.label = 'Base type';
+    for (const r of rows) {
+      const opt = document.createElement('option');
+      opt.value = r.t.id;
+      const label = typeof r.t.displayLabel === 'function' && intake ? r.t.displayLabel(intake) : r.t.label;
+      opt.textContent = r.pct != null ? `${label} (${r.pct}%)` : label;
+      baseGrp.appendChild(opt);
+    }
+    sel.appendChild(baseGrp);
+  } else {
+    for (const r of rows) {
+      const opt = document.createElement('option');
+      opt.value = r.t.id;
+      const label = typeof r.t.displayLabel === 'function' && intake ? r.t.displayLabel(intake) : r.t.label;
+      opt.textContent = r.pct != null ? `${label} (${r.pct}%)` : label;
+      sel.appendChild(opt);
+    }
   }
+
+  // Force the correct value after building — avoids browser auto-selecting the first option
+  // when optgroups are used. Works across both the grouped and flat layouts.
+  sel.value = selectedId;
+  // If selectedId wasn't found (e.g. a stale type ID), fall back to the first option
+  if (!sel.value && sel.options.length) sel.value = sel.options[0].value;
 }
 
 function normalizePercents(values) {

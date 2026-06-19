@@ -44,3 +44,19 @@ export function matchKnown(intake, baseType) {
   }
   return null;
 }
+
+// Return ALL known-file matches across all candidate base types (deduped by known.id).
+// Results are ordered by ranking order — so the highest-confidence base type's match comes first.
+export function matchAllKnown(intake, ranking) {
+  const seen = new Set();
+  const results = [];
+  for (const { type } of ranking) {
+    for (const k of KNOWN) {
+      if (seen.has(k.id)) continue;
+      try {
+        if (k.match(intake, type)) { seen.add(k.id); results.push({ known: k, baseType: type }); }
+      } catch { /* bad matcher */ }
+    }
+  }
+  return results;
+}

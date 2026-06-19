@@ -8,7 +8,7 @@ import { pickType } from './detect.js';
 import { wireIntake, LARGE_FILE_BYTES } from './intake.js';
 import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
 import { findGitDir, isGitInternal, openRepo } from './git.js';
-import { matchKnown } from '../known/registry.js';
+import { matchKnown, matchAllKnown } from '../known/registry.js';
 import { renderRepoView } from './repoview.js';
 import { createRawView } from './rawview.js';
 import { loadMonaco } from './monaco-loader.js';
@@ -74,7 +74,8 @@ async function loadIntake(intake) {
   // so save doesn't accidentally compute paths against a stale folder.
   if (!fromTree) resetCompanionFolderRoot();
   const { type, ranking } = pickType(intake);
-  populateTypeSelect(ranking, type.id, !!state.settingsModel?.values?.showAllTypes, intake);
+  state.knownCandidates = matchAllKnown(intake, ranking);
+  populateTypeSelect(ranking, type.id, !!state.settingsModel?.values?.showAllTypes, intake, state.knownCandidates);
   await activateType(type);
   if (intake.truncated) {
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
@@ -93,12 +94,13 @@ function showIntake() {
 
 /* ─────────────────────────── Type activation ─────────────────────────── */
 
-async function activateType(type) {
+async function activateType(type, knownOverride = null) {
   state.type = type;
   state.settingsModel = await getModel(type);   // cached per type (no re-fetch per file)
   // Layer 3: does a known-file enhancement apply (e.g. package.json, Dockerfile)? A known
   // renderer can supply a preview even when the base type has none (e.g. Dockerfile→code).
-  state.known = matchKnown(state.intake, type);
+  // knownOverride lets the type-select force a specific known-file view.
+  state.known = knownOverride || matchKnown(state.intake, type);
   state.forceBase = false;
   updateEnhanceChip();
   // Show workspace + relevant chrome.
@@ -270,7 +272,11 @@ function onSettingsChange(model, changedKey) {
   // "Show all file types" is a global pref applied to the type dropdown immediately.
   if (changedKey === 'showAllTypes') {
     persistGlobalKey('showAllTypes', model.values.showAllTypes);
-    if (state.intake && state.type) populateTypeSelect(pickType(state.intake).ranking, state.type.id, !!state.settingsModel?.values?.showAllTypes, state.intake);
+    if (state.intake && state.type) {
+      const { ranking } = pickType(state.intake);
+      const selId = state.known && !state.forceBase ? 'known:' + state.known.id : state.type.id;
+      populateTypeSelect(ranking, selId, !!state.settingsModel?.values?.showAllTypes, state.intake, state.knownCandidates || []);
+    }
   }
   // "Reduce motion" is a global pref that toggles a root class disabling all CSS animation.
   if (changedKey === 'reduceMotion') {
@@ -394,7 +400,17 @@ function init() {
   $('formatBtn').addEventListener('click', () => state.rawview?.format());
   initSplitDivider();
 
-  $('typeSelect').addEventListener('change', (e) => { const t = getType(e.target.value); if (t) activateType(t); });
+  $('typeSelect').addEventListener('change', async (e) => {
+    const val = e.target.value;
+    if (val.startsWith('known:')) {
+      const knownId = val.slice(6);
+      const match = (state.knownCandidates || []).find((m) => m.known.id === knownId);
+      if (match) await activateType(match.baseType, match.known);
+      return;
+    }
+    const t = getType(val);
+    if (t) await activateType(t);
+  });
   $('themeBtn').addEventListener('click', () => applyTheme(!themeIsDark()));
   $('settingsBtn').addEventListener('click', () => openDrawer('settingsDrawer', openSettings));
   $('metaBtn').addEventListener('click', () => {
