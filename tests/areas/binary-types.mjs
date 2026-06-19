@@ -221,4 +221,17 @@ export async function run(ctx) {
   if (/PWAD|IWAD/i.test(wadText)) pass('WAD type badge shown'); else fail('wad badge: ' + wadText.slice(0, 300));
   if (/Patch WAD|Internal WAD/i.test(wadText)) pass('WAD type description shown'); else fail('wad desc: ' + wadText.slice(0, 300));
   if (/MAP01|Lumps|THINGS|LINEDEFS/i.test(wadText)) pass('WAD lump info shown'); else fail('wad lumps: ' + wadText.slice(0, 300));
+
+  // ── SDF / MDL Molfile ─────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Aspirin Molecule (SDF)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const sdff = await frameOf('iframe.fv-preview-frame');
+  await sdff.waitForSelector('.badge-sdf', { timeout: 8000 });
+  const sdfTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (sdfTypeId === 'sdf') pass('.sdf detected as sdf type'); else fail('sdf typeId: ' + sdfTypeId);
+  const sdfText = await sdff.$eval('body', (el) => el.textContent);
+  if (/SDF\/MOL/i.test(sdfText)) pass('SDF badge shown'); else fail('sdf badge: ' + sdfText.slice(0, 300));
+  if (/C9H8O4|Formula/i.test(sdfText)) pass('SDF molecular formula shown'); else fail('sdf formula: ' + sdfText.slice(0, 300));
+  if (/aspirin|acetyloxy/i.test(sdfText)) pass('SDF molecule name shown'); else fail('sdf name: ' + sdfText.slice(0, 300));
 }

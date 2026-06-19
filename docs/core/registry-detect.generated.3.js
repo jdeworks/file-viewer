@@ -307,16 +307,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_reg=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const sample = intake.textSample || '';
-  if (sample.startsWith('Windows Registry Editor Version 5.00') ||
-      sample.startsWith('REGEDIT4')) return 0.98;
-  if (intake.filename?.toLowerCase().endsWith('.reg')) return 0.65;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad,"reg":detect_reg};
+export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad};

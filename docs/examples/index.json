@@ -2092,5 +2092,15 @@
     "categories": [
       "Games"
     ]
+  },
+  {
+    "file": "sample.sdf",
+    "label": "Aspirin Molecule (SDF)",
+    "mime": "chemical/x-mdl-sdfile",
+    "category": "chemical",
+    "categories": [
+      "chemical",
+      "scientific"
+    ]
   }
 ]
