@@ -14,5 +14,6 @@ export default {
   syntaxLanguage: 'ini',
   loadRenderer: () => import('./renderer.js'),
   loadMetadata: () => import('./metadata.js'),
+  loadExports: () => import('./exports.js'),
   settingsUrl: new URL('./settings.default.json', import.meta.url),
 };

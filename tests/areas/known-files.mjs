@@ -1158,4 +1158,69 @@ export async function run(ctx) {
   if (/Heroku/i.test(hkuText)) pass('heroku.yml: Heroku badge shown'); else fail('heroku badge: ' + hkuText.slice(0, 200));
   if (/Dockerfile/i.test(hkuText)) pass('heroku.yml: Docker build shown'); else fail('heroku docker: ' + hkuText.slice(0, 200));
   if (/web|worker|scheduler/i.test(hkuText)) pass('heroku.yml: process types shown'); else fail('heroku processes: ' + hkuText.slice(0, 200));
+
+  // ── .readthedocs.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.readthedocs.yaml');
+  await page.waitForSelector('#previewHost .rtd-doc', { timeout: 12000 });
+  const rtdText = await page.$eval('#previewHost .rtd-doc', (e) => e.textContent);
+  if (/ReadTheDocs/i.test(rtdText)) pass('.readthedocs.yaml: ReadTheDocs badge shown'); else fail('readthedocs badge: ' + rtdText.slice(0, 200));
+  if (/ubuntu|3\.11|Node/i.test(rtdText)) pass('.readthedocs.yaml: build environment shown'); else fail('readthedocs build env: ' + rtdText.slice(0, 200));
+  if (/Sphinx|MkDocs|pdf|epub/i.test(rtdText)) pass('.readthedocs.yaml: doc tool or formats shown'); else fail('readthedocs formats: ' + rtdText.slice(0, 200));
+
+  // ── CITATION.cff viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('CITATION.cff');
+  await page.waitForSelector('#previewHost .cff-doc', { timeout: 12000 });
+  const cffText = await page.$eval('#previewHost .cff-doc', (e) => e.textContent);
+  if (/Citation/i.test(cffText)) pass('CITATION.cff: Citation badge shown'); else fail('citation badge: ' + cffText.slice(0, 200));
+  if (/MyAwesomeTool/i.test(cffText)) pass('CITATION.cff: title shown'); else fail('citation title: ' + cffText.slice(0, 200));
+  if (/Alice|Researcher|Bob|Developer/i.test(cffText)) pass('CITATION.cff: authors shown'); else fail('citation authors: ' + cffText.slice(0, 200));
+
+  // ── .yamllint.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.yamllint.yml');
+  await page.waitForSelector('#previewHost .yml-doc', { timeout: 12000 });
+  const ymlText = await page.$eval('#previewHost .yml-doc', (e) => e.textContent);
+  if (/yamllint/i.test(ymlText)) pass('.yamllint.yml: yamllint badge shown'); else fail('yamllint badge: ' + ymlText.slice(0, 200));
+  if (/default/i.test(ymlText)) pass('.yamllint.yml: extends shown'); else fail('yamllint extends: ' + ymlText.slice(0, 200));
+  if (/120|line-length|indentation/i.test(ymlText)) pass('.yamllint.yml: key rules shown'); else fail('yamllint rules: ' + ymlText.slice(0, 200));
+
+  // ── .coderabbit.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.coderabbit.yaml');
+  await page.waitForSelector('#previewHost .crb-doc', { timeout: 12000 });
+  const crbText = await page.$eval('#previewHost .crb-doc', (e) => e.textContent);
+  if (/CodeRabbit/i.test(crbText)) pass('.coderabbit.yaml: CodeRabbit badge shown'); else fail('coderabbit badge: ' + crbText.slice(0, 200));
+  if (/enabled|auto-review/i.test(crbText)) pass('.coderabbit.yaml: auto-review status shown'); else fail('coderabbit auto-review: ' + crbText.slice(0, 200));
+  if (/ruff|eslint|path/i.test(crbText)) pass('.coderabbit.yaml: tools or filters shown'); else fail('coderabbit tools: ' + crbText.slice(0, 200));
+
+  // ── vcpkg.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vcpkg.json');
+  await page.waitForSelector('#previewHost .vcpkg-doc', { timeout: 12000 });
+  const vcpkgText = await page.$eval('#previewHost .vcpkg-doc', (e) => e.textContent);
+  if (/vcpkg/i.test(vcpkgText)) pass('vcpkg.json: vcpkg badge shown'); else fail('vcpkg badge: ' + vcpkgText.slice(0, 200));
+  if (/my-cpp-app/i.test(vcpkgText)) pass('vcpkg.json: package name shown'); else fail('vcpkg name: ' + vcpkgText.slice(0, 200));
+  if (/fmt|nlohmann-json|boost-filesystem/i.test(vcpkgText)) pass('vcpkg.json: dependencies listed'); else fail('vcpkg deps: ' + vcpkgText.slice(0, 300));
+  if (/networking|testing/i.test(vcpkgText)) pass('vcpkg.json: features shown'); else fail('vcpkg features: ' + vcpkgText.slice(0, 300));
+
+  // ── CMakePresets.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('CMakePresets.json');
+  await page.waitForSelector('#previewHost .cmp-doc', { timeout: 12000 });
+  const cmpText = await page.$eval('#previewHost .cmp-doc', (e) => e.textContent);
+  if (/CMake Presets/i.test(cmpText)) pass('CMakePresets.json: CMake Presets badge shown'); else fail('cmake-presets badge: ' + cmpText.slice(0, 200));
+  if (/3\.25|3\.25\.0/i.test(cmpText)) pass('CMakePresets.json: minimum CMake version shown'); else fail('cmake-presets version: ' + cmpText.slice(0, 200));
+  if (/debug|release|ci/i.test(cmpText)) pass('CMakePresets.json: configure presets listed'); else fail('cmake-presets configure: ' + cmpText.slice(0, 300));
+  if (/configure|build|test|workflow/i.test(cmpText)) pass('CMakePresets.json: summary tags shown'); else fail('cmake-presets tags: ' + cmpText.slice(0, 200));
+
+  // ── conanfile.txt viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('conanfile.txt');
+  await page.waitForSelector('#previewHost .conan-doc', { timeout: 12000 });
+  const conanText = await page.$eval('#previewHost .conan-doc', (e) => e.textContent);
+  if (/Conan/i.test(conanText)) pass('conanfile.txt: Conan badge shown'); else fail('conan badge: ' + conanText.slice(0, 200));
+  if (/boost|fmt|nlohmann_json/i.test(conanText)) pass('conanfile.txt: requires listed'); else fail('conan requires: ' + conanText.slice(0, 300));
+  if (/CMakeDeps|CMakeToolchain/i.test(conanText)) pass('conanfile.txt: generators shown'); else fail('conan generators: ' + conanText.slice(0, 200));
 }

@@ -177,6 +177,17 @@ import cypressConfig from '../types/text/known/cypress-config/index.js';
 import vcpkg from '../types/text/json/known/vcpkg/index.js';
 import cmakePresets from '../types/text/json/known/cmake-presets/index.js';
 import conanfile from '../types/text/known/conanfile/index.js';
+import prometheusConfig from '../types/text/yaml/known/prometheus-config/index.js';
+import alertmanager from '../types/text/yaml/known/alertmanager/index.js';
+import datadogConfig from '../types/text/yaml/known/datadog-config/index.js';
+import viteConfig from '../types/text/known/vite-config/index.js';
+import webpackConfig from '../types/text/known/webpack-config/index.js';
+import rollupConfig from '../types/text/known/rollup-config/index.js';
+import nextConfig from '../types/text/known/next-config/index.js';
+import airConfig from '../types/text/toml/known/air-config/index.js';
+import spectral from '../types/text/yaml/known/spectral/index.js';
+import tiltfile from '../types/text/known/tiltfile/index.js';
+import mesonBuild from '../types/text/known/meson-build/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -208,7 +219,10 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   bazel, bazelrc, ninjaBuild,
   packageSwift, mixExs, buildSbt,
   playwrightConfig, cypressConfig,
-  vcpkg, cmakePresets, conanfile];
+  vcpkg, cmakePresets, conanfile,
+  prometheusConfig, alertmanager, datadogConfig,
+  viteConfig, webpackConfig, rollupConfig, nextConfig,
+  airConfig, spectral, tiltfile, mesonBuild];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
