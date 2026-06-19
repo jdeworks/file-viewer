@@ -1,0 +1,60 @@
+# Dependencies — excluded for build speed and image size
+node_modules/
+vendor/
+.pnp
+.pnp.js
+
+# Git metadata
+.git/
+.gitignore
+.gitattributes
+
+# Docker files themselves (no recursion risk)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Environment & secrets
+.env
+.env.*
+*.local
+secrets/
+
+# Build output (re-built inside container)
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+*.tsbuildinfo
+
+# Tests & CI
+tests/
+test/
+__tests__/
+coverage/
+.nyc_output/
+.github/
+.gitlab-ci.yml
+.circleci/
+
+# Docs
+README.md
+CHANGELOG.md
+docs/
+*.md
+
+# Dev tooling
+.editorconfig
+.eslintrc*
+.prettierrc*
+
+# Logs & temp files
+*.log
+*.tmp
+.cache/
+
+# OS artifacts
+.DS_Store
+Thumbs.db

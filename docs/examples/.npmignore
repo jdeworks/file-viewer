@@ -1,0 +1,48 @@
+# Source & development files
+src/
+tests/
+test/
+__tests__/
+*.test.js
+*.spec.js
+*.test.ts
+*.spec.ts
+
+# Config files (not needed by consumers)
+.editorconfig
+.eslintrc*
+.prettierrc*
+.babelrc*
+tsconfig*.json
+jest.config.*
+rollup.config.*
+
+# CI & tooling
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+Makefile
+Dockerfile
+docker-compose.yml
+
+# Docs & meta (kept: README.md, LICENSE)
+CHANGELOG.md
+CONTRIBUTING.md
+docs/
+*.md
+!README.md
+
+# Build artifacts & cache
+node_modules/
+.cache/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# IDE & OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+Thumbs.db

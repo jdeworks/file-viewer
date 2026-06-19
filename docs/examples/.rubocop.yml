@@ -1,0 +1,25 @@
+AllCops:
+  TargetRubyVersion: 3.2
+  NewCops: enable
+  DisabledByDefault: false
+  Exclude:
+    - 'vendor/**/*'
+    - 'db/schema.rb'
+
+inherit_from: .rubocop_todo.yml
+
+Layout/LineLength:
+  Max: 120
+  Enabled: true
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Metrics/MethodLength:
+  Max: 20
+
+Naming/MethodParameterName:
+  MinNameLength: 2

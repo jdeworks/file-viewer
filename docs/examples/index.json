@@ -353,7 +353,38 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true
+  },
+  {
+    "label": ".mailmap",
+    "file": ".mailmap",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": ".npmignore",
+    "file": ".npmignore",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": ".dockerignore",
+    "file": ".dockerignore",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
   },
   {
     "label": "requirements.txt",
@@ -3299,6 +3330,33 @@
   {
     "label": "Justfile",
     "file": "justfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": ".mailmap",
+    "file": ".mailmap",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": ".npmignore",
+    "file": ".npmignore",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": ".dockerignore",
+    "file": ".dockerignore",
     "mime": "text/plain",
     "category": "Config",
     "categories": [

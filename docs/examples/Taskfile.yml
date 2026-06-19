@@ -1,0 +1,35 @@
+version: '3'
+
+dotenv: ['.env', '.env.local']
+
+vars:
+  BINARY: myapp
+  BUILD_DIR: ./dist
+
+tasks:
+  default:
+    desc: Run build and test
+    cmds:
+      - task: build
+      - task: test
+
+  build:
+    desc: Compile the project
+    cmds:
+      - go build -o {{.BUILD_DIR}}/{{.BINARY}} ./cmd/...
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test ./...
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf {{.BUILD_DIR}}
+
+  lint:
+    desc: Run linters
+    deps: [build]
+    cmds:
+      - golangci-lint run

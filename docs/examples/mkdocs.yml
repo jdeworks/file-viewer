@@ -1,0 +1,32 @@
+site_name: My Project Docs
+site_url: https://example.github.io/my-project/
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Configuration: getting-started/configuration.md
+  - User Guide:
+    - Usage: guide/usage.md
+    - Advanced: guide/advanced.md
+    - FAQ: guide/faq.md
+  - API Reference: api/reference.md
+  - Changelog: changelog.md
+
+plugins:
+  - search
+  - minify
+  - git-revision-date-localized
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - toc:
+      permalink: true

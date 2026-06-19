@@ -5113,6 +5113,94 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
     },
+    "gitattributes": {
+      "label": ".gitattributes",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        ".gitattributes"
+      ],
+      "extensions": [],
+      "capabilities": [
+        "preview",
+        "diff"
+      ],
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "none",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "mailmap": {
+      "label": ".mailmap",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        ".mailmap"
+      ],
+      "extensions": [],
+      "capabilities": [
+        "preview",
+        "diff"
+      ],
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "none",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "npmignore": {
+      "label": ".npmignore",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        ".npmignore"
+      ],
+      "extensions": [],
+      "capabilities": [
+        "preview",
+        "diff"
+      ],
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "none",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "dockerignore": {
+      "label": ".dockerignore",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        ".dockerignore"
+      ],
+      "extensions": [],
+      "capabilities": [
+        "preview",
+        "diff"
+      ],
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "none",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
     "gemfile": {
       "label": "Gemfile",
       "baseType": "markdown",

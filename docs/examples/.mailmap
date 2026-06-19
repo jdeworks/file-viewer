@@ -1,0 +1,20 @@
+# Canonical name/email → old name/email mappings
+# Format: Canonical Name <canonical@email> [Old Name] <old@email>
+
+# Fix a typo in an author's name (same email)
+Jane Doe <jane@example.com> Jan Doe <jane@example.com>
+
+# Consolidate two email addresses for the same person
+Alice Smith <alice@example.com> <alice.smith@oldcompany.com>
+
+# Name and email both changed
+Bob Johnson <bob@example.com> Robert J <rj@contractor.io>
+
+# Only email changed (keep canonical name)
+Carol White <carol@example.com> <carol@legacy-domain.net>
+
+# Team alias mapping
+Dev Team <dev@example.com> CI Bot <ci@buildserver.internal>
+
+# Contributor who changed their name
+Morgan Lee <morgan@example.com> M. Lee <mlee@example.com>
