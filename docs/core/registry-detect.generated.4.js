@@ -3,6 +3,46 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_xyz=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (!hasExtension(intake, 'xyz')) return 0;
+  const lines = (intake.textSample || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return 0.5;
+  // First line should be an integer (atom count)
+  if (/^\d+$/.test(lines[0])) return 0.93;
+  return 0.4;
+}
+return detect;
+})();
+
+const detect_shapefile=(()=>{
+function detect(intake) {
+  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  const b = intake.bytes;
+  // Shapefile magic: file code 9994 = 0x0000270A (big-endian int32)
+  if (b[0] === 0x00 && b[1] === 0x00 && b[2] === 0x27 && b[3] === 0x0A) {
+    if (hasExtension(intake, 'shp')) return 0.99;
+    return 0.85;
+  }
+  if (hasExtension(intake, 'shp')) return 0.5;
+  return 0;
+}
+return detect;
+})();
+
+const detect_wad=(()=>{
+function detect(intake) {
+  if (!intake.bytes || intake.bytes.length < 12) return 0;
+  const b = intake.bytes;
+  const magic = String.fromCharCode(b[0], b[1], b[2], b[3]);
+  if (magic === 'IWAD' || magic === 'PWAD') return 0.98;
+  if (hasExtension(intake, 'wad')) return 0.6;
+  return 0;
+}
+return detect;
+})();
+
 const detect_bsp=(()=>{
 function r32le(b, off) {
   return (b[off] | (b[off + 1] << 8) | (b[off + 2] << 16) | (b[off + 3] << 24)) >>> 0;
@@ -273,50 +313,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_exr=(()=>{
-// OpenEXR magic: 0x76 0x2F 0x31 0x01
-const MAGIC = [0x76, 0x2f, 0x31, 0x01];
-
-function detect(intake) {
-  const { filename, bytes: b } = intake;
-  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
-  const isExrExt = ext === 'exr';
-
-  if (!b || b.length < 4) return isExrExt ? 0.6 : 0;
-  const hasMagic = MAGIC.every((v, i) => b[i] === v);
-
-  if (isExrExt) return hasMagic ? 0.99 : 0.65;
-  return hasMagic ? 0.97 : 0;
-}
-return detect;
-})();
-
-const detect_dbf=(()=>{
-// dBASE/DBF version byte values:
-// 0x02 = dBASE II, 0x03 = dBASE III+, 0x04 = dBASE IV, 0x05 = dBASE V,
-// 0x7b = Visual Objects, 0x83 = dBASE III+ with memo, 0x8b = dBASE IV with memo,
-// 0xf5 = FoxPro with memo, 0x30 = Visual FoxPro, 0x31 = VFP with autoincrement,
-// 0x32 = VFP with varchar
-const KNOWN_VERSIONS = new Set([0x02, 0x03, 0x04, 0x05, 0x07, 0x30, 0x31, 0x32, 0x7b, 0x82, 0x83, 0x8b, 0x8e, 0xcb, 0xf5]);
-
-function detect(intake) {
-  const { filename, bytes: b } = intake;
-  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
-  const isDbfExt = ext === 'dbf';
-
-  if (!b || b.length < 32) return isDbfExt ? 0.6 : 0;
-
-  const version = b[0];
-  const knownVersion = KNOWN_VERSIONS.has(version);
-  // header size and record size must be reasonable
-  const headerSize = b[8] | (b[9] << 8);
-  const recordSize = b[10] | (b[11] << 8);
-  const structural = knownVersion && headerSize >= 32 && headerSize <= 65535 && recordSize >= 1 && recordSize <= 65535;
-
-  if (isDbfExt) return structural ? 0.97 : knownVersion ? 0.80 : 0.65;
-  return structural ? 0.70 : 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"hdf5":detect_hdf5,"msgpack":detect_msgpack,"bson":detect_bson,"exr":detect_exr,"dbf":detect_dbf};
+export const DETECTORS={"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad,"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"hdf5":detect_hdf5,"msgpack":detect_msgpack,"bson":detect_bson};

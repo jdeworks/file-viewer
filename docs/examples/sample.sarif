@@ -1,0 +1,65 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "DemoScanner",
+          "version": "1.4.2",
+          "rules": [
+            { "id": "SQL001", "name": "SqlInjection", "shortDescription": { "text": "Potential SQL injection vulnerability" } },
+            { "id": "XSS002", "name": "CrossSiteScripting", "shortDescription": { "text": "Unsanitized user input in HTML output" } },
+            { "id": "SEC003", "name": "HardcodedCredential", "shortDescription": { "text": "Hardcoded password or API key detected" } },
+            { "id": "PERF004", "name": "InefficientQuery", "shortDescription": { "text": "N+1 database query pattern detected" } },
+            { "id": "DEP005", "name": "OutdatedDependency", "shortDescription": { "text": "Dependency with known vulnerability" } }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "SQL001",
+          "level": "error",
+          "message": { "text": "User input is concatenated directly into SQL query without parameterization." },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/db/users.js" }, "region": { "startLine": 42, "startColumn": 18 } } }]
+        },
+        {
+          "ruleId": "XSS002",
+          "level": "error",
+          "message": { "text": "innerHTML assignment with unsanitized request parameter 'name'." },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/views/profile.js" }, "region": { "startLine": 87 } } }]
+        },
+        {
+          "ruleId": "SEC003",
+          "level": "error",
+          "message": { "text": "Hardcoded API key found in source file." },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/config/api.js" }, "region": { "startLine": 12 } } }]
+        },
+        {
+          "ruleId": "PERF004",
+          "level": "warning",
+          "message": { "text": "Database query inside a loop may cause N+1 query problem." },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/services/orders.js" }, "region": { "startLine": 156 } } }]
+        },
+        {
+          "ruleId": "DEP005",
+          "level": "warning",
+          "message": { "text": "Package 'lodash@4.17.20' has a known prototype pollution vulnerability (CVE-2021-23337)." },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "package.json" }, "region": { "startLine": 23 } } }]
+        },
+        {
+          "ruleId": "XSS002",
+          "level": "warning",
+          "message": { "text": "Template literal with unescaped user data rendered to DOM." },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/components/Comment.js" }, "region": { "startLine": 31 } } }]
+        },
+        {
+          "ruleId": "SEC003",
+          "level": "note",
+          "message": { "text": "Consider using environment variables for database connection string." },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/db/connection.js" }, "region": { "startLine": 5 } } }]
+        }
+      ]
+    }
+  ]
+}

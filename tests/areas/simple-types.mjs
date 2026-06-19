@@ -441,4 +441,38 @@ export async function run(ctx) {
   if (/GFF3?/i.test(gffText)) pass('GFF badge shown'); else fail('gff badge: ' + gffText.slice(0, 300));
   if (/gene|exon|CDS|mRNA/i.test(gffText)) pass('GFF feature types shown'); else fail('gff features: ' + gffText.slice(0, 300));
   if (/chr\d|chromosome/i.test(gffText)) pass('GFF chromosome info shown'); else fail('gff chrom: ' + gffText.slice(0, 300));
+
+  // ── Dockerfile viewer ──
+  // Known-file enhancement takes over for Dockerfiles (returns parentNode with .kf-list, no iframe)
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Dockerfile (multi-stage demo)');
+  await page.waitForSelector('#previewHost .kf-list', { timeout: 12000 });
+  const dfTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (dfTypeId === 'dockerfile') pass('Dockerfile detected'); else fail('dockerfile typeId: ' + dfTypeId);
+  const dfText = await page.$eval('#previewHost', (el) => el.textContent);
+  if (/Dockerfile/i.test(dfText)) pass('Dockerfile heading shown'); else fail('dockerfile heading: ' + dfText.slice(0, 200));
+  if (/nginx|node|stage/i.test(dfText)) pass('Dockerfile images\/stages shown'); else fail('dockerfile content: ' + dfText.slice(0, 200));
+
+  // ── docker-compose viewer ──
+  // Known-file enhancement takes over (returns parentNode with .kf-svc, no iframe)
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('docker-compose.yml (demo)');
+  await page.waitForSelector('#previewHost .kf-svc', { timeout: 12000 });
+  const dcTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (dcTypeId === 'docker-compose') pass('docker-compose.yml detected'); else fail('docker-compose typeId: ' + dcTypeId);
+  const dcText = await page.$eval('#previewHost', (el) => el.textContent);
+  if (/compose stack|docker.compose/i.test(dcText)) pass('docker-compose heading shown'); else fail('dc heading: ' + dcText.slice(0, 200));
+  if (/web|api|db/i.test(dcText)) pass('docker-compose services shown'); else fail('dc services: ' + dcText.slice(0, 200));
+
+  // ── SARIF security scan viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('SARIF security scan results (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const srf = await frameOf('iframe.fv-preview-frame');
+  await srf.waitForSelector('.badge-sarif', { timeout: 8000 });
+  const srTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (srTypeId === 'sarif') pass('SARIF detected'); else fail('sarif typeId: ' + srTypeId);
+  const srText = await srf.$eval('body', (el) => el.textContent);
+  if (/SARIF/i.test(srText)) pass('SARIF badge shown'); else fail('sarif badge: ' + srText.slice(0, 200));
+  if (/error|warning/i.test(srText)) pass('SARIF findings shown'); else fail('sarif findings: ' + srText.slice(0, 200));
 }

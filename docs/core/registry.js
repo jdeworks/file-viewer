@@ -138,6 +138,9 @@ import debType from '../types/binary/deb/index.js';
 import qifType from '../types/text/qif/index.js';
 import mt940Type from '../types/text/mt940/index.js';
 import gffType from '../types/text/gff/index.js';
+import dockerfileType from '../types/text/dockerfile/index.js';
+import dockerComposeType from '../types/text/docker-compose/index.js';
+import sarifType from '../types/text/sarif/index.js';
 import sdfType from '../types/text/sdf/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
@@ -179,6 +182,8 @@ export const REGISTRY = [
   msgType,
   icsType,
   kubeconfigType,
+  dockerComposeType,
+  dockerfileType,
   yamlType,
   tomlType,
   plistType,
@@ -204,6 +209,7 @@ export const REGISTRY = [
   ofxType,
   bioType,
   gffType,
+  sarifType,
   jsonType,
   layeredType,
   tiffType,

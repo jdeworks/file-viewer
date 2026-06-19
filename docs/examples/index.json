@@ -2351,5 +2351,35 @@
       "Scientific",
       "bioinformatics"
     ]
+  },
+  {
+    "file": "Dockerfile",
+    "label": "Dockerfile (multi-stage demo)",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code",
+      "devops"
+    ]
+  },
+  {
+    "file": "docker-compose.yml",
+    "label": "docker-compose.yml (demo)",
+    "mime": "text/yaml",
+    "category": "Code",
+    "categories": [
+      "Code",
+      "devops"
+    ]
+  },
+  {
+    "file": "sample.sarif",
+    "label": "SARIF security scan results (demo)",
+    "mime": "application/json",
+    "category": "Code",
+    "categories": [
+      "Code",
+      "security"
+    ]
   }
 ]

@@ -3,6 +3,33 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_xml=(()=>{
+// XML family (but NOT .svg — that's the image type, and not the Office/zip XML containers).
+// Strong on explicit XML extensions; a `<?xml` / root-element sniff catches the rest.
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, 'xml', 'xsd', 'xsl', 'xslt', 'rss', 'atom', 'wsdl', 'pom', 'csproj', 'props', 'targets', 'resx')) return 0.92;
+  if (mimeMatches(intake, 'xml')) return 0.85;
+  const t = (intake.textSample || '').trimStart();
+  if (/^<\?xml[\s>]/.test(t)) return 0.8;
+  // A bare element root that isn't HTML — weak fallback for extensionless XML.
+  if (/^<([A-Za-z_][\w.-]*)(\s|>)/.test(t) && !/^<(?:!doctype\s+html|html|head|body)\b/i.test(t)) return 0.3;
+  return 0;
+}
+return detect;
+})();
+
+const detect_als=(()=>{
+function detect(intake) {
+  const isAls = hasExtension(intake, 'als');
+  if (!isAls) return 0;
+  const b = intake.bytes || new Uint8Array();
+  if (b.length >= 2 && b[0] === 0x1f && b[1] === 0x8b) return 0.97;
+  return 0.90;
+}
+return detect;
+})();
+
 const detect_env=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -295,31 +322,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_gff=(()=>{
-// GFF3: General Feature Format v3 — starts with ##gff-version 3
-// GFF2/GTF: starts with ##gff-version 2 or tab-delimited with 9 columns starting with seqname
-
-function detect(intake) {
-  const { filename, textSample } = intake;
-  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
-  const isGffExt = ext === 'gff' || ext === 'gff3' || ext === 'gtf' || ext === 'gff2';
-
-  if (!textSample) return isGffExt ? 0.4 : 0;
-
-  const s = textSample.trimStart();
-  if (/^##gff-version\s+3/i.test(s)) return isGffExt ? 0.99 : 0.96;
-  if (/^##gff-version\s+2/i.test(s)) return isGffExt ? 0.99 : 0.94;
-  if (/^##gff-version/i.test(s)) return isGffExt ? 0.97 : 0.90;
-
-  // GTF/GFF2: 9 tab-separated columns with gene_id / transcript_id in col 9
-  if (isGffExt) {
-    const firstData = s.split('\n').find(l => !l.startsWith('#') && l.includes('\t'));
-    if (firstData && firstData.split('\t').length >= 9) return 0.85;
-    return 0.5;
-  }
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"bio":detect_bio,"gff":detect_gff};
+export const DETECTORS={"xml":detect_xml,"als":detect_als,"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"bio":detect_bio};

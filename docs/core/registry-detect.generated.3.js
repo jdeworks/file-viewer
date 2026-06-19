@@ -3,6 +3,62 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_epub=(()=>{
+// EPUB e-books. A .epub is a zip, so we must outscore the generic archive type (0.9) on the
+// extension. As a fallback, sniff the uncompressed "mimetype" entry that every EPUB stores
+// near the start of the archive: the literal bytes "application/epub+zip".
+function detect(intake) {
+  if (hasExtension(intake, 'epub')) return 0.96;
+  const b = intake.bytes;
+  if (b && b.length >= 4 && b[0] === 0x50 && b[1] === 0x4b) {
+    // PK zip — look for the mimetype marker in the first ~200 bytes.
+    const head = b.subarray(0, 200);
+    const marker = 'epub+zip';
+    outer: for (let i = 0; i + marker.length <= head.length; i++) {
+      for (let j = 0; j < marker.length; j++) if (head[i + j] !== marker.charCodeAt(j)) continue outer;
+      return 0.95;
+    }
+  }
+  return 0;
+}
+return detect;
+})();
+
+const detect_comic=(()=>{
+// Comic book archives: .cbz (zip of images) and .cbr (rar of images). Claim these extensions
+// above the generic zip type so a comic opens in the page-turning reader, not as a file listing.
+// A bare zip/rar magic is NOT claimed here — only the comic extensions — so normal archives stay
+// in the archive type.
+function detect(intake) {
+  if (hasExtension(intake, 'cbz', 'cbr', 'cb7', 'cbt')) return 0.96;
+  return 0;
+}
+return detect;
+})();
+
+const detect_djvu=(()=>{
+// DjVu documents. Magic: AT&TFORM at offset 0, then 4-byte length, then DJVU/DJVM/DJVI/THUM at offset 12.
+// AT&T = 0x41 0x54 0x26 0x54 (note: AT&T in ASCII = 41 54 26 54, not AT& T)
+// Wait — "AT&T" is: A=0x41 T=0x54 &=0x26 T=0x54
+// then "FORM" = 0x46 0x4F 0x52 0x4D
+function detect(intake) {
+  const b = intake.bytes;
+  if (b && b.length >= 16) {
+    // Check AT&TFORM magic (bytes 0-7)
+    if (b[0] === 0x41 && b[1] === 0x54 && b[2] === 0x26 && b[3] === 0x54 &&
+        b[4] === 0x46 && b[5] === 0x4F && b[6] === 0x52 && b[7] === 0x4D) {
+      // Subtype at offset 12 (after 4-byte size field)
+      const sub = String.fromCharCode(b[12], b[13], b[14], b[15]);
+      if (sub === 'DJVU' || sub === 'DJVM' || sub === 'DJVI' || sub === 'THUM') return 0.99;
+      return 0.85; // IFF FORM but unknown subtype
+    }
+  }
+  if (hasExtension(intake, 'djvu', 'djv')) return 0.7;
+  return 0;
+}
+return detect;
+})();
+
 const detect_archive=(()=>{
 // 7z / RAR / tar family archives. These are claimed here at high confidence so they route to
 // the archive listing renderer rather than the zip renderer or raw fallback. Zip (.zip) stays
@@ -267,44 +323,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_xyz=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (!hasExtension(intake, 'xyz')) return 0;
-  const lines = (intake.textSample || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  if (!lines.length) return 0.5;
-  // First line should be an integer (atom count)
-  if (/^\d+$/.test(lines[0])) return 0.93;
-  return 0.4;
-}
-return detect;
-})();
-
-const detect_shapefile=(()=>{
-function detect(intake) {
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
-  const b = intake.bytes;
-  // Shapefile magic: file code 9994 = 0x0000270A (big-endian int32)
-  if (b[0] === 0x00 && b[1] === 0x00 && b[2] === 0x27 && b[3] === 0x0A) {
-    if (hasExtension(intake, 'shp')) return 0.99;
-    return 0.85;
-  }
-  if (hasExtension(intake, 'shp')) return 0.5;
-  return 0;
-}
-return detect;
-})();
-
-const detect_wad=(()=>{
-function detect(intake) {
-  if (!intake.bytes || intake.bytes.length < 12) return 0;
-  const b = intake.bytes;
-  const magic = String.fromCharCode(b[0], b[1], b[2], b[3]);
-  if (magic === 'IWAD' || magic === 'PWAD') return 0.98;
-  if (hasExtension(intake, 'wad')) return 0.6;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad};
+export const DETECTORS={"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap};

@@ -206,6 +206,45 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_docker_compose=(()=>{
+function detect(intake) {
+  const { filename, text, textSample } = intake;
+  const name = (filename || '').toLowerCase();
+  const isComposeName = name === 'docker-compose.yml' || name === 'docker-compose.yaml'
+    || name === 'compose.yml' || name === 'compose.yaml'
+    || /docker-compose[.-]/.test(name);
+  const src = (text || textSample || '').trimStart();
+  const hasServices = /^services\s*:/m.test(src);
+  const hasVersion = /^version\s*:/m.test(src);
+  if (isComposeName && hasServices) return 0.99;
+  if (isComposeName && (hasVersion || hasServices)) return 0.92;
+  if (hasServices && (hasVersion || /^\s+image\s*:/m.test(src))) return 0.8;
+  if (isComposeName) return 0.5;
+  return 0;
+}
+return detect;
+})();
+
+const detect_dockerfile=(()=>{
+function detect(intake) {
+  const { filename, text, textSample } = intake;
+  const name = (filename || '').toLowerCase();
+  const isDockerfileName = name === 'dockerfile' || name.startsWith('dockerfile.') || name.endsWith('.dockerfile');
+  const src = (text || textSample || '').trimStart();
+  // A Dockerfile starts with a FROM (possibly after comments)
+  const lines = src.split(/\r?\n/).filter(l => l.trim() && !l.trim().startsWith('#'));
+  const firstInstr = (lines[0] || '').trim().toUpperCase();
+  const hasFrom = firstInstr.startsWith('FROM ') || firstInstr === 'FROM';
+  const hasDockerInstructions = /^(FROM|RUN|COPY|ADD|EXPOSE|ENV|ENTRYPOINT|CMD|WORKDIR|USER|ARG|LABEL|VOLUME|HEALTHCHECK|ONBUILD|STOPSIGNAL|SHELL)\s/m.test(src);
+  if (isDockerfileName && hasFrom) return 0.99;
+  if (isDockerfileName && hasDockerInstructions) return 0.92;
+  if (hasFrom && hasDockerInstructions) return 0.85;
+  if (isDockerfileName) return 0.6;
+  return 0;
+}
+return detect;
+})();
+
 const detect_yaml=(()=>{
 // YAML by extension/MIME; weak content sniff for extensionless pasted YAML.
 function detect(intake) {
@@ -283,31 +322,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_xml=(()=>{
-// XML family (but NOT .svg — that's the image type, and not the Office/zip XML containers).
-// Strong on explicit XML extensions; a `<?xml` / root-element sniff catches the rest.
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'xml', 'xsd', 'xsl', 'xslt', 'rss', 'atom', 'wsdl', 'pom', 'csproj', 'props', 'targets', 'resx')) return 0.92;
-  if (mimeMatches(intake, 'xml')) return 0.85;
-  const t = (intake.textSample || '').trimStart();
-  if (/^<\?xml[\s>]/.test(t)) return 0.8;
-  // A bare element root that isn't HTML — weak fallback for extensionless XML.
-  if (/^<([A-Za-z_][\w.-]*)(\s|>)/.test(t) && !/^<(?:!doctype\s+html|html|head|body)\b/i.test(t)) return 0.3;
-  return 0;
-}
-return detect;
-})();
-
-const detect_als=(()=>{
-function detect(intake) {
-  const isAls = hasExtension(intake, 'als');
-  if (!isAls) return 0;
-  const b = intake.bytes || new Uint8Array();
-  if (b.length >= 2 && b[0] === 0x1f && b[1] === 0x8b) return 0.97;
-  return 0.90;
-}
-return detect;
-})();
-
-export const DETECTORS={"markdown":detect_markdown,"pdf":detect_pdf,"csv":detect_csv,"xlsx":detect_xlsx,"docx":detect_docx,"pptx":detect_pptx,"odf":detect_odf,"rtf":detect_rtf,"html":detect_html,"eml":detect_eml,"mbox":detect_mbox,"msg":detect_msg,"ics":detect_ics,"kubeconfig":detect_kubeconfig,"yaml":detect_yaml,"toml":detect_toml,"plist":detect_plist,"strings":detect_strings,"musicxml":detect_musicxml,"xml":detect_xml,"als":detect_als};
+export const DETECTORS={"markdown":detect_markdown,"pdf":detect_pdf,"csv":detect_csv,"xlsx":detect_xlsx,"docx":detect_docx,"pptx":detect_pptx,"odf":detect_odf,"rtf":detect_rtf,"html":detect_html,"eml":detect_eml,"mbox":detect_mbox,"msg":detect_msg,"ics":detect_ics,"kubeconfig":detect_kubeconfig,"docker-compose":detect_docker_compose,"dockerfile":detect_dockerfile,"yaml":detect_yaml,"toml":detect_toml,"plist":detect_plist,"strings":detect_strings,"musicxml":detect_musicxml};

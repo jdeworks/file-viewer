@@ -3,6 +3,53 @@ import { mediaInfo } from '../types/media/medialib.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_gff=(()=>{
+// GFF3: General Feature Format v3 — starts with ##gff-version 3
+// GFF2/GTF: starts with ##gff-version 2 or tab-delimited with 9 columns starting with seqname
+
+function detect(intake) {
+  const { filename, textSample } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isGffExt = ext === 'gff' || ext === 'gff3' || ext === 'gtf' || ext === 'gff2';
+
+  if (!textSample) return isGffExt ? 0.4 : 0;
+
+  const s = textSample.trimStart();
+  if (/^##gff-version\s+3/i.test(s)) return isGffExt ? 0.99 : 0.96;
+  if (/^##gff-version\s+2/i.test(s)) return isGffExt ? 0.99 : 0.94;
+  if (/^##gff-version/i.test(s)) return isGffExt ? 0.97 : 0.90;
+
+  // GTF/GFF2: 9 tab-separated columns with gene_id / transcript_id in col 9
+  if (isGffExt) {
+    const firstData = s.split('\n').find(l => !l.startsWith('#') && l.includes('\t'));
+    if (firstData && firstData.split('\t').length >= 9) return 0.85;
+    return 0.5;
+  }
+  return 0;
+}
+return detect;
+})();
+
+const detect_sarif=(()=>{
+function detect(intake) {
+  const { filename, text, textSample, mimeType } = intake;
+  const ext = (filename || '').split('.').pop().toLowerCase();
+  const isSarifExt = ext === 'sarif';
+  const src = (text || textSample || '').trimStart();
+  if (!src.startsWith('{')) return isSarifExt ? 0.5 : 0;
+  const hasSarifSchema = src.includes('"$schema"') && src.includes('sarif');
+  const hasRuns = /"runs"\s*:/.test(src) && /"results"\s*:/.test(src);
+  const hasSarifVersion = /"version"\s*:\s*"2\.\d+\.\d+"/.test(src) && hasRuns;
+  if (isSarifExt && hasSarifVersion) return 0.99;
+  if (isSarifExt && hasRuns) return 0.95;
+  if (hasSarifSchema && hasRuns) return 0.97;
+  if (hasSarifVersion) return 0.9;
+  if (isSarifExt) return 0.6;
+  return 0;
+}
+return detect;
+})();
+
 const detect_json=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -266,60 +313,4 @@ function magic(intake) {
 return detect;
 })();
 
-const detect_epub=(()=>{
-// EPUB e-books. A .epub is a zip, so we must outscore the generic archive type (0.9) on the
-// extension. As a fallback, sniff the uncompressed "mimetype" entry that every EPUB stores
-// near the start of the archive: the literal bytes "application/epub+zip".
-function detect(intake) {
-  if (hasExtension(intake, 'epub')) return 0.96;
-  const b = intake.bytes;
-  if (b && b.length >= 4 && b[0] === 0x50 && b[1] === 0x4b) {
-    // PK zip — look for the mimetype marker in the first ~200 bytes.
-    const head = b.subarray(0, 200);
-    const marker = 'epub+zip';
-    outer: for (let i = 0; i + marker.length <= head.length; i++) {
-      for (let j = 0; j < marker.length; j++) if (head[i + j] !== marker.charCodeAt(j)) continue outer;
-      return 0.95;
-    }
-  }
-  return 0;
-}
-return detect;
-})();
-
-const detect_comic=(()=>{
-// Comic book archives: .cbz (zip of images) and .cbr (rar of images). Claim these extensions
-// above the generic zip type so a comic opens in the page-turning reader, not as a file listing.
-// A bare zip/rar magic is NOT claimed here — only the comic extensions — so normal archives stay
-// in the archive type.
-function detect(intake) {
-  if (hasExtension(intake, 'cbz', 'cbr', 'cb7', 'cbt')) return 0.96;
-  return 0;
-}
-return detect;
-})();
-
-const detect_djvu=(()=>{
-// DjVu documents. Magic: AT&TFORM at offset 0, then 4-byte length, then DJVU/DJVM/DJVI/THUM at offset 12.
-// AT&T = 0x41 0x54 0x26 0x54 (note: AT&T in ASCII = 41 54 26 54, not AT& T)
-// Wait — "AT&T" is: A=0x41 T=0x54 &=0x26 T=0x54
-// then "FORM" = 0x46 0x4F 0x52 0x4D
-function detect(intake) {
-  const b = intake.bytes;
-  if (b && b.length >= 16) {
-    // Check AT&TFORM magic (bytes 0-7)
-    if (b[0] === 0x41 && b[1] === 0x54 && b[2] === 0x26 && b[3] === 0x54 &&
-        b[4] === 0x46 && b[5] === 0x4F && b[6] === 0x52 && b[7] === 0x4D) {
-      // Subtype at offset 12 (after 4-byte size field)
-      const sub = String.fromCharCode(b[12], b[13], b[14], b[15]);
-      if (sub === 'DJVU' || sub === 'DJVM' || sub === 'DJVI' || sub === 'THUM') return 0.99;
-      return 0.85; // IFF FORM but unknown subtype
-    }
-  }
-  if (hasExtension(intake, 'djvu', 'djv')) return 0.7;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu};
+export const DETECTORS={"gff":detect_gff,"sarif":detect_sarif,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite};

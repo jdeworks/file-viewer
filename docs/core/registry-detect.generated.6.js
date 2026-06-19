@@ -3,6 +3,28 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_mt940=(()=>{
+// MT940/MT942: SWIFT bank statement format
+// Starts with :20: (transaction reference) optionally preceded by {1: or similar FIN tags
+
+function detect(intake) {
+  const { filename, textSample } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isMtExt = ext === 'mt940' || ext === 'mt942' || ext === 'sta' || ext === 'mt';
+
+  if (!textSample) return isMtExt ? 0.4 : 0;
+
+  const s = textSample.trimStart();
+  // MT940/942 always starts with :20: or a FIN wrapper
+  if (/^:20:/.test(s) || /^\{1:[^}]+\}\{2:[^}]+\}\{4:\s*:20:/s.test(s)) {
+    return isMtExt ? 0.99 : 0.92;
+  }
+  if (isMtExt && /^:\d{2}[A-Z]?:/.test(s)) return 0.75;
+  return isMtExt ? 0.4 : 0;
+}
+return detect;
+})();
+
 const detect_sdf=(()=>{
 function hasExtension(intake, ...exts) {
   const name = (intake.filename || '').toLowerCase();
@@ -301,27 +323,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_gcode=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'gcode', 'gc', 'nc', 'ngc')) return 0.90;
-  const sample = (intake.text || '').slice(0, 2048);
-  const signals = ['G0 ', 'G1 ', 'G28', 'M104', 'M109', 'M140', ';LAYER:'];
-  const hits = signals.filter((s) => sample.includes(s)).length;
-  if (hits >= 2) return 0.80;
-  return 0;
-}
-return detect;
-})();
-
-const detect_gitignore=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const n = intake.filename || '';
-  if (/(?:^|\.)(?:gitignore|dockerignore|npmignore|eslintignore|prettierignore|hgignore)$/.test(n)) return 0.95;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore};
+export const DETECTORS={"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj};
