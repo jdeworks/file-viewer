@@ -2102,5 +2102,15 @@
       "chemical",
       "scientific"
     ]
+  },
+  {
+    "file": "sample.bsp",
+    "label": "Quake BSP Game Map (demo)",
+    "mime": "application/octet-stream",
+    "category": "game",
+    "categories": [
+      "game",
+      "binary"
+    ]
   }
 ]

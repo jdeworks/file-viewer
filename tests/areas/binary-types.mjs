@@ -234,4 +234,17 @@ export async function run(ctx) {
   if (/SDF\/MOL/i.test(sdfText)) pass('SDF badge shown'); else fail('sdf badge: ' + sdfText.slice(0, 300));
   if (/C9H8O4|Formula/i.test(sdfText)) pass('SDF molecular formula shown'); else fail('sdf formula: ' + sdfText.slice(0, 300));
   if (/aspirin|acetyloxy/i.test(sdfText)) pass('SDF molecule name shown'); else fail('sdf name: ' + sdfText.slice(0, 300));
+
+  // ── BSP Game Map ──────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Quake BSP Game Map (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const bspf = await frameOf('iframe.fv-preview-frame');
+  await bspf.waitForSelector('.badge-bsp', { timeout: 8000 });
+  const bspTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (bspTypeId === 'bsp') pass('.bsp detected as bsp type'); else fail('bsp typeId: ' + bspTypeId);
+  const bspText = await bspf.$eval('body', (el) => el.textContent);
+  if (/Quake BSP/i.test(bspText)) pass('BSP badge shown'); else fail('bsp badge: ' + bspText.slice(0, 300));
+  if (/Quake|GoldSrc/i.test(bspText)) pass('BSP game engine shown'); else fail('bsp engine: ' + bspText.slice(0, 300));
+  if (/File Viewer Demo|monster_soldier|info_player/i.test(bspText)) pass('BSP entity info shown'); else fail('bsp entities: ' + bspText.slice(0, 300));
 }

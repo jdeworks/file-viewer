@@ -3984,6 +3984,37 @@
         "No 3D structure visualisation (coords not rendered graphically)",
         "V3000 molfiles parsed via text scan only"
       ]
+    },
+    "bsp": {
+      "label": "BSP Game Map",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.bsp"
+      ],
+      "extensions": [
+        ".bsp"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "fileExamplesSlug": null,
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Geometry not rendered (entity listing only)",
+        "Texture extraction not supported",
+        "BSP tree/vis data not decoded"
+      ]
     }
   },
   "knownFiles": {
