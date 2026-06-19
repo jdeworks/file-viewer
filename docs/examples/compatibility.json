@@ -6953,6 +6953,762 @@
       "testCoverage": "none",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
+    },
+    "helm-chart": {
+      "label": "Helm Chart",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "Chart.yaml"
+      ],
+      "extensions": [
+        "Chart.yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "kustomize": {
+      "label": "Kustomize overlay",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "kustomization.yaml"
+      ],
+      "extensions": [
+        "kustomization.yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "ansible-playbook": {
+      "label": "Ansible playbook",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "ansible-playbook.yml"
+      ],
+      "extensions": [
+        "ansible-playbook.yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "pulumi": {
+      "label": "Pulumi project",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "Pulumi.yaml"
+      ],
+      "extensions": [
+        "Pulumi.yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "packer": {
+      "label": "HashiCorp Packer",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "packer.json"
+      ],
+      "extensions": [
+        "packer.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "ruff": {
+      "label": "Ruff config",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "ruff.toml"
+      ],
+      "extensions": [
+        "ruff.toml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "uv": {
+      "label": "uv config",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "uv.toml"
+      ],
+      "extensions": [
+        "uv.toml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "kube-helm-values": {
+      "label": "Helm values",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "values.yaml"
+      ],
+      "extensions": [
+        "values.yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "firebase": {
+      "label": "Firebase Config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "firebase.json"
+      ],
+      "extensions": [
+        "firebase.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "expo": {
+      "label": "Expo App Config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "app.json"
+      ],
+      "extensions": [
+        "app.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "tailwind": {
+      "label": "Tailwind CSS Config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "tailwind.config.json"
+      ],
+      "extensions": [
+        "tailwind.config.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "postcss": {
+      "label": "PostCSS Config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "postcss.config.json"
+      ],
+      "extensions": [
+        "postcss.config.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "husky": {
+      "label": "Husky Git Hooks",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        ".huskyrc.json"
+      ],
+      "extensions": [
+        ".huskyrc.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "lint-staged": {
+      "label": "lint-staged Config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        ".lintstagedrc.json"
+      ],
+      "extensions": [
+        ".lintstagedrc.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "nest-cli": {
+      "label": "NestJS CLI Config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "nest-cli.json"
+      ],
+      "extensions": [
+        "nest-cli.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "swcrc": {
+      "label": "SWC Config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        ".swcrc"
+      ],
+      "extensions": [
+        ".swcrc"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "package-lock": {
+      "label": "package-lock.json",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "package-lock.json"
+      ],
+      "extensions": [
+        "package-lock.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "composer-lock": {
+      "label": "composer.lock",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "composer.lock"
+      ],
+      "extensions": [
+        "composer.lock"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "pnpm-lock": {
+      "label": "pnpm-lock.yaml",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "pnpm-lock.yaml"
+      ],
+      "extensions": [
+        "pnpm-lock.yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "cargo-lock": {
+      "label": "Cargo.lock",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "Cargo.lock"
+      ],
+      "extensions": [
+        "Cargo.lock"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "poetry-lock": {
+      "label": "poetry.lock",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "poetry.lock"
+      ],
+      "extensions": [
+        "poetry.lock"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "go-sum": {
+      "label": "go.sum",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "go.sum"
+      ],
+      "extensions": [
+        "go.sum"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "justfile": {
+      "label": "Justfile",
+      "baseType": "plain",
+      "support": "supported",
+      "sampleFiles": [
+        "Justfile"
+      ],
+      "extensions": [
+        "Justfile"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "makefile": {
+      "label": "Makefile",
+      "baseType": "plain",
+      "support": "supported",
+      "sampleFiles": [
+        "Makefile"
+      ],
+      "extensions": [
+        "Makefile"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "procfile": {
+      "label": "Procfile",
+      "baseType": "plain",
+      "support": "supported",
+      "sampleFiles": [
+        "Procfile"
+      ],
+      "extensions": [
+        "Procfile"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "envrc": {
+      "label": ".envrc",
+      "baseType": "plain",
+      "support": "supported",
+      "sampleFiles": [
+        ".envrc"
+      ],
+      "extensions": [
+        ".envrc"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "mise-config": {
+      "label": "mise config",
+      "baseType": "plain",
+      "support": "supported",
+      "sampleFiles": [
+        "mise.toml"
+      ],
+      "extensions": [
+        "mise.toml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "tool-versions": {
+      "label": ".tool-versions",
+      "baseType": "plain",
+      "support": "supported",
+      "sampleFiles": [
+        ".tool-versions"
+      ],
+      "extensions": [
+        ".tool-versions"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

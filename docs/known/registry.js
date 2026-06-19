@@ -114,7 +114,15 @@ import husky from '../types/text/json/known/husky/index.js';
 import lintStaged from '../types/text/json/known/lint-staged/index.js';
 import nestCli from '../types/text/json/known/nest-cli/index.js';
 import swcrc from '../types/text/json/known/swcrc/index.js';
+import makefileKf from '../types/text/known/makefile/index.js';
+import justfile from '../types/text/known/justfile/index.js';
+import procfile from '../types/text/known/procfile/index.js';
+import envrc from '../types/text/known/envrc/index.js';
+import miseConfig from '../types/text/toml/known/mise/index.js';
+import toolVersions from '../types/text/known/tool-versions/index.js';
 
+import makefile from '../types/text/known/makefile/index.js';
+import uvToml from '../types/text/toml/known/uv/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -131,7 +139,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   drone, buildkite, skaffold, hadolint,
   helmChart, kustomize, ansiblePlaybook, pulumi, packer, ruff, uv, kubeHelmValues,
   firebase, expo, tailwind, postcss, husky, lintStaged, nestCli, swcrc,
-  packageLock, composerLock, pnpmLock, cargoLock, poetryLock, goSum];
+  packageLock, composerLock, pnpmLock, cargoLock, poetryLock, goSum,
+  makefileKf, justfile, procfile, envrc, miseConfig, toolVersions];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

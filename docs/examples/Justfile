@@ -1,0 +1,21 @@
+# Project task runner
+
+node_version := "20.11.0"
+project := "file-viewer"
+
+# Build the project
+build:
+    npm run build
+
+# Run tests
+test:
+    npm test
+
+# Format code
+fmt:
+    npm run format
+
+# Release a new version
+release version:
+    git tag -a v{{version}} -m "Release v{{version}}"
+    git push origin v{{version}}

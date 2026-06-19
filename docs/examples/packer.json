@@ -1,0 +1,39 @@
+{
+  "variables": {
+    "aws_region": "us-east-1",
+    "base_ami": "ami-0c55b159cbfafe1f0",
+    "instance_type": "t3.micro",
+    "app_version": "1.5.0"
+  },
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "region": "{{user `aws_region`}}",
+      "source_ami": "{{user `base_ami`}}",
+      "instance_type": "{{user `instance_type`}}",
+      "ssh_username": "ubuntu",
+      "ami_name": "my-webapp-{{user `app_version`}}-{{timestamp}}"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "sudo apt-get update",
+        "sudo apt-get install -y nginx python3 python3-pip"
+      ]
+    },
+    {
+      "type": "file",
+      "source": "config/nginx.conf",
+      "destination": "/tmp/nginx.conf"
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/setup-app.sh",
+        "scripts/configure-nginx.sh"
+      ]
+    }
+  ]
+}

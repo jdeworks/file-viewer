@@ -693,4 +693,165 @@ export async function run(ctx) {
   const swcText = await page.$eval('#previewHost .swc-doc', (e) => e.textContent);
   if (/SWC/i.test(swcText)) pass('.swcrc: badge shown'); else fail('swcrc badge: ' + swcText.slice(0, 200));
   if (/typescript|es2020|es6|source maps/i.test(swcText)) pass('.swcrc: compiler config shown'); else fail('swcrc config: ' + swcText.slice(0, 200));
+
+  // ── Chart.yaml (Helm chart) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Chart.yaml (Helm chart)');
+  await page.waitForSelector('#previewHost .hc-doc', { timeout: 12000 });
+  const hcText = await page.$eval('#previewHost .hc-doc', (e) => e.textContent);
+  if (/Helm/i.test(hcText)) pass('Chart.yaml: Helm badge shown'); else fail('helm-chart badge: ' + hcText.slice(0, 200));
+  if (/my-webapp|postgresql|redis/i.test(hcText)) pass('Chart.yaml: chart name and dependencies shown'); else fail('helm-chart content: ' + hcText.slice(0, 200));
+
+  // ── kustomization.yaml (Kustomize) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('kustomization.yaml (Kustomize)');
+  await page.waitForSelector('#previewHost .kust-doc', { timeout: 12000 });
+  const kustText = await page.$eval('#previewHost .kust-doc', (e) => e.textContent);
+  if (/Kustomize/i.test(kustText)) pass('kustomization.yaml: Kustomize badge shown'); else fail('kustomize badge: ' + kustText.slice(0, 200));
+  if (/resources|patches|configMap|app-config/i.test(kustText)) pass('kustomization.yaml: overlay content shown'); else fail('kustomize content: ' + kustText.slice(0, 200));
+
+  // ── ansible-playbook.yml (Ansible) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('ansible-playbook.yml (Ansible)');
+  await page.waitForSelector('#previewHost .ans-doc', { timeout: 12000 });
+  const ansText = await page.$eval('#previewHost .ans-doc', (e) => e.textContent);
+  if (/Ansible/i.test(ansText)) pass('ansible-playbook.yml: Ansible badge shown'); else fail('ansible badge: ' + ansText.slice(0, 200));
+  if (/webservers|databases|nginx|postgresql/i.test(ansText)) pass('ansible-playbook.yml: plays and tasks shown'); else fail('ansible content: ' + ansText.slice(0, 200));
+
+  // ── Pulumi.yaml (Pulumi project) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Pulumi.yaml (Pulumi project)');
+  await page.waitForSelector('#previewHost .pul-doc', { timeout: 12000 });
+  const pulText = await page.$eval('#previewHost .pul-doc', (e) => e.textContent);
+  if (/Pulumi/i.test(pulText)) pass('Pulumi.yaml: Pulumi badge shown'); else fail('pulumi badge: ' + pulText.slice(0, 200));
+  if (/nodejs|cloud-infra|region/i.test(pulText)) pass('Pulumi.yaml: runtime and config shown'); else fail('pulumi content: ' + pulText.slice(0, 200));
+
+  // ── packer.json (HashiCorp Packer) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('packer.json (HashiCorp Packer)');
+  await page.waitForSelector('#previewHost .pkr-doc', { timeout: 12000 });
+  const pkrText = await page.$eval('#previewHost .pkr-doc', (e) => e.textContent);
+  if (/Packer/i.test(pkrText)) pass('packer.json: Packer badge shown'); else fail('packer badge: ' + pkrText.slice(0, 200));
+  if (/amazon-ebs|shell|builders/i.test(pkrText)) pass('packer.json: builders and provisioners shown'); else fail('packer content: ' + pkrText.slice(0, 200));
+
+  // ── ruff.toml (Ruff linter) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('ruff.toml (Ruff linter)');
+  await page.waitForSelector('#previewHost .ruf-doc', { timeout: 12000 });
+  const rufText = await page.$eval('#previewHost .ruf-doc', (e) => e.textContent);
+  if (/Ruff/i.test(rufText)) pass('ruff.toml: Ruff badge shown'); else fail('ruff badge: ' + rufText.slice(0, 200));
+  if (/py311|E|F|W|line-length|100/i.test(rufText)) pass('ruff.toml: rules and settings shown'); else fail('ruff content: ' + rufText.slice(0, 200));
+
+  // ── uv.toml (uv package manager) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('uv.toml (uv package manager)');
+  await page.waitForSelector('#previewHost .uv-doc', { timeout: 12000 });
+  const uvText = await page.$eval('#previewHost .uv-doc', (e) => e.textContent);
+  if (/uv/i.test(uvText)) pass('uv.toml: uv badge shown'); else fail('uv badge: ' + uvText.slice(0, 200));
+  if (/3\.12|python|hardlink/i.test(uvText)) pass('uv.toml: Python version and settings shown'); else fail('uv content: ' + uvText.slice(0, 200));
+
+  // ── values.yaml (Helm values) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('values.yaml (Helm values)');
+  await page.waitForSelector('#previewHost .hv-doc', { timeout: 12000 });
+  const hvText = await page.$eval('#previewHost .hv-doc', (e) => e.textContent);
+  if (/Helm/i.test(hvText)) pass('values.yaml: Helm values badge shown'); else fail('helm-values badge: ' + hvText.slice(0, 200));
+  if (/replicaCount|image|service|ingress/i.test(hvText)) pass('values.yaml: key sections shown'); else fail('helm-values content: ' + hvText.slice(0, 200));
+
+  // ── package-lock.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('package-lock.json');
+  await page.waitForSelector('#previewHost .plk-doc', { timeout: 12000 });
+  const plkText = await page.$eval('#previewHost .plk-doc', (e) => e.textContent);
+  if (/npm/i.test(plkText)) pass('package-lock.json: badge shown'); else fail('package-lock badge: ' + plkText.slice(0, 200));
+  if (/lockfileVersion|v3|Total|packages/i.test(plkText)) pass('package-lock.json: stats shown'); else fail('package-lock stats: ' + plkText.slice(0, 200));
+
+  // ── composer.lock viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('composer.lock');
+  await page.waitForSelector('#previewHost .cpl-doc', { timeout: 12000 });
+  const cplText = await page.$eval('#previewHost .cpl-doc', (e) => e.textContent);
+  if (/Composer/i.test(cplText)) pass('composer.lock: badge shown'); else fail('composer-lock badge: ' + cplText.slice(0, 200));
+  if (/guzzlehttp|symfony|phpunit|package/i.test(cplText)) pass('composer.lock: packages shown'); else fail('composer-lock packages: ' + cplText.slice(0, 200));
+
+  // ── pnpm-lock.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pnpm-lock.yaml');
+  await page.waitForSelector('#previewHost .pkl-doc', { timeout: 12000 });
+  const pklText = await page.$eval('#previewHost .pkl-doc', (e) => e.textContent);
+  if (/pnpm/i.test(pklText)) pass('pnpm-lock.yaml: badge shown'); else fail('pnpm-lock badge: ' + pklText.slice(0, 200));
+  if (/lockfileVersion|9|Packages|react/i.test(pklText)) pass('pnpm-lock.yaml: stats shown'); else fail('pnpm-lock stats: ' + pklText.slice(0, 200));
+
+  // ── Cargo.lock viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Cargo.lock');
+  await page.waitForSelector('#previewHost .clk-doc', { timeout: 12000 });
+  const clkText = await page.$eval('#previewHost .clk-doc', (e) => e.textContent);
+  if (/Cargo/i.test(clkText)) pass('Cargo.lock: badge shown'); else fail('cargo-lock badge: ' + clkText.slice(0, 200));
+  if (/serde|crate|Workspace/i.test(clkText)) pass('Cargo.lock: crates shown'); else fail('cargo-lock crates: ' + clkText.slice(0, 200));
+
+  // ── poetry.lock viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('poetry.lock');
+  await page.waitForSelector('#previewHost .plo-doc', { timeout: 12000 });
+  const ploText = await page.$eval('#previewHost .plo-doc', (e) => e.textContent);
+  if (/Poetry/i.test(ploText)) pass('poetry.lock: badge shown'); else fail('poetry-lock badge: ' + ploText.slice(0, 200));
+  if (/flask|requests|certifi|package/i.test(ploText)) pass('poetry.lock: packages shown'); else fail('poetry-lock packages: ' + ploText.slice(0, 200));
+
+  // ── go.sum viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('go.sum');
+  await page.waitForSelector('#previewHost .gsm-doc', { timeout: 12000 });
+  const gsmText = await page.$eval('#previewHost .gsm-doc', (e) => e.textContent);
+  if (/Go/i.test(gsmText)) pass('go.sum: badge shown'); else fail('go-sum badge: ' + gsmText.slice(0, 200));
+  if (/gin-gonic|module|Entries|Modules/i.test(gsmText)) pass('go.sum: module list shown'); else fail('go-sum modules: ' + gsmText.slice(0, 200));
+
+  // ── Makefile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Makefile');
+  await page.waitForSelector('#previewHost .mkf-doc', { timeout: 12000 });
+  const mkfText = await page.$eval('#previewHost .mkf-doc', (e) => e.textContent);
+  if (/Make|Makefile/i.test(mkfText)) pass('Makefile: badge shown'); else fail('makefile badge: ' + mkfText.slice(0, 200));
+  if (/all|test|clean|serve/i.test(mkfText)) pass('Makefile: targets shown'); else fail('makefile targets: ' + mkfText.slice(0, 200));
+
+  // ── Justfile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Justfile');
+  await page.waitForSelector('#previewHost .jst-doc', { timeout: 12000 });
+  const jstText = await page.$eval('#previewHost .jst-doc', (e) => e.textContent);
+  if (/[Jj]ust/i.test(jstText)) pass('Justfile: badge shown'); else fail('justfile badge: ' + jstText.slice(0, 200));
+  if (/build|test|fmt|release/i.test(jstText)) pass('Justfile: recipes shown'); else fail('justfile recipes: ' + jstText.slice(0, 200));
+
+  // ── Procfile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Procfile');
+  await page.waitForSelector('#previewHost .pfl-doc', { timeout: 12000 });
+  const pflText = await page.$eval('#previewHost .pfl-doc', (e) => e.textContent);
+  if (/Procfile|process/i.test(pflText)) pass('Procfile: badge shown'); else fail('procfile badge: ' + pflText.slice(0, 200));
+  if (/web|worker|scheduler/i.test(pflText)) pass('Procfile: process types shown'); else fail('procfile procs: ' + pflText.slice(0, 200));
+
+  // ── .envrc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.envrc');
+  await page.waitForSelector('#previewHost .erc-doc', { timeout: 12000 });
+  const ercText = await page.$eval('#previewHost .erc-doc', (e) => e.textContent);
+  if (/direnv|envrc/i.test(ercText)) pass('.envrc: badge shown'); else fail('envrc badge: ' + ercText.slice(0, 200));
+  if (/NODE_ENV|PORT|DATABASE_URL/i.test(ercText)) pass('.envrc: exports shown'); else fail('envrc exports: ' + ercText.slice(0, 200));
+  if (!/do-not-commit/i.test(ercText)) pass('.envrc: sensitive values redacted'); else fail('envrc not redacting secrets');
+
+  // ── mise.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mise.toml');
+  await page.waitForSelector('#previewHost .mse-doc', { timeout: 12000 });
+  const mseText = await page.$eval('#previewHost .mse-doc', (e) => e.textContent);
+  if (/mise/i.test(mseText)) pass('mise.toml: badge shown'); else fail('mise badge: ' + mseText.slice(0, 200));
+  if (/node|python|ruby/i.test(mseText)) pass('mise.toml: tools shown'); else fail('mise tools: ' + mseText.slice(0, 200));
+
+  // ── .tool-versions viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.tool-versions');
+  await page.waitForSelector('#previewHost .tvr-doc', { timeout: 12000 });
+  const tvrText = await page.$eval('#previewHost .tvr-doc', (e) => e.textContent);
+  if (/asdf|tool.version/i.test(tvrText)) pass('.tool-versions: badge shown'); else fail('tool-versions badge: ' + tvrText.slice(0, 200));
+  if (/node|python|ruby/i.test(tvrText)) pass('.tool-versions: tools shown'); else fail('tool-versions tools: ' + tvrText.slice(0, 200));
 }

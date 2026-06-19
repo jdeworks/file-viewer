@@ -1,0 +1,40 @@
+---
+- name: Configure web servers
+  hosts: webservers
+  become: true
+  vars:
+    app_port: 8080
+    deploy_user: deploy
+
+  tasks:
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - python3-pip
+          - git
+        state: present
+        update_cache: true
+
+    - name: Deploy application config
+      ansible.builtin.template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/sites-available/app.conf
+        owner: root
+        mode: '0644'
+
+    - name: Enable site and restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+        enabled: true
+
+- name: Configure database servers
+  hosts: databases
+  become: true
+  tasks:
+    - name: Ensure PostgreSQL is running
+      ansible.builtin.service:
+        name: postgresql
+        state: started
+        enabled: true

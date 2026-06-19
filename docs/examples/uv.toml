@@ -1,0 +1,11 @@
+python-version = "3.12"
+link-mode = "hardlink"
+cache-dir = "~/.cache/uv"
+preview = false
+managed = true
+
+[pip]
+index-url = "https://pypi.org/simple"
+extra-index-url = ["https://download.pytorch.org/whl/cpu"]
+compile-bytecode = true
+no-binary = []

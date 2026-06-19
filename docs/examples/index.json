@@ -884,6 +884,7 @@
       "Code"
     ],
     "type": "code",
+    "enhanced": true,
     "description": "Makefile build, test, serve, and clean targets."
   },
   {
@@ -3176,7 +3177,9 @@
     "file": "package-lock.json",
     "mime": "application/json",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -3184,7 +3187,9 @@
     "file": "composer.lock",
     "mime": "application/json",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -3192,7 +3197,9 @@
     "file": "pnpm-lock.yaml",
     "mime": "application/yaml",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -3200,7 +3207,9 @@
     "file": "Cargo.lock",
     "mime": "application/toml",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -3208,7 +3217,9 @@
     "file": "poetry.lock",
     "mime": "application/toml",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -3216,7 +3227,82 @@
     "file": "go.sum",
     "mime": "text/plain",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
+  },
+  {
+    "label": "Justfile",
+    "file": "Justfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Just command runner with build, test, fmt, and release recipes."
+  },
+  {
+    "label": "Procfile",
+    "file": "Procfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Heroku/foreman Procfile defining web, worker, scheduler, and release processes."
+  },
+  {
+    "label": ".envrc",
+    "file": ".envrc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "direnv environment configuration with exports and layout directives."
+  },
+  {
+    "label": "mise.toml",
+    "file": "mise.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "mise tool version manager configuration with tools, tasks, and env vars."
+  },
+  {
+    "label": ".tool-versions",
+    "file": ".tool-versions",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "asdf .tool-versions pinning node, python, ruby, and go versions."
+  },
+  {
+    "label": "Helm Chart.yaml",
+    "file": "chart.yaml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "Justfile",
+    "file": "justfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
   }
 ]

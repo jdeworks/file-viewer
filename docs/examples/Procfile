@@ -1,0 +1,4 @@
+web: node server.js --port $PORT
+worker: node worker.js --queue default
+scheduler: node cron.js
+release: node scripts/migrate.js

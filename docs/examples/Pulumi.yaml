@@ -1,0 +1,15 @@
+name: cloud-infra
+runtime: nodejs
+description: Core cloud infrastructure — VPC, EKS cluster, and RDS database
+
+config:
+  cloud:region:
+    default: us-east-1
+  cluster:nodeCount:
+    default: 3
+  cluster:instanceType:
+    default: t3.medium
+  db:instanceClass:
+    default: db.t3.micro
+  db:name:
+    default: appdb
