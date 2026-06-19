@@ -1,0 +1,17 @@
+{
+  "client": {
+    "name": "my-app",
+    "service": "my-service",
+    "includes": ["src/**/*.{ts,tsx,graphql}"],
+    "excludes": ["src/**/*.test.ts"]
+  },
+  "service": {
+    "name": "my-service",
+    "endpoint": {
+      "url": "https://api.example.com/graphql",
+      "headers": {
+        "Authorization": "Bearer ${API_KEY}"
+      }
+    }
+  }
+}

@@ -92,6 +92,22 @@ import drone from '../types/text/yaml/known/drone/index.js';
 import buildkite from '../types/text/yaml/known/buildkite/index.js';
 import skaffold from '../types/text/yaml/known/skaffold/index.js';
 import hadolint from '../types/text/yaml/known/hadolint/index.js';
+import helmChart from '../types/text/yaml/known/helm-chart/index.js';
+import kustomize from '../types/text/yaml/known/kustomize/index.js';
+import ansiblePlaybook from '../types/text/yaml/known/ansible-playbook/index.js';
+import pulumi from '../types/text/yaml/known/pulumi/index.js';
+import packer from '../types/text/json/known/packer/index.js';
+import ruff from '../types/text/toml/known/ruff/index.js';
+import uv from '../types/text/toml/known/uv/index.js';
+import kubeHelmValues from '../types/text/yaml/known/kube-helm-values/index.js';
+import firebase from '../types/text/json/known/firebase/index.js';
+import expo from '../types/text/json/known/expo/index.js';
+import tailwind from '../types/text/json/known/tailwind/index.js';
+import postcss from '../types/text/json/known/postcss/index.js';
+import husky from '../types/text/json/known/husky/index.js';
+import lintStaged from '../types/text/json/known/lint-staged/index.js';
+import nestCli from '../types/text/json/known/nest-cli/index.js';
+import swcrc from '../types/text/json/known/swcrc/index.js';
 
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
@@ -106,7 +122,9 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   preCommit, pyrightconfig, tox, mypy,
   angularJson, capacitor, nycrc, devcontainer, knip, mocha, gitlabCi, pnpmWorkspace,
   vitest, graphqlConfig, apollo, storybook,
-  drone, buildkite, skaffold, hadolint];
+  drone, buildkite, skaffold, hadolint,
+  helmChart, kustomize, ansiblePlaybook, pulumi, packer, ruff, uv, kubeHelmValues,
+  firebase, expo, tailwind, postcss, husky, lintStaged, nestCli, swcrc];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

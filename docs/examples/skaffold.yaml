@@ -1,0 +1,53 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: my-app
+
+build:
+  artifacts:
+    - image: gcr.io/my-project/api
+      context: services/api
+      docker:
+        dockerfile: Dockerfile
+    - image: gcr.io/my-project/frontend
+      context: services/frontend
+      docker:
+        dockerfile: Dockerfile
+  tagPolicy:
+    gitCommit: {}
+  local:
+    push: false
+
+deploy:
+  kubectl:
+    manifests:
+      - k8s/base/*.yaml
+  helm:
+    releases:
+      - name: redis
+        chart: bitnami/redis
+        version: 17.0.0
+
+test:
+  - image: gcr.io/my-project/api
+    structureTests:
+      - ./structure-tests.yaml
+
+portForward:
+  - resourceType: Deployment
+    resourceName: api
+    port: 8080
+    localPort: 8080
+
+profiles:
+  - name: dev
+    activation:
+      - env: ENV=dev
+    build:
+      local:
+        push: false
+  - name: staging
+    deploy:
+      kubectl:
+        manifests:
+          - k8s/staging/*.yaml

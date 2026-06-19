@@ -2868,7 +2868,9 @@
     "file": "devcontainer.json",
     "mime": "application/json",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -2876,7 +2878,9 @@
     "file": "knip.json",
     "mime": "application/json",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -2884,7 +2888,9 @@
     "file": ".mocharc.json",
     "mime": "application/json",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -2892,7 +2898,9 @@
     "file": ".gitlab-ci.yml",
     "mime": "application/yaml",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -2900,7 +2908,9 @@
     "file": "pnpm-workspace.yaml",
     "mime": "application/yaml",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -2908,7 +2918,9 @@
     "file": "vitest.config.json",
     "mime": "application/json",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -2916,7 +2928,9 @@
     "file": "graphql.config.json",
     "mime": "application/json",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -2924,7 +2938,9 @@
     "file": "apollo.config.json",
     "mime": "application/json",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -2932,7 +2948,9 @@
     "file": "storybook.main.json",
     "mime": "application/json",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   },
   {
@@ -2940,7 +2958,10 @@
     "file": ".drone.yml",
     "mime": "application/yaml",
     "category": "Config",
-    "categories": ["Config", "devops"],
+    "categories": [
+      "Config",
+      "devops"
+    ],
     "enhanced": true
   },
   {
@@ -2948,7 +2969,10 @@
     "file": "buildkite.yml",
     "mime": "application/yaml",
     "category": "Config",
-    "categories": ["Config", "devops"],
+    "categories": [
+      "Config",
+      "devops"
+    ],
     "enhanced": true
   },
   {
@@ -2956,7 +2980,10 @@
     "file": "skaffold.yaml",
     "mime": "application/yaml",
     "category": "Config",
-    "categories": ["Config", "devops"],
+    "categories": [
+      "Config",
+      "devops"
+    ],
     "enhanced": true
   },
   {
@@ -2964,7 +2991,184 @@
     "file": ".hadolint.yaml",
     "mime": "application/yaml",
     "category": "Config",
-    "categories": ["Config"],
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "Chart.yaml (Helm chart)",
+    "file": "Chart.yaml",
+    "mime": "application/yaml",
+    "category": "DevOps",
+    "categories": [
+      "DevOps",
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Helm chart metadata with name, version, and chart dependencies."
+  },
+  {
+    "label": "kustomization.yaml (Kustomize)",
+    "file": "kustomization.yaml",
+    "mime": "application/yaml",
+    "category": "DevOps",
+    "categories": [
+      "DevOps",
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Kustomize overlay with resources, strategic merge patches, and ConfigMap generators."
+  },
+  {
+    "label": "ansible-playbook.yml (Ansible)",
+    "file": "ansible-playbook.yml",
+    "mime": "application/yaml",
+    "category": "DevOps",
+    "categories": [
+      "DevOps",
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Ansible playbook targeting web servers and database servers with task lists."
+  },
+  {
+    "label": "Pulumi.yaml (Pulumi project)",
+    "file": "Pulumi.yaml",
+    "mime": "application/yaml",
+    "category": "DevOps",
+    "categories": [
+      "DevOps",
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Pulumi cloud infrastructure project with Node.js runtime and config keys."
+  },
+  {
+    "label": "packer.json (HashiCorp Packer)",
+    "file": "packer.json",
+    "mime": "application/json",
+    "category": "DevOps",
+    "categories": [
+      "DevOps",
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Packer machine image template with AWS EBS builder and shell provisioners."
+  },
+  {
+    "label": "ruff.toml (Ruff linter)",
+    "file": "ruff.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Ruff Python linter configuration with rule selection, ignores, and format settings."
+  },
+  {
+    "label": "uv.toml (uv package manager)",
+    "file": "uv.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "uv Python package manager configuration with Python version and index settings."
+  },
+  {
+    "label": "values.yaml (Helm values)",
+    "file": "values.yaml",
+    "mime": "application/yaml",
+    "category": "DevOps",
+    "categories": [
+      "DevOps",
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Helm chart values file with image, service, ingress, and resource configuration."
+  },
+  {
+    "label": "firebase.json",
+    "file": "firebase.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "DevOps"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "app.json (Expo)",
+    "file": "app.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "tailwind.config.json",
+    "file": "tailwind.config.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "postcss.config.json",
+    "file": "postcss.config.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": ".huskyrc.json",
+    "file": ".huskyrc.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": ".lintstagedrc.json",
+    "file": ".lintstagedrc.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "nest-cli.json",
+    "file": "nest-cli.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": ".swcrc",
+    "file": ".swcrc",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
     "enhanced": true
   }
 ]

@@ -1,0 +1,23 @@
+{
+  "stories": [
+    "src/**/*.stories.@(js|jsx|ts|tsx|mdx)",
+    "src/**/*.story.@(js|jsx|ts|tsx)"
+  ],
+  "addons": [
+    "@storybook/addon-essentials",
+    "@storybook/addon-interactions",
+    "@storybook/addon-a11y",
+    "@storybook/addon-coverage"
+  ],
+  "framework": {
+    "name": "@storybook/react-vite",
+    "options": {}
+  },
+  "staticDirs": ["../public"],
+  "docs": {
+    "autodocs": "tag"
+  },
+  "core": {
+    "builder": "@storybook/builder-vite"
+  }
+}

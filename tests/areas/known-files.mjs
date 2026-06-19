@@ -565,4 +565,68 @@ export async function run(ctx) {
   const pnwText = await page.$eval('#previewHost .pnw-doc', (e) => e.textContent);
   if (/pnpm/i.test(pnwText)) pass('pnpm-workspace.yaml: badge shown'); else fail('pnpm-workspace badge: ' + pnwText.slice(0, 200));
   if (/packages|apps|catalog|react/i.test(pnwText)) pass('pnpm-workspace.yaml: workspaces shown'); else fail('pnpm-workspace content: ' + pnwText.slice(0, 200));
+
+  // ── vitest.config.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vitest.config.json');
+  await page.waitForSelector('#previewHost .vt-doc', { timeout: 12000 });
+  const vtText = await page.$eval('#previewHost .vt-doc', (e) => e.textContent);
+  if (/Vitest/i.test(vtText)) pass('vitest.config.json: badge shown'); else fail('vitest badge: ' + vtText.slice(0, 200));
+  if (/jsdom|environment|coverage|reporters/i.test(vtText)) pass('vitest.config.json: config shown'); else fail('vitest config: ' + vtText.slice(0, 200));
+
+  // ── graphql.config.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('graphql.config.json');
+  await page.waitForSelector('#previewHost .gql-doc', { timeout: 12000 });
+  const gqlText = await page.$eval('#previewHost .gql-doc', (e) => e.textContent);
+  if (/GraphQL/i.test(gqlText)) pass('graphql.config.json: badge shown'); else fail('graphql badge: ' + gqlText.slice(0, 200));
+  if (/schema|documents|extensions|codegen/i.test(gqlText)) pass('graphql.config.json: config shown'); else fail('graphql config: ' + gqlText.slice(0, 200));
+
+  // ── apollo.config.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('apollo.config.json');
+  await page.waitForSelector('#previewHost .apl-doc', { timeout: 12000 });
+  const aplText = await page.$eval('#previewHost .apl-doc', (e) => e.textContent);
+  if (/Apollo/i.test(aplText)) pass('apollo.config.json: badge shown'); else fail('apollo badge: ' + aplText.slice(0, 200));
+  if (/client|service|my-app|endpoint/i.test(aplText)) pass('apollo.config.json: client and service shown'); else fail('apollo config: ' + aplText.slice(0, 200));
+
+  // ── storybook.main.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('storybook.main.json (.storybook/main.json)');
+  await page.waitForSelector('#previewHost .sb-doc', { timeout: 12000 });
+  const sbText = await page.$eval('#previewHost .sb-doc', (e) => e.textContent);
+  if (/Storybook/i.test(sbText)) pass('storybook.main.json: badge shown'); else fail('storybook badge: ' + sbText.slice(0, 200));
+  if (/addon|stories|framework|react-vite/i.test(sbText)) pass('storybook.main.json: addons and framework shown'); else fail('storybook config: ' + sbText.slice(0, 200));
+
+  // ── .drone.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.drone.yml');
+  await page.waitForSelector('#previewHost .drn-doc', { timeout: 12000 });
+  const drnText = await page.$eval('#previewHost .drn-doc', (e) => e.textContent);
+  if (/Drone/i.test(drnText)) pass('.drone.yml: badge shown'); else fail('drone badge: ' + drnText.slice(0, 200));
+  if (/pipeline|steps|install|test|build/i.test(drnText)) pass('.drone.yml: steps shown'); else fail('drone steps: ' + drnText.slice(0, 200));
+
+  // ── buildkite.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('buildkite.yml');
+  await page.waitForSelector('#previewHost .bk-doc', { timeout: 12000 });
+  const bkText = await page.$eval('#previewHost .bk-doc', (e) => e.textContent);
+  if (/Buildkite/i.test(bkText)) pass('buildkite.yml: badge shown'); else fail('buildkite badge: ' + bkText.slice(0, 200));
+  if (/Build|test|Deploy|step/i.test(bkText)) pass('buildkite.yml: steps shown'); else fail('buildkite steps: ' + bkText.slice(0, 200));
+
+  // ── skaffold.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('skaffold.yaml');
+  await page.waitForSelector('#previewHost .skf-doc', { timeout: 12000 });
+  const skfText = await page.$eval('#previewHost .skf-doc', (e) => e.textContent);
+  if (/Skaffold/i.test(skfText)) pass('skaffold.yaml: badge shown'); else fail('skaffold badge: ' + skfText.slice(0, 200));
+  if (/artifact|deploy|kubectl|profile/i.test(skfText)) pass('skaffold.yaml: build and deploy shown'); else fail('skaffold config: ' + skfText.slice(0, 200));
+
+  // ── .hadolint.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.hadolint.yaml');
+  await page.waitForSelector('#previewHost .hdl-doc', { timeout: 12000 });
+  const hdlText = await page.$eval('#previewHost .hdl-doc', (e) => e.textContent);
+  if (/Hadolint/i.test(hdlText)) pass('.hadolint.yaml: badge shown'); else fail('hadolint badge: ' + hdlText.slice(0, 200));
+  if (/DL3008|DL3009|ignore|threshold/i.test(hdlText)) pass('.hadolint.yaml: ignored rules and threshold shown'); else fail('hadolint rules: ' + hdlText.slice(0, 200));
 }

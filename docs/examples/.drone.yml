@@ -1,0 +1,49 @@
+kind: pipeline
+type: docker
+name: default
+
+platform:
+  os: linux
+  arch: amd64
+
+trigger:
+  branch:
+    include:
+      - main
+      - develop
+  event:
+    include:
+      - push
+      - pull_request
+
+steps:
+  - name: install
+    image: node:18-alpine
+    commands:
+      - npm ci
+
+  - name: lint
+    image: node:18-alpine
+    commands:
+      - npm run lint
+
+  - name: test
+    image: node:18-alpine
+    commands:
+      - npm test -- --coverage
+
+  - name: build
+    image: node:18-alpine
+    commands:
+      - npm run build
+    when:
+      branch:
+        - main
+
+services:
+  - name: postgres
+    image: postgres:15
+    environment:
+      POSTGRES_DB: testdb
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: secret

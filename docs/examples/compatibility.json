@@ -6735,6 +6735,208 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "vitest": {
+      "label": "Vitest config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        "vitest.config.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "graphql-config": {
+      "label": "GraphQL Config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".graphqlrc.json",
+        ".graphqlrc"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "apollo": {
+      "label": "Apollo Config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        "apollo.config.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "storybook": {
+      "label": "Storybook config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".storybook/main.json"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "drone": {
+      "label": "Drone CI config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".drone.yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "buildkite": {
+      "label": "Buildkite pipeline",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".buildkite/pipeline.yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "skaffold": {
+      "label": "Skaffold config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        "skaffold.yaml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "hadolint": {
+      "label": "Hadolint config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".hadolint.yaml",
+        ".hadolint.yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
     }
   }
 }

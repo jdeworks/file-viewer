@@ -1,0 +1,40 @@
+steps:
+  - label: ":hammer: Build"
+    command: npm run build
+    agents:
+      queue: default
+    env:
+      NODE_ENV: production
+
+  - label: ":test_tube: Unit tests"
+    command: npm test
+    agents:
+      queue: default
+
+  - label: ":mag: Lint"
+    command: npm run lint
+    agents:
+      queue: default
+
+  - wait: ~
+
+  - label: ":docker: Docker build"
+    command: docker build -t myapp:$BUILDKITE_COMMIT .
+    agents:
+      queue: docker
+
+  - block: ":rocket: Deploy to production?"
+    branches: main
+
+  - label: ":rocket: Deploy"
+    command: ./scripts/deploy.sh
+    branches: main
+    agents:
+      queue: deploy
+
+agents:
+  queue: default
+
+env:
+  NODE_VERSION: "18"
+  CI: "true"
