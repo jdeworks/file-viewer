@@ -169,4 +169,17 @@ export async function run(ctx) {
   if (/DEMO/i.test(pdbText)) pass('PDB ID shown'); else fail('pdb id: ' + pdbText.slice(0, 300));
   if (/Homo sapiens|HYDROLASE/i.test(pdbText)) pass('PDB organism/type shown'); else fail('pdb org: ' + pdbText.slice(0, 300));
   if (/Chain|chain|1\.80|Residue|residue/i.test(pdbText)) pass('PDB structure info shown'); else fail('pdb struct: ' + pdbText.slice(0, 300));
+
+  // ── PCAP Network Capture ──────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Network Capture Demo (PCAP)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const pcapf = await frameOf('iframe.fv-preview-frame');
+  await pcapf.waitForSelector('.badge-pcap', { timeout: 8000 });
+  const pcapTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (pcapTypeId === 'pcap') pass('.pcap detected as pcap type'); else fail('pcap typeId: ' + pcapTypeId);
+  const pcapText = await pcapf.$eval('body', (el) => el.textContent);
+  if (/PCAP/i.test(pcapText)) pass('PCAP badge shown'); else fail('pcap badge missing');
+  if (/Ethernet/i.test(pcapText)) pass('PCAP link type shown'); else fail('pcap link: ' + pcapText.slice(0, 300));
+  if (/ARP|TCP|UDP|ICMP/i.test(pcapText)) pass('PCAP protocols shown'); else fail('pcap proto: ' + pcapText.slice(0, 300));
 }

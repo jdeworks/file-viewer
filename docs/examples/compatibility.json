@@ -3826,6 +3826,40 @@
         "3D visualization not yet implemented — text metadata only",
         "Multi-model NMR ensembles show first model only"
       ]
+    },
+    "pcap": {
+      "label": "Network Capture (.pcap)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.pcap"
+      ],
+      "extensions": [
+        ".pcap",
+        ".pcapng",
+        ".cap"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "fileExamplesSlug": null,
+      "securityLimitations": [
+        "Packet payload content not decoded or displayed"
+      ],
+      "knownParserGaps": [
+        "PCAPNG multi-interface captures show limited info",
+        "Payload protocols beyond Ethernet/IP/TCP/UDP/ICMP not parsed"
+      ]
     }
   },
   "knownFiles": {

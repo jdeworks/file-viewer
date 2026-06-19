@@ -2053,5 +2053,15 @@
     "categories": [
       "Binary"
     ]
+  },
+  {
+    "label": "Network Capture Demo (PCAP)",
+    "file": "sample.pcap",
+    "mime": "application/vnd.tcpdump.pcap",
+    "category": "System",
+    "categories": [
+      "System",
+      "Data"
+    ]
   }
 ]
