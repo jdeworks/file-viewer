@@ -3086,7 +3086,7 @@
       "editCapability": "basic",
       "exportCapability": "download",
       "securityLimitations": [
-        "PostScript execution not supported — metadata display only"
+        "PostScript execution not supported \u2014 metadata display only"
       ],
       "knownParserGaps": [
         "No rendering of PostScript graphics"
@@ -3189,7 +3189,7 @@
       },
       "partialSamples": [],
       "realWorldQuality": "synthetic",
-      "notes": "Parses KML placemarks, folders, geometry types. No map rendering — shows structured list.",
+      "notes": "Parses KML placemarks, folders, geometry types. No map rendering \u2014 shows structured list.",
       "fileExamplesSlug": null,
       "previewDepth": "basic",
       "metadataDepth": "basic",
@@ -3575,6 +3575,43 @@
       "exportCapability": "download",
       "securityLimitations": [],
       "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "dxf": {
+      "label": "AutoCAD Drawing (.dxf)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.dxf"
+      ],
+      "extensions": [
+        ".dxf"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "needs-review",
+      "notes": "Pure-JS DXF group-code parser; shows sections, entity counts by type, layers, block names, header variables",
+      "fileExamplesSlug": null,
+      "previewDepth": "structure-only",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "No geometry rendering (2D canvas)",
+        "Binary DXF format not supported"
+      ],
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
