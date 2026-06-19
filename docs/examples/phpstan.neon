@@ -1,0 +1,26 @@
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+    - vendor/phpstan/phpstan-symfony/extension.neon
+
+parameters:
+    level: 8
+
+    paths:
+        - src
+        - tests
+
+    excludePaths:
+        - src/Migrations
+        - src/DataFixtures
+
+    ignoreErrors:
+        - '#Call to an undefined method Doctrine\\ORM\\QueryBuilder::#'
+        - '#Variable \$em might not be defined#'
+        - '#Unsafe usage of new static\(\)#'
+
+    checkMissingIterableValueType: false
+    reportUnmatchedIgnoredErrors: false
+
+    extensions:
+        - PHPStan\Symfony\SymfonyExtension
+        - PHPStan\Rules\Doctrine\DoctrineExtension

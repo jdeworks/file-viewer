@@ -1,0 +1,20 @@
+version: 0.1
+
+currency: USD
+
+projects:
+  - path: ./infra/vpc
+    terraform_vars_files:
+      - vars/common.tfvars
+      - vars/prod.tfvars
+  - path: ./infra/eks
+    terraform_vars_files:
+      - vars/common.tfvars
+    env:
+      INFRACOST_TERRAFORM_WORKSPACE: production
+  - path: ./infra/rds
+    terraform_vars_files:
+      - vars/common.tfvars
+      - vars/staging.tfvars
+    env:
+      INFRACOST_TERRAFORM_WORKSPACE: staging

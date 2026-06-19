@@ -1,0 +1,27 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: my-service
+  description: Backend API service for the platform
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    github.com/project-slug: acme/my-service
+    jenkins.io/job-full-name: my-service/main
+  tags:
+    - java
+    - rest-api
+    - backend
+  links:
+    - url: https://my-service.acme.com
+      title: Production
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: team-platform
+  system: platform
+  dependsOn:
+    - component:my-database
+    - resource:message-queue
+  providesApis:
+    - my-service-api

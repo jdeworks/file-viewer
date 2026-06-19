@@ -237,6 +237,18 @@ import flywayConf from '../types/text/known/flyway-conf/index.js';
 import projectClj from '../types/text/known/project-clj/index.js';
 import depsEdn from '../types/text/known/deps-edn/index.js';
 import shadowCljs from '../types/text/known/shadow-cljs/index.js';
+import wdioConfig from '../types/text/known/wdio-config/index.js';
+import artilleryYml from '../types/text/yaml/known/artillery-yml/index.js';
+import k6Config from '../types/text/known/k6-config/index.js';
+import gatlingConf from '../types/text/known/gatling-conf/index.js';
+import cursorRules from '../types/text/known/cursor-rules/index.js';
+import claudeMd from '../types/text/known/claude-md/index.js';
+import copilotInstructions from '../types/text/known/copilot-instructions/index.js';
+import aiderConf from '../types/text/yaml/known/aider-conf/index.js';
+import gaeApp from '../types/text/yaml/known/gae-app/index.js';
+import cloudbuild from '../types/text/yaml/known/cloudbuild/index.js';
+import googleServices from '../types/text/json/known/google-services/index.js';
+import catalogInfo from '../types/text/yaml/known/catalog-info/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -283,7 +295,9 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   csproj, directoryBuild, nuspec,
   stackYaml, cabal, packageResolved, rebarConfig,
   docusaurusConfig, vitepressConfig, sphinxConf, doxyfile,
-  drizzleConfig, knexfile, alembic, flywayConf];
+  drizzleConfig, knexfile, alembic, flywayConf,
+  wdioConfig, artilleryYml, k6Config, gatlingConf,
+  gaeApp, cloudbuild, googleServices, catalogInfo];
 
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

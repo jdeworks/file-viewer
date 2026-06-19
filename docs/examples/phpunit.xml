@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         stopOnFailure="false">
+  <testsuites>
+    <testsuite name="Unit">
+      <directory>tests/Unit</directory>
+    </testsuite>
+    <testsuite name="Integration">
+      <directory>tests/Integration</directory>
+      <file>tests/bootstrap/IntegrationSetup.php</file>
+    </testsuite>
+    <testsuite name="Feature">
+      <directory>tests/Feature</directory>
+    </testsuite>
+  </testsuites>
+  <coverage>
+    <include>
+      <directory>src</directory>
+    </include>
+    <exclude>
+      <directory>src/Migrations</directory>
+    </exclude>
+  </coverage>
+  <php>
+    <ini name="memory_limit" value="512M"/>
+    <ini name="error_reporting" value="E_ALL"/>
+    <env name="APP_ENV" value="testing"/>
+    <env name="DB_CONNECTION" value="sqlite"/>
+  </php>
+  <logging>
+    <log type="junit" target="var/log/phpunit/junit.xml"/>
+    <log type="teamcity" target="var/log/phpunit/teamcity.txt"/>
+  </logging>
+</phpunit>

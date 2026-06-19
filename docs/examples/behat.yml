@@ -1,0 +1,40 @@
+default:
+    suites:
+        default:
+            contexts:
+                - App\Tests\Behat\FeatureContext
+                - App\Tests\Behat\DatabaseContext
+            paths:
+                - features/
+
+        api:
+            contexts:
+                - App\Tests\Behat\ApiContext
+                - App\Tests\Behat\AuthContext
+            paths:
+                - features/api/
+
+        admin:
+            contexts:
+                - App\Tests\Behat\AdminContext
+            paths:
+                - features/admin/
+
+    formatters:
+        pretty:
+            verbose: true
+        junit:
+            output_path: var/log/behat
+
+    extensions:
+        Behat\MinkExtension:
+            base_url: http://localhost:8000
+            browser_name: chrome
+            sessions:
+                default:
+                    symfony2: ~
+                api:
+                    goutte: ~
+            javascript_session: selenium2
+            selenium2:
+                wd_host: http://localhost:4444/wd/hub

@@ -1,0 +1,20 @@
+[install]
+registry = "https://registry.npmjs.org/"
+frozenLockfile = false
+
+[install.scopes]
+"@mycompany" = { token = "$MY_NPM_TOKEN", url = "https://npm.mycompany.com/" }
+
+[run]
+bun = "^1.1.0"
+
+[test]
+preload = ["./tests/setup.ts"]
+timeout = 5000
+coverage = true
+
+[serve]
+port = 3000
+
+[telemetry]
+disable = true

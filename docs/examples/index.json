@@ -4531,5 +4531,525 @@
         ],
         "enhanced": true,
         "description": "Xcode release build configuration: Swift 5.9, iOS 16 deployment target, manual code signing, optimizer flags."
+    },
+    {
+        "label": "conf.py",
+        "file": "conf.py",
+        "mime": "text/x-python",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Sphinx documentation config: project metadata, extensions, and theme."
+    },
+    {
+        "label": "atlantis.yaml",
+        "file": "atlantis.yaml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Atlantis Terraform PR automation: projects, workflows, and policies."
+    },
+    {
+        "label": ".checkov.yaml",
+        "file": ".checkov.yaml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Checkov IaC security scanner: skip checks and directory config."
+    },
+    {
+        "label": ".terraform-docs.yml",
+        "file": ".terraform-docs.yml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "terraform-docs: output format, sorting, and content settings."
+    },
+    {
+        "label": "infracost.yml",
+        "file": "infracost.yml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Infracost cloud cost estimation: projects and metadata settings."
+    },
+    {
+        "label": "Package.resolved",
+        "file": "Package.resolved",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Swift Package Manager resolved dependencies."
+    },
+    {
+        "label": "app.csproj",
+        "file": "app.csproj",
+        "mime": "text/xml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "C# project file."
+    },
+    {
+        "label": "Directory.Build.props",
+        "file": "Directory.Build.props",
+        "mime": "text/xml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": ".NET Directory.Build.props shared MSBuild settings."
+    },
+    {
+        "label": "package.nuspec",
+        "file": "package.nuspec",
+        "mime": "text/xml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "NuGet package specification file."
+    },
+    {
+        "label": "stack.yaml",
+        "file": "stack.yaml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Haskell Stack project configuration."
+    },
+    {
+        "label": "example.cabal",
+        "file": "example.cabal",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Haskell Cabal package description."
+    },
+    {
+        "label": "rebar.config",
+        "file": "rebar.config",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Erlang rebar3 build config."
+    },
+    {
+        "label": "drizzle.config.ts",
+        "file": "drizzle.config.ts",
+        "mime": "text/x-typescript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Drizzle ORM configuration."
+    },
+    {
+        "label": "knexfile.js",
+        "file": "knexfile.js",
+        "mime": "text/javascript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Knex.js database query builder configuration."
+    },
+    {
+        "label": "alembic.ini",
+        "file": "alembic.ini",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Alembic database migration configuration."
+    },
+    {
+        "label": "flyway.conf",
+        "file": "flyway.conf",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Flyway database migration configuration."
+    },
+    {
+        "label": "docusaurus.config.js",
+        "file": "docusaurus.config.js",
+        "mime": "text/javascript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Docusaurus documentation site config: site title My Awesome Docs, URL, navbar with Docs/Blog/API/Changelog items, i18n locales, plugins."
+    },
+    {
+        "label": "vitepress.config.ts",
+        "file": "vitepress.config.ts",
+        "mime": "text/x-typescript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "VitePress documentation site config: site title, nav items, sidebar sections, social links, Algolia search."
+    },
+    {
+        "label": "Doxyfile",
+        "file": "Doxyfile",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Doxygen documentation generator config: project MyC++ Library v3.1.0, HTML/XML output, dot graphs, UML."
+    },
+    {
+        "label": "gradle-wrapper.properties",
+        "file": "gradle-wrapper.properties",
+        "mime": "text/x-java-properties",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Gradle wrapper properties: version and download URL."
+    },
+    {
+        "label": "gradle.properties",
+        "file": "gradle.properties",
+        "mime": "text/x-java-properties",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Gradle project properties: JVM args, Kotlin/Android SDK versions."
+    },
+    {
+        "label": ".cursorrules",
+        "file": ".cursorrules",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Cursor AI coding rules: TypeScript strict mode, React patterns, and code style guidelines."
+    },
+    {
+        "label": "CLAUDE.md",
+        "file": "CLAUDE.md",
+        "mime": "text/markdown",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Claude Code project instructions: architecture overview, build commands, and code conventions."
+    },
+    {
+        "label": "copilot-instructions.md",
+        "file": "copilot-instructions.md",
+        "mime": "text/markdown",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "GitHub Copilot custom instructions: TypeScript strict mode, React hooks, zod validation, and testing."
+    },
+    {
+        "label": "aider.conf.yml",
+        "file": "aider.conf.yml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Aider AI config: claude-3-5-sonnet model, diff edit format, auto-commits, repo map, prompt caching."
+    },
+    {
+        "label": "settings.gradle",
+        "file": "settings.gradle",
+        "mime": "text/x-groovy",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Gradle multi-project settings: root my-awesome-app with 7 subprojects."
+    },
+    {
+        "label": "application.properties",
+        "file": "application.properties",
+        "mime": "text/x-java-properties",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Spring Boot: inventory-service on port 8080, PostgreSQL, Redis, Actuator, security."
+    },
+    {
+        "label": "application.yml",
+        "file": "application.yml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Spring Boot YAML: order-service, port 8080, PostgreSQL, Redis, OAuth2, Prometheus."
+    },
+    {
+        "label": "astro.config.mjs",
+        "file": "astro.config.mjs",
+        "mime": "text/javascript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Astro framework config: integrations, output mode, and build settings."
+    },
+    {
+        "label": "svelte.config.js",
+        "file": "svelte.config.js",
+        "mime": "text/javascript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "SvelteKit project config: adapter, paths, and prerender settings."
+    },
+    {
+        "label": "nuxt.config.ts",
+        "file": "nuxt.config.ts",
+        "mime": "text/typescript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Nuxt 3 config: modules, runtimeConfig, and build settings."
+    },
+    {
+        "label": "remix.config.js",
+        "file": "remix.config.js",
+        "mime": "text/javascript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Remix framework config: app directory, server build, and future flags."
+    },
+    {
+        "label": "grafana.ini",
+        "file": "grafana.ini",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Grafana server config: auth, database, and dashboard settings."
+    },
+    {
+        "label": "redis.conf",
+        "file": "redis.conf",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Redis server config: bind, port, memory, persistence, and security."
+    },
+    {
+        "label": "kong.yaml",
+        "file": "kong.yaml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Kong API gateway declarative config: services, routes, and plugins."
+    },
+    {
+        "label": "traefik.yml",
+        "file": "traefik.yml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Traefik reverse proxy config: entrypoints, providers, and TLS settings."
+    },
+    {
+        "label": "tsup.config.ts",
+        "file": "tsup.config.ts",
+        "mime": "text/typescript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "tsup bundler config: entry points, format, and DTS generation."
+    },
+    {
+        "label": "rspack.config.js",
+        "file": "rspack.config.js",
+        "mime": "text/javascript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Rspack (fast webpack-compatible) bundler config."
+    },
+    {
+        "label": ".parcelrc",
+        "file": ".parcelrc",
+        "mime": "application/json",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Parcel bundler config: transformers, reporters, and namers."
+    },
+    {
+        "label": "bunfig.toml",
+        "file": "bunfig.toml",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Bun JavaScript runtime config: test, install, and run settings."
+    },
+    {
+        "label": "Project.toml",
+        "file": "Project.toml",
+        "mime": "application/toml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Julia package manifest: name, UUID, version, dependencies."
+    },
+    {
+        "label": "shard.yml",
+        "file": "shard.yml",
+        "mime": "text/x-yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Crystal language shard manifest: package info and dependencies."
+    },
+    {
+        "label": "go.work",
+        "file": "go.work",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Go workspace file defining a multi-module workspace."
+    },
+    {
+        "label": "build.zig.zon",
+        "file": "build.zig.zon",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ],
+        "enhanced": true,
+        "description": "Zig build system package manifest with dependencies."
+    },
+    {
+        "file": "wdio.conf.js",
+        "label": "wdio.conf.js",
+        "mime": "text/javascript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "file": "artillery.yml",
+        "label": "artillery.yml",
+        "mime": "text/yaml",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "file": "k6.config.js",
+        "label": "k6.config.js",
+        "mime": "text/javascript",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
+    },
+    {
+        "file": "gatling.conf",
+        "label": "gatling.conf",
+        "mime": "text/plain",
+        "category": "Config",
+        "categories": [
+            "Config"
+        ]
     }
 ]

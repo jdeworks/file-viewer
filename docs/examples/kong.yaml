@@ -1,0 +1,91 @@
+_format_version: "3.0"
+_transform: true
+
+# Kong DB-less declarative configuration
+# https://docs.konghq.com/gateway/latest/production/deployment-topologies/db-less-and-declarative-config/
+
+services:
+  - name: users-api
+    url: http://users-service:8080
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          hour: 1000
+          policy: local
+    routes:
+      - name: users-route
+        paths:
+          - /api/v1/users
+        methods:
+          - GET
+          - POST
+        strip_path: false
+
+  - name: orders-api
+    url: http://orders-service:8081
+    routes:
+      - name: orders-list
+        paths:
+          - /api/v1/orders
+        methods:
+          - GET
+          - POST
+      - name: orders-detail
+        paths:
+          - /api/v1/orders/(?<id>\d+)
+        methods:
+          - GET
+          - PUT
+          - DELETE
+
+  - name: auth-api
+    url: http://auth-service:8082
+    routes:
+      - name: auth-route
+        paths:
+          - /api/v1/auth
+        methods:
+          - POST
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "https://app.example.com"
+        - "https://admin.example.com"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      headers:
+        - Authorization
+        - Content-Type
+      exposed_headers:
+        - X-Auth-Token
+      max_age: 3600
+
+  - name: response-transformer
+    config:
+      add:
+        headers:
+          - "X-Powered-By: Kong"
+
+upstreams:
+  - name: users-service
+    targets:
+      - target: 10.0.0.1:8080
+        weight: 100
+      - target: 10.0.0.2:8080
+        weight: 100
+
+consumers:
+  - username: frontend-app
+    keyauth_credentials:
+      - key: frontend-api-key-placeholder
+
+  - username: mobile-app
+    keyauth_credentials:
+      - key: mobile-api-key-placeholder

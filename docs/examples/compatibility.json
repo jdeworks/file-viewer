@@ -1131,7 +1131,7 @@
         "sample.jxl"
       ],
       "realWorldQuality": "sourced-or-derived",
-      "notes": "Editing (pencil, eraser, text overlay with font/size/color, undo) available for PNG, JPEG, WebP. Export to PNG/JPEG/WebP. BMP, GIF, JXL preview-only. SVG rendered in sandboxed iframe (DOMPurify) — no pixel editing.",
+      "notes": "Editing (pencil, eraser, text overlay with font/size/color, undo) available for PNG, JPEG, WebP. Export to PNG/JPEG/WebP. BMP, GIF, JXL preview-only. SVG rendered in sandboxed iframe (DOMPurify) \u2014 no pixel editing.",
       "fileExamplesSlug": null,
       "previewDepth": "rich",
       "metadataDepth": "basic",
@@ -3122,7 +3122,7 @@
       "editCapability": "basic",
       "exportCapability": "download",
       "securityLimitations": [
-        "PostScript execution not supported — metadata display only"
+        "PostScript execution not supported \u2014 metadata display only"
       ],
       "knownParserGaps": [
         "No rendering of PostScript graphics"
@@ -3225,7 +3225,7 @@
       },
       "partialSamples": [],
       "realWorldQuality": "synthetic",
-      "notes": "Parses KML placemarks, folders, geometry types. No map rendering — shows structured list.",
+      "notes": "Parses KML placemarks, folders, geometry types. No map rendering \u2014 shows structured list.",
       "fileExamplesSlug": null,
       "previewDepth": "basic",
       "metadataDepth": "basic",
@@ -3721,7 +3721,7 @@
       "editCapability": "none",
       "exportCapability": "download",
       "securityLimitations": [
-        "PHI warning shown; no automatic redaction — user must handle compliance"
+        "PHI warning shown; no automatic redaction \u2014 user must handle compliance"
       ],
       "knownParserGaps": [
         "Implicit VR not supported",
@@ -3828,7 +3828,7 @@
       "fileExamplesSlug": null,
       "securityLimitations": [],
       "knownParserGaps": [
-        "Tile data not decoded — metadata display only",
+        "Tile data not decoded \u2014 metadata display only",
         "Vector tile (PBF) schema not parsed"
       ]
     },
@@ -3859,7 +3859,7 @@
       "fileExamplesSlug": "rcsb.org",
       "securityLimitations": [],
       "knownParserGaps": [
-        "3D visualization not yet implemented — text metadata only",
+        "3D visualization not yet implemented \u2014 text metadata only",
         "Multi-model NMR ensembles show first model only"
       ]
     },
@@ -3923,7 +3923,7 @@
       "fileExamplesSlug": null,
       "securityLimitations": [],
       "knownParserGaps": [
-        "3D visualization not implemented — element table only",
+        "3D visualization not implemented \u2014 element table only",
         "Extended XYZ attributes not parsed"
       ]
     },
@@ -3954,7 +3954,7 @@
       "securityLimitations": [],
       "knownParserGaps": [
         ".dbf attribute table not decoded",
-        "No map rendering — bounding box and record count only",
+        "No map rendering \u2014 bounding box and record count only",
         ".shx index file not used"
       ]
     },
@@ -3984,7 +3984,7 @@
       "fileExamplesSlug": null,
       "securityLimitations": [],
       "knownParserGaps": [
-        "Lump data not decoded — lump listing only",
+        "Lump data not decoded \u2014 lump listing only",
         "BLOCKMAP/REJECT/BSP data not displayed",
         "No sprite/texture extraction"
       ]
@@ -4112,7 +4112,7 @@
       "knownParserGaps": [
         "Column types not decoded (FlatBuffers schema not fully parsed)",
         "Row data not displayed",
-        "Feather v2 uses Arrow IPC format — same support level"
+        "Feather v2 uses Arrow IPC format \u2014 same support level"
       ]
     },
     "cif": {
@@ -4263,7 +4263,7 @@
       "previewDepth": "rich",
       "metadataDepth": "basic",
       "knownParserGaps": [
-        "No magic bytes — extension-required for high-confidence detection",
+        "No magic bytes \u2014 extension-required for high-confidence detection",
         "Ext types shown as opaque placeholders"
       ],
       "fileExamplesSlug": null,
@@ -4354,7 +4354,7 @@
       "previewDepth": "rich",
       "metadataDepth": "rich",
       "knownParserGaps": [
-        "Memo field (.dbt/.fpt) content not loaded — only field names shown",
+        "Memo field (.dbt/.fpt) content not loaded \u2014 only field names shown",
         "Limited to first 20 records in preview"
       ],
       "fileExamplesSlug": null,
@@ -10304,7 +10304,9 @@
       "label": "Haskell Stack",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "stack.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -10329,7 +10331,9 @@
       "label": "Haskell Cabal",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "example.cabal"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -10354,7 +10358,9 @@
       "label": "Swift Package.resolved",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "Package.resolved"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -10379,7 +10385,9 @@
       "label": "Erlang rebar3",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "rebar.config"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -10404,7 +10412,9 @@
       "label": "Docusaurus Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "docusaurus.config.js"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -10429,7 +10439,9 @@
       "label": "VitePress Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "vitepress.config.ts"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -10454,7 +10466,9 @@
       "label": "Sphinx Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "conf.py"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -10477,6 +10491,324 @@
     },
     "doxyfile": {
       "label": "Doxyfile",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "Doxyfile"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "astro-config": {
+      "label": "Astro Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "astro.config.mjs"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "svelte-config": {
+      "label": "SvelteKit Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "svelte.config.js"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "nuxt-config": {
+      "label": "Nuxt Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "nuxt.config.ts"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "remix-config": {
+      "label": "Remix Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "remix.config.js"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "drizzle-config": {
+      "label": "Drizzle ORM Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "drizzle.config.ts"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "knexfile": {
+      "label": "Knex.js Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "knexfile.js"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "alembic": {
+      "label": "Alembic Migrations",
+      "baseType": "ini",
+      "support": "supported",
+      "sampleFiles": [
+        "alembic.ini"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "flyway-conf": {
+      "label": "Flyway Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "flyway.conf"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "wdio-config": {
+      "label": "WebdriverIO Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "artillery-yml": {
+      "label": "Artillery Config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "k6-config": {
+      "label": "k6 Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "gatling-conf": {
+      "label": "Gatling Config",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [],

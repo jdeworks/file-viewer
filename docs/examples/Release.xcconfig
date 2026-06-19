@@ -1,0 +1,36 @@
+// Xcode Build Configuration — Release
+// Shared settings for all release builds
+#include "Pods/Target Support Files/Pods-MyApp/Pods-MyApp.release.xcconfig"
+#include "Shared.xcconfig"
+
+SWIFT_VERSION = 5.9
+IPHONEOS_DEPLOYMENT_TARGET = 16.0
+MACOSX_DEPLOYMENT_TARGET = 13.0
+PRODUCT_BUNDLE_IDENTIFIER = com.example.myapp
+PRODUCT_NAME = MyApp
+DEVELOPMENT_TEAM = ABCD1234EF
+
+// Compiler optimizations
+SWIFT_OPTIMIZATION_LEVEL = -O
+GCC_OPTIMIZATION_LEVEL = s
+ENABLE_BITCODE = NO
+
+// Code signing
+CODE_SIGN_IDENTITY = iPhone Distribution
+CODE_SIGN_STYLE = Manual
+PROVISIONING_PROFILE_SPECIFIER = MyApp_Distribution
+
+// Debugging
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+GCC_GENERATE_DEBUGGING_SYMBOLS = YES
+ENABLE_TESTABILITY = NO
+
+// Strip settings
+STRIP_INSTALLED_PRODUCT = YES
+DEPLOYMENT_POSTPROCESSING = YES
+
+// Other flags
+OTHER_SWIFT_FLAGS = -DRELEASE
+GCC_PREPROCESSOR_DEFINITIONS = RELEASE=1 $(inherited)
+ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES
+TARGETED_DEVICE_FAMILY = 1,2

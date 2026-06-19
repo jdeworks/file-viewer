@@ -1,0 +1,28 @@
+.{
+    .name = "my-zig-app",
+    .version = "0.3.1",
+    .minimum_zig_version = "0.13.0",
+    .dependencies = .{
+        .zap = .{
+            .url = "https://github.com/zigzap/zap/archive/refs/tags/v0.9.1.tar.gz",
+            .hash = "12208e0bcd8f4c6b66e2e6a66c4f03cb54aa37c7f8c19c7d96bed01f7f2c13b8a1c2",
+        },
+        .zig_sqlite = .{
+            .url = "https://github.com/vrischmann/zig-sqlite/archive/refs/tags/v0.4.0.tar.gz",
+            .hash = "122039e8b5f9bdaf85fa432f89c9a553e01d92e9ad84b3ee5e41af0c89f3e8a5b9de",
+        },
+        .known_folders = .{
+            .url = "https://github.com/ziglibs/known-folders/archive/refs/tags/v0.6.1.tar.gz",
+            .hash = "1220c068d78b8a1c5acde2d2d26c8dda83c6a83b040a4339f24a4c8a2dd53adf5c06",
+        },
+        .local_utils = .{
+            .path = "../utils",
+        },
+    },
+    .paths = .{
+        "src",
+        "build.zig",
+        "build.zig.zon",
+        "README.md",
+    },
+}

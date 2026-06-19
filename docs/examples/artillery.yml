@@ -1,0 +1,62 @@
+config:
+  target: "https://api.example.com"
+  http:
+    timeout: 10
+    maxSockets: 100
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: Warm up
+    - duration: 60
+      arrivalRate: 5
+      rampTo: 50
+      name: Ramp up load
+    - duration: 120
+      arrivalRate: 50
+      name: Sustained load
+    - duration: 30
+      arrivalRate: 50
+      rampTo: 5
+      name: Cool down
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer {{ $processEnvironment.API_TOKEN }}"
+  plugins:
+    expect: {}
+    metrics-by-endpoint: {}
+  environments:
+    staging:
+      target: "https://staging.example.com"
+    production:
+      target: "https://api.example.com"
+
+scenarios:
+  - name: "User authentication flow"
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            username: "{{ username }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      - get:
+          url: "/api/users/me"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      - get:
+          url: "/api/dashboard"
+
+  - name: "Browse products"
+    flow:
+      - get:
+          url: "/api/products"
+      - get:
+          url: "/api/products/{{ $randomInt(1, 100) }}"
+      - post:
+          url: "/api/cart"
+          json:
+            productId: "{{ $randomInt(1, 100) }}"
+            quantity: 1

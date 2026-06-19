@@ -1,0 +1,26 @@
+name = "MyPackage"
+uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+authors = ["Alice Smith <alice@example.com>", "Bob Jones <bob@example.com>"]
+version = "1.2.3"
+
+[deps]
+DataFrames = "a93c6f00-e57d-5684-b466-afe8fa294f15"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+JSON3 = "0f8b85d8-7e73-5f02-b275-4c08468a0787"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b7"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
+[compat]
+julia = "1.9"
+DataFrames = "1.5, 1.6"
+Plots = "1.38"
+JSON3 = "1.13"
+HTTP = "1.9"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+
+[targets]
+test = ["Test", "BenchmarkTools"]

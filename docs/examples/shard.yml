@@ -1,0 +1,36 @@
+name: my-crystal-app
+version: 0.4.2
+description: A sample Crystal web application using Kemal framework
+
+authors:
+  - Carol Williams <carol@example.com>
+  - Dave Lee <dave@example.com>
+
+crystal: ">= 1.10.0"
+
+license: MIT
+
+dependencies:
+  kemal:
+    github: kemalcr/kemal
+    version: ~> 1.6
+  db:
+    github: crystal-lang/crystal-db
+    version: ~> 0.13
+  pg:
+    github: will/crystal-pg
+    version: ~> 0.28
+  redis:
+    git: https://github.com/jwoertink/redis.cr.git
+    branch: master
+  dotenv:
+    github: gdotdesign/cr-dotenv
+    version: ~> 1.0
+
+development_dependencies:
+  spectator:
+    github: icy-arctic-fox/spectator
+    version: ~> 0.11
+  ameba:
+    github: crystal-ameba/ameba
+    version: ~> 1.5

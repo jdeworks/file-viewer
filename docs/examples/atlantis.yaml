@@ -1,0 +1,40 @@
+version: 3
+
+automerge: false
+parallel_plan: true
+parallel_apply: false
+
+projects:
+  - name: vpc
+    dir: infra/vpc
+    workspace: production
+    workflow: terraform-cloud
+  - name: eks-cluster
+    dir: infra/eks
+    workspace: production
+    workflow: terraform-cloud
+  - name: rds
+    dir: infra/rds
+    workspace: staging
+  - name: iam-roles
+    dir: infra/iam
+    workspace: default
+
+workflows:
+  terraform-cloud:
+    plan:
+      steps:
+        - init
+        - plan
+    apply:
+      steps:
+        - apply
+  default:
+    plan:
+      steps:
+        - init
+        - plan:
+            extra_args: ["-var-file", "vars/common.tfvars"]
+    apply:
+      steps:
+        - apply
