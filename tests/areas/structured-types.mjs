@@ -230,6 +230,36 @@ export async function run(ctx) {
   const sshRawMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
   if (sshRawMode === 'raw') pass('SSH config raw view remains explicitly available'); else fail('ssh raw mode: ' + sshRawMode);
 
+  // ── RDP ── connection info card, mstsc command. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.rdp');
+  await page.waitForSelector('#previewHost .rdp-root', { timeout: 12000 });
+  const rdpType = await page.$eval('#typeSelect', (s) => s.value);
+  if (rdpType === 'rdp') pass('.rdp detected as RDP Connection'); else fail('rdp type: ' + rdpType);
+  const rdpTxt = await page.textContent('#previewHost .rdp-root');
+  if (rdpTxt.includes('myserver.example.com') || rdpTxt.includes('RDP')) pass('RDP connection host shown'); else fail('rdp txt: ' + rdpTxt.replace(/\s+/g, ' ').slice(0, 200));
+  if (rdpTxt.includes('mstsc') || rdpTxt.includes('jdoe')) pass('RDP mstsc command or username shown'); else fail('rdp mstsc/user: ' + rdpTxt.replace(/\s+/g, ' ').slice(0, 200));
+
+  // ── MCP Config ── server cards, env var redaction. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('claude_desktop_config.json');
+  await page.waitForSelector('#previewHost .mc-root', { timeout: 12000 });
+  const mcpType = await page.$eval('#typeSelect', (s) => s.value);
+  if (mcpType === 'mcp-config') pass('claude_desktop_config.json detected as MCP Server Config'); else fail('mcp type: ' + mcpType);
+  const mcpTxt = await page.textContent('#previewHost .mc-root');
+  if (mcpTxt.includes('filesystem') || mcpTxt.includes('github')) pass('MCP server names shown'); else fail('mcp servers: ' + mcpTxt.replace(/\s+/g, ' ').slice(0, 200));
+  if (!mcpTxt.includes('BSAexamplekeyABC123') && !mcpTxt.includes('ghp_example')) pass('MCP secret env values redacted'); else fail('mcp secret visible: ' + mcpTxt.replace(/\s+/g, ' ').slice(0, 200));
+
+  // ── Kubeconfig ── cluster/context/user tables. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('kubeconfig');
+  await page.waitForSelector('#previewHost .kc-root', { timeout: 12000 });
+  const kubeType = await page.$eval('#typeSelect', (s) => s.value);
+  if (kubeType === 'kubeconfig') pass('kubeconfig detected as Kubernetes Config'); else fail('kube type: ' + kubeType);
+  const kubeTxt = await page.textContent('#previewHost .kc-root');
+  if (kubeTxt.includes('prod-cluster') || kubeTxt.includes('dev-cluster')) pass('kubeconfig cluster names shown'); else fail('kube clusters: ' + kubeTxt.replace(/\s+/g, ' ').slice(0, 200));
+  if (kubeTxt.includes('prod-admin') || kubeTxt.includes('developer')) pass('kubeconfig users shown'); else fail('kube users: ' + kubeTxt.replace(/\s+/g, ' ').slice(0, 200));
+
   // ── Patch / unified diff ── colorized add/remove/hunk lines. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.patch');
