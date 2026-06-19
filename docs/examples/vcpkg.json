@@ -1,0 +1,39 @@
+{
+  "name": "my-cpp-app",
+  "version-semver": "1.2.0",
+  "description": "A sample C++ application using vcpkg for dependency management.",
+  "supports": "!uwp",
+  "default-features": ["networking"],
+  "dependencies": [
+    "fmt",
+    "nlohmann-json",
+    {
+      "name": "boost-filesystem",
+      "version>=": "1.82.0"
+    },
+    {
+      "name": "openssl",
+      "platform": "!windows"
+    },
+    {
+      "name": "curl",
+      "features": ["ssl", "http2"]
+    }
+  ],
+  "features": {
+    "networking": {
+      "description": "Enable HTTP networking support",
+      "dependencies": ["curl", "openssl"]
+    },
+    "testing": {
+      "description": "Include test utilities",
+      "dependencies": ["catch2"]
+    }
+  },
+  "overrides": [
+    {
+      "name": "zlib",
+      "version-semver": "1.3.0"
+    }
+  ]
+}

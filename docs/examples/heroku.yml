@@ -1,0 +1,25 @@
+build:
+  docker:
+    web: Dockerfile
+    worker: Dockerfile.worker
+
+release:
+  image: web
+  command:
+    - bundle exec rails db:migrate
+
+run:
+  web: bundle exec puma -C config/puma.rb
+  worker: bundle exec sidekiq -C config/sidekiq.yml
+  scheduler: bundle exec rake jobs:work
+
+setup:
+  addons:
+    - plan: heroku-postgresql:standard-0
+      as: DATABASE
+    - plan: heroku-redis:premium-0
+      as: REDIS
+  config:
+    S3_BUCKET: my-app-assets
+    RAILS_ENV: production
+    WEB_CONCURRENCY: "2"

@@ -1,0 +1,84 @@
+version: 2
+project_name: myapp
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - id: myapp
+    binary: myapp
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+      - zip
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+signs:
+  - cmd: cosign
+    args:
+      - sign-blob
+      - --output-signature=${signature}
+      - ${artifact}
+    artifacts: checksum
+
+sboms:
+  - artifacts: archive
+
+dockers:
+  - id: myapp-docker
+    image_templates:
+      - ghcr.io/myorg/myapp:{{ .Tag }}
+      - ghcr.io/myorg/myapp:latest
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - --platform=linux/amd64
+
+brews:
+  - name: myapp
+    repository:
+      owner: myorg
+      name: homebrew-tap
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    description: "My awesome Go application"
+    license: MIT
+
+release:
+  github:
+    owner: myorg
+    name: myapp
+  draft: false
+  prerelease: auto
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request

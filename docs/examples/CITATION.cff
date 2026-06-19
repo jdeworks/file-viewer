@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "MyAwesomeTool"
+version: 2.1.0
+doi: 10.5281/zenodo.1234567
+url: https://myawesometool.example.com
+repository-code: https://github.com/example/myawesometool
+date-released: 2024-03-15
+license: MIT
+keywords:
+  - data analysis
+  - scientific computing
+  - visualization
+  - python
+  - open-source
+authors:
+  - given-names: Alice
+    family-names: Researcher
+    email: alice@example.com
+    orcid: https://orcid.org/0000-0001-2345-6789
+    affiliation: University of Example
+  - given-names: Bob
+    name-particle: van
+    family-names: Developer
+    email: bob@example.org
+    orcid: https://orcid.org/0000-0002-9876-5432
+    affiliation: Institute of Open Source

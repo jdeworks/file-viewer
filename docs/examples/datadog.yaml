@@ -1,0 +1,33 @@
+# Datadog Agent Configuration
+# api_key is typically set via DD_API_KEY environment variable
+# api_key: <YOUR_DATADOG_API_KEY>
+
+site: datadoghq.com
+
+hostname: myapp-prod-01
+
+log_level: info
+
+tags:
+  - env:production
+  - service:myapp
+  - team:platform
+  - region:us-east-1
+
+logs_enabled: true
+logs_config:
+  container_collect_all: true
+
+apm_config:
+  enabled: true
+  receiver_port: 8126
+  default_sample_rate: 1.0
+
+process_config:
+  enabled: true
+
+network_config:
+  enabled: false
+
+runtime_security_config:
+  enabled: false

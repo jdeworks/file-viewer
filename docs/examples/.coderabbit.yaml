@@ -1,0 +1,24 @@
+language: en-US
+
+reviews:
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+      - develop
+  profile: chill
+  auto_description: true
+  path_filters:
+    - "!**/*.lock"
+    - "!**/dist/**"
+    - "!**/node_modules/**"
+    - "!**/__snapshots__/**"
+
+tools:
+  ruff:
+    enabled: true
+  eslint:
+    enabled: true
+  markdownlint:
+    enabled: false
