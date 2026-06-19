@@ -16,10 +16,16 @@ function readerShell(content) {
     + '<input class="ebook-choice ebook-theme-light" id="fb2-theme-light" name="fb2-theme" type="radio" checked>'
     + '<input class="ebook-choice ebook-theme-sepia" id="fb2-theme-sepia" name="fb2-theme" type="radio">'
     + '<input class="ebook-choice ebook-theme-dark" id="fb2-theme-dark" name="fb2-theme" type="radio">'
+    + '<input class="ebook-choice ebook-line-normal" id="fb2-line-normal" name="fb2-line" type="radio" checked>'
+    + '<input class="ebook-choice ebook-line-loose" id="fb2-line-loose" name="fb2-line" type="radio">'
+    + '<input class="ebook-choice ebook-margin-normal" id="fb2-margin-normal" name="fb2-margin" type="radio" checked>'
+    + '<input class="ebook-choice ebook-margin-wide" id="fb2-margin-wide" name="fb2-margin" type="radio">'
     + '<div class="ebook-controls" aria-label="Reader settings">'
     + '<label for="fb2-size-normal">A</label><label for="fb2-size-large">A+</label>'
     + '<label for="fb2-font-serif">Serif</label><label for="fb2-font-sans">Sans</label>'
     + '<label for="fb2-theme-light">Light</label><label for="fb2-theme-sepia">Sepia</label><label for="fb2-theme-dark">Dark</label>'
+    + '<label for="fb2-line-normal">Line</label><label for="fb2-line-loose">Line+</label>'
+    + '<label for="fb2-margin-normal">Page</label><label for="fb2-margin-wide">Page+</label>'
     + '</div>' + content + '</div>';
 }
 

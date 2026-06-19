@@ -148,11 +148,19 @@
   .ebook-font-sans:checked~.ebook-controls label[for$="font-sans"],
   .ebook-theme-light:checked~.ebook-controls label[for$="theme-light"],
   .ebook-theme-sepia:checked~.ebook-controls label[for$="theme-sepia"],
-  .ebook-theme-dark:checked~.ebook-controls label[for$="theme-dark"]{border-color:#4c9aff;color:#0b69c7;background:#eaf3ff;}
+  .ebook-theme-dark:checked~.ebook-controls label[for$="theme-dark"],
+  .ebook-line-normal:checked~.ebook-controls label[for$="line-normal"],
+  .ebook-line-loose:checked~.ebook-controls label[for$="line-loose"],
+  .ebook-margin-normal:checked~.ebook-controls label[for$="margin-normal"],
+  .ebook-margin-wide:checked~.ebook-controls label[for$="margin-wide"]{border-color:#4c9aff;color:#0b69c7;background:#eaf3ff;}
   .ebook-size-normal:checked~:where(.fb2-book,.mobi-book){font-size:18px;}
   .ebook-size-large:checked~:where(.fb2-book,.mobi-book){font-size:22px;}
   .ebook-font-serif:checked~:where(.fb2-book,.mobi-book){font-family:Georgia,"Times New Roman",serif;}
   .ebook-font-sans:checked~:where(.fb2-book,.mobi-book){font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
+  .ebook-line-normal:checked~:where(.fb2-book,.mobi-book){line-height:1.55;}
+  .ebook-line-loose:checked~:where(.fb2-book,.mobi-book){line-height:1.85;}
+  .ebook-margin-normal:checked~:where(.fb2-book,.mobi-book){max-width:42rem;}
+  .ebook-margin-wide:checked~:where(.fb2-book,.mobi-book){max-width:34rem;}
   .ebook-theme-sepia:checked~:where(.fb2-book,.mobi-book){background:#f4ecd8;color:#4b3928;}
   .ebook-theme-dark:checked~:where(.fb2-book,.mobi-book){background:#14171c;color:#c9d1d9;}
   .ebook-theme-sepia:checked~:where(.fb2-book,.mobi-book),

@@ -18,10 +18,16 @@ function readerShell(content) {
     + '<input class="ebook-choice ebook-theme-light" id="mobi-theme-light" name="mobi-theme" type="radio" checked>'
     + '<input class="ebook-choice ebook-theme-sepia" id="mobi-theme-sepia" name="mobi-theme" type="radio">'
     + '<input class="ebook-choice ebook-theme-dark" id="mobi-theme-dark" name="mobi-theme" type="radio">'
+    + '<input class="ebook-choice ebook-line-normal" id="mobi-line-normal" name="mobi-line" type="radio" checked>'
+    + '<input class="ebook-choice ebook-line-loose" id="mobi-line-loose" name="mobi-line" type="radio">'
+    + '<input class="ebook-choice ebook-margin-normal" id="mobi-margin-normal" name="mobi-margin" type="radio" checked>'
+    + '<input class="ebook-choice ebook-margin-wide" id="mobi-margin-wide" name="mobi-margin" type="radio">'
     + '<div class="ebook-controls" aria-label="Reader settings">'
     + '<label for="mobi-size-normal">A</label><label for="mobi-size-large">A+</label>'
     + '<label for="mobi-font-serif">Serif</label><label for="mobi-font-sans">Sans</label>'
     + '<label for="mobi-theme-light">Light</label><label for="mobi-theme-sepia">Sepia</label><label for="mobi-theme-dark">Dark</label>'
+    + '<label for="mobi-line-normal">Line</label><label for="mobi-line-loose">Line+</label>'
+    + '<label for="mobi-margin-normal">Page</label><label for="mobi-margin-wide">Page+</label>'
     + '</div>' + content + '</div>';
 }
 
