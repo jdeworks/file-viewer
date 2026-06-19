@@ -121,6 +121,10 @@ import cifType from '../types/text/cif/index.js';
 import parquetType from '../types/binary/parquet/index.js';
 import avroType from '../types/binary/avro/index.js';
 import hdf5Type from '../types/binary/hdf5/index.js';
+import msgpackType from '../types/binary/msgpack/index.js';
+import bsonType from '../types/binary/bson/index.js';
+import exrType from '../types/binary/exr/index.js';
+import dbfType from '../types/binary/dbf/index.js';
 import sdfType from '../types/text/sdf/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
@@ -234,6 +238,10 @@ export const REGISTRY = [
   parquetType,
   avroType,
   hdf5Type,
+  msgpackType,
+  bsonType,
+  exrType,
+  dbfType,
   sdfType,
   regType,
   urlType,

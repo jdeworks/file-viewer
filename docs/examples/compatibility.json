@@ -4206,6 +4206,94 @@
         "Group hierarchy not traversed",
         "Attributes not decoded"
       ]
+    },
+    "msgpack": {
+      "label": "MessagePack",
+      "support": "full",
+      "sampleFiles": [
+        "sample.msgpack"
+      ],
+      "extensions": [
+        ".msgpack",
+        ".mpk"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "No magic bytes — extension-required for high-confidence detection",
+        "Ext types shown as opaque placeholders"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "bson": {
+      "label": "BSON (Binary JSON)",
+      "support": "full",
+      "sampleFiles": [
+        "sample.bson"
+      ],
+      "extensions": [
+        ".bson"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "Multi-document streams show only the first document",
+        "Decimal128 shown as placeholder"
+      ],
+      "fileExamplesSlug": null,
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "exr": {
+      "label": "OpenEXR Image",
+      "support": "partial",
+      "sampleFiles": ["sample.exr"],
+      "extensions": [".exr"],
+      "capabilities": { "rawView": false, "preview": true, "diff": false, "magicSelector": false, "screenshot": false },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "knownParserGaps": [
+        "Pixel data not decoded (requires openexr-js ~large)",
+        "Deep compositing and multi-layer channels not traversed",
+        "Half-float and integer pixel types not rendered"
+      ]
+    },
+    "dbf": {
+      "label": "dBase / DBF Database",
+      "support": "full",
+      "sampleFiles": ["sample.dbf"],
+      "extensions": [".dbf"],
+      "capabilities": { "rawView": false, "preview": true, "diff": false, "magicSelector": false, "screenshot": false },
+      "previewDepth": "rich",
+      "metadataDepth": "rich",
+      "knownParserGaps": [
+        "Memo field (.dbt/.fpt) content not loaded — only field names shown",
+        "Limited to first 20 records in preview"
+      ]
     }
   },
   "knownFiles": {

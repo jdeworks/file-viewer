@@ -220,6 +220,59 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_msgpack=(()=>{
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isMsgpackExt = ext === 'msgpack' || ext === 'mpk';
+
+  if (!b || b.length === 0) return isMsgpackExt ? 0.6 : 0;
+
+  // MessagePack has no magic bytes, but byte 0 identifies the first value type.
+  // Valid first bytes cover: fixint (0x00-0x7f), nil (0xc0), false/true (0xc2/c3),
+  // fixmap (0x80-0x8f), fixarray (0x90-0x9f), fixstr (0xa0-0xbf),
+  // uint8-64 (0xcc-0xcf), int8-64 (0xd0-0xd3), float32/64 (0xca/cb),
+  // str8-32 (0xd9-0xdb), bin8-32 (0xc4-0xc6), array16/32 (0xdc-0xdd),
+  // map16/32 (0xde-0xdf), ext8-32 (0xc7-0xc9), fixext1-16 (0xd4-0xd8).
+  // 0xc1 is never-used (RESERVED), 0xe0-0xff are negative fixint.
+  const first = b[0];
+  const invalid = first === 0xc1; // only reserved byte
+  if (isMsgpackExt) return invalid ? 0.5 : 0.95;
+
+  // Without extension: require a map or array root object (common in practice)
+  // and at least minimal structural validity.
+  const isMapOrArray =
+    (first >= 0x80 && first <= 0x8f) || // fixmap
+    (first >= 0x90 && first <= 0x9f) || // fixarray
+    first === 0xdc || first === 0xdd ||  // array 16/32
+    first === 0xde || first === 0xdf;    // map 16/32
+
+  return isMapOrArray && !invalid ? 0.45 : 0;
+}
+return detect;
+})();
+
+const detect_bson=(()=>{
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isBsonExt = ext === 'bson';
+
+  if (!b || b.length < 5) return isBsonExt ? 0.6 : 0;
+
+  // BSON document: first 4 bytes = LE int32 document length (includes itself),
+  // last byte of the stated length must be 0x00 (document terminator).
+  const docLen = b[0] | (b[1] << 8) | (b[2] << 16) | (b[3] << 24);
+  const validLen = docLen >= 5 && docLen <= b.length;
+  const terminator = validLen && b[docLen - 1] === 0x00;
+  const structural = validLen && terminator;
+
+  if (isBsonExt) return structural ? 0.97 : 0.65;
+  return structural ? 0.75 : 0;
+}
+return detect;
+})();
+
 const detect_sdf=(()=>{
 function hasExtension(intake, ...exts) {
   const name = (intake.filename || '').toLowerCase();
@@ -270,23 +323,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_url=(()=>{
-// URL / query-string inspector: high score for https:// URLs, stepping down through other
-// schemes, bare query strings, multi-URL files, and .url/.webloc extensions.
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const t = (intake.textSample || '').trim();
-  if (!t) return 0;
-
-  if (/^https?:\/\//i.test(t)) return 0.90;
-  if (/^(?:(?:ftp|file|blob|git):\/\/|(?:data|mailto|tel|ssh):)/i.test(t)) return 0.85;
-  if (/^\?[^=\n]+=[^&\n]/.test(t)) return 0.80;
-  const multiUrl = (t.match(/^https?:\/\//gmi) || []).length;
-  if (multiUrl >= 3) return 0.75;
-  if (hasExtension(intake, 'url', 'webloc')) return 0.70;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"hdf5":detect_hdf5,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url};
+export const DETECTORS={"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"hdf5":detect_hdf5,"msgpack":detect_msgpack,"bson":detect_bson,"sdf":detect_sdf,"reg":detect_reg};

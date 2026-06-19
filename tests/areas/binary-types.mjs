@@ -312,6 +312,54 @@ export async function run(ctx) {
   if (/Employee|com\.example/i.test(avroText)) pass('Avro schema name shown'); else fail('avro schema: ' + avroText.slice(0, 300));
   if (/salary|department|hire_date/i.test(avroText)) pass('Avro schema fields shown'); else fail('avro fields: ' + avroText.slice(0, 300));
 
+  // ── MessagePack ───────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('MessagePack data (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const msgpf = await frameOf('iframe.fv-preview-frame');
+  await msgpf.waitForSelector('.badge-msgpack', { timeout: 8000 });
+  const msgpTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (msgpTypeId === 'msgpack') pass('.msgpack detected as msgpack type'); else fail('msgpack typeId: ' + msgpTypeId);
+  const msgpText = await msgpf.$eval('body', (el) => el.textContent);
+  if (/MessagePack/i.test(msgpText)) pass('MessagePack badge shown'); else fail('msgpack badge: ' + msgpText.slice(0, 300));
+  if (/status|version|user|scores/i.test(msgpText)) pass('MessagePack keys rendered'); else fail('msgpack keys: ' + msgpText.slice(0, 300));
+
+  // ── BSON (Binary JSON) ───────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('BSON document (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const bsonf = await frameOf('iframe.fv-preview-frame');
+  await bsonf.waitForSelector('.badge-bson', { timeout: 8000 });
+  const bsonTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (bsonTypeId === 'bson') pass('.bson detected as bson type'); else fail('bson typeId: ' + bsonTypeId);
+  const bsonText = await bsonf.$eval('body', (el) => el.textContent);
+  if (/BSON/i.test(bsonText)) pass('BSON badge shown'); else fail('bson badge: ' + bsonText.slice(0, 300));
+  if (/name|Alice|role/i.test(bsonText)) pass('BSON fields rendered'); else fail('bson fields: ' + bsonText.slice(0, 300));
+
+  // ── dBase DBF ─────────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dBase DBF database (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const dbff = await frameOf('iframe.fv-preview-frame');
+  await dbff.waitForSelector('.badge-dbf', { timeout: 8000 });
+  const dbfTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (dbfTypeId === 'dbf') pass('.dbf detected as dbf type'); else fail('dbf typeId: ' + dbfTypeId);
+  const dbfText = await dbff.$eval('body', (el) => el.textContent);
+  if (/DBF|dBase/i.test(dbfText)) pass('DBF badge shown'); else fail('dbf badge: ' + dbfText.slice(0, 300));
+  if (/NAME|CITY|Alice/i.test(dbfText)) pass('DBF fields and records shown'); else fail('dbf fields: ' + dbfText.slice(0, 300));
+
+  // ── OpenEXR ───────────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('OpenEXR HDR image (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const exrf = await frameOf('iframe.fv-preview-frame');
+  await exrf.waitForSelector('.badge-exr', { timeout: 8000 });
+  const exrTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (exrTypeId === 'exr') pass('.exr detected as exr type'); else fail('exr typeId: ' + exrTypeId);
+  const exrText = await exrf.$eval('body', (el) => el.textContent);
+  if (/OpenEXR/i.test(exrText)) pass('OpenEXR badge shown'); else fail('exr badge: ' + exrText.slice(0, 300));
+  if (/compression|window|scanline/i.test(exrText)) pass('EXR header attributes shown'); else fail('exr attrs: ' + exrText.slice(0, 300));
+
   // ── HDF5 Scientific Data ─────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('HDF5 Scientific Dataset (demo)');

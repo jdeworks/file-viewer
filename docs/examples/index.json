@@ -2175,5 +2175,45 @@
       "binary",
       "data"
     ]
+  },
+  {
+    "file": "sample.msgpack",
+    "label": "MessagePack data (demo)",
+    "mime": "application/x-msgpack",
+    "category": "data",
+    "categories": [
+      "data",
+      "binary"
+    ]
+  },
+  {
+    "file": "sample.bson",
+    "label": "BSON document (demo)",
+    "mime": "application/bson",
+    "category": "data",
+    "categories": [
+      "data",
+      "binary"
+    ]
+  },
+  {
+    "file": "sample.exr",
+    "label": "OpenEXR HDR image (demo)",
+    "mime": "image/x-exr",
+    "category": "Image",
+    "categories": [
+      "Image",
+      "binary"
+    ]
+  },
+  {
+    "file": "sample.dbf",
+    "label": "dBase DBF database (demo)",
+    "mime": "application/dbf",
+    "category": "data",
+    "categories": [
+      "data",
+      "binary"
+    ]
   }
 ]
