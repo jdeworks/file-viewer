@@ -3860,6 +3860,67 @@
         "PCAPNG multi-interface captures show limited info",
         "Payload protocols beyond Ethernet/IP/TCP/UDP/ICMP not parsed"
       ]
+    },
+    "xyz": {
+      "label": "Molecular Structure (.xyz)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.xyz"
+      ],
+      "extensions": [
+        ".xyz"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "full",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false,
+      "fileExamplesSlug": null,
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "3D visualization not implemented — element table only",
+        "Extended XYZ attributes not parsed"
+      ]
+    },
+    "shapefile": {
+      "label": "ESRI Shapefile (.shp)",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.shp"
+      ],
+      "extensions": [
+        ".shp"
+      ],
+      "capabilities": {
+        "rawView": false,
+        "preview": true,
+        "diff": false,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "fileExamplesSlug": null,
+      "securityLimitations": [],
+      "knownParserGaps": [
+        ".dbf attribute table not decoded",
+        "No map rendering — bounding box and record count only",
+        ".shx index file not used"
+      ]
     }
   },
   "knownFiles": {

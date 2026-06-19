@@ -1901,6 +1901,16 @@
     ]
   },
   {
+    "label": "Ethanol Molecule (XYZ)",
+    "file": "sample.xyz",
+    "mime": "chemical/x-xyz",
+    "category": "Science",
+    "categories": [
+      "Science",
+      "Data"
+    ]
+  },
+  {
     "label": "Demo Protein Structure (PDB)",
     "file": "sample.pdb",
     "mime": "chemical/x-pdb",
@@ -2062,6 +2072,16 @@
     "categories": [
       "System",
       "Data"
+    ]
+  },
+  {
+    "label": "NYC Borough Boundary (Shapefile)",
+    "file": "sample.shp",
+    "mime": "application/octet-stream",
+    "category": "Geo",
+    "categories": [
+      "Geo",
+      "Science"
     ]
   }
 ]

@@ -267,6 +267,34 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_xyz=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (!hasExtension(intake, 'xyz')) return 0;
+  const lines = (intake.textSample || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return 0.5;
+  // First line should be an integer (atom count)
+  if (/^\d+$/.test(lines[0])) return 0.93;
+  return 0.4;
+}
+return detect;
+})();
+
+const detect_shapefile=(()=>{
+function detect(intake) {
+  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  const b = intake.bytes;
+  // Shapefile magic: file code 9994 = 0x0000270A (big-endian int32)
+  if (b[0] === 0x00 && b[1] === 0x00 && b[2] === 0x27 && b[3] === 0x0A) {
+    if (hasExtension(intake, 'shp')) return 0.99;
+    return 0.85;
+  }
+  if (hasExtension(intake, 'shp')) return 0.5;
+  return 0;
+}
+return detect;
+})();
+
 const detect_reg=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -279,23 +307,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_url=(()=>{
-// URL / query-string inspector: high score for https:// URLs, stepping down through other
-// schemes, bare query strings, multi-URL files, and .url/.webloc extensions.
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  const t = (intake.textSample || '').trim();
-  if (!t) return 0;
-
-  if (/^https?:\/\//i.test(t)) return 0.90;
-  if (/^(?:(?:ftp|file|blob|git):\/\/|(?:data|mailto|tel|ssh):)/i.test(t)) return 0.85;
-  if (/^\?[^=\n]+=[^&\n]/.test(t)) return 0.80;
-  const multiUrl = (t.match(/^https?:\/\//gmi) || []).length;
-  if (multiUrl >= 3) return 0.75;
-  if (hasExtension(intake, 'url', 'webloc')) return 0.70;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"reg":detect_reg,"url":detect_url};
+export const DETECTORS={"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"reg":detect_reg};

@@ -3,6 +3,25 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_url=(()=>{
+// URL / query-string inspector: high score for https:// URLs, stepping down through other
+// schemes, bare query strings, multi-URL files, and .url/.webloc extensions.
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  const t = (intake.textSample || '').trim();
+  if (!t) return 0;
+
+  if (/^https?:\/\//i.test(t)) return 0.90;
+  if (/^(?:(?:ftp|file|blob|git):\/\/|(?:data|mailto|tel|ssh):)/i.test(t)) return 0.85;
+  if (/^\?[^=\n]+=[^&\n]/.test(t)) return 0.80;
+  const multiUrl = (t.match(/^https?:\/\//gmi) || []).length;
+  if (multiUrl >= 3) return 0.75;
+  if (hasExtension(intake, 'url', 'webloc')) return 0.70;
+  return 0;
+}
+return detect;
+})();
+
 const detect_asciiart=(()=>{
 const BLOCK_CHARS = /[█▓▒░═╔╗╚╝╠╣╦╩╬║─│┌┐└┘├┤┬┴┼]/g;
 
@@ -285,31 +304,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_ssh_config=(()=>{
-function detect(intake) {
-  if (intake.bytes?.[0] > 127) return 0; // not ASCII/UTF-8 text
-  const name = intake.filename?.toLowerCase() ?? '';
-  const text = intake.textSample ?? '';
-
-  // Strong SSH config keywords in content
-  const hasHostBlock = /^host\s+\S/im.test(text);
-  const hasSSHKeywords = /^\s+(hostname|identityfile|proxyjump|forwardagent|serveraliveinterval|user\s+\S)\s/im.test(text);
-
-  // Named exactly "config" or ends with "/config" + SSH content → very likely
-  const isConfigFile = name === 'config' || name.endsWith('/config');
-  if (isConfigFile && hasHostBlock) return 0.92;
-  if (isConfigFile && hasSSHKeywords) return 0.85;
-
-  // ".ssh-config" or "ssh-config" as extension/name
-  if (name.endsWith('.ssh-config') || name === 'ssh-config') return hasHostBlock ? 0.92 : 0.7;
-
-  // Strong content signal alone
-  if (hasHostBlock && hasSSHKeywords) return 0.75;
-  if (hasHostBlock && /^\s+port\s+\d+/im.test(text)) return 0.65;
-
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config};
+export const DETECTORS={"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig};

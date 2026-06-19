@@ -182,4 +182,30 @@ export async function run(ctx) {
   if (/PCAP/i.test(pcapText)) pass('PCAP badge shown'); else fail('pcap badge missing');
   if (/Ethernet/i.test(pcapText)) pass('PCAP link type shown'); else fail('pcap link: ' + pcapText.slice(0, 300));
   if (/ARP|TCP|UDP|ICMP/i.test(pcapText)) pass('PCAP protocols shown'); else fail('pcap proto: ' + pcapText.slice(0, 300));
+
+  // ── XYZ Molecular Structure ───────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Ethanol Molecule (XYZ)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const xyzf = await frameOf('iframe.fv-preview-frame');
+  await xyzf.waitForSelector('.badge-xyz', { timeout: 8000 });
+  const xyzTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (xyzTypeId === 'xyz') pass('.xyz detected as xyz type'); else fail('xyz typeId: ' + xyzTypeId);
+  const xyzText = await xyzf.$eval('body', (el) => el.textContent);
+  if (/XYZ/i.test(xyzText)) pass('XYZ badge shown'); else fail('xyz badge missing');
+  if (/Carbon|Hydrogen|Oxygen/i.test(xyzText)) pass('XYZ element names shown'); else fail('xyz elements: ' + xyzText.slice(0, 300));
+  if (/12|Atom/i.test(xyzText)) pass('XYZ atom count shown'); else fail('xyz atoms: ' + xyzText.slice(0, 300));
+
+  // ── ESRI Shapefile ────────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('NYC Borough Boundary (Shapefile)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const shpf = await frameOf('iframe.fv-preview-frame');
+  await shpf.waitForSelector('.badge-shp', { timeout: 8000 });
+  const shpTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (shpTypeId === 'shapefile') pass('.shp detected as shapefile type'); else fail('shp typeId: ' + shpTypeId);
+  const shpText = await shpf.$eval('body', (el) => el.textContent);
+  if (/Shapefile/i.test(shpText)) pass('Shapefile badge shown'); else fail('shp badge missing');
+  if (/Polygon/i.test(shpText)) pass('Shapefile shape type shown'); else fail('shp type: ' + shpText.slice(0, 300));
+  if (/40\.|74\./i.test(shpText)) pass('Shapefile bounding box shown'); else fail('shp bbox: ' + shpText.slice(0, 300));
 }
