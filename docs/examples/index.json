@@ -1331,6 +1331,106 @@
     "attribution": "Wikimedia Commons example audio file"
   },
   {
+    "label": "Sample.mp4",
+    "file": "sample.mp4",
+    "mime": "video/mp4",
+    "type": "media",
+    "category": "Media",
+    "categories": [
+      "Media"
+    ],
+    "description": "Tiny MP4 video test clip for native video playback coverage.",
+    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/tiny-clip.mp4",
+    "license": "BSD-3-Clause",
+    "attribution": "Chromium media test data"
+  },
+  {
+    "label": "Sample.webm",
+    "file": "sample.webm",
+    "mime": "video/webm",
+    "type": "media",
+    "category": "Media",
+    "categories": [
+      "Media"
+    ],
+    "description": "Small WebM video test clip for native browser playback coverage.",
+    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/bear.webm",
+    "license": "BSD-3-Clause",
+    "attribution": "Chromium media test data"
+  },
+  {
+    "label": "Sample.mov",
+    "file": "sample.mov",
+    "mime": "video/quicktime",
+    "type": "media",
+    "category": "Media",
+    "categories": [
+      "Media"
+    ],
+    "partial": true,
+    "description": "QuickTime MOV sample; playback depends on browser codec support.",
+    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/bear_pcm_s16be.mov",
+    "license": "BSD-3-Clause",
+    "attribution": "Chromium media test data"
+  },
+  {
+    "label": "Sample.mkv",
+    "file": "sample.mkv",
+    "mime": "video/x-matroska",
+    "type": "media",
+    "category": "Media",
+    "categories": [
+      "Media"
+    ],
+    "partial": true,
+    "description": "Matroska MKV sample; the viewer detects it and shows a transcode hint if native playback fails.",
+    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/testsrc-no-durations-h264.mkv",
+    "license": "BSD-3-Clause",
+    "attribution": "Chromium media test data"
+  },
+  {
+    "label": "Sample.flac",
+    "file": "sample.flac",
+    "mime": "audio/flac",
+    "type": "media",
+    "category": "Media",
+    "categories": [
+      "Media"
+    ],
+    "description": "Small FLAC audio fixture for lossless audio detection and playback coverage.",
+    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/sfx.flac",
+    "license": "BSD-3-Clause",
+    "attribution": "Chromium media test data"
+  },
+  {
+    "label": "Sample.m4a",
+    "file": "sample.m4a",
+    "mime": "audio/mp4",
+    "type": "media",
+    "category": "Media",
+    "categories": [
+      "Media"
+    ],
+    "description": "Small M4A audio fixture for MPEG-4 audio container coverage.",
+    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/sfx.m4a",
+    "license": "BSD-3-Clause",
+    "attribution": "Chromium media test data"
+  },
+  {
+    "label": "Sample.aac",
+    "file": "sample.aac",
+    "mime": "audio/aac",
+    "type": "media",
+    "category": "Media",
+    "categories": [
+      "Media"
+    ],
+    "description": "AAC ADTS audio sample for standalone AAC detection and playback coverage.",
+    "source": "https://chromium.googlesource.com/chromium/src/+/main/media/test/data/bear-audio-lc-aac.aac",
+    "license": "BSD-3-Clause",
+    "attribution": "Chromium media test data"
+  },
+  {
     "label": "Sample.ttf",
     "file": "sample.ttf",
     "mime": "font/ttf",

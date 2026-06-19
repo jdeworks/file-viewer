@@ -109,12 +109,19 @@ export async function run(ctx) {
   } else {
     fail('missing dedicated JPEG XL partial-support sample');
   }
-  const audioFormatSamples = ['sample.wav', 'sample.mp3', 'sample.ogg'];
-  const missingAudioFormats = audioFormatSamples.filter((file) => byFile.get(file)?.type !== 'media');
-  if (missingAudioFormats.length) {
-    fail('missing dedicated audio format samples: ' + missingAudioFormats.join(', '));
+  const mediaFormatSamples = ['sample.wav', 'sample.mp3', 'sample.ogg', 'sample.mp4', 'sample.webm', 'sample.mov', 'sample.mkv', 'sample.flac', 'sample.m4a', 'sample.aac'];
+  const missingMediaFormats = mediaFormatSamples.filter((file) => byFile.get(file)?.type !== 'media');
+  if (missingMediaFormats.length) {
+    fail('missing dedicated media format samples: ' + missingMediaFormats.join(', '));
   } else {
-    pass('dedicated audio format samples indexed (' + audioFormatSamples.length + ')');
+    pass('dedicated media format samples indexed (' + mediaFormatSamples.length + ')');
+  }
+  const partialContainerSamples = ['sample.mov', 'sample.mkv'];
+  const missingPartialContainers = partialContainerSamples.filter((file) => !byFile.get(file)?.partial);
+  if (missingPartialContainers.length) {
+    fail('container-dependent media samples should be marked partial: ' + missingPartialContainers.join(', '));
+  } else {
+    pass('container-dependent media samples document partial playback support');
   }
   const fontFormatSamples = ['sample.ttf', 'sample.otf', 'sample.woff', 'sample.woff2'];
   const missingFontFormats = fontFormatSamples.filter((file) => byFile.get(file)?.type !== 'font');
