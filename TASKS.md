@@ -625,7 +625,7 @@ Design target:
 
 ## TASK 18 — Metadata Extraction Research + Coverage Audit
 
-**Status:** Implemented — new-file editor autofocus, readable plain-text preview, and session-sidebar unsaved markers are covered by smoke tests.  
+**Status:** Not started — metadata audit and coverage improvements are still pending.  
 **Effort:** L (~1-2 days research, follow-up implementation tasks likely)  
 **Files likely touched:**
 - `docs/core/meta-drawer.js`
@@ -673,7 +673,7 @@ Add smoke/unit coverage targets for metadata extraction so regressions are caugh
 
 ## TASK 19 — New File Autofocus + Readable Text Preview
 
-**Status:** Not started  
+**Status:** Implemented — new-file editor autofocus, readable plain-text preview, and session-sidebar unsaved markers are covered by smoke tests.  
 **Effort:** S/M (~1-2h)  
 **Files likely touched:**
 - `docs/core/session-tree.js`
