@@ -307,6 +307,10 @@ import bitbucketPipelines from '../types/text/yaml/known/bitbucket-pipelines/ind
 import tektonPipeline from '../types/text/yaml/known/tekton-pipeline/index.js';
 import argoCdApp from '../types/text/yaml/known/argo-cd-app/index.js';
 import fluxHelmRelease from '../types/text/yaml/known/flux-helm-release/index.js';
+import semgrepConfig from '../types/text/yaml/known/semgrep-config/index.js';
+import codeclimateConfig from '../types/text/yaml/known/codeclimate-config/index.js';
+import gitleaksConfig from '../types/text/toml/known/gitleaks-config/index.js';
+import osvScanner from '../types/text/toml/known/osv-scanner/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,

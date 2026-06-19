@@ -1638,4 +1638,45 @@ export async function run(ctx) {
   if (/mydb|replica/i.test(pbText)) pass('pgbouncer.ini: [databases] section shown'); else fail('pgbouncer dbs: ' + pbText.slice(0, 300));
   if (/transaction|pool_mode/i.test(pbText)) pass('pgbouncer.ini: pool_mode shown'); else fail('pgbouncer pool: ' + pbText.slice(0, 300));
   if (/••••/.test(pbText)) pass('pgbouncer.ini: password in connection string masked'); else fail('pgbouncer masking: ' + pbText.slice(0, 300));
+
+  // ── .pylintrc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.pylintrc');
+  await page.waitForSelector('#previewHost .pl-doc', { timeout: 12000 });
+  const plText = await page.$eval('#previewHost .pl-doc', (e) => e.textContent);
+  if (/Pylint/i.test(plText)) pass('.pylintrc: Pylint badge shown'); else fail('pylintrc badge: ' + plText.slice(0, 200));
+  if (/disabled/i.test(plText)) pass('.pylintrc: disabled codes section shown'); else fail('pylintrc disabled: ' + plText.slice(0, 200));
+  if (/max-line-length|120/i.test(plText)) pass('.pylintrc: max-line-length shown'); else fail('pylintrc max-line: ' + plText.slice(0, 300));
+  if (/jobs/i.test(plText)) pass('.pylintrc: jobs shown'); else fail('pylintrc jobs: ' + plText.slice(0, 300));
+
+  // ── .flake8 viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.flake8');
+  await page.waitForSelector('#previewHost .f8-doc', { timeout: 12000 });
+  const f8Text = await page.$eval('#previewHost .f8-doc', (e) => e.textContent);
+  if (/Flake8/i.test(f8Text)) pass('.flake8: Flake8 badge shown'); else fail('flake8 badge: ' + f8Text.slice(0, 200));
+  if (/max-line-length|120/i.test(f8Text)) pass('.flake8: max-line-length shown'); else fail('flake8 max-line: ' + f8Text.slice(0, 200));
+  if (/E203|W503|E501/i.test(f8Text)) pass('.flake8: ignored codes shown'); else fail('flake8 ignored: ' + f8Text.slice(0, 300));
+  if (/venv|migrations|__pycache__/i.test(f8Text)) pass('.flake8: excluded paths shown'); else fail('flake8 excluded: ' + f8Text.slice(0, 300));
+
+  // ── setup.cfg viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('setup.cfg');
+  await page.waitForSelector('#previewHost .sc-doc', { timeout: 12000 });
+  const scText = await page.$eval('#previewHost .sc-doc', (e) => e.textContent);
+  if (/setup\.cfg/i.test(scText)) pass('setup.cfg: badge shown'); else fail('setup.cfg badge: ' + scText.slice(0, 200));
+  if (/myproject/i.test(scText)) pass('setup.cfg: package name shown'); else fail('setup.cfg name: ' + scText.slice(0, 200));
+  if (/1\.4\.2/i.test(scText)) pass('setup.cfg: version shown'); else fail('setup.cfg version: ' + scText.slice(0, 300));
+  if (/fastapi|pydantic|sqlalchemy/i.test(scText)) pass('setup.cfg: dependencies shown'); else fail('setup.cfg deps: ' + scText.slice(0, 300));
+  if (/pytest|mypy/i.test(scText)) pass('setup.cfg: tool sections shown'); else fail('setup.cfg tools: ' + scText.slice(0, 300));
+
+  // ── .bandit viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.bandit');
+  await page.waitForSelector('#previewHost .bd-doc', { timeout: 12000 });
+  const bdText = await page.$eval('#previewHost .bd-doc', (e) => e.textContent);
+  if (/Bandit/i.test(bdText)) pass('.bandit: Bandit badge shown'); else fail('bandit badge: ' + bdText.slice(0, 200));
+  if (/B101|B311|B506/i.test(bdText)) pass('.bandit: skipped test IDs shown'); else fail('bandit skips: ' + bdText.slice(0, 300));
+  if (/tests|migrations|venv/i.test(bdText)) pass('.bandit: excluded dirs shown'); else fail('bandit exclude: ' + bdText.slice(0, 300));
+  if (/MEDIUM|severity/i.test(bdText)) pass('.bandit: severity filter shown'); else fail('bandit severity: ' + bdText.slice(0, 300));
 }

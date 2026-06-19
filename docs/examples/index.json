@@ -3136,7 +3136,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
+    "description": "typos source code spell checker configuration — word overrides, file ignores, and check settings.",
     "knownFile": "typos"
   },
   {
@@ -3744,15 +3744,6 @@
     "knownFile": "railway-json"
   },
   {
-    "label": "Matchfile",
-    "file": "Matchfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
     "label": "Appfile",
     "file": "Appfile",
     "mime": "text/plain",
@@ -3841,48 +3832,6 @@
     "description": "Clang-Format C/C++ code formatting configuration."
   },
   {
-    "label": ".markdownlint.yml",
-    "file": ".markdownlint.yml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Markdownlint configuration in YAML format \u2014 rule overrides and custom settings for Markdown linting."
-  },
-  {
-    "label": ".markdownlint.yml",
-    "file": ".markdownlint.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Markdownlint configuration for linting Markdown files."
-  },
-  {
-    "label": "Dockerfile (multi-stage demo)",
-    "file": "Dockerfile",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
-    "label": "docker-compose.yml (demo)",
-    "file": "docker-compose.yml",
-    "mime": "application/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true
-  },
-  {
     "label": "Jenkinsfile",
     "file": "Jenkinsfile",
     "mime": "text/plain",
@@ -3893,39 +3842,6 @@
     "enhanced": true,
     "description": "Jenkins declarative pipeline with Install, Lint, Test, Build, and Deploy stages.",
     "knownFile": "jenkinsfile"
-  },
-  {
-    "label": "BUILD.bazel",
-    "file": "BUILD.bazel",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Bazel build rules file."
-  },
-  {
-    "label": ".bazelrc",
-    "file": ".bazelrc",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Bazel configuration file."
-  },
-  {
-    "label": "build.ninja",
-    "file": "build.ninja",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Ninja build system rules file."
   },
   {
     "label": ".gitconfig",
