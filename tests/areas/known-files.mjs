@@ -4336,6 +4336,24 @@ export async function run(ctx) {
   if (!atlantisText.includes('Atlantis')) fail('atlantis.yaml: missing badge'); else pass('atlantis.yaml: badge shown');
   if (!atlantisText.includes('project') && !atlantisText.includes('workflow')) fail('atlantis.yaml: no projects'); else pass('atlantis.yaml: projects shown');
 
+  // ── Caddyfile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Caddyfile');
+  await page.waitForSelector('.caddyfile-doc');
+  pass('Caddyfile: renders');
+  const caddyText = await page.$eval('.caddyfile-doc', el => el.textContent);
+  if (!caddyText.includes('Caddy')) fail('Caddyfile: missing badge'); else pass('Caddyfile: badge shown');
+  if (!caddyText.includes('reverse_proxy') && !caddyText.includes('file_server') && !caddyText.includes('site')) fail('Caddyfile: no site info'); else pass('Caddyfile: site info shown');
+
+  // ── supervisord.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('supervisord.conf');
+  await page.waitForSelector('.supervisordcfg-doc');
+  pass('supervisord.conf: renders');
+  const supervisordText = await page.$eval('.supervisordcfg-doc', el => el.textContent);
+  if (!supervisordText.includes('supervisord')) fail('supervisord.conf: missing badge'); else pass('supervisord.conf: badge shown');
+  if (!supervisordText.includes('program') && !supervisordText.includes('command')) fail('supervisord.conf: no programs shown'); else pass('supervisord.conf: programs shown');
+
   // ── nginx.conf viewer (nginxconf-doc class) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('nginx.conf');
@@ -4353,4 +4371,22 @@ export async function run(ctx) {
   const haproxyText = await page.$eval('.haproxycfg-doc', el => el.textContent);
   if (!haproxyText.includes('HAProxy')) fail('haproxy.cfg: missing badge'); else pass('haproxy.cfg: badge shown');
   if (!haproxyText.includes('frontend') && !haproxyText.includes('backend')) fail('haproxy.cfg: no proxy config'); else pass('haproxy.cfg: proxy config shown');
+
+  // ── .babelrc (Babel transpiler JSON config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.babelrc');
+  await page.waitForSelector('.babelrc-doc');
+  pass('.babelrc: renders');
+  const babelrcText = await page.$eval('.babelrc-doc', el => el.textContent);
+  if (!babelrcText.includes('Babel')) fail('.babelrc: missing badge'); else pass('.babelrc: badge shown');
+  if (!babelrcText.includes('preset') && !babelrcText.includes('plugin')) fail('.babelrc: no config shown'); else pass('.babelrc: config shown');
+
+  // ── jest.config.js (Jest plain-text JS config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('jest.config.js');
+  await page.waitForSelector('.jestconfig-doc');
+  pass('jest.config.js: renders');
+  const jestText = await page.$eval('.jestconfig-doc', el => el.textContent);
+  if (!jestText.includes('Jest')) fail('jest.config.js: missing badge'); else pass('jest.config.js: badge shown');
+  if (!jestText.includes('testEnvironment') && !jestText.includes('transform') && !jestText.includes('coverage')) fail('jest.config.js: no config shown'); else pass('jest.config.js: config shown');
 }

@@ -55,6 +55,8 @@ import eslint from '../types/text/json/known/eslint/index.js';
 import jest from '../types/text/json/known/jest/index.js';
 import stylelint from '../types/text/json/known/stylelint/index.js';
 import babel from '../types/text/json/known/babel/index.js';
+import { plugin as babelrc } from '../types/text/json/known/babelrc/index.js';
+import { plugin as jestConfig } from '../types/text/known/jest-config/index.js';
 import commitlint from '../types/text/json/known/commitlint/index.js';
 import lefthook from '../types/text/yaml/known/lefthook/index.js';
 import wrangler from '../types/text/toml/known/wrangler/index.js';
@@ -564,7 +566,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
-  eslint, jest, stylelint, babel, commitlint, lefthook,
+  eslint, jest, jestConfig, stylelint, babelrc, babel, commitlint, lefthook,
   wrangler, flyToml, cliff, releaserc,
   lerna, nx, biome, codecov, serverless, azurePipelines,
   vscodeSettings, vscodeExtensions, vscodeLaunch, vscodeTasks,

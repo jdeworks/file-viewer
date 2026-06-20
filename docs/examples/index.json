@@ -7447,12 +7447,15 @@
   },
   {
     "file": "supervisord.conf",
-    "label": "supervisord.conf (Supervisor)",
+    "label": "supervisord.conf",
     "category": "Config",
     "categories": [
       "Config",
       "Process"
-    ]
+    ],
+    "enhanced": true,
+    "description": "Supervisord process manager configuration with daemon settings, program definitions, groups, and HTTP server.",
+    "knownFile": "supervisord-conf"
   },
   {
     "file": "logrotate.conf",
@@ -8413,5 +8416,29 @@
     "enhanced": true,
     "description": "Conky system monitor config: window placement, font, display settings, and conky.text variable template.",
     "knownFile": "conky-conf"
+  },
+  {
+    "label": ".babelrc",
+    "file": ".babelrc",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "babelrc",
+    "description": ".babelrc Babel config: @babel/preset-env (targets), @babel/preset-react, @babel/preset-typescript, 6 plugins, and env overrides for test/production/development."
+  },
+  {
+    "label": "jest.config.js",
+    "file": "jest.config.js",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "jest-config",
+    "description": "Jest config (JS format): jsdom environment, 4 transforms, 5 module aliases, setupFilesAfterFramework, 80/70/75/80% coverage thresholds."
   }
 ]
