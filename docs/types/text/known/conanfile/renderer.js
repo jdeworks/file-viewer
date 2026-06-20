@@ -1,20 +1,20 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.conan-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
-.badge-conan{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#e07b00;color:#fff;vertical-align:middle;margin-right:8px}
-.conan-title{font-size:18px;font-weight:700;margin:0 0 4px}
-.conan-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 12px}
-.conan-meta{font-size:13px;color:var(--fg-2,#888);margin:2px 0}
-.conan-sec{margin:12px 0}
-.conan-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px}
-.conan-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px}
-.conan-item{display:flex;align-items:baseline;gap:8px;padding:4px 8px;border-radius:6px;background:var(--bg-2,#f6f8fa);flex-wrap:wrap}
-.conan-name{font:13px/1 ui-monospace,monospace;font-weight:600;color:var(--accent,#0969da)}
-.conan-ver{font:11px ui-monospace,monospace;padding:1px 6px;border-radius:8px;background:#fed7aa;border:1px solid #fb923c;color:#c2410c}
-.conan-pills{display:flex;flex-wrap:wrap;gap:6px}
-.conan-pill{display:inline-flex;align-items:center;font-size:12px;padding:2px 8px;border-radius:10px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace}
-.conan-hint{font-size:12px;color:var(--fg-2,#888)}
+.conanfile-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
+.badge-conanfile{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#2eaae1;color:#fff;vertical-align:middle;margin-right:8px}
+.conanfile-title{font-size:18px;font-weight:700;margin:0 0 4px}
+.conanfile-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 12px}
+.conanfile-meta{font-size:13px;color:var(--fg-2,#888);margin:2px 0}
+.conanfile-sec{margin:12px 0}
+.conanfile-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px}
+.conanfile-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px}
+.conanfile-item{display:flex;align-items:baseline;gap:8px;padding:4px 8px;border-radius:6px;background:var(--bg-2,#f6f8fa);flex-wrap:wrap}
+.conanfile-name{font:13px/1 ui-monospace,monospace;font-weight:600;color:var(--accent,#0969da)}
+.conanfile-ver{font:11px ui-monospace,monospace;padding:1px 6px;border-radius:8px;background:#fed7aa;border:1px solid #fb923c;color:#c2410c}
+.conanfile-pills{display:flex;flex-wrap:wrap;gap:6px}
+.conanfile-pill{display:inline-flex;align-items:center;font-size:12px;padding:2px 8px;border-radius:10px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace}
+.conanfile-hint{font-size:12px;color:var(--fg-2,#888)}
 `;
 
 // Parse conanfile.txt ini-style sections
@@ -82,10 +82,10 @@ export function render(intake) {
   const isTxt = filename.toLowerCase() === 'conanfile.txt';
 
   const host = document.createElement('div');
-  host.className = 'conan-doc';
+  host.className = 'conanfile-doc';
 
   let html = `<style>${CSS}</style>`;
-  html += `<div class="conan-title"><span class="badge-conan">Conan</span>${esc(filename)}</div>`;
+  html += `<div class="conanfile-title"><span class="badge-conanfile">Conan</span>${esc(filename)}</div>`;
 
   if (isTxt) {
     const sections = parseTxt(text);
@@ -94,67 +94,66 @@ export function render(intake) {
     const options = (sections.options || []).filter(Boolean);
     const imports = (sections.imports || []).filter(Boolean);
 
-    html += `<div class="conan-sub">Conan package manifest (INI format)</div>`;
-    if (requires.length) html += `<div class="conan-meta">${requires.length} dependenc${requires.length === 1 ? 'y' : 'ies'}</div>`;
+    html += `<div class="conanfile-sub">Conan package manifest (INI format)</div>`;
+    if (requires.length) html += `<div class="conanfile-meta">${requires.length} dependenc${requires.length === 1 ? 'y' : 'ies'}</div>`;
 
     if (requires.length) {
-      html += `<div class="conan-sec"><h3>Requires (${requires.length})</h3><ul class="conan-list">`;
+      html += `<div class="conanfile-sec"><h3>Requires (${requires.length})</h3><ul class="conanfile-list">`;
       for (const dep of requires) {
         const { name, version } = parseDep(dep);
-        html += `<li class="conan-item"><span class="conan-name">${esc(name)}</span>`;
-        if (version) html += `<span class="conan-ver">${esc(version)}</span>`;
+        html += `<li class="conanfile-item"><span class="conanfile-name">${esc(name)}</span>`;
+        if (version) html += `<span class="conanfile-ver">${esc(version)}</span>`;
         html += '</li>';
       }
       html += '</ul></div>';
     }
 
     if (generators.length) {
-      html += `<div class="conan-sec"><h3>Generators</h3><div class="conan-pills">${generators.map((g) => `<span class="conan-pill">${esc(g)}</span>`).join('')}</div></div>`;
+      html += `<div class="conanfile-sec"><h3>Generators</h3><div class="conanfile-pills">${generators.map((g) => `<span class="conanfile-pill">${esc(g)}</span>`).join('')}</div></div>`;
     }
 
     if (options.length) {
-      html += `<div class="conan-sec"><h3>Options</h3><ul class="conan-list">`;
+      html += `<div class="conanfile-sec"><h3>Options</h3><ul class="conanfile-list">`;
       for (const opt of options) {
-        html += `<li class="conan-item"><span class="conan-hint" style="font-family:ui-monospace,monospace;font-size:12px">${esc(opt)}</span></li>`;
+        html += `<li class="conanfile-item"><span class="conanfile-hint" style="font-family:ui-monospace,monospace;font-size:12px">${esc(opt)}</span></li>`;
       }
       html += '</ul></div>';
     }
 
     if (imports.length) {
-      html += `<div class="conan-sec"><h3>Imports</h3><ul class="conan-list">`;
+      html += `<div class="conanfile-sec"><h3>Imports</h3><ul class="conanfile-list">`;
       for (const imp of imports) {
-        html += `<li class="conan-item"><span class="conan-hint" style="font-family:ui-monospace,monospace;font-size:12px">${esc(imp)}</span></li>`;
+        html += `<li class="conanfile-item"><span class="conanfile-hint" style="font-family:ui-monospace,monospace;font-size:12px">${esc(imp)}</span></li>`;
       }
       html += '</ul></div>';
     }
   } else {
     // conanfile.py
     const py = parsePy(text);
-    const displayName = py.name || py.className || 'conanfile.py';
 
-    html += `<div class="conan-sub">Conan package recipe (Python)</div>`;
-    if (py.name) html += `<div class="conan-meta">Package: <strong>${esc(py.name)}</strong></div>`;
-    if (py.version) html += `<div class="conan-meta">Version: <strong>${esc(py.version)}</strong></div>`;
-    if (py.className) html += `<div class="conan-meta">Class: <code style="font-size:12px">${esc(py.className)}</code></div>`;
+    html += `<div class="conanfile-sub">Conan package recipe (Python)</div>`;
+    if (py.name) html += `<div class="conanfile-meta">Package: <strong>${esc(py.name)}</strong></div>`;
+    if (py.version) html += `<div class="conanfile-meta">Version: <strong>${esc(py.version)}</strong></div>`;
+    if (py.className) html += `<div class="conanfile-meta">Class: <code style="font-size:12px">${esc(py.className)}</code></div>`;
 
     const totalDeps = py.requires.length + py.buildRequires.length;
-    if (totalDeps) html += `<div class="conan-meta">${totalDeps} dependenc${totalDeps === 1 ? 'y' : 'ies'}</div>`;
+    if (totalDeps) html += `<div class="conanfile-meta">${totalDeps} dependenc${totalDeps === 1 ? 'y' : 'ies'}</div>`;
 
     if (py.requires.length) {
-      html += `<div class="conan-sec"><h3>Requires (${py.requires.length})</h3><ul class="conan-list">`;
+      html += `<div class="conanfile-sec"><h3>Requires (${py.requires.length})</h3><ul class="conanfile-list">`;
       for (const d of py.requires) {
-        html += `<li class="conan-item"><span class="conan-name">${esc(d.name)}</span>`;
-        if (d.version) html += `<span class="conan-ver">${esc(d.version)}</span>`;
+        html += `<li class="conanfile-item"><span class="conanfile-name">${esc(d.name)}</span>`;
+        if (d.version) html += `<span class="conanfile-ver">${esc(d.version)}</span>`;
         html += '</li>';
       }
       html += '</ul></div>';
     }
 
     if (py.buildRequires.length) {
-      html += `<div class="conan-sec"><h3>Build Requires (${py.buildRequires.length})</h3><ul class="conan-list">`;
+      html += `<div class="conanfile-sec"><h3>Build Requires (${py.buildRequires.length})</h3><ul class="conanfile-list">`;
       for (const d of py.buildRequires) {
-        html += `<li class="conan-item"><span class="conan-name">${esc(d.name)}</span>`;
-        if (d.version) html += `<span class="conan-ver">${esc(d.version)}</span>`;
+        html += `<li class="conanfile-item"><span class="conanfile-name">${esc(d.name)}</span>`;
+        if (d.version) html += `<span class="conanfile-ver">${esc(d.version)}</span>`;
         html += '</li>';
       }
       html += '</ul></div>';

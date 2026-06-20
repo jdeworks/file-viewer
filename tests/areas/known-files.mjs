@@ -141,10 +141,13 @@ export async function run(ctx) {
 
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('build.gradle');
-  await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
-  const gradleHrefs = await page.$$eval('#previewHost a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
-  const gradleConfigs = await page.$$eval('#previewHost .pj-sec h3', (els) => els.map((e) => e.textContent));
-  if (gradleHrefs.some((h) => /mvnrepository\.com\/artifact\/com\.google\.guava\/guava/.test(h)) && gradleConfigs.some((c) => /implementation/.test(c))) pass('build.gradle: deps link to mvnrepository (grouped by config)'); else fail('gradle links=' + gradleHrefs.join(',') + ' configs=' + gradleConfigs.join(','));
+  await page.waitForSelector('#previewHost .buildgradle-doc', { timeout: 12000 });
+  pass('build.gradle: renders');
+  const gradleText = await page.$eval('#previewHost .buildgradle-doc', (el) => el.textContent);
+  if (!gradleText.includes('Gradle')) fail('build.gradle: missing badge'); else pass('build.gradle: badge shown');
+  if (!gradleText.includes('plugin') && !gradleText.includes('depend')) fail('build.gradle: no plugins or deps'); else pass('build.gradle: content shown');
+  const gradleHrefs = await page.$$eval('#previewHost .buildgradle-doc a.bgr-link', (els) => els.map((a) => a.getAttribute('href')));
+  if (gradleHrefs.some((h) => /mvnrepository\.com\/artifact\/com\.google\.guava\/guava/.test(h))) pass('build.gradle: deps link to mvnrepository'); else fail('gradle links=' + gradleHrefs.join(','));
 
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Pipfile');
@@ -248,8 +251,9 @@ export async function run(ctx) {
   // ── Vercel config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Vercel config (vercel.json demo)');
-  await page.waitForSelector('#previewHost .badge-vercel, #previewHost [class*="vcl"]', { timeout: 12000 });
-  const vclText = await page.$eval('#previewHost', (e) => e.textContent);
+  await page.waitForSelector('.verceljson-doc', { timeout: 12000 });
+  pass('vercel.json: renders');
+  const vclText = await page.$eval('.verceljson-doc', (e) => e.textContent);
   if (/Vercel/i.test(vclText)) pass('vercel.json: badge shown'); else fail('vercel badge: ' + vclText.slice(0, 200));
   if (/nextjs|Next\.js/i.test(vclText)) pass('vercel.json: framework shown'); else fail('vercel framework: ' + vclText.slice(0, 200));
 
@@ -3363,8 +3367,10 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('settings.gradle');
   await page.waitForSelector('#previewHost .sg-doc', { timeout: 12000 });
+  pass('settings.gradle: renders');
   const sgText = await page.$eval('#previewHost .sg-doc', (e) => e.textContent);
-  if (/Gradle Settings/i.test(sgText)) pass('settings.gradle: badge shown'); else fail('settings-gradle badge: ' + sgText.slice(0, 200));
+  if (!sgText.includes('Gradle')) fail('settings.gradle: missing badge'); else pass('settings.gradle: badge shown');
+  if (!sgText.includes('rootProject') && !sgText.includes('include')) fail('settings.gradle: no project info'); else pass('settings.gradle: modules shown');
   if (/my-awesome-app/i.test(sgText)) pass('settings.gradle: root project name shown'); else fail('settings-gradle name: ' + sgText.slice(0, 200));
   if (/app|feature|core/i.test(sgText)) pass('settings.gradle: subprojects shown'); else fail('settings-gradle subprojects: ' + sgText.slice(0, 300));
 

@@ -69,9 +69,40 @@ export function render(intake) {
     }
   }
 
+  // Extract target_link_libraries: target → list of libs
+  const linkMap = {};
+  for (const line of lines) {
+    const m = /^target_link_libraries\s*\(\s*([^\s)]+)/i.exec(line.trim());
+    if (m) {
+      if (!linkMap[m[1]]) linkMap[m[1]] = true;
+    }
+  }
+  const linkedTargets = Object.keys(linkMap);
+
+  // Count install() rules
+  let installCount = 0;
+  for (const line of lines) {
+    if (/^install\s*\(/i.test(line.trim())) installCount++;
+  }
+
+  // Extract option() flags: option(NAME "description" DEFAULT)
+  const options = [];
+  for (const line of lines) {
+    const m = /^option\s*\(\s*(\w+)\s+"([^"]*)"\s*(\w+)?/i.exec(line.trim());
+    if (m) options.push({ name: m[1], desc: m[2], def: m[3] || '' });
+  }
+
+  // Extract key CMAKE_* set() variables
+  const cmakeVars = {};
+  for (const line of lines) {
+    const m = /^set\s*\(\s*(CMAKE_\w+)\s+([^\s)]+)/i.exec(line.trim());
+    if (m) cmakeVars[m[1]] = m[2];
+  }
+
   const metaHtml = [
     minVersion ? `<div class="cmake-meta">CMake &ge; <strong>${esc(minVersion)}</strong></div>` : '',
     projectVersion ? `<div class="cmake-meta">Version: <strong>${esc(projectVersion)}</strong></div>` : '',
+    installCount ? `<div class="cmake-meta">Install rules: <strong>${installCount}</strong></div>` : '',
   ].join('');
 
   const targetsHtml = targets.length
@@ -86,11 +117,24 @@ export function render(intake) {
     ? `<div class="cmake-sec"><h3>Subdirectories (${subdirs.length})</h3><div class="cmake-pills">${subdirs.map((d) => `<span class="cmake-pill">${esc(d)}</span>`).join('')}</div></div>`
     : '';
 
+  const linksHtml = linkedTargets.length
+    ? `<div class="cmake-sec"><h3>Link Libraries</h3><div class="cmake-pills">${linkedTargets.map((t) => `<span class="cmake-pill">${esc(t)}</span>`).join('')}</div></div>`
+    : '';
+
+  const optsHtml = options.length
+    ? `<div class="cmake-sec"><h3>Options (${options.length})</h3><ul class="cmake-list">${options.map((o) => `<li class="cmake-item"><span class="cmake-name">${esc(o.name)}</span><span style="font-size:12px;color:var(--fg-2,#888);flex:1">${esc(o.desc)}</span>${o.def ? `<span class="cmake-kind">${esc(o.def)}</span>` : ''}</li>`).join('')}</ul></div>`
+    : '';
+
+  const varsEntries = Object.entries(cmakeVars);
+  const varsHtml = varsEntries.length
+    ? `<div class="cmake-sec"><h3>CMake Variables</h3><ul class="cmake-list">${varsEntries.map(([k, v]) => `<li class="cmake-item"><span class="cmake-name">${esc(k)}</span><span class="cmake-kind">${esc(v)}</span></li>`).join('')}</ul></div>`
+    : '';
+
   const host = document.createElement('div');
   host.className = 'cmake-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="cmake-title"><span class="badge-cmake">CMake</span>${esc(projectName || 'CMakeLists.txt')}</div>
 <div class="cmake-sub">CMake build configuration</div>
-${metaHtml}${targetsHtml}${pkgsHtml}${subdirsHtml}`;
+${metaHtml}${targetsHtml}${pkgsHtml}${linksHtml}${subdirsHtml}${optsHtml}${varsHtml}`;
   return { parentNode: host };
 }

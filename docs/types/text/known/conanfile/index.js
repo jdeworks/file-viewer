@@ -2,7 +2,7 @@ export default {
   id: 'conanfile',
   label: 'Conan',
   match(intake) {
-    const n = (intake.filename || '').split('/').pop().toLowerCase();
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === 'conanfile.txt' || n === 'conanfile.py';
   },
   loadRenderer: () => import('./renderer.js'),
