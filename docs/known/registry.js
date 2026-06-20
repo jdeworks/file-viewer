@@ -436,6 +436,10 @@ import shellRc from '../types/text/known/shell-rc/index.js';
 import nixConfig from '../types/text/known/nix-config/index.js';
 import mavenSettings from '../types/text/xml/known/maven-settings/index.js';
 import pgHba from '../types/text/known/pg-hba/index.js';
+import dvcPipeline from '../types/text/yaml/known/dvc-pipeline/index.js';
+import hydraConfig from '../types/text/yaml/known/hydra-config/index.js';
+import mlflowProject from '../types/text/yaml/known/mlflow-project/index.js';
+import wandbConfig from '../types/text/ini/known/wandb-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -530,6 +534,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   shellRc,
   nixConfig,
   mavenSettings, pgHba,
+  dvcPipeline, hydraConfig, mlflowProject, wandbConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -1476,7 +1476,7 @@ export async function run(ctx) {
   const catText = await page.$eval('#previewHost .cat-doc', (e) => e.textContent);
   if (/Backstage/i.test(catText)) pass('catalog-info.yaml: Backstage badge shown'); else fail('catalog-info badge: ' + catText.slice(0, 200));
   if (/Component|API|System|Group|User/i.test(catText)) pass('catalog-info.yaml: entity kind shown'); else fail('catalog-info kind: ' + catText.slice(0, 200));
-  if (/order-service|payment-service/i.test(catText)) pass('catalog-info.yaml: entity name shown'); else fail('catalog-info name: ' + catText.slice(0, 200));
+  if (/my-service|order-service|payment-service/i.test(catText)) pass('catalog-info.yaml: entity name shown'); else fail('catalog-info name: ' + catText.slice(0, 200));
   if (/production|experimental|deprecated/i.test(catText)) pass('catalog-info.yaml: lifecycle shown'); else fail('catalog-info lifecycle: ' + catText.slice(0, 200));
 
   // ── docusaurus.config.js viewer ──
@@ -1568,7 +1568,7 @@ export async function run(ctx) {
   if (/1\.2\.0/i.test(tauriText)) pass('tauri.conf.json: version shown'); else fail('tauri version: ' + tauriText.slice(0, 200));
   if (/com\.example\.mytauriapp/i.test(tauriText)) pass('tauri.conf.json: bundle identifier shown'); else fail('tauri identifier: ' + tauriText.slice(0, 300));
   if (/deb|appimage|msi|nsis|dmg/i.test(tauriText)) pass('tauri.conf.json: bundle targets shown'); else fail('tauri targets: ' + tauriText.slice(0, 300));
-  if (/main|splash/i.test(tauriText)) pass('tauri.conf.json: windows listed'); else fail('tauri windows: ' + tauriText.slice(0, 300));
+  if (/main|splash|My Tauri App|Loading/i.test(tauriText)) pass('tauri.conf.json: windows listed'); else fail('tauri windows: ' + tauriText.slice(0, 300));
 
   // ── electron-builder.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -2894,4 +2894,20 @@ export async function run(ctx) {
   const esbText = await page.$eval('#previewHost .esb-doc', (e) => e.textContent);
   if (/esbuild/i.test(esbText)) pass('esbuild.config.mjs: badge shown'); else fail('esbuild badge: ' + esbText.slice(0, 200));
   if (/entry|src\/index|outdir/i.test(esbText)) pass('esbuild.config.mjs: entry/output shown'); else fail('esbuild entry: ' + esbText.slice(0, 300));
+
+  // ── maven-settings viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('settings.xml (Maven)');
+  await page.waitForSelector('#previewHost .mvns-doc', { timeout: 12000 });
+  const mvnsText = await page.$eval('#previewHost .mvns-doc', (e) => e.textContent);
+  if (/Maven Settings/i.test(mvnsText)) pass('settings.xml: badge shown'); else fail('maven-settings badge: ' + mvnsText.slice(0, 200));
+  if (/configured|password/i.test(mvnsText)) pass('settings.xml: credentials redacted'); else fail('maven-settings creds: ' + mvnsText.slice(0, 300));
+
+  // ── pg_hba.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pg_hba.conf');
+  await page.waitForSelector('#previewHost .pghba-doc', { timeout: 12000 });
+  const pghbaText = await page.$eval('#previewHost .pghba-doc', (e) => e.textContent);
+  if (/PostgreSQL|pg_hba/i.test(pghbaText)) pass('pg_hba.conf: badge shown'); else fail('pghba badge: ' + pghbaText.slice(0, 200));
+  if (/scram-sha-256|peer|md5/i.test(pghbaText)) pass('pg_hba.conf: auth methods shown'); else fail('pghba methods: ' + pghbaText.slice(0, 300));
 }

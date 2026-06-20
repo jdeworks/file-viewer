@@ -6922,7 +6922,8 @@
     "categories": [
       "Config",
       "Network"
-    ]
+    ],
+    "knownFile": "openvpn-config"
   },
   {
     "label": "settings.xml (Maven)",
