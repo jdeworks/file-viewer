@@ -4420,6 +4420,30 @@
     "knownFile": "alertmanager"
   },
   {
+    "label": "blackbox.yml",
+    "file": "blackbox.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Prometheus Blackbox Exporter config: 4 probe modules (http_2xx GET, http_post_2xx with basic_auth, tcp_connect with SSH banner check, icmp).",
+    "knownFile": "blackbox"
+  },
+  {
+    "label": "snmp.yml",
+    "file": "snmp.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Prometheus SNMP Exporter config: 2 modules (if_mib with 6 metrics, cisco_wlc with 4 metrics) and 2 auth profiles (SNMPv2c community, SNMPv3 authPriv).",
+    "knownFile": "snmp-exporter"
+  },
+  {
     "label": "datadog.yaml",
     "file": "datadog.yaml",
     "mime": "text/yaml",
@@ -8704,5 +8728,15 @@
     "name": "buf.gen.yaml",
     "category": "Tooling",
     "knownFile": "buf-gen"
+  },
+  {
+    "name": "registries.conf",
+    "category": "Infrastructure",
+    "knownFile": "registries-conf"
+  },
+  {
+    "name": "storage.conf",
+    "category": "Infrastructure",
+    "knownFile": "storage-conf"
   }
 ]

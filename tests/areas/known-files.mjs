@@ -4679,4 +4679,20 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('buf.gen.yaml');
   pass(await page.waitForSelector('#previewHost .bufgen-doc', { timeout: 12000 }), 'buf.gen.yaml: bufgen-doc shown');
+
+  // ── registries.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('registries.conf');
+  pass(await page.waitForSelector('#previewHost .registriescfg-doc', { timeout: 12000 }), 'registries.conf: registriescfg-doc shown');
+  const registriesText = await page.$eval('#previewHost .registriescfg-doc', el => el.textContent);
+  if (!registriesText.includes('Podman') && !registriesText.includes('Container')) fail('registries.conf: missing badge'); else pass('registries.conf: badge shown');
+  if (!registriesText.includes('docker.io') && !registriesText.includes('quay.io')) fail('registries.conf: no registry entries shown'); else pass('registries.conf: registry entries shown');
+
+  // ── storage.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('storage.conf');
+  pass(await page.waitForSelector('#previewHost .storagecfg-doc', { timeout: 12000 }), 'storage.conf: storagecfg-doc shown');
+  const storageText = await page.$eval('#previewHost .storagecfg-doc', el => el.textContent);
+  if (!storageText.includes('Podman') && !storageText.includes('Storage')) fail('storage.conf: missing badge'); else pass('storage.conf: badge shown');
+  if (!storageText.includes('overlay') && !storageText.includes('driver')) fail('storage.conf: no driver shown'); else pass('storage.conf: driver shown');
 }

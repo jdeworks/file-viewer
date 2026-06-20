@@ -227,6 +227,8 @@ import cmakePresets from '../types/text/json/known/cmake-presets/index.js';
 import conanfile from '../types/text/known/conanfile/index.js';
 import prometheusConfig from '../types/text/yaml/known/prometheus-config/index.js';
 import alertmanager from '../types/text/yaml/known/alertmanager/index.js';
+import blackboxExporter from '../types/text/yaml/known/blackbox/index.js';
+import snmpExporter from '../types/text/yaml/known/snmp-exporter/index.js';
 import victoriaMetricsConfig from '../types/text/yaml/known/victoria-metrics-config/index.js';
 import thanosConfig from '../types/text/yaml/known/thanos-config/index.js';
 import datadogConfig from '../types/text/yaml/known/datadog-config/index.js';
@@ -587,6 +589,8 @@ import harbor from '../types/text/yaml/known/harbor/index.js';
 import gardenIo from '../types/text/yaml/known/garden-io/index.js';
 import stryker from '../types/text/json/known/stryker/index.js';
 import airflowCfg from '../types/text/ini/known/airflow/index.js';
+import registriesConf from '../types/text/toml/known/registries-conf/index.js';
+import storageConf from '../types/text/toml/known/storage-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -620,7 +624,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   packageSwift, mixExs, buildSbt, scalafmtConf, scalafixConf,
   playwrightConfig, cypressConfig,
   vcpkg, cmakePresets, conanfile,
-  prometheusConfig, alertmanager, victoriaMetricsConfig, thanosConfig, datadogConfig,
+  prometheusConfig, alertmanager, blackboxExporter, snmpExporter, victoriaMetricsConfig, thanosConfig, datadogConfig,
   viteConfig, webpackConfig, rollupConfig, nextConfig,
   astroConfig, svelteConfig, nuxtConfig, remixConfig, hugoConfig,
   airConfig, spectral, tiltfile, mesonBuild,
@@ -720,6 +724,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   benthos, testKitchen,
   harbor, gardenIo,
   stryker, airflowCfg,
+  registriesConf, storageConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
