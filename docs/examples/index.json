@@ -10340,5 +10340,15 @@
     "enhanced": true,
     "description": "Homarr self-hosted application dashboard configuration",
     "knownFile": true
+  },
+  {
+    "file": "kavita-appsettings.json",
+    "label": "Kavita config",
+    "mime": "application/json",
+    "category": "Media",
+    "categories": ["Media", "Books", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Kavita self-hosted comic and book reader server configuration",
+    "knownFile": true
   }
 ]

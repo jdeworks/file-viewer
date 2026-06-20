@@ -5599,4 +5599,16 @@ export async function run(ctx) {
   await openExample('homarr.yaml');
   await page.waitForSelector('#previewHost .homarr-doc', { timeout: 12000 });
   pass('homarr.yaml: Homarr badge shown');
+
+  // ── kavita-appsettings.json viewer (kavita-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('kavita-appsettings.json');
+  await page.waitForSelector('#previewHost .kavita-doc', { timeout: 12000 });
+  pass('kavita-appsettings.json: Kavita badge shown');
+
+  // ── komga.yml viewer (komga-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('komga.yml');
+  await page.waitForSelector('#previewHost .komga-doc', { timeout: 12000 });
+  pass('komga.yml: Komga badge shown');
 }

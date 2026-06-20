@@ -1,0 +1,13 @@
+{
+  "TokenKey": "super-secret-token-key-here-make-it-long",
+  "Port": 5000,
+  "IpAddresses": "0.0.0.0",
+  "BaseUrl": "/",
+  "LoggingLevel": "Information",
+  "AllowIFraming": false,
+  "CacheSize": 75,
+  "TotalBackups": 30,
+  "TotalLogs": 30,
+  "BackupDirectory": "/config/backups",
+  "EmailServiceUrl": "https://email.kavitareader.com"
+}

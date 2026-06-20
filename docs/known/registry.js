@@ -921,6 +921,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   forgejoConfig,
   glancesConfig,
   homarrConfig,
+  kavitaConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
