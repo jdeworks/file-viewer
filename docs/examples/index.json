@@ -8945,5 +8945,15 @@
     "name": "frps.toml",
     "category": "DevOps",
     "knownFile": true
+  },
+  {
+    "name": "vsftpd.conf",
+    "category": "Server",
+    "knownFile": true
+  },
+  {
+    "name": "proftpd.conf",
+    "category": "Server",
+    "knownFile": true
   }
 ]

@@ -4884,4 +4884,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('frps.toml');
   pass(await page.waitForSelector('#previewHost .frps-doc', { timeout: 12000 }), 'frps.toml: FRP server badge shown');
+
+  // ── vsftpd.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vsftpd.conf');
+  pass(await page.waitForSelector('#previewHost .vsf-doc', { timeout: 12000 }), 'vsftpd.conf: vsftpd badge shown');
+
+  // ── proftpd.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('proftpd.conf');
+  pass(await page.waitForSelector('#previewHost .prf-doc', { timeout: 12000 }), 'proftpd.conf: ProFTPD badge shown');
 }
