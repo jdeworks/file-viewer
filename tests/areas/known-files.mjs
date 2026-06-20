@@ -3346,11 +3346,13 @@ export async function run(ctx) {
   // ── ssh_config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('ssh_config (SSH Client Config)');
-  await page.waitForSelector('#previewHost .sc-root', { timeout: 12000 });
-  const sshcfgText = await page.$eval('#previewHost .sc-root', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .ssh-doc', { timeout: 12000 });
+  const sshcfgText = await page.$eval('#previewHost .ssh-doc', (e) => e.textContent);
   if (/SSH/i.test(sshcfgText)) pass('ssh_config: badge shown'); else fail('ssh_config badge: ' + sshcfgText.slice(0, 200));
   if (/github\.com/i.test(sshcfgText)) pass('ssh_config: github.com host shown'); else fail('ssh_config host: ' + sshcfgText.slice(0, 300));
   if (/prod-web|prod-db|IdentityFile/i.test(sshcfgText)) pass('ssh_config: host settings shown'); else fail('ssh_config settings: ' + sshcfgText.slice(0, 300));
+  const sshCopyBtn = await page.$('#previewHost .ssh-doc .ssh-copy-btn');
+  if (sshCopyBtn) pass('ssh_config: copy button present'); else fail('ssh_config: copy button missing');
 
   // ── sshd_config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -5706,4 +5708,13 @@ export async function run(ctx) {
   await openExample('hoarder.env');
   await page.waitForSelector('#previewHost .hoarder-doc', { timeout: 12000 });
   pass('hoarder.env: Hoarder badge shown');
+
+  // ── claude_desktop_config.json viewer (mcp-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('claude_desktop_config.json');
+  await page.waitForSelector('#previewHost .mcp-doc', { timeout: 12000 });
+  const mcpText = await page.$eval('#previewHost .mcp-doc', (e) => e.textContent);
+  if (/MCP/i.test(mcpText)) pass('claude_desktop_config.json: MCP badge shown'); else fail('mcp-config badge: ' + mcpText.slice(0, 200));
+  if (/server.*configured|configured/i.test(mcpText)) pass('claude_desktop_config.json: count text visible'); else fail('mcp-config count: ' + mcpText.slice(0, 300));
+  if (/filesystem|brave-search|github/i.test(mcpText)) pass('claude_desktop_config.json: server names shown'); else fail('mcp-config servers: ' + mcpText.slice(0, 300));
 }
