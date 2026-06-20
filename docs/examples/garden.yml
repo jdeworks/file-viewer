@@ -1,0 +1,47 @@
+apiVersion: garden.io/v1
+kind: Project
+name: my-app
+
+defaultEnvironment: dev
+
+environments:
+  - name: dev
+    variables:
+      DOMAIN: dev.example.com
+      LOG_LEVEL: debug
+      DB_NAME: myapp_dev
+      DB_PASSWORD: "${local.env.DB_PASSWORD}"
+  - name: staging
+    variables:
+      DOMAIN: staging.example.com
+      LOG_LEVEL: info
+      DB_NAME: myapp_staging
+      DB_PASSWORD: "${local.env.DB_PASSWORD}"
+  - name: production
+    variables:
+      DOMAIN: example.com
+      LOG_LEVEL: warning
+      DB_NAME: myapp_prod
+      DB_PASSWORD: "${local.env.DB_PASSWORD}"
+
+providers:
+  - name: local-kubernetes
+    environments: [dev]
+    defaultHostname: ${var.DOMAIN}
+    namespace: my-app-dev
+
+  - name: kubernetes
+    environments: [staging, production]
+    context: eks-cluster
+    defaultHostname: ${var.DOMAIN}
+    namespace: my-app-${environment.name}
+    deploymentRegistry:
+      hostname: registry.example.com
+      namespace: my-app
+
+  - name: container
+    environments: [dev, staging, production]
+
+variables:
+  imageTag: ${git.commitHash}
+  replicas: 2
