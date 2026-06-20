@@ -42,6 +42,7 @@ import k8sNetworkPolicy from '../types/text/yaml/known/k8s-network-policy/index.
 import k8sHpa from '../types/text/yaml/known/k8s-hpa/index.js';
 import k8sIngress from '../types/text/yaml/known/k8s-ingress/index.js';
 import pubspec from '../types/text/yaml/known/pubspec/index.js';
+import pubspecLock from '../types/text/yaml/known/pubspec-lock/index.js';
 import netlifyToml from '../types/text/toml/known/netlify/index.js';
 import vercelJson from '../types/text/json/known/vercel/index.js';
 import pyprojectToml from '../types/text/toml/known/pyproject/index.js';
@@ -166,6 +167,7 @@ import rustfmtToml from '../types/text/toml/known/rustfmt-toml/index.js';
 import clippyToml from '../types/text/toml/known/clippy-toml/index.js';
 import rustToolchain from '../types/text/toml/known/rust-toolchain/index.js';
 import htaccess from '../types/text/known/htaccess/index.js';
+import { plugin as htpasswd } from '../types/text/known/htpasswd/index.js';
 import nginxConf from '../types/text/known/nginx-conf/index.js';
 import apacheConf from '../types/text/known/apache-conf/index.js';
 import lighttpdConf from '../types/text/known/lighttpd-conf/index.js';
@@ -558,7 +560,7 @@ import { plugin as conkyConf } from '../types/text/known/conky-conf/index.js';
 import nanorc from '../types/text/known/nanorc/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
-  buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
+  buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
   eslint, jest, stylelint, babel, commitlint, lefthook,
   wrangler, flyToml, cliff, releaserc,
@@ -579,7 +581,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   appveyor, rubocop, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
   brewfile, license, ansibleCfg, ansibleHosts, makepkgConf, gemspec, typos, cargoDeny, cargoConfig, rustfmtToml, clippyToml, rustToolchain,
-  htaccess, nginxConf, apacheConf, lighttpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
+  htaccess, htpasswd, nginxConf, apacheConf, lighttpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
   rsyslogConf,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,

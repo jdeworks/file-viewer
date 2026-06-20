@@ -1,10 +1,10 @@
 export const plugin = {
-  id: 'pubspec',
-  label: 'pubspec.yaml',
-  tags: ['dart', 'flutter', 'pubspec'],
+  id: 'pubspec-lock',
+  label: 'pubspec.lock',
+  tags: ['dart', 'flutter', 'pubspec', 'lock'],
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    return n === 'pubspec.yaml';
+    return n === 'pubspec.lock';
   },
   loadRenderer: () => import('./renderer.js'),
 };

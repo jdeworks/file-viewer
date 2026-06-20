@@ -1,9 +1,16 @@
-// build.gradle / build.gradle.kts enhancement: list the declared dependencies (group:artifact:
-// version) by configuration, each linked to mvnrepository. Handles both Groovy and Kotlin DSL.
+// build.gradle / build.gradle.kts plugin — Gradle build script viewer.
+// Parses plugins, dependencies, repositories, tasks, and project metadata.
 export default {
   id: 'build-gradle',
-  label: 'build.gradle',
-  match: (intake) => /(^|\/)build\.gradle(\.kts)?$/i.test(intake.filename || ''),
-  loadRenderer: () => import('./render.js'),
+  label: 'Gradle Build',
+  tags: ['gradle', 'build', 'java', 'kotlin'],
+  match(intake) {
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    return n === 'build.gradle' || n === 'build.gradle.kts';
+  },
+  loadRenderer: () => import('./renderer.js'),
   loadMetadata: () => import('./metadata.js'),
+  about: {
+    description: 'Gradle build script — applied plugins, project coordinates, repositories, dependencies by configuration, and defined tasks.',
+  },
 };

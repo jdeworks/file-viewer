@@ -2565,7 +2565,20 @@
       "Config",
       "mobile"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "pubspec"
+  },
+  {
+    "file": "pubspec.lock",
+    "label": "pubspec.lock (demo)",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "mobile"
+    ],
+    "enhanced": true,
+    "knownFile": "pubspec-lock"
   },
   {
     "file": "netlify.toml",
@@ -3813,6 +3826,18 @@
     "enhanced": true,
     "description": "Apache per-directory configuration with URL rewriting and auth rules.",
     "knownFile": "htaccess"
+  },
+  {
+    "label": ".htpasswd",
+    "file": ".htpasswd",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Apache HTTP Basic/Digest authentication credential file with hashed passwords.",
+    "knownFile": "htpasswd"
   },
   {
     "label": "nginx.conf",

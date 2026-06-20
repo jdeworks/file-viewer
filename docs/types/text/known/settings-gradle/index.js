@@ -2,8 +2,9 @@
 export default {
   id: 'settings-gradle',
   label: 'Gradle Settings',
-  match: (intake) => {
-    const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
+  tags: ['gradle', 'build', 'java', 'kotlin'],
+  match(intake) {
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === 'settings.gradle' || n === 'settings.gradle.kts';
   },
   loadRenderer: () => import('./renderer.js'),

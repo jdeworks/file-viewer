@@ -238,6 +238,24 @@ export async function run(ctx) {
   if (/Flutter|Dart/i.test(psText)) pass('pubspec: badge shown'); else fail('pubspec badge: ' + psText.slice(0, 200));
   if (/my.flutter.app|1\.2\.0/i.test(psText)) pass('pubspec: name/version shown'); else fail('pubspec name: ' + psText.slice(0, 200));
 
+  // ── pubspec.yaml known-file plugin ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pubspec.yaml');
+  await page.waitForSelector('.pubspec-doc', { timeout: 12000 });
+  pass('pubspec.yaml: renders');
+  const pubspecText = await page.$eval('.pubspec-doc', el => el.textContent);
+  if (!pubspecText.includes('Dart') && !pubspecText.includes('Flutter')) fail('pubspec.yaml: missing badge'); else pass('pubspec.yaml: badge shown');
+  if (!pubspecText.includes('flutter') && !pubspecText.includes('provider')) fail('pubspec.yaml: no deps shown'); else pass('pubspec.yaml: deps shown');
+
+  // ── pubspec.lock known-file plugin ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pubspec.lock (demo)');
+  await page.waitForSelector('.pubspeclock-doc', { timeout: 12000 });
+  pass('pubspec.lock: renders');
+  const lockText = await page.$eval('.pubspeclock-doc', el => el.textContent);
+  if (!lockText.includes('pubspec') && !lockText.includes('lock')) fail('pubspec.lock: missing badge'); else pass('pubspec.lock: badge shown');
+  if (!lockText.includes('package') && !lockText.includes('flutter')) fail('pubspec.lock: no packages shown'); else pass('pubspec.lock: packages shown');
+
   // ── Netlify config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Netlify config (netlify.toml demo)');
