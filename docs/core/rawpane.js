@@ -18,6 +18,7 @@ import { mountWysiwyg, unmountWysiwyg, getWysiwygValue, isWysiwygActive, getWysi
 import { HtmlWysiwygEditor } from '../types/html/wysiwyg-html.js';
 import { TableEditor } from '../types/text/csv/table-editor.js';
 import { EnvFormEditor } from '../types/text/env/form-editor.js';
+import { IniFormEditor } from '../types/text/ini/form-editor.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
@@ -28,6 +29,7 @@ let wysiwygMode = false;
 let htmlWysiwyg = null;
 let tableEditor = null;
 let envFormEditor = null;
+let iniFormEditor = null;
 
 // Show the in-memory edit banner (B). Wires the dismiss buttons once, idempotently.
 function setDisclaimerVisible(visible) {
@@ -782,6 +784,58 @@ function wireEnvFormBtn() {
   });
 }
 
+export function setIniFormMode(on) {
+  const editorEl = document.getElementById('editor');
+  const btn = document.getElementById('iniFormBtn');
+  if (on) {
+    const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
+    // Freeze Monaco while form is active
+    state.rawview?.updateOptions?.({ readOnly: true });
+    let host = document.getElementById('iniFormHost');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'iniFormHost';
+      host.className = 'editor-host';
+      editorEl?.parentNode?.insertBefore(host, editorEl);
+    }
+    host.hidden = false;
+    if (editorEl) editorEl.style.display = 'none';
+    iniFormEditor = new IniFormEditor(host, text, (newText) => {
+      state.intake = { ...state.intake, text: newText };
+      state.downloadedSinceEdit = false;
+    });
+  } else {
+    // Flush form value back to Monaco before hiding
+    if (iniFormEditor) {
+      const text = iniFormEditor.getValue();
+      iniFormEditor.destroy();
+      iniFormEditor = null;
+      if (state.rawview) {
+        state.rawview.setValue(text);
+        state.rawview.updateOptions?.({ readOnly: false });
+      }
+      state.intake = { ...state.intake, text };
+    }
+    const host = document.getElementById('iniFormHost');
+    if (host) host.hidden = true;
+    if (editorEl) editorEl.style.display = '';
+  }
+  if (btn) {
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', String(on));
+  }
+}
+
+function wireIniFormBtn() {
+  const btn = document.getElementById('iniFormBtn');
+  if (!btn || btn.dataset.wired) return;
+  btn.dataset.wired = '1';
+  btn.addEventListener('click', () => {
+    const isOn = btn.classList.contains('active');
+    setIniFormMode(!isOn);
+  });
+}
+
 function updateWordCount(text, typeId) {
   const bar = document.getElementById('wordCountBar');
   if (!bar) return;
@@ -837,6 +891,8 @@ export async function buildRawView() {
   }
   // Tear down env form editor when rebuilding (e.g. file changed)
   setEnvFormMode(false);
+  // Tear down ini form editor when rebuilding (e.g. file changed)
+  setIniFormMode(false);
   // If WYSIWYG was active (e.g. file changed), tear it down first
   if (wysiwygMode) {
     unmountWysiwyg();
@@ -904,11 +960,13 @@ export async function buildRawView() {
     tableModeBtn.setAttribute('aria-pressed', 'false');
   }
   wireTextUtils();
-  // Show text-utils only when no structured-type toolbar (JSON/YAML/XML) is active.
-  // Markdown co-exists (both bars show; markdown uses first row, textutils second row).
-  // JSON/YAML/XML/HTML/CSV hide textutils to prevent overlap with their dedicated toolbars.
-  const hasStructuredToolbar = ['json', 'yaml', 'xml', 'html', 'csv'].includes(state.type?.id);
-  setTextUtilsVisible(!state.intake?.isBinary && !hasStructuredToolbar);
+  // Show text-utils only when no structured-type toolbar is active in raw mode.
+  // Markdown co-exists (both bars show; markdown toolbar = first row, textutils = second row).
+  // JSON/YAML/XML/CSV have always-on toolbars that would overlap textutils at top:0,
+  // so hide textutils for those types. HTML toolbar only appears in WYSIWYG mode (not raw),
+  // so HTML files are fine to show textutils in raw mode. CSV has table mode btn, not a toolbar.
+  const hasAlwaysOnToolbar = ['json', 'yaml', 'xml'].includes(state.type?.id);
+  setTextUtilsVisible(!state.intake?.isBinary && !hasAlwaysOnToolbar);
   wireEnvFormBtn();
   const filename = (state.intake?.filename || state.intake?.name || '').split('/').pop().toLowerCase();
   const isEnv = (state.type?.id === 'env' || filename.endsWith('.env')) && !state.intake.isBinary;
@@ -917,6 +975,14 @@ export async function buildRawView() {
     envFormBtn.hidden = !isEnv;
     envFormBtn.classList.remove('active');
     envFormBtn.setAttribute('aria-pressed', 'false');
+  }
+  wireIniFormBtn();
+  const isIni = state.type?.id === 'ini' && !state.intake.isBinary;
+  const iniFormBtn = document.getElementById('iniFormBtn');
+  if (iniFormBtn) {
+    iniFormBtn.hidden = !isIni;
+    iniFormBtn.classList.remove('active');
+    iniFormBtn.setAttribute('aria-pressed', 'false');
   }
   // HTML Visual button
   const htmlVisualBtn = document.getElementById('htmlVisualBtn');
@@ -1008,6 +1074,9 @@ export function hasUnsavedWork() {
   // Env form editor: dirty when current text differs from the original load
   if (envFormEditor && !state.downloadedSinceEdit &&
       envFormEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
+  // INI form editor: dirty when current text differs from the original load
+  if (iniFormEditor && !state.downloadedSinceEdit &&
+      iniFormEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
   if (state.sessionEdits.size > 0) return true;
   // Folder edits stashed but not yet exported also count — closing the tab would lose them.
   return state.folderEdits.size > 0 && !state.folderExported;
@@ -1062,11 +1131,13 @@ export async function downloadCurrent() {
       ? tableEditor.getValue()
       : envFormEditor
         ? envFormEditor.getValue()
-        : htmlWysiwyg
-          ? htmlWysiwyg.getValue()
-          : wysiwygMode && isWysiwygActive()
-            ? getWysiwygValue()
-            : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
+        : iniFormEditor
+          ? iniFormEditor.getValue()
+          : htmlWysiwyg
+            ? htmlWysiwyg.getValue()
+            : wysiwygMode && isWysiwygActive()
+              ? getWysiwygValue()
+              : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
     blob = new Blob([text], { type: state.intake.mimeType || 'text/plain' });
   }
   const a = document.createElement('a');
@@ -1079,11 +1150,13 @@ export async function downloadCurrent() {
       ? tableEditor.getValue()
       : envFormEditor
         ? envFormEditor.getValue()
-        : htmlWysiwyg
-          ? htmlWysiwyg.getValue()
-          : wysiwygMode && isWysiwygActive()
-            ? getWysiwygValue()
-            : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
+        : iniFormEditor
+          ? iniFormEditor.getValue()
+          : htmlWysiwyg
+            ? htmlWysiwyg.getValue()
+            : wysiwygMode && isWysiwygActive()
+              ? getWysiwygValue()
+              : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
     state.sessionIntakes.set(state.intake.filename, { ...state.sessionIntakes.get(state.intake.filename), text });
     state.sessionEdits.delete(state.intake.filename);
     state.treeApi?.setEdited?.(state.intake.filename, false);
