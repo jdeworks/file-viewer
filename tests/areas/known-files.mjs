@@ -3632,4 +3632,20 @@ export async function run(ctx) {
   if (/Downloads|concurrent/i.test(aria2Text)) pass('aria2.conf: download dir or concurrency shown'); else fail('aria2-conf general: ' + aria2Text.slice(0, 300));
   if (/\[configured\]/.test(aria2Text) && !/mysecrettoken/.test(aria2Text)) pass('aria2.conf: RPC secret is masked'); else fail('aria2-conf rpc-secret not masked: ' + aria2Text.slice(0, 400));
 
+  // ── picom.conf (picom X11 compositor) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('picom.conf');
+  await page.waitForSelector('#previewHost .picomcfg-doc', { timeout: 12000 });
+  const picomText = await page.$eval('#previewHost .picomcfg-doc', (e) => e.textContent);
+  if (/picom/i.test(picomText)) pass('picom.conf: picom badge shown'); else fail('picom-conf badge: ' + picomText.slice(0, 200));
+  if (/glx|backend|shadow/i.test(picomText)) pass('picom.conf: backend or shadow information shown'); else fail('picom-conf content: ' + picomText.slice(0, 300));
+
+  // ── mpd.conf (Music Player Daemon) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mpd.conf');
+  await page.waitForSelector('#previewHost .mpdcfg-doc', { timeout: 12000 });
+  const mpdText = await page.$eval('#previewHost .mpdcfg-doc', (e) => e.textContent);
+  if (/MPD/i.test(mpdText)) pass('mpd.conf: MPD badge shown'); else fail('mpd-conf badge: ' + mpdText.slice(0, 200));
+  if (/Music|audio|pipewire/i.test(mpdText)) pass('mpd.conf: music directory or audio outputs shown'); else fail('mpd-conf content: ' + mpdText.slice(0, 300));
+
 }

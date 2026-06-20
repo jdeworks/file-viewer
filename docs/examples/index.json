@@ -5237,12 +5237,12 @@
     "label": "shard.yml",
     "file": "shard.yml",
     "mime": "text/x-yaml",
-    "category": "Config",
+    "category": "Package",
     "categories": [
-      "Config"
+      "Package"
     ],
     "enhanced": true,
-    "description": "Crystal language shard manifest: package info and dependencies."
+    "description": "Crystal language shard.yml package manifest — dependencies, version, and build targets."
   },
   {
     "label": "go.work",
@@ -5259,12 +5259,12 @@
     "label": "build.zig.zon",
     "file": "build.zig.zon",
     "mime": "text/plain",
-    "category": "Config",
+    "category": "Package",
     "categories": [
-      "Config"
+      "Package"
     ],
     "enhanced": true,
-    "description": "Zig build system package manifest with dependencies."
+    "description": "Zig build.zig.zon package manifest — name, version, and dependencies in ZON format."
   },
   {
     "file": "wdio.conf.js",

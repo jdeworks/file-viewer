@@ -329,6 +329,7 @@ import veleroConfig from '../types/text/yaml/known/velero-config/index.js';
 import androidManifest from '../types/text/xml/known/android-manifest/index.js';
 import appConfig from '../types/text/xml/known/app-config/index.js';
 import buildZigZon from '../types/text/known/build-zig-zon/index.js';
+import zigZon from '../types/text/known/zig-zon/index.js';
 import cartfile from '../types/text/known/cartfile/index.js';
 import electronBuilder from '../types/text/yaml/known/electron-builder/index.js';
 import elmJson from '../types/text/json/known/elm-json/index.js';
@@ -367,6 +368,7 @@ import pgbouncerIni from '../types/text/known/pgbouncer-ini/index.js';
 import pgbackrestConf from '../types/text/known/pgbackrest-conf/index.js';
 import patroniConfig from '../types/text/yaml/known/patroni-config/index.js';
 import shardYml from '../types/text/yaml/known/shard-yml/index.js';
+import crystalShard from '../types/text/yaml/known/crystal-shard/index.js';
 import tauriConf from '../types/text/json/known/tauri-conf/index.js';
 import traefikConfig from '../types/text/yaml/known/traefik-config/index.js';
 import unleashConfig from '../types/text/known/unleash-config/index.js';
@@ -512,6 +514,8 @@ import pulseaudioConf from '../types/text/known/pulseaudio-conf/index.js';
 import pipewireConf from '../types/text/known/pipewire-conf/index.js';
 import weztermConf from '../types/text/known/wezterm-conf/index.js';
 import aria2Conf from '../types/text/known/aria2-conf/index.js';
+import picomConf from '../types/text/known/picom-conf/index.js';
+import mpdConf from '../types/text/known/mpd-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -573,11 +577,11 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   shadowCljs, projectClj, depsEdn,
   atlantis, checkov, terraformDocs, infracost,
   opencostConfig, crossplaneConfig, kedaConfig, veleroConfig,
-  androidManifest, appConfig, buildZigZon, cartfile,
+  androidManifest, appConfig, buildZigZon, zigZon, cartfile,
   electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, forgeConfig,
   gleamToml, goWork, grafanaIni, podmanQuadlet, growthbook,
   jekyllConfig, juliaProject, juliaManifest, kongConfig, apisixConfig, envoyConfig, launchSettings,
-  nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, clickhouseConfig, shardYml,
+  nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, clickhouseConfig, shardYml, crystalShard,
   tauriConf, traefikConfig, unleashConfig, vaultHcl, nomadJob, consulConfig,
   vectorToml, vectorConfig, keepalivedConf, wailsJson, webConfig, xcconfig,
   bitbucketPipelines, tektonPipeline, argoCdApp, fluxKustomization, fluxHelmRelease, dockerStack,
@@ -625,6 +629,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   rofiConfig, makoConf,
   pulseaudioConf, pipewireConf,
   weztermConf, aria2Conf,
+  picomConf, mpdConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
