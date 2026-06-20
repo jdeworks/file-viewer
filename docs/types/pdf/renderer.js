@@ -2,8 +2,14 @@
 // executes, the PDF) directly in the parent pane, so we can attach edit controls. Default is a
 // clean read-only view; an Edit toggle reveals per-page rotate / move / delete, and edits (via
 // pdf-lib, lazy-loaded) produce a new PDF you can download. The original bytes are never mutated.
+//
+// Password-protected PDFs: pdf.js throws PasswordException (name === 'PasswordException') with
+// code 1 (NEED_PASSWORD) on first open, or code 2 (INCORRECT_PASSWORD) on a wrong retry.
+// We catch these and show an inline password prompt (showPasswordPrompt) in the host element,
+// then retry getDocument with the supplied password until success or cancellation.
 import { loadPdfjs } from './pdflib.js';
 import { createEditor } from './pdfedit.js';
+import { showPasswordPrompt } from '../../core/password-prompt.js';
 
 const MAX_PAGES = 50;
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -48,11 +54,46 @@ export async function render(intake, ctx) {
   const infoEl = host.querySelector('.pdf-info');
   const changesEl = host.querySelector('.pdf-changes');
 
+  // Password state — retained across re-renders (e.g. after edits) so the user doesn't need to
+  // re-enter it. Cleared to null if the document is replaced (not applicable in current flow).
+  let unlockPassword = null;
+
   let editor = null, editing = false, dirty = false, currentBytes = intake.bytes;
 
   async function renderPages(bytes) {
     const lib = await loadPdfjs();
-    const doc = await lib.getDocument({ data: bytes.slice() }).promise;
+    // pdf.js throws PasswordException (name === 'PasswordException') for encrypted PDFs:
+    //   code 1 (NEED_PASSWORD)      — first attempt, no password supplied
+    //   code 2 (INCORRECT_PASSWORD) — wrong password was provided
+    // We show an inline overlay prompt and retry until the user succeeds or cancels.
+    let doc;
+    while (true) {
+      try {
+        doc = await lib.getDocument({ data: bytes.slice(), password: unlockPassword ?? undefined }).promise;
+        break; // success
+      } catch (err) {
+        if (err?.name !== 'PasswordException') throw err;
+        // Show a full-size password prompt overlay on top of the (empty) pdf-doc host.
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:absolute;inset:0;background:var(--bg,#fff);z-index:10;display:flex;flex-direction:column;';
+        host.style.position = 'relative';
+        host.appendChild(overlay);
+        const hint = unlockPassword !== null ? 'Incorrect password — please try again.' : '';
+        const password = await showPasswordPrompt(overlay, {
+          filename: intake.filename || intake.name || 'document.pdf',
+          hint,
+        });
+        host.removeChild(overlay);
+        if (password === null) {
+          // User cancelled — show a neutral note.
+          pagesEl.innerHTML = '<p class="pdf-note" style="padding:20px;color:var(--fg-2,#888)">Password required to view this file.</p>';
+          infoEl.textContent = 'password required';
+          return;
+        }
+        unlockPassword = password;
+        // Loop to retry with the new password.
+      }
+    }
     try {
       const max = Math.min(doc.numPages, MAX_PAGES);
       pagesEl.innerHTML = '';
