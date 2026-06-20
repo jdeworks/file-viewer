@@ -1,0 +1,72 @@
+name: file-viewer CI
+
+when:
+  branch:
+    - main
+    - develop
+  event:
+    - push
+    - pull_request
+
+matrix:
+  NODE_VERSION:
+    - 20
+    - 22
+
+clone:
+  git:
+    image: woodpecker/git
+    settings:
+      depth: 50
+
+steps:
+  - name: install
+    image: node:${matrix.NODE_VERSION}-alpine
+    commands:
+      - npm ci --prefer-offline
+
+  - name: lint
+    image: node:${matrix.NODE_VERSION}-alpine
+    commands:
+      - npm run lint
+    when:
+      event: push
+
+  - name: test
+    image: node:${matrix.NODE_VERSION}-alpine
+    commands:
+      - npm test
+      - npm run test:coverage
+    secrets:
+      - source: CODECOV_TOKEN
+      - source: TEST_API_KEY
+    environment:
+      CI: "true"
+
+  - name: build
+    image: node:${matrix.NODE_VERSION}-alpine
+    commands:
+      - npm run build
+      - du -sh dist/
+
+  - name: deploy-pages
+    image: woodpecker/gh-pages
+    settings:
+      pages_directory: dist
+      branch: gh-pages
+    secrets:
+      - source: GH_DEPLOY_TOKEN
+    when:
+      branch: main
+      event: push
+
+  - name: notify
+    image: woodpecker/slack
+    settings:
+      webhook: from_secret
+    secrets:
+      - source: SLACK_WEBHOOK
+    when:
+      status:
+        - success
+        - failure

@@ -1,0 +1,29 @@
+# act configuration file
+# Local GitHub Actions runner — https://github.com/nektos/act
+
+# Platform mappings: map runner labels to Docker images
+-P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest
+-P ubuntu-22.04=ghcr.io/catthehacker/ubuntu:act-22.04
+-P ubuntu-20.04=ghcr.io/catthehacker/ubuntu:act-20.04
+-P ubuntu-18.04=ghcr.io/catthehacker/ubuntu:act-18.04
+
+# Environment variables passed to all jobs
+--env GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+--env CI=true
+--env NODE_ENV=test
+--env DOCKER_BUILDKIT=1
+
+# Secrets (values injected from local secrets store)
+--secret NPM_TOKEN
+--secret DOCKER_HUB_TOKEN
+--secret AWS_ACCESS_KEY_ID
+--secret AWS_SECRET_ACCESS_KEY
+
+# Workflow directory
+--workflows .github/workflows
+
+# Additional flags
+--pull=false
+--reuse
+--rm
+--no-cache-server

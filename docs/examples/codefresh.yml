@@ -1,0 +1,102 @@
+version: '1.0'
+mode: parallel
+fail_fast: false
+
+triggers:
+  - type: git
+    name: push-to-main
+    repo: myorg/myapp
+    events:
+      - push
+    branchRegex: '^main$'
+  - type: git
+    name: push-to-develop
+    repo: myorg/myapp
+    events:
+      - push
+    branchRegex: '^develop$'
+  - type: cron
+    name: nightly-build
+    expression: '0 2 * * *'
+
+variables:
+  - key: REGISTRY
+    value: r.cfcr.io/myorg
+  - key: IMAGE_NAME
+    value: myapp
+  - key: NODE_ENV
+    value: production
+  - key: COVERAGE_THRESHOLD
+    value: '80'
+
+steps:
+  clone:
+    title: Clone repository
+    type: git-clone
+    repo: myorg/myapp
+    revision: '${{CF_BRANCH}}'
+
+  install_deps:
+    title: Install dependencies
+    type: freestyle
+    image: node:20-alpine
+    commands:
+      - npm ci --prefer-offline
+    working_directory: '${{clone}}'
+
+  lint:
+    title: Lint code
+    type: freestyle
+    image: node:20-alpine
+    commands:
+      - npm run lint
+      - npm run typecheck
+    working_directory: '${{clone}}'
+
+  test:
+    title: Run unit tests
+    type: freestyle
+    image: node:20-alpine
+    commands:
+      - npm test -- --coverage --coverageThreshold='{"global":{"lines":${{COVERAGE_THRESHOLD}}}}'
+    working_directory: '${{clone}}'
+
+  build:
+    title: Build Docker image
+    type: build
+    image_name: '${{REGISTRY}}/${{IMAGE_NAME}}'
+    tag: '${{CF_SHORT_REVISION}}'
+    dockerfile: Dockerfile
+    working_directory: '${{clone}}'
+
+  push_staging:
+    title: Push to staging registry
+    type: push
+    candidate: '${{build}}'
+    tags:
+      - staging
+      - '${{CF_SHORT_REVISION}}'
+    registry: cfcr
+
+  integration_tests:
+    title: Integration tests
+    type: freestyle
+    image: node:20-alpine
+    commands:
+      - npm run test:integration
+    environment:
+      - APP_URL=http://staging.myapp.example.com
+    working_directory: '${{clone}}'
+
+  push_production:
+    title: Push production image
+    type: push
+    candidate: '${{build}}'
+    tags:
+      - latest
+      - '${{CF_BRANCH_TAG_NORMALIZED}}'
+    registry: cfcr
+    when:
+      branch:
+        only:
+          - main

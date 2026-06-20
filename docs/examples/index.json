@@ -6206,7 +6206,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys — all secret values masked.",
+    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys \u2014 all secret values masked.",
     "knownFile": "rails-credentials"
   },
   {
@@ -6218,8 +6218,292 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Puma web server config: 2 workers, threads 2–16, production environment, preload_app enabled, plugins listed.",
+    "description": "Puma web server config: 2 workers, threads 2\u201316, production environment, preload_app enabled, plugins listed.",
     "knownFile": "puma-config"
   },
-  {"label": "Harness Pipeline", "file": "harness-pipeline.yaml", "mime": "text/yaml", "category": "Config", "categories": ["Config", "devops"], "enhanced": true}
+  {
+    "label": "Harness Pipeline",
+    "file": "harness-pipeline.yaml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "devops"
+    ],
+    "enhanced": true,
+    "knownFile": "harness-pipeline"
+  },
+  {
+    "label": ".woodpecker.yml (Woodpecker CI)",
+    "file": ".woodpecker.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "devops"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "act config (.actrc)",
+    "file": ".actrc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "devops"
+    ],
+    "enhanced": true
+  },
+  {
+    "label": "policy.rego",
+    "file": "policy.rego",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "OPA Rego authorization policy with allow/deny rules and helper functions.",
+    "knownFile": "opa-policy"
+  },
+  {
+    "label": "falco_rules.yaml",
+    "file": "falco_rules.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Falco runtime security rules with conditions, output templates, and priority levels.",
+    "knownFile": "falco-rules"
+  },
+  {
+    "label": "kyverno-policy.yaml",
+    "file": "kyverno-policy.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Kyverno ClusterPolicy enforcing pod security standards with validation rules.",
+    "knownFile": "kyverno-policy"
+  },
+  {
+    "label": "gatekeeper-constraint.yaml",
+    "file": "gatekeeper-constraint.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "OPA Gatekeeper constraint requiring team labels on all Kubernetes namespaces.",
+    "knownFile": "gatekeeper-config"
+  },
+  {
+    "label": "config.xml (ClickHouse)",
+    "file": "config.xml",
+    "mime": "text/xml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "ClickHouse server config: listen host/port, memory limits, logger, and access management."
+  },
+  {
+    "label": "cassandra.yaml",
+    "file": "cassandra.yaml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Apache Cassandra config: cluster name, seeds, storage paths, compaction, and authentication.",
+    "knownFile": "cassandra-config"
+  },
+  {
+    "label": "elasticsearch.yml",
+    "file": "elasticsearch.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Elasticsearch config: cluster/node identity, network, discovery, and X-Pack security.",
+    "knownFile": "elasticsearch-config"
+  },
+  {
+    "label": "sentinel.conf (Redis Sentinel)",
+    "file": "sentinel.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Redis Sentinel config: sentinel port, monitored masters, quorum, and failover timeouts.",
+    "knownFile": "redis-sentinel"
+  },
+  {
+    "label": "Codefresh config",
+    "file": "codefresh.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "devops"
+    ],
+    "enhanced": true,
+    "knownFile": "codefresh-config"
+  },
+  {
+    "label": "sbom.cyclonedx.json (CycloneDX SBOM)",
+    "file": "sbom.cyclonedx.json",
+    "mime": "application/json",
+    "category": "Security",
+    "categories": [
+      "Security"
+    ],
+    "enhanced": true,
+    "description": "CycloneDX SBOM listing 7 npm dependencies with metadata, tools, and one vulnerability.",
+    "knownFile": "cyclonedx-sbom"
+  },
+  {
+    "label": "sbom.spdx (SPDX SBOM)",
+    "file": "sbom.spdx",
+    "mime": "text/plain",
+    "category": "Security",
+    "categories": [
+      "Security"
+    ],
+    "enhanced": true,
+    "description": "SPDX 2.3 Software Bill of Materials with 6 packages and relationship graph.",
+    "knownFile": "spdx-sbom"
+  },
+  {
+    "label": "provenance.json (SLSA Provenance)",
+    "file": "provenance.json",
+    "mime": "application/json",
+    "category": "Security",
+    "categories": [
+      "Security"
+    ],
+    "enhanced": true,
+    "description": "SLSA v0.2 provenance attestation for a GitHub Actions build with 2 subjects and 4 materials.",
+    "knownFile": "slsa-provenance"
+  },
+  {
+    "label": ".syft.yaml (Syft config)",
+    "file": ".syft.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Syft SBOM generation config: 3 output formats, 8 enabled catalogers, secret scanning enabled.",
+    "knownFile": "syft-config"
+  },
+  {
+    "label": "example.nomad (Nomad Job)",
+    "file": "example.nomad",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "HashiCorp Nomad job definition: service type with task groups, Docker driver, resources, and service discovery.",
+    "knownFile": "nomad-job"
+  },
+  {
+    "label": "docker-stack.yml (Docker Stack)",
+    "file": "docker-stack.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Docker Swarm stack file: web, api, and db services with replicas, update_config, restart_policy, and named secrets.",
+    "knownFile": "docker-stack"
+  },
+  {
+    "label": "myapp.container (Podman Quadlet)",
+    "file": "myapp.container",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Podman Quadlet systemd container unit: image, environment variables (secrets masked), volume mounts, network, and ports.",
+    "knownFile": "podman-quadlet"
+  },
+  {
+    "label": "flux-kustomization.yaml (Flux Kustomization)",
+    "file": "flux-kustomization.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Flux CD Kustomization CRD: GitRepository source, path, prune/wait settings, health checks, and dependsOn.",
+    "knownFile": "flux-kustomization"
+  },
+  {
+    "label": ".mockery.yaml (mockery)",
+    "file": ".mockery.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "mockery config: 3 packages, 8 interfaces mocked, with-expecter enabled.",
+    "knownFile": "mockery-config"
+  },
+  {
+    "label": ".ko.yaml (ko container build)",
+    "file": ".ko.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "ko Go container image builder: distroless base, linux/amd64 + linux/arm64, SPDX SBOM.",
+    "knownFile": "ko-config"
+  },
+  {
+    "label": "sqlc.yaml (sqlc)",
+    "file": "sqlc.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "sqlc SQL code generation: 2 PostgreSQL databases, type-safe Go output, UUID and timestamp overrides.",
+    "knownFile": "sqlc-config"
+  },
+  {
+    "label": "nfpm.yaml (nfpm)",
+    "file": "nfpm.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "nfpm package config: myapp v1.2.3 for deb, rpm, and apk formats with install scripts.",
+    "knownFile": "nfpm-config"
+  }
 ]

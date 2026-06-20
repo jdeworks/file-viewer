@@ -1,0 +1,110 @@
+pipeline:
+  name: Build and Deploy Service
+  identifier: Build_and_Deploy_Service
+  projectIdentifier: my_project
+  orgIdentifier: my_org
+  tags:
+    env: production
+    team: platform
+  variables:
+    - name: DOCKER_REGISTRY
+      value: registry.example.com
+      type: String
+    - name: IMAGE_TAG
+      value: latest
+      type: String
+    - name: REPLICAS
+      value: "3"
+      type: String
+  stages:
+    - stage:
+        name: Build Docker Image
+        identifier: Build_Docker_Image
+        type: CI
+        spec:
+          cloneCodebase: true
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: account.k8s_cluster
+              namespace: harness-builds
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Run Tests
+                  identifier: Run_Tests
+                  spec:
+                    connectorRef: account.docker_hub
+                    image: node:18-alpine
+                    command: |-
+                      npm ci
+                      npm test
+              - step:
+                  type: BuildAndPushDockerRegistry
+                  name: Build and Push
+                  identifier: Build_and_Push
+                  spec:
+                    connectorRef: account.docker_registry
+                    repo: <+pipeline.variables.DOCKER_REGISTRY>/my-service
+                    tags:
+                      - <+pipeline.variables.IMAGE_TAG>
+                      - <+pipeline.executionId>
+    - stage:
+        name: Deploy to Staging
+        identifier: Deploy_to_Staging
+        type: CD
+        spec:
+          deploymentType: Kubernetes
+          service:
+            serviceRef: my_service
+          environment:
+            environmentRef: staging
+            deployToAll: false
+          execution:
+            steps:
+              - step:
+                  type: K8sRollingDeploy
+                  name: Rolling Deploy
+                  identifier: Rolling_Deploy
+                  spec:
+                    skipDryRun: false
+              - step:
+                  type: Http
+                  name: Health Check
+                  identifier: Health_Check
+                  spec:
+                    url: https://staging.example.com/health
+                    method: GET
+                    assertion: <+httpResponseCode> == 200
+    - stage:
+        name: Deploy to Production
+        identifier: Deploy_to_Production
+        type: CD
+        spec:
+          deploymentType: Kubernetes
+          service:
+            serviceRef: my_service
+          environment:
+            environmentRef: production
+            deployToAll: false
+          execution:
+            steps:
+              - step:
+                  type: HarnessApproval
+                  name: Approve Production Deploy
+                  identifier: Approve_Production
+                  spec:
+                    approvalMessage: Please review the staging deployment before approving production release.
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      minimumCount: 1
+                      disallowPipelineExecutor: true
+                      userGroups:
+                        - account.platform_leads
+              - step:
+                  type: K8sRollingDeploy
+                  name: Rolling Deploy
+                  identifier: Rolling_Deploy_Prod
+                  spec:
+                    skipDryRun: false

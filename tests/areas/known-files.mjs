@@ -2209,4 +2209,144 @@ export async function run(ctx) {
   if (/numpy|pandas|scikit-learn/i.test(pxiText)) pass('pixi.toml: conda dependencies shown'); else fail('pxi deps: ' + pxiText.slice(0, 400));
   if (/torch|transformers/i.test(pxiText)) pass('pixi.toml: PyPI dependencies shown'); else fail('pxi pypi: ' + pxiText.slice(0, 400));
   if (/train|evaluate|notebook/i.test(pxiText)) pass('pixi.toml: tasks shown in table'); else fail('pxi tasks: ' + pxiText.slice(0, 400));
+
+  // ── .woodpecker.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.woodpecker.yml');
+  await page.waitForSelector('#previewHost .wpc-doc', { timeout: 12000 });
+  const wpcText = await page.$eval('#previewHost .wpc-doc', (e) => e.textContent);
+  if (/Woodpecker/i.test(wpcText)) pass('.woodpecker.yml: badge shown'); else fail('woodpecker badge: ' + wpcText.slice(0, 200));
+  if (/step|pipeline/i.test(wpcText)) pass('.woodpecker.yml: steps shown'); else fail('woodpecker steps: ' + wpcText.slice(0, 200));
+  if (/image|plugin/i.test(wpcText)) pass('.woodpecker.yml: step images shown'); else fail('woodpecker images: ' + wpcText.slice(0, 200));
+  if (/secret|when|clone|matrix/i.test(wpcText)) pass('.woodpecker.yml: pipeline metadata shown'); else fail('woodpecker metadata: ' + wpcText.slice(0, 200));
+
+  // ── harness-pipeline.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('harness-pipeline.yaml');
+  await page.waitForSelector('#previewHost .hrn-doc', { timeout: 12000 });
+  const hrnText = await page.$eval('#previewHost .hrn-doc', (e) => e.textContent);
+  if (/Harness/i.test(hrnText)) pass('harness-pipeline.yaml: badge shown'); else fail('harness badge: ' + hrnText.slice(0, 200));
+  if (/pipeline|identifier/i.test(hrnText)) pass('harness-pipeline.yaml: pipeline identity shown'); else fail('harness identity: ' + hrnText.slice(0, 200));
+  if (/stage|CI|CD/i.test(hrnText)) pass('harness-pipeline.yaml: stages shown'); else fail('harness stages: ' + hrnText.slice(0, 200));
+  if (/step|variable|tag/i.test(hrnText)) pass('harness-pipeline.yaml: stage details shown'); else fail('harness details: ' + hrnText.slice(0, 200));
+
+  // ── codefresh.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('codefresh.yml');
+  await page.waitForSelector('#previewHost .cfd-doc', { timeout: 12000 });
+  const cfdText = await page.$eval('#previewHost .cfd-doc', (e) => e.textContent);
+  if (/Codefresh/i.test(cfdText)) pass('codefresh.yml: badge shown'); else fail('codefresh badge: ' + cfdText.slice(0, 200));
+  if (/step|build|test|push/i.test(cfdText)) pass('codefresh.yml: steps shown'); else fail('codefresh steps: ' + cfdText.slice(0, 200));
+  if (/version/i.test(cfdText)) pass('codefresh.yml: version shown'); else fail('codefresh version: ' + cfdText.slice(0, 200));
+  if (/trigger|variable|image|type/i.test(cfdText)) pass('codefresh.yml: pipeline metadata shown'); else fail('codefresh metadata: ' + cfdText.slice(0, 200));
+
+
+  // ── opa-policy viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('policy.rego');
+  await page.waitForSelector('#previewHost .opa-doc', { timeout: 12000 });
+  const opaText = await page.$eval('#previewHost .opa-doc', (e) => e.textContent);
+  if (/OPA Policy/i.test(opaText)) pass('policy.rego: OPA Policy badge shown'); else fail('opa badge: ' + opaText.slice(0, 200));
+  if (/authz/i.test(opaText)) pass('policy.rego: package name shown'); else fail('opa package: ' + opaText.slice(0, 300));
+  if (/allow/i.test(opaText)) pass('policy.rego: allow rules shown'); else fail('opa allow rules: ' + opaText.slice(0, 300));
+  if (/deny/i.test(opaText)) pass('policy.rego: deny rules shown'); else fail('opa deny rules: ' + opaText.slice(0, 300));
+  if (/rego\.v1|data\.roles/i.test(opaText)) pass('policy.rego: imports shown'); else fail('opa imports: ' + opaText.slice(0, 300));
+
+  // ── falco-rules viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('falco_rules.yaml');
+  await page.waitForSelector('#previewHost .falco-doc', { timeout: 12000 });
+  const falcoText = await page.$eval('#previewHost .falco-doc', (e) => e.textContent);
+  if (/Falco Rules/i.test(falcoText)) pass('falco_rules.yaml: Falco Rules badge shown'); else fail('falco badge: ' + falcoText.slice(0, 200));
+  if (/Terminal shell in container/i.test(falcoText)) pass('falco_rules.yaml: rule name shown'); else fail('falco rule name: ' + falcoText.slice(0, 300));
+  if (/CRITICAL|ERROR|NOTICE/i.test(falcoText)) pass('falco_rules.yaml: priority levels shown'); else fail('falco priority: ' + falcoText.slice(0, 300));
+  if (/container|shell|network/i.test(falcoText)) pass('falco_rules.yaml: tags shown'); else fail('falco tags: ' + falcoText.slice(0, 300));
+  if (/spawned_process|bin_dir/i.test(falcoText)) pass('falco_rules.yaml: macro names shown'); else fail('falco macros: ' + falcoText.slice(0, 300));
+
+  // ── kyverno-policy viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('kyverno-policy.yaml');
+  await page.waitForSelector('#previewHost .kyv-doc', { timeout: 12000 });
+  const kyvText = await page.$eval('#previewHost .kyv-doc', (e) => e.textContent);
+  if (/Kyverno/i.test(kyvText)) pass('kyverno-policy.yaml: Kyverno badge shown'); else fail('kyverno badge: ' + kyvText.slice(0, 200));
+  if (/disallow-privileged-containers/i.test(kyvText)) pass('kyverno-policy.yaml: policy name shown'); else fail('kyverno name: ' + kyvText.slice(0, 300));
+  if (/enforce/i.test(kyvText)) pass('kyverno-policy.yaml: validationFailureAction shown'); else fail('kyverno action: ' + kyvText.slice(0, 300));
+  if (/privileged-containers/i.test(kyvText)) pass('kyverno-policy.yaml: rule names shown'); else fail('kyverno rules: ' + kyvText.slice(0, 300));
+  if (/Pod/i.test(kyvText)) pass('kyverno-policy.yaml: matched kinds shown'); else fail('kyverno kinds: ' + kyvText.slice(0, 300));
+
+  // ── gatekeeper-config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('gatekeeper-constraint.yaml');
+  await page.waitForSelector('#previewHost .gkpr-doc', { timeout: 12000 });
+  const gkText = await page.$eval('#previewHost .gkpr-doc', (e) => e.textContent);
+  if (/Gatekeeper/i.test(gkText)) pass('gatekeeper-constraint.yaml: Gatekeeper badge shown'); else fail('gatekeeper badge: ' + gkText.slice(0, 200));
+  if (/require-team-label/i.test(gkText)) pass('gatekeeper-constraint.yaml: constraint name shown'); else fail('gatekeeper name: ' + gkText.slice(0, 300));
+  if (/deny/i.test(gkText)) pass('gatekeeper-constraint.yaml: enforcementAction shown'); else fail('gatekeeper action: ' + gkText.slice(0, 300));
+  if (/Namespace/i.test(gkText)) pass('gatekeeper-constraint.yaml: match kinds shown'); else fail('gatekeeper kinds: ' + gkText.slice(0, 300));
+  if (/team|labels/i.test(gkText)) pass('gatekeeper-constraint.yaml: parameters shown'); else fail('gatekeeper params: ' + gkText.slice(0, 300));
+
+  // ── .actrc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.actrc');
+  await page.waitForSelector('#previewHost .act-doc', { timeout: 12000 });
+  const actText = await page.$eval('#previewHost .act-doc', (e) => e.textContent);
+  if (/\bact\b/i.test(actText)) pass('.actrc: act badge shown'); else fail('act badge: ' + actText.slice(0, 200));
+  if (/ubuntu|platform|runner/i.test(actText)) pass('.actrc: platform mappings shown'); else fail('act platforms: ' + actText.slice(0, 200));
+  if (/env|secret/i.test(actText)) pass('.actrc: env/secrets shown'); else fail('act env/secrets: ' + actText.slice(0, 200));
+  if (/ghcr\.io|catthehacker|docker/i.test(actText)) pass('.actrc: docker image shown'); else fail('act docker image: ' + actText.slice(0, 200));
+}
+
+  // ── .actrc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.actrc');
+  await page.waitForSelector('#previewHost .act-doc', { timeout: 12000 });
+  const actText = await page.$eval('#previewHost .act-doc', (e) => e.textContent);
+  if (/\bact\b/i.test(actText)) pass('.actrc: act badge shown'); else fail('act badge: ' + actText.slice(0, 200));
+  if (/ubuntu|platform|runner/i.test(actText)) pass('.actrc: platform mappings shown'); else fail('act platforms: ' + actText.slice(0, 200));
+  if (/env|secret/i.test(actText)) pass('.actrc: env/secrets shown'); else fail('act env/secrets: ' + actText.slice(0, 200));
+  if (/ghcr\.io|catthehacker|docker/i.test(actText)) pass('.actrc: docker image shown'); else fail('act docker image: ' + actText.slice(0, 200));
+
+  // ── clickhouse config.xml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('config.xml (ClickHouse)');
+  await page.waitForSelector('#previewHost .ch-doc', { timeout: 12000 });
+  const chText = await page.$eval('#previewHost .ch-doc', (e) => e.textContent);
+  if (/ClickHouse/i.test(chText)) pass('config.xml: ClickHouse badge shown'); else fail('clickhouse badge: ' + chText.slice(0, 200));
+  if (/9000|8123/i.test(chText)) pass('config.xml: TCP/HTTP ports shown'); else fail('clickhouse ports: ' + chText.slice(0, 300));
+  if (/4096/i.test(chText)) pass('config.xml: max_connections shown'); else fail('clickhouse max_connections: ' + chText.slice(0, 300));
+  if (/information|debug|warning|error/i.test(chText)) pass('config.xml: log level shown'); else fail('clickhouse loglevel: ' + chText.slice(0, 300));
+  if (/clickhouse-server|default/i.test(chText)) pass('config.xml: storage/database shown'); else fail('clickhouse storage: ' + chText.slice(0, 300));
+
+  // ── cassandra.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cassandra.yaml');
+  await page.waitForSelector('#previewHost .cass-doc', { timeout: 12000 });
+  const cassText = await page.$eval('#previewHost .cass-doc', (e) => e.textContent);
+  if (/Cassandra/i.test(cassText)) pass('cassandra.yaml: Cassandra badge shown'); else fail('cassandra badge: ' + cassText.slice(0, 200));
+  if (/MyProductionCluster/i.test(cassText)) pass('cassandra.yaml: cluster name shown'); else fail('cassandra cluster name: ' + cassText.slice(0, 300));
+  if (/10\.0\.1\.10|10\.0\.1\.11|10\.0\.1\.12/i.test(cassText)) pass('cassandra.yaml: seed addresses shown'); else fail('cassandra seeds: ' + cassText.slice(0, 300));
+  if (/9042/i.test(cassText)) pass('cassandra.yaml: native_transport_port shown'); else fail('cassandra port: ' + cassText.slice(0, 300));
+  if (/PasswordAuthenticator|GossipingPropertyFileSnitch/i.test(cassText)) pass('cassandra.yaml: auth/snitch settings shown'); else fail('cassandra auth: ' + cassText.slice(0, 300));
+
+  // ── elasticsearch.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('elasticsearch.yml');
+  await page.waitForSelector('#previewHost .es-doc', { timeout: 12000 });
+  const esText = await page.$eval('#previewHost .es-doc', (e) => e.textContent);
+  if (/Elasticsearch/i.test(esText)) pass('elasticsearch.yml: Elasticsearch badge shown'); else fail('elasticsearch badge: ' + esText.slice(0, 200));
+  if (/my-production-cluster/i.test(esText)) pass('elasticsearch.yml: cluster.name shown'); else fail('elasticsearch cluster: ' + esText.slice(0, 300));
+  if (/es-node-01/i.test(esText)) pass('elasticsearch.yml: node.name shown'); else fail('elasticsearch node: ' + esText.slice(0, 300));
+  if (/9200/i.test(esText)) pass('elasticsearch.yml: http.port shown'); else fail('elasticsearch http port: ' + esText.slice(0, 300));
+  if (/••••••••|sensitive|keystore|truststore/i.test(esText)) pass('elasticsearch.yml: X-Pack sensitive keys masked'); else fail('elasticsearch security masking: ' + esText.slice(0, 300));
+
+  // ── sentinel.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sentinel.conf (Redis Sentinel)');
+  await page.waitForSelector('#previewHost .rds-doc', { timeout: 12000 });
+  const rdsText = await page.$eval('#previewHost .rds-doc', (e) => e.textContent);
+  if (/Redis Sentinel/i.test(rdsText)) pass('sentinel.conf: Redis Sentinel badge shown'); else fail('sentinel badge: ' + rdsText.slice(0, 200));
+  if (/26379/i.test(rdsText)) pass('sentinel.conf: sentinel port shown'); else fail('sentinel port: ' + rdsText.slice(0, 300));
+  if (/redis-primary|redis-cache/i.test(rdsText)) pass('sentinel.conf: monitored master names shown'); else fail('sentinel masters: ' + rdsText.slice(0, 300));
+  if (/••••••••|sensitive/i.test(rdsText)) pass('sentinel.conf: passwords are masked'); else fail('sentinel masking: ' + rdsText.slice(0, 300));
+  if (/30000|180000/i.test(rdsText)) pass('sentinel.conf: down-after/failover-timeout shown'); else fail('sentinel timeouts: ' + rdsText.slice(0, 300));
 }

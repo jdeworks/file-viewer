@@ -214,6 +214,10 @@ import mesonBuild from '../types/text/known/meson-build/index.js';
 import goreleaser from '../types/text/yaml/known/goreleaser/index.js';
 import golangciLint from '../types/text/yaml/known/golangci-lint/index.js';
 import bufConfig from '../types/text/yaml/known/buf-config/index.js';
+import mockeryConfig from '../types/text/yaml/known/mockery-config/index.js';
+import koConfig from '../types/text/yaml/known/ko-config/index.js';
+import sqlcConfig from '../types/text/yaml/known/sqlc-config/index.js';
+import nfpmConfig from '../types/text/yaml/known/nfpm-config/index.js';
 import heroku from '../types/text/yaml/known/heroku/index.js';
 import readthedocs from '../types/text/yaml/known/readthedocs/index.js';
 import citationCff from '../types/text/yaml/known/citation-cff/index.js';
@@ -312,6 +316,7 @@ import forgeConfig from '../types/text/known/forge-config/index.js';
 import gleamToml from '../types/text/toml/known/gleam-toml/index.js';
 import goWork from '../types/text/known/go-work/index.js';
 import grafanaIni from '../types/text/ini/known/grafana-ini/index.js';
+import podmanQuadlet from '../types/text/ini/known/podman-quadlet/index.js';
 import growthbook from '../types/text/json/known/growthbook/index.js';
 import jekyllConfig from '../types/text/yaml/known/jekyll-config/index.js';
 import juliaProject from '../types/text/toml/known/julia-project/index.js';
@@ -323,6 +328,10 @@ import nimble from '../types/text/known/nimble/index.js';
 import packagesConfig from '../types/text/xml/known/packages-config/index.js';
 import podspec from '../types/text/known/podspec/index.js';
 import redisConf from '../types/text/known/redis-conf/index.js';
+import redisSentinel from '../types/text/known/redis-sentinel/index.js';
+import cassandraConfig from '../types/text/yaml/known/cassandra-config/index.js';
+import elasticsearchConfig from '../types/text/yaml/known/elasticsearch-config/index.js';
+import clickhouseConfig from '../types/text/xml/known/clickhouse-config/index.js';
 import mongodConf from '../types/text/known/mongod-conf/index.js';
 import myCnf from '../types/text/known/my-cnf/index.js';
 import postgresqlConf from '../types/text/known/postgresql-conf/index.js';
@@ -332,6 +341,7 @@ import tauriConf from '../types/text/json/known/tauri-conf/index.js';
 import traefikConfig from '../types/text/yaml/known/traefik-config/index.js';
 import unleashConfig from '../types/text/known/unleash-config/index.js';
 import vaultHcl from '../types/text/known/vault-hcl/index.js';
+import nomadJob from '../types/text/known/nomad-job/index.js';
 import vectorToml from '../types/text/toml/known/vector-toml/index.js';
 import wailsJson from '../types/text/json/known/wails-json/index.js';
 import webConfig from '../types/text/xml/known/web-config/index.js';
@@ -339,7 +349,9 @@ import xcconfig from '../types/text/known/xcconfig/index.js';
 import bitbucketPipelines from '../types/text/yaml/known/bitbucket-pipelines/index.js';
 import tektonPipeline from '../types/text/yaml/known/tekton-pipeline/index.js';
 import argoCdApp from '../types/text/yaml/known/argo-cd-app/index.js';
+import fluxKustomization from '../types/text/yaml/known/flux-kustomization/index.js';
 import fluxHelmRelease from '../types/text/yaml/known/flux-helm-release/index.js';
+import dockerStack from '../types/text/yaml/known/docker-stack/index.js';
 import semgrepConfig from '../types/text/yaml/known/semgrep-config/index.js';
 import codeclimateConfig from '../types/text/yaml/known/codeclimate-config/index.js';
 import gitleaksConfig from '../types/text/toml/known/gitleaks-config/index.js';
@@ -375,12 +387,22 @@ import analysisOptions from '../types/text/yaml/known/analysis-options/index.js'
 import podfileLock from '../types/text/known/podfile-lock/index.js';
 import xcodeScheme from '../types/text/xml/known/xcode-scheme/index.js';
 import easJson from '../types/text/json/known/eas-json/index.js';
+import opaPolicy from '../types/text/known/opa-policy/index.js';
+import falcoRules from '../types/text/yaml/known/falco-rules/index.js';
+import kyvernoPolicy from '../types/text/yaml/known/kyverno-policy/index.js';
+import gatekeeperConfig from '../types/text/yaml/known/gatekeeper-config/index.js';
 import jetbrainsWorkspace from '../types/text/xml/known/jetbrains-workspace/index.js';
 import neovimConfig from '../types/text/known/neovim-config/index.js';
 import vimConfig from '../types/text/known/vim-config/index.js';
 import emacsConfig from '../types/text/known/emacs-config/index.js';
 import woodpeckerCi from '../types/text/yaml/known/woodpecker-ci/index.js';
 import codefreshConfig from '../types/text/yaml/known/codefresh-config/index.js';
+import harnessPipeline from '../types/text/yaml/known/harness-pipeline/index.js';
+import actConfig from '../types/text/known/act-config/index.js';
+import cyclonedxSbom from '../types/text/json/known/cyclonedx-sbom/index.js';
+import spdxSbom from '../types/text/known/spdx-sbom/index.js';
+import slsaProvenance from '../types/text/json/known/slsa-provenance/index.js';
+import syftConfig from '../types/text/yaml/known/syft-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -417,7 +439,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   viteConfig, webpackConfig, rollupConfig, nextConfig,
   astroConfig, svelteConfig, nuxtConfig, remixConfig,
   airConfig, spectral, tiltfile, mesonBuild,
-  goreleaser, golangciLint, bufConfig, heroku,
+  goreleaser, golangciLint, bufConfig, mockeryConfig, koConfig, sqlcConfig, nfpmConfig, heroku,
   readthedocs, citationCff, yamllint, coderabbit,
   ionicConfig, metroConfig, reactNativeConfig,
   dotnetGlobal, prismaSchema, nugetConfig,
@@ -441,12 +463,12 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   opencostConfig, crossplaneConfig, kedaConfig, veleroConfig,
   androidManifest, appConfig, buildZigZon, cartfile,
   electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, forgeConfig,
-  gleamToml, goWork, grafanaIni, growthbook,
+  gleamToml, goWork, grafanaIni, podmanQuadlet, growthbook,
   jekyllConfig, juliaProject, kongConfig, apisixConfig, envoyConfig, launchSettings,
-  nimble, packagesConfig, podspec, redisConf, mongodConf, myCnf, postgresqlConf, pgbouncerIni, shardYml,
-  tauriConf, traefikConfig, unleashConfig, vaultHcl, consulConfig,
+  nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, cassandraConfig, elasticsearchConfig, clickhouseConfig, shardYml,
+  tauriConf, traefikConfig, unleashConfig, vaultHcl, nomadJob, consulConfig,
   vectorToml, wailsJson, webConfig, xcconfig,
-  bitbucketPipelines, tektonPipeline, argoCdApp, fluxHelmRelease,
+  bitbucketPipelines, tektonPipeline, argoCdApp, fluxKustomization, fluxHelmRelease, dockerStack,
   semgrepConfig, codeclimateConfig, gitleaksConfig, osvScanner,
   condaEnv, pipConf, nodeVersionFile, dockerBake,
   flake8, pylintrc, setupCfg, awsCredentials, awsConfig,
@@ -460,6 +482,11 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,
   woodpeckerCi,
+  codefreshConfig,
+  opaPolicy, falcoRules, kyvernoPolicy, gatekeeperConfig,
+  harnessPipeline,
+  actConfig,
+  cyclonedxSbom, spdxSbom, slsaProvenance, syftConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
