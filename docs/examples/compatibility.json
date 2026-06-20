@@ -5019,6 +5019,35 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "svg": {
+      "label": "SVG image",
+      "support": "supported",
+      "sampleFiles": [
+        "example.svg"
+      ],
+      "extensions": [
+        ".svg"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [
+        "scripts disabled in sandboxed iframe"
+      ],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false,
+      "fileExamplesSlug": null
     }
   },
   "knownFiles": {
@@ -28753,7 +28782,7 @@
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
-        "sample.als"
+        "sample-alloy.als"
       ],
       "extensions": [
         ".yml"

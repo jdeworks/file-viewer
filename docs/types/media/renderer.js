@@ -77,6 +77,9 @@ export async function render(intake, ctx = {}) {
   name.className = 'media-name';
   name.textContent = intake.filename;
 
+  // Resolve ffmpeg setting early so video controls and the pill can reference it.
+  const enableFfmpeg = !!ctx.settings?.enableFfmpeg;
+
   // ── Sleep timer control ──
   const tools = document.createElement('div');
   tools.className = 'media-tools';
@@ -94,6 +97,84 @@ export async function render(intake, ctx = {}) {
   const sleepNote = document.createElement('span');
   sleepNote.className = 'media-sleep-note';
   tools.append(sleepWrap, sleepNote);
+
+  // ── Video-only controls ──
+  if (info.kind === 'video') {
+    const videoControls = document.createElement('div');
+    videoControls.className = 'media-video-controls';
+
+    // Seek ±10s buttons
+    const seekBack = btn('⏪ 10s', 'Seek back 10 seconds');
+    seekBack.addEventListener('click', () => { el.currentTime = Math.max(0, el.currentTime - 10); });
+    const seekFwd = btn('⏩ 10s', 'Seek forward 10 seconds');
+    seekFwd.addEventListener('click', () => { el.currentTime = Math.min(el.duration || 0, el.currentTime + 10); });
+
+    // Fullscreen button
+    const fsBtn = btn('⛶ Full', 'Enter fullscreen');
+    fsBtn.addEventListener('click', () => { (el.closest('.media-doc') || el).requestFullscreen?.(); });
+
+    // Filter controls
+    const filterDetails = document.createElement('details');
+    filterDetails.className = 'media-filter-panel';
+    const filterSummary = document.createElement('summary');
+    filterSummary.textContent = 'Filters';
+    filterDetails.appendChild(filterSummary);
+
+    let brVal = 1.0, conVal = 1.0, satVal = 1.0;
+    function applyFilters() {
+      el.style.filter = 'brightness(' + brVal + ') contrast(' + conVal + ') saturate(' + satVal + ')';
+    }
+
+    const filterSliders = [
+      { label: 'Brightness', min: '0.5', max: '2.0', step: '0.05', def: 1.0, get: () => brVal, set: (v) => { brVal = v; } },
+      { label: 'Contrast',   min: '0.5', max: '2.0', step: '0.05', def: 1.0, get: () => conVal, set: (v) => { conVal = v; } },
+      { label: 'Color',      min: '0',   max: '2.0', step: '0.05', def: 1.0, get: () => satVal, set: (v) => { satVal = v; } },
+    ];
+    const sliderEls = [];
+    for (const s of filterSliders) {
+      const row = document.createElement('div');
+      row.className = 'media-filter-row';
+      const lbl = document.createElement('label');
+      lbl.textContent = s.label;
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.min = s.min;
+      slider.max = s.max;
+      slider.step = s.step;
+      slider.value = String(s.def);
+      slider.addEventListener('input', () => { s.set(parseFloat(slider.value)); applyFilters(); });
+      sliderEls.push({ slider, def: s.def, set: s.set });
+      row.append(lbl, slider);
+      filterDetails.appendChild(row);
+    }
+    const resetBtn = document.createElement('button');
+    resetBtn.type = 'button';
+    resetBtn.className = 'media-track-btn';
+    resetBtn.textContent = 'Reset';
+    resetBtn.title = 'Reset filters to default';
+    resetBtn.addEventListener('click', () => {
+      brVal = 1.0; conVal = 1.0; satVal = 1.0;
+      for (const { slider, def } of sliderEls) slider.value = String(def);
+      el.style.filter = '';
+    });
+    filterDetails.appendChild(resetBtn);
+
+    videoControls.append(seekBack, seekFwd, fsBtn, filterDetails);
+    tools.appendChild(videoControls);
+  }
+
+  // ── FFmpeg status pill ──
+  const ffmpegPill = document.createElement('button');
+  ffmpegPill.type = 'button';
+  ffmpegPill.className = 'media-ffmpeg-pill' + (enableFfmpeg ? ' media-ffmpeg-pill--on' : '');
+  ffmpegPill.textContent = enableFfmpeg ? '🎬 Editor: on' : '🎬 Editor: off';
+  ffmpegPill.title = enableFfmpeg
+    ? 'Media editor active — scroll down to edit'
+    : 'Enable media transcoding in Settings → Advanced to unlock trim/convert';
+  ffmpegPill.addEventListener('click', () => {
+    if (enableFfmpeg && editorPanel) editorPanel.scrollIntoView({ behavior: 'smooth' });
+  });
+  tools.appendChild(ffmpegPill);
 
   // ── Folder playlist (when the file is part of a multi-track folder) ──
   let shuffle = false;
@@ -177,7 +258,7 @@ export async function render(intake, ctx = {}) {
   // When ffmpeg is enabled: full editor panel (Phase 2). Provides trim, extract
   // audio, mute, screenshot, downscale, volume, speed, and WebM conversion.
   // When disabled: show a plain hint for formats that can't play natively.
-  const enableFfmpeg = !!ctx.settings?.enableFfmpeg;
+  // (enableFfmpeg is declared earlier so video controls can reference it.)
   const needsConvert = likelyNeedsTranscode(intake);
 
   // Legacy hint panel — shown only when ffmpeg is disabled but the file needs conversion.

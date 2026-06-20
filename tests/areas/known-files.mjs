@@ -7011,7 +7011,7 @@ export async function run(ctx) {
 
   // ── alloy-lang viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('sample.als');
+  await openExample('sample-alloy.als');
   await page.waitForSelector('#previewHost .als-doc', { timeout: 12000 });
   pass('alloy-lang: rendered');
 

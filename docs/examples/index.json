@@ -1440,8 +1440,17 @@
     ]
   },
   {
-    "label": "sample.als (Alloy)",
+    "label": "Sample.als",
     "file": "sample.als",
+    "mime": "application/x-ableton-live-set",
+    "category": "Media",
+    "categories": [
+      "Media"
+    ]
+  },
+  {
+    "label": "sample-alloy.als (Alloy)",
+    "file": "sample-alloy.als",
     "mime": "text/plain",
     "category": "Code",
     "categories": [

@@ -24,6 +24,12 @@ export function extract(intake) {
     if (info.glyphs != null) out.push({ label: 'Glyphs', value: info.glyphs.toLocaleString() });
     if (info.weightClass) out.push({ label: 'Weight class', value: String(info.weightClass) });
     if (info.widthClass) out.push({ label: 'Width class', value: String(info.widthClass) });
+    if (info.designer) out.push({ label: 'Designer', value: info.designer });
+    if (info.manufacturer) out.push({ label: 'Manufacturer', value: info.manufacturer });
+    if (info.vendorUrl) out.push({ label: 'Vendor URL', value: info.vendorUrl });
+    if (info.copyright) out.push({ label: 'Copyright', value: info.copyright.slice(0, 200) });
+    if (info.license) out.push({ label: 'License', value: info.license.slice(0, 200) });
+    if (info.licenseUrl) out.push({ label: 'License URL', value: info.licenseUrl });
   }
   return out;
 }
@@ -69,7 +75,10 @@ function readNames(bytes, dv, table, info) {
   const base = table.offset;
   const count = dv.getUint16(base + 2, false);
   const strings = base + dv.getUint16(base + 4, false);
-  const wanted = new Map([[1, 'family'], [2, 'subfamily'], [4, 'fullName'], [5, 'version']]);
+  const wanted = new Map([
+    [0, 'copyright'], [1, 'family'], [2, 'subfamily'], [4, 'fullName'], [5, 'version'],
+    [8, 'manufacturer'], [9, 'designer'], [11, 'vendorUrl'], [13, 'license'], [14, 'licenseUrl'],
+  ]);
   for (let i = 0; i < count; i++) {
     const p = base + 6 + i * 12;
     if (p + 12 > base + table.length) break;
@@ -82,7 +91,7 @@ function readNames(bytes, dv, table, info) {
     const key = wanted.get(nameId);
     if (!key || info[key] || offset + length > base + table.length) continue;
     const value = decodeName(bytes.subarray(offset, offset + length), platform, encoding).trim();
-    if (value && (language === 0x0409 || !info[key])) info[key] = value.slice(0, 160);
+    if (value && (language === 0x0409 || !info[key])) info[key] = value.slice(0, 500);
   }
 }
 

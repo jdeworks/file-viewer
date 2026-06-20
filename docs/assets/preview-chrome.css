@@ -283,6 +283,25 @@
 .preview-host .media-ed-secondary-status { font-size: 12px; color: var(--fg-2);
   padding: 4px 6px; background: var(--bg-2); border-radius: 5px; }
 
+/* ── Video controls (seek, fullscreen, filters) ── */
+.preview-host .media-video-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.preview-host .media-filter-panel { font-size: 12px; color: var(--fg-2); }
+.preview-host .media-filter-panel summary { cursor: pointer; user-select: none;
+  padding: 2px 6px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--fg-2); font-size: 12px; list-style: none; }
+.preview-host .media-filter-panel summary::-webkit-details-marker { display: none; }
+.preview-host .media-filter-panel[open] summary { color: var(--accent); border-color: var(--accent); }
+.preview-host .media-filter-row { display: flex; align-items: center; gap: 6px;
+  margin-top: 4px; font-size: 12px; }
+.preview-host .media-filter-row label { min-width: 64px; color: var(--fg-2); }
+.preview-host .media-filter-row input[type=range] { width: 100px; cursor: pointer; accent-color: var(--accent); }
+/* ── FFmpeg status pill ── */
+.preview-host .media-ffmpeg-pill { font-size: 11px; padding: 2px 8px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg-2);
+  cursor: pointer; white-space: nowrap; }
+.preview-host .media-ffmpeg-pill--on { color: #22863a; border-color: #22863a; }
+.preview-host .media-ffmpeg-pill--on:hover { background: rgba(34,134,58,.08); }
+
 /* EPUB reader (hand-rolled): sidebar TOC + paged chapter content, rendered in the parent
    pane (blob: images need a real origin). Sanitized before it reaches the DOM. */
 .preview-host .epub-doc { position: absolute; inset: 0; display: flex; background: var(--bg); }
@@ -469,6 +488,34 @@
 .mxml-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; }
 .mxml-stat-value { font-weight: 600; font-size: 1.05em; }
 .mxml-stat-label { font-size: .75em; color: var(--fg-2); }
+.mxml-lyricist { color: var(--fg-2); font-size: .85em; margin-bottom: 2px; }
+.mxml-copyright { color: var(--fg-2); font-size: .75em; margin-top: 6px; }
+.mxml-untitled { color: var(--fg-2); font-style: italic; }
+.mxml-error { color: var(--danger, #dc2626); }
+/* Score outline tree */
+.mxml-tree { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; line-height: 1.7;
+  border-left: 2px solid var(--border); padding: 4px 0 4px 8px; }
+.mxml-tree-node { display: flex; align-items: baseline; gap: 6px; padding: 1px 0; }
+.mxml-tag-name { color: var(--accent, #2563eb); font-weight: 500; }
+.mxml-attr-name { color: #d97706; }
+.mxml-attr-value { color: #16a34a; }
+.mxml-node-label { color: var(--fg); font-size: .9em; }
+.mxml-tree-more { color: var(--fg-2); font-size: .85em; font-style: italic; }
+/* Raw XML preview */
+.mxml-raw-details { margin-top: 12px; }
+.mxml-raw-summary { cursor: pointer; font-size: .8em; font-weight: 600; color: var(--fg-2);
+  text-transform: uppercase; letter-spacing: .05em; padding: 4px 0; user-select: none;
+  list-style: none; }
+.mxml-raw-summary::-webkit-details-marker { display: none; }
+.mxml-raw-summary::before { content: "▸ "; }
+.mxml-raw-details[open] .mxml-raw-summary::before { content: "▾ "; }
+.mxml-raw-xml { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+  white-space: pre-wrap; overflow-x: auto; max-height: 300px; overflow-y: auto;
+  background: var(--surface, #f8f8f8); padding: 12px; border-radius: 4px;
+  border: 1px solid var(--border, #ddd); margin: 6px 0 0; }
+.mxml-punctuation { color: var(--fg-2); }
+.mxml-comment { color: var(--fg-2); font-style: italic; }
+.mxml-raw-truncated { font-size: .8em; color: var(--fg-2); font-style: italic; padding: 4px 0; }
 
 /* Bioinformatics (FASTA/FASTQ/VCF) */
 .bio-preview { padding: 12px; } .bio-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
