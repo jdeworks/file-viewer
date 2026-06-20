@@ -28,6 +28,7 @@ import { mapPreviewToRaw, mapRawToPreview, syncScrollFromRaw, syncScrollFromPrev
 import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare, initCompareDropTarget } from './compare.js';
 import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent } from './rawpane.js';
 import { buildMetadata } from './meta-drawer.js';
+import { buildTypeHelp } from './type-help.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, showFolderLoading, hideFolderLoading } from './folder.js';
 import { clearArchiveTree, mountArchiveTree } from './archive-tree.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
@@ -111,6 +112,7 @@ async function activateType(type, knownOverride = null) {
   $('fileName').textContent = state.intake.filename;
   $('settingsBtn').hidden = false;
   $('metaBtn').hidden = false;
+  $('typeHelpBtn').hidden = false;
 
   // Capabilities decide which surfaces exist. Some types are preview-only (PDF: no raw
   // editor), some raw-only (code), some both (markdown).
@@ -313,7 +315,7 @@ function openDrawer(id, build) {
   $(id).hidden = false; $('scrim').hidden = false;
 }
 function closeDrawers() {
-  $('settingsDrawer').hidden = true; $('metaDrawer').hidden = true; $('scrim').hidden = true;
+  $('settingsDrawer').hidden = true; $('metaDrawer').hidden = true; $('typeHelpDrawer').hidden = true; $('scrim').hidden = true;
 }
 
 /* ─────────────────────────── metaBtn Easter egg ─────────────────────────── */
@@ -416,6 +418,7 @@ function init() {
   });
   $('themeBtn').addEventListener('click', () => applyTheme(!themeIsDark()));
   $('settingsBtn').addEventListener('click', () => openDrawer('settingsDrawer', openSettings));
+  $('typeHelpBtn').addEventListener('click', () => openDrawer('typeHelpDrawer', () => buildTypeHelp(state.type?.id)));
   $('metaBtn').addEventListener('click', () => {
     metaBtnClicks++;
     if (metaBtnClicks <= 4) openDrawer('metaDrawer', buildMetadata);
