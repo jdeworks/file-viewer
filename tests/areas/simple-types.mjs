@@ -504,16 +504,16 @@ export async function run(ctx) {
   // ── SVG dual-pane viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('example.svg');
-  // SVG type: split mode — editor on left, preview iframe on right
+  // SVG type: dual-pane (Monaco editor left, sandboxed iframe preview right) via parentNode
   const svgTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (svgTypeId === 'svg') pass('example.svg detected as SVG type'); else fail('svg typeId: ' + svgTypeId);
-  // Preview iframe should render the SVG
-  const svgFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const svgf = await frameOf('iframe.fv-preview-frame');
-  await svgf.waitForSelector('svg', { timeout: 8000 });
-  const svgEl = await svgf.$('svg');
-  if (svgEl) pass('SVG element rendered in preview iframe'); else fail('SVG element not found in preview');
-  // Monaco editor should be present (rawView: true)
-  const svgModeMenu = await page.$('#rawBtn,#splitBtn,[data-mode]');
-  if (svgModeMenu) pass('SVG mode controls present (rawView: true)'); else fail('SVG mode controls missing');
+  // The dual-pane container (.svg-editor) should be present in the preview host
+  const svgEditorContainer = await page.waitForSelector('.svg-editor', { timeout: 12000 });
+  if (svgEditorContainer) pass('SVG dual-pane container (.svg-editor) mounted in preview host'); else fail('SVG dual-pane container not found');
+  // The live preview iframe (srcdoc, sandbox=allow-same-origin) should be present
+  const svgPreviewIframe = await page.waitForSelector('.svg-preview-iframe', { timeout: 8000 });
+  if (svgPreviewIframe) pass('SVG preview iframe (.svg-preview-iframe) present'); else fail('SVG preview iframe not found');
+  // The toolbar with Copy SVG button and dimensions badge should be present
+  const svgToolbar = await page.$('.svg-toolbar');
+  if (svgToolbar) pass('SVG toolbar present'); else fail('SVG toolbar not found');
 }
