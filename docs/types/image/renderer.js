@@ -55,8 +55,8 @@ export async function render(intake, ctx = {}) {
       + '<input class="imgv-text-color" type="color" value="#ffffff" title="Text color">'
       + '<button class="imgv-text-apply" title="Draw text on image">Add text</button>'
       + '<span class="imgv-sep"></span>'
-      + '<button class="imgv-pencil" title="Pencil / brush draw mode">✏</button>'
-      + '<button class="imgv-eraser" title="Eraser mode">◻</button>'
+      + '<button class="imgv-pencil" title="Pencil / brush draw mode">Pencil</button>'
+      + '<button class="imgv-eraser" title="Eraser mode">Eraser</button>'
       + '<input class="imgv-draw-color" type="color" value="#ff0000" title="Brush color">'
       + '<select class="imgv-draw-size" title="Brush size">'
       + '<option value="3">3px</option><option value="8" selected>8px</option>'
@@ -102,7 +102,7 @@ export async function render(intake, ctx = {}) {
       + '</span>'
       + '<button class="imgv-text-reset" title="Reset all edits" hidden>Reset</button>' : '')
     + '</div>'
-    + '<div class="imgv-stage"><img class="imgv-img" alt="' + esc(intake.filename) + '"><div class="imgv-note" hidden></div></div>'
+    + '<div class="imgv-stage"><img class="imgv-img" draggable="false" alt="' + esc(intake.filename) + '"><div class="imgv-note" hidden></div></div>'
     + '<div class="imgv-ascii-out" hidden></div>';
 
   const img = host.querySelector('.imgv-img');
@@ -154,6 +154,7 @@ export async function render(intake, ctx = {}) {
   let natural = 0, fit = true, zoom = 1, asciiMode = false, asciiText = '';
   let editedUrl = null, editedBlob = null;
   let drawMode = null, isEraserStroke = false;
+  let textPlaceMode = false, textPlaceX = 0.5, textPlaceY = 0.5;
   let bgPickMode = false, bgSrcData = null, bgSrcW = 0, bgSrcH = 0, bgPickX = -1, bgPickY = -1, bgPreviewUrl = null;
   const undoStack = [];
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null;
@@ -252,7 +253,7 @@ export async function render(intake, ctx = {}) {
     if (asciiText) navigator.clipboard?.writeText(asciiText);
   });
 
-  async function drawText() {
+  async function commitText(nx, ny) {
     const text = (editInput?.value || '').trim();
     if (!text) return;
     const base = new Image();
@@ -266,15 +267,18 @@ export async function render(intake, ctx = {}) {
     if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
     g.drawImage(base, 0, 0);
     const size = Math.max(8, Math.min(240, parseInt(editSize?.value, 10) || 32));
-    const pad = Math.max(12, Math.round(size * 0.6));
     const fontFamily = editFont?.value || 'system-ui,sans-serif';
     g.font = `700 ${size}px ${fontFamily}`;
-    g.textBaseline = 'bottom';
+    g.textBaseline = 'alphabetic';
     g.lineJoin = 'round';
     g.strokeStyle = 'rgba(0,0,0,.72)';
     g.lineWidth = Math.max(3, Math.round(size / 8));
     g.fillStyle = editColor?.value || '#ffffff';
-    wrapText(g, text, pad, canvas.height - pad, canvas.width - pad * 2, size * 1.2);
+    const px = Math.round((nx ?? 0.5) * canvas.width);
+    const py = Math.round((ny ?? 0.5) * canvas.height);
+    const maxW = Math.round(canvas.width * 0.8);
+    g.strokeText(text, px, py, maxW);
+    g.fillText(text, px, py, maxW);
     const targetMime = getExportMime();
     pushUndo();
     editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
@@ -290,26 +294,36 @@ export async function render(intake, ctx = {}) {
     });
   }
 
-  function wrapText(g, text, x, y, maxWidth, lineHeight) {
-    const words = text.split(/\s+/);
-    const lines = [];
-    let line = '';
-    for (const word of words) {
-      const next = line ? line + ' ' + word : word;
-      if (line && g.measureText(next).width > maxWidth) { lines.push(line); line = word; }
-      else line = next;
-    }
-    if (line) lines.push(line);
-    const startY = y - Math.max(0, lines.length - 1) * lineHeight;
-    lines.forEach((l, i) => {
-      const yy = startY + i * lineHeight;
-      g.strokeText(l, x, yy, maxWidth);
-      g.fillText(l, x, yy, maxWidth);
-    });
+  function exitTextPlaceMode() {
+    textPlaceMode = false;
+    img.style.cursor = '';
+    if (editApply) { editApply.textContent = 'Add text'; editApply.classList.remove('active'); }
   }
 
-  editApply?.addEventListener('click', () => { drawText().catch((e) => { editApply.title = e.message || String(e); }); });
+  function enterTextPlaceMode() {
+    const text = (editInput?.value || '').trim();
+    if (!text) { editInput?.focus(); return; }
+    textPlaceMode = true;
+    img.style.cursor = 'crosshair';
+    if (editApply) { editApply.textContent = 'Click image to place'; editApply.classList.add('active'); }
+  }
+
+
+  editApply?.addEventListener('click', () => {
+    if (textPlaceMode) { exitTextPlaceMode(); return; }
+    enterTextPlaceMode();
+  });
+
+  img.addEventListener('click', (e) => {
+    if (!textPlaceMode) return;
+    const r = img.getBoundingClientRect();
+    const nx = (e.clientX - r.left) / r.width;
+    const ny = (e.clientY - r.top) / r.height;
+    exitTextPlaceMode();
+    commitText(nx, ny).catch((err) => { if (editApply) editApply.title = err.message || String(err); });
+  });
   editReset?.addEventListener('click', () => {
+    exitTextPlaceMode();
     undoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
     undoStack.length = 0;
     if (undoBtn) undoBtn.hidden = true;
@@ -415,7 +429,7 @@ export async function render(intake, ctx = {}) {
     const stage = host.querySelector('.imgv-stage');
     stage.style.position = 'relative';
     drawOverlay = document.createElement('canvas');
-    drawOverlay.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;touch-action:none;';
+    drawOverlay.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;touch-action:none;z-index:2;';
     stage.appendChild(drawOverlay);
     drawOCtx = drawOverlay.getContext('2d');
     img.addEventListener('load', () => {
@@ -440,6 +454,7 @@ export async function render(intake, ctx = {}) {
       drawOverlay.style.pointerEvents = drawMode ? 'auto' : 'none';
       drawOverlay.style.cursor = drawMode === 'eraser' ? 'cell' : drawMode === 'pencil' ? 'crosshair' : '';
     }
+    img.style.pointerEvents = drawMode ? 'none' : '';
   }
 
   function ptToCanvas(e) {

@@ -33,6 +33,8 @@ export async function mountWysiwyg(container, text, onChange) {
   easyMDE.codemirror.on('change', () => {
     onChange?.(easyMDE.value());
   });
+  // Enter side-by-side preview so the user immediately sees rendered Markdown.
+  easyMDE.toggleSideBySide();
   return easyMDE;
 }
 

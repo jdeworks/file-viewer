@@ -109,10 +109,24 @@ function wireMarkdownTools() {
   const el = $('markdownTools');
   if (!el || el.dataset.wired) return;
   el.dataset.wired = '1';
+  // Use mousedown + preventDefault to preserve Monaco's selection before focus shifts.
+  // Table action stays on click (needs position info for the picker).
+  el.addEventListener('mousedown', (e) => {
+    const btn = e.target.closest('[data-md-action]');
+    if (!btn || btn.dataset.mdAction === 'table') return;
+    e.preventDefault();
+    runMarkdownAction(btn.dataset.mdAction, btn);
+  });
   el.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-md-action]');
+    if (!btn || btn.dataset.mdAction === 'table') return;
+    // Already handled on mousedown — prevent double-fire
+    e.preventDefault();
+  });
+  el.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-md-action="table"]');
     if (!btn) return;
-    runMarkdownAction(btn.dataset.mdAction, btn);
+    runMarkdownAction('table', btn);
   });
   // Dismiss the table picker when clicking outside
   document.addEventListener('click', (e) => {
