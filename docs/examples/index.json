@@ -6076,5 +6076,101 @@
     "enhanced": true,
     "description": "OpenTelemetry Operator Kubernetes resource: OpenTelemetryCollector in deployment mode with OTLP receiver and Jaeger exporter.",
     "knownFile": "opentelemetry-k8s"
+  },
+  {
+    "label": "workspace.xml (JetBrains)",
+    "file": "workspace.xml",
+    "mime": "application/xml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "JetBrains IDE workspace file: run configurations, changed files, and VCS mappings.",
+    "knownFile": "jetbrains-workspace"
+  },
+  {
+    "label": "init.lua (Neovim)",
+    "file": "init.lua",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Neovim configuration: lazy.nvim plugin manager, key mappings, and editor options.",
+    "knownFile": "neovim-config"
+  },
+  {
+    "label": ".vimrc (Vim)",
+    "file": ".vimrc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Vim configuration: vim-plug plugins, set options, colorscheme, and key mappings.",
+    "knownFile": "vim-config"
+  },
+  {
+    "label": "init.el (Emacs)",
+    "file": "init.el",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Emacs configuration: use-package declarations, global keybindings, and custom variables.",
+    "knownFile": "emacs-config"
+  },
+  {
+    "label": "devbox.json",
+    "file": "devbox.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Devbox project configuration with nix packages, shell init hooks, env variables, and scripts.",
+    "knownFile": "devbox-json"
+  },
+  {
+    "label": ".prototools",
+    "file": ".prototools",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "proto toolchain manager configuration pinning tool versions for node, python, go, rust, bun, and the proto CLI itself.",
+    "knownFile": "proto-config"
+  },
+  {
+    "label": "aqua.yaml",
+    "file": "aqua.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "aqua declarative CLI version manager config with standard registry and 10 pinned tools.",
+    "knownFile": "aqua-config"
+  },
+  {
+    "label": "pixi.toml",
+    "file": "pixi.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "pixi project configuration with conda/PyPI dependencies, channels, platforms, and tasks.",
+    "knownFile": "pixi-config"
   }
 ]

@@ -124,6 +124,10 @@ import procfile from '../types/text/known/procfile/index.js';
 import envrc from '../types/text/known/envrc/index.js';
 import miseConfig from '../types/text/toml/known/mise/index.js';
 import toolVersions from '../types/text/known/tool-versions/index.js';
+import devboxJson from '../types/text/json/known/devbox-json/index.js';
+import protoConfig from '../types/text/toml/known/proto-config/index.js';
+import aquaConfig from '../types/text/yaml/known/aqua-config/index.js';
+import pixiConfig from '../types/text/toml/known/pixi-config/index.js';
 import gitattributes from '../types/text/known/gitattributes/index.js';
 import gemfileLock from '../types/text/known/gemfile-lock/index.js';
 import sonar from '../types/text/known/sonar/index.js';
@@ -367,9 +371,13 @@ import analysisOptions from '../types/text/yaml/known/analysis-options/index.js'
 import podfileLock from '../types/text/known/podfile-lock/index.js';
 import xcodeScheme from '../types/text/xml/known/xcode-scheme/index.js';
 import easJson from '../types/text/json/known/eas-json/index.js';
+import jetbrainsWorkspace from '../types/text/xml/known/jetbrains-workspace/index.js';
+import neovimConfig from '../types/text/known/neovim-config/index.js';
+import vimConfig from '../types/text/known/vim-config/index.js';
+import emacsConfig from '../types/text/known/emacs-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
-  buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
+  buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
   eslint, jest, stylelint, babel, commitlint, lefthook,
   wrangler, flyToml, cliff, releaserc,
@@ -433,7 +441,6 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   tauriConf, traefikConfig, unleashConfig, vaultHcl, consulConfig,
   vectorToml, wailsJson, webConfig, xcconfig,
   bitbucketPipelines, tektonPipeline, argoCdApp, fluxHelmRelease,
-  k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress,
   semgrepConfig, codeclimateConfig, gitleaksConfig, osvScanner,
   condaEnv, pipConf, nodeVersionFile, dockerBake,
   flake8, pylintrc, setupCfg, awsCredentials, awsConfig,
@@ -443,6 +450,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   samTemplate, cfnTemplate, cdkJson, awsSamConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson,
   hostsFile, resolvConf, sshConfig, sshdConfig,
+  jetbrainsWorkspace, neovimConfig, vimConfig, emacsConfig,
+  devboxJson, protoConfig, aquaConfig, pixiConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

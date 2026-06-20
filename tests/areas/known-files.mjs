@@ -2122,4 +2122,48 @@ export async function run(ctx) {
   if (/localnet|SSL_ports|Safe_ports/i.test(sqdText)) pass('squid.conf: ACL names shown'); else fail('squid acls: ' + sqdText.slice(0, 300));
   if (/allow|deny/i.test(sqdText)) pass('squid.conf: access rules shown'); else fail('squid access: ' + sqdText.slice(0, 300));
   if (/8\.8\.8\.8|1\.1\.1\.1/i.test(sqdText)) pass('squid.conf: DNS nameservers shown'); else fail('squid dns: ' + sqdText.slice(0, 300));
+
+  // ── workspace.xml (JetBrains Workspace) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('workspace.xml (JetBrains)');
+  await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
+  const jbwText = await page.$eval('#previewHost .pj-doc', (e) => e.textContent);
+  if (/JetBrains Workspace/i.test(jbwText)) pass('workspace.xml: JetBrains Workspace badge shown'); else fail('jbw badge: ' + jbwText.slice(0, 200));
+  if (/Run Configurations/i.test(jbwText)) pass('workspace.xml: Run Configurations section shown'); else fail('jbw run configs: ' + jbwText.slice(0, 300));
+  if (/Main|Tests|Docker Compose/i.test(jbwText)) pass('workspace.xml: run config names shown'); else fail('jbw config names: ' + jbwText.slice(0, 400));
+  if (/Changed Files/i.test(jbwText)) pass('workspace.xml: Changed Files section shown'); else fail('jbw changed files: ' + jbwText.slice(0, 400));
+  if (/VCS Mappings/i.test(jbwText)) pass('workspace.xml: VCS Mappings section shown'); else fail('jbw vcs: ' + jbwText.slice(0, 400));
+
+  // ── init.lua (Neovim Config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('init.lua (Neovim)');
+  await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
+  const nvcText = await page.$eval('#previewHost .pj-doc', (e) => e.textContent);
+  if (/Neovim Config/i.test(nvcText)) pass('init.lua: Neovim Config badge shown'); else fail('nvc badge: ' + nvcText.slice(0, 200));
+  if (/lazy\.nvim/i.test(nvcText)) pass('init.lua: lazy.nvim plugin manager detected'); else fail('nvc pm: ' + nvcText.slice(0, 300));
+  if (/Key Mappings/i.test(nvcText)) pass('init.lua: Key Mappings section shown'); else fail('nvc keymaps: ' + nvcText.slice(0, 300));
+  if (/Options/i.test(nvcText)) pass('init.lua: Options section shown'); else fail('nvc opts: ' + nvcText.slice(0, 300));
+  if (/tokyonight/i.test(nvcText)) pass('init.lua: colorscheme detected'); else fail('nvc colorscheme: ' + nvcText.slice(0, 400));
+
+  // ── .vimrc (Vim Config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.vimrc (Vim)');
+  await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
+  const vcText = await page.$eval('#previewHost .pj-doc', (e) => e.textContent);
+  if (/Vim Config/i.test(vcText)) pass('.vimrc: Vim Config badge shown'); else fail('vc badge: ' + vcText.slice(0, 200));
+  if (/vim-plug/i.test(vcText)) pass('.vimrc: vim-plug plugin manager detected'); else fail('vc pm: ' + vcText.slice(0, 300));
+  if (/gruvbox/i.test(vcText)) pass('.vimrc: colorscheme detected'); else fail('vc colorscheme: ' + vcText.slice(0, 300));
+  if (/Settings/i.test(vcText)) pass('.vimrc: Settings section shown'); else fail('vc settings: ' + vcText.slice(0, 300));
+  if (/Key Mappings/i.test(vcText)) pass('.vimrc: Key Mappings section shown'); else fail('vc keymaps: ' + vcText.slice(0, 400));
+
+  // ── init.el (Emacs Config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('init.el (Emacs)');
+  await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
+  const ecText = await page.$eval('#previewHost .pj-doc', (e) => e.textContent);
+  if (/Emacs Config/i.test(ecText)) pass('init.el: Emacs Config badge shown'); else fail('ec badge: ' + ecText.slice(0, 200));
+  if (/use-package/i.test(ecText)) pass('init.el: use-package package manager detected'); else fail('ec pm: ' + ecText.slice(0, 300));
+  if (/Keybindings/i.test(ecText)) pass('init.el: Keybindings section shown'); else fail('ec keybindings: ' + ecText.slice(0, 300));
+  if (/evil|company|ivy|magit|flycheck/i.test(ecText)) pass('init.el: package names shown'); else fail('ec packages: ' + ecText.slice(0, 400));
+  if (/Custom Variables/i.test(ecText)) pass('init.el: Custom Variables section shown'); else fail('ec custom vars: ' + ecText.slice(0, 400));
 }

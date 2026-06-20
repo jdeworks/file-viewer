@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RunManager" selected="Application.Main">
+    <configuration name="Main" type="Application" factoryName="Application">
+      <option name="MAIN_CLASS_NAME" value="com.example.Main" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    </configuration>
+    <configuration name="Tests" type="JUnit" factoryName="JUnit">
+      <option name="TEST_SEARCH_SCOPE" value="MODULE_WITH_DEPENDENCIES" />
+    </configuration>
+    <configuration name="Docker Compose" type="docker-compose" factoryName="docker-compose">
+      <option name="COMPOSE_FILE" value="$PROJECT_DIR$/docker-compose.yml" />
+    </configuration>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="default" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/example/Main.java" type="MODIFICATION" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/application.properties" type="MODIFICATION" />
+      <change afterPath="$PROJECT_DIR$/README.md" type="NEW" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+  </component>
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunDashboard.configTypes" value="Application;JUnit" />
+    <property name="project.structure.last.edited" value="Modules" />
+  </component>
+</project>
