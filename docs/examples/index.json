@@ -4408,6 +4408,19 @@
     ]
   },
   {
+    "file": "thanos.yaml",
+    "label": "thanos.yaml",
+    "mime": "text/x-yaml",
+    "category": "Observability",
+    "categories": [
+      "Observability",
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Thanos object storage configuration for long-term Prometheus metric storage (S3 backend).",
+    "knownFile": "thanos-config"
+  },
+  {
     "label": "alertmanager.yml",
     "file": "alertmanager.yml",
     "mime": "text/yaml",

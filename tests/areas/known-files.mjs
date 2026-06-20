@@ -3462,6 +3462,22 @@ export async function run(ctx) {
   if (/S3/i.test(thanosText)) pass('thanos-bucket.yml: S3 storage type shown'); else fail('thanoscfg type: ' + thanosText.slice(0, 300));
   if (/bucket/i.test(thanosText)) pass('thanos-bucket.yml: bucket shown'); else fail('thanoscfg bucket: ' + thanosText.slice(0, 300));
 
+  // ── Thanos config viewer (thanos.yaml) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('thanos.yaml');
+  await page.waitForSelector('#previewHost .thanoscfg-doc', { timeout: 12000 });
+  const thanosYamlText = await page.$eval('#previewHost .thanoscfg-doc', (e) => e.textContent);
+  if (/Thanos/i.test(thanosYamlText)) pass('thanos.yaml: Thanos badge shown'); else fail('thanos.yaml badge: ' + thanosYamlText.slice(0, 200));
+  if (/S3/i.test(thanosYamlText)) pass('thanos.yaml: S3 storage type shown'); else fail('thanos.yaml type: ' + thanosYamlText.slice(0, 300));
+
+  // ── Loki config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('loki-config.yaml');
+  await page.waitForSelector('#previewHost .loki-doc', { timeout: 12000 });
+  const lokiText = await page.$eval('#previewHost .loki-doc', (e) => e.textContent);
+  if (/Loki/i.test(lokiText)) pass('loki-config.yaml: Loki badge shown'); else fail('loki badge: ' + lokiText.slice(0, 200));
+  if (/schema|storage/i.test(lokiText)) pass('loki-config.yaml: schema or storage section shown'); else fail('loki content: ' + lokiText.slice(0, 300));
+
   // ── fail2ban jail.local viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('jail.local (Fail2ban)');

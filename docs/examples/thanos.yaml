@@ -1,0 +1,19 @@
+type: S3
+config:
+  bucket: thanos-metrics
+  endpoint: s3.us-east-1.amazonaws.com
+  region: us-east-1
+  access_key: AKIAIOSFODNN7EXAMPLE
+  secret_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  insecure: false
+  signature_version2: false
+  encrypt_sse: false
+  put_user_metadata: {}
+  http_config:
+    idle_conn_timeout: 1m30s
+    response_header_timeout: 2m
+    insecure_skip_verify: false
+  trace:
+    enable: false
+  part_size: 134217728
+prefix: ""
