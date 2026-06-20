@@ -7263,6 +7263,18 @@
     "knownFile": "nfs-exports"
   },
   {
+    "file": "lighttpd.conf",
+    "label": "lighttpd.conf (Lighttpd Web Server)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "knownFile": "lighttpd-conf"
+  },
+  {
     "file": "named.conf",
     "label": "named.conf (BIND DNS)",
     "category": "Config",

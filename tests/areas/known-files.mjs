@@ -841,6 +841,25 @@ export async function run(ctx) {
   if (/Poetry/i.test(ploText)) pass('poetry.lock: badge shown'); else fail('poetry-lock badge: ' + ploText.slice(0, 200));
   if (/flask|requests|certifi|package/i.test(ploText)) pass('poetry.lock: packages shown'); else fail('poetry-lock packages: ' + ploText.slice(0, 200));
 
+  // ── Julia Project.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Project.toml');
+  await page.waitForSelector('#previewHost .julia-doc', { timeout: 12000 });
+  const jpText = await page.$eval('#previewHost .julia-doc', (e) => e.textContent);
+  if (/Julia/i.test(jpText)) pass('Project.toml: Julia badge shown'); else fail('julia-project badge: ' + jpText.slice(0, 200));
+  if (/MyPackage/i.test(jpText)) pass('Project.toml: package name shown'); else fail('julia-project name: ' + jpText.slice(0, 200));
+  if (/DataFrames|HTTP|Dependencies/i.test(jpText)) pass('Project.toml: dependencies shown'); else fail('julia-project deps: ' + jpText.slice(0, 300));
+
+  // ── Julia Manifest.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Manifest.toml');
+  await page.waitForSelector('#previewHost .julia-mani-doc', { timeout: 12000 });
+  const jmText = await page.$eval('#previewHost .julia-mani-doc', (e) => e.textContent);
+  if (/Julia Manifest/i.test(jmText)) pass('Manifest.toml: Julia Manifest badge shown'); else fail('julia-manifest badge: ' + jmText.slice(0, 200));
+  if (/1\.9\.0/.test(jmText)) pass('Manifest.toml: julia_version shown'); else fail('julia-manifest version: ' + jmText.slice(0, 200));
+  if (/DataFrames|HTTP|Statistics|package/i.test(jmText)) pass('Manifest.toml: packages shown'); else fail('julia-manifest pkgs: ' + jmText.slice(0, 300));
+  if (/do not edit manually/i.test(jmText)) pass('Manifest.toml: lockfile warning shown'); else fail('julia-manifest lockfile note: ' + jmText.slice(0, 200));
+
   // ── go.sum viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('go.sum');
@@ -1749,6 +1768,25 @@ export async function run(ctx) {
   if (/mydb|replica/i.test(pbText)) pass('pgbouncer.ini: [databases] section shown'); else fail('pgbouncer dbs: ' + pbText.slice(0, 300));
   if (/transaction|pool_mode/i.test(pbText)) pass('pgbouncer.ini: pool_mode shown'); else fail('pgbouncer pool: ' + pbText.slice(0, 300));
   if (/••••/.test(pbText)) pass('pgbouncer.ini: password in connection string masked'); else fail('pgbouncer masking: ' + pbText.slice(0, 300));
+
+  // ── pgbackrest.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pgbackrest.conf');
+  await page.waitForSelector('#previewHost .pgbr-doc', { timeout: 12000 });
+  const pgbrText = await page.$eval('#previewHost .pgbr-doc', (e) => e.textContent);
+  if (/pgBackRest/i.test(pgbrText)) pass('pgbackrest.conf: pgBackRest badge shown'); else fail('pgbackrest badge: ' + pgbrText.slice(0, 200));
+  if (/S3|us-east-1|my-postgres-backups/i.test(pgbrText)) pass('pgbackrest.conf: repository info shown'); else fail('pgbackrest repo: ' + pgbrText.slice(0, 300));
+  if (/main|replica/i.test(pgbrText)) pass('pgbackrest.conf: stanza names shown'); else fail('pgbackrest stanzas: ' + pgbrText.slice(0, 300));
+  if (/\[configured\]/.test(pgbrText)) pass('pgbackrest.conf: credentials redacted'); else fail('pgbackrest masking: ' + pgbrText.slice(0, 300));
+
+  // ── patroni.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('patroni.yml');
+  await page.waitForSelector('#previewHost .patroni-doc', { timeout: 12000 });
+  const patroniText = await page.$eval('#previewHost .patroni-doc', (e) => e.textContent);
+  if (/Patroni/i.test(patroniText)) pass('patroni.yml: Patroni badge shown'); else fail('patroni badge: ' + patroniText.slice(0, 200));
+  if (/postgres-cluster|node1/i.test(patroniText)) pass('patroni.yml: cluster/node info shown'); else fail('patroni cluster: ' + patroniText.slice(0, 300));
+  if (/etcd|ETCD/i.test(patroniText)) pass('patroni.yml: DCS type shown'); else fail('patroni dcs: ' + patroniText.slice(0, 300));
 
   // ── .pylintrc viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

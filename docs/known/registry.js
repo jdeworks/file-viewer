@@ -358,6 +358,8 @@ import mongodConf from '../types/text/known/mongod-conf/index.js';
 import myCnf from '../types/text/known/my-cnf/index.js';
 import postgresqlConf from '../types/text/known/postgresql-conf/index.js';
 import pgbouncerIni from '../types/text/known/pgbouncer-ini/index.js';
+import pgbackrestConf from '../types/text/known/pgbackrest-conf/index.js';
+import patroniConfig from '../types/text/yaml/known/patroni-config/index.js';
 import shardYml from '../types/text/yaml/known/shard-yml/index.js';
 import tauriConf from '../types/text/json/known/tauri-conf/index.js';
 import traefikConfig from '../types/text/yaml/known/traefik-config/index.js';
@@ -535,7 +537,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, forgeConfig,
   gleamToml, goWork, grafanaIni, podmanQuadlet, growthbook,
   jekyllConfig, juliaProject, juliaManifest, kongConfig, apisixConfig, envoyConfig, launchSettings,
-  nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, cassandraConfig, elasticsearchConfig, clickhouseConfig, shardYml,
+  nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, clickhouseConfig, shardYml,
   tauriConf, traefikConfig, unleashConfig, vaultHcl, nomadJob, consulConfig,
   vectorToml, wailsJson, webConfig, xcconfig,
   bitbucketPipelines, tektonPipeline, argoCdApp, fluxKustomization, fluxHelmRelease, dockerStack,
