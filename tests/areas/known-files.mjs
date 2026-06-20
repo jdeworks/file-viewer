@@ -3117,4 +3117,21 @@ export async function run(ctx) {
   if (/UFW/i.test(ufwText)) pass('ufw.conf: UFW badge shown'); else fail('ufw badge: ' + ufwText.slice(0, 200));
   if (/DEFAULT/i.test(ufwText)) pass('ufw.conf: default policies shown'); else fail('ufw policies: ' + ufwText.slice(0, 300));
 
+  // ── VictoriaMetrics config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('victoria-metrics.yml (VictoriaMetrics)');
+  await page.waitForSelector('#previewHost .vmcfg-doc', { timeout: 12000 });
+  const vmcfgText = await page.$eval('#previewHost .vmcfg-doc', (e) => e.textContent);
+  if (/VictoriaMetrics/i.test(vmcfgText)) pass('victoria-metrics.yml: VictoriaMetrics badge shown'); else fail('vmcfg badge: ' + vmcfgText.slice(0, 200));
+  if (/scrape/i.test(vmcfgText)) pass('victoria-metrics.yml: scrape jobs shown'); else fail('vmcfg scrape: ' + vmcfgText.slice(0, 300));
+
+  // ── Thanos config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('thanos-bucket.yml (Thanos)');
+  await page.waitForSelector('#previewHost .thanoscfg-doc', { timeout: 12000 });
+  const thanosText = await page.$eval('#previewHost .thanoscfg-doc', (e) => e.textContent);
+  if (/Thanos/i.test(thanosText)) pass('thanos-bucket.yml: Thanos badge shown'); else fail('thanoscfg badge: ' + thanosText.slice(0, 200));
+  if (/S3/i.test(thanosText)) pass('thanos-bucket.yml: S3 storage type shown'); else fail('thanoscfg type: ' + thanosText.slice(0, 300));
+  if (/bucket/i.test(thanosText)) pass('thanos-bucket.yml: bucket shown'); else fail('thanoscfg bucket: ' + thanosText.slice(0, 300));
+
 }
