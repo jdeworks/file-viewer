@@ -6028,5 +6028,41 @@
     "enhanced": true,
     "description": "Apache Kafka broker configuration: broker ID, listeners, partitions, log retention, and ZooKeeper connection.",
     "knownFile": "kafka-server-props"
+  },
+  {
+    "label": "prometheus-rules.yaml",
+    "file": "prometheus-rules.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Prometheus alerting rules: alert groups with severity labels and annotation templates.",
+    "knownFile": "prometheus-rules"
+  },
+  {
+    "label": "grafana-dashboard.json",
+    "file": "grafana-dashboard.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Grafana dashboard definition: panels, template variables, time range, and refresh settings.",
+    "knownFile": "grafana-dashboard"
+  },
+  {
+    "label": "jaeger-config.yaml",
+    "file": "jaeger-config.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Jaeger distributed tracing configuration: query port, collector endpoints, and storage backend.",
+    "knownFile": "jaeger-config"
   }
 ]

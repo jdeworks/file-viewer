@@ -13488,7 +13488,7 @@
       "needsRealWorldSample": false
     },
     "squid-conf": {
-      "label": "squid-conf",
+      "label": "Squid proxy config",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [
@@ -13515,7 +13515,7 @@
       "needsRealWorldSample": false
     },
     "analysis-options": {
-      "label": "analysis-options",
+      "label": "Dart Analysis Options",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [],
@@ -13540,7 +13540,7 @@
       "needsRealWorldSample": false
     },
     "podfile-lock": {
-      "label": "podfile-lock",
+      "label": "Podfile.lock (CocoaPods)",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [],
@@ -13565,7 +13565,7 @@
       "needsRealWorldSample": false
     },
     "xcode-scheme": {
-      "label": "xcode-scheme",
+      "label": "Xcode Scheme",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [],
@@ -13590,7 +13590,7 @@
       "needsRealWorldSample": false
     },
     "eas-json": {
-      "label": "eas-json",
+      "label": "eas.json (Expo EAS)",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [],
