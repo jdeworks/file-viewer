@@ -1,0 +1,55 @@
+{{! Page template: user profile }}
+{{#> layouts/main title="User Profile"}}
+
+  {{#> partials/breadcrumb}}
+    {{#breadcrumbItems}}
+      <li><a href="{{url}}">{{label}}</a></li>
+    {{/breadcrumbItems}}
+  {{/partials/breadcrumb}}
+
+  <div class="profile-card">
+    <h1 class="profile-name">{{{user.displayName}}}</h1>
+    <p class="profile-email">{{user.email}}</p>
+
+    {{#if user.isVerified}}
+      <span class="badge badge-verified">Verified</span>
+    {{else}}
+      <span class="badge badge-unverified">Not Verified</span>
+    {{/if}}
+
+    {{#unless user.isPublic}}
+      <div class="privacy-notice">
+        {{> partials/icon name="lock"}}
+        This profile is private.
+      </div>
+    {{/unless}}
+
+    {{#with user.address}}
+      <address>
+        {{street}}<br>
+        {{city}}, {{region}} {{postalCode}}<br>
+        {{country}}
+      </address>
+    {{/with}}
+
+    {{#each user.roles}}
+      <span class="role role-{{this}}">{{capitalize this}}</span>
+    {{/each}}
+
+    {{#if user.posts.length}}
+      <section class="recent-posts">
+        <h2>Recent Posts ({{user.posts.length}})</h2>
+        {{#each user.posts}}
+          <article class="post-item">
+            <h3><a href="{{> helpers/postUrl this}}">{{title}}</a></h3>
+            <time datetime="{{isoDate createdAt}}">{{formatDate createdAt "MMMM D, YYYY"}}</time>
+            <p>{{truncate body 200}}</p>
+          </article>
+        {{/each}}
+      </section>
+    {{/if}}
+  </div>
+
+  {{> partials/footer year=currentYear}}
+
+{{/layouts/main}}

@@ -1,0 +1,63 @@
+{% layout 'theme' %}
+
+{% section 'header' %}
+
+<div class="product-page">
+  <h1>{{ product.title | upcase }}</h1>
+  <p class="vendor">by {{ product.vendor }}</p>
+
+  {% if product.available %}
+    <span class="badge badge--available">In Stock</span>
+  {% else %}
+    <span class="badge badge--sold-out">Sold Out</span>
+  {% endif %}
+
+  <div class="product-price">
+    {% if product.compare_at_price > product.price %}
+      <span class="price--original">{{ product.compare_at_price | money }}</span>
+    {% endif %}
+    <span class="price">{{ product.price | money }}</span>
+  </div>
+
+  {% assign has_discount = false %}
+  {% if product.compare_at_price > product.price %}
+    {% assign has_discount = true %}
+    {% assign discount_percent = product.compare_at_price | minus: product.price | times: 100 | divided_by: product.compare_at_price %}
+    <span class="discount-badge">Save {{ discount_percent }}%</span>
+  {% endif %}
+
+  <form action="/cart/add" method="post" enctype="multipart/form-data">
+    {% for variant in product.variants %}
+      <option value="{{ variant.id }}" {% unless variant.available %}disabled{% endunless %}>
+        {{ variant.title }} — {{ variant.price | money }}
+      </option>
+    {% endfor %}
+
+    <input type="hidden" name="quantity" value="1">
+    <button type="submit" class="btn btn--primary" {% unless product.available %}disabled{% endunless %}>
+      {% if product.available %}
+        Add to Cart
+      {% else %}
+        Sold Out
+      {% endif %}
+    </button>
+  </form>
+
+  {% if product.description != blank %}
+    <div class="product-description">
+      {{ product.description }}
+    </div>
+  {% endif %}
+
+  <div class="product-meta">
+    <p>SKU: {{ product.selected_or_first_available_variant.sku | default: 'N/A' }}</p>
+    {% for tag in product.tags %}
+      <a class="tag" href="/collections/all/{{ tag | handleize }}">{{ tag }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{% render 'product-recommendations', product: product, limit: 4 %}
+{% include 'social-sharing' %}
+
+{% section 'footer' %}

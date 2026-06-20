@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{title}}</title>
+  <meta name="description" content="{{description}}">
+</head>
+<body>
+
+{{> header}}
+
+<main>
+  {{#hero}}
+  <section class="hero">
+    <h1>{{{headline}}}</h1>
+    <p>{{subheading}}</p>
+    {{#ctaButton}}
+    <a href="{{url}}" class="btn btn-primary">{{label}}</a>
+    {{/ctaButton}}
+  </section>
+  {{/hero}}
+
+  {{! Featured articles section }}
+  {{#articles}}
+  <section class="articles">
+    <h2>{{sectionTitle}}</h2>
+    {{#items}}
+    <article>
+      <h3><a href="{{permalink}}">{{title}}</a></h3>
+      <time>{{publishDate}}</time>
+      <p>{{excerpt}}</p>
+      {{#tags}}
+      <span class="tag">{{name}}</span>
+      {{/tags}}
+      {{^tags}}
+      <span class="tag tag--none">Uncategorised</span>
+      {{/tags}}
+    </article>
+    {{/items}}
+    {{^items}}
+    <p class="empty">No articles found.</p>
+    {{/items}}
+  </section>
+  {{/articles}}
+
+  {{#sidebar}}
+  <aside>
+    {{> sidebar/widgets}}
+    {{#newsletter}}
+    <div class="newsletter">
+      <h3>{{title}}</h3>
+      <p>{{description}}</p>
+      <form action="{{formAction}}" method="post">
+        <input type="email" name="email" placeholder="{{emailPlaceholder}}">
+        <button type="submit">{{submitLabel}}</button>
+      </form>
+    </div>
+    {{/newsletter}}
+  </aside>
+  {{/sidebar}}
+</main>
+
+{{> footer}}
+
+</body>
+</html>
