@@ -20,6 +20,7 @@ import { TableEditor } from '../types/text/csv/table-editor.js';
 import { EnvFormEditor } from '../types/text/env/form-editor.js';
 import { IniFormEditor } from '../types/text/ini/form-editor.js';
 import { TomlFormEditor } from '../types/text/toml/form-editor.js';
+import { YamlFormEditor } from '../types/text/yaml/form-editor.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
@@ -32,6 +33,7 @@ let tableEditor = null;
 let envFormEditor = null;
 let iniFormEditor = null;
 let tomlFormEditor = null;
+let yamlFormEditor = null;
 
 // Show the in-memory edit banner (B). Wires the dismiss buttons once, idempotently.
 function setDisclaimerVisible(visible) {
@@ -926,6 +928,56 @@ function wireTomlFormBtn() {
   });
 }
 
+export function setYamlFormMode(on) {
+  const editorEl = document.getElementById('editor');
+  const btn = document.getElementById('yamlFormBtn');
+  if (on) {
+    const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
+    // Freeze Monaco while form is active
+    state.rawview?.updateOptions?.({ readOnly: true });
+    let host = document.getElementById('yamlFormHost');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'yamlFormHost';
+      host.className = 'editor-host';
+      editorEl?.parentNode?.insertBefore(host, editorEl);
+    }
+    host.hidden = false;
+    if (editorEl) editorEl.style.display = 'none';
+    yamlFormEditor = new YamlFormEditor(host);
+    yamlFormEditor.setValue(text);
+  } else {
+    // Flush form value back to Monaco before hiding
+    if (yamlFormEditor) {
+      const text = yamlFormEditor.getValue();
+      yamlFormEditor.destroy();
+      yamlFormEditor = null;
+      if (state.rawview) {
+        state.rawview.setValue(text);
+        state.rawview.updateOptions?.({ readOnly: false });
+      }
+      state.intake = { ...state.intake, text };
+    }
+    const host = document.getElementById('yamlFormHost');
+    if (host) host.hidden = true;
+    if (editorEl) editorEl.style.display = '';
+  }
+  if (btn) {
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', String(on));
+  }
+}
+
+function wireYamlFormBtn() {
+  const btn = document.getElementById('yamlFormBtn');
+  if (!btn || btn.dataset.wired) return;
+  btn.dataset.wired = '1';
+  btn.addEventListener('click', () => {
+    const isOn = btn.classList.contains('active');
+    setYamlFormMode(!isOn);
+  });
+}
+
 function updateWordCount(text, typeId) {
   const bar = document.getElementById('wordCountBar');
   if (!bar) return;
@@ -985,6 +1037,8 @@ export async function buildRawView() {
   setIniFormMode(false);
   // Tear down toml form editor when rebuilding (e.g. file changed)
   setTomlFormMode(false);
+  // Tear down yaml form editor when rebuilding (e.g. file changed)
+  setYamlFormMode(false);
   // If WYSIWYG was active (e.g. file changed), tear it down first
   if (wysiwygMode) {
     unmountWysiwyg();
@@ -1085,6 +1139,13 @@ export async function buildRawView() {
     tomlFormBtn.classList.remove('active');
     tomlFormBtn.setAttribute('aria-pressed', 'false');
   }
+  wireYamlFormBtn();
+  // Reset yamlFormBtn active state (visibility is inherited from #yamlTools parent)
+  const yamlFormBtn = document.getElementById('yamlFormBtn');
+  if (yamlFormBtn) {
+    yamlFormBtn.classList.remove('active');
+    yamlFormBtn.setAttribute('aria-pressed', 'false');
+  }
   // HTML Visual button
   const htmlVisualBtn = document.getElementById('htmlVisualBtn');
   if (htmlVisualBtn) {
@@ -1181,6 +1242,9 @@ export function hasUnsavedWork() {
   // TOML form editor: dirty when current text differs from the original load
   if (tomlFormEditor && !state.downloadedSinceEdit &&
       tomlFormEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
+  // YAML form editor: dirty when current text differs from the original load
+  if (yamlFormEditor && !state.downloadedSinceEdit &&
+      yamlFormEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
   if (state.sessionEdits.size > 0) return true;
   // Folder edits stashed but not yet exported also count — closing the tab would lose them.
   return state.folderEdits.size > 0 && !state.folderExported;
@@ -1239,11 +1303,13 @@ export async function downloadCurrent() {
           ? iniFormEditor.getValue()
           : tomlFormEditor
             ? tomlFormEditor.getValue()
-            : htmlWysiwyg
-              ? htmlWysiwyg.getValue()
-              : wysiwygMode && isWysiwygActive()
-                ? getWysiwygValue()
-                : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
+            : yamlFormEditor
+              ? yamlFormEditor.getValue()
+              : htmlWysiwyg
+                ? htmlWysiwyg.getValue()
+                : wysiwygMode && isWysiwygActive()
+                  ? getWysiwygValue()
+                  : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
     blob = new Blob([text], { type: state.intake.mimeType || 'text/plain' });
   }
   const a = document.createElement('a');
@@ -1260,11 +1326,13 @@ export async function downloadCurrent() {
           ? iniFormEditor.getValue()
           : tomlFormEditor
             ? tomlFormEditor.getValue()
-            : htmlWysiwyg
-              ? htmlWysiwyg.getValue()
-              : wysiwygMode && isWysiwygActive()
-                ? getWysiwygValue()
-                : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
+            : yamlFormEditor
+              ? yamlFormEditor.getValue()
+              : htmlWysiwyg
+                ? htmlWysiwyg.getValue()
+                : wysiwygMode && isWysiwygActive()
+                  ? getWysiwygValue()
+                  : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
     state.sessionIntakes.set(state.intake.filename, { ...state.sessionIntakes.get(state.intake.filename), text });
     state.sessionEdits.delete(state.intake.filename);
     state.treeApi?.setEdited?.(state.intake.filename, false);

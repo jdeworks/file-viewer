@@ -6167,4 +6167,49 @@ export async function run(ctx) {
   if (/DataStructures\.BinaryTree/i.test(hsText)) pass('sample.hs: module name shown'); else fail('hs module: ' + hsText.slice(0, 300));
   if (/Tree|RoseTree|SizedList/i.test(hsText)) pass('sample.hs: data types listed'); else fail('hs types: ' + hsText.slice(0, 300));
   if (/insert|search|depth|fromList/i.test(hsText)) pass('sample.hs: functions listed'); else fail('hs functions: ' + hsText.slice(0, 300));
+
+  // ── sample.kt viewer (Kotlin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.kt');
+  await page.waitForSelector('#previewHost .kt-doc', { timeout: 12000 });
+  pass('sample.kt: renders');
+  const ktText = await page.$eval('#previewHost .kt-doc', (e) => e.textContent);
+  if (/Kotlin/i.test(ktText)) pass('sample.kt: Kotlin badge shown'); else fail('kt badge: ' + ktText.slice(0, 200));
+  if (/com\.example\.demo/.test(ktText)) pass('sample.kt: package shown'); else fail('kt package: ' + ktText.slice(0, 300));
+  if (/Point|Circle|MathUtils/i.test(ktText)) pass('sample.kt: types listed'); else fail('kt types: ' + ktText.slice(0, 300));
+  if (/distanceBetween|fetchPoints|main/i.test(ktText)) pass('sample.kt: functions listed'); else fail('kt functions: ' + ktText.slice(0, 300));
+
+  // ── sample.scala viewer (Scala) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.scala');
+  await page.waitForSelector('#previewHost .sc-doc', { timeout: 12000 });
+  pass('sample.scala: renders');
+  const scalaText = await page.$eval('#previewHost .sc-doc', (e) => e.textContent);
+  if (/Scala/i.test(scalaText)) pass('sample.scala: Scala badge shown'); else fail('scala badge: ' + scalaText.slice(0, 200));
+  if (/com\.example\.demo/.test(scalaText)) pass('sample.scala: package shown'); else fail('scala package: ' + scalaText.slice(0, 300));
+  if (/Point|Circle|MathUtils|Shape/i.test(scalaText)) pass('sample.scala: types listed'); else fail('scala types: ' + scalaText.slice(0, 300));
+  if (/distanceBetween|circleArea/i.test(scalaText)) pass('sample.scala: defs listed'); else fail('scala defs: ' + scalaText.slice(0, 300));
+
+  // ── sample.nim viewer (Nim) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.nim');
+  await page.waitForSelector('#previewHost .nim-doc', { timeout: 12000 });
+  pass('sample.nim: renders');
+  const nimText = await page.$eval('#previewHost .nim-doc', (e) => e.textContent);
+  if (/Nim/i.test(nimText)) pass('sample.nim: Nim badge shown'); else fail('nim badge: ' + nimText.slice(0, 200));
+  if (/strutils|sequtils|math/i.test(nimText)) pass('sample.nim: imports listed'); else fail('nim imports: ' + nimText.slice(0, 300));
+  if (/distance|greet|main/i.test(nimText)) pass('sample.nim: procs listed'); else fail('nim procs: ' + nimText.slice(0, 300));
+  if (/Point|Color/i.test(nimText)) pass('sample.nim: types listed'); else fail('nim types: ' + nimText.slice(0, 300));
+
+  // ── sample.dart viewer (Dart) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.dart');
+  await page.waitForSelector('#previewHost .dart-doc', { timeout: 12000 });
+  pass('sample.dart: renders');
+  const dartText = await page.$eval('#previewHost .dart-doc', (e) => e.textContent);
+  if (/Dart/i.test(dartText)) pass('sample.dart: Dart badge shown'); else fail('dart badge: ' + dartText.slice(0, 200));
+  if (/Flutter/i.test(dartText)) pass('sample.dart: Flutter detected'); else fail('dart flutter: ' + dartText.slice(0, 200));
+  if (/Reading|Sensor|LabSensor/i.test(dartText)) pass('sample.dart: classes listed'); else fail('dart classes: ' + dartText.slice(0, 300));
+  if (/Status/i.test(dartText)) pass('sample.dart: enum listed'); else fail('dart enum: ' + dartText.slice(0, 300));
+  if (/ReadingExtension/i.test(dartText)) pass('sample.dart: extension listed'); else fail('dart extension: ' + dartText.slice(0, 300));
 }
