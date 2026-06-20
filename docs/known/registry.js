@@ -418,6 +418,7 @@ import zookeeperConfig from '../types/text/known/zookeeper-config/index.js';
 import hostsFile from '../types/text/known/hosts-file/index.js';
 import resolvConf from '../types/text/known/resolv-conf/index.js';
 import sshdConfig from '../types/text/known/sshd-config/index.js';
+import sshClientConfig from '../types/text/known/ssh-config/index.js';
 import sudoers from '../types/text/known/sudoers/index.js';
 import nfsExports from '../types/text/known/nfs-exports/index.js';
 import samTemplate from '../types/text/yaml/known/sam-template/index.js';
@@ -629,7 +630,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   kafkaServerProps, natsConfig, rabbitmqConf, zookeeperConfig,
   samTemplate, cfnTemplate, cdkJson, awsSamConfig, releasePleaseConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson,
-  hostsFile, resolvConf, sshdConfig, sudoers, nfsExports, fstab, crypttab,
+  hostsFile, resolvConf, sshdConfig, sshClientConfig, sudoers, nfsExports, fstab, crypttab,
   sysctlConf, modprobeConf,
   jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, emacsConfig, tmuxConf, screenrc, i3Config, swayConfig, dunstrc, polybarConf, nanorc,
   devboxJson, protoConfig, aquaConfig, pixiConfig,

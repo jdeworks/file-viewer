@@ -15,7 +15,7 @@ const ROLL_FORWARD_DOCS = {
 };
 
 const CSS = `
-.dn-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.globaljson-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
 .dn-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
 .badge-dn{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700;background:#512bd4;color:#fff;vertical-align:middle;}
 .dn-title{font-size:18px;font-weight:700;margin:0;}
@@ -36,10 +36,10 @@ const CSS = `
 
 export function render(intake) {
   const host = document.createElement('div');
-  host.className = 'dn-doc';
+  host.className = 'globaljson-doc';
 
   let cfg;
-  try { cfg = JSON.parse(intake.text || '{}'); }
+  try { cfg = intake.parsed || JSON.parse(intake.text || '{}'); }
   catch (e) {
     host.innerHTML = `<style>${CSS}</style><p class="dn-err">Invalid JSON: ${esc(e.message)}</p>`;
     return { parentNode: host };

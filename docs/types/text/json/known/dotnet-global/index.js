@@ -5,7 +5,10 @@ export default {
   label: '.NET global.json',
   match(intake, baseType) {
     if (baseType?.id !== 'json') return false;
-    return (intake.filename || intake.name || '').split('/').pop().toLowerCase() === 'global.json';
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    if (n !== 'global.json') return false;
+    const p = intake.parsed || {};
+    return !!(p.sdk?.version || p['msbuild-sdks']);
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

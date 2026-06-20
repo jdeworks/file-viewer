@@ -300,10 +300,13 @@ export async function run(ctx) {
   // ── .eslintrc.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.eslintrc.json');
-  await page.waitForSelector('#previewHost .esl-doc', { timeout: 12000 });
-  const eslText = await page.$eval('#previewHost .esl-doc', (e) => e.textContent);
-  if (/ESLint/i.test(eslText)) pass('.eslintrc.json: badge shown'); else fail('eslint badge: ' + eslText.slice(0, 200));
-  if (/no-console|no-unused-vars|prefer-const/i.test(eslText)) pass('.eslintrc.json: rules shown'); else fail('eslint rules: ' + eslText.slice(0, 200));
+  await page.waitForSelector('#previewHost .eslint-doc', { timeout: 12000 });
+  pass('.eslintrc.json: badge shown');
+  const eslText = await page.$eval('#previewHost .eslint-doc', (e) => e.textContent);
+  if (!eslText.includes('typescript-eslint')) fail('.eslintrc.json: extends not shown');
+  else pass('.eslintrc.json: extends shown');
+  if (!eslText.includes('no-console')) fail('.eslintrc.json: rules not shown');
+  else pass('.eslintrc.json: rules shown');
 
   // ── jest.config.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -4069,4 +4072,26 @@ export async function run(ctx) {
   else pass('release-please-config.json: release type shown');
   if (!rplText.includes('packages/api')) fail('release-please-config.json: packages not shown');
   else pass('release-please-config.json: packages shown');
+
+  // ── .nanorc (GNU nano editor config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.nanorc');
+  await page.waitForSelector('#previewHost .nanorc-doc', { timeout: 12000 });
+  pass('.nanorc: badge shown');
+  const nanoText = await page.$eval('#previewHost .nanorc-doc', el => el.textContent);
+  if (!nanoText.includes('tabsize') && !nanoText.includes('4')) fail('.nanorc: settings not shown');
+  else pass('.nanorc: settings shown');
+  if (!nanoText.includes('include') && !nanoText.includes('nanorc')) fail('.nanorc: syntax includes not shown');
+  else pass('.nanorc: syntax includes shown');
+
+  // ── global.json (.NET SDK pinning) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('global.json');
+  await page.waitForSelector('#previewHost .globaljson-doc', { timeout: 12000 });
+  pass('global.json: badge shown');
+  const gjText = await page.$eval('#previewHost .globaljson-doc', el => el.textContent);
+  if (!gjText.includes('8.0.100')) fail('global.json: SDK version not shown');
+  else pass('global.json: SDK version shown');
+  if (!gjText.includes('latestPatch')) fail('global.json: rollForward not shown');
+  else pass('global.json: rollForward shown');
 }

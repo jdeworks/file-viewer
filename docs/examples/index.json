@@ -4434,7 +4434,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": ".NET global.json: SDK version 8.0.100 pinned with latestPatch roll-forward policy."
+    "description": ".NET global.json: SDK version 8.0.100 pinned with latestPatch roll-forward policy.",
+    "knownFile": "dotnet-global"
   },
   {
     "label": "schema.prisma",
@@ -8028,6 +8029,18 @@
     "enhanced": true,
     "description": "curl default options file: follow redirects, retry settings, timeouts, HTTP/2, user-agent, and TLS CA path.",
     "knownFile": "curlrc"
+  },
+  {
+    "file": ".nanorc",
+    "label": ".nanorc",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "GNU nano editor config: autoindent, tab settings, line numbers, color themes, syntax highlighting includes, and custom key bindings.",
+    "knownFile": "nanorc"
   },
   {
     "file": ".inputrc",

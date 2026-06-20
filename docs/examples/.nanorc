@@ -1,0 +1,35 @@
+## Nano config file
+
+set autoindent
+set tabsize 4
+set tabstospaces
+set linenumbers
+set numbercolor yellow,black
+set mouse
+set softwrap
+set wordchars "_-."
+set historylog
+set positionlog
+set backup
+set backupdir "~/.local/share/nano/backups/"
+set suspendable
+set titlecolor bold,white,blue
+set statuscolor bold,white,green
+set errorcolor bold,white,red
+set spotlightcolor black,orange
+set selectedcolor lightwhite,magenta
+set scrollercolor cyan
+set functioncolor green
+set keycolor cyan,black
+
+## Syntax highlighting
+include "/usr/share/nano/*.nanorc"
+include "~/.config/nano/python.nanorc"
+include "~/.config/nano/rust.nanorc"
+
+## Keybindings
+bind ^Z suspend main
+bind ^Q exit all
+bind ^S savefile main
+bind ^F whereis all
+bind ^H help all
