@@ -361,10 +361,11 @@ export async function run(ctx) {
   // ── cliff.toml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('cliff.toml');
-  await page.waitForSelector('#previewHost .clf-doc', { timeout: 12000 });
-  const clfText = await page.$eval('#previewHost .clf-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .clifftoml-doc', { timeout: 12000 });
+  const clfText = await page.$eval('#previewHost .clifftoml-doc', (e) => e.textContent);
   if (/git-cliff/i.test(clfText)) pass('cliff.toml: badge shown'); else fail('cliff badge: ' + clfText.slice(0, 200));
-  if (/Features|Bug Fixes|commit/i.test(clfText)) pass('cliff.toml: parsers shown'); else fail('cliff content: ' + clfText.slice(0, 200));
+  if (/Features|Bug Fixes|commit/i.test(clfText)) pass('cliff.toml: commit groups shown'); else fail('cliff content: ' + clfText.slice(0, 200));
+  if (/conventional/i.test(clfText)) pass('cliff.toml: git settings shown'); else fail('cliff git settings: ' + clfText.slice(0, 200));
 
   // ── .releaserc.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1023,12 +1024,11 @@ export async function run(ctx) {
   // ── SonarQube config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('sonar-project.properties');
-  await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
-  const snrChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
-  if (/Sonar/i.test(snrChipText)) pass('sonar-project.properties: chip shown'); else fail('sonar chip: ' + snrChipText.slice(0, 200));
-  await page.waitForSelector('#previewHost .snr-doc', { timeout: 12000 });
-  const snrText = await page.$eval('#previewHost .snr-doc', (e) => e.textContent);
-  if (/sonar|project/i.test(snrText)) pass('sonar-project.properties: content shown'); else fail('sonar content: ' + snrText.slice(0, 200));
+  await page.waitForSelector('#previewHost .sonarprops-doc', { timeout: 12000 });
+  const snrText = await page.$eval('#previewHost .sonarprops-doc', (e) => e.textContent);
+  if (/SonarQube/i.test(snrText)) pass('sonar-project.properties: badge shown'); else fail('sonar badge: ' + snrText.slice(0, 200));
+  if (snrText.includes('My Application')) pass('sonar-project.properties: project name shown'); else fail('sonar-project.properties: project name not shown: ' + snrText.slice(0, 200));
+  if (snrText.includes('squ_abc123xyz456def789')) fail('sonar-project.properties: token leaked'); else pass('sonar-project.properties: token masked');
 
   // ── Hatch config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

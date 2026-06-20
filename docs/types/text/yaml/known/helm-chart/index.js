@@ -3,8 +3,8 @@ export default {
   label: 'Helm Chart',
   match: (intake, baseType) => {
     if (baseType.id !== 'yaml') return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
-    return name === 'chart.yaml';
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    return name === 'chart.yaml' || name === 'chart.yml';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {
