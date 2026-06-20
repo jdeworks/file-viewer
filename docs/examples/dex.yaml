@@ -1,0 +1,123 @@
+issuer: https://dex.example.com/dex
+
+storage:
+  type: postgres
+  config:
+    host: localhost
+    port: 5432
+    database: dex
+    user: dex
+    password: s3cr3t-db-pass
+    ssl:
+      mode: require
+
+web:
+  http: 0.0.0.0:5556
+  https: 0.0.0.0:5554
+  tlsCert: /etc/dex/tls/tls.crt
+  tlsKey: /etc/dex/tls/tls.key
+
+grpc:
+  addr: 0.0.0.0:5557
+  tlsCert: /etc/dex/tls/tls.crt
+  tlsKey: /etc/dex/tls/tls.key
+
+telemetry:
+  http: 0.0.0.0:5558
+
+logger:
+  level: info
+  format: json
+
+oauth2:
+  skipApprovalScreen: true
+  responseTypes:
+    - code
+    - token
+    - id_token
+
+expiry:
+  idTokens: 24h
+  refreshTokens:
+    validIfNotUsedFor: 720h
+
+connectors:
+  - type: ldap
+    id: ldap
+    name: Corporate LDAP
+    config:
+      host: ldap.example.com:389
+      insecureNoSSL: false
+      bindDN: cn=dex,ou=service-accounts,dc=example,dc=com
+      bindPW: ldap-bind-secret
+      usernamePrompt: Username
+      userSearch:
+        baseDN: ou=users,dc=example,dc=com
+        filter: "(objectClass=person)"
+        username: mail
+        idAttr: uid
+        emailAttr: mail
+        nameAttr: cn
+      groupSearch:
+        baseDN: ou=groups,dc=example,dc=com
+        filter: "(objectClass=groupOfNames)"
+        userMatchers:
+          - userAttr: DN
+            groupAttr: member
+        nameAttr: cn
+
+  - type: github
+    id: github
+    name: GitHub
+    config:
+      clientID: github-client-id
+      clientSecret: github-client-secret
+      redirectURI: https://dex.example.com/dex/callback
+      orgs:
+        - name: my-org
+
+  - type: oidc
+    id: google
+    name: Google
+    config:
+      issuer: https://accounts.google.com
+      clientID: google-client-id
+      clientSecret: google-client-secret
+      redirectURI: https://dex.example.com/dex/callback
+
+staticClients:
+  - id: example-app
+    secret: example-app-secret
+    name: Example App
+    redirectURIs:
+      - https://app.example.com/callback
+      - http://localhost:8080/callback
+
+  - id: grafana
+    secret: grafana-oauth-secret
+    name: Grafana
+    redirectURIs:
+      - https://grafana.example.com/login/generic_oauth
+
+  - id: kubernetes
+    secret: k8s-dex-client-secret
+    name: Kubernetes
+    trustedPeers:
+      - example-app
+    redirectURIs:
+      - urn:ietf:wg:oauth:2.0:oob
+      - http://localhost:8080
+
+  - id: argocd
+    secret: argocd-dex-secret
+    name: ArgoCD
+    redirectURIs:
+      - https://argocd.example.com/auth/callback
+
+enablePasswordDB: true
+
+staticPasswords:
+  - email: admin@example.com
+    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+    username: admin
+    userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"

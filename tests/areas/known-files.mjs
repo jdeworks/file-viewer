@@ -5320,4 +5320,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('ArchiveBox.conf');
   pass(await page.waitForSelector('#previewHost .abox-doc', { timeout: 12000 }), 'ArchiveBox.conf: ArchiveBox badge shown');
+
+  // ── dex.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dex.yaml');
+  pass(await page.waitForSelector('#previewHost .dex-doc', { timeout: 12000 }), 'dex.yaml: Dex OIDC badge shown');
+
+  // ── lldap_config.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('lldap_config.toml');
+  pass(await page.waitForSelector('#previewHost .lldap-doc', { timeout: 12000 }), 'lldap_config.toml: LLDAP badge shown');
 }

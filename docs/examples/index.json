@@ -9773,5 +9773,34 @@
     "enhanced": true,
     "description": "ArchiveBox web archiving tool configuration with server, security, admin, archiving formats, limits, and binary paths.",
     "knownFile": "archivebox-config"
+  },
+  {
+    "file": "dex.yaml",
+    "label": "dex.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security",
+      "Identity"
+    ],
+    "enhanced": true,
+    "description": "Dex OIDC identity provider configuration with issuer, PostgreSQL storage, LDAP/GitHub/OIDC connectors, OAuth2 settings, static clients (Grafana, Kubernetes, ArgoCD), and password DB.",
+    "knownFile": "dex-config"
+  },
+  {
+    "file": "lldap_config.toml",
+    "label": "lldap_config.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security",
+      "Identity",
+      "LDAP"
+    ],
+    "enhanced": true,
+    "description": "LLDAP lightweight LDAP server configuration with base DN, LDAP/LDAPS/HTTP ports, JWT secret, admin credentials, PostgreSQL database URL, and SMTP password reset settings.",
+    "knownFile": "lldap-config"
   }
 ]

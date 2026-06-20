@@ -1,0 +1,61 @@
+## LLDAP configuration file
+## See https://github.com/lldap/lldap for documentation
+
+verbose = false
+
+## The LDAP base DN for the users.
+ldap_base_dn = "dc=example,dc=com"
+
+## The port on which to have the LDAP server.
+ldap_port = 3890
+
+## The port on which to have the LDAPS server.
+## Set to 0 to disable.
+ldaps_port = 6360
+
+## The port on which to have the HTTP server.
+http_port = 17170
+
+## The public URL of the server, for password reset links.
+http_url = "https://lldap.example.com"
+
+## Random secret for JWT signature.
+jwt_secret = "super-secret-jwt-key-change-me"
+
+## The DN of the admin user.
+lldap_ldap_user_dn = "cn=admin,dc=example,dc=com"
+
+## The password of the admin user.
+lldap_ldap_user_pass = "admin-password-change-me"
+
+## The database URL for storage.
+## Supported: sqlite://path, postgres://user:pass@host/db, mysql://user:pass@host/db
+database_url = "postgres://lldap:lldap-db-secret@localhost:5432/lldap"
+
+## Private key file for HTTP TLS.
+key_file = "/etc/lldap/private_key"
+
+[smtp_options]
+## Whether to enable password reset via email.
+enable_password_reset = true
+
+## The SMTP server host.
+server = "smtp.example.com"
+
+## The SMTP server port.
+port = 587
+
+## SMTP user for authentication.
+user = "lldap@example.com"
+
+## SMTP password.
+password = "smtp-password-secret"
+
+## The sender address for password reset emails.
+from = "LLDAP Admin <lldap@example.com>"
+
+## Reply-to address for password reset emails.
+reply_to = "Do Not Reply <noreply@example.com>"
+
+## Whether to use TLS.
+tls_required = false
