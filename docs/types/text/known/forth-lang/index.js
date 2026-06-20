@@ -5,6 +5,8 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').toLowerCase();
     if (name.endsWith('.forth') || name.endsWith('.fth') || name.endsWith('.4th')) return true;
+    // Factor language uses .factor extension and also has : words and CONSTANT — don't poach it
+    if (name.endsWith('.factor')) return false;
     const text = intake.text || '';
     const hits = [/^: [A-Z_a-z]/m.test(text), /\bVARIABLE\b/.test(text), /\bCONSTANT\b/.test(text), /\bDO\b.*\bLOOP\b/s.test(text), /\bIF\b/.test(text) && /\bTHEN\b/.test(text), /\bBEGIN\b.*\bUNTIL\b/s.test(text)].filter(Boolean).length;
     return hits >= 2;
