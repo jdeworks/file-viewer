@@ -1,8 +1,8 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.brew-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.badge-brew{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#f9a825;color:#3e2000;vertical-align:middle;margin-right:8px;}
+.brewfile-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.badge-brew{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#FBB040;color:#3e2000;vertical-align:middle;margin-right:8px;}
 .brew-title{font-size:18px;font-weight:700;margin:0 0 4px;}
 .brew-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 12px;}
 .brew-sec{margin:14px 0;}
@@ -13,8 +13,10 @@ const CSS = `
 .brew-item:last-child{border-bottom:none;}
 .brew-name{font-family:ui-monospace,monospace;font-size:12px;}
 .brew-args{font-size:11px;color:var(--fg-2,#888);font-family:ui-monospace,monospace;}
-.brew-tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:6px;background:#fff3e0;border:1px solid #f9a825;color:#7c5200;font-weight:600;}
+.brew-tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:6px;background:#fff3e0;border:1px solid #FBB040;color:#7c5200;font-weight:600;}
 .brew-id{font-size:11px;color:var(--fg-2,#888);}
+.brew-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px;}
+.brew-chip{font-size:11px;padding:2px 8px;border-radius:8px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);color:var(--fg-2,#888);}
 `;
 
 function parseBrewfile(text) {
@@ -65,46 +67,55 @@ function section(title, count, html) {
 
 export function render(intake) {
   const { taps, formulas, casks, mas, vscode } = parseBrewfile(intake.text || '');
-  const total = formulas.length + casks.length + mas.length;
   const parts = [];
 
-  if (taps.length) {
-    const rows = taps.map((t) => `<li class="brew-item"><span class="brew-name">${esc(t)}</span></li>`).join('');
-    parts.push(section('Taps', taps.length, `<ul class="brew-list">${rows}</ul>`));
+  const displayTaps = taps.slice(0, 8);
+  const displayFormulas = formulas.slice(0, 30);
+  const displayCasks = casks.slice(0, 20);
+  const displayMas = mas.slice(0, 10);
+  const displayVscode = vscode.slice(0, 10);
+
+  if (displayTaps.length) {
+    const rows = displayTaps.map((t) => `<li class="brew-item"><span class="brew-name">${esc(t)}</span></li>`).join('');
+    parts.push(section('Taps', displayTaps.length, `<ul class="brew-list">${rows}</ul>`));
   }
-  if (formulas.length) {
-    const rows = formulas.map((f) => {
+  if (displayFormulas.length) {
+    const rows = displayFormulas.map((f) => {
       const args = f.args.length ? `<span class="brew-args">${esc(f.args.join(' '))}</span>` : '';
       return `<li class="brew-item"><span class="brew-name">${esc(f.name)}</span>${args}</li>`;
     }).join('');
-    parts.push(section('Formulae', formulas.length, `<ul class="brew-list">${rows}</ul>`));
+    parts.push(section('Formulae', displayFormulas.length + (formulas.length > 30 ? ` of ${formulas.length}` : ''), `<ul class="brew-list">${rows}</ul>`));
   }
-  if (casks.length) {
-    const rows = casks.map((c) => `<li class="brew-item"><span class="brew-name">${esc(c)}</span><span class="brew-tag">cask</span></li>`).join('');
-    parts.push(section('Casks', casks.length, `<ul class="brew-list">${rows}</ul>`));
+  if (displayCasks.length) {
+    const rows = displayCasks.map((c) => `<li class="brew-item"><span class="brew-name">${esc(c)}</span><span class="brew-tag">cask</span></li>`).join('');
+    parts.push(section('Casks', displayCasks.length + (casks.length > 20 ? ` of ${casks.length}` : ''), `<ul class="brew-list">${rows}</ul>`));
   }
-  if (mas.length) {
-    const rows = mas.map((a) => `<li class="brew-item"><span class="brew-name">${esc(a.name)}</span><span class="brew-id">id: ${esc(a.id)}</span></li>`).join('');
-    parts.push(section('Mac App Store', mas.length, `<ul class="brew-list">${rows}</ul>`));
+  if (displayMas.length) {
+    const rows = displayMas.map((a) => `<li class="brew-item"><span class="brew-name">${esc(a.name)}</span><span class="brew-id">id: ${esc(a.id)}</span></li>`).join('');
+    parts.push(section('Mac App Store', displayMas.length, `<ul class="brew-list">${rows}</ul>`));
   }
-  if (vscode.length) {
-    const rows = vscode.map((e) => `<li class="brew-item"><span class="brew-name">${esc(e)}</span></li>`).join('');
-    parts.push(section('VS Code Extensions', vscode.length, `<ul class="brew-list">${rows}</ul>`));
+  if (displayVscode.length) {
+    const rows = displayVscode.map((e) => `<li class="brew-item"><span class="brew-name">${esc(e)}</span></li>`).join('');
+    parts.push(section('VS Code Extensions', displayVscode.length, `<ul class="brew-list">${rows}</ul>`));
   }
 
-  const subParts = [
+  const chipParts = [
     taps.length && `${taps.length} tap${taps.length !== 1 ? 's' : ''}`,
-    formulas.length && `${formulas.length} formula${formulas.length !== 1 ? 'e' : ''}`,
+    formulas.length && `${formulas.length} formulae`,
     casks.length && `${casks.length} cask${casks.length !== 1 ? 's' : ''}`,
     mas.length && `${mas.length} MAS app${mas.length !== 1 ? 's' : ''}`,
     vscode.length && `${vscode.length} VS Code ext${vscode.length !== 1 ? 's' : ''}`,
-  ].filter(Boolean).join(' · ');
+  ].filter(Boolean);
+
+  const chipsHtml = chipParts.length
+    ? `<div class="brew-chips">${chipParts.map((c) => `<span class="brew-chip">${esc(c)}</span>`).join('')}</div>`
+    : '';
 
   const host = document.createElement('div');
-  host.className = 'brew-doc';
+  host.className = 'brewfile-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="brew-title"><span class="badge-brew">Homebrew</span>Brewfile</div>
-<div class="brew-sub">${esc(subParts) || 'No packages defined'}</div>
+${chipsHtml}
 ${parts.join('') || '<p style="color:var(--fg-2,#888);font-size:13px;">No Homebrew entries found.</p>'}`;
   return { parentNode: host };
 }

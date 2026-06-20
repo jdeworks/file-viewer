@@ -1013,8 +1013,9 @@ export async function run(ctx) {
   // ── .tool-versions viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.tool-versions');
-  await page.waitForSelector('#previewHost .tvr-doc', { timeout: 12000 });
-  const tvrText = await page.$eval('#previewHost .tvr-doc', (e) => e.textContent);
+  await page.waitForSelector('.toolversions-doc', { timeout: 12000 });
+  pass('.tool-versions: renders');
+  const tvrText = await page.$eval('.toolversions-doc', (e) => e.textContent);
   if (/asdf|tool.version/i.test(tvrText)) pass('.tool-versions: badge shown'); else fail('tool-versions badge: ' + tvrText.slice(0, 200));
   if (/node|python|ruby/i.test(tvrText)) pass('.tool-versions: tools shown'); else fail('tool-versions tools: ' + tvrText.slice(0, 200));
 
@@ -4092,9 +4093,11 @@ export async function run(ctx) {
   // ── Brewfile (Homebrew bundle manifest) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Brewfile');
-  await page.waitForSelector('#previewHost .brew-doc', { timeout: 12000 });
-  const brewText = await page.$eval('#previewHost .brew-doc', (e) => e.textContent);
-  if (/homebrew/i.test(brewText)) pass('Brewfile: Homebrew badge shown'); else fail('Brewfile badge: ' + brewText.slice(0, 200));
+  await page.waitForSelector('.brewfile-doc', { timeout: 12000 });
+  pass('Brewfile: renders');
+  const brewText = await page.$eval('.brewfile-doc', (e) => e.textContent);
+  if (!brewText.includes('Homebrew') && !brewText.includes('brew')) fail('Brewfile: missing badge'); else pass('Brewfile: badge shown');
+  if (!brewText.includes('formulae') && !brewText.includes('cask') && !brewText.includes('git')) fail('Brewfile: no packages shown'); else pass('Brewfile: packages shown');
   if (/tap/i.test(brewText)) pass('Brewfile: taps section shown'); else fail('Brewfile taps: ' + brewText.slice(0, 300));
   if (/formulae|formula/i.test(brewText)) pass('Brewfile: formulae section shown'); else fail('Brewfile formulae: ' + brewText.slice(0, 300));
   if (/cask/i.test(brewText)) pass('Brewfile: casks section shown'); else fail('Brewfile casks: ' + brewText.slice(0, 300));
@@ -4386,9 +4389,9 @@ export async function run(ctx) {
   await openExample('jest.config.js');
   await page.waitForSelector('.jestconfig-doc');
   pass('jest.config.js: renders');
-  const jestText = await page.$eval('.jestconfig-doc', el => el.textContent);
-  if (!jestText.includes('Jest')) fail('jest.config.js: missing badge'); else pass('jest.config.js: badge shown');
-  if (!jestText.includes('testEnvironment') && !jestText.includes('transform') && !jestText.includes('coverage')) fail('jest.config.js: no config shown'); else pass('jest.config.js: config shown');
+  const jestJsText = await page.$eval('.jestconfig-doc', el => el.textContent);
+  if (!jestJsText.includes('Jest')) fail('jest.config.js: missing badge'); else pass('jest.config.js: badge shown');
+  if (!jestJsText.includes('testEnvironment') && !jestJsText.includes('transform') && !jestJsText.includes('coverage')) fail('jest.config.js: no config shown'); else pass('jest.config.js: config shown');
 
   // ── .env.example (env template) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

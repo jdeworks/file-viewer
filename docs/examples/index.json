@@ -377,7 +377,7 @@
     ],
     "enhanced": true,
     "knownFile": "npmignore",
-    "description": "npm publish ignore file: excludes source, tests, env files, CI config, docs, and dev tooling — keeps only dist/ output and README."
+    "description": "npm publish ignore file: excludes source, tests, env files, CI config, docs, and dev tooling \u2014 keeps only dist/ output and README."
   },
   {
     "label": ".dockerignore",
@@ -389,7 +389,7 @@
     ],
     "enhanced": true,
     "knownFile": "dockerignore",
-    "description": "Docker build context ignore file: excludes dependencies, git metadata, env secrets, tests, and docs — keeps only what the container needs."
+    "description": "Docker build context ignore file: excludes dependencies, git metadata, env secrets, tests, and docs \u2014 keeps only what the container needs."
   },
   {
     "label": "requirements.txt",
@@ -3551,7 +3551,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "asdf .tool-versions pinning node, python, ruby, and go versions."
+    "description": "asdf .tool-versions pinning node, python, ruby, golang, java, and terraform versions.",
+    "knownFile": "tool-versions"
   },
   {
     "label": "Helm Chart.yaml",
@@ -8441,5 +8442,31 @@
     "enhanced": true,
     "knownFile": "jest-config",
     "description": "Jest config (JS format): jsdom environment, 4 transforms, 5 module aliases, setupFilesAfterFramework, 80/70/75/80% coverage thresholds."
+  },
+  {
+    "label": ".gcloudignore",
+    "file": ".gcloudignore",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Google Cloud"
+    ],
+    "enhanced": true,
+    "knownFile": "gcloudignore",
+    "description": "Google Cloud build ignore file: Node.js artifacts, build output, test files, dev configs, IDE files, and git metadata excluded from gcloud deployments."
+  },
+  {
+    "label": "heroku-app.json",
+    "file": "heroku-app.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Deploy"
+    ],
+    "enhanced": true,
+    "knownFile": "app-json",
+    "description": "Heroku app manifest: heroku-22 stack, nodejs+python buildpacks, web+worker formation, PostgreSQL+Redis add-ons, environment variables, and deploy scripts."
   }
 ]
