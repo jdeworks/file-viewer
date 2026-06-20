@@ -4,54 +4,6 @@ import { loadKra } from './decoders/kra.js';
 
 function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
-// ── ORA (OpenRaster) ─────────────────────────────────────────────────────────
-
-async function loadOra(intake) {
-  const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
-  const zip = await JSZip.loadAsync(intake.bytes);
-  const xmlText = await zip.file('stack.xml')?.async('string');
-  if (!xmlText) throw new Error('Missing stack.xml in ORA');
-  const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
-  const stackEl = doc.querySelector('image');
-  const W = parseInt(stackEl?.getAttribute('w') || '0', 10);
-  const H = parseInt(stackEl?.getAttribute('h') || '0', 10);
-
-  function parseLayers(el) {
-    return [...el.children].reverse().flatMap((c) => {
-      if (c.tagName === 'layer') {
-        return [{
-          name: c.getAttribute('name') || c.getAttribute('src') || 'Layer',
-          src: c.getAttribute('src'),
-          x: parseInt(c.getAttribute('x') || '0', 10),
-          y: parseInt(c.getAttribute('y') || '0', 10),
-          opacity: parseFloat(c.getAttribute('opacity') ?? '1'),
-          visibility: c.getAttribute('visibility') !== 'hidden',
-          type: 'layer',
-        }];
-      }
-      if (c.tagName === 'stack') {
-        return [{ name: c.getAttribute('name') || 'Group', type: 'group', children: parseLayers(c), visibility: c.getAttribute('visibility') !== 'hidden' }];
-      }
-      return [];
-    });
-  }
-
-  const stackNode = doc.querySelector('stack');
-  const layers = stackNode ? parseLayers(stackNode) : [];
-
-  async function loadBitmaps(ls) {
-    await Promise.all(ls.map(async (l) => {
-      if (l.type === 'group') { await loadBitmaps(l.children); return; }
-      try {
-        const data = await zip.file(l.src)?.async('arraybuffer');
-        if (data) l.bitmap = await createImageBitmap(new Blob([data], { type: 'image/png' }));
-      } catch { /* skip unreadable layer */ }
-    }));
-  }
-  await loadBitmaps(layers);
-  return { W, H, layers };
-}
-
 // ── PSD ──────────────────────────────────────────────────────────────────────
 
 async function loadPsd(intake) {
@@ -217,10 +169,16 @@ function detectFormat(intake) {
 }
 
 export async function render(intake, _ctx) {
+  const format = detectFormat(intake);
+
+  // Delegate ORA to its dedicated sub-module renderer
+  if (format === 'ora') {
+    const { render: renderOra } = await import('./ora/renderer.js');
+    return renderOra(intake);
+  }
+
   const wrap = document.createElement('div');
   wrap.className = 'layered-wrap';
-
-  const format = detectFormat(intake);
 
   // ── Canvas column (toolbar + scrollable canvas area) ──
   const canvasCol = document.createElement('div');
@@ -318,8 +276,6 @@ export async function render(intake, _ctx) {
       layerData = await Promise.resolve(loadXcf(intake.bytes));
     } else if (format === 'kra') {
       layerData = await loadKra(intake);
-    } else {
-      layerData = await loadOra(intake);
     }
 
     const { W, H, layers, mergedImageData, mergedBitmap } = layerData;

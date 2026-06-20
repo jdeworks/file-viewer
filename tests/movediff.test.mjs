@@ -252,5 +252,20 @@ const P3 = 'A third paragraph at the bottom.';
   ok(pages.join('|') === 'cover.webp|pages/2.jpg|pages/10.jpg', 'Comic metadata: image pages filtered and natural-sorted');
 }
 
+// ORA (OpenRaster) detect.js: ZIP magic + .ora extension -> confidence 0.95
+{
+  const { detect: detectOra } = await import('../docs/types/layered/ora/detect.js');
+  const zipMagic = Uint8Array.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+  const nonZip   = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]); // PNG magic
+  ok(detectOra({ isBinary: true, bytes: zipMagic, filename: 'test.ora', name: 'test.ora' }) === 0.95,
+    'ORA detect: ZIP magic + .ora extension -> 0.95');
+  ok(detectOra({ isBinary: true, bytes: zipMagic, filename: 'test.kra', name: 'test.kra' }) === 0,
+    'ORA detect: ZIP magic + .kra extension -> 0 (not ORA)');
+  ok(detectOra({ isBinary: true, bytes: nonZip, filename: 'test.ora', name: 'test.ora' }) === 0,
+    'ORA detect: non-ZIP bytes + .ora extension -> 0');
+  ok(detectOra({ isBinary: false, bytes: zipMagic, filename: 'test.ora', name: 'test.ora' }) === 0,
+    'ORA detect: non-binary intake -> 0');
+}
+
 console.log(failed ? `\nMOVEDIFF FAILED (${failed})` : '\nMOVEDIFF PASSED');
 process.exit(failed ? 1 : 0);
