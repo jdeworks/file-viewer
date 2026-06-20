@@ -4477,4 +4477,22 @@ export async function run(ctx) {
   const prettierignoreText = await page.$eval('.prettierignore-doc', el => el.textContent);
   if (!prettierignoreText.includes('Prettier')) fail('.prettierignore: missing badge'); else pass('.prettierignore: badge shown');
   if (!prettierignoreText.includes('node_modules') && !prettierignoreText.includes('dist') && !prettierignoreText.includes('pattern')) fail('.prettierignore: no patterns'); else pass('.prettierignore: patterns shown');
+
+  // ── .codeclimate.yml upgraded viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.codeclimate.yml');
+  await page.waitForSelector('.codeclimate-doc');
+  pass('.codeclimate.yml: renders');
+  const codeclimateText = await page.$eval('.codeclimate-doc', el => el.textContent);
+  if (!codeclimateText.includes('Code Climate') && !codeclimateText.includes('codeclimate')) fail('.codeclimate.yml: missing badge'); else pass('.codeclimate.yml: badge shown');
+  if (!codeclimateText.includes('plugin') && !codeclimateText.includes('rubocop') && !codeclimateText.includes('eslint')) fail('.codeclimate.yml: no plugins shown'); else pass('.codeclimate.yml: plugins shown');
+
+  // ── semaphore.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('semaphore.yml');
+  await page.waitForSelector('.semaphorecfg-doc');
+  pass('semaphore.yml: renders');
+  const semaphoreText = await page.$eval('.semaphorecfg-doc', el => el.textContent);
+  if (!semaphoreText.includes('Semaphore')) fail('semaphore.yml: missing badge'); else pass('semaphore.yml: badge shown');
+  if (!semaphoreText.includes('block') && !semaphoreText.includes('job') && !semaphoreText.includes('Install')) fail('semaphore.yml: no blocks shown'); else pass('semaphore.yml: blocks shown');
 }

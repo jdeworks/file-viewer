@@ -3,21 +3,21 @@ import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.cc-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.cc-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#1a7f37;color:#fff;vertical-align:middle;margin-right:8px;}
-.cc-title{font-size:18px;font-weight:700;margin:0 0 4px;}
-.cc-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
-.cc-sec{margin:12px 0;}
-.cc-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 8px;}
-.cc-chips{display:flex;flex-wrap:wrap;gap:4px;}
-.cc-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 9px;border-radius:8px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace;}
-.cc-chip.on{background:#f0fdf4;border-color:#86efac;color:#166534;}
-.cc-chip.off{background:#fef2f2;border-color:#fca5a5;color:#991b1b;}
-.cc-path{font:12px/1.6 ui-monospace,monospace;color:var(--fg-2,#888);display:block;padding:1px 0;}
-.cc-kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;font-size:13px;margin:6px 0;}
-.cc-k{font:12px/1.6 ui-monospace,monospace;color:var(--fg-2,#888);}
-.cc-v{font:12px/1.6 ui-monospace,monospace;font-weight:600;}
-.cc-card{background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);border-radius:8px;padding:10px 14px;margin:0 0 10px;}
+.codeclimate-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.codeclimate-doc .cc-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#00AA66;color:#fff;vertical-align:middle;margin-right:8px;}
+.codeclimate-doc .cc-title{font-size:18px;font-weight:700;margin:0 0 4px;}
+.codeclimate-doc .cc-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
+.codeclimate-doc .cc-sec{margin:12px 0;}
+.codeclimate-doc .cc-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 8px;}
+.codeclimate-doc .cc-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.codeclimate-doc .cc-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 9px;border-radius:8px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace;}
+.codeclimate-doc .cc-chip.on{background:#f0fdf4;border-color:#86efac;color:#166534;}
+.codeclimate-doc .cc-chip.off{background:#fef2f2;border-color:#fca5a5;color:#991b1b;}
+.codeclimate-doc .cc-path{font:12px/1.6 ui-monospace,monospace;color:var(--fg-2,#888);display:block;padding:1px 0;}
+.codeclimate-doc .cc-kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;font-size:13px;margin:6px 0;}
+.codeclimate-doc .cc-k{font:12px/1.6 ui-monospace,monospace;color:var(--fg-2,#888);}
+.codeclimate-doc .cc-v{font:12px/1.6 ui-monospace,monospace;font-weight:600;}
+.codeclimate-doc .cc-card{background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);border-radius:8px;padding:10px 14px;margin:0 0 10px;}
 `;
 
 export async function render(intake) {
@@ -96,7 +96,7 @@ export async function render(intake) {
   ].filter(Boolean);
 
   const host = document.createElement('div');
-  host.className = 'cc-doc';
+  host.className = 'codeclimate-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="cc-title"><span class="cc-badge">Code Climate</span>Code Climate config</div>
 <div class="cc-sub">${esc(subParts.join(' · ') || 'Code Climate quality configuration')}</div>

@@ -1,0 +1,73 @@
+version: v1.0
+name: My App CI Pipeline
+
+agent:
+  machine:
+    type: e2-standard-2
+    os_image: ubuntu2204
+
+global_job_config:
+  env_vars:
+    - name: NODE_ENV
+      value: test
+    - name: CI
+      value: "true"
+    - name: API_KEY
+      value: abc123secret
+    - name: DATABASE_URL
+      value: postgres://localhost/myapp_test
+  secrets:
+    - name: docker-hub
+    - name: npm-token
+
+blocks:
+  - name: Install Dependencies
+    task:
+      jobs:
+        - name: npm install
+          commands:
+            - checkout
+            - cache restore node-modules-$(checksum package-lock.json)
+            - npm ci
+            - cache store node-modules-$(checksum package-lock.json) node_modules
+
+  - name: Test
+    task:
+      jobs:
+        - name: Unit Tests
+          commands:
+            - checkout
+            - cache restore node-modules-$(checksum package-lock.json)
+            - npm run test:unit
+        - name: Integration Tests
+          commands:
+            - checkout
+            - cache restore node-modules-$(checksum package-lock.json)
+            - npm run test:integration
+        - name: Lint
+          commands:
+            - checkout
+            - cache restore node-modules-$(checksum package-lock.json)
+            - npm run lint
+
+  - name: Build
+    task:
+      jobs:
+        - name: Build Docker Image
+          commands:
+            - checkout
+            - cache restore node-modules-$(checksum package-lock.json)
+            - npm run build
+            - docker build -t myapp:$SEMAPHORE_GIT_SHA .
+            - docker push myapp:$SEMAPHORE_GIT_SHA
+
+promotions:
+  - name: Deploy to Production
+    pipeline_file: .semaphore/deploy-production.yml
+    auto_promote_on:
+      - result: passed
+        branch:
+          - main
+  - name: Deploy to Staging
+    pipeline_file: .semaphore/deploy-staging.yml
+    when: "branch = 'develop'"

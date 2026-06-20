@@ -4270,6 +4270,20 @@
     "knownFile": "scalafmt-conf"
   },
   {
+    "name": ".scalafix.conf",
+    "file": ".scalafix.conf",
+    "label": ".scalafix.conf",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Scala"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Scalafix linter and rewriter config: rules list, OrganizeImports groups, DisableSyntax flags, and RemoveUnused settings.",
+    "knownFile": "scalafix-conf"
+  },
+  {
     "label": ".readthedocs.yaml",
     "file": ".readthedocs.yaml",
     "mime": "application/yaml",
@@ -6095,6 +6109,7 @@
       "Config"
     ],
     "enhanced": true,
+    "knownFile": "codeclimate-config",
     "description": "Code Climate config: code quality analysis engines and exclude patterns."
   },
   {
@@ -8506,5 +8521,18 @@
     "enhanced": true,
     "knownFile": "app-json",
     "description": "Heroku app manifest: heroku-22 stack, nodejs+python buildpacks, web+worker formation, PostgreSQL+Redis add-ons, environment variables, and deploy scripts."
+  },
+  {
+    "label": "semaphore.yml",
+    "file": "semaphore.yml",
+    "mime": "text/yaml",
+    "category": "CI",
+    "categories": [
+      "CI",
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "semaphore-ci",
+    "description": "Semaphore CI v1.0 pipeline: e2-standard-2 agent, Install/Test/Build blocks with parallel jobs, and production/staging promotions."
   }
 ]

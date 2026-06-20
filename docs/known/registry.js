@@ -219,6 +219,7 @@ import mixExs from '../types/text/known/mix-exs/index.js';
 import buildSbt from '../types/text/known/build-sbt/index.js';
 import duneBuild from '../types/text/known/dune-build/index.js';
 import scalafmtConf from '../types/text/known/scalafmt-conf/index.js';
+import scalafixConf from '../types/text/known/scalafix-conf/index.js';
 import playwrightConfig from '../types/text/known/playwright-config/index.js';
 import cypressConfig from '../types/text/known/cypress-config/index.js';
 import vcpkg from '../types/text/json/known/vcpkg/index.js';
@@ -566,6 +567,7 @@ import dnfConf from '../types/text/known/dnf-conf/index.js';
 import gdbinit from '../types/text/known/gdbinit/index.js';
 import { plugin as preCommitConfig } from '../types/text/yaml/known/pre-commit-config/index.js';
 import { plugin as conkyConf } from '../types/text/known/conky-conf/index.js';
+import { plugin as semaphoreCi } from '../types/text/yaml/known/semaphore-ci/index.js';
 import nanorc from '../types/text/known/nanorc/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
@@ -597,7 +599,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   supabaseConfig, netlifyRedirects,
   cmake, jenkinsfile,
   bazel, bazelrc, ninjaBuild,
-  packageSwift, mixExs, buildSbt, scalafmtConf,
+  packageSwift, mixExs, buildSbt, scalafmtConf, scalafixConf,
   playwrightConfig, cypressConfig,
   vcpkg, cmakePresets, conanfile,
   prometheusConfig, alertmanager, victoriaMetricsConfig, thanosConfig, datadogConfig,
@@ -694,6 +696,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   cmusConf, pacmanConf, dnfConf,
   gdbinit,
   preCommitConfig, conkyConf,
+  semaphoreCi,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

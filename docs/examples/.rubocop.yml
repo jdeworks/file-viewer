@@ -1,25 +1,67 @@
+inherit_from: .rubocop_todo.yml
+
+require:
+  - rubocop-rails
+  - rubocop-rspec
+
 AllCops:
-  TargetRubyVersion: 3.2
+  TargetRubyVersion: 3.1
   NewCops: enable
   DisabledByDefault: false
   Exclude:
     - 'vendor/**/*'
     - 'db/schema.rb'
+    - 'node_modules/**/*'
+    - 'bin/**/*'
 
-inherit_from: .rubocop_todo.yml
-
+# Layout cops
 Layout/LineLength:
   Max: 120
   Enabled: true
+  AllowedPatterns:
+    - '\A\s*#'
 
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+# Style cops
 Style/FrozenStringLiteralComment:
   Enabled: false
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes
+  Enabled: true
 
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: comma
+
+Style/Documentation:
+  Enabled: false
+
+Style/HashSyntax:
+  EnforcedStyle: ruby19
+
+# Metrics cops
 Metrics/MethodLength:
   Max: 20
+  CountAsOne:
+    - array
+    - heredoc
 
+Metrics/ClassLength:
+  Max: 250
+  Enabled: true
+
+Metrics/AbcSize:
+  Max: 20
+
+# Naming cops
 Naming/MethodParameterName:
   MinNameLength: 2
+
+Naming/VariableNumber:
+  Enabled: false
+
+# Lint cops
+Lint/MissingSuper:
+  Enabled: false
