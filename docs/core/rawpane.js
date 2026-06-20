@@ -508,6 +508,7 @@ export async function toggleWysiwyg({ skipPersist = false } = {}) {
         state.treeApi?.setEdited?.(state.intake.filename, true);
       }
       if (state.type?.capabilities.preview) await renderPreview();
+      updateWordCount(value, 'markdown');
     });
     if (!skipPersist && state.settingsModel) {
       state.settingsModel.values.markdownEditor = 'wysiwyg';
@@ -709,8 +710,40 @@ function wireEnvFormBtn() {
   });
 }
 
+function updateWordCount(text, typeId) {
+  const bar = document.getElementById('wordCountBar');
+  if (!bar) return;
+  if (!text || state.intake?.isBinary) {
+    bar.hidden = true;
+    document.getElementById('rawPane')?.classList.remove('has-wordcount');
+    return;
+  }
+  const lines = text.split('\n').length;
+  const chars = text.length;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  let label;
+  if (typeId === 'markdown') {
+    const readMins = Math.ceil(words / 200);
+    label = `${words.toLocaleString()} words · ${chars.toLocaleString()} chars · ~${readMins} min read`;
+  } else if (typeId === 'text') {
+    label = `${lines.toLocaleString()} lines · ${words.toLocaleString()} words · ${chars.toLocaleString()} chars`;
+  } else {
+    label = `${lines.toLocaleString()} lines · ${chars.toLocaleString()} chars`;
+  }
+  bar.textContent = label;
+  bar.hidden = false;
+  document.getElementById('rawPane')?.classList.add('has-wordcount');
+}
+
+function hideWordCount() {
+  const bar = document.getElementById('wordCountBar');
+  if (bar) bar.hidden = true;
+  document.getElementById('rawPane')?.classList.remove('has-wordcount');
+}
+
 export async function buildRawView() {
   stopAutosave();
+  hideWordCount();
   // Tear down HTML WYSIWYG when rebuilding (e.g. file changed)
   if (htmlWysiwyg) {
     htmlWysiwyg.unmount();
@@ -831,6 +864,7 @@ export async function buildRawView() {
       showAutosaveBanner(saved);
     }
     startAutosave();
+    updateWordCount(state.intake?.text || '', state.type?.id);
   }
 }
 
@@ -878,6 +912,7 @@ export async function onRawEdited(value) {
     toast('🎮 import easteregg — arcade unlocked!');
   }
   if (state.type?.capabilities.preview) await renderPreview();
+  updateWordCount(value, state.type?.id);
 }
 
 // Unsaved work = the working copy differs from the original AND it wasn't downloaded

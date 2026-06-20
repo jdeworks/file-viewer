@@ -381,4 +381,14 @@ export async function run(ctx) {
   const warnLines = await lf.$$eval('.logv .l-warn', (els) => els.length);
   const tsSpans = await lf.$$eval('.logv .l-ts', (els) => els.length);
   if (errLines >= 1 && warnLines >= 1 && tsSpans >= 4) pass('log severity highlighted (' + errLines + ' error, ' + warnLines + ' warn, ' + tsSpans + ' timestamps)'); else fail('log: err=' + errLines + ' warn=' + warnLines + ' ts=' + tsSpans);
+
+  // ── Word count bar ── visible for markdown, shows stats. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('welcome.md');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
+  const wcBarHidden = await page.$eval('#wordCountBar', (el) => el.hidden);
+  if (!wcBarHidden) pass('word count bar visible for markdown file'); else fail('word count bar hidden for markdown');
+  const wcText = await page.$eval('#wordCountBar', (el) => el.textContent);
+  if (wcText.includes('words') && wcText.includes('chars')) pass('word count bar shows words and chars for markdown: ' + wcText.trim()); else fail('word count bar missing stats: ' + wcText);
+  if (/min read/.test(wcText)) pass('word count bar shows reading time for markdown'); else fail('word count bar missing read time: ' + wcText);
 }

@@ -272,6 +272,45 @@ body {
 .raw-pane.comparing.has-autosave .editor-host { top: 58px; }
 .raw-pane.comparing.has-disclaimer .autosave-banner { top: 58px; }
 .raw-pane.comparing.has-disclaimer.has-autosave .editor-host { top: 86px; }
+/* Word count / document stats bar — thin status strip between toolbar area and editor */
+.word-count-bar { position: absolute; top: 0; left: 0; right: 0; height: 24px; z-index: 4;
+  display: flex; align-items: center; justify-content: flex-end; padding: 0 12px;
+  background: var(--bg-2); border-bottom: 1px solid var(--border);
+  font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--fg-2); }
+.word-count-bar[hidden] { display: none; }
+.raw-pane.has-wordcount .editor-host { top: 24px; }
+.raw-pane.has-disclaimer .word-count-bar { top: 28px; }
+.raw-pane.has-autosave .word-count-bar { top: 28px; }
+.raw-pane.has-disclaimer.has-autosave .word-count-bar { top: 56px; }
+.raw-pane.comparing .word-count-bar { top: 30px; }
+.raw-pane.comparing.has-disclaimer .word-count-bar { top: 58px; }
+.raw-pane.comparing.has-autosave .word-count-bar { top: 58px; }
+.raw-pane.comparing.has-disclaimer.has-autosave .word-count-bar { top: 86px; }
+.raw-pane.has-disclaimer.has-wordcount .editor-host { top: 52px; }
+.raw-pane.has-autosave.has-wordcount .editor-host { top: 52px; }
+.raw-pane.has-disclaimer.has-autosave.has-wordcount .editor-host { top: 80px; }
+.raw-pane.comparing.has-wordcount .editor-host { top: 54px; }
+.raw-pane.comparing.has-disclaimer.has-wordcount .editor-host { top: 82px; }
+.raw-pane.comparing.has-autosave.has-wordcount .editor-host { top: 82px; }
+.raw-pane.comparing.has-disclaimer.has-autosave.has-wordcount .editor-host { top: 110px; }
+/* Word count bar shifts below tools bar when tools are visible */
+.raw-pane.has-tools .word-count-bar { top: 34px; }
+.raw-pane.has-tools.has-wordcount .editor-host { top: 58px; }
+.raw-pane.comparing.has-tools .word-count-bar { top: 64px; }
+.raw-pane.comparing.has-tools.has-wordcount .editor-host { top: 88px; }
+.raw-pane.has-disclaimer.has-tools .word-count-bar { top: 62px; }
+.raw-pane.has-disclaimer.has-tools.has-wordcount .editor-host { top: 86px; }
+.raw-pane.has-autosave.has-tools .word-count-bar { top: 62px; }
+.raw-pane.has-autosave.has-tools.has-wordcount .editor-host { top: 86px; }
+.raw-pane.has-disclaimer.has-autosave.has-tools .word-count-bar { top: 90px; }
+.raw-pane.has-disclaimer.has-autosave.has-tools.has-wordcount .editor-host { top: 114px; }
+.raw-pane.comparing.has-disclaimer.has-tools .word-count-bar { top: 92px; }
+.raw-pane.comparing.has-disclaimer.has-tools.has-wordcount .editor-host { top: 116px; }
+.raw-pane.comparing.has-autosave.has-tools .word-count-bar { top: 92px; }
+.raw-pane.comparing.has-autosave.has-tools.has-wordcount .editor-host { top: 116px; }
+.raw-pane.comparing.has-disclaimer.has-autosave.has-tools .word-count-bar { top: 120px; }
+.raw-pane.comparing.has-disclaimer.has-autosave.has-tools.has-wordcount .editor-host { top: 144px; }
+
 /* Markdown toolbar — horizontal button strip */
 .md-tools-bar { position: absolute; top: 0; left: 0; right: 0; height: 34px; z-index: 6;
   display: flex; align-items: center; gap: 2px; padding: 2px 8px;
