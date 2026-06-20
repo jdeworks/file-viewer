@@ -2585,6 +2585,15 @@ export async function run(ctx) {
   if (/image|plugin/i.test(wpcText)) pass('.woodpecker.yml: step images shown'); else fail('woodpecker images: ' + wpcText.slice(0, 200));
   if (/secret|when|clone|matrix/i.test(wpcText)) pass('.woodpecker.yml: pipeline metadata shown'); else fail('woodpecker metadata: ' + wpcText.slice(0, 200));
 
+  // ── woodpecker.yml (non-hidden) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('woodpecker.yml (Woodpecker CI)');
+  await page.waitForSelector('#previewHost .wpc-doc', { timeout: 12000 });
+  const wpcYmlText = await page.$eval('#previewHost .wpc-doc', (e) => e.textContent);
+  if (/Woodpecker/i.test(wpcYmlText)) pass('woodpecker.yml: badge shown'); else fail('woodpecker.yml badge: ' + wpcYmlText.slice(0, 200));
+  if (/step|pipeline/i.test(wpcYmlText)) pass('woodpecker.yml: steps shown'); else fail('woodpecker.yml steps: ' + wpcYmlText.slice(0, 200));
+  if (/postgres|service/i.test(wpcYmlText)) pass('woodpecker.yml: services shown'); else fail('woodpecker.yml services: ' + wpcYmlText.slice(0, 300));
+
   // ── harness-pipeline.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Harness Pipeline');
@@ -5059,6 +5068,17 @@ export async function run(ctx) {
   if (/accept/i.test(tsAclText)) pass('tailscale-acl.hujson: accept rules shown'); else fail('tailscale accept: ' + tsAclText.slice(0, 300));
   if (/accept rules present/i.test(tsAclText)) pass('tailscale-acl.hujson: accept-rules-present status shown'); else fail('tailscale accept status: ' + tsAclText.slice(0, 300));
 
+  // ── headscale-config.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('headscale-config.yaml (Headscale)');
+  pass(await page.waitForSelector('#previewHost .hscale-doc', { timeout: 12000 }), 'headscale-config.yaml: badge shown');
+  const hscaleText = await page.$eval('#previewHost .hscale-doc', (el) => el.textContent);
+  if (/Headscale/i.test(hscaleText)) pass('headscale-config.yaml: Headscale badge shown'); else fail('headscale badge: ' + hscaleText.slice(0, 200));
+  if (/headscale\.example\.com/.test(hscaleText)) pass('headscale-config.yaml: server_url shown'); else fail('headscale server_url: ' + hscaleText.slice(0, 300));
+  if (/100\.64\.0\.0|fd7a/.test(hscaleText)) pass('headscale-config.yaml: IP prefixes shown'); else fail('headscale ip_prefixes: ' + hscaleText.slice(0, 300));
+  if (/sqlite3|sqlite/.test(hscaleText)) pass('headscale-config.yaml: db_type shown'); else fail('headscale db_type: ' + hscaleText.slice(0, 300));
+  if (/private\.key|noise_private/.test(hscaleText)) pass('headscale-config.yaml: private key paths shown'); else fail('headscale key paths: ' + hscaleText.slice(0, 300));
+
   // ── pihole-setupVars.conf viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('setupVars.conf (Pi-hole)');
@@ -5200,4 +5220,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('mattermost-config.json');
   pass(await page.waitForSelector('#previewHost .mm-doc', { timeout: 12000 }), 'mattermost-config.json: Mattermost badge shown');
+
+  // ── netbox-configuration.py viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('netbox-configuration.py');
+  pass(await page.waitForSelector('#previewHost .nbox-doc', { timeout: 12000 }), 'netbox-configuration.py: NetBox badge shown');
+
+  // ── vaultwarden.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vaultwarden.env');
+  pass(await page.waitForSelector('#previewHost .vwarden-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
 }
