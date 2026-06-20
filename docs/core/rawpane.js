@@ -15,6 +15,7 @@ import { recordStage1RawEdit } from '../games/metagame/viewer-actions.js';
 import { markdownHeading, markdownLinkForPastedUrl, markdownTable, markdownWrap, markdownCodeBlock, markdownInlineCode, markdownBlockquote, markdownBulletList, markdownOrderedList, markdownStrikethrough, sortMarkdownTable, tableSortOptions } from '../types/markdown/edit-actions.js';
 import { mountWysiwyg, unmountWysiwyg, getWysiwygValue, isWysiwygActive, getWysiwygCodeMirror } from '../types/markdown/wysiwyg.js';
 import { TableEditor } from '../types/text/csv/table-editor.js';
+import { EnvFormEditor } from '../types/text/env/form-editor.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
@@ -23,6 +24,7 @@ const DISCLAIMER_KEY = 'fv:edit-disclaimer';
 let markdownContextMenu = null;
 let wysiwygMode = false;
 let tableEditor = null;
+let envFormEditor = null;
 
 // Show the in-memory edit banner (B). Wires the dismiss buttons once, idempotently.
 function setDisclaimerVisible(visible) {
@@ -380,6 +382,58 @@ function wireTableModeBtn() {
   });
 }
 
+export function setEnvFormMode(on) {
+  const editorEl = document.getElementById('editor');
+  const btn = document.getElementById('envFormBtn');
+  if (on) {
+    const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
+    // Freeze Monaco while form is active
+    state.rawview?.updateOptions?.({ readOnly: true });
+    let host = document.getElementById('envFormHost');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'envFormHost';
+      host.className = 'editor-host';
+      editorEl?.parentNode?.insertBefore(host, editorEl);
+    }
+    host.hidden = false;
+    if (editorEl) editorEl.style.display = 'none';
+    envFormEditor = new EnvFormEditor(host, text, (newText) => {
+      state.intake = { ...state.intake, text: newText };
+      state.downloadedSinceEdit = false;
+    });
+  } else {
+    // Flush form value back to Monaco before hiding
+    if (envFormEditor) {
+      const text = envFormEditor.getValue();
+      envFormEditor.destroy();
+      envFormEditor = null;
+      if (state.rawview) {
+        state.rawview.setValue(text);
+        state.rawview.updateOptions?.({ readOnly: false });
+      }
+      state.intake = { ...state.intake, text };
+    }
+    const host = document.getElementById('envFormHost');
+    if (host) host.hidden = true;
+    if (editorEl) editorEl.style.display = '';
+  }
+  if (btn) {
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', String(on));
+  }
+}
+
+function wireEnvFormBtn() {
+  const btn = document.getElementById('envFormBtn');
+  if (!btn || btn.dataset.wired) return;
+  btn.dataset.wired = '1';
+  btn.addEventListener('click', () => {
+    const isOn = btn.classList.contains('active');
+    setEnvFormMode(!isOn);
+  });
+}
+
 export async function buildRawView() {
   stopAutosave();
   // Tear down table editor when rebuilding (e.g. file changed)
@@ -391,6 +445,8 @@ export async function buildRawView() {
     const editorEl = document.getElementById('editor');
     if (editorEl) editorEl.style.display = '';
   }
+  // Tear down env form editor when rebuilding (e.g. file changed)
+  setEnvFormMode(false);
   // If WYSIWYG was active (e.g. file changed), tear it down first
   if (wysiwygMode) {
     unmountWysiwyg();
@@ -445,6 +501,15 @@ export async function buildRawView() {
     tableModeBtn.hidden = !isTabular;
     tableModeBtn.classList.remove('active');
     tableModeBtn.setAttribute('aria-pressed', 'false');
+  }
+  wireEnvFormBtn();
+  const filename = (state.intake?.filename || state.intake?.name || '').split('/').pop().toLowerCase();
+  const isEnv = (state.type?.id === 'env' || filename.endsWith('.env')) && !state.intake.isBinary;
+  const envFormBtn = document.getElementById('envFormBtn');
+  if (envFormBtn) {
+    envFormBtn.hidden = !isEnv;
+    envFormBtn.classList.remove('active');
+    envFormBtn.setAttribute('aria-pressed', 'false');
   }
   syncRawModeButtons();
   showEditDisclaimer();
@@ -517,6 +582,9 @@ export function hasUnsavedWork() {
   // Table editor: dirty when current CSV differs from the original load
   if (tableEditor && !state.downloadedSinceEdit &&
       tableEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
+  // Env form editor: dirty when current text differs from the original load
+  if (envFormEditor && !state.downloadedSinceEdit &&
+      envFormEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
   if (state.sessionEdits.size > 0) return true;
   // Folder edits stashed but not yet exported also count — closing the tab would lose them.
   return state.folderEdits.size > 0 && !state.folderExported;
@@ -569,9 +637,11 @@ export async function downloadCurrent() {
   } else {
     const text = tableEditor
       ? tableEditor.getValue()
-      : wysiwygMode && isWysiwygActive()
-        ? getWysiwygValue()
-        : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
+      : envFormEditor
+        ? envFormEditor.getValue()
+        : wysiwygMode && isWysiwygActive()
+          ? getWysiwygValue()
+          : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
     blob = new Blob([text], { type: state.intake.mimeType || 'text/plain' });
   }
   const a = document.createElement('a');
@@ -582,9 +652,11 @@ export async function downloadCurrent() {
   if (state.sessionEdits.has(state.intake.filename)) {
     const text = tableEditor
       ? tableEditor.getValue()
-      : wysiwygMode && isWysiwygActive()
-        ? getWysiwygValue()
-        : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
+      : envFormEditor
+        ? envFormEditor.getValue()
+        : wysiwygMode && isWysiwygActive()
+          ? getWysiwygValue()
+          : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
     state.sessionIntakes.set(state.intake.filename, { ...state.sessionIntakes.get(state.intake.filename), text });
     state.sessionEdits.delete(state.intake.filename);
     state.treeApi?.setEdited?.(state.intake.filename, false);
