@@ -1,0 +1,100 @@
+{{Infobox article
+| title = Sample MediaWiki Article
+| author = Example User
+| date = 2024-01-15
+| status = Draft
+}}
+
+== Introduction ==
+
+This is a sample '''MediaWiki''' markup file demonstrating common wikitext features.
+MediaWiki is the software that powers [[Wikipedia]] and thousands of other wikis.
+
+'''Bold text''' and ''italic text'' are common formatting options.
+You can also combine them: '''''bold italic'''''.
+
+== Headings and Structure ==
+
+=== Third-level heading ===
+
+==== Fourth-level heading ====
+
+===== Fifth-level heading =====
+
+== Links ==
+
+=== Internal Links ===
+
+* [[Main Page]] — link to another wiki article
+* [[Help:Contents|Help]] — link with custom display text
+* [[Wikipedia:About]] — link to a namespace
+* [[Special:Search]] — special page link
+
+=== External Links ===
+
+* [https://www.mediawiki.org MediaWiki official site]
+* [https://www.wikipedia.org Wikipedia]
+* Plain URL: https://example.com
+
+== Templates ==
+
+{{stub}}
+{{cleanup|reason=needs more references|date=January 2024}}
+{{Cite web|url=https://example.com|title=Example Page|author=John Doe|year=2024}}
+
+== Files and Images ==
+
+[[File:Example.png|thumb|right|300px|A caption for the example image]]
+[[File:Logo.svg|50px|Company logo]]
+[[Image:Diagram.jpg|center|500px|Architecture diagram]]
+
+== Tables ==
+
+{| class="wikitable sortable"
+|-
+! Feature !! MediaWiki !! Creole !! Textile
+|-
+| Headings || == H == || = H = || h1.
+|-
+| Bold || '''text''' || **text** || *text*
+|-
+| Links || [[link]] || [[link]] || "text":url
+|-
+| Tables || {| !! || | !! || \|
+|}
+
+== Lists ==
+
+* Unordered item one
+* Unordered item two
+** Nested item
+** Another nested item
+* Item three
+
+# Ordered item one
+# Ordered item two
+## Nested ordered
+# Item three
+
+;Definition term : Definition description
+;Another term : Another description
+
+== References ==
+
+Some text with a reference.<ref>First reference text here.</ref>
+More text.<ref name="smith2024">Smith, J. (2024). ''Example Book''. Publisher.</ref>
+Repeated citation.<ref name="smith2024" />
+
+== See Also ==
+
+* [[Related Article One]]
+* [[Related Article Two]]
+* [[Help:Formatting]]
+
+== References list ==
+
+<references />
+
+[[Category:Sample articles]]
+[[Category:MediaWiki examples]]
+[[Category:Documentation]]

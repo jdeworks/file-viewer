@@ -12463,5 +12463,29 @@
     "enhanced": true,
     "description": "Ballerina cloud-native service",
     "knownFile": "ballerina-lang"
+  },
+  {
+    "label": "sample.nu (Nushell Script)",
+    "file": "sample.nu",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Nushell script with defined commands",
+    "knownFile": "nushell-script"
+  },
+  {
+    "label": "configure.ac (M4/Autoconf)",
+    "file": "configure.ac",
+    "mime": "text/plain",
+    "category": "Build",
+    "categories": [
+      "Build"
+    ],
+    "enhanced": true,
+    "description": "Autoconf configure.ac script using M4 macros",
+    "knownFile": "m4-macro"
   }
 ]

@@ -1,0 +1,80 @@
+h1. Getting Started with Textile
+
+Textile is a lightweight markup language used in Redmine, older blog platforms, and wikis.
+This sample demonstrates common Textile features.
+
+h2. Text Formatting
+
+You can make text *bold* or __italic__ or ??cited?? or -deleted- or +inserted+ or ^superscript^ or ~subscript~.
+
+Inline @code snippets@ look like this.
+
+h2. Links and Images
+
+External link: "Redmine":https://www.redmine.org
+
+Internal link: [[WikiPage]]
+
+Inline image: !https://example.com/logo.png(Company Logo)!
+
+Image with link: !"https://example.com":https://example.com/logo.png(Click here)!
+
+h2. Lists
+
+Unordered list:
+* First item
+* Second item
+** Nested item
+** Another nested item
+* Third item
+
+Ordered list:
+# Step one
+# Step two
+## Sub-step A
+## Sub-step B
+# Step three
+
+h2. Code Blocks
+
+Inline code: @puts "Hello, World!"@
+
+Block of code:
+
+bc. def greet(name)
+  puts "Hello, #{name}!"
+end
+greet("World")
+
+h2. Tables
+
+|_.Name|_.Age|_.Role|
+|Alice|30|Developer|
+|Bob|25|Designer|
+|Carol|35|Manager|
+
+h2. Blockquotes
+
+bq. This is a blockquote. It can span multiple lines and is used for
+quoting external sources or highlighting important passages.
+
+h2. Footnotes
+
+This is some text with a footnote.[1]
+
+fn1. This is the footnote text.
+
+h3. Pre-formatted Text
+
+pre. This text will be displayed in a fixed-width font
+without any further processing by Textile.
+
+h2. Advanced Features
+
+Attribute: p(myclass). A paragraph with a CSS class.
+
+Span: %(highlight)highlighted text%
+
+HTML is also allowed: <em>emphasized</em>
+
+"Contact us":https://example.com/contact for more "information":https://example.com/info.

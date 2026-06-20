@@ -6594,18 +6594,18 @@ export async function run(ctx) {
   await openExample('sample.nu');
   await page.waitForSelector('#previewHost .nu-doc', { timeout: 12000 });
   pass('nushell-script: rendered');
-  const nuText = await page.$eval('#previewHost .nu-doc', (e) => e.textContent);
-  if (/Nushell Script/i.test(nuText)) pass('nushell-script: badge shown'); else fail('nushell-script badge: ' + nuText.slice(0, 200));
-  if (/Commands|Exported|def|export/i.test(nuText)) pass('nushell-script: structure shown'); else fail('nushell-script structure: ' + nuText.slice(0, 300));
+  const nuScriptText = await page.$eval('#previewHost .nu-doc', (e) => e.textContent);
+  if (/Nushell Script/i.test(nuScriptText)) pass('nushell-script: badge shown'); else fail('nushell-script badge: ' + nuScriptText.slice(0, 200));
+  if (/Commands|Exported|def|export/i.test(nuScriptText)) pass('nushell-script: structure shown'); else fail('nushell-script structure: ' + nuScriptText.slice(0, 300));
 
   // ── gdscript-lang viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('sample.gd');
   await page.waitForSelector('#previewHost .gd-doc', { timeout: 12000 });
   pass('gdscript-lang: rendered');
-  const gdText = await page.$eval('#previewHost .gd-doc', (e) => e.textContent);
-  if (/GDScript|Godot Tool Script/i.test(gdText)) pass('gdscript-lang: badge shown'); else fail('gdscript-lang badge: ' + gdText.slice(0, 200));
-  if (/Extends|Functions|Signals|Exports/i.test(gdText)) pass('gdscript-lang: structure shown'); else fail('gdscript-lang structure: ' + gdText.slice(0, 300));
+  const gdscriptText = await page.$eval('#previewHost .gd-doc', (e) => e.textContent);
+  if (/GDScript|Godot Tool Script/i.test(gdscriptText)) pass('gdscript-lang: badge shown'); else fail('gdscript-lang badge: ' + gdscriptText.slice(0, 200));
+  if (/Extends|Functions|Signals|Exports/i.test(gdscriptText)) pass('gdscript-lang: structure shown'); else fail('gdscript-lang structure: ' + gdscriptText.slice(0, 300));
 
   // ── ink-script viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -6673,4 +6673,44 @@ export async function run(ctx) {
   if (/System Env/i.test(etcenvText)) pass('etc-environment: badge shown'); else fail('etc-environment badge: ' + etcenvText.slice(0, 200));
   if (/LANG|LC_ALL|TZ|JAVA_HOME/i.test(etcenvText)) pass('etc-environment: variables shown'); else fail('etc-environment vars: ' + etcenvText.slice(0, 300));
   if (/locale|java|timezone/i.test(etcenvText)) pass('etc-environment: categories shown'); else fail('etc-environment categories: ' + etcenvText.slice(0, 300));
+
+  // ── typst-doc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.typ');
+  await page.waitForSelector('#previewHost .typ-doc', { timeout: 12000 });
+  pass('typst-doc: rendered');
+  const typText = await page.$eval('#previewHost .typ-doc', (e) => e.textContent);
+  if (/Typst Document/i.test(typText)) pass('typst-doc: badge shown'); else fail('typst-doc badge: ' + typText.slice(0, 200));
+  if (/import|definition|set rule|show rule/i.test(typText)) pass('typst-doc: structure shown'); else fail('typst-doc structure: ' + typText.slice(0, 300));
+  if (/introduction|conclusion|mathematical/i.test(typText)) pass('typst-doc: headings shown'); else fail('typst-doc headings: ' + typText.slice(0, 300));
+
+  // ── textile-markup viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.textile');
+  await page.waitForSelector('#previewHost .textile-doc', { timeout: 12000 });
+  pass('textile-markup: rendered');
+  const textileText = await page.$eval('#previewHost .textile-doc', (e) => e.textContent);
+  if (/Textile/i.test(textileText)) pass('textile-markup: badge shown'); else fail('textile-markup badge: ' + textileText.slice(0, 200));
+  if (/heading|link|image|code|table|word/i.test(textileText)) pass('textile-markup: stats shown'); else fail('textile-markup stats: ' + textileText.slice(0, 300));
+  if (/Getting Started|Text Formatting|Links/i.test(textileText)) pass('textile-markup: heading outline shown'); else fail('textile-markup outline: ' + textileText.slice(0, 300));
+
+  // ── mediawiki-markup viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.mediawiki');
+  await page.waitForSelector('#previewHost .mw-doc', { timeout: 12000 });
+  pass('mediawiki-markup: rendered');
+  const mwText = await page.$eval('#previewHost .mw-doc', (e) => e.textContent);
+  if (/MediaWiki/i.test(mwText)) pass('mediawiki-markup: badge shown'); else fail('mediawiki-markup badge: ' + mwText.slice(0, 200));
+  if (/section|template|categor|link/i.test(mwText)) pass('mediawiki-markup: stats shown'); else fail('mediawiki-markup stats: ' + mwText.slice(0, 300));
+  if (/Introduction|Headings|References/i.test(mwText)) pass('mediawiki-markup: sections shown'); else fail('mediawiki-markup sections: ' + mwText.slice(0, 300));
+
+  // ── bbcode-text viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.bbcode');
+  await page.waitForSelector('#previewHost .bbc-doc', { timeout: 12000 });
+  pass('bbcode-text: rendered');
+  const bbcText = await page.$eval('#previewHost .bbc-doc', (e) => e.textContent);
+  if (/BBCode/i.test(bbcText)) pass('bbcode-text: badge shown'); else fail('bbcode-text badge: ' + bbcText.slice(0, 200));
+  if (/tag type|link|quote|code block|bold|italic/i.test(bbcText)) pass('bbcode-text: stats shown'); else fail('bbcode-text stats: ' + bbcText.slice(0, 300));
+  if (/url|img|quote|code/i.test(bbcText)) pass('bbcode-text: tag inventory shown'); else fail('bbcode-text tags: ' + bbcText.slice(0, 300));
 }
