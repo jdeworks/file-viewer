@@ -584,6 +584,8 @@ import apparmorProfile from '../types/text/known/apparmor-profile/index.js';
 import smbConf from '../types/text/known/smb-conf/index.js';
 import corefile from '../types/text/known/corefile/index.js';
 import containerdConfig from '../types/text/known/containerd-config/index.js';
+import bindZone from '../types/text/known/bind-zone/index.js';
+import postfixMain from '../types/text/known/postfix-main/index.js';
 import postfixConf from '../types/text/known/postfix-conf/index.js';
 import dovecotConf from '../types/text/known/dovecot-conf/index.js';
 import nagiosConf from '../types/text/known/nagios-conf/index.js';
@@ -937,7 +939,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   iptablesRules, udevRules, grubConf, nftablesRules, ufwConf,
   fail2banConf, apparmorProfile, suricataConfig, smbConf,
   corefile, containerdConfig,
-  postfixConf, dovecotConf, nagiosConf, zabbixConf, eximConf, chronyConf,
+  bindZone, postfixMain, postfixConf, dovecotConf, nagiosConf, zabbixConf, eximConf, chronyConf,
   namedConf, unboundConf, piholeSetupvars, dhcpdConf,
   netdataConfig, netdataConf, yarnrc,
   hyprlandConf, lxcConfig,

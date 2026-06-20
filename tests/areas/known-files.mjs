@@ -3525,8 +3525,8 @@ export async function run(ctx) {
   // ── postfix main.cf viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('main.cf (Postfix Mail Server)');
-  await page.waitForSelector('#previewHost .postfixcfg-doc', { timeout: 12000 });
-  const postfixText = await page.$eval('#previewHost .postfixcfg-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .postfix-doc', { timeout: 12000 });
+  const postfixText = await page.$eval('#previewHost .postfix-doc', (e) => e.textContent);
   if (/Postfix/i.test(postfixText)) pass('main.cf: Postfix badge shown'); else fail('postfix badge: ' + postfixText.slice(0, 200));
   if (/myhostname|mail\.example\.com/i.test(postfixText)) pass('main.cf: myhostname or hostname shown'); else fail('postfix hostname: ' + postfixText.slice(0, 300));
 
@@ -6467,4 +6467,14 @@ export async function run(ctx) {
   await openExample('sample.d');
   await page.waitForSelector('#previewHost .d-doc', { timeout: 12000 });
   pass('d-lang: rendered');
+
+  // ── bind-zone: DNS zone file viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.zone (DNS Zone File)');
+  await page.waitForSelector('#previewHost .zone-doc', { timeout: 12000 });
+  pass('bind-zone: rendered');
+  const zoneText = await page.$eval('#previewHost .zone-doc', (e) => e.textContent);
+  if (/DNS Zone/i.test(zoneText)) pass('bind-zone: DNS Zone badge shown'); else fail('bind-zone badge: ' + zoneText.slice(0, 200));
+  if (/example\.com|SOA/i.test(zoneText)) pass('bind-zone: zone origin or SOA shown'); else fail('bind-zone origin: ' + zoneText.slice(0, 300));
+  if (/NS|MX|SPF|TXT/i.test(zoneText)) pass('bind-zone: record types shown'); else fail('bind-zone records: ' + zoneText.slice(0, 300));
 }

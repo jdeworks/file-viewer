@@ -26716,7 +26716,9 @@
       "label": "Prolog",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.pro"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26741,7 +26743,9 @@
       "label": "Assembly",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.asm"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26766,7 +26770,9 @@
       "label": "Objective-C",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.m"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26791,7 +26797,63 @@
       "label": "D",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.d"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "bind-zone": {
+      "label": "DNS Zone File",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.zone"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "postfix-main": {
+      "label": "Postfix Main",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "main.cf"
+      ],
       "extensions": [
         ".yml"
       ],

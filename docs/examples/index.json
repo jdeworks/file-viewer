@@ -8031,7 +8031,7 @@
       "Config",
       "Mail"
     ],
-    "knownFile": "postfix-conf"
+    "knownFile": "postfix-main"
   },
   {
     "file": "chrony.conf",
@@ -8109,6 +8109,18 @@
     "mime": "text/plain",
     "enhanced": true,
     "knownFile": "named-conf"
+  },
+  {
+    "file": "sample.zone",
+    "label": "sample.zone (DNS Zone File)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "knownFile": "bind-zone"
   },
   {
     "file": "unbound.conf",
@@ -12135,5 +12147,57 @@
     "enhanced": true,
     "description": "Ada package specification with type definitions, subprograms, and contract-based design.",
     "knownFile": "ada-lang"
+  },
+  {
+    "label": "sample.pro",
+    "file": "sample.pro",
+    "mime": "text/plain",
+    "category": "Functional",
+    "categories": [
+      "Functional",
+      "Logic"
+    ],
+    "enhanced": true,
+    "description": "Prolog logic programming with facts, rules, predicates, and backtracking search.",
+    "knownFile": "prolog-lang"
+  },
+  {
+    "label": "sample.asm",
+    "file": "sample.asm",
+    "mime": "text/plain",
+    "category": "Systems",
+    "categories": [
+      "Systems",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Assembly language with CPU instructions, registers, memory operations, and syscalls.",
+    "knownFile": "asm-lang"
+  },
+  {
+    "label": "sample.m",
+    "file": "sample.m",
+    "mime": "text/plain",
+    "category": "Mobile",
+    "categories": [
+      "Mobile",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Objective-C source with class interfaces, message passing, and Cocoa framework patterns.",
+    "knownFile": "objc-lang"
+  },
+  {
+    "label": "sample.d",
+    "file": "sample.d",
+    "mime": "text/plain",
+    "category": "Systems",
+    "categories": [
+      "Systems",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "D language with modules, templates, ranges, and compile-time features.",
+    "knownFile": "d-lang"
   }
 ]
