@@ -267,12 +267,24 @@ for (const id of typeIds) {
 
 // Enrich known files
 const updatedKnown = {};
+const catalogFileSet = new Set(examplesIndex.map((e) => e.file));
+// Build knownFile -> files map from index.json for backfilling empty sampleFiles
+const knownFileMap = {};
+for (const e of examplesIndex) {
+  if (e.knownFile && e.file && catalogFileSet.has(e.file)) {
+    (knownFileMap[e.knownFile] ??= []).push(e.file);
+  }
+}
 for (const [id, row] of Object.entries(compat.knownFiles)) {
-  updatedKnown[id] = enrichKnownRow(row);
+  const enriched = enrichKnownRow(row);
+  // Backfill empty sampleFiles from index.json knownFile links
+  if ((!enriched.sampleFiles || enriched.sampleFiles.length === 0) && knownFileMap[id]) {
+    enriched.sampleFiles = knownFileMap[id];
+  }
+  updatedKnown[id] = enriched;
 }
 // Scaffold any NEW known files from the registry that have no compat row yet.
 // Use the plugin's actual `id` field (from index.js), not the folder name.
-const catalogFileSet = new Set(examplesIndex.map((e) => e.file));
 for (const knownItem of extractKnownItems(knownRegistrySrc)) {
   // Read the index.js to get the real plugin id, label, and base type
   let pluginId = knownItem.id; // folder name fallback
@@ -288,13 +300,17 @@ for (const knownItem of extractKnownItems(knownRegistrySrc)) {
     const baseMatch = knownItem.relPath.match(/text\/([^/]+)\/known\//);
     if (baseMatch) baseType = baseMatch[1];
     else if (knownItem.relPath.includes('text/known/')) baseType = 'raw';
-    // Extract filenames from match function for sampleFiles hint
-    const nameMatches = [...indexSrc.matchAll(/name\s*===?\s*['"]([^'"]+)['"]/g)].map((m) => m[1]);
+    // Extract filenames from match function for sampleFiles hint (any variable === 'filename')
+    const nameMatches = [...indexSrc.matchAll(/\b\w+\s*===?\s*['"]([^'"]+\.[^'"]+)['"]/g)].map((m) => m[1]);
     matchFilenames = nameMatches;
   } catch { /* skip */ }
   if (updatedKnown[pluginId]) continue;
-  // Find matching example files in the catalog
-  const sampleFiles = matchFilenames.filter((f) => catalogFileSet.has(f));
+  // Find matching example files in the catalog: from match() extraction OR knownFile links in index.json
+  const knownFileLinks = examplesIndex.filter((e) => e.knownFile === pluginId && e.file).map((e) => e.file);
+  const sampleFiles = [...new Set([
+    ...matchFilenames.filter((f) => catalogFileSet.has(f)),
+    ...knownFileLinks.filter((f) => catalogFileSet.has(f)),
+  ])];
   updatedKnown[pluginId] = enrichKnownRow({
     label,
     baseType,
