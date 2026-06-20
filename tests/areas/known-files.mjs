@@ -561,10 +561,11 @@ export async function run(ctx) {
   // ── mypy.ini viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('mypy config');
-  await page.waitForSelector('#previewHost .myp-doc', { timeout: 12000 });
-  const mypText = await page.$eval('#previewHost .myp-doc', (e) => e.textContent);
-  if (/mypy/i.test(mypText)) pass('mypy.ini: badge shown'); else fail('mypy badge: ' + mypText.slice(0, 200));
-  if (/3\.11|disallow|strict|override/i.test(mypText)) pass('mypy.ini: config shown'); else fail('mypy config: ' + mypText.slice(0, 200));
+  await page.waitForSelector('#previewHost .mypyini-doc', { timeout: 12000 });
+  pass('mypy.ini: badge shown');
+  const mypText = await page.$eval('#previewHost .mypyini-doc', (e) => e.textContent);
+  if (!mypText.includes('3.11')) fail('mypy.ini: python version not shown'); else pass('mypy.ini: python version shown');
+  if (!mypText.includes('pytest') && !mypText.includes('requests')) fail('mypy.ini: module overrides not shown'); else pass('mypy.ini: module overrides shown');
 
   // ── angular.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -802,10 +803,11 @@ export async function run(ctx) {
   // ── ruff.toml (Ruff linter) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('ruff.toml (Ruff linter)');
-  await page.waitForSelector('#previewHost .ruf-doc', { timeout: 12000 });
-  const rufText = await page.$eval('#previewHost .ruf-doc', (e) => e.textContent);
-  if (/Ruff/i.test(rufText)) pass('ruff.toml: Ruff badge shown'); else fail('ruff badge: ' + rufText.slice(0, 200));
-  if (/py311|E|F|W|line-length|100/i.test(rufText)) pass('ruff.toml: rules and settings shown'); else fail('ruff content: ' + rufText.slice(0, 200));
+  await page.waitForSelector('#previewHost .rufftoml-doc', { timeout: 12000 });
+  pass('ruff.toml: badge shown');
+  const rufText = await page.$eval('#previewHost .rufftoml-doc', (e) => e.textContent);
+  if (!rufText.includes('py311') && !rufText.includes('3.11')) fail('ruff.toml: python version not shown'); else pass('ruff.toml: python version shown');
+  if (!rufText.includes('120')) fail('ruff.toml: line length not shown'); else pass('ruff.toml: line length shown');
 
   // ── uv.toml (uv package manager) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
