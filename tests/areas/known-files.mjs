@@ -6756,4 +6756,40 @@ export async function run(ctx) {
   if (/article/i.test(texText)) pass('tex-doc: document class shown'); else fail('tex-doc class: ' + texText.slice(0, 300));
   if (/amsmath|graphicx|hyperref/i.test(texText)) pass('tex-doc: packages listed'); else fail('tex-doc packages: ' + texText.slice(0, 300));
   if (/Introduction|Mathematics|Conclusion/i.test(texText)) pass('tex-doc: section titles shown'); else fail('tex-doc sections: ' + texText.slice(0, 300));
+
+  // ── forth-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.fth');
+  await page.waitForSelector('#previewHost .fth-doc', { timeout: 12000 });
+  pass('forth-lang: rendered');
+  const fthText = await page.$eval('#previewHost .fth-doc', (e) => e.textContent);
+  if (/Forth/i.test(fthText)) pass('forth-lang: badge shown'); else fail('forth-lang badge: ' + fthText.slice(0, 200));
+  if (/word|variable|constant|stack/i.test(fthText)) pass('forth-lang: stats shown'); else fail('forth-lang stats: ' + fthText.slice(0, 300));
+
+  // ── lean-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.lean');
+  await page.waitForSelector('#previewHost .ln-doc', { timeout: 12000 });
+  pass('lean-lang: rendered');
+  const lnText = await page.$eval('#previewHost .ln-doc', (e) => e.textContent);
+  if (/Lean/i.test(lnText)) pass('lean-lang: badge shown'); else fail('lean-lang badge: ' + lnText.slice(0, 200));
+  if (/theorem|lemma|def|import|namespace/i.test(lnText)) pass('lean-lang: stats shown'); else fail('lean-lang stats: ' + lnText.slice(0, 300));
+
+  // ── agda-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.agda');
+  await page.waitForSelector('#previewHost .agda-doc', { timeout: 12000 });
+  pass('agda-lang: rendered');
+  const agdaText = await page.$eval('#previewHost .agda-doc', (e) => e.textContent);
+  if (/Agda/i.test(agdaText)) pass('agda-lang: badge shown'); else fail('agda-lang badge: ' + agdaText.slice(0, 200));
+  if (/data|record|import|module/i.test(agdaText)) pass('agda-lang: stats shown'); else fail('agda-lang stats: ' + agdaText.slice(0, 300));
+
+  // ── chapel-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.chpl');
+  await page.waitForSelector('#previewHost .chpl-doc', { timeout: 12000 });
+  pass('chapel-lang: rendered');
+  const chplText = await page.$eval('#previewHost .chpl-doc', (e) => e.textContent);
+  if (/Chapel/i.test(chplText)) pass('chapel-lang: badge shown'); else fail('chapel-lang badge: ' + chplText.slice(0, 200));
+  if (/proc|config|coforall|forall|module/i.test(chplText)) pass('chapel-lang: stats shown'); else fail('chapel-lang stats: ' + chplText.slice(0, 300));
 }
