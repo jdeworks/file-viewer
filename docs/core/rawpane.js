@@ -11,7 +11,7 @@ import { captureBodyHtml } from './iframe.js';
 import { mapRawToPreview, syncScrollFromRaw } from './sync.js';
 import { applyLayout } from './layout.js';
 import { recordStage1RawEdit } from '../games/metagame/viewer-actions.js';
-import { markdownHeading, markdownLinkForPastedUrl, markdownTable, markdownWrap, sortMarkdownTable, tableSortOptions } from '../types/markdown/edit-actions.js';
+import { markdownHeading, markdownLinkForPastedUrl, markdownTable, markdownWrap, markdownCodeBlock, markdownInlineCode, markdownBlockquote, markdownBulletList, markdownOrderedList, markdownStrikethrough, sortMarkdownTable, tableSortOptions } from '../types/markdown/edit-actions.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
@@ -52,28 +52,78 @@ function wireMarkdownTools() {
   const el = $('markdownTools');
   if (!el || el.dataset.wired) return;
   el.dataset.wired = '1';
-  const menu = el.querySelector('.md-tools-menu');
-  const toggle = el.querySelector('.md-tools-toggle');
-  toggle.addEventListener('click', () => {
-    menu.hidden = !menu.hidden;
-    toggle.setAttribute('aria-expanded', String(!menu.hidden));
-  });
   el.addEventListener('click', (e) => {
-    const action = e.target.closest('[data-md-action]')?.dataset.mdAction;
-    if (!action) return;
-    menu.hidden = true;
-    toggle.setAttribute('aria-expanded', 'false');
-    runMarkdownAction(action);
+    const btn = e.target.closest('[data-md-action]');
+    if (!btn) return;
+    runMarkdownAction(btn.dataset.mdAction, btn);
   });
+  // Dismiss the table picker when clicking outside
   document.addEventListener('click', (e) => {
-    if (!menu.hidden && !e.target.closest('#markdownTools')) {
-      menu.hidden = true;
-      toggle.setAttribute('aria-expanded', 'false');
+    if (!e.target.closest('.md-table-picker') && !e.target.closest('[data-md-action="table"]')) {
+      closeTablePicker();
     }
   });
 }
 
-function runMarkdownAction(action) {
+let tablePicker = null;
+
+function closeTablePicker() {
+  if (tablePicker) { tablePicker.remove(); tablePicker = null; }
+}
+
+function showTablePicker(anchorEl) {
+  closeTablePicker();
+  const picker = document.createElement('div');
+  picker.className = 'md-table-picker';
+  const ROWS = 5, COLS = 5;
+  const cells = [];
+  const label = document.createElement('div');
+  label.className = 'md-table-picker-label';
+  label.textContent = '1×1';
+  picker.append(label);
+  const grid = document.createElement('div');
+  grid.className = 'md-table-picker-grid';
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'md-table-picker-cell';
+      cell.dataset.r = r; cell.dataset.c = c;
+      grid.append(cell);
+      cells.push(cell);
+    }
+  }
+  picker.append(grid);
+  document.body.append(picker);
+  tablePicker = picker;
+
+  function highlight(rows, cols) {
+    label.textContent = `${cols}×${rows}`;
+    cells.forEach((cell) => {
+      const r = Number(cell.dataset.r), c = Number(cell.dataset.c);
+      cell.classList.toggle('active', r < rows && c < cols);
+    });
+  }
+
+  grid.addEventListener('mousemove', (e) => {
+    const cell = e.target.closest('.md-table-picker-cell');
+    if (!cell) return;
+    highlight(Number(cell.dataset.r) + 1, Number(cell.dataset.c) + 1);
+  });
+  grid.addEventListener('mouseleave', () => highlight(0, 0));
+  grid.addEventListener('click', (e) => {
+    const cell = e.target.closest('.md-table-picker-cell');
+    if (!cell) return;
+    const rows = Number(cell.dataset.r) + 1, cols = Number(cell.dataset.c) + 1;
+    closeTablePicker();
+    state.rawview.replaceSelection(markdownTable(rows, cols), { source: 'markdown-table', selectInserted: true });
+  });
+
+  const rect = anchorEl.getBoundingClientRect();
+  picker.style.left = Math.min(rect.left, window.innerWidth - 180) + 'px';
+  picker.style.top = (rect.bottom + 4) + 'px';
+}
+
+function runMarkdownAction(action, btn) {
   if (!state.rawview || state.type?.id !== 'markdown') return;
   if (action === 'heading') {
     state.rawview.transformSelection((text) => markdownHeading(text, 1), { expandToLines: true, source: 'markdown-heading' });
@@ -81,11 +131,21 @@ function runMarkdownAction(action) {
     state.rawview.transformSelection((text) => markdownWrap(text, '**', 'strong text'), { source: 'markdown-bold' });
   } else if (action === 'italic') {
     state.rawview.transformSelection((text) => markdownWrap(text, '*', 'emphasis'), { source: 'markdown-italic' });
+  } else if (action === 'strikethrough') {
+    state.rawview.transformSelection((text) => markdownStrikethrough(text), { source: 'markdown-strikethrough' });
+  } else if (action === 'inline-code') {
+    state.rawview.transformSelection((text) => markdownInlineCode(text), { source: 'markdown-inline-code' });
+  } else if (action === 'code-block') {
+    state.rawview.transformSelection((text) => markdownCodeBlock(text), { source: 'markdown-code-block' });
+  } else if (action === 'blockquote') {
+    state.rawview.transformSelection((text) => markdownBlockquote(text), { expandToLines: true, source: 'markdown-blockquote' });
+  } else if (action === 'bullet-list') {
+    state.rawview.transformSelection((text) => markdownBulletList(text), { expandToLines: true, source: 'markdown-bullet-list' });
+  } else if (action === 'ordered-list') {
+    state.rawview.transformSelection((text) => markdownOrderedList(text), { expandToLines: true, source: 'markdown-ordered-list' });
   } else if (action === 'table') {
-    const dims = prompt('Insert table as rows, columns', '3,3');
-    if (dims == null) return;
-    const [rows, cols] = dims.split(/[,\sx]+/i).map((n) => Number(n)).filter((n) => Number.isFinite(n));
-    state.rawview.replaceSelection(markdownTable(rows || 3, cols || 3), { source: 'markdown-table', selectInserted: true });
+    if (tablePicker) { closeTablePicker(); return; }
+    showTablePicker(btn || $('mdTableBtn'));
   }
 }
 
@@ -171,6 +231,10 @@ export async function buildRawView() {
   });
   wireMarkdownTools();
   setMarkdownToolsVisible(state.type?.id === 'markdown' && !state.intake.isBinary);
+  if (state.type?.id === 'markdown' && !state.intake.isBinary) {
+    state.rawview.addCommand?.('ctrl+b', () => runMarkdownAction('bold'));
+    state.rawview.addCommand?.('ctrl+i', () => runMarkdownAction('italic'));
+  }
   syncRawModeButtons();
   showEditDisclaimer();
 }

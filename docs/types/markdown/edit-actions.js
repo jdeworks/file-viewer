@@ -17,6 +17,52 @@ export function markdownWrap(text, marker, placeholder) {
   };
 }
 
+export function markdownCodeBlock(text) {
+  const value = String(text || '');
+  if (!value.includes('\n') && value.length > 0) {
+    // Inline selection with no newlines → inline code
+    return markdownInlineCode(value);
+  }
+  const inner = value || 'code';
+  return {
+    text: '```\n' + inner + '\n```',
+    selectStart: 4,
+    selectEnd: 4 + inner.length,
+  };
+}
+
+export function markdownInlineCode(text) {
+  const value = String(text || '');
+  const inner = value || 'code';
+  return { text: '`' + inner + '`', selectStart: 1, selectEnd: 1 + inner.length };
+}
+
+export function markdownBlockquote(text) {
+  const value = String(text || '');
+  const lines = value.split('\n');
+  return lines.map((line) => '> ' + line).join('\n');
+}
+
+export function markdownBulletList(text) {
+  const value = String(text || '');
+  const lines = value.split('\n');
+  return lines.map((line) => (line.trim() ? '- ' + line : line)).join('\n');
+}
+
+export function markdownOrderedList(text) {
+  const value = String(text || '');
+  const lines = value.split('\n');
+  let counter = 1;
+  return lines.map((line) => {
+    if (!line.trim()) return line;
+    return counter++ + '. ' + line;
+  }).join('\n');
+}
+
+export function markdownStrikethrough(text) {
+  return markdownWrap(text, '~~', 'strikethrough');
+}
+
 export function markdownLinkForPastedUrl(selection, pastedText) {
   const label = String(selection || '').trim();
   const url = String(pastedText || '').trim();

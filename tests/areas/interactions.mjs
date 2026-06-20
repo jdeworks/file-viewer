@@ -18,13 +18,16 @@ export async function run(ctx) {
   // ── Markdown editable text tools ── raw/split editor actions format selections, insert tables,
   // and extend the right-click path for sorting a selected Markdown table.
   const mdToolsShown = await page.$eval('#markdownTools', (e) => !e.hidden);
-  if (mdToolsShown) pass('Markdown tools menu shown for editable Markdown'); else fail('Markdown tools hidden');
+  if (mdToolsShown) pass('Markdown tools bar shown for editable Markdown'); else fail('Markdown tools hidden');
+  const mdBoldBtn = await page.$('#markdownTools .md-btn[data-md-action="bold"]');
+  if (mdBoldBtn) pass('Markdown tools: bold button present'); else fail('bold button missing');
+  const mdTableBtn = await page.$('#markdownTools .md-btn[data-md-action="table"]');
+  if (mdTableBtn) pass('Markdown tools: table button present'); else fail('table button missing');
   await page.evaluate(() => {
     const rv = window.__fv.state.rawview;
     rv.setValue('Title');
     rv.setSelection(1, 1, 1, 1);
   });
-  await page.click('#markdownTools .md-tools-toggle');
   await page.click('#markdownTools [data-md-action="heading"]');
   const mdHeading = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (mdHeading === '# Title') pass('Markdown tools: heading action formats current line'); else fail('heading result: ' + mdHeading);
@@ -33,7 +36,6 @@ export async function run(ctx) {
     rv.setValue('bold italic');
     rv.setSelection(1, 1, 1, 5);
   });
-  await page.click('#markdownTools .md-tools-toggle');
   await page.click('#markdownTools [data-md-action="bold"]');
   const mdBold = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (mdBold === '**bold** italic') pass('Markdown tools: bold wraps selected text'); else fail('bold result: ' + mdBold);
@@ -41,7 +43,6 @@ export async function run(ctx) {
     const rv = window.__fv.state.rawview;
     rv.setSelection(1, 10, 1, 16);
   });
-  await page.click('#markdownTools .md-tools-toggle');
   await page.click('#markdownTools [data-md-action="italic"]');
   const mdItalic = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (mdItalic === '**bold** *italic*') pass('Markdown tools: italic wraps selected text'); else fail('italic result: ' + mdItalic);
@@ -56,11 +57,13 @@ export async function run(ctx) {
   });
   const mdPasteLink = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (mdPasteLink === '[OpenAI](https://openai.com/docs) docs') pass('Markdown paste: selected text plus URL becomes link'); else fail('paste link result: ' + mdPasteLink);
-  page.once('dialog', (d) => d.accept('2,2'));
-  await page.click('#markdownTools .md-tools-toggle');
+  // Table picker — click the table button, then click the 2×2 cell in the grid picker
   await page.click('#markdownTools [data-md-action="table"]');
+  await page.waitForSelector('.md-table-picker', { timeout: 4000 });
+  // Cell at row=1,col=1 gives a 2×2 table
+  await page.click('.md-table-picker-cell[data-r="1"][data-c="1"]');
   const mdTableInserted = await page.evaluate(() => window.__fv.state.rawview.getValue());
-  if (/\| Column 1 \| Column 2 \|/.test(mdTableInserted) && mdTableInserted.split('\n').length === 4) pass('Markdown tools: table prompt inserts requested dimensions'); else fail('table inserted: ' + mdTableInserted);
+  if (/\| Column 1 \| Column 2 \|/.test(mdTableInserted) && mdTableInserted.split('\n').length === 4) pass('Markdown tools: table grid picker inserts 2×2 table'); else fail('table inserted: ' + mdTableInserted);
   await page.evaluate(() => {
     const table = [
       '| Name | Score |',

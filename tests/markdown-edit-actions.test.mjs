@@ -3,6 +3,12 @@ import {
   markdownLinkForPastedUrl,
   markdownTable,
   markdownWrap,
+  markdownCodeBlock,
+  markdownInlineCode,
+  markdownBlockquote,
+  markdownBulletList,
+  markdownOrderedList,
+  markdownStrikethrough,
   sortMarkdownTable,
   tableSortOptions,
 } from '../docs/types/markdown/edit-actions.js';
@@ -40,6 +46,19 @@ ok(/\| Alpha \| 2 \|\n\| Beta \| 10 \|\n\| Gamma \| 1 \|/.test(byName), 'table s
 const byScore = sortMarkdownTable(unsorted, 1);
 ok(/\| Gamma \| 1 \|\n\| Alpha \| 2 \|\n\| Beta \| 10 \|/.test(byScore), 'table sort: sorts selected table by numeric column');
 ok(sortMarkdownTable('not a table', 0) === null, 'table sort: rejects non-table selection');
+
+// New actions
+const codeBlock = markdownCodeBlock('const x = 1;\nconst y = 2;');
+ok(codeBlock.text === '```\nconst x = 1;\nconst y = 2;\n```' && codeBlock.selectStart === 4, 'code block: wraps multi-line in fenced block');
+const inlineCode = markdownInlineCode('foo');
+ok(typeof inlineCode === 'object' && inlineCode.text === '`foo`' && inlineCode.selectStart === 1 && inlineCode.selectEnd === 4, 'inline code: wraps in single backtick');
+const codeBlockInline = markdownCodeBlock('foo');
+ok(typeof codeBlockInline === 'object' && codeBlockInline.text === '`foo`', 'code block: single-line falls back to inline code');
+ok(markdownBlockquote('line1\nline2') === '> line1\n> line2', 'blockquote: prefixes each line');
+ok(markdownBulletList('a\nb\n') === '- a\n- b\n', 'bullet list: prefixes non-empty lines');
+ok(markdownOrderedList('a\nb\nc') === '1. a\n2. b\n3. c', 'ordered list: numbers non-empty lines');
+const strike = markdownStrikethrough('text');
+ok(typeof strike === 'object' && strike.text === '~~text~~', 'strikethrough: wraps in ~~');
 
 if (failed) {
   console.error(`\n${failed} markdown edit action test(s) failed`);

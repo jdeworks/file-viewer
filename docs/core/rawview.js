@@ -155,6 +155,21 @@ export async function createRawView(host, {
     },
     reveal(line) { std.revealLineInCenter(line); },
     format() { return std.getAction?.('editor.action.formatDocument')?.run(); },
+    // Register a keybinding (e.g. 'ctrl+b') → handler. Uses Monaco's KeyMod/KeyCode API.
+    addCommand(keybinding, handler) {
+      const parts = String(keybinding || '').toLowerCase().split('+');
+      let chord = 0;
+      for (const part of parts) {
+        if (part === 'ctrl') chord |= monaco.KeyMod.CtrlCmd;
+        else if (part === 'shift') chord |= monaco.KeyMod.Shift;
+        else if (part === 'alt') chord |= monaco.KeyMod.Alt;
+        else {
+          const key = monaco.KeyCode['Key' + part.toUpperCase()] ?? monaco.KeyCode[part.toUpperCase()] ?? 0;
+          chord |= key;
+        }
+      }
+      if (chord) std.addCommand(chord, handler);
+    },
     // Scroll sync uses the std editor (active in current/original modes).
     scrollInfo() { return { top: std.getScrollTop(), max: std.getScrollHeight() - std.getLayoutInfo().height }; },
     setScrollTop(t) { std.setScrollTop(t); },
