@@ -9661,5 +9661,33 @@
     "enhanced": true,
     "description": "NocoDB open-source Airtable alternative environment configuration with server, security, database, Redis, email, and feature settings.",
     "knownFile": "nocodb-config"
+  },
+  {
+    "file": "plane.env",
+    "label": "plane.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Project Management"
+    ],
+    "enhanced": true,
+    "description": "Plane project management environment configuration with server, security, database, Redis, S3/MinIO storage, email, and auth settings.",
+    "knownFile": "plane-config"
+  },
+  {
+    "file": "infisical.env",
+    "label": "infisical.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Security"
+    ],
+    "enhanced": true,
+    "description": "Infisical secrets management platform environment configuration with server, encryption keys, JWT secrets, MongoDB, Redis, and SMTP email settings.",
+    "knownFile": "infisical-config"
   }
 ]

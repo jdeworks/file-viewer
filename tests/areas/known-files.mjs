@@ -5280,4 +5280,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('nocodb.env');
   pass(await page.waitForSelector('#previewHost .noco-doc', { timeout: 12000 }), 'nocodb.env: NocoDB badge shown');
+
+  // ── plane.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('plane.env');
+  pass(await page.waitForSelector('#previewHost .plane-doc', { timeout: 12000 }), 'plane.env: Plane badge shown');
+
+  // ── infisical.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('infisical.env');
+  pass(await page.waitForSelector('#previewHost .infsc-doc', { timeout: 12000 }), 'infisical.env: Infisical badge shown');
 }

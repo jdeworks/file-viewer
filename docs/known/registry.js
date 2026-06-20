@@ -677,6 +677,8 @@ import stirlingPdfConfig from '../types/text/yaml/known/stirling-pdf-config/inde
 import monicaConfig from '../types/text/known/monica-config/index.js';
 import n8nConfig from '../types/text/known/n8n-config/index.js';
 import nocodbConfig from '../types/text/known/nocodb-config/index.js';
+import planeConfig from '../types/text/known/plane-config/index.js';
+import infisicalConfig from '../types/text/known/infisical-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -832,6 +834,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   plausibleConfig, umamiConfig,
   stirlingPdfConfig, monicaConfig,
   n8nConfig, nocodbConfig,
+  planeConfig, infisicalConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
