@@ -5389,4 +5389,9 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('vaultwarden.env');
   pass(await page.waitForSelector('#previewHost .vwarden-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
+
+  // ── filebrowser.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('filebrowser.json');
+  pass(await page.waitForSelector('#previewHost .fbrowser-doc', { timeout: 12000 }), 'filebrowser.json: File Browser badge shown');
 }

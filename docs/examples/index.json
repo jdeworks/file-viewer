@@ -9933,5 +9933,18 @@
     "enhanced": true,
     "description": "Gitea Act Runner CI configuration",
     "knownFile": "act-runner-config"
+  },
+  {
+    "file": "filebrowser.json",
+    "label": "File Browser Config",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "File Browser self-hosted file manager configuration",
+    "knownFile": "filebrowser-config"
   }
 ]

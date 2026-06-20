@@ -1,0 +1,26 @@
+{
+  "address": "0.0.0.0",
+  "port": 8080,
+  "baseURL": "",
+  "root": "/srv/files",
+  "database": "/config/filebrowser.db",
+  "log": "stdout",
+  "username": "admin",
+  "password": "$2y$10$TEbHaKp5dJbFMDOclyiW5eRn8gIfhxsH7nQ1WrO1kBzXpf2Q9a2s6",
+  "auth": {
+    "method": "json",
+    "header": ""
+  },
+  "tls": {
+    "cert": "",
+    "key": ""
+  },
+  "recaptcha": {
+    "host": "https://www.google.com",
+    "key": "6Lcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "secret": "6Lcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  "commands": {},
+  "shell": "",
+  "rules": []
+}

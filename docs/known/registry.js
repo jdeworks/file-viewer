@@ -512,7 +512,8 @@ import androidStrings from '../types/text/xml/known/android-strings/index.js';
 import keycloakRealm from '../types/text/json/known/keycloak-realm/index.js';
 import autheliaConfig from '../types/text/yaml/known/authelia-config/index.js';
 import oauth2ProxyConfig from '../types/text/known/oauth2-proxy-config/index.js';
-import authentikConfig from '../types/text/yaml/known/authentik-config/index.js';
+import authentikBlueprint from '../types/text/yaml/known/authentik-config/index.js';
+import authentikConfig from '../types/text/known/authentik-config/index.js';
 import synapseConfig from '../types/text/yaml/known/synapse-config/index.js';
 import gotosocialConfig from '../types/text/yaml/known/gotosocial-config/index.js';
 import searxngConfig from '../types/text/yaml/known/searxng-config/index.js';
@@ -665,6 +666,7 @@ import photoprismConfig from '../types/text/yaml/known/photoprism-config/index.j
 import paperlessConf from '../types/text/known/paperless-conf/index.js';
 import bookstackEnv from '../types/text/known/bookstack-env/index.js';
 import mattermostConfig from '../types/text/json/known/mattermost-config/index.js';
+import filebrowserConfig from '../types/text/json/known/filebrowser-config/index.js';
 import netboxConfig from '../types/text/known/netbox-config/index.js';
 import vaultwardenEnv from '../types/text/known/vaultwarden-env/index.js';
 import ntfyConfig from '../types/text/yaml/known/ntfy-config/index.js';
@@ -787,7 +789,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   pulsarConf,
   cyclonedxSbom, spdxSbom, slsaProvenance, syftConfig,
   proguardRules, androidStrings,
-  keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig, synapseConfig,
+  keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig, authentikBlueprint, synapseConfig,
   gotosocialConfig, searxngConfig,
   newrelicConfig, dynatraceConfig, elasticApmConfig, filebeatConfig, heartbeatConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
@@ -845,7 +847,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   crowdsecConfig, crowdsecAcquis,
   homerConfig, uptimeKumaConfig,
   photoprismConfig, paperlessConf,
-  bookstackEnv, mattermostConfig,
+  bookstackEnv, mattermostConfig, filebrowserConfig,
   netboxConfig, vaultwardenEnv,
   ntfyConfig, wakapiConfig,
   outlineConfig, linkdingConfig,
