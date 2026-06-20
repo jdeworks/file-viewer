@@ -5,10 +5,10 @@ project:
   name: 'web-app'
   description: 'Frontend web application'
   type: 'application'
-  language: 'typescript'
+  language: 'node'
   owner: 'frontend-team'
 
-language: 'typescript'
+language: 'node'
 
 dependsOn:
   - 'shared-ui'
@@ -19,6 +19,7 @@ dependsOn:
 tasks:
   build:
     command: 'vite build'
+    platform: 'node'
     inputs:
       - 'src/**/*'
       - 'public/**/*'
@@ -27,10 +28,12 @@ tasks:
 
   dev:
     command: 'vite dev'
+    platform: 'node'
     local: true
 
   test:
     command: 'vitest run'
+    platform: 'node'
     inputs:
       - 'src/**/*.test.ts'
     deps:
@@ -38,11 +41,14 @@ tasks:
 
   lint:
     command: 'eslint src'
+    platform: 'node'
     inputs:
       - 'src/**/*.ts'
       - 'src/**/*.tsx'
 
-  typecheck:
-    command: 'tsc --noEmit'
-    deps:
-      - '~:build'
+  format:
+    command: 'prettier --write src'
+    platform: 'node'
+    inputs:
+      - 'src/**/*.ts'
+      - 'src/**/*.tsx'

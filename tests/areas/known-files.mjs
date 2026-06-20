@@ -318,10 +318,11 @@ export async function run(ctx) {
   // ── turbo.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('turbo.json');
-  await page.waitForSelector('#previewHost .turbo-doc', { timeout: 12000 });
-  const turboText = await page.$eval('#previewHost .turbo-doc', (e) => e.textContent);
-  if (/Turbo/i.test(turboText)) pass('turbo.json: badge shown'); else fail('turbo badge: ' + turboText.slice(0, 200));
-  if (/build|test|lint/i.test(turboText)) pass('turbo.json: tasks shown'); else fail('turbo tasks: ' + turboText.slice(0, 200));
+  await page.waitForSelector('#previewHost .turbojson-doc', { timeout: 12000 });
+  pass('turbo.json: renders');
+  const turboText = await page.$eval('#previewHost .turbojson-doc', (e) => e.textContent);
+  if (!turboText.includes('Turborepo') && !turboText.includes('turbo')) fail('turbo.json: missing badge'); else pass('turbo.json: badge shown');
+  if (!turboText.includes('build') && !turboText.includes('pipeline')) fail('turbo.json: no pipeline shown'); else pass('turbo.json: pipeline shown');
 
   // ── dependabot.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1187,10 +1188,11 @@ export async function run(ctx) {
   // ── moon.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('moon.yml');
-  await page.waitForSelector('#previewHost .moon-doc', { timeout: 12000 });
-  const moonText = await page.$eval('#previewHost .moon-doc', (e) => e.textContent);
-  if (/Moon/i.test(moonText)) pass('moon.yml: badge shown'); else fail('moon badge: ' + moonText.slice(0, 200));
-  if (/language|tasks|project|schema|vcs|pnpm/i.test(moonText)) pass('moon.yml: content shown'); else fail('moon content: ' + moonText.slice(0, 200));
+  await page.waitForSelector('#previewHost .moonyml-doc', { timeout: 12000 });
+  pass('moon.yml: renders');
+  const moonText = await page.$eval('#previewHost .moonyml-doc', (e) => e.textContent);
+  if (!moonText.includes('Moon')) fail('moon.yml: missing badge'); else pass('moon.yml: badge shown');
+  if (!moonText.includes('task') && !moonText.includes('build')) fail('moon.yml: no tasks shown'); else pass('moon.yml: tasks shown');
 
   // ── crowdin.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

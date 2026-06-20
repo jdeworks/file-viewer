@@ -2665,7 +2665,7 @@
       "Config"
     ],
     "enhanced": true,
-    "knownFile": "turbo",
+    "knownFile": "turbo-json",
     "description": "Turborepo build system configuration \u2014 tasks, caching, dependencies, and global env vars."
   },
   {
