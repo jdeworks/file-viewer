@@ -7910,5 +7910,29 @@
     "enhanced": true,
     "description": "Xorg X11 server configuration: amdgpu driver with TearFree and VariableRefresh, touchpad with tapping and natural scrolling, screen modes, and DPMS monitor settings.",
     "knownFile": "xorg-conf"
+  },
+  {
+    "file": "rclone.conf",
+    "label": "rclone.conf",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "rclone cloud storage configuration: remote definitions for S3, Google Drive, Dropbox, SFTP, and encrypted remotes.",
+    "knownFile": "rclone-conf"
+  },
+  {
+    "file": "resticprofile.toml",
+    "label": "resticprofile.toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "resticprofile backup configuration: global scheduler settings, repository profiles with backup sources, retention policies, and check schedules.",
+    "knownFile": "restic-config"
   }
 ]

@@ -3729,4 +3729,22 @@ export async function run(ctx) {
   if (/yt-dlp/i.test(ytdlpText)) pass('yt-dlp.conf: yt-dlp badge shown'); else fail('ytdlp-conf badge: ' + ytdlpText.slice(0, 200));
   if (/format|bestvideo/i.test(ytdlpText)) pass('yt-dlp.conf: format spec shown'); else fail('ytdlp-conf format: ' + ytdlpText.slice(0, 300));
   if (/output|Downloads/i.test(ytdlpText)) pass('yt-dlp.conf: output path shown'); else fail('ytdlp-conf output: ' + ytdlpText.slice(0, 300));
+
+  // ── .Xresources (X11 resource database) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.Xresources');
+  await page.waitForSelector('#previewHost .xrdb-doc', { timeout: 12000 });
+  const xresText = await page.$eval('#previewHost .xrdb-doc', (e) => e.textContent);
+  if (/Xresources/i.test(xresText)) pass('.Xresources: Xresources badge shown'); else fail('xresources badge: ' + xresText.slice(0, 200));
+  if (/96\s*dpi|Xft/i.test(xresText)) pass('.Xresources: DPI or Xft settings shown'); else fail('xresources dpi: ' + xresText.slice(0, 300));
+  if (/#1e1e2e|#cdd6f4|color0|color/i.test(xresText)) pass('.Xresources: color palette shown'); else fail('xresources colors: ' + xresText.slice(0, 300));
+
+  // ── xorg.conf (Xorg X server config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('xorg.conf');
+  await page.waitForSelector('#previewHost .xorgcfg-doc', { timeout: 12000 });
+  const xorgText = await page.$eval('#previewHost .xorgcfg-doc', (e) => e.textContent);
+  if (/Xorg/i.test(xorgText)) pass('xorg.conf: Xorg badge shown'); else fail('xorg-conf badge: ' + xorgText.slice(0, 200));
+  if (/amdgpu|nvidia|intel|modesetting/i.test(xorgText)) pass('xorg.conf: GPU driver shown'); else fail('xorg-conf driver: ' + xorgText.slice(0, 300));
+  if (/Screen|Device|Monitor|ServerLayout/i.test(xorgText)) pass('xorg.conf: section names shown'); else fail('xorg-conf sections: ' + xorgText.slice(0, 300));
 }
