@@ -1,0 +1,79 @@
+{
+  "data_provider": {
+    "driver": "sqlite",
+    "name": "/var/lib/sftpgo/sftpgo.db",
+    "host": "",
+    "port": 0,
+    "username": "",
+    "password": "",
+    "connection_string": ""
+  },
+  "sftpd": {
+    "bindings": [
+      {
+        "port": 2022,
+        "address": "0.0.0.0",
+        "apply_proxy_config": true
+      }
+    ],
+    "max_auth_tries": 5,
+    "key_exchange_algorithms": [
+      "curve25519-sha256",
+      "ecdh-sha2-nistp256",
+      "diffie-hellman-group14-sha256"
+    ],
+    "host_keys": ["/var/lib/sftpgo/id_rsa", "/var/lib/sftpgo/id_ecdsa"]
+  },
+  "ftpd": {
+    "bindings": [
+      {
+        "port": 0,
+        "address": ""
+      }
+    ],
+    "banner": "SFTPGo FTP server"
+  },
+  "httpd": {
+    "bindings": [
+      {
+        "port": 8080,
+        "address": "127.0.0.1",
+        "enable_web_admin": true,
+        "enable_web_client": true,
+        "enable_rest_api": true,
+        "render_openapi": true
+      }
+    ],
+    "templates_path": "templates",
+    "static_files_path": "static",
+    "openapi_path": "openapi"
+  },
+  "webdavd": {
+    "bindings": [
+      {
+        "port": 0,
+        "address": ""
+      }
+    ]
+  },
+  "telemetry": {
+    "bind_port": 10000,
+    "bind_address": "127.0.0.1",
+    "enable_profiler": false
+  },
+  "common": {
+    "idle_timeout": 15,
+    "upload_mode": 0,
+    "actions": {},
+    "setstat_mode": 0,
+    "proxy_allowed": [],
+    "post_connect_hook": "",
+    "post_disconnect_hook": "",
+    "max_total_connections": 0,
+    "max_per_host_connections": 20,
+    "defender": {
+      "enabled": false
+    }
+  },
+  "plugins": []
+}
