@@ -5,6 +5,8 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.groovy') || name.endsWith('.gvy') || name.endsWith('.gy') || name.endsWith('.gsh')) return true;
+    // Rego policy files share import/package keywords but are not Groovy
+    if (name.endsWith('.rego')) return false;
     const text = intake.text || '';
     const hits = [
       /^def\s+/m.test(text),

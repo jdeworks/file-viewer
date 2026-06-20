@@ -294,16 +294,15 @@ export async function run(ctx) {
   const mxmlTreeNodes = await page.$$eval('#previewHost .mxml-tree .mxml-node-label', (els) => els.map((e) => e.textContent));
   if (mxmlTreeNodes.length >= 2 && mxmlTreeNodes.some((p) => /violin/i.test(p)) && mxmlTreeNodes.some((p) => /piano/i.test(p))) pass('MusicXML instrumentation list shows parts'); else fail('mxml parts: ' + mxmlTreeNodes.join(', '));
 
-  // ── OFX / QFX financial viewer ──
+  // ── OFX / QFX financial viewer (parentNode) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('sample.ofx');
-  const ofxf = await frameOf('iframe.fv-preview-frame');
-  await ofxf.waitForSelector('.ofx-preview', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .ofx-preview', { timeout: 8000 });
   const ofxTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (ofxTypeId === 'ofx') pass('sample.ofx detected as OFX / QFX Financial'); else fail('ofx type: ' + ofxTypeId);
-  const ofxAcct = await ofxf.$eval('.ofx-acct', (e) => e.textContent);
+  const ofxAcct = await page.$eval('#previewHost .ofx-acct', (e) => e.textContent);
   if (/\*{4}\d{4}/.test(ofxAcct) && /CHECKING/i.test(ofxAcct)) pass('OFX account card shows masked account number and type'); else fail('ofx acct: ' + ofxAcct.replace(/\s+/g, ' ').slice(0, 100));
-  const ofxRows = await ofxf.$$eval('.ofx-table tbody tr', (els) => els.length);
+  const ofxRows = await page.$$eval('#previewHost .ofx-table tbody tr', (els) => els.length);
   if (ofxRows >= 4) pass('OFX transaction table shows expected rows'); else fail('ofx txn rows: ' + ofxRows);
 
   // ── KiCad EDA PCB viewer ──

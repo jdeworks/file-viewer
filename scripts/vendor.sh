@@ -76,6 +76,10 @@ cp node_modules/@ffmpeg/core-st/dist/ffmpeg-core.worker.js "$VENDOR/ffmpeg/ffmpe
 mkdir -p "$VENDOR/ag-psd"
 cp node_modules/ag-psd/dist/bundle.js "$VENDOR/ag-psd/ag-psd.bundle.js"
 
+# --- qrcodejs2-fixes (QR code generator, browser UMD). Loaded only for vCard QR buttons.
+mkdir -p "$VENDOR/qrcodejs"
+cp node_modules/qrcodejs2-fixes/qrcode.js "$VENDOR/qrcodejs/qrcode.js"
+
 # Record pinned versions for provenance.
 node -e "const p=require('./package.json').devDependencies; require('fs').writeFileSync('$VENDOR/VERSIONS.json', JSON.stringify(p,null,2)+'\n')"
 

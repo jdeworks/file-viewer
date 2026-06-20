@@ -1100,6 +1100,7 @@ export async function buildRawView() {
         }
       : undefined,
   });
+  if (!state.intake.isBinary) state.rawview.addCommand?.('ctrl+s', downloadCurrent);
   wireMarkdownTools();
   setMarkdownToolsVisible(state.type?.id === 'markdown' && !state.intake.isBinary);
   if (state.type?.id === 'markdown' && !state.intake.isBinary) {

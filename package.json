@@ -19,6 +19,8 @@
     "pdf-lib": "1.17.1",
     "pdfjs-dist": "4.10.38",
     "pptxviewjs": "1.1.9",
+    "qrcode": "^1.5.4",
+    "qrcodejs2-fixes": "^0.0.2",
     "sql.js": "1.12.0",
     "xlsx": "0.18.5"
   }

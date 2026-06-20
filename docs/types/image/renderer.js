@@ -7,7 +7,9 @@ import { isSvg, mimeFor, dimensions } from './imglib.js';
 import { recordStage3AsciiActivation } from '../../games/metagame/viewer-actions.js';
 
 const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const EDITABLE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
+// BMP and GIF: createImageBitmap decodes both natively; the editor pipeline
+// always exports as PNG/JPEG/WebP, so the source format doesn't matter.
+const EDITABLE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/bmp', 'image/gif']);
 
 export async function render(intake, ctx = {}) {
   if (isSvg(intake)) {
@@ -163,7 +165,10 @@ export async function render(intake, ctx = {}) {
   let cropMode = false, cropOverlay = null, cropSelBox = null;
   let cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0, cropDragging = false, cropHasRegion = false;
 
-  function getExportMime() { return (exportFmt?.value) || mime; }
+  // BMP and GIF: browsers don't support canvas.toBlob for these formats;
+  // fall back to PNG when the source mime is not a canvas-encodable type.
+  const CANVAS_ENCODABLE = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/avif']);
+  function getExportMime() { const m = (exportFmt?.value) || mime; return CANVAS_ENCODABLE.has(m) ? m : 'image/png'; }
 
   function pushUndo() {
     undoStack.push({ blob: editedBlob || null, url: editedUrl || null });

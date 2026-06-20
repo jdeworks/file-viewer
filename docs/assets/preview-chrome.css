@@ -369,6 +369,8 @@
 .sq-query { display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
 .sq-sql { flex: 1; font: 12px ui-monospace, monospace; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); }
 .sq-run { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--accent); color: var(--accent-fg); cursor: pointer; }
+.sq-explain, .sq-export-csv, .sq-export-json { padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; font-size: 12px; }
+.sq-explain:hover, .sq-export-csv:hover, .sq-export-json:hover { background: var(--bg-2); }
 .sq-result { flex: 1; overflow: auto; padding: 8px 12px; }
 .sq-note { color: var(--fg-2); font-size: 12px; margin: 0 0 8px; }
 .sq-err { color: var(--danger); font: 12px ui-monospace, monospace; }
@@ -458,8 +460,13 @@
 .jsonl-note { color: var(--fg-2); font-size: .82rem; margin-top: 10px; }
 .jsonl-empty { color: var(--fg-2); padding: 20px; text-align: center; }
 
-/* OFX / QFX financial viewer */
+/* OFX / QFX financial viewer (parentNode — styles apply in the parent document) */
 .ofx-preview { font-family: system-ui, sans-serif; padding: 14px; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.ofx-txn-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.ofx-txn-head .ofx-section { margin: 0; }
+.ofx-export-csv { padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-2); color: var(--fg); cursor: pointer; font-size: 12px; }
+.ofx-chart-wrap { margin: 10px 0 6px; }
+.ofx-chart { width: 100% !important; }
 .ofx-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
 .ofx-row { display: flex; gap: 12px; align-items: baseline; font-size: .9rem; }
 .ofx-label { color: var(--fg-2); min-width: 90px; font-size: .82rem; flex-shrink: 0; }
@@ -475,6 +482,25 @@
 .ofx-note { color: var(--fg-2); font-size: .82rem; margin-top: 8px; }
 .ofx-empty { color: var(--fg-2); padding: 16px; text-align: center; font-size: .9rem; }
 
+
+/* vCard contact viewer (parentNode) */
+.vcf-doc { font-family: system-ui, sans-serif; padding: 14px; max-width: 600px; margin: 0 auto; }
+.vcf-head { font: 600 14px system-ui, sans-serif; color: var(--fg-2); margin: 0 0 12px; }
+.vcf-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin: 0 0 10px; background: var(--bg); }
+.vcf-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.vcf-name { font: 600 16px system-ui, sans-serif; color: var(--fg); }
+.vcf-org { font: 13px system-ui, sans-serif; color: var(--fg-2); margin: 2px 0 8px; }
+.vcf-row { display: flex; gap: 8px; font: 13px/1.6 system-ui, sans-serif; padding: 1px 0; color: var(--fg); }
+.vcf-row-icon { width: 18px; flex: 0 0 18px; text-align: center; opacity: .8; }
+.vcf-row-body { word-break: break-word; }
+.vcf-row-body a { color: var(--accent); text-decoration: none; }
+.vcf-type { font-size: 11px; color: var(--fg-2); }
+.vcf-note { margin-top: 8px; font: 13px/1.5 system-ui, sans-serif; color: var(--fg-2); white-space: pre-wrap; }
+.vcf-empty { color: var(--fg-2); font-size: .9rem; }
+.vcf-qr-btn { padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-2); color: var(--fg-2); cursor: pointer; font-size: 11px; }
+.vcf-qr-btn.active, .vcf-qr-btn:hover { border-color: var(--accent); color: var(--accent); }
+.vcf-qr-wrap { margin-top: 10px; display: flex; justify-content: center; }
+.vcf-qr-wrap img, .vcf-qr-wrap canvas { border-radius: 4px; }
 
 /* Bioinformatics (FASTA/FASTQ/VCF) */
 .bio-preview { padding: 12px; } .bio-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }

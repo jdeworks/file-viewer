@@ -1,3 +1,5 @@
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
+
 const MAX_TXN = 200;
 
 function esc(s) {
@@ -150,20 +152,71 @@ export async function render(intake, _ctx) {
       + '<td>' + esc(t.memo) + '</td></tr>';
   }).join('');
 
+  const exportBtn = transactions.length
+    ? '<button class="ofx-export-csv">Export CSV</button>'
+    : '';
+
+  const chartHtml = transactions.length >= 2
+    ? '<div class="ofx-chart-wrap"><canvas class="ofx-chart" height="160"></canvas></div>'
+    : '';
+
   const txnHtml = transactions.length
     ? '<div class="ofx-txn">'
-      + '<h3 class="ofx-section">Transactions (' + transactions.length + ')</h3>'
+      + '<div class="ofx-txn-head"><h3 class="ofx-section">Transactions (' + transactions.length + ')</h3>' + exportBtn + '</div>'
+      + chartHtml
       + '<table class="ofx-table"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Memo</th></tr></thead>'
       + '<tbody>' + txnRows + '</tbody></table>'
       + (truncated ? '<p class="ofx-note">Showing first ' + MAX_TXN + ' of ' + transactions.length + ' transactions.</p>' : '')
       + '</div>'
     : '<p class="ofx-empty">No transactions found.</p>';
 
-  const bodyHtml = '<div class="ofx-preview">'
-    + (acctHtml || '<p class="ofx-empty">No account info found.</p>')
-    + balHtml
-    + txnHtml
-    + '</div>';
+  // Render in parentNode mode so preview-chrome.css (where our CSS lives) applies,
+  // and so we can wire native event listeners (CSV export, running balance chart).
+  const host = document.createElement('div');
+  host.className = 'ofx-preview';
+  host.innerHTML = (acctHtml || '<p class="ofx-empty">No account info found.</p>') + balHtml + txnHtml;
 
-  return { hadUnsafe: false, bodyHtml };
+  const csvBtn = host.querySelector('.ofx-export-csv');
+  if (csvBtn) {
+    csvBtn.addEventListener('click', () => {
+      const csvEscape = (v) => {
+        const s = String(v ?? '');
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+      };
+      const header = 'Date,Type,Amount,Memo';
+      const rows = transactions.map((t) => [t.date, t.type, t.amount, t.memo].map(csvEscape).join(','));
+      const blob = new Blob([[header, ...rows].join('\r\n')], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (intake.filename || 'transactions').replace(/\.[^.]+$/, '') + '.csv';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+  }
+
+  // Running balance chart — load Chart.js lazily after mount
+  const chartCanvas = host.querySelector('.ofx-chart');
+  if (chartCanvas && transactions.length >= 2) {
+    loadGlobal(vendor('chartjs/chart.umd.js'), 'Chart').then((Chart) => {
+      // Transactions are newest-first; reverse for chronological chart
+      const chrono = [...transactions].reverse();
+      let running = 0;
+      const labels = [], data = [];
+      for (const t of chrono) {
+        const n = parseFloat(t.amount);
+        if (!isNaN(n)) running += n;
+        labels.push(t.date);
+        data.push(+running.toFixed(2));
+      }
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      const lineColor = isDark ? '#60a5fa' : '#2563eb';
+      new Chart(chartCanvas, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Running balance', data, borderColor: lineColor, backgroundColor: lineColor + '22', borderWidth: 1.5, pointRadius: labels.length > 60 ? 0 : 2, tension: 0.2, fill: true }] },
+        options: { animation: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { maxTicksLimit: 8, maxRotation: 0 } }, y: { ticks: { maxTicksLimit: 5 } } } },
+      });
+    }).catch(() => { /* Chart.js optional; ignore failure */ });
+  }
+
+  return { parentNode: host };
 }
