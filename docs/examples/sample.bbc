@@ -1,0 +1,26 @@
+[b]Welcome to the Forum![/b]
+
+This is a sample BBCode post demonstrating common forum markup.
+
+[b]Bold text[/b] and [i]italic text[/i] are commonly used.
+
+[url=https://www.example.com]Click here[/url] to visit the example site.
+
+[quote=Username]This is a quoted reply from another user.[/quote]
+
+[code]
+def hello():
+    print("Hello, World!")
+[/code]
+
+[color=red]Red text[/color] and [color=blue]blue text[/color].
+
+[size=18]Large text[/size]
+
+[img]https://example.com/image.png[/img]
+
+[list]
+[*]First item
+[*]Second item
+[*]Third item
+[/list]

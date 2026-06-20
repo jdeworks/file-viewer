@@ -12487,5 +12487,53 @@
     "enhanced": true,
     "description": "Autoconf configure.ac script using M4 macros",
     "knownFile": "m4-macro"
+  },
+  {
+    "label": "sample.typ (Typst)",
+    "file": "sample.typ",
+    "mime": "text/plain",
+    "category": "Document",
+    "categories": [
+      "Document"
+    ],
+    "enhanced": true,
+    "description": "Typst document with markup and scripting",
+    "knownFile": "typst-doc"
+  },
+  {
+    "label": "sample.textile (Textile)",
+    "file": "sample.textile",
+    "mime": "text/plain",
+    "category": "Document",
+    "categories": [
+      "Document"
+    ],
+    "enhanced": true,
+    "description": "Textile markup document",
+    "knownFile": "textile-markup"
+  },
+  {
+    "label": "sample.mediawiki (MediaWiki)",
+    "file": "sample.mediawiki",
+    "mime": "text/plain",
+    "category": "Document",
+    "categories": [
+      "Document"
+    ],
+    "enhanced": true,
+    "description": "MediaWiki markup with templates and links",
+    "knownFile": "mediawiki-markup"
+  },
+  {
+    "label": "sample.bbc (BBCode)",
+    "file": "sample.bbc",
+    "mime": "text/plain",
+    "category": "Document",
+    "categories": [
+      "Document"
+    ],
+    "enhanced": true,
+    "description": "BBCode forum markup post",
+    "knownFile": "bbcode-text"
   }
 ]

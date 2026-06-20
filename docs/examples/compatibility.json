@@ -27526,7 +27526,9 @@
       "label": "Typst Document",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.typ"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27551,7 +27553,9 @@
       "label": "Textile",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.textile"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27576,7 +27580,9 @@
       "label": "MediaWiki",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.mediawiki"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27601,7 +27607,9 @@
       "label": "BBCode",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.bbc"
+      ],
       "extensions": [
         ".yml"
       ],
