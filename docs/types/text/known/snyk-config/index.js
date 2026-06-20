@@ -2,7 +2,7 @@ export default {
   id: 'snyk-config',
   label: 'Snyk',
   match(intake) {
-    return (intake.name || '').toLowerCase() === '.snyk';
+    return (intake.name || intake.filename || '').split('/').pop().toLowerCase() === '.snyk';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

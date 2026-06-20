@@ -2,7 +2,7 @@
 export default {
   id: 'gradle-props',
   label: 'Gradle properties',
-  match: (intake) => (intake.name || '').toLowerCase() === 'gradle.properties',
+  match: (intake) => (intake.name || intake.filename || '').split('/').pop().toLowerCase() === 'gradle.properties',
   loadRenderer: () => import('./renderer.js'),
   about: { description: 'Gradle project properties — JVM args, parallel builds, daemon settings, Kotlin/Android SDK versions, and custom project properties.' },
 };

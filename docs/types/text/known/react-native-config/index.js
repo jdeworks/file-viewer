@@ -2,7 +2,7 @@ export default {
   id: 'react-native-config',
   label: 'React Native CLI',
   match(intake) {
-    const n = (intake.name || '').toLowerCase();
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === 'react-native.config.js' || n === 'react-native.config.ts';
   },
   loadRenderer: () => import('./renderer.js'),

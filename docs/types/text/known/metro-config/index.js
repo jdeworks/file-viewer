@@ -2,7 +2,7 @@ export default {
   id: 'metro-config',
   label: 'Metro (React Native)',
   match(intake) {
-    const n = (intake.name || '').toLowerCase();
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === 'metro.config.js' || n === 'metro.config.ts';
   },
   loadRenderer: () => import('./renderer.js'),
