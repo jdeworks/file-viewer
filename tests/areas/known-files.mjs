@@ -5431,4 +5431,16 @@ export async function run(ctx) {
   await openExample('invidious-config.yml');
   await page.waitForSelector('#previewHost .invidious-doc', { timeout: 12000 });
   pass('invidious-config.yml: Invidious badge shown');
+
+  // ── sonar.properties viewer (sonarqube-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sonar.properties');
+  await page.waitForSelector('#previewHost .sonarqube-doc', { timeout: 12000 });
+  pass('sonar.properties: SonarQube badge shown');
+
+  // ── concourse.env viewer (concourse-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('concourse.env');
+  await page.waitForSelector('#previewHost .concourse-doc', { timeout: 12000 });
+  pass('concourse.env: Concourse CI badge shown');
 }

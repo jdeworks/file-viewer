@@ -10007,5 +10007,31 @@
     "enhanced": true,
     "description": "Invidious self-hosted YouTube frontend configuration",
     "knownFile": true
+  },
+  {
+    "file": "sonar.properties",
+    "label": "SonarQube Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "DevOps"
+    ],
+    "enhanced": true,
+    "description": "SonarQube code quality server configuration",
+    "knownFile": true
+  },
+  {
+    "file": "concourse.env",
+    "label": "Concourse CI Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "CI/CD"
+    ],
+    "enhanced": true,
+    "description": "Concourse CI server environment configuration",
+    "knownFile": true
   }
 ]
