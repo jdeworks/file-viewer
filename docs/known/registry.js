@@ -301,6 +301,7 @@ import tfLock from '../types/text/known/tf-lock/index.js';
 import versionsTf from '../types/text/known/versions-tf/index.js';
 import tsupConfig from '../types/text/known/tsup-config/index.js';
 import rspackConfig from '../types/text/known/rspack-config/index.js';
+import esbuildConfig from '../types/text/known/esbuild-config/index.js';
 import parcelrc from '../types/text/json/known/parcelrc/index.js';
 import bunfigToml from '../types/text/toml/known/bunfig/index.js';
 import atlantis from '../types/text/yaml/known/atlantis/index.js';
@@ -488,7 +489,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   phpunit, phpstan, phpCsFixer, behat,
   phpIni, psalmConfig, phpunitConfig, rectorConfig,
   terragrunt, tflint, tfLock, versionsTf,
-  tsupConfig, rspackConfig, parcelrc, bunfigToml,
+  tsupConfig, rspackConfig, esbuildConfig, parcelrc, bunfigToml,
   shadowCljs, projectClj, depsEdn,
   atlantis, checkov, terraformDocs, infracost,
   opencostConfig, crossplaneConfig, kedaConfig, veleroConfig,

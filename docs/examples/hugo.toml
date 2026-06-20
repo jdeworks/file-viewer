@@ -1,0 +1,38 @@
+baseURL = 'https://example.com/'
+languageCode = 'en-us'
+title = 'My Hugo Site'
+theme = 'ananke'
+paginate = 10
+enableRobotsTXT = true
+enableGitInfo = false
+
+[markup]
+  [markup.highlight]
+    style = 'monokai'
+    lineNos = true
+
+[taxonomies]
+  tag = 'tags'
+  category = 'categories'
+  series = 'series'
+
+[params]
+  author = 'Jane Doe'
+  description = 'My personal blog and portfolio'
+  github = 'janedoe'
+  twitter = 'janedoe'
+
+[[menus.main]]
+  name = 'Blog'
+  url = '/posts/'
+  weight = 10
+
+[[menus.main]]
+  name = 'About'
+  url = '/about/'
+  weight = 20
+
+[[menus.main]]
+  name = 'Contact'
+  url = '/contact/'
+  weight = 30

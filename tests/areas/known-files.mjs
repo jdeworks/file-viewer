@@ -2859,4 +2859,22 @@ export async function run(ctx) {
   const nixText = await page.$eval('#previewHost .nix-doc', (e) => e.textContent);
   if (/Nix/i.test(nixText)) pass('flake.nix: badge shown'); else fail('nix badge: ' + nixText.slice(0, 200));
   if (/description|dev shell|input/i.test(nixText)) pass('flake.nix: content shown'); else fail('nix content: ' + nixText.slice(0, 300));
+
+  // ── hugo-config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('hugo.toml');
+  await page.waitForSelector('#previewHost .hugo-doc', { timeout: 12000 });
+  const hugoText = await page.$eval('#previewHost .hugo-doc', (e) => e.textContent);
+  if (/Hugo/i.test(hugoText)) pass('hugo.toml: badge shown'); else fail('hugo badge: ' + hugoText.slice(0, 200));
+  if (/ananke|theme/i.test(hugoText)) pass('hugo.toml: theme shown'); else fail('hugo theme: ' + hugoText.slice(0, 300));
+  if (/example\.com|baseURL/i.test(hugoText)) pass('hugo.toml: baseURL shown'); else fail('hugo url: ' + hugoText.slice(0, 300));
+
+  // ── R DESCRIPTION viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('DESCRIPTION');
+  await page.waitForSelector('#previewHost .rdesc-doc', { timeout: 12000 });
+  const rdescText = await page.$eval('#previewHost .rdesc-doc', (e) => e.textContent);
+  if (/R Package/i.test(rdescText)) pass('DESCRIPTION: badge shown'); else fail('r-desc badge: ' + rdescText.slice(0, 200));
+  if (/mypackage|Version/i.test(rdescText)) pass('DESCRIPTION: package info shown'); else fail('r-desc info: ' + rdescText.slice(0, 300));
+  if (/dplyr|ggplot2|Imports/i.test(rdescText)) pass('DESCRIPTION: dependencies shown'); else fail('r-desc deps: ' + rdescText.slice(0, 300));
 }
