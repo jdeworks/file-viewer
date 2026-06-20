@@ -6298,4 +6298,40 @@ export async function run(ctx) {
   if (/sample/i.test(erlText)) pass('sample.erl: module name shown'); else fail('erl module: ' + erlText.slice(0, 300));
   if (/gen_server/i.test(erlText)) pass('sample.erl: behaviour shown'); else fail('erl behaviour: ' + erlText.slice(0, 300));
   if (/start_link|stop|add|lookup/i.test(erlText)) pass('sample.erl: exports listed'); else fail('erl exports: ' + erlText.slice(0, 300));
+
+  // ── nginx.conf viewer (nginx-conf plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nginx.conf');
+  await page.waitForSelector('#previewHost .nginxconf-doc', { timeout: 12000 });
+  pass('nginx-conf: renders');
+  const ngxCfgText = await page.$eval('#previewHost .nginxconf-doc', (e) => e.textContent);
+  if (/nginx/i.test(ngxCfgText)) pass('nginx-conf: badge shown'); else fail('nginx-conf badge: ' + ngxCfgText.slice(0, 200));
+  if (/server|listen/i.test(ngxCfgText)) pass('nginx-conf: server info shown'); else fail('nginx-conf server info: ' + ngxCfgText.slice(0, 300));
+
+  // ── sample.htaccess viewer (apache-conf plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.htaccess');
+  await page.waitForSelector('#previewHost .apachecfg-doc', { timeout: 12000 });
+  pass('apache-conf: sample.htaccess renders');
+  const apacheCfgText = await page.$eval('#previewHost .apachecfg-doc', (e) => e.textContent);
+  if (/apache/i.test(apacheCfgText)) pass('apache-conf: badge shown'); else fail('apache-conf badge: ' + apacheCfgText.slice(0, 200));
+
+  // ── haproxy.cfg viewer (haproxy-cfg plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('haproxy.cfg');
+  await page.waitForSelector('#previewHost .hpcfg-doc', { timeout: 12000 });
+  pass('haproxy-cfg: renders');
+  const hpcfgText = await page.$eval('#previewHost .hpcfg-doc', (e) => e.textContent);
+  if (/HAProxy/i.test(hpcfgText)) pass('haproxy-cfg: badge shown'); else fail('haproxy-cfg badge: ' + hpcfgText.slice(0, 200));
+  if (/frontend|backend/i.test(hpcfgText)) pass('haproxy-cfg: sections shown'); else fail('haproxy-cfg sections: ' + hpcfgText.slice(0, 300));
+
+  // ── traefik.toml viewer (traefik-conf plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('traefik.toml');
+  await page.waitForSelector('#previewHost .trkcfg-doc', { timeout: 12000 });
+  pass('traefik-conf: traefik.toml renders');
+  const trkCfgText = await page.$eval('#previewHost .trkcfg-doc', (e) => e.textContent);
+  if (/Traefik/i.test(trkCfgText)) pass('traefik-conf: badge shown'); else fail('traefik-conf badge: ' + trkCfgText.slice(0, 200));
+  if (/entrypoint|websecure|web/i.test(trkCfgText)) pass('traefik-conf: entrypoints shown'); else fail('traefik-conf entrypoints: ' + trkCfgText.slice(0, 300));
+  if (/docker|file/i.test(trkCfgText)) pass('traefik-conf: providers shown'); else fail('traefik-conf providers: ' + trkCfgText.slice(0, 300));
 }

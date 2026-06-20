@@ -1,0 +1,58 @@
+# Traefik v2 static configuration (TOML format)
+# https://doc.traefik.io/traefik/reference/static-configuration/file/
+
+[global]
+  checkNewVersion = true
+  sendAnonymousUsage = false
+
+[api]
+  dashboard = true
+  insecure = false
+
+[log]
+  level = "INFO"
+  format = "json"
+
+[accessLog]
+  filePath = "/var/log/traefik/access.log"
+
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
+    [entryPoints.web.http.redirections.entryPoint]
+      to = "websecure"
+      scheme = "https"
+      permanent = true
+
+  [entryPoints.websecure]
+    address = ":443"
+    [entryPoints.websecure.http.tls]
+      certResolver = "letsencrypt"
+
+  [entryPoints.metrics]
+    address = ":8082"
+
+[providers]
+  [providers.docker]
+    endpoint = "unix:///var/run/docker.sock"
+    network = "traefik-net"
+    exposedByDefault = false
+    watch = true
+
+  [providers.file]
+    directory = "/etc/traefik/dynamic"
+    watch = true
+
+[certificatesResolvers]
+  [certificatesResolvers.letsencrypt.acme]
+    email = "admin@example.com"
+    storage = "/letsencrypt/acme.json"
+    [certificatesResolvers.letsencrypt.acme.httpChallenge]
+      entryPoint = "web"
+
+  [certificatesResolvers.staging.acme]
+    email = "admin@example.com"
+    storage = "/letsencrypt/acme-staging.json"
+    caServer = "https://acme-staging-v02.api.letsencrypt.org/directory"
+    [certificatesResolvers.staging.acme.httpChallenge]
+      entryPoint = "web"

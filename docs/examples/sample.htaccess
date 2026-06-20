@@ -1,0 +1,35 @@
+# Apache per-directory configuration
+# URL rewriting and access control
+
+Options -Indexes +FollowSymLinks
+DirectoryIndex index.html index.php
+
+# Enable URL rewriting
+RewriteEngine On
+RewriteBase /
+
+# Force HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# SPA routing: send all non-file/dir requests to index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /index.html [L]
+
+# Basic authentication on admin area
+<Location /admin>
+  AuthType Basic
+  AuthName "Admin Area"
+  AuthUserFile /etc/apache2/.htpasswd
+  Require valid-user
+</Location>
+
+# Security headers
+Header always set X-Frame-Options "SAMEORIGIN"
+Header always set X-Content-Type-Options "nosniff"
+
+# Deny access to hidden files
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
