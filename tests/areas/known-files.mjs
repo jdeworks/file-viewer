@@ -6948,4 +6948,28 @@ export async function run(ctx) {
   await openExample('slapd.conf');
   await page.waitForSelector('#previewHost .ldap-doc', { timeout: 12000 });
   pass('openldap-conf: rendered');
+
+  // ── gnuplot-script viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.gnuplot');
+  await page.waitForSelector('#previewHost .gnuplot-doc', { timeout: 12000 });
+  pass('gnuplot-script: rendered');
+
+  // ── wolfram-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.wl');
+  await page.waitForSelector('#previewHost .wlang-doc', { timeout: 12000 });
+  pass('wolfram-lang: rendered');
+
+  // ── stata-do viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.do');
+  await page.waitForSelector('#previewHost .stata-doc', { timeout: 12000 });
+  pass('stata-do: rendered');
+
+  // ── tla-plus viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.tla');
+  await page.waitForSelector('#previewHost .tla-doc', { timeout: 12000 });
+  pass('tla-plus: rendered');
 }

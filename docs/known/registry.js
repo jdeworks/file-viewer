@@ -890,7 +890,26 @@ import avahiDaemonConf from '../types/text/known/avahi-daemon-conf/index.js';
 import neomuttConf from '../types/text/known/neomutt-conf/index.js';
 import msmtpConf from '../types/text/known/msmtp-conf/index.js';
 import openldapConf from '../types/text/known/openldap-conf/index.js';
-export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, rubyLang, perlLang, phpLang, powershellLang, solidityLang, vhdlLang, arduinoSketch, cobolLang, gleamLang, odinLang, haxeLang, adaLang, prologLang, asmLang, objcLang, dLang, ponyLang, wrenLang, mojoLang, janetLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
+import gnuplotScript from '../types/text/known/gnuplot-script/index.js';
+import wolframLang from '../types/text/known/wolfram-lang/index.js';
+import stataDo from '../types/text/known/stata-do/index.js';
+import tlaPlus from '../types/text/known/tla-plus/index.js';
+export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks,
+  // Extension-specific language plugins — listed BEFORE broad content-heuristic matchers to avoid interception
+  valaLang, idrisLang, smlLang, texDoc,
+  forthLang, leanLang, agdaLang, chapelLang,
+  kokaLang, carbonLang, grainLang, factorLang,
+  commonLisp, emacsLisp, squirrelLang, redLang,
+  pascalLang, eiffelLang,
+  coffeescriptLang, livescriptLang, rescriptLang, reasonLang,
+  gdscriptLang, inkScript, fennelLang, ballerinaLang,
+  typstDoc, textileMarkup, mediawikiMarkup, bbcodeText,
+  gnuplotScript, wolframLang, stataDo, tlaPlus,
+  avahiDaemonConf, neomuttConf, msmtpConf, openldapConf,
+  aptSources, pkgbuild, limitsConf, auditRules,
+  journaldConf, tmpfilesD, nsswitchConf, mkinitcpioConf,
+  wpaSupplicantConf, sssdConf,
+  haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, rubyLang, perlLang, phpLang, powershellLang, solidityLang, vhdlLang, arduinoSketch, cobolLang, gleamLang, odinLang, haxeLang, adaLang, prologLang, asmLang, objcLang, dLang, ponyLang, wrenLang, mojoLang, janetLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
@@ -1098,17 +1117,6 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   linkwardenConfig,
   hoarderConfig,
   frigateConfig,
-  coffeescriptLang, livescriptLang, rescriptLang, reasonLang,
-  gdscriptLang, inkScript, fennelLang, ballerinaLang,
-  typstDoc, textileMarkup, mediawikiMarkup, bbcodeText,
-  valaLang, idrisLang, smlLang, texDoc,
-  forthLang, leanLang, agdaLang, chapelLang,
-  kokaLang, carbonLang, grainLang, factorLang,
-  aptSources, pkgbuild, limitsConf, auditRules,
-  commonLisp, emacsLisp, squirrelLang, redLang,
-  journaldConf, tmpfilesD, nsswitchConf, mkinitcpioConf,
-  wpaSupplicantConf, sssdConf, pascalLang, eiffelLang,
-  avahiDaemonConf, neomuttConf, msmtpConf, openldapConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
