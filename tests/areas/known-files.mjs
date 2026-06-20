@@ -2517,11 +2517,11 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('proguard-rules.pro (ProGuard Rules)');
   await page.waitForSelector('#previewHost .pg-doc', { timeout: 12000 });
-  const pgText = await page.$eval('#previewHost .pg-doc', (e) => e.textContent);
-  if (/ProGuard/i.test(pgText)) pass('proguard-rules.pro: ProGuard badge shown'); else fail('proguard badge: ' + pgText.slice(0, 200));
-  if (/proguard-rules\.pro/i.test(pgText)) pass('proguard-rules.pro: filename shown'); else fail('proguard filename: ' + pgText.slice(0, 200));
-  if (/-keep|-dontwarn/i.test(pgText)) pass('proguard-rules.pro: rule types shown in summary'); else fail('proguard summary: ' + pgText.slice(0, 300));
-  if (/Retrofit|Room|Gson/i.test(pgText)) pass('proguard-rules.pro: class patterns shown in keep rules table'); else fail('proguard keep rules: ' + pgText.slice(0, 300));
+  const proguardText = await page.$eval('#previewHost .pg-doc', (e) => e.textContent);
+  if (/ProGuard/i.test(proguardText)) pass('proguard-rules.pro: ProGuard badge shown'); else fail('proguard badge: ' + proguardText.slice(0, 200));
+  if (/proguard-rules\.pro/i.test(proguardText)) pass('proguard-rules.pro: filename shown'); else fail('proguard filename: ' + proguardText.slice(0, 200));
+  if (/-keep|-dontwarn/i.test(proguardText)) pass('proguard-rules.pro: rule types shown in summary'); else fail('proguard summary: ' + proguardText.slice(0, 300));
+  if (/Retrofit|Room|Gson/i.test(proguardText)) pass('proguard-rules.pro: class patterns shown in keep rules table'); else fail('proguard keep rules: ' + proguardText.slice(0, 300));
   const pgBadge = await page.$eval('#previewHost .badge-pg', (e) => e.style.background || window.getComputedStyle(e).background);
   pass('proguard-rules.pro: Android green badge rendered');
 
@@ -2542,11 +2542,11 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('dvc.yaml (DVC Pipeline)');
   await page.waitForSelector('#previewHost .dvc-doc', { timeout: 12000 });
-  const dvcText = await page.$eval('#previewHost .dvc-doc', (e) => e.textContent);
-  if (/DVC/i.test(dvcText)) pass('dvc.yaml: DVC badge shown'); else fail('dvc badge: ' + dvcText.slice(0, 200));
-  if (/prepare|train|evaluate/i.test(dvcText)) pass('dvc.yaml: pipeline stages shown'); else fail('dvc stages: ' + dvcText.slice(0, 300));
-  if (/python src\/prepare\.py|python src\/train\.py/i.test(dvcText)) pass('dvc.yaml: stage commands shown'); else fail('dvc commands: ' + dvcText.slice(0, 300));
-  if (/Dependencies|Outputs|Parameters/i.test(dvcText)) pass('dvc.yaml: stage dep/out/param lists shown'); else fail('dvc lists: ' + dvcText.slice(0, 300));
+  const dvPipelineText = await page.$eval('#previewHost .dvc-doc', (e) => e.textContent);
+  if (/DVC/i.test(dvPipelineText)) pass('dvc.yaml: DVC badge shown'); else fail('dvc badge: ' + dvPipelineText.slice(0, 200));
+  if (/prepare|train|evaluate/i.test(dvPipelineText)) pass('dvc.yaml: pipeline stages shown'); else fail('dvc stages: ' + dvPipelineText.slice(0, 300));
+  if (/python src\/prepare\.py|python src\/train\.py/i.test(dvPipelineText)) pass('dvc.yaml: stage commands shown'); else fail('dvc commands: ' + dvPipelineText.slice(0, 300));
+  if (/Dependencies|Outputs|Parameters/i.test(dvPipelineText)) pass('dvc.yaml: stage dep/out/param lists shown'); else fail('dvc lists: ' + dvPipelineText.slice(0, 300));
 
   // ── MLflow Project viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -2790,4 +2790,48 @@ export async function run(ctx) {
   if (/application|provider|flow/i.test(atkText)) pass('authentik-blueprint.yaml: model types shown'); else fail('authentik models: ' + atkText.slice(0, 300));
   if (/example-application|example-login-flow|myapp-provider/i.test(atkText)) pass('authentik-blueprint.yaml: entry identifiers shown'); else fail('authentik entries: ' + atkText.slice(0, 300));
   if (!/EXAMPLE_SECRET_DO_NOT_USE/i.test(atkText)) pass('authentik-blueprint.yaml: secrets masked'); else fail('authentik secrets not masked');
+
+  // ── .NET / MSBuild known-file viewers ──
+
+  // csproj viewer
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('app.csproj');
+  await page.waitForSelector('#previewHost .cs-doc', { timeout: 12000 });
+  const csprojText = await page.$eval('#previewHost .cs-doc', (e) => e.textContent);
+  if (/\.NET Project/i.test(csprojText)) pass('app.csproj: .NET Project badge shown'); else fail('csproj badge: ' + csprojText.slice(0, 200));
+  if (/Microsoft\.NET\.Sdk/i.test(csprojText)) pass('app.csproj: SDK name shown in header'); else fail('csproj sdk: ' + csprojText.slice(0, 300));
+  if (/net8\.0/i.test(csprojText)) pass('app.csproj: target framework shown'); else fail('csproj tf: ' + csprojText.slice(0, 300));
+  if (/Serilog|Polly|Npgsql/i.test(csprojText)) pass('app.csproj: package references listed'); else fail('csproj pkgs: ' + csprojText.slice(0, 300));
+  if (/MyApp\.Core|MyApp\.Infrastructure/i.test(csprojText)) pass('app.csproj: project references listed'); else fail('csproj projrefs: ' + csprojText.slice(0, 300));
+
+  // nuget-config viewer
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nuget.config');
+  await page.waitForSelector('#previewHost .nu-doc', { timeout: 12000 });
+  const nugetText = await page.$eval('#previewHost .nu-doc', (e) => e.textContent);
+  if (/NuGet/i.test(nugetText)) pass('nuget.config: NuGet badge shown'); else fail('nuget badge: ' + nugetText.slice(0, 200));
+  if (/nuget\.org/i.test(nugetText)) pass('nuget.config: nuget.org source listed'); else fail('nuget source: ' + nugetText.slice(0, 300));
+  if (/MyCompany Feed|dev\.azure\.com/i.test(nugetText)) pass('nuget.config: private feed source listed'); else fail('nuget private: ' + nugetText.slice(0, 300));
+  if (/clears inherited sources|globalPackagesFolder/i.test(nugetText)) pass('nuget.config: config options or clear flag shown'); else fail('nuget opts: ' + nugetText.slice(0, 300));
+
+  // Directory.Build.props viewer
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Directory.Build.props');
+  await page.waitForSelector('#previewHost .db-doc', { timeout: 12000 });
+  const dbPropsText = await page.$eval('#previewHost .db-doc', (e) => e.textContent);
+  if (/MSBuild/i.test(dbPropsText)) pass('Directory.Build.props: MSBuild badge shown'); else fail('db badge: ' + dbPropsText.slice(0, 200));
+  if (/LangVersion|Nullable|TreatWarningsAsErrors/i.test(dbPropsText)) pass('Directory.Build.props: well-known properties shown'); else fail('db props: ' + dbPropsText.slice(0, 300));
+  if (/ManagePackageVersionsCentrally/i.test(dbPropsText)) pass('Directory.Build.props: CPM property shown'); else fail('db cpm: ' + dbPropsText.slice(0, 300));
+  if (/Microsoft\.SourceLink/i.test(dbPropsText)) pass('Directory.Build.props: package reference shown'); else fail('db pkgref: ' + dbPropsText.slice(0, 300));
+
+  // msbuild-props viewer (Common.props)
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Common.props (MSBuild)');
+  await page.waitForSelector('#previewHost .mb-doc', { timeout: 12000 });
+  const mbPropsText = await page.$eval('#previewHost .mb-doc', (e) => e.textContent);
+  if (/MSBuild/i.test(mbPropsText)) pass('Common.props: MSBuild badge shown'); else fail('mb badge: ' + mbPropsText.slice(0, 200));
+  if (/LangVersion|Nullable|TreatWarningsAsErrors/i.test(mbPropsText)) pass('Common.props: properties shown'); else fail('mb props: ' + mbPropsText.slice(0, 300));
+  if (/Newtonsoft\.Json|Microsoft\.Extensions\.Logging/i.test(mbPropsText)) pass('Common.props: package versions listed'); else fail('mb pkgvers: ' + mbPropsText.slice(0, 300));
+  if (/PrintBuildInfo/i.test(mbPropsText)) pass('Common.props: target element shown'); else fail('mb targets: ' + mbPropsText.slice(0, 300));
+  if (/Custom\.targets/i.test(mbPropsText)) pass('Common.props: import element shown'); else fail('mb imports: ' + mbPropsText.slice(0, 300));
 }
