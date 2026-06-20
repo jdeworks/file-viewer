@@ -9553,5 +9553,59 @@
     "enhanced": true,
     "description": "Wakapi WakaTime-compatible time tracking server configuration with database, security, mail, and leaderboard settings.",
     "knownFile": "wakapi-config"
+  },
+  {
+    "file": "outline.env",
+    "label": "outline.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "Outline wiki server environment-variable configuration with server, security, database, Redis, S3 storage, OIDC auth, and email settings.",
+    "knownFile": "outline-config"
+  },
+  {
+    "file": "linkding.env",
+    "label": "linkding.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "Linkding bookmark manager environment-variable configuration with admin, server, database, auth proxy, and feature settings.",
+    "knownFile": "linkding-config"
+  },
+  {
+    "file": "plausible.env",
+    "label": "plausible.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Analytics"
+    ],
+    "enhanced": true,
+    "description": "Plausible Analytics self-hosted server environment configuration with server, security, database, email, and Google OAuth settings.",
+    "knownFile": "plausible-config"
+  },
+  {
+    "file": "umami.env",
+    "label": "umami.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Analytics"
+    ],
+    "enhanced": true,
+    "description": "Umami website analytics self-hosted server environment configuration with server, security, database, privacy, and embed settings.",
+    "knownFile": "umami-config"
   }
 ]

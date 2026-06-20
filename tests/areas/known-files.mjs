@@ -5240,4 +5240,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('wakapi.yml');
   pass(await page.waitForSelector('#previewHost .wkapi-doc', { timeout: 12000 }), 'wakapi.yml: Wakapi badge shown');
+
+  // ── outline.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('outline.env');
+  pass(await page.waitForSelector('#previewHost .outline-doc', { timeout: 12000 }), 'outline.env: Outline badge shown');
+
+  // ── linkding.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('linkding.env');
+  pass(await page.waitForSelector('#previewHost .ldng-doc', { timeout: 12000 }), 'linkding.env: Linkding badge shown');
 }
