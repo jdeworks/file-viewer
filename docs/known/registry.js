@@ -551,6 +551,7 @@ import dnfConf from '../types/text/known/dnf-conf/index.js';
 import gdbinit from '../types/text/known/gdbinit/index.js';
 import { plugin as preCommitConfig } from '../types/text/yaml/known/pre-commit-config/index.js';
 import { plugin as conkyConf } from '../types/text/known/conky-conf/index.js';
+import nanorc from '../types/text/known/nanorc/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -630,7 +631,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   analysisOptions, podfileLock, xcodeScheme, easJson,
   hostsFile, resolvConf, sshdConfig, sudoers, nfsExports, fstab, crypttab,
   sysctlConf, modprobeConf,
-  jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, emacsConfig, tmuxConf, screenrc, i3Config, swayConfig, dunstrc, polybarConf,
+  jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, emacsConfig, tmuxConf, screenrc, i3Config, swayConfig, dunstrc, polybarConf, nanorc,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,
   woodpeckerCi,

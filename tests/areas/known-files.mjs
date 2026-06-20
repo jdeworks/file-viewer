@@ -1728,6 +1728,16 @@ export async function run(ctx) {
   if (/localhost:5000|localhost:7001/i.test(lsText)) pass('launchSettings.json: application URLs shown'); else fail('launchSettings URLs: ' + lsText.slice(0, 300));
   if (/ASPNETCORE_ENVIRONMENT|Development/i.test(lsText)) pass('launchSettings.json: environment variables shown'); else fail('launchSettings env: ' + lsText.slice(0, 300));
 
+  // ── appsettings.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('appsettings.json (ASP.NET)');
+  await page.waitForSelector('#previewHost .appsettings-doc', { timeout: 12000 });
+  pass('appsettings.json: badge shown');
+  const asText = await page.$eval('#previewHost .appsettings-doc', (e) => e.textContent);
+  if (!asText.includes('DefaultConnection')) fail('appsettings.json: connection strings not shown'); else pass('appsettings.json: connection strings shown');
+  if (asText.includes('secret123') || asText.includes('super-secret-jwt')) fail('appsettings.json: secrets leaked'); else pass('appsettings.json: secrets masked');
+  if (/Information|Warning/i.test(asText)) pass('appsettings.json: log levels shown'); else fail('appsettings.json: log levels not shown: ' + asText.slice(0, 200));
+
   // ── terragrunt.hcl viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('terragrunt.hcl (Terragrunt)');
