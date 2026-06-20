@@ -5511,5 +5511,160 @@
     ],
     "enhanced": true,
     "description": "OSV-Scanner config: vulnerability scanning config for open source dependencies."
+  },
+  {
+    "label": "cloudformation.yaml (CloudFormation)",
+    "file": "cloudformation.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "AWS CloudFormation template: web app with S3, Lambda, DynamoDB, IAM, and API Gateway resources.",
+    "knownFile": "cfn-template"
+  },
+  {
+    "label": "sam-template.yaml (AWS SAM)",
+    "file": "sam-template.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "AWS SAM template: serverless REST API with 3 functions, DynamoDB table, and Cognito auth.",
+    "knownFile": "sam-template"
+  },
+  {
+    "label": "cdk.json (AWS CDK)",
+    "file": "cdk.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "AWS CDK app config: TypeScript app entry, 23 context keys, watch settings.",
+    "knownFile": "cdk-json"
+  },
+  {
+    "label": "samconfig.toml (SAM Config)",
+    "file": "samconfig.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "SAM CLI config: deploy parameters for default/dev, staging, and prod environments.",
+    "knownFile": "aws-sam-config"
+  },
+  {
+    "label": "consul.hcl (HashiCorp Consul)",
+    "file": "consul.hcl",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "HashiCorp Consul agent/server config: datacenter, data directory, and cluster settings.",
+    "knownFile": "consul-config"
+  },
+  {
+    "label": "k8s-rbac.yaml (Kubernetes RBAC)",
+    "file": "k8s-rbac.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Kubernetes RBAC: ClusterRole and ClusterRoleBinding for pod access control.",
+    "knownFile": "k8s-rbac"
+  },
+  {
+    "label": "k8s-network-policy.yaml",
+    "file": "k8s-network-policy.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Kubernetes NetworkPolicy: ingress/egress traffic rules for pod isolation.",
+    "knownFile": "k8s-network-policy"
+  },
+  {
+    "label": "k8s-hpa.yaml (HPA)",
+    "file": "k8s-hpa.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Kubernetes HorizontalPodAutoscaler: CPU/memory-based pod scaling rules.",
+    "knownFile": "k8s-hpa"
+  },
+  {
+    "label": "k8s-ingress.yaml",
+    "file": "k8s-ingress.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Kubernetes Ingress: HTTP routing rules for external access.",
+    "knownFile": "k8s-ingress"
+  },
+  {
+    "label": "istio-virtual-service.yaml (Istio)",
+    "file": "istio-virtual-service.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Istio VirtualService + DestinationRule: traffic routing, subset weighting, header match.",
+    "knownFile": "istio-config"
+  },
+  {
+    "label": "linkerd-config.yaml (Linkerd)",
+    "file": "linkerd-config.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Linkerd Server + ServerAuthorization + MeshTLSAuthentication policy resources.",
+    "knownFile": "linkerd-config"
+  },
+  {
+    "label": "etcd.yaml",
+    "file": "etcd.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "etcd cluster config: member identity, peer/client URLs, 3-member initial cluster, TLS paths.",
+    "knownFile": "etcd-config"
+  },
+  {
+    "label": "k8s-role.yaml",
+    "file": "k8s-role.yaml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Kubernetes RBAC Role manifest: rules for resource access in a namespace."
   }
 ]

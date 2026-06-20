@@ -1,0 +1,55 @@
+skips:
+  - B101  # assert_used (common in tests)
+  - B104  # hardcoded_bind_all_interfaces
+  - B108  # probable_tmp_dir
+  - B311  # random (standard pseudo-random)
+  - B314  # blacklist xml.etree.ElementTree
+  - B320  # xml_bad_expatreader
+  - B405  # import_xml_etree
+  - B410  # import_xml_lxml
+  - B506  # yaml_load (we use safe_load)
+  - B601  # paramiko_calls (internal usage)
+
+tests:
+  - B102  # exec_used
+  - B103  # set_bad_file_permissions
+  - B201  # flask_debug_true
+  - B301  # pickle (avoid)
+  - B302  # marshal (avoid)
+  - B303  # md5 weak hash
+  - B304  # ciphers - ECB mode
+  - B305  # cipher_modes
+  - B307  # eval
+  - B324  # hashlib weak hashes
+  - B501  # request_with_no_cert_validation
+  - B502  # ssl_with_bad_version
+  - B503  # ssl_with_bad_defaults
+  - B504  # ssl_with_no_version
+  - B505  # weak_cryptographic_key
+  - B601  # paramiko_calls
+  - B602  # subprocess_popen_with_shell_equals_true
+  - B603  # subprocess_without_shell_equals_true
+  - B604  # any_other_function_with_shell_equals_true
+  - B605  # start_process_with_a_shell
+  - B607  # start_process_with_partial_path
+  - B608  # hardcoded_sql_expressions
+  - B703  # django_mark_safe
+
+exclude_dirs:
+  - tests
+  - docs
+  - migrations
+  - .venv
+  - venv
+  - node_modules
+  - build
+  - dist
+
+severity: MEDIUM
+confidence: MEDIUM
+
+assert_used:
+  skips:
+    - "*_test.py"
+    - "test_*.py"
+    - "conftest.py"

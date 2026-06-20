@@ -35,6 +35,10 @@ import pipfile from '../types/text/known/pipfile/index.js';
 import openapi from '../types/text/known/openapi/index.js';
 import githubActions from '../types/text/yaml/known/github-actions/index.js';
 import k8sManifest from '../types/text/yaml/known/k8s-manifest/index.js';
+import k8sRbac from '../types/text/yaml/known/k8s-rbac/index.js';
+import k8sNetworkPolicy from '../types/text/yaml/known/k8s-network-policy/index.js';
+import k8sHpa from '../types/text/yaml/known/k8s-hpa/index.js';
+import k8sIngress from '../types/text/yaml/known/k8s-ingress/index.js';
 import pubspec from '../types/text/yaml/known/pubspec/index.js';
 import netlifyToml from '../types/text/toml/known/netlify/index.js';
 import vercelJson from '../types/text/json/known/vercel/index.js';
@@ -148,6 +152,7 @@ import nginxConf from '../types/text/known/nginx-conf/index.js';
 import moonYml from '../types/text/yaml/known/moon/index.js';
 import vagrantfile from '../types/text/known/vagrantfile/index.js';
 import caddyfile from '../types/text/known/caddyfile/index.js';
+import consulConfig from '../types/text/known/consul-config/index.js';
 import renderYaml from '../types/text/yaml/known/render-yaml/index.js';
 import railwayJson from '../types/text/json/known/railway-json/index.js';
 import crowdinYml from '../types/text/yaml/known/crowdin-yml/index.js';
@@ -315,6 +320,21 @@ import condaEnv from '../types/text/yaml/known/conda-env/index.js';
 import pipConf from '../types/text/known/pip-conf/index.js';
 import nodeVersionFile from '../types/text/known/node-version-file/index.js';
 import dockerBake from '../types/text/known/docker-bake/index.js';
+import flake8 from '../types/text/ini/known/flake8/index.js';
+import pylintrc from '../types/text/ini/known/pylintrc/index.js';
+import setupCfg from '../types/text/ini/known/setup-cfg/index.js';
+import banditYaml from '../types/text/yaml/known/bandit-yaml/index.js';
+import istioConfig from '../types/text/yaml/known/istio-config/index.js';
+import linkerdConfig from '../types/text/yaml/known/linkerd-config/index.js';
+import etcdConfig from '../types/text/yaml/known/etcd-config/index.js';
+import kafkaServerProps from '../types/text/known/kafka-server-props/index.js';
+import rabbitmqConf from '../types/text/known/rabbitmq-conf/index.js';
+import natsConfig from '../types/text/known/nats-config/index.js';
+import zookeeperConfig from '../types/text/known/zookeeper-config/index.js';
+import samTemplate from '../types/text/yaml/known/sam-template/index.js';
+import cfnTemplate from '../types/text/yaml/known/cfn-template/index.js';
+import cdkJson from '../types/text/json/known/cdk-json/index.js';
+import awsSamConfig from '../types/text/toml/known/aws-sam-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -375,10 +395,17 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   gleamToml, goWork, grafanaIni, growthbook,
   jekyllConfig, juliaProject, kongConfig, launchSettings,
   nimble, packagesConfig, podspec, redisConf, mongodConf, myCnf, postgresqlConf, pgbouncerIni, shardYml,
-  tauriConf, traefikConfig, unleashConfig, vaultHcl,
+  tauriConf, traefikConfig, unleashConfig, vaultHcl, consulConfig,
   vectorToml, wailsJson, webConfig, xcconfig,
   bitbucketPipelines, tektonPipeline, argoCdApp, fluxHelmRelease,
-  semgrepConfig, codeclimateConfig, gitleaksConfig, osvScanner];
+  k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress,
+  semgrepConfig, codeclimateConfig, gitleaksConfig, osvScanner,
+  condaEnv, pipConf, nodeVersionFile, dockerBake,
+  flake8, pylintrc, setupCfg, banditYaml,
+  istioConfig, linkerdConfig, etcdConfig,
+  samTemplate, cfnTemplate, cdkJson, awsSamConfig,
+  kafkaServerProps, rabbitmqConf, natsConfig, zookeeperConfig,
+];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
     try { if (k.match(intake, baseType)) return k; } catch { /* a bad matcher never breaks detection */ }

@@ -178,6 +178,49 @@ export async function run(ctx) {
   if (/Deployment/i.test(k8sText)) pass('Kubernetes: kind shown'); else fail('k8s kind: ' + k8sText.slice(0, 200));
   if (/web-app|production/i.test(k8sText)) pass('Kubernetes: name/namespace shown'); else fail('k8s meta: ' + k8sText.slice(0, 200));
 
+  // ── Kubernetes RBAC viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('k8s-role.yaml');
+  await page.waitForSelector('#previewHost .rbac-doc', { timeout: 12000 });
+  const rbacText = await page.$eval('#previewHost .rbac-doc', (e) => e.textContent);
+  if (/K8s RBAC/i.test(rbacText)) pass('k8s-rbac: badge shown'); else fail('k8s-rbac badge: ' + rbacText.slice(0, 200));
+  if (/ClusterRole/i.test(rbacText)) pass('k8s-rbac: kind shown'); else fail('k8s-rbac kind: ' + rbacText.slice(0, 200));
+  if (/pod-reader/i.test(rbacText)) pass('k8s-rbac: name shown'); else fail('k8s-rbac name: ' + rbacText.slice(0, 200));
+  if (/pods|deployments/i.test(rbacText)) pass('k8s-rbac: resources shown'); else fail('k8s-rbac resources: ' + rbacText.slice(0, 300));
+  if (/get|list|watch/i.test(rbacText)) pass('k8s-rbac: verbs shown'); else fail('k8s-rbac verbs: ' + rbacText.slice(0, 300));
+
+  // ── Kubernetes NetworkPolicy viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('k8s-network-policy.yaml');
+  await page.waitForSelector('#previewHost .np-doc', { timeout: 12000 });
+  const npText = await page.$eval('#previewHost .np-doc', (e) => e.textContent);
+  if (/NetworkPolicy/i.test(npText)) pass('k8s-network-policy: badge shown'); else fail('k8s-network-policy badge: ' + npText.slice(0, 200));
+  if (/api-server-policy/i.test(npText)) pass('k8s-network-policy: name shown'); else fail('k8s-network-policy name: ' + npText.slice(0, 200));
+  if (/Ingress|Egress/i.test(npText)) pass('k8s-network-policy: policy types shown'); else fail('k8s-network-policy types: ' + npText.slice(0, 300));
+  if (/api-server|backend/i.test(npText)) pass('k8s-network-policy: pod selector shown'); else fail('k8s-network-policy selector: ' + npText.slice(0, 300));
+
+  // ── Kubernetes HPA viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('k8s-hpa.yaml');
+  await page.waitForSelector('#previewHost .hpa-doc', { timeout: 12000 });
+  const hpaText = await page.$eval('#previewHost .hpa-doc', (e) => e.textContent);
+  if (/HPA/i.test(hpaText)) pass('k8s-hpa: badge shown'); else fail('k8s-hpa badge: ' + hpaText.slice(0, 200));
+  if (/HorizontalPodAutoscaler/i.test(hpaText)) pass('k8s-hpa: kind shown'); else fail('k8s-hpa kind: ' + hpaText.slice(0, 200));
+  if (/api-server/i.test(hpaText)) pass('k8s-hpa: target shown'); else fail('k8s-hpa target: ' + hpaText.slice(0, 200));
+  if (/2.*20|20.*2/i.test(hpaText.replace(/\s+/g, ' '))) pass('k8s-hpa: replica range shown'); else fail('k8s-hpa replicas: ' + hpaText.slice(0, 300));
+  if (/cpu|memory/i.test(hpaText)) pass('k8s-hpa: metrics shown'); else fail('k8s-hpa metrics: ' + hpaText.slice(0, 300));
+
+  // ── Kubernetes Ingress viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('k8s-ingress.yaml');
+  await page.waitForSelector('#previewHost .ing-doc', { timeout: 12000 });
+  const ingText = await page.$eval('#previewHost .ing-doc', (e) => e.textContent);
+  if (/K8s Ingress/i.test(ingText)) pass('k8s-ingress: badge shown'); else fail('k8s-ingress badge: ' + ingText.slice(0, 200));
+  if (/webapp-ingress/i.test(ingText)) pass('k8s-ingress: name shown'); else fail('k8s-ingress name: ' + ingText.slice(0, 200));
+  if (/nginx/i.test(ingText)) pass('k8s-ingress: ingress class shown'); else fail('k8s-ingress class: ' + ingText.slice(0, 200));
+  if (/app\.example\.com|api\.example\.com/i.test(ingText)) pass('k8s-ingress: hosts shown'); else fail('k8s-ingress hosts: ' + ingText.slice(0, 300));
+  if (/frontend-svc|api-svc/i.test(ingText)) pass('k8s-ingress: backend services shown'); else fail('k8s-ingress services: ' + ingText.slice(0, 300));
+
   // ── Flutter pubspec viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Flutter pubspec.yaml (demo)');
@@ -1718,4 +1761,83 @@ export async function run(ctx) {
   if (/engine|plugin/i.test(ccText)) pass('.codeclimate.yml: engines/plugins section shown'); else fail('codeclimate engines: ' + ccText.slice(0, 300));
   if (/eslint|duplication|fixme/i.test(ccText)) pass('.codeclimate.yml: engine names shown'); else fail('codeclimate engine names: ' + ccText.slice(0, 300));
   if (/exclude/i.test(ccText)) pass('.codeclimate.yml: exclude patterns shown'); else fail('codeclimate excludes: ' + ccText.slice(0, 300));
+  // ── conda environment.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('environment.yml (Conda)');
+  await page.waitForSelector('#previewHost .conda-doc', { timeout: 12000 });
+  const condaText = await page.$eval('#previewHost .conda-doc', (e) => e.textContent);
+  if (/Conda/i.test(condaText)) pass('environment.yml: Conda badge shown'); else fail('conda-env badge: ' + condaText.slice(0, 200));
+  if (/myproject/i.test(condaText)) pass('environment.yml: env name shown'); else fail('conda-env name: ' + condaText.slice(0, 200));
+  if (/conda-forge/i.test(condaText)) pass('environment.yml: channels shown'); else fail('conda-env channels: ' + condaText.slice(0, 200));
+  if (/python=3\.11/i.test(condaText)) pass('environment.yml: python version shown'); else fail('conda-env python: ' + condaText.slice(0, 200));
+  if (/numpy|pandas/i.test(condaText)) pass('environment.yml: dependencies shown'); else fail('conda-env deps: ' + condaText.slice(0, 300));
+  if (/pip/i.test(condaText)) pass('environment.yml: pip packages section shown'); else fail('conda-env pip: ' + condaText.slice(0, 300));
+
+  // ── pip.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pip.conf');
+  await page.waitForSelector('#previewHost .pc-doc', { timeout: 12000 });
+  const pcText = await page.$eval('#previewHost .pc-doc', (e) => e.textContent);
+  if (/pip/i.test(pcText)) pass('pip.conf: pip badge shown'); else fail('pip-conf badge: ' + pcText.slice(0, 200));
+  if (/pypi\.org/i.test(pcText)) pass('pip.conf: index-url shown'); else fail('pip-conf index: ' + pcText.slice(0, 200));
+  if (/packages\.example\.com/i.test(pcText)) pass('pip.conf: trusted-host shown'); else fail('pip-conf trusted: ' + pcText.slice(0, 200));
+
+  // ── .node-version viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.node-version');
+  await page.waitForSelector('#previewHost .nv-doc', { timeout: 12000 });
+  const nvText = await page.$eval('#previewHost .nv-doc', (e) => e.textContent);
+  if (/Node\.js/i.test(nvText)) pass('.node-version: Node.js badge shown'); else fail('node-version-file badge: ' + nvText.slice(0, 200));
+  if (/20\.11\.0/.test(nvText)) pass('.node-version: version shown'); else fail('node-version-file version: ' + nvText.slice(0, 200));
+  if (/fnm|volta|nvm/i.test(nvText)) pass('.node-version: install commands shown'); else fail('node-version-file commands: ' + nvText.slice(0, 300));
+
+  // ── docker-bake.hcl viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('docker-bake.hcl');
+  await page.waitForSelector('#previewHost .bk-doc', { timeout: 12000 });
+  const bkText = await page.$eval('#previewHost .bk-doc', (e) => e.textContent);
+  if (/Docker Bake/i.test(bkText)) pass('docker-bake.hcl: Docker Bake badge shown'); else fail('docker-bake badge: ' + bkText.slice(0, 200));
+  if (/api|worker|frontend/i.test(bkText)) pass('docker-bake.hcl: target names shown'); else fail('docker-bake targets: ' + bkText.slice(0, 200));
+  if (/linux\/amd64|linux\/arm64/i.test(bkText)) pass('docker-bake.hcl: platforms shown'); else fail('docker-bake platforms: ' + bkText.slice(0, 300));
+  if (/registry\.example\.com/i.test(bkText)) pass('docker-bake.hcl: tags shown'); else fail('docker-bake tags: ' + bkText.slice(0, 300));
+
+  // ── cloudformation.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cloudformation.yaml');
+  await page.waitForSelector('#previewHost .cfn-doc', { timeout: 12000 });
+  const cfnText = await page.$eval('#previewHost .cfn-doc', (e) => e.textContent);
+  if (/CloudFormation/i.test(cfnText)) pass('cloudformation.yaml: CloudFormation badge shown'); else fail('cfn badge: ' + cfnText.slice(0, 200));
+  if (/S3|Lambda|DynamoDB|IAM|ApiGateway/i.test(cfnText)) pass('cloudformation.yaml: resource types shown'); else fail('cfn resources: ' + cfnText.slice(0, 300));
+  if (/Environment|LambdaMemory|BucketNameSuffix/i.test(cfnText)) pass('cloudformation.yaml: parameters shown'); else fail('cfn params: ' + cfnText.slice(0, 300));
+  if (/BucketName|TableName|FunctionArn|ApiEndpoint/i.test(cfnText)) pass('cloudformation.yaml: outputs shown'); else fail('cfn outputs: ' + cfnText.slice(0, 300));
+
+  // ── sam-template.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sam-template.yaml');
+  await page.waitForSelector('#previewHost .sam-doc', { timeout: 12000 });
+  const samText = await page.$eval('#previewHost .sam-doc', (e) => e.textContent);
+  if (/AWS SAM/i.test(samText)) pass('sam-template.yaml: AWS SAM badge shown'); else fail('sam badge: ' + samText.slice(0, 200));
+  if (/GetNotesFunction|CreateNoteFunction|DeleteNoteFunction/i.test(samText)) pass('sam-template.yaml: function names shown'); else fail('sam functions: ' + samText.slice(0, 300));
+  if (/nodejs20\.x/i.test(samText)) pass('sam-template.yaml: runtime shown'); else fail('sam runtime: ' + samText.slice(0, 300));
+  if (/Environment|LogRetentionDays/i.test(samText)) pass('sam-template.yaml: parameters shown'); else fail('sam params: ' + samText.slice(0, 300));
+
+  // ── cdk.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cdk.json');
+  await page.waitForSelector('#previewHost .cdk-doc', { timeout: 12000 });
+  const cdkText = await page.$eval('#previewHost .cdk-doc', (e) => e.textContent);
+  if (/AWS CDK/i.test(cdkText)) pass('cdk.json: AWS CDK badge shown'); else fail('cdk badge: ' + cdkText.slice(0, 200));
+  if (/npx ts-node|bin\/my-app\.ts/i.test(cdkText)) pass('cdk.json: app command shown'); else fail('cdk app: ' + cdkText.slice(0, 300));
+  if (/context/i.test(cdkText)) pass('cdk.json: context section shown'); else fail('cdk context: ' + cdkText.slice(0, 300));
+  if (/@aws-cdk\/aws-lambda|my-app:region/i.test(cdkText)) pass('cdk.json: context keys shown'); else fail('cdk context keys: ' + cdkText.slice(0, 300));
+
+  // ── samconfig.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('samconfig.toml');
+  await page.waitForSelector('#previewHost .smc-doc', { timeout: 12000 });
+  const smcText = await page.$eval('#previewHost .smc-doc', (e) => e.textContent);
+  if (/SAM Config/i.test(smcText)) pass('samconfig.toml: SAM Config badge shown'); else fail('smc badge: ' + smcText.slice(0, 200));
+  if (/default|staging|prod/i.test(smcText)) pass('samconfig.toml: environments shown'); else fail('smc environments: ' + smcText.slice(0, 300));
+  if (/stack_name|notes-app/i.test(smcText)) pass('samconfig.toml: stack_name shown'); else fail('smc stack_name: ' + smcText.slice(0, 300));
+  if (/region|us-east-1|eu-west-1/i.test(smcText)) pass('samconfig.toml: regions shown'); else fail('smc regions: ' + smcText.slice(0, 300));
 }

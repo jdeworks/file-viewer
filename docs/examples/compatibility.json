@@ -12812,23 +12812,16 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "pylintrc": {
-      "label": "pylintrc",
-      "baseType": "text",
+    "conda-env": {
+      "label": "environment.yml",
+      "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [
-        ".pylintrc"
+        "environment.yml"
       ],
-      "extensions": [],
-      "previewDepth": "rich",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "none",
-      "testCoverage": "none",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": true,
-      "securityLimitations": [],
-      "knownParserGaps": [],
+      "extensions": [
+        ".yml"
+      ],
       "capabilities": {
         "rawView": true,
         "preview": true,
@@ -12836,25 +12829,134 @@
         "magicSelector": false,
         "screenshot": true
       },
-      "fileExamplesSlug": null
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "pip-conf": {
+      "label": "pip.conf",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "pip.conf"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "node-version-file": {
+      "label": ".node-version",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        ".node-version"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "docker-bake": {
+      "label": "docker-bake.hcl",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "docker-bake.hcl"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "consul-config": {
+      "label": "Consul Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "consul.hcl"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     },
     "flake8": {
-      "label": "flake8",
-      "baseType": "text",
+      "label": "Flake8 config",
+      "baseType": "ini",
       "support": "supported",
       "sampleFiles": [
         ".flake8"
       ],
-      "extensions": [],
-      "previewDepth": "rich",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "none",
-      "testCoverage": "none",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": true,
-      "securityLimitations": [],
-      "knownParserGaps": [],
+      "extensions": [
+        ".yml"
+      ],
       "capabilities": {
         "rawView": true,
         "preview": true,
@@ -12862,25 +12964,53 @@
         "magicSelector": false,
         "screenshot": true
       },
-      "fileExamplesSlug": null
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "pylintrc": {
+      "label": "Pylint config",
+      "baseType": "ini",
+      "support": "supported",
+      "sampleFiles": [
+        ".pylintrc"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     },
     "setup-cfg": {
-      "label": "setup-cfg",
-      "baseType": "text",
+      "label": "setup.cfg",
+      "baseType": "ini",
       "support": "supported",
       "sampleFiles": [
         "setup.cfg"
       ],
-      "extensions": [],
-      "previewDepth": "rich",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "none",
-      "testCoverage": "none",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": true,
-      "securityLimitations": [],
-      "knownParserGaps": [],
+      "extensions": [
+        ".yml"
+      ],
       "capabilities": {
         "rawView": true,
         "preview": true,
@@ -12888,25 +13018,26 @@
         "magicSelector": false,
         "screenshot": true
       },
-      "fileExamplesSlug": null
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     },
     "bandit-yaml": {
-      "label": "bandit-yaml",
-      "baseType": "text",
+      "label": "Bandit config",
+      "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [
         ".bandit"
       ],
-      "extensions": [],
-      "previewDepth": "rich",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "none",
-      "testCoverage": "none",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": true,
-      "securityLimitations": [],
-      "knownParserGaps": [],
+      "extensions": [
+        ".yml"
+      ],
       "capabilities": {
         "rawView": true,
         "preview": true,
@@ -12914,7 +13045,410 @@
         "magicSelector": false,
         "screenshot": true
       },
-      "fileExamplesSlug": null
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "istio-config": {
+      "label": "Istio Config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "istio-virtual-service.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "k8s-rbac": {
+      "label": "Kubernetes RBAC",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "k8s-role.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "k8s-network-policy": {
+      "label": "Kubernetes NetworkPolicy",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "k8s-network-policy.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "k8s-hpa": {
+      "label": "Kubernetes HPA",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "k8s-hpa.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "k8s-ingress": {
+      "label": "Kubernetes Ingress",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "k8s-ingress.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "sam-template": {
+      "label": "AWS SAM",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "sam-template.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "cfn-template": {
+      "label": "CloudFormation",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "cloudformation.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "cdk-json": {
+      "label": "AWS CDK",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "cdk.json"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "aws-sam-config": {
+      "label": "SAM Config",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "samconfig.toml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "linkerd-config": {
+      "label": "Linkerd Config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "linkerd-config.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "etcd-config": {
+      "label": "etcd Config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "kafka-server-props": {
+      "label": "Kafka server.properties",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "rabbitmq-conf": {
+      "label": "rabbitmq.conf",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "nats-config": {
+      "label": "nats.conf",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "zookeeper-config": {
+      "label": "zoo.cfg",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }
