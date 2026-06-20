@@ -1,0 +1,8 @@
+ignore:
+  - CVE-2020-8165
+  - CVE-2021-22942
+  - CVE-2022-32224
+
+update: true
+
+verbosity: verbose

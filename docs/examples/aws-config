@@ -1,0 +1,20 @@
+[default]
+region = us-east-1
+output = json
+
+[profile staging]
+region = us-west-2
+output = json
+role_arn = arn:aws:iam::123456789012:role/StagingRole
+source_profile = default
+mfa_serial = arn:aws:iam::111122223333:mfa/my-device
+
+[profile production]
+region = eu-west-1
+output = table
+role_arn = arn:aws:iam::999988887777:role/ProductionAdminRole
+source_profile = default
+
+[profile china]
+region = cn-north-1
+output = json

@@ -1,0 +1,12 @@
+ruby_version: 3.2
+
+ignore:
+  - 'db/schema.rb'
+  - 'vendor/**/*'
+
+extend:
+  - standard-rails
+  - standard-performance
+
+plugins:
+  - standard-custom

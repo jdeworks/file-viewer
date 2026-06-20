@@ -1,0 +1,69 @@
+PODS:
+  - Alamofire (5.8.1)
+  - Firebase/Analytics (10.21.0):
+    - Firebase/Core
+    - GoogleAnalytics (7.6.0)
+  - Firebase/Core (10.21.0):
+    - Firebase/CoreOnly
+    - FirebaseAnalytics (10.21.0)
+  - Firebase/CoreOnly (10.21.0):
+    - FirebaseCore (10.21.0)
+  - FirebaseCore (10.21.0):
+    - FirebaseCoreInternal (= 10.21.0)
+    - GoogleUtilities/Environment (= 7.13.1)
+    - GoogleUtilities/Logger (= 7.13.1)
+  - FirebaseCoreInternal (10.21.0):
+    - GoogleUtilities/UserDefaults (= 7.13.1)
+  - GoogleAnalytics (7.6.0)
+  - GoogleUtilities/Environment (7.13.1)
+  - GoogleUtilities/Logger (7.13.1):
+    - GoogleUtilities/Environment (= 7.13.1)
+  - GoogleUtilities/UserDefaults (7.13.1):
+    - GoogleUtilities/Logger (= 7.13.1)
+  - KeychainAccess (4.2.2)
+  - Kingfisher (7.10.2)
+  - lottie-ios (4.4.1)
+  - SDWebImage (5.18.10):
+    - SDWebImage/Core (= 5.18.10)
+  - SDWebImage/Core (5.18.10)
+  - SnapKit (5.7.1)
+
+DEPENDENCIES:
+  - Alamofire (~> 5.8)
+  - Firebase/Analytics
+  - KeychainAccess (~> 4.2)
+  - Kingfisher (~> 7.10)
+  - lottie-ios (~> 4.4)
+  - SDWebImage (~> 5.18)
+  - SnapKit (~> 5.7)
+
+SPEC REPOS:
+  trunk:
+    - Alamofire
+    - Firebase
+    - FirebaseCore
+    - FirebaseCoreInternal
+    - GoogleAnalytics
+    - GoogleUtilities
+    - KeychainAccess
+    - Kingfisher
+    - lottie-ios
+    - SDWebImage
+    - SnapKit
+
+SPEC CHECKSUMS:
+  Alamofire: b04c4de9982b10a4807e9f460c4bcf8f3c45768a
+  Firebase: 2d45ed82e1b41c498d219b23eedceec83e47ae5c
+  FirebaseCore: 5a19c0e6be8bf56d5cf9e6f8a44e44f5bc5cc7a0
+  FirebaseCoreInternal: 5af9a5aa7e8afbf08fae0e75da61e31d6a490d3f
+  GoogleAnalytics: 64f0c6af89b88d7d5dcb1ecfca354fc31c1d0b23
+  GoogleUtilities: 2c997f48b04bcf000a477bb71ef4c3e21b6b8ed4
+  KeychainAccess: aefef66a86a577b8d6a3b82a63e025c17f0ab85e
+  Kingfisher: 7c96fae2e8e5f4b5b7f8e4b3a6e4c5d8f9b0c1d2
+  lottie-ios: a04c4de9982b10a4807e9f460c4bcf8f3c45768b
+  SDWebImage: b14c4de9982b10a4807e9f460c4bcf8f3c45768c
+  SnapKit: 5e8fae2e8e5f4b5b7f8e4b3a6e4c5d8f9b0c1d3
+
+PODFILE CHECKSUM: abc123def456789abcdef0123456789abcdef01
+
+COCOAPODS: 1.15.2

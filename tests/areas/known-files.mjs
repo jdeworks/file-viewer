@@ -2035,4 +2035,47 @@ export async function run(ctx) {
   if (/OpenTelemetryCollector|otel-collector/i.test(otkText)) pass('opentelemetry-k8s.yaml: collector shown'); else fail('otk collector: ' + otkText.slice(0, 200));
   if (/deployment/i.test(otkText)) pass('opentelemetry-k8s.yaml: mode shown'); else fail('otk mode: ' + otkText.slice(0, 200));
   if (/Instrumentation|my-instrumentation/i.test(otkText)) pass('opentelemetry-k8s.yaml: instrumentation shown'); else fail('otk instrumentation: ' + otkText.slice(0, 300));
+
+  // ── aws-credentials viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('aws-credentials (AWS)');
+  await page.waitForSelector('#previewHost .awsc-doc', { timeout: 12000 });
+  const awscText = await page.$eval('#previewHost .awsc-doc', (e) => e.textContent);
+  if (/AWS Credentials/i.test(awscText)) pass('aws-credentials: AWS Credentials badge shown'); else fail('aws-credentials badge: ' + awscText.slice(0, 200));
+  if (/default|staging|production/i.test(awscText)) pass('aws-credentials: profile names shown'); else fail('aws-credentials profiles: ' + awscText.slice(0, 300));
+  if (/AKIA/i.test(awscText)) pass('aws-credentials: access key ID shown (masked)'); else fail('aws-credentials key id: ' + awscText.slice(0, 300));
+  if (/•{4,}/.test(awscText)) pass('aws-credentials: secret key is masked'); else fail('aws-credentials secret mask: ' + awscText.slice(0, 300));
+  if (/handle with care/i.test(awscText)) pass('aws-credentials: security warning shown'); else fail('aws-credentials warning: ' + awscText.slice(0, 300));
+
+  // ── aws-config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('aws-config (AWS)');
+  await page.waitForSelector('#previewHost .awscfg-doc', { timeout: 12000 });
+  const awscfgText = await page.$eval('#previewHost .awscfg-doc', (e) => e.textContent);
+  if (/AWS Config/i.test(awscfgText)) pass('aws-config: AWS Config badge shown'); else fail('aws-config badge: ' + awscfgText.slice(0, 200));
+  if (/default|staging|production|china/i.test(awscfgText)) pass('aws-config: profile names shown'); else fail('aws-config profiles: ' + awscfgText.slice(0, 300));
+  if (/us-east-1|us-west-2|eu-west-1/i.test(awscfgText)) pass('aws-config: region values shown'); else fail('aws-config regions: ' + awscfgText.slice(0, 300));
+  if (/role_arn|mfa_serial/i.test(awscfgText)) pass('aws-config: role/mfa fields shown'); else fail('aws-config fields: ' + awscfgText.slice(0, 300));
+
+  // ── kubeconfig.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('kubeconfig.yaml');
+  await page.waitForSelector('#previewHost .kc-doc', { timeout: 12000 });
+  const kcText = await page.$eval('#previewHost .kc-doc', (e) => e.textContent);
+  if (/Kubeconfig/i.test(kcText)) pass('kubeconfig.yaml: Kubeconfig badge shown'); else fail('kubeconfig badge: ' + kcText.slice(0, 200));
+  if (/dev-cluster-context/i.test(kcText)) pass('kubeconfig.yaml: current context highlighted'); else fail('kubeconfig current-context: ' + kcText.slice(0, 300));
+  if (/production-cluster|staging-cluster|dev-cluster/i.test(kcText)) pass('kubeconfig.yaml: cluster names shown'); else fail('kubeconfig clusters: ' + kcText.slice(0, 300));
+  if (/DATA\+OMITTED|REDACTED/i.test(kcText)) pass('kubeconfig.yaml: cert/token data is redacted'); else fail('kubeconfig redaction: ' + kcText.slice(0, 300));
+  if (/cluster credentials/i.test(kcText)) pass('kubeconfig.yaml: security warning shown'); else fail('kubeconfig warning: ' + kcText.slice(0, 300));
+
+  // ── gcp-service-account.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('gcp-service-account.json (GCP)');
+  await page.waitForSelector('#previewHost .gcp-doc', { timeout: 12000 });
+  const gcpText = await page.$eval('#previewHost .gcp-doc', (e) => e.textContent);
+  if (/GCP Service Account/i.test(gcpText)) pass('gcp-service-account.json: GCP Service Account badge shown'); else fail('gcp-sa badge: ' + gcpText.slice(0, 200));
+  if (/my-example-project-123/i.test(gcpText)) pass('gcp-service-account.json: project_id shown'); else fail('gcp-sa project: ' + gcpText.slice(0, 300));
+  if (/my-service-account@/i.test(gcpText)) pass('gcp-service-account.json: client_email shown'); else fail('gcp-sa email: ' + gcpText.slice(0, 300));
+  if (/REDACTED.*private key/i.test(gcpText)) pass('gcp-service-account.json: private key is redacted'); else fail('gcp-sa private key masking: ' + gcpText.slice(0, 300));
+  if (/never commit/i.test(gcpText)) pass('gcp-service-account.json: security warning shown'); else fail('gcp-sa warning: ' + gcpText.slice(0, 300));
 }

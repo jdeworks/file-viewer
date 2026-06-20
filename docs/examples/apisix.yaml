@@ -1,0 +1,72 @@
+deployment:
+  mode: traditional
+  admin:
+    admin_listen:
+      ip: 127.0.0.1
+      port: 9180
+    https_admin: false
+    admin_key:
+      - name: admin
+        key: edd1c9f034335f136f87ad84b625c8f1
+        role: admin
+
+apisix:
+  node_listen: 9080
+  enable_ipv6: true
+  enable_http2: true
+  router:
+    http: radixtree_uri
+    ssl: radixtree_sni
+  proxy_cache:
+    cache_ttl: 10s
+
+plugins:
+  - real-ip
+  - ai
+  - client-control
+  - proxy-control
+  - request-id
+  - zipkin
+  - ext-plugin-pre-req
+  - fault-injection
+  - mocking
+  - serverless-pre-function
+  - cors
+  - ip-restriction
+  - ua-restriction
+  - referer-restriction
+  - csrf
+  - uri-blocker
+  - request-validation
+  - openid-connect
+  - authz-casbin
+  - limit-req
+  - limit-count
+  - limit-conn
+  - proxy-cache
+  - proxy-rewrite
+  - proxy-mirror
+  - api-breaker
+  - traffic-split
+  - request-validation
+  - response-rewrite
+  - grpc-transcode
+  - grpc-web
+  - http-logger
+  - skywalking
+  - datadog
+  - prometheus
+  - echo
+
+etcd:
+  host:
+    - http://127.0.0.1:2379
+  prefix: /apisix
+  timeout: 30
+
+plugin_attr:
+  prometheus:
+    export_uri: /apisix/prometheus/metrics
+    export_addr:
+      ip: 127.0.0.1
+      port: 9091

@@ -1,0 +1,39 @@
+# /etc/ssh/sshd_config — OpenSSH daemon configuration
+
+# Network
+Port 22
+AddressFamily any
+ListenAddress 0.0.0.0
+ListenAddress ::
+
+# Authentication
+PermitRootLogin prohibit-password
+PasswordAuthentication no
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+PermitEmptyPasswords no
+ChallengeResponseAuthentication no
+UsePAM yes
+
+# Access control
+AllowUsers deploy admin jenkins
+AllowGroups sshusers sudo
+
+# Security
+MaxAuthTries 3
+MaxSessions 10
+LoginGraceTime 30
+StrictModes yes
+X11Forwarding no
+PrintLastLog yes
+
+# Keepalive
+ClientAliveInterval 120
+ClientAliveCountMax 2
+
+# Logging
+SyslogFacility AUTH
+LogLevel INFO
+
+# Subsystem
+Subsystem sftp /usr/lib/openssh/sftp-server

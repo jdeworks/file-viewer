@@ -1,0 +1,24 @@
+name: etcd-1
+data-dir: /var/lib/etcd
+
+listen-client-urls:
+  - http://localhost:2379
+  - http://10.0.1.10:2379
+
+advertise-client-urls: http://10.0.1.10:2379
+
+listen-peer-urls: http://10.0.1.10:2380
+
+initial-advertise-peer-urls: http://10.0.1.10:2380
+
+initial-cluster: etcd-1=http://10.0.1.10:2380,etcd-2=http://10.0.1.11:2380,etcd-3=http://10.0.1.12:2380
+
+initial-cluster-state: new
+
+initial-cluster-token: etcd-cluster-prod-token
+
+client-transport-security:
+  cert-file: /etc/etcd/pki/server.crt
+  key-file: /etc/etcd/pki/server.key
+  trusted-ca-file: /etc/etcd/pki/ca.crt
+  client-cert-auth: true

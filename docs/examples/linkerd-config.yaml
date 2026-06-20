@@ -1,0 +1,43 @@
+apiVersion: policy.linkerd.io/v1beta1
+kind: Server
+metadata:
+  name: emoji-server
+  namespace: emojivoto
+spec:
+  podSelector:
+    matchLabels:
+      app: emoji
+  port:
+    number: 8080
+    protocol: HTTP2
+  proxyProtocol: HTTP/2
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: emoji-auth
+  namespace: emojivoto
+spec:
+  server:
+    name: emoji-server
+  requiredAuthenticationRefs:
+    - name: mesh-clients
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+  client:
+    networks:
+      - cidr: 10.0.0.0/8
+      - cidr: 192.168.0.0/16
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: mesh-clients
+  namespace: emojivoto
+spec:
+  identities:
+    - "*.emojivoto.serviceaccount.identity.linkerd.cluster.local"
+  identityRefs:
+    - kind: ServiceAccount
+      name: web
+      namespace: emojivoto

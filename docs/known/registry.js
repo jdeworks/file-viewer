@@ -439,6 +439,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   flake8, pylintrc, setupCfg, awsCredentials, awsConfig,
   kubeconfig, gcpServiceAccount, banditYaml,
   istioConfig, linkerdConfig, etcdConfig,
+  kafkaServerProps, natsConfig, rabbitmqConf, zookeeperConfig,
   samTemplate, cfnTemplate, cdkJson, awsSamConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson,
   hostsFile, resolvConf, sshConfig, sshdConfig,

@@ -1,0 +1,63 @@
+## JVM configuration
+## Elasticsearch JVM options — adjust for your environment
+
+################################################################
+## IMPORTANT: JVM heap size
+################################################################
+
+# Xms represents the initial size of total heap space
+# Xmx represents the maximum size of total heap space
+# Reduce the heap size slightly below the machine's available memory
+
+-Xms2g
+-Xmx2g
+
+# Use the G1GC garbage collector
+-XX:+UseG1GC
+
+# Set the JVM stack size
+-Xss1m
+
+################################################################
+## GC configuration
+################################################################
+
+-XX:MaxGCPauseMillis=200
+-XX:G1HeapRegionSize=16m
+-XX:InitiatingHeapOccupancyPercent=30
+-XX:G1ReservePercent=10
+-XX:+ParallelRefProcEnabled
+
+# Disable explicit GC calls
+-XX:+DisableExplicitGC
+
+################################################################
+## JVM temporary directory
+################################################################
+
+-Djava.io.tmpdir=${ES_TMPDIR}
+-Djava.security.manager=allow
+
+################################################################
+## Locale settings
+################################################################
+
+-Dfile.encoding=UTF-8
+-Duser.language=en
+-Duser.country=US
+
+################################################################
+## Error handling
+################################################################
+
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=data
+-XX:ErrorFile=logs/hs_err_pid%p.log
+-XX:+ExitOnOutOfMemoryError
+
+################################################################
+## JDK 17+ flags
+################################################################
+
+--add-opens=java.base/java.io=ALL-UNNAMED
+--add-opens=java.base/java.lang=ALL-UNNAMED
