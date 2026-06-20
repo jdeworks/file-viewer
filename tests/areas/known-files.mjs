@@ -2034,6 +2034,15 @@ export async function run(ctx) {
   if (/aws-access-key|github-pat|stripe/i.test(glText)) pass('.gitleaks.toml: rule ids shown'); else fail('gitleaks rule ids: ' + glText.slice(0, 300));
   if (/allowlist/i.test(glText)) pass('.gitleaks.toml: allowlists shown'); else fail('gitleaks allowlists: ' + glText.slice(0, 300));
 
+  // ── .trufflehog.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.trufflehog.yaml');
+  await page.waitForSelector('#previewHost .tfh-doc', { timeout: 12000 });
+  const tfhText = await page.$eval('#previewHost .tfh-doc', (e) => e.textContent);
+  if (/TruffleHog/i.test(tfhText)) pass('.trufflehog.yaml: TruffleHog badge shown'); else fail('trufflehog badge: ' + tfhText.slice(0, 200));
+  if (/AWS|GitHub|Slack/i.test(tfhText)) pass('.trufflehog.yaml: detectors shown'); else fail('trufflehog detectors: ' + tfhText.slice(0, 300));
+  if (/exclude/i.test(tfhText)) pass('.trufflehog.yaml: exclude paths shown'); else fail('trufflehog paths: ' + tfhText.slice(0, 300));
+
   // ── osv-scanner.toml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('osv-scanner.toml');

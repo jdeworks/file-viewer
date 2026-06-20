@@ -431,6 +431,7 @@ import dockerStack from '../types/text/yaml/known/docker-stack/index.js';
 import semgrepConfig from '../types/text/yaml/known/semgrep-config/index.js';
 import codeclimateConfig from '../types/text/yaml/known/codeclimate-config/index.js';
 import gitleaksConfig from '../types/text/toml/known/gitleaks-config/index.js';
+import trufflehogConfig from '../types/text/yaml/known/trufflehog-config/index.js';
 import osvScanner from '../types/text/toml/known/osv-scanner/index.js';
 import condaEnv from '../types/text/yaml/known/conda-env/index.js';
 import pipConf from '../types/text/known/pip-conf/index.js';
@@ -694,7 +695,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   tauriConf, traefikConfig, unleashConfig, vaultHcl, nomadJob, consulConfig,
   vectorToml, vectorConfig, keepalivedConf, wailsJson, webConfig, xcconfig,
   bitbucketPipelines, tektonPipeline, argoCdApp, fluxKustomization, fluxHelmRelease, dockerStack,
-  semgrepConfig, codeclimateConfig, gitleaksConfig, osvScanner,
+  semgrepConfig, codeclimateConfig, gitleaksConfig, trufflehogConfig, osvScanner,
   condaEnv, pipConf, nodeVersionFile, dockerBake,
   flake8, pylintrc, setupCfg, awsCredentials, awsConfig,
   kubeconfig, gcpServiceAccount, banditYaml,

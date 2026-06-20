@@ -6177,6 +6177,19 @@
     "description": "Gitleaks secret scanning config: rules for detecting secrets in git repositories."
   },
   {
+    "name": ".trufflehog.yaml",
+    "label": ".trufflehog.yaml",
+    "file": ".trufflehog.yaml",
+    "mime": "application/yaml",
+    "category": "Security",
+    "categories": [
+      "Security"
+    ],
+    "knownFile": true,
+    "enhanced": true,
+    "description": "TruffleHog secrets scanning config: detectors, include/exclude paths, and scan settings."
+  },
+  {
     "label": "osv-scanner.toml",
     "file": "osv-scanner.toml",
     "mime": "application/toml",

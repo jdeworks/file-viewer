@@ -1,0 +1,28 @@
+# TruffleHog configuration
+
+concurrency: 8
+only_verified: false
+
+detectors:
+  include:
+    - AWS
+    - GitHub
+    - Slack
+    - Stripe
+    - Twilio
+    - SendGrid
+    - Postgres
+    - MySQL
+
+exclude_paths:
+  - "tests/"
+  - "docs/examples/"
+  - "vendor/"
+  - "node_modules/"
+  - "*.lock"
+  - "*.min.js"
+
+include_paths:
+  - "src/"
+  - "cmd/"
+  - "config/"
