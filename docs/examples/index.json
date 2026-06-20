@@ -10292,5 +10292,33 @@
     "enhanced": true,
     "description": "Speedtest Tracker automated internet speed monitoring configuration",
     "knownFile": true
+  },
+  {
+    "file": "dozzle.yaml",
+    "label": "Dozzle config",
+    "mime": "text/yaml",
+    "category": "Docker",
+    "categories": [
+      "Docker",
+      "Monitoring",
+      "Self-Hosted"
+    ],
+    "enhanced": true,
+    "description": "Dozzle Docker log viewer configuration",
+    "knownFile": true
+  },
+  {
+    "file": "forgejo.ini",
+    "label": "Forgejo config",
+    "mime": "text/plain",
+    "category": "DevOps",
+    "categories": [
+      "DevOps",
+      "Git",
+      "Self-Hosted"
+    ],
+    "enhanced": true,
+    "description": "Forgejo self-hosted Git service configuration",
+    "knownFile": true
   }
 ]

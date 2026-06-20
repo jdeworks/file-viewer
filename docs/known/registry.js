@@ -726,6 +726,8 @@ import nzbgetConfig from '../types/text/known/nzbget-config/index.js';
 import sabnzbdConfig from '../types/text/ini/known/sabnzbd-config/index.js';
 import joplinServerConfig from '../types/text/known/joplin-server-config/index.js';
 import speedtestTrackerConfig from '../types/text/known/speedtest-tracker-config/index.js';
+import dozzleConfig from '../types/text/yaml/known/dozzle-config/index.js';
+import forgejoConfig from '../types/text/ini/known/forgejo-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -912,6 +914,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   sabnzbdConfig,
   joplinServerConfig,
   speedtestTrackerConfig,
+  dozzleConfig,
+  forgejoConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

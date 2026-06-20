@@ -1,0 +1,18 @@
+addr: :8080
+base: /
+level: info
+noAnalytics: false
+hostname: docker-host
+
+auth:
+  provider: simple-password
+  users:
+    admin:
+      password: $2a$11$WUgReLlwk4v/6c7bO5t9y.SaO2hLT.kfKkPQ0DVOlSmF58OhGSU2y
+      email: admin@example.com
+
+remote:
+  - url: tcp://remote-host-1:2375
+    label: remote-1
+  - url: tcp://remote-host-2:2375
+    label: remote-2

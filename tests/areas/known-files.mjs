@@ -5575,4 +5575,16 @@ export async function run(ctx) {
   await openExample('pocket-id.env');
   await page.waitForSelector('#previewHost .pocketid-doc', { timeout: 12000 });
   pass('pocket-id.env: Pocket ID badge shown');
+
+  // ── dozzle.yaml viewer (dozzle-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dozzle.yaml');
+  await page.waitForSelector('#previewHost .dozzle-doc', { timeout: 12000 });
+  pass('dozzle.yaml: Dozzle badge shown');
+
+  // ── forgejo.ini viewer (forgejo-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('forgejo.ini');
+  await page.waitForSelector('#previewHost .forgejo-doc', { timeout: 12000 });
+  pass('forgejo.ini: Forgejo badge shown');
 }
