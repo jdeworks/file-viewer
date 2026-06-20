@@ -1422,8 +1422,8 @@ export async function run(ctx) {
   // ── conanfile.txt viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('conanfile.txt');
-  await page.waitForSelector('#previewHost .conan-doc', { timeout: 12000 });
-  const conanText = await page.$eval('#previewHost .conan-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .conanfile-doc', { timeout: 12000 });
+  const conanText = await page.$eval('#previewHost .conanfile-doc', (e) => e.textContent);
   if (/Conan/i.test(conanText)) pass('conanfile.txt: Conan badge shown'); else fail('conan badge: ' + conanText.slice(0, 200));
   if (/boost|fmt|nlohmann_json/i.test(conanText)) pass('conanfile.txt: requires listed'); else fail('conan requires: ' + conanText.slice(0, 300));
   if (/CMakeDeps|CMakeToolchain/i.test(conanText)) pass('conanfile.txt: generators shown'); else fail('conan generators: ' + conanText.slice(0, 200));
@@ -4192,4 +4192,23 @@ export async function run(ctx) {
   else pass('mix.exs: phoenix dep shown');
   if (!mixText.includes('my_app') && !mixText.includes('MyApp')) fail('mix.exs: app name not shown');
   else pass('mix.exs: app name shown');
+
+  // ── railway.json (Railway.app deploy config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('railway.json');
+  await page.waitForSelector('#previewHost .railwayjson-doc', { timeout: 12000 });
+  pass('railway.json: renders');
+  const railwayText = await page.$eval('#previewHost .railwayjson-doc', el => el.textContent);
+  if (!railwayText.includes('Railway')) fail('railway.json: missing badge'); else pass('railway.json: badge shown');
+  if (!railwayText.includes('web') && !railwayText.includes('worker')) fail('railway.json: services not shown'); else pass('railway.json: services shown');
+  if (railwayText.includes('supersecret123') || railwayText.includes('tok_abc123') || railwayText.includes('s3cr3t')) fail('railway.json: secrets leaked'); else pass('railway.json: secrets masked');
+
+  // ── render.yaml (Render.com infrastructure-as-code) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('render.yaml');
+  await page.waitForSelector('#previewHost .renderyaml-doc', { timeout: 12000 });
+  pass('render.yaml: renders');
+  const renderText = await page.$eval('#previewHost .renderyaml-doc', el => el.textContent);
+  if (!renderText.includes('Render')) fail('render.yaml: missing badge'); else pass('render.yaml: badge shown');
+  if (!renderText.includes('web-app') && !renderText.includes('web')) fail('render.yaml: services not shown'); else pass('render.yaml: services shown');
 }

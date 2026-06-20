@@ -3,7 +3,7 @@ export default {
   label: 'Railway config',
   match: (intake, baseType) => {
     if (baseType.id !== 'json') return false;
-    const name = (intake.filename || '').split('/').pop();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return name === 'railway.json';
   },
   loadRenderer: () => import('./renderer.js'),

@@ -2,7 +2,7 @@ import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.rdr-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
+.renderyaml-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
 .badge-rdr{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#46E3B7;color:#0f3630;vertical-align:middle;margin-right:8px}
 .rdr-title{font-size:18px;font-weight:700;margin:0 0 4px}
 .rdr-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px}
@@ -87,7 +87,7 @@ export async function render(intake) {
     : '';
 
   const host = document.createElement('div');
-  host.className = 'rdr-doc';
+  host.className = 'renderyaml-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="rdr-title"><span class="badge-rdr">Render</span>render.yaml</div>
 <div class="rdr-sub">${esc(sub)}</div>

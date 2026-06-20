@@ -3,7 +3,7 @@ export default {
   label: 'Render.com config',
   match: (intake, baseType) => {
     if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType.id)) return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name !== 'render.yaml') return false;
     // Require Render-specific keys to avoid false positives on generic render.yaml files
     const text = intake.text || '';

@@ -1,16 +1,16 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.mkf-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
-.badge-mkf{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#2d6a4f;color:#fff;vertical-align:middle;margin-right:8px}
-.mkf-title{font-size:18px;font-weight:700;margin:0 0 4px}
-.mkf-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 12px}
-.mkf-sec{margin:12px 0}
-.mkf-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px}
-.mkf-pills{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
-.mkf-pill{display:inline-flex;align-items:center;font-size:12px;padding:3px 10px;border-radius:12px;background:#d8f3dc;border:1px solid #74c69d;color:#1b4332;font-family:ui-monospace,monospace}
-.mkf-pill-reg{display:inline-flex;align-items:center;font-size:12px;padding:3px 10px;border-radius:12px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace}
-.mkf-stat{display:inline-block;font-size:13px;color:var(--fg-2,#888);margin-top:4px}
+.makefile-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
+.makefile-doc .badge-mkf{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#1a1a2e;color:#fff;vertical-align:middle;margin-right:8px}
+.makefile-doc .mkf-title{font-size:18px;font-weight:700;margin:0 0 4px}
+.makefile-doc .mkf-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 12px}
+.makefile-doc .mkf-sec{margin:12px 0}
+.makefile-doc .mkf-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px}
+.makefile-doc .mkf-pills{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
+.makefile-doc .mkf-pill{display:inline-flex;align-items:center;font-size:12px;padding:3px 10px;border-radius:12px;background:#e8f4fd;border:1px solid #e65c00;color:#1a1a2e;font-family:ui-monospace,monospace}
+.makefile-doc .mkf-pill-reg{display:inline-flex;align-items:center;font-size:12px;padding:3px 10px;border-radius:12px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace}
+.makefile-doc .mkf-stat{display:inline-block;font-size:13px;color:var(--fg-2,#888);margin-top:4px}
 `;
 
 export function render(intake) {
@@ -58,9 +58,9 @@ export function render(intake) {
   const varHtml = vars.length ? `<div class="mkf-stat">${vars.length} variable${vars.length !== 1 ? 's' : ''} defined</div>` : '';
 
   const host = document.createElement('div');
-  host.className = 'mkf-doc';
+  host.className = 'makefile-doc';
   host.innerHTML = `<style>${CSS}</style>
-<div class="mkf-title"><span class="badge-mkf">Make</span>Makefile</div>
+<div class="mkf-title"><span class="badge-mkf">Makefile</span>Makefile</div>
 <div class="mkf-sub">${allTargets.length} target${allTargets.length !== 1 ? 's' : ''} total</div>
 ${phonyHtml}${realHtml}${varHtml}`;
   return { parentNode: host };

@@ -4,28 +4,28 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.nu-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.nu-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
-.badge-nu{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700;background:#004880;color:#fff;vertical-align:middle;}
-.nu-title{font-size:18px;font-weight:700;margin:0;}
-.nu-sec{margin-top:16px;}
-.nu-sec h3{font-size:13px;font-weight:600;color:var(--fg-2,#888);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;}
-.nu-source-list{list-style:none;margin:0;padding:0;}
-.nu-source-item{display:flex;flex-direction:column;padding:7px 0;border-bottom:1px solid var(--border,#e8eaed);}
-.nu-source-item:last-child{border-bottom:none;}
-.nu-source-key{font-family:ui-monospace,monospace;font-weight:700;font-size:13px;color:#004880;}
-.nu-source-url{font-size:12px;color:var(--fg-2,#888);font-family:ui-monospace,monospace;word-break:break-all;}
-.nu-tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600;}
-.nu-tag.active{background:#e8f5e9;color:#276749;border:1px solid #9ae6b4;}
-.nu-tag.clear{background:#fff3cd;color:#7a5c00;border:1px solid #ffe082;}
-.nu-tag.disabled{background:#f7f7f7;color:#888;border:1px solid #ddd;}
-.nu-fallback-list{list-style:none;margin:0;padding:0;}
-.nu-fallback-item{font-size:12px;font-family:ui-monospace,monospace;color:var(--fg,#24292f);padding:3px 0;}
-.nu-kv-list{list-style:none;margin:0;padding:0;}
-.nu-kv-item{display:flex;gap:10px;font-size:12px;padding:3px 0;}
-.nu-kv-key{font-family:ui-monospace,monospace;font-weight:600;min-width:140px;flex-shrink:0;}
-.nu-kv-val{font-family:ui-monospace,monospace;color:var(--fg-2,#888);}
-.nu-err{color:#c62828;font-size:13px;}
+.nugetcfg-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.nugetcfg-doc .nu-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.nugetcfg-doc .badge-nu{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700;background:#8B4FA4;color:#fff;vertical-align:middle;}
+.nugetcfg-doc .nu-title{font-size:18px;font-weight:700;margin:0;}
+.nugetcfg-doc .nu-sec{margin-top:16px;}
+.nugetcfg-doc .nu-sec h3{font-size:13px;font-weight:600;color:var(--fg-2,#888);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;}
+.nugetcfg-doc .nu-source-list{list-style:none;margin:0;padding:0;}
+.nugetcfg-doc .nu-source-item{display:flex;flex-direction:column;padding:7px 0;border-bottom:1px solid var(--border,#e8eaed);}
+.nugetcfg-doc .nu-source-item:last-child{border-bottom:none;}
+.nugetcfg-doc .nu-source-key{font-family:ui-monospace,monospace;font-weight:700;font-size:13px;color:#8B4FA4;}
+.nugetcfg-doc .nu-source-url{font-size:12px;color:var(--fg-2,#888);font-family:ui-monospace,monospace;word-break:break-all;}
+.nugetcfg-doc .nu-tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600;}
+.nugetcfg-doc .nu-tag.active{background:#e8f5e9;color:#276749;border:1px solid #9ae6b4;}
+.nugetcfg-doc .nu-tag.clear{background:#fff3cd;color:#7a5c00;border:1px solid #ffe082;}
+.nugetcfg-doc .nu-tag.disabled{background:#f7f7f7;color:#888;border:1px solid #ddd;}
+.nugetcfg-doc .nu-fallback-list{list-style:none;margin:0;padding:0;}
+.nugetcfg-doc .nu-fallback-item{font-size:12px;font-family:ui-monospace,monospace;color:var(--fg,#24292f);padding:3px 0;}
+.nugetcfg-doc .nu-kv-list{list-style:none;margin:0;padding:0;}
+.nugetcfg-doc .nu-kv-item{display:flex;gap:10px;font-size:12px;padding:3px 0;}
+.nugetcfg-doc .nu-kv-key{font-family:ui-monospace,monospace;font-weight:600;min-width:140px;flex-shrink:0;}
+.nugetcfg-doc .nu-kv-val{font-family:ui-monospace,monospace;color:var(--fg-2,#888);}
+.nugetcfg-doc .nu-err{color:#c62828;font-size:13px;}
 `;
 
 // Get all <add key="..." value="..." /> children of a section
@@ -56,7 +56,7 @@ function hasClear(doc, sectionTag) {
 export function render(intake) {
   const text = intake.text || new TextDecoder().decode(intake.bytes || new Uint8Array());
   const host = document.createElement('div');
-  host.className = 'nu-doc';
+  host.className = 'nugetcfg-doc';
 
   let doc = null;
   try { doc = new DOMParser().parseFromString(text, 'text/xml'); } catch (e) {
@@ -76,6 +76,7 @@ export function render(intake) {
   const fallbackFolders = getAdds(doc, 'fallbackPackageFolders');
   const clearSources = hasClear(doc, 'packageSources');
   const configOptions = getAdds(doc, 'config');
+  const apiKeys = getAdds(doc, 'apikeys');
 
   const sourceItems = sources.map((s) => {
     const isDisabled = disabledSet.has(s.key.toLowerCase());
@@ -99,6 +100,11 @@ export function render(intake) {
     `<li class="nu-kv-item"><span class="nu-kv-key">${esc(c.key)}</span><span class="nu-kv-val">${esc(c.value)}</span></li>`
   ).join('');
 
+  // API keys: show the feed URL (key) but always mask the actual key value
+  const apiKeyItems = apiKeys.map((k) =>
+    `<li class="nu-kv-item"><span class="nu-kv-key" style="word-break:break-all;max-width:400px;">${esc(k.key)}</span><span class="nu-kv-val" style="font-style:italic;color:var(--fg-2,#aaa);">[configured]</span></li>`
+  ).join('');
+
   host.innerHTML = `<style>${CSS}</style>
 <div class="nu-head">
   <span class="badge-nu">NuGet</span>
@@ -107,7 +113,8 @@ export function render(intake) {
 ${clearSources ? '<div style="margin-bottom:10px;"><span class="nu-tag clear">clears inherited sources</span></div>' : ''}
 ${sources.length ? `<div class="nu-sec"><h3>Package Sources <span style="font-size:11px;font-weight:400;">(${sources.length})</span></h3><ul class="nu-source-list">${sourceItems}</ul></div>` : '<p style="color:var(--fg-2,#888);font-size:13px;">No package sources defined.</p>'}
 ${fallbackFolders.length ? `<div class="nu-sec"><h3>Fallback Folders</h3><ul class="nu-fallback-list">${fallbackItems}</ul></div>` : ''}
-${configOptions.length ? `<div class="nu-sec"><h3>Config Options</h3><ul class="nu-kv-list">${configItems}</ul></div>` : ''}`;
+${configOptions.length ? `<div class="nu-sec"><h3>Config Options</h3><ul class="nu-kv-list">${configItems}</ul></div>` : ''}
+${apiKeys.length ? `<div class="nu-sec"><h3>API Keys <span style="font-size:11px;font-weight:400;color:#888;">(${apiKeys.length} configured — values masked)</span></h3><ul class="nu-kv-list">${apiKeyItems}</ul></div>` : ''}`;
 
   return { parentNode: host };
 }
