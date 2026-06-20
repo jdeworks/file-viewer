@@ -658,6 +658,10 @@ import homerConfig from '../types/text/yaml/known/homer-config/index.js';
 import uptimeKumaConfig from '../types/text/json/known/uptime-kuma-config/index.js';
 import minifluxConf from '../types/text/known/miniflux-conf/index.js';
 import ghostConfig from '../types/text/json/known/ghost-config/index.js';
+import mealieConfig from '../types/text/known/mealie-config/index.js';
+import immichConfig from '../types/text/known/immich-config/index.js';
+import photoprismConfig from '../types/text/yaml/known/photoprism-config/index.js';
+import paperlessConf from '../types/text/known/paperless-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -802,8 +806,10 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   pdnsConf, pdnsRecursorConf,
   coturnConf, radicaleConfig, gitoliteConf,
   minifluxConf, ghostConfig,
+  mealieConfig, immichConfig,
   crowdsecConfig, crowdsecAcquis,
   homerConfig, uptimeKumaConfig,
+  photoprismConfig, paperlessConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -5124,4 +5124,50 @@ export async function run(ctx) {
   if (/Ghost/i.test(ghostText)) pass('config.production.json: Ghost badge shown in text'); else fail('ghost badge: ' + ghostText.slice(0, 200));
   if (/blog\.example\.com|127\.0\.0\.1/.test(ghostText)) pass('config.production.json: server info shown'); else fail('ghost server: ' + ghostText.slice(0, 300));
   if (/\[configured\]/.test(ghostText)) pass('config.production.json: secrets masked'); else fail('ghost secrets: ' + ghostText.slice(0, 300));
+
+  // ── gotosocial-config.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('gotosocial-config.yaml');
+  pass(await page.waitForSelector('#previewHost .gts-doc', { timeout: 12000 }), 'gotosocial-config.yaml: GoToSocial badge shown');
+  const gtsText = await page.$eval('#previewHost .gts-doc', (el) => el.textContent);
+  if (/GoToSocial/i.test(gtsText)) pass('gotosocial-config.yaml: GoToSocial badge shown in text'); else fail('gotosocial badge: ' + gtsText.slice(0, 200));
+  if (/social\.example\.org/.test(gtsText)) pass('gotosocial-config.yaml: host shown'); else fail('gotosocial host: ' + gtsText.slice(0, 300));
+  if (/\[configured\]/.test(gtsText)) pass('gotosocial-config.yaml: secrets masked'); else fail('gotosocial secrets: ' + gtsText.slice(0, 300));
+
+  // ── searxng-settings.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('searxng-settings.yml');
+  pass(await page.waitForSelector('#previewHost .sxng-doc', { timeout: 12000 }), 'searxng-settings.yml: SearXNG badge shown');
+  const sxngText = await page.$eval('#previewHost .sxng-doc', (el) => el.textContent);
+  if (/SearXNG/i.test(sxngText)) pass('searxng-settings.yml: SearXNG badge shown in text'); else fail('searxng badge: ' + sxngText.slice(0, 200));
+  if (/My SearXNG/.test(sxngText)) pass('searxng-settings.yml: instance_name shown'); else fail('searxng instance: ' + sxngText.slice(0, 300));
+  if (/\[configured\]/.test(sxngText)) pass('searxng-settings.yml: secrets masked'); else fail('searxng secrets: ' + sxngText.slice(0, 300));
+
+  // ── crowdsec-config.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('crowdsec-config.yaml (CrowdSec Config)');
+  pass(await page.waitForSelector('#previewHost .csec-doc', { timeout: 12000 }), 'crowdsec-config.yaml: CrowdSec badge shown');
+
+  // ── acquis.yaml (CrowdSec acquis) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('acquis.yaml (CrowdSec Acquis)');
+  pass(await page.waitForSelector('#previewHost .caquis-doc', { timeout: 12000 }), 'acquis.yaml: CrowdSec acquis badge shown');
+
+  // ── homer.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('homer.yml');
+  pass(await page.waitForSelector('#previewHost .homer-doc', { timeout: 12000 }), 'homer.yml: Homer badge shown');
+  const homerText = await page.$eval('#previewHost .homer-doc', (el) => el.textContent);
+  if (/Homer/i.test(homerText)) pass('homer.yml: Homer badge shown in text'); else fail('homer badge: ' + homerText.slice(0, 200));
+  if (/HomeLab Dashboard|My HomeLab/.test(homerText)) pass('homer.yml: title shown'); else fail('homer title: ' + homerText.slice(0, 300));
+  if (/Monitoring|Infrastructure/.test(homerText)) pass('homer.yml: service groups shown'); else fail('homer services: ' + homerText.slice(0, 300));
+
+  // ── uptime-kuma.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('uptime-kuma.json');
+  pass(await page.waitForSelector('#previewHost .ukuma-doc', { timeout: 12000 }), 'uptime-kuma.json: Uptime Kuma badge shown');
+  const ukumaText = await page.$eval('#previewHost .ukuma-doc', (el) => el.textContent);
+  if (/Uptime Kuma/i.test(ukumaText)) pass('uptime-kuma.json: Uptime Kuma badge shown in text'); else fail('ukuma badge: ' + ukumaText.slice(0, 200));
+  if (/3001/.test(ukumaText)) pass('uptime-kuma.json: port shown'); else fail('ukuma port: ' + ukumaText.slice(0, 300));
+  if (/0\.0\.0\.0/.test(ukumaText)) pass('uptime-kuma.json: hostname shown'); else fail('ukuma hostname: ' + ukumaText.slice(0, 300));
 }

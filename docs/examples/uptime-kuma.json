@@ -1,0 +1,11 @@
+{
+  "port": 3001,
+  "hostname": "0.0.0.0",
+  "disableAuth": false,
+  "trustProxy": true,
+  "demoMode": false,
+  "allowAllChromeAgents": false,
+  "disableAutoUpdate": false,
+  "rateLimitCheck": true,
+  "maxInputLength": 1024
+}

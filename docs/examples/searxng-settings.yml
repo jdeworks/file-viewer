@@ -1,0 +1,138 @@
+# SearXNG settings
+# https://docs.searxng.org/admin/settings/index.html
+
+general:
+  instance_name: "My SearXNG"
+  debug: false
+  privacypolicy_url: false
+  donation_url: false
+  contact_url: false
+  enable_metrics: true
+
+brand:
+  new_issue_url: https://github.com/searxng/searxng/issues/new
+  docs_url: https://docs.searxng.org/
+  public_instances: https://searx.space
+  wiki_url: https://github.com/searxng/searxng/wiki
+  issue_url: https://github.com/searxng/searxng/issues
+
+server:
+  port: 8888
+  bind_address: "127.0.0.1"
+  base_url: "https://search.example.org/"
+  limiter: false
+  image_proxy: false
+  http_protocol_version: "1.0"
+  # Protects against CSRF attacks — keep secret!
+  secret_key: "ultrasecretkey-changeme-in-production"
+
+ui:
+  static_use_hash: true
+  default_locale: ""
+  query_in_title: false
+  infinite_scroll: false
+  center_alignment: false
+  cache_url: "https://web.archive.org/web/"
+  default_theme: simple
+  theme_args:
+    simple_style: auto
+  search_on_category_select: true
+  hotkeys: vim
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  autocomplete_min: 4
+  default_lang: "en"
+  ban_time_on_fail: 5
+  max_ban_time_on_fail: 120
+  formats:
+    - html
+    - csv
+    - json
+    - rss
+
+outgoing:
+  request_timeout: 3.0
+  max_request_timeout: 15.0
+  useragent_suffix: ""
+  pool_connections: 100
+  pool_maxsize: 20
+  enable_http2: true
+
+engines:
+  - name: bing
+    engine: bing
+    shortcut: bi
+
+  - name: brave
+    engine: brave
+    shortcut: br
+
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+
+  - name: google
+    engine: google
+    shortcut: g
+    disabled: false
+
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    categories: general
+
+  - name: startpage
+    engine: startpage
+    shortcut: sp
+    disabled: false
+
+  - name: mojeek
+    engine: mojeek
+    shortcut: mjk
+
+  - name: qwant
+    engine: qwant
+    shortcut: qw
+
+  - name: yahoo
+    engine: yahoo
+    shortcut: yh
+
+  - name: archive.org
+    engine: archive
+    shortcut: ao
+
+  - name: wikidata
+    engine: wikidata
+    shortcut: wd
+
+  - name: openstreetmap
+    engine: openstreetmap
+    shortcut: osm
+    disabled: false
+
+  - name: github
+    engine: github
+    shortcut: gh
+    disabled: false
+
+  - name: stackoverflow
+    engine: stackoverflow
+    shortcut: st
+
+searx:
+  instance: "https://search.example.org/"
+
+categories_as_tabs:
+  general:
+  images:
+  videos:
+  news:
+  map:
+  music:
+  it:
+  science:
+  files:
+  social media:

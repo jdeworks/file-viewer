@@ -1,0 +1,69 @@
+---
+title: My HomeLab Dashboard
+subtitle: Internal services overview
+logo: assets/logo.png
+header: true
+footer: '<p>Keep it running.</p>'
+theme: default
+colors:
+  light: "#f6f6f6"
+  dark: "#1a1a2e"
+
+links:
+  - name: GitHub
+    icon: fab fa-github
+    url: https://github.com
+    target: _blank
+  - name: Docs
+    icon: fas fa-book
+    url: https://docs.example.com
+
+services:
+  - name: Monitoring
+    icon: fas fa-heartbeat
+    items:
+      - name: Uptime Kuma
+        subtitle: Status monitoring
+        logo: assets/uptime-kuma.png
+        url: http://uptime.home:3001
+        type: UptimeKuma
+        slug: my-status-page
+      - name: Grafana
+        subtitle: Metrics & dashboards
+        logo: assets/grafana.png
+        url: http://grafana.home:3000
+        tag: monitoring
+      - name: Prometheus
+        subtitle: Metrics backend
+        url: http://prometheus.home:9090
+        tag: monitoring
+
+  - name: Infrastructure
+    icon: fas fa-server
+    items:
+      - name: Portainer
+        subtitle: Container management
+        url: http://portainer.home:9000
+        logo: assets/portainer.png
+      - name: Traefik
+        subtitle: Reverse proxy
+        url: http://traefik.home:8080
+        tag: network
+      - name: Proxmox
+        subtitle: Hypervisor dashboard
+        url: https://proxmox.home:8006
+        tag: infra
+
+  - name: Media
+    icon: fas fa-film
+    items:
+      - name: Jellyfin
+        subtitle: Media streaming
+        url: http://jellyfin.home:8096
+        logo: assets/jellyfin.png
+      - name: Sonarr
+        subtitle: TV show management
+        url: http://sonarr.home:8989
+      - name: Radarr
+        subtitle: Movie management
+        url: http://radarr.home:7878

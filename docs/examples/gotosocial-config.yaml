@@ -1,0 +1,90 @@
+################################
+# GoToSocial Configuration File #
+################################
+
+# The hostname/domain where GoToSocial will be hosted.
+host: "social.example.org"
+
+# Port to listen on. Change this to 443 if using TLS termination directly.
+port: 8080
+
+# Network protocol. Can be "http" or "https".
+protocol: "https"
+
+# Allow the server to act on behalf of this domain.
+account-domain: "example.org"
+
+# Address to bind to. "0.0.0.0" means all interfaces.
+bind-address: "0.0.0.0"
+
+# Trust X-Forwarded-* headers from reverse proxies.
+trusted-proxies:
+  - "127.0.0.1/32"
+  - "::1"
+
+# Log level: debug, info, warn, error
+log-level: "info"
+
+# Database type: postgres or sqlite
+db-type: "postgres"
+
+# Database address (host or path for SQLite)
+db-address: "localhost"
+
+# Database port
+db-port: 5432
+
+# Database name
+db-name: "gotosocial"
+
+# Database user
+db-user: "gotosocial"
+
+# Database password — keep secret!
+db-password: "s3cur3P@ssw0rd"
+
+# Database TLS mode: disable, enable, require
+db-tls-mode: "disable"
+
+# Storage backend: local or s3
+storage-backend: "s3"
+
+# S3 endpoint
+s3-endpoint: "s3.us-east-1.amazonaws.com"
+
+# S3 bucket
+s3-bucket: "my-gotosocial-media"
+
+# S3 access key (not sensitive — can be shown)
+s3-access-key: "AKIAIOSFODNN7EXAMPLE"
+
+# S3 secret key — keep secret!
+s3-secret-key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
+# SMTP host for sending email
+smtp-host: "smtp.mailgun.org"
+
+# SMTP port
+smtp-port: 587
+
+# SMTP username
+smtp-username: "postmaster@example.org"
+
+# SMTP password — keep secret!
+smtp-password: "smtpSuperSecret!"
+
+# From address for outgoing email
+smtp-from: "noreply@example.org"
+
+# OIDC single-sign-on
+oidc-enabled: false
+oidc-issuer: "https://auth.example.org"
+oidc-client-id: "gotosocial"
+oidc-client-secret: "oidcClientSecretValue"
+
+# Registration & moderation
+accounts-registration-open: false
+accounts-approval-required: true
+accounts-reason-required: true
+instance-expose-peers: false
+instance-expose-suspended: false

@@ -9367,5 +9367,57 @@
     "enhanced": true,
     "description": "CrowdSec acquisition configuration defining log sources for different service types.",
     "knownFile": "crowdsec-acquis"
+  },
+  {
+    "file": "homer.yml",
+    "label": "homer.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Homer self-hosted dashboard configuration with service groups, links, and appearance settings.",
+    "knownFile": "homer-config"
+  },
+  {
+    "file": "uptime-kuma.json",
+    "label": "uptime-kuma.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Monitoring"
+    ],
+    "enhanced": true,
+    "description": "Uptime Kuma monitoring server configuration with auth, proxy, rate limiting, and server settings.",
+    "knownFile": "uptime-kuma-config"
+  },
+  {
+    "file": "photoprism-options.yml",
+    "label": "photoprism-options.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "PhotoPrism photo management configuration with account, site, database, and storage settings.",
+    "knownFile": "photoprism-config"
+  },
+  {
+    "file": "paperless.conf",
+    "label": "paperless.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "Paperless-ngx document management configuration with database, OCR, and admin settings.",
+    "knownFile": "paperless-conf"
   }
 ]
