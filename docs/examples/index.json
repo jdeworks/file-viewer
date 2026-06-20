@@ -6923,5 +6923,25 @@
       "Config",
       "Network"
     ]
+  },
+  {
+    "label": "settings.xml (Maven)",
+    "file": "settings.xml",
+    "mime": "application/xml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Java"
+    ]
+  },
+  {
+    "label": "pg_hba.conf",
+    "file": "pg_hba.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Database"
+    ]
   }
 ]

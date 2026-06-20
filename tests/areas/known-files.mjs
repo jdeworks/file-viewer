@@ -2844,6 +2844,15 @@ export async function run(ctx) {
   if (/redacted/i.test(wgText)) pass('wg0.conf: private key redacted'); else fail('wireguard key: ' + wgText.slice(0, 300));
   if (/Peer|AllowedIPs/i.test(wgText)) pass('wg0.conf: peers shown'); else fail('wireguard peers: ' + wgText.slice(0, 300));
 
+  // ── openvpn-config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('client.ovpn');
+  await page.waitForSelector('#previewHost .ovpn-doc', { timeout: 12000 });
+  const ovpnText = await page.$eval('#previewHost .ovpn-doc', (e) => e.textContent);
+  if (/OpenVPN/i.test(ovpnText)) pass('client.ovpn: badge shown'); else fail('openvpn badge: ' + ovpnText.slice(0, 200));
+  if (/vpn\.example\.com|remote/i.test(ovpnText)) pass('client.ovpn: remote shown'); else fail('openvpn remote: ' + ovpnText.slice(0, 300));
+  if (/embedded|private key/i.test(ovpnText)) pass('client.ovpn: embedded keys noted'); else fail('openvpn keys: ' + ovpnText.slice(0, 300));
+
   // ── shell-rc viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.bashrc');
