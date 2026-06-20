@@ -3,7 +3,7 @@ export default {
   label: 'GoReleaser',
   match: (intake, baseType) => {
     if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType?.id)) return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return ['.goreleaser.yaml', '.goreleaser.yml', 'goreleaser.yaml', 'goreleaser.yml'].includes(name);
   },
   loadRenderer: () => import('./renderer.js'),
