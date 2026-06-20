@@ -4599,4 +4599,20 @@ export async function run(ctx) {
   if (!kitchenText.includes('vagrant') && !kitchenText.includes('driver')) fail('.kitchen.yml: no driver shown'); else pass('.kitchen.yml: driver shown');
   if (!kitchenText.includes('ubuntu') && !kitchenText.includes('centos') && !kitchenText.includes('platform')) fail('.kitchen.yml: no platforms shown'); else pass('.kitchen.yml: platforms shown');
   if (!kitchenText.includes('default') && !kitchenText.includes('suite')) fail('.kitchen.yml: no suites shown'); else pass('.kitchen.yml: suites shown');
+
+  // ── shopify.app.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('shopify.app.toml');
+  pass(await page.waitForSelector('#previewHost .shopifyapp-doc', { timeout: 12000 }), 'shopify.app.toml: shopifyapp-doc shown');
+  const shopifyText = await page.$eval('#previewHost .shopifyapp-doc', el => el.textContent);
+  if (!shopifyText.includes('Shopify')) fail('shopify.app.toml: missing badge'); else pass('shopify.app.toml: badge shown');
+  if (!shopifyText.includes('scope') && !shopifyText.includes('products') && !shopifyText.includes('orders')) fail('shopify.app.toml: no scopes shown'); else pass('shopify.app.toml: scopes shown');
+
+  // ── .lighthouserc.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.lighthouserc.json');
+  pass(await page.waitForSelector('#previewHost .lhci-doc', { timeout: 12000 }), '.lighthouserc.json: lhci-doc shown');
+  const lhciText = await page.$eval('#previewHost .lhci-doc', el => el.textContent);
+  if (!lhciText.includes('Lighthouse')) fail('.lighthouserc.json: missing badge'); else pass('.lighthouserc.json: badge shown');
+  if (!lhciText.includes('lighthouse:recommended') && !lhciText.includes('assert') && !lhciText.includes('performance')) fail('.lighthouserc.json: no assertions shown'); else pass('.lighthouserc.json: assertions shown');
 }

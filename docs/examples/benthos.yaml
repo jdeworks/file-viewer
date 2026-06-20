@@ -1,0 +1,56 @@
+input:
+  kafka:
+    addresses:
+      - broker1.example.com:9092
+      - broker2.example.com:9092
+    consumer_group: benthos-consumer-group
+    topics:
+      - events.raw
+      - events.retries
+    start_from_oldest: false
+    commit_period: 1s
+
+pipeline:
+  threads: 4
+  processors:
+    - bloblang: |
+        root = this
+        root.event_id = uuid_v4()
+        root.ingested_at = now()
+        root.source = "kafka"
+    - http:
+        url: https://enrich.internal/lookup
+        verb: POST
+        headers:
+          Content-Type: application/json
+        timeout: 5s
+    - archive:
+        format: concatenate
+
+output:
+  http_client:
+    url: https://sink.example.com/events
+    verb: POST
+    headers:
+      Content-Type: application/json
+      Authorization: Bearer ${HTTP_TOKEN}
+    retries: 3
+    backoff:
+      initial_interval: 500ms
+      max_interval: 5s
+      max_elapsed_time: 30s
+
+buffer:
+  memory:
+    limit: 52428800
+
+logger:
+  level: INFO
+  format: logfmt
+  add_timestamp: true
+
+metrics:
+  prometheus:
+    prefix: benthos
+    path_mapping: |
+      root = this.replace("benthos_", "")

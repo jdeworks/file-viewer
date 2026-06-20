@@ -362,6 +362,8 @@ import logstashConf from '../types/text/known/logstash-conf/index.js';
 import fluentdConf from '../types/text/known/fluentd-conf/index.js';
 import lokiConfig from '../types/text/yaml/known/loki-config/index.js';
 import promtailConfig from '../types/text/yaml/known/promtail-config/index.js';
+import tempoConfig from '../types/text/yaml/known/tempo/index.js';
+import mimirConfig from '../types/text/yaml/known/mimir/index.js';
 import forgeConfig from '../types/text/known/forge-config/index.js';
 import gradleVersionCatalog from '../types/text/toml/known/gradle-version-catalog/index.js';
 import gleamToml from '../types/text/toml/known/gleam-toml/index.js';
@@ -581,6 +583,8 @@ import benthos from '../types/text/yaml/known/benthos/index.js';
 import testKitchen from '../types/text/yaml/known/test-kitchen/index.js';
 import harbor from '../types/text/yaml/known/harbor/index.js';
 import gardenIo from '../types/text/yaml/known/garden-io/index.js';
+import stryker from '../types/text/json/known/stryker/index.js';
+import airflowCfg from '../types/text/ini/known/airflow/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -713,6 +717,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   helmfile, releaseIt,
   benthos, testKitchen,
   harbor, gardenIo,
+  stryker, airflowCfg,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

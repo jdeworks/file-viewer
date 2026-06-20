@@ -377,7 +377,7 @@
     ],
     "enhanced": true,
     "knownFile": "npmignore",
-    "description": "npm publish ignore file: excludes source, tests, env files, CI config, docs, and dev tooling \u2014 keeps only dist/ output and README."
+    "description": "npm publish ignore file: excludes source, tests, env files, CI config, docs, and dev tooling — keeps only dist/ output and README."
   },
   {
     "label": ".dockerignore",
@@ -389,7 +389,7 @@
     ],
     "enhanced": true,
     "knownFile": "dockerignore",
-    "description": "Docker build context ignore file: excludes dependencies, git metadata, env secrets, tests, and docs \u2014 keeps only what the container needs."
+    "description": "Docker build context ignore file: excludes dependencies, git metadata, env secrets, tests, and docs — keeps only what the container needs."
   },
   {
     "label": ".eslintignore",
@@ -2667,7 +2667,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Renovate dependency update bot configuration \u2014 extends presets, PR limits, package rules, and vulnerability alert settings.",
+    "description": "Renovate dependency update bot configuration — extends presets, PR limits, package rules, and vulnerability alert settings.",
     "knownFile": "renovate"
   },
   {
@@ -2690,7 +2690,7 @@
     ],
     "enhanced": true,
     "knownFile": "turbo-json",
-    "description": "Turborepo build system configuration \u2014 tasks, caching, dependencies, and global env vars."
+    "description": "Turborepo build system configuration — tasks, caching, dependencies, and global env vars."
   },
   {
     "label": "dependabot.yml",
@@ -2811,7 +2811,7 @@
     ],
     "enhanced": true,
     "knownFile": "release-please",
-    "description": "Release Please configuration \u2014 automated changelog generation and GitHub releases via Conventional Commits."
+    "description": "Release Please configuration — automated changelog generation and GitHub releases via Conventional Commits."
   },
   {
     "label": "lerna.json",
@@ -2823,7 +2823,7 @@
     ],
     "enhanced": true,
     "knownFile": "lerna",
-    "description": "Lerna monorepo configuration \u2014 versioning, publishing, npm client, workspace globs, and command settings."
+    "description": "Lerna monorepo configuration — versioning, publishing, npm client, workspace globs, and command settings."
   },
   {
     "label": "nx.json",
@@ -2835,7 +2835,7 @@
     ],
     "enhanced": true,
     "knownFile": "nx",
-    "description": "Nx monorepo workspace configuration \u2014 targets, plugins, named inputs, and Nx Cloud settings."
+    "description": "Nx monorepo workspace configuration — targets, plugins, named inputs, and Nx Cloud settings."
   },
   {
     "label": "biome.json",
@@ -2855,7 +2855,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Codecov CI coverage configuration \u2014 coverage targets, flags with paths and carryforward, ignore patterns, and PR comment layout.",
+    "description": "Codecov CI coverage configuration — coverage targets, flags with paths and carryforward, ignore patterns, and PR comment layout.",
     "knownFile": "codecov"
   },
   {
@@ -3305,7 +3305,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
+    "description": "typos source code spell checker configuration — word overrides, file ignores, and check settings.",
     "knownFile": "typos"
   },
   {
@@ -3317,7 +3317,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "rustfmt Rust code formatter configuration \u2014 edition 2021, max_width 100, import ordering, and style options.",
+    "description": "rustfmt Rust code formatter configuration — edition 2021, max_width 100, import ordering, and style options.",
     "knownFile": "rustfmt-toml"
   },
   {
@@ -3329,7 +3329,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Clippy Rust linter configuration \u2014 MSRV 1.70, complexity thresholds, size limits, and test allowances.",
+    "description": "Clippy Rust linter configuration — MSRV 1.70, complexity thresholds, size limits, and test allowances.",
     "knownFile": "clippy-toml"
   },
   {
@@ -3341,7 +3341,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Rust toolchain pinning \u2014 channel 1.75.0, components (rustfmt, clippy, rust-analyzer, rust-src), and multi-platform targets.",
+    "description": "Rust toolchain pinning — channel 1.75.0, components (rustfmt, clippy, rust-analyzer, rust-src), and multi-platform targets.",
     "knownFile": "rust-toolchain"
   },
   {
@@ -5518,7 +5518,7 @@
       "Package"
     ],
     "enhanced": true,
-    "description": "Crystal language shard.yml package manifest \u2014 dependencies, version, and build targets."
+    "description": "Crystal language shard.yml package manifest — dependencies, version, and build targets."
   },
   {
     "label": "go.work",
@@ -5540,7 +5540,7 @@
       "Package"
     ],
     "enhanced": true,
-    "description": "Zig build.zig.zon package manifest \u2014 name, version, and dependencies in ZON format."
+    "description": "Zig build.zig.zon package manifest — name, version, and dependencies in ZON format."
   },
   {
     "file": "wdio.conf.js",
@@ -6827,7 +6827,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys \u2014 all secret values masked.",
+    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys — all secret values masked.",
     "knownFile": "rails-credentials"
   },
   {
@@ -6839,7 +6839,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Puma web server config: 2 workers, threads 2\u201316, production environment, preload_app enabled, plugins listed.",
+    "description": "Puma web server config: 2 workers, threads 2–16, production environment, preload_app enabled, plugins listed.",
     "knownFile": "puma-config"
   },
   {
@@ -8375,7 +8375,7 @@
       "Config",
       "Arch Linux"
     ],
-    "description": "Arch Linux makepkg build system configuration \u2014 compiler flags, build environment, and package options.",
+    "description": "Arch Linux makepkg build system configuration — compiler flags, build environment, and package options.",
     "knownFile": "makepkg-conf",
     "enhanced": true
   },
@@ -8650,5 +8650,15 @@
     "name": "garden.yml",
     "category": "DevOps",
     "knownFile": "garden-io"
+  },
+  {
+    "name": "shopify.app.toml",
+    "category": "Config",
+    "knownFile": "shopify-app"
+  },
+  {
+    "name": ".lighthouserc.json",
+    "category": "Tooling",
+    "knownFile": "lighthouserc"
   }
 ]
