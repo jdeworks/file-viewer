@@ -2416,13 +2416,14 @@ export async function run(ctx) {
   // ── kubeconfig.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('kubeconfig.yaml');
-  await page.waitForSelector('#previewHost .kc-doc', { timeout: 12000 });
-  const kcText = await page.$eval('#previewHost .kc-doc', (e) => e.textContent);
-  if (/Kubeconfig/i.test(kcText)) pass('kubeconfig.yaml: Kubeconfig badge shown'); else fail('kubeconfig badge: ' + kcText.slice(0, 200));
+  await page.waitForSelector('#previewHost .kube-doc', { timeout: 12000 });
+  const kcText = await page.$eval('#previewHost .kube-doc', (e) => e.textContent);
+  if (/kubectl/i.test(kcText)) pass('kubeconfig.yaml: kubectl badge shown'); else fail('kubeconfig badge: ' + kcText.slice(0, 200));
   if (/dev-cluster-context/i.test(kcText)) pass('kubeconfig.yaml: current context highlighted'); else fail('kubeconfig current-context: ' + kcText.slice(0, 300));
   if (/production-cluster|staging-cluster|dev-cluster/i.test(kcText)) pass('kubeconfig.yaml: cluster names shown'); else fail('kubeconfig clusters: ' + kcText.slice(0, 300));
-  if (/DATA\+OMITTED|REDACTED/i.test(kcText)) pass('kubeconfig.yaml: cert/token data is redacted'); else fail('kubeconfig redaction: ' + kcText.slice(0, 300));
+  if (/configured|cert-auth|client-cert/i.test(kcText)) pass('kubeconfig.yaml: cert/token data is redacted'); else fail('kubeconfig redaction: ' + kcText.slice(0, 300));
   if (/cluster credentials/i.test(kcText)) pass('kubeconfig.yaml: security warning shown'); else fail('kubeconfig warning: ' + kcText.slice(0, 300));
+  if (/Copy kubectl context/i.test(kcText)) pass('kubeconfig.yaml: copy command button present'); else fail('kubeconfig copy-btn: ' + kcText.slice(0, 300));
 
   // ── gcp-service-account.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -5717,4 +5718,15 @@ export async function run(ctx) {
   if (/MCP/i.test(mcpText)) pass('claude_desktop_config.json: MCP badge shown'); else fail('mcp-config badge: ' + mcpText.slice(0, 200));
   if (/server.*configured|configured/i.test(mcpText)) pass('claude_desktop_config.json: count text visible'); else fail('mcp-config count: ' + mcpText.slice(0, 300));
   if (/filesystem|brave-search|github/i.test(mcpText)) pass('claude_desktop_config.json: server names shown'); else fail('mcp-config servers: ' + mcpText.slice(0, 300));
+
+  // ── example.rdp viewer (rdp-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('example.rdp');
+  await page.waitForSelector('#previewHost .rdp-doc', { timeout: 12000 });
+  const rdpText = await page.$eval('#previewHost .rdp-doc', (e) => e.textContent);
+  if (/RDP/i.test(rdpText)) pass('example.rdp: RDP badge shown'); else fail('rdp-config badge: ' + rdpText.slice(0, 200));
+  if (/server\.example\.com|example\.com/i.test(rdpText)) pass('example.rdp: host shown'); else fail('rdp-config host: ' + rdpText.slice(0, 300));
+  if (/mstsc|xfreerdp/i.test(rdpText)) pass('example.rdp: copy command buttons present'); else fail('rdp-config copy-btn: ' + rdpText.slice(0, 300));
+  if (/configured/i.test(rdpText)) pass('example.rdp: password redacted'); else fail('rdp-config redaction: ' + rdpText.slice(0, 300));
+  if (/NLA/i.test(rdpText)) pass('example.rdp: NLA auth chip shown'); else fail('rdp-config nla: ' + rdpText.slice(0, 300));
 }

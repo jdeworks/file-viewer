@@ -2001,7 +2001,21 @@
     "category": "Other",
     "categories": [
       "Other"
-    ]
+    ],
+    "knownFile": "rdp-config",
+    "enhanced": true,
+    "description": "Windows RDP connection file: host, auth level, clipboard redirect, copy mstsc/xfreerdp commands."
+  },
+  {
+    "label": "example.rdp",
+    "file": "example.rdp",
+    "category": "Other",
+    "categories": [
+      "Other"
+    ],
+    "enhanced": true,
+    "description": "Windows RDP config: connection card, copy mstsc/xfreerdp commands, NLA chip, password redacted.",
+    "knownFile": "rdp-config"
   },
   {
     "label": "claude_desktop_config.json",

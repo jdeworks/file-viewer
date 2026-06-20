@@ -460,6 +460,7 @@ import rabbitmqConf from '../types/text/known/rabbitmq-conf/index.js';
 import natsConfig from '../types/text/known/nats-config/index.js';
 import mosquittoConf from '../types/text/known/mosquitto-conf/index.js';
 import zookeeperConfig from '../types/text/known/zookeeper-config/index.js';
+import rdpConfig from '../types/text/known/rdp-config/index.js';
 import hostsFile from '../types/text/known/hosts-file/index.js';
 import resolvConf from '../types/text/known/resolv-conf/index.js';
 import sshdConfig from '../types/text/known/sshd-config/index.js';
@@ -823,6 +824,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   kafkaServerProps, natsConfig, rabbitmqConf, mosquittoConf, zookeeperConfig,
   samTemplate, cfnTemplate, cdkJson, awsSamConfig, releasePleaseConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson, dprintConfig,
+  rdpConfig,
   hostsFile, resolvConf, sshdConfig, sshClientConfig, sudoers, nfsExports, fstab, crypttab,
   mcpConfig,
   sysctlConf, modprobeConf,
