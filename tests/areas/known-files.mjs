@@ -386,6 +386,8 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .nx-doc', { timeout: 12000 });
   const nxText = await page.$eval('#previewHost .nx-doc', (e) => e.textContent);
   if (/Nx/i.test(nxText)) pass('nx.json: badge shown'); else fail('nx badge: ' + nxText.slice(0, 200));
+  if (/build/i.test(nxText)) pass('nx.json: build target shown'); else fail('nx.json: build target not shown');
+  if (nxText.includes('abc123xyz')) fail('nx.json: cloud token leaked'); else pass('nx.json: cloud token masked');
 
   // ── biome.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1313,8 +1315,9 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .cff-doc', { timeout: 12000 });
   const cffText = await page.$eval('#previewHost .cff-doc', (e) => e.textContent);
   if (/Citation/i.test(cffText)) pass('CITATION.cff: Citation badge shown'); else fail('citation badge: ' + cffText.slice(0, 200));
-  if (/MyAwesomeTool/i.test(cffText)) pass('CITATION.cff: title shown'); else fail('citation title: ' + cffText.slice(0, 200));
-  if (/Alice|Researcher|Bob|Developer/i.test(cffText)) pass('CITATION.cff: authors shown'); else fail('citation authors: ' + cffText.slice(0, 200));
+  if (/MyResearchTool/i.test(cffText)) pass('CITATION.cff: title shown'); else fail('citation title: ' + cffText.slice(0, 200));
+  if (/Smith/i.test(cffText)) pass('CITATION.cff: authors shown'); else fail('citation authors: ' + cffText.slice(0, 200));
+  if (/10\.5281/i.test(cffText)) pass('CITATION.cff: DOI shown'); else fail('citation DOI: ' + cffText.slice(0, 200));
 
   // ── .yamllint.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -3952,4 +3955,28 @@ export async function run(ctx) {
   if (/Xmx|Xms|Heap/i.test(gpEnhText)) pass('gradle.properties: JVM heap shown'); else fail('gradle-props jvm-heap: ' + gpEnhText.slice(0, 300));
   if (/useAndroidX|Android/i.test(gpEnhText)) pass('gradle.properties: Android section shown'); else fail('gradle-props android: ' + gpEnhText.slice(0, 300));
   if (/configuration.cache|parallel|caching/i.test(gpEnhText)) pass('gradle.properties: performance settings shown'); else fail('gradle-props perf: ' + gpEnhText.slice(0, 300));
+
+  // ── haproxy.cfg (HAProxy config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('haproxy.cfg');
+  await page.waitForSelector('#previewHost .haproxy-doc', { timeout: 12000 });
+  pass('haproxy.cfg: badge shown');
+  const haSections = await page.$eval('#previewHost .haproxy-doc', el => el.textContent);
+  if (!haSections.includes('frontend')) fail('haproxy.cfg: frontend not shown');
+  else pass('haproxy.cfg: frontend shown');
+  if (!haSections.includes('backend')) fail('haproxy.cfg: backend not shown');
+  else pass('haproxy.cfg: backend shown');
+  if (haSections.includes('password')) fail('haproxy.cfg: stats password leaked');
+  else pass('haproxy.cfg: stats password masked');
+
+  // ── 50-usb.rules (udev rules) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('50-usb.rules');
+  await page.waitForSelector('#previewHost .udev-doc', { timeout: 12000 });
+  pass('50-usb.rules: badge shown');
+  const udevText = await page.$eval('#previewHost .udev-doc', el => el.textContent);
+  if (!udevText.includes('usb')) fail('50-usb.rules: USB subsystem not shown');
+  else pass('50-usb.rules: USB subsystem shown');
+  if (!udevText.includes('plugdev')) fail('50-usb.rules: group not shown');
+  else pass('50-usb.rules: plugdev group shown');
 }

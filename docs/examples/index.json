@@ -2752,7 +2752,10 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true,
+    "knownFile": "nx",
+    "description": "Nx monorepo workspace configuration \u2014 targets, plugins, named inputs, and Nx Cloud settings."
   },
   {
     "label": "biome.json",
@@ -4067,6 +4070,7 @@
       "Config"
     ],
     "enhanced": true,
+    "knownFile": "citation-cff",
     "description": "Citation File Format for software and dataset citations."
   },
   {
@@ -8171,5 +8175,29 @@
     "enhanced": true,
     "description": "Linux udev rules: USB storage permissions, YubiKey access, tty device groups, network interface naming, and script automation on device events.",
     "knownFile": "udev-rules"
+  },
+  {
+    "label": ".pre-commit-config.yaml",
+    "file": "pre-commit-config.yaml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "pre-commit framework config: repos, hook IDs, revisions, CI autofix settings, and default language versions.",
+    "knownFile": "pre-commit-config"
+  },
+  {
+    "label": "conky.conf",
+    "file": "conky.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Conky system monitor config: window placement, font, display settings, and conky.text variable template.",
+    "knownFile": "conky-conf"
   }
 ]

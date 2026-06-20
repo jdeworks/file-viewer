@@ -269,6 +269,7 @@ import msbuildProps from '../types/text/xml/known/msbuild-props/index.js';
 import nuspec from '../types/text/xml/known/nuspec/index.js';
 import stackYaml from '../types/text/yaml/known/stack-yaml/index.js';
 import cabal from '../types/text/known/cabal/index.js';
+import opamFile from '../types/text/known/opam-file/index.js';
 import packageResolved from '../types/text/json/known/package-resolved/index.js';
 import rebarConfig from '../types/text/known/rebar-config/index.js';
 import erlangSysConfig from '../types/text/known/erlang-sys-config/index.js';
@@ -491,6 +492,7 @@ import crontab from '../types/text/known/crontab/index.js';
 import clusterConfig from '../types/text/yaml/known/cluster-config/index.js';
 import certManager from '../types/text/yaml/known/cert-manager/index.js';
 import iptablesRules from '../types/text/known/iptables-rules/index.js';
+import udevRules from '../types/text/known/udev-rules/index.js';
 import grubConf from '../types/text/known/grub-conf/index.js';
 import nftablesRules from '../types/text/known/nftables-rules/index.js';
 import ufwConf from '../types/text/known/ufw-conf/index.js';
@@ -543,6 +545,8 @@ import cmusConf from '../types/text/known/cmus-conf/index.js';
 import pacmanConf from '../types/text/known/pacman-conf/index.js';
 import dnfConf from '../types/text/known/dnf-conf/index.js';
 import gdbinit from '../types/text/known/gdbinit/index.js';
+import { plugin as preCommitConfig } from '../types/text/yaml/known/pre-commit-config/index.js';
+import { plugin as conkyConf } from '../types/text/known/conky-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -566,7 +570,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   appveyor, rubocop, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
   brewfile, license, ansibleCfg, ansibleHosts, makepkgConf, gemspec, typos, cargoDeny, cargoConfig,
-  htaccess, nginxConf, apacheConf, lighttpdConf, haproxyConfig, squidConf, varnishVcl, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
+  htaccess, nginxConf, apacheConf, lighttpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
   rsyslogConf,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,
@@ -589,7 +593,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   scorecard, socketSecurity, trivyConfig, snykConfig,
   gradleVersionCatalog, gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml,
   csproj, directoryBuild, msbuildProps, nuspec,
-  stackYaml, cabal, duneBuild, packageResolved, rebarConfig, erlangSysConfig, erlangVmArgs, cpanfile,
+  stackYaml, cabal, opamFile, duneBuild, packageResolved, rebarConfig, erlangSysConfig, erlangVmArgs, cpanfile,
   rDescription, rProfile,
   docusaurusConfig, vitepressConfig, sphinxConf, doxyfile,
   drizzleConfig, knexfile, alembic, flywayConf,
@@ -645,7 +649,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   postmanCollection, graphqlSchema,
   systemdUnit, crontab,
   clusterConfig, certManager,
-  iptablesRules, grubConf, nftablesRules, ufwConf,
+  iptablesRules, udevRules, grubConf, nftablesRules, ufwConf,
   fail2banConf, apparmorProfile, smbConf,
   corefile, containerdConfig,
   postfixConf, dovecotConf, eximConf, chronyConf,
@@ -669,6 +673,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   wslConf, loaderConf,
   cmusConf, pacmanConf, dnfConf,
   gdbinit,
+  preCommitConfig, conkyConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
