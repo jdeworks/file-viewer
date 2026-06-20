@@ -10,18 +10,24 @@ const CSS = `
 .plist-table tr:last-child td{border-bottom:none;}
 .plist-key{font-weight:600;color:var(--fg,#24292f);width:40%;font-family:ui-monospace,monospace;font-size:12px;word-break:break-all;}
 .plist-val{color:var(--fg,#24292f);word-break:break-all;}
-.plist-str{color:#a31515;font-family:ui-monospace,monospace;}
-.plist-num{color:#098658;font-family:ui-monospace,monospace;}
+.plist-str{color:var(--plist-string,#a31515);font-family:ui-monospace,monospace;}
+.plist-num{color:var(--plist-number,#098658);font-family:ui-monospace,monospace;}
 .plist-true{display:inline-block;padding:1px 8px;border-radius:8px;font-size:11px;font-weight:700;background:#dcfce7;color:#14532d;border:1px solid #86efac;}
 .plist-false{display:inline-block;padding:1px 8px;border-radius:8px;font-size:11px;font-weight:700;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
-.plist-date{color:#7a3e9d;font-family:ui-monospace,monospace;}
-.plist-data{color:#7a5c00;font-family:ui-monospace,monospace;font-style:italic;}
+.plist-date{color:var(--plist-date,#7a3e9d);font-family:ui-monospace,monospace;}
+.plist-data{color:var(--plist-data,#7a5c00);font-family:ui-monospace,monospace;font-style:italic;}
 .plist-nested{font-style:italic;color:var(--fg-2,#888);}
 .plist-card{border:1px solid var(--border,#e0e0e0);border-radius:10px;overflow:hidden;margin:0 0 14px;background:var(--bg,#fff);}
 .plist-card-title{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);padding:10px 14px 6px;border-bottom:1px solid var(--border,#e8e8e8);}
 .plist-more{padding:6px 14px;font-size:12px;color:var(--fg-2,#888);font-style:italic;}
 .plist-array-item{padding:4px 14px;border-bottom:1px solid var(--border,#f0f0f0);font-size:13px;}
 .plist-array-item:last-child{border-bottom:none;}
+[data-theme="dark"] .plist-str{--plist-string:#f4897b;}
+[data-theme="dark"] .plist-num{--plist-number:#4ec9a0;}
+[data-theme="dark"] .plist-date{--plist-date:#c586c0;}
+[data-theme="dark"] .plist-data{--plist-data:#d4a84b;}
+[data-theme="dark"] .plist-true{background:#14532d;color:#86efac;border-color:#166534;}
+[data-theme="dark"] .plist-false{background:#7f1d1d;color:#fca5a5;border-color:#991b1b;}
 `;
 
 function renderValue(el, depth) {
