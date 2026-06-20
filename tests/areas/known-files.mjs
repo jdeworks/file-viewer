@@ -3313,7 +3313,7 @@ export async function run(ctx) {
 
   // ── supervisord.conf viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('supervisord.conf (Supervisor)');
+  await openExample('supervisord.conf');
   await page.waitForSelector('#previewHost .supd-doc', { timeout: 12000 });
   const supdText = await page.$eval('#previewHost .supd-doc', (e) => e.textContent);
   if (/Supervisor/i.test(supdText)) pass('supervisord.conf: badge shown'); else fail('supervisord badge: ' + supdText.slice(0, 200));
@@ -6227,12 +6227,12 @@ export async function run(ctx) {
   // ── sample.cr viewer (Crystal) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('sample.cr');
-  await page.waitForSelector('#previewHost .cr-doc', { timeout: 12000 });
+  await page.waitForSelector('#previewHost .crl-doc', { timeout: 12000 });
   pass('sample.cr: renders');
-  const crText = await page.$eval('#previewHost .cr-doc', (e) => e.textContent);
-  if (/Crystal/i.test(crText)) pass('sample.cr: Crystal badge shown'); else fail('crystal badge: ' + crText.slice(0, 200));
-  if (/json|http\/client/i.test(crText)) pass('sample.cr: requires listed'); else fail('crystal requires: ' + crText.slice(0, 300));
-  if (/Circle|Point|Shape|Color/i.test(crText)) pass('sample.cr: types listed'); else fail('crystal types: ' + crText.slice(0, 300));
+  const crystalText = await page.$eval('#previewHost .crl-doc', (e) => e.textContent);
+  if (/Crystal/i.test(crystalText)) pass('sample.cr: Crystal badge shown'); else fail('crystal badge: ' + crystalText.slice(0, 200));
+  if (/json|http\/client/i.test(crystalText)) pass('sample.cr: requires listed'); else fail('crystal requires: ' + crystalText.slice(0, 300));
+  if (/Circle|Point|Shape|Color/i.test(crystalText)) pass('sample.cr: types listed'); else fail('crystal types: ' + crystalText.slice(0, 300));
 
   // ── sample.jl viewer (Julia) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -6419,4 +6419,28 @@ export async function run(ctx) {
   const cobText = await page.$eval('#previewHost .cob-doc', (e) => e.textContent);
   if (/COBOL Program|COBOL Copybook/i.test(cobText)) pass('cobol-lang: badge shown'); else fail('cobol-lang badge: ' + cobText.slice(0, 200));
   if (/DIVISION|division/i.test(cobText)) pass('cobol-lang: divisions listed'); else fail('cobol-lang divisions: ' + cobText.slice(0, 300));
+
+  // ── gleam-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.gleam');
+  await page.waitForSelector('#previewHost .gleam-doc', { timeout: 12000 });
+  pass('gleam-lang: rendered');
+
+  // ── odin-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.odin');
+  await page.waitForSelector('#previewHost .odin-doc', { timeout: 12000 });
+  pass('odin-lang: rendered');
+
+  // ── haxe-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.hx');
+  await page.waitForSelector('#previewHost .haxe-doc', { timeout: 12000 });
+  pass('haxe-lang: rendered');
+
+  // ── ada-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.ads');
+  await page.waitForSelector('#previewHost .ada-doc', { timeout: 12000 });
+  pass('ada-lang: rendered');
 }
