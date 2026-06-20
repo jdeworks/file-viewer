@@ -2,7 +2,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 
 const CSS = `
 .relpls-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.badge-relpls{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#1a73e8;color:#fff;vertical-align:middle;margin-right:8px;}
+.badge-relpls{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#1976d2;color:#fff;vertical-align:middle;margin-right:8px;}
 .relpls-title{font-size:18px;font-weight:700;margin:0 0 4px;}
 .relpls-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 12px;}
 .relpls-sec{margin:14px 0;}
@@ -12,28 +12,36 @@ const CSS = `
 .relpls-pill.on{background:#e8f0fe;border-color:#aecbfa;color:#1a4c8b;}
 .relpls-pill.off{background:#fef2f2;border-color:#fecaca;color:#991b1b;}
 .relpls-pill.type{background:#f0fdf4;border-color:#bbf7d0;color:#166534;}
+.relpls-pill.plugin{background:#fef3c7;border-color:#fcd34d;color:#92400e;}
 .relpls-pill.hidden{background:var(--bg-2,#f6f8fa);color:var(--fg-2,#888);text-decoration:line-through;}
 .relpls-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px;}
 .relpls-table th{text-align:left;color:var(--fg-2,#888);font-size:11px;text-transform:uppercase;padding:3px 8px 3px 0;border-bottom:2px solid var(--border,#e0e0e0);}
 .relpls-table td{padding:5px 8px 5px 0;border-bottom:1px solid var(--border,#e0e0e0);vertical-align:middle;}
 .relpls-mono{font:12px/1.4 ui-monospace,monospace;}
+.relpls-kv{display:flex;gap:8px;align-items:baseline;margin:3px 0;}
+.relpls-kv-k{font-size:12px;color:var(--fg-2,#888);min-width:160px;flex-shrink:0;}
+.relpls-kv-v{font-size:13px;font-family:ui-monospace,monospace;word-break:break-all;}
 `;
 
 export function render(intake) {
   let cfg;
   try {
-    cfg = intake.parsed || JSON.parse(intake.text || '{}');
+    cfg = intake.parsed ?? JSON.parse(intake.text || '{}');
   } catch {
     return { parentNode: Object.assign(document.createElement('div'), { textContent: 'Invalid release-please-config.json.' }) };
   }
 
+  const schema = cfg['$schema'] || '';
   const releaseType = cfg['release-type'] || '';
+  const bootstrapSha = cfg['bootstrap-sha'] || '';
   const bumpMinor = cfg['bump-minor-pre-major'];
   const bumpPatch = cfg['bump-patch-for-minor-pre-major'];
   const draft = cfg['draft'];
   const prerelease = cfg['prerelease'];
+  const prTitlePattern = cfg['pull-request-title-pattern'] || '';
   const changelogSections = Array.isArray(cfg['changelog-sections']) ? cfg['changelog-sections'] : [];
   const packages = cfg['packages'] && typeof cfg['packages'] === 'object' ? cfg['packages'] : null;
+  const plugins = Array.isArray(cfg['plugins']) ? cfg['plugins'] : [];
 
   const host = document.createElement('div');
   host.className = 'relpls-doc';
@@ -55,16 +63,32 @@ export function render(intake) {
     boolChip('prerelease', prerelease),
   ].filter(Boolean).join('');
 
-  const settingsHtml = settingPills
-    ? `<div class="relpls-sec"><h3>Settings</h3><div class="relpls-pills">${settingPills}</div></div>`
+  const settingKvRows = [];
+  if (schema) settingKvRows.push(`<div class="relpls-kv"><span class="relpls-kv-k">$schema</span><span class="relpls-kv-v relpls-mono" style="font-size:11px;color:var(--fg-2,#888)">${esc(schema)}</span></div>`);
+  if (bootstrapSha) settingKvRows.push(`<div class="relpls-kv"><span class="relpls-kv-k">bootstrap-sha</span><span class="relpls-kv-v relpls-mono">${esc(bootstrapSha)}</span></div>`);
+  if (prTitlePattern) settingKvRows.push(`<div class="relpls-kv"><span class="relpls-kv-k">PR title pattern</span><span class="relpls-kv-v relpls-mono">${esc(prTitlePattern)}</span></div>`);
+
+  const settingsHtml = (settingPills || settingKvRows.length)
+    ? `<div class="relpls-sec"><h3>Settings</h3>${settingPills ? `<div class="relpls-pills">${settingPills}</div>` : ''}${settingKvRows.join('')}</div>`
     : '';
 
-  // Packages table
+  // Plugins section
+  let pluginsHtml = '';
+  if (plugins.length) {
+    const pluginPills = plugins.map((p) => {
+      const name = typeof p === 'string' ? p : (p.type || JSON.stringify(p));
+      return `<span class="relpls-pill plugin">${esc(name)}</span>`;
+    }).join('');
+    pluginsHtml = `<div class="relpls-sec"><h3>Plugins (${plugins.length})</h3><div class="relpls-pills">${pluginPills}</div></div>`;
+  }
+
+  // Packages table (up to 10)
   let packagesHtml = '';
   if (packages) {
     const pkgEntries = Object.entries(packages);
     if (pkgEntries.length) {
-      const rows = pkgEntries.map(([path, pkg]) => {
+      const shown = pkgEntries.slice(0, 10);
+      const rows = shown.map(([path, pkg]) => {
         const rt = pkg['release-type'] || releaseType || '';
         const component = pkg['component'] || '';
         const changelogPath = pkg['changelog-path'] || '';
@@ -75,10 +99,11 @@ export function render(intake) {
   <td class="relpls-mono" style="font-size:11px;color:var(--fg-2,#888)">${esc(changelogPath)}</td>
 </tr>`;
       }).join('');
+      const moreRow = pkgEntries.length > 10 ? `<tr><td colspan="4" style="color:var(--fg-2,#888);font-size:12px">…and ${pkgEntries.length - 10} more</td></tr>` : '';
       packagesHtml = `<div class="relpls-sec"><h3>Packages (${pkgEntries.length})</h3>
 <table class="relpls-table">
   <thead><tr><th>Path</th><th>Release type</th><th>Component</th><th>Changelog</th></tr></thead>
-  <tbody>${rows}</tbody>
+  <tbody>${rows}${moreRow}</tbody>
 </table></div>`;
     }
   }
@@ -105,6 +130,7 @@ export function render(intake) {
   const subtitle = [
     releaseType ? `release-type: ${releaseType}` : '',
     pkgCount ? `${pkgCount} package${pkgCount !== 1 ? 's' : ''}` : '',
+    plugins.length ? `${plugins.length} plugin${plugins.length !== 1 ? 's' : ''}` : '',
     changelogSections.length ? `${changelogSections.length} changelog section${changelogSections.length !== 1 ? 's' : ''}` : '',
   ].filter(Boolean).join(' · ');
 
@@ -116,6 +142,7 @@ export function render(intake) {
 </div>
 <div class="relpls-sub">${subtitle || 'Automated changelog and release management'}</div>
 ${settingsHtml}
+${pluginsHtml}
 ${packagesHtml}
 ${changelogHtml}`;
 

@@ -3,7 +3,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 
 const CSS = `
 .clifftoml-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.badge-clifftoml{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#f0932b;color:#fff;vertical-align:middle;margin-right:8px;}
+.badge-clifftoml{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#F4511E;color:#fff;vertical-align:middle;margin-right:8px;}
 .clifftoml-title{font-size:18px;font-weight:700;margin:0 0 2px;}
 .clifftoml-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
 .clifftoml-sec{margin:12px 0;}
@@ -19,27 +19,28 @@ const CSS = `
 .clifftoml-mono{font:12px/1.4 ui-monospace,monospace;}
 .clifftoml-template{font:12px/1.5 ui-monospace,monospace;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);border-radius:6px;padding:6px 10px;white-space:pre-wrap;word-break:break-all;max-height:80px;overflow:hidden;color:var(--fg-2,#888);}
 .clifftoml-kv{display:flex;gap:8px;align-items:baseline;margin:2px 0;}
-.clifftoml-kv-k{font-size:12px;color:var(--fg-2,#888);min-width:120px;}
+.clifftoml-kv-k{font-size:12px;color:var(--fg-2,#888);min-width:140px;}
 .clifftoml-kv-v{font-size:13px;font-family:ui-monospace,monospace;}
 `;
 
 export function render(intake) {
   let cfg = {};
   try {
-    if (intake.parsed && typeof intake.parsed === 'object') {
-      cfg = intake.parsed;
-    } else {
-      cfg = parseTOML(intake.text || '') || {};
-    }
+    cfg = (intake.parsed && typeof intake.parsed === 'object') ? intake.parsed : (parseTOML(intake.text || '') || {});
   } catch { cfg = {}; }
 
   const changelog = cfg.changelog || {};
   const git = cfg.git || {};
+  const remote = cfg.remote || {};
+  const remoteGithub = remote.github || null;
+
   const commitParsers = Array.isArray(git.commit_parsers) ? git.commit_parsers : [];
   const conventionalCommits = git.conventional_commits;
   const filterCommits = git.filter_commits;
   const filterUnconventional = git.filter_unconventional;
+  const protectBreaking = git.protect_breaking_commits;
   const tagPattern = git.tag_pattern || '';
+  const ignoreTags = git.ignore_tags;
   const trim = changelog.trim;
   const hasHeader = !!changelog.header;
   const hasFooter = !!changelog.footer;
@@ -61,22 +62,38 @@ export function render(intake) {
   if (conventionalCommits !== undefined) gitChips.push(`<span class="clifftoml-pill ${conventionalCommits ? 'on' : 'off'}">conventional_commits: ${conventionalCommits ? 'yes' : 'no'}</span>`);
   if (filterUnconventional !== undefined) gitChips.push(`<span class="clifftoml-pill ${filterUnconventional ? 'on' : 'off'}">filter_unconventional: ${filterUnconventional ? 'yes' : 'no'}</span>`);
   if (filterCommits !== undefined) gitChips.push(`<span class="clifftoml-pill ${filterCommits ? 'on' : 'off'}">filter_commits: ${filterCommits ? 'yes' : 'no'}</span>`);
-  const gitCard = gitChips.length || tagPattern
-    ? `<div class="clifftoml-sec"><h3>Git Settings</h3><div class="clifftoml-pills">${gitChips.join('')}</div>${tagPattern ? `<div class="clifftoml-kv" style="margin-top:6px"><span class="clifftoml-kv-k">tag_pattern</span><span class="clifftoml-kv-v clifftoml-mono">${esc(tagPattern)}</span></div>` : ''}</div>` : '';
+  if (protectBreaking !== undefined) gitChips.push(`<span class="clifftoml-pill ${protectBreaking ? 'on' : 'off'}">protect_breaking_commits: ${protectBreaking ? 'yes' : 'no'}</span>`);
 
-  // Commit parsers table
+  const gitKvRows = [];
+  if (tagPattern) gitKvRows.push(`<div class="clifftoml-kv"><span class="clifftoml-kv-k">tag_pattern</span><span class="clifftoml-kv-v clifftoml-mono">${esc(tagPattern)}</span></div>`);
+  if (ignoreTags !== undefined && ignoreTags !== '') gitKvRows.push(`<div class="clifftoml-kv"><span class="clifftoml-kv-k">ignore_tags</span><span class="clifftoml-kv-v clifftoml-mono">${esc(ignoreTags)}</span></div>`);
+
+  const gitCard = gitChips.length || gitKvRows.length
+    ? `<div class="clifftoml-sec"><h3>Git Settings</h3><div class="clifftoml-pills">${gitChips.join('')}</div>${gitKvRows.join('')}</div>` : '';
+
+  // Commit parsers table (up to 8 as spec says)
   const parsersHtml = commitParsers.length
-    ? `<div class="clifftoml-sec"><h3>Commit Groups (${commitParsers.length})</h3><table class="clifftoml-table"><thead><tr><th>Pattern</th><th>Group / Action</th></tr></thead><tbody>${commitParsers.slice(0, 12).map((p) => {
+    ? `<div class="clifftoml-sec"><h3>Commit Groups (${commitParsers.length})</h3><table class="clifftoml-table"><thead><tr><th>Pattern</th><th>Group / Action</th></tr></thead><tbody>${commitParsers.slice(0, 8).map((p) => {
         const pattern = p.message || p.footer || p.field || '—';
         const isSkip = p.skip === true;
         const action = isSkip ? '<span class="clifftoml-pill skip">skip</span>' : esc(p.group || '—');
         return `<tr><td><span class="clifftoml-mono">${esc(pattern)}</span></td><td>${action}</td></tr>`;
-      }).join('')}${commitParsers.length > 12 ? `<tr><td colspan="2" style="color:var(--fg-2,#888);font-size:12px">…and ${commitParsers.length - 12} more</td></tr>` : ''}</tbody></table></div>`
+      }).join('')}${commitParsers.length > 8 ? `<tr><td colspan="2" style="color:var(--fg-2,#888);font-size:12px">…and ${commitParsers.length - 8} more</td></tr>` : ''}</tbody></table></div>`
     : '';
 
   // Body template preview
   const templateHtml = bodyText
     ? `<div class="clifftoml-sec"><h3>Body Template</h3><div class="clifftoml-template">${esc(bodyText)}…</div></div>` : '';
+
+  // Remote GitHub section
+  let remoteHtml = '';
+  if (remoteGithub) {
+    const owner = remoteGithub.owner || '';
+    const repo = remoteGithub.repo || '';
+    if (owner || repo) {
+      remoteHtml = `<div class="clifftoml-sec"><h3>Remote</h3><div class="clifftoml-kv"><span class="clifftoml-kv-k">github</span><span class="clifftoml-kv-v clifftoml-mono">${esc(owner)}${owner && repo ? '/' : ''}${esc(repo)}</span></div></div>`;
+    }
+  }
 
   host.innerHTML = `<style>${CSS}</style>
 <div class="clifftoml-title"><span class="badge-clifftoml">git-cliff</span>cliff.toml</div>
@@ -84,7 +101,8 @@ export function render(intake) {
 ${changelogCard}
 ${gitCard}
 ${parsersHtml}
-${templateHtml}`;
+${templateHtml}
+${remoteHtml}`;
 
   return { parentNode: host };
 }

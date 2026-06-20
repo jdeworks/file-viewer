@@ -4430,4 +4430,22 @@ export async function run(ctx) {
   const appjsonText = await page.$eval('.appjson-doc', el => el.textContent);
   if (!appjsonText.includes('Heroku')) fail('app.json: missing badge'); else pass('app.json: badge shown');
   if (!appjsonText.includes('buildpack') && !appjsonText.includes('addon') && !appjsonText.includes('formation')) fail('app.json: no config shown'); else pass('app.json: config shown');
+
+  // ── cliff.toml upgraded viewer (plugin id: cliff-toml) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cliff.toml');
+  await page.waitForSelector('.clifftoml-doc');
+  pass('cliff.toml: renders');
+  const cliffText = await page.$eval('.clifftoml-doc', el => el.textContent);
+  if (!cliffText.includes('git-cliff') && !cliffText.includes('cliff')) fail('cliff.toml: missing badge'); else pass('cliff.toml: badge shown');
+  if (!cliffText.includes('conventional') && !cliffText.includes('commit')) fail('cliff.toml: no git config shown'); else pass('cliff.toml: git config shown');
+
+  // ── release-please-config.json upgraded viewer (plugin id: release-please) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('release-please-config.json');
+  await page.waitForSelector('.relpls-doc');
+  pass('release-please-config.json: renders');
+  const rpText = await page.$eval('.relpls-doc', el => el.textContent);
+  if (!rpText.includes('Release')) fail('release-please-config.json: missing badge'); else pass('release-please-config.json: badge shown');
+  if (!rpText.includes('package') && !rpText.includes('release-type')) fail('release-please-config.json: no config shown'); else pass('release-please-config.json: config shown');
 }
