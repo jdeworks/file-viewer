@@ -475,6 +475,8 @@ import dprintConfig from '../types/text/json/known/dprint/index.js';
 import opaPolicy from '../types/text/known/opa-policy/index.js';
 import falcoRules from '../types/text/yaml/known/falco-rules/index.js';
 import falcoConfig from '../types/text/yaml/known/falco-config/index.js';
+import borgmaticConfig from '../types/text/yaml/known/borgmatic-config/index.js';
+import suricataConfig from '../types/text/yaml/known/suricata-config/index.js';
 import kyvernoPolicy from '../types/text/yaml/known/kyverno-policy/index.js';
 import gatekeeperConfig from '../types/text/yaml/known/gatekeeper-config/index.js';
 import jetbrainsWorkspace from '../types/text/xml/known/jetbrains-workspace/index.js';
@@ -482,6 +484,7 @@ import neovimConfig from '../types/text/known/neovim-config/index.js';
 import vimConfig from '../types/text/known/vim-config/index.js';
 import alacrittyConf from '../types/text/known/alacritty-conf/index.js';
 import kittyConf from '../types/text/known/kitty-conf/index.js';
+import starshipConfig from '../types/text/toml/known/starship-config/index.js';
 import emacsConfig from '../types/text/known/emacs-config/index.js';
 import tmuxConf from '../types/text/known/tmux-conf/index.js';
 import screenrc from '../types/text/known/screenrc/index.js';
@@ -489,6 +492,7 @@ import i3Config from '../types/text/known/i3-config/index.js';
 import swayConfig from '../types/text/known/sway-config/index.js';
 import dunstrc from '../types/text/known/dunstrc/index.js';
 import polybarConf from '../types/text/known/polybar-conf/index.js';
+import waybarConfig from '../types/text/json/known/waybar-config/index.js';
 import woodpeckerCi from '../types/text/yaml/known/woodpecker-ci/index.js';
 import codefreshConfig from '../types/text/yaml/known/codefresh-config/index.js';
 import harnessPipeline from '../types/text/yaml/known/harness-pipeline/index.js';
@@ -516,6 +520,7 @@ import truffleConfig from '../types/text/known/truffle-config/index.js';
 import foundryToml from '../types/text/toml/known/foundry-toml/index.js';
 import anchorToml from '../types/text/toml/known/anchor-toml/index.js';
 import wireguardConf from '../types/text/known/wireguard-conf/index.js';
+import netbirdConfig from '../types/text/json/known/netbird-config/index.js';
 import openvpnConfig from '../types/text/known/openvpn-config/index.js';
 import opensslConf from '../types/text/known/openssl-conf/index.js';
 import krb5Conf from '../types/text/known/krb5-conf/index.js';
@@ -708,12 +713,12 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   flake8, pylintrc, setupCfg, awsCredentials, awsConfig,
   kubeconfig, gcpServiceAccount, banditYaml,
   istioConfig, linkerdConfig, etcdConfig,
-  kafkaServerProps, natsConfig, rabbitmqConf, zookeeperConfig,
+  kafkaServerProps, natsConfig, rabbitmqConf, mosquittoConf, zookeeperConfig,
   samTemplate, cfnTemplate, cdkJson, awsSamConfig, releasePleaseConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson, dprintConfig,
   hostsFile, resolvConf, sshdConfig, sshClientConfig, sudoers, nfsExports, fstab, crypttab,
   sysctlConf, modprobeConf,
-  jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, emacsConfig, tmuxConf, screenrc, i3Config, swayConfig, dunstrc, polybarConf, nanorc,
+  jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, starshipConfig, emacsConfig, tmuxConf, screenrc, i3Config, swayConfig, dunstrc, polybarConf, waybarConfig, nanorc,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,
   woodpeckerCi,
@@ -738,7 +743,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   systemdUnit, crontab,
   clusterConfig, certManager,
   iptablesRules, udevRules, grubConf, nftablesRules, ufwConf,
-  fail2banConf, apparmorProfile, smbConf,
+  fail2banConf, apparmorProfile, suricataConfig, smbConf,
   corefile, containerdConfig,
   postfixConf, dovecotConf, zabbixConf, eximConf, chronyConf,
   namedConf, unboundConf, dhcpdConf,
@@ -753,7 +758,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   bspwmrc, sxhkdrc,
   mpvConf, ytdlpConf,
   xresources, xorgConf,
-  rcloneConf, resticConfig,
+  rcloneConf, resticConfig, borgmaticConfig,
   taskrc, curlrc,
   inputrc, wgetrc,
   helixConfig, lfrc,

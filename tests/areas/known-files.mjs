@@ -4940,6 +4940,20 @@ export async function run(ctx) {
   await openExample('recursor.conf');
   pass(await page.waitForSelector('#previewHost .rec-doc', { timeout: 12000 }), 'recursor.conf: PowerDNS Recursor badge shown');
 
+  // ── starship.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('starship.toml');
+  pass(await page.waitForSelector('#previewHost .starship-doc', { timeout: 12000 }), 'starship.toml: badge shown');
+  const starshipText = await page.$eval('#previewHost .starship-doc', (el) => el.textContent);
+  if (/Modules/.test(starshipText) && /character/.test(starshipText)) pass('starship.toml: modules section with character module shown'); else fail('starship.toml modules: ' + starshipText.slice(0, 200));
+
+  // ── mosquitto.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mosquitto.conf');
+  pass(await page.waitForSelector('#previewHost .mosquitto-doc', { timeout: 12000 }), 'mosquitto.conf: badge shown');
+  const mosquittoText = await page.$eval('#previewHost .mosquitto-doc', (el) => el.textContent);
+  if (/1883/.test(mosquittoText) && /false/.test(mosquittoText)) pass('mosquitto.conf: listener port 1883 and allow_anonymous false shown'); else fail('mosquitto.conf listeners: ' + mosquittoText.slice(0, 200));
+
   // ── kamal.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('kamal.yml');
@@ -4977,4 +4991,25 @@ export async function run(ctx) {
   if (/data_platform\.pipelines|pipelines/i.test(dagsterText)) pass('dagster.yaml: code location packages shown'); else fail('dagster packages: ' + dagsterText.slice(0, 300));
   if (/grpc.server|ml-dagster-grpc|ml-pipelines/i.test(dagsterText)) pass('dagster.yaml: gRPC server location shown'); else fail('dagster grpc: ' + dagsterText.slice(0, 300));
   if (/4 code location/i.test(dagsterText)) pass('dagster.yaml: location count shown'); else fail('dagster count: ' + dagsterText.slice(0, 300));
+
+  // ── zabbix_agentd.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('zabbix_agentd.conf');
+  pass(await page.waitForSelector('#previewHost .zabbix-doc', { timeout: 12000 }), 'zabbix_agentd.conf: badge shown');
+  const zabbixText = await page.$eval('#previewHost .zabbix-doc', (el) => el.textContent);
+  if (/Zabbix Agent/i.test(zabbixText)) pass('zabbix_agentd.conf: Agent type badge shown'); else fail('zabbix type: ' + zabbixText.slice(0, 200));
+  if (/192\.168\.1\.100/.test(zabbixText)) pass('zabbix_agentd.conf: Server address shown'); else fail('zabbix server: ' + zabbixText.slice(0, 300));
+  if (/web-frontend-01\.example\.com/.test(zabbixText)) pass('zabbix_agentd.conf: Hostname shown'); else fail('zabbix hostname: ' + zabbixText.slice(0, 300));
+  if (/\[configured\]/.test(zabbixText)) pass('zabbix_agentd.conf: PSK values masked'); else fail('zabbix psk mask: ' + zabbixText.slice(0, 300));
+  if (/5 user parameter/.test(zabbixText)) pass('zabbix_agentd.conf: UserParameter count shown'); else fail('zabbix userparams: ' + zabbixText.slice(0, 300));
+
+  // ── ejabberd.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('ejabberd.yml');
+  pass(await page.waitForSelector('#previewHost .ejabberd-doc', { timeout: 12000 }), 'ejabberd.yml: badge shown');
+  const ejabberdText = await page.$eval('#previewHost .ejabberd-doc', (el) => el.textContent);
+  if (/ejabberd/i.test(ejabberdText)) pass('ejabberd.yml: ejabberd badge shown'); else fail('ejabberd badge: ' + ejabberdText.slice(0, 200));
+  if (/example\.com/.test(ejabberdText)) pass('ejabberd.yml: host shown'); else fail('ejabberd host: ' + ejabberdText.slice(0, 300));
+  if (/5222|c2s/i.test(ejabberdText)) pass('ejabberd.yml: c2s listener shown'); else fail('ejabberd c2s: ' + ejabberdText.slice(0, 300));
+  if (/\[configured\]/.test(ejabberdText)) pass('ejabberd.yml: SQL password masked'); else fail('ejabberd sql mask: ' + ejabberdText.slice(0, 300));
 }

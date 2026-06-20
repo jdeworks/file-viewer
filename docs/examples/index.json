@@ -4453,6 +4453,16 @@
     "knownFile": "alertmanager"
   },
   {
+    "file": "ejabberd.yml",
+    "label": "ejabberd.yml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": ["Config", "Messaging"],
+    "enhanced": true,
+    "description": "ejabberd XMPP server configuration with hosts, listeners, and modules.",
+    "knownFile": "ejabberd-config"
+  },
+  {
     "label": "blackbox.yml",
     "file": "blackbox.yml",
     "mime": "text/yaml",
@@ -6598,6 +6608,16 @@
     "description": "RabbitMQ config: AMQP port, TLS listeners, memory limit, disk threshold, and management port."
   },
   {
+    "file": "mosquitto.conf",
+    "label": "mosquitto.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": ["Config", "Networking"],
+    "enhanced": true,
+    "description": "Eclipse Mosquitto MQTT broker configuration with listeners and security settings.",
+    "knownFile": "mosquitto-conf"
+  },
+  {
     "label": "nats.conf",
     "file": "nats.conf",
     "mime": "text/plain",
@@ -6863,6 +6883,16 @@
     "enhanced": true,
     "description": "kitty GPU terminal configuration: font stack, window opacity, colors (Catppuccin Mocha), cursor, scrollback, tab bar, and keybindings.",
     "knownFile": "kitty-conf"
+  },
+  {
+    "file": "starship.toml",
+    "label": "starship.toml",
+    "mime": "text/x-toml",
+    "category": "Config",
+    "categories": ["Config", "Terminal"],
+    "enhanced": true,
+    "description": "Starship cross-shell prompt configuration with modules and palette.",
+    "knownFile": "starship-config"
   },
   {
     "label": "aria2.conf",
@@ -8172,6 +8202,16 @@
     "enhanced": true,
     "description": "Dovecot IMAP/POP3 server config: protocols, mail storage, SSL/TLS, auth mechanisms, and service listeners.",
     "knownFile": "dovecot-conf"
+  },
+  {
+    "file": "zabbix_agentd.conf",
+    "label": "zabbix_agentd.conf",
+    "mime": "text/plain",
+    "category": "Monitoring",
+    "categories": ["Monitoring", "Config"],
+    "enhanced": true,
+    "description": "Zabbix monitoring agent configuration.",
+    "knownFile": "zabbix-conf"
   },
   {
     "file": "exim4.conf",
