@@ -407,6 +407,54 @@ body {
 .raw-pane.has-disclaimer.has-autosave .md-tools-bar { top: 56px; }
 .raw-pane.comparing.has-autosave .md-tools-bar { top: 58px; }
 .raw-pane.comparing.has-disclaimer.has-autosave .md-tools-bar { top: 86px; }
+/* Text-utils toolbar — second toolbar row (below any type-specific toolbar).
+   Uses has-textutils class so it can co-exist with has-tools without conflicting.
+   These rules come after the .md-tools-bar rules so they win the cascade. */
+/* Position of .text-utils-bar: 34px lower than the default md-tools-bar position when
+   has-tools is also active (type-specific toolbar occupies the first row). */
+.raw-pane.has-tools .text-utils-bar { top: 34px; }
+.raw-pane.has-tools.comparing .text-utils-bar { top: 64px; }
+.raw-pane.has-tools.has-disclaimer .text-utils-bar { top: 62px; }
+.raw-pane.has-tools.has-autosave .text-utils-bar { top: 62px; }
+.raw-pane.has-tools.comparing.has-disclaimer .text-utils-bar { top: 92px; }
+.raw-pane.has-tools.has-disclaimer.has-autosave .text-utils-bar { top: 90px; }
+.raw-pane.has-tools.comparing.has-autosave .text-utils-bar { top: 92px; }
+.raw-pane.has-tools.comparing.has-disclaimer.has-autosave .text-utils-bar { top: 120px; }
+/* Editor host offset when has-textutils is active (textutils bar alone) */
+.raw-pane.has-textutils .editor-host { top: 34px; }
+.raw-pane.has-textutils.comparing .editor-host { top: 64px; }
+.raw-pane.has-textutils.has-disclaimer .editor-host { top: 62px; }
+.raw-pane.has-textutils.has-autosave .editor-host { top: 62px; }
+.raw-pane.has-textutils.comparing.has-disclaimer .editor-host { top: 92px; }
+.raw-pane.has-textutils.has-disclaimer.has-autosave .editor-host { top: 90px; }
+.raw-pane.has-textutils.comparing.has-autosave .editor-host { top: 92px; }
+.raw-pane.has-textutils.comparing.has-disclaimer.has-autosave .editor-host { top: 120px; }
+/* When both has-tools and has-textutils are active — editor shifted by 68px total */
+.raw-pane.has-tools.has-textutils .editor-host { top: 68px; }
+.raw-pane.has-tools.has-textutils.comparing .editor-host { top: 98px; }
+.raw-pane.has-tools.has-textutils.has-disclaimer .editor-host { top: 96px; }
+.raw-pane.has-tools.has-textutils.has-autosave .editor-host { top: 96px; }
+.raw-pane.has-tools.has-textutils.comparing.has-disclaimer .editor-host { top: 126px; }
+.raw-pane.has-tools.has-textutils.has-disclaimer.has-autosave .editor-host { top: 124px; }
+.raw-pane.has-tools.has-textutils.comparing.has-autosave .editor-host { top: 126px; }
+.raw-pane.has-tools.has-textutils.comparing.has-disclaimer.has-autosave .editor-host { top: 154px; }
+/* Word count bar: shift below textutils bar when active */
+.raw-pane.has-textutils .word-count-bar { top: 34px; }
+.raw-pane.has-textutils.has-disclaimer .word-count-bar { top: 62px; }
+.raw-pane.has-textutils.has-autosave .word-count-bar { top: 62px; }
+.raw-pane.has-textutils.comparing .word-count-bar { top: 64px; }
+.raw-pane.has-textutils.has-wordcount .editor-host { top: 58px; }
+.raw-pane.has-textutils.has-disclaimer.has-wordcount .editor-host { top: 86px; }
+.raw-pane.has-textutils.has-autosave.has-wordcount .editor-host { top: 86px; }
+.raw-pane.has-textutils.comparing.has-wordcount .editor-host { top: 88px; }
+.raw-pane.has-tools.has-textutils .word-count-bar { top: 68px; }
+.raw-pane.has-tools.has-textutils.has-disclaimer .word-count-bar { top: 96px; }
+.raw-pane.has-tools.has-textutils.has-autosave .word-count-bar { top: 96px; }
+.raw-pane.has-tools.has-textutils.comparing .word-count-bar { top: 98px; }
+.raw-pane.has-tools.has-textutils.has-wordcount .editor-host { top: 92px; }
+.raw-pane.has-tools.has-textutils.has-disclaimer.has-wordcount .editor-host { top: 120px; }
+.raw-pane.has-tools.has-textutils.has-autosave.has-wordcount .editor-host { top: 120px; }
+.raw-pane.has-tools.has-textutils.comparing.has-wordcount .editor-host { top: 122px; }
 #compareBtn.active { color: var(--accent); }
 .preview-host { position: absolute; inset: 0; overflow: auto; background: var(--bg); }
 /* display:block kills the inline-iframe baseline gap that otherwise pushes content a few px

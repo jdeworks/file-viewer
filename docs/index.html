@@ -197,6 +197,16 @@
             <button type="button" class="md-btn" id="xmlValidateBtn" title="Validate XML syntax">Validate</button>
             <span id="xmlValidIndicator" class="json-valid-indicator" hidden></span>
           </div>
+          <div id="textUtils" class="md-tools-bar text-utils-bar" hidden aria-label="Text utilities">
+            <button class="md-btn" data-textutil="sortAsc" title="Sort lines A → Z">Sort ↑</button>
+            <button class="md-btn" data-textutil="sortDesc" title="Sort lines Z → A">Sort ↓</button>
+            <span class="md-sep"></span>
+            <button class="md-btn" data-textutil="trim" title="Remove trailing whitespace from each line">Trim</button>
+            <button class="md-btn" data-textutil="dedup" title="Remove duplicate lines (keeps first occurrence)">Dedup</button>
+            <span class="md-sep"></span>
+            <button class="md-btn" data-textutil="b64encode" title="Encode selection (or full text) as Base64">B64 ↑</button>
+            <button class="md-btn" data-textutil="b64decode" title="Decode Base64 selection (or full text)">B64 ↓</button>
+          </div>
           <div id="htmlToolbar" class="html-toolbar" hidden>
             <button type="button" class="ht-btn" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
             <button type="button" class="ht-btn ht-italic" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>

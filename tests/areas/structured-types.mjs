@@ -329,10 +329,10 @@ export async function run(ctx) {
   // ── RDP ── connection info card, mstsc command. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('sample.rdp');
-  await page.waitForSelector('#previewHost .rdp-root', { timeout: 12000 });
+  await page.waitForSelector('#previewHost .rdp-doc', { timeout: 12000 });
   const rdpType = await page.$eval('#typeSelect', (s) => s.value);
   if (rdpType === 'rdp') pass('.rdp detected as RDP Connection'); else fail('rdp type: ' + rdpType);
-  const rdpTxt = await page.textContent('#previewHost .rdp-root');
+  const rdpTxt = await page.textContent('#previewHost .rdp-doc');
   if (rdpTxt.includes('myserver.example.com') || rdpTxt.includes('RDP')) pass('RDP connection host shown'); else fail('rdp txt: ' + rdpTxt.replace(/\s+/g, ' ').slice(0, 200));
   if (rdpTxt.includes('mstsc') || rdpTxt.includes('jdoe')) pass('RDP mstsc command or username shown'); else fail('rdp mstsc/user: ' + rdpTxt.replace(/\s+/g, ' ').slice(0, 200));
 
@@ -391,4 +391,15 @@ export async function run(ctx) {
   const wcText = await page.$eval('#wordCountBar', (el) => el.textContent);
   if (wcText.includes('words') && wcText.includes('chars')) pass('word count bar shows words and chars for markdown: ' + wcText.trim()); else fail('word count bar missing stats: ' + wcText);
   if (/min read/.test(wcText)) pass('word count bar shows reading time for markdown'); else fail('word count bar missing read time: ' + wcText);
+
+  // ── Text utilities toolbar ── visible for all non-binary text files. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('welcome.md');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
+  const textUtilsHidden = await page.$eval('#textUtils', (el) => el.hidden);
+  if (!textUtilsHidden) pass('text utilities toolbar visible for markdown (non-binary text) file'); else fail('text utils toolbar hidden for markdown');
+  const sortAscBtn = await page.$('[data-textutil="sortAsc"]');
+  const trimBtn = await page.$('[data-textutil="trim"]');
+  const b64encBtn = await page.$('[data-textutil="b64encode"]');
+  if (sortAscBtn && trimBtn && b64encBtn) pass('text utils toolbar has Sort ↑, Trim, and B64 ↑ buttons'); else fail('text utils buttons missing');
 }

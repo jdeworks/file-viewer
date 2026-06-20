@@ -82,11 +82,21 @@ function showAutosaveBanner(saved) {
   }
 }
 
+// Re-syncs the has-tools class on rawPane: true iff ANY type-specific toolbar is visible.
+// Called after each setXxxToolsVisible so that showing one toolbar and then hiding another
+// doesn't incorrectly clear the class when a third toolbar is still active.
+function syncHasToolsClass() {
+  const anyVisible = ['markdownTools', 'jsonTools', 'yamlTools', 'xmlTools', 'htmlToolbar'].some(
+    (id) => { const el = $(id) || document.getElementById(id); return el && !el.hidden; }
+  );
+  $('rawPane')?.classList.toggle('has-tools', anyVisible);
+}
+
 function setMarkdownToolsVisible(visible) {
   const el = $('markdownTools');
   if (!el) return;
   el.hidden = !visible;
-  $('rawPane')?.classList.toggle('has-tools', visible);
+  syncHasToolsClass();
 }
 
 function wireMarkdownTools() {
@@ -113,7 +123,7 @@ function setJsonToolsVisible(visible) {
   const el = $('jsonTools');
   if (!el) return;
   el.hidden = !visible;
-  $('rawPane')?.classList.toggle('has-tools', visible);
+  syncHasToolsClass();
   if (!visible) {
     const indicator = $('jsonValidIndicator');
     if (indicator) indicator.hidden = true;
@@ -184,7 +194,7 @@ function setYamlToolsVisible(visible) {
   const el = $('yamlTools');
   if (!el) return;
   el.hidden = !visible;
-  $('rawPane')?.classList.toggle('has-tools', visible);
+  syncHasToolsClass();
   if (!visible) {
     const indicator = $('yamlValidIndicator');
     if (indicator) indicator.hidden = true;
@@ -236,12 +246,74 @@ async function runYamlAction(action) {
   }
 }
 
+// ── Text utilities toolbar ────────────────────────────────────────────────────
+function setTextUtilsVisible(visible) {
+  const el = $('textUtils');
+  if (!el) return;
+  el.hidden = !visible;
+  $('rawPane')?.classList.toggle('has-textutils', visible);
+}
+
+function wireTextUtils() {
+  const el = $('textUtils');
+  if (!el || el.dataset.wired) return;
+  el.dataset.wired = '1';
+  el.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-textutil]');
+    if (!btn) return;
+    applyTextUtil(btn.dataset.textutil);
+  });
+}
+
+function applyTextUtil(action) {
+  if (!state.rawview) return;
+  const text = state.rawview.getValue();
+  let result;
+
+  if (action === 'sortAsc') {
+    result = text.split('\n').sort((a, b) => a.localeCompare(b)).join('\n');
+  } else if (action === 'sortDesc') {
+    result = text.split('\n').sort((a, b) => b.localeCompare(a)).join('\n');
+  } else if (action === 'trim') {
+    result = text.split('\n').map((l) => l.trimEnd()).join('\n');
+  } else if (action === 'dedup') {
+    const seen = new Set();
+    result = text.split('\n').filter((l) => { if (seen.has(l)) return false; seen.add(l); return true; }).join('\n');
+  } else if (action === 'b64encode') {
+    const sel = state.rawview.selectionText?.();
+    const target = (sel && sel.trim()) ? sel : text;
+    try {
+      const encoded = btoa(unescape(encodeURIComponent(target)));
+      if (sel && sel.trim()) {
+        state.rawview.replaceSelection(encoded);
+        return;
+      }
+      result = encoded;
+    } catch (e) { toast('Base64 encode failed: ' + e.message); return; }
+  } else if (action === 'b64decode') {
+    const sel = state.rawview.selectionText?.();
+    const target = ((sel && sel.trim()) ? sel : text).trim();
+    try {
+      const decoded = decodeURIComponent(escape(atob(target)));
+      if (sel && sel.trim()) {
+        state.rawview.replaceSelection(decoded);
+        return;
+      }
+      result = decoded;
+    } catch (e) { toast('Not valid Base64'); return; }
+  }
+
+  if (result !== undefined && result !== text) {
+    state.rawview.setValue(result);
+  }
+}
+
 // ── XML toolbar ──────────────────────────────────────────────────────────────
 function setXmlToolsVisible(visible) {
   const el = $('xmlTools');
   if (!el) return;
   el.hidden = !visible;
-  $('rawPane')?.classList.toggle('has-tools', visible);
+  syncHasToolsClass();
   if (!visible) {
     const indicator = $('xmlValidIndicator');
     if (indicator) indicator.hidden = true;
@@ -533,7 +605,7 @@ function setHtmlToolbarVisible(visible) {
   const el = document.getElementById('htmlToolbar');
   if (!el) return;
   el.hidden = !visible;
-  document.getElementById('rawPane')?.classList.toggle('has-tools', visible);
+  syncHasToolsClass();
 }
 
 function wireHtmlToolbar() {
@@ -831,6 +903,12 @@ export async function buildRawView() {
     tableModeBtn.classList.remove('active');
     tableModeBtn.setAttribute('aria-pressed', 'false');
   }
+  wireTextUtils();
+  // Show text-utils only when no structured-type toolbar (JSON/YAML/XML) is active.
+  // Markdown co-exists (both bars show; markdown uses first row, textutils second row).
+  // JSON/YAML/XML/HTML/CSV hide textutils to prevent overlap with their dedicated toolbars.
+  const hasStructuredToolbar = ['json', 'yaml', 'xml', 'html', 'csv'].includes(state.type?.id);
+  setTextUtilsVisible(!state.intake?.isBinary && !hasStructuredToolbar);
   wireEnvFormBtn();
   const filename = (state.intake?.filename || state.intake?.name || '').split('/').pop().toLowerCase();
   const isEnv = (state.type?.id === 'env' || filename.endsWith('.env')) && !state.intake.isBinary;
