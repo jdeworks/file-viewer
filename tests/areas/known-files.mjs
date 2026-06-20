@@ -3459,4 +3459,22 @@ export async function run(ctx) {
   if (/nftables/i.test(nftText)) pass('nftables.conf: nftables badge shown'); else fail('nftables-rules badge: ' + nftText.slice(0, 200));
   if (/chain|filter/i.test(nftText)) pass('nftables.conf: chain or filter information shown'); else fail('nftables-rules content: ' + nftText.slice(0, 300));
 
+  // ── i3.config (i3 WM) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('i3.config (i3 WM)');
+  await page.waitForSelector('#previewHost .i3cfg-doc', { timeout: 12000 });
+  const i3Text = await page.$eval('#previewHost .i3cfg-doc', (e) => e.textContent);
+  if (/\bi3\b/i.test(i3Text)) pass('i3.config: i3 badge shown'); else fail('i3-config badge: ' + i3Text.slice(0, 200));
+  if (/Mod4|Super/i.test(i3Text)) pass('i3.config: modifier key (Mod4/Super) shown'); else fail('i3-config modifier: ' + i3Text.slice(0, 300));
+  if (/bindsym|keybinding/i.test(i3Text)) pass('i3.config: keybindings section shown'); else fail('i3-config bindings: ' + i3Text.slice(0, 300));
+
+  // ── sway (Sway WM) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sway (Sway WM)');
+  await page.waitForSelector('#previewHost .swaycfg-doc', { timeout: 12000 });
+  const swayText = await page.$eval('#previewHost .swaycfg-doc', (e) => e.textContent);
+  if (/Sway/i.test(swayText)) pass('sway: Sway badge shown'); else fail('sway-config badge: ' + swayText.slice(0, 200));
+  if (/output|HDMI|eDP/i.test(swayText)) pass('sway: output configuration shown'); else fail('sway-config outputs: ' + swayText.slice(0, 300));
+  if (/input|keyboard|touchpad/i.test(swayText)) pass('sway: input configuration shown'); else fail('sway-config inputs: ' + swayText.slice(0, 300));
+
 }

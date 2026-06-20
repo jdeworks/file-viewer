@@ -7548,5 +7548,31 @@
     "enhanced": true,
     "description": "Exim MTA configuration: mail routing, transport drivers, ACLs, TLS, and SMTP authenticators.",
     "knownFile": "exim-conf"
+  },
+  {
+    "file": "app.ini",
+    "label": "app.ini (Gitea/Forgejo)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "DevOps"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Gitea/Forgejo self-hosted Git service configuration: server, database, mailer, security, cache, and CI actions.",
+    "knownFile": "gitea-conf"
+  },
+  {
+    "file": "stunnel.conf",
+    "label": "stunnel.conf (SSL tunnel)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "stunnel SSL/TLS tunnel configuration: global cert/key/CA settings and named tunnel proxies.",
+    "knownFile": "stunnel-conf"
   }
 ]

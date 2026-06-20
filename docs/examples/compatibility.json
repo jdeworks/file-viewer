@@ -17645,6 +17645,114 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "i3-config": {
+      "label": "i3 Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "i3.config"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "sway-config": {
+      "label": "Sway Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "sway"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "gitea-conf": {
+      "label": "Gitea/Forgejo Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "app.ini"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "stunnel-conf": {
+      "label": "stunnel Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "stunnel.conf"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

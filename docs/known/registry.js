@@ -426,6 +426,8 @@ import jetbrainsWorkspace from '../types/text/xml/known/jetbrains-workspace/inde
 import neovimConfig from '../types/text/known/neovim-config/index.js';
 import vimConfig from '../types/text/known/vim-config/index.js';
 import emacsConfig from '../types/text/known/emacs-config/index.js';
+import i3Config from '../types/text/known/i3-config/index.js';
+import swayConfig from '../types/text/known/sway-config/index.js';
 import woodpeckerCi from '../types/text/yaml/known/woodpecker-ci/index.js';
 import codefreshConfig from '../types/text/yaml/known/codefresh-config/index.js';
 import harnessPipeline from '../types/text/yaml/known/harness-pipeline/index.js';
@@ -453,6 +455,8 @@ import openvpnConfig from '../types/text/known/openvpn-config/index.js';
 import opensslConf from '../types/text/known/openssl-conf/index.js';
 import krb5Conf from '../types/text/known/krb5-conf/index.js';
 import gpgConf from '../types/text/known/gpg-conf/index.js';
+import giteaConf from '../types/text/known/gitea-conf/index.js';
+import stunnelConf from '../types/text/known/stunnel-conf/index.js';
 import supervisordConf from '../types/text/known/supervisord-conf/index.js';
 import logrotateConf from '../types/text/known/logrotate-conf/index.js';
 import shellRc from '../types/text/known/shell-rc/index.js';
@@ -569,7 +573,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   analysisOptions, podfileLock, xcodeScheme, easJson,
   hostsFile, resolvConf, sshdConfig, sudoers, nfsExports, fstab, crypttab,
   sysctlConf, modprobeConf,
-  jetbrainsWorkspace, neovimConfig, vimConfig, emacsConfig,
+  jetbrainsWorkspace, neovimConfig, vimConfig, emacsConfig, i3Config, swayConfig,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,
   woodpeckerCi,
@@ -583,6 +587,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   newrelicConfig, dynatraceConfig, elasticApmConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
   wireguardConf, openvpnConfig, opensslConf, krb5Conf, gpgConf,
+  giteaConf, stunnelConf,
   supervisordConf, logrotateConf,
   shellRc,
   nixConfig,
