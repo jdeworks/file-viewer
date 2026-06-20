@@ -3101,4 +3101,20 @@ export async function run(ctx) {
   if (/ClusterIssuer/i.test(certmgrText)) pass('cert-manager: ClusterIssuer kind shown'); else fail('cert-manager ClusterIssuer: ' + certmgrText.slice(0, 300));
   if (/letsencrypt/i.test(certmgrText)) pass('cert-manager: letsencrypt issuer shown'); else fail('cert-manager letsencrypt: ' + certmgrText.slice(0, 300));
 
+  // ── iptables rules viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('iptables.rules (Firewall Rules)');
+  await page.waitForSelector('#previewHost .iptr-doc', { timeout: 12000 });
+  const iptablesText = await page.$eval('#previewHost .iptr-doc', (e) => e.textContent);
+  if (/iptables/i.test(iptablesText)) pass('iptables.rules: iptables badge shown'); else fail('iptables badge: ' + iptablesText.slice(0, 200));
+  if (/INPUT|filter/i.test(iptablesText)) pass('iptables.rules: chain or table shown'); else fail('iptables chain/table: ' + iptablesText.slice(0, 300));
+
+  // ── UFW config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('ufw.conf (UFW Firewall)');
+  await page.waitForSelector('#previewHost .ufwcfg-doc', { timeout: 12000 });
+  const ufwText = await page.$eval('#previewHost .ufwcfg-doc', (e) => e.textContent);
+  if (/UFW/i.test(ufwText)) pass('ufw.conf: UFW badge shown'); else fail('ufw badge: ' + ufwText.slice(0, 200));
+  if (/DEFAULT/i.test(ufwText)) pass('ufw.conf: default policies shown'); else fail('ufw policies: ' + ufwText.slice(0, 300));
+
 }
