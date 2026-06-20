@@ -19352,7 +19352,9 @@
       "label": "rust-toolchain",
       "baseType": "toml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "rust-toolchain.toml"
+      ],
       "extensions": [
         ".yml"
       ],

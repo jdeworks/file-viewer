@@ -3255,6 +3255,18 @@
     "knownFile": "clippy-toml"
   },
   {
+    "label": "rust-toolchain.toml",
+    "file": "rust-toolchain.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Rust toolchain pinning \u2014 channel 1.75.0, components (rustfmt, clippy, rust-analyzer, rust-src), and multi-platform targets.",
+    "knownFile": "rust-toolchain"
+  },
+  {
     "label": "uv.toml (uv package manager)",
     "file": "uv.toml",
     "mime": "application/toml",

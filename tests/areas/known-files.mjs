@@ -944,6 +944,17 @@ export async function run(ctx) {
   if (/Procfile|process/i.test(pflText)) pass('Procfile: badge shown'); else fail('procfile badge: ' + pflText.slice(0, 200));
   if (/web|worker|scheduler/i.test(pflText)) pass('Procfile: process types shown'); else fail('procfile procs: ' + pflText.slice(0, 200));
 
+  // ── rust-toolchain.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('rust-toolchain.toml');
+  await page.waitForSelector('#previewHost .rusttoolchain-doc', { timeout: 12000 });
+  pass('rust-toolchain.toml: badge shown');
+  const rtText = await page.$eval('#previewHost .rusttoolchain-doc', (e) => e.textContent);
+  if (!rtText.includes('1.75') && !rtText.includes('1.75.0')) fail('rust-toolchain.toml: channel not shown');
+  else pass('rust-toolchain.toml: channel shown');
+  if (!rtText.includes('clippy')) fail('rust-toolchain.toml: components not shown');
+  else pass('rust-toolchain.toml: components shown');
+
   // ── .envrc viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.envrc');
