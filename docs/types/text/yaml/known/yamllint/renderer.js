@@ -2,34 +2,90 @@ import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.yml-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.badge-yml{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#E6C200;color:#1c1917;vertical-align:middle;margin-right:8px;}
-.yml-title{font-size:18px;font-weight:700;margin:0 0 4px;}
-.yml-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
-.yml-sec{margin:12px 0;}
-.yml-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px;}
-.yml-kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12px;margin:4px 0;}
-.yml-kv dt{font-weight:600;white-space:nowrap;color:var(--fg,#24292f);}
-.yml-kv dd{margin:0;color:var(--fg-2,#555);font-family:ui-monospace,monospace;}
-.yml-pills{display:flex;flex-wrap:wrap;gap:6px;}
-.yml-pill{display:inline-flex;align-items:center;font-size:12px;padding:3px 10px;border-radius:12px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace;}
-.yml-strict{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;}
-.yml-strict-yes{background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;}
-.yml-strict-no{background:#dcfce7;border:1px solid #86efac;color:#166534;}
-.yml-strict-mid{background:#fef9c3;border:1px solid #fde047;color:#713f12;}
+.yamllint-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.yamllint-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#3D7DD8;color:#fff;vertical-align:middle;margin-right:8px;}
+.yamllint-title{font-size:18px;font-weight:700;margin:0 0 4px;}
+.yamllint-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
+.yamllint-sec{margin:12px 0;}
+.yamllint-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px;}
+.yamllint-kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12px;margin:4px 0;}
+.yamllint-kv dt{font-weight:600;white-space:nowrap;color:var(--fg,#24292f);}
+.yamllint-kv dd{margin:0;color:var(--fg-2,#555);font-family:ui-monospace,monospace;}
+.yamllint-chip{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;}
+.yamllint-chip-default{background:#dbeafe;color:#1e40af;}
+.yamllint-chip-relaxed{background:#dcfce7;color:#166534;}
+.yamllint-chip-custom{background:#f3e8ff;color:#7e22ce;}
+.yamllint-rule-list{display:flex;flex-direction:column;gap:4px;}
+.yamllint-rule{display:flex;align-items:baseline;gap:8px;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border,#f0f0f0);}
+.yamllint-rule:last-child{border-bottom:none;}
+.yamllint-rule-name{font-family:ui-monospace,monospace;font-weight:600;min-width:200px;color:var(--fg,#24292f);}
+.yamllint-rule-detail{color:var(--fg-2,#666);font-family:ui-monospace,monospace;font-size:11px;}
+.yamllint-lvl{display:inline-block;padding:1px 6px;border-radius:6px;font-size:10px;font-weight:700;margin-left:4px;}
+.yamllint-lvl-error{background:#fee2e2;color:#991b1b;}
+.yamllint-lvl-warning{background:#fef9c3;color:#713f12;}
+.yamllint-lvl-disable{background:#f3f4f6;color:#6b7280;}
 `;
 
-function getRuleValue(rule, key) {
-  if (!rule || rule === 'disable' || rule === 'enable') return null;
-  if (typeof rule === 'object') return rule[key] ?? null;
-  return null;
+function getLevel(rule) {
+  if (rule === 'disable') return 'disable';
+  if (rule === 'enable') return 'warning';
+  if (rule && typeof rule === 'object') return rule.level || 'warning';
+  return 'warning';
 }
 
-function ruleEnabled(rule) {
-  if (rule === 'disable') return false;
-  if (rule === 'enable') return true;
-  if (rule && typeof rule === 'object') return rule.level !== 'disable';
-  return rule != null;
+function getRuleValue(rule, key) {
+  if (!rule || typeof rule !== 'object') return null;
+  return rule[key] ?? null;
+}
+
+function levelBadge(level) {
+  const cls = level === 'error' ? 'yamllint-lvl-error' : level === 'disable' ? 'yamllint-lvl-disable' : 'yamllint-lvl-warning';
+  return `<span class="yamllint-lvl ${cls}">${esc(level)}</span>`;
+}
+
+function ruleDetail(name, rule) {
+  const parts = [];
+  if (name === 'line-length') {
+    const max = getRuleValue(rule, 'max');
+    const nonBreak = getRuleValue(rule, 'allow-non-breakable-words');
+    if (max != null) parts.push(`max: ${max}`);
+    if (nonBreak != null) parts.push(`non-breakable: ${nonBreak}`);
+  } else if (name === 'indentation') {
+    const spaces = getRuleValue(rule, 'spaces');
+    const indSeq = getRuleValue(rule, 'indent-sequences');
+    if (spaces != null) parts.push(`spaces: ${spaces}`);
+    if (indSeq != null) parts.push(`indent-sequences: ${indSeq}`);
+  } else if (name === 'truthy') {
+    const allowed = getRuleValue(rule, 'allowed-values');
+    if (allowed != null) parts.push(`allowed: [${Array.isArray(allowed) ? allowed.join(', ') : allowed}]`);
+  } else if (name === 'braces') {
+    const minI = getRuleValue(rule, 'min-spaces-inside');
+    const maxI = getRuleValue(rule, 'max-spaces-inside');
+    if (minI != null) parts.push(`min-inside: ${minI}`);
+    if (maxI != null) parts.push(`max-inside: ${maxI}`);
+  } else if (name === 'brackets') {
+    const minI = getRuleValue(rule, 'min-spaces-inside');
+    const maxI = getRuleValue(rule, 'max-spaces-inside');
+    if (minI != null) parts.push(`min-inside: ${minI}`);
+    if (maxI != null) parts.push(`max-inside: ${maxI}`);
+  } else if (name === 'colons') {
+    const before = getRuleValue(rule, 'max-spaces-before');
+    const after = getRuleValue(rule, 'max-spaces-after');
+    if (before != null) parts.push(`max-before: ${before}`);
+    if (after != null) parts.push(`max-after: ${after}`);
+  } else if (name === 'comments') {
+    const minSpaces = getRuleValue(rule, 'min-spaces-from-content');
+    const reqStart = getRuleValue(rule, 'require-starting-space');
+    if (minSpaces != null) parts.push(`min-spaces: ${minSpaces}`);
+    if (reqStart != null) parts.push(`require-starting-space: ${reqStart}`);
+  } else if (name === 'document-start') {
+    const present = getRuleValue(rule, 'present');
+    if (present != null) parts.push(`present: ${present}`);
+  } else if (name === 'empty-lines') {
+    const max = getRuleValue(rule, 'max');
+    if (max != null) parts.push(`max: ${max}`);
+  }
+  return parts.length ? parts.join(' · ') : '';
 }
 
 export async function render(intake) {
@@ -37,62 +93,50 @@ export async function render(intake) {
   try {
     const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
     cfg = (jsyaml.loadAll(intake.text || '') || [])[0] || {};
-  } catch { cfg = {}; }
+  } catch { cfg = intake.parsed || {}; }
 
   const ext = cfg.extends || '';
   const rules = cfg.rules && typeof cfg.rules === 'object' ? cfg.rules : {};
   const ruleKeys = Object.keys(rules);
 
-  // Key rule details
-  const lineLength = rules['line-length'];
-  const lineLengthMax = getRuleValue(lineLength, 'max');
-  const indentation = rules['indentation'];
-  const indentSpaces = getRuleValue(indentation, 'spaces');
-  const truthy = rules['truthy'];
-  const truthyAllowed = getRuleValue(truthy, 'allowed-values');
-
-  // Strictness heuristic
-  let strictness = 'moderate';
-  if (ext === 'relaxed') strictness = 'permissive';
-  else if (ext === 'default') {
-    const disabledCount = ruleKeys.filter((k) => !ruleEnabled(rules[k])).length;
-    const enabledCount = ruleKeys.filter((k) => ruleEnabled(rules[k])).length;
-    if (disabledCount > enabledCount) strictness = 'permissive';
-    else if (enabledCount > 3) strictness = 'strict';
-  } else if (!ext) {
-    strictness = ruleKeys.length > 5 ? 'strict' : 'moderate';
-  }
+  // Extends chip
+  let extendsChipClass = 'yamllint-chip-custom';
+  if (ext === 'default') extendsChipClass = 'yamllint-chip-default';
+  else if (ext === 'relaxed') extendsChipClass = 'yamllint-chip-relaxed';
+  const extendsChip = ext ? `<span class="yamllint-chip ${extendsChipClass}">${esc(ext)}</span>` : '<span style="color:var(--fg-2,#888);font-size:12px;">(none)</span>';
 
   const subParts = [];
   if (ext) subParts.push(`extends: ${ext}`);
-  subParts.push(`${ruleKeys.length} rule${ruleKeys.length !== 1 ? 's' : ''}`);
+  subParts.push(`${ruleKeys.length} rule${ruleKeys.length !== 1 ? 's' : ''} defined`);
 
-  const strictLabel = strictness === 'strict' ? 'Strict' : strictness === 'permissive' ? 'Permissive' : 'Moderate';
-  const strictClass = strictness === 'strict' ? 'yml-strict-yes' : strictness === 'permissive' ? 'yml-strict-no' : 'yml-strict-mid';
-
-  const baseHtml = `<div class="yml-sec"><h3>Base Config</h3><dl class="yml-kv">
-    ${ext ? `<dt>Extends</dt><dd>${esc(ext)}</dd>` : '<dt>Extends</dt><dd>(none)</dd>'}
+  // Base config section
+  const baseHtml = `<div class="yamllint-sec"><h3>Base Config</h3><dl class="yamllint-kv">
+    <dt>Extends</dt><dd>${extendsChip}</dd>
     <dt>Rules defined</dt><dd>${ruleKeys.length}</dd>
-    <dt>Strictness</dt><dd><span class="yml-strict ${strictClass}">${strictLabel}</span></dd>
   </dl></div>`;
 
-  const keyRulesHtml = (lineLengthMax != null || indentSpaces != null || truthy != null)
-    ? `<div class="yml-sec"><h3>Key Rules</h3><dl class="yml-kv">
-      ${lineLengthMax != null ? `<dt>Line length max</dt><dd>${esc(lineLengthMax)}</dd>` : ''}
-      ${indentSpaces != null ? `<dt>Indent spaces</dt><dd>${esc(indentSpaces)}</dd>` : ''}
-      ${truthyAllowed != null ? `<dt>Truthy values</dt><dd>${esc(Array.isArray(truthyAllowed) ? truthyAllowed.join(', ') : truthyAllowed)}</dd>` : truthy ? `<dt>Truthy</dt><dd>${ruleEnabled(truthy) ? 'enabled' : 'disabled'}</dd>` : ''}
-    </dl></div>`
-    : '';
-
-  const allRulesHtml = ruleKeys.length
-    ? `<div class="yml-sec"><h3>All Rules (${ruleKeys.length})</h3><div class="yml-pills">${ruleKeys.map((k) => `<span class="yml-pill">${esc(k)}</span>`).join('')}</div></div>`
-    : '';
+  // Rules section (up to 15)
+  const displayRules = ruleKeys.slice(0, 15);
+  const rulesHtml = displayRules.length ? `<div class="yamllint-sec"><h3>Rules (${ruleKeys.length}${ruleKeys.length > 15 ? ', showing 15' : ''})</h3>
+    <div class="yamllint-rule-list">
+    ${displayRules.map((k) => {
+      const rule = rules[k];
+      const level = getLevel(rule);
+      const detail = ruleDetail(k, rule);
+      return `<div class="yamllint-rule">
+        <span class="yamllint-rule-name">${esc(k)}</span>
+        ${levelBadge(level)}
+        ${detail ? `<span class="yamllint-rule-detail">${esc(detail)}</span>` : ''}
+      </div>`;
+    }).join('')}
+    </div>
+  </div>` : '';
 
   const host = document.createElement('div');
-  host.className = 'yml-doc';
+  host.className = 'yamllint-doc';
   host.innerHTML = `<style>${CSS}</style>
-<div class="yml-title"><span class="badge-yml">yamllint</span>YAML lint config</div>
-<div class="yml-sub">${esc(subParts.join(' · '))}</div>
-${baseHtml}${keyRulesHtml}${allRulesHtml}`;
+<div class="yamllint-title"><span class="yamllint-badge">yamllint</span>YAML Lint Config</div>
+<div class="yamllint-sub">${esc(subParts.join(' · '))}</div>
+${baseHtml}${rulesHtml}`;
   return { parentNode: host };
 }

@@ -1466,8 +1466,8 @@ export async function run(ctx) {
   // ── .yamllint.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.yamllint.yml');
-  await page.waitForSelector('#previewHost .yml-doc', { timeout: 12000 });
-  const ymlText = await page.$eval('#previewHost .yml-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .yamllint-doc', { timeout: 12000 });
+  const ymlText = await page.$eval('#previewHost .yamllint-doc', (e) => e.textContent);
   if (/yamllint/i.test(ymlText)) pass('.yamllint.yml: yamllint badge shown'); else fail('yamllint badge: ' + ymlText.slice(0, 200));
   if (/default/i.test(ymlText)) pass('.yamllint.yml: extends shown'); else fail('yamllint extends: ' + ymlText.slice(0, 200));
   if (/120|line-length|indentation/i.test(ymlText)) pass('.yamllint.yml: key rules shown'); else fail('yamllint rules: ' + ymlText.slice(0, 200));
