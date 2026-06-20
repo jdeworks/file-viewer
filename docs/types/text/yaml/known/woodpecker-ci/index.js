@@ -5,7 +5,7 @@ export default {
     if (baseType.id !== 'yaml') return false;
     const fn = intake.filename || '';
     const name = fn.split('/').pop().toLowerCase();
-    return name === '.woodpecker.yml' || name === '.woodpecker.yaml' || fn.includes('.woodpecker/');
+    return name === '.woodpecker.yml' || name === '.woodpecker.yaml' || name === 'woodpecker.yml' || fn.includes('.woodpecker/');
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

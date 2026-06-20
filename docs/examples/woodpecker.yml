@@ -1,0 +1,58 @@
+name: build-and-deploy
+
+when:
+  branch:
+    - main
+  event:
+    - push
+    - pull_request
+
+steps:
+  - name: test
+    image: golang:1.22-alpine
+    commands:
+      - go test ./...
+      - go vet ./...
+    when:
+      event: pull_request
+
+  - name: build
+    image: golang:1.22-alpine
+    commands:
+      - go build -o app ./cmd/server
+      - ls -lh app
+
+  - name: docker-build
+    image: plugins/docker
+    settings:
+      repo: registry.example.com/myapp
+      tags:
+        - latest
+        - ${CI_COMMIT_SHA:0:8}
+      dockerfile: Dockerfile
+      registry: registry.example.com
+    secrets:
+      - source: REGISTRY_USER
+      - source: REGISTRY_PASSWORD
+    when:
+      branch: main
+      event: push
+
+  - name: deploy
+    image: alpine/kubectl:1.29
+    commands:
+      - kubectl set image deployment/myapp myapp=registry.example.com/myapp:${CI_COMMIT_SHA:0:8}
+      - kubectl rollout status deployment/myapp
+    secrets:
+      - source: KUBECONFIG_DATA
+    when:
+      branch: main
+      event: push
+
+services:
+  - name: postgres
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: testdb
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
