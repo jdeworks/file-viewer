@@ -1,20 +1,20 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.doxy-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
-.badge-doxygen{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#2c6499;color:#fff;vertical-align:middle;margin-right:8px}
-.doxy-title{font-size:18px;font-weight:700;margin:0 0 4px}
-.doxy-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 12px}
-.doxy-sec{margin:12px 0}
-.doxy-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px}
-.doxy-meta{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0}
-.doxy-kv{display:flex;gap:6px;align-items:baseline;font-size:13px;padding:4px 10px;border-radius:6px;background:var(--bg-2,#f6f8fa)}
-.doxy-kv span:first-child{color:var(--fg-2,#888);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
-.doxy-kv span:last-child{font-family:ui-monospace,monospace;font-weight:600}
-.doxy-pills{display:flex;flex-wrap:wrap;gap:6px}
-.doxy-pill{display:inline-flex;align-items:center;font-size:12px;padding:2px 8px;border-radius:10px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace}
-.doxy-badge-yes{padding:1px 7px;border-radius:8px;background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;font-size:11px;font-weight:700}
-.doxy-badge-no{padding:1px 7px;border-radius:8px;background:#f6f8fa;border:1px solid #e0e0e0;color:#888;font-size:11px}
+.doxyfile-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
+.doxyfile-doc .badge-doxygen{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#9c27b0;color:#fff;vertical-align:middle;margin-right:8px}
+.doxyfile-doc .doxy-title{font-size:18px;font-weight:700;margin:0 0 4px}
+.doxyfile-doc .doxy-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 12px}
+.doxyfile-doc .doxy-sec{margin:12px 0}
+.doxyfile-doc .doxy-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px}
+.doxyfile-doc .doxy-meta{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0}
+.doxyfile-doc .doxy-kv{display:flex;gap:6px;align-items:baseline;font-size:13px;padding:4px 10px;border-radius:6px;background:var(--bg-2,#f6f8fa)}
+.doxyfile-doc .doxy-kv span:first-child{color:var(--fg-2,#888);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.doxyfile-doc .doxy-kv span:last-child{font-family:ui-monospace,monospace;font-weight:600}
+.doxyfile-doc .doxy-pills{display:flex;flex-wrap:wrap;gap:6px}
+.doxyfile-doc .doxy-pill{display:inline-flex;align-items:center;font-size:12px;padding:2px 8px;border-radius:10px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace}
+.doxyfile-doc .doxy-badge-yes{padding:1px 7px;border-radius:8px;background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;font-size:11px;font-weight:700}
+.doxyfile-doc .doxy-badge-no{padding:1px 7px;border-radius:8px;background:#f6f8fa;border:1px solid #e0e0e0;color:#888;font-size:11px}
 `;
 
 function doxyVal(text, key) {
@@ -72,7 +72,7 @@ export function render(intake) {
     : val === false ? '<span class="doxy-badge-no">NO</span>' : '';
 
   const host = document.createElement('div');
-  host.className = 'doxy-doc';
+  host.className = 'doxyfile-doc';
 
   const metaItems = [
     projectName ? `<div class="doxy-kv"><span>Project</span><span>${esc(projectName)}</span></div>` : '',

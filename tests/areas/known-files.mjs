@@ -238,9 +238,11 @@ export async function run(ctx) {
   // ── Netlify config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Netlify config (netlify.toml demo)');
-  await page.waitForSelector('#previewHost .badge-netlify, #previewHost [class*="ntl"]', { timeout: 12000 });
-  const ntlText = await page.$eval('#previewHost', (e) => e.textContent);
-  if (/Netlify/i.test(ntlText)) pass('netlify.toml: badge shown'); else fail('netlify badge: ' + ntlText.slice(0, 200));
+  await page.waitForSelector('.netlifytoml-doc', { timeout: 12000 });
+  pass('netlify.toml: renders');
+  const ntlText = await page.$eval('.netlifytoml-doc', el => el.textContent);
+  if (!ntlText.includes('Netlify')) fail('netlify.toml: missing badge');
+  else pass('netlify.toml: badge shown');
   if (/npm run build|dist/i.test(ntlText)) pass('netlify.toml: build command shown'); else fail('netlify build: ' + ntlText.slice(0, 200));
 
   // ── Vercel config viewer ──

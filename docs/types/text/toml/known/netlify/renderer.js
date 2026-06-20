@@ -28,17 +28,17 @@ export function render(intake) {
   const envKeys = envBlock ? [...envBlock[1].matchAll(/^\s*(\w+)\s*=/mg)].map((m) => m[1]) : [];
 
   let html = `<style>
-.ntl-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif}
-.badge-netlify{display:inline-block;background:#00AD9F;color:#fff;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.04em;margin-bottom:10px}
-.ntl-grid{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:12px 0}
-.ntl-key{color:var(--fg-2);font-size:12px}
-.ntl-val{font:12px ui-monospace,monospace;color:var(--accent);word-break:break-all}
-.ntl-sec{margin:12px 0}
-.ntl-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2);margin:0 0 6px}
-.ntl-pill{display:inline-block;background:var(--bg-3);border-radius:4px;padding:2px 8px;font:12px ui-monospace,monospace;margin:2px}
+.netlifytoml-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif}
+.netlifytoml-doc .badge-netlify{display:inline-block;background:#00c7b7;color:#fff;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.04em;margin-bottom:10px}
+.netlifytoml-doc .ntl-grid{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:12px 0}
+.netlifytoml-doc .ntl-key{color:var(--fg-2);font-size:12px}
+.netlifytoml-doc .ntl-val{font:12px ui-monospace,monospace;color:var(--accent);word-break:break-all}
+.netlifytoml-doc .ntl-sec{margin:12px 0}
+.netlifytoml-doc .ntl-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2);margin:0 0 6px}
+.netlifytoml-doc .ntl-pill{display:inline-block;background:var(--bg-3);border-radius:4px;padding:2px 8px;font:12px ui-monospace,monospace;margin:2px}
 </style>
 <div class="ntl-doc">
-<span class="badge-netlify">Netlify Config</span>
+<span class="badge-netlify">Netlify</span>
 <div class="ntl-grid">
 ${buildCmd ? `<span class="ntl-key">Build command</span><span class="ntl-val">${esc(buildCmd)}</span>` : ''}
 ${publish ? `<span class="ntl-key">Publish dir</span><span class="ntl-val">${esc(publish)}</span>` : ''}
@@ -58,6 +58,7 @@ ${edgeFunc ? `<span class="ntl-key">Edge functions</span><span class="ntl-val">$
 
   html += '</div>';
   const host = document.createElement('div');
+  host.className = 'netlifytoml-doc';
   host.innerHTML = html;
   return { parentNode: host };
 }

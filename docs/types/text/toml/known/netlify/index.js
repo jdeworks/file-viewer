@@ -1,7 +1,7 @@
 export default {
   id: 'netlify-toml',
   label: 'Netlify Config',
-  match: (intake) => (intake.filename || '').split('/').pop() === 'netlify.toml',
+  match: (intake) => (intake.name || intake.filename || '').split('/').pop().toLowerCase() === 'netlify.toml',
   loadRenderer: () => import('./renderer.js'),
   about: {
     description: 'Netlify deployment configuration — build command, publish directory, redirects, and environment variables.',
