@@ -16921,7 +16921,9 @@
       "label": "Lighttpd Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "lighttpd.conf"
+      ],
       "extensions": [
         ".yml"
       ],

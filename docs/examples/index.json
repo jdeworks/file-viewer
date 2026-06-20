@@ -7275,6 +7275,29 @@
     "knownFile": "lighttpd-conf"
   },
   {
+    "file": "rsyslog.conf",
+    "label": "rsyslog.conf (rsyslog)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "System"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "knownFile": "rsyslog-conf"
+  },
+  {
+    "file": "Manifest.toml",
+    "label": "Manifest.toml (Julia Manifest)",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "application/toml",
+    "enhanced": true,
+    "knownFile": "julia-manifest"
+  },
+  {
     "file": "named.conf",
     "label": "named.conf (BIND DNS)",
     "category": "Config",
@@ -7297,5 +7320,17 @@
     "mime": "text/plain",
     "enhanced": true,
     "knownFile": "dhcpd-conf"
+  },
+  {
+    "file": "keepalived.conf",
+    "label": "keepalived.conf (Keepalived VRRP)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "knownFile": "keepalived-conf"
   }
 ]

@@ -367,6 +367,8 @@ import unleashConfig from '../types/text/known/unleash-config/index.js';
 import vaultHcl from '../types/text/known/vault-hcl/index.js';
 import nomadJob from '../types/text/known/nomad-job/index.js';
 import vectorToml from '../types/text/toml/known/vector-toml/index.js';
+import vectorConfig from '../types/text/known/vector-config/index.js';
+import keepalivedConf from '../types/text/known/keepalived-conf/index.js';
 import wailsJson from '../types/text/json/known/wails-json/index.js';
 import webConfig from '../types/text/xml/known/web-config/index.js';
 import xcconfig from '../types/text/known/xcconfig/index.js';
@@ -539,7 +541,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   jekyllConfig, juliaProject, juliaManifest, kongConfig, apisixConfig, envoyConfig, launchSettings,
   nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, clickhouseConfig, shardYml,
   tauriConf, traefikConfig, unleashConfig, vaultHcl, nomadJob, consulConfig,
-  vectorToml, wailsJson, webConfig, xcconfig,
+  vectorToml, vectorConfig, keepalivedConf, wailsJson, webConfig, xcconfig,
   bitbucketPipelines, tektonPipeline, argoCdApp, fluxKustomization, fluxHelmRelease, dockerStack,
   semgrepConfig, codeclimateConfig, gitleaksConfig, osvScanner,
   condaEnv, pipConf, nodeVersionFile, dockerBake,
