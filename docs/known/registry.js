@@ -267,6 +267,8 @@ import stackYaml from '../types/text/yaml/known/stack-yaml/index.js';
 import cabal from '../types/text/known/cabal/index.js';
 import packageResolved from '../types/text/json/known/package-resolved/index.js';
 import rebarConfig from '../types/text/known/rebar-config/index.js';
+import erlangSysConfig from '../types/text/known/erlang-sys-config/index.js';
+import erlangVmArgs from '../types/text/known/erlang-vm-args/index.js';
 import cpanfile from '../types/text/known/cpanfile/index.js';
 import rDescription from '../types/text/known/r-description/index.js';
 import rProfile from '../types/text/known/r-profile/index.js';
@@ -477,6 +479,8 @@ import smbConf from '../types/text/known/smb-conf/index.js';
 import corefile from '../types/text/known/corefile/index.js';
 import containerdConfig from '../types/text/known/containerd-config/index.js';
 import postfixConf from '../types/text/known/postfix-conf/index.js';
+import dovecotConf from '../types/text/known/dovecot-conf/index.js';
+import eximConf from '../types/text/known/exim-conf/index.js';
 import chronyConf from '../types/text/known/chrony-conf/index.js';
 import namedConf from '../types/text/known/named-conf/index.js';
 import dhcpdConf from '../types/text/known/dhcpd-conf/index.js';
@@ -528,7 +532,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   scorecard, socketSecurity, trivyConfig, snykConfig,
   gradleVersionCatalog, gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml,
   csproj, directoryBuild, msbuildProps, nuspec,
-  stackYaml, cabal, packageResolved, rebarConfig, cpanfile,
+  stackYaml, cabal, packageResolved, rebarConfig, erlangSysConfig, erlangVmArgs, cpanfile,
   rDescription, rProfile,
   docusaurusConfig, vitepressConfig, sphinxConf, doxyfile,
   drizzleConfig, knexfile, alembic, flywayConf,
@@ -586,7 +590,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   iptablesRules, ufwConf,
   fail2banConf, apparmorProfile, smbConf,
   corefile, containerdConfig,
-  postfixConf, chronyConf,
+  postfixConf, dovecotConf, eximConf, chronyConf,
   namedConf, dhcpdConf,
   netdataConf, yarnrc,
 ];

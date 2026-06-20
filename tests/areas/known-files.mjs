@@ -3395,4 +3395,36 @@ export async function run(ctx) {
   if (/modprobe/i.test(modprobeText)) pass('blacklist.conf: modprobe badge shown'); else fail('modprobe-conf badge: ' + modprobeText.slice(0, 200));
   if (/blacklist/i.test(modprobeText)) pass('blacklist.conf: blacklist section shown'); else fail('modprobe-conf blacklist: ' + modprobeText.slice(0, 300));
 
+  // ── dovecot.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dovecot.conf (Dovecot IMAP/POP3)');
+  await page.waitForSelector('#previewHost .dovecotcfg-doc', { timeout: 12000 });
+  const dovecotText = await page.$eval('#previewHost .dovecotcfg-doc', (e) => e.textContent);
+  if (/Dovecot/i.test(dovecotText)) pass('dovecot.conf: Dovecot badge shown'); else fail('dovecot-conf badge: ' + dovecotText.slice(0, 200));
+  if (/imap|protocols/i.test(dovecotText)) pass('dovecot.conf: protocols or imap shown'); else fail('dovecot-conf protocols: ' + dovecotText.slice(0, 300));
+
+  // ── exim4.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('exim4.conf (Exim MTA)');
+  await page.waitForSelector('#previewHost .eximcfg-doc', { timeout: 12000 });
+  const eximText = await page.$eval('#previewHost .eximcfg-doc', (e) => e.textContent);
+  if (/Exim/i.test(eximText)) pass('exim4.conf: Exim badge shown'); else fail('exim-conf badge: ' + eximText.slice(0, 200));
+  if (/router|transport/i.test(eximText)) pass('exim4.conf: routers or transports shown'); else fail('exim-conf routers: ' + eximText.slice(0, 300));
+
+  // ── sys.config (Erlang/OTP) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sys.config');
+  await page.waitForSelector('#previewHost .erlsyscfg-doc', { timeout: 12000 });
+  const erlSysCfgText = await page.$eval('#previewHost .erlsyscfg-doc', (e) => e.textContent);
+  if (/Erlang/i.test(erlSysCfgText)) pass('sys.config: Erlang badge shown'); else fail('erlang-sys-config badge: ' + erlSysCfgText.slice(0, 200));
+  if (/kernel|myapp/i.test(erlSysCfgText)) pass('sys.config: application names shown (kernel or myapp)'); else fail('erlang-sys-config apps: ' + erlSysCfgText.slice(0, 300));
+
+  // ── vm.args (Erlang VM) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vm.args');
+  await page.waitForSelector('#previewHost .erlvmargs-doc', { timeout: 12000 });
+  const erlVmArgsText = await page.$eval('#previewHost .erlvmargs-doc', (e) => e.textContent);
+  if (/Erlang VM/i.test(erlVmArgsText)) pass('vm.args: Erlang VM badge shown'); else fail('erlang-vm-args badge: ' + erlVmArgsText.slice(0, 200));
+  if (/node|scheduler/i.test(erlVmArgsText)) pass('vm.args: node identity or scheduler section shown'); else fail('erlang-vm-args content: ' + erlVmArgsText.slice(0, 300));
+
 }

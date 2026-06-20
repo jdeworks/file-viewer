@@ -3168,7 +3168,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "typos source code spell checker configuration — word overrides, file ignores, and check settings.",
+    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
     "knownFile": "typos"
   },
   {
@@ -4787,6 +4787,32 @@
     "description": "Erlang rebar3 build config."
   },
   {
+    "label": "sys.config",
+    "file": "sys.config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Erlang"
+    ],
+    "enhanced": true,
+    "knownFile": "erlang-sys-config",
+    "description": "Erlang/OTP runtime application configuration."
+  },
+  {
+    "label": "vm.args",
+    "file": "vm.args",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Erlang"
+    ],
+    "enhanced": true,
+    "knownFile": "erlang-vm-args",
+    "description": "Erlang VM startup arguments: node name, cookie, schedulers, memory."
+  },
+  {
     "label": "drizzle.config.ts",
     "file": "drizzle.config.ts",
     "mime": "text/x-typescript",
@@ -6379,7 +6405,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys — all secret values masked.",
+    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys \u2014 all secret values masked.",
     "knownFile": "rails-credentials"
   },
   {
@@ -6391,7 +6417,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Puma web server config: 2 workers, threads 2–16, production environment, preload_app enabled, plugins listed.",
+    "description": "Puma web server config: 2 workers, threads 2\u201316, production environment, preload_app enabled, plugins listed.",
     "knownFile": "puma-config"
   },
   {
@@ -7354,6 +7380,26 @@
     "knownFile": "openssl-conf"
   },
   {
+    "file": "krb5.conf",
+    "label": "krb5.conf (Kerberos)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security"
+    ],
+    "knownFile": "krb5-conf"
+  },
+  {
+    "file": "gpg.conf",
+    "label": "gpg.conf (GnuPG)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security"
+    ],
+    "knownFile": "gpg-conf"
+  },
+  {
     "file": "netdata.conf",
     "label": "netdata.conf (Netdata)",
     "category": "Config",
@@ -7428,5 +7474,31 @@
     "enhanced": true,
     "description": "Kernel module blacklist configuration: prevents auto-loading of Bluetooth, USB storage, webcam, and legacy protocol modules.",
     "knownFile": "modprobe-conf"
+  },
+  {
+    "file": "dovecot.conf",
+    "label": "dovecot.conf (Dovecot IMAP/POP3)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Mail"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Dovecot IMAP/POP3 server config: protocols, mail storage, SSL/TLS, auth mechanisms, and service listeners.",
+    "knownFile": "dovecot-conf"
+  },
+  {
+    "file": "exim4.conf",
+    "label": "exim4.conf (Exim MTA)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Mail"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Exim MTA configuration: mail routing, transport drivers, ACLs, TLS, and SMTP authenticators.",
+    "knownFile": "exim-conf"
   }
 ]
