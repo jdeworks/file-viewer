@@ -193,6 +193,13 @@ function applyFilter(container) {
   for (const group of container.querySelectorAll('.ex-group')) {
     group.hidden = !group.querySelector('.ex-file-btn:not([hidden])');
   }
+  // Hide super-sections whose grids have no visible cards
+  for (const section of container.querySelectorAll('.ex-super-section')) {
+    const grid = section.querySelector('.ex-folder-grid');
+    if (!grid) continue;
+    const hasVisible = !!grid.querySelector('.ex-folder-card:not([hidden])');
+    section.hidden = !hasVisible;
+  }
 }
 
 export async function loadExamples(onPick) {
