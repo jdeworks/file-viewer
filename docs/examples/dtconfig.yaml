@@ -1,0 +1,31 @@
+# Dynatrace OneAgent configuration
+# https://docs.dynatrace.com/docs/setup-and-configuration/dynatrace-oneagent/configuration
+
+dynatrace:
+  apiUrl: https://abc12345.live.dynatrace.com/api
+  environmentId: abc12345
+  apiToken: dt0c01.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+  networkZone: us-east-1
+  networkZones:
+    - us-east-1
+    - us-east-2
+
+  hostGroup: production-web
+  hostTags:
+    - env:production
+    - team:platform
+    - region:us-east
+
+  infraOnly: false
+
+  storage:
+    path: /opt/dynatrace/agent
+    maxSize: 512
+
+  features:
+    fullstack: true
+    metricIngest: true
+    logMonitoring: true
+    networkMonitoring: true
+    processGroupDetection: true

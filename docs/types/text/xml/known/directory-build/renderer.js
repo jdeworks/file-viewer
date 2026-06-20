@@ -5,7 +5,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 const CSS = `
 .db-doc{padding:16px 18px;max-width:860px;font-family:system-ui,sans-serif;font-size:14px;color:#c9d1d9}
 .db-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-.db-badge{background:#1f6feb;color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;letter-spacing:.4px}
+.db-badge{background:#512BD4;color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;letter-spacing:.4px}
 .db-title{font-size:18px;font-weight:700;color:#e6edf3}
 .db-sec{margin-bottom:16px}
 .db-sec h3{font-size:12px;font-weight:600;color:#8b949e;text-transform:uppercase;letter-spacing:.6px;margin:0 0 8px}

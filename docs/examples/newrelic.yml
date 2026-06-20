@@ -1,0 +1,47 @@
+# New Relic Java Agent Configuration
+# https://docs.newrelic.com/docs/apm/agents/java-agent/configuration/java-agent-configuration-config-file/
+
+common: &default_settings
+  license_key: NRJS-000000000000000000000000
+  app_name: MyApp (Production)
+  agent_enabled: true
+  log_level: info
+  high_security: false
+
+  browser_monitoring:
+    auto_instrument: true
+
+  distributed_tracing:
+    enabled: true
+
+  transaction_tracer:
+    enabled: true
+    transaction_threshold: apdex_f
+    record_sql: obfuscated
+    log_sql: false
+    stack_trace_threshold: 0.5
+
+  error_collector:
+    enabled: true
+    ignore_status_codes:
+      - 404
+      - 401
+
+  thread_profiler:
+    enabled: true
+
+development:
+  <<: *default_settings
+  app_name: MyApp (Development)
+  log_level: finest
+  browser_monitoring:
+    auto_instrument: false
+
+test:
+  <<: *default_settings
+  app_name: MyApp (Test)
+  log_level: fine
+
+production:
+  <<: *default_settings
+  app_name: MyApp (Production)

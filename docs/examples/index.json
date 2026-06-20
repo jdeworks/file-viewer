@@ -4399,6 +4399,50 @@
     "description": "PHP CS Fixer config: PSR-12 rules, PHP 8.1 target, custom fixers for strict types and array syntax."
   },
   {
+    "label": "php.ini",
+    "file": "php.ini",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "PHP runtime config: memory limit, execution timeout, upload limits, error reporting, session handling, and OPcache."
+  },
+  {
+    "label": "psalm.xml",
+    "file": "psalm.xml",
+    "mime": "text/xml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Psalm static analysis config: errorLevel 3, PHP 8.1, project roots, stubs, plugins, forbidden functions, and issue handlers."
+  },
+  {
+    "label": "phpunit.xml.dist (PHPUnit Config)",
+    "file": "phpunit.xml.dist",
+    "mime": "text/xml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "PHPUnit config: unit + integration test suites, coverage source paths, PHP ini settings, and extensions."
+  },
+  {
+    "label": "rector.php (Rector Config)",
+    "file": "rector.php",
+    "mime": "application/x-httpd-php",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Rector automated PHP upgrade config: PHP 8.1 target, dead code removal, 5 rules with skip list."
+  },
+  {
     "label": "behat.yml",
     "file": "behat.yml",
     "mime": "text/x-yaml",

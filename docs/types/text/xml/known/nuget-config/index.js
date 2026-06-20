@@ -4,8 +4,11 @@ export default {
   label: 'NuGet Config',
   match(intake, baseType) {
     if (baseType?.id !== 'xml') return false;
-    const n = (intake.name || '').toLowerCase();
-    return n === 'nuget.config' || n === 'nuget.config.xml';
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    if (n !== 'nuget.config' && n !== 'nuget.config.xml') return false;
+    // Confirm it looks like a NuGet config (has packageSources)
+    const text = intake.text || '';
+    return !text || /<packageSources|<configuration>/i.test(text);
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

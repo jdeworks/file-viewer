@@ -1,13 +1,13 @@
-// .csproj renderer — SDK-style C# project file. Surfaces target framework, output type,
-// package references, project references, and key build settings.
+// .csproj / .vbproj / .fsproj renderer — SDK-style .NET project files. Surfaces SDK type,
+// target framework, output type, package references, project references, and key build settings.
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
 .cs-doc{padding:16px 18px;max-width:860px;font-family:system-ui,sans-serif;font-size:14px;color:#c9d1d9}
 .cs-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-.cs-badge{background:#6f42c1;color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;letter-spacing:.4px}
+.cs-badge{background:#512BD4;color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;letter-spacing:.4px}
 .cs-title{font-size:18px;font-weight:700;color:#e6edf3}
-.cs-sdk{font-size:11px;color:#8b949e;margin-left:auto}
+.cs-sdk{font-size:11px;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:2px 8px;color:#79c0ff;margin-left:auto;font-family:monospace}
 .cs-grid{display:grid;grid-template-columns:160px 1fr;gap:4px 12px;margin-bottom:16px}
 .cs-key{color:#8b949e;font-size:12px;display:flex;align-items:center}
 .cs-val{color:#e6edf3;font-size:13px;font-family:monospace}
@@ -31,10 +31,6 @@ function childText(el, tag) {
     if (local === tag) return (c.textContent || '').trim();
   }
   return '';
-}
-
-function allText(doc, tag) {
-  return [...doc.getElementsByTagName(tag)].map((e) => e.textContent.trim()).filter(Boolean);
 }
 
 export function render(intake) {
@@ -84,7 +80,7 @@ export function render(intake) {
 
   const filename = (intake.name || intake.filename || '').split('/').pop() || 'project.csproj';
 
-  // Build info rows
+  // Build info rows (SDK moved to header chip)
   const infoRows = [
     targetFramework && ['Target Framework', targetFramework],
     outputType && ['Output Type', outputType],
@@ -94,7 +90,6 @@ export function render(intake) {
     nullable && ['Nullable', nullable],
     langVersion && ['Lang Version', langVersion],
     defineConstants && ['Define Constants', defineConstants],
-    isSdkStyle && ['SDK', sdk],
   ].filter(Boolean);
 
   const gridHtml = infoRows.map(([k, v]) =>
@@ -116,9 +111,9 @@ export function render(intake) {
   const host = document.createElement('div');
   host.innerHTML = `<style>${CSS}</style><div class="cs-doc">
     <div class="cs-head">
-      <span class="cs-badge">.NET / C#</span>
+      <span class="cs-badge">.NET Project</span>
       <span class="cs-title">${esc(filename)}</span>
-      ${isSdkStyle ? `<span class="cs-sdk">SDK-style</span>` : ''}
+      ${isSdkStyle ? `<span class="cs-sdk">${esc(sdk)}</span>` : ''}
     </div>
     ${gridHtml ? `<div class="cs-grid">${gridHtml}</div>` : ''}
     <div class="cs-sec">

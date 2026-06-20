@@ -285,6 +285,10 @@ import phpunit from '../types/text/xml/known/phpunit/index.js';
 import phpstan from '../types/text/known/phpstan/index.js';
 import phpCsFixer from '../types/text/known/php-cs-fixer/index.js';
 import behat from '../types/text/yaml/known/behat/index.js';
+import phpIni from '../types/text/ini/known/php-ini/index.js';
+import psalmConfig from '../types/text/xml/known/psalm-config/index.js';
+import phpunitConfig from '../types/text/xml/known/phpunit-config/index.js';
+import rectorConfig from '../types/text/known/rector-config/index.js';
 import terragrunt from '../types/text/known/terragrunt/index.js';
 import tflint from '../types/text/known/tflint/index.js';
 import tfLock from '../types/text/known/tf-lock/index.js';
@@ -414,6 +418,10 @@ import newrelicConfig from '../types/text/yaml/known/newrelic-config/index.js';
 import dynatraceConfig from '../types/text/yaml/known/dynatrace-config/index.js';
 import elasticApmConfig from '../types/text/known/elastic-apm-config/index.js';
 import beatsConfig from '../types/text/yaml/known/beats-config/index.js';
+import hardhatConfig from '../types/text/known/hardhat-config/index.js';
+import truffleConfig from '../types/text/known/truffle-config/index.js';
+import foundryToml from '../types/text/toml/known/foundry-toml/index.js';
+import anchorToml from '../types/text/toml/known/anchor-toml/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -467,6 +475,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   gaeApp, cloudbuild, googleServices, catalogInfo,
   cursorRules, claudeMd, copilotInstructions, aiderConf,
   phpunit, phpstan, phpCsFixer, behat,
+  phpIni, psalmConfig, phpunitConfig, rectorConfig,
   terragrunt, tflint, tfLock, versionsTf,
   tsupConfig, rspackConfig, parcelrc, bunfigToml,
   shadowCljs, projectClj, depsEdn,
@@ -501,6 +510,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   proguardRules, androidStrings,
   keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig,
   newrelicConfig, dynatraceConfig, elasticApmConfig, beatsConfig,
+  hardhatConfig, truffleConfig, foundryToml, anchorToml,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

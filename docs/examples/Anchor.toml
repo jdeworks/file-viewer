@@ -1,0 +1,36 @@
+[programs.localnet]
+my_program = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+token_vault = "HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65L"
+
+[programs.devnet]
+my_program = "7n2UMFKNpKX3Q3gWFYQCkK9pWpzpXEqsWzCJXbPpzkmq"
+token_vault = "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin"
+
+[programs.mainnet]
+my_program = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+token_vault = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[workspace]
+members = ["programs/*"]
+types = "target/types"
+idl = "target/idl"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[test]
+startup_wait = 5000
+
+[test.validator]
+url = "https://api.devnet.solana.com"
+
+[[test.validator.clone]]
+address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+
+[[test.validator.account]]
+address = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+filename = "tests/fixtures/my_program.json"

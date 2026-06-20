@@ -15301,7 +15301,9 @@
       "label": "ProGuard Rules",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "proguard-rules.pro"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15326,7 +15328,9 @@
       "label": "Android Strings",
       "baseType": "xml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "strings.xml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15351,7 +15355,9 @@
       "label": "MSBuild",
       "baseType": "xml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "Common.props"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15484,7 +15490,9 @@
       "label": "Keycloak Realm",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "keycloak-realm.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15509,7 +15517,9 @@
       "label": "Authelia config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "authelia-config.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15534,7 +15544,9 @@
       "label": "OAuth2 Proxy config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "oauth2-proxy.cfg"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15559,7 +15571,9 @@
       "label": "Authentik blueprint",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "authentik-blueprint.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15584,7 +15598,9 @@
       "label": "New Relic Agent",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "newrelic.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15609,7 +15625,9 @@
       "label": "Dynatrace OneAgent",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "dtconfig.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15634,7 +15652,9 @@
       "label": "Elastic APM Agent",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "elastic-apm-agent.properties"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15659,7 +15679,225 @@
       "label": "Elastic Beats",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "filebeat.yml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "hardhat-config": {
+      "label": "Hardhat Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "hardhat.config.js"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "truffle-config": {
+      "label": "Truffle Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "truffle-config.js"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "foundry-toml": {
+      "label": "Foundry Config",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "foundry.toml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "anchor-toml": {
+      "label": "Anchor Config",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "Anchor.toml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "php-ini": {
+      "label": "PHP Configuration",
+      "baseType": "ini",
+      "support": "supported",
+      "sampleFiles": [
+        "php.ini"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "psalm-config": {
+      "label": "Psalm Config",
+      "baseType": "xml",
+      "support": "supported",
+      "sampleFiles": [
+        "psalm.xml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "phpunit-config": {
+      "label": "PHPUnit Config",
+      "baseType": "xml",
+      "support": "supported",
+      "sampleFiles": [
+        "phpunit-app.xml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "rector-config": {
+      "label": "Rector Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "rector.php"
+      ],
       "extensions": [
         ".yml"
       ],

@@ -2577,4 +2577,88 @@ export async function run(ctx) {
   if (/my-team/i.test(wbText)) pass('wandb-settings: entity shown'); else fail('wandb entity: ' + wbText.slice(0, 300));
   if (/image-classification/i.test(wbText)) pass('wandb-settings: project shown'); else fail('wandb project: ' + wbText.slice(0, 300));
   if (/online/i.test(wbText)) pass('wandb-settings: mode shown'); else fail('wandb mode: ' + wbText.slice(0, 300));
+
+  // ── New Relic Agent config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('newrelic.yml (New Relic Agent)');
+  await page.waitForSelector('#previewHost .nr-doc', { timeout: 12000 });
+  const nrText = await page.$eval('#previewHost .nr-doc', (e) => e.textContent);
+  if (/New Relic/i.test(nrText)) pass('newrelic.yml: New Relic badge shown'); else fail('newrelic badge: ' + nrText.slice(0, 200));
+  if (/MyApp/i.test(nrText)) pass('newrelic.yml: app_name shown'); else fail('newrelic app_name: ' + nrText.slice(0, 300));
+  if (/••••••••|masked/i.test(nrText)) pass('newrelic.yml: license_key masked'); else fail('newrelic masking: ' + nrText.slice(0, 300));
+  if (/distributed_tracing|transaction_tracer|error_collector/i.test(nrText)) pass('newrelic.yml: config sections shown'); else fail('newrelic sections: ' + nrText.slice(0, 300));
+  if (/development|production|test/i.test(nrText)) pass('newrelic.yml: environments shown'); else fail('newrelic environments: ' + nrText.slice(0, 300));
+
+  // ── Dynatrace OneAgent config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dtconfig.yaml (Dynatrace OneAgent)');
+  await page.waitForSelector('#previewHost .dt-doc', { timeout: 12000 });
+  const dtText = await page.$eval('#previewHost .dt-doc', (e) => e.textContent);
+  if (/Dynatrace/i.test(dtText)) pass('dtconfig.yaml: Dynatrace badge shown'); else fail('dynatrace badge: ' + dtText.slice(0, 200));
+  if (/abc12345|live\.dynatrace\.com/i.test(dtText)) pass('dtconfig.yaml: environment/API URL shown'); else fail('dynatrace env: ' + dtText.slice(0, 300));
+  if (/••••••••|masked/i.test(dtText)) pass('dtconfig.yaml: apiToken masked'); else fail('dynatrace token masking: ' + dtText.slice(0, 300));
+  if (/us-east-1|network.zone/i.test(dtText)) pass('dtconfig.yaml: network zones shown'); else fail('dynatrace network zones: ' + dtText.slice(0, 300));
+
+  // ── Elastic APM agent config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('elastic-apm-agent.properties (Elastic APM Agent)');
+  await page.waitForSelector('#previewHost .apm-doc', { timeout: 12000 });
+  const apmText = await page.$eval('#previewHost .apm-doc', (e) => e.textContent);
+  if (/Elastic APM/i.test(apmText)) pass('elastic-apm-agent.properties: Elastic APM badge shown'); else fail('elastic-apm badge: ' + apmText.slice(0, 200));
+  if (/payment-service/i.test(apmText)) pass('elastic-apm-agent.properties: service_name shown'); else fail('elastic-apm service: ' + apmText.slice(0, 300));
+  if (/production/i.test(apmText)) pass('elastic-apm-agent.properties: environment shown'); else fail('elastic-apm env: ' + apmText.slice(0, 300));
+  if (/••••••••|masked/i.test(apmText)) pass('elastic-apm-agent.properties: secret_token masked'); else fail('elastic-apm token masking: ' + apmText.slice(0, 300));
+  if (/0\.25|25%|sample/i.test(apmText)) pass('elastic-apm-agent.properties: sample rate shown'); else fail('elastic-apm sampling: ' + apmText.slice(0, 300));
+
+  // ── Elastic Beats (Filebeat) config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('filebeat.yml (Elastic Beats)');
+  await page.waitForSelector('#previewHost .beats-doc', { timeout: 12000 });
+  const beatsText = await page.$eval('#previewHost .beats-doc', (e) => e.textContent);
+  if (/Elastic Beats/i.test(beatsText)) pass('filebeat.yml: Elastic Beats badge shown'); else fail('beats badge: ' + beatsText.slice(0, 200));
+  if (/Filebeat/i.test(beatsText)) pass('filebeat.yml: beat type chip shown'); else fail('beats type chip: ' + beatsText.slice(0, 200));
+  if (/app-logs|nginx-access|\/var\/log/i.test(beatsText)) pass('filebeat.yml: inputs shown'); else fail('beats inputs: ' + beatsText.slice(0, 300));
+  if (/elasticsearch/i.test(beatsText)) pass('filebeat.yml: output type shown'); else fail('beats output: ' + beatsText.slice(0, 300));
+  if (/••••••••|masked/i.test(beatsText)) pass('filebeat.yml: output password masked'); else fail('beats password masking: ' + beatsText.slice(0, 300));
+
+  // ── Hardhat config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('hardhat.config.js (Hardhat)');
+  await page.waitForSelector('#previewHost .hh-doc', { timeout: 12000 });
+  const hhText = await page.$eval('#previewHost .hh-doc', (e) => e.textContent);
+  if (/Hardhat/i.test(hhText)) pass('hardhat.config.js: Hardhat badge shown'); else fail('hardhat badge: ' + hhText.slice(0, 200));
+  if (/hardhat|localhost|mainnet/i.test(hhText)) pass('hardhat.config.js: network names shown'); else fail('hardhat networks: ' + hhText.slice(0, 300));
+  if (/0\.8\.24/i.test(hhText)) pass('hardhat.config.js: Solidity version shown'); else fail('hardhat solc: ' + hhText.slice(0, 300));
+  if (/configured/i.test(hhText)) pass('hardhat.config.js: Etherscan configured shown'); else fail('hardhat etherscan: ' + hhText.slice(0, 300));
+
+  // ── Truffle config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('truffle-config.js (Truffle)');
+  await page.waitForSelector('#previewHost .truf-doc', { timeout: 12000 });
+  const trufText = await page.$eval('#previewHost .truf-doc', (e) => e.textContent);
+  if (/Truffle/i.test(trufText)) pass('truffle-config.js: Truffle badge shown'); else fail('truffle badge: ' + trufText.slice(0, 200));
+  if (/development|mainnet/i.test(trufText)) pass('truffle-config.js: network names shown'); else fail('truffle networks: ' + trufText.slice(0, 300));
+  if (/0\.8\.17/i.test(trufText)) pass('truffle-config.js: Solidity version shown'); else fail('truffle solc: ' + trufText.slice(0, 300));
+  if (/build\/contracts|build.contracts/i.test(trufText)) pass('truffle-config.js: build directory shown'); else fail('truffle build dir: ' + trufText.slice(0, 300));
+
+  // ── Foundry TOML viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('foundry.toml (Foundry)');
+  await page.waitForSelector('#previewHost .fndry-doc', { timeout: 12000 });
+  const fndryText = await page.$eval('#previewHost .fndry-doc', (e) => e.textContent);
+  if (/Foundry/i.test(fndryText)) pass('foundry.toml: Foundry badge shown'); else fail('foundry badge: ' + fndryText.slice(0, 200));
+  if (/0\.8\.24/i.test(fndryText)) pass('foundry.toml: Solidity version shown'); else fail('foundry solc: ' + fndryText.slice(0, 300));
+  if (/mainnet|goerli|arbitrum/i.test(fndryText)) pass('foundry.toml: RPC endpoint names shown'); else fail('foundry rpc: ' + fndryText.slice(0, 300));
+  if (/openzeppelin|forge-std/i.test(fndryText)) pass('foundry.toml: remappings shown'); else fail('foundry remappings: ' + fndryText.slice(0, 300));
+  if (/URL.*hidden|URLs hidden/i.test(fndryText)) pass('foundry.toml: RPC URLs hidden message shown'); else fail('foundry rpc masking: ' + fndryText.slice(0, 400));
+
+  // ── Anchor TOML viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Anchor.toml (Anchor)');
+  await page.waitForSelector('#previewHost .anc-doc', { timeout: 12000 });
+  const ancText = await page.$eval('#previewHost .anc-doc', (e) => e.textContent);
+  if (/Anchor/i.test(ancText)) pass('Anchor.toml: Anchor badge shown'); else fail('anchor badge: ' + ancText.slice(0, 200));
+  if (/my_program|token_vault/i.test(ancText)) pass('Anchor.toml: program names shown'); else fail('anchor programs: ' + ancText.slice(0, 300));
+  if (/localnet|devnet|mainnet/i.test(ancText)) pass('Anchor.toml: cluster names shown'); else fail('anchor clusters: ' + ancText.slice(0, 300));
+  if (/~\/.config\/solana\/id\.json/i.test(ancText)) pass('Anchor.toml: wallet path shown'); else fail('anchor wallet: ' + ancText.slice(0, 300));
 }

@@ -1,0 +1,34 @@
+<Project>
+
+  <PropertyGroup>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Optimize Condition="'$(Configuration)' == 'Release'">true</Optimize>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Acme Corp</Authors>
+    <Company>Acme Corp</Company>
+    <Copyright>Copyright (c) 2024 Acme Corp</Copyright>
+    <RepositoryUrl>https://github.com/acme/myrepo</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageVersion Include="NUnit" Version="4.1.0" />
+    <PackageVersion Include="Moq" Version="4.20.70" />
+  </ItemGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)Custom.targets" Condition="Exists('$(MSBuildThisFileDirectory)Custom.targets')" />
+
+  <Target Name="PrintBuildInfo" AfterTargets="Build">
+    <Message Text="Build complete: $(AssemblyName) $(Configuration)" Importance="high" />
+  </Target>
+
+</Project>

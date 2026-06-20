@@ -1,0 +1,49 @@
+# Filebeat configuration
+# https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-reference-yml.html
+
+filebeat.inputs:
+  - type: log
+    id: app-logs
+    enabled: true
+    paths:
+      - /var/log/myapp/*.log
+      - /var/log/myapp/**/*.log
+    fields:
+      service: myapp
+      environment: production
+    multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+    multiline.negate: true
+    multiline.match: after
+
+  - type: log
+    id: nginx-access
+    enabled: true
+    paths:
+      - /var/log/nginx/access.log
+    fields:
+      service: nginx
+      log_type: access
+
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - drop_fields:
+      fields: ["agent.ephemeral_id"]
+
+output.elasticsearch:
+  hosts:
+    - https://es-node-1.example.com:9200
+    - https://es-node-2.example.com:9200
+  index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+  username: filebeat_writer
+  password: s3cr3tp@ssw0rd
+
+logging:
+  level: info
+  to_files: true
+  files:
+    path: /var/log/filebeat
+    name: filebeat
+    keepfiles: 7
