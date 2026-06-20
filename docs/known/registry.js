@@ -538,6 +538,8 @@ import rangerConf from '../types/text/known/ranger-conf/index.js';
 import zathurarc from '../types/text/known/zathurarc/index.js';
 import wslConf from '../types/text/known/wsl-conf/index.js';
 import loaderConf from '../types/text/known/loader-conf/index.js';
+import cmusConf from '../types/text/known/cmus-conf/index.js';
+import pacmanConf from '../types/text/known/pacman-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -662,6 +664,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   helixConfig, lfrc,
   rangerConf, zathurarc,
   wslConf, loaderConf,
+  cmusConf, pacmanConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

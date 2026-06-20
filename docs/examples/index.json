@@ -8101,5 +8101,30 @@
     "enhanced": true,
     "description": "systemd-boot boot entry for Arch Linux: kernel path, microcode and initramfs images, and kernel command-line options with UUID root and quiet boot.",
     "knownFile": "loader-conf"
+  },
+  {
+    "label": "cmus.rc",
+    "file": "cmus.rc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Music"
+    ],
+    "enhanced": true,
+    "description": "cmus terminal music player configuration: pipewire output, zenburn colorscheme, replaygain, display settings, and key bindings.",
+    "knownFile": "cmus-conf"
+  },
+  {
+    "label": "pacman.conf",
+    "file": "pacman.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Arch Linux pacman configuration: core, extra, multilib, and chaotic-aur repositories with parallel downloads and ILoveCandy.",
+    "knownFile": "pacman-conf"
   }
 ]

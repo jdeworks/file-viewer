@@ -3878,4 +3878,22 @@ export async function run(ctx) {
   if (/zathura/i.test(zathuraText)) pass('zathurarc: Zathura badge shown'); else fail('zathurarc badge: ' + zathuraText.slice(0, 200));
   if (/#1e1e2e|default.bg|default-bg/i.test(zathuraText)) pass('zathurarc: default-bg color shown'); else fail('zathurarc default-bg: ' + zathuraText.slice(0, 300));
   if (/recolor/i.test(zathuraText)) pass('zathurarc: recolor mode shown'); else fail('zathurarc recolor: ' + zathuraText.slice(0, 300));
+
+  // ── wsl.conf (WSL2 per-distribution config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('wsl.conf');
+  await page.waitForSelector('#previewHost .wslcfg-doc', { timeout: 12000 });
+  const wslText = await page.$eval('#previewHost .wslcfg-doc', (e) => e.textContent);
+  if (/WSL2/i.test(wslText)) pass('wsl.conf: WSL2 badge shown'); else fail('wsl-conf badge: ' + wslText.slice(0, 200));
+  if (/automount|enabled/i.test(wslText)) pass('wsl.conf: automount section shown'); else fail('wsl-conf automount: ' + wslText.slice(0, 300));
+  if (/systemd/i.test(wslText)) pass('wsl.conf: systemd chip shown'); else fail('wsl-conf systemd: ' + wslText.slice(0, 300));
+
+  // ── loader.conf (systemd-boot config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('loader.conf');
+  await page.waitForSelector('#previewHost .sdbcfg-doc', { timeout: 12000 });
+  const loaderText = await page.$eval('#previewHost .sdbcfg-doc', (e) => e.textContent);
+  if (/systemd-boot/i.test(loaderText)) pass('loader.conf: systemd-boot badge shown'); else fail('loader-conf badge: ' + loaderText.slice(0, 200));
+  if (/arch-linux\.conf|default/i.test(loaderText)) pass('loader.conf: default entry shown'); else fail('loader-conf default: ' + loaderText.slice(0, 300));
+  if (/timeout|3/i.test(loaderText)) pass('loader.conf: timeout shown'); else fail('loader-conf timeout: ' + loaderText.slice(0, 300));
 }
