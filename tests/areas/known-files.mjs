@@ -5443,4 +5443,10 @@ export async function run(ctx) {
   await openExample('concourse.env');
   await page.waitForSelector('#previewHost .concourse-doc', { timeout: 12000 });
   pass('concourse.env: Concourse CI badge shown');
+
+  // ── invoiceninja.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('invoiceninja.env');
+  await page.waitForSelector('#previewHost .invninja-doc', { timeout: 12000 });
+  pass('invoiceninja.env: Invoice Ninja badge shown');
 }

@@ -10033,5 +10033,18 @@
     "enhanced": true,
     "description": "Concourse CI server environment configuration",
     "knownFile": true
+  },
+  {
+    "file": "invoiceninja.env",
+    "label": "Invoice Ninja Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Invoice Ninja self-hosted invoicing platform environment configuration with app, security, database, mail, storage, and queue settings.",
+    "knownFile": "invoiceninja-config"
   }
 ]
