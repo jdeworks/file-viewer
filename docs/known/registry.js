@@ -517,6 +517,8 @@ import weztermConf from '../types/text/known/wezterm-conf/index.js';
 import aria2Conf from '../types/text/known/aria2-conf/index.js';
 import picomConf from '../types/text/known/picom-conf/index.js';
 import mpdConf from '../types/text/known/mpd-conf/index.js';
+import ncmpcppConf from '../types/text/known/ncmpcpp-conf/index.js';
+import newsboatConf from '../types/text/known/newsboat-conf/index.js';
 import xresources from '../types/text/known/xresources/index.js';
 import xorgConf from '../types/text/known/xorg-conf/index.js';
 import bspwmrc from '../types/text/known/bspwmrc/index.js';
@@ -639,6 +641,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   pulseaudioConf, pipewireConf,
   weztermConf, aria2Conf,
   picomConf, mpdConf,
+  ncmpcppConf, newsboatConf,
   bspwmrc, sxhkdrc,
   mpvConf, ytdlpConf,
   xresources, xorgConf,

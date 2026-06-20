@@ -1,0 +1,48 @@
+version = "1"
+
+[global]
+  priority = "low"
+  ionice = true
+  ionice-class = 2
+  ionice-level = 6
+
+[default]
+  repository = "/mnt/backup/restic"
+  password-file = "/etc/restic/password.txt"
+  initialize = false
+
+  [default.backup]
+    source = ["/home", "/etc", "/var/www"]
+    exclude-caches = true
+    exclude = [
+      "/home/*/.cache",
+      "/home/*/.local/share/Trash",
+      "*.tmp"
+    ]
+    schedule = "02:30"
+    schedule-permission = "system"
+
+  [default.retention]
+    keep-daily = 7
+    keep-weekly = 4
+    keep-monthly = 12
+    keep-yearly = 2
+    prune = true
+
+  [default.check]
+    schedule = "Sun 03:00"
+
+[offsite]
+  repository = "s3:s3.amazonaws.com/my-backup-bucket"
+  password-file = "/etc/restic/password.txt"
+  aws-access-key-id = "AKIAIOSFODNN7EXAMPLE"
+  aws-secret-access-key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
+  [offsite.backup]
+    source = ["/home", "/etc"]
+    schedule = "04:00"
+
+  [offsite.retention]
+    keep-daily = 14
+    keep-weekly = 8
+    keep-monthly = 6

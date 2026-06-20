@@ -7836,6 +7836,31 @@
     "knownFile": "mpd-conf"
   },
   {
+    "file": "ncmpcpp.conf",
+    "label": "ncmpcpp.conf",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Music"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "ncmpcpp MPD music player client configuration: MPD connection, display formats, visualizer (spectrum), and media library settings.",
+    "knownFile": "ncmpcpp-conf"
+  },
+  {
+    "file": "newsboat.conf",
+    "label": "newsboat.conf",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "newsboat RSS/Atom feed reader configuration: auto-reload settings, display formats, browser, key bindings, and colors.",
+    "knownFile": "newsboat-conf"
+  },
+  {
     "file": "bspwmrc",
     "label": "bspwmrc (bspwm WM)",
     "category": "Config",

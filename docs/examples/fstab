@@ -1,11 +1,23 @@
-# /etc/fstab: static file system information
-#
-# <file system>             <mount point>  <type>   <options>              <dump> <pass>
-UUID=1234-5678              /              ext4     errors=remount-ro       0      1
-UUID=abcd-ef01              /boot          ext4     defaults                0      2
-UUID=5678-9abc              /home          xfs      defaults,noatime        0      2
-UUID=ef01-2345              /var           ext4     defaults,noatime        0      2
-UUID=2345-6789              none           swap     sw                      0      0
-tmpfs                       /tmp           tmpfs    defaults,size=2G        0      0
-/dev/cdrom                  /media/cdrom0  udf,iso9660 user,noauto         0      0
-192.168.1.10:/data          /mnt/nas       nfs      defaults,noatime,nofail 0      0
+# /etc/fstab: static file system information.
+# <file system>       <mount point>  <type>   <options>                      <dump> <pass>
+
+# Root filesystem
+UUID=3e5a8b2c-1234-5678-abcd-ef0123456789  /           btrfs  defaults,compress=zstd,noatime,subvol=@      0 1
+
+# Boot partition
+UUID=ABCD-1234                             /boot/efi   vfat   umask=0077,shortname=mixed                   0 2
+
+# Home
+UUID=4f7e9d3a-abcd-1234-5678-fedcba987654  /home       btrfs  defaults,compress=zstd,noatime,subvol=@home  0 2
+
+# Swap
+UUID=12345678-1234-1234-1234-123456789abc  none        swap   sw                                            0 0
+
+# tmpfs
+tmpfs                                      /tmp        tmpfs  defaults,size=8G,mode=1777                   0 0
+
+# Windows NTFS data partition (read-only)
+UUID=AAAA1234BBBB5678  /mnt/windows  ntfs  ro,nofail,x-systemd.automount,x-systemd.idle-timeout=30  0 0
+
+# NFS home share
+server.local:/exports/data  /mnt/nas  nfs  rw,nofail,soft,intr,noatime,timeo=30  0 0

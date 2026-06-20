@@ -3730,6 +3730,24 @@ export async function run(ctx) {
   if (/format|bestvideo/i.test(ytdlpText)) pass('yt-dlp.conf: format spec shown'); else fail('ytdlp-conf format: ' + ytdlpText.slice(0, 300));
   if (/output|Downloads/i.test(ytdlpText)) pass('yt-dlp.conf: output path shown'); else fail('ytdlp-conf output: ' + ytdlpText.slice(0, 300));
 
+  // ── ncmpcpp.conf (ncmpcpp MPD music player client config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('ncmpcpp.conf');
+  await page.waitForSelector('#previewHost .ncmpcpp-doc', { timeout: 12000 });
+  const ncmpcppText = await page.$eval('#previewHost .ncmpcpp-doc', (e) => e.textContent);
+  if (/ncmpcpp/i.test(ncmpcppText)) pass('ncmpcpp.conf: ncmpcpp badge shown'); else fail('ncmpcpp-conf badge: ' + ncmpcppText.slice(0, 200));
+  if (/localhost|mpd_host/i.test(ncmpcppText)) pass('ncmpcpp.conf: MPD host shown'); else fail('ncmpcpp-conf mpd host: ' + ncmpcppText.slice(0, 300));
+  if (/spectrum|visualizer/i.test(ncmpcppText)) pass('ncmpcpp.conf: visualizer type shown'); else fail('ncmpcpp-conf visualizer: ' + ncmpcppText.slice(0, 300));
+
+  // ── newsboat.conf (newsboat RSS/Atom feed reader config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('newsboat.conf');
+  await page.waitForSelector('#previewHost .newsboat-doc', { timeout: 12000 });
+  const newsboatText = await page.$eval('#previewHost .newsboat-doc', (e) => e.textContent);
+  if (/newsboat/i.test(newsboatText)) pass('newsboat.conf: newsboat badge shown'); else fail('newsboat-conf badge: ' + newsboatText.slice(0, 200));
+  if (/30 min|reload-time/i.test(newsboatText)) pass('newsboat.conf: reload time shown'); else fail('newsboat-conf reload-time: ' + newsboatText.slice(0, 300));
+  if (/xdg-open|browser/i.test(newsboatText)) pass('newsboat.conf: browser command shown'); else fail('newsboat-conf browser: ' + newsboatText.slice(0, 300));
+
   // ── .Xresources (X11 resource database) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.Xresources');
@@ -3747,4 +3765,25 @@ export async function run(ctx) {
   if (/Xorg/i.test(xorgText)) pass('xorg.conf: Xorg badge shown'); else fail('xorg-conf badge: ' + xorgText.slice(0, 200));
   if (/amdgpu|nvidia|intel|modesetting/i.test(xorgText)) pass('xorg.conf: GPU driver shown'); else fail('xorg-conf driver: ' + xorgText.slice(0, 300));
   if (/Screen|Device|Monitor|ServerLayout/i.test(xorgText)) pass('xorg.conf: section names shown'); else fail('xorg-conf sections: ' + xorgText.slice(0, 300));
+
+  // ── rclone.conf (rclone cloud storage config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('rclone.conf');
+  await page.waitForSelector('#previewHost .rclonecfg-doc', { timeout: 12000 });
+  const rcloneText = await page.$eval('#previewHost .rclonecfg-doc', (e) => e.textContent);
+  if (/rclone/i.test(rcloneText)) pass('rclone.conf: rclone badge shown'); else fail('rclone-conf badge: ' + rcloneText.slice(0, 200));
+  if (/s3-backup|gdrive|dropbox|sftp/i.test(rcloneText)) pass('rclone.conf: remote names shown'); else fail('rclone-conf remotes: ' + rcloneText.slice(0, 300));
+  if (/s3|drive|dropbox|sftp|crypt/i.test(rcloneText)) pass('rclone.conf: remote type chips shown'); else fail('rclone-conf types: ' + rcloneText.slice(0, 300));
+  if (!/AKIAIOSFODNN7EXAMPLE|wJalrXUtnFEMI|GOCSPX|example_token/.test(rcloneText)) pass('rclone.conf: credentials are redacted'); else fail('rclone-conf credentials not redacted: ' + rcloneText.slice(0, 400));
+  if (/configured/i.test(rcloneText)) pass('rclone.conf: [configured] placeholder shown for secrets'); else fail('rclone-conf redact placeholder: ' + rcloneText.slice(0, 300));
+
+  // ── resticprofile.toml (resticprofile backup config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('resticprofile.toml');
+  await page.waitForSelector('#previewHost .resticcfg-doc', { timeout: 12000 });
+  const resticText = await page.$eval('#previewHost .resticcfg-doc', (e) => e.textContent);
+  if (/restic/i.test(resticText)) pass('resticprofile.toml: restic badge shown'); else fail('restic-config badge: ' + resticText.slice(0, 200));
+  if (/default|offsite/i.test(resticText)) pass('resticprofile.toml: profile names shown'); else fail('restic-config profiles: ' + resticText.slice(0, 300));
+  if (/repository|password-file/i.test(resticText)) pass('resticprofile.toml: repository or password-file shown'); else fail('restic-config repo: ' + resticText.slice(0, 300));
+  if (!/AKIAIOSFODNN7EXAMPLE|wJalrXUtnFEMI/.test(resticText)) pass('resticprofile.toml: AWS credentials are redacted'); else fail('restic-config credentials not redacted: ' + resticText.slice(0, 400));
 }
