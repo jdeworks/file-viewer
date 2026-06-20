@@ -894,11 +894,20 @@ import gnuplotScript from '../types/text/known/gnuplot-script/index.js';
 import wolframLang from '../types/text/known/wolfram-lang/index.js';
 import stataDo from '../types/text/known/stata-do/index.js';
 import tlaPlus from '../types/text/known/tla-plus/index.js';
+import rpmSpec from '../types/text/known/rpm-spec/index.js';
+import debianControl from '../types/text/known/debian-control/index.js';
+import cupsConf from '../types/text/known/cups-conf/index.js';
+import dafnyLang from '../types/text/known/dafny/index.js';
 export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks,
-  // Extension-specific language plugins — listed BEFORE broad content-heuristic matchers to avoid interception
-  valaLang, idrisLang, smlLang, texDoc,
-  forthLang, leanLang, agdaLang, chapelLang,
-  kokaLang, carbonLang, grainLang, factorLang,
+  // Extension-specific language plugins — listed BEFORE broad content-heuristic matchers to avoid interception.
+  // Within this block: more-specific (fewer heuristics) goes first to avoid false-positive interception.
+  // forth-lang before factor-lang (factor uses VARIABLE/CONSTANT which forth also has)
+  // agda, chapel, grain BEFORE idris (idris heuristic is broad: module+import)
+  // sml BEFORE ocaml (sml heuristic can overlap ocaml)
+  agdaLang, chapelLang, grainLang, kokaLang, carbonLang,
+  leanLang, idrisLang, smlLang,
+  forthLang, factorLang,
+  valaLang, texDoc,
   commonLisp, emacsLisp, squirrelLang, redLang,
   pascalLang, eiffelLang,
   coffeescriptLang, livescriptLang, rescriptLang, reasonLang,
@@ -1117,6 +1126,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   linkwardenConfig,
   hoarderConfig,
   frigateConfig,
+  rpmSpec, debianControl, cupsConf, dafnyLang,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

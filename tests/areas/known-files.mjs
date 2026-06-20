@@ -6972,4 +6972,28 @@ export async function run(ctx) {
   await openExample('sample.tla');
   await page.waitForSelector('#previewHost .tla-doc', { timeout: 12000 });
   pass('tla-plus: rendered');
+
+  // ── rpm-spec viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.spec');
+  await page.waitForSelector('#previewHost .rpmspec-doc', { timeout: 12000 });
+  pass('rpm-spec: rendered');
+
+  // ── debian-control viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('control');
+  await page.waitForSelector('#previewHost .debctrl-doc', { timeout: 12000 });
+  pass('debian-control: rendered');
+
+  // ── cups-conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cupsd.conf');
+  await page.waitForSelector('#previewHost .cups-doc', { timeout: 12000 });
+  pass('cups-conf: rendered');
+
+  // ── dafny viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.dfy');
+  await page.waitForSelector('#previewHost .dfy-doc', { timeout: 12000 });
+  pass('dafny: rendered');
 }

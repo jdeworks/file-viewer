@@ -1,0 +1,12 @@
+Package: hello
+Version: 1.0.0-1
+Architecture: amd64
+Maintainer: Developer <dev@example.com>
+Installed-Size: 1024
+Depends: libc6 (>= 2.17), libgcc1
+Priority: optional
+Section: utils
+Description: A hello world application
+ This package contains the hello world binary and documentation.
+ .
+ It is a simple example package.
