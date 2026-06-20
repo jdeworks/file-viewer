@@ -2,7 +2,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 
 const CSS = `
 .immich-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.immich-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#f57c00;color:#fff;vertical-align:middle;margin-right:8px;}
+.immich-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#4250AF;color:#fff;vertical-align:middle;margin-right:8px;}
 .immich-title{font-size:18px;font-weight:700;margin:0 0 4px;}
 .immich-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
 .immich-sec{margin:12px 0;}

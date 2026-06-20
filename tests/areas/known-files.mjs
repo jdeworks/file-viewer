@@ -5729,4 +5729,13 @@ export async function run(ctx) {
   if (/mstsc|xfreerdp/i.test(rdpText)) pass('example.rdp: copy command buttons present'); else fail('rdp-config copy-btn: ' + rdpText.slice(0, 300));
   if (/configured/i.test(rdpText)) pass('example.rdp: password redacted'); else fail('rdp-config redaction: ' + rdpText.slice(0, 300));
   if (/NLA/i.test(rdpText)) pass('example.rdp: NLA auth chip shown'); else fail('rdp-config nla: ' + rdpText.slice(0, 300));
+
+  // ── frigate.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('frigate.yml');
+  await page.waitForSelector('#previewHost .frigate-doc', { timeout: 12000 });
+  const frigateText = await page.$eval('#previewHost .frigate-doc', (e) => e.textContent);
+  if (/Frigate/i.test(frigateText)) pass('frigate.yml: Frigate badge shown'); else fail('frigate-config badge: ' + frigateText.slice(0, 200));
+  if (/front_door|backyard/i.test(frigateText)) pass('frigate.yml: camera name shown'); else fail('frigate-config cameras: ' + frigateText.slice(0, 300));
+  if (/\d+\s*camera/i.test(frigateText)) pass('frigate.yml: camera count shown'); else fail('frigate-config camera count: ' + frigateText.slice(0, 300));
 }

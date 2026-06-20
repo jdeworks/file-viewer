@@ -1,0 +1,53 @@
+mqtt:
+  host: mosquitto
+  port: 1883
+  user: frigate
+  password: mqtt_password_here
+
+detectors:
+  coral:
+    type: edgetpu
+    device: usb
+  cpu1:
+    type: cpu
+    num_threads: 3
+
+cameras:
+  front_door:
+    ffmpeg:
+      inputs:
+        - path: rtsp://admin:camera_pass@192.168.1.100:554/stream1
+          roles:
+            - detect
+            - record
+    detect:
+      width: 1280
+      height: 720
+      fps: 5
+  backyard:
+    ffmpeg:
+      inputs:
+        - path: rtsp://admin:camera_pass@192.168.1.101:554/main
+          roles:
+            - detect
+            - snapshot
+    detect:
+      width: 1920
+      height: 1080
+
+record:
+  enabled: true
+  retain:
+    days: 7
+
+snapshots:
+  enabled: true
+  retain:
+    default: 14
+
+objects:
+  track:
+    - person
+    - car
+    - cat
+    - dog

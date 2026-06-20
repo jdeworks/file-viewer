@@ -10602,5 +10602,20 @@
     "enhanced": true,
     "description": "Hoarder (Karakeep) self-hosted bookmark manager with AI tagging configuration",
     "knownFile": true
+  },
+  {
+    "file": "frigate.yml",
+    "label": "Frigate NVR Config",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "NVR",
+      "Self-Hosted",
+      "Security"
+    ],
+    "enhanced": true,
+    "description": "Frigate AI-powered NVR configuration with cameras, detectors, MQTT, recording, and object tracking.",
+    "knownFile": "frigate-config"
   }
 ]
