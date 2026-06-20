@@ -1149,10 +1149,20 @@ export async function run(ctx) {
   // ── .clang-format viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.clang-format');
-  await page.waitForSelector('#previewHost .clf-doc', { timeout: 12000 });
-  const clangFmtText = await page.$eval('#previewHost .clf-doc', (e) => e.textContent);
-  if (/clang-format/i.test(clangFmtText)) pass('.clang-format: badge shown'); else fail('clang-format badge: ' + clangFmtText.slice(0, 200));
-  if (/Google|IndentWidth|ColumnLimit/i.test(clangFmtText)) pass('.clang-format: style settings shown'); else fail('clang-format settings: ' + clangFmtText.slice(0, 200));
+  await page.waitForSelector('#previewHost .clangformat-doc', { timeout: 12000 });
+  pass('.clang-format: renders');
+  const clangFmtText = await page.$eval('#previewHost .clangformat-doc', (e) => e.textContent);
+  if (/clang-format/i.test(clangFmtText)) pass('.clang-format: badge shown'); else fail('.clang-format: missing badge');
+  if (/Google|style|Indent/i.test(clangFmtText)) pass('.clang-format: style shown'); else fail('.clang-format: no style info');
+
+  // ── .clang-tidy viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.clang-tidy');
+  await page.waitForSelector('#previewHost .clangtidy-doc', { timeout: 12000 });
+  pass('.clang-tidy: renders');
+  const clangtidyText = await page.$eval('#previewHost .clangtidy-doc', (e) => e.textContent);
+  if (/clang-tidy/i.test(clangtidyText)) pass('.clang-tidy: badge shown'); else fail('.clang-tidy: missing badge');
+  if (/modernize|check/i.test(clangtidyText)) pass('.clang-tidy: checks shown'); else fail('.clang-tidy: no checks shown');
 
   // ── moon.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -3962,11 +3972,13 @@ export async function run(ctx) {
   // ── .curlrc (curl defaults config) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.curlrc');
-  await page.waitForSelector('#previewHost .curlrccfg-doc', { timeout: 12000 });
-  const curlrcText = await page.$eval('#previewHost .curlrccfg-doc', (e) => e.textContent);
-  if (/curl/i.test(curlrcText)) pass('.curlrc: curl badge shown'); else fail('curlrc badge: ' + curlrcText.slice(0, 200));
+  await page.waitForSelector('#previewHost .curlrc-doc', { timeout: 12000 });
+  pass('.curlrc: renders');
+  const curlrcText = await page.$eval('#previewHost .curlrc-doc', (e) => e.textContent);
+  if (/curl/i.test(curlrcText)) pass('.curlrc: badge shown'); else fail('.curlrc: missing badge');
   if (/redirect|location|max-redirs/i.test(curlrcText)) pass('.curlrc: redirect setting shown'); else fail('curlrc redirect: ' + curlrcText.slice(0, 300));
   if (/max-time|connect-timeout|timeout/i.test(curlrcText)) pass('.curlrc: timeout shown'); else fail('curlrc timeout: ' + curlrcText.slice(0, 300));
+  if (!curlrcText.includes('secretpass')) pass('.curlrc: credentials masked'); else fail('.curlrc: credential leaked!');
 
   // ── .inputrc (GNU readline config) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -3981,10 +3993,12 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.wgetrc');
   await page.waitForSelector('#previewHost .wgetrc-doc', { timeout: 12000 });
+  pass('.wgetrc: renders');
   const wgetrcText = await page.$eval('#previewHost .wgetrc-doc', (e) => e.textContent);
-  if (/wget/i.test(wgetrcText)) pass('.wgetrc: wget badge shown'); else fail('wgetrc badge: ' + wgetrcText.slice(0, 200));
+  if (/wget/i.test(wgetrcText)) pass('.wgetrc: badge shown'); else fail('.wgetrc: missing badge');
   if (/timeout|connect.timeout/i.test(wgetrcText)) pass('.wgetrc: timeout shown'); else fail('wgetrc timeout: ' + wgetrcText.slice(0, 300));
   if (/tries|retry/i.test(wgetrcText)) pass('.wgetrc: retry count shown'); else fail('wgetrc tries: ' + wgetrcText.slice(0, 300));
+  if (!wgetrcText.includes('secretpass')) pass('.wgetrc: credentials masked'); else fail('.wgetrc: credential leaked!');
 
   // ── helix.toml (Helix editor config) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

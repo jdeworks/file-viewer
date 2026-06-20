@@ -4077,6 +4077,18 @@
     "knownFile": "clang-format"
   },
   {
+    "label": ".clang-tidy",
+    "file": ".clang-tidy",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Clang-Tidy C/C++ static analysis linter configuration.",
+    "knownFile": "clang-tidy"
+  },
+  {
     "label": "Jenkinsfile",
     "file": "Jenkinsfile",
     "mime": "text/plain",

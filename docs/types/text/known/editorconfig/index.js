@@ -1,9 +1,13 @@
-// .editorconfig enhancement: group properties under each [glob] section, annotate the common
-// keys (indent_style, end_of_line, charset, …) and surface the root flag.
-export default {
+export const plugin = {
   id: 'editorconfig',
   label: '.editorconfig',
-  match: (intake) => /(^|\/)\.editorconfig$/i.test(intake.filename || ''),
-  loadRenderer: () => import('./render.js'),
+  tags: ['editorconfig', 'editor', 'formatting'],
+  match(intake) {
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    return n === '.editorconfig';
+  },
+  renderer: () => import('./renderer.js'),
+  loadRenderer: () => import('./renderer.js'),
   loadMetadata: () => import('./metadata.js'),
 };
+export default plugin;
