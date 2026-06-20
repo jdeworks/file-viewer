@@ -6325,6 +6325,32 @@
     "knownFile": "emacs-config"
   },
   {
+    "label": "i3.config (i3 WM)",
+    "file": "i3.config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Desktop"
+    ],
+    "enhanced": true,
+    "description": "i3 tiling window manager configuration: modifier key, keybindings, workspaces, bar settings, gaps, colors, and startup apps.",
+    "knownFile": "i3-config"
+  },
+  {
+    "label": "sway (Sway WM)",
+    "file": "sway",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Desktop"
+    ],
+    "enhanced": true,
+    "description": "Sway Wayland compositor configuration: outputs, inputs, keybindings, wallpaper, gaps, and startup applications.",
+    "knownFile": "sway-config"
+  },
+  {
     "label": "devbox.json",
     "file": "devbox.json",
     "mime": "application/json",
@@ -7185,6 +7211,28 @@
       "Config",
       "Network"
     ]
+  },
+  {
+    "name": "grub",
+    "file": "grub",
+    "label": "grub (/etc/default/grub)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "System"
+    ],
+    "knownFile": "grub-conf"
+  },
+  {
+    "name": "nftables.conf",
+    "file": "nftables.conf",
+    "label": "nftables.conf (nftables Firewall Rules)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ],
+    "knownFile": "nftables-rules"
   },
   {
     "file": "ufw.conf",

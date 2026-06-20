@@ -1,0 +1,14 @@
+# /etc/default/grub - GRUB bootloader settings
+# Run 'update-grub' after changes
+
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=5
+GRUB_TIMEOUT_STYLE=menu
+GRUB_DISTRIBUTOR="Ubuntu"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0 ipv6.disable=1"
+GRUB_DISABLE_RECOVERY="true"
+GRUB_DISABLE_SUBMENU=y
+GRUB_GFXMODE=1920x1080
+GRUB_TERMINAL=console
+# GRUB_THEME="/boot/grub/themes/custom/theme.txt"

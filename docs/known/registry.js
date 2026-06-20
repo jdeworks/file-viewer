@@ -474,6 +474,8 @@ import crontab from '../types/text/known/crontab/index.js';
 import clusterConfig from '../types/text/yaml/known/cluster-config/index.js';
 import certManager from '../types/text/yaml/known/cert-manager/index.js';
 import iptablesRules from '../types/text/known/iptables-rules/index.js';
+import grubConf from '../types/text/known/grub-conf/index.js';
+import nftablesRules from '../types/text/known/nftables-rules/index.js';
 import ufwConf from '../types/text/known/ufw-conf/index.js';
 import fail2banConf from '../types/text/known/fail2ban-conf/index.js';
 import apparmorProfile from '../types/text/known/apparmor-profile/index.js';
@@ -589,7 +591,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   postmanCollection, graphqlSchema,
   systemdUnit, crontab,
   clusterConfig, certManager,
-  iptablesRules, ufwConf,
+  iptablesRules, grubConf, nftablesRules, ufwConf,
   fail2banConf, apparmorProfile, smbConf,
   corefile, containerdConfig,
   postfixConf, dovecotConf, eximConf, chronyConf,

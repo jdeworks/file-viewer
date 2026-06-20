@@ -3427,4 +3427,36 @@ export async function run(ctx) {
   if (/Erlang VM/i.test(erlVmArgsText)) pass('vm.args: Erlang VM badge shown'); else fail('erlang-vm-args badge: ' + erlVmArgsText.slice(0, 200));
   if (/node|scheduler/i.test(erlVmArgsText)) pass('vm.args: node identity or scheduler section shown'); else fail('erlang-vm-args content: ' + erlVmArgsText.slice(0, 300));
 
+  // ── krb5.conf (Kerberos) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('krb5.conf (Kerberos)');
+  await page.waitForSelector('#previewHost .krb5cfg-doc', { timeout: 12000 });
+  const krb5Text = await page.$eval('#previewHost .krb5cfg-doc', (e) => e.textContent);
+  if (/Kerberos/i.test(krb5Text)) pass('krb5.conf: Kerberos badge shown'); else fail('krb5-conf badge: ' + krb5Text.slice(0, 200));
+  if (/EXAMPLE\.COM|realm/i.test(krb5Text)) pass('krb5.conf: realm information shown'); else fail('krb5-conf realm: ' + krb5Text.slice(0, 300));
+
+  // ── gpg.conf (GnuPG) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('gpg.conf (GnuPG)');
+  await page.waitForSelector('#previewHost .gpgcfg-doc', { timeout: 12000 });
+  const gpgText = await page.$eval('#previewHost .gpgcfg-doc', (e) => e.textContent);
+  if (/GnuPG/i.test(gpgText)) pass('gpg.conf: GnuPG badge shown'); else fail('gpg-conf badge: ' + gpgText.slice(0, 200));
+  if (/keyserver|cipher/i.test(gpgText)) pass('gpg.conf: keyserver or cipher information shown'); else fail('gpg-conf content: ' + gpgText.slice(0, 300));
+
+  // ── grub (/etc/default/grub) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('grub (/etc/default/grub)');
+  await page.waitForSelector('#previewHost .grubcfg-doc', { timeout: 12000 });
+  const grubText = await page.$eval('#previewHost .grubcfg-doc', (e) => e.textContent);
+  if (/GRUB/i.test(grubText)) pass('grub: GRUB badge shown'); else fail('grub-conf badge: ' + grubText.slice(0, 200));
+  if (/CMDLINE|timeout/i.test(grubText)) pass('grub: cmdline parameters or timeout shown'); else fail('grub-conf content: ' + grubText.slice(0, 300));
+
+  // ── nftables.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nftables.conf (nftables Firewall Rules)');
+  await page.waitForSelector('#previewHost .nftcfg-doc', { timeout: 12000 });
+  const nftText = await page.$eval('#previewHost .nftcfg-doc', (e) => e.textContent);
+  if (/nftables/i.test(nftText)) pass('nftables.conf: nftables badge shown'); else fail('nftables-rules badge: ' + nftText.slice(0, 200));
+  if (/chain|filter/i.test(nftText)) pass('nftables.conf: chain or filter information shown'); else fail('nftables-rules content: ' + nftText.slice(0, 300));
+
 }
