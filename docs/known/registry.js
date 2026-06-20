@@ -882,6 +882,10 @@ import journaldConf from '../types/text/known/journald-conf/index.js';
 import tmpfilesD from '../types/text/known/tmpfiles-d/index.js';
 import nsswitchConf from '../types/text/known/nsswitch-conf/index.js';
 import mkinitcpioConf from '../types/text/known/mkinitcpio-conf/index.js';
+import wpaSupplicantConf from '../types/text/known/wpa-supplicant-conf/index.js';
+import sssdConf from '../types/text/known/sssd-conf/index.js';
+import pascalLang from '../types/text/known/pascal-lang/index.js';
+import eiffelLang from '../types/text/known/eiffel-lang/index.js';
 export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, rubyLang, perlLang, phpLang, powershellLang, solidityLang, vhdlLang, arduinoSketch, cobolLang, gleamLang, odinLang, haxeLang, adaLang, prologLang, asmLang, objcLang, dLang, ponyLang, wrenLang, mojoLang, janetLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
@@ -1099,6 +1103,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   aptSources, pkgbuild, limitsConf, auditRules,
   commonLisp, emacsLisp, squirrelLang, redLang,
   journaldConf, tmpfilesD, nsswitchConf, mkinitcpioConf,
+  wpaSupplicantConf, sssdConf, pascalLang, eiffelLang,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

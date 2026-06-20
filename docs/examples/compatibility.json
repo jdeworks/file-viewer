@@ -27958,7 +27958,9 @@
       "label": "APT Sources",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sources.list"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27983,7 +27985,9 @@
       "label": "PKGBUILD",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "PKGBUILD"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28008,7 +28012,9 @@
       "label": "Limits Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "limits.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28033,7 +28039,9 @@
       "label": "Audit Rules",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "audit.rules"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28058,7 +28066,9 @@
       "label": "Common Lisp",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.lisp"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28084,7 +28094,7 @@
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
-        "init.el"
+        "sample.el"
       ],
       "extensions": [
         ".yml"
@@ -28110,7 +28120,9 @@
       "label": "Squirrel",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.nut"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28135,7 +28147,9 @@
       "label": "Red",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.red"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28160,7 +28174,9 @@
       "label": "journald.conf",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "journald.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28185,7 +28201,9 @@
       "label": "tmpfiles.d",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.tmpfiles"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28210,7 +28228,9 @@
       "label": "nsswitch.conf",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "nsswitch.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28235,7 +28255,9 @@
       "label": "mkinitcpio.conf",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "mkinitcpio.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28255,6 +28277,98 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "wpa-supplicant-conf": {
+      "label": "wpa_supplicant",
+      "baseType": "raw",
+      "support": "enhanced",
+      "sampleFiles": [
+        "wpa_supplicant.conf"
+      ],
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "realWorldQuality": "needs-review",
+      "notes": "Known-file enhancer with dedicated catalog sample.",
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "sssd-conf": {
+      "label": "SSSD",
+      "baseType": "raw",
+      "support": "enhanced",
+      "sampleFiles": [
+        "sssd.conf"
+      ],
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "realWorldQuality": "needs-review",
+      "notes": "Known-file enhancer with dedicated catalog sample.",
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "pascal-lang": {
+      "label": "Pascal",
+      "baseType": "raw",
+      "support": "enhanced",
+      "sampleFiles": [
+        "sample.pas"
+      ],
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "realWorldQuality": "needs-review",
+      "notes": "Known-file enhancer with dedicated catalog sample.",
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
+    "eiffel-lang": {
+      "label": "Eiffel",
+      "baseType": "raw",
+      "support": "enhanced",
+      "sampleFiles": [
+        "sample.e"
+      ],
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "realWorldQuality": "needs-review",
+      "notes": "Known-file enhancer with dedicated catalog sample.",
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
     }
   }
 }

@@ -6900,4 +6900,28 @@ export async function run(ctx) {
   await openExample('mkinitcpio.conf');
   await page.waitForSelector('#previewHost .mki-doc', { timeout: 12000 });
   pass('mkinitcpio-conf: rendered');
+
+  // ── wpa-supplicant-conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('wpa_supplicant.conf');
+  await page.waitForSelector('#previewHost .wpas-doc', { timeout: 12000 });
+  pass('wpa-supplicant-conf: rendered');
+
+  // ── sssd-conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sssd.conf');
+  await page.waitForSelector('#previewHost .sssd-doc', { timeout: 12000 });
+  pass('sssd-conf: rendered');
+
+  // ── pascal-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.pas');
+  await page.waitForSelector('#previewHost .pas-doc', { timeout: 12000 });
+  pass('pascal-lang: rendered');
+
+  // ── eiffel-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.e');
+  await page.waitForSelector('#previewHost .efl-doc', { timeout: 12000 });
+  pass('eiffel-lang: rendered');
 }
