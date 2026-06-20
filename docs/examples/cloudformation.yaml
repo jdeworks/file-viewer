@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Sample CloudFormation template — web app with S3, Lambda, and DynamoDB
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment environment
+  LambdaMemory:
+    Type: Number
+    Default: 256
+    Description: Lambda function memory in MB
+  BucketNameSuffix:
+    Type: String
+    Default: my-app
+    Description: Suffix for the S3 bucket name
+
+Resources:
+  AssetsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${BucketNameSuffix}-assets-${Environment}'
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Enabled
+
+  AssetsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AssetsBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
+            Action: 's3:GetObject'
+            Resource: !Sub '${AssetsBucket.Arn}/*'
+
+  CloudFrontOAI:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: OAI for assets bucket
+
+  AppTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${BucketNameSuffix}-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  ApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${BucketNameSuffix}-api-${Environment}'
+      Runtime: nodejs20.x
+      Handler: index.handler
+      MemorySize: !Ref LambdaMemory
+      Timeout: 30
+      Role: !GetAtt LambdaRole.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AppTable
+          BUCKET_NAME: !Ref AssetsBucket
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => ({
+            statusCode: 200,
+            body: JSON.stringify({ message: 'Hello from Lambda' })
+          });
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${BucketNameSuffix}-lambda-role-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AppPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:Query]
+                Resource: !GetAtt AppTable.Arn
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject]
+                Resource: !Sub '${AssetsBucket.Arn}/*'
+
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub '${BucketNameSuffix}-api-${Environment}'
+      Description: REST API for the application
+
+Outputs:
+  BucketName:
+    Description: S3 bucket for static assets
+    Value: !Ref AssetsBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketName'
+  TableName:
+    Description: DynamoDB table name
+    Value: !Ref AppTable
+    Export:
+      Name: !Sub '${AWS::StackName}-TableName'
+  FunctionArn:
+    Description: Lambda function ARN
+    Value: !GetAtt ApiFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-FunctionArn'
+  ApiEndpoint:
+    Description: REST API endpoint URL
+    Value: !Sub 'https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'

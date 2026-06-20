@@ -1,0 +1,117 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template — serverless REST API with DynamoDB backend
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Handler: index.handler
+    MemorySize: 256
+    Timeout: 30
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref NotesTable
+        NODE_ENV: !Ref Environment
+  Api:
+    Cors:
+      AllowOrigin: "'*'"
+      AllowHeaders: "'Content-Type,Authorization'"
+      AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+    Auth:
+      DefaultAuthorizer: CognitoAuthorizer
+      Authorizers:
+        CognitoAuthorizer:
+          UserPoolArn: !GetAtt UserPool.Arn
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  LogRetentionDays:
+    Type: Number
+    Default: 14
+
+Resources:
+  NotesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: noteId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: noteId
+          KeyType: RANGE
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub 'notes-pool-${Environment}'
+
+  NotesApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+      TracingEnabled: true
+
+  GetNotesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/getNotes/
+      Description: List all notes for authenticated user
+      Events:
+        GetNotes:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NotesApi
+            Path: /notes
+            Method: GET
+
+  CreateNoteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/createNote/
+      Handler: create.handler
+      Description: Create a new note
+      MemorySize: 512
+      Events:
+        CreateNote:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NotesApi
+            Path: /notes
+            Method: POST
+
+  DeleteNoteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/deleteNote/
+      Description: Delete a note by ID
+      Events:
+        DeleteNote:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NotesApi
+            Path: /notes/{id}
+            Method: DELETE
+
+  ProcessNoteLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: notes-shared-utils
+      ContentUri: layers/shared/
+      CompatibleRuntimes: [nodejs20.x]
+      RetentionPolicy: Delete
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${NotesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/'
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool

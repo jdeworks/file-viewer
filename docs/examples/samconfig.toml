@@ -1,0 +1,42 @@
+version = 0.1
+
+[default]
+[default.global.parameters]
+stack_name = "notes-app"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.deploy.parameters]
+stack_name = "notes-app-dev"
+s3_bucket = "notes-app-deploy-us-east-1"
+s3_prefix = "notes-app"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
+parameter_overrides = "Environment=dev"
+
+[default.validate.parameters]
+lint = true
+
+[staging]
+[staging.deploy.parameters]
+stack_name = "notes-app-staging"
+s3_bucket = "notes-app-deploy-eu-west-1"
+s3_prefix = "notes-app"
+region = "eu-west-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
+parameter_overrides = "Environment=staging LogRetentionDays=30"
+
+[prod]
+[prod.deploy.parameters]
+stack_name = "notes-app-prod"
+s3_bucket = "notes-app-deploy-prod-us-east-1"
+s3_prefix = "notes-app"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
+parameter_overrides = "Environment=prod LogRetentionDays=90"
+image_repositories = []
