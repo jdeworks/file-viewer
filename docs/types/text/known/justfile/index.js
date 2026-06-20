@@ -1,10 +1,18 @@
 export default {
   id: 'justfile',
   label: 'Justfile',
-  match: (intake) => {
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
-    return name === 'justfile';
+  match(intake) {
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    if (n === 'justfile' || n === '.justfile') return true;
+    const text = intake.textSample || intake.text || '';
+    // Just recipes: `recipe-name arg:` followed by indented commands
+    if (text.match(/^[a-z][\w-]*(\s+\S+)*:$/m) && text.includes('{{')) return true;
+    if (text.match(/^set \w+ := /m) && text.match(/^[a-z][\w-]*.*:$/m)) return true;
+    return false;
   },
   loadRenderer: () => import('./renderer.js'),
-  about: { description: 'Just command runner file — defines recipes for common project tasks.' },
+  about: {
+    description: 'Just command runner — task automation recipes similar to make but simpler.',
+    tags: ['just', 'justfile', 'build', 'automation', 'config'],
+  },
 };

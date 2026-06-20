@@ -1,21 +1,64 @@
-# Project task runner
+# Just configuration
+set shell := ["bash", "-uc"]
+set dotenv-load := true
 
-node_version := "20.11.0"
-project := "file-viewer"
+# Project variables
+project := "myapp"
+version := `git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0"`
+docker_image := "ghcr.io/example/" + project
+
+# List available recipes
+default:
+    @just --list
+
+# Development
+# Start the development server
+dev:
+    npm run dev
 
 # Build the project
 build:
     npm run build
 
 # Run tests
-test:
-    npm test
+test *args:
+    npm test {{args}}
+
+# Run linter
+lint:
+    npm run lint
+    npm run type-check
+
+# Docker
+# Build Docker image
+docker-build tag=version:
+    docker build -t {{docker_image}}:{{tag}} .
+
+# Push Docker image
+docker-push tag=version:
+    docker push {{docker_image}}:{{tag}}
+
+# Deploy
+# Deploy to staging
+[private]
+deploy-staging:
+    kubectl apply -f k8s/staging/
+
+# Deploy to production (requires confirmation)
+deploy-prod:
+    @echo "Deploying version {{version}} to production..."
+    kubectl apply -f k8s/production/
+
+# Utilities
+# Clean build artifacts
+clean:
+    rm -rf dist/ .cache/ node_modules/.cache/
+
+# Install dependencies
+install:
+    npm ci
 
 # Format code
 fmt:
-    npm run format
-
-# Release a new version
-release version:
-    git tag -a v{{version}} -m "Release v{{version}}"
-    git push origin v{{version}}
+    prettier --write .
+    eslint --fix .

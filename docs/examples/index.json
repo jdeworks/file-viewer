@@ -3672,18 +3672,6 @@
     "knownFile": "gemspec"
   },
   {
-    "label": "ansible.cfg",
-    "file": "ansible.cfg",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "Ansible configuration with defaults, privilege escalation, and inventory settings.",
-    "knownFile": "ansible-cfg"
-  },
-  {
     "label": "deny.toml",
     "file": "deny.toml",
     "mime": "application/toml",
@@ -3794,10 +3782,11 @@
     "mime": "text/plain",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "Server"
     ],
     "enhanced": true,
-    "description": "Caddy web server configuration with HTTPS, reverse proxies, and file server blocks.",
+    "description": "Caddy web server configuration with automatic HTTPS, reverse proxies, file server, and site blocks.",
     "knownFile": "caddyfile"
   },
   {
@@ -7222,8 +7211,13 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Ansible"
-    ]
+      "Ansible",
+      "DevOps"
+    ],
+    "mime": "text/plain",
+    "description": "Ansible automation configuration with defaults, privilege escalation, SSH connection, and inventory settings.",
+    "knownFile": "ansible-cfg",
+    "enhanced": true
   },
   {
     "file": "inventory",
@@ -7961,6 +7955,30 @@
     "knownFile": "curlrc"
   },
   {
+    "file": ".inputrc",
+    "label": ".inputrc",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "GNU readline configuration: editing mode (vi/emacs), completion settings, key bindings, and conditional sections for Bash.",
+    "knownFile": "inputrc"
+  },
+  {
+    "file": ".wgetrc",
+    "label": ".wgetrc",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "wget default configuration: timeouts, retry counts, user agent, cookies, timestamping, and resume support.",
+    "knownFile": "wgetrc"
+  },
+  {
     "file": "rclone.conf",
     "label": "rclone.conf",
     "category": "Config",
@@ -8031,5 +8049,18 @@
     "enhanced": true,
     "description": "Zathura PDF/document viewer configuration: Catppuccin Mocha theme, recolor dark mode, color swatches, adjust-open, scroll/zoom settings, synctex, and key bindings.",
     "knownFile": "zathurarc"
+  },
+  {
+    "file": "makepkg.conf",
+    "label": "makepkg.conf (makepkg Config)",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Arch Linux"
+    ],
+    "description": "Arch Linux makepkg build system configuration \u2014 compiler flags, build environment, and package options.",
+    "knownFile": "makepkg-conf",
+    "enhanced": true
   }
 ]

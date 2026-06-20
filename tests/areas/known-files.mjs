@@ -3007,10 +3007,20 @@ export async function run(ctx) {
   // ── ansible.cfg viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('ansible.cfg (Ansible Config)');
-  await page.waitForSelector('#previewHost .anscfg-doc', { timeout: 12000 });
-  const anscfgText = await page.$eval('#previewHost .anscfg-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .ansiblecfg-doc', { timeout: 12000 });
+  const anscfgText = await page.$eval('#previewHost .ansiblecfg-doc', (e) => e.textContent);
   if (/Ansible/i.test(anscfgText)) pass('ansible.cfg: Ansible badge shown'); else fail('ansible-cfg badge: ' + anscfgText.slice(0, 200));
   if (/defaults/i.test(anscfgText)) pass('ansible.cfg: defaults section shown'); else fail('ansible-cfg defaults: ' + anscfgText.slice(0, 200));
+  if (/forks/i.test(anscfgText)) pass('ansible.cfg: forks shown'); else fail('ansible-cfg forks: ' + anscfgText.slice(0, 300));
+
+  // ── makepkg.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('makepkg.conf (makepkg Config)');
+  await page.waitForSelector('#previewHost .makepkgcfg-doc', { timeout: 12000 });
+  const makepkgText = await page.$eval('#previewHost .makepkgcfg-doc', (e) => e.textContent);
+  if (/makepkg/i.test(makepkgText)) pass('makepkg.conf: badge shown'); else fail('makepkg-conf badge: ' + makepkgText.slice(0, 200));
+  if (/x86_64/i.test(makepkgText)) pass('makepkg.conf: CARCH shown'); else fail('makepkg-conf CARCH: ' + makepkgText.slice(0, 300));
+  if (/MAKEFLAGS|CFLAGS/i.test(makepkgText)) pass('makepkg.conf: compiler flags shown'); else fail('makepkg-conf flags: ' + makepkgText.slice(0, 300));
 
   // ── inventory (Ansible Inventory) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -3805,6 +3815,24 @@ export async function run(ctx) {
   if (/curl/i.test(curlrcText)) pass('.curlrc: curl badge shown'); else fail('curlrc badge: ' + curlrcText.slice(0, 200));
   if (/redirect|location|max-redirs/i.test(curlrcText)) pass('.curlrc: redirect setting shown'); else fail('curlrc redirect: ' + curlrcText.slice(0, 300));
   if (/max-time|connect-timeout|timeout/i.test(curlrcText)) pass('.curlrc: timeout shown'); else fail('curlrc timeout: ' + curlrcText.slice(0, 300));
+
+  // ── .inputrc (GNU readline config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.inputrc');
+  await page.waitForSelector('#previewHost .inputrc-doc', { timeout: 12000 });
+  const inputrcText = await page.$eval('#previewHost .inputrc-doc', (e) => e.textContent);
+  if (/readline/i.test(inputrcText)) pass('.inputrc: readline badge shown'); else fail('inputrc badge: ' + inputrcText.slice(0, 200));
+  if (/editing.mode|vi mode|emacs mode/i.test(inputrcText)) pass('.inputrc: editing mode shown'); else fail('inputrc editing mode: ' + inputrcText.slice(0, 300));
+  if (/completion.ignore.case|completion/i.test(inputrcText)) pass('.inputrc: completion settings shown'); else fail('inputrc completion: ' + inputrcText.slice(0, 300));
+
+  // ── .wgetrc (wget config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.wgetrc');
+  await page.waitForSelector('#previewHost .wgetrc-doc', { timeout: 12000 });
+  const wgetrcText = await page.$eval('#previewHost .wgetrc-doc', (e) => e.textContent);
+  if (/wget/i.test(wgetrcText)) pass('.wgetrc: wget badge shown'); else fail('wgetrc badge: ' + wgetrcText.slice(0, 200));
+  if (/timeout|connect.timeout/i.test(wgetrcText)) pass('.wgetrc: timeout shown'); else fail('wgetrc timeout: ' + wgetrcText.slice(0, 300));
+  if (/tries|retry/i.test(wgetrcText)) pass('.wgetrc: retry count shown'); else fail('wgetrc tries: ' + wgetrcText.slice(0, 300));
 
   // ── helix.toml (Helix editor config) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

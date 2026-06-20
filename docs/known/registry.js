@@ -155,6 +155,7 @@ import brewfile from '../types/text/known/brewfile/index.js';
 import license from '../types/text/known/license/index.js';
 import ansibleCfg from '../types/text/known/ansible-cfg/index.js';
 import ansibleHosts from '../types/text/known/ansible-hosts/index.js';
+import makepkgConf from '../types/text/known/makepkg-conf/index.js';
 import gemspec from '../types/text/known/gemspec/index.js';
 import typos from '../types/text/toml/known/typos/index.js';
 import cargoDeny from '../types/text/toml/known/cargo-deny/index.js';
@@ -529,6 +530,8 @@ import rcloneConf from '../types/text/known/rclone-conf/index.js';
 import resticConfig from '../types/text/known/restic-config/index.js';
 import taskrc from '../types/text/known/taskrc/index.js';
 import curlrc from '../types/text/known/curlrc/index.js';
+import inputrc from '../types/text/known/inputrc/index.js';
+import wgetrc from '../types/text/known/wgetrc/index.js';
 import helixConfig from '../types/text/toml/known/helix-config/index.js';
 import lfrc from '../types/text/known/lfrc/index.js';
 import rangerConf from '../types/text/known/ranger-conf/index.js';
@@ -555,7 +558,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   mailmap, npmignore, dockerignore,
   appveyor, rubocop, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
-  brewfile, license, ansibleCfg, ansibleHosts, gemspec, typos, cargoDeny, cargoConfig,
+  brewfile, license, ansibleCfg, ansibleHosts, makepkgConf, gemspec, typos, cargoDeny, cargoConfig,
   htaccess, nginxConf, apacheConf, lighttpdConf, haproxyConfig, squidConf, varnishVcl, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
   rsyslogConf,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
@@ -653,6 +656,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   xresources, xorgConf,
   rcloneConf, resticConfig,
   taskrc, curlrc,
+  inputrc, wgetrc,
   helixConfig, lfrc,
   rangerConf, zathurarc,
 ];
