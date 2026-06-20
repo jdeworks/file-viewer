@@ -1,0 +1,84 @@
+schemaVersion: 2.2.0
+metadata:
+  name: my-nodejs-app
+  displayName: My Node.js Application
+  description: Full-stack Node.js development workspace with tools sidecar
+  version: 1.0.0
+  tags:
+    - nodejs
+    - typescript
+    - fullstack
+  icon: https://nodejs.org/static/images/logo.svg
+  website: https://github.com/example/my-nodejs-app
+
+components:
+  - name: nodejs-runtime
+    container:
+      image: registry.access.redhat.com/ubi9/nodejs-20:latest
+      mountSources: true
+      memoryLimit: 1Gi
+      cpuLimit: "1"
+      env:
+        - name: NODE_ENV
+          value: development
+      ports:
+        - exposedPort: 3000
+          name: http
+      volumeMounts:
+        - name: npm-cache
+          path: /home/user/.npm
+
+  - name: tools-sidecar
+    container:
+      image: quay.io/devfile/universal-developer-image:latest
+      mountSources: false
+      memoryLimit: 512Mi
+      cpuLimit: "500m"
+      env:
+        - name: TOOLS_HOME
+          value: /usr/local
+
+  - name: npm-cache
+    volume:
+      ephemeral: false
+      size: 2Gi
+
+commands:
+  - id: install
+    exec:
+      label: Install dependencies
+      component: nodejs-runtime
+      commandLine: npm install
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: true
+
+  - id: start
+    exec:
+      label: Start development server
+      component: nodejs-runtime
+      commandLine: npm run dev
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: run
+        isDefault: true
+
+  - id: test
+    exec:
+      label: Run tests
+      component: nodejs-runtime
+      commandLine: npm test -- --watchAll=false
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: test
+        isDefault: true
+
+starterProjects:
+  - name: nodejs-starter
+    description: A minimal Node.js + Express starter project
+    git:
+      remotes:
+        origin: https://github.com/devfile-samples/devfile-sample-nodejs.git
+      checkoutFrom:
+        revision: main

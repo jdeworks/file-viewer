@@ -8792,5 +8792,15 @@
     "name": ".ncurc.json",
     "category": "Tooling",
     "knownFile": "ncurc"
+  },
+  {
+    "name": "influxdb.conf",
+    "category": "Infrastructure",
+    "knownFile": "influxdb"
+  },
+  {
+    "name": "nsqd.cfg",
+    "category": "Infrastructure",
+    "knownFile": "nsq-conf"
   }
 ]

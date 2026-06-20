@@ -281,6 +281,8 @@ import scorecard from '../types/text/yaml/known/scorecard/index.js';
 import socketSecurity from '../types/text/yaml/known/socket-security/index.js';
 import trivyConfig from '../types/text/yaml/known/trivy-config/index.js';
 import snykConfig from '../types/text/known/snyk-config/index.js';
+import { plugin as grypeConfig } from '../types/text/yaml/known/grype/index.js';
+import { plugin as tetragonPolicy } from '../types/text/yaml/known/tetragon/index.js';
 import gradleProps from '../types/text/known/gradle-props/index.js';
 import gradleWrapper from '../types/text/known/gradle-wrapper/index.js';
 import settingsGradle from '../types/text/known/settings-gradle/index.js';
@@ -479,6 +481,8 @@ import woodpeckerCi from '../types/text/yaml/known/woodpecker-ci/index.js';
 import codefreshConfig from '../types/text/yaml/known/codefresh-config/index.js';
 import harnessPipeline from '../types/text/yaml/known/harness-pipeline/index.js';
 import actConfig from '../types/text/known/act-config/index.js';
+import actrc from '../types/text/known/actrc/index.js';
+import pulsarConf from '../types/text/known/pulsar-conf/index.js';
 import cyclonedxSbom from '../types/text/json/known/cyclonedx-sbom/index.js';
 import spdxSbom from '../types/text/known/spdx-sbom/index.js';
 import slsaProvenance from '../types/text/json/known/slsa-provenance/index.js';
@@ -599,6 +603,8 @@ import asyncapi from '../types/text/yaml/known/asyncapi/index.js';
 import telegraf from '../types/text/toml/known/telegraf/index.js';
 import devfile from '../types/text/yaml/known/devfile/index.js';
 import ncurc from '../types/text/json/known/ncurc/index.js';
+import influxdbConf from '../types/text/toml/known/influxdb/index.js';
+import nsqConf from '../types/text/known/nsq-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -685,7 +691,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   codefreshConfig,
   opaPolicy, falcoRules, kyvernoPolicy, gatekeeperConfig,
   harnessPipeline,
-  actConfig,
+  actrc, actConfig,
+  pulsarConf,
   cyclonedxSbom, spdxSbom, slsaProvenance, syftConfig,
   proguardRules, androidStrings,
   keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig,
@@ -735,6 +742,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   registriesConf, storageConf,
   asyncapi, telegraf,
   devfile, ncurc,
+  influxdbConf, nsqConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -1,0 +1,22 @@
+{
+  "target": "minor",
+  "filter": [
+    "react",
+    "react-dom",
+    "@types/react",
+    "typescript",
+    "vite",
+    "eslint"
+  ],
+  "reject": [
+    "lodash",
+    "moment",
+    "webpack",
+    "@babel/core"
+  ],
+  "packageManager": "npm",
+  "peer": true,
+  "root": true,
+  "upgrade": false,
+  "pre": false
+}
