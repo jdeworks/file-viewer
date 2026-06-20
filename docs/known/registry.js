@@ -770,7 +770,11 @@ import capnp from '../types/text/known/capnp/index.js';
 import flatbuffers from '../types/text/known/flatbuffers/index.js';
 import dhallConfig from '../types/text/known/dhall-config/index.js';
 import wgslShader from '../types/text/known/wgsl-shader/index.js';
-export const KNOWN = [plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
+import glslShader from '../types/text/known/glsl-shader/index.js';
+import hlslShader from '../types/text/known/hlsl-shader/index.js';
+import restructuredtext from '../types/text/known/restructuredtext/index.js';
+import orgMode from '../types/text/known/org-mode/index.js';
+export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,

@@ -1,0 +1,21 @@
+@startuml
+title User Authentication Flow
+
+actor User
+participant "Browser" as Browser
+participant "Auth Service" as Auth
+participant "Database" as DB
+
+User -> Browser: Enter credentials
+Browser -> Auth: POST /login
+Auth -> DB: Query user record
+DB --> Auth: User data
+Auth -> Auth: Validate password hash
+alt Valid credentials
+    Auth --> Browser: 200 OK + JWT token
+    Browser --> User: Redirect to dashboard
+else Invalid credentials
+    Auth --> Browser: 401 Unauthorized
+    Browser --> User: Show error message
+end
+@enduml

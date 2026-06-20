@@ -1,0 +1,67 @@
+= Getting Started Guide
+:author: Jane Developer
+:email: jane@example.com
+:revdate: 2026-06-20
+:revnumber: 1.0
+:toc:
+:toc-title: Contents
+:description: A short introduction to the project
+
+== Introduction
+
+Welcome to the project! This guide walks you through setup and basic usage.
+
+=== Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+* Node.js 20 or later
+* Git
+* A code editor (VS Code recommended)
+
+== Installation
+
+Clone the repository and install dependencies:
+
+----
+git clone https://github.com/example/project.git
+cd project
+npm install
+----
+
+=== Configuration
+
+Copy the example environment file and fill in your values:
+
+----
+cp .env.example .env
+----
+
+== Usage
+
+Start the development server:
+
+[source,bash]
+----
+npm run dev
+----
+
+The app will be available at `http://localhost:3000`.
+
+=== Key Features
+
+* *Fast*: Built with performance in mind
+* *Extensible*: Plugin architecture for custom renderers
+* _Offline-capable_: Service worker caches all assets
+
+== Contributing
+
+Pull requests are welcome. For major changes, please open an issue first.
+
+=== Code Style
+
+We use ESLint and Prettier. Run `npm run lint` before submitting.
+
+== License
+
+MIT — see the LICENSE file for details.

@@ -1,0 +1,33 @@
+// FlatBuffers schema for a simple game
+namespace MyGame;
+
+file_identifier "MGAM";
+file_extension "bin";
+
+enum Color : byte { Red = 0, Blue, Green }
+
+struct Vec3 {
+  x : float;
+  y : float;
+  z : float;
+}
+
+table Weapon {
+  name : string;
+  damage : short;
+}
+
+union Equipment { Weapon }
+
+table Monster {
+  pos : Vec3;
+  hp : short = 100;
+  mana : short = 150;
+  name : string;
+  inventory : [ubyte];
+  color : Color = Blue;
+  weapons : [Weapon];
+  equipped : Equipment;
+}
+
+root_type Monster;

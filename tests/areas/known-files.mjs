@@ -5920,13 +5920,13 @@ export async function run(ctx) {
   // ── sample.fbs viewer (FlatBuffers) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('sample.fbs');
-  await page.waitForSelector('#previewHost .fbs-doc', { timeout: 12000 });
+  await page.waitForSelector('#previewHost .flatbuf-doc', { timeout: 12000 });
   pass('sample.fbs: renders');
-  const fbsText = await page.$eval('#previewHost .fbs-doc', (e) => e.textContent);
-  if (/FlatBuffers/i.test(fbsText)) pass('sample.fbs: FlatBuffers badge shown'); else fail('fbs badge: ' + fbsText.slice(0, 200));
-  if (/MyGame/i.test(fbsText)) pass('sample.fbs: namespace shown'); else fail('fbs namespace: ' + fbsText.slice(0, 300));
-  if (/Monster|Table/i.test(fbsText)) pass('sample.fbs: table listed'); else fail('fbs tables: ' + fbsText.slice(0, 300));
-  if (/Monster/.test(fbsText) && /root_type/i.test(fbsText)) pass('sample.fbs: root_type shown'); else fail('fbs root_type: ' + fbsText.slice(0, 300));
+  const flatbufText = await page.$eval('#previewHost .flatbuf-doc', (e) => e.textContent);
+  if (/FlatBuffers/i.test(flatbufText)) pass('sample.fbs: FlatBuffers badge shown'); else fail('fbs badge: ' + flatbufText.slice(0, 200));
+  if (/MyGame/i.test(flatbufText)) pass('sample.fbs: namespace shown'); else fail('fbs namespace: ' + flatbufText.slice(0, 300));
+  if (/Monster|Table/i.test(flatbufText)) pass('sample.fbs: table listed'); else fail('fbs tables: ' + flatbufText.slice(0, 300));
+  if (/Monster/.test(flatbufText) && /root_type/i.test(flatbufText)) pass('sample.fbs: root_type shown'); else fail('fbs root_type: ' + flatbufText.slice(0, 300));
 
   // ── sample.dhall viewer (Dhall) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -5948,4 +5948,49 @@ export async function run(ctx) {
   if (/vertex/i.test(wgslText) && /fragment/i.test(wgslText)) pass('sample.wgsl: vertex + fragment stages shown'); else fail('wgsl stages: ' + wgslText.slice(0, 300));
   if (/Uniforms|struct/i.test(wgslText)) pass('sample.wgsl: struct listed'); else fail('wgsl structs: ' + wgslText.slice(0, 300));
   if (/group 0|group 1/i.test(wgslText)) pass('sample.wgsl: binding groups shown'); else fail('wgsl bindings: ' + wgslText.slice(0, 300));
+
+  // ── sample.glsl viewer (GLSL Shader) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.glsl');
+  await page.waitForSelector('#previewHost .glsl-doc', { timeout: 12000 });
+  pass('sample.glsl: renders');
+  const glslText = await page.$eval('#previewHost .glsl-doc', (e) => e.textContent);
+  if (/GLSL/i.test(glslText)) pass('sample.glsl: GLSL badge shown'); else fail('glsl badge: ' + glslText.slice(0, 200));
+  if (/vertex/i.test(glslText)) pass('sample.glsl: shader stage shown'); else fail('glsl stage: ' + glslText.slice(0, 300));
+  if (/Uniforms|uniform/i.test(glslText)) pass('sample.glsl: uniforms listed'); else fail('glsl uniforms: ' + glslText.slice(0, 300));
+  if (/330/i.test(glslText)) pass('sample.glsl: GLSL version shown'); else fail('glsl version: ' + glslText.slice(0, 300));
+
+  // ── sample.hlsl viewer (HLSL Shader) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.hlsl');
+  await page.waitForSelector('#previewHost .hlsl-doc', { timeout: 12000 });
+  pass('sample.hlsl: renders');
+  const hlslText = await page.$eval('#previewHost .hlsl-doc', (e) => e.textContent);
+  if (/HLSL/i.test(hlslText)) pass('sample.hlsl: HLSL badge shown'); else fail('hlsl badge: ' + hlslText.slice(0, 200));
+  if (/VSMain|PSMain/i.test(hlslText)) pass('sample.hlsl: entry points shown'); else fail('hlsl entry points: ' + hlslText.slice(0, 300));
+  if (/PerFrame|PerObject|cbuffer/i.test(hlslText)) pass('sample.hlsl: constant buffers shown'); else fail('hlsl cbuffers: ' + hlslText.slice(0, 300));
+  if (/albedoMap|Texture2D/i.test(hlslText)) pass('sample.hlsl: textures/samplers shown'); else fail('hlsl textures: ' + hlslText.slice(0, 300));
+
+  // ── sample.rst viewer (reStructuredText) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.rst');
+  await page.waitForSelector('#previewHost .rst-doc', { timeout: 12000 });
+  pass('sample.rst: renders');
+  const rstText = await page.$eval('#previewHost .rst-doc', (e) => e.textContent);
+  if (/RST|reStructuredText/i.test(rstText)) pass('sample.rst: RST badge shown'); else fail('rst badge: ' + rstText.slice(0, 200));
+  if (/Getting Started/i.test(rstText)) pass('sample.rst: document title shown'); else fail('rst title: ' + rstText.slice(0, 300));
+  if (/Installation|Usage|Introduction/i.test(rstText)) pass('sample.rst: section headings shown'); else fail('rst sections: ' + rstText.slice(0, 300));
+  if (/note|code-block|warning/i.test(rstText)) pass('sample.rst: directives listed'); else fail('rst directives: ' + rstText.slice(0, 300));
+
+  // ── sample.org viewer (Org-mode) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.org');
+  await page.waitForSelector('#previewHost .org-doc', { timeout: 12000 });
+  pass('sample.org: renders');
+  const orgText = await page.$eval('#previewHost .org-doc', (e) => e.textContent);
+  if (/Org/i.test(orgText)) pass('sample.org: Org badge shown'); else fail('org badge: ' + orgText.slice(0, 200));
+  if (/Project Notes/i.test(orgText)) pass('sample.org: document title shown'); else fail('org title: ' + orgText.slice(0, 300));
+  if (/Jane Developer/i.test(orgText)) pass('sample.org: author shown'); else fail('org author: ' + orgText.slice(0, 300));
+  if (/TODO|DONE/i.test(orgText)) pass('sample.org: TODO/DONE items shown'); else fail('org todos: ' + orgText.slice(0, 300));
+  if (/python|json/i.test(orgText)) pass('sample.org: code block languages shown'); else fail('org code langs: ' + orgText.slice(0, 300));
 }

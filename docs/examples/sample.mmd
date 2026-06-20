@@ -1,0 +1,10 @@
+flowchart TD
+    A[Start] --> B{Check user role}
+    B -->|admin| C[Full access]
+    B -->|editor| D[Edit content]
+    B -->|viewer| E[Read-only]
+    C --> F[Dashboard]
+    D --> F
+    E --> G[View pages]
+    F --> H[End]
+    G --> H
