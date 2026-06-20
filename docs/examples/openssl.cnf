@@ -1,0 +1,59 @@
+[ req ]
+default_bits        = 4096
+default_keyfile     = privkey.pem
+distinguished_name  = req_distinguished_name
+attributes          = req_attributes
+x509_extensions     = v3_ca
+req_extensions      = v3_req
+string_mask         = utf8only
+prompt              = no
+
+[ req_distinguished_name ]
+countryName                     = US
+stateOrProvinceName             = California
+localityName                    = San Francisco
+organizationName                = Example Corp
+organizationalUnitName          = Engineering
+commonName                      = example.com
+emailAddress                    = admin@example.com
+
+[ req_attributes ]
+challengePassword               = A challenge password
+
+[ v3_ca ]
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always,issuer
+basicConstraints        = critical,CA:true
+keyUsage                = critical,digitalSignature,cRLSign,keyCertSign
+
+[ v3_req ]
+basicConstraints        = CA:FALSE
+keyUsage                = nonRepudiation,digitalSignature,keyEncipherment
+extendedKeyUsage        = serverAuth,clientAuth
+subjectAltName          = @alt_names
+
+[ alt_names ]
+DNS.1 = example.com
+DNS.2 = www.example.com
+DNS.3 = api.example.com
+IP.1  = 192.168.1.1
+
+[ CA_default ]
+dir               = /etc/ssl/CA
+database          = $dir/index.txt
+new_certs_dir     = $dir/newcerts
+serial            = $dir/serial
+certificate       = $dir/cacert.pem
+private_key       = $dir/private/cakey.pem
+default_days      = 365
+default_md        = sha256
+policy            = policy_match
+preserve          = no
+
+[ policy_match ]
+countryName             = match
+stateOrProvinceName     = optional
+organizationName        = match
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional

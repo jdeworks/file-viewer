@@ -166,6 +166,7 @@ import lighttpdConf from '../types/text/known/lighttpd-conf/index.js';
 import rsyslogConf from '../types/text/known/rsyslog-conf/index.js';
 import haproxyConfig from '../types/text/known/haproxy-config/index.js';
 import squidConf from '../types/text/known/squid-conf/index.js';
+import varnishVcl from '../types/text/known/varnish-vcl/index.js';
 import moonYml from '../types/text/yaml/known/moon/index.js';
 import vagrantfile from '../types/text/known/vagrantfile/index.js';
 import caddyfile from '../types/text/known/caddyfile/index.js';
@@ -469,6 +470,7 @@ import certManager from '../types/text/yaml/known/cert-manager/index.js';
 import iptablesRules from '../types/text/known/iptables-rules/index.js';
 import ufwConf from '../types/text/known/ufw-conf/index.js';
 import fail2banConf from '../types/text/known/fail2ban-conf/index.js';
+import apparmorProfile from '../types/text/known/apparmor-profile/index.js';
 import smbConf from '../types/text/known/smb-conf/index.js';
 import corefile from '../types/text/known/corefile/index.js';
 import containerdConfig from '../types/text/known/containerd-config/index.js';
@@ -501,7 +503,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   appveyor, rubocop, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
   brewfile, license, ansibleCfg, ansibleHosts, gemspec, typos, cargoDeny, cargoConfig,
-  htaccess, nginxConf, apacheConf, lighttpdConf, haproxyConfig, squidConf, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
+  htaccess, nginxConf, apacheConf, lighttpdConf, haproxyConfig, squidConf, varnishVcl, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
   rsyslogConf,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,
@@ -569,7 +571,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig,
   newrelicConfig, dynatraceConfig, elasticApmConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
-  wireguardConf, openvpnConfig,
+  wireguardConf, openvpnConfig, opensslConf,
   supervisordConf, logrotateConf,
   shellRc,
   nixConfig,
@@ -579,7 +581,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   systemdUnit, crontab,
   clusterConfig, certManager,
   iptablesRules, ufwConf,
-  fail2banConf, smbConf,
+  fail2banConf, apparmorProfile, smbConf,
   corefile, containerdConfig,
   postfixConf, chronyConf,
   namedConf, dhcpdConf,

@@ -1,0 +1,34 @@
+# cpanfile - Perl dependencies
+requires 'perl', '5.026';
+
+requires 'Moose' => '2.0000';
+requires 'Plack' => '1.0000';
+requires 'DBI' => '1.620';
+requires 'DBD::Pg' => '3.0.0';
+requires 'JSON::XS' => '4.0';
+requires 'LWP::UserAgent' => '6.00';
+requires 'DateTime' => '1.50';
+requires 'Try::Tiny';
+requires 'Log::Log4perl';
+requires 'Config::Tiny';
+requires 'File::Slurp';
+
+recommends 'JSON::XS' => '4.02';
+recommends 'DBIx::Class' => '0.082840';
+
+suggests 'YAML::XS';
+suggests 'Devel::NYTProf';
+
+on 'test' => sub {
+    requires 'Test::More' => '1.001014';
+    requires 'Test::Exception';
+    requires 'Test::MockModule';
+    requires 'Test::Deep';
+    requires 'Plack::Test';
+};
+
+on 'develop' => sub {
+    requires 'Perl::Critic';
+    requires 'Perl::Tidy';
+    requires 'Devel::Cover';
+};

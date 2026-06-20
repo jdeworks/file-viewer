@@ -3331,4 +3331,36 @@ export async function run(ctx) {
   if (/Keepalived/i.test(kaText)) pass('keepalived.conf: Keepalived badge shown'); else fail('keepalived-conf badge: ' + kaText.slice(0, 200));
   if (/MASTER|vrrp/i.test(kaText)) pass('keepalived.conf: VRRP instance state shown'); else fail('keepalived-conf vrrp: ' + kaText.slice(0, 300));
 
+  // ── netdata.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('netdata.conf (Netdata)');
+  await page.waitForSelector('#previewHost .netdatacfg-doc', { timeout: 12000 });
+  const netdataText = await page.$eval('#previewHost .netdatacfg-doc', (e) => e.textContent);
+  if (/Netdata/i.test(netdataText)) pass('netdata.conf: Netdata badge shown'); else fail('netdata-conf badge: ' + netdataText.slice(0, 200));
+  if (/global|plugins/i.test(netdataText)) pass('netdata.conf: global or plugins section shown'); else fail('netdata-conf sections: ' + netdataText.slice(0, 300));
+
+  // ── .yarnrc.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.yarnrc.yml (Yarn)');
+  await page.waitForSelector('#previewHost .yarnrc-doc', { timeout: 12000 });
+  const yarnText = await page.$eval('#previewHost .yarnrc-doc', (e) => e.textContent);
+  if (/Yarn/i.test(yarnText)) pass('.yarnrc.yml: Yarn badge shown'); else fail('yarnrc badge: ' + yarnText.slice(0, 200));
+  if (/nodeLinker|Berry/i.test(yarnText)) pass('.yarnrc.yml: nodeLinker or Berry shown'); else fail('yarnrc content: ' + yarnText.slice(0, 300));
+
+  // ── cpanfile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cpanfile');
+  await page.waitForSelector('#previewHost .cpanfile-doc', { timeout: 12000 });
+  const cpanfileText = await page.$eval('#previewHost .cpanfile-doc', (e) => e.textContent);
+  if (/Perl/i.test(cpanfileText)) pass('cpanfile: Perl badge shown'); else fail('cpanfile badge: ' + cpanfileText.slice(0, 200));
+  if (/Moose|requires/i.test(cpanfileText)) pass('cpanfile: required dependencies shown'); else fail('cpanfile deps: ' + cpanfileText.slice(0, 300));
+
+  // ── openssl.cnf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('openssl.cnf');
+  await page.waitForSelector('#previewHost .opensslcfg-doc', { timeout: 12000 });
+  const opensslText = await page.$eval('#previewHost .opensslcfg-doc', (e) => e.textContent);
+  if (/OpenSSL/i.test(opensslText)) pass('openssl.cnf: OpenSSL badge shown'); else fail('openssl-conf badge: ' + opensslText.slice(0, 200));
+  if (/distinguished_name|CA/i.test(opensslText)) pass('openssl.cnf: distinguished_name or CA info shown'); else fail('openssl-conf content: ' + opensslText.slice(0, 300));
+
 }
