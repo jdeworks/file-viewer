@@ -54,6 +54,7 @@ function flatGet(doc, ...keys) {
 const SECRET_PATTERN = /password|keystore|truststore|keypass|ssl.*key/i;
 
 export async function render(intake) {
+  const jsYaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
   const text = intake.text || '';
   let doc = {};
   try { doc = (jsYaml.loadAll(text) || [])[0] || {}; } catch { /* ignore */ }

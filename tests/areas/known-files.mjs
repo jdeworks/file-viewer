@@ -127,10 +127,10 @@ export async function run(ctx) {
   if (ecGlobs.some((g) => /\*\.py/.test(g)) && ecRoot.includes('root')) pass('.editorconfig: sections per glob (+ root flag)'); else fail('editorconfig globs=' + ecGlobs.join(',') + ' tags=' + ecRoot.join(','));
 
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('pom.xml');
-  await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
-  const pomHrefs = await page.$$eval('#previewHost a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
-  const pomScopes = await page.$$eval('#previewHost .kf-tag', (els) => els.map((e) => e.textContent));
+  await openExample('pom.xml (Maven POM)');
+  await page.waitForSelector('#previewHost .mvn-doc', { timeout: 12000 });
+  const pomHrefs = await page.$$eval('#previewHost a.mvn-link', (els) => els.map((a) => a.getAttribute('href')));
+  const pomScopes = await page.$$eval('#previewHost .mvn-scope', (els) => els.map((e) => e.textContent));
   if (pomHrefs.some((h) => /mvnrepository\.com\/artifact\/com\.google\.guava\/guava/.test(h)) && pomScopes.includes('test')) pass('pom.xml: dependencies link to mvnrepository (+ scope tagged)'); else fail('pom links=' + pomHrefs.join(',') + ' scopes=' + pomScopes.join(','));
 
   await page.goto(origin, { waitUntil: 'networkidle' });

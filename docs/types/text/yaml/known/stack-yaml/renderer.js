@@ -22,6 +22,7 @@ const CSS = `
 `;
 
 export async function render(intake) {
+  const jsYaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
   const text = intake.text || new TextDecoder().decode(intake.bytes);
   let parsed = {};
   try { parsed = (jsYaml.loadAll(text) || [])[0] || {}; } catch { parsed = {}; }

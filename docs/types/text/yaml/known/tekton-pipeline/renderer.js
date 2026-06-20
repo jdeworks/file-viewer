@@ -5,6 +5,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 const KIND_COLOR = { Pipeline: '#1a73e8', Task: '#0d904f', ClusterTask: '#6a1b9a', PipelineRun: '#e65100', TaskRun: '#00838f' };
 
 export async function render(intake) {
+  const jsYaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
   const text = intake.text || '';
   let doc = {};
   try { doc = (jsYaml.loadAll(text) || [])[0] || {}; } catch { /* ignore parse errors */ }

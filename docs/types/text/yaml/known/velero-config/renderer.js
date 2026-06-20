@@ -8,6 +8,7 @@ function kv(label, value) {
 }
 
 export async function render(intake) {
+  const jsYaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
   const text = intake.text || '';
   let doc = {};
   try { doc = (jsYaml.loadAll(text) || [])[0] || {}; } catch { /* ignore */ }

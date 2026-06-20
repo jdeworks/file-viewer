@@ -15378,33 +15378,6 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "maven-pom": {
-      "label": "Maven POM",
-      "baseType": "xml",
-      "support": "supported",
-      "sampleFiles": [
-        "pom.xml"
-      ],
-      "extensions": [
-        ".xml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
     "gradle-version-catalog": {
       "label": "Gradle Version Catalog",
       "baseType": "toml",
@@ -15900,6 +15873,33 @@
       ],
       "extensions": [
         ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "maven-pom": {
+      "label": "Maven POM",
+      "baseType": "xml",
+      "support": "supported",
+      "sampleFiles": [
+        "pom.xml"
+      ],
+      "extensions": [
+        ".xml"
       ],
       "capabilities": {
         "rawView": true,

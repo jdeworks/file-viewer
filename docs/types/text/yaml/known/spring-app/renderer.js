@@ -57,6 +57,7 @@ function flatten(obj, prefix = '') {
 }
 
 export async function render(intake) {
+  const jsYaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
   const text = intake.text || new TextDecoder().decode(intake.bytes || new Uint8Array());
 
   let parsed;

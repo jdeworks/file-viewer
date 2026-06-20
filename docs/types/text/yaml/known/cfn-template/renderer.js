@@ -47,6 +47,7 @@ function groupByService(resources) {
 }
 
 export async function render(intake) {
+  const jsYaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
   let tpl = {};
   try { tpl = (jsYaml.loadAll(intake.text || \'\') || [])[0] || {}; } catch { tpl = {}; }
 
