@@ -1,0 +1,68 @@
+# Falco configuration file
+
+rules_file:
+  - /etc/falco/falco_rules.yaml
+  - /etc/falco/falco_rules.local.yaml
+  - /etc/falco/rules.d
+
+plugins: []
+
+load_plugins: []
+
+watch_config_files: true
+
+time_format_iso_8601: false
+
+json_output: false
+json_include_output_property: true
+json_include_tags_property: true
+
+log_stderr: true
+log_syslog: true
+log_level: info
+
+libs_logger:
+  enabled: false
+  severity: debug
+
+priority: debug
+
+buffered_outputs: false
+
+syscall_event_drops:
+  actions:
+    - log
+    - alert
+  rate: 0.03333
+  max_burst: 1
+
+stdout_output:
+  enabled: true
+
+file_output:
+  enabled: false
+  keep_alive: false
+  filename: /tmp/falco.txt
+
+program_output:
+  enabled: false
+  keep_alive: false
+  program: "jq '{text: .output}' | curl -d @- -X POST https://hooks.slack.com/services/XXX/YYY/ZZZ"
+
+http_output:
+  enabled: false
+  url: http://some.url/some/path/
+
+grpc:
+  enabled: false
+  bind_address: "unix:///run/falco/falco.sock"
+  threadiness: 8
+
+grpc_output:
+  enabled: false
+
+webserver:
+  enabled: true
+  listen_port: 8765
+  k8s_node_healthz_endpoint: /healthz
+  ssl_enabled: false

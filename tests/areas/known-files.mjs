@@ -2628,6 +2628,16 @@ export async function run(ctx) {
   if (/container|shell|network/i.test(falcoText)) pass('falco_rules.yaml: tags shown'); else fail('falco tags: ' + falcoText.slice(0, 300));
   if (/spawned_process|bin_dir/i.test(falcoText)) pass('falco_rules.yaml: macro names shown'); else fail('falco macros: ' + falcoText.slice(0, 300));
 
+  // ── falco-config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('falco.yaml');
+  await page.waitForSelector('#previewHost .falco-doc', { timeout: 12000 });
+  const falcoCfgText = await page.$eval('#previewHost .falco-doc', (e) => e.textContent);
+  if (/Falco/i.test(falcoCfgText)) pass('falco.yaml: Falco badge shown'); else fail('falco-config badge: ' + falcoCfgText.slice(0, 200));
+  if (/rules_file|Rules Files/i.test(falcoCfgText)) pass('falco.yaml: rules files shown'); else fail('falco-config rules: ' + falcoCfgText.slice(0, 300));
+  if (/log_level|info/i.test(falcoCfgText)) pass('falco.yaml: log level shown'); else fail('falco-config log: ' + falcoCfgText.slice(0, 300));
+  if (/stdout_output|Outputs/i.test(falcoCfgText)) pass('falco.yaml: outputs shown'); else fail('falco-config outputs: ' + falcoCfgText.slice(0, 300));
+
   // ── kyverno-policy viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('kyverno-policy.yaml');

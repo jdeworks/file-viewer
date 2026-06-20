@@ -470,6 +470,7 @@ import easJson from '../types/text/json/known/eas-json/index.js';
 import dprintConfig from '../types/text/json/known/dprint/index.js';
 import opaPolicy from '../types/text/known/opa-policy/index.js';
 import falcoRules from '../types/text/yaml/known/falco-rules/index.js';
+import falcoConfig from '../types/text/yaml/known/falco-config/index.js';
 import kyvernoPolicy from '../types/text/yaml/known/kyverno-policy/index.js';
 import gatekeeperConfig from '../types/text/yaml/known/gatekeeper-config/index.js';
 import jetbrainsWorkspace from '../types/text/xml/known/jetbrains-workspace/index.js';
@@ -710,7 +711,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   djangoSettings, springProfiles, railsCredentials, pumaConfig,
   woodpeckerCi,
   codefreshConfig,
-  opaPolicy, falcoRules, kyvernoPolicy, gatekeeperConfig,
+  opaPolicy, falcoRules, falcoConfig, kyvernoPolicy, gatekeeperConfig,
   harnessPipeline,
   actrc, actConfig,
   pulsarConf,

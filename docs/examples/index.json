@@ -6999,6 +6999,18 @@
     "knownFile": "falco-rules"
   },
   {
+    "label": "falco.yaml",
+    "file": "falco.yaml",
+    "mime": "application/yaml",
+    "category": "Security",
+    "categories": [
+      "Security"
+    ],
+    "enhanced": true,
+    "description": "Falco runtime security configuration controlling rules files, outputs, gRPC settings, and log level.",
+    "knownFile": "falco-config"
+  },
+  {
     "label": "kyverno-policy.yaml",
     "file": "kyverno-policy.yaml",
     "mime": "application/yaml",
