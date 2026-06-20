@@ -1,0 +1,72 @@
+[app]
+  # Interface and port to listen on. Use an IP like 0.0.0.0 to listen on all interfaces.
+  address = "0.0.0.0:9000"
+  admin_username = "listmonk"
+  admin_password = "listmonk"
+
+  # Path to static file directory. Defaults to ./static.
+  # static_dir = ""
+
+  # Interval for running various internal housekeeping tasks.
+  # housekeeping_interval = "12h"
+
+  # Maximum number of concurrent multi-bulk subscribers addition.
+  max_send_errors = 1000
+
+  # Enable the public-facing subscriber facing APIs.
+  # enable_public_subscription_page = true
+
+  # Batch size for bulk subscriber import.
+  batch_size = 1000
+
+  # Concurrency for processing bulk subscriber imports.
+  concurrency = 10
+
+[db]
+  host = "localhost"
+  port = 5432
+  user = "listmonk"
+  password = "listmonk"
+  database = "listmonk"
+
+  # Maximum number of open connections to the database.
+  max_open = 25
+
+  # Maximum number of idle connections to the database.
+  max_idle = 25
+
+  # Duration after which an idle connection is closed. Use "s" for seconds,
+  # "m" for minutes, "h" for hours. eg: 300s, 5m, 1h
+  max_lifetime = "300s"
+
+  ssl_mode = "disable"
+
+[[smtp]]
+  enabled = true
+  host = "smtp.example.com"
+  port = 587
+  auth_protocol = "login"
+  username = "admin@example.com"
+  password = "secret"
+  email_headers = []
+  max_conns = 10
+  max_msg_retries = 2
+  idle_timeout = "15s"
+  wait_timeout = "5s"
+  tls_type = "STARTTLS"
+  tls_skip_verify = false
+
+[[smtp]]
+  enabled = false
+  host = "smtp.relay.example.com"
+  port = 25
+  auth_protocol = "plain"
+  username = "relay@example.com"
+  password = "another-secret"
+  email_headers = []
+  max_conns = 5
+  max_msg_retries = 2
+  idle_timeout = "15s"
+  wait_timeout = "5s"
+  tls_type = "none"
+  tls_skip_verify = false

@@ -5330,4 +5330,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('lldap_config.toml');
   pass(await page.waitForSelector('#previewHost .lldap-doc', { timeout: 12000 }), 'lldap_config.toml: LLDAP badge shown');
+
+  // ── listmonk-config.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('listmonk-config.toml');
+  pass(await page.waitForSelector('#previewHost .lmonk-doc', { timeout: 12000 }), 'listmonk-config.toml: Listmonk badge shown');
+
+  // ── windmill.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('windmill.env');
+  pass(await page.waitForSelector('#previewHost .wmill-doc', { timeout: 12000 }), 'windmill.env: Windmill badge shown');
 }

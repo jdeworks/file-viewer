@@ -9802,5 +9802,33 @@
     "enhanced": true,
     "description": "LLDAP lightweight LDAP server configuration with base DN, LDAP/LDAPS/HTTP ports, JWT secret, admin credentials, PostgreSQL database URL, and SMTP password reset settings.",
     "knownFile": "lldap-config"
+  },
+  {
+    "file": "listmonk-config.toml",
+    "label": "listmonk-config.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Email"
+    ],
+    "enhanced": true,
+    "description": "Listmonk self-hosted newsletter and mailing list manager configuration with app server, PostgreSQL database, and SMTP server settings.",
+    "knownFile": "listmonk-config"
+  },
+  {
+    "file": "windmill.env",
+    "label": "windmill.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Automation"
+    ],
+    "enhanced": true,
+    "description": "Windmill workflow automation platform environment configuration with server, security, database, workers, and runtime binary paths.",
+    "knownFile": "windmill-config"
   }
 ]
