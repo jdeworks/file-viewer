@@ -9526,6 +9526,16 @@
     "knownFile": "headscale-config"
   },
   {
+    "file": "headscale.yaml",
+    "label": "Headscale Config",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": ["Config", "Self-hosted", "Networking"],
+    "enhanced": true,
+    "description": "Headscale self-hosted Tailscale VPN control server configuration",
+    "knownFile": true
+  },
+  {
     "file": "ntfy-server.yml",
     "label": "ntfy-server.yml (ntfy)",
     "mime": "text/yaml",

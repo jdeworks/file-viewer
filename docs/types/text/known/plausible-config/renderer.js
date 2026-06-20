@@ -9,7 +9,7 @@ const CSS = `
 .plsbl-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px;}
 .plsbl-card{background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);border-radius:6px;padding:10px 14px;margin-bottom:8px;}
 .plsbl-row{display:flex;align-items:baseline;gap:6px;margin-bottom:4px;font-size:13px;flex-wrap:wrap;}
-.plsbl-key{color:var(--fg-2,#888);font-size:12px;min-width:200px;flex-shrink:0;}
+.plsbl-key{color:var(--fg-2,#888);font-size:12px;min-width:220px;flex-shrink:0;}
 .plsbl-val{font-family:ui-monospace,monospace;font-size:12px;word-break:break-all;}
 .plsbl-chip{display:inline-block;font-size:11px;padding:1px 8px;border-radius:8px;border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace;margin:1px 2px 1px 0;background:var(--bg-2,#f6f8fa);color:var(--fg,#24292f);}
 .plsbl-chip-blue{background:#e3f2fd;border-color:#2196f3;color:#0d47a1;}
@@ -17,6 +17,7 @@ const CSS = `
 .plsbl-chip-red{background:#ffebee;border-color:#f44336;color:#b71c1c;}
 .plsbl-chip-gray{background:var(--bg-2,#f6f8fa);border-color:var(--border,#e0e0e0);color:var(--fg-2,#888);}
 .plsbl-chip-purple{background:#f3e5f5;border-color:#9c27b0;color:#4a148c;}
+.plsbl-chip-orange{background:#fff3e0;border-color:#ff9800;color:#e65100;}
 .plsbl-masked{font-family:ui-monospace,monospace;font-size:12px;color:var(--fg-2,#888);font-style:italic;}
 `;
 
@@ -30,7 +31,8 @@ function parseKV(text) {
     const eq = line.indexOf('=');
     if (eq < 1) continue;
     const key = line.slice(0, eq).trim();
-    const val = line.slice(eq + 1).trim();
+    let val = line.slice(eq + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) val = val.slice(1, -1);
     if (key && !(key in out)) out[key] = val;
   }
   return out;
@@ -42,9 +44,9 @@ function maskDsn(val) {
   return val.replace(/(\/\/[^:@]*):([^@]*)@/, '$1:[configured]@');
 }
 
-function chip(val, cls = '') {
+function chip(val, cls) {
   if (val == null || val === '') return '';
-  return `<span class="plsbl-chip${cls ? ' plsbl-chip-' + cls : ''}">${esc(val)}</span>`;
+  return `<span class="plsbl-chip${cls ? ' plsbl-chip-' + cls : ''}">${esc(String(val))}</span>`;
 }
 
 function masked() {
@@ -60,6 +62,14 @@ function boolChip(v, trueLabel, trueColor, falseLabel, falseColor) {
   const lower = (v || '').trim().toLowerCase();
   if (lower === 'true' || lower === '1' || lower === 'yes') return chip(trueLabel || 'true', trueColor || 'green');
   if (lower === 'false' || lower === '0' || lower === 'no') return chip(falseLabel || 'false', falseColor || 'gray');
+  return chip(v, 'gray');
+}
+
+function registrationChip(v) {
+  const lower = (v || '').trim().toLowerCase();
+  if (lower === 'true' || lower === '1') return chip('disabled', 'red');
+  if (lower === 'false' || lower === '0') return chip('open', 'green');
+  if (lower === 'invite_only') return chip('invite_only', 'orange');
   return chip(v, 'gray');
 }
 
@@ -89,18 +99,19 @@ export function render(intake) {
 
   let body = '';
 
-  // Server
-  const serverRows = [
+  // App
+  const appRows = [
     cfg.BASE_URL ? row('BASE_URL', chip(cfg.BASE_URL, 'blue')) : '',
-    cfg.DISABLE_REGISTRATION != null ? row('DISABLE_REGISTRATION', boolChip(cfg.DISABLE_REGISTRATION, 'disabled', 'red', 'open', 'green')) : '',
-    cfg.ENABLE_EMAIL_VERIFICATION != null ? row('ENABLE_EMAIL_VERIFICATION', boolChip(cfg.ENABLE_EMAIL_VERIFICATION, 'enabled', 'green', 'disabled', 'gray')) : '',
+    cfg.PORT ? row('PORT', chip(cfg.PORT, 'blue')) : '',
   ].filter(Boolean).join('');
-  if (serverRows) body += `<div class="plsbl-sec"><h3>Server</h3><div class="plsbl-card">${serverRows}</div></div>`;
+  if (appRows) body += `<div class="plsbl-sec"><h3>App</h3><div class="plsbl-card">${appRows}</div></div>`;
 
   // Security
-  if (cfg.SECRET_KEY_BASE != null) {
-    body += `<div class="plsbl-sec"><h3>Security</h3><div class="plsbl-card">${row('SECRET_KEY_BASE', masked())}</div></div>`;
-  }
+  const secRows = [
+    cfg.SECRET_KEY_BASE != null ? row('SECRET_KEY_BASE', masked()) : '',
+    cfg.TOTP_VAULT_KEY != null ? row('TOTP_VAULT_KEY', masked()) : '',
+  ].filter(Boolean).join('');
+  if (secRows) body += `<div class="plsbl-sec"><h3>Security</h3><div class="plsbl-card">${secRows}</div></div>`;
 
   // Database
   const dbRows = [
@@ -114,18 +125,32 @@ export function render(intake) {
     cfg.MAILER_EMAIL ? row('MAILER_EMAIL', chip(cfg.MAILER_EMAIL)) : '',
     cfg.SMTP_HOST_ADDR ? row('SMTP_HOST_ADDR', chip(cfg.SMTP_HOST_ADDR)) : '',
     cfg.SMTP_HOST_PORT ? row('SMTP_HOST_PORT', chip(cfg.SMTP_HOST_PORT, 'blue')) : '',
-    cfg.SMTP_HOST_SSL_ENABLED != null ? row('SMTP_HOST_SSL_ENABLED', boolChip(cfg.SMTP_HOST_SSL_ENABLED, 'enabled', 'green', 'disabled', 'gray')) : '',
     cfg.SMTP_USER_NAME ? row('SMTP_USER_NAME', chip(cfg.SMTP_USER_NAME)) : '',
     cfg.SMTP_USER_PWD != null ? row('SMTP_USER_PWD', masked()) : '',
+    cfg.SMTP_RETRIES ? row('SMTP_RETRIES', chip(cfg.SMTP_RETRIES)) : '',
   ].filter(Boolean).join('');
   if (smtpRows) body += `<div class="plsbl-sec"><h3>Email</h3><div class="plsbl-card">${smtpRows}</div></div>`;
+
+  // Registration
+  const regRows = [
+    cfg.DISABLE_REGISTRATION != null ? row('DISABLE_REGISTRATION', registrationChip(cfg.DISABLE_REGISTRATION)) : '',
+    cfg.ENABLE_EMAIL_VERIFICATION != null ? row('ENABLE_EMAIL_VERIFICATION', boolChip(cfg.ENABLE_EMAIL_VERIFICATION, 'enabled', 'green', 'disabled', 'gray')) : '',
+  ].filter(Boolean).join('');
+  if (regRows) body += `<div class="plsbl-sec"><h3>Registration</h3><div class="plsbl-card">${regRows}</div></div>`;
 
   // Google OAuth
   const oauthRows = [
     cfg.GOOGLE_CLIENT_ID ? row('GOOGLE_CLIENT_ID', chip(cfg.GOOGLE_CLIENT_ID, 'purple')) : '',
     cfg.GOOGLE_CLIENT_SECRET != null ? row('GOOGLE_CLIENT_SECRET', masked()) : '',
   ].filter(Boolean).join('');
-  if (oauthRows) body += `<div class="plsbl-sec"><h3>Google OAuth</h3><div class="plsbl-card">${oauthRows}</div></div>`;
+  if (oauthRows) body += `<div class="plsbl-sec"><h3>Google</h3><div class="plsbl-card">${oauthRows}</div></div>`;
+
+  // MaxMind GeoIP
+  const maxmindRows = [
+    cfg.MAXMIND_LICENSE_KEY != null ? row('MAXMIND_LICENSE_KEY', masked()) : '',
+    cfg.MAXMIND_EDITION ? row('MAXMIND_EDITION', chip(cfg.MAXMIND_EDITION)) : '',
+  ].filter(Boolean).join('');
+  if (maxmindRows) body += `<div class="plsbl-sec"><h3>MaxMind GeoIP</h3><div class="plsbl-card">${maxmindRows}</div></div>`;
 
   if (!body) {
     body = '<p style="color:var(--fg-2,#888);font-size:13px;">No Plausible Analytics configuration keys found.</p>';

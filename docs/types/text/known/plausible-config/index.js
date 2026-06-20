@@ -1,13 +1,17 @@
 export default {
   id: 'plausible-config',
-  label: 'Plausible Analytics Config',
+  label: 'Plausible Config',
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    return n === 'plausible.env';
+    if (n === 'plausible.env') return true;
+    const text = intake.text || intake.textSample || '';
+    return text.includes('SECRET_KEY_BASE') && text.includes('BASE_URL') && text.includes('CLICKHOUSE_DATABASE_URL');
   },
   loadRenderer: () => import('./renderer.js'),
   about: {
     description: 'Plausible Analytics self-hosted server environment configuration — server, security, database, email, and OAuth settings.',
-    tags: ['plausible', 'analytics', 'self-hosted', 'config'],
+    usedFor: [
+      { label: 'Plausible Analytics', description: 'Privacy-friendly open-source web analytics, self-hosted edition.', href: 'https://plausible.io/docs/self-hosting-configuration' },
+    ],
   },
 };

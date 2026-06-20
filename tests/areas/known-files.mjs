@@ -5079,6 +5079,11 @@ export async function run(ctx) {
   if (/sqlite3|sqlite/.test(hscaleText)) pass('headscale-config.yaml: db_type shown'); else fail('headscale db_type: ' + hscaleText.slice(0, 300));
   if (/private\.key|noise_private/.test(hscaleText)) pass('headscale-config.yaml: private key paths shown'); else fail('headscale key paths: ' + hscaleText.slice(0, 300));
 
+  // ── headscale.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Headscale Config');
+  pass(await page.waitForSelector('#previewHost .hscale-doc', { timeout: 12000 }), 'headscale.yaml: Headscale badge shown');
+
   // ── pihole-setupVars.conf viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('setupVars.conf (Pi-hole)');
@@ -5255,6 +5260,10 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('plausible.env');
   pass(await page.waitForSelector('#previewHost .plsbl-doc', { timeout: 12000 }), 'plausible.env: Plausible badge shown');
+  const plausibleText = await page.$eval('#previewHost .plsbl-doc', (el) => el.textContent);
+  if (/Plausible/i.test(plausibleText)) pass('plausible.env: Plausible badge shown'); else fail('plausible badge: ' + plausibleText.slice(0, 200));
+  if (/\[configured\]/.test(plausibleText)) pass('plausible.env: secrets masked'); else fail('plausible secrets: ' + plausibleText.slice(0, 300));
+  if (/invite_only/.test(plausibleText)) pass('plausible.env: invite_only registration chip shown'); else fail('plausible invite_only: ' + plausibleText.slice(0, 300));
 
   // ── umami.env viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
