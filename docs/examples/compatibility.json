@@ -28806,7 +28806,9 @@
       "label": "Flatpak Manifest",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "org.example.App.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28831,7 +28833,9 @@
       "label": "Snapcraft",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "snapcraft.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28856,7 +28860,9 @@
       "label": "SMT-LIB 2",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.smt2"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28881,7 +28887,9 @@
       "label": "PROMELA",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.pml"
+      ],
       "extensions": [
         ".yml"
       ],

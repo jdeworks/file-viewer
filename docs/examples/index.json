@@ -13054,5 +13054,53 @@
     "enhanced": true,
     "description": "Coq proof assistant source file with inductive definitions, theorems, and formal proofs.",
     "knownFile": "coq-lang"
+  },
+  {
+    "label": "org.example.App.yaml (Flatpak Manifest)",
+    "file": "org.example.App.yaml",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Flatpak application manifest defining app-id, runtime, SDK, and build modules.",
+    "knownFile": "flatpak-manifest"
+  },
+  {
+    "label": "snapcraft.yaml (Snapcraft)",
+    "file": "snapcraft.yaml",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Snapcraft package definition with snap name, version, confinement, parts, and app commands.",
+    "knownFile": "snapcraft-yaml"
+  },
+  {
+    "label": "sample.smt2 (SMT-LIB 2)",
+    "file": "sample.smt2",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "SMT-LIB 2 input file with logic declarations, assertions, and check-sat commands for SMT solvers.",
+    "knownFile": "smtlib"
+  },
+  {
+    "label": "sample.pml (PROMELA)",
+    "file": "sample.pml",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "PROMELA process metalanguage model for the SPIN model checker with processes and message channels.",
+    "knownFile": "promela"
   }
 ]

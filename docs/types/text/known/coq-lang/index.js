@@ -19,6 +19,7 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     const ext = name.includes('.') ? name.split('.').pop() : '';
+    if (ext === 'coq') return true;
     if (ext !== 'v') return false;
     const text = intake.text || '';
     if (hasVerilogKeywords(text)) return false;

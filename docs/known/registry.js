@@ -928,6 +928,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   wpaSupplicantConf, sssdConf,
   rpmSpec, debianControl, cupsConf, dafnyLang,
   xdgDesktopEntry, isabelleThy, alloyLang, coqLang,
+  flatpakManifest, snapcraftYaml, smtlib, promela,
   haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, rubyLang, perlLang, phpLang, powershellLang, solidityLang, vhdlLang, arduinoSketch, cobolLang, gleamLang, odinLang, haxeLang, adaLang, prologLang, asmLang, objcLang, dLang, ponyLang, wrenLang, mojoLang, janetLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
@@ -1136,7 +1137,6 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   linkwardenConfig,
   hoarderConfig,
   frigateConfig,
-  flatpakManifest, snapcraftYaml, smtlib, promela,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
