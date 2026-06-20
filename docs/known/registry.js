@@ -740,6 +740,8 @@ import scrutinyConfig from '../types/text/yaml/known/scrutiny-config/index.js';
 import homepageConfig from '../types/text/yaml/known/homepage-config/index.js';
 import overseerrConfig from '../types/text/json/known/overseerr-config/index.js';
 import freshRssConfig from '../types/text/known/freshrss-config/index.js';
+import wallabagConfig from '../types/text/known/wallabag-config/index.js';
+import linkwardenConfig from '../types/text/known/linkwarden-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -940,6 +942,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   overseerrConfig,
   freshRssConfig,
   homepageConfig,
+  wallabagConfig,
+  linkwardenConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -5665,4 +5665,16 @@ export async function run(ctx) {
   await openExample('homepage-services.yaml');
   await page.waitForSelector('#previewHost .homepage-doc', { timeout: 12000 });
   pass('homepage-services.yaml: Homepage badge shown');
+
+  // ── wallabag.env viewer (wallabag-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('wallabag.env');
+  await page.waitForSelector('#previewHost .wallabag-doc', { timeout: 12000 });
+  pass('wallabag.env: Wallabag badge shown');
+
+  // ── linkwarden.env viewer (linkwarden-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('linkwarden.env');
+  await page.waitForSelector('#previewHost .linkwarden-doc', { timeout: 12000 });
+  pass('linkwarden.env: Linkwarden badge shown');
 }

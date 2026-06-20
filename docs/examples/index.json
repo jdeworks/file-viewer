@@ -10440,5 +10440,25 @@
     "enhanced": true,
     "description": "Homepage dashboard services configuration file",
     "knownFile": true
+  },
+  {
+    "file": "wallabag.env",
+    "label": "Wallabag config",
+    "mime": "text/plain",
+    "category": "Productivity",
+    "categories": ["Productivity", "Reading", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Wallabag self-hosted read-it-later application configuration",
+    "knownFile": true
+  },
+  {
+    "file": "linkwarden.env",
+    "label": "Linkwarden config",
+    "mime": "text/plain",
+    "category": "Productivity",
+    "categories": ["Productivity", "Bookmarks", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Linkwarden self-hosted bookmark manager and link archiver configuration",
+    "knownFile": true
   }
 ]
