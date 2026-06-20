@@ -1935,6 +1935,16 @@
     "knownFile": "ssh-config"
   },
   {
+    "file": "ssh_config",
+    "label": "ssh_config (SSH Client Config)",
+    "category": "Config",
+    "categories": ["Config", "Network"],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "SSH client config: named host aliases, HostName, User, Port, IdentityFile paths, ProxyJump chains, wildcard fallback.",
+    "knownFile": "ssh-config"
+  },
+  {
     "label": "sample.rdp",
     "file": "sample.rdp",
     "category": "Other",
@@ -3327,10 +3337,23 @@
     "mime": "text/plain",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "DevOps"
     ],
     "enhanced": true,
     "description": "Heroku/foreman Procfile defining web, worker, scheduler, and release processes."
+  },
+  {
+    "label": ".env.example (Env Template)",
+    "file": ".env.example",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Environment"
+    ],
+    "enhanced": true,
+    "description": "Environment variable template with placeholders for app, database, auth, cloud, and feature flag settings."
   },
   {
     "label": ".envrc",

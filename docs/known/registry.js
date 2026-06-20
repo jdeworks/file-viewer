@@ -122,6 +122,7 @@ import swcrc from '../types/text/json/known/swcrc/index.js';
 import makefileKf from '../types/text/known/makefile/index.js';
 import justfile from '../types/text/known/justfile/index.js';
 import procfile from '../types/text/known/procfile/index.js';
+import envExample from '../types/text/known/env-example/index.js';
 import envrc from '../types/text/known/envrc/index.js';
 import miseConfig from '../types/text/toml/known/mise/index.js';
 import toolVersions from '../types/text/known/tool-versions/index.js';
@@ -460,7 +461,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   helmChart, kustomize, ansiblePlaybook, pulumi, packer, ruff, uv, kubeHelmValues,
   firebase, expo, tailwind, postcss, husky, lintStaged, nestCli, swcrc,
   packageLock, composerLock, pnpmLock, cargoLock, poetryLock, goSum,
-  makefileKf, justfile, procfile, envrc, miseConfig, toolVersions,
+  makefileKf, justfile, procfile, envExample, envrc, miseConfig, toolVersions,
   gitattributes, gemfileLock, sonar, hatch,
   mailmap, npmignore, dockerignore,
   appveyor, rubocop, taskfile, mkdocsYml,
