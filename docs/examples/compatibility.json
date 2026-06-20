@@ -16111,7 +16111,9 @@
       "label": "OpenVPN config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "client.ovpn"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16136,7 +16138,9 @@
       "label": "Maven settings",
       "baseType": "xml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "maven-settings.xml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16161,7 +16165,113 @@
       "label": "PostgreSQL pg_hba",
       "baseType": "raw",
       "support": "supported",
+      "sampleFiles": [
+        "pg_hba.conf"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "dvc-pipeline": {
+      "label": "DVC Pipeline",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "dvc.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "hydra-config": {
+      "label": "Hydra Config",
+      "baseType": "yaml",
+      "support": "supported",
       "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "mlflow-project": {
+      "label": "MLflow Project",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "wandb-config": {
+      "label": "W&B Config",
+      "baseType": "ini",
+      "support": "supported",
+      "sampleFiles": [
+        "wandb-settings"
+      ],
       "extensions": [
         ".yml"
       ],

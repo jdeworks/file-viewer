@@ -2910,4 +2910,13 @@ export async function run(ctx) {
   const pghbaText = await page.$eval('#previewHost .pghba-doc', (e) => e.textContent);
   if (/PostgreSQL|pg_hba/i.test(pghbaText)) pass('pg_hba.conf: badge shown'); else fail('pghba badge: ' + pghbaText.slice(0, 200));
   if (/scram-sha-256|peer|md5/i.test(pghbaText)) pass('pg_hba.conf: auth methods shown'); else fail('pghba methods: ' + pghbaText.slice(0, 300));
+
+  // ── R DESCRIPTION viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('DESCRIPTION');
+  await page.waitForSelector('#previewHost .rdesc-doc', { timeout: 12000 });
+  const rdescText = await page.$eval('#previewHost .rdesc-doc', (e) => e.textContent);
+  if (/R Package/i.test(rdescText)) pass('DESCRIPTION: badge shown'); else fail('r-desc badge: ' + rdescText.slice(0, 200));
+  if (/mypackage|Version/i.test(rdescText)) pass('DESCRIPTION: package info shown'); else fail('r-desc info: ' + rdescText.slice(0, 300));
+  if (/dplyr|ggplot2|Imports/i.test(rdescText)) pass('DESCRIPTION: dependencies shown'); else fail('r-desc deps: ' + rdescText.slice(0, 300));
 }
