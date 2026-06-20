@@ -1,0 +1,92 @@
+# Editor Roadmap — Audio & Video
+
+---
+
+## Audio
+
+### Current state
+
+- Native `<audio>` element with browser controls (play/pause, seek bar, volume, speed).
+- Waveform canvas (waveform.js): renders first ~60 s of the file, click-to-seek via `currentTime`, animated playhead via RAF loop, toggleable panel.
+- Web Audio `GainNode` connected per element; per-track gain slider (0–200 %) persisted to `localStorage`.
+- Playlist mode when a folder contains multiple PLAYABLE files: prev/next, shuffle, click-to-play track list, ID3 tag enrichment (title + artist from first 256 KB head slice).
+- Sleep timer with fade-out (5/15/30/45/60 min options).
+- Media Session API: OS/lock-screen metadata and seek-backward/seek-forward handlers.
+- Resume-position persistence via `persistence.js`.
+- ffmpeg.wasm editor panel (opt-in, ~23 MB on first load) with: Trim, Extract Audio, Mute Video, Screenshot, Downscale, Volume, Speed, Convert WebM, Loudness Normalize, GIF Export, WebP Export, Thumbnail Strip, Remove Metadata, Embed Subtitles, Concatenate, Replace Audio.
+
+### Viewer enhancements (no write-back needed)
+
+- **Full waveform** — decode and render the entire file, not just the first 60 s. Use an OffscreenCanvas + Worker to decode in background without blocking UI. — M
+- **Waveform zoom** — Ctrl+scroll or pinch to zoom the waveform canvas horizontally; the playhead stays centred. Map to the same `zoom` / `scrollLeft` pattern used in auto-audiobook's `AudioMixerView`. — M
+- **Drag-select region** — mousedown + mousedrag on the waveform draws a highlighted region (start/end markers); displayed as start/end timestamps below the canvas. Used as the trim range for the ffmpeg Trim op without reopening the editor panel. — M
+- **Spectrum / frequency view** — toggle between waveform and real-time FFT spectrum (Web Audio `AnalyserNode`, 256-bin, log-frequency x-axis). No lib needed. — S
+- **ID3 cover art** — extract embedded APIC frame from the ID3 tag and show it alongside the track name; already have `id3.js` for tag parsing, extend to return image bytes. — S
+- **Chapter markers** — read ID3v2 CHAP/CTOC frames (podcasts, audiobooks) and render vertical tick marks on the waveform with chapter names on hover. — M
+- **Speed presets** — add 0.75×/1.0×/1.25×/1.5×/2.0× buttons that set `audio.playbackRate`; complement the existing browser control. — S
+
+### In-browser editing (download-on-save)
+
+- **Multi-track mixer** — a new `mixer.js` module, ES module, no framework. Three lanes: Main (loaded file), Generated, Effects. Each lane: waveform strip rendered on `<canvas>`, gain slider, mute/solo buttons, fade-in/fade-out handles dragged at region edges. Playback via Web Audio: one `MediaElementSource` or `AudioBufferSourceNode` per lane routed through a shared `GainNode` → `AudioContext.destination`. Inspired directly by auto-audiobook's `AudioMixerView` + `MixerTrack` (canvas-draw loop, cursor, region drag, zoom via Ctrl+scroll). — L
+- **Pink noise + test tones** — generated tracks in the mixer: `AudioContext.createOscillator()` (sine 440 Hz, 1 kHz), pink noise via `ScriptProcessorNode` or `AudioWorkletNode`; rendered as flat waveform strip. — S — Web Audio only, no lib
+- **Trim** — already exists in the ffmpeg editor panel. The drag-select region (above) should pre-fill start/end timestamps. — S (integration only)
+- **Fade in / Fade out** — ffmpeg `-af afade` wrapper; surfaced as duration sliders, added to the editor panel alongside Volume. — S — ffmpeg.wasm
+- **Loudness normalize** — already exists (`normalize` op in editor-advanced.js). Surface a target LUFS input (default -16 LUFS for podcasts) passed as `-af loudnorm=I=<val>`. — S
+- **3-band EQ** — low/mid/high shelving via Web Audio `BiquadFilterNode` (no lib); apply in real time during playback; bake to file with ffmpeg `-af equalizer` when the user exports. — M
+- **Export WAV** — encode decoded `AudioBuffer` to PCM WAV in a Worker using a hand-written WAV header (44-byte PCM header + raw float→int16 samples); no lib needed. — S
+- **Export MP3 / OGG** — encode via ffmpeg.wasm: ffmpeg `-i input.wav -b:a 192k output.mp3`; already have the ffmpeg infrastructure in `transcoder.js`. — S (infrastructure already exists)
+- **Region loop** — click a region in the mixer, toggle loop; Web Audio schedules repeated `AudioBufferSourceNode` with `.loop = true`. — S
+
+### Full write-back editing (companion required)
+
+- **Save mixed project** — write back a `.json` session file (lane descriptors, region offsets, gain, fades) alongside the audio files; requires the Tauri + Axum companion for disk writes.
+- **Overwrite with mixed-down export** — replace the source file on disk with the mixed WAV/MP3 output; companion required to avoid blob-download friction.
+- **Moving tracks between lanes** — drag a region from one mixer lane to another; drag-drop already handled in auto-audiobook's `MixerTrack` mousedown/mousemove logic; port to the vanilla-JS mixer. Session file persists layout.
+- **Overlapping region detection** — when two regions on the same lane overlap, highlight in red and auto-duck or block drop; companion not strictly required but overlap state needs to survive navigation.
+
+### Shared toolbar / modular note
+
+The mixer panel should be a separate `mixer.js` ES module lazy-imported from `renderer.js` behind the same `enableFfmpeg` guard (or a new `enableMixer` flag). Keep `waveform.js` as the single-file preview and `mixer.js` as the multi-lane editor to avoid inflating the fast path. The `connectGain` helper in `waveform.js` is already reusable for per-lane gain routing. Auto-audiobook's zoom/scroll pattern (`msToPixels`, `scrollLeft`, Ctrl+scroll wheel handler) should be translated verbatim to vanilla JS.
+
+---
+
+## Video
+
+### Current state
+
+- Native `<video>` element with browser controls.
+- Seek ±10 s buttons.
+- Fullscreen button (calls `requestFullscreen()` on the container element).
+- Filter panel (brightness, contrast, saturation) via CSS `filter` on the `<video>` element.
+- ffmpeg.wasm editor panel (same opt-in as audio) with: Trim, Mute, Screenshot, Downscale, Speed, Convert WebM, GIF Export, WebP Export, Thumbnail Strip, Remove Metadata, Embed Subtitles, Concatenate, Replace Audio.
+- Resume-position persistence.
+- Sleep timer (shared with audio).
+
+### Viewer enhancements (no write-back needed)
+
+- **Frame-step buttons** — step one frame forward/back: `video.currentTime += 1 / fps`; estimate fps from `getVideoPlaybackQuality()` or default 30. Add Prev Frame / Next Frame buttons to the existing `media-video-controls` row. — S
+- **Picture-in-picture** — button calls `video.requestPictureInPicture()`; guard with `document.pictureInPictureEnabled` feature check; show only when supported. — S — browser PiP API, no lib
+- **Speed control presets** — 0.5×/0.75×/1×/1.25×/1.5×/2× buttons setting `video.playbackRate`; surface in `media-video-controls` alongside seek buttons. — S
+- **Timeline with chapter markers** — horizontal scrub bar below the video (replacing or augmenting the browser seekbar) with `<video>` `textTracks` chapter cues rendered as tick marks; also parse WebVTT chapter files if a `.vtt` sidecar is present in the folder. — M
+- **Subtitle overlay** — load `.srt` file (dragged or from folder sidecar): parse with a small hand-written SRT parser (~30 lines), create a `<track kind="subtitles">` element and add as `<track>` child, or render as an absolutely-positioned `<div>` overlay timed to `timeupdate`. No lib needed for basic SRT. — M
+- **Keyboard shortcuts** — Space: play/pause, Left/Right: ±5 s, `[`/`]`: ±frame, `f`: fullscreen, `p`: PiP. Attach `keydown` on the host div when focused. — S
+
+### In-browser editing (download-on-save)
+
+- **Trim video clip** — already in the ffmpeg editor panel. Add a dual-handle range UI on a thumbnail strip so the user can drag trim points visually (thumbnail strip is also already available as the "Thumbnail Strip" op). Wires start/end into the existing `trim` ffmpeg op. — M — ffmpeg.wasm (already present)
+- **Add music / audio track** — multi-lane: video lane 0, audio/music lane 1. User drags an audio file onto lane 1; ffmpeg muxes: `ffmpeg -i video -i audio -c:v copy -shortest output.mp4`. Surface as a simplified two-lane timeline below the video (canvas-drawn, no full mixer needed). — M — ffmpeg.wasm
+- **Subtitle burn-in** — embed `.srt` as hardcoded subtitles via `ffmpeg -vf subtitles=file.srt`; ffmpeg.wasm supports the `subtitles` filter when the `.srt` is registered as a virtual FS file. — M — ffmpeg.wasm
+- **Video trim + audio replace** — already individually available; chain them: trim first, then replace audio in one ffmpeg invocation (`-i trimmed -i audio -map 0:v -map 1:a -shortest`). Expose as a combined "Trim + Replace Audio" preset in the editor panel. — S (ffmpeg args only)
+- **Mute segments** — specify multiple time ranges to silence (`-af volume=enable='between(t,s,e)':volume=0`); UI: click-drag on a simple audio waveform strip below the video (reuse `waveform.js`). — M — ffmpeg.wasm + waveform.js
+- **Downscale presets** — already exists (`downscale` op). Add labelled preset buttons (720p, 480p, 360p) that populate the resolution input. — S
+- **Screenshot sequence** — extract N evenly-spaced frames as a ZIP of PNGs; ffmpeg `-vf fps=1/interval`; package into a blob ZIP (fflate or hand-rolled for a small set). — M — ffmpeg.wasm + fflate
+
+### Full write-back editing (companion required)
+
+- **Multi-lane video editor session** — persist a `.json` project (video clip path, music region, subtitle file path, trim range, filters) so the user can reopen and continue; requires companion for disk I/O.
+- **Overwrite source file** — save the ffmpeg-processed file back to the original path on disk; companion required (blob download is the current fallback).
+- **Chapter edit** — write a new MP4 chapter atom or WebVTT `.vtt` sidecar based on markers the user placed on the timeline; companion writes the sidecar file alongside the video.
+
+### Shared toolbar / modular note
+
+The video lane, audio/music lane, and subtitle lane share a lightweight timeline canvas (`timeline.js`) that is simpler than the full audio mixer — it only needs two lanes at most. Reuse `waveform.js`'s `drawWaveform` + `connectGain` for the audio lane. The ffmpeg.wasm infrastructure in `transcoder.js` already handles all mux/encode operations; new video editing features are primarily new ffmpeg argument sets passed to the existing `runOperation()` call, not new infrastructure.
