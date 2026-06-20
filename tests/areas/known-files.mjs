@@ -3477,4 +3477,20 @@ export async function run(ctx) {
   if (/output|HDMI|eDP/i.test(swayText)) pass('sway: output configuration shown'); else fail('sway-config outputs: ' + swayText.slice(0, 300));
   if (/input|keyboard|touchpad/i.test(swayText)) pass('sway: input configuration shown'); else fail('sway-config inputs: ' + swayText.slice(0, 300));
 
+  // ── app.ini (Gitea/Forgejo) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('app.ini (Gitea/Forgejo)');
+  await page.waitForSelector('#previewHost .giteacfg-doc', { timeout: 12000 });
+  const giteaText = await page.$eval('#previewHost .giteacfg-doc', (e) => e.textContent);
+  if (/Gitea/i.test(giteaText)) pass('app.ini: Gitea badge shown'); else fail('gitea-conf badge: ' + giteaText.slice(0, 200));
+  if (/server|database|ROOT_URL/i.test(giteaText)) pass('app.ini: server or database information shown'); else fail('gitea-conf content: ' + giteaText.slice(0, 300));
+
+  // ── stunnel.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('stunnel.conf (SSL tunnel)');
+  await page.waitForSelector('#previewHost .stunnelcfg-doc', { timeout: 12000 });
+  const stunnelText = await page.$eval('#previewHost .stunnelcfg-doc', (e) => e.textContent);
+  if (/stunnel/i.test(stunnelText)) pass('stunnel.conf: stunnel badge shown'); else fail('stunnel-conf badge: ' + stunnelText.slice(0, 200));
+  if (/client|accept/i.test(stunnelText)) pass('stunnel.conf: client mode or accept address shown'); else fail('stunnel-conf content: ' + stunnelText.slice(0, 300));
+
 }

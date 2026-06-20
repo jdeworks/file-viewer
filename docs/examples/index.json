@@ -7574,5 +7574,31 @@
     "enhanced": true,
     "description": "stunnel SSL/TLS tunnel configuration: global cert/key/CA settings and named tunnel proxies.",
     "knownFile": "stunnel-conf"
+  },
+  {
+    "file": "hyprland.conf",
+    "label": "hyprland.conf (Hyprland Wayland compositor)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Desktop"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Hyprland dynamic tiling Wayland compositor config: monitors, keybindings, animations, window rules, and startup apps.",
+    "knownFile": "hyprland-conf"
+  },
+  {
+    "file": "lxc.config",
+    "label": "lxc.config (LXC container)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Container"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "LXC container configuration: identity, network interfaces, resource limits, mounts, and security settings.",
+    "knownFile": "lxc-config"
   }
 ]

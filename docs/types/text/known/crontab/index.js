@@ -11,7 +11,7 @@ export default {
       const t = l.trim();
       if (!t || t.startsWith('#')) return false;
       const parts = t.split(/\s+/);
-      return parts.length >= 6 && /^[\d\*\/,\-]+$/.test(parts[0]);
+      return parts.length >= 6 && /^(\*|\d[\d\*\/,\-]*)$/.test(parts[0]);
     });
     return cronLines.length >= 1;
   },
