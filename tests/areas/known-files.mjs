@@ -5497,4 +5497,16 @@ export async function run(ctx) {
   await openExample('semaphore-config.json');
   await page.waitForSelector('#previewHost .semaphore-doc', { timeout: 12000 });
   pass('semaphore-config.json: Semaphore badge shown');
+
+  // ── actual-config.json viewer (actual-budget-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('actual-config.json');
+  await page.waitForSelector('#previewHost .actualbudget-doc', { timeout: 12000 });
+  pass('actual-config.json: Actual Budget badge shown');
+
+  // ── wallos.env viewer (wallos-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('wallos.env');
+  await page.waitForSelector('#previewHost .wallos-doc', { timeout: 12000 });
+  pass('wallos.env: Wallos badge shown');
 }

@@ -1,0 +1,17 @@
+{
+  "port": 5006,
+  "hostname": "0.0.0.0",
+  "serverFiles": "/data/server-files",
+  "userFiles": "/data/user-files",
+  "dataDir": "/data",
+  "https": {
+    "key": "/etc/ssl/private/actual-server.key",
+    "cert": "/etc/ssl/certs/actual-server.crt"
+  },
+  "loginMethod": "password",
+  "trustedProxies": ["127.0.0.1", "::1"],
+  "upload": {
+    "fileSizeLimit": 20971520,
+    "syncEncrypted": true
+  }
+}

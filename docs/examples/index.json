@@ -10154,5 +10154,31 @@
     "enhanced": true,
     "description": "Ansible Semaphore task runner configuration",
     "knownFile": true
+  },
+  {
+    "file": "actual-config.json",
+    "label": "Actual Budget Config",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Actual Budget personal finance server configuration",
+    "knownFile": true
+  },
+  {
+    "file": "wallos.env",
+    "label": "Wallos Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Wallos subscription tracker environment configuration",
+    "knownFile": true
   }
 ]
