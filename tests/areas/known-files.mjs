@@ -6525,4 +6525,40 @@ export async function run(ctx) {
   await openExample('sample.janet');
   await page.waitForSelector('#previewHost .janet-doc', { timeout: 12000 });
   pass('janet-lang: rendered');
+
+  // ── awk-script viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.awk');
+  await page.waitForSelector('#previewHost .awk-doc', { timeout: 12000 });
+  pass('awk-script: rendered');
+  const awkText = await page.$eval('#previewHost .awk-doc', (e) => e.textContent);
+  if (/AWK Script/i.test(awkText)) pass('awk-script: badge shown'); else fail('awk-script badge: ' + awkText.slice(0, 200));
+  if (/BEGIN|END|Rules|Functions/i.test(awkText)) pass('awk-script: structure shown'); else fail('awk-script structure: ' + awkText.slice(0, 300));
+
+  // ── sed-script viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.sed');
+  await page.waitForSelector('#previewHost .sed-doc', { timeout: 12000 });
+  pass('sed-script: rendered');
+  const sedText = await page.$eval('#previewHost .sed-doc', (e) => e.textContent);
+  if (/sed Script/i.test(sedText)) pass('sed-script: badge shown'); else fail('sed-script badge: ' + sedText.slice(0, 200));
+  if (/Substitution|Command|delete|branch/i.test(sedText)) pass('sed-script: commands shown'); else fail('sed-script commands: ' + sedText.slice(0, 300));
+
+  // ── m4-macro viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('configure.ac');
+  await page.waitForSelector('#previewHost .m4-doc', { timeout: 12000 });
+  pass('m4-macro: rendered');
+  const m4Text = await page.$eval('#previewHost .m4-doc', (e) => e.textContent);
+  if (/M4 Macro|Autoconf/i.test(m4Text)) pass('m4-macro: badge shown'); else fail('m4-macro badge: ' + m4Text.slice(0, 200));
+  if (/myproject|AC_/i.test(m4Text)) pass('m4-macro: project or macros shown'); else fail('m4-macro project: ' + m4Text.slice(0, 300));
+
+  // ── lex-yacc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.y');
+  await page.waitForSelector('#previewHost .ly-doc', { timeout: 12000 });
+  pass('lex-yacc: rendered');
+  const lyText = await page.$eval('#previewHost .ly-doc', (e) => e.textContent);
+  if (/Yacc|Bison|Lex|Flex/i.test(lyText)) pass('lex-yacc: badge shown'); else fail('lex-yacc badge: ' + lyText.slice(0, 200));
+  if (/token|Token|grammar|rule/i.test(lyText)) pass('lex-yacc: tokens or rules shown'); else fail('lex-yacc tokens: ' + lyText.slice(0, 300));
 }

@@ -838,6 +838,10 @@ import ponyLang from '../types/text/known/pony-lang/index.js';
 import wrenLang from '../types/text/known/wren-lang/index.js';
 import mojoLang from '../types/text/known/mojo-lang/index.js';
 import janetLang from '../types/text/known/janet-lang/index.js';
+import awkScript from '../types/text/known/awk-script/index.js';
+import sedScript from '../types/text/known/sed-script/index.js';
+import m4Macro from '../types/text/known/m4-macro/index.js';
+import lexYacc from '../types/text/known/lex-yacc/index.js';
 export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, rubyLang, perlLang, phpLang, powershellLang, solidityLang, vhdlLang, arduinoSketch, cobolLang, gleamLang, odinLang, haxeLang, adaLang, prologLang, asmLang, objcLang, dLang, ponyLang, wrenLang, mojoLang, janetLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
@@ -867,6 +871,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   podfile, fastfile, snapfile,
   supabaseConfig, netlifyRedirects,
   cmake, jenkinsfile,
+  awkScript, sedScript, m4Macro, lexYacc,
   bazel, bazelrc, ninjaBuild,
   packageSwift, mixExs, buildSbt, scalafmtConf, scalafixConf,
   playwrightConfig, cypressConfig,
