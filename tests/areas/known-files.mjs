@@ -3150,4 +3150,20 @@ export async function run(ctx) {
   if (/Samba/i.test(smbText)) pass('smb.conf: Samba badge shown'); else fail('samba badge: ' + smbText.slice(0, 200));
   if (/data|workgroup/i.test(smbText)) pass('smb.conf: data share or workgroup shown'); else fail('samba content: ' + smbText.slice(0, 300));
 
+  // ── Corefile (CoreDNS) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Corefile (CoreDNS)');
+  await page.waitForSelector('#previewHost .coredns-doc', { timeout: 12000 });
+  const corefileText = await page.$eval('#previewHost .coredns-doc', (e) => e.textContent);
+  if (/CoreDNS/i.test(corefileText)) pass('Corefile: CoreDNS badge shown'); else fail('corefile badge: ' + corefileText.slice(0, 200));
+  if (/kubernetes|forward/i.test(corefileText)) pass('Corefile: kubernetes or forward plugin shown'); else fail('corefile content: ' + corefileText.slice(0, 300));
+
+  // ── containerd.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('containerd.toml (containerd)');
+  await page.waitForSelector('#previewHost .ctrd-doc', { timeout: 12000 });
+  const ctrdText = await page.$eval('#previewHost .ctrd-doc', (e) => e.textContent);
+  if (/containerd/i.test(ctrdText)) pass('containerd.toml: containerd badge shown'); else fail('containerd badge: ' + ctrdText.slice(0, 200));
+  if (/sandbox_image|overlayfs/i.test(ctrdText)) pass('containerd.toml: sandbox_image or overlayfs shown'); else fail('containerd content: ' + ctrdText.slice(0, 300));
+
 }

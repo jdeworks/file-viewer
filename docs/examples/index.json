@@ -7148,5 +7148,41 @@
       "Config",
       "Network"
     ]
+  },
+  {
+    "file": "Corefile",
+    "label": "Corefile (CoreDNS)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Kubernetes"
+    ]
+  },
+  {
+    "file": "containerd.toml",
+    "label": "containerd.toml (containerd)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Container"
+    ]
+  },
+  {
+    "file": "main.cf",
+    "label": "main.cf (Postfix Mail Server)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Mail"
+    ]
+  },
+  {
+    "file": "chrony.conf",
+    "label": "chrony.conf (NTP)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "System"
+    ]
   }
 ]

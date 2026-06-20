@@ -31,6 +31,7 @@ import codeowners from '../types/text/known/codeowners/index.js';
 import editorconfig from '../types/text/known/editorconfig/index.js';
 import pomXml from '../types/text/xml/known/pom-xml/index.js';
 import mavenPom from '../types/text/xml/known/maven-pom/index.js';
+import antBuild from '../types/text/xml/known/ant-build/index.js';
 import buildGradle from '../types/text/known/build-gradle/index.js';
 import pipfile from '../types/text/known/pipfile/index.js';
 import openapi from '../types/text/known/openapi/index.js';
@@ -463,7 +464,7 @@ import containerdConfig from '../types/text/known/containerd-config/index.js';
 import postfixConf from '../types/text/known/postfix-conf/index.js';
 import chronyConf from '../types/text/known/chrony-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
-  requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, mavenPom, pomXml,
+  requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
   eslint, jest, stylelint, babel, commitlint, lefthook,
@@ -564,6 +565,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   iptablesRules, ufwConf,
   fail2banConf, smbConf,
   corefile, containerdConfig,
+  postfixConf, chronyConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -1,0 +1,32 @@
+# CoreDNS configuration
+.:53 {
+    errors
+    health {
+       lameduck 5s
+    }
+    ready
+    kubernetes cluster.local in-addr.arpa ip6.arpa {
+       pods insecure
+       fallthrough in-addr.arpa ip6.arpa
+       ttl 30
+    }
+    prometheus :9153
+    forward . /etc/resolv.conf {
+       max_concurrent 1000
+    }
+    cache 30
+    loop
+    reload
+    loadbalance
+}
+
+internal.corp:53 {
+    file /etc/coredns/db.internal.corp
+    log
+    errors
+}
+
+acme.corp:53 {
+    forward . 10.0.0.1 10.0.0.2
+    cache 60
+}
