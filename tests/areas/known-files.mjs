@@ -3525,4 +3525,20 @@ export async function run(ctx) {
   if (/GNU Screen|Screen/i.test(screenText)) pass('.screenrc: GNU Screen badge shown'); else fail('screenrc badge: ' + screenText.slice(0, 200));
   if (/scrollback|hardstatus/i.test(screenText)) pass('.screenrc: scrollback or hardstatus shown'); else fail('screenrc content: ' + screenText.slice(0, 300));
 
+  // ── Alacritty config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('alacritty.toml');
+  await page.waitForSelector('#previewHost .alacritty-doc', { timeout: 12000 });
+  const alacrittyText = await page.$eval('#previewHost .alacritty-doc', (e) => e.textContent);
+  if (/Alacritty/i.test(alacrittyText)) pass('alacritty.toml: Alacritty badge shown'); else fail('alacritty-conf badge: ' + alacrittyText.slice(0, 200));
+  if (/font|opacity/i.test(alacrittyText)) pass('alacritty.toml: font or opacity shown'); else fail('alacritty-conf content: ' + alacrittyText.slice(0, 300));
+
+  // ── kitty config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('kitty.conf');
+  await page.waitForSelector('#previewHost .kitty-doc', { timeout: 12000 });
+  const kittyText = await page.$eval('#previewHost .kitty-doc', (e) => e.textContent);
+  if (/kitty/i.test(kittyText)) pass('kitty.conf: kitty badge shown'); else fail('kitty-conf badge: ' + kittyText.slice(0, 200));
+  if (/font_family|scrollback/i.test(kittyText)) pass('kitty.conf: font_family or scrollback shown'); else fail('kitty-conf content: ' + kittyText.slice(0, 300));
+
 }

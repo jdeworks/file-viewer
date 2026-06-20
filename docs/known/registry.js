@@ -432,6 +432,8 @@ import tmuxConf from '../types/text/known/tmux-conf/index.js';
 import screenrc from '../types/text/known/screenrc/index.js';
 import i3Config from '../types/text/known/i3-config/index.js';
 import swayConfig from '../types/text/known/sway-config/index.js';
+import dunstrc from '../types/text/known/dunstrc/index.js';
+import polybarConf from '../types/text/known/polybar-conf/index.js';
 import woodpeckerCi from '../types/text/yaml/known/woodpecker-ci/index.js';
 import codefreshConfig from '../types/text/yaml/known/codefresh-config/index.js';
 import harnessPipeline from '../types/text/yaml/known/harness-pipeline/index.js';
@@ -579,7 +581,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   analysisOptions, podfileLock, xcodeScheme, easJson,
   hostsFile, resolvConf, sshdConfig, sudoers, nfsExports, fstab, crypttab,
   sysctlConf, modprobeConf,
-  jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, emacsConfig, tmuxConf, screenrc, i3Config, swayConfig,
+  jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, emacsConfig, tmuxConf, screenrc, i3Config, swayConfig, dunstrc, polybarConf,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,
   woodpeckerCi,
