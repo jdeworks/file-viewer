@@ -147,6 +147,7 @@ import hatch from '../types/text/toml/known/hatch/index.js';
 import mailmap from '../types/text/known/mailmap/index.js';
 import npmignore from '../types/text/known/npmignore/index.js';
 import dockerignore from '../types/text/known/dockerignore/index.js';
+import gcloudignore from '../types/text/known/gcloudignore/index.js';
 import appveyor from '../types/text/yaml/known/appveyor/index.js';
 import rubocop from '../types/text/yaml/known/rubocop/index.js';
 import taskfile from '../types/text/yaml/known/taskfile/index.js';
@@ -186,6 +187,7 @@ import caddyfile from '../types/text/known/caddyfile/index.js';
 import consulConfig from '../types/text/known/consul-config/index.js';
 import renderYaml from '../types/text/yaml/known/render-yaml/index.js';
 import railwayJson from '../types/text/json/known/railway-json/index.js';
+import appJson from '../types/text/json/known/app-json/index.js';
 import crowdinYml from '../types/text/yaml/known/crowdin-yml/index.js';
 import matchfile from '../types/text/known/matchfile/index.js';
 import appfile from '../types/text/known/appfile/index.js';
@@ -581,11 +583,11 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   packageLock, composerLock, pnpmLock, cargoLock, poetryLock, goSum,
   makefileKf, justfile, procfile, envExample, envrc, miseConfig, toolVersions,
   gitattributes, gemfileLock, sonar, hatch,
-  mailmap, npmignore, dockerignore,
+  mailmap, npmignore, dockerignore, gcloudignore,
   appveyor, rubocop, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, clangTidy, moonrepo,
   brewfile, license, ansibleCfg, ansibleHosts, makepkgConf, gemspec, typos, cargoDeny, cargoConfig, rustfmtToml, clippyToml, rustToolchain,
-  htaccess, htpasswd, nginxConf, apacheConf, lighttpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, berksfile, caddyfile, renderYaml, railwayJson,
+  htaccess, htpasswd, nginxConf, apacheConf, lighttpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, berksfile, caddyfile, renderYaml, railwayJson, appJson,
   rsyslogConf,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,

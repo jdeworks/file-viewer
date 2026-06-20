@@ -1,0 +1,55 @@
+#!include:.gitignore
+
+# Node.js artifacts
+node_modules/
+npm-debug.log
+yarn-error.log
+.npm/
+.yarn/
+
+# Build output
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# Test files
+**/*.test.js
+**/*.spec.js
+__tests__/
+coverage/
+.nyc_output/
+
+# Development configuration
+.env
+.env.local
+.env.*.local
+.editorconfig
+.eslintrc*
+.prettierrc*
+jest.config.*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Git metadata
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+docs/
+*.md
+CHANGELOG
+LICENSE
+
+# Cloud build infrastructure (not needed in container)
+cloudbuild.yaml
+Dockerfile.dev
+docker-compose*.yml
+.dockerignore

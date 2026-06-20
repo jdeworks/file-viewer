@@ -2765,7 +2765,7 @@
       "Config"
     ],
     "enhanced": true,
-    "knownFile": "cliff",
+    "knownFile": "cliff-toml",
     "description": "git-cliff changelog config: conventional commits, 10 commit parsers, trim enabled, Jinja2 body template."
   },
   {
@@ -2786,7 +2786,7 @@
       "Config"
     ],
     "enhanced": true,
-    "knownFile": "release-please-config",
+    "knownFile": "release-please",
     "description": "Release Please configuration \u2014 automated changelog generation and GitHub releases via Conventional Commits."
   },
   {
