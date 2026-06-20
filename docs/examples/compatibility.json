@@ -24794,6 +24794,232 @@
       "testCoverage": "none",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "security-txt": {
+      "label": "security.txt",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "security.txt"
+      ],
+      "extensions": [
+        "security.txt"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "none",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "humans-txt": {
+      "label": "humans.txt",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "humans.txt"
+      ],
+      "extensions": [
+        "humans.txt"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "none",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "jsonnet": {
+      "label": "Jsonnet",
+      "baseType": "code",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.jsonnet"
+      ],
+      "extensions": [
+        ".jsonnet",
+        ".libsonnet"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "none",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "cue-lang": {
+      "label": "CUE",
+      "baseType": "code",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.cue"
+      ],
+      "extensions": [
+        ".cue"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "none",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "terraform-hcl": {
+      "label": "Terraform HCL",
+      "baseType": "code",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.tf"
+      ],
+      "extensions": [
+        ".tf"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Regex-based parser — complex nested blocks may not fully parse"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "nix-expr": {
+      "label": "Nix expression",
+      "baseType": "code",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.nix"
+      ],
+      "extensions": [
+        ".nix"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "none",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Attribute extraction uses regex — deeply nested attrs may be missed"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "azure-bicep": {
+      "label": "Azure Bicep",
+      "baseType": "code",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.bicep"
+      ],
+      "extensions": [
+        ".bicep",
+        ".bicepparam"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Regex-based parser — expressions spanning multiple lines may not be captured"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "kdl-doc": {
+      "label": "KDL document",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.kdl"
+      ],
+      "extensions": [
+        ".kdl"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "none",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Simplified line-based parser — complex multi-line values may mis-count"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

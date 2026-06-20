@@ -754,7 +754,15 @@ import hoarderConfig from '../types/text/known/hoarder-config/index.js';
 import frigateConfig from '../types/text/yaml/known/frigate-config/index.js';
 import plistConfig from '../types/text/known/plist/index.js';
 import steamAcf from '../types/text/known/steam-acf/index.js';
-export const KNOWN = [plistConfig, steamAcf, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
+import securityTxt from '../types/text/known/security-txt/index.js';
+import humansTxt from '../types/text/known/humans-txt/index.js';
+import jsonnet from '../types/text/known/jsonnet/index.js';
+import cueLang from '../types/text/known/cue-lang/index.js';
+import { plugin as terraformHcl } from '../types/text/known/terraform-hcl/index.js';
+import { plugin as nixExpr } from '../types/text/known/nix-expr/index.js';
+import { plugin as azureBicep } from '../types/text/known/azure-bicep/index.js';
+import { plugin as kdlDoc } from '../types/text/known/kdl-doc/index.js';
+export const KNOWN = [plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
@@ -810,7 +818,7 @@ export const KNOWN = [plistConfig, steamAcf, packageJson, cargoToml, tsconfig, d
   cursorRules, claudeMd, copilotInstructions, aiderConf,
   phpunit, phpstan, phpCsFixer, behat,
   phpIni, psalmConfig, phpunitConfig, rectorConfig,
-  terragrunt, tflint, tfLock, versionsTf,
+  terragrunt, tflint, tfLock, versionsTf, terraformHcl,
   tsupConfig, rspackConfig, esbuildConfig, parcelrc, bunfigToml, shopifyApp, lighthouserc,
   shadowCljs, projectClj, depsEdn,
   atlantis, spaceliftConfig, kamalConfig, prefectConfig, checkov, terraformDocs, infracost,

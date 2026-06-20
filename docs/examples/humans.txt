@@ -1,0 +1,29 @@
+/* TEAM */
+Name: Alice Nguyen
+Role: Lead Developer
+Location: Berlin, Germany
+Twitter: @alice_codes
+GitHub: @alicen
+
+Name: Bob Martínez
+Role: Designer
+Location: Madrid, Spain
+Twitter: @bobdesigns
+Website: https://bobmartinez.dev
+
+/* THANKS */
+Name: Open Source Community
+GitHub: @github
+
+Name: Jane Smith
+Role: Security Researcher
+Twitter: @janeinfosec
+
+/* SITE */
+Last update: 2026-06-20
+Language: English, German
+Doctype: HTML5
+IDE: VS Code
+Standards: HTML5, CSS3, JavaScript (ES2022)
+Components: React, Vite
+Hosted on: GitHub Pages

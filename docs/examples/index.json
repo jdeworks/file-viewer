@@ -11197,8 +11197,143 @@
     "knownFile": "avro-schema"
   },
   {
+    "label": "sample.tf (Terraform HCL)",
+    "file": "sample.tf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Infrastructure"
+    ],
+    "enhanced": true,
+    "description": "Terraform HCL configuration with AWS resources, variables, and outputs.",
+    "knownFile": "terraform-hcl"
+  },
+  {
+    "label": "sample.nix (Nix expression)",
+    "file": "sample.nix",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Nix"
+    ],
+    "enhanced": true,
+    "description": "Nix expression defining a development shell with Python and Node.js packages.",
+    "knownFile": "nix-expr"
+  },
+  {
+    "label": "sample.bicep (Azure Bicep)",
+    "file": "sample.bicep",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Infrastructure"
+    ],
+    "enhanced": true,
+    "description": "Azure Bicep template deploying a storage account and App Service plan.",
+    "knownFile": "azure-bicep"
+  },
+  {
+    "label": "sample.kdl (KDL document)",
+    "file": "sample.kdl",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "KDL document language sample: project configuration with dependencies and scripts.",
+    "knownFile": "kdl-doc"
+  },
+  {
     "label": "robots.txt (demo)",
     "file": "robots.txt",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "security.txt (demo)",
+    "file": "security.txt",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "RFC 9116 security contact file with Contact, Policy, Encryption and Expiry fields.",
+    "knownFile": "security-txt"
+  },
+  {
+    "label": "humans.txt (demo)",
+    "file": "humans.txt",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "humans.txt credits file with TEAM, THANKS, and SITE sections.",
+    "knownFile": "humans-txt"
+  },
+  {
+    "label": "sample.jsonnet",
+    "file": "sample.jsonnet",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Jsonnet data templating file with imports, local variables, and functions.",
+    "knownFile": "jsonnet"
+  },
+  {
+    "label": "sample.cue",
+    "file": "sample.cue",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "CUE configuration/validation schema with package declaration, imports, and definitions.",
+    "knownFile": "cue-lang"
+  },
+  {
+    "label": "security.txt (demo)",
+    "file": "security.txt",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "humans.txt (demo)",
+    "file": "humans.txt",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ]
+  },
+  {
+    "label": "Jsonnet template (demo)",
+    "file": "sample.jsonnet",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ]
+  },
+  {
+    "label": "CUE schema (demo)",
+    "file": "sample.cue",
     "mime": "text/plain",
     "category": "Config",
     "categories": [

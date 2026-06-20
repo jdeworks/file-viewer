@@ -5782,4 +5782,87 @@ export async function run(ctx) {
   const avroText = await page.$eval('#previewHost .avro-doc', (e) => e.textContent);
   if (/Avro/i.test(avroText)) pass('sample.avsc: Avro badge shown'); else fail('avro badge: ' + avroText.slice(0, 200));
   if (/User/i.test(avroText) && /field/i.test(avroText)) pass('sample.avsc: schema fields shown'); else fail('avro fields: ' + avroText.slice(0, 300));
+
+  // ── security.txt viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('security.txt');
+  await page.waitForSelector('#previewHost .sec-doc', { timeout: 12000 });
+  pass('security.txt: renders');
+  const secText = await page.$eval('#previewHost .sec-doc', (e) => e.textContent);
+  if (/security\.txt/i.test(secText)) pass('security.txt: badge shown'); else fail('security.txt badge: ' + secText.slice(0, 200));
+  if (/Contact|Policy|Expires/i.test(secText)) pass('security.txt: RFC 9116 fields shown'); else fail('security.txt fields: ' + secText.slice(0, 300));
+  const secLinks = await page.$$eval('#previewHost .sec-doc a.sec-link', (els) => els.map((a) => a.href));
+  if (secLinks.some((h) => /example\.com/.test(h))) pass('security.txt: contact/policy URLs are clickable links'); else fail('security.txt links: ' + secLinks.join(','));
+
+  // ── humans.txt viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('humans.txt');
+  await page.waitForSelector('#previewHost .hum-doc', { timeout: 12000 });
+  pass('humans.txt: renders');
+  const humText = await page.$eval('#previewHost .hum-doc', (e) => e.textContent);
+  if (/humans\.txt/i.test(humText)) pass('humans.txt: badge shown'); else fail('humans.txt badge: ' + humText.slice(0, 200));
+  if (/TEAM|THANKS|SITE/i.test(humText)) pass('humans.txt: sections shown'); else fail('humans.txt sections: ' + humText.slice(0, 300));
+  if (/Alice|Bob|Designer/i.test(humText)) pass('humans.txt: team members shown'); else fail('humans.txt members: ' + humText.slice(0, 300));
+
+  // ── sample.jsonnet viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.jsonnet');
+  await page.waitForSelector('#previewHost .jnet-doc', { timeout: 12000 });
+  pass('sample.jsonnet: renders');
+  const jnetText = await page.$eval('#previewHost .jnet-doc', (e) => e.textContent);
+  if (/Jsonnet/i.test(jnetText)) pass('sample.jsonnet: badge shown'); else fail('jsonnet badge: ' + jnetText.slice(0, 200));
+  if (/import|local|function/i.test(jnetText)) pass('sample.jsonnet: summary shows imports/locals/functions'); else fail('jsonnet summary: ' + jnetText.slice(0, 300));
+  if (/makeService/i.test(jnetText)) pass('sample.jsonnet: function signature shown'); else fail('jsonnet fn: ' + jnetText.slice(0, 300));
+
+  // ── sample.cue viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.cue');
+  await page.waitForSelector('#previewHost .cue-doc', { timeout: 12000 });
+  pass('sample.cue: renders');
+  const cueText = await page.$eval('#previewHost .cue-doc', (e) => e.textContent);
+  if (/CUE/i.test(cueText)) pass('sample.cue: badge shown'); else fail('cue badge: ' + cueText.slice(0, 200));
+  if (/webservice/i.test(cueText)) pass('sample.cue: package name shown'); else fail('cue package: ' + cueText.slice(0, 300));
+  if (/#Service|#Config|Definitions/i.test(cueText)) pass('sample.cue: definitions shown'); else fail('cue defs: ' + cueText.slice(0, 300));
+
+  // ── sample.tf viewer (Terraform HCL) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.tf');
+  await page.waitForSelector('#previewHost .tf-doc', { timeout: 12000 });
+  pass('sample.tf: renders');
+  const tfText = await page.$eval('#previewHost .tf-doc', (e) => e.textContent);
+  if (/terraform/i.test(tfText)) pass('sample.tf: terraform badge shown'); else fail('tf badge: ' + tfText.slice(0, 200));
+  if (/aws_s3_bucket|aws_instance/i.test(tfText)) pass('sample.tf: resource types shown'); else fail('tf resources: ' + tfText.slice(0, 300));
+  if (/variable|Variables/i.test(tfText)) pass('sample.tf: variables section shown'); else fail('tf variables: ' + tfText.slice(0, 300));
+  if (/output|Outputs/i.test(tfText)) pass('sample.tf: outputs section shown'); else fail('tf outputs: ' + tfText.slice(0, 300));
+
+  // ── sample.nix viewer (Nix expression) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.nix');
+  await page.waitForSelector('#previewHost .nix-doc', { timeout: 12000 });
+  pass('sample.nix: renders');
+  const nixExprText = await page.$eval('#previewHost .nix-doc', (e) => e.textContent);
+  if (/nix/i.test(nixExprText)) pass('sample.nix: nix badge shown'); else fail('nix badge: ' + nixExprText.slice(0, 200));
+  if (/shell|mkShell|Development/i.test(nixExprText)) pass('sample.nix: detected kind shown'); else fail('nix kind: ' + nixExprText.slice(0, 300));
+  if (/pythonEnv|nodeVersion|shellHook/i.test(nixExprText)) pass('sample.nix: top-level attributes shown'); else fail('nix attrs: ' + nixExprText.slice(0, 300));
+
+  // ── sample.bicep viewer (Azure Bicep) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.bicep');
+  await page.waitForSelector('#previewHost .bicep-doc', { timeout: 12000 });
+  pass('sample.bicep: renders');
+  const bicepText = await page.$eval('#previewHost .bicep-doc', (e) => e.textContent);
+  if (/Bicep/i.test(bicepText)) pass('sample.bicep: Bicep badge shown'); else fail('bicep badge: ' + bicepText.slice(0, 200));
+  if (/storageAccount|appServicePlan/i.test(bicepText)) pass('sample.bicep: resource names shown'); else fail('bicep resources: ' + bicepText.slice(0, 300));
+  if (/param|Parameters/i.test(bicepText)) pass('sample.bicep: parameters shown'); else fail('bicep params: ' + bicepText.slice(0, 300));
+  if (/resourceGroup/i.test(bicepText)) pass('sample.bicep: targetScope shown'); else fail('bicep scope: ' + bicepText.slice(0, 300));
+
+  // ── sample.kdl viewer (KDL document) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.kdl');
+  await page.waitForSelector('#previewHost .kdl-doc', { timeout: 12000 });
+  pass('sample.kdl: renders');
+  const kdlText = await page.$eval('#previewHost .kdl-doc', (e) => e.textContent);
+  if (/KDL/i.test(kdlText)) pass('sample.kdl: KDL badge shown'); else fail('kdl badge: ' + kdlText.slice(0, 200));
+  if (/project|dependencies|scripts|config/i.test(kdlText)) pass('sample.kdl: top-level nodes shown'); else fail('kdl nodes: ' + kdlText.slice(0, 300));
+  if (/Top-level nodes|node/i.test(kdlText)) pass('sample.kdl: node count shown'); else fail('kdl count: ' + kdlText.slice(0, 300));
 }

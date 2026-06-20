@@ -1,0 +1,21 @@
+# Our security.txt — please read before reporting vulnerabilities
+# Conforms to RFC 9116
+
+Contact: mailto:security@example.com
+Contact: https://example.com/security/report
+
+Expires: 2027-01-01T00:00:00.000Z
+
+Encryption: https://example.com/.well-known/pgp-key.txt
+
+Policy: https://example.com/security/policy
+
+Acknowledgments: https://example.com/security/hall-of-fame
+
+Preferred-Languages: en, de
+
+Canonical: https://example.com/.well-known/security.txt
+
+Hiring: https://example.com/jobs/security-engineer
+
+CSAF: https://example.com/.well-known/csaf/provider-metadata.json
