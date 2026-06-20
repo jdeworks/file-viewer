@@ -5993,4 +5993,89 @@ export async function run(ctx) {
   if (/Jane Developer/i.test(orgText)) pass('sample.org: author shown'); else fail('org author: ' + orgText.slice(0, 300));
   if (/TODO|DONE/i.test(orgText)) pass('sample.org: TODO/DONE items shown'); else fail('org todos: ' + orgText.slice(0, 300));
   if (/python|json/i.test(orgText)) pass('sample.org: code block languages shown'); else fail('org code langs: ' + orgText.slice(0, 300));
+
+  // ── sample.liquid viewer (Liquid Template) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.liquid');
+  await page.waitForSelector('#previewHost .liq-doc', { timeout: 12000 });
+  pass('sample.liquid: renders');
+  const liqText = await page.$eval('#previewHost .liq-doc', (e) => e.textContent);
+  if (/Liquid/i.test(liqText)) pass('sample.liquid: Liquid badge shown'); else fail('liquid badge: ' + liqText.slice(0, 200));
+  if (/output tag|block tag/i.test(liqText)) pass('sample.liquid: tag counts shown'); else fail('liquid tag counts: ' + liqText.slice(0, 300));
+  if (/money|upcase|handleize/i.test(liqText)) pass('sample.liquid: filters listed'); else fail('liquid filters: ' + liqText.slice(0, 300));
+  if (/render|include|section/i.test(liqText)) pass('sample.liquid: includes/renders shown'); else fail('liquid includes: ' + liqText.slice(0, 300));
+
+  // ── sample.hbs viewer (Handlebars Template) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.hbs');
+  await page.waitForSelector('#previewHost .hbs-doc', { timeout: 12000 });
+  pass('sample.hbs: renders');
+  const hbsText = await page.$eval('#previewHost .hbs-doc', (e) => e.textContent);
+  if (/Handlebars/i.test(hbsText)) pass('sample.hbs: Handlebars badge shown'); else fail('hbs badge: ' + hbsText.slice(0, 200));
+  if (/expression|block helper/i.test(hbsText)) pass('sample.hbs: expression counts shown'); else fail('hbs counts: ' + hbsText.slice(0, 300));
+  if (/if|each|with|unless/i.test(hbsText)) pass('sample.hbs: block helpers listed'); else fail('hbs block helpers: ' + hbsText.slice(0, 300));
+  if (/partial|partials/i.test(hbsText)) pass('sample.hbs: partials shown'); else fail('hbs partials: ' + hbsText.slice(0, 300));
+
+  // ── sample.j2 viewer (Jinja2 Template) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.j2');
+  await page.waitForSelector('#previewHost .j2-doc', { timeout: 12000 });
+  pass('sample.j2: renders');
+  const j2Text = await page.$eval('#previewHost .j2-doc', (e) => e.textContent);
+  if (/Jinja2/i.test(j2Text)) pass('sample.j2: Jinja2 badge shown'); else fail('j2 badge: ' + j2Text.slice(0, 200));
+  if (/block|Blocks/i.test(j2Text)) pass('sample.j2: blocks listed'); else fail('j2 blocks: ' + j2Text.slice(0, 300));
+  if (/extends/i.test(j2Text)) pass('sample.j2: extends shown'); else fail('j2 extends: ' + j2Text.slice(0, 300));
+  if (/upper|lower|default|replace/i.test(j2Text)) pass('sample.j2: filters listed'); else fail('j2 filters: ' + j2Text.slice(0, 300));
+
+  // ── sample.mustache viewer (Mustache Template) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.mustache');
+  await page.waitForSelector('#previewHost .mst-doc', { timeout: 12000 });
+  pass('sample.mustache: renders');
+  const mstText = await page.$eval('#previewHost .mst-doc', (e) => e.textContent);
+  if (/Mustache/i.test(mstText)) pass('sample.mustache: Mustache badge shown'); else fail('mustache badge: ' + mstText.slice(0, 200));
+  if (/section|Section/i.test(mstText)) pass('sample.mustache: sections listed'); else fail('mustache sections: ' + mstText.slice(0, 300));
+  if (/partial|Partial/i.test(mstText)) pass('sample.mustache: partials listed'); else fail('mustache partials: ' + mstText.slice(0, 300));
+  if (/title|headline|description/i.test(mstText)) pass('sample.mustache: variables listed'); else fail('mustache variables: ' + mstText.slice(0, 300));
+
+  // ── sample.sparql viewer (SPARQL Query) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.sparql');
+  await page.waitForSelector('#previewHost .sparql-doc', { timeout: 12000 });
+  pass('sample.sparql: renders');
+  const sparqlText = await page.$eval('#previewHost .sparql-doc', (e) => e.textContent);
+  if (/SPARQL/i.test(sparqlText)) pass('sample.sparql: SPARQL badge shown'); else fail('sparql badge: ' + sparqlText.slice(0, 200));
+  if (/SELECT/i.test(sparqlText)) pass('sample.sparql: query type shown'); else fail('sparql query type: ' + sparqlText.slice(0, 300));
+  if (/prefix|Prefix/i.test(sparqlText)) pass('sample.sparql: prefixes shown'); else fail('sparql prefixes: ' + sparqlText.slice(0, 300));
+  if (/title|author|year/i.test(sparqlText)) pass('sample.sparql: projected variables shown'); else fail('sparql vars: ' + sparqlText.slice(0, 300));
+
+  // ── sample.ttl viewer (Turtle RDF) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.ttl');
+  await page.waitForSelector('#previewHost .ttl-doc', { timeout: 12000 });
+  pass('sample.ttl: renders');
+  const ttlText = await page.$eval('#previewHost .ttl-doc', (e) => e.textContent);
+  if (/Turtle RDF|RDF/i.test(ttlText)) pass('sample.ttl: Turtle RDF badge shown'); else fail('ttl badge: ' + ttlText.slice(0, 200));
+  if (/prefix|Prefix/i.test(ttlText)) pass('sample.ttl: prefixes shown'); else fail('ttl prefixes: ' + ttlText.slice(0, 300));
+  if (/rdf|owl|rdfs/i.test(ttlText)) pass('sample.ttl: namespace URIs shown'); else fail('ttl namespaces: ' + ttlText.slice(0, 300));
+
+  // ── sample.dot viewer (Graphviz DOT) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.dot');
+  await page.waitForSelector('#previewHost .dot-doc', { timeout: 12000 });
+  pass('sample.dot: renders');
+  const dotText = await page.$eval('#previewHost .dot-doc', (e) => e.textContent);
+  if (/DOT|Graphviz/i.test(dotText)) pass('sample.dot: DOT badge shown'); else fail('dot badge: ' + dotText.slice(0, 200));
+  if (/digraph|graph/i.test(dotText)) pass('sample.dot: graph type shown'); else fail('dot graph type: ' + dotText.slice(0, 300));
+  if (/node|edge/i.test(dotText)) pass('sample.dot: node/edge counts shown'); else fail('dot counts: ' + dotText.slice(0, 300));
+
+  // ── sample.v viewer (Verilog) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.v');
+  await page.waitForSelector('#previewHost .vlog-doc', { timeout: 12000 });
+  pass('sample.v: renders');
+  const vlogText = await page.$eval('#previewHost .vlog-doc', (e) => e.textContent);
+  if (/Verilog/i.test(vlogText)) pass('sample.v: Verilog badge shown'); else fail('vlog badge: ' + vlogText.slice(0, 200));
+  if (/counter|mux/i.test(vlogText)) pass('sample.v: module names shown'); else fail('vlog modules: ' + vlogText.slice(0, 300));
+  if (/module|Module/i.test(vlogText)) pass('sample.v: module count shown'); else fail('vlog module count: ' + vlogText.slice(0, 300));
 }

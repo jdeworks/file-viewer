@@ -774,7 +774,15 @@ import glslShader from '../types/text/known/glsl-shader/index.js';
 import hlslShader from '../types/text/known/hlsl-shader/index.js';
 import restructuredtext from '../types/text/known/restructuredtext/index.js';
 import orgMode from '../types/text/known/org-mode/index.js';
-export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
+import liquidTemplate from '../types/text/known/liquid-template/index.js';
+import handlebarsTemplate from '../types/text/known/handlebars-template/index.js';
+import jinja2Template from '../types/text/known/jinja2-template/index.js';
+import mustacheTemplate from '../types/text/known/mustache-template/index.js';
+import sparqlQuery from '../types/text/known/sparql-query/index.js';
+import turtleRdf from '../types/text/known/turtle-rdf/index.js';
+import graphvizDot from '../types/text/known/graphviz-dot/index.js';
+import verilog from '../types/text/known/verilog/index.js';
+export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,

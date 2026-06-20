@@ -11443,5 +11443,57 @@
     "enhanced": true,
     "description": "WGSL WebGPU shader with vertex and fragment entry points, uniform bindings, and texture sampling.",
     "knownFile": "wgsl-shader"
+  },
+  {
+    "label": "sample.glsl (GLSL Shader)",
+    "file": "sample.glsl",
+    "mime": "text/plain",
+    "category": "Graphics",
+    "categories": [
+      "Graphics",
+      "Shader"
+    ],
+    "enhanced": true,
+    "description": "GLSL vertex shader with position transform, UV passthrough, and uniform declarations.",
+    "knownFile": "glsl-shader"
+  },
+  {
+    "label": "sample.hlsl (HLSL Shader)",
+    "file": "sample.hlsl",
+    "mime": "text/plain",
+    "category": "Graphics",
+    "categories": [
+      "Graphics",
+      "Shader"
+    ],
+    "enhanced": true,
+    "description": "HLSL Phong lighting shader with constant buffers, textures, and vertex/pixel entry points.",
+    "knownFile": "hlsl-shader"
+  },
+  {
+    "label": "sample.rst (reStructuredText)",
+    "file": "sample.rst",
+    "mime": "text/plain",
+    "category": "Documents",
+    "categories": [
+      "Documents",
+      "Documentation"
+    ],
+    "enhanced": true,
+    "description": "reStructuredText documentation with sections, directives, code blocks, and a table.",
+    "knownFile": "restructuredtext"
+  },
+  {
+    "label": "sample.org (Org-mode)",
+    "file": "sample.org",
+    "mime": "text/plain",
+    "category": "Documents",
+    "categories": [
+      "Documents",
+      "Notes"
+    ],
+    "enhanced": true,
+    "description": "Org-mode document with headings, TODO items, code blocks, and a table.",
+    "knownFile": "org-mode"
   }
 ]
