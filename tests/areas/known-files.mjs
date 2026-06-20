@@ -1019,8 +1019,8 @@ export async function run(ctx) {
   // ── mise.toml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('mise.toml');
-  await page.waitForSelector('#previewHost .mse-doc', { timeout: 12000 });
-  const mseText = await page.$eval('#previewHost .mse-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .mise-doc', { timeout: 12000 });
+  const mseText = await page.$eval('#previewHost .mise-doc', (e) => e.textContent);
   if (/mise/i.test(mseText)) pass('mise.toml: badge shown'); else fail('mise badge: ' + mseText.slice(0, 200));
   if (/node|python|ruby/i.test(mseText)) pass('mise.toml: tools shown'); else fail('mise tools: ' + mseText.slice(0, 200));
 
@@ -2547,8 +2547,8 @@ export async function run(ctx) {
   // ── aqua.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('aqua.yaml');
-  await page.waitForSelector('#previewHost .aqc-doc', { timeout: 12000 });
-  const aqcText = await page.$eval('#previewHost .aqc-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .aqua-doc', { timeout: 12000 });
+  const aqcText = await page.$eval('#previewHost .aqua-doc', (e) => e.textContent);
   if (/aqua/i.test(aqcText)) pass('aqua.yaml: aqua badge shown'); else fail('aqc badge: ' + aqcText.slice(0, 200));
   if (/standard/i.test(aqcText)) pass('aqua.yaml: registry type shown'); else fail('aqc registry: ' + aqcText.slice(0, 300));
   if (/cli\/cli|jqlang\/jq|sharkdp\/fd/i.test(aqcText)) pass('aqua.yaml: package names shown'); else fail('aqc packages: ' + aqcText.slice(0, 300));
