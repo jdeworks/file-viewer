@@ -635,6 +635,7 @@ import { plugin as releaseIt } from '../types/text/yaml/known/release-it/index.j
 import benthos from '../types/text/yaml/known/benthos/index.js';
 import testKitchen from '../types/text/yaml/known/test-kitchen/index.js';
 import harbor from '../types/text/yaml/known/harbor/index.js';
+import harborConfig from '../types/text/yaml/known/harbor-config/index.js';
 import gardenIo from '../types/text/yaml/known/garden-io/index.js';
 import stryker from '../types/text/json/known/stryker/index.js';
 import airflowCfg from '../types/text/ini/known/airflow/index.js';
@@ -664,6 +665,7 @@ import mealieConfig from '../types/text/known/mealie-config/index.js';
 import immichConfig from '../types/text/known/immich-config/index.js';
 import photoprismConfig from '../types/text/yaml/known/photoprism-config/index.js';
 import paperlessConf from '../types/text/known/paperless-conf/index.js';
+import bookstackConfig from '../types/text/known/bookstack-config/index.js';
 import bookstackEnv from '../types/text/known/bookstack-env/index.js';
 import mattermostConfig from '../types/text/json/known/mattermost-config/index.js';
 import filebrowserConfig from '../types/text/json/known/filebrowser-config/index.js';
@@ -832,7 +834,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   ansibleLint, molecule,
   helmfile, releaseIt,
   benthos, testKitchen,
-  harbor, gardenIo,
+  harbor, harborConfig, gardenIo,
   stryker, airflowCfg,
   registriesConf, storageConf,
   asyncapi, telegraf,
@@ -847,7 +849,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   crowdsecConfig, crowdsecAcquis,
   homerConfig, uptimeKumaConfig,
   photoprismConfig, paperlessConf,
-  bookstackEnv, mattermostConfig, filebrowserConfig,
+  bookstackConfig, bookstackEnv, mattermostConfig, filebrowserConfig,
   netboxConfig, vaultwardenEnv,
   ntfyConfig, wakapiConfig,
   outlineConfig, linkdingConfig,

@@ -5278,7 +5278,14 @@ export async function run(ctx) {
   // ── stirling-pdf-settings.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('stirling-pdf-settings.yml');
-  pass(await page.waitForSelector('#previewHost .strpdf-doc', { timeout: 12000 }), 'stirling-pdf-settings.yml: Stirling PDF badge shown');
+  await page.waitForSelector('#previewHost .spdf-doc', { timeout: 12000 });
+  pass('stirling-pdf-settings.yml: Stirling-PDF badge shown');
+
+  // ── authentik.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Authentik Config');
+  await page.waitForSelector('#previewHost .authentik-doc', { timeout: 12000 });
+  pass('authentik.env: Authentik badge shown');
 
   // ── monica.env viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

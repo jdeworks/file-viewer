@@ -7650,7 +7650,20 @@
     ],
     "enhanced": true,
     "description": "Authentik blueprint: declarative configuration entries for applications, providers, and flows.",
-    "knownFile": "authentik-config"
+    "knownFile": "authentik-blueprint"
+  },
+  {
+    "file": "authentik.env",
+    "label": "Authentik Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Authentik identity provider environment configuration",
+    "knownFile": true
   },
   {
     "label": "wg0.conf",
@@ -8950,9 +8963,18 @@
     "knownFile": "test-kitchen"
   },
   {
-    "name": "harbor.yml",
-    "category": "Infrastructure",
-    "knownFile": "harbor"
+    "file": "harbor.yml",
+    "label": "Harbor Config",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted",
+      "DevOps"
+    ],
+    "enhanced": true,
+    "description": "Harbor container registry configuration",
+    "knownFile": "harbor-config"
   },
   {
     "name": "garden.yml",
@@ -9461,16 +9483,16 @@
   },
   {
     "file": "bookstack.env",
-    "label": "bookstack.env",
+    "label": "BookStack Config",
     "mime": "text/plain",
     "category": "Config",
     "categories": [
       "Config",
-      "Application"
+      "Self-hosted"
     ],
     "enhanced": true,
-    "description": "BookStack wiki/knowledge-base Laravel .env configuration with application, database, email, cache, and storage settings.",
-    "knownFile": "bookstack-env"
+    "description": "BookStack self-hosted wiki environment configuration",
+    "knownFile": "bookstack-config"
   },
   {
     "file": "mattermost-config.json",
@@ -9640,7 +9662,7 @@
       "Application"
     ],
     "enhanced": true,
-    "description": "Stirling PDF self-hosted PDF tools configuration with security, UI, system, endpoints, and metrics settings.",
+    "description": "Stirling-PDF self-hosted PDF tool settings with security, UI, system, premium, and metrics configuration.",
     "knownFile": "stirling-pdf-config"
   },
   {

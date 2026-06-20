@@ -1,5 +1,5 @@
 export default {
-  id: 'authentik-config',
+  id: 'authentik-blueprint',
   label: 'Authentik blueprint',
   match(intake, baseType) {
     if (baseType?.id !== 'yaml') return false;

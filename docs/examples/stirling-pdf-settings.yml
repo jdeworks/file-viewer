@@ -1,26 +1,26 @@
-# Stirling PDF Settings
+# Stirling-PDF Settings
 # https://github.com/Stirling-Tools/Stirling-PDF
 
 security:
   enableLogin: true
-  initialLogin: false
-  username: admin
-  password: changeme
+  initialUsername: admin
+  initialPassword: changeme_on_first_login
+  csrfDisabled: false
 
 ui:
-  appName: Stirling PDF
+  appName: Stirling-PDF
   homeDescription: Self-hosted PDF manipulation tools
-  appNavbarName: Stirling PDF
+  appNavbarName: Stirling-PDF
 
 system:
   defaultLocale: en-US
   googlevisibility: false
   customStaticFilePath:
+  maxFileSize: 100
 
-endpoints:
-  toRemove:
-    - /api/v1/security/sanitize-pdf
-    - /api/v1/misc/compress-pdf
+premium:
+  enabled: false
+  key:
 
 metrics:
   enabled: true
