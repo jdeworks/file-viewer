@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package example.api.v1;
+
+option go_package = "github.com/example/api/v1;apiv1";
+option java_package = "com.example.api.v1";
+
+// User represents a registered user.
+message User {
+  int64 id = 1;
+  string username = 2;
+  string email = 3;
+  UserRole role = 4;
+  repeated string tags = 5;
+  Address address = 6;
+}
+
+message Address {
+  string street = 1;
+  string city = 2;
+  string country = 3;
+  string postal_code = 4;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message CreateUserResponse {
+  User user = 1;
+}
+
+message GetUserRequest {
+  int64 user_id = 1;
+}
+
+message ListUsersRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message DeleteUserRequest {
+  int64 user_id = 1;
+}
+
+message DeleteUserResponse {
+  bool success = 1;
+}
+
+enum UserRole {
+  USER_ROLE_UNSPECIFIED = 0;
+  USER_ROLE_USER = 1;
+  USER_ROLE_ADMIN = 2;
+  USER_ROLE_MODERATOR = 3;
+}
+
+// UserService provides CRUD operations for users.
+service UserService {
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc GetUser(GetUserRequest) returns (User);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  rpc WatchUser(GetUserRequest) returns (stream User);
+  rpc BatchCreateUsers(stream CreateUserRequest) returns (CreateUserResponse);
+}

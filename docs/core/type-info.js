@@ -75,6 +75,8 @@ const TYPE_INFO = {
   ruffle: ['Flash movie', 'used for SWF animation, games, and interactive Flash content.', 'https://en.wikipedia.org/wiki/SWF'],
   v86: ['PC disk image', 'used to boot legacy operating systems or disks in an x86 emulator.', 'https://en.wikipedia.org/wiki/Disk_image'],
   emulatorjs: ['Emulator ROM', 'used by web emulators to run supported console/game images.', 'https://emulatorjs.org/'],
+  proto: ['Protocol Buffer', 'used for gRPC service contracts, message types, and API definitions.', 'https://protobuf.dev/'],
+  thrift: ['Apache Thrift', 'used for cross-language RPC service definitions with structs, exceptions, and services.', 'https://thrift.apache.org/'],
   code: ['Source code', 'used for programs, scripts, configuration, and markup edited as text.', 'https://en.wikipedia.org/wiki/Source_code'],
   raw: ['Plain text', 'used for unstructured text or unsupported text-like files.', 'https://en.wikipedia.org/wiki/Text_file'],
 };

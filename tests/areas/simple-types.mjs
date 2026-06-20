@@ -473,6 +473,26 @@ export async function run(ctx) {
   if (/SARIF/i.test(srText)) pass('SARIF badge shown'); else fail('sarif badge: ' + srText.slice(0, 200));
   if (/error|warning/i.test(srText)) pass('SARIF findings shown'); else fail('sarif findings: ' + srText.slice(0, 200));
 
+  // ── Protocol Buffer viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Protocol Buffer IDL (demo)');
+  await page.waitForSelector('#previewHost .proto-root', { timeout: 12000 });
+  const protoTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (protoTypeId === 'proto') pass('.proto detected as Protocol Buffer type'); else fail('proto typeId: ' + protoTypeId);
+  const protoText = await page.$eval('#previewHost .proto-root', (el) => el.textContent);
+  if (/proto3|Protocol Buffer/i.test(protoText)) pass('proto badge/syntax shown'); else fail('proto badge: ' + protoText.slice(0, 300));
+  if (/message|UserService/i.test(protoText)) pass('proto messages and service shown'); else fail('proto content: ' + protoText.slice(0, 300));
+
+  // ── Apache Thrift viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Apache Thrift IDL (demo)');
+  await page.waitForSelector('#previewHost .thrift-root', { timeout: 12000 });
+  const thriftTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (thriftTypeId === 'thrift') pass('.thrift detected as Apache Thrift type'); else fail('thrift typeId: ' + thriftTypeId);
+  const thriftText = await page.$eval('#previewHost .thrift-root', (el) => el.textContent);
+  if (/Thrift/i.test(thriftText)) pass('thrift badge shown'); else fail('thrift badge: ' + thriftText.slice(0, 300));
+  if (/struct|UserService/i.test(thriftText)) pass('thrift structs and service shown'); else fail('thrift content: ' + thriftText.slice(0, 300));
+
   // ── secret.txt Easter egg — The Archivist lore file loads as plain text ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('secret.txt');

@@ -11339,5 +11339,57 @@
     "categories": [
       "Config"
     ]
+  },
+  {
+    "label": "sample.mmd (Mermaid Diagram)",
+    "file": "sample.mmd",
+    "mime": "text/plain",
+    "category": "Diagram",
+    "categories": [
+      "Diagram",
+      "Visualization"
+    ],
+    "enhanced": true,
+    "description": "Mermaid flowchart diagram showing a role-based access control flow.",
+    "knownFile": "mermaid-diagram"
+  },
+  {
+    "label": "sample.puml (PlantUML)",
+    "file": "sample.puml",
+    "mime": "text/plain",
+    "category": "Diagram",
+    "categories": [
+      "Diagram",
+      "UML"
+    ],
+    "enhanced": true,
+    "description": "PlantUML sequence diagram showing a user authentication flow.",
+    "knownFile": "plantuml"
+  },
+  {
+    "label": "sample.rego (Rego Policy)",
+    "file": "sample.rego",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security"
+    ],
+    "enhanced": true,
+    "description": "OPA Rego authorization policy with allow/deny rules and helper functions.",
+    "knownFile": "rego-policy"
+  },
+  {
+    "label": "sample.adoc (AsciiDoc)",
+    "file": "sample.adoc",
+    "mime": "text/plain",
+    "category": "Docs",
+    "categories": [
+      "Docs",
+      "Documentation"
+    ],
+    "enhanced": true,
+    "description": "AsciiDoc document demonstrating sections, attributes, and code blocks.",
+    "knownFile": "asciidoc"
   }
 ]

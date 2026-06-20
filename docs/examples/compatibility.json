@@ -25020,6 +25020,131 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "mermaid-diagram": {
+      "label": "Mermaid Diagram",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.mmd"
+      ],
+      "extensions": [
+        ".mmd",
+        ".mermaid"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Connection count uses regex pattern matching — may over-count in commented or string content"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "plantuml": {
+      "label": "PlantUML",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.puml"
+      ],
+      "extensions": [
+        ".puml",
+        ".plantuml",
+        ".pu",
+        ".uml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Diagram type detection uses keyword heuristics — unusual or mixed-type diagrams may be misclassified"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "rego-policy": {
+      "label": "Rego Policy",
+      "baseType": "code",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.rego"
+      ],
+      "extensions": [
+        ".rego"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Rule extraction uses regex — deeply nested or multi-line rules may not be captured"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "asciidoc": {
+      "label": "AsciiDoc",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.adoc"
+      ],
+      "extensions": [
+        ".adoc",
+        ".asciidoc",
+        ".asc",
+        ".ad"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "Word count estimate from line splitting — may differ from exact counts",
+        "Heading outline limited to first 40 headings in very long documents",
+        ".asc extension excluded for PGP armored files via content sniff"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

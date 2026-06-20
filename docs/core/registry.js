@@ -164,6 +164,8 @@ import kmlType from '../types/text/kml/index.js';
 import abcType from '../types/text/abc/index.js';
 import hl7Type from '../types/text/hl7/index.js';
 import hydrogenType from '../types/text/hydrogen/index.js';
+import protoType from '../types/text/proto/index.js';
+import thriftType from '../types/text/thrift/index.js';
 import prprojType from '../types/text/prproj/index.js';
 import ruffleType from '../types/emulator/ruffle/index.js';
 import v86Type from '../types/emulator/v86/index.js';
@@ -295,6 +297,8 @@ export const REGISTRY = [
   hl7Type,
   hydrogenType,
   prprojType,
+  protoType,
+  thriftType,
   gcodeType,
   gitignoreType,
   gitattributesType,
