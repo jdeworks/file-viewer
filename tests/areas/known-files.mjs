@@ -4335,4 +4335,22 @@ export async function run(ctx) {
   const atlantisText = await page.$eval('.atlantisyaml-doc', el => el.textContent);
   if (!atlantisText.includes('Atlantis')) fail('atlantis.yaml: missing badge'); else pass('atlantis.yaml: badge shown');
   if (!atlantisText.includes('project') && !atlantisText.includes('workflow')) fail('atlantis.yaml: no projects'); else pass('atlantis.yaml: projects shown');
+
+  // ── nginx.conf viewer (nginxconf-doc class) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nginx.conf');
+  await page.waitForSelector('.nginxconf-doc');
+  pass('nginx.conf: renders');
+  const nginxText = await page.$eval('.nginxconf-doc', el => el.textContent);
+  if (!nginxText.includes('NGINX') && !nginxText.includes('nginx')) fail('nginx.conf: missing badge'); else pass('nginx.conf: badge shown');
+  if (!nginxText.includes('server') && !nginxText.includes('listen')) fail('nginx.conf: no server info'); else pass('nginx.conf: server info shown');
+
+  // ── haproxy.cfg viewer (haproxycfg-doc class) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('haproxy.cfg');
+  await page.waitForSelector('.haproxycfg-doc');
+  pass('haproxy.cfg: renders');
+  const haproxyText = await page.$eval('.haproxycfg-doc', el => el.textContent);
+  if (!haproxyText.includes('HAProxy')) fail('haproxy.cfg: missing badge'); else pass('haproxy.cfg: badge shown');
+  if (!haproxyText.includes('frontend') && !haproxyText.includes('backend')) fail('haproxy.cfg: no proxy config'); else pass('haproxy.cfg: proxy config shown');
 }

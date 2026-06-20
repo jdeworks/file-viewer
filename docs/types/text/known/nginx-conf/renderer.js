@@ -154,7 +154,7 @@ function handlerHtml(loc) {
 
 export function render(intake) {
   const host = document.createElement('div');
-  host.className = 'ngx-doc';
+  host.className = 'ngx-doc nginxconf-doc';
 
   const text = intake.text || '';
   const { serverBlocks, upstreams } = parseNginx(text);

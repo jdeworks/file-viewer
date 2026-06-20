@@ -112,7 +112,7 @@ function parseHAProxy(text) {
 
 export function render(intake) {
   const host = document.createElement('div');
-  host.className = 'haproxy-doc';
+  host.className = 'haproxy-doc haproxycfg-doc';
 
   const text = intake.text || '';
   const filename = (intake.name || intake.filename || '').split('/').pop() || 'haproxy.cfg';
