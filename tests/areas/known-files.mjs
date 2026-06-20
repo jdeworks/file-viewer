@@ -3509,4 +3509,20 @@ export async function run(ctx) {
   if (/LXC/i.test(lxcText)) pass('lxc.config: LXC badge shown'); else fail('lxc-config badge: ' + lxcText.slice(0, 200));
   if (/network|rootfs/i.test(lxcText)) pass('lxc.config: network or rootfs information shown'); else fail('lxc-config content: ' + lxcText.slice(0, 300));
 
+  // ── .tmux.conf (tmux) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.tmux.conf');
+  await page.waitForSelector('#previewHost .tmuxcfg-doc', { timeout: 12000 });
+  const tmuxText = await page.$eval('#previewHost .tmuxcfg-doc', (e) => e.textContent);
+  if (/tmux/i.test(tmuxText)) pass('.tmux.conf: tmux badge shown'); else fail('tmux-conf badge: ' + tmuxText.slice(0, 200));
+  if (/prefix|C-a/i.test(tmuxText)) pass('.tmux.conf: prefix key shown'); else fail('tmux-conf prefix: ' + tmuxText.slice(0, 300));
+
+  // ── .screenrc (GNU Screen) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.screenrc');
+  await page.waitForSelector('#previewHost .screenrc-doc', { timeout: 12000 });
+  const screenText = await page.$eval('#previewHost .screenrc-doc', (e) => e.textContent);
+  if (/GNU Screen|Screen/i.test(screenText)) pass('.screenrc: GNU Screen badge shown'); else fail('screenrc badge: ' + screenText.slice(0, 200));
+  if (/scrollback|hardstatus/i.test(screenText)) pass('.screenrc: scrollback or hardstatus shown'); else fail('screenrc content: ' + screenText.slice(0, 300));
+
 }

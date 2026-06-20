@@ -6351,6 +6351,32 @@
     "knownFile": "sway-config"
   },
   {
+    "label": "alacritty.toml",
+    "file": "alacritty.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Terminal"
+    ],
+    "enhanced": true,
+    "description": "Alacritty GPU-accelerated terminal configuration: font, window decorations, colors (Catppuccin Mocha), scrollback, and keyboard bindings.",
+    "knownFile": "alacritty-conf"
+  },
+  {
+    "label": "kitty.conf",
+    "file": "kitty.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Terminal"
+    ],
+    "enhanced": true,
+    "description": "kitty GPU terminal configuration: font stack, window opacity, colors (Catppuccin Mocha), cursor, scrollback, tab bar, and keybindings.",
+    "knownFile": "kitty-conf"
+  },
+  {
     "label": "devbox.json",
     "file": "devbox.json",
     "mime": "application/json",

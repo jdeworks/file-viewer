@@ -1,0 +1,53 @@
+# GNU Screen configuration
+
+# Disable startup message
+startup_message off
+
+# Change escape key to Ctrl+a (default is Ctrl+a, but explicit)
+escape ^Aa
+
+# Large scrollback buffer
+defscrollback 10000
+
+# Terminal info
+termcapinfo xterm* ti@:te@
+termcapinfo xterm-256color 'Co#256:AB=\E[48;5;%dm:AF=\E[38;5;%dm'
+term screen-256color
+
+# UTF-8
+defutf8 on
+defencoding utf8
+
+# No visual bell
+vbell off
+
+# Status line
+hardstatus alwayslastline
+hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{= kw}%?%-Lw%?%{r}(%{W}%n*%f%t%?(%u)%?%{r})%{w}%?%+Lw%?%?%= %{g}][%{B}%Y-%m-%d %{W}%c %{g}]'
+
+# Caption for each window
+caption always "%{= kw}%-w%{= BW}%n %t%{-}%+w %-="
+
+# Mouse support
+mousetrack on
+
+# Shell
+shell -$SHELL
+
+# Key bindings
+bind k kill
+bind K kill
+bind r eval "source $HOME/.screenrc" "echo '.screenrc reloaded'"
+bind | split -v
+bind - split
+bind TAB focus next
+bind ' ' windowlist -b
+
+# Startup windows
+screen -t "main" 1 bash
+screen -t "edit" 2 vim
+screen -t "monitor" 3 htop
+
+# Default window settings
+defmonitor on
+defsilence off

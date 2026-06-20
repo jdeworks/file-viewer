@@ -425,6 +425,8 @@ import gatekeeperConfig from '../types/text/yaml/known/gatekeeper-config/index.j
 import jetbrainsWorkspace from '../types/text/xml/known/jetbrains-workspace/index.js';
 import neovimConfig from '../types/text/known/neovim-config/index.js';
 import vimConfig from '../types/text/known/vim-config/index.js';
+import alacrittyConf from '../types/text/known/alacritty-conf/index.js';
+import kittyConf from '../types/text/known/kitty-conf/index.js';
 import emacsConfig from '../types/text/known/emacs-config/index.js';
 import tmuxConf from '../types/text/known/tmux-conf/index.js';
 import screenrc from '../types/text/known/screenrc/index.js';
@@ -577,7 +579,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   analysisOptions, podfileLock, xcodeScheme, easJson,
   hostsFile, resolvConf, sshdConfig, sudoers, nfsExports, fstab, crypttab,
   sysctlConf, modprobeConf,
-  jetbrainsWorkspace, neovimConfig, vimConfig, emacsConfig, tmuxConf, screenrc, i3Config, swayConfig,
+  jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, emacsConfig, tmuxConf, screenrc, i3Config, swayConfig,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,
   woodpeckerCi,
