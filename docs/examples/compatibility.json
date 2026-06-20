@@ -13330,7 +13330,7 @@
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [
-        "TESTVALUE"
+        "etcd.yaml"
       ],
       "extensions": [
         ".yml"
@@ -13353,11 +13353,11 @@
       "needsRealWorldSample": false
     },
     "kafka-server-props": {
-      "label": "Kafka server.properties",
+      "label": "Kafka Server Config",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
-        "kafka-server.properties"
+        "server.properties"
       ],
       "extensions": [
         ".yml"
@@ -13380,7 +13380,7 @@
       "needsRealWorldSample": false
     },
     "rabbitmq-conf": {
-      "label": "rabbitmq.conf",
+      "label": "RabbitMQ Config",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
@@ -13407,7 +13407,7 @@
       "needsRealWorldSample": false
     },
     "nats-config": {
-      "label": "nats.conf",
+      "label": "NATS Server Config",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
@@ -13434,7 +13434,7 @@
       "needsRealWorldSample": false
     },
     "zookeeper-config": {
-      "label": "zoo.cfg",
+      "label": "ZooKeeper Config",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
@@ -13518,7 +13518,9 @@
       "label": "Dart Analysis Options",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "analysis_options.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -13543,7 +13545,9 @@
       "label": "Podfile.lock (CocoaPods)",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "Podfile.lock"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -13568,7 +13572,9 @@
       "label": "Xcode Scheme",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "MyApp.xcscheme"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -13593,7 +13599,9 @@
       "label": "eas.json (Expo EAS)",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "eas.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -14131,7 +14139,9 @@
       "label": "AWS Config",
       "baseType": "ini",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "aws-config"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -14211,7 +14221,9 @@
       "label": "Prometheus Rules",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "prometheus-rules.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -14236,7 +14248,9 @@
       "label": "Grafana Dashboard",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "grafana-dashboard.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -14261,7 +14275,9 @@
       "label": "Jaeger config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "jaeger-config.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -14286,7 +14302,9 @@
       "label": "OTel Operator resource",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "otel-collector-config.yaml"
+      ],
       "extensions": [
         ".yml"
       ],

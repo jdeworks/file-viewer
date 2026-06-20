@@ -1706,12 +1706,12 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('setup.cfg');
   await page.waitForSelector('#previewHost .sc-doc', { timeout: 12000 });
-  const scText = await page.$eval('#previewHost .sc-doc', (e) => e.textContent);
-  if (/setup\.cfg/i.test(scText)) pass('setup.cfg: badge shown'); else fail('setup.cfg badge: ' + scText.slice(0, 200));
-  if (/myproject/i.test(scText)) pass('setup.cfg: package name shown'); else fail('setup.cfg name: ' + scText.slice(0, 200));
-  if (/1\.4\.2/i.test(scText)) pass('setup.cfg: version shown'); else fail('setup.cfg version: ' + scText.slice(0, 300));
-  if (/fastapi|pydantic|sqlalchemy/i.test(scText)) pass('setup.cfg: dependencies shown'); else fail('setup.cfg deps: ' + scText.slice(0, 300));
-  if (/pytest|mypy/i.test(scText)) pass('setup.cfg: tool sections shown'); else fail('setup.cfg tools: ' + scText.slice(0, 300));
+  const setupCfgText = await page.$eval('#previewHost .sc-doc', (e) => e.textContent);
+  if (/setup\.cfg/i.test(setupCfgText)) pass('setup.cfg: badge shown'); else fail('setup.cfg badge: ' + setupCfgText.slice(0, 200));
+  if (/myproject/i.test(setupCfgText)) pass('setup.cfg: package name shown'); else fail('setup.cfg name: ' + setupCfgText.slice(0, 200));
+  if (/1\.4\.2/i.test(setupCfgText)) pass('setup.cfg: version shown'); else fail('setup.cfg version: ' + setupCfgText.slice(0, 300));
+  if (/fastapi|pydantic|sqlalchemy/i.test(setupCfgText)) pass('setup.cfg: dependencies shown'); else fail('setup.cfg deps: ' + setupCfgText.slice(0, 300));
+  if (/pytest|mypy/i.test(setupCfgText)) pass('setup.cfg: tool sections shown'); else fail('setup.cfg tools: ' + setupCfgText.slice(0, 300));
 
   // ── .bandit viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1815,10 +1815,10 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('pip.conf');
   await page.waitForSelector('#previewHost .pc-doc', { timeout: 12000 });
-  const pcText = await page.$eval('#previewHost .pc-doc', (e) => e.textContent);
-  if (/pip/i.test(pcText)) pass('pip.conf: pip badge shown'); else fail('pip-conf badge: ' + pcText.slice(0, 200));
-  if (/pypi\.org/i.test(pcText)) pass('pip.conf: index-url shown'); else fail('pip-conf index: ' + pcText.slice(0, 200));
-  if (/packages\.example\.com/i.test(pcText)) pass('pip.conf: trusted-host shown'); else fail('pip-conf trusted: ' + pcText.slice(0, 200));
+  const pipConfText = await page.$eval('#previewHost .pc-doc', (e) => e.textContent);
+  if (/pip/i.test(pipConfText)) pass('pip.conf: pip badge shown'); else fail('pip-conf badge: ' + pipConfText.slice(0, 200));
+  if (/pypi\.org/i.test(pipConfText)) pass('pip.conf: index-url shown'); else fail('pip-conf index: ' + pipConfText.slice(0, 200));
+  if (/packages\.example\.com/i.test(pipConfText)) pass('pip.conf: trusted-host shown'); else fail('pip-conf trusted: ' + pipConfText.slice(0, 200));
 
   // ── .node-version viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1833,11 +1833,11 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('docker-bake.hcl');
   await page.waitForSelector('#previewHost .bk-doc', { timeout: 12000 });
-  const bkText = await page.$eval('#previewHost .bk-doc', (e) => e.textContent);
-  if (/Docker Bake/i.test(bkText)) pass('docker-bake.hcl: Docker Bake badge shown'); else fail('docker-bake badge: ' + bkText.slice(0, 200));
-  if (/api|worker|frontend/i.test(bkText)) pass('docker-bake.hcl: target names shown'); else fail('docker-bake targets: ' + bkText.slice(0, 200));
-  if (/linux\/amd64|linux\/arm64/i.test(bkText)) pass('docker-bake.hcl: platforms shown'); else fail('docker-bake platforms: ' + bkText.slice(0, 300));
-  if (/registry\.example\.com/i.test(bkText)) pass('docker-bake.hcl: tags shown'); else fail('docker-bake tags: ' + bkText.slice(0, 300));
+  const dockerBakeText = await page.$eval('#previewHost .bk-doc', (e) => e.textContent);
+  if (/Docker Bake/i.test(dockerBakeText)) pass('docker-bake.hcl: Docker Bake badge shown'); else fail('docker-bake badge: ' + dockerBakeText.slice(0, 200));
+  if (/api|worker|frontend/i.test(dockerBakeText)) pass('docker-bake.hcl: target names shown'); else fail('docker-bake targets: ' + dockerBakeText.slice(0, 200));
+  if (/linux\/amd64|linux\/arm64/i.test(dockerBakeText)) pass('docker-bake.hcl: platforms shown'); else fail('docker-bake platforms: ' + dockerBakeText.slice(0, 300));
+  if (/registry\.example\.com/i.test(dockerBakeText)) pass('docker-bake.hcl: tags shown'); else fail('docker-bake tags: ' + dockerBakeText.slice(0, 300));
 
   // ── cloudformation.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1893,11 +1893,11 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Podfile.lock (CocoaPods)');
   await page.waitForSelector('#previewHost .pfl-doc', { timeout: 12000 });
-  const pflText = await page.$eval('#previewHost .pfl-doc', (e) => e.textContent);
-  if (/CocoaPods Lock/i.test(pflText)) pass('Podfile.lock: CocoaPods Lock badge shown'); else fail('pfl badge: ' + pflText.slice(0, 200));
-  if (/Alamofire|Kingfisher/i.test(pflText)) pass('Podfile.lock: pod names shown'); else fail('pfl pods: ' + pflText.slice(0, 300));
-  if (/1\.15\.2/i.test(pflText)) pass('Podfile.lock: CocoaPods version shown'); else fail('pfl version: ' + pflText.slice(0, 300));
-  if (/checksum|sha1/i.test(pflText.toLowerCase())) pass('Podfile.lock: checksums section shown'); else fail('pfl checksums: ' + pflText.slice(0, 300));
+  const podfileLockText = await page.$eval('#previewHost .pfl-doc', (e) => e.textContent);
+  if (/CocoaPods Lock/i.test(podfileLockText)) pass('Podfile.lock: CocoaPods Lock badge shown'); else fail('pfl badge: ' + podfileLockText.slice(0, 200));
+  if (/Alamofire|Kingfisher/i.test(podfileLockText)) pass('Podfile.lock: pod names shown'); else fail('pfl pods: ' + podfileLockText.slice(0, 300));
+  if (/1\.15\.2/i.test(podfileLockText)) pass('Podfile.lock: CocoaPods version shown'); else fail('pfl version: ' + podfileLockText.slice(0, 300));
+  if (/checksum|sha1/i.test(podfileLockText.toLowerCase())) pass('Podfile.lock: checksums section shown'); else fail('pfl checksums: ' + podfileLockText.slice(0, 300));
 
   // ── MyApp.xcscheme viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1959,12 +1959,12 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('dbt_project.yml');
   await page.waitForSelector('#previewHost .dbt-doc', { timeout: 12000 });
-  const dbtText = await page.$eval('#previewHost .dbt-doc', (e) => e.textContent);
-  if (/dbt/i.test(dbtText)) pass('dbt_project.yml: dbt badge shown'); else fail('dbt badge: ' + dbtText.slice(0, 200));
-  if (/jaffle_shop/i.test(dbtText)) pass('dbt_project.yml: project name shown'); else fail('dbt name: ' + dbtText.slice(0, 200));
-  if (/profile/i.test(dbtText)) pass('dbt_project.yml: profile shown'); else fail('dbt profile: ' + dbtText.slice(0, 200));
-  if (/incremental|table|view/i.test(dbtText)) pass('dbt_project.yml: materializations shown'); else fail('dbt materializations: ' + dbtText.slice(0, 300));
-  if (/start_date|payment_method|environment/i.test(dbtText)) pass('dbt_project.yml: vars shown'); else fail('dbt vars: ' + dbtText.slice(0, 300));
+  const dbtProjectText = await page.$eval('#previewHost .dbt-doc', (e) => e.textContent);
+  if (/dbt/i.test(dbtProjectText)) pass('dbt_project.yml: dbt badge shown'); else fail('dbt badge: ' + dbtProjectText.slice(0, 200));
+  if (/jaffle_shop/i.test(dbtProjectText)) pass('dbt_project.yml: project name shown'); else fail('dbt name: ' + dbtProjectText.slice(0, 200));
+  if (/profile/i.test(dbtProjectText)) pass('dbt_project.yml: profile shown'); else fail('dbt profile: ' + dbtProjectText.slice(0, 200));
+  if (/incremental|table|view/i.test(dbtProjectText)) pass('dbt_project.yml: materializations shown'); else fail('dbt materializations: ' + dbtProjectText.slice(0, 300));
+  if (/start_date|payment_method|environment/i.test(dbtProjectText)) pass('dbt_project.yml: vars shown'); else fail('dbt vars: ' + dbtProjectText.slice(0, 300));
 
   // ── liquibase.properties viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
