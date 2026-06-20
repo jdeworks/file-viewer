@@ -16948,7 +16948,9 @@
       "label": "rsyslog Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "rsyslog.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16973,7 +16975,9 @@
       "label": "Julia Manifest",
       "baseType": "toml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "Manifest.toml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -17135,6 +17139,60 @@
       "support": "supported",
       "sampleFiles": [
         "patroni.yml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "vector-config": {
+      "label": "Vector Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "vector.toml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "keepalived-conf": {
+      "label": "Keepalived Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "keepalived.conf"
       ],
       "extensions": [
         ".yml"

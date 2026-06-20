@@ -7332,5 +7332,75 @@
     "mime": "text/plain",
     "enhanced": true,
     "knownFile": "keepalived-conf"
+  },
+  {
+    "file": "cpanfile",
+    "label": "cpanfile",
+    "category": "Package",
+    "categories": [
+      "Package",
+      "Perl"
+    ],
+    "knownFile": "cpanfile"
+  },
+  {
+    "file": "openssl.cnf",
+    "label": "openssl.cnf",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security"
+    ],
+    "knownFile": "openssl-conf"
+  },
+  {
+    "file": "netdata.conf",
+    "label": "netdata.conf (Netdata)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Monitoring"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "knownFile": "netdata-conf"
+  },
+  {
+    "file": ".yarnrc.yml",
+    "label": ".yarnrc.yml (Yarn)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Package Manager"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "knownFile": "yarnrc"
+  },
+  {
+    "file": "default.vcl",
+    "label": "default.vcl (Varnish VCL)",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Web Server"
+    ],
+    "enhanced": true,
+    "description": "Varnish VCL config: backends, directors, ACLs, and subroutine overrides for cache control.",
+    "knownFile": "varnish-vcl"
+  },
+  {
+    "file": "usr.bin.nginx",
+    "label": "usr.bin.nginx (AppArmor profile)",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security"
+    ],
+    "enhanced": true,
+    "description": "AppArmor mandatory access control profile for nginx: capabilities, file rules, and network permissions.",
+    "knownFile": "apparmor-profile"
   }
 ]

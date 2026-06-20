@@ -3315,4 +3315,20 @@ export async function run(ctx) {
   if (/192\.168\.1\.0/i.test(dhcpdText)) pass('dhcpd.conf: subnet shown'); else fail('dhcpd-conf subnet: ' + dhcpdText.slice(0, 300));
   if (/server01|printer/i.test(dhcpdText)) pass('dhcpd.conf: host reservations shown'); else fail('dhcpd-conf hosts: ' + dhcpdText.slice(0, 300));
 
+  // ── vector.toml (Vector Config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vector.toml (Vector)');
+  await page.waitForSelector('#previewHost .vectorcfg-doc', { timeout: 12000 });
+  const vecText = await page.$eval('#previewHost .vectorcfg-doc', (e) => e.textContent);
+  if (/Vector/i.test(vecText)) pass('vector.toml: Vector badge shown'); else fail('vector-config badge: ' + vecText.slice(0, 200));
+  if (/source|sink/i.test(vecText)) pass('vector.toml: sources/sinks shown'); else fail('vector-config sources: ' + vecText.slice(0, 300));
+
+  // ── keepalived.conf (Keepalived) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('keepalived.conf (Keepalived VRRP)');
+  await page.waitForSelector('#previewHost .kalivd-doc', { timeout: 12000 });
+  const kaText = await page.$eval('#previewHost .kalivd-doc', (e) => e.textContent);
+  if (/Keepalived/i.test(kaText)) pass('keepalived.conf: Keepalived badge shown'); else fail('keepalived-conf badge: ' + kaText.slice(0, 200));
+  if (/MASTER|vrrp/i.test(kaText)) pass('keepalived.conf: VRRP instance state shown'); else fail('keepalived-conf vrrp: ' + kaText.slice(0, 300));
+
 }

@@ -266,6 +266,7 @@ import stackYaml from '../types/text/yaml/known/stack-yaml/index.js';
 import cabal from '../types/text/known/cabal/index.js';
 import packageResolved from '../types/text/json/known/package-resolved/index.js';
 import rebarConfig from '../types/text/known/rebar-config/index.js';
+import cpanfile from '../types/text/known/cpanfile/index.js';
 import rDescription from '../types/text/known/r-description/index.js';
 import rProfile from '../types/text/known/r-profile/index.js';
 import docusaurusConfig from '../types/text/known/docusaurus-config/index.js';
@@ -446,6 +447,7 @@ import foundryToml from '../types/text/toml/known/foundry-toml/index.js';
 import anchorToml from '../types/text/toml/known/anchor-toml/index.js';
 import wireguardConf from '../types/text/known/wireguard-conf/index.js';
 import openvpnConfig from '../types/text/known/openvpn-config/index.js';
+import opensslConf from '../types/text/known/openssl-conf/index.js';
 import supervisordConf from '../types/text/known/supervisord-conf/index.js';
 import logrotateConf from '../types/text/known/logrotate-conf/index.js';
 import shellRc from '../types/text/known/shell-rc/index.js';
@@ -474,6 +476,8 @@ import postfixConf from '../types/text/known/postfix-conf/index.js';
 import chronyConf from '../types/text/known/chrony-conf/index.js';
 import namedConf from '../types/text/known/named-conf/index.js';
 import dhcpdConf from '../types/text/known/dhcpd-conf/index.js';
+import netdataConf from '../types/text/known/netdata-conf/index.js';
+import yarnrc from '../types/text/known/yarnrc/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -520,7 +524,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   scorecard, socketSecurity, trivyConfig, snykConfig,
   gradleVersionCatalog, gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml,
   csproj, directoryBuild, msbuildProps, nuspec,
-  stackYaml, cabal, packageResolved, rebarConfig,
+  stackYaml, cabal, packageResolved, rebarConfig, cpanfile,
   rDescription, rProfile,
   docusaurusConfig, vitepressConfig, sphinxConf, doxyfile,
   drizzleConfig, knexfile, alembic, flywayConf,
@@ -579,6 +583,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   corefile, containerdConfig,
   postfixConf, chronyConf,
   namedConf, dhcpdConf,
+  netdataConf, yarnrc,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
