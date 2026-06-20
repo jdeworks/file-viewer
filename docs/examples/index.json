@@ -6632,6 +6632,30 @@
     "knownFile": "mimir"
   },
   {
+    "label": "cortex.yaml",
+    "file": "cortex.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Grafana Cortex horizontally-scalable Prometheus configuration: server, S3 blocks storage, distributor, ingester, store gateway, compactor, and ruler storage.",
+    "knownFile": "cortex"
+  },
+  {
+    "label": "config.alloy",
+    "file": "config.alloy",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Grafana Alloy telemetry pipeline (River syntax): prometheus.scrape, prometheus.remote_write, loki.write, otelcol.receiver.otlp, and logging components.",
+    "knownFile": "grafana-alloy"
+  },
+  {
     "label": "opentelemetry-k8s.yaml (OTel Operator)",
     "file": "opentelemetry-k8s.yaml",
     "mime": "application/yaml",

@@ -1,0 +1,20 @@
+emit:
+  - "@typespec/openapi3"
+  - "@azure-tools/typespec-autorest"
+options:
+  "@typespec/openapi3":
+    output-dir: "{output-dir}/openapi"
+    file-type: yaml
+  "@azure-tools/typespec-autorest":
+    output-dir: "{output-dir}/autorest"
+    azure-resource-provider-folder: "resource-manager"
+    emit-common-types-with-version: "v5"
+imports:
+  - "./common/base.tsp"
+environmentVariables:
+  TYPESPEC_SKIP_OUTDATED_COMPILER_CHECK:
+    description: "Set to 1 to skip the outdated compiler check on startup."
+    default: "0"
+  OUTPUT_DIR:
+    description: "Root output directory for all emitters."
+    default: "./tsp-output"

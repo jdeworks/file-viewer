@@ -1,0 +1,39 @@
+schema: "https://api.example.com/graphql"
+documents:
+  - "src/**/*.graphql"
+  - "src/**/*.gql"
+generates:
+  src/generated/types.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+    config:
+      enumsAsConst: true
+      skipTypename: false
+      addDocBlocks: true
+      avoidOptionals: false
+  src/generated/resolvers.ts:
+    plugins:
+      - typescript
+      - typescript-resolvers
+    config:
+      enumsAsConst: true
+      contextType: "../../context#Context"
+      mappers:
+        User: "../../models#UserModel"
+        Post: "../../models#PostModel"
+  src/generated/hooks.ts:
+    preset: near-operation-file
+    presetConfig:
+      extension: .generated.tsx
+      baseTypesPath: ./types.ts
+    plugins:
+      - typescript-react-query
+    config:
+      withHooks: true
+      withRefetchFunctions: true
+      fetcher: "../../lib/fetcher#fetcher"
+hooks:
+  afterAllFileWrite:
+    - prettier --write
+watch: false

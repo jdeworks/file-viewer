@@ -370,6 +370,8 @@ import lokiConfig from '../types/text/yaml/known/loki-config/index.js';
 import promtailConfig from '../types/text/yaml/known/promtail-config/index.js';
 import tempoConfig from '../types/text/yaml/known/tempo/index.js';
 import mimirConfig from '../types/text/yaml/known/mimir/index.js';
+import cortexConfig from '../types/text/yaml/known/cortex/index.js';
+import grafanaAlloy from '../types/text/known/grafana-alloy/index.js';
 import forgeConfig from '../types/text/known/forge-config/index.js';
 import gradleVersionCatalog from '../types/text/toml/known/gradle-version-catalog/index.js';
 import gleamToml from '../types/text/toml/known/gleam-toml/index.js';
@@ -655,7 +657,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   atlantis, checkov, terraformDocs, infracost,
   opencostConfig, crossplaneConfig, kedaConfig, veleroConfig,
   androidManifest, appConfig, buildZigZon, zigZon, cartfile,
-  electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, tempoConfig, mimirConfig, forgeConfig,
+  electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, tempoConfig, mimirConfig, cortexConfig, grafanaAlloy, forgeConfig,
   gleamToml, goWork, grafanaIni, podmanQuadlet, growthbook,
   jekyllConfig, juliaProject, juliaManifest, kongConfig, apisixConfig, envoyConfig, launchSettings, appSettings,
   nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, clickhouseConfig, shardYml, crystalShard,

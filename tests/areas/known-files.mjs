@@ -4711,4 +4711,14 @@ export async function run(ctx) {
   const snmpText = await page.$eval('#previewHost .snmpexp-doc', el => el.textContent);
   if (!snmpText.includes('SNMP')) fail('snmp.yml: missing badge'); else pass('snmp.yml: badge shown');
   if (!snmpText.includes('if_mib') && !snmpText.includes('module')) fail('snmp.yml: no modules shown'); else pass('snmp.yml: modules shown');
+
+  // ── codegen.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('codegen.yml');
+  pass(await page.waitForSelector('#previewHost .gqlcodegen-doc', { timeout: 12000 }), 'codegen.yml: gqlcodegen-doc shown');
+
+  // ── tspconfig.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('tspconfig.yaml');
+  pass(await page.waitForSelector('#previewHost .tspconfig-doc', { timeout: 12000 }), 'tspconfig.yaml: tspconfig-doc shown');
 }
