@@ -12812,13 +12812,340 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
+    "pylintrc": {
+      "label": "pylintrc",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        ".pylintrc"
+      ],
+      "extensions": [],
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "none",
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "fileExamplesSlug": null
+    },
+    "flake8": {
+      "label": "flake8",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        ".flake8"
+      ],
+      "extensions": [],
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "none",
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "fileExamplesSlug": null
+    },
+    "setup-cfg": {
+      "label": "setup-cfg",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        "setup.cfg"
+      ],
+      "extensions": [],
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "none",
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "fileExamplesSlug": null
+    },
+    "bandit-yaml": {
+      "label": "bandit-yaml",
+      "baseType": "text",
+      "support": "supported",
+      "sampleFiles": [
+        ".bandit"
+      ],
+      "extensions": [],
+      "previewDepth": "rich",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "none",
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true,
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "fileExamplesSlug": null
+    },
+    "prometheus-rules": {
+      "label": "Prometheus Rules",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "grafana-dashboard": {
+      "label": "Grafana Dashboard",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "jaeger-config": {
+      "label": "Jaeger config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "opentelemetry-k8s": {
+      "label": "OTel Operator resource",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "consul-config": {
+      "label": "consul-config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "k8s-rbac": {
+      "label": "Kubernetes RBAC",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "k8s-network-policy": {
+      "label": "Kubernetes NetworkPolicy",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "k8s-hpa": {
+      "label": "Kubernetes HPA",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "k8s-ingress": {
+      "label": "Kubernetes Ingress",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
     "conda-env": {
       "label": "environment.yml",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [
-        "environment.yml"
-      ],
+      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -12920,148 +13247,11 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "consul-config": {
-      "label": "Consul Config",
-      "baseType": "raw",
-      "support": "supported",
-      "sampleFiles": [
-        "consul.hcl"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "flake8": {
-      "label": "Flake8 config",
-      "baseType": "ini",
-      "support": "supported",
-      "sampleFiles": [
-        ".flake8"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "pylintrc": {
-      "label": "Pylint config",
-      "baseType": "ini",
-      "support": "supported",
-      "sampleFiles": [
-        ".pylintrc"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "setup-cfg": {
-      "label": "setup.cfg",
-      "baseType": "ini",
-      "support": "supported",
-      "sampleFiles": [
-        "setup.cfg"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "bandit-yaml": {
-      "label": "Bandit config",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [
-        ".bandit"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
     "istio-config": {
-      "label": "Istio Config",
+      "label": "istio-config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [
-        "istio-virtual-service.yaml"
-      ],
+      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -13082,13 +13272,11 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "k8s-rbac": {
-      "label": "Kubernetes RBAC",
+    "linkerd-config": {
+      "label": "linkerd-config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [
-        "k8s-role.yaml"
-      ],
+      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -13109,67 +13297,11 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "k8s-network-policy": {
-      "label": "Kubernetes NetworkPolicy",
+    "etcd-config": {
+      "label": "etcd-config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [
-        "k8s-network-policy.yaml"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "k8s-hpa": {
-      "label": "Kubernetes HPA",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [
-        "k8s-hpa.yaml"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "k8s-ingress": {
-      "label": "Kubernetes Ingress",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [
-        "k8s-ingress.yaml"
-      ],
+      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -13194,9 +13326,7 @@
       "label": "AWS SAM",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [
-        "sam-template.yaml"
-      ],
+      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -13221,9 +13351,7 @@
       "label": "CloudFormation",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [
-        "cloudformation.yaml"
-      ],
+      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -13298,63 +13426,9 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "linkerd-config": {
-      "label": "Linkerd Config",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [
-        "linkerd-config.yaml"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "etcd-config": {
-      "label": "etcd Config",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [
-        "TESTVALUE"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
     "kafka-server-props": {
-      "label": "Kafka server.properties",
-      "baseType": "raw",
+      "label": "kafka-server-props",
+      "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [],
       "extensions": [
@@ -13378,8 +13452,8 @@
       "needsRealWorldSample": false
     },
     "rabbitmq-conf": {
-      "label": "rabbitmq.conf",
-      "baseType": "raw",
+      "label": "rabbitmq-conf",
+      "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [],
       "extensions": [
@@ -13403,8 +13477,8 @@
       "needsRealWorldSample": false
     },
     "nats-config": {
-      "label": "nats.conf",
-      "baseType": "raw",
+      "label": "nats-config",
+      "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [],
       "extensions": [
@@ -13428,8 +13502,8 @@
       "needsRealWorldSample": false
     },
     "zookeeper-config": {
-      "label": "zoo.cfg",
-      "baseType": "raw",
+      "label": "zookeeper-config",
+      "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [],
       "extensions": [
@@ -13479,6 +13553,456 @@
     },
     "squid-conf": {
       "label": "squid-conf",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "rspec-config": {
+      "label": "rspec-config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "sorbet-config": {
+      "label": "sorbet-config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "bundler-audit-config": {
+      "label": "bundler-audit-config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "standardrb-config": {
+      "label": "standardrb-config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "dbt-project": {
+      "label": "dbt project",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "liquibase-props": {
+      "label": "Liquibase Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "sqitch-conf": {
+      "label": "Sqitch Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "atlas-hcl": {
+      "label": "Atlas Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "opencost-config": {
+      "label": "OpenCost config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "crossplane-config": {
+      "label": "Crossplane config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "keda-config": {
+      "label": "KEDA config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "velero-config": {
+      "label": "Velero config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "apisix-config": {
+      "label": "apisix-config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "envoy-config": {
+      "label": "envoy-config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "aws-credentials": {
+      "label": "aws-credentials",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "aws-config": {
+      "label": "aws-config",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "kubeconfig": {
+      "label": "kubeconfig",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "gcp-service-account": {
+      "label": "gcp-service-account",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [],
@@ -13602,379 +14126,11 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "rspec-config": {
-      "label": "RSpec config",
-      "baseType": "raw",
-      "support": "supported",
-      "sampleFiles": [
-        ".rspec"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "sorbet-config": {
-      "label": "Sorbet config",
-      "baseType": "raw",
-      "support": "supported",
-      "sampleFiles": [],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "bundler-audit-config": {
-      "label": "Bundler Audit config",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [
-        ".bundler-audit.yml"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "standardrb-config": {
-      "label": "Standard Ruby config",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [
-        ".standard.yml"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "opencost-config": {
-      "label": "OpenCost config",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [
-        "opencost.yaml"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "crossplane-config": {
-      "label": "Crossplane config",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "keda-config": {
-      "label": "KEDA config",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "velero-config": {
-      "label": "Velero config",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "apisix-config": {
-      "label": "APISIX config",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "envoy-config": {
-      "label": "Envoy proxy config",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "dbt-project": {
-      "label": "dbt project",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [
-        "dbt_project.yml"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "liquibase-props": {
-      "label": "Liquibase Config",
-      "baseType": "raw",
-      "support": "supported",
-      "sampleFiles": [
-        "liquibase.properties"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "sqitch-conf": {
-      "label": "Sqitch Config",
-      "baseType": "raw",
-      "support": "supported",
-      "sampleFiles": [
-        "sqitch.conf"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "atlas-hcl": {
-      "label": "Atlas Config",
-      "baseType": "raw",
-      "support": "supported",
-      "sampleFiles": [
-        "atlas.hcl"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
     "hosts-file": {
-      "label": "hosts",
-      "baseType": "raw",
+      "label": "hosts-file",
+      "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [
-        "hosts"
-      ],
+      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -13996,12 +14152,10 @@
       "needsRealWorldSample": false
     },
     "resolv-conf": {
-      "label": "resolv.conf",
-      "baseType": "raw",
+      "label": "resolv-conf",
+      "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [
-        "resolv.conf"
-      ],
+      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -14023,8 +14177,8 @@
       "needsRealWorldSample": false
     },
     "ssh-config": {
-      "label": "SSH Config",
-      "baseType": "raw",
+      "label": "ssh-config",
+      "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [],
       "extensions": [
@@ -14048,113 +14202,8 @@
       "needsRealWorldSample": false
     },
     "sshd-config": {
-      "label": "sshd_config",
-      "baseType": "raw",
-      "support": "supported",
-      "sampleFiles": [
-        "sshd_config"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "aws-credentials": {
-      "label": "AWS Credentials",
-      "baseType": "ini",
-      "support": "supported",
-      "sampleFiles": [],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "aws-config": {
-      "label": "AWS Config",
-      "baseType": "ini",
-      "support": "supported",
-      "sampleFiles": [],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "kubeconfig": {
-      "label": "Kubeconfig",
+      "label": "sshd-config",
       "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [
-        "kubeconfig",
-        "kubeconfig.yaml"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "gcp-service-account": {
-      "label": "GCP Service Account",
-      "baseType": "json",
       "support": "supported",
       "sampleFiles": [],
       "extensions": [

@@ -1996,4 +1996,43 @@ export async function run(ctx) {
   if (/local|staging|production/i.test(atText)) pass('atlas.hcl: env blocks shown'); else fail('at envs: ' + atText.slice(0, 200));
   if (/variable|db_url|dev_url/i.test(atText)) pass('atlas.hcl: variables shown'); else fail('at variables: ' + atText.slice(0, 300));
   if (/\*{3}/i.test(atText)) pass('atlas.hcl: credentials masked in URLs'); else fail('at credential masking: ' + atText.slice(0, 300));
+
+  // ── prometheus-rules.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('prometheus-rules.yaml');
+  await page.waitForSelector('#previewHost .pr-doc', { timeout: 12000 });
+  const prText = await page.$eval('#previewHost .pr-doc', (e) => e.textContent);
+  if (/Prometheus Rules/i.test(prText)) pass('prometheus-rules.yaml: badge shown'); else fail('prometheus-rules badge: ' + prText.slice(0, 200));
+  if (/node-alerts|NodeHighCPU/i.test(prText)) pass('prometheus-rules.yaml: alert group/rule shown'); else fail('prometheus-rules content: ' + prText.slice(0, 200));
+  if (/warning|critical/i.test(prText)) pass('prometheus-rules.yaml: severity shown'); else fail('prometheus-rules severity: ' + prText.slice(0, 200));
+  if (/recording/i.test(prText)) pass('prometheus-rules.yaml: recording rule shown'); else fail('prometheus-rules recording: ' + prText.slice(0, 200));
+
+  // ── grafana-dashboard.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('grafana-dashboard.json');
+  await page.waitForSelector('#previewHost .gd-doc', { timeout: 12000 });
+  const gdText = await page.$eval('#previewHost .gd-doc', (e) => e.textContent);
+  if (/Grafana Dashboard/i.test(gdText)) pass('grafana-dashboard.json: badge shown'); else fail('grafana-dashboard badge: ' + gdText.slice(0, 200));
+  if (/Node Exporter Dashboard/i.test(gdText)) pass('grafana-dashboard.json: title shown'); else fail('grafana-dashboard title: ' + gdText.slice(0, 200));
+  if (/schemaVersion|36/i.test(gdText)) pass('grafana-dashboard.json: schemaVersion shown'); else fail('grafana-dashboard schema: ' + gdText.slice(0, 200));
+  if (/panel|stat|timeseries/i.test(gdText)) pass('grafana-dashboard.json: panels shown'); else fail('grafana-dashboard panels: ' + gdText.slice(0, 200));
+
+  // ── jaeger-config.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('jaeger-config.yaml');
+  await page.waitForSelector('#previewHost .jg-doc', { timeout: 12000 });
+  const jgText = await page.$eval('#previewHost .jg-doc', (e) => e.textContent);
+  if (/Jaeger/i.test(jgText)) pass('jaeger-config.yaml: badge shown'); else fail('jaeger badge: ' + jgText.slice(0, 200));
+  if (/16686/i.test(jgText)) pass('jaeger-config.yaml: query port shown'); else fail('jaeger port: ' + jgText.slice(0, 200));
+  if (/elasticsearch/i.test(jgText)) pass('jaeger-config.yaml: storage type shown'); else fail('jaeger storage: ' + jgText.slice(0, 200));
+
+  // ── opentelemetry-k8s.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('opentelemetry-k8s.yaml');
+  await page.waitForSelector('#previewHost .otk-doc', { timeout: 12000 });
+  const otkText = await page.$eval('#previewHost .otk-doc', (e) => e.textContent);
+  if (/OpenTelemetry/i.test(otkText)) pass('opentelemetry-k8s.yaml: badge shown'); else fail('otk badge: ' + otkText.slice(0, 200));
+  if (/OpenTelemetryCollector|otel-collector/i.test(otkText)) pass('opentelemetry-k8s.yaml: collector shown'); else fail('otk collector: ' + otkText.slice(0, 200));
+  if (/deployment/i.test(otkText)) pass('opentelemetry-k8s.yaml: mode shown'); else fail('otk mode: ' + otkText.slice(0, 200));
+  if (/Instrumentation|my-instrumentation/i.test(otkText)) pass('opentelemetry-k8s.yaml: instrumentation shown'); else fail('otk instrumentation: ' + otkText.slice(0, 300));
 }

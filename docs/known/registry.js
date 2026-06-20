@@ -221,6 +221,10 @@ import sentryProps from '../types/text/known/sentry-props/index.js';
 import otelCollector from '../types/text/yaml/known/otel-collector/index.js';
 import logback from '../types/text/xml/known/logback/index.js';
 import log4j2 from '../types/text/xml/known/log4j2/index.js';
+import prometheusRules from '../types/text/yaml/known/prometheus-rules/index.js';
+import grafanaDashboard from '../types/text/json/known/grafana-dashboard/index.js';
+import jaegerConfig from '../types/text/yaml/known/jaeger-config/index.js';
+import otelK8s from '../types/text/yaml/known/opentelemetry-k8s/index.js';
 import scorecard from '../types/text/yaml/known/scorecard/index.js';
 import socketSecurity from '../types/text/yaml/known/socket-security/index.js';
 import trivyConfig from '../types/text/yaml/known/trivy-config/index.js';
@@ -404,6 +408,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   ionicConfig, metroConfig, reactNativeConfig,
   dotnetGlobal, prismaSchema, nugetConfig,
   sentryProps, otelCollector, logback, log4j2,
+  prometheusRules, grafanaDashboard, jaegerConfig, otelK8s,
   scorecard, socketSecurity, trivyConfig, snykConfig,
   gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml,
   csproj, directoryBuild, nuspec,

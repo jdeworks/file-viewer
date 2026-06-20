@@ -1,0 +1,29 @@
+groups:
+  - name: node-alerts
+    rules:
+      - alert: NodeHighCPU
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: High CPU usage on {{ $labels.instance }}
+          description: CPU usage on {{ $labels.instance }} has been above 80% for more than 5 minutes. Current value is {{ $value }}%.
+
+      - alert: NodeDown
+        expr: up{job="node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: Node {{ $labels.instance }} is down
+          description: Node exporter on {{ $labels.instance }} has been unreachable for more than 1 minute.
+
+  - name: recording-rules
+    rules:
+      - record: job:node_cpu:avg
+        expr: avg without (cpu, mode) (rate(node_cpu_seconds_total{mode!="idle"}[5m]))
+        labels:
+          aggregation: job
