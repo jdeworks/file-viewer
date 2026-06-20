@@ -6851,7 +6851,49 @@
     "file": ".bashrc",
     "mime": "text/plain",
     "category": "Config",
-    "categories": ["Config", "Shell"]
+    "categories": [
+      "Config",
+      "Shell"
+    ]
   },
-  { "label": "flake.nix", "file": "flake.nix", "mime": "text/plain", "category": "Config", "categories": ["Config", "Nix"] }
+  {
+    "label": "flake.nix",
+    "file": "flake.nix",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Nix"
+    ]
+  },
+  {
+    "label": "hugo.toml",
+    "file": "hugo.toml",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Hugo"
+    ]
+  },
+  {
+    "label": "DESCRIPTION",
+    "file": "DESCRIPTION",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "R"
+    ]
+  },
+  {
+    "label": ".Rprofile",
+    "file": ".Rprofile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "R"
+    ]
+  }
 ]

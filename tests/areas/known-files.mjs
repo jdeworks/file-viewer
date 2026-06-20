@@ -2843,4 +2843,20 @@ export async function run(ctx) {
   if (/WireGuard/i.test(wgText)) pass('wg0.conf: badge shown'); else fail('wireguard badge: ' + wgText.slice(0, 200));
   if (/redacted/i.test(wgText)) pass('wg0.conf: private key redacted'); else fail('wireguard key: ' + wgText.slice(0, 300));
   if (/Peer|AllowedIPs/i.test(wgText)) pass('wg0.conf: peers shown'); else fail('wireguard peers: ' + wgText.slice(0, 300));
+
+  // ── shell-rc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.bashrc');
+  await page.waitForSelector('#previewHost .shrc-doc', { timeout: 12000 });
+  const shrcText = await page.$eval('#previewHost .shrc-doc', (e) => e.textContent);
+  if (/Shell Config/i.test(shrcText)) pass('.bashrc: badge shown'); else fail('shell-rc badge: ' + shrcText.slice(0, 200));
+  if (/alias/i.test(shrcText)) pass('.bashrc: aliases shown'); else fail('shell-rc aliases: ' + shrcText.slice(0, 300));
+
+  // ── nix-config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('flake.nix');
+  await page.waitForSelector('#previewHost .nix-doc', { timeout: 12000 });
+  const nixText = await page.$eval('#previewHost .nix-doc', (e) => e.textContent);
+  if (/Nix/i.test(nixText)) pass('flake.nix: badge shown'); else fail('nix badge: ' + nixText.slice(0, 200));
+  if (/description|dev shell|input/i.test(nixText)) pass('flake.nix: content shown'); else fail('nix content: ' + nixText.slice(0, 300));
 }

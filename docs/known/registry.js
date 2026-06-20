@@ -208,6 +208,7 @@ import astroConfig from '../types/text/known/astro-config/index.js';
 import svelteConfig from '../types/text/known/svelte-config/index.js';
 import nuxtConfig from '../types/text/known/nuxt-config/index.js';
 import remixConfig from '../types/text/known/remix-config/index.js';
+import hugoConfig from '../types/text/known/hugo-config/index.js';
 import airConfig from '../types/text/toml/known/air-config/index.js';
 import spectral from '../types/text/yaml/known/spectral/index.js';
 import tiltfile from '../types/text/known/tiltfile/index.js';
@@ -257,6 +258,8 @@ import stackYaml from '../types/text/yaml/known/stack-yaml/index.js';
 import cabal from '../types/text/known/cabal/index.js';
 import packageResolved from '../types/text/json/known/package-resolved/index.js';
 import rebarConfig from '../types/text/known/rebar-config/index.js';
+import rDescription from '../types/text/known/r-description/index.js';
+import rProfile from '../types/text/known/r-profile/index.js';
 import docusaurusConfig from '../types/text/known/docusaurus-config/index.js';
 import vitepressConfig from '../types/text/known/vitepress-config/index.js';
 import sphinxConf from '../types/text/known/sphinx-conf/index.js';
@@ -463,7 +466,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   vcpkg, cmakePresets, conanfile,
   prometheusConfig, alertmanager, datadogConfig,
   viteConfig, webpackConfig, rollupConfig, nextConfig,
-  astroConfig, svelteConfig, nuxtConfig, remixConfig,
+  astroConfig, svelteConfig, nuxtConfig, remixConfig, hugoConfig,
   airConfig, spectral, tiltfile, mesonBuild,
   goreleaser, golangciLint, bufConfig, mockeryConfig, koConfig, sqlcConfig, nfpmConfig, heroku,
   readthedocs, citationCff, yamllint, coderabbit,
@@ -475,6 +478,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   gradleVersionCatalog, gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml,
   csproj, directoryBuild, msbuildProps, nuspec,
   stackYaml, cabal, packageResolved, rebarConfig,
+  rDescription, rProfile,
   docusaurusConfig, vitepressConfig, sphinxConf, doxyfile,
   drizzleConfig, knexfile, alembic, flywayConf,
   dbtProject, liquibaseProps, sqitchConf, atlasHcl,
