@@ -9830,5 +9830,34 @@
     "enhanced": true,
     "description": "Windmill workflow automation platform environment configuration with server, security, database, workers, and runtime binary paths.",
     "knownFile": "windmill-config"
+  },
+  {
+    "file": "komga.yml",
+    "label": "komga.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Media",
+      "Comics"
+    ],
+    "enhanced": true,
+    "description": "Komga comic/manga server (Spring Boot YAML) configuration with server port, library scan schedule, database backup, and Google/GitHub OAuth2 client registrations.",
+    "knownFile": "komga-config"
+  },
+  {
+    "file": "coder.env",
+    "label": "coder.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Developer Tools"
+    ],
+    "enhanced": true,
+    "description": "Coder cloud development environment platform configuration with access URL, TLS, PostgreSQL database, Prometheus observability, GitHub OAuth2, and OIDC settings.",
+    "knownFile": "coder-config"
   }
 ]

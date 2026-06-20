@@ -689,6 +689,8 @@ import dexConfig from '../types/text/yaml/known/dex-config/index.js';
 import lldapConfig from '../types/text/toml/known/lldap-config/index.js';
 import listmonkConfig from '../types/text/toml/known/listmonk-config/index.js';
 import windmillConfig from '../types/text/known/windmill-config/index.js';
+import komgaConfig from '../types/text/yaml/known/komga-config/index.js';
+import coderConfig from '../types/text/known/coder-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -850,6 +852,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   glitchtipConfig, archiveboxConfig,
   dexConfig, lldapConfig,
   listmonkConfig, windmillConfig,
+  komgaConfig, coderConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

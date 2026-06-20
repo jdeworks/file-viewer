@@ -5340,4 +5340,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('windmill.env');
   pass(await page.waitForSelector('#previewHost .wmill-doc', { timeout: 12000 }), 'windmill.env: Windmill badge shown');
+
+  // ── komga.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('komga.yml');
+  pass(await page.waitForSelector('#previewHost .komga-doc', { timeout: 12000 }), 'komga.yml: Komga badge shown');
+
+  // ── coder.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('coder.env');
+  pass(await page.waitForSelector('#previewHost .coder-doc', { timeout: 12000 }), 'coder.env: Coder badge shown');
 }

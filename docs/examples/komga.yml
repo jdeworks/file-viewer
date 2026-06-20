@@ -1,0 +1,28 @@
+server:
+  port: 25600
+  servlet:
+    context-path: /komga
+
+komga:
+  libraries-scan-cron: "0 0 */8 * * ?"
+  libraries-scan-startup: false
+  remember-me-key: "aVerySecretRememberMeKey12345"
+  database:
+    backup:
+      enabled: true
+
+spring:
+  datasource:
+    url: jdbc:h2:file:/config/database.h2;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: ""
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: "123456789-abcdefgh.apps.googleusercontent.com"
+            client-secret: "GOCSPX-abcdefghijklmnopqrstuvwxyz"
+          github:
+            client-id: "Iv1.abcdef1234567890"
+            client-secret: "abcdef1234567890abcdef1234567890abcdef12"
