@@ -5168,6 +5168,17 @@
     "description": "Julia package manifest: name, UUID, version, dependencies."
   },
   {
+    "label": "Manifest.toml",
+    "file": "Manifest.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Julia package lockfile: resolved dependency tree with versions and content hashes."
+  },
+  {
     "label": "shard.yml",
     "file": "shard.yml",
     "mime": "text/x-yaml",
@@ -5447,6 +5458,34 @@
     ],
     "enhanced": true,
     "description": "PgBouncer connection pooler config: transaction pool mode, 1000 max client connections, 2 databases, auth settings."
+  },
+  {
+    "name": "pgbackrest.conf",
+    "label": "pgbackrest.conf",
+    "file": "pgbackrest.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Database"
+    ],
+    "enhanced": true,
+    "description": "pgBackRest configuration: S3 backup repository, 2 stanzas, lz4 compression, 4 parallel processes.",
+    "knownFile": "pgbackrest-conf"
+  },
+  {
+    "name": "patroni.yml",
+    "label": "patroni.yml",
+    "file": "patroni.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Database"
+    ],
+    "enhanced": true,
+    "description": "Patroni HA configuration: postgres-cluster scope, etcd DCS, node1, REST API on port 8008.",
+    "knownFile": "patroni-config"
   },
   {
     "label": "tauri.conf.json (Tauri)",

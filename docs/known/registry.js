@@ -162,6 +162,8 @@ import cargoConfig from '../types/text/toml/known/cargo-config/index.js';
 import htaccess from '../types/text/known/htaccess/index.js';
 import nginxConf from '../types/text/known/nginx-conf/index.js';
 import apacheConf from '../types/text/known/apache-conf/index.js';
+import lighttpdConf from '../types/text/known/lighttpd-conf/index.js';
+import rsyslogConf from '../types/text/known/rsyslog-conf/index.js';
 import haproxyConfig from '../types/text/known/haproxy-config/index.js';
 import squidConf from '../types/text/known/squid-conf/index.js';
 import moonYml from '../types/text/yaml/known/moon/index.js';
@@ -339,6 +341,7 @@ import podmanQuadlet from '../types/text/ini/known/podman-quadlet/index.js';
 import growthbook from '../types/text/json/known/growthbook/index.js';
 import jekyllConfig from '../types/text/yaml/known/jekyll-config/index.js';
 import juliaProject from '../types/text/toml/known/julia-project/index.js';
+import juliaManifest from '../types/text/toml/known/julia-manifest/index.js';
 import kongConfig from '../types/text/yaml/known/kong-config/index.js';
 import apisixConfig from '../types/text/yaml/known/apisix-config/index.js';
 import envoyConfig from '../types/text/yaml/known/envoy-config/index.js';
@@ -465,6 +468,8 @@ import corefile from '../types/text/known/corefile/index.js';
 import containerdConfig from '../types/text/known/containerd-config/index.js';
 import postfixConf from '../types/text/known/postfix-conf/index.js';
 import chronyConf from '../types/text/known/chrony-conf/index.js';
+import namedConf from '../types/text/known/named-conf/index.js';
+import dhcpdConf from '../types/text/known/dhcpd-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -488,7 +493,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   appveyor, rubocop, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
   brewfile, license, ansibleCfg, ansibleHosts, gemspec, typos, cargoDeny, cargoConfig,
-  htaccess, nginxConf, apacheConf, haproxyConfig, squidConf, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
+  htaccess, nginxConf, apacheConf, lighttpdConf, haproxyConfig, squidConf, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
+  rsyslogConf,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,
   supabaseConfig, netlifyRedirects,
@@ -528,7 +534,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   androidManifest, appConfig, buildZigZon, cartfile,
   electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, forgeConfig,
   gleamToml, goWork, grafanaIni, podmanQuadlet, growthbook,
-  jekyllConfig, juliaProject, kongConfig, apisixConfig, envoyConfig, launchSettings,
+  jekyllConfig, juliaProject, juliaManifest, kongConfig, apisixConfig, envoyConfig, launchSettings,
   nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, cassandraConfig, elasticsearchConfig, clickhouseConfig, shardYml,
   tauriConf, traefikConfig, unleashConfig, vaultHcl, nomadJob, consulConfig,
   vectorToml, wailsJson, webConfig, xcconfig,
@@ -568,6 +574,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   fail2banConf, smbConf,
   corefile, containerdConfig,
   postfixConf, chronyConf,
+  namedConf, dhcpdConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -3243,4 +3243,38 @@ export async function run(ctx) {
   if (/NFS/i.test(nfsText)) pass('exports: NFS badge shown'); else fail('nfs-exports badge: ' + nfsText.slice(0, 200));
   if (/rw|sync/i.test(nfsText)) pass('exports: export options shown'); else fail('nfs-exports options: ' + nfsText.slice(0, 300));
 
+  // ── rsyslog.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('rsyslog.conf');
+  await page.waitForSelector('#previewHost .rsyslog-doc', { timeout: 12000 });
+  const rsyslogText = await page.$eval('#previewHost .rsyslog-doc', (e) => e.textContent);
+  if (/rsyslog/i.test(rsyslogText)) pass('rsyslog.conf: rsyslog badge shown'); else fail('rsyslog badge: ' + rsyslogText.slice(0, 200));
+  if (/auth|syslog/i.test(rsyslogText)) pass('rsyslog.conf: log routing shown'); else fail('rsyslog routing: ' + rsyslogText.slice(0, 300));
+
+  // ── lighttpd.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('lighttpd.conf');
+  await page.waitForSelector('#previewHost .lighty-doc', { timeout: 12000 });
+  const lightyText = await page.$eval('#previewHost .lighty-doc', (e) => e.textContent);
+  if (/Lighttpd/i.test(lightyText)) pass('lighttpd.conf: Lighttpd badge shown'); else fail('lighttpd badge: ' + lightyText.slice(0, 200));
+  if (/document-root|modules/i.test(lightyText)) pass('lighttpd.conf: document-root or modules shown'); else fail('lighttpd content: ' + lightyText.slice(0, 300));
+
+  // ── named.conf (BIND DNS) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('named.conf (BIND DNS)');
+  await page.waitForSelector('#previewHost .namedcfg-doc', { timeout: 12000 });
+  const namedText = await page.$eval('#previewHost .namedcfg-doc', (e) => e.textContent);
+  if (/BIND/i.test(namedText)) pass('named.conf: BIND badge shown'); else fail('named-conf badge: ' + namedText.slice(0, 200));
+  if (/example\.com/i.test(namedText)) pass('named.conf: zone names shown'); else fail('named-conf zones: ' + namedText.slice(0, 300));
+  if (/master|primary/i.test(namedText)) pass('named.conf: zone types shown'); else fail('named-conf zone types: ' + namedText.slice(0, 300));
+
+  // ── dhcpd.conf (ISC DHCP Server) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dhcpd.conf (ISC DHCP Server)');
+  await page.waitForSelector('#previewHost .dhcpd-doc', { timeout: 12000 });
+  const dhcpdText = await page.$eval('#previewHost .dhcpd-doc', (e) => e.textContent);
+  if (/DHCP/i.test(dhcpdText)) pass('dhcpd.conf: DHCP badge shown'); else fail('dhcpd-conf badge: ' + dhcpdText.slice(0, 200));
+  if (/192\.168\.1\.0/i.test(dhcpdText)) pass('dhcpd.conf: subnet shown'); else fail('dhcpd-conf subnet: ' + dhcpdText.slice(0, 300));
+  if (/server01|printer/i.test(dhcpdText)) pass('dhcpd.conf: host reservations shown'); else fail('dhcpd-conf hosts: ' + dhcpdText.slice(0, 300));
+
 }
