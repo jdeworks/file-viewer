@@ -47,6 +47,53 @@ const ENHANCED_FILES = new Set([
 ]);
 const PARTIAL_FILES = new Set(['sample.djvu', 'sample.lrf']);
 
+const KNOWN_GROUP_ORDER = [
+  'Text / Shell', 'JSON', 'YAML', 'TOML', 'INI/Config', 'Docker',
+  'XML', 'Build', 'Terraform', 'JavaScript', 'TypeScript', 'React/JSX', 'CSS',
+  'Python', 'Go', 'Rust', 'JVM', 'C/C++', 'C#', 'Ruby', 'PHP', 'Swift', 'Dart',
+  'Elixir', 'Clojure', 'Perl', 'R', 'Lua', 'Shell', 'PowerShell',
+  'Protobuf', 'GraphQL', 'SQL', 'Apple Config',
+];
+
+function knownFileGroup(fname) {
+  const ext = fname.includes('.') ? fname.split('.').pop().toLowerCase() : '';
+  const base = fname.toLowerCase();
+  if (ext === 'json' || ext === 'jsonc') return 'JSON';
+  if (ext === 'yaml' || ext === 'yml') return 'YAML';
+  if (ext === 'toml') return 'TOML';
+  if (base === 'dockerfile' || base.startsWith('dockerfile.') || ext === 'dockerignore') return 'Docker';
+  if (ext === 'xml') return 'XML';
+  if (ext === 'gradle' || ext === 'bazel' || ext === 'ninja' || base === 'cmakelists.txt' || base === 'makefile' || base === 'build.bazel' || base === 'build.xml' || base === 'build.ninja') return 'Build';
+  if (ext === 'tf' || ext === 'tfvars' || ext === 'hcl') return 'Terraform';
+  if (ext === 'proto') return 'Protobuf';
+  if (ext === 'graphql' || ext === 'gql') return 'GraphQL';
+  if (ext === 'sql') return 'SQL';
+  if (ext === 'css' || ext === 'scss' || ext === 'less') return 'CSS';
+  if (ext === 'js' || ext === 'mjs' || ext === 'cjs') return 'JavaScript';
+  if (ext === 'ts') return 'TypeScript';
+  if (ext === 'tsx' || ext === 'jsx') return 'React/JSX';
+  if (ext === 'py') return 'Python';
+  if (ext === 'go') return 'Go';
+  if (ext === 'rs') return 'Rust';
+  if (ext === 'java' || ext === 'kt' || ext === 'scala') return 'JVM';
+  if (ext === 'c' || ext === 'cpp' || ext === 'h') return 'C/C++';
+  if (ext === 'cs') return 'C#';
+  if (ext === 'rb') return 'Ruby';
+  if (ext === 'php') return 'PHP';
+  if (ext === 'swift') return 'Swift';
+  if (ext === 'dart') return 'Dart';
+  if (ext === 'r') return 'R';
+  if (ext === 'lua') return 'Lua';
+  if (ext === 'ex' || ext === 'exs') return 'Elixir';
+  if (ext === 'clj') return 'Clojure';
+  if (ext === 'pl') return 'Perl';
+  if (ext === 'sh' || ext === 'bash' || ext === 'zsh') return 'Shell';
+  if (ext === 'ps1') return 'PowerShell';
+  if (ext === 'ini' || ext === 'cfg' || ext === 'conf') return 'INI/Config';
+  if (ext === 'plist' || ext === 'strings') return 'Apple Config';
+  return 'Text / Shell';
+}
+
 function isGamesUnlocked() {
   try { return localStorage.getItem(GAMES_KEY) === '1'; } catch { return false; }
 }
@@ -279,6 +326,97 @@ function renderGallery(host, list, onPick) {
     return frag;
   }
 
+  function renderKnownFiles() {
+    const knownExamples = visible.filter((ex) => {
+      const fname = (ex.file || '').split('/').pop();
+      const cats = categoriesFor(ex);
+      return cats.some((c) => c === 'Config' || c === 'Code') && !fname.startsWith('sample.');
+    });
+    if (knownExamples.length === 0) return null;
+
+    const groupMap = new Map();
+    for (const ex of knownExamples) {
+      const g = knownFileGroup(ex.file.split('/').pop());
+      if (!groupMap.has(g)) groupMap.set(g, []);
+      groupMap.get(g).push(ex);
+    }
+    const orderedGroups = [...groupMap.keys()].sort((a, b) => {
+      const ia = KNOWN_GROUP_ORDER.indexOf(a), ib = KNOWN_GROUP_ORDER.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
+    });
+
+    const section = document.createElement('details');
+    section.className = 'ex-known-section';
+    section.open = false;
+
+    const summary = document.createElement('summary');
+    summary.className = 'ex-known-summary';
+    summary.innerHTML = `Known files <span class="ex-known-count">${knownExamples.length}</span>`;
+    section.appendChild(summary);
+
+    const body = document.createElement('div');
+    body.className = 'ex-known-body';
+
+    const searchInput = document.createElement('input');
+    searchInput.type = 'search';
+    searchInput.className = 'ex-known-search';
+    searchInput.placeholder = 'Search by name (e.g. package.json, Dockerfile, requirements.txt)…';
+    searchInput.setAttribute('aria-label', 'Search known files');
+
+    const groupsEl = document.createElement('div');
+    groupsEl.className = 'ex-known-groups';
+
+    for (const g of orderedGroups) {
+      const items = groupMap.get(g) || [];
+      const groupEl = document.createElement('div');
+      groupEl.className = 'ex-known-group';
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'ex-known-group-label';
+      labelEl.textContent = g;
+      groupEl.appendChild(labelEl);
+
+      const itemsEl = document.createElement('div');
+      itemsEl.className = 'ex-known-group-items';
+
+      for (const ex of items) {
+        const fname = ex.file.split('/').pop();
+        const btn = document.createElement('button');
+        btn.className = 'ex-known-btn';
+        btn.textContent = fname;
+        btn.title = ex.description || fname;
+        btn.dataset.search = fname.toLowerCase();
+        btn.onclick = async () => {
+          const r = await fetch('examples/' + ex.file);
+          const buf = new Uint8Array(await r.arrayBuffer());
+          await onPick(await intakeFromFile(new File([buf], fname, { type: ex.mime || '' })));
+        };
+        itemsEl.appendChild(btn);
+      }
+
+      groupEl.appendChild(itemsEl);
+      groupsEl.appendChild(groupEl);
+    }
+
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim().toLowerCase();
+      for (const groupEl of groupsEl.querySelectorAll('.ex-known-group')) {
+        let anyVisible = false;
+        for (const btn of groupEl.querySelectorAll('.ex-known-btn')) {
+          const show = !q || btn.dataset.search.includes(q);
+          btn.hidden = !show;
+          if (show) anyVisible = true;
+        }
+        groupEl.hidden = !anyVisible;
+      }
+    });
+
+    body.appendChild(searchInput);
+    body.appendChild(groupsEl);
+    section.appendChild(body);
+    return section;
+  }
+
   function showCategory(cat) {
     saveLastCat(cat);
     host.textContent = '';
@@ -409,6 +547,8 @@ function renderGallery(host, list, onPick) {
     host.appendChild(showall);
     host.appendChild(renderFilterBar(host));
     applyFilter(host);
+    const knownSection = renderKnownFiles();
+    if (knownSection) host.appendChild(knownSection);
     appendExternalExamplesLink(host);
   }
 

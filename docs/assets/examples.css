@@ -61,3 +61,36 @@
 .ex-more { margin: 2px 0 0; color: var(--fg-2); font-size: 11px; line-height: 1.4; text-align: center; }
 .ex-more a { color: var(--accent); }
 @media (max-height: 680px) { .examples { max-height: 34dvh; } }
+
+/* Known files searchable section */
+.ex-known-section { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 2px; }
+.ex-known-summary {
+  font-size: 11px; font-weight: 600; color: var(--fg-2); cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 6px; padding: 5px 2px; list-style: none;
+}
+.ex-known-summary::-webkit-details-marker { display: none; }
+.ex-known-summary::before { content: '▸'; font-size: 9px; color: var(--fg-2); }
+details[open] > .ex-known-summary::before { content: '▾'; }
+.ex-known-count {
+  background: var(--bg-3); border-radius: 10px; padding: 0 6px;
+  font-weight: 400; color: var(--fg-2); font-size: 10px;
+}
+.ex-known-body { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.ex-known-search {
+  width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); color: var(--fg); padding: 6px 9px; font: inherit; font-size: 12px;
+}
+.ex-known-groups { display: flex; flex-direction: column; gap: 8px; }
+.ex-known-group[hidden] { display: none; }
+.ex-known-group-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--fg-2); opacity: 0.6; margin-bottom: 4px;
+}
+.ex-known-group-items { display: flex; flex-wrap: wrap; gap: 5px 6px; }
+.ex-known-btn {
+  font-size: 11px; font-family: monospace; padding: 3px 8px; border-radius: 14px; white-space: nowrap;
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg-2); cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.ex-known-btn:hover { background: var(--bg-3); color: var(--fg); }
+.ex-known-btn[hidden] { display: none; }
