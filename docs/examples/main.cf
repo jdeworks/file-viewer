@@ -1,0 +1,47 @@
+# Postfix main configuration
+
+# Identity
+myhostname = mail.example.com
+mydomain = example.com
+myorigin = $mydomain
+
+# Network
+inet_interfaces = all
+inet_protocols = all
+mynetworks = 127.0.0.0/8 [::1]/128 192.168.1.0/24
+relay_domains = $mydestination
+
+# Domains
+mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+virtual_alias_domains = lists.example.com
+
+# TLS
+smtpd_tls_cert_file = /etc/ssl/certs/mail.example.com.crt
+smtpd_tls_key_file = /etc/ssl/private/mail.example.com.key
+smtpd_tls_security_level = may
+smtpd_tls_protocols = !SSLv2, !SSLv3
+smtp_tls_security_level = may
+smtp_tls_note_starttls_offer = yes
+
+# SASL Authentication
+smtpd_sasl_auth_enable = yes
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+smtpd_sasl_security_options = noanonymous
+
+# Limits
+mailbox_size_limit = 0
+message_size_limit = 52428800
+
+# Anti-spam
+smtpd_relay_restrictions =
+    permit_mynetworks
+    permit_sasl_authenticated
+    reject_unauth_destination
+
+smtpd_recipient_restrictions =
+    reject_unauth_pipelining
+    reject_unknown_sender_domain
+    permit_mynetworks
+    permit_sasl_authenticated
+    reject_unauth_destination

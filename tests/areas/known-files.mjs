@@ -3166,4 +3166,65 @@ export async function run(ctx) {
   if (/containerd/i.test(ctrdText)) pass('containerd.toml: containerd badge shown'); else fail('containerd badge: ' + ctrdText.slice(0, 200));
   if (/sandbox_image|overlayfs/i.test(ctrdText)) pass('containerd.toml: sandbox_image or overlayfs shown'); else fail('containerd content: ' + ctrdText.slice(0, 300));
 
+  // ── postfix main.cf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('main.cf (Postfix Mail Server)');
+  await page.waitForSelector('#previewHost .postfixcfg-doc', { timeout: 12000 });
+  const postfixText = await page.$eval('#previewHost .postfixcfg-doc', (e) => e.textContent);
+  if (/Postfix/i.test(postfixText)) pass('main.cf: Postfix badge shown'); else fail('postfix badge: ' + postfixText.slice(0, 200));
+  if (/myhostname|mail\.example\.com/i.test(postfixText)) pass('main.cf: myhostname or hostname shown'); else fail('postfix hostname: ' + postfixText.slice(0, 300));
+
+  // ── chrony.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('chrony.conf (NTP)');
+  await page.waitForSelector('#previewHost .chronycfg-doc', { timeout: 12000 });
+  const chronyText = await page.$eval('#previewHost .chronycfg-doc', (e) => e.textContent);
+  if (/NTP/i.test(chronyText)) pass('chrony.conf: NTP badge shown'); else fail('chrony badge: ' + chronyText.slice(0, 200));
+  if (/pool|google/i.test(chronyText)) pass('chrony.conf: pool or google NTP shown'); else fail('chrony sources: ' + chronyText.slice(0, 300));
+
+  // ── gradle-wrapper.properties viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('gradle-wrapper.properties');
+  await page.waitForSelector('#previewHost .gw-doc', { timeout: 12000 });
+  const gwText = await page.$eval('#previewHost .gw-doc', (e) => e.textContent);
+  if (/Gradle Wrapper/i.test(gwText)) pass('gradle-wrapper.properties: badge shown'); else fail('gradle-wrapper badge: ' + gwText.slice(0, 200));
+  if (/8\.7|8\.\d/i.test(gwText)) pass('gradle-wrapper.properties: Gradle version shown'); else fail('gradle-wrapper version: ' + gwText.slice(0, 200));
+  if (/bin|services\.gradle\.org/i.test(gwText)) pass('gradle-wrapper.properties: distribution info shown'); else fail('gradle-wrapper dist: ' + gwText.slice(0, 300));
+
+  // ── gradle.properties viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('gradle.properties');
+  await page.waitForSelector('#previewHost .gp-doc', { timeout: 12000 });
+  const gpText = await page.$eval('#previewHost .gp-doc', (e) => e.textContent);
+  if (/Gradle/i.test(gpText)) pass('gradle.properties: badge shown'); else fail('gradle-props badge: ' + gpText.slice(0, 200));
+  if (/parallel|daemon|workers/i.test(gpText)) pass('gradle.properties: build settings shown'); else fail('gradle-props settings: ' + gpText.slice(0, 300));
+  if (/Kotlin|kotlin/i.test(gpText)) pass('gradle.properties: Kotlin version shown'); else fail('gradle-props kotlin: ' + gpText.slice(0, 300));
+
+  // ── settings.gradle viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('settings.gradle');
+  await page.waitForSelector('#previewHost .sg-doc', { timeout: 12000 });
+  const sgText = await page.$eval('#previewHost .sg-doc', (e) => e.textContent);
+  if (/Gradle Settings/i.test(sgText)) pass('settings.gradle: badge shown'); else fail('settings-gradle badge: ' + sgText.slice(0, 200));
+  if (/my-awesome-app/i.test(sgText)) pass('settings.gradle: root project name shown'); else fail('settings-gradle name: ' + sgText.slice(0, 200));
+  if (/app|feature|core/i.test(sgText)) pass('settings.gradle: subprojects shown'); else fail('settings-gradle subprojects: ' + sgText.slice(0, 300));
+
+  // ── build.sbt viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('build.sbt');
+  await page.waitForSelector('#previewHost .sbt-doc', { timeout: 12000 });
+  const buildSbtText = await page.$eval('#previewHost .sbt-doc', (e) => e.textContent);
+  if (/Scala\/SBT/i.test(buildSbtText)) pass('build.sbt: badge shown'); else fail('build-sbt badge: ' + buildSbtText.slice(0, 200));
+  if (/my-scala-app/i.test(buildSbtText)) pass('build.sbt: project name shown'); else fail('build-sbt name: ' + buildSbtText.slice(0, 200));
+  if (/cats-core|cats-effect|fs2/i.test(buildSbtText)) pass('build.sbt: dependencies shown'); else fail('build-sbt deps: ' + buildSbtText.slice(0, 300));
+
+  // ── build.xml (Apache Ant) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('build.xml (Apache Ant)');
+  await page.waitForSelector('#previewHost .antbuild-doc', { timeout: 12000 });
+  const antText = await page.$eval('#previewHost .antbuild-doc', (e) => e.textContent);
+  if (/Ant/i.test(antText)) pass('build.xml: Ant badge shown'); else fail('ant-build badge: ' + antText.slice(0, 200));
+  if (/MyApp/i.test(antText)) pass('build.xml: project name shown'); else fail('ant-build name: ' + antText.slice(0, 200));
+  if (/compile|package|clean/i.test(antText)) pass('build.xml: targets shown'); else fail('ant-build targets: ' + antText.slice(0, 300));
+
 }

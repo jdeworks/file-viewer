@@ -437,6 +437,18 @@
     "enhanced": true
   },
   {
+    "label": "build.xml (Apache Ant)",
+    "file": "build.xml",
+    "mime": "text/xml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Build"
+    ],
+    "enhanced": true,
+    "description": "Apache Ant build file for MyApp: 5 targets (init, compile, test, package, clean), 6 properties."
+  },
+  {
     "label": "Pipfile",
     "file": "Pipfile",
     "mime": "text/plain",
@@ -3156,7 +3168,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
+    "description": "typos source code spell checker configuration — word overrides, file ignores, and check settings.",
     "knownFile": "typos"
   },
   {
@@ -6328,7 +6340,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys \u2014 all secret values masked.",
+    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys — all secret values masked.",
     "knownFile": "rails-credentials"
   },
   {
@@ -6340,7 +6352,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Puma web server config: 2 workers, threads 2\u201316, production environment, preload_app enabled, plugins listed.",
+    "description": "Puma web server config: 2 workers, threads 2–16, production environment, preload_app enabled, plugins listed.",
     "knownFile": "puma-config"
   },
   {
@@ -7138,7 +7150,8 @@
     "categories": [
       "Config",
       "Security"
-    ]
+    ],
+    "knownFile": "fail2ban-conf"
   },
   {
     "file": "smb.conf",
@@ -7147,7 +7160,8 @@
     "categories": [
       "Config",
       "Network"
-    ]
+    ],
+    "knownFile": "smb-conf"
   },
   {
     "file": "Corefile",
@@ -7156,7 +7170,8 @@
     "categories": [
       "Config",
       "Kubernetes"
-    ]
+    ],
+    "knownFile": "corefile"
   },
   {
     "file": "containerd.toml",
@@ -7165,7 +7180,8 @@
     "categories": [
       "Config",
       "Container"
-    ]
+    ],
+    "knownFile": "containerd-config"
   },
   {
     "file": "main.cf",
@@ -7174,7 +7190,8 @@
     "categories": [
       "Config",
       "Mail"
-    ]
+    ],
+    "knownFile": "postfix-conf"
   },
   {
     "file": "chrony.conf",
@@ -7183,6 +7200,7 @@
     "categories": [
       "Config",
       "System"
-    ]
+    ],
+    "knownFile": "chrony-conf"
   }
 ]

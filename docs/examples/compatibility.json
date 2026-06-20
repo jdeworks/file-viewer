@@ -16732,7 +16732,9 @@
       "label": "Fail2ban Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "jail.local"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16757,7 +16759,9 @@
       "label": "Samba Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "smb.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16782,7 +16786,9 @@
       "label": "Corefile",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "Corefile"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16807,7 +16813,9 @@
       "label": "containerd Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "containerd.toml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16832,7 +16840,9 @@
       "label": "Postfix Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "main.cf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16857,7 +16867,36 @@
       "label": "Chrony Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "chrony.conf"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "ant-build": {
+      "label": "Ant Build",
+      "baseType": "xml",
+      "support": "supported",
+      "sampleFiles": [
+        "build.xml"
+      ],
       "extensions": [
         ".yml"
       ],
