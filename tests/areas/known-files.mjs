@@ -2696,12 +2696,12 @@ export async function run(ctx) {
   // ── SpotBugs viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('spotbugs-exclude.xml (SpotBugs)');
-  await page.waitForSelector('#previewHost .sb-doc', { timeout: 12000 });
-  const sbText = await page.$eval('#previewHost .sb-doc', (e) => e.textContent);
-  if (/SpotBugs/i.test(sbText)) pass('spotbugs-exclude.xml: SpotBugs badge shown'); else fail('spotbugs badge: ' + sbText.slice(0, 200));
-  if (/NP_NULL_ON_SOME_PATH|BC_UNCONFIRMED_CAST|SE_NO_SERIALVERSIONID/i.test(sbText)) pass('spotbugs-exclude.xml: bug pattern names shown'); else fail('spotbugs patterns: ' + sbText.slice(0, 300));
-  if (/com\.acme/i.test(sbText)) pass('spotbugs-exclude.xml: class / package filters shown'); else fail('spotbugs classes: ' + sbText.slice(0, 300));
-  if (/Exclude|match rule/i.test(sbText)) pass('spotbugs-exclude.xml: filter type and match count shown'); else fail('spotbugs filter type: ' + sbText.slice(0, 300));
+  await page.waitForSelector('#previewHost .spb-doc', { timeout: 12000 });
+  const spbText = await page.$eval('#previewHost .spb-doc', (e) => e.textContent);
+  if (/SpotBugs/i.test(spbText)) pass('spotbugs-exclude.xml: SpotBugs badge shown'); else fail('spotbugs badge: ' + spbText.slice(0, 200));
+  if (/NP_NULL_ON_SOME_PATH|BC_UNCONFIRMED_CAST|SE_NO_SERIALVERSIONID/i.test(spbText)) pass('spotbugs-exclude.xml: bug pattern names shown'); else fail('spotbugs patterns: ' + spbText.slice(0, 300));
+  if (/com\.acme/i.test(spbText)) pass('spotbugs-exclude.xml: class / package filters shown'); else fail('spotbugs classes: ' + spbText.slice(0, 300));
+  if (/Exclude|match rule/i.test(spbText)) pass('spotbugs-exclude.xml: filter type and match count shown'); else fail('spotbugs filter type: ' + spbText.slice(0, 300));
 
   // ── php-ini viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -2738,23 +2738,23 @@ export async function run(ctx) {
   // ── rector-config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('rector.php (Rector Config)');
-  await page.waitForSelector('#previewHost .rc-doc', { timeout: 12000 });
-  const rcText = await page.$eval('#previewHost .rc-doc', (e) => e.textContent);
-  if (/Rector/i.test(rcText)) pass('rector.php: Rector badge shown'); else fail('rector badge: ' + rcText.slice(0, 200));
-  if (/8\.1/i.test(rcText)) pass('rector.php: PHP version shown'); else fail('rector phpVersion: ' + rcText.slice(0, 300));
-  if (/php81|php sets/i.test(rcText)) pass('rector.php: PHP sets shown'); else fail('rector sets: ' + rcText.slice(0, 300));
-  if (/FirstClassCallable|ClassPropertyAssign|RemoveUnused/i.test(rcText)) pass('rector.php: rules shown'); else fail('rector rules: ' + rcText.slice(0, 300));
-  if (/dead.*code|20/i.test(rcText)) pass('rector.php: dead code level shown'); else fail('rector deadCode: ' + rcText.slice(0, 300));
+  await page.waitForSelector('#previewHost .rect-doc', { timeout: 12000 });
+  const rectorText = await page.$eval('#previewHost .rect-doc', (e) => e.textContent);
+  if (/Rector/i.test(rectorText)) pass('rector.php: Rector badge shown'); else fail('rector badge: ' + rectorText.slice(0, 200));
+  if (/8\.1/i.test(rectorText)) pass('rector.php: PHP version shown'); else fail('rector phpVersion: ' + rectorText.slice(0, 300));
+  if (/php81|php sets/i.test(rectorText)) pass('rector.php: PHP sets shown'); else fail('rector sets: ' + rectorText.slice(0, 300));
+  if (/FirstClassCallable|ClassPropertyAssign|RemoveUnused/i.test(rectorText)) pass('rector.php: rules shown'); else fail('rector rules: ' + rectorText.slice(0, 300));
+  if (/dead.*code|20/i.test(rectorText)) pass('rector.php: dead code level shown'); else fail('rector deadCode: ' + rectorText.slice(0, 300));
 
   // ── Keycloak Realm viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('keycloak-realm.json (Keycloak Realm)');
   await page.waitForSelector('#previewHost .kc-doc', { timeout: 12000 });
-  const kcText = await page.$eval('#previewHost .kc-doc', (e) => e.textContent);
-  if (/Keycloak/i.test(kcText)) pass('keycloak-realm.json: Keycloak badge shown'); else fail('keycloak badge: ' + kcText.slice(0, 200));
-  if (/myrealm/i.test(kcText)) pass('keycloak-realm.json: realm name shown'); else fail('keycloak realm name: ' + kcText.slice(0, 300));
-  if (/app-frontend|app-backend|admin-cli/i.test(kcText)) pass('keycloak-realm.json: clients shown'); else fail('keycloak clients: ' + kcText.slice(0, 300));
-  if (!/EXAMPLE_SECRET_DO_NOT_USE/i.test(kcText)) pass('keycloak-realm.json: client secret masked'); else fail('keycloak secret not masked');
+  const keycloakText = await page.$eval('#previewHost .kc-doc', (e) => e.textContent);
+  if (/Keycloak/i.test(keycloakText)) pass('keycloak-realm.json: Keycloak badge shown'); else fail('keycloak badge: ' + keycloakText.slice(0, 200));
+  if (/myrealm/i.test(keycloakText)) pass('keycloak-realm.json: realm name shown'); else fail('keycloak realm name: ' + keycloakText.slice(0, 300));
+  if (/app-frontend|app-backend|admin-cli/i.test(keycloakText)) pass('keycloak-realm.json: clients shown'); else fail('keycloak clients: ' + keycloakText.slice(0, 300));
+  if (!/EXAMPLE_SECRET_DO_NOT_USE/i.test(keycloakText)) pass('keycloak-realm.json: client secret masked'); else fail('keycloak secret not masked');
   if (/admin|user|readonly/i.test(kcText)) pass('keycloak-realm.json: realm roles shown'); else fail('keycloak roles: ' + kcText.slice(0, 300));
   if (/github/i.test(kcText)) pass('keycloak-realm.json: identity provider shown'); else fail('keycloak idp: ' + kcText.slice(0, 300));
 

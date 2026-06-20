@@ -1,13 +1,13 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.rc-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.rect-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
 .rc-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
 .badge-rc{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700;background:#FF6B35;color:#fff;vertical-align:middle;}
-.rc-title{font-size:18px;font-weight:700;margin:0;}
+.rect-title{font-size:18px;font-weight:700;margin:0;}
 .rc-sub{font-size:12px;color:var(--fg-2,#888);margin:2px 0 0;}
-.rc-sec{margin-top:16px;}
-.rc-sec h3{font-size:12px;font-weight:600;color:var(--fg-2,#888);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;}
+.rect-sec{margin-top:16px;}
+.rect-sec h3{font-size:12px;font-weight:600;color:var(--fg-2,#888);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;}
 .rc-card{border:1px solid var(--border,#e8eaed);border-radius:6px;padding:8px 12px;}
 .rc-kv{display:flex;gap:10px;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border,#eaecef);}
 .rc-kv:last-child{border-bottom:none;}
@@ -117,7 +117,7 @@ function extractSkip(text) {
 export function render(intake) {
   const text = intake.text || new TextDecoder().decode(intake.bytes || new Uint8Array());
   const host = document.createElement('div');
-  host.className = 'rc-doc';
+  host.className = 'rect-doc';
 
   const rules = extractWithRules(text);
   const phpSets = extractPhpSets(text);
