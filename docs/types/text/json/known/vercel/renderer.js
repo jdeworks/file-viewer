@@ -1,77 +1,121 @@
-const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+const SECRET_RE = /secret|token|key|password|api/i;
+function maskVal(k, v) {
+  return SECRET_RE.test(k) ? '[configured]' : String(v == null ? '' : v).slice(0, 60);
+}
+
+const CSS = `
+.verceljson-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.verceljson-doc .badge-vercel{display:inline-block;background:#000;color:#fff;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.04em;margin-bottom:10px;}
+.verceljson-doc .vcl-grid{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:8px 0 12px;}
+.verceljson-doc .vcl-key{color:var(--fg-2,#888);font-size:12px;}
+.verceljson-doc .vcl-val{font:12px ui-monospace,monospace;color:var(--accent,#0070f3);word-break:break-all;}
+.verceljson-doc .vcl-sec{margin:14px 0;}
+.verceljson-doc .vcl-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px;}
+.verceljson-doc .vcl-pill{display:inline-block;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);border-radius:4px;padding:2px 8px;font:12px ui-monospace,monospace;margin:2px;}
+.verceljson-doc .vcl-table{width:100%;border-collapse:collapse;font-size:13px;}
+.verceljson-doc .vcl-table th{text-align:left;color:var(--fg-2,#888);font-size:11px;text-transform:uppercase;padding:3px 8px 3px 0;border-bottom:2px solid var(--border,#e0e0e0);}
+.verceljson-doc .vcl-table td{padding:4px 8px 4px 0;border-bottom:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace;font-size:12px;word-break:break-all;}
+.verceljson-doc .vcl-src{color:var(--accent,#0070f3);}
+.verceljson-doc .vcl-dst{color:var(--fg-2,#888);}
+.verceljson-doc .vcl-badge{display:inline-block;background:var(--bg-3,#e8e8e8);color:var(--fg-2,#888);border-radius:3px;padding:0 5px;font-size:10px;margin-left:4px;vertical-align:middle;}
+.verceljson-doc .vcl-masked{color:var(--fg-2,#888);font-style:italic;}
+`;
+
+function kv(key, val) {
+  if (val == null || val === '') return '';
+  return `<span class="vcl-key">${esc(key)}</span><span class="vcl-val">${esc(val)}</span>`;
+}
 
 export function render(intake) {
-  let cfg = {};
-  try { cfg = JSON.parse(intake.text || '{}'); } catch { /* malformed JSON */ }
+  const cfg = intake.parsed ?? (() => { try { return JSON.parse(intake.text || '{}'); } catch { return {}; } })();
 
   const framework = cfg.framework || null;
   const version = cfg.version || null;
-  const builds = Array.isArray(cfg.builds) ? cfg.builds : [];
-  const routes = Array.isArray(cfg.routes) ? cfg.routes : [];
+  const buildCmd = cfg.buildCommand || null;
+  const installCmd = cfg.installCommand || null;
+  const outputDir = cfg.outputDirectory || cfg.distDir || null;
+  const devCmd = cfg.devCommand || null;
+
   const rewrites = Array.isArray(cfg.rewrites) ? cfg.rewrites : [];
   const redirects = Array.isArray(cfg.redirects) ? cfg.redirects : [];
   const headers = Array.isArray(cfg.headers) ? cfg.headers : [];
   const regions = Array.isArray(cfg.regions) ? cfg.regions : (cfg.regions ? [cfg.regions] : []);
-  const envKeys = cfg.env ? Object.keys(cfg.env) : [];
-  const buildEnvKeys = cfg.build?.env ? Object.keys(cfg.build.env) : [];
-  const outputDir = cfg.outputDirectory || cfg.distDir || null;
-  const installCmd = cfg.installCommand || null;
-  const buildCmd = cfg.buildCommand || null;
-  const devCmd = cfg.devCommand || null;
-  const functions = cfg.functions ? Object.keys(cfg.functions) : [];
+  const routes = Array.isArray(cfg.routes) ? cfg.routes : [];
 
-  let html = `<style>
-.vcl-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif}
-.badge-vercel{display:inline-block;background:#000;color:#fff;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.04em;margin-bottom:10px}
-.vcl-grid{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:8px 0 12px}
-.vcl-key{color:var(--fg-2);font-size:12px}
-.vcl-val{font:12px ui-monospace,monospace;color:var(--accent)}
-.vcl-sec{margin:12px 0}
-.vcl-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2);margin:0 0 4px}
-.vcl-pill{display:inline-block;background:var(--bg-3);border-radius:4px;padding:2px 8px;font:12px ui-monospace,monospace;margin:2px}
-.vcl-route{font:11px ui-monospace,monospace;padding:2px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap}
-.vcl-route-src{color:var(--accent)}
-.vcl-route-dst{color:var(--fg-2)}
-</style>
-<div class="vcl-doc">
-<span class="badge-vercel">▲ Vercel Config</span>
-<div class="vcl-grid">
-${framework ? `<span class="vcl-key">Framework</span><span class="vcl-val">${esc(framework)}</span>` : ''}
-${version ? `<span class="vcl-key">Schema version</span><span class="vcl-val">${esc(String(version))}</span>` : ''}
-${buildCmd ? `<span class="vcl-key">Build command</span><span class="vcl-val">${esc(buildCmd)}</span>` : ''}
-${installCmd ? `<span class="vcl-key">Install command</span><span class="vcl-val">${esc(installCmd)}</span>` : ''}
-${outputDir ? `<span class="vcl-key">Output dir</span><span class="vcl-val">${esc(outputDir)}</span>` : ''}
-${devCmd ? `<span class="vcl-key">Dev command</span><span class="vcl-val">${esc(devCmd)}</span>` : ''}
-${regions.length ? `<span class="vcl-key">Regions</span><span class="vcl-val">${esc(regions.join(', '))}</span>` : ''}
-${routes.length ? `<span class="vcl-key">Routes</span><span class="vcl-val">${routes.length}</span>` : ''}
-${rewrites.length ? `<span class="vcl-key">Rewrites</span><span class="vcl-val">${rewrites.length}</span>` : ''}
-${redirects.length ? `<span class="vcl-key">Redirects</span><span class="vcl-val">${redirects.length}</span>` : ''}
-${headers.length ? `<span class="vcl-key">Custom headers</span><span class="vcl-val">${headers.length}</span>` : ''}
-${builds.length ? `<span class="vcl-key">Build specs</span><span class="vcl-val">${builds.length}</span>` : ''}
-</div>`;
+  const allEnv = { ...(cfg.env || {}), ...(cfg.build?.env || {}) };
+  const envEntries = Object.entries(allEnv);
 
-  const allRoutes = [...rewrites.map((r) => ({ src: r.source, dst: r.destination, type: 'rewrite' })),
-    ...redirects.map((r) => ({ src: r.source, dst: r.destination, type: 'redirect' })),
-    ...routes.map((r) => ({ src: r.src, dst: r.dest, type: 'route' }))];
-  if (allRoutes.length > 0) {
-    html += `<div class="vcl-sec"><h3>Routes / Rewrites / Redirects</h3>`;
-    html += allRoutes.slice(0, 12).map((r) => `<div class="vcl-route"><span class="vcl-route-src">${esc(r.src || r.source || '?')}</span><span>→</span><span class="vcl-route-dst">${esc(r.dst || r.destination || '?')}</span><span style="color:var(--fg-2);font-size:10px">[${r.type}]</span></div>`).join('');
-    if (allRoutes.length > 12) html += `<div style="color:var(--fg-2);font-size:11px;margin-top:4px">+ ${allRoutes.length - 12} more</div>`;
-    html += '</div>';
-  }
+  const functions = cfg.functions && typeof cfg.functions === 'object' ? Object.entries(cfg.functions) : [];
 
-  if (envKeys.length || buildEnvKeys.length) {
-    html += `<div class="vcl-sec"><h3>Environment variables</h3>`;
-    [...new Set([...envKeys, ...buildEnvKeys])].forEach((k) => { html += `<span class="vcl-pill">${esc(k)}</span>`; });
-    html += '</div>';
-  }
-
-  if (functions.length) {
-    html += `<div class="vcl-sec"><h3>Function overrides</h3>${functions.map((f) => `<span class="vcl-pill">${esc(f)}</span>`).join('')}</div>`;
-  }
-
-  html += '</div>';
   const host = document.createElement('div');
-  host.innerHTML = html;
+  host.className = 'verceljson-doc';
+
+  // header grid
+  const gridLines = [
+    version != null ? kv('Schema version', version) : '',
+    framework ? kv('Framework', framework) : '',
+    buildCmd ? kv('Build command', buildCmd) : '',
+    installCmd ? kv('Install command', installCmd) : '',
+    outputDir ? kv('Output directory', outputDir) : '',
+    devCmd ? kv('Dev command', devCmd) : '',
+    regions.length ? kv('Regions', regions.join(', ')) : '',
+  ].filter(Boolean);
+
+  // rewrites table
+  const rewritesHtml = rewrites.length
+    ? `<div class="vcl-sec"><h3>Rewrites (${rewrites.length})</h3><table class="vcl-table"><thead><tr><th>Source</th><th>Destination</th></tr></thead><tbody>${rewrites.slice(0, 12).map((r) => `<tr><td class="vcl-src">${esc(r.source || r.src || '?')}</td><td class="vcl-dst">${esc(r.destination || r.dest || '?')}</td></tr>`).join('')}${rewrites.length > 12 ? `<tr><td colspan="2" style="color:var(--fg-2,#888);font-size:11px">+${rewrites.length - 12} more</td></tr>` : ''}</tbody></table></div>`
+    : '';
+
+  // redirects table
+  const redirectsHtml = redirects.length
+    ? `<div class="vcl-sec"><h3>Redirects (${redirects.length})</h3><table class="vcl-table"><thead><tr><th>Source</th><th>Destination</th><th>Status</th></tr></thead><tbody>${redirects.slice(0, 12).map((r) => {
+        const status = r.statusCode || (r.permanent ? '308' : '307');
+        return `<tr><td class="vcl-src">${esc(r.source || r.src || '?')}</td><td class="vcl-dst">${esc(r.destination || r.dest || '?')}</td><td>${esc(status)}</td></tr>`;
+      }).join('')}${redirects.length > 12 ? `<tr><td colspan="3" style="color:var(--fg-2,#888);font-size:11px">+${redirects.length - 12} more</td></tr>` : ''}</tbody></table></div>`
+    : '';
+
+  // legacy routes
+  const routesHtml = routes.length && !rewrites.length && !redirects.length
+    ? `<div class="vcl-sec"><h3>Routes (${routes.length})</h3><table class="vcl-table"><thead><tr><th>Source</th><th>Destination</th></tr></thead><tbody>${routes.slice(0, 12).map((r) => `<tr><td class="vcl-src">${esc(r.src || '?')}</td><td class="vcl-dst">${esc(r.dest || '?')}</td></tr>`).join('')}${routes.length > 12 ? `<tr><td colspan="2" style="color:var(--fg-2,#888);font-size:11px">+${routes.length - 12} more</td></tr>` : ''}</tbody></table></div>`
+    : '';
+
+  // headers list
+  const headersHtml = headers.length
+    ? `<div class="vcl-sec"><h3>Headers (${headers.length} rule${headers.length !== 1 ? 's' : ''})</h3>${headers.slice(0, 6).map((h) => {
+        const hdrs = Array.isArray(h.headers) ? h.headers.map((hh) => `<span class="vcl-pill">${esc(hh.key)}</span>`).join('') : '';
+        return `<div style="margin:4px 0;font-size:12px"><span class="vcl-src" style="font-family:ui-monospace,monospace">${esc(h.source || '?')}</span> ${hdrs}</div>`;
+      }).join('')}${headers.length > 6 ? `<div style="color:var(--fg-2,#888);font-size:11px">+${headers.length - 6} more</div>` : ''}</div>`
+    : '';
+
+  // functions table
+  const functionsHtml = functions.length
+    ? `<div class="vcl-sec"><h3>Functions (${functions.length})</h3><table class="vcl-table"><thead><tr><th>Pattern</th><th>Max duration</th><th>Memory</th></tr></thead><tbody>${functions.map(([pattern, opts]) => {
+        const dur = opts.maxDuration != null ? `${opts.maxDuration}s` : '—';
+        const mem = opts.memory != null ? `${opts.memory} MB` : '—';
+        return `<tr><td>${esc(pattern)}</td><td>${esc(dur)}</td><td>${esc(mem)}</td></tr>`;
+      }).join('')}</tbody></table></div>`
+    : '';
+
+  // env vars with masking
+  const envHtml = envEntries.length
+    ? `<div class="vcl-sec"><h3>Environment variables (${envEntries.length})</h3><div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0">${envEntries.map(([k, v]) => {
+        const masked = SECRET_RE.test(k);
+        const val = masked ? `<span class="vcl-masked">=[configured]</span>` : `=<span style="color:var(--fg-2,#888);font-size:11px">${esc(String(v).slice(0, 30))}</span>`;
+        return `<span class="vcl-pill">${esc(k)}${val}</span>`;
+      }).join('')}</div></div>`
+    : '';
+
+  host.innerHTML = `<style>${CSS}</style>
+<span class="badge-vercel">▲ Vercel</span>
+<div class="vcl-grid">${gridLines.join('')}</div>
+${rewritesHtml}
+${redirectsHtml}
+${routesHtml}
+${headersHtml}
+${functionsHtml}
+${envHtml}`;
+
   return { parentNode: host };
 }

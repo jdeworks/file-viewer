@@ -436,7 +436,9 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "build-gradle",
+    "description": "Gradle Groovy DSL build script: Spring Boot app with 15 dependencies across implementation, runtimeOnly, testImplementation, and annotationProcessor configurations."
   },
   {
     "label": "build.xml (Apache Ant)",
@@ -5152,7 +5154,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Gradle multi-project settings: root my-awesome-app with 7 subprojects."
+    "description": "Gradle multi-project settings: root my-awesome-app with 7 Android subprojects, pluginManagement, and dependencyResolutionManagement.",
+    "knownFile": "settings-gradle"
   },
   {
     "label": "application.properties",

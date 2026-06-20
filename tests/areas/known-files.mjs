@@ -385,10 +385,11 @@ export async function run(ctx) {
   // ── fly.toml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('fly.toml');
-  await page.waitForSelector('#previewHost .fly-doc', { timeout: 12000 });
-  const flyText = await page.$eval('#previewHost .fly-doc', (e) => e.textContent);
+  await page.waitForSelector('.flytoml-doc', { timeout: 12000 });
+  pass('fly.toml: renders');
+  const flyText = await page.$eval('.flytoml-doc', (e) => e.textContent);
   if (/Fly\.io/i.test(flyText)) pass('fly.toml: badge shown'); else fail('fly badge: ' + flyText.slice(0, 200));
-  if (/my-app|iad|8080/i.test(flyText)) pass('fly.toml: content shown'); else fail('fly content: ' + flyText.slice(0, 200));
+  if (/my-api-service|iad|region/i.test(flyText)) pass('fly.toml: app info shown'); else fail('fly content: ' + flyText.slice(0, 200));
 
   // ── cliff.toml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

@@ -1,10 +1,10 @@
-export default {
+export const plugin = {
   id: 'fly-toml',
-  label: 'Fly.io config',
-  match: (intake, baseType) => {
-    if (baseType.id !== 'toml') return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
-    return name === 'fly.toml';
+  label: 'Fly.io',
+  tags: ['fly', 'deploy', 'paas'],
+  match(intake) {
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    return n === 'fly.toml';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {
@@ -12,3 +12,5 @@ export default {
     usedFor: [{ label: 'Fly.io deployment', description: 'Deploy apps globally with Fly.io', href: 'https://fly.io/docs/reference/configuration/' }],
   },
 };
+
+export default plugin;

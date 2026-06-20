@@ -1,21 +1,39 @@
-app = "my-app"
+app = "my-api-service"
 primary_region = "iad"
+kill_signal = "SIGINT"
+kill_timeout = "5s"
 
 [build]
-  image = "node:20-alpine"
+  dockerfile = "Dockerfile"
+  [build.args]
+    NODE_ENV = "production"
+    BUILD_TARGET = "server"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 2
+  memory_mb = 512
 
 [env]
-  PORT = "8080"
+  PORT = "3000"
   NODE_ENV = "production"
-
-[[services]]
-  internal_port = 8080
-  protocol = "tcp"
-
-  [[services.ports]]
-    port = 443
-    handlers = ["tls", "http"]
+  DATABASE_URL = "postgres://localhost/mydb"
+  SECRET_KEY = "super-secret-value"
+  API_TOKEN = "tok_live_abc123"
+  REDIS_URL = "redis://localhost:6379"
+  LOG_LEVEL = "info"
 
 [[mounts]]
-  source = "data"
+  source = "app_data"
   destination = "/data"
+
+[processes]
+  app = "node server.js"
+  worker = "node worker.js"

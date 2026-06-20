@@ -4,13 +4,15 @@
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
   "outputDirectory": ".next",
-  "regions": ["iad1", "cdg1"],
+  "regions": ["iad1", "cdg1", "sfo1"],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/health", "destination": "/api/health" },
     { "source": "/(.*)", "destination": "/$1" }
   ],
   "redirects": [
-    { "source": "/old-blog/:slug", "destination": "/blog/:slug", "permanent": true }
+    { "source": "/old-blog/:slug", "destination": "/blog/:slug", "permanent": true },
+    { "source": "/docs", "destination": "https://docs.example.com", "statusCode": 301 }
   ],
   "headers": [
     {
@@ -18,22 +20,37 @@
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" }
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" }
+      ]
+    },
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     }
   ],
   "env": {
+    "NEXT_PUBLIC_API_URL": "https://api.example.com",
     "DATABASE_URL": "@database-url",
-    "NEXT_PUBLIC_API_URL": "https://api.example.com"
+    "API_SECRET_KEY": "@api-secret-key",
+    "STRIPE_TOKEN": "@stripe-token"
   },
   "build": {
     "env": {
-      "ANALYZE": "true"
+      "ANALYZE": "true",
+      "NEXT_TELEMETRY_DISABLED": "1"
     }
   },
   "functions": {
     "api/*.js": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "memory": 1024
+    },
+    "api/heavy/*.js": {
+      "maxDuration": 60,
+      "memory": 3008
     }
   }
 }
