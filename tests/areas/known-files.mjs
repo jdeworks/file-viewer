@@ -6561,4 +6561,40 @@ export async function run(ctx) {
   const lyText = await page.$eval('#previewHost .ly-doc', (e) => e.textContent);
   if (/Yacc|Bison|Lex|Flex/i.test(lyText)) pass('lex-yacc: badge shown'); else fail('lex-yacc badge: ' + lyText.slice(0, 200));
   if (/token|Token|grammar|rule/i.test(lyText)) pass('lex-yacc: tokens or rules shown'); else fail('lex-yacc tokens: ' + lyText.slice(0, 300));
+
+  // ── elvish-script viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.elv');
+  await page.waitForSelector('#previewHost .elv-doc', { timeout: 12000 });
+  pass('elvish-script: rendered');
+  const elvText = await page.$eval('#previewHost .elv-doc', (e) => e.textContent);
+  if (/Elvish Script/i.test(elvText)) pass('elvish-script: badge shown'); else fail('elvish-script badge: ' + elvText.slice(0, 200));
+  if (/Functions|Modules|use|fn/i.test(elvText)) pass('elvish-script: structure shown'); else fail('elvish-script structure: ' + elvText.slice(0, 300));
+
+  // ── fish-script viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.fish');
+  await page.waitForSelector('#previewHost .fish-doc', { timeout: 12000 });
+  pass('fish-script: rendered');
+  const fishText = await page.$eval('#previewHost .fish-doc', (e) => e.textContent);
+  if (/Fish Script|Fish Config/i.test(fishText)) pass('fish-script: badge shown'); else fail('fish-script badge: ' + fishText.slice(0, 200));
+  if (/Functions|Aliases|Abbrevs|function/i.test(fishText)) pass('fish-script: structure shown'); else fail('fish-script structure: ' + fishText.slice(0, 300));
+
+  // ── zsh-script viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.zsh');
+  await page.waitForSelector('#previewHost .zsh-doc', { timeout: 12000 });
+  pass('zsh-script: rendered');
+  const zshText = await page.$eval('#previewHost .zsh-doc', (e) => e.textContent);
+  if (/Zsh Script/i.test(zshText)) pass('zsh-script: badge shown'); else fail('zsh-script badge: ' + zshText.slice(0, 200));
+  if (/Functions|Autoloads|Bindings|Completions/i.test(zshText)) pass('zsh-script: structure shown'); else fail('zsh-script structure: ' + zshText.slice(0, 300));
+
+  // ── nushell-script viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.nu');
+  await page.waitForSelector('#previewHost .nu-doc', { timeout: 12000 });
+  pass('nushell-script: rendered');
+  const nuText = await page.$eval('#previewHost .nu-doc', (e) => e.textContent);
+  if (/Nushell Script/i.test(nuText)) pass('nushell-script: badge shown'); else fail('nushell-script badge: ' + nuText.slice(0, 200));
+  if (/Commands|Exported|def|export/i.test(nuText)) pass('nushell-script: structure shown'); else fail('nushell-script structure: ' + nuText.slice(0, 300));
 }

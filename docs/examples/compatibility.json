@@ -26878,7 +26878,9 @@
       "label": "CoffeeScript",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.coffee"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26903,7 +26905,9 @@
       "label": "LiveScript",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.ls"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26928,7 +26932,9 @@
       "label": "ReScript",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.res"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26953,7 +26959,9 @@
       "label": "Reason",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.re"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26978,7 +26986,9 @@
       "label": "Pony",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.pony"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27003,7 +27013,9 @@
       "label": "Wren Script",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.wren"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27028,7 +27040,9 @@
       "label": "Mojo",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.mojo"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27053,7 +27067,9 @@
       "label": "Janet Script",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.janet"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27078,7 +27094,9 @@
       "label": "AWK Script",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.awk"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27103,7 +27121,9 @@
       "label": "sed Script",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.sed"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27128,7 +27148,9 @@
       "label": "M4 Macro",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.m4"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27153,7 +27175,111 @@
       "label": "Lex/Yacc Grammar",
       "baseType": "raw",
       "support": "supported",
+      "sampleFiles": [
+        "sample.y"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "elvish-script": {
+      "label": "Elvish Script",
+      "baseType": "raw",
+      "support": "supported",
       "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "fish-script": {
+      "label": "Fish Script",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "zsh-script": {
+      "label": "Zsh Script",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "nushell-script": {
+      "label": "Nushell Script",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "config.nu"
+      ],
       "extensions": [
         ".yml"
       ],

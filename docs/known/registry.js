@@ -133,6 +133,7 @@ import justfile from '../types/text/known/justfile/index.js';
 import procfile from '../types/text/known/procfile/index.js';
 import envExample from '../types/text/known/env-example/index.js';
 import envrc from '../types/text/known/envrc/index.js';
+import etcEnvironment from '../types/text/known/etc-environment/index.js';
 import miseConfig from '../types/text/toml/known/mise/index.js';
 import toolVersions from '../types/text/known/tool-versions/index.js';
 import devboxJson from '../types/text/json/known/devbox-json/index.js';
@@ -469,6 +470,7 @@ import hostsFile from '../types/text/known/hosts-file/index.js';
 import resolvConf from '../types/text/known/resolv-conf/index.js';
 import sshdConfig from '../types/text/known/sshd-config/index.js';
 import sshClientConfig from '../types/text/known/ssh-config/index.js';
+import sshKnownHosts from '../types/text/known/ssh-known-hosts/index.js';
 import mcpConfig from '../types/text/json/known/mcp-config/index.js';
 import sudoers from '../types/text/known/sudoers/index.js';
 import nfsExports from '../types/text/known/nfs-exports/index.js';
@@ -550,6 +552,7 @@ import tlpConf from '../types/text/known/tlp-conf/index.js';
 import shellRc from '../types/text/known/shell-rc/index.js';
 import nixDaemonConf from '../types/text/known/nix-daemon-conf/index.js';
 import nixConfig from '../types/text/known/nix-config/index.js';
+import nixFlake from '../types/text/known/nix-flake/index.js';
 import mavenSettings from '../types/text/xml/known/maven-settings/index.js';
 import pgHba from '../types/text/known/pg-hba/index.js';
 import dvcPipeline from '../types/text/yaml/known/dvc-pipeline/index.js';
@@ -571,6 +574,7 @@ import crypttab from '../types/text/known/crypttab/index.js';
 import sysctlConf from '../types/text/known/sysctl-conf/index.js';
 import modprobeConf from '../types/text/known/modprobe-conf/index.js';
 import systemdUnit from '../types/text/known/systemd-unit/index.js';
+import openrcInit from '../types/text/known/openrc-init/index.js';
 import crontab from '../types/text/known/crontab/index.js';
 import clusterConfig from '../types/text/yaml/known/cluster-config/index.js';
 import certManager from '../types/text/yaml/known/cert-manager/index.js';
@@ -842,6 +846,10 @@ import awkScript from '../types/text/known/awk-script/index.js';
 import sedScript from '../types/text/known/sed-script/index.js';
 import m4Macro from '../types/text/known/m4-macro/index.js';
 import lexYacc from '../types/text/known/lex-yacc/index.js';
+import elvishScript from '../types/text/known/elvish-script/index.js';
+import fishScript from '../types/text/known/fish-script/index.js';
+import zshScript from '../types/text/known/zsh-script/index.js';
+import nushellScript from '../types/text/known/nushell-script/index.js';
 export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, rubyLang, perlLang, phpLang, powershellLang, solidityLang, vhdlLang, arduinoSketch, cobolLang, gleamLang, odinLang, haxeLang, adaLang, prologLang, asmLang, objcLang, dLang, ponyLang, wrenLang, mojoLang, janetLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
@@ -859,7 +867,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   helmChart, kustomize, ansiblePlaybook, pulumi, packer, ruff, uv, kubeHelmValues,
   firebase, expo, tailwind, postcss, husky, lintStaged, nestCli, swcrc,
   packageLock, composerLock, pnpmLock, cargoLock, poetryLock, goSum,
-  makefileKf, justfile, procfile, envExample, envrc, miseConfig, toolVersions,
+  makefileKf, justfile, procfile, envExample, envrc, etcEnvironment, miseConfig, toolVersions,
   gitattributes, gemfileLock, sonar, hatch,
   mailmap, npmignore, dockerignore, gcloudignore, eslintignore, prettierignore,
   appveyor, rubocop, rubocopTodo, taskfile, mkdocsYml,
@@ -871,7 +879,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   podfile, fastfile, snapfile,
   supabaseConfig, netlifyRedirects,
   cmake, jenkinsfile,
-  awkScript, sedScript, m4Macro, lexYacc,
+  awkScript, sedScript, m4Macro, lexYacc, elvishScript, fishScript, zshScript, nushellScript,
   bazel, bazelrc, ninjaBuild,
   packageSwift, mixExs, buildSbt, scalafmtConf, scalafixConf,
   playwrightConfig, cypressConfig,
@@ -921,7 +929,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   samTemplate, cfnTemplate, cdkJson, awsSamConfig, releasePleaseConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson, dprintConfig,
   rdpConfig,
-  hostsFile, resolvConf, sshdConfig, sshClientConfig, sudoers, nfsExports, fstab, crypttab,
+  hostsFile, resolvConf, sshdConfig, sshClientConfig, sshKnownHosts, sudoers, nfsExports, fstab, crypttab,
   mcpConfig,
   sysctlConf, modprobeConf,
   jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, starshipConfig, emacsConfig, tmuxConf, nushellConfig, screenrc, i3Config, swayConfig, dunstrc, polybarConf, waybarConfig, nanorc,
@@ -943,11 +951,11 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   giteaConf, stunnelConf,
   supervisordConf, logrotateConf, tlpConf,
   shellRc,
-  nixDaemonConf, nixConfig,
+  nixDaemonConf, nixConfig, nixFlake,
   mavenSettings, pgHba,
   dvcPipeline, hydraConfig, mlflowProject, meltanoConfig, dagsterConfig, wandbConfig,
   mintlify, postmanCollection, harKnown, avroSchema, brunoWorkspace, insomnia, openapiGenerator, graphqlSchema,
-  systemdUnit, crontab,
+  systemdUnit, openrcInit, crontab,
   clusterConfig, certManager,
   iptablesRules, udevRules, grubConf, nftablesRules, ufwConf,
   fail2banConf, apparmorProfile, suricataConfig, smbConf,
