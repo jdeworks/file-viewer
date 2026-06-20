@@ -1,0 +1,35 @@
+{
+  "ServiceSettings": {
+    "SiteURL": "https://mattermost.example.com",
+    "ListenAddress": ":8065",
+    "EnableAPIv3": false,
+    "ConnectionSecurity": "TLS"
+  },
+  "TeamSettings": {
+    "SiteName": "Acme Mattermost",
+    "MaxUsersPerTeam": 50,
+    "EnableOpenServer": false
+  },
+  "SqlSettings": {
+    "DriverName": "postgres",
+    "DataSource": "postgres://mmuser:mostsecurepasswordever@localhost:5432/mattermost?sslmode=disable"
+  },
+  "FileSettings": {
+    "DriverName": "amazons3",
+    "AmazonS3Bucket": "my-mattermost-files",
+    "AmazonS3AccessKeyId": "AKIAIOSFODNN7EXAMPLE",
+    "AmazonS3SecretAccessKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+  },
+  "EmailSettings": {
+    "SMTPServer": "smtp.example.com",
+    "SMTPPort": "587",
+    "SMTPUsername": "mattermost@example.com",
+    "SMTPPassword": "emailpassword123",
+    "EnableSMTPAuth": true
+  },
+  "LogSettings": {
+    "EnableFile": true,
+    "FileLevel": "INFO",
+    "FileLocation": "/var/log/mattermost"
+  }
+}

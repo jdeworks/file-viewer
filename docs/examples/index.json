@@ -9419,5 +9419,111 @@
     "enhanced": true,
     "description": "Paperless-ngx document management configuration with database, OCR, and admin settings.",
     "knownFile": "paperless-conf"
+  },
+  {
+    "file": "mealie.env",
+    "label": "mealie.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "Mealie recipe manager environment-variable configuration with server, database, SMTP, and security settings.",
+    "knownFile": "mealie-config"
+  },
+  {
+    "file": "immich.env",
+    "label": "immich.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "Immich photo/video management environment-variable configuration with server, database, Redis, and security settings.",
+    "knownFile": "immich-config"
+  },
+  {
+    "file": "bookstack.env",
+    "label": "bookstack.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "BookStack wiki/knowledge-base Laravel .env configuration with application, database, email, cache, and storage settings.",
+    "knownFile": "bookstack-env"
+  },
+  {
+    "file": "mattermost-config.json",
+    "label": "mattermost-config.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "Mattermost team messaging server configuration with service, database, file storage, email, and team settings.",
+    "knownFile": "mattermost-config"
+  },
+  {
+    "file": "netbox-configuration.py",
+    "label": "netbox-configuration.py",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Network"
+    ],
+    "enhanced": true,
+    "description": "NetBox DCIM/IPAM network documentation tool Django configuration with database, Redis, security, and plugin settings.",
+    "knownFile": "netbox-config"
+  },
+  {
+    "file": "vaultwarden.env",
+    "label": "vaultwarden.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Security"
+    ],
+    "enhanced": true,
+    "description": "Vaultwarden (Bitwarden_RS fork) self-hosted password manager configuration with server, security, database, email, and logging settings.",
+    "knownFile": "vaultwarden-env"
+  },
+  {
+    "file": "woodpecker.yml",
+    "label": "woodpecker.yml (Woodpecker CI)",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "devops"
+    ],
+    "enhanced": true,
+    "description": "Woodpecker CI pipeline with build, test, Docker publish, and Kubernetes deploy steps, plus a Postgres service.",
+    "knownFile": "woodpecker-ci"
+  },
+  {
+    "file": "headscale-config.yaml",
+    "label": "headscale-config.yaml (Headscale)",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "networking"
+    ],
+    "enhanced": true,
+    "description": "Headscale WireGuard VPN control plane configuration with server, database, DERP, DNS, and security settings.",
+    "knownFile": "headscale-config"
   }
 ]

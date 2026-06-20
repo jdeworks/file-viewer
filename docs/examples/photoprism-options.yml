@@ -1,0 +1,27 @@
+## PhotoPrism Configuration
+## https://docs.photoprism.app/getting-started/config-options/
+
+AdminUser: admin
+AdminPassword: changeme123
+AdminEmail: admin@example.com
+
+SiteTitle: My Photo Library
+SiteDescription: A personal photo library powered by PhotoPrism
+SiteAuthor: John Doe
+SiteUrl: https://photos.example.com
+
+DatabaseDriver: mysql
+DatabaseDsn: photoprism:supersecretpassword@tcp(mariadb:3306)/photoprism?charset=utf8mb4&parseTime=true&loc=UTC
+
+StoragePath: /photoprism/storage
+OriginalsPath: /photoprism/originals
+ImportPath: /photoprism/import
+BackupPath: /photoprism/storage/backup
+ThumbnailsPath: /photoprism/storage/thumbnails
+
+Workers: 4
+WakeupInterval: 900
+ReadOnly: false
+
+DetectNSFW: true
+UploadNSFW: false

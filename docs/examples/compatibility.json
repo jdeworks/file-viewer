@@ -21719,7 +21719,9 @@
       "label": "Mealie Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "mealie.env"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -21744,7 +21746,9 @@
       "label": "Immich Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "immich.env"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -21798,6 +21802,60 @@
       "support": "supported",
       "sampleFiles": [
         "paperless.conf"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "bookstack-env": {
+      "label": "BookStack Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "bookstack.env"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "mattermost-config": {
+      "label": "Mattermost Config",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "mattermost-config.json"
       ],
       "extensions": [
         ".yml"

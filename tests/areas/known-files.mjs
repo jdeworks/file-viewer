@@ -5170,4 +5170,34 @@ export async function run(ctx) {
   if (/Uptime Kuma/i.test(ukumaText)) pass('uptime-kuma.json: Uptime Kuma badge shown in text'); else fail('ukuma badge: ' + ukumaText.slice(0, 200));
   if (/3001/.test(ukumaText)) pass('uptime-kuma.json: port shown'); else fail('ukuma port: ' + ukumaText.slice(0, 300));
   if (/0\.0\.0\.0/.test(ukumaText)) pass('uptime-kuma.json: hostname shown'); else fail('ukuma hostname: ' + ukumaText.slice(0, 300));
+
+  // ── photoprism-options.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('photoprism-options.yml');
+  pass(await page.waitForSelector('#previewHost .pprism-doc', { timeout: 12000 }), 'photoprism-options.yml: PhotoPrism badge shown');
+
+  // ── paperless.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('paperless.conf');
+  pass(await page.waitForSelector('#previewHost .plngx-doc', { timeout: 12000 }), 'paperless.conf: Paperless-ngx badge shown');
+
+  // ── mealie.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mealie.env');
+  pass(await page.waitForSelector('#previewHost .mealie-doc', { timeout: 12000 }), 'mealie.env: Mealie badge shown');
+
+  // ── immich.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('immich.env');
+  pass(await page.waitForSelector('#previewHost .immich-doc', { timeout: 12000 }), 'immich.env: Immich badge shown');
+
+  // ── bookstack.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('bookstack.env');
+  pass(await page.waitForSelector('#previewHost .bstack-doc', { timeout: 12000 }), 'bookstack.env: BookStack badge shown');
+
+  // ── mattermost-config.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mattermost-config.json');
+  pass(await page.waitForSelector('#previewHost .mm-doc', { timeout: 12000 }), 'mattermost-config.json: Mattermost badge shown');
 }

@@ -530,6 +530,7 @@ import wireguardConf from '../types/text/known/wireguard-conf/index.js';
 import coturnConf from '../types/text/known/coturn-conf/index.js';
 import netbirdConfig from '../types/text/json/known/netbird-config/index.js';
 import tailscaleAcl from '../types/text/json/known/tailscale-acl/index.js';
+import headscaleConfig from '../types/text/yaml/known/headscale-config/index.js';
 import openvpnConfig from '../types/text/known/openvpn-config/index.js';
 import opensslConf from '../types/text/known/openssl-conf/index.js';
 import krb5Conf from '../types/text/known/krb5-conf/index.js';
@@ -662,6 +663,10 @@ import mealieConfig from '../types/text/known/mealie-config/index.js';
 import immichConfig from '../types/text/known/immich-config/index.js';
 import photoprismConfig from '../types/text/yaml/known/photoprism-config/index.js';
 import paperlessConf from '../types/text/known/paperless-conf/index.js';
+import bookstackEnv from '../types/text/known/bookstack-env/index.js';
+import mattermostConfig from '../types/text/json/known/mattermost-config/index.js';
+import netboxConfig from '../types/text/known/netbox-config/index.js';
+import vaultwardenEnv from '../types/text/known/vaultwarden-env/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -756,7 +761,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   gotosocialConfig, searxngConfig,
   newrelicConfig, dynatraceConfig, elasticApmConfig, filebeatConfig, heartbeatConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
-  wireguardConf, netbirdConfig, tailscaleAcl, openvpnConfig, opensslConf, krb5Conf, gpgConf,
+  wireguardConf, netbirdConfig, tailscaleAcl, headscaleConfig, openvpnConfig, opensslConf, krb5Conf, gpgConf,
   giteaConf, stunnelConf,
   supervisordConf, logrotateConf, tlpConf,
   shellRc,
@@ -810,6 +815,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   crowdsecConfig, crowdsecAcquis,
   homerConfig, uptimeKumaConfig,
   photoprismConfig, paperlessConf,
+  bookstackEnv, mattermostConfig,
+  netboxConfig, vaultwardenEnv,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
