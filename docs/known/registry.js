@@ -648,7 +648,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   dotnetGlobal, prismaSchema, nugetConfig,
   sentryProps, otelCollector, logback, log4j2, checkstyleXml, spotbugsConfig,
   prometheusRules, grafanaDashboard, jaegerConfig, otelK8s,
-  scorecard, socketSecurity, trivyConfig, snykConfig,
+  scorecard, socketSecurity, trivyConfig, snykConfig, grypeConfig, tetragonPolicy,
   gradleVersionCatalog, gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml,
   csproj, directoryBuild, msbuildProps, nuspec,
   stackYaml, cabal, opamFile, duneBuild, packageResolved, rebarConfig, erlangSysConfig, erlangVmArgs, cpanfile,

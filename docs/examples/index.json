@@ -6941,12 +6941,13 @@
     "label": "act config (.actrc)",
     "file": ".actrc",
     "mime": "text/plain",
-    "category": "Config",
+    "category": "DevOps",
     "categories": [
       "Config",
-      "devops"
+      "DevOps"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "actrc"
   },
   {
     "label": "policy.rego",
@@ -7102,6 +7103,34 @@
     "enhanced": true,
     "description": "Syft SBOM generation config: 3 output formats, 8 enabled catalogers, secret scanning enabled.",
     "knownFile": "syft-config"
+  },
+  {
+    "name": ".grype.yaml",
+    "label": ".grype.yaml (Grype config)",
+    "file": ".grype.yaml",
+    "mime": "application/yaml",
+    "category": "Security",
+    "categories": [
+      "Security",
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Anchore Grype vulnerability scanner config: fail-on severity: high, 3 CVE ignore rules, all-layers search scope, registry auth.",
+    "knownFile": "grype"
+  },
+  {
+    "name": "tetragon.yaml",
+    "label": "tetragon.yaml (Tetragon policy)",
+    "file": "tetragon.yaml",
+    "mime": "application/yaml",
+    "category": "Security",
+    "categories": [
+      "Security",
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Cilium Tetragon TracingPolicy: 2 kprobes (execve with Sigkill action, tcp_connect), 1 raw_syscalls tracepoint.",
+    "knownFile": "tetragon"
   },
   {
     "label": "example.nomad (Nomad Job)",
@@ -8802,5 +8831,10 @@
     "name": "nsqd.cfg",
     "category": "Infrastructure",
     "knownFile": "nsq-conf"
+  },
+  {
+    "name": "standalone.conf",
+    "category": "Infrastructure",
+    "knownFile": "pulsar-conf"
   }
 ]

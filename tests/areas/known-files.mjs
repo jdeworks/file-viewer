@@ -4760,4 +4760,40 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.ncurc.json');
   pass(await page.waitForSelector('#previewHost .ncurc-doc', { timeout: 12000 }), '.ncurc.json: ncurc-doc shown');
+
+  // ── influxdb.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('influxdb.conf');
+  pass(await page.waitForSelector('#previewHost .influxdb-doc', { timeout: 12000 }), 'influxdb.conf: influxdb-doc shown');
+  const influxText = await page.$eval('#previewHost .influxdb-doc', el => el.textContent);
+  if (!influxText.includes('InfluxDB')) fail('influxdb.conf: missing badge'); else pass('influxdb.conf: badge shown');
+  if (!influxText.includes(':8086') && !influxText.includes('bind-address')) fail('influxdb.conf: no HTTP address shown'); else pass('influxdb.conf: HTTP address shown');
+
+  // ── nsqd.cfg viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nsqd.cfg');
+  pass(await page.waitForSelector('#previewHost .nsqconf-doc', { timeout: 12000 }), 'nsqd.cfg: nsqconf-doc shown');
+  const nsqText = await page.$eval('#previewHost .nsqconf-doc', el => el.textContent);
+  if (!nsqText.includes('NSQ')) fail('nsqd.cfg: missing badge'); else pass('nsqd.cfg: badge shown');
+  if (!nsqText.includes('4150') && !nsqText.includes('tcp-address')) fail('nsqd.cfg: no TCP address shown'); else pass('nsqd.cfg: TCP address shown');
+
+  // ── .actrc viewer (act GitHub Actions runner config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.actrc');
+  pass(await page.waitForSelector('#previewHost .actrc-doc', { timeout: 12000 }), '.actrc: actrc-doc shown');
+
+  // ── standalone.conf viewer (Apache Pulsar broker config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('standalone.conf');
+  pass(await page.waitForSelector('#previewHost .pulsarconf-doc', { timeout: 12000 }), 'standalone.conf: pulsarconf-doc shown');
+
+  // ── .grype.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.grype.yaml');
+  pass(await page.waitForSelector('#previewHost .grype-doc', { timeout: 12000 }), '.grype.yaml: grype-doc shown');
+
+  // ── tetragon.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('tetragon.yaml');
+  pass(await page.waitForSelector('#previewHost .tetragon-doc', { timeout: 12000 }), 'tetragon.yaml: tetragon-doc shown');
 }
