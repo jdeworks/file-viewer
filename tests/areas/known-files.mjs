@@ -6501,4 +6501,28 @@ export async function run(ctx) {
   await openExample('sample.re');
   await page.waitForSelector('#previewHost .re-doc', { timeout: 12000 });
   pass('reason-lang: rendered');
+
+  // ── pony-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.pony');
+  await page.waitForSelector('#previewHost .pony-doc', { timeout: 12000 });
+  pass('pony-lang: rendered');
+
+  // ── wren-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.wren');
+  await page.waitForSelector('#previewHost .wren-doc', { timeout: 12000 });
+  pass('wren-lang: rendered');
+
+  // ── mojo-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.mojo');
+  await page.waitForSelector('#previewHost .mojo-doc', { timeout: 12000 });
+  pass('mojo-lang: rendered');
+
+  // ── janet-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.janet');
+  await page.waitForSelector('#previewHost .janet-doc', { timeout: 12000 });
+  pass('janet-lang: rendered');
 }
