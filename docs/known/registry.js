@@ -679,6 +679,8 @@ import n8nConfig from '../types/text/known/n8n-config/index.js';
 import nocodbConfig from '../types/text/known/nocodb-config/index.js';
 import planeConfig from '../types/text/known/plane-config/index.js';
 import infisicalConfig from '../types/text/known/infisical-config/index.js';
+import vikunjaConfig from '../types/text/yaml/known/vikunja-config/index.js';
+import appsmithConfig from '../types/text/known/appsmith-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -835,6 +837,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   stirlingPdfConfig, monicaConfig,
   n8nConfig, nocodbConfig,
   planeConfig, infisicalConfig,
+  vikunjaConfig, appsmithConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

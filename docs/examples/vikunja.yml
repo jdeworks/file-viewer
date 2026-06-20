@@ -1,0 +1,50 @@
+# Vikunja Configuration
+# https://vikunja.io/docs/config-options/
+
+service:
+  # The URL the frontend is listening on
+  frontendurl: https://tasks.example.com
+  # The interface on which to run the webserver
+  interface: ":3456"
+  # Enable public team discovery
+  enablepublicteams: false
+  # Allow registration of new users
+  enableregistration: true
+  # JWT token lifetime in seconds (15 minutes)
+  jwtttl: 259200
+  # Long-lived JWT token lifetime in seconds (30 days)
+  jwtttllong: 2592000
+
+database:
+  # Database backend to use (sqlite, mysql, postgres)
+  type: postgres
+  host: localhost
+  user: vikunja
+  password: supersecretpassword
+  database: vikunja
+
+redis:
+  enabled: true
+  host: localhost:6379
+  password: ""
+
+mailer:
+  enabled: true
+  host: smtp.example.com
+  port: 587
+  username: vikunja@example.com
+  password: mailsecret
+  fromemail: vikunja@example.com
+  skiptlsverify: false
+  forcessl: false
+
+files:
+  # The path where files are stored
+  basepath: ./files
+  # Maximum file size in bytes (20MB)
+  maxsize: 20971520
+
+log:
+  level: INFO
+  path: stdout
+  format: text

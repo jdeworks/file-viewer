@@ -5290,4 +5290,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('infisical.env');
   pass(await page.waitForSelector('#previewHost .infsc-doc', { timeout: 12000 }), 'infisical.env: Infisical badge shown');
+
+  // ── vikunja.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vikunja.yml');
+  pass(await page.waitForSelector('#previewHost .vkunja-doc', { timeout: 12000 }), 'vikunja.yml: Vikunja badge shown');
+
+  // ── appsmith.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('appsmith.env');
+  pass(await page.waitForSelector('#previewHost .appsm-doc', { timeout: 12000 }), 'appsmith.env: Appsmith badge shown');
 }

@@ -9689,5 +9689,33 @@
     "enhanced": true,
     "description": "Infisical secrets management platform environment configuration with server, encryption keys, JWT secrets, MongoDB, Redis, and SMTP email settings.",
     "knownFile": "infisical-config"
+  },
+  {
+    "file": "vikunja.yml",
+    "label": "vikunja.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Task Management"
+    ],
+    "enhanced": true,
+    "description": "Vikunja task management server configuration with service, database, Redis, mail, and file storage settings.",
+    "knownFile": "vikunja-config"
+  },
+  {
+    "file": "appsmith.env",
+    "label": "appsmith.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Low-Code"
+    ],
+    "enhanced": true,
+    "description": "Appsmith low-code app builder environment configuration with encryption, MongoDB, Redis, email, OAuth, and feature flags.",
+    "knownFile": "appsmith-config"
   }
 ]
