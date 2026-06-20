@@ -5659,4 +5659,10 @@ export async function run(ctx) {
   await openExample('freshrss.env');
   await page.waitForSelector('#previewHost .freshrss-doc', { timeout: 12000 });
   pass('freshrss.env: FreshRSS badge shown');
+
+  // ── homepage-services.yaml viewer (homepage-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('homepage-services.yaml');
+  await page.waitForSelector('#previewHost .homepage-doc', { timeout: 12000 });
+  pass('homepage-services.yaml: Homepage badge shown');
 }

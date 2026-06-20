@@ -1,0 +1,38 @@
+- Media:
+    - Plex:
+        href: https://plex.example.com
+        description: Media server
+        icon: plex.svg
+        widget:
+          type: plex
+          url: http://plex:32400
+          key: plexapikey
+    - Jellyfin:
+        href: https://jellyfin.example.com
+        description: Open source media server
+        icon: jellyfin.svg
+    - Radarr:
+        href: https://radarr.example.com
+        description: Movie management
+        icon: radarr.svg
+        widget:
+          type: radarr
+          url: http://radarr:7878
+          key: radarrapikey
+
+- Infrastructure:
+    - Portainer:
+        href: https://portainer.example.com
+        description: Docker management
+        icon: portainer.svg
+    - Traefik:
+        href: https://traefik.example.com
+        description: Reverse proxy
+        icon: traefik.svg
+        widget:
+          type: traefik
+          url: http://traefik:8080
+    - Grafana:
+        href: https://grafana.example.com
+        description: Metrics dashboards
+        icon: grafana.svg
