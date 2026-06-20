@@ -2995,4 +2995,22 @@ export async function run(ctx) {
   if (/PermitRootLogin/i.test(sshdcfgText)) pass('sshd_config: PermitRootLogin shown'); else fail('sshd_config permit-root: ' + sshdcfgText.slice(0, 300));
   if (/PasswordAuthentication/i.test(sshdcfgText)) pass('sshd_config: PasswordAuthentication shown'); else fail('sshd_config passwd-auth: ' + sshdcfgText.slice(0, 300));
 
+  // ── Postman Collection viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('api.postman_collection.json (Postman)');
+  await page.waitForSelector('#previewHost .postman-doc', { timeout: 12000 });
+  const postmanText = await page.$eval('#previewHost .postman-doc', (e) => e.textContent);
+  if (/Postman/i.test(postmanText)) pass('api.postman_collection.json: Postman badge shown'); else fail('postman badge: ' + postmanText.slice(0, 200));
+  if (/My API Collection/i.test(postmanText)) pass('api.postman_collection.json: collection name shown'); else fail('postman name: ' + postmanText.slice(0, 300));
+  if (/Auth|Users|Health/i.test(postmanText)) pass('api.postman_collection.json: folders/items shown'); else fail('postman structure: ' + postmanText.slice(0, 300));
+
+  // ── GraphQL Schema viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('schema.graphql (GraphQL Schema)');
+  await page.waitForSelector('#previewHost .gql-doc', { timeout: 12000 });
+  const gqlText = await page.$eval('#previewHost .gql-doc', (e) => e.textContent);
+  if (/GraphQL/i.test(gqlText)) pass('schema.graphql: GraphQL badge shown'); else fail('graphql badge: ' + gqlText.slice(0, 200));
+  if (/Query/i.test(gqlText)) pass('schema.graphql: Query operations shown'); else fail('graphql query: ' + gqlText.slice(0, 300));
+  if (/Mutation|User|Post/i.test(gqlText)) pass('schema.graphql: types/mutations shown'); else fail('graphql types: ' + gqlText.slice(0, 300));
+
 }

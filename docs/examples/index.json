@@ -887,13 +887,13 @@
     "description": "Clojure namespace and slug generation example."
   },
   {
-    "label": "schema.graphql",
+    "label": "schema.graphql (GraphQL Schema)",
     "file": "schema.graphql",
     "mime": "application/graphql",
-    "category": "Code",
+    "category": "API",
     "categories": [
-      "Code",
-      "Data"
+      "API",
+      "Code"
     ],
     "type": "code",
     "description": "GraphQL schema for project sample metadata."
@@ -3156,7 +3156,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "typos source code spell checker configuration — word overrides, file ignores, and check settings.",
+    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
     "knownFile": "typos"
   },
   {
@@ -6295,7 +6295,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys — all secret values masked.",
+    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys \u2014 all secret values masked.",
     "knownFile": "rails-credentials"
   },
   {
@@ -6307,7 +6307,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Puma web server config: 2 workers, threads 2–16, production environment, preload_app enabled, plugins listed.",
+    "description": "Puma web server config: 2 workers, threads 2\u201316, production environment, preload_app enabled, plugins listed.",
     "knownFile": "puma-config"
   },
   {
@@ -7009,6 +7009,15 @@
     "categories": [
       "Config",
       "System"
+    ]
+  },
+  {
+    "file": "api.postman_collection.json",
+    "label": "api.postman_collection.json (Postman)",
+    "category": "API",
+    "categories": [
+      "API",
+      "Config"
     ]
   }
 ]
