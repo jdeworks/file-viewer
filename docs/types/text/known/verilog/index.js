@@ -6,7 +6,10 @@ function isCoq(text) {
 function hasVerilogContent(text) {
   if (!text) return false;
   if (isCoq(text)) return false;
-  return /\bmodule\s+\w/.test(text);
+  if (!/\bmodule\s+\w/.test(text)) return false;
+  // Require at least one more Verilog/SystemVerilog keyword to avoid false-positives
+  // on files like go.mod that also use "module <name>".
+  return /\b(endmodule|always|assign|wire\b|reg\b|input\b|output\b|inout\b|parameter\b|localparam\b|posedge|negedge|initial\b)\b/.test(text);
 }
 
 function isSystemVerilog(ext, text) {
