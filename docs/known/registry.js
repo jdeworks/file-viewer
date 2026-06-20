@@ -850,6 +850,10 @@ import elvishScript from '../types/text/known/elvish-script/index.js';
 import fishScript from '../types/text/known/fish-script/index.js';
 import zshScript from '../types/text/known/zsh-script/index.js';
 import nushellScript from '../types/text/known/nushell-script/index.js';
+import gdscriptLang from '../types/text/known/gdscript-lang/index.js';
+import inkScript from '../types/text/known/ink-script/index.js';
+import fennelLang from '../types/text/known/fennel-lang/index.js';
+import ballerinaLang from '../types/text/known/ballerina-lang/index.js';
 export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, rubyLang, perlLang, phpLang, powershellLang, solidityLang, vhdlLang, arduinoSketch, cobolLang, gleamLang, odinLang, haxeLang, adaLang, prologLang, asmLang, objcLang, dLang, ponyLang, wrenLang, mojoLang, janetLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
@@ -1059,6 +1063,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   hoarderConfig,
   frigateConfig,
   coffeescriptLang, livescriptLang, rescriptLang, reasonLang,
+  gdscriptLang, inkScript, fennelLang, ballerinaLang,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

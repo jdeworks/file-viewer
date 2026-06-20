@@ -6597,4 +6597,40 @@ export async function run(ctx) {
   const nuText = await page.$eval('#previewHost .nu-doc', (e) => e.textContent);
   if (/Nushell Script/i.test(nuText)) pass('nushell-script: badge shown'); else fail('nushell-script badge: ' + nuText.slice(0, 200));
   if (/Commands|Exported|def|export/i.test(nuText)) pass('nushell-script: structure shown'); else fail('nushell-script structure: ' + nuText.slice(0, 300));
+
+  // ── gdscript-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.gd');
+  await page.waitForSelector('#previewHost .gd-doc', { timeout: 12000 });
+  pass('gdscript-lang: rendered');
+  const gdText = await page.$eval('#previewHost .gd-doc', (e) => e.textContent);
+  if (/GDScript|Godot Tool Script/i.test(gdText)) pass('gdscript-lang: badge shown'); else fail('gdscript-lang badge: ' + gdText.slice(0, 200));
+  if (/Extends|Functions|Signals|Exports/i.test(gdText)) pass('gdscript-lang: structure shown'); else fail('gdscript-lang structure: ' + gdText.slice(0, 300));
+
+  // ── ink-script viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.ink');
+  await page.waitForSelector('#previewHost .ink-doc', { timeout: 12000 });
+  pass('ink-script: rendered');
+  const inkText = await page.$eval('#previewHost .ink-doc', (e) => e.textContent);
+  if (/Ink Story/i.test(inkText)) pass('ink-script: badge shown'); else fail('ink-script badge: ' + inkText.slice(0, 200));
+  if (/Knots|Variables|Choices|Diverts/i.test(inkText)) pass('ink-script: structure shown'); else fail('ink-script structure: ' + inkText.slice(0, 300));
+
+  // ── fennel-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.fnl');
+  await page.waitForSelector('#previewHost .fnl-doc', { timeout: 12000 });
+  pass('fennel-lang: rendered');
+  const fnlText = await page.$eval('#previewHost .fnl-doc', (e) => e.textContent);
+  if (/Fennel Script/i.test(fnlText)) pass('fennel-lang: badge shown'); else fail('fennel-lang badge: ' + fnlText.slice(0, 200));
+  if (/Requires|Functions|Locals|Macros/i.test(fnlText)) pass('fennel-lang: structure shown'); else fail('fennel-lang structure: ' + fnlText.slice(0, 300));
+
+  // ── ballerina-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.bal');
+  await page.waitForSelector('#previewHost .bal-doc', { timeout: 12000 });
+  pass('ballerina-lang: rendered');
+  const balText = await page.$eval('#previewHost .bal-doc', (e) => e.textContent);
+  if (/Ballerina/i.test(balText)) pass('ballerina-lang: badge shown'); else fail('ballerina-lang badge: ' + balText.slice(0, 200));
+  if (/Imports|Services|Functions|Types/i.test(balText)) pass('ballerina-lang: structure shown'); else fail('ballerina-lang structure: ' + balText.slice(0, 300));
 }
