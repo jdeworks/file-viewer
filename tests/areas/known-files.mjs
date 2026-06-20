@@ -2078,4 +2078,48 @@ export async function run(ctx) {
   if (/my-service-account@/i.test(gcpText)) pass('gcp-service-account.json: client_email shown'); else fail('gcp-sa email: ' + gcpText.slice(0, 300));
   if (/REDACTED.*private key/i.test(gcpText)) pass('gcp-service-account.json: private key is redacted'); else fail('gcp-sa private key masking: ' + gcpText.slice(0, 300));
   if (/never commit/i.test(gcpText)) pass('gcp-service-account.json: security warning shown'); else fail('gcp-sa warning: ' + gcpText.slice(0, 300));
+
+  // ── apisix.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('apisix.yaml');
+  await page.waitForSelector('#previewHost .ax-doc', { timeout: 12000 });
+  const axText = await page.$eval('#previewHost .ax-doc', (e) => e.textContent);
+  if (/APISIX/i.test(axText)) pass('apisix.yaml: APISIX badge shown'); else fail('apisix badge: ' + axText.slice(0, 200));
+  if (/traditional/i.test(axText)) pass('apisix.yaml: deployment mode shown'); else fail('apisix mode: ' + axText.slice(0, 300));
+  if (/9080|9180/i.test(axText)) pass('apisix.yaml: ports shown'); else fail('apisix ports: ' + axText.slice(0, 300));
+  if (/prometheus|cors|limit-req/i.test(axText)) pass('apisix.yaml: plugin names shown'); else fail('apisix plugins: ' + axText.slice(0, 300));
+  if (/2379|\/apisix/i.test(axText)) pass('apisix.yaml: etcd config shown'); else fail('apisix etcd: ' + axText.slice(0, 300));
+
+  // ── envoy.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('envoy.yaml');
+  await page.waitForSelector('#previewHost .ev-doc', { timeout: 12000 });
+  const evText = await page.$eval('#previewHost .ev-doc', (e) => e.textContent);
+  if (/Envoy/i.test(evText)) pass('envoy.yaml: Envoy badge shown'); else fail('envoy badge: ' + evText.slice(0, 200));
+  if (/edge-proxy-01/i.test(evText)) pass('envoy.yaml: node id shown'); else fail('envoy node id: ' + evText.slice(0, 300));
+  if (/9901/i.test(evText)) pass('envoy.yaml: admin port shown'); else fail('envoy admin: ' + evText.slice(0, 300));
+  if (/listener_http|listener_https/i.test(evText)) pass('envoy.yaml: listeners shown'); else fail('envoy listeners: ' + evText.slice(0, 300));
+  if (/api_service|web_service/i.test(evText)) pass('envoy.yaml: clusters shown'); else fail('envoy clusters: ' + evText.slice(0, 300));
+
+  // ── haproxy.cfg viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('haproxy.cfg');
+  await page.waitForSelector('#previewHost .ha-doc', { timeout: 12000 });
+  const haText = await page.$eval('#previewHost .ha-doc', (e) => e.textContent);
+  if (/HAProxy/i.test(haText)) pass('haproxy.cfg: HAProxy badge shown'); else fail('haproxy badge: ' + haText.slice(0, 200));
+  if (/50000/i.test(haText)) pass('haproxy.cfg: maxconn shown'); else fail('haproxy maxconn: ' + haText.slice(0, 300));
+  if (/http_front|https_front/i.test(haText)) pass('haproxy.cfg: frontend blocks shown'); else fail('haproxy frontends: ' + haText.slice(0, 300));
+  if (/web_backend|api_backend/i.test(haText)) pass('haproxy.cfg: backend blocks shown'); else fail('haproxy backends: ' + haText.slice(0, 300));
+  if (/roundrobin|leastconn/i.test(haText)) pass('haproxy.cfg: balance algorithms shown'); else fail('haproxy balance: ' + haText.slice(0, 300));
+
+  // ── squid.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('squid.conf');
+  await page.waitForSelector('#previewHost .sqd-doc', { timeout: 12000 });
+  const sqdText = await page.$eval('#previewHost .sqd-doc', (e) => e.textContent);
+  if (/Squid/i.test(sqdText)) pass('squid.conf: Squid badge shown'); else fail('squid badge: ' + sqdText.slice(0, 200));
+  if (/3128/i.test(sqdText)) pass('squid.conf: http_port shown'); else fail('squid port: ' + sqdText.slice(0, 300));
+  if (/localnet|SSL_ports|Safe_ports/i.test(sqdText)) pass('squid.conf: ACL names shown'); else fail('squid acls: ' + sqdText.slice(0, 300));
+  if (/allow|deny/i.test(sqdText)) pass('squid.conf: access rules shown'); else fail('squid access: ' + sqdText.slice(0, 300));
+  if (/8\.8\.8\.8|1\.1\.1\.1/i.test(sqdText)) pass('squid.conf: DNS nameservers shown'); else fail('squid dns: ' + sqdText.slice(0, 300));
 }

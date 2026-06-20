@@ -1922,10 +1922,14 @@
   {
     "label": "ssh-config",
     "file": "ssh-config",
-    "category": "Other",
+    "category": "Config",
     "categories": [
-      "Other"
-    ]
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "SSH client config: named host aliases, HostName, User, Port, IdentityFile paths, ProxyJump chains, wildcard fallback.",
+    "knownFile": "ssh-config"
   },
   {
     "label": "sample.rdp",
@@ -3684,6 +3688,28 @@
     "knownFile": "nginx-conf"
   },
   {
+    "label": "haproxy.cfg",
+    "file": "haproxy.cfg",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "HAProxy load balancer config: global settings, frontends, backends, and server pools."
+  },
+  {
+    "label": "squid.conf",
+    "file": "squid.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Squid HTTP proxy config: ports, ACLs, access rules, cache directory, and DNS settings."
+  },
+  {
     "label": "moon.yml",
     "file": "moon.yml",
     "mime": "text/yaml",
@@ -4240,42 +4266,6 @@
     "description": "OpenTelemetry Collector config: 4 receivers (otlp, prometheus, jaeger, zipkin), 3 processors (batch, memory_limiter, resourcedetection), 3 exporters, 3 service pipelines (traces, metrics, logs)."
   },
   {
-    "label": "prometheus-rules.yaml",
-    "file": "prometheus-rules.yaml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": ["Config"],
-    "enhanced": true,
-    "description": "Prometheus rules: 2 alert groups (node-alerts, recording-rules) with 2 alert rules and 1 recording rule."
-  },
-  {
-    "label": "grafana-dashboard.json",
-    "file": "grafana-dashboard.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": ["Config"],
-    "enhanced": true,
-    "description": "Grafana dashboard: Node Exporter Dashboard with 4 panels (stat, graph, timeseries, table), 2 template variables."
-  },
-  {
-    "label": "jaeger-config.yaml",
-    "file": "jaeger-config.yaml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": ["Config"],
-    "enhanced": true,
-    "description": "Jaeger tracing config with Elasticsearch storage, query on port 16686, collector with Zipkin and gRPC endpoints."
-  },
-  {
-    "label": "opentelemetry-k8s.yaml",
-    "file": "opentelemetry-k8s.yaml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": ["Config"],
-    "enhanced": true,
-    "description": "OpenTelemetry Operator resources: OpenTelemetryCollector (deployment mode, 2 receivers, 3 exporters) and Instrumentation CRD."
-  },
-  {
     "label": "logback.xml",
     "file": "logback.xml",
     "mime": "text/xml",
@@ -4540,6 +4530,54 @@
     "description": "Infracost cloud cost estimation: projects and metadata settings."
   },
   {
+    "label": "opencost.yaml",
+    "file": "opencost.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "OpenCost configuration: cluster ID, Prometheus endpoint, exporter settings, and UI status.",
+    "knownFile": "opencost-config"
+  },
+  {
+    "label": "crossplane-config.yaml (Crossplane)",
+    "file": "crossplane-config.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Crossplane Provider manifest: package image, apiVersion, and controller config.",
+    "knownFile": "crossplane-config"
+  },
+  {
+    "label": "keda-scaledobject.yaml (KEDA)",
+    "file": "keda-scaledobject.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "KEDA ScaledObject: scaling target, replica bounds, and trigger definitions.",
+    "knownFile": "keda-config"
+  },
+  {
+    "label": "velero-schedule.yaml (Velero)",
+    "file": "velero-schedule.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Velero Schedule: cron expression, TTL, storage location, and namespace filters.",
+    "knownFile": "velero-config"
+  },
+  {
     "label": "Package.resolved",
     "file": "Package.resolved",
     "mime": "application/json",
@@ -4659,6 +4697,46 @@
     ],
     "enhanced": true,
     "description": "Flyway database migration configuration."
+  },
+  {
+    "label": "dbt_project.yml",
+    "file": "dbt_project.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Database"
+    ]
+  },
+  {
+    "label": "liquibase.properties",
+    "file": "liquibase.properties",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Database"
+    ]
+  },
+  {
+    "label": "sqitch.conf",
+    "file": "sqitch.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Database"
+    ]
+  },
+  {
+    "label": "atlas.hcl",
+    "file": "atlas.hcl",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Database"
+    ]
   },
   {
     "label": "docusaurus.config.js",
@@ -4879,6 +4957,28 @@
     ],
     "enhanced": true,
     "description": "Traefik reverse proxy config: entrypoints, providers, and TLS settings."
+  },
+  {
+    "label": "apisix.yaml",
+    "file": "apisix.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Apache APISIX API gateway config: deployment mode, plugins, and etcd settings."
+  },
+  {
+    "label": "envoy.yaml",
+    "file": "envoy.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Envoy proxy static config: node identity, listeners, routes, and clusters."
   },
   {
     "label": "tsup.config.ts",
@@ -5702,5 +5802,189 @@
     ],
     "enhanced": true,
     "description": "Kubernetes RBAC Role manifest: rules for resource access in a namespace."
+  },
+  {
+    "label": ".rspec",
+    "file": ".rspec",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "RSpec options file: format, color, require, and order flags.",
+    "knownFile": "rspec-config"
+  },
+  {
+    "label": ".bundler-audit.yml",
+    "file": ".bundler-audit.yml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "bundler-audit config: 3 ignored CVEs, auto-update enabled.",
+    "knownFile": "bundler-audit-config"
+  },
+  {
+    "label": ".standard.yml",
+    "file": ".standard.yml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "StandardRB linter config: Ruby 3.2, ignore patterns, extensions.",
+    "knownFile": "standardrb-config"
+  },
+  {
+    "label": "sorbet.config",
+    "file": "sorbet.config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Sorbet type checker config: source dirs, ignore patterns, experimental features.",
+    "knownFile": "sorbet-config"
+  },
+  {
+    "label": "aws-credentials (AWS)",
+    "file": "aws-credentials",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "AWS credentials file: default + named profiles with access key IDs (masked) and secret keys always hidden.",
+    "knownFile": "aws-credentials"
+  },
+  {
+    "label": "aws-config (AWS)",
+    "file": "aws-config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "AWS CLI config file: profiles with region, output format, role ARN, MFA serial, and source profile.",
+    "knownFile": "aws-config"
+  },
+  {
+    "label": "kubeconfig.yaml",
+    "file": "kubeconfig.yaml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Kubernetes kubeconfig: 3 clusters, 3 contexts, current-context highlighted, cert/token data always redacted.",
+    "knownFile": "kubeconfig"
+  },
+  {
+    "label": "gcp-service-account.json (GCP)",
+    "file": "gcp-service-account.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "GCP service account key: project ID, client email, key ID (masked). Private key is never displayed.",
+    "knownFile": "gcp-service-account"
+  },
+  {
+    "label": "hosts",
+    "file": "hosts",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "System hosts file: loopback entries, development service overrides, and ad-blocking null routes.",
+    "knownFile": "hosts-file"
+  },
+  {
+    "label": "resolv.conf",
+    "file": "resolv.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "DNS resolver config: public nameservers, search domains, local domain, and resolver options.",
+    "knownFile": "resolv-conf"
+  },
+  {
+    "label": "sshd_config",
+    "file": "sshd_config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "SSH daemon config: port, auth methods, PermitRootLogin, AllowUsers, MaxAuthTries, and SFTP subsystem.",
+    "knownFile": "sshd-config"
+  },
+  {
+    "label": "analysis_options.yaml (Dart Analyzer)",
+    "file": "analysis_options.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "mobile"
+    ],
+    "enhanced": true,
+    "description": "Flutter/Dart static analysis options: linter rules, strong-mode settings, and error severity overrides.",
+    "knownFile": "analysis-options"
+  },
+  {
+    "label": "Podfile.lock (CocoaPods)",
+    "file": "Podfile.lock",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "mobile"
+    ],
+    "enhanced": true,
+    "description": "CocoaPods lockfile: installed pod versions, direct dependencies, spec checksums, and CocoaPods version.",
+    "knownFile": "podfile-lock"
+  },
+  {
+    "label": "MyApp.xcscheme (Xcode Scheme)",
+    "file": "MyApp.xcscheme",
+    "mime": "application/xml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "mobile"
+    ],
+    "enhanced": true,
+    "description": "Xcode scheme: build targets, test targets, run/archive configurations for an iOS app.",
+    "knownFile": "xcode-scheme"
+  },
+  {
+    "label": "eas.json (Expo EAS)",
+    "file": "eas.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "mobile"
+    ],
+    "enhanced": true,
+    "description": "Expo Application Services config: build profiles for development/preview/production and submit profiles.",
+    "knownFile": "eas-json"
   }
 ]
