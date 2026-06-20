@@ -720,6 +720,12 @@ import actualBudgetConfig from '../types/text/json/known/actual-budget-config/in
 import wallosConfig from '../types/text/known/wallos-config/index.js';
 import openWebUiConfig from '../types/text/known/open-webui-config/index.js';
 import maybeConfig from '../types/text/known/maybe-config/index.js';
+import netdataConfig from '../types/text/ini/known/netdata-config/index.js';
+import pocketIdConfig from '../types/text/known/pocket-id-config/index.js';
+import nzbgetConfig from '../types/text/known/nzbget-config/index.js';
+import sabnzbdConfig from '../types/text/ini/known/sabnzbd-config/index.js';
+import joplinServerConfig from '../types/text/known/joplin-server-config/index.js';
+import speedtestTrackerConfig from '../types/text/known/speedtest-tracker-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -829,7 +835,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   corefile, containerdConfig,
   postfixConf, dovecotConf, nagiosConf, zabbixConf, eximConf, chronyConf,
   namedConf, unboundConf, piholeSetupvars, dhcpdConf,
-  netdataConf, yarnrc,
+  netdataConfig, netdataConf, yarnrc,
   hyprlandConf, lxcConfig,
   muttrc, footConfig,
   rofiConfig, makoConf,
@@ -901,6 +907,11 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   wallosConfig,
   openWebUiConfig,
   maybeConfig,
+  pocketIdConfig,
+  nzbgetConfig,
+  sabnzbdConfig,
+  joplinServerConfig,
+  speedtestTrackerConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

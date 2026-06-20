@@ -8158,14 +8158,16 @@
   {
     "file": "netdata.conf",
     "label": "netdata.conf (Netdata)",
-    "category": "Config",
+    "category": "Monitoring",
     "categories": [
-      "Config",
-      "Monitoring"
+      "Monitoring",
+      "Infrastructure",
+      "Self-Hosted"
     ],
     "mime": "text/plain",
     "enhanced": true,
-    "knownFile": "netdata-conf"
+    "knownFile": true,
+    "description": "Netdata real-time monitoring agent configuration"
   },
   {
     "file": ".yarnrc.yml",
@@ -10219,6 +10221,76 @@
     ],
     "enhanced": true,
     "description": "Maybe Finance self-hosted personal finance environment configuration",
+    "knownFile": true
+  },
+  {
+    "file": "pocket-id.env",
+    "label": "Pocket ID config",
+    "mime": "text/plain",
+    "category": "Authentication",
+    "categories": [
+      "Authentication",
+      "Identity",
+      "Self-Hosted"
+    ],
+    "enhanced": true,
+    "description": "Pocket ID OIDC identity provider configuration",
+    "knownFile": true
+  },
+  {
+    "file": "nzbget.conf",
+    "label": "NZBGet config",
+    "mime": "text/plain",
+    "category": "Download",
+    "categories": [
+      "Download",
+      "Usenet",
+      "Self-Hosted"
+    ],
+    "enhanced": true,
+    "description": "NZBGet Usenet downloader configuration",
+    "knownFile": true
+  },
+  {
+    "file": "sabnzbd.ini",
+    "label": "SABnzbd config",
+    "mime": "text/plain",
+    "category": "Download",
+    "categories": [
+      "Download",
+      "Usenet",
+      "Self-Hosted"
+    ],
+    "enhanced": true,
+    "description": "SABnzbd Usenet downloader configuration",
+    "knownFile": true
+  },
+  {
+    "file": "joplin.env",
+    "label": "Joplin Server config",
+    "mime": "text/plain",
+    "category": "Productivity",
+    "categories": [
+      "Productivity",
+      "Notes",
+      "Self-Hosted"
+    ],
+    "enhanced": true,
+    "description": "Joplin Server self-hosted note-taking server configuration",
+    "knownFile": true
+  },
+  {
+    "file": "speedtest-tracker.env",
+    "label": "Speedtest Tracker config",
+    "mime": "text/plain",
+    "category": "Monitoring",
+    "categories": [
+      "Monitoring",
+      "Network",
+      "Self-Hosted"
+    ],
+    "enhanced": true,
+    "description": "Speedtest Tracker automated internet speed monitoring configuration",
     "knownFile": true
   }
 ]

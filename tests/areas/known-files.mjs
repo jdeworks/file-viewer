@@ -5527,4 +5527,40 @@ export async function run(ctx) {
   await openExample('maybe.env');
   await page.waitForSelector('#previewHost .maybe-doc', { timeout: 12000 });
   pass('maybe.env: Maybe badge shown');
+
+  // ── netdata.conf viewer (netdata-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('netdata.conf');
+  await page.waitForSelector('#previewHost .netdata-doc', { timeout: 12000 });
+  pass('netdata.conf: Netdata badge shown');
+
+  // ── pocket-id.env viewer (pocket-id-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pocket-id.env');
+  await page.waitForSelector('#previewHost .pocketid-doc', { timeout: 12000 });
+  pass('pocket-id.env: Pocket ID badge shown');
+
+  // ── nzbget.conf viewer (nzbget-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nzbget.conf');
+  await page.waitForSelector('#previewHost .nzbget-doc', { timeout: 12000 });
+  pass('nzbget.conf: NZBGet badge shown');
+
+  // ── sabnzbd.ini viewer (sabnzbd-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sabnzbd.ini');
+  await page.waitForSelector('#previewHost .sabnzbd-doc', { timeout: 12000 });
+  pass('sabnzbd.ini: SABnzbd badge shown');
+
+  // ── joplin.env viewer (joplin-server-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('joplin.env');
+  await page.waitForSelector('#previewHost .joplin-doc', { timeout: 12000 });
+  pass('joplin.env: Joplin Server badge shown');
+
+  // ── speedtest-tracker.env viewer (speedtest-tracker-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('speedtest-tracker.env');
+  await page.waitForSelector('#previewHost .speedtest-doc', { timeout: 12000 });
+  pass('speedtest-tracker.env: Speedtest Tracker badge shown');
 }
