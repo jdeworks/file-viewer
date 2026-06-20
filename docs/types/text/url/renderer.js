@@ -187,9 +187,10 @@ function copyAllParamsBtn(params) {
 const CSS = `
 <style>
 body { font: 13px/1.5 system-ui, sans-serif; color: #1a1d21; background: #fff; margin: 0; padding: 12px; }
-@media (prefers-color-scheme: dark) { body { color: #e6e6e6; background: #1e1e1e; } .ui-table td,.ui-table th { border-color: #3a3a3d; } }
+body.fv-dark { color: #e6e6e6; background: #1e1e1e; }
+body.fv-dark .ui-table td, body.fv-dark .ui-table th { border-color: #3a3a3d; }
 .ui-raw-box { display: block; font-family: monospace; font-size: 12px; background: #f4f5f7; border: 1px solid #d8dce2; border-radius: 6px; padding: 8px 12px; margin: 0 0 12px; white-space: pre-wrap; word-break: break-all; }
-@media (prefers-color-scheme: dark) { .ui-raw-box { background: #252526; border-color: #3a3a3d; } }
+body.fv-dark .ui-raw-box { background: #252526; border-color: #3a3a3d; }
 .ui-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
 .ui-table td, .ui-table th { border: 1px solid #d8dce2; padding: 5px 10px; vertical-align: top; }
 .ui-label { color: #5b6470; white-space: nowrap; font-size: 12px; width: 120px; }
@@ -197,25 +198,27 @@ body { font: 13px/1.5 system-ui, sans-serif; color: #1a1d21; background: #fff; m
 .ui-key { font-family: monospace; font-size: 12px; white-space: nowrap; }
 .ui-val { font-family: monospace; font-size: 12px; word-break: break-all; }
 .ui-section-head { background: #e9ebef; font-size: 12px; font-weight: 600; color: #5b6470; }
-@media (prefers-color-scheme: dark) { .ui-section-head { background: #2d2d30; color: #9aa0a8; } }
+body.fv-dark .ui-section-head { background: #2d2d30; color: #9aa0a8; }
 .ui-center { text-align: center; padding: 12px !important; }
 .ui-oauth-row { background: rgba(79,130,230,.07); }
 .ui-badge { font-size: 10px; padding: 1px 5px; border-radius: 4px; vertical-align: middle; font-weight: 600; margin-left: 4px; }
 .ui-badge-oauth { background: #e3f0ff; color: #2f6feb; }
 .ui-badge-jwt { background: #fff3cd; color: #664d00; }
 .ui-badge-decoded { background: #e7f8ec; color: #1a7f37; }
-@media (prefers-color-scheme: dark) { .ui-badge-oauth { background: #0b1220; } .ui-badge-jwt { background: #2d2400; color: #c8a000; } .ui-badge-decoded { background: #09230f; color: #56d364; } }
+body.fv-dark .ui-badge-oauth { background: #0b1220; }
+body.fv-dark .ui-badge-jwt { background: #2d2400; color: #c8a000; }
+body.fv-dark .ui-badge-decoded { background: #09230f; color: #56d364; }
 .ui-copy-btn { font-size: 10px; margin-left: 4px; cursor: pointer; border: none; background: transparent; color: #5b6470; padding: 0 2px; }
 .ui-copy-btn:hover { color: #2f6feb; }
 .ui-copy-all-btn { font-size: 12px; padding: 4px 10px; border: 1px solid #d8dce2; border-radius: 6px; background: #f4f5f7; cursor: pointer; color: #1a1d21; margin-top: 4px; }
-@media (prefers-color-scheme: dark) { .ui-copy-all-btn { background: #252526; border-color: #3a3a3d; color: #e6e6e6; } }
+body.fv-dark .ui-copy-all-btn { background: #252526; border-color: #3a3a3d; color: #e6e6e6; }
 .ui-pretty { margin-top: 4px; }
 .ui-pretty summary { font-size: 11px; cursor: pointer; color: #5b6470; }
 .ui-pretty pre { margin: 4px 0 0; font-size: 11px; max-height: 200px; overflow: auto; }
 .ui-body-pre { white-space: pre-wrap; word-break: break-all; font-size: 12px; margin: 0; }
 .ui-multi-head { font-weight: 600; font-size: 13px; margin-bottom: 8px; }
 .ui-url-item { border: 1px solid #d8dce2; border-radius: 6px; margin-bottom: 6px; }
-@media (prefers-color-scheme: dark) { .ui-url-item { border-color: #3a3a3d; } }
+body.fv-dark .ui-url-item { border-color: #3a3a3d; }
 .ui-url-item summary { padding: 6px 10px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 8px; }
 .ui-url-num { background: #e9ebef; border-radius: 4px; padding: 0 5px; font-size: 11px; }
 .ui-url-raw { font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -119,20 +119,18 @@ function parseSauce(text) {
 const CSS = `
 <style>
 body { margin: 0; padding: 0; background: #0d0d0d; color: #ccc; font: 13px/1.2 "Courier New", Courier, monospace; }
-@media (prefers-color-scheme: light) { body { background: #f8f8f8; color: #222; } }
+body:not(.fv-dark) { background: #f8f8f8; color: #222; }
 .aa-notice { font-family: system-ui, sans-serif; font-size: 12px; color: #888; padding: 6px 10px;
   border-bottom: 1px solid #333; background: #1a1a1a; }
-@media (prefers-color-scheme: light) { .aa-notice { background: #eee; border-color: #ccc; } }
+body:not(.fv-dark) .aa-notice { background: #eee; border-color: #ccc; }
 .aa-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px;
   border-bottom: 1px solid #333; background: #151515; font-family: system-ui, sans-serif; font-size: 12px; }
 .aa-sauce { color: #ccc; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .aa-copy { border: 1px solid #444; border-radius: 4px; background: #222; color: #ddd; padding: 4px 8px; font: inherit; cursor: pointer; }
 .aa-copy:hover { background: #2d2d2d; }
-@media (prefers-color-scheme: light) {
-  .aa-head { background: #eee; border-color: #ccc; }
-  .aa-sauce { color: #333; }
-  .aa-copy { background: #fff; color: #222; border-color: #bbb; }
-}
+body:not(.fv-dark) .aa-head { background: #eee; border-color: #ccc; }
+body:not(.fv-dark) .aa-sauce { color: #333; }
+body:not(.fv-dark) .aa-copy { background: #fff; color: #222; border-color: #bbb; }
 .aa-wrap { overflow: auto; padding: 12px; }
 .aa-pre { white-space: pre; font: 13px/1.2 "Courier New", Courier, monospace;
   tab-size: 8; -moz-tab-size: 8; }
