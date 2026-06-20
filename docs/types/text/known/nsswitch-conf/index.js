@@ -7,6 +7,10 @@ export default {
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name === 'nsswitch.conf') return true;
+    // Exclude structured-data and markup extensions — their key: value syntax causes
+    // false-positive matches against the nsswitch database patterns.
+    const ext = name.includes('.') ? name.split('.').pop() : '';
+    if (['yaml', 'yml', 'json', 'toml', 'xml', 'html', 'ini', 'cfg', 'conf', 'md', 'rst'].includes(ext)) return false;
     const text = intake.text || '';
     const lines = text.split(/\r?\n/).filter((l) => /^\w+:\s+\w+/.test(l.trim()));
     if (lines.length < 3) return false;

@@ -5,9 +5,9 @@ export const plugin = {
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (n === 'pytest.ini') return true;
+    // setup.cfg is handled by the setup-cfg plugin — it covers pytest config within it
+    if (n === 'setup.cfg') return false;
     const t = intake.text || '';
-    // setup.cfg only if it has a [tool:pytest] or [pytest] section
-    if (n === 'setup.cfg') return /^\[tool:pytest\]/m.test(t) || /^\[pytest\]/m.test(t);
     return /^\[pytest\]/m.test(t) || /^\[tool:pytest\]/m.test(t);
   },
   renderer: () => import('./renderer.js'),

@@ -9,6 +9,8 @@ export const plugin = {
   tags: ['elixir', 'functional', 'beam', 'erlang', 'phoenix'],
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    // mix.exs is the Elixir build config — handled by the mix-exs plugin
+    if (name === 'mix.exs') return false;
     const ext = name.includes('.') ? name.split('.').pop() : '';
     if (ext === 'ex' || ext === 'exs') {
       return hasElixirContent(intake.text);

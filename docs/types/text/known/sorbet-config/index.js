@@ -2,11 +2,13 @@ export default {
   id: 'sorbet-config',
   label: 'Sorbet config',
   match: (intake) => {
-    const n = (intake.filename || '').split('/').pop();
-    const p = intake.filename || '';
+    const n = (intake.filename || intake.name || '').split('/').pop();
+    const p = intake.filename || intake.name || '';
     const t = intake.text || '';
-    // Match sorbet/config file, or any file named 'config' in a sorbet/ directory
-    return (n === 'config' && p.includes('sorbet')) ||
+    // Match sorbet/config file, or any file named 'config' in a sorbet/ directory,
+    // or a file explicitly named 'sorbet.config'
+    return n === 'sorbet.config' ||
+           (n === 'config' && p.includes('sorbet')) ||
            (n === 'config' && t.includes('--dir') && t.includes('--ignore'));
   },
   loadRenderer: () => import('./renderer.js'),

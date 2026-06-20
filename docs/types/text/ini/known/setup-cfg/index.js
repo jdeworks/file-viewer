@@ -1,8 +1,7 @@
 export default {
   id: 'setup-cfg',
   label: 'setup.cfg',
-  match(intake, baseType) {
-    if (baseType?.id !== 'ini') return false;
+  match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === 'setup.cfg';
   },

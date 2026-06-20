@@ -1,8 +1,7 @@
 export default {
   id: 'pylintrc',
   label: 'Pylint config',
-  match(intake, baseType) {
-    if (baseType?.id !== 'ini') return false;
+  match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === '.pylintrc' || n === 'pylintrc' || n === '.pylint';
   },

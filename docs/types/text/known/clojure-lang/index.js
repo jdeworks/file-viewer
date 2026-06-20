@@ -4,8 +4,11 @@ export const plugin = {
   tags: ['clojure', 'clj', 'cljs', 'cljc', 'edn', 'functional', 'lisp', 'jvm'],
   match(intake) {
     const name = (intake.name || intake.filename || '').toLowerCase();
-    // project.clj is a Leiningen build config — handled by the project-clj plugin
-    if (name.split('/').pop() === 'project.clj') return false;
+    const base = name.split('/').pop();
+    // Known Clojure build/config files handled by dedicated plugins
+    if (base === 'project.clj') return false;
+    if (base === 'deps.edn') return false;
+    if (base === 'shadow-cljs.edn') return false;
     return name.endsWith('.clj') || name.endsWith('.cljs') || name.endsWith('.cljc') || name.endsWith('.edn');
   },
   loadRenderer: () => import('./renderer.js'),

@@ -33,7 +33,10 @@ export const plugin = {
       // .v is also Coq — guard carefully
       return hasVerilogContent(intake.text);
     }
-    // Content-based detection for unlabelled files
+    // Content-based detection for unlabelled files — exclude config/markup extensions that
+    // commonly contain false-positive words like "module", "input", "output".
+    const configExts = new Set(['yml', 'yaml', 'json', 'toml', 'ini', 'cfg', 'conf', 'md', 'rst', 'txt', 'xml', 'html', 'css', 'sh', 'bash', 'py', 'rb', 'go', 'rs', 'ts', 'js']);
+    if (configExts.has(ext)) return false;
     return hasVerilogContent(intake.text);
   },
   loadRenderer: () => import('./renderer.js'),

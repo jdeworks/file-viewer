@@ -4,7 +4,8 @@ export default {
   match: (intake) => {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name === 'mypy.ini' || name === '.mypy.ini') return true;
-    // heuristic: plain text containing [mypy] section header
+    // setup.cfg is handled by the setup-cfg plugin — it covers mypy config within it
+    if (name === 'setup.cfg') return false;
     const text = intake.text || '';
     return /^\[mypy\]/m.test(text);
   },

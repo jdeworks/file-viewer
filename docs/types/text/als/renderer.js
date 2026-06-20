@@ -30,7 +30,7 @@ export async function parseAls(intake) {
     const type = tag.replace(/Track$/, '').replace(/^Midi$/, 'MIDI') || 'Track';
     const name = valueOf(el.querySelector('UserName')) || valueOf(el.querySelector('EffectiveName')) || type + ' ' + (i + 1);
     const clips = [...el.querySelectorAll('MidiClip, AudioClip')].map((clip) => valueOf(clip) || valueOf(clip.querySelector('Name'))).filter(Boolean);
-    const plugins = [...el.querySelectorAll('PluginDevice')].map((p) => valueOf(p.querySelector('Name')) || valueOf(p.querySelector('PluginDesc Name'))).filter(Boolean);
+    const plugins = [...el.querySelectorAll('PluginDevice')].map((p) => valueOf(p.querySelector('Name EffectiveName')) || valueOf(p.querySelector('Name UserName')) || valueOf(p.querySelector('PluginDesc Name'))).filter(Boolean);
     return { type, name, clips, plugins };
   });
   const plugins = [...new Set(tracks.flatMap((t) => t.plugins))];

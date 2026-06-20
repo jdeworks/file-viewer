@@ -33,16 +33,20 @@ function extractPackages(text) {
 
 function extractCustomVars(text) {
   const vars = [];
-  // (custom-set-variables '(key val …))
-  const blockRe = /\(custom-set-variables([\s\S]*?)\)\s*\n/;
-  const block = blockRe.exec(text);
-  if (block) {
-    const inner = block[1];
-    const re = /'\((\S+)\s+([^)]+)\)/g;
-    let m;
-    while ((m = re.exec(inner)) !== null && vars.length < 20) {
-      vars.push({ key: m[1], val: m[2].trim() });
-    }
+  const start = text.indexOf('(custom-set-variables');
+  if (start < 0) return vars;
+  // Walk paren depth to find the matching closing paren of the whole block
+  let depth = 0, i = start;
+  while (i < text.length) {
+    if (text[i] === '(') depth++;
+    else if (text[i] === ')') { depth--; if (depth === 0) break; }
+    i++;
+  }
+  const block = text.slice(start, i + 1);
+  const re = /'\((\S+)\s+([^)]+)\)/g;
+  let m;
+  while ((m = re.exec(block)) !== null && vars.length < 20) {
+    vars.push({ key: m[1], val: m[2].trim() });
   }
   return vars;
 }

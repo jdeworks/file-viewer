@@ -5,7 +5,9 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (!name.endsWith('.lua')) return false;
+    // Defer init.lua to neovim-config plugin when it contains Neovim-specific APIs
     const text = intake.text || '';
+    if (name === 'init.lua' && (text.includes('vim.opt') || text.includes('vim.keymap') || text.includes('vim.g.mapleader'))) return false;
     const hits = [
       /\bfunction\s+\w+/.test(text),
       /\blocal\s+\w+/.test(text),

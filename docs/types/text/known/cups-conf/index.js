@@ -6,6 +6,8 @@ export const plugin = {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name === 'cupsd.conf') return true;
     const text = intake.text || '';
+    // Reject Apache httpd configs that share ServerName/Listen/<Location syntax
+    if (/^LoadModule\s/m.test(text) || /<VirtualHost\b/m.test(text)) return false;
     return /^ServerName\s/m.test(text) && /^Listen\s/m.test(text) && /<Location\s/m.test(text);
   },
   loadRenderer: () => import('./renderer.js'),

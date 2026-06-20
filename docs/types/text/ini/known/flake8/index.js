@@ -1,8 +1,7 @@
 export default {
   id: 'flake8',
   label: 'Flake8 config',
-  match(intake, baseType) {
-    if (baseType?.id !== 'ini') return false;
+  match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === '.flake8';
   },

@@ -1,11 +1,10 @@
 export default {
   id: 'aws-credentials',
   label: 'AWS Credentials',
-  match(intake, baseType) {
-    if (baseType?.id !== 'ini') return false;
+  match(intake) {
     const name = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
     const text = intake.textSample || intake.text || '';
-    return name === 'credentials' && text.includes('aws_access_key_id');
+    return (name === 'credentials' || name === 'aws-credentials') && text.includes('aws_access_key_id');
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

@@ -4,8 +4,9 @@ export const plugin = {
   tags: ['emacs', 'lisp', 'elisp', 'editor'],
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    // Let emacs-config handle the primary Emacs config files — those get a richer viewer
+    if (name === '.emacs' || name === 'init.el' || name === 'early-init.el') return false;
     if (name.endsWith('.el')) return true;
-    if (name === '.emacs' || name === 'init.el' || name === 'early-init.el') return true;
     const text = intake.text || '';
     return (
       text.includes('(defun ') ||

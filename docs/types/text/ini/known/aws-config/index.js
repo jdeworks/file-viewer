@@ -1,11 +1,10 @@
 export default {
   id: 'aws-config',
   label: 'AWS Config',
-  match(intake, baseType) {
-    if (baseType?.id !== 'ini') return false;
+  match(intake) {
     const name = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
     const text = intake.textSample || intake.text || '';
-    return name === 'config' && (text.includes('[default]') || text.includes('[profile ')) && text.includes('region');
+    return (name === 'config' || name === 'aws-config') && (text.includes('[default]') || text.includes('[profile ')) && text.includes('region');
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

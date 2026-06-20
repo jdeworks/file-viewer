@@ -7,7 +7,8 @@ export default {
     const text = intake.textSample || intake.text || '';
     if (n === 'victoria-metrics.yml' || n === 'vmagent.yml' || n === 'vmalert.yml' || n === 'victoriametrics.yml') return true;
     if (text.includes('scrape_configs:') && text.includes('remote_write:')) return true;
-    if (text.includes('groups:') && text.includes('expr:') && text.includes('severity:')) return true;
+    // Avoid the generic groups+expr+severity pattern — Prometheus uses the same format for its
+    // rules files (prometheus-rules.yaml etc.), so a content-only check causes false-positives.
     return false;
   },
   loadRenderer: () => import('./renderer.js'),

@@ -42,8 +42,8 @@ function parseAtlasHcl(text) {
   const variables = [];
   const datasources = [];
 
-  // Strip comments
-  const cleaned = text.replace(/\/\/[^\n]*/g, '').replace(/#[^\n]*/g, '');
+  // Strip line comments (anchored to start-of-line so URLs containing // are preserved)
+  const cleaned = text.replace(/^[ \t]*\/\/[^\n]*/mg, '').replace(/^[ \t]*#[^\n]*/mg, '');
 
   // Match top-level blocks
   const blockRe = /(\w+)\s+(?:"([^"]+)"\s+)?(?:"([^"]+)"\s+)?\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}/g;

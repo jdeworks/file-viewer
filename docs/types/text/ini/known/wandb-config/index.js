@@ -1,8 +1,7 @@
 export default {
   id: 'wandb-config',
   label: 'W&B Config',
-  match(intake, baseType) {
-    if (!baseType || baseType.id !== 'ini') return false;
+  match(intake) {
     const fullPath = intake.filename || intake.name || '';
     const name = fullPath.split('/').pop().toLowerCase();
     const text = intake.textSample || intake.text || '';

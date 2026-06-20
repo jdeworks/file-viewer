@@ -30,10 +30,19 @@ function fnChipClass(type) {
   return 'other';
 }
 
+function makeCfnSchema(jsYaml) {
+  const tagNames = ['Sub', 'Ref', 'GetAtt', 'If', 'Select', 'Split', 'Join', 'Base64',
+    'FindInMap', 'GetAZs', 'ImportValue', 'Length', 'Transform', 'ValueOf', 'Condition', 'And', 'Or', 'Not', 'Equals'];
+  const types = tagNames.flatMap((tag) => ['scalar', 'sequence', 'mapping'].map((kind) =>
+    new jsYaml.Type('!' + tag, { kind, construct: (d) => ({ [tag]: d }) })));
+  return jsYaml.DEFAULT_SCHEMA.extend(types);
+}
+
 export async function render(intake) {
   const jsYaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
   let tpl = {};
-  try { tpl = (jsYaml.loadAll(intake.text || '') || [])[0] || {}; } catch { tpl = {}; }
+  const cfnSchema = makeCfnSchema(jsYaml);
+  try { tpl = jsYaml.load(intake.text || '', { schema: cfnSchema }) || {}; } catch { tpl = {}; }
 
   const transform = tpl.Transform || '';
   const description = tpl.Description || '';

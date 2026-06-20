@@ -49,7 +49,8 @@ function extractColorscheme(text) {
 
 function extractMappings(text) {
   const maps = [];
-  const re = /^\s*(n?v?i?[nvoicx]?map(?:!)?)\s+(\S+)\s+(\S+)/gm;
+  // match map, noremap, nmap, nnoremap, vnoremap, inoremap, etc. (0-1 mode char + optional 'nore' + 'map' + optional '!')
+  const re = /^\s*([nvoicxstl]?(?:nore)?map!?)\s+(\S+)\s+(\S+)/gm;
   let m;
   while ((m = re.exec(text)) !== null && maps.length < 20) {
     maps.push({ mode: m[1], lhs: m[2], rhs: m[3] });

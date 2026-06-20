@@ -21,17 +21,24 @@ const CSS = `
 function parseIni(text) {
   const secs = {};
   let cur = null;
+  let lastKey = null;
   for (const rawLine of (text || '').split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#') || line.startsWith(';')) continue;
-    const sec = line.match(/^\[([^\]]+)\]/);
-    if (sec) { cur = sec[1].trim(); secs[cur] = {}; continue; }
+    if (!rawLine.trim() || rawLine.trim().startsWith('#') || rawLine.trim().startsWith(';')) { lastKey = null; continue; }
+    const sec = rawLine.trim().match(/^\[([^\]]+)\]/);
+    if (sec) { cur = sec[1].trim(); secs[cur] = {}; lastKey = null; continue; }
+    // Continuation line: starts with whitespace and follows a key
+    if (cur && lastKey && /^[ \t]/.test(rawLine)) {
+      secs[cur][lastKey] += '\n' + rawLine.trim();
+      continue;
+    }
     if (cur) {
-      const kv = line.match(/^([^=]+)=(.*)/);
+      const kv = rawLine.trim().match(/^([^=]+)=(.*)/);
       if (kv) {
-        const key = kv[1].trim();
+        lastKey = kv[1].trim();
         const val = kv[2].trim();
-        if (!(key in secs[cur])) secs[cur][key] = val;
+        if (!(lastKey in secs[cur])) secs[cur][lastKey] = val;
+      } else {
+        lastKey = null;
       }
     }
   }

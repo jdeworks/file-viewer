@@ -44,6 +44,7 @@ export async function render(intake) {
 
   const name = cfg.name || (intake.filename || '').split('/').pop() || 'Pipeline';
   const steps = Array.isArray(cfg.steps) ? cfg.steps : [];
+  const services = Array.isArray(cfg.services) ? cfg.services : [];
   const matrix = cfg.matrix || null;
   const cloneCfg = cfg.clone || null;
   const pipelineWhen = cfg.when || null;
@@ -96,6 +97,15 @@ export async function render(intake) {
     ? `<div class="wpc-sec"><h3>Secrets used (${allSecrets.length})</h3><div style="display:flex;flex-wrap:wrap;gap:4px;">${allSecrets.map((s) => `<span class="wpc-pill">${esc(s)}</span>`).join('')}</div></div>`
     : '';
 
+  // Services (sidecar containers)
+  const servicesHtml = services.length
+    ? `<div class="wpc-sec"><h3>Services (${services.length})</h3>${services.slice(0, 8).map((s) => {
+        const sname = s.name || '?';
+        const img = s.image || '';
+        return `<div class="wpc-step"><span class="wpc-step-name">${esc(sname)}</span>${img ? `<span class="wpc-step-img">${esc(img)}</span>` : ''}</div>`;
+      }).join('')}</div>`
+    : '';
+
   // Clone config
   let cloneHtml = '';
   if (cloneCfg && typeof cloneCfg === 'object') {
@@ -116,7 +126,7 @@ export async function render(intake) {
   host.innerHTML = `<style>${CSS}</style>
 <div class="wpc-title"><span class="badge-wpc">Woodpecker CI</span>${esc(name)}</div>
 <div class="wpc-sub">${esc(sub)}</div>
-${stepsHtml}${whenHtml}${matrixHtml}${secretsHtml}${cloneHtml}`;
+${stepsHtml}${servicesHtml}${whenHtml}${matrixHtml}${secretsHtml}${cloneHtml}`;
 
   return { parentNode: host };
 }
