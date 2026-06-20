@@ -13,8 +13,15 @@ import { loadState, saveState, clearState } from '../../core/persistence.js';
 import { showIosAudioHint, hideIosAudioHint } from '../../core/ios-audio.js';
 import { parseId3 } from './id3.js';
 import { likelyNeedsTranscode, transcode } from './transcoder.js';
-import { buildEditorPanel } from './editor.js';
 import { recordStage5MediaPlayback } from '../../games/metagame/viewer-actions.js';
+
+// Lazily import editor.js (and its transcoder.js dep) only when ffmpeg is enabled.
+// This prevents a stale SW-cached transcoder.js from breaking the entire preview.
+let _editorModule = null;
+async function getEditorPanel() {
+  if (!_editorModule) _editorModule = await import('./editor.js');
+  return _editorModule.buildEditorPanel;
+}
 
 const SLEEP_OPTIONS = [0, 5, 15, 30, 45, 60];   // minutes; 0 = off
 const PLAYABLE = /\.(mp3|wav|m4a|m4b|aac|oga|ogg|opus|flac|weba|mp4|m4v|webm|ogv|mov|mkv)$/i;
@@ -197,6 +204,7 @@ export async function render(intake, ctx = {}) {
   let transcodedUrl = null;  // revoked on cleanup
 
   if (enableFfmpeg) {
+    const buildEditorPanel = await getEditorPanel();
     const editor = buildEditorPanel(intake, el, (newUrl) => {
       if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
       transcodedUrl = newUrl;
