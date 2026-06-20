@@ -321,8 +321,8 @@ export async function run(ctx) {
   // ── babel.config.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('babel.config.json');
-  await page.waitForSelector('#previewHost .bbl-doc', { timeout: 12000 });
-  const bblText = await page.$eval('#previewHost .bbl-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .babelcfg-doc', { timeout: 12000 });
+  const bblText = await page.$eval('#previewHost .babelcfg-doc', (e) => e.textContent);
   if (/Babel/i.test(bblText)) pass('babel.config.json: badge shown'); else fail('babel badge: ' + bblText.slice(0, 200));
   if (/@babel\/preset-env|@babel\/preset-react/i.test(bblText)) pass('babel.config.json: presets shown'); else fail('babel presets: ' + bblText.slice(0, 200));
 
@@ -1238,10 +1238,10 @@ export async function run(ctx) {
   // ── .golangci.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.golangci.yml');
-  await page.waitForSelector('#previewHost .gcl-doc', { timeout: 12000 });
-  const gclText = await page.$eval('#previewHost .gcl-doc', (e) => e.textContent);
-  if (/golangci-lint/i.test(gclText)) pass('.golangci.yml: golangci-lint badge shown'); else fail('golangci badge: ' + gclText.slice(0, 200));
-  if (/errcheck|gosimple|govet/i.test(gclText)) pass('.golangci.yml: enabled linters shown'); else fail('golangci linters: ' + gclText.slice(0, 200));
+  await page.waitForSelector('#previewHost .golangci-doc', { timeout: 12000 });
+  const gclText = await page.$eval('#previewHost .golangci-doc', (e) => e.textContent);
+  if (/golangci-lint/i.test(gclText)) pass('.golangci.yml: badge shown'); else fail('golangci badge: ' + gclText.slice(0, 200));
+  if (/errcheck/i.test(gclText)) pass('.golangci.yml: linters shown'); else fail('golangci linters: ' + gclText.slice(0, 200));
   if (/5m/i.test(gclText)) pass('.golangci.yml: timeout shown'); else fail('golangci timeout: ' + gclText.slice(0, 200));
 
   // ── buf.yaml viewer ──

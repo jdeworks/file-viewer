@@ -3,7 +3,7 @@ export default {
   label: 'vcpkg',
   match(intake, baseType) {
     if (baseType?.id !== 'json') return false;
-    const n = (intake.filename || '').split('/').pop().toLowerCase();
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === 'vcpkg.json';
   },
   loadRenderer: () => import('./renderer.js'),

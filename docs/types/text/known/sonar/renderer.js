@@ -1,44 +1,36 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.snr-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
-.snr-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#4E9BCD;color:#fff;vertical-align:middle;margin-right:8px}
-.snr-title{font-size:18px;font-weight:700;margin:0 0 4px}
-.snr-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px}
-.snr-card{background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);border-radius:8px;padding:12px 16px;margin:0 0 14px}
-.snr-table{width:100%;border-collapse:collapse;font-size:13px}
-.snr-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);padding:4px 8px;border-bottom:1px solid var(--border,#e0e0e0)}
-.snr-table td{padding:5px 8px;border-bottom:1px solid var(--border,#e0e0e0)}
-.snr-table td:first-child{font:12px/1.4 ui-monospace,monospace;color:var(--fg-2,#666);white-space:nowrap}
-.snr-table td:last-child{font:13px/1.4 ui-monospace,monospace;word-break:break-all}
-.snr-sec{margin:14px 0}
-.snr-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 8px}
+.sonarprops-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
+.sonarprops-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#4e9bcd;color:#fff;vertical-align:middle;margin-right:8px}
+.sonarprops-title{font-size:18px;font-weight:700;margin:0 0 4px}
+.sonarprops-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px}
+.sonarprops-chip{display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace;margin-left:6px;vertical-align:middle}
+.sonarprops-card{background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);border-radius:8px;padding:12px 16px;margin:0 0 14px}
+.sonarprops-card h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 8px}
+.sonarprops-table{width:100%;border-collapse:collapse;font-size:13px}
+.sonarprops-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);padding:4px 8px;border-bottom:1px solid var(--border,#e0e0e0)}
+.sonarprops-table td{padding:5px 8px;border-bottom:1px solid var(--border,#e0e0e0)}
+.sonarprops-table td:first-child{font:12px/1.4 ui-monospace,monospace;color:var(--fg-2,#666);white-space:nowrap}
+.sonarprops-table td:last-child{font:13px/1.4 ui-monospace,monospace;word-break:break-all}
+.sonarprops-masked{font:11px ui-monospace,monospace;color:var(--fg-2,#888);font-style:italic}
+.sonarprops-paths{list-style:none;padding:0;margin:2px 0 0;display:flex;flex-direction:column;gap:2px}
+.sonarprops-paths li{font:12px ui-monospace,monospace;color:var(--fg-2,#666)}
 `;
 
-const KEY_LABELS = {
-  'sonar.projectKey': 'Project Key',
-  'sonar.projectName': 'Project Name',
-  'sonar.projectVersion': 'Version',
-  'sonar.sources': 'Sources',
-  'sonar.tests': 'Tests',
-  'sonar.language': 'Language',
-  'sonar.java.binaries': 'Java Binaries',
-  'sonar.exclusions': 'Exclusions',
-  'sonar.coverage.exclusions': 'Coverage Exclusions',
-  'sonar.host.url': 'Host URL',
-  'sonar.login': 'Login',
-  'sonar.token': 'Token',
-};
+// Keys that should be masked
+const SENSITIVE = /password|token|login|secret|credential/i;
 
-// Keys shown in the summary card
-const SUMMARY_KEYS = ['sonar.projectKey', 'sonar.projectName', 'sonar.projectVersion', 'sonar.sources', 'sonar.tests', 'sonar.language'];
+function maskVal(key, val) {
+  if (SENSITIVE.test(key)) return '<span class="sonarprops-masked">[configured]</span>';
+  return esc(val);
+}
 
-export async function render(intake) {
-  const text = intake.text || new TextDecoder().decode(intake.bytes);
+export function render(intake) {
+  const text = intake.text || '';
   const lines = text.split(/\r?\n/);
 
   const props = new Map();
-  const allPairs = [];
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
@@ -47,39 +39,103 @@ export async function render(intake) {
     const key = trimmed.slice(0, eq).trim();
     const val = trimmed.slice(eq + 1).trim();
     props.set(key, val);
-    allPairs.push({ key, val });
   }
 
-  const summaryRows = SUMMARY_KEYS
-    .filter((k) => props.has(k))
-    .map((k) => `<tr><td>${esc(KEY_LABELS[k] || k)}</td><td>${esc(props.get(k))}</td></tr>`)
-    .join('');
+  const g = (k) => props.get(k) || '';
 
-  const otherRows = allPairs
-    .filter(({ key }) => !SUMMARY_KEYS.includes(key))
-    .map(({ key, val }) => `<tr><td>${esc(key)}</td><td>${esc(val)}</td></tr>`)
-    .join('');
+  const projectName = g('sonar.projectName');
+  const projectKey = g('sonar.projectKey');
+  const version = g('sonar.projectVersion');
 
-  const summaryHtml = summaryRows
-    ? `<div class="snr-sec"><h3>Project Info</h3><div class="snr-card"><table class="snr-table"><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody>${summaryRows}</tbody></table></div></div>`
-    : '';
+  // Header
+  let html = `<style>${CSS}</style>`;
+  html += `<div class="sonarprops-title"><span class="sonarprops-badge">SonarQube</span>${esc(projectName || 'sonar-project.properties')}`;
+  if (version) html += `<span class="sonarprops-chip">${esc(version)}</span>`;
+  html += `</div>`;
+  if (projectKey) html += `<div class="sonarprops-sub">${esc(projectKey)}</div>`;
 
-  const otherHtml = otherRows
-    ? `<div class="snr-sec"><h3>Additional Properties</h3><div class="snr-card"><table class="snr-table"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>${otherRows}</tbody></table></div></div>`
-    : '';
+  // Project card
+  const projectRows = [
+    ['sonar.projectKey', 'Project Key'],
+    ['sonar.projectName', 'Project Name'],
+    ['sonar.projectVersion', 'Version'],
+  ].filter(([k]) => props.has(k));
 
-  const projectKey = props.get('sonar.projectKey') || '';
-  const projectName = props.get('sonar.projectName') || '';
-  const version = props.get('sonar.projectVersion') || '';
-  const language = props.get('sonar.language') || '';
+  if (projectRows.length) {
+    html += `<div class="sonarprops-card"><h3>Project</h3><table class="sonarprops-table"><tbody>`;
+    for (const [k, label] of projectRows) {
+      html += `<tr><td>${esc(label)}</td><td>${maskVal(k, g(k))}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
 
-  const subParts = [projectKey, version, language].filter(Boolean);
+  // Server card
+  const hostUrl = g('sonar.host.url');
+  const hasServer = hostUrl || props.has('sonar.token') || props.has('sonar.login');
+  if (hasServer) {
+    html += `<div class="sonarprops-card"><h3>Server</h3><table class="sonarprops-table"><tbody>`;
+    if (hostUrl) html += `<tr><td>Host URL</td><td>${esc(hostUrl)}</td></tr>`;
+    if (props.has('sonar.token')) html += `<tr><td>Token</td><td>${maskVal('sonar.token', g('sonar.token'))}</td></tr>`;
+    if (props.has('sonar.login')) html += `<tr><td>Login</td><td>${maskVal('sonar.login', g('sonar.login'))}</td></tr>`;
+    html += `</tbody></table></div>`;
+  }
+
+  // Source settings card
+  const sources = g('sonar.sources');
+  const tests = g('sonar.tests');
+  const javaSrc = g('sonar.java.source');
+  const javaTarget = g('sonar.java.target');
+  const encoding = g('sonar.sourceEncoding');
+  const javaBin = g('sonar.java.binaries');
+  const hasSource = sources || tests || javaSrc || javaTarget || encoding || javaBin;
+
+  if (hasSource) {
+    html += `<div class="sonarprops-card"><h3>Source Settings</h3><table class="sonarprops-table"><tbody>`;
+    if (sources) {
+      const paths = sources.split(',').map((p) => p.trim()).filter(Boolean);
+      html += `<tr><td>Sources</td><td><ul class="sonarprops-paths">${paths.map((p) => `<li>${esc(p)}</li>`).join('')}</ul></td></tr>`;
+    }
+    if (tests) {
+      const tpaths = tests.split(',').map((p) => p.trim()).filter(Boolean);
+      html += `<tr><td>Tests</td><td><ul class="sonarprops-paths">${tpaths.map((p) => `<li>${esc(p)}</li>`).join('')}</ul></td></tr>`;
+    }
+    if (javaBin) html += `<tr><td>Java Binaries</td><td>${esc(javaBin)}</td></tr>`;
+    if (javaSrc || javaTarget) {
+      const chips = [javaSrc && `<span class="sonarprops-chip">source: ${esc(javaSrc)}</span>`, javaTarget && `<span class="sonarprops-chip">target: ${esc(javaTarget)}</span>`].filter(Boolean).join(' ');
+      html += `<tr><td>Java Version</td><td>${chips}</td></tr>`;
+    }
+    if (encoding) html += `<tr><td>Encoding</td><td><span class="sonarprops-chip">${esc(encoding)}</span></td></tr>`;
+    html += `</tbody></table></div>`;
+  }
+
+  // Coverage card
+  const jacocoPath = g('sonar.coverage.jacoco.xmlReportPaths');
+  const junitPath = g('sonar.junit.reportPaths');
+  if (jacocoPath || junitPath) {
+    html += `<div class="sonarprops-card"><h3>Coverage</h3><table class="sonarprops-table"><tbody>`;
+    if (jacocoPath) html += `<tr><td>JaCoCo Report</td><td title="${esc(jacocoPath)}">${esc(jacocoPath.length > 60 ? jacocoPath.slice(0, 57) + '…' : jacocoPath)}</td></tr>`;
+    if (junitPath) html += `<tr><td>JUnit Report</td><td title="${esc(junitPath)}">${esc(junitPath.length > 60 ? junitPath.slice(0, 57) + '…' : junitPath)}</td></tr>`;
+    html += `</tbody></table></div>`;
+  }
+
+  // Exclusions card
+  const excl = g('sonar.exclusions');
+  const covExcl = g('sonar.coverage.exclusions');
+  if (excl || covExcl) {
+    html += `<div class="sonarprops-card"><h3>Exclusions</h3>`;
+    if (excl) {
+      const patterns = excl.split(',').map((p) => p.trim()).filter(Boolean);
+      html += `<div style="margin-bottom:6px"><div style="font-size:11px;color:var(--fg-2,#888);margin-bottom:3px">Source exclusions</div><ul class="sonarprops-paths">${patterns.map((p) => `<li>${esc(p)}</li>`).join('')}</ul></div>`;
+    }
+    if (covExcl) {
+      const patterns = covExcl.split(',').map((p) => p.trim()).filter(Boolean);
+      html += `<div><div style="font-size:11px;color:var(--fg-2,#888);margin-bottom:3px">Coverage exclusions</div><ul class="sonarprops-paths">${patterns.map((p) => `<li>${esc(p)}</li>`).join('')}</ul></div>`;
+    }
+    html += `</div>`;
+  }
 
   const host = document.createElement('div');
-  host.className = 'snr-doc';
-  host.innerHTML = `<style>${CSS}</style>
-<div class="snr-title"><span class="snr-badge">SonarQube</span>${esc(projectName || 'sonar-project.properties')}</div>
-<div class="snr-sub">${esc(subParts.join(' · '))}</div>
-${summaryHtml}${otherHtml}`;
+  host.className = 'sonarprops-doc';
+  host.innerHTML = html;
   return { parentNode: host };
 }
