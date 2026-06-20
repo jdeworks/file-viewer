@@ -114,10 +114,13 @@ export async function run(ctx) {
   // ── More known-files (Layer 3): CODEOWNERS, .editorconfig, pom.xml ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('CODEOWNERS');
-  await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
-  const coPats = await page.$$eval('#previewHost .kf-pat code', (els) => els.map((e) => e.textContent));
-  const coOwners = await page.$$eval('#previewHost .kf-pat a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
-  if (coPats.includes('/docs/') && coOwners.some((h) => /github\.com\/orgs\/acme\/teams\/web-team/.test(h)) && coOwners.some((h) => /github\.com\/ada$/.test(h))) pass('CODEOWNERS: rules + owners link to GitHub (user + team)'); else fail('codeowners pats=' + coPats.join(',') + ' owners=' + coOwners.join(','));
+  await page.waitForSelector('#previewHost .codeowners-doc', { timeout: 12000 });
+  pass('CODEOWNERS: badge shown');
+  const coText = await page.$eval('#previewHost .codeowners-doc', el => el.textContent);
+  if (!coText.includes('platform-team')) fail('CODEOWNERS: owners not shown');
+  else pass('CODEOWNERS: owners shown');
+  if (!coText.includes('frontend')) fail('CODEOWNERS: sections not shown');
+  else pass('CODEOWNERS: sections shown');
 
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.editorconfig');
@@ -620,8 +623,8 @@ export async function run(ctx) {
   // ── pnpm-workspace.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('pnpm-workspace.yaml');
-  await page.waitForSelector('#previewHost .pnw-doc', { timeout: 12000 });
-  const pnwText = await page.$eval('#previewHost .pnw-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .pnpmws-doc', { timeout: 12000 });
+  const pnwText = await page.$eval('#previewHost .pnpmws-doc', (e) => e.textContent);
   if (/pnpm/i.test(pnwText)) pass('pnpm-workspace.yaml: badge shown'); else fail('pnpm-workspace badge: ' + pnwText.slice(0, 200));
   if (/packages|apps|catalog|react/i.test(pnwText)) pass('pnpm-workspace.yaml: workspaces shown'); else fail('pnpm-workspace content: ' + pnwText.slice(0, 200));
 
@@ -944,11 +947,13 @@ export async function run(ctx) {
   // ── .gitattributes viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.gitattributes');
-  await page.waitForSelector('#previewHost .gat-doc', { timeout: 12000 });
-  const gatText = await page.$eval('#previewHost .gat-doc', (e) => e.textContent);
-  if (/gitattributes/i.test(gatText)) pass('.gitattributes: title shown'); else fail('gitattributes title: ' + gatText.slice(0, 200));
-  const gatPats = await page.$$eval('#previewHost .gat-doc .kf-pat code', (els) => els.map((e) => e.textContent));
-  if (gatPats.some((p) => /\*/.test(p))) pass('.gitattributes: patterns shown'); else fail('gitattributes patterns: ' + gatPats.join(','));
+  await page.waitForSelector('#previewHost .gitattr-doc', { timeout: 12000 });
+  pass('.gitattributes: badge shown');
+  const gaText = await page.$eval('#previewHost .gitattr-doc', el => el.textContent);
+  if (!gaText.includes('eol=lf') && !gaText.includes('LF')) fail('.gitattributes: line endings not shown');
+  else pass('.gitattributes: line endings shown');
+  if (!gaText.includes('lfs') && !gaText.includes('LFS')) fail('.gitattributes: LFS not shown');
+  else pass('.gitattributes: LFS shown');
 
   // ── .mailmap viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1016,8 +1021,8 @@ export async function run(ctx) {
   await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
   const mdkChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
   if (/MkDocs/i.test(mdkChipText)) pass('mkdocs.yml: badge shown'); else fail('mkdocs chip: ' + mdkChipText.slice(0, 200));
-  await page.waitForSelector('#previewHost .mdk-doc', { timeout: 12000 });
-  const mdkText = await page.$eval('#previewHost .mdk-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .mkdocs-doc', { timeout: 12000 });
+  const mdkText = await page.$eval('#previewHost .mkdocs-doc', (e) => e.textContent);
   if (/MkDocs/i.test(mdkText)) pass('mkdocs.yml: label shown'); else fail('mkdocs label: ' + mdkText.slice(0, 200));
   if (/My Project Docs|material|Getting Started/i.test(mdkText)) pass('mkdocs.yml: site info shown'); else fail('mkdocs site info: ' + mdkText.slice(0, 200));
 

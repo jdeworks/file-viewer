@@ -3041,7 +3041,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "pnpm-workspace"
   },
   {
     "label": "vitest.config.json",
@@ -3585,7 +3586,8 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "mkdocs"
   },
   {
     "label": "cloudbuild.yaml",
