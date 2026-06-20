@@ -337,10 +337,17 @@ export async function render(intake, ctx = {}) {
       'white-space:nowrap',
       'touch-action:none',
     ].join(';');
-    // Start at 10%, 10% of stage
-    textDragDiv.style.left = '10%';
-    textDragDiv.style.top = '10%';
     stage.appendChild(textDragDiv);
+    // Position centered on the image (not the stage) so the text is immediately visible.
+    requestAnimationFrame(() => {
+      const stageR = stage.getBoundingClientRect();
+      const imgR = img.getBoundingClientRect();
+      const textR = textDragDiv.getBoundingClientRect();
+      const cx = imgR.left - stageR.left + (imgR.width - textR.width) / 2;
+      const cy = imgR.top - stageR.top + imgR.height / 3;
+      textDragDiv.style.left = Math.max(0, cx) + 'px';
+      textDragDiv.style.top = Math.max(0, cy) + 'px';
+    });
 
     // Drag logic
     let dragOffX = 0, dragOffY = 0, dragging = false;

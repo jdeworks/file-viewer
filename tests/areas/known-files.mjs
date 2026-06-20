@@ -2616,16 +2616,16 @@ export async function run(ctx) {
   if (/trigger|variable|image|type/i.test(cfdText)) pass('codefresh.yml: pipeline metadata shown'); else fail('codefresh metadata: ' + cfdText.slice(0, 200));
 
 
-  // ── opa-policy viewer ──
+  // ── rego-policy viewer (rego-policy plugin intercepts all .rego files before opa-policy) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('policy.rego');
-  await page.waitForSelector('#previewHost .opa-doc', { timeout: 12000 });
-  const opaText = await page.$eval('#previewHost .opa-doc', (e) => e.textContent);
-  if (/OPA Policy/i.test(opaText)) pass('policy.rego: OPA Policy badge shown'); else fail('opa badge: ' + opaText.slice(0, 200));
-  if (/authz/i.test(opaText)) pass('policy.rego: package name shown'); else fail('opa package: ' + opaText.slice(0, 300));
-  if (/allow/i.test(opaText)) pass('policy.rego: allow rules shown'); else fail('opa allow rules: ' + opaText.slice(0, 300));
-  if (/deny/i.test(opaText)) pass('policy.rego: deny rules shown'); else fail('opa deny rules: ' + opaText.slice(0, 300));
-  if (/rego\.v1|data\.roles/i.test(opaText)) pass('policy.rego: imports shown'); else fail('opa imports: ' + opaText.slice(0, 300));
+  await page.waitForSelector('#previewHost .rego-doc', { timeout: 12000 });
+  const opaText = await page.$eval('#previewHost .rego-doc', (e) => e.textContent);
+  if (/OPA Rego|Rego/i.test(opaText)) pass('policy.rego: OPA Rego badge shown'); else fail('rego badge: ' + opaText.slice(0, 200));
+  if (/authz/i.test(opaText)) pass('policy.rego: package name shown'); else fail('rego package: ' + opaText.slice(0, 300));
+  if (/allow/i.test(opaText)) pass('policy.rego: allow rules shown'); else fail('rego allow rules: ' + opaText.slice(0, 300));
+  if (/deny/i.test(opaText)) pass('policy.rego: deny rules shown'); else fail('rego deny rules: ' + opaText.slice(0, 300));
+  if (/rego\.v1|data\.roles/i.test(opaText)) pass('policy.rego: imports shown'); else fail('rego imports: ' + opaText.slice(0, 300));
 
   // ── falco-rules viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

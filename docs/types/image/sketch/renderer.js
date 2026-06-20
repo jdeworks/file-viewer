@@ -4,11 +4,11 @@ export async function render(intake) {
   const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
 
   const wrap = document.createElement('div');
-  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;padding:24px;gap:16px;font-family:system-ui,sans-serif;';
+  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;padding:24px;gap:16px;font-family:system-ui,sans-serif;color:var(--fg);';
 
   // Partial-support banner
   const banner = document.createElement('div');
-  banner.style.cssText = 'max-width:560px;width:100%;padding:10px 14px;background:var(--bg-warn,#fef3c7);color:var(--text-warn,#92400e);border-radius:6px;font-size:13px;text-align:center;';
+  banner.style.cssText = 'max-width:560px;width:100%;padding:10px 14px;background:var(--bg-2,#fef3c7);color:var(--fg-2,#92400e);border-radius:6px;font-size:13px;text-align:center;border:1px solid var(--border);';
   banner.textContent = '⚠ Sketch design file — showing embedded preview and structure only. Full vector content requires Sketch for Mac.';
   wrap.appendChild(banner);
 
@@ -37,7 +37,7 @@ export async function render(intake) {
       wrap.appendChild(img);
     } else {
       const noThumb = document.createElement('div');
-      noThumb.style.cssText = 'color:var(--text-muted,#6b7280);font-size:13px;padding:32px;border:1px dashed currentColor;border-radius:6px;';
+      noThumb.style.cssText = 'color:var(--fg-2);font-size:13px;padding:32px;border:1px dashed currentColor;border-radius:6px;';
       noThumb.textContent = 'No preview available';
       wrap.appendChild(noThumb);
     }
@@ -84,7 +84,7 @@ export async function render(intake) {
     }
 
     const infoBox = document.createElement('div');
-    infoBox.style.cssText = 'max-width:560px;width:100%;background:var(--bg-card,#f9fafb);border:1px solid var(--border,#e5e7eb);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--text,#111827);';
+    infoBox.style.cssText = 'max-width:560px;width:100%;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--fg);';
 
     const infoTitle = document.createElement('div');
     infoTitle.style.cssText = 'font-weight:600;margin-bottom:8px;font-size:14px;';
@@ -101,9 +101,9 @@ export async function render(intake) {
 
     for (const [key, val] of infoRows) {
       const row = document.createElement('div');
-      row.style.cssText = 'display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--border,#f3f4f6);';
+      row.style.cssText = 'display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--border);';
       const k = document.createElement('span');
-      k.style.cssText = 'color:var(--text-muted,#6b7280);min-width:120px;';
+      k.style.cssText = 'color:var(--fg-2);min-width:120px;';
       k.textContent = key;
       const v = document.createElement('span');
       v.textContent = String(val);
@@ -118,7 +118,7 @@ export async function render(intake) {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;gap:8px;padding:3px 0;';
       const k = document.createElement('span');
-      k.style.cssText = 'color:var(--text-muted,#6b7280);min-width:120px;';
+      k.style.cssText = 'color:var(--fg-2);min-width:120px;';
       k.textContent = 'Fonts used';
       const v = document.createElement('span');
       v.textContent = fonts.join(', ');
@@ -132,7 +132,7 @@ export async function render(intake) {
     // Pages + artboards list
     if (pageIds.length > 0) {
       const pagesBox = document.createElement('div');
-      pagesBox.style.cssText = 'max-width:560px;width:100%;background:var(--bg-card,#f9fafb);border:1px solid var(--border,#e5e7eb);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--text,#111827);';
+      pagesBox.style.cssText = 'max-width:560px;width:100%;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--fg);';
 
       const pagesTitle = document.createElement('div');
       pagesTitle.style.cssText = 'font-weight:600;margin-bottom:8px;font-size:14px;';
@@ -148,23 +148,23 @@ export async function render(intake) {
         pageRow.style.cssText = 'padding:4px 0;';
 
         const pageLabel = document.createElement('div');
-        pageLabel.style.cssText = 'font-weight:500;color:var(--text,#111827);';
+        pageLabel.style.cssText = 'font-weight:500;color:var(--fg);';
         pageLabel.textContent = '📄 ' + pageName;
         pageRow.appendChild(pageLabel);
 
         if (artboardNames.length > 0) {
           const abList = document.createElement('div');
-          abList.style.cssText = 'padding-left:16px;color:var(--text-muted,#6b7280);display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;';
+          abList.style.cssText = 'padding-left:16px;color:var(--fg-2);display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;';
           for (const abName of artboardNames) {
             const ab = document.createElement('span');
-            ab.style.cssText = 'background:var(--bg,#f3f4f6);border:1px solid var(--border,#e5e7eb);border-radius:4px;padding:1px 6px;font-size:12px;';
+            ab.style.cssText = 'background:var(--bg-3);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:12px;color:var(--fg);';
             ab.textContent = abName;
             abList.appendChild(ab);
           }
           pageRow.appendChild(abList);
         } else {
           const noAb = document.createElement('div');
-          noAb.style.cssText = 'padding-left:16px;color:var(--text-muted,#9ca3af);font-size:12px;margin-top:2px;';
+          noAb.style.cssText = 'padding-left:16px;color:var(--fg-2);font-size:12px;margin-top:2px;';
           noAb.textContent = 'No artboards';
           pageRow.appendChild(noAb);
         }
@@ -177,7 +177,7 @@ export async function render(intake) {
 
   } catch (e) {
     const err = document.createElement('div');
-    err.style.cssText = 'color:var(--text-error,#dc2626);font-size:13px;';
+    err.style.cssText = 'color:var(--danger,#dc2626);font-size:13px;';
     err.textContent = 'Could not read Sketch file: ' + e.message;
     wrap.appendChild(err);
   }
