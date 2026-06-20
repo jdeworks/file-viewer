@@ -1,0 +1,32 @@
+opam-version: "2.0"
+name: "mypackage"
+version: "1.2.3"
+synopsis: "A useful OCaml library for data processing"
+description: """
+  MyPackage is a comprehensive library for processing structured data
+  in OCaml applications. It provides efficient parsing and transformation
+  utilities with a clean functional API.
+"""
+maintainer: "Jane Smith <jane@example.com>"
+authors: [
+  "Jane Smith <jane@example.com>"
+  "Bob Jones <bob@example.com>"
+]
+license: "MIT"
+homepage: "https://github.com/myorg/mypackage"
+bug-reports: "https://github.com/myorg/mypackage/issues"
+dev-repo: "git+https://github.com/myorg/mypackage.git"
+depends: [
+  "ocaml" {>= "4.14.0"}
+  "dune" {>= "3.0"}
+  "yojson" {>= "2.0.0"}
+  "cmdliner" {>= "1.1.0"}
+  "alcotest" {with-test & >= "1.6.0"}
+  "odoc" {with-doc}
+]
+build: [
+  ["dune" "subst"] {dev}
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "build" "-p" name "-j" jobs "@doc"] {with-doc}
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
+]
