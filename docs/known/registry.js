@@ -830,6 +830,10 @@ import prologLang from '../types/text/known/prolog-lang/index.js';
 import asmLang from '../types/text/known/asm-lang/index.js';
 import objcLang from '../types/text/known/objc-lang/index.js';
 import dLang from '../types/text/known/d-lang/index.js';
+import coffeescriptLang from '../types/text/known/coffeescript-lang/index.js';
+import livescriptLang from '../types/text/known/livescript-lang/index.js';
+import rescriptLang from '../types/text/known/rescript-lang/index.js';
+import reasonLang from '../types/text/known/reason-lang/index.js';
 export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, rubyLang, perlLang, phpLang, powershellLang, solidityLang, vhdlLang, arduinoSketch, cobolLang, gleamLang, odinLang, haxeLang, adaLang, prologLang, asmLang, objcLang, dLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
@@ -1037,6 +1041,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   linkwardenConfig,
   hoarderConfig,
   frigateConfig,
+  coffeescriptLang, livescriptLang, rescriptLang, reasonLang,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

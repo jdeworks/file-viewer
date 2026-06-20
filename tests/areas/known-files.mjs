@@ -6477,4 +6477,28 @@ export async function run(ctx) {
   if (/DNS Zone/i.test(zoneText)) pass('bind-zone: DNS Zone badge shown'); else fail('bind-zone badge: ' + zoneText.slice(0, 200));
   if (/example\.com|SOA/i.test(zoneText)) pass('bind-zone: zone origin or SOA shown'); else fail('bind-zone origin: ' + zoneText.slice(0, 300));
   if (/NS|MX|SPF|TXT/i.test(zoneText)) pass('bind-zone: record types shown'); else fail('bind-zone records: ' + zoneText.slice(0, 300));
+
+  // ── coffeescript-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.coffee');
+  await page.waitForSelector('#previewHost .coffee-doc', { timeout: 12000 });
+  pass('coffeescript-lang: rendered');
+
+  // ── livescript-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.ls');
+  await page.waitForSelector('#previewHost .ls-doc', { timeout: 12000 });
+  pass('livescript-lang: rendered');
+
+  // ── rescript-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.res');
+  await page.waitForSelector('#previewHost .res-doc', { timeout: 12000 });
+  pass('rescript-lang: rendered');
+
+  // ── reason-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.re');
+  await page.waitForSelector('#previewHost .re-doc', { timeout: 12000 });
+  pass('reason-lang: rendered');
 }
