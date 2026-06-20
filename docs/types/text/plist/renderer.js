@@ -148,40 +148,40 @@ export async function render(intake, _ctx) {
   const bodyHtml = `
 <style>
   body { font-family: system-ui, sans-serif; font-size: 14px; margin: 0; padding: 12px 16px; background: var(--bg, #fff); color: var(--fg, #222); }
-  @media (prefers-color-scheme: dark) { body { --bg: #1e1e1e; --fg: #d4d4d4; } }
+  body.fv-dark { --bg: #1e1e1e; --fg: #d4d4d4; }
   .pl-tree { line-height: 1.7; }
   .pl-row { margin: 1px 0; padding-left: 1.2em; border-left: 2px solid transparent; }
   .pl-row:hover { border-left-color: #aaa4; background: #8882; border-radius: 2px; }
   .pl-key { cursor: pointer; user-select: none; font-weight: 600; color: #0070c1; }
-  @media (prefers-color-scheme: dark) { .pl-key { color: #9cdcfe; } }
+  body.fv-dark .pl-key { color: #9cdcfe; }
   .pl-key::before { content: '▾ '; font-size: 0.85em; }
   .pl-key.collapsed::before { content: '▸ '; }
   .pl-key-plain { font-weight: 600; color: #0070c1; }
-  @media (prefers-color-scheme: dark) { .pl-key-plain { color: #9cdcfe; } }
+  body.fv-dark .pl-key-plain { color: #9cdcfe; }
   .pl-idx { color: #666; font-style: italic; }
   .pl-children { padding-left: 1.4em; border-left: 2px solid #ddd8; margin-left: 0.2em; }
-  @media (prefers-color-scheme: dark) { .pl-children { border-left-color: #4444; } }
+  body.fv-dark .pl-children { border-left-color: #4444; }
   .pl-children.hidden { display: none; }
   .pl-str { color: #a31515; font-family: monospace; }
-  @media (prefers-color-scheme: dark) { .pl-str { color: #ce9178; } }
+  body.fv-dark .pl-str { color: #ce9178; }
   .pl-num { color: #098658; font-family: monospace; }
-  @media (prefers-color-scheme: dark) { .pl-num { color: #b5cea8; } }
+  body.fv-dark .pl-num { color: #b5cea8; }
   .pl-true { color: #067d17; font-weight: bold; font-family: monospace; }
-  @media (prefers-color-scheme: dark) { .pl-true { color: #4ec94e; } }
+  body.fv-dark .pl-true { color: #4ec94e; }
   .pl-false { color: #c7254e; font-weight: bold; font-family: monospace; }
-  @media (prefers-color-scheme: dark) { .pl-false { color: #f47070; } }
+  body.fv-dark .pl-false { color: #f47070; }
   .pl-date { color: #7a3e9d; font-family: monospace; }
-  @media (prefers-color-scheme: dark) { .pl-date { color: #c586c0; } }
+  body.fv-dark .pl-date { color: #c586c0; }
   .pl-data { color: #7a5c00; font-family: monospace; font-style: italic; }
-  @media (prefers-color-scheme: dark) { .pl-data { color: #d7ba7d; } }
+  body.fv-dark .pl-data { color: #d7ba7d; }
   .pl-null { color: #aaa; font-family: monospace; }
   .pl-bracket { color: #888; font-family: monospace; }
   .pl-raw { padding: 12px; background: #f5f5f5; border-radius: 4px; overflow: auto; font-size: 13px; white-space: pre-wrap; word-break: break-all; }
-  @media (prefers-color-scheme: dark) { .pl-raw { background: #2d2d2d; } }
+  body.fv-dark .pl-raw { background: #2d2d2d; }
   .pl-footer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #ddd; color: #888; font-size: 12px; }
-  @media (prefers-color-scheme: dark) { .pl-footer { border-top-color: #444; } }
+  body.fv-dark .pl-footer { border-top-color: #444; }
   .pl-binary-notice { padding: 20px; background: #fff8e1; border: 1px solid #ffe082; border-radius: 6px; }
-  @media (prefers-color-scheme: dark) { .pl-binary-notice { background: #3a3000; border-color: #7a6000; } }
+  body.fv-dark .pl-binary-notice { background: #3a3000; border-color: #7a6000; }
   .pl-binary-notice pre { background: #0001; padding: 8px 12px; border-radius: 4px; font-size: 13px; }
 </style>
 <div class="pl-tree">${treeHtml}</div>
