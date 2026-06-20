@@ -1,10 +1,11 @@
-export default {
+export const plugin = {
   id: 'scalafmt-conf',
-  label: 'Scalafmt Config',
+  label: '.scalafmt.conf',
+  tags: ['scala', 'scalafmt', 'formatting'],
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    const text = intake.textSample || intake.text || '';
     if (n === '.scalafmt.conf') return true;
+    const text = intake.textSample || intake.text || '';
     if (text.includes('version = ') && text.includes('runner.dialect') && text.includes('maxColumn')) return true;
     return false;
   },
@@ -14,3 +15,4 @@ export default {
     usedFor: [{ label: 'Scalafmt', description: 'Code formatter for Scala', href: 'https://scalameta.org/scalafmt/' }],
   },
 };
+export default plugin;

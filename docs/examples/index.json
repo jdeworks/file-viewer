@@ -4468,6 +4468,7 @@
       "Config"
     ],
     "enhanced": true,
+    "knownFile": "goreleaser",
     "description": "GoReleaser config: 3 build targets (linux/darwin/windows), archive format, GitHub release, Docker images, Homebrew tap, and changelog."
   },
   {

@@ -3895,6 +3895,15 @@ export async function run(ctx) {
   if (/maxColumn|version|3\.7/i.test(scalafmtText)) pass('.scalafmt.conf: version or maxColumn shown'); else fail('scalafmt-conf content: ' + scalafmtText.slice(0, 300));
   if (/rewrite|SortImports|scala/i.test(scalafmtText)) pass('.scalafmt.conf: rewrite rules or dialect shown'); else fail('scalafmt-conf rewrite: ' + scalafmtText.slice(0, 300));
 
+  // ── .scalafix.conf (scalafix Scala linter/rewriter) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.scalafix.conf');
+  await page.waitForSelector('.scalafix-doc', { timeout: 12000 });
+  pass('.scalafix.conf: renders');
+  const scalafixText = await page.$eval('.scalafix-doc', el => el.textContent);
+  if (/scalafix/i.test(scalafixText)) pass('.scalafix.conf: badge shown'); else fail('.scalafix.conf: missing badge: ' + scalafixText.slice(0, 200));
+  if (/rule|RemoveUnused|OrganizeImports/i.test(scalafixText)) pass('.scalafix.conf: rules shown'); else fail('.scalafix.conf: no rules shown: ' + scalafixText.slice(0, 300));
+
   // ── bspwmrc (bspwm tiling window manager config) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('bspwmrc');
