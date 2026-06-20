@@ -762,7 +762,15 @@ import { plugin as terraformHcl } from '../types/text/known/terraform-hcl/index.
 import { plugin as nixExpr } from '../types/text/known/nix-expr/index.js';
 import { plugin as azureBicep } from '../types/text/known/azure-bicep/index.js';
 import { plugin as kdlDoc } from '../types/text/known/kdl-doc/index.js';
-export const KNOWN = [plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
+import mermaidDiagram from '../types/text/known/mermaid-diagram/index.js';
+import plantuml from '../types/text/known/plantuml/index.js';
+import regoPolicy from '../types/text/known/rego-policy/index.js';
+import asciidoc from '../types/text/known/asciidoc/index.js';
+import capnp from '../types/text/known/capnp/index.js';
+import flatbuffers from '../types/text/known/flatbuffers/index.js';
+import dhallConfig from '../types/text/known/dhall-config/index.js';
+import wgslShader from '../types/text/known/wgsl-shader/index.js';
+export const KNOWN = [plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,

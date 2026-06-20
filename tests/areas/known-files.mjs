@@ -5905,4 +5905,47 @@ export async function run(ctx) {
   if (/Getting Started/i.test(adocText)) pass('sample.adoc: document title shown'); else fail('asciidoc title: ' + adocText.slice(0, 300));
   if (/Jane Developer/i.test(adocText)) pass('sample.adoc: author shown'); else fail('asciidoc author: ' + adocText.slice(0, 300));
   if (/Installation|Usage|Introduction/i.test(adocText)) pass('sample.adoc: section headings shown'); else fail('asciidoc sections: ' + adocText.slice(0, 300));
+
+  // ── sample.capnp viewer (Cap'n Proto) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.capnp');
+  await page.waitForSelector('#previewHost .capnp-doc', { timeout: 12000 });
+  pass('sample.capnp: renders');
+  const capnpText = await page.$eval('#previewHost .capnp-doc', (e) => e.textContent);
+  if (/Cap'n Proto/i.test(capnpText)) pass("sample.capnp: Cap'n Proto badge shown"); else fail('capnp badge: ' + capnpText.slice(0, 200));
+  if (/0x8e7d3a8b1bc0d9bf/i.test(capnpText)) pass('sample.capnp: file ID shown'); else fail('capnp fileId: ' + capnpText.slice(0, 300));
+  if (/Person|Struct/i.test(capnpText)) pass('sample.capnp: struct listed'); else fail('capnp structs: ' + capnpText.slice(0, 300));
+  if (/UserService|Interface/i.test(capnpText)) pass('sample.capnp: interface listed'); else fail('capnp interfaces: ' + capnpText.slice(0, 300));
+
+  // ── sample.fbs viewer (FlatBuffers) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.fbs');
+  await page.waitForSelector('#previewHost .fbs-doc', { timeout: 12000 });
+  pass('sample.fbs: renders');
+  const fbsText = await page.$eval('#previewHost .fbs-doc', (e) => e.textContent);
+  if (/FlatBuffers/i.test(fbsText)) pass('sample.fbs: FlatBuffers badge shown'); else fail('fbs badge: ' + fbsText.slice(0, 200));
+  if (/MyGame/i.test(fbsText)) pass('sample.fbs: namespace shown'); else fail('fbs namespace: ' + fbsText.slice(0, 300));
+  if (/Monster|Table/i.test(fbsText)) pass('sample.fbs: table listed'); else fail('fbs tables: ' + fbsText.slice(0, 300));
+  if (/Monster/.test(fbsText) && /root_type/i.test(fbsText)) pass('sample.fbs: root_type shown'); else fail('fbs root_type: ' + fbsText.slice(0, 300));
+
+  // ── sample.dhall viewer (Dhall) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.dhall');
+  await page.waitForSelector('#previewHost .dhall-doc', { timeout: 12000 });
+  pass('sample.dhall: renders');
+  const dhallText = await page.$eval('#previewHost .dhall-doc', (e) => e.textContent);
+  if (/Dhall/i.test(dhallText)) pass('sample.dhall: Dhall badge shown'); else fail('dhall badge: ' + dhallText.slice(0, 200));
+  if (/let-binding|Let-binding/i.test(dhallText)) pass('sample.dhall: let-binding count shown'); else fail('dhall let: ' + dhallText.slice(0, 300));
+  if (/remote import|prelude\.dhall-lang/i.test(dhallText)) pass('sample.dhall: remote import shown'); else fail('dhall import: ' + dhallText.slice(0, 300));
+
+  // ── sample.wgsl viewer (WGSL Shader) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.wgsl');
+  await page.waitForSelector('#previewHost .wgsl-doc', { timeout: 12000 });
+  pass('sample.wgsl: renders');
+  const wgslText = await page.$eval('#previewHost .wgsl-doc', (e) => e.textContent);
+  if (/WGSL/i.test(wgslText)) pass('sample.wgsl: WGSL badge shown'); else fail('wgsl badge: ' + wgslText.slice(0, 200));
+  if (/vertex/i.test(wgslText) && /fragment/i.test(wgslText)) pass('sample.wgsl: vertex + fragment stages shown'); else fail('wgsl stages: ' + wgslText.slice(0, 300));
+  if (/Uniforms|struct/i.test(wgslText)) pass('sample.wgsl: struct listed'); else fail('wgsl structs: ' + wgslText.slice(0, 300));
+  if (/group 0|group 1/i.test(wgslText)) pass('sample.wgsl: binding groups shown'); else fail('wgsl bindings: ' + wgslText.slice(0, 300));
 }

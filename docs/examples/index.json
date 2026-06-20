@@ -11391,5 +11391,57 @@
     "enhanced": true,
     "description": "AsciiDoc document demonstrating sections, attributes, and code blocks.",
     "knownFile": "asciidoc"
+  },
+  {
+    "label": "sample.capnp (Cap'n Proto)",
+    "file": "sample.capnp",
+    "mime": "text/plain",
+    "category": "Schema",
+    "categories": [
+      "Schema",
+      "Serialization"
+    ],
+    "enhanced": true,
+    "description": "Cap'n Proto schema with a struct, enum, interface, and file ID.",
+    "knownFile": "capnp"
+  },
+  {
+    "label": "sample.fbs (FlatBuffers)",
+    "file": "sample.fbs",
+    "mime": "text/plain",
+    "category": "Schema",
+    "categories": [
+      "Schema",
+      "Serialization"
+    ],
+    "enhanced": true,
+    "description": "FlatBuffers schema for a game entity with tables, struct, enum, union, and root_type.",
+    "knownFile": "flatbuffers"
+  },
+  {
+    "label": "sample.dhall (Dhall)",
+    "file": "sample.dhall",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Functional"
+    ],
+    "enhanced": true,
+    "description": "Dhall configuration with let-bindings, a remote Prelude import, and a typed record.",
+    "knownFile": "dhall-config"
+  },
+  {
+    "label": "sample.wgsl (WGSL Shader)",
+    "file": "sample.wgsl",
+    "mime": "text/plain",
+    "category": "Graphics",
+    "categories": [
+      "Graphics",
+      "Shader"
+    ],
+    "enhanced": true,
+    "description": "WGSL WebGPU shader with vertex and fragment entry points, uniform bindings, and texture sampling.",
+    "knownFile": "wgsl-shader"
   }
 ]
