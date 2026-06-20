@@ -7600,5 +7600,27 @@
     "enhanced": true,
     "description": "LXC container configuration: identity, network interfaces, resource limits, mounts, and security settings.",
     "knownFile": "lxc-config"
+  },
+  {
+    "file": ".tmux.conf",
+    "label": ".tmux.conf",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Terminal"
+    ],
+    "mime": "text/plain",
+    "knownFile": "tmux-conf"
+  },
+  {
+    "file": ".screenrc",
+    "label": ".screenrc",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Terminal"
+    ],
+    "mime": "text/plain",
+    "knownFile": "screenrc"
   }
 ]

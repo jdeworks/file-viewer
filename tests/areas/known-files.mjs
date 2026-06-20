@@ -3493,4 +3493,20 @@ export async function run(ctx) {
   if (/stunnel/i.test(stunnelText)) pass('stunnel.conf: stunnel badge shown'); else fail('stunnel-conf badge: ' + stunnelText.slice(0, 200));
   if (/client|accept/i.test(stunnelText)) pass('stunnel.conf: client mode or accept address shown'); else fail('stunnel-conf content: ' + stunnelText.slice(0, 300));
 
+  // ── hyprland.conf (Hyprland Wayland compositor) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('hyprland.conf (Hyprland Wayland compositor)');
+  await page.waitForSelector('#previewHost .hyprlcfg-doc', { timeout: 12000 });
+  const hyprlText = await page.$eval('#previewHost .hyprlcfg-doc', (e) => e.textContent);
+  if (/Hyprland/i.test(hyprlText)) pass('hyprland.conf: Hyprland badge shown'); else fail('hyprland-conf badge: ' + hyprlText.slice(0, 200));
+  if (/monitor|mainMod/i.test(hyprlText)) pass('hyprland.conf: monitor or mainMod information shown'); else fail('hyprland-conf content: ' + hyprlText.slice(0, 300));
+
+  // ── lxc.config (LXC container) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('lxc.config (LXC container)');
+  await page.waitForSelector('#previewHost .lxccfg-doc', { timeout: 12000 });
+  const lxcText = await page.$eval('#previewHost .lxccfg-doc', (e) => e.textContent);
+  if (/LXC/i.test(lxcText)) pass('lxc.config: LXC badge shown'); else fail('lxc-config badge: ' + lxcText.slice(0, 200));
+  if (/network|rootfs/i.test(lxcText)) pass('lxc.config: network or rootfs information shown'); else fail('lxc-config content: ' + lxcText.slice(0, 300));
+
 }

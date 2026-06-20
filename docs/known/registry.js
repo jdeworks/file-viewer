@@ -426,6 +426,8 @@ import jetbrainsWorkspace from '../types/text/xml/known/jetbrains-workspace/inde
 import neovimConfig from '../types/text/known/neovim-config/index.js';
 import vimConfig from '../types/text/known/vim-config/index.js';
 import emacsConfig from '../types/text/known/emacs-config/index.js';
+import tmuxConf from '../types/text/known/tmux-conf/index.js';
+import screenrc from '../types/text/known/screenrc/index.js';
 import i3Config from '../types/text/known/i3-config/index.js';
 import swayConfig from '../types/text/known/sway-config/index.js';
 import woodpeckerCi from '../types/text/yaml/known/woodpecker-ci/index.js';
@@ -494,6 +496,8 @@ import namedConf from '../types/text/known/named-conf/index.js';
 import dhcpdConf from '../types/text/known/dhcpd-conf/index.js';
 import netdataConf from '../types/text/known/netdata-conf/index.js';
 import yarnrc from '../types/text/known/yarnrc/index.js';
+import hyprlandConf from '../types/text/known/hyprland-conf/index.js';
+import lxcConfig from '../types/text/known/lxc-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -573,7 +577,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   analysisOptions, podfileLock, xcodeScheme, easJson,
   hostsFile, resolvConf, sshdConfig, sudoers, nfsExports, fstab, crypttab,
   sysctlConf, modprobeConf,
-  jetbrainsWorkspace, neovimConfig, vimConfig, emacsConfig, i3Config, swayConfig,
+  jetbrainsWorkspace, neovimConfig, vimConfig, emacsConfig, tmuxConf, screenrc, i3Config, swayConfig,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,
   woodpeckerCi,
@@ -602,6 +606,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   postfixConf, dovecotConf, eximConf, chronyConf,
   namedConf, dhcpdConf,
   netdataConf, yarnrc,
+  hyprlandConf, lxcConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
