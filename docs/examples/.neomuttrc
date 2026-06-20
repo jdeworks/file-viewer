@@ -1,0 +1,62 @@
+# NeoMutt configuration
+
+set realname = "Jane Smith"
+set from = "jane@example.com"
+set use_from = yes
+set envelope_from = yes
+
+# IMAP settings
+set imap_user = "jane@example.com"
+set folder = "imaps://imap.example.com/"
+set spoolfile = "+INBOX"
+set postponed = "+[Gmail]/Drafts"
+set record = "+[Gmail]/Sent Mail"
+set trash = "+[Gmail]/Trash"
+
+# Sidebar
+set sidebar_visible = yes
+set sidebar_width = 25
+set sidebar_format = "%B%?F? [%F]?%* %?N?%N/?%S"
+set sidebar_short_path = yes
+set sidebar_delim_chars = "/."
+
+# Virtual mailboxes (notmuch integration)
+virtual-mailboxes "Inbox" "notmuch://?query=tag:inbox"
+virtual-mailboxes "Unread" "notmuch://?query=tag:unread"
+virtual-mailboxes "Flagged" "notmuch://?query=tag:flagged"
+
+# Key bindings
+bind index,pager \Ck sidebar-prev
+bind index,pager \Cj sidebar-next
+bind index,pager \Co sidebar-open
+bind index,pager \Cp sidebar-prev-new
+bind index,pager \Cn sidebar-next-new
+bind index g top-page
+bind index G bottom-page
+
+# Colors
+color sidebar_new color221 color233
+color sidebar_flagged color196 color233
+color sidebar_divider color61 color233
+color normal color250 color234
+color status color248 color238
+color indicator color234 color136
+color error color196 color234
+
+# Source additional configs
+source ~/.config/neomutt/accounts
+source ~/.config/neomutt/mappings
+
+# Editor
+set editor = "nvim"
+set charset = "utf-8"
+set send_charset = "utf-8:iso-8859-1:us-ascii"
+
+# Display
+set sort = "reverse-date-received"
+set sort_aux = "reverse-date-sent"
+set pager_index_lines = 10
+set pager_stop = yes
+set markers = no
+set mark_old = no
+set mime_forward = yes

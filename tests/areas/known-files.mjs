@@ -6924,4 +6924,28 @@ export async function run(ctx) {
   await openExample('sample.e');
   await page.waitForSelector('#previewHost .efl-doc', { timeout: 12000 });
   pass('eiffel-lang: rendered');
+
+  // ── avahi-daemon-conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('avahi-daemon.conf');
+  await page.waitForSelector('#previewHost .avhi-doc', { timeout: 12000 });
+  pass('avahi-daemon-conf: rendered');
+
+  // ── neomutt-conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.neomuttrc');
+  await page.waitForSelector('#previewHost .nmu-doc', { timeout: 12000 });
+  pass('neomutt-conf: rendered');
+
+  // ── msmtp-conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.msmtprc');
+  await page.waitForSelector('#previewHost .msmtp-doc', { timeout: 12000 });
+  pass('msmtp-conf: rendered');
+
+  // ── openldap-conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('slapd.conf');
+  await page.waitForSelector('#previewHost .ldap-doc', { timeout: 12000 });
+  pass('openldap-conf: rendered');
 }
