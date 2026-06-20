@@ -5250,4 +5250,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('linkding.env');
   pass(await page.waitForSelector('#previewHost .ldng-doc', { timeout: 12000 }), 'linkding.env: Linkding badge shown');
+
+  // ── plausible.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('plausible.env');
+  pass(await page.waitForSelector('#previewHost .plsbl-doc', { timeout: 12000 }), 'plausible.env: Plausible badge shown');
+
+  // ── umami.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('umami.env');
+  pass(await page.waitForSelector('#previewHost .umami-doc', { timeout: 12000 }), 'umami.env: Umami badge shown');
 }
