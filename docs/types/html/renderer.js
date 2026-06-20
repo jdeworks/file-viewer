@@ -8,13 +8,26 @@ import { loadGlobal, vendor } from '../../core/script-loader.js';
 const SCRIPT_RE = /<script[\s>]|\son\w+\s*=|javascript:/i;
 export function containsScripts(html) { return SCRIPT_RE.test(html || ''); }
 
+function applyInjectHead(html, injectHead) {
+  if (!injectHead) return html;
+  const tags = injectHead.split('\n').map((t) => t.trim()).filter(Boolean).join('\n');
+  if (!tags) return html;
+  if (html.includes('</head>')) return html.replace('</head>', tags + '\n</head>');
+  if (html.includes('</body>')) return html.replace('</body>', tags + '\n</body>');
+  return tags + '\n' + html;
+}
+
 export async function render(intake, ctx) {
-  const html = intake.text || '';
+  const raw = intake.text || '';
+  const injectHead = (ctx?.settings?.htmlInjectHead || '').trim();
   if (ctx?.allowScripts) {
-    return { fullDoc: html, ranScripts: true, containsScripts: containsScripts(html) };
+    // Script-enabled path: inject user tags into the live document before it runs.
+    return { fullDoc: applyInjectHead(raw, injectHead), ranScripts: true, containsScripts: containsScripts(raw) };
   }
   const DOMPurify = await loadGlobal(vendor('dompurify/purify.min.js'), 'DOMPurify');
   DOMPurify.removed = [];
-  const clean = DOMPurify.sanitize(html, { ADD_ATTR: ['target'], FORBID_TAGS: ['script'] });
-  return { bodyHtml: clean, containsScripts: containsScripts(html), hadUnsafe: DOMPurify.removed.length > 0 };
+  const clean = DOMPurify.sanitize(raw, { ADD_ATTR: ['target'], FORBID_TAGS: ['script'] });
+  // Sanitized path: append user-configured tags after sanitization (user trusts their own settings).
+  const injected = applyInjectHead(clean, injectHead);
+  return { bodyHtml: injected, containsScripts: containsScripts(raw), hadUnsafe: DOMPurify.removed.length > 0 };
 }

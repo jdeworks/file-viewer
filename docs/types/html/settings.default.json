@@ -1,1 +1,1 @@
-{ "version": 1, "label": "Default", "values": { "wordWrap": "on", "fontSize": 13, "syncScroll": true } }
+{ "version": 1, "label": "Default", "values": { "wordWrap": "on", "fontSize": 13, "syncScroll": true, "htmlInjectHead": "" } }

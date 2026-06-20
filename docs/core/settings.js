@@ -191,6 +191,12 @@ export function renderSettings(container, model, { onChange, toast }) {
       el = document.createElement('input'); el.type = 'number'; el.value = v;
       if (d.min != null) el.min = d.min; if (d.max != null) el.max = d.max;
       el.onchange = () => set(d.key, clampNum(Number(el.value), d));
+    } else if (d.type === 'textarea') {
+      el = document.createElement('textarea');
+      el.rows = 4; el.spellcheck = false;
+      el.style.fontFamily = 'monospace'; el.style.resize = 'vertical'; el.style.width = '100%';
+      el.value = String(v ?? '');
+      el.onchange = () => set(d.key, el.value);
     } else { // select
       el = document.createElement('select');
       for (const o of d.options) {
@@ -219,7 +225,8 @@ export function renderSettings(container, model, { onChange, toast }) {
       det.addEventListener('toggle', () => groupOpenState.set(cat, det.open));
       det.appendChild(sum);
       for (const d of items) {
-        const row = document.createElement('div'); row.className = 'set-row';
+        const row = document.createElement('div');
+        row.className = d.type === 'textarea' ? 'set-row set-row--block' : 'set-row';
         const id = 'set-' + d.key;
         const info = document.createElement('div'); info.className = 'set-info';
         const l = document.createElement('label'); l.textContent = d.label; l.htmlFor = id;   // click label -> toggle/focus control

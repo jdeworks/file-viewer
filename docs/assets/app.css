@@ -446,6 +446,12 @@ body {
   background: var(--bg-3); color: var(--fg); border: 1px solid var(--border);
   border-radius: 6px; padding: 4px 6px; max-width: 130px;
 }
+.set-row textarea {
+  background: var(--bg-3); color: var(--fg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 6px; font-size: 12px; flex: 1 1 auto;
+}
+.set-row--block { flex-direction: column; align-items: stretch; }
+.set-row--block textarea { width: 100%; box-sizing: border-box; }
 .set-footer { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
 .btn.small { padding: 6px 10px; font-size: 12px; }
 .meta-row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
