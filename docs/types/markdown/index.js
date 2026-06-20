@@ -21,6 +21,9 @@ export default {
     schema: [
       // previewMaxWidth / font / spacing are generic now (settings-schema VIEWER_DESCRIPTORS).
       // These are markdown-it parser options, applied per render via ctx.settings.
+      { key: 'markdownEditor', label: 'Markdown editor', category: 'monaco-common', type: 'select',
+        options: ['monaco', 'wysiwyg'], default: 'monaco',
+        hint: 'Default editor mode for Markdown files. "wysiwyg" opens EasyMDE (rich visual editing); "monaco" uses the code editor. You can still toggle between modes with the toolbar button.' },
       { key: 'mdLinkify', label: 'Auto-link URLs', category: 'viewer-extended', type: 'bool', default: true,
         hint: 'Turn bare URLs like https://example.com into clickable links.' },
       { key: 'mdTypographer', label: 'Smart typography', category: 'viewer-extended', type: 'bool', default: true,

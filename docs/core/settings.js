@@ -129,6 +129,14 @@ export function persistGlobalKey(key, value) {
   localStorage.setItem(GLOBAL_KEY, JSON.stringify({ version: SETTINGS_VERSION, values: cur }));
 }
 
+// Persist a single key for a specific type (merging into that type's saved bag).
+export function persistTypeKey(typeId, key, value) {
+  const k = typeKey(typeId);
+  const cur = readSaved(k) || {};
+  cur[key] = value;
+  localStorage.setItem(k, JSON.stringify({ version: SETTINGS_VERSION, values: cur }));
+}
+
 // Read a single global pref straight from storage (no model needed). Returns `fallback`
 // if unset. Used at startup to apply prefs like "reduce motion" before any model loads.
 export function readGlobalKey(key, fallback) {

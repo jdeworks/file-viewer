@@ -6,7 +6,7 @@ import { state, $, toast, themeIsDark, debounce } from './state.js';
 import { startAutosave, stopAutosave, saveNow, clearAutosave, getAutosave } from './autosave.js';
 import { createRawView } from './rawview.js';
 import { hexDump } from './hexdump.js';
-import { monacoOptions } from './settings.js';
+import { monacoOptions, persistTypeKey } from './settings.js';
 import { previewStyle } from './settings-schema.js';
 import { captureBodyHtml } from './iframe.js';
 import { mapRawToPreview, syncScrollFromRaw } from './sync.js';
@@ -356,7 +356,7 @@ function updateWysiwygBtn() {
   btn.title = wysiwygMode ? 'Switch to code editor' : 'Switch to visual editor (WYSIWYG)';
 }
 
-export async function toggleWysiwyg() {
+export async function toggleWysiwyg({ skipPersist = false } = {}) {
   if (state.type?.id !== 'markdown') return;
 
   if (!wysiwygMode) {
@@ -380,6 +380,10 @@ export async function toggleWysiwyg() {
       }
       if (state.type?.capabilities.preview) await renderPreview();
     });
+    if (!skipPersist && state.settingsModel) {
+      state.settingsModel.values.markdownEditor = 'wysiwyg';
+      persistTypeKey('markdown', 'markdownEditor', 'wysiwyg');
+    }
   } else {
     // Switching BACK to Monaco: capture EasyMDE text, unmount, rebuild rawview
     const text = getWysiwygValue();
@@ -388,6 +392,10 @@ export async function toggleWysiwyg() {
     state.intake = { ...state.intake, text };
     updateWysiwygBtn();
     await buildRawView();
+    if (!skipPersist && state.settingsModel) {
+      state.settingsModel.values.markdownEditor = 'monaco';
+      persistTypeKey('markdown', 'markdownEditor', 'monaco');
+    }
   }
 }
 
@@ -641,6 +649,11 @@ export async function buildRawView() {
   if (state.type?.id === 'markdown' && !state.intake.isBinary) {
     state.rawview.addCommand?.('ctrl+b', () => runMarkdownAction('bold'));
     state.rawview.addCommand?.('ctrl+i', () => runMarkdownAction('italic'));
+  }
+  // Auto-activate WYSIWYG if the user's preference is set
+  if (state.type?.id === 'markdown' && !state.intake.isBinary
+      && state.settingsModel?.values?.markdownEditor === 'wysiwyg') {
+    await toggleWysiwyg({ skipPersist: true });
   }
   wireJsonTools();
   setJsonToolsVisible(state.type?.id === 'json' && !state.intake.isBinary);
