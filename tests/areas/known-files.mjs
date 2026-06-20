@@ -5216,6 +5216,11 @@ export async function run(ctx) {
   await openExample('immich.env');
   pass(await page.waitForSelector('#previewHost .immich-doc', { timeout: 12000 }), 'immich.env: Immich badge shown');
 
+  // ── minio.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('minio.env');
+  pass(await page.waitForSelector('#previewHost .minio-doc', { timeout: 12000 }), 'minio.env: MinIO badge shown');
+
   // ── bookstack.env viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('bookstack.env');

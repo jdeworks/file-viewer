@@ -9434,6 +9434,19 @@
     "knownFile": "mealie-config"
   },
   {
+    "file": "minio.env",
+    "label": "minio.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "MinIO object storage environment configuration",
+    "knownFile": "minio-config"
+  },
+  {
     "file": "immich.env",
     "label": "immich.env",
     "mime": "text/plain",
