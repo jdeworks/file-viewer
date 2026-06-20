@@ -501,6 +501,21 @@ export async function run(ctx) {
   const secretText = await secretf.$eval('.plain-doc .plain-text', (e) => e.textContent);
   if (/Archivist/i.test(secretText)) pass('secret.txt Easter egg loads as plain text with Archivist lore'); else fail('secret.txt text: ' + secretText.slice(0, 200));
 
+  // ── RTF WYSIWYG editor (parentNode) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.rtf');
+  await page.waitForSelector('#previewHost .rtf-paper', { timeout: 12000 });
+  const rtfTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (rtfTypeId === 'rtf') pass('sample.rtf detected as RTF type'); else fail('rtf typeId: ' + rtfTypeId);
+  const rtfText = await page.$eval('#previewHost .rtf-paper', (e) => e.textContent);
+  if (/Sample RTF Document/i.test(rtfText)) pass('RTF document title rendered'); else fail('rtf title: ' + rtfText.slice(0, 200));
+  const boldEls = await page.$$('#previewHost .rtf-paper [style*="font-weight:bold"]');
+  if (boldEls.length >= 1) pass('RTF bold formatting rendered (' + boldEls.length + ' bold spans)'); else fail('rtf bold spans: ' + boldEls.length);
+  const italicEls = await page.$$('#previewHost .rtf-paper [style*="font-style:italic"]');
+  if (italicEls.length >= 1) pass('RTF italic formatting rendered'); else fail('rtf italic spans: ' + italicEls.length);
+  const rtfToolbar = await page.$('#previewHost .rtf-editor-toolbar');
+  if (rtfToolbar) pass('RTF WYSIWYG toolbar present'); else fail('rtf toolbar missing');
+
   // ── SVG dual-pane viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('example.svg');
