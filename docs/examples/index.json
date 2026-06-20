@@ -3140,7 +3140,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
+    "description": "typos source code spell checker configuration — word overrides, file ignores, and check settings.",
     "knownFile": "typos"
   },
   {
@@ -5986,5 +5986,47 @@
     "enhanced": true,
     "description": "Expo Application Services config: build profiles for development/preview/production and submit profiles.",
     "knownFile": "eas-json"
+  },
+  {
+    "label": "rabbitmq.conf",
+    "file": "rabbitmq.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "description": "RabbitMQ config: AMQP port, TLS listeners, memory limit, disk threshold, and management port."
+  },
+  {
+    "label": "nats.conf",
+    "file": "nats.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "description": "NATS server config: host, port, cluster settings, JetStream persistence, and monitoring."
+  },
+  {
+    "label": "zoo.cfg",
+    "file": "zoo.cfg",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "description": "ZooKeeper config: data directory, client port, tick time, session limits, and ensemble servers."
+  },
+  {
+    "label": "server.properties (Kafka)",
+    "file": "server.properties",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Apache Kafka broker configuration: broker ID, listeners, partitions, log retention, and ZooKeeper connection.",
+    "knownFile": "kafka-server-props"
   }
 ]
