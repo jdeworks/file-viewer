@@ -782,7 +782,11 @@ import sparqlQuery from '../types/text/known/sparql-query/index.js';
 import turtleRdf from '../types/text/known/turtle-rdf/index.js';
 import graphvizDot from '../types/text/known/graphviz-dot/index.js';
 import verilog from '../types/text/known/verilog/index.js';
-export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
+import xsltStylesheet from '../types/text/known/xslt-stylesheet/index.js';
+import svelteComponent from '../types/text/known/svelte-component/index.js';
+import nunjucks from '../types/text/known/nunjucks/index.js';
+import haskellLang from '../types/text/known/haskell-lang/index.js';
+export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,

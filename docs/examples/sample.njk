@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% from "macros/forms.html" import input_field, submit_btn %}
+{% import "macros/ui.html" as ui %}
+
+{% block title %}{{ page.title | default("Home") }} — {{ site.name }}{% endblock %}
+
+{% block meta %}
+  <meta name="description" content="{{ page.description | truncate(160) | escape }}">
+  <meta name="author" content="{{ site.author | upper }}">
+{% endblock %}
+
+{% block content %}
+  {# Main page content #}
+  {% set featured = posts | selectattr("featured") | list %}
+  {% set recentPosts = posts | sort(attribute="date", reverse=true) | first(5) %}
+
+  <header class="page-header">
+    <h1>{{ page.title | title }}</h1>
+    {% if page.subtitle %}
+      <p class="subtitle">{{ page.subtitle }}</p>
+    {% endif %}
+  </header>
+
+  {% if featured | length > 0 %}
+    <section class="featured">
+      <h2>Featured Posts</h2>
+      {% for post in featured %}
+        {{ ui.post_card(post, class="featured-card") }}
+      {% else %}
+        <p>No featured posts available.</p>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  <section class="recent-posts">
+    <h2>Recent Posts</h2>
+    {% for post in recentPosts %}
+      <article>
+        <h3><a href="{{ post.url | url }}">{{ post.title }}</a></h3>
+        <time datetime="{{ post.date | date('Y-m-d') }}">
+          {{ post.date | date("MMMM D, YYYY") }}
+        </time>
+        <p>{{ post.excerpt | safe }}</p>
+        {% if post.tags %}
+          <ul class="tags">
+            {% for tag in post.tags %}
+              <li><a href="/tags/{{ tag | slug }}">{{ tag }}</a></li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </section>
+
+  {% macro pagination(currentPage, totalPages, baseUrl) %}
+    {% if totalPages > 1 %}
+      <nav class="pagination">
+        {% if currentPage > 1 %}
+          <a href="{{ baseUrl }}/{{ currentPage - 1 }}">Previous</a>
+        {% endif %}
+        {% for i in range(1, totalPages + 1) %}
+          <a href="{{ baseUrl }}/{{ i }}"
+             class="{{ 'active' if i == currentPage else '' }}">{{ i }}</a>
+        {% endfor %}
+        {% if currentPage < totalPages %}
+          <a href="{{ baseUrl }}/{{ currentPage + 1 }}">Next</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% endmacro %}
+
+  {{ pagination(page.current, page.total, "/blog") }}
+
+  <form action="/search" method="get">
+    {{ input_field("q", label="Search", placeholder="Enter search term...") }}
+    {{ submit_btn("Search") }}
+  </form>
+{% endblock %}
+
+{% block sidebar %}
+  <aside>
+    {% include "partials/recent-comments.html" %}
+    {% include "partials/newsletter.html" ignore missing %}
+  </aside>
+{% endblock %}

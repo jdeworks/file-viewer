@@ -6078,4 +6078,49 @@ export async function run(ctx) {
   if (/Verilog/i.test(vlogText)) pass('sample.v: Verilog badge shown'); else fail('vlog badge: ' + vlogText.slice(0, 200));
   if (/counter|mux/i.test(vlogText)) pass('sample.v: module names shown'); else fail('vlog modules: ' + vlogText.slice(0, 300));
   if (/module|Module/i.test(vlogText)) pass('sample.v: module count shown'); else fail('vlog module count: ' + vlogText.slice(0, 300));
+
+  // ── sample.xsl viewer (XSLT Stylesheet) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.xsl');
+  await page.waitForSelector('#previewHost .xsl-doc', { timeout: 12000 });
+  pass('sample.xsl: renders');
+  const xslText = await page.$eval('#previewHost .xsl-doc', (e) => e.textContent);
+  if (/XSLT/i.test(xslText)) pass('sample.xsl: XSLT badge shown'); else fail('xsl badge: ' + xslText.slice(0, 200));
+  if (/2\.0/.test(xslText)) pass('sample.xsl: version shown'); else fail('xsl version: ' + xslText.slice(0, 300));
+  if (/html/i.test(xslText)) pass('sample.xsl: output method shown'); else fail('xsl output method: ' + xslText.slice(0, 300));
+  if (/book-header|format-price/i.test(xslText)) pass('sample.xsl: named templates listed'); else fail('xsl named templates: ' + xslText.slice(0, 300));
+  if (/lang|showDetails/i.test(xslText)) pass('sample.xsl: params listed'); else fail('xsl params: ' + xslText.slice(0, 300));
+
+  // ── sample.svelte viewer (Svelte Component) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.svelte');
+  await page.waitForSelector('#previewHost .svelte-doc', { timeout: 12000 });
+  pass('sample.svelte: renders');
+  const svelteText = await page.$eval('#previewHost .svelte-doc', (e) => e.textContent);
+  if (/Svelte/i.test(svelteText)) pass('sample.svelte: Svelte badge shown'); else fail('svelte badge: ' + svelteText.slice(0, 200));
+  if (/TypeScript/i.test(svelteText)) pass('sample.svelte: TypeScript language shown'); else fail('svelte ts: ' + svelteText.slice(0, 300));
+  if (/title|maxCount|items/i.test(svelteText)) pass('sample.svelte: props listed'); else fail('svelte props: ' + svelteText.slice(0, 300));
+  if (/Counter|Modal/i.test(svelteText)) pass('sample.svelte: component imports listed'); else fail('svelte imports: ' + svelteText.slice(0, 300));
+
+  // ── sample.njk viewer (Nunjucks Template) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.njk');
+  await page.waitForSelector('#previewHost .njk-doc', { timeout: 12000 });
+  pass('sample.njk: renders');
+  const njkText = await page.$eval('#previewHost .njk-doc', (e) => e.textContent);
+  if (/Nunjucks/i.test(njkText)) pass('sample.njk: Nunjucks badge shown'); else fail('njk badge: ' + njkText.slice(0, 200));
+  if (/base\.html/i.test(njkText)) pass('sample.njk: extends shown'); else fail('njk extends: ' + njkText.slice(0, 300));
+  if (/title|content|sidebar/i.test(njkText)) pass('sample.njk: blocks listed'); else fail('njk blocks: ' + njkText.slice(0, 300));
+  if (/pagination/i.test(njkText)) pass('sample.njk: macros listed'); else fail('njk macros: ' + njkText.slice(0, 300));
+
+  // ── sample.hs viewer (Haskell) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.hs');
+  await page.waitForSelector('#previewHost .hs-doc', { timeout: 12000 });
+  pass('sample.hs: renders');
+  const hsText = await page.$eval('#previewHost .hs-doc', (e) => e.textContent);
+  if (/Haskell/i.test(hsText)) pass('sample.hs: Haskell badge shown'); else fail('hs badge: ' + hsText.slice(0, 200));
+  if (/DataStructures\.BinaryTree/i.test(hsText)) pass('sample.hs: module name shown'); else fail('hs module: ' + hsText.slice(0, 300));
+  if (/Tree|RoseTree|SizedList/i.test(hsText)) pass('sample.hs: data types listed'); else fail('hs types: ' + hsText.slice(0, 300));
+  if (/insert|search|depth|fromList/i.test(hsText)) pass('sample.hs: functions listed'); else fail('hs functions: ' + hsText.slice(0, 300));
 }
