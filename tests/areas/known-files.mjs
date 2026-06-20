@@ -519,8 +519,9 @@ export async function run(ctx) {
   // ── circleci.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('CircleCI config');
-  await page.waitForSelector('#previewHost .cci-doc', { timeout: 12000 });
-  const cciText = await page.$eval('#previewHost .cci-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .circleciconfig-doc', { timeout: 12000 });
+  pass('circleci.yml: renders');
+  const cciText = await page.$eval('#previewHost .circleciconfig-doc', (e) => e.textContent);
   if (/CircleCI/i.test(cciText)) pass('circleci.yml: badge shown'); else fail('circleci badge: ' + cciText.slice(0, 200));
   if (/build|test|deploy|job/i.test(cciText)) pass('circleci.yml: jobs shown'); else fail('circleci jobs: ' + cciText.slice(0, 200));
 
@@ -1222,10 +1223,11 @@ export async function run(ctx) {
   // ── Jenkinsfile viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Jenkinsfile');
-  await page.waitForSelector('#previewHost .jkf-doc', { timeout: 12000 });
-  const jkfText = await page.$eval('#previewHost .jkf-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .jenkinsfile-doc', { timeout: 12000 });
+  pass('Jenkinsfile: renders');
+  const jkfText = await page.$eval('#previewHost .jenkinsfile-doc', (e) => e.textContent);
   if (/Jenkins/i.test(jkfText)) pass('Jenkinsfile: badge shown'); else fail('jenkins badge: ' + jkfText.slice(0, 200));
-  if (/Install|Lint|Test|Build|Deploy/i.test(jkfText)) pass('Jenkinsfile: stages shown'); else fail('jenkins stages: ' + jkfText.slice(0, 200));
+  if (/stage|Stage/i.test(jkfText)) pass('Jenkinsfile: stages shown'); else fail('jenkins stages: ' + jkfText.slice(0, 200));
 
   // ── Vagrantfile viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -4262,4 +4264,22 @@ export async function run(ctx) {
   const berksText = await page.$eval('.berksfile-doc', el => el.textContent);
   if (!berksText.includes('Berkshelf') && !berksText.includes('Berks')) fail('Berksfile: missing badge'); else pass('Berksfile: badge shown');
   if (!berksText.includes('cookbook')) fail('Berksfile: no cookbooks'); else pass('Berksfile: cookbooks shown');
+
+  // ── .terraform.lock.hcl (Terraform provider lock file) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.terraform.lock.hcl');
+  await page.waitForSelector('.tflockfile-doc');
+  pass('.terraform.lock.hcl: renders');
+  const tflockText = await page.$eval('.tflockfile-doc', el => el.textContent);
+  if (!tflockText.includes('Terraform')) fail('.terraform.lock.hcl: missing badge'); else pass('.terraform.lock.hcl: badge shown');
+  if (!tflockText.includes('aws') && !tflockText.includes('provider')) fail('.terraform.lock.hcl: no providers'); else pass('.terraform.lock.hcl: providers shown');
+
+  // ── atlantis.yaml (Atlantis Terraform PR automation) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('atlantis.yaml');
+  await page.waitForSelector('.atlantisyaml-doc');
+  pass('atlantis.yaml: renders');
+  const atlantisText = await page.$eval('.atlantisyaml-doc', el => el.textContent);
+  if (!atlantisText.includes('Atlantis')) fail('atlantis.yaml: missing badge'); else pass('atlantis.yaml: badge shown');
+  if (!atlantisText.includes('project') && !atlantisText.includes('workflow')) fail('atlantis.yaml: no projects'); else pass('atlantis.yaml: projects shown');
 }

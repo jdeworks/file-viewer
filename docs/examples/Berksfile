@@ -1,0 +1,11 @@
+source 'https://supermarket.chef.io'
+
+cookbook 'apt', '~> 7.4'
+cookbook 'nginx', '>= 10.0'
+cookbook 'postgresql', '~> 10.2'
+cookbook 'redis', '~> 8.0'
+cookbook 'nodejs', '~> 7.3'
+cookbook 'users', '~> 7.1'
+
+cookbook 'my-base', path: '../cookbooks/my-base'
+cookbook 'app-deploy', git: 'https://github.com/example/app-deploy-cookbook.git'
