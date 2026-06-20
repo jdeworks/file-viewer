@@ -1,5 +1,3 @@
-import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
-
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -26,15 +24,8 @@ function scheduleChip(interval) {
   return `<span class="dbt-chip ${cls}">${esc(interval)}</span>`;
 }
 
-export async function render(intake) {
-  let cfg = {};
-  try {
-    const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
-    cfg = (jsyaml.loadAll(intake.text || \'\') || [])[0] || {};
-  } catch {
-    cfg = intake.parsed || {};
-  }
-
+export function render(intake) {
+  const cfg = intake.parsed || {};
   const updates = Array.isArray(cfg.updates) ? cfg.updates : [];
   const version = cfg.version;
 
