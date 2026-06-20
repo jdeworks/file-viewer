@@ -4949,6 +4949,76 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
+    },
+    "proto": {
+      "label": "Protocol Buffer",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.proto"
+      ],
+      "extensions": [
+        ".proto"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Parses .proto IDL files. Shows messages with fields, services with RPCs, and enums.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [
+        "No support for proto2 groups or map fields in rendering"
+      ],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "thrift": {
+      "label": "Apache Thrift",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.thrift"
+      ],
+      "extensions": [
+        ".thrift"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "synthetic",
+      "notes": "Parses .thrift IDL files. Shows namespaces, typedefs, enums, structs, exceptions, and services.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   },
   "knownFiles": {
@@ -24637,6 +24707,87 @@
       "previewDepth": "rich",
       "metadataDepth": "none",
       "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "sitemap-xml": {
+      "label": "XML Sitemap",
+      "baseType": "xml",
+      "support": "supported",
+      "sampleFiles": [
+        "sitemap.xml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "avro-schema": {
+      "label": "Avro Schema",
+      "baseType": "json",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.avsc"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "robots-txt": {
+      "label": "robots.txt",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "robots.txt"
+      ],
+      "extensions": [
+        "robots.txt"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "none",
+      "editCapability": "basic",
       "exportCapability": "download",
       "securityLimitations": [],
       "knownParserGaps": [],

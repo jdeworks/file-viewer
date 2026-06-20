@@ -5755,4 +5755,31 @@ export async function run(ctx) {
   if (/acf/i.test(acfText)) pass('appmanifest_570.acf: acf badge shown'); else fail('acf badge: ' + acfText.slice(0, 200));
   if (/Dota 2/i.test(acfText)) pass('appmanifest_570.acf: game name shown'); else fail('acf name: ' + acfText.slice(0, 300));
   if (/Fully Installed/i.test(acfText)) pass('appmanifest_570.acf: Fully Installed state shown'); else fail('acf state: ' + acfText.slice(0, 300));
+
+  // ── robots.txt viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('robots.txt');
+  await page.waitForSelector('#previewHost .rbots-doc', { timeout: 12000 });
+  pass('robots.txt: renders');
+  const robotsText = await page.$eval('#previewHost .rbots-doc', (e) => e.textContent);
+  if (/robots\.txt/i.test(robotsText)) pass('robots.txt: badge shown'); else fail('robots.txt badge: ' + robotsText.slice(0, 200));
+  if (/User-agent/i.test(robotsText) || /Googlebot/i.test(robotsText)) pass('robots.txt: User-agent groups shown'); else fail('robots.txt groups: ' + robotsText.slice(0, 300));
+
+  // ── sitemap.xml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sitemap.xml');
+  await page.waitForSelector('#previewHost .sitemap-doc', { timeout: 12000 });
+  pass('sitemap.xml: renders');
+  const sitemapText = await page.$eval('#previewHost .sitemap-doc', (e) => e.textContent);
+  if (/sitemap/i.test(sitemapText)) pass('sitemap.xml: badge shown'); else fail('sitemap.xml badge: ' + sitemapText.slice(0, 200));
+  if (/example\.com/i.test(sitemapText) || /URL/i.test(sitemapText)) pass('sitemap.xml: URL table shown'); else fail('sitemap.xml URLs: ' + sitemapText.slice(0, 300));
+
+  // ── sample.avsc (Avro schema) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.avsc');
+  await page.waitForSelector('#previewHost .avro-doc', { timeout: 12000 });
+  pass('sample.avsc: renders');
+  const avroText = await page.$eval('#previewHost .avro-doc', (e) => e.textContent);
+  if (/Avro/i.test(avroText)) pass('sample.avsc: Avro badge shown'); else fail('avro badge: ' + avroText.slice(0, 200));
+  if (/User/i.test(avroText) && /field/i.test(avroText)) pass('sample.avsc: schema fields shown'); else fail('avro fields: ' + avroText.slice(0, 300));
 }

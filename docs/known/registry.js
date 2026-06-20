@@ -30,6 +30,7 @@ import gemfile from '../types/text/known/gemfile/index.js';
 import codeowners from '../types/text/known/codeowners/index.js';
 import editorconfig from '../types/text/known/editorconfig/index.js';
 import pomXml from '../types/text/xml/known/pom-xml/index.js';
+import sitemapXml from '../types/text/xml/known/sitemap/index.js';
 import mavenPom from '../types/text/xml/known/maven-pom/index.js';
 import antBuild from '../types/text/xml/known/ant-build/index.js';
 import buildGradle from '../types/text/known/build-gradle/index.js';
@@ -177,6 +178,7 @@ import clippyToml from '../types/text/toml/known/clippy-toml/index.js';
 import rustToolchain from '../types/text/toml/known/rust-toolchain/index.js';
 import htaccess from '../types/text/known/htaccess/index.js';
 import { plugin as htpasswd } from '../types/text/known/htpasswd/index.js';
+import { plugin as robotsTxt } from '../types/text/known/robots-txt/index.js';
 import nginxConf from '../types/text/known/nginx-conf/index.js';
 import apacheConf from '../types/text/known/apache-conf/index.js';
 import lighttpdConf from '../types/text/known/lighttpd-conf/index.js';
@@ -557,6 +559,7 @@ import wandbConfig from '../types/text/ini/known/wandb-config/index.js';
 import mintlify from '../types/text/json/known/mintlify/index.js';
 import postmanCollection from '../types/text/json/known/postman-collection/index.js';
 import harKnown from '../types/text/json/known/har/index.js';
+import avroSchema from '../types/text/json/known/avro-schema/index.js';
 import brunoWorkspace from '../types/text/json/known/bruno/index.js';
 import insomnia from '../types/text/yaml/known/insomnia/index.js';
 import openapiGenerator from '../types/text/yaml/known/openapi-generator/index.js';
@@ -753,7 +756,7 @@ import plistConfig from '../types/text/known/plist/index.js';
 import steamAcf from '../types/text/known/steam-acf/index.js';
 export const KNOWN = [plistConfig, steamAcf, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
-  buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
+  buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
   eslint, jest, jestConfig, stylelint, babelrc, babel, commitlint, lefthook,
   wrangler, flyToml, cliff, releaserc,
@@ -774,7 +777,7 @@ export const KNOWN = [plistConfig, steamAcf, packageJson, cargoToml, tsconfig, d
   appveyor, rubocop, rubocopTodo, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, clangTidy, moonrepo,
   brewfile, license, ansibleCfg, ansibleHosts, makepkgConf, gemspec, typos, cargoDeny, cargoConfig, rustfmtToml, clippyToml, rustToolchain,
-  htaccess, htpasswd, nginxConf, apacheConf, lighttpdConf, vsftpdConf, proftpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, berksfile, caddyfile, renderYaml, railwayJson, appJson,
+  htaccess, htpasswd, robotsTxt, nginxConf, apacheConf, lighttpdConf, vsftpdConf, proftpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, berksfile, caddyfile, renderYaml, railwayJson, appJson,
   rsyslogConf, netplan, syslogNg,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,
@@ -854,7 +857,7 @@ export const KNOWN = [plistConfig, steamAcf, packageJson, cargoToml, tsconfig, d
   nixDaemonConf, nixConfig,
   mavenSettings, pgHba,
   dvcPipeline, hydraConfig, mlflowProject, meltanoConfig, dagsterConfig, wandbConfig,
-  mintlify, postmanCollection, harKnown, brunoWorkspace, insomnia, openapiGenerator, graphqlSchema,
+  mintlify, postmanCollection, harKnown, avroSchema, brunoWorkspace, insomnia, openapiGenerator, graphqlSchema,
   systemdUnit, crontab,
   clusterConfig, certManager,
   iptablesRules, udevRules, grubConf, nftablesRules, ufwConf,
