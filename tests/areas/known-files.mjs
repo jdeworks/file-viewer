@@ -6828,4 +6828,16 @@ export async function run(ctx) {
   const fctrText = await page.$eval('#previewHost .fctr-doc', (e) => e.textContent);
   if (/Factor/i.test(fctrText)) pass('factor-lang: badge shown'); else fail('factor-lang badge: ' + fctrText.slice(0, 200));
   if (/word|USING|TUPLE|SYMBOL|vocabulary/i.test(fctrText)) pass('factor-lang: stats shown'); else fail('factor-lang stats: ' + fctrText.slice(0, 300));
+
+  // ── apt-sources viewer ──
+  await t.testKnown('apt-sources', 'sources.list', '.apts-doc');
+
+  // ── pkgbuild viewer ──
+  await t.testKnown('pkgbuild', 'PKGBUILD', '.pkgb-doc');
+
+  // ── limits-conf viewer ──
+  await t.testKnown('limits-conf', 'limits.conf', '.lim-doc');
+
+  // ── audit-rules viewer ──
+  await t.testKnown('audit-rules', 'audit.rules', '.audr-doc');
 }

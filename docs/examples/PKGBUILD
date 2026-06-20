@@ -1,0 +1,16 @@
+pkgname=hello
+pkgver=1.0
+pkgrel=1
+pkgdesc="Hello world package"
+arch=('x86_64')
+depends=('glibc')
+makedepends=('gcc')
+source=("https://example.com/hello-1.0.tar.gz")
+
+build() {
+    make
+}
+
+package() {
+    make install
+}

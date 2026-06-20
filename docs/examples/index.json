@@ -12583,5 +12583,101 @@
     "enhanced": true,
     "description": "LaTeX document with usepackage, sections, math, and author metadata.",
     "knownFile": "tex-doc"
+  },
+  {
+    "label": "sample.fth (Forth)",
+    "file": "sample.fth",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Forth stack-based language sample with word definitions, variables, and control flow.",
+    "knownFile": "forth-lang"
+  },
+  {
+    "label": "sample.lean (Lean 4)",
+    "file": "sample.lean",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Lean 4 theorem prover sample with imports, definitions, theorems, and lemmas.",
+    "knownFile": "lean-lang"
+  },
+  {
+    "label": "sample.agda (Agda)",
+    "file": "sample.agda",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Agda dependently typed language sample with module, data types, records, and postulates.",
+    "knownFile": "agda-lang"
+  },
+  {
+    "label": "sample.chpl (Chapel)",
+    "file": "sample.chpl",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Chapel parallel language sample with module, proc definitions, and coforall parallelism.",
+    "knownFile": "chapel-lang"
+  },
+  {
+    "label": "sample.koka (Koka)",
+    "file": "sample.koka",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Koka functional language sample with effect types, handlers, and fun definitions.",
+    "knownFile": "koka-lang"
+  },
+  {
+    "label": "sample.carbon (Carbon)",
+    "file": "sample.carbon",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Carbon language sample with package declaration, class, interface, and fn definitions.",
+    "knownFile": "carbon-lang"
+  },
+  {
+    "label": "sample.gr (Grain)",
+    "file": "sample.gr",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Grain WebAssembly functional language sample with module, let bindings, and imports.",
+    "knownFile": "grain-lang"
+  },
+  {
+    "label": "sample.factor (Factor)",
+    "file": "sample.factor",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Factor stack-based language sample with USING, IN, and word definitions.",
+    "knownFile": "factor-lang"
   }
 ]

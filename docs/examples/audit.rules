@@ -1,0 +1,12 @@
+## Delete all existing rules
+-D
+
+## Set buffer size
+-b 8192
+
+## Watch sensitive files
+-w /etc/passwd -p wa -k passwd-watch
+-w /etc/shadow -p wa -k shadow-watch
+
+## Syscall rules
+-a always,exit -F arch=b64 -S open -k file-open
