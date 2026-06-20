@@ -10410,5 +10410,35 @@
     "enhanced": true,
     "description": "Scrutiny hard drive health monitoring dashboard configuration",
     "knownFile": true
+  },
+  {
+    "file": "overseerr-settings.json",
+    "label": "Overseerr config",
+    "mime": "application/json",
+    "category": "Media",
+    "categories": ["Media", "Requests", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Overseerr media request manager configuration (Plex-based)",
+    "knownFile": true
+  },
+  {
+    "file": "freshrss.env",
+    "label": "FreshRSS config",
+    "mime": "text/plain",
+    "category": "Productivity",
+    "categories": ["Productivity", "RSS", "Self-Hosted"],
+    "enhanced": true,
+    "description": "FreshRSS self-hosted RSS feed aggregator configuration",
+    "knownFile": true
+  },
+  {
+    "file": "homepage-services.yaml",
+    "label": "Homepage services config",
+    "mime": "text/yaml",
+    "category": "Dashboard",
+    "categories": ["Dashboard", "Self-Hosted", "YAML"],
+    "enhanced": true,
+    "description": "Homepage dashboard services configuration file",
+    "knownFile": true
   }
 ]

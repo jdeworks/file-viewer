@@ -5647,4 +5647,16 @@ export async function run(ctx) {
   await openExample('scrutiny.yaml');
   await page.waitForSelector('#previewHost .scrutiny-doc', { timeout: 12000 });
   pass('scrutiny.yaml: Scrutiny badge shown');
+
+  // ── overseerr-settings.json viewer (overseerr-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('overseerr-settings.json');
+  await page.waitForSelector('#previewHost .overseerr-doc', { timeout: 12000 });
+  pass('overseerr-settings.json: Overseerr badge shown');
+
+  // ── freshrss.env viewer (freshrss-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('freshrss.env');
+  await page.waitForSelector('#previewHost .freshrss-doc', { timeout: 12000 });
+  pass('freshrss.env: FreshRSS badge shown');
 }

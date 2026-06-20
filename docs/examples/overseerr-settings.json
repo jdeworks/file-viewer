@@ -1,0 +1,35 @@
+{
+  "clientId": "abc123def456overseerr",
+  "currentVersion": "1.33.2",
+  "main": {
+    "apiKey": "supersecret-overseerr-api-key",
+    "applicationTitle": "Overseerr",
+    "applicationUrl": "https://requests.example.com",
+    "locale": "en",
+    "trustProxy": true,
+    "csrfProtection": false,
+    "defaultPermissions": 32,
+    "hideAvailable": false,
+    "localLogin": true,
+    "newPlexLogin": true,
+    "region": "US",
+    "originalLanguage": "en"
+  },
+  "plex": {
+    "name": "Plex Media Server",
+    "ip": "plex",
+    "port": 32400,
+    "useSsl": false,
+    "libraries": [
+      {"id": "1", "name": "Movies", "enabled": true, "type": "movie"},
+      {"id": "2", "name": "TV Shows", "enabled": true, "type": "show"}
+    ]
+  },
+  "notifications": {
+    "agents": {
+      "email": {"enabled": false, "options": {}},
+      "discord": {"enabled": true, "options": {"webhookUrl": "https://discord.com/api/webhooks/xxx"}},
+      "slack": {"enabled": false, "options": {}}
+    }
+  }
+}
