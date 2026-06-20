@@ -6835,5 +6835,23 @@
     "enhanced": true,
     "description": "Authentik blueprint: declarative configuration entries for applications, providers, and flows.",
     "knownFile": "authentik-config"
-  }
+  },
+  {
+    "label": "wg0.conf",
+    "file": "wg0.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ]
+  },
+  {
+    "label": ".bashrc",
+    "file": ".bashrc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": ["Config", "Shell"]
+  },
+  { "label": "flake.nix", "file": "flake.nix", "mime": "text/plain", "category": "Config", "categories": ["Config", "Nix"] }
 ]

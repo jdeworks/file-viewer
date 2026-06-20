@@ -426,6 +426,9 @@ import hardhatConfig from '../types/text/known/hardhat-config/index.js';
 import truffleConfig from '../types/text/known/truffle-config/index.js';
 import foundryToml from '../types/text/toml/known/foundry-toml/index.js';
 import anchorToml from '../types/text/toml/known/anchor-toml/index.js';
+import wireguardConf from '../types/text/known/wireguard-conf/index.js';
+import shellRc from '../types/text/known/shell-rc/index.js';
+import nixConfig from '../types/text/known/nix-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -515,6 +518,9 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig,
   newrelicConfig, dynatraceConfig, elasticApmConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
+  wireguardConf,
+  shellRc,
+  nixConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

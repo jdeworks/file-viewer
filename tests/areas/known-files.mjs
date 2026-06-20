@@ -201,7 +201,7 @@ export async function run(ctx) {
 
   // ── Kubernetes HPA viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('k8s-hpa.yaml');
+  await openExample('k8s-hpa.yaml (HPA)');
   await page.waitForSelector('#previewHost .hpa-doc', { timeout: 12000 });
   const hpaText = await page.$eval('#previewHost .hpa-doc', (e) => e.textContent);
   if (/HPA/i.test(hpaText)) pass('k8s-hpa: badge shown'); else fail('k8s-hpa badge: ' + hpaText.slice(0, 200));
@@ -451,7 +451,7 @@ export async function run(ctx) {
 
   // ── travis.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('travis.yml');
+  await openExample('Travis CI config');
   await page.waitForSelector('#previewHost .trv-doc', { timeout: 12000 });
   const trvText = await page.$eval('#previewHost .trv-doc', (e) => e.textContent);
   if (/Travis CI/i.test(trvText)) pass('travis.yml: badge shown'); else fail('travis badge: ' + trvText.slice(0, 200));
@@ -459,7 +459,7 @@ export async function run(ctx) {
 
   // ── circleci.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('circleci.yml');
+  await openExample('CircleCI config');
   await page.waitForSelector('#previewHost .cci-doc', { timeout: 12000 });
   const cciText = await page.$eval('#previewHost .cci-doc', (e) => e.textContent);
   if (/CircleCI/i.test(cciText)) pass('circleci.yml: badge shown'); else fail('circleci badge: ' + cciText.slice(0, 200));
@@ -467,7 +467,7 @@ export async function run(ctx) {
 
   // ── amplify.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('amplify.yml');
+  await openExample('AWS Amplify config');
   await page.waitForSelector('#previewHost .amp-doc', { timeout: 12000 });
   const ampText = await page.$eval('#previewHost .amp-doc', (e) => e.textContent);
   if (/AWS Amplify/i.test(ampText)) pass('amplify.yml: badge shown'); else fail('amplify badge: ' + ampText.slice(0, 200));
@@ -475,7 +475,7 @@ export async function run(ctx) {
 
   // ── buildspec.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('buildspec.yml');
+  await openExample('AWS CodeBuild buildspec');
   await page.waitForSelector('#previewHost .cod-doc', { timeout: 12000 });
   const codText = await page.$eval('#previewHost .cod-doc', (e) => e.textContent);
   if (/CodeBuild/i.test(codText)) pass('buildspec.yml: badge shown'); else fail('codebuild badge: ' + codText.slice(0, 200));
@@ -491,7 +491,7 @@ export async function run(ctx) {
 
   // ── deno.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('deno.json');
+  await openExample('Deno config');
   await page.waitForSelector('#previewHost .den-doc', { timeout: 12000 });
   const denText = await page.$eval('#previewHost .den-doc', (e) => e.textContent);
   if (/Deno/i.test(denText)) pass('deno.json: badge shown'); else fail('deno badge: ' + denText.slice(0, 200));
@@ -499,7 +499,7 @@ export async function run(ctx) {
 
   // ── .nvmrc viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('nvmrc');
+  await openExample('.nvmrc');
   await page.waitForSelector('#previewHost .nvm-doc', { timeout: 12000 });
   const nvmText = await page.$eval('#previewHost .nvm-doc', (e) => e.textContent);
   if (/Node\.js|nvmrc/i.test(nvmText)) pass('nvmrc: badge shown'); else fail('nvmrc badge: ' + nvmText.slice(0, 200));
@@ -507,7 +507,7 @@ export async function run(ctx) {
 
   // ── .browserslistrc viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('browserslistrc');
+  await openExample('.browserslistrc');
   await page.waitForSelector('#previewHost .brl-doc', { timeout: 12000 });
   const brlText = await page.$eval('#previewHost .brl-doc', (e) => e.textContent);
   if (/Browserslist/i.test(brlText)) pass('browserslistrc: badge shown'); else fail('browserslist badge: ' + brlText.slice(0, 200));
@@ -515,7 +515,7 @@ export async function run(ctx) {
 
   // ── pre-commit-config.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('pre-commit-config.yaml');
+  await openExample('pre-commit config');
   await page.waitForSelector('#previewHost .prc-doc', { timeout: 12000 });
   const prcText = await page.$eval('#previewHost .prc-doc', (e) => e.textContent);
   if (/pre-commit/i.test(prcText)) pass('pre-commit-config.yaml: badge shown'); else fail('pre-commit badge: ' + prcText.slice(0, 200));
@@ -523,7 +523,7 @@ export async function run(ctx) {
 
   // ── pyrightconfig.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('pyrightconfig.json');
+  await openExample('Pyright config');
   await page.waitForSelector('#previewHost .pyr-doc', { timeout: 12000 });
   const pyrText = await page.$eval('#previewHost .pyr-doc', (e) => e.textContent);
   if (/Pyright/i.test(pyrText)) pass('pyrightconfig.json: badge shown'); else fail('pyright badge: ' + pyrText.slice(0, 200));
@@ -539,7 +539,7 @@ export async function run(ctx) {
 
   // ── mypy.ini viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('mypy.ini');
+  await openExample('mypy config');
   await page.waitForSelector('#previewHost .myp-doc', { timeout: 12000 });
   const mypText = await page.$eval('#previewHost .myp-doc', (e) => e.textContent);
   if (/mypy/i.test(mypText)) pass('mypy.ini: badge shown'); else fail('mypy badge: ' + mypText.slice(0, 200));
@@ -1042,7 +1042,7 @@ export async function run(ctx) {
 
   // ── crowdin.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('crowdin.yml');
+  await openExample('crowdin.yml (Crowdin config)');
   await page.waitForSelector('#previewHost .cwd-doc', { timeout: 12000 });
   const cwdText = await page.$eval('#previewHost .cwd-doc', (e) => e.textContent);
   if (/Crowdin/i.test(cwdText)) pass('crowdin.yml: badge shown'); else fail('crowdin badge: ' + cwdText.slice(0, 200));
@@ -1050,7 +1050,7 @@ export async function run(ctx) {
 
   // ── Matchfile viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('Matchfile');
+  await openExample('Matchfile (Fastlane Match)');
   await page.waitForSelector('#previewHost .mf-doc', { timeout: 12000 });
   const mfText = await page.$eval('#previewHost .mf-doc', (e) => e.textContent);
   if (/Match/i.test(mfText)) pass('Matchfile: badge shown'); else fail('matchfile badge: ' + mfText.slice(0, 200));
@@ -1082,7 +1082,7 @@ export async function run(ctx) {
 
   // ── Supabase config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('supabase-config.toml');
+  await openExample('supabase/config.toml');
   await page.waitForSelector('#previewHost .sbc-doc', { timeout: 12000 });
   const sbcText = await page.$eval('#previewHost .sbc-doc', (e) => e.textContent);
   if (/Supabase/i.test(sbcText)) pass('supabase config.toml: badge shown'); else fail('supabase badge: ' + sbcText.slice(0, 200));
@@ -1195,7 +1195,7 @@ export async function run(ctx) {
 
   // ── .mockery.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('.mockery.yaml');
+  await openExample('.mockery.yaml (mockery)');
   await page.waitForSelector('#previewHost .mky-doc', { timeout: 12000 });
   const mkyText = await page.$eval('#previewHost .mky-doc', (e) => e.textContent);
   if (/mockery/i.test(mkyText)) pass('.mockery.yaml: mockery badge shown'); else fail('mockery badge: ' + mkyText.slice(0, 200));
@@ -1205,7 +1205,7 @@ export async function run(ctx) {
 
   // ── .ko.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('.ko.yaml');
+  await openExample('.ko.yaml (ko container build)');
   await page.waitForSelector('#previewHost .ko-doc', { timeout: 12000 });
   const koText = await page.$eval('#previewHost .ko-doc', (e) => e.textContent);
   if (/\bko\b/i.test(koText)) pass('.ko.yaml: ko badge shown'); else fail('ko badge: ' + koText.slice(0, 200));
@@ -1215,7 +1215,7 @@ export async function run(ctx) {
 
   // ── sqlc.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('sqlc.yaml');
+  await openExample('sqlc.yaml (sqlc)');
   await page.waitForSelector('#previewHost .sqlc-doc', { timeout: 12000 });
   const sqlcText = await page.$eval('#previewHost .sqlc-doc', (e) => e.textContent);
   if (/sqlc/i.test(sqlcText)) pass('sqlc.yaml: sqlc badge shown'); else fail('sqlc badge: ' + sqlcText.slice(0, 200));
@@ -1225,7 +1225,7 @@ export async function run(ctx) {
 
   // ── nfpm.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('nfpm.yaml');
+  await openExample('nfpm.yaml (nfpm)');
   await page.waitForSelector('#previewHost .nfpm-doc', { timeout: 12000 });
   const nfpmText = await page.$eval('#previewHost .nfpm-doc', (e) => e.textContent);
   if (/nfpm/i.test(nfpmText)) pass('nfpm.yaml: nfpm badge shown'); else fail('nfpm badge: ' + nfpmText.slice(0, 200));
@@ -1560,7 +1560,7 @@ export async function run(ctx) {
 
   // ── tauri.conf.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('tauri.conf.json');
+  await openExample('tauri.conf.json (Tauri)');
   await page.waitForSelector('#previewHost .tauri-doc', { timeout: 12000 });
   const tauriText = await page.$eval('#previewHost .tauri-doc', (e) => e.textContent);
   if (/Tauri/i.test(tauriText)) pass('tauri.conf.json: Tauri badge shown'); else fail('tauri badge: ' + tauriText.slice(0, 200));
@@ -1582,7 +1582,7 @@ export async function run(ctx) {
 
   // ── forge.config.js viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('forge.config.js');
+  await openExample('forge.config.js (Electron Forge)');
   await page.waitForSelector('#previewHost .fg-doc', { timeout: 12000 });
   const fgText = await page.$eval('#previewHost .fg-doc', (e) => e.textContent);
   if (/Electron Forge/i.test(fgText)) pass('forge.config.js: Electron Forge badge shown'); else fail('forge badge: ' + fgText.slice(0, 200));
@@ -1592,7 +1592,7 @@ export async function run(ctx) {
 
   // ── wails.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('wails.json');
+  await openExample('wails.json (Wails)');
   await page.waitForSelector('#previewHost .wails-doc', { timeout: 12000 });
   const wailsText = await page.$eval('#previewHost .wails-doc', (e) => e.textContent);
   if (/Wails/i.test(wailsText)) pass('wails.json: Wails badge shown'); else fail('wails badge: ' + wailsText.slice(0, 200));
@@ -1603,7 +1603,7 @@ export async function run(ctx) {
 
   // ── web.config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('web.config');
+  await openExample('web.config (IIS/ASP.NET)');
   await page.waitForSelector('#previewHost .wc-doc', { timeout: 12000 });
   const wcText = await page.$eval('#previewHost .wc-doc', (e) => e.textContent);
   if (/ASP\.NET/i.test(wcText)) pass('web.config: ASP.NET badge shown'); else fail('web.config badge: ' + wcText.slice(0, 200));
@@ -1615,7 +1615,7 @@ export async function run(ctx) {
 
   // ── app.config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('app.config');
+  await openExample('app.config (.NET)');
   await page.waitForSelector('#previewHost .ac-doc', { timeout: 12000 });
   const acText = await page.$eval('#previewHost .ac-doc', (e) => e.textContent);
   if (/\.NET/i.test(acText)) pass('app.config: .NET badge shown'); else fail('app.config badge: ' + acText.slice(0, 200));
@@ -1627,7 +1627,7 @@ export async function run(ctx) {
 
   // ── packages.config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('packages.config');
+  await openExample('packages.config (NuGet)');
   await page.waitForSelector('#previewHost .pc-doc', { timeout: 12000 });
   const pcText = await page.$eval('#previewHost .pc-doc', (e) => e.textContent);
   if (/NuGet/i.test(pcText)) pass('packages.config: NuGet badge shown'); else fail('packages.config badge: ' + pcText.slice(0, 200));
@@ -1637,7 +1637,7 @@ export async function run(ctx) {
 
   // ── launchSettings.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('launchSettings.json');
+  await openExample('launchSettings.json (ASP.NET)');
   await page.waitForSelector('#previewHost .ls-doc', { timeout: 12000 });
   const lsText = await page.$eval('#previewHost .ls-doc', (e) => e.textContent);
   if (/ASP\.NET Core/i.test(lsText)) pass('launchSettings.json: ASP.NET Core badge shown'); else fail('launchSettings badge: ' + lsText.slice(0, 200));
@@ -1648,7 +1648,7 @@ export async function run(ctx) {
 
   // ── terragrunt.hcl viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('terragrunt.hcl');
+  await openExample('terragrunt.hcl (Terragrunt)');
   await page.waitForSelector('#previewHost .tgr-doc', { timeout: 12000 });
   const tgrText = await page.$eval('#previewHost .tgr-doc', (e) => e.textContent);
   if (/Terragrunt/i.test(tgrText)) pass('terragrunt.hcl: Terragrunt badge shown'); else fail('terragrunt badge: ' + tgrText.slice(0, 200));
@@ -1657,7 +1657,7 @@ export async function run(ctx) {
 
   // ── .tflint.hcl viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('.tflint.hcl');
+  await openExample('.tflint.hcl (TFLint)');
   await page.waitForSelector('#previewHost .tfl-doc', { timeout: 12000 });
   const tflText = await page.$eval('#previewHost .tfl-doc', (e) => e.textContent);
   if (/TFLint/i.test(tflText)) pass('.tflint.hcl: TFLint badge shown'); else fail('tflint badge: ' + tflText.slice(0, 200));
@@ -1675,7 +1675,7 @@ export async function run(ctx) {
 
   // ── versions.tf viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('versions.tf');
+  await openExample('versions.tf (Terraform)');
   await page.waitForSelector('#previewHost .vtf-doc', { timeout: 12000 });
   const vtfText = await page.$eval('#previewHost .vtf-doc', (e) => e.textContent);
   if (/Terraform/i.test(vtfText)) pass('versions.tf: Terraform badge shown'); else fail('versions-tf badge: ' + vtfText.slice(0, 200));
@@ -1694,7 +1694,7 @@ export async function run(ctx) {
 
   // ── my.cnf viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('my.cnf');
+  await openExample('my.cnf (MySQL)');
   await page.waitForSelector('#previewHost .my-doc', { timeout: 12000 });
   const myText = await page.$eval('#previewHost .my-doc', (e) => e.textContent);
   if (/MySQL/i.test(myText)) pass('my.cnf: MySQL badge shown'); else fail('my.cnf badge: ' + myText.slice(0, 200));
@@ -1881,7 +1881,7 @@ export async function run(ctx) {
 
   // ── cloudformation.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('cloudformation.yaml');
+  await openExample('cloudformation.yaml (CloudFormation)');
   await page.waitForSelector('#previewHost .cfn-doc', { timeout: 12000 });
   const cfnText = await page.$eval('#previewHost .cfn-doc', (e) => e.textContent);
   if (/CloudFormation/i.test(cfnText)) pass('cloudformation.yaml: CloudFormation badge shown'); else fail('cfn badge: ' + cfnText.slice(0, 200));
@@ -1891,7 +1891,7 @@ export async function run(ctx) {
 
   // ── sam-template.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('sam-template.yaml');
+  await openExample('sam-template.yaml (AWS SAM)');
   await page.waitForSelector('#previewHost .sam-doc', { timeout: 12000 });
   const samText = await page.$eval('#previewHost .sam-doc', (e) => e.textContent);
   if (/AWS SAM/i.test(samText)) pass('sam-template.yaml: AWS SAM badge shown'); else fail('sam badge: ' + samText.slice(0, 200));
@@ -1901,7 +1901,7 @@ export async function run(ctx) {
 
   // ── cdk.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('cdk.json');
+  await openExample('cdk.json (AWS CDK)');
   await page.waitForSelector('#previewHost .cdk-doc', { timeout: 12000 });
   const cdkText = await page.$eval('#previewHost .cdk-doc', (e) => e.textContent);
   if (/AWS CDK/i.test(cdkText)) pass('cdk.json: AWS CDK badge shown'); else fail('cdk badge: ' + cdkText.slice(0, 200));
@@ -1911,7 +1911,7 @@ export async function run(ctx) {
 
   // ── samconfig.toml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('samconfig.toml');
+  await openExample('samconfig.toml (SAM Config)');
   await page.waitForSelector('#previewHost .smc-doc', { timeout: 12000 });
   const smcText = await page.$eval('#previewHost .smc-doc', (e) => e.textContent);
   if (/SAM Config/i.test(smcText)) pass('samconfig.toml: SAM Config badge shown'); else fail('smc badge: ' + smcText.slice(0, 200));
@@ -2068,7 +2068,7 @@ export async function run(ctx) {
 
   // ── opentelemetry-k8s.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('opentelemetry-k8s.yaml');
+  await openExample('opentelemetry-k8s.yaml (OTel Operator)');
   await page.waitForSelector('#previewHost .otk-doc', { timeout: 12000 });
   const otkText = await page.$eval('#previewHost .otk-doc', (e) => e.textContent);
   if (/OpenTelemetry/i.test(otkText)) pass('opentelemetry-k8s.yaml: badge shown'); else fail('otk badge: ' + otkText.slice(0, 200));
@@ -2252,7 +2252,7 @@ export async function run(ctx) {
 
   // ── .woodpecker.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('.woodpecker.yml');
+  await openExample('.woodpecker.yml (Woodpecker CI)');
   await page.waitForSelector('#previewHost .wpc-doc', { timeout: 12000 });
   const wpcText = await page.$eval('#previewHost .wpc-doc', (e) => e.textContent);
   if (/Woodpecker/i.test(wpcText)) pass('.woodpecker.yml: badge shown'); else fail('woodpecker badge: ' + wpcText.slice(0, 200));
@@ -2262,7 +2262,7 @@ export async function run(ctx) {
 
   // ── harness-pipeline.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('harness-pipeline.yaml');
+  await openExample('Harness Pipeline');
   await page.waitForSelector('#previewHost .hrn-doc', { timeout: 12000 });
   const hrnText = await page.$eval('#previewHost .hrn-doc', (e) => e.textContent);
   if (/Harness/i.test(hrnText)) pass('harness-pipeline.yaml: badge shown'); else fail('harness badge: ' + hrnText.slice(0, 200));
@@ -2272,7 +2272,7 @@ export async function run(ctx) {
 
   // ── codefresh.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('codefresh.yml');
+  await openExample('Codefresh config');
   await page.waitForSelector('#previewHost .cfd-doc', { timeout: 12000 });
   const cfdText = await page.$eval('#previewHost .cfd-doc', (e) => e.textContent);
   if (/Codefresh/i.test(cfdText)) pass('codefresh.yml: badge shown'); else fail('codefresh badge: ' + cfdText.slice(0, 200));
@@ -2327,7 +2327,7 @@ export async function run(ctx) {
 
   // ── .actrc viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('.actrc');
+  await openExample('act config (.actrc)');
   await page.waitForSelector('#previewHost .act-doc', { timeout: 12000 });
   const actText = await page.$eval('#previewHost .act-doc', (e) => e.textContent);
   if (/\bact\b/i.test(actText)) pass('.actrc: act badge shown'); else fail('act badge: ' + actText.slice(0, 200));
@@ -2834,4 +2834,13 @@ export async function run(ctx) {
   if (/Newtonsoft\.Json|Microsoft\.Extensions\.Logging/i.test(mbPropsText)) pass('Common.props: package versions listed'); else fail('mb pkgvers: ' + mbPropsText.slice(0, 300));
   if (/PrintBuildInfo/i.test(mbPropsText)) pass('Common.props: target element shown'); else fail('mb targets: ' + mbPropsText.slice(0, 300));
   if (/Custom\.targets/i.test(mbPropsText)) pass('Common.props: import element shown'); else fail('mb imports: ' + mbPropsText.slice(0, 300));
+
+  // ── wireguard-conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('wg0.conf');
+  await page.waitForSelector('#previewHost .wg-doc', { timeout: 12000 });
+  const wgText = await page.$eval('#previewHost .wg-doc', (e) => e.textContent);
+  if (/WireGuard/i.test(wgText)) pass('wg0.conf: badge shown'); else fail('wireguard badge: ' + wgText.slice(0, 200));
+  if (/redacted/i.test(wgText)) pass('wg0.conf: private key redacted'); else fail('wireguard key: ' + wgText.slice(0, 300));
+  if (/Peer|AllowedIPs/i.test(wgText)) pass('wg0.conf: peers shown'); else fail('wireguard peers: ' + wgText.slice(0, 300));
 }
