@@ -4034,6 +4034,26 @@
     "knownFile": "railway-json"
   },
   {
+    "file": "kamal.yml",
+    "label": "kamal.yml",
+    "mime": "text/x-yaml",
+    "category": "DevOps",
+    "categories": ["DevOps", "Config"],
+    "enhanced": true,
+    "description": "Kamal 2 deployment configuration for containerized applications.",
+    "knownFile": "kamal-config"
+  },
+  {
+    "file": "prefect.yaml",
+    "label": "prefect.yaml",
+    "mime": "text/x-yaml",
+    "category": "DevOps",
+    "categories": ["DevOps", "Config"],
+    "enhanced": true,
+    "description": "Prefect 2 workflow orchestration configuration with deployments and schedules.",
+    "knownFile": "prefect-config"
+  },
+  {
     "label": "Appfile",
     "file": "Appfile",
     "mime": "text/plain",
@@ -7327,6 +7347,32 @@
     "enhanced": true,
     "description": "MLflow project: sklearn ElasticNet model with conda env, train entry point (alpha, l1_ratio, max_iter), and predict entry point.",
     "knownFile": "mlflow-project"
+  },
+  {
+    "file": "meltano.yml",
+    "label": "meltano.yml",
+    "mime": "text/x-yaml",
+    "category": "Data",
+    "categories": [
+      "Data",
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Meltano ELT platform configuration with plugins, environments, and schedules.",
+    "knownFile": "meltano-config"
+  },
+  {
+    "file": "dagster.yaml",
+    "label": "dagster.yaml",
+    "mime": "text/x-yaml",
+    "category": "Data",
+    "categories": [
+      "Data",
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Dagster data orchestration workspace configuration with code locations.",
+    "knownFile": "dagster-config"
   },
   {
     "label": "hydra-config.yaml (Hydra Config)",

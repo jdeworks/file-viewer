@@ -4939,4 +4939,22 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('recursor.conf');
   pass(await page.waitForSelector('#previewHost .rec-doc', { timeout: 12000 }), 'recursor.conf: PowerDNS Recursor badge shown');
+
+  // ── kamal.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('kamal.yml');
+  pass(await page.waitForSelector('#previewHost .kamal-doc', { timeout: 12000 }), 'kamal.yml: kamal-doc shown');
+  const kamalText = await page.$eval('#previewHost .kamal-doc', (e) => e.textContent);
+  if (/myapp/i.test(kamalText)) pass('kamal.yml: service name shown'); else fail('kamal service: ' + kamalText.slice(0, 200));
+  if (/configured/i.test(kamalText)) pass('kamal.yml: secrets masked as [configured]'); else fail('kamal secrets: ' + kamalText.slice(0, 200));
+  if (/accessories|redis|postgres/i.test(kamalText)) pass('kamal.yml: accessories listed'); else fail('kamal accessories: ' + kamalText.slice(0, 200));
+
+  // ── prefect.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('prefect.yaml');
+  pass(await page.waitForSelector('#previewHost .prefect-doc', { timeout: 12000 }), 'prefect.yaml: prefect-doc shown');
+  const prefectText = await page.$eval('#previewHost .prefect-doc', (e) => e.textContent);
+  if (/data-pipeline/i.test(prefectText)) pass('prefect.yaml: project name shown'); else fail('prefect project: ' + prefectText.slice(0, 200));
+  if (/etl-daily|ml-training/i.test(prefectText)) pass('prefect.yaml: deployments listed'); else fail('prefect deployments: ' + prefectText.slice(0, 200));
+  if (/cron/i.test(prefectText)) pass('prefect.yaml: schedules shown'); else fail('prefect schedules: ' + prefectText.slice(0, 200));
 }

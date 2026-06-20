@@ -1,0 +1,71 @@
+name: data-pipeline
+prefect-version: 2.16.9
+
+build:
+  - prefect_docker.deployments.steps.build_docker_image:
+      id: build-image
+      requires: prefect-docker>=0.3.1
+      image_name: ghcr.io/myorg/data-pipeline
+      tag: latest
+      dockerfile: auto
+
+push:
+  - prefect_docker.deployments.steps.push_docker_image:
+      requires: prefect-docker>=0.3.1
+      image_name: "{{ build-image.image_name }}"
+      tag: "{{ build-image.tag }}"
+
+pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: /app
+
+deployments:
+  - name: etl-daily
+    version: null
+    tags:
+      - etl
+      - daily
+      - production
+    description: Daily ETL pipeline that ingests raw data and writes to the warehouse.
+    entrypoint: flows/etl.py:run_etl
+    parameters:
+      source: s3://mybucket/raw
+      destination: warehouse.public.events
+      batch_size: 1000
+    work_pool:
+      name: kubernetes-pool
+      work_queue_name: default
+      job_variables:
+        image: "{{ build-image.image }}"
+        namespace: prefect
+        cpu_request: "500m"
+        memory_request: "512Mi"
+    schedules:
+      - cron: "0 6 * * *"
+        timezone: "UTC"
+        active: true
+
+  - name: ml-training
+    version: null
+    tags:
+      - ml
+      - training
+    description: Weekly model retraining job with GPU support.
+    entrypoint: flows/train.py:train_model
+    parameters:
+      experiment_name: baseline-v2
+      epochs: 50
+      learning_rate: 0.001
+    work_pool:
+      name: gpu-pool
+      work_queue_name: gpu
+      job_variables:
+        image: "{{ build-image.image }}"
+        namespace: ml-jobs
+        cpu_request: "2"
+        memory_request: "8Gi"
+        gpu_count: 1
+    schedules:
+      - cron: "0 2 * * 0"
+        timezone: "UTC"
+        active: true

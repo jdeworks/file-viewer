@@ -233,6 +233,7 @@ import cmakePresets from '../types/text/json/known/cmake-presets/index.js';
 import conanfile from '../types/text/known/conanfile/index.js';
 import prometheusConfig from '../types/text/yaml/known/prometheus-config/index.js';
 import alertmanager from '../types/text/yaml/known/alertmanager/index.js';
+import ejabberdConfig from '../types/text/yaml/known/ejabberd-config/index.js';
 import blackboxExporter from '../types/text/yaml/known/blackbox/index.js';
 import snmpExporter from '../types/text/yaml/known/snmp-exporter/index.js';
 import victoriaMetricsConfig from '../types/text/yaml/known/victoria-metrics-config/index.js';
@@ -355,6 +356,8 @@ import shopifyApp from '../types/text/toml/known/shopify-app/index.js';
 import lighthouserc from '../types/text/json/known/lighthouserc/index.js';
 import atlantis from '../types/text/yaml/known/atlantis/index.js';
 import spaceliftConfig from '../types/text/yaml/known/spacelift-config/index.js';
+import kamalConfig from '../types/text/yaml/known/kamal-config/index.js';
+import prefectConfig from '../types/text/yaml/known/prefect-config/index.js';
 import checkov from '../types/text/yaml/known/checkov/index.js';
 import terraformDocs from '../types/text/yaml/known/terraform-docs/index.js';
 import infracost from '../types/text/yaml/known/infracost/index.js';
@@ -529,6 +532,8 @@ import pgHba from '../types/text/known/pg-hba/index.js';
 import dvcPipeline from '../types/text/yaml/known/dvc-pipeline/index.js';
 import hydraConfig from '../types/text/yaml/known/hydra-config/index.js';
 import mlflowProject from '../types/text/yaml/known/mlflow-project/index.js';
+import meltanoConfig from '../types/text/yaml/known/meltano-config/index.js';
+import dagsterConfig from '../types/text/yaml/known/dagster-config/index.js';
 import wandbConfig from '../types/text/ini/known/wandb-config/index.js';
 import mintlify from '../types/text/json/known/mintlify/index.js';
 import postmanCollection from '../types/text/json/known/postman-collection/index.js';
@@ -556,6 +561,7 @@ import corefile from '../types/text/known/corefile/index.js';
 import containerdConfig from '../types/text/known/containerd-config/index.js';
 import postfixConf from '../types/text/known/postfix-conf/index.js';
 import dovecotConf from '../types/text/known/dovecot-conf/index.js';
+import zabbixConf from '../types/text/known/zabbix-conf/index.js';
 import eximConf from '../types/text/known/exim-conf/index.js';
 import chronyConf from '../types/text/known/chrony-conf/index.js';
 import namedConf from '../types/text/known/named-conf/index.js';
@@ -686,7 +692,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   terragrunt, tflint, tfLock, versionsTf,
   tsupConfig, rspackConfig, esbuildConfig, parcelrc, bunfigToml, shopifyApp, lighthouserc,
   shadowCljs, projectClj, depsEdn,
-  atlantis, spaceliftConfig, checkov, terraformDocs, infracost,
+  atlantis, spaceliftConfig, kamalConfig, prefectConfig, checkov, terraformDocs, infracost,
   opencostConfig, crossplaneConfig, kedaConfig, veleroConfig,
   androidManifest, appConfig, buildZigZon, zigZon, cartfile,
   electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, tempoConfig, mimirConfig, cortexConfig, grafanaAlloy, forgeConfig,
@@ -726,7 +732,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   shellRc,
   nixDaemonConf, nixConfig,
   mavenSettings, pgHba,
-  dvcPipeline, hydraConfig, mlflowProject, wandbConfig,
+  dvcPipeline, hydraConfig, mlflowProject, meltanoConfig, dagsterConfig, wandbConfig,
   mintlify, postmanCollection, brunoWorkspace, insomnia, openapiGenerator, graphqlSchema,
   systemdUnit, crontab,
   clusterConfig, certManager,
