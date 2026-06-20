@@ -2911,12 +2911,22 @@ export async function run(ctx) {
   if (/PostgreSQL|pg_hba/i.test(pghbaText)) pass('pg_hba.conf: badge shown'); else fail('pghba badge: ' + pghbaText.slice(0, 200));
   if (/scram-sha-256|peer|md5/i.test(pghbaText)) pass('pg_hba.conf: auth methods shown'); else fail('pghba methods: ' + pghbaText.slice(0, 300));
 
-  // ── R DESCRIPTION viewer ──
+  // ── Caddyfile viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('DESCRIPTION');
-  await page.waitForSelector('#previewHost .rdesc-doc', { timeout: 12000 });
-  const rdescText = await page.$eval('#previewHost .rdesc-doc', (e) => e.textContent);
-  if (/R Package/i.test(rdescText)) pass('DESCRIPTION: badge shown'); else fail('r-desc badge: ' + rdescText.slice(0, 200));
-  if (/mypackage|Version/i.test(rdescText)) pass('DESCRIPTION: package info shown'); else fail('r-desc info: ' + rdescText.slice(0, 300));
-  if (/dplyr|ggplot2|Imports/i.test(rdescText)) pass('DESCRIPTION: dependencies shown'); else fail('r-desc deps: ' + rdescText.slice(0, 300));
+  await openExample('Caddyfile');
+  await page.waitForSelector('#previewHost .cdf-doc', { timeout: 12000 });
+  const cdfText = await page.$eval('#previewHost .cdf-doc', (e) => e.textContent);
+  if (/Caddy/i.test(cdfText)) pass('Caddyfile: badge shown'); else fail('caddyfile badge: ' + cdfText.slice(0, 200));
+  if (/example\.com/i.test(cdfText)) pass('Caddyfile: site address shown'); else fail('caddyfile site: ' + cdfText.slice(0, 300));
+  if (/reverse_proxy|file_server|encode/i.test(cdfText)) pass('Caddyfile: directives shown'); else fail('caddyfile directives: ' + cdfText.slice(0, 300));
+
+  // ── nginx.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nginx.conf');
+  await page.waitForSelector('#previewHost .ngx-doc', { timeout: 12000 });
+  const ngxText = await page.$eval('#previewHost .ngx-doc', (e) => e.textContent);
+  if (/nginx/i.test(ngxText)) pass('nginx.conf: badge shown'); else fail('nginx badge: ' + ngxText.slice(0, 200));
+  if (/backend/i.test(ngxText)) pass('nginx.conf: upstream shown'); else fail('nginx upstream: ' + ngxText.slice(0, 300));
+  if (/example\.com/i.test(ngxText)) pass('nginx.conf: server_name shown'); else fail('nginx server_name: ' + ngxText.slice(0, 300));
+
 }

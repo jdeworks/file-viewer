@@ -16139,7 +16139,7 @@
       "baseType": "xml",
       "support": "supported",
       "sampleFiles": [
-        "maven-settings.xml"
+        "settings.xml"
       ],
       "extensions": [
         ".yml"
@@ -16219,7 +16219,9 @@
       "label": "Hydra Config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "hydra-config.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16244,7 +16246,9 @@
       "label": "MLflow Project",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "MLproject"
+      ],
       "extensions": [
         ".yml"
       ],

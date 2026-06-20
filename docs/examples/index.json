@@ -6933,7 +6933,8 @@
     "categories": [
       "Config",
       "Java"
-    ]
+    ],
+    "knownFile": "maven-settings"
   },
   {
     "label": "pg_hba.conf",

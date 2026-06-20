@@ -152,6 +152,7 @@ import moonrepo from '../types/text/yaml/known/moonrepo/index.js';
 import brewfile from '../types/text/known/brewfile/index.js';
 import license from '../types/text/known/license/index.js';
 import ansibleCfg from '../types/text/known/ansible-cfg/index.js';
+import ansibleHosts from '../types/text/known/ansible-hosts/index.js';
 import gemspec from '../types/text/known/gemspec/index.js';
 import typos from '../types/text/toml/known/typos/index.js';
 import cargoDeny from '../types/text/toml/known/cargo-deny/index.js';
@@ -462,7 +463,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   mailmap, npmignore, dockerignore,
   appveyor, rubocop, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
-  brewfile, license, ansibleCfg, gemspec, typos, cargoDeny, cargoConfig,
+  brewfile, license, ansibleCfg, ansibleHosts, gemspec, typos, cargoDeny, cargoConfig,
   htaccess, nginxConf, haproxyConfig, squidConf, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,
