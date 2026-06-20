@@ -132,6 +132,9 @@ export function parseGLTF(intake) {
     renderedPrimitiveCount: 0,
   };
 
+  const groupList = [];
+  const primGroupMap = new Map(); // matIdx → groupIdx
+
   const addMesh = (meshIdx, matrix) => {
     const mesh = gltf.meshes[meshIdx];
     if (!mesh) return;
@@ -145,10 +148,18 @@ export function parseGLTF(intake) {
       const idx = prim.indices != null ? readAccessor(gltf, buffers, prim.indices) : verts.map((_, i) => i);
       if (!idx) continue;
       const color = materialColor((gltf.materials || [])[prim.material]);
+      const matIdx = prim.material ?? -1;
+      if (!primGroupMap.has(matIdx)) {
+        const matName = (gltf.materials || [])[matIdx]?.name || (matIdx >= 0 ? 'material_' + matIdx : 'mesh');
+        const grpColor = color || [0.286, 0.471, 0.784, 1];
+        primGroupMap.set(matIdx, groupList.length);
+        groupList.push({ id: matName, color: grpColor });
+      }
+      const groupIdx = primGroupMap.get(matIdx);
       stats.renderedPrimitiveCount++;
       for (let i = 0; i + 2 < idx.length; i += 3) {
         const a = verts[idx[i]], b = verts[idx[i + 1]], c = verts[idx[i + 2]];
-        if (a && b && c) tris.push({ v: [a, b, c], n: vnorm(vcross(vsub(b, a), vsub(c, a))), color });
+        if (a && b && c) tris.push({ v: [a, b, c], n: vnorm(vcross(vsub(b, a), vsub(c, a))), color, groupIdx });
       }
     }
   };
@@ -166,5 +177,5 @@ export function parseGLTF(intake) {
   else if (gltf.nodes) gltf.nodes.forEach((_, i) => walk(i, IDENT));     // no scene — render all nodes
   else if (gltf.meshes) gltf.meshes.forEach((_, i) => addMesh(i, IDENT));
 
-  return { tris, ...stats, ...bounds(tris) };
+  return { tris, groups: groupList, ...stats, ...bounds(tris) };
 }

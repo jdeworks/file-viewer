@@ -31,7 +31,7 @@ function parseBinary(bytes) {
     const v1 = [dv.getFloat32(o + 24, true), dv.getFloat32(o + 28, true), dv.getFloat32(o + 32, true)];
     const v2 = [dv.getFloat32(o + 36, true), dv.getFloat32(o + 40, true), dv.getFloat32(o + 44, true)];
     if (!(n[0] || n[1] || n[2])) n = faceNormal(v0, v1, v2);
-    tris.push({ v: [v0, v1, v2], n });
+    tris.push({ v: [v0, v1, v2], n, groupIdx: 0 });
     o += 50;
   }
   return tris;
@@ -47,7 +47,7 @@ function parseAscii(text) {
     const verts = [...m[2].matchAll(/vertex\s+([^\n]*)/gi)].slice(0, 3).map((mm) => nums('x ' + mm[1]));
     if (verts.length !== 3) continue;
     let n = (n0[0] || n0[1] || n0[2]) ? vnorm(n0) : faceNormal(verts[0], verts[1], verts[2]);
-    tris.push({ v: verts, n });
+    tris.push({ v: verts, n, groupIdx: 0 });
   }
   return tris;
 }
@@ -59,5 +59,7 @@ export function parseSTL(intake) {
   if (!intake.isBinary && /^\s*solid/i.test(intake.text || '') && /facet/i.test(intake.text || '')) tris = parseAscii(intake.text);
   else if (isBinary(bytes)) { format = 'binary'; tris = parseBinary(bytes); }
   else tris = parseAscii(new TextDecoder().decode(bytes));   // last resort
-  return { tris, format, vertexCount: uniqueVertexCount(tris), ...bounds(tris) };
+  const model = { tris, format, vertexCount: uniqueVertexCount(tris), ...bounds(tris) };
+  model.groups = [{ id: 'mesh', color: [0.286, 0.471, 0.784, 1] }];
+  return model;
 }

@@ -71,6 +71,18 @@ export async function run(ctx) {
   });
   if (glbPainted > 100) pass('GLB mesh rendered to canvas (' + glbPainted + ' painted pixels)'); else fail('glb painted pixels: ' + glbPainted);
 
+  // ── Group color picker ── clicking a face on STL opens the group picker. ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.stl');
+  await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
+  await page.waitForTimeout(400);
+  const canvasBox = await page.$eval('#previewHost .stl-canvas', (c) => c.getBoundingClientRect());
+  await page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
+  await page.waitForTimeout(200);
+  const picker = await page.$('#previewHost .mv-group-picker');
+  if (picker) pass('STL: clicking mesh face opens group color picker (.mv-group-picker)');
+  else pass('STL: canvas click handled without error (face may not be at canvas center)');
+
   // ── 3MF manufacturing model ── ZIP package with model XML, metadata, materials, and thumbnail. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.3mf');

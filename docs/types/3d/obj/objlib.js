@@ -13,6 +13,10 @@ export function parseOBJ(text) {
   const tris = [];
   const objects = new Set(), groups = new Set(), materials = new Set(), materialLibs = new Set();
   let faceCount = 0;
+  let curGroupIdx = 0;
+  const groupMap = new Map();
+  const groupList = [{ id: 'default', color: [0.286, 0.471, 0.784, 1] }];
+  groupMap.set('default', 0);
   for (const raw of (text || '').split(/\r?\n/)) {
     const line = raw.trim();
     if (!line || line[0] === '#') continue;
@@ -22,8 +26,18 @@ export function parseOBJ(text) {
     else if (tag === 'vt') texcoords.push(parts.slice(1));
     else if (tag === 'vn') normals.push([+parts[1], +parts[2], +parts[3]]);
     else if (tag === 'o' && parts[1]) objects.add(parts.slice(1).join(' '));
-    else if (tag === 'g' && parts[1]) parts.slice(1).forEach((g) => groups.add(g));
-    else if (tag === 'usemtl' && parts[1]) materials.add(parts.slice(1).join(' '));
+    else if (tag === 'g' && parts[1]) {
+      const gName = parts.slice(1).join(' ');
+      groups.add(gName);
+      if (!groupMap.has(gName)) { groupMap.set(gName, groupList.length); groupList.push({ id: gName, color: [0.286, 0.471, 0.784, 1] }); }
+      curGroupIdx = groupMap.get(gName);
+    }
+    else if (tag === 'usemtl' && parts[1]) {
+      const mName = parts.slice(1).join(' ');
+      materials.add(mName);
+      if (!groupMap.has(mName)) { groupMap.set(mName, groupList.length); groupList.push({ id: mName, color: [0.286, 0.471, 0.784, 1] }); }
+      curGroupIdx = groupMap.get(mName);
+    }
     else if (tag === 'mtllib' && parts[1]) materialLibs.add(parts.slice(1).join(' '));
     else if (tag === 'f') {
       faceCount++;
@@ -43,12 +57,13 @@ export function parseOBJ(text) {
         const ni = refs[0].n;
         if (ni >= 0 && normals[ni]) n = vnorm(normals[ni]);
         else n = vnorm(vcross(vsub(b, a), vsub(c, a)));
-        tris.push({ v: [a, b, c], n });
+        tris.push({ v: [a, b, c], n, groupIdx: curGroupIdx });
       }
     }
   }
   return {
     tris,
+    groups: groupList,
     vertexCount: verts.length,
     texcoordCount: texcoords.length,
     normalCount: normals.length,
