@@ -4223,7 +4223,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Conan C/C++ package manifest with requires and generators sections."
+    "description": "Conan C/C++ package manifest with requires and generators sections.",
+    "knownFile": "conanfile"
   },
   {
     "label": "prometheus.yml",
