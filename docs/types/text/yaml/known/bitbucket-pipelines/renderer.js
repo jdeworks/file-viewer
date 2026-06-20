@@ -1,4 +1,4 @@
-import jsYaml from '../../../../vendor/js-yaml/js-yaml.min.js';
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -31,7 +31,7 @@ function renderPipelineList(steps, label) {
 export async function render(intake) {
   const text = intake.text || '';
   let doc = {};
-  try { doc = jsYaml.load(text) || {}; } catch { /* ignore parse errors */ }
+  try { doc = (jsYaml.loadAll(text) || [])[0] || {}; } catch { /* ignore parse errors */ }
 
   const image = doc.image?.name || (typeof doc.image === 'string' ? doc.image : null);
   const pipelines = doc.pipelines || {};

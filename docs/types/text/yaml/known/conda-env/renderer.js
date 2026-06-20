@@ -59,7 +59,7 @@ export async function render(intake) {
   let doc = {};
   try {
     const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
-    doc = jsyaml.load(intake.text || '') || {};
+    doc = (jsyaml.loadAll(intake.text || \'\') || [])[0] || {};
   } catch {
     doc = {};
   }

@@ -1,4 +1,4 @@
-import jsYaml from '../../../../vendor/js-yaml/js-yaml.min.js';
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -21,10 +21,10 @@ const CSS = `
 .stk-flag{display:inline-flex;align-items:center;font-size:12px;padding:2px 8px;border-radius:10px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace;margin:2px}
 `;
 
-export function render(intake) {
+export async function render(intake) {
   const text = intake.text || new TextDecoder().decode(intake.bytes);
   let parsed = {};
-  try { parsed = jsYaml.load(text) || {}; } catch { parsed = {}; }
+  try { parsed = (jsYaml.loadAll(text) || [])[0] || {}; } catch { parsed = {}; }
 
   // Resolver / snapshot
   const resolver = parsed.resolver || parsed.snapshot || null;

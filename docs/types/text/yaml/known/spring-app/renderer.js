@@ -1,4 +1,4 @@
-import jsYaml from '../../../../vendor/js-yaml/js-yaml.min.js';
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -61,7 +61,7 @@ export async function render(intake) {
 
   let parsed;
   try {
-    parsed = jsYaml.load(text);
+    parsed = (jsYaml.loadAll(text) || [])[0];
   } catch {
     parsed = null;
   }

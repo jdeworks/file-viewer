@@ -77,7 +77,7 @@ export async function render(intake) {
   // Plaintext credentials.yml
   const text = intake.text || '';
   let parsed = {};
-  try { parsed = jsYaml.load(text) || {}; } catch { parsed = {}; }
+  try { parsed = (jsYaml.loadAll(text) || [])[0] || {}; } catch { parsed = {}; }
 
   const rows = flatRows(parsed);
 

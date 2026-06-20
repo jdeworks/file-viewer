@@ -1,5 +1,5 @@
 // Elasticsearch elasticsearch.yml enhanced view.
-import jsYaml from '../../../../vendor/js-yaml/js-yaml.min.js';
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -53,10 +53,10 @@ function flatGet(doc, ...keys) {
 
 const SECRET_PATTERN = /password|keystore|truststore|keypass|ssl.*key/i;
 
-export function render(intake) {
+export async function render(intake) {
   const text = intake.text || '';
   let doc = {};
-  try { doc = jsYaml.load(text) || {}; } catch { /* ignore */ }
+  try { doc = (jsYaml.loadAll(text) || [])[0] || {}; } catch { /* ignore */ }
 
   // Support both nested objects and dotted flat keys
   const clusterName = flatGet(doc, 'cluster.name', 'cluster') && typeof flatGet(doc, 'cluster.name', 'cluster') === 'string'

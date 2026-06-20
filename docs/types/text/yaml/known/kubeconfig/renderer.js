@@ -32,7 +32,7 @@ function hasSensitiveData(obj) {
 
 export async function render(intake) {
   let cfg = {};
-  try { cfg = jsYaml.load(intake.text || '') || {}; } catch { cfg = {}; }
+  try { cfg = (jsYaml.loadAll(intake.text || \'\') || [])[0] || {}; } catch { cfg = {}; }
 
   const currentContext = cfg['current-context'] || '';
   const contexts = Array.isArray(cfg.contexts) ? cfg.contexts : [];

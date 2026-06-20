@@ -1,5 +1,5 @@
 // Apache Cassandra cassandra.yaml enhanced view.
-import jsYaml from '../../../../vendor/js-yaml/js-yaml.min.js';
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -40,10 +40,10 @@ function extractSeeds(seedProvider) {
   return seeds;
 }
 
-export function render(intake) {
+export async function render(intake) {
   const text = intake.text || '';
   let doc = {};
-  try { doc = jsYaml.load(text) || {}; } catch { /* ignore parse errors */ }
+  try { doc = (jsYaml.loadAll(text) || [])[0] || {}; } catch { /* ignore parse errors */ }
 
   const clusterName = doc['cluster_name'] || '';
   const listenAddress = doc['listen_address'] || '';

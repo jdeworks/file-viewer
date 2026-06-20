@@ -1,4 +1,4 @@
-import jsYaml from '../../../../vendor/js-yaml/js-yaml.min.js';
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -30,9 +30,9 @@ function fnChipClass(type) {
   return 'other';
 }
 
-export function render(intake) {
+export async function render(intake) {
   let tpl = {};
-  try { tpl = jsYaml.load(intake.text || '') || {}; } catch { tpl = {}; }
+  try { tpl = (jsYaml.loadAll(intake.text || \'\') || [])[0] || {}; } catch { tpl = {}; }
 
   const transform = tpl.Transform || '';
   const description = tpl.Description || '';

@@ -1,4 +1,4 @@
-import jsYaml from '../../../../vendor/js-yaml/js-yaml.min.js';
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -10,7 +10,7 @@ function kv(label, value) {
 export async function render(intake) {
   const text = intake.text || '';
   let doc = {};
-  try { doc = jsYaml.load(text) || {}; } catch { /* ignore */ }
+  try { doc = (jsYaml.loadAll(text) || [])[0] || {}; } catch { /* ignore */ }
 
   const clusterId = doc.cluster_id || doc.clusterId || '';
 

@@ -1,4 +1,4 @@
-import jsYaml from '../../../../vendor/js-yaml/js-yaml.min.js';
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -32,7 +32,7 @@ function priClass(p) {
 export async function render(intake) {
   let items = [];
   try {
-    const parsed = jsYaml.load(intake.text || '');
+    const parsed = (jsYaml.loadAll(intake.text || \'\') || [])[0];
     items = Array.isArray(parsed) ? parsed : [];
   } catch { items = []; }
 

@@ -45,7 +45,7 @@ export async function render(intake) {
   let cfg = {};
   try {
     const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
-    cfg = jsyaml.load(intake.text || '') || {};
+    cfg = (jsyaml.loadAll(intake.text || \'\') || [])[0] || {};
   } catch (e) {
     host.innerHTML = `<style>${CSS}</style><p style="color:#c62828;font-size:13px;">Failed to parse YAML: ${esc(String(e))}</p>`;
     return { parentNode: host };

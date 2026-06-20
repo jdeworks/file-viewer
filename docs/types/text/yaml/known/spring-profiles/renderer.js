@@ -50,7 +50,7 @@ export async function render(intake) {
   const filename = (intake.name || intake.filename || '').split('/').pop() || 'application.yml';
 
   let parsed = {};
-  try { parsed = jsYaml.load(text) || {}; } catch { parsed = {}; }
+  try { parsed = (jsYaml.loadAll(text) || [])[0] || {}; } catch { parsed = {}; }
 
   const flat = flatten(parsed);
 

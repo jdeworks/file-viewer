@@ -1,4 +1,4 @@
-import jsYaml from '../../../../vendor/js-yaml/js-yaml.min.js';
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -21,9 +21,9 @@ const CSS = `
 .ao-note{color:var(--fg-2,#888);font-style:italic;font-size:12px;}
 `;
 
-export function render(intake) {
+export async function render(intake) {
   let cfg = {};
-  try { cfg = jsYaml.load(intake.text || '') || {}; } catch { cfg = {}; }
+  try { cfg = (jsYaml.loadAll(intake.text || \'\') || [])[0] || {}; } catch { cfg = {}; }
 
   const analyzer = cfg.analyzer || {};
   const linter = cfg.linter || {};

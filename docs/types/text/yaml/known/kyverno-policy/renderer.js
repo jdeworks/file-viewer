@@ -1,4 +1,4 @@
-import jsYaml from '../../../../vendor/js-yaml/js-yaml.min.js';
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -50,7 +50,7 @@ function getMatchKinds(rule) {
 export async function render(intake) {
   let cfg = {};
   try {
-    cfg = jsYaml.load(intake.text || '') || {};
+    cfg = (jsYaml.loadAll(intake.text || \'\') || [])[0] || {};
   } catch { cfg = {}; }
 
   const kind = String(cfg.kind || 'Policy');

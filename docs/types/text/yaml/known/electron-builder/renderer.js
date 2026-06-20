@@ -35,7 +35,7 @@ export async function render(intake) {
   } else {
     try {
       const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
-      cfg = jsyaml.load(text) || {};
+      cfg = (jsyaml.loadAll(text) || [])[0] || {};
     } catch {
       cfg = intake.parsed || {};
     }
