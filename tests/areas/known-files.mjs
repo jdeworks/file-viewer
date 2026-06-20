@@ -1426,9 +1426,21 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .prom-doc', { timeout: 12000 });
   const promText = await page.$eval('#previewHost .prom-doc', (e) => e.textContent);
   if (/Prometheus/i.test(promText)) pass('prometheus.yml: Prometheus badge shown'); else fail('prometheus badge: ' + promText.slice(0, 200));
-  if (/node-exporter|prometheus/i.test(promText)) pass('prometheus.yml: scrape jobs shown'); else fail('prometheus scrape jobs: ' + promText.slice(0, 200));
+  if (/node_exporter|node-exporter|prometheus/i.test(promText)) pass('prometheus.yml: scrape jobs shown'); else fail('prometheus scrape jobs: ' + promText.slice(0, 200));
   if (/15s/i.test(promText)) pass('prometheus.yml: scrape_interval shown'); else fail('prometheus interval: ' + promText.slice(0, 200));
   if (/alertmanager/i.test(promText)) pass('prometheus.yml: alertmanager target shown'); else fail('prometheus alertmanager: ' + promText.slice(0, 200));
+  if (promText.includes('secret123')) fail('prometheus.yml: password leaked'); else pass('prometheus.yml: password masked');
+
+  // ── traefik.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('traefik.yml');
+  await page.waitForSelector('#previewHost .traefik-doc', { timeout: 12000 });
+  pass('traefik.yml: badge shown');
+  const trText = await page.$eval('#previewHost .traefik-doc', el => el.textContent);
+  if (!trText.includes('websecure') && !trText.includes('443')) fail('traefik.yml: entry points not shown');
+  else pass('traefik.yml: entry points shown');
+  if (!trText.includes('docker')) fail('traefik.yml: providers not shown');
+  else pass('traefik.yml: providers shown');
 
   // ── alertmanager.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

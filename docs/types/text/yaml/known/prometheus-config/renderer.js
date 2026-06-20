@@ -52,11 +52,16 @@ ${scrapeConfigs.slice(0, 10).map((job) => {
     const staticConfigs = Array.isArray(job.static_configs) ? job.static_configs : [];
     const targetCount = staticConfigs.reduce((sum, sc) => sum + (Array.isArray(sc.targets) ? sc.targets.length : 0), 0);
     const interval = job.scrape_interval || '';
+    const auth = job.basic_auth;
+    const bearerToken = job.bearer_token;
     return `<div class="prom-card">
 <div class="prom-card-name">${esc(job.job_name || '(unnamed)')}</div>
 ${interval ? kv('scrape_interval', interval) : ''}
 ${targetCount ? kv('targets', String(targetCount)) : ''}
 ${staticConfigs.length && staticConfigs[0]?.targets ? `<div class="prom-kv"><span class="prom-kv-k">targets</span><span class="prom-pills">${staticConfigs[0].targets.slice(0, 4).map((t) => `<span class="prom-pill">${esc(t)}</span>`).join('')}${staticConfigs[0].targets.length > 4 ? `<span style="font-size:11px;color:var(--fg-2,#888)">+${staticConfigs[0].targets.length - 4} more</span>` : ''}</span></div>` : ''}
+${auth ? kv('basic_auth user', auth.username || '') : ''}
+${auth?.password != null ? kv('basic_auth pass', '[configured]') : ''}
+${bearerToken != null ? kv('bearer_token', '[configured]') : ''}
 </div>`;
   }).join('')}
 ${scrapeConfigs.length > 10 ? `<div style="font-size:12px;color:var(--fg-2,#888);padding:4px 0">…and ${scrapeConfigs.length - 10} more jobs</div>` : ''}

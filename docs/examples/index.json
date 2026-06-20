@@ -4222,7 +4222,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Prometheus server config with global settings, 2 scrape jobs, alerting, and remote write."
+    "description": "Prometheus server config: global settings, 5 scrape jobs (static, kubernetes SD, blackbox), alerting, and basic_auth masking.",
+    "knownFile": "prometheus-config"
   },
   {
     "file": "victoria-metrics.yml",
@@ -5246,7 +5247,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Traefik reverse proxy config: entrypoints, providers, and TLS settings."
+    "description": "Traefik reverse proxy config: entrypoints with HTTPS redirect, Docker/file providers, ACME cert resolvers, and logging.",
+    "knownFile": "traefik-config"
   },
   {
     "label": "apisix.yaml",
