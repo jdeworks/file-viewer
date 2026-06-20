@@ -2332,6 +2332,28 @@ export async function run(ctx) {
   if (/16686/i.test(jgText)) pass('jaeger-config.yaml: query port shown'); else fail('jaeger port: ' + jgText.slice(0, 200));
   if (/elasticsearch/i.test(jgText)) pass('jaeger-config.yaml: storage type shown'); else fail('jaeger storage: ' + jgText.slice(0, 200));
 
+  // ── tempo.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('tempo.yaml');
+  await page.waitForSelector('#previewHost .tempo-doc', { timeout: 12000 });
+  const tempoText = await page.$eval('#previewHost .tempo-doc', (e) => e.textContent);
+  if (/Tempo/i.test(tempoText)) pass('tempo.yaml: badge shown'); else fail('tempo badge: ' + tempoText.slice(0, 200));
+  if (/3200/i.test(tempoText)) pass('tempo.yaml: http port shown'); else fail('tempo port: ' + tempoText.slice(0, 200));
+  if (/otlp|jaeger|zipkin/i.test(tempoText)) pass('tempo.yaml: receivers shown'); else fail('tempo receivers: ' + tempoText.slice(0, 200));
+  if (/s3/i.test(tempoText)) pass('tempo.yaml: storage backend shown'); else fail('tempo storage: ' + tempoText.slice(0, 200));
+  if (/configured\]/i.test(tempoText)) pass('tempo.yaml: credentials redacted'); else fail('tempo redact: ' + tempoText.slice(0, 300));
+
+  // ── mimir.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mimir.yaml');
+  await page.waitForSelector('#previewHost .mimir-doc', { timeout: 12000 });
+  const mimirText = await page.$eval('#previewHost .mimir-doc', (e) => e.textContent);
+  if (/Mimir/i.test(mimirText)) pass('mimir.yaml: badge shown'); else fail('mimir badge: ' + mimirText.slice(0, 200));
+  if (/8080/i.test(mimirText)) pass('mimir.yaml: http port shown'); else fail('mimir port: ' + mimirText.slice(0, 200));
+  if (/s3/i.test(mimirText)) pass('mimir.yaml: storage backend shown'); else fail('mimir storage: ' + mimirText.slice(0, 200));
+  if (/ingestion_rate|max_global_series/i.test(mimirText)) pass('mimir.yaml: limits shown'); else fail('mimir limits: ' + mimirText.slice(0, 300));
+  if (/configured\]/i.test(mimirText)) pass('mimir.yaml: credentials redacted'); else fail('mimir redact: ' + mimirText.slice(0, 300));
+
   // ── opentelemetry-k8s.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('opentelemetry-k8s.yaml (OTel Operator)');

@@ -19958,7 +19958,9 @@
       "label": "Grafana Tempo",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "tempo.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -19983,7 +19985,9 @@
       "label": "Grafana Mimir",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "mimir.yaml"
+      ],
       "extensions": [
         ".yml"
       ],

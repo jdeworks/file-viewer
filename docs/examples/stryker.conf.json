@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-js/master/packages/core/schema/stryker-schema.json",
+  "testRunner": "jest",
+  "testRunnerNodeArgs": ["--experimental-vm-modules"],
+  "mutate": [
+    "src/**/*.ts",
+    "!src/**/*.spec.ts",
+    "!src/**/*.test.ts",
+    "!src/index.ts"
+  ],
+  "coverageAnalysis": "perTest",
+  "reporters": ["html", "progress", "json"],
+  "thresholds": {
+    "high": 85,
+    "low": 70,
+    "break": 50
+  },
+  "timeoutMS": 10000,
+  "timeoutFactor": 1.5,
+  "disableTypeChecks": true,
+  "ignorePatterns": [
+    "node_modules",
+    ".stryker-tmp",
+    "dist"
+  ],
+  "htmlReporter": {
+    "fileName": "reports/mutation/mutation.html"
+  },
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  }
+}
