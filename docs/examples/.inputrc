@@ -1,0 +1,57 @@
+# GNU readline configuration
+
+# Editing mode
+set editing-mode vi
+set keymap vi-command
+
+# Bell
+set bell-style none
+
+# Completion
+set completion-ignore-case on
+set completion-map-case on
+set show-all-if-ambiguous on
+set show-all-if-unmodified on
+set menu-complete-display-prefix on
+set colored-completion-prefix on
+set colored-stats on
+
+# Display
+set mark-symlinked-directories on
+set visible-stats on
+set skip-completed-text on
+set page-completions off
+
+# History search
+"\e[A": history-search-backward
+"\e[B": history-search-forward
+
+# $if mode=vi
+$if mode=vi
+    # Normal mode bindings
+    set keymap vi-command
+    "k": history-search-backward
+    "j": history-search-forward
+    "/": vi-search
+    "?": vi-search-again
+    "0": beginning-of-line
+    "$": end-of-line
+
+    # Insert mode bindings
+    set keymap vi-insert
+    "\C-l": clear-screen
+    "\C-a": beginning-of-line
+    "\C-e": end-of-line
+    "\C-k": kill-line
+    "\C-p": history-search-backward
+    "\C-n": history-search-forward
+$endif
+
+$if Bash
+    # Bash-specific readline settings
+    "\e[1;5C": forward-word      # Ctrl+Right
+    "\e[1;5D": backward-word     # Ctrl+Left
+    "\e[3~": delete-char         # Delete key
+    "\e[1~": beginning-of-line   # Home
+    "\e[4~": end-of-line         # End
+$endif

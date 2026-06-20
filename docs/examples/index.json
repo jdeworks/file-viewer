@@ -2599,7 +2599,10 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true,
+    "description": "npm/pnpm configuration: registry URLs, scoped registries, auth tokens (redacted), and install settings.",
+    "knownFile": "npmrc"
   },
   {
     "label": "renovate.json",
@@ -5792,7 +5795,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "pip configuration: index server, trusted hosts, and install options.",
+    "description": "pip configuration: index server, extra index URLs, trusted hosts, retries, and install/download options.",
     "knownFile": "pip-conf"
   },
   {
@@ -8062,5 +8065,41 @@
     "description": "Arch Linux makepkg build system configuration \u2014 compiler flags, build environment, and package options.",
     "knownFile": "makepkg-conf",
     "enhanced": true
+  },
+  {
+    "file": "wsl.conf",
+    "label": "wsl.conf",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "WSL2 per-distribution configuration: automount drive settings (root, options, fstab), network (hosts, resolv.conf, hostname), Windows interop, and systemd boot.",
+    "knownFile": "wsl-conf"
+  },
+  {
+    "file": "loader.conf",
+    "label": "loader.conf",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "systemd-boot bootloader main configuration: default boot entry, menu timeout, console mode, editor lock, and automatic entry discovery.",
+    "knownFile": "loader-conf"
+  },
+  {
+    "file": "arch-linux.conf",
+    "label": "arch-linux.conf (boot entry)",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "systemd-boot boot entry for Arch Linux: kernel path, microcode and initramfs images, and kernel command-line options with UUID root and quiet boot.",
+    "knownFile": "loader-conf"
   }
 ]

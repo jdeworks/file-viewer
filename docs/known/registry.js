@@ -536,6 +536,8 @@ import helixConfig from '../types/text/toml/known/helix-config/index.js';
 import lfrc from '../types/text/known/lfrc/index.js';
 import rangerConf from '../types/text/known/ranger-conf/index.js';
 import zathurarc from '../types/text/known/zathurarc/index.js';
+import wslConf from '../types/text/known/wsl-conf/index.js';
+import loaderConf from '../types/text/known/loader-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -659,6 +661,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   inputrc, wgetrc,
   helixConfig, lfrc,
   rangerConf, zathurarc,
+  wslConf, loaderConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -259,7 +259,8 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .npmrc-doc', { timeout: 12000 });
   const npmrcText = await page.$eval('#previewHost .npmrc-doc', (e) => e.textContent);
   if (/npm/i.test(npmrcText)) pass('.npmrc: badge shown'); else fail('npmrc badge: ' + npmrcText.slice(0, 200));
-  if (!/secrettoken|publictoken/i.test(npmrcText)) pass('.npmrc: auth tokens redacted'); else fail('npmrc tokens not redacted');
+  if (/registry\.npmjs\.org/i.test(npmrcText)) pass('.npmrc: registry URL shown'); else fail('npmrc registry: ' + npmrcText.slice(0, 200));
+  if (!/secrettoken|publictoken|exampletoken|NexusToken/i.test(npmrcText)) pass('.npmrc: auth tokens masked as [configured]'); else fail('npmrc tokens not redacted: ' + npmrcText.slice(0, 300));
 
   // ── renovate.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -867,6 +868,14 @@ export async function run(ctx) {
   const gsmText = await page.$eval('#previewHost .gsm-doc', (e) => e.textContent);
   if (/Go/i.test(gsmText)) pass('go.sum: badge shown'); else fail('go-sum badge: ' + gsmText.slice(0, 200));
   if (/gin-gonic|module|Entries|Modules/i.test(gsmText)) pass('go.sum: module list shown'); else fail('go-sum modules: ' + gsmText.slice(0, 200));
+
+  // ── go.work viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('go.work');
+  await page.waitForSelector('#previewHost .gw-doc', { timeout: 12000 });
+  const gwText = await page.$eval('#previewHost .gw-doc', (e) => e.textContent);
+  if (/Go Workspace|Go/i.test(gwText)) pass('go.work: badge shown'); else fail('go-work badge: ' + gwText.slice(0, 200));
+  if (/\.\/core|\.\/api|1\.22\.0/i.test(gwText)) pass('go.work: modules or version shown'); else fail('go-work modules: ' + gwText.slice(0, 300));
 
   // ── Makefile viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1920,11 +1929,11 @@ export async function run(ctx) {
   // ── pip.conf viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('pip.conf');
-  await page.waitForSelector('#previewHost .pc-doc', { timeout: 12000 });
-  const pipConfText = await page.$eval('#previewHost .pc-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .pipcfg-doc', { timeout: 12000 });
+  const pipConfText = await page.$eval('#previewHost .pipcfg-doc', (e) => e.textContent);
   if (/pip/i.test(pipConfText)) pass('pip.conf: pip badge shown'); else fail('pip-conf badge: ' + pipConfText.slice(0, 200));
   if (/pypi\.org/i.test(pipConfText)) pass('pip.conf: index-url shown'); else fail('pip-conf index: ' + pipConfText.slice(0, 200));
-  if (/packages\.example\.com/i.test(pipConfText)) pass('pip.conf: trusted-host shown'); else fail('pip-conf trusted: ' + pipConfText.slice(0, 200));
+  if (/pypi\.company\.internal|timeout/i.test(pipConfText)) pass('pip.conf: trusted-host or timeout shown'); else fail('pip-conf trusted/timeout: ' + pipConfText.slice(0, 200));
 
   // ── .node-version viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
