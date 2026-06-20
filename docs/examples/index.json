@@ -10370,5 +10370,25 @@
     "enhanced": true,
     "description": "Audiobookshelf self-hosted audiobook and podcast server configuration",
     "knownFile": true
+  },
+  {
+    "file": "dashy.yml",
+    "label": "Dashy dashboard config",
+    "mime": "text/yaml",
+    "category": "Dashboard",
+    "categories": ["Dashboard", "Self-Hosted", "YAML"],
+    "enhanced": true,
+    "description": "Dashy self-hosted personal dashboard configuration",
+    "knownFile": true
+  },
+  {
+    "file": "jellyseerr-settings.json",
+    "label": "Jellyseerr config",
+    "mime": "application/json",
+    "category": "Media",
+    "categories": ["Media", "Requests", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Jellyseerr media request manager configuration",
+    "knownFile": true
   }
 ]

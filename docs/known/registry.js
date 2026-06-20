@@ -733,6 +733,8 @@ import homarrConfig from '../types/text/yaml/known/homarr-config/index.js';
 import kavitaConfig from '../types/text/json/known/kavita-config/index.js';
 import tandoorConfig from '../types/text/known/tandoor-config/index.js';
 import audiobookshelfConfig from '../types/text/known/audiobookshelf-config/index.js';
+import dashyConfig from '../types/text/yaml/known/dashy-config/index.js';
+import jellyseerrConfig from '../types/text/json/known/jellyseerr-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -926,6 +928,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   kavitaConfig,
   tandoorConfig,
   audiobookshelfConfig,
+  dashyConfig,
+  jellyseerrConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

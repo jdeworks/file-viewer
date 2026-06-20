@@ -1,0 +1,36 @@
+{
+  "clientId": "abc123def456ghi789",
+  "currentVersion": "1.9.2",
+  "main": {
+    "apiKey": "supersecret-api-key-here",
+    "applicationTitle": "Jellyseerr",
+    "applicationUrl": "https://requests.example.com",
+    "locale": "en",
+    "trustProxy": true,
+    "csrfProtection": false,
+    "defaultPermissions": 32,
+    "hideAvailable": false,
+    "localLogin": true,
+    "newPlexLogin": true,
+    "region": "US",
+    "originalLanguage": "en"
+  },
+  "jellyfin": {
+    "name": "Jellyfin",
+    "hostname": "jellyfin",
+    "port": 8096,
+    "useSsl": false,
+    "externalHostname": "https://jellyfin.example.com",
+    "libraries": [
+      {"id": "1", "name": "Movies", "enabled": true},
+      {"id": "2", "name": "TV Shows", "enabled": true}
+    ]
+  },
+  "notifications": {
+    "agents": {
+      "email": {"enabled": false},
+      "discord": {"enabled": true, "options": {"webhookUrl": "https://discord.com/api/webhooks/xxx"}},
+      "telegram": {"enabled": false}
+    }
+  }
+}

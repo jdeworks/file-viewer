@@ -5623,4 +5623,16 @@ export async function run(ctx) {
   await openExample('audiobookshelf.env');
   await page.waitForSelector('#previewHost .abs-doc', { timeout: 12000 });
   pass('audiobookshelf.env: Audiobookshelf badge shown');
+
+  // ── dashy.yml viewer (dashy-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dashy.yml');
+  await page.waitForSelector('#previewHost .dashy-doc', { timeout: 12000 });
+  pass('dashy.yml: Dashy badge shown');
+
+  // ── jellyseerr-settings.json viewer (jellyseerr-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('jellyseerr-settings.json');
+  await page.waitForSelector('#previewHost .jellyseerr-doc', { timeout: 12000 });
+  pass('jellyseerr-settings.json: Jellyseerr badge shown');
 }

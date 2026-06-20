@@ -1,0 +1,49 @@
+pageInfo:
+  title: My Dashboard
+  description: Self-hosted services dashboard
+  logo: https://i.ibb.co/r5T3MwM/dashy-logo.png
+  navLinks:
+    - title: GitHub
+      path: https://github.com
+    - title: Docs
+      path: https://dashy.to/docs
+
+appConfig:
+  theme: colorful
+  layout: auto
+  iconSize: medium
+  language: en
+  statusCheck: false
+  disableConfigurationButton: false
+
+sections:
+  - name: 📺 Media
+    displayData:
+      cols: 2
+    items:
+      - title: Plex
+        description: Media server
+        url: https://plex.example.com
+        icon: hl-plex
+      - title: Jellyfin
+        description: Media server
+        url: https://jellyfin.example.com
+        icon: hl-jellyfin
+      - title: Radarr
+        description: Movie management
+        url: https://radarr.example.com
+        icon: hl-radarr
+  - name: 🔧 Infrastructure
+    items:
+      - title: Portainer
+        description: Docker management
+        url: https://portainer.example.com
+        icon: hl-portainer
+      - title: Traefik
+        description: Reverse proxy
+        url: https://traefik.example.com
+        icon: hl-traefik
+      - title: Grafana
+        description: Monitoring
+        url: https://grafana.example.com
+        icon: hl-grafana
