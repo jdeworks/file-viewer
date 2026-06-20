@@ -9057,6 +9057,19 @@
     "knownFile": "influxdb"
   },
   {
+    "file": "influxdb.yml",
+    "label": "InfluxDB Config",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Monitoring"
+    ],
+    "enhanced": true,
+    "description": "InfluxDB 2.x time-series database configuration",
+    "knownFile": true
+  },
+  {
     "name": "nsqd.cfg",
     "category": "Infrastructure",
     "knownFile": "nsq-conf"
@@ -9565,7 +9578,11 @@
     "label": "Headscale Config",
     "mime": "text/yaml",
     "category": "Config",
-    "categories": ["Config", "Self-hosted", "Networking"],
+    "categories": [
+      "Config",
+      "Self-hosted",
+      "Networking"
+    ],
     "enhanced": true,
     "description": "Headscale self-hosted Tailscale VPN control server configuration",
     "knownFile": true

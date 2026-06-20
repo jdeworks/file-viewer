@@ -647,6 +647,7 @@ import telegraf from '../types/text/toml/known/telegraf/index.js';
 import devfile from '../types/text/yaml/known/devfile/index.js';
 import ncurc from '../types/text/json/known/ncurc/index.js';
 import influxdbConf from '../types/text/toml/known/influxdb/index.js';
+import influxdbConfig from '../types/text/yaml/known/influxdb-config/index.js';
 import nsqConf from '../types/text/known/nsq-conf/index.js';
 import cloudflared from '../types/text/yaml/known/cloudflared/index.js';
 import dnsmasqConf from '../types/text/known/dnsmasq/index.js';
@@ -709,6 +710,8 @@ import concourseConfig from '../types/text/known/concourse-config/index.js';
 import invoiceNinjaConfig from '../types/text/known/invoiceninja-config/index.js';
 import conduitConfig from '../types/text/toml/known/conduit-config/index.js';
 import zitadelConfig from '../types/text/yaml/known/zitadel-config/index.js';
+import dendriteConfig from '../types/text/yaml/known/dendrite-config/index.js';
+import watchtowerConfig from '../types/text/known/watchtower-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -847,7 +850,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   registriesConf, storageConf,
   asyncapi, telegraf,
   devfile, ncurc,
-  influxdbConf, nsqConf,
+  influxdbConf, influxdbConfig, nsqConf,
   cloudflared, dnsmasqConf,
   frpcConfig, frpsConfig,
   pdnsConf, pdnsRecursorConf,

@@ -1,0 +1,23 @@
+bolt-path: /var/lib/influxdb2/influxd.bolt
+engine-path: /var/lib/influxdb2/engine
+
+http-bind-address: :8086
+http-idle-timeout: 3m
+http-read-header-timeout: 10s
+http-read-timeout: 0s
+http-write-timeout: 0s
+
+tls-cert: /etc/ssl/influxdb/cert.pem
+tls-key: /etc/ssl/influxdb/key.pem
+
+log-level: info
+tracing-type: ""
+
+query-concurrency: 1024
+query-queue-size: 1024
+storage-cache-max-memory-size: 1073741824
+storage-write-timeout: 10s
+
+reporting-disabled: true
+metrics-disabled: false
+ui-disabled: false

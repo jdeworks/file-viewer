@@ -5461,4 +5461,10 @@ export async function run(ctx) {
   await openExample('zitadel.yaml');
   await page.waitForSelector('#previewHost .zitadel-doc', { timeout: 12000 });
   pass('zitadel.yaml: ZITADEL badge shown');
+
+  // ── influxdb.yml viewer (influxdb-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('influxdb.yml');
+  await page.waitForSelector('#previewHost .influxdb-doc', { timeout: 12000 });
+  pass('influxdb.yml: InfluxDB badge shown');
 }
