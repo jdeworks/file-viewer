@@ -11979,5 +11979,161 @@
     "enhanced": true,
     "description": "Apache .htaccess per-directory configuration with URL rewriting, auth, and access control.",
     "knownFile": "apache-conf"
+  },
+  {
+    "label": "sample.rb",
+    "file": "sample.rb",
+    "mime": "text/plain",
+    "category": "Scripting",
+    "categories": [
+      "Scripting",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Ruby scripting language with classes, modules, blocks, and idiomatic Ruby patterns.",
+    "knownFile": "ruby-lang"
+  },
+  {
+    "label": "sample.pm",
+    "file": "sample.pm",
+    "mime": "text/plain",
+    "category": "Scripting",
+    "categories": [
+      "Scripting",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Perl module with packages, subroutines, regular expressions, and CPAN-style documentation.",
+    "knownFile": "perl-lang"
+  },
+  {
+    "label": "sample.php",
+    "file": "sample.php",
+    "mime": "text/x-php",
+    "category": "Web",
+    "categories": [
+      "Web",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "PHP web script with classes, namespaces, traits, and modern PHP 8 patterns.",
+    "knownFile": "php-lang"
+  },
+  {
+    "label": "sample.ps1",
+    "file": "sample.ps1",
+    "mime": "text/plain",
+    "category": "Scripting",
+    "categories": [
+      "Scripting",
+      "Systems"
+    ],
+    "enhanced": true,
+    "description": "PowerShell script with cmdlets, pipelines, functions, and automation patterns.",
+    "knownFile": "powershell-lang"
+  },
+  {
+    "label": "sample.sol",
+    "file": "sample.sol",
+    "mime": "text/plain",
+    "category": "Blockchain",
+    "categories": [
+      "Blockchain",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Solidity smart contract with interfaces, libraries, events, and access control patterns.",
+    "knownFile": "solidity-lang"
+  },
+  {
+    "label": "sample.vhd",
+    "file": "sample.vhd",
+    "mime": "text/plain",
+    "category": "Hardware",
+    "categories": [
+      "Hardware",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "VHDL hardware description with entity/architecture, signals, and sequential processes.",
+    "knownFile": "vhdl-lang"
+  },
+  {
+    "label": "sample.ino",
+    "file": "sample.ino",
+    "mime": "text/plain",
+    "category": "Embedded",
+    "categories": [
+      "Embedded",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Arduino sketch with setup/loop functions, library includes, and hardware control patterns.",
+    "knownFile": "arduino-sketch"
+  },
+  {
+    "label": "sample.cob",
+    "file": "sample.cob",
+    "mime": "text/plain",
+    "category": "Legacy",
+    "categories": [
+      "Legacy",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "COBOL program with IDENTIFICATION, ENVIRONMENT, DATA, and PROCEDURE divisions.",
+    "knownFile": "cobol-lang"
+  },
+  {
+    "label": "sample.gleam",
+    "file": "sample.gleam",
+    "mime": "text/plain",
+    "category": "Functional",
+    "categories": [
+      "Functional",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Gleam functional language with type inference, custom types, and beam VM integration.",
+    "knownFile": "gleam-lang"
+  },
+  {
+    "label": "sample.odin",
+    "file": "sample.odin",
+    "mime": "text/plain",
+    "category": "Systems",
+    "categories": [
+      "Systems",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Odin systems programming language with packages, structs, and low-level control.",
+    "knownFile": "odin-lang"
+  },
+  {
+    "label": "sample.hx",
+    "file": "sample.hx",
+    "mime": "text/plain",
+    "category": "Cross-platform",
+    "categories": [
+      "Cross-platform",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Haxe cross-platform language with static typing, generics, and multi-target compilation.",
+    "knownFile": "haxe-lang"
+  },
+  {
+    "label": "sample.ads",
+    "file": "sample.ads",
+    "mime": "text/plain",
+    "category": "Systems",
+    "categories": [
+      "Systems",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Ada package specification with type definitions, subprograms, and contract-based design.",
+    "knownFile": "ada-lang"
   }
 ]

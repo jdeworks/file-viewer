@@ -6443,4 +6443,28 @@ export async function run(ctx) {
   await openExample('sample.ads');
   await page.waitForSelector('#previewHost .ada-doc', { timeout: 12000 });
   pass('ada-lang: rendered');
+
+  // ── prolog-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.pro');
+  await page.waitForSelector('#previewHost .pro-doc', { timeout: 12000 });
+  pass('prolog-lang: rendered');
+
+  // ── asm-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.asm');
+  await page.waitForSelector('#previewHost .asm-doc', { timeout: 12000 });
+  pass('asm-lang: rendered');
+
+  // ── objc-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.m');
+  await page.waitForSelector('#previewHost .objc-doc', { timeout: 12000 });
+  pass('objc-lang: rendered');
+
+  // ── d-lang: rendered ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.d');
+  await page.waitForSelector('#previewHost .d-doc', { timeout: 12000 });
+  pass('d-lang: rendered');
 }
