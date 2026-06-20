@@ -2354,6 +2354,25 @@ export async function run(ctx) {
   if (/ingestion_rate|max_global_series/i.test(mimirText)) pass('mimir.yaml: limits shown'); else fail('mimir limits: ' + mimirText.slice(0, 300));
   if (/configured\]/i.test(mimirText)) pass('mimir.yaml: credentials redacted'); else fail('mimir redact: ' + mimirText.slice(0, 300));
 
+  // ── cortex.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cortex.yaml');
+  pass(await page.waitForSelector('#previewHost .cortex-doc', { timeout: 12000 }), 'cortex.yaml: cortex-doc shown');
+  const cortexText = await page.$eval('#previewHost .cortex-doc', (e) => e.textContent);
+  if (/Cortex/i.test(cortexText)) pass('cortex.yaml: badge shown'); else fail('cortex badge: ' + cortexText.slice(0, 200));
+  if (/9009/i.test(cortexText)) pass('cortex.yaml: http port shown'); else fail('cortex port: ' + cortexText.slice(0, 200));
+  if (/s3/i.test(cortexText)) pass('cortex.yaml: storage backend shown'); else fail('cortex storage: ' + cortexText.slice(0, 200));
+  if (/configured\]/i.test(cortexText)) pass('cortex.yaml: credentials redacted'); else fail('cortex redact: ' + cortexText.slice(0, 300));
+
+  // ── config.alloy viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('config.alloy');
+  pass(await page.waitForSelector('#previewHost .grfalloy-doc', { timeout: 12000 }), 'config.alloy: grfalloy-doc shown');
+  const alloyText = await page.$eval('#previewHost .grfalloy-doc', (e) => e.textContent);
+  if (/Alloy/i.test(alloyText)) pass('config.alloy: badge shown'); else fail('alloy badge: ' + alloyText.slice(0, 200));
+  if (/prometheus\.scrape|prometheus\.remote_write|loki\.write/i.test(alloyText)) pass('config.alloy: component types shown'); else fail('alloy components: ' + alloyText.slice(0, 300));
+  if (/\d+\s*component/i.test(alloyText)) pass('config.alloy: total component count shown'); else fail('alloy count: ' + alloyText.slice(0, 200));
+
   // ── opentelemetry-k8s.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('opentelemetry-k8s.yaml (OTel Operator)');

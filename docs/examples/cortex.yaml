@@ -1,0 +1,68 @@
+target: all
+
+server:
+  http_listen_port: 9009
+  grpc_listen_port: 9095
+  log_level: info
+
+blocks_storage:
+  backend: s3
+  s3:
+    bucket_name: cortex-blocks
+    endpoint: s3.us-east-1.amazonaws.com
+    region: us-east-1
+    access_key_id: AKIAIOSFODNN7EXAMPLE
+    secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  tsdb:
+    dir: /var/cortex/tsdb
+
+distributor:
+  ring:
+    kvstore:
+      store: memberlist
+    replication_factor: 3
+
+ingester:
+  ring:
+    kvstore:
+      store: memberlist
+    replication_factor: 3
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: memberlist
+      replication_factor: 3
+    final_sleep: 0s
+
+store_gateway:
+  sharding_enabled: true
+  sharding_ring:
+    kvstore:
+      store: memberlist
+
+compactor:
+  working_directory: /var/cortex/compactor
+  sharding_ring:
+    kvstore:
+      store: memberlist
+
+ruler_storage:
+  backend: s3
+  s3:
+    bucket_name: cortex-ruler
+    endpoint: s3.us-east-1.amazonaws.com
+    region: us-east-1
+    access_key_id: AKIAIOSFODNN7EXAMPLE
+    secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+memberlist:
+  join_members:
+    - cortex-1:7946
+    - cortex-2:7946
+    - cortex-3:7946
+
+limits:
+  ingestion_rate: 10000
+  ingestion_burst_size: 200000
+  max_global_series_per_user: 1500000

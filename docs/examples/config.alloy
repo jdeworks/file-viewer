@@ -1,0 +1,107 @@
+// Grafana Alloy configuration (River syntax)
+// Telemetry pipeline: scrape metrics, forward to Mimir; collect logs to Loki; receive traces via OTLP
+
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// ── Prometheus scraping ──────────────────────────────────────────────────────
+
+prometheus.scrape "node_exporter" {
+  targets = [
+    {"__address__" = "localhost:9100"},
+  ]
+  job_name        = "node_exporter"
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.mimir.receiver]
+}
+
+prometheus.scrape "cadvisor" {
+  targets = [
+    {"__address__" = "localhost:8080"},
+  ]
+  job_name        = "cadvisor"
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.mimir.receiver]
+}
+
+prometheus.scrape "app_metrics" {
+  targets = [
+    {"__address__" = "app-service:8081"},
+    {"__address__" = "app-service:8082"},
+  ]
+  job_name        = "application"
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.mimir.receiver]
+}
+
+// ── Remote write to Grafana Mimir ────────────────────────────────────────────
+
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://mimir:9009/api/v1/push"
+
+    basic_auth {
+      username = "alloy"
+      password = "supersecret-mimir-password"
+    }
+  }
+
+  queue_config {
+    max_samples_per_send = 5000
+    max_shards           = 200
+    capacity             = 10000
+  }
+}
+
+// ── Loki log collection ──────────────────────────────────────────────────────
+
+loki.source.file "app_logs" {
+  targets = [
+    {__path__ = "/var/log/app/*.log", job = "app"},
+    {__path__ = "/var/log/nginx/access.log", job = "nginx"},
+  ]
+  forward_to = [loki.write.grafana_cloud.receiver]
+}
+
+loki.write "grafana_cloud" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// ── OpenTelemetry traces ─────────────────────────────────────────────────────
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "http://tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// ── Kubernetes discovery ─────────────────────────────────────────────────────
+
+discovery.kubernetes "pods" {
+  role = "pod"
+}
+
+prometheus.scrape "kubernetes_pods" {
+  targets    = discovery.kubernetes.pods.targets
+  job_name   = "kubernetes-pods"
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}

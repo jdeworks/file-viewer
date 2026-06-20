@@ -20216,7 +20216,9 @@
       "label": "Grafana Cortex",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "cortex.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20241,7 +20243,9 @@
       "label": "Grafana Alloy",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "config.alloy"
+      ],
       "extensions": [
         ".yml"
       ],
