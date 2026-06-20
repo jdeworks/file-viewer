@@ -45,8 +45,21 @@ export async function render(intake, ctx) {
     + '<button class="pdf-edit" title="Edit pages">Edit</button>'
     + '<button class="pdf-addimg" hidden title="Add an image as a new page">+ Image page</button>'
     + '<button class="pdf-merge" hidden title="Append another PDF">+ Merge PDF</button>'
+    + '<button class="pdf-watermark" hidden title="Add a text watermark to all pages">Watermark</button>'
+    + '<button class="pdf-extract" hidden title="Extract a range of pages to a new PDF">Extract pages</button>'
     + '<button class="pdf-download" hidden>Download edited PDF</button></div>'
     + '<div class="pdf-changes" hidden></div>'
+    + '<div class="pdf-watermark-form" hidden style="padding:4px 8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'
+    + '<input class="pdf-wm-text" type="text" value="DRAFT" placeholder="Watermark text" style="width:120px">'
+    + '<label style="font-size:0.85em">Opacity <input class="pdf-wm-opacity" type="range" min="0.05" max="1" step="0.05" value="0.3" style="width:80px"></label>'
+    + '<button class="pdf-wm-apply">Apply watermark</button>'
+    + '<button class="pdf-wm-clear">Clear</button>'
+    + '</div>'
+    + '<div class="pdf-extract-form" hidden style="padding:4px 8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'
+    + '<label style="font-size:0.85em">Pages <input class="pdf-ex-from" type="number" min="1" value="1" style="width:52px"> – <input class="pdf-ex-to" type="number" min="1" value="1" style="width:52px"></label>'
+    + '<button class="pdf-ex-apply">Extract</button>'
+    + '<button class="pdf-ex-cancel">Cancel</button>'
+    + '</div>'
     + '<input type="file" class="pdf-imginput" accept="image/*" hidden>'
     + '<input type="file" class="pdf-pdfinput" accept="application/pdf,.pdf" hidden>'
     + '<div class="pdf-pages"></div>';
@@ -164,9 +177,24 @@ export async function render(intake, ctx) {
     host.querySelector('.pdf-edit').classList.toggle('active', editing);
     host.querySelector('.pdf-addimg').hidden = !editing;
     host.querySelector('.pdf-merge').hidden = !editing;
+    host.querySelector('.pdf-watermark').hidden = !editing;
+    host.querySelector('.pdf-extract').hidden = !editing;
+    if (!editing) {
+      host.querySelector('.pdf-watermark-form').hidden = true;
+      host.querySelector('.pdf-extract-form').hidden = true;
+    }
     if (editing && !editor) {
       try { editor = await createEditor(intake.bytes); }
-      catch (e) { infoEl.textContent = 'Editing unavailable: ' + esc(e.message); editing = false; host.querySelector('.pdf-edit').classList.remove('active'); host.querySelector('.pdf-addimg').hidden = true; host.querySelector('.pdf-merge').hidden = true; return; }
+      catch (e) {
+        infoEl.textContent = 'Editing unavailable: ' + esc(e.message);
+        editing = false;
+        host.querySelector('.pdf-edit').classList.remove('active');
+        host.querySelector('.pdf-addimg').hidden = true;
+        host.querySelector('.pdf-merge').hidden = true;
+        host.querySelector('.pdf-watermark').hidden = true;
+        host.querySelector('.pdf-extract').hidden = true;
+        return;
+      }
     }
     await renderPages(currentBytes);
   });
@@ -201,6 +229,58 @@ export async function render(intake, ctx) {
       const bytes = new Uint8Array(await file.arrayBuffer());
       await applyEdit(async () => { await editor.addPdf(bytes); });
     } catch (err) { infoEl.textContent = 'Could not merge PDF: ' + esc(err.message); }
+  });
+
+  // Watermark: show/hide inline form; apply/clear watermark on the editor.
+  host.querySelector('.pdf-watermark').addEventListener('click', () => {
+    const form = host.querySelector('.pdf-watermark-form');
+    form.hidden = !form.hidden;
+    host.querySelector('.pdf-extract-form').hidden = true;
+  });
+  host.querySelector('.pdf-wm-apply').addEventListener('click', async () => {
+    if (!editor) return;
+    const text = host.querySelector('.pdf-wm-text').value.trim() || 'DRAFT';
+    const opacity = parseFloat(host.querySelector('.pdf-wm-opacity').value) || 0.3;
+    await applyEdit(() => { editor.watermark(text, { opacity }); });
+    host.querySelector('.pdf-watermark-form').hidden = true;
+  });
+  host.querySelector('.pdf-wm-clear').addEventListener('click', async () => {
+    if (!editor) return;
+    await applyEdit(() => { editor.clearWatermark(); });
+    host.querySelector('.pdf-watermark-form').hidden = true;
+  });
+
+  // Extract pages: show/hide inline form; call extractRange and trigger download.
+  host.querySelector('.pdf-extract').addEventListener('click', () => {
+    const form = host.querySelector('.pdf-extract-form');
+    form.hidden = !form.hidden;
+    host.querySelector('.pdf-watermark-form').hidden = true;
+    if (!form.hidden && editor) {
+      const total = editor.pageCount();
+      host.querySelector('.pdf-ex-to').value = total;
+      host.querySelector('.pdf-ex-from').max = total;
+      host.querySelector('.pdf-ex-to').max = total;
+    }
+  });
+  host.querySelector('.pdf-ex-apply').addEventListener('click', async () => {
+    if (!editor) return;
+    const fromVal = parseInt(host.querySelector('.pdf-ex-from').value, 10) || 1;
+    const toVal = parseInt(host.querySelector('.pdf-ex-to').value, 10) || 1;
+    const from0 = Math.max(0, fromVal - 1);
+    const to0 = Math.max(0, toVal - 1);
+    try {
+      const bytes = await editor.extractRange(from0, to0);
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (intake.filename || 'document').replace(/\.pdf$/i, '') + '-pages-' + fromVal + '-' + toVal + '.pdf';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } catch (err) { infoEl.textContent = 'Could not extract pages: ' + esc(err.message); }
+    host.querySelector('.pdf-extract-form').hidden = true;
+  });
+  host.querySelector('.pdf-ex-cancel').addEventListener('click', () => {
+    host.querySelector('.pdf-extract-form').hidden = true;
   });
 
   host.querySelector('.pdf-download').addEventListener('click', () => {

@@ -68,10 +68,26 @@ export async function createEditor(origBytes) {
       }
       return out;
     },
-    // Rebuild a fresh PDF from the items in order, applying rotations + embedding image pages.
-    async build() {
+    // Stamp a diagonal text watermark on every page when build() is called.
+    watermark(text, opts = {}) {
+      this._watermark = {
+        text,
+        color: opts.color || '#cccccc',
+        opacity: opts.opacity ?? 0.3,
+        size: opts.size || 48,
+        diagonal: opts.diagonal ?? true,
+      };
+    },
+    clearWatermark() { this._watermark = null; },
+
+    // Extract a range of pages (0-based, inclusive) into a new PDF and return its bytes.
+    async extractRange(from, to) {
       const out = await PDFLib.PDFDocument.create();
-      for (const it of order) {
+      const clampedFrom = Math.max(0, from);
+      const clampedTo = Math.min(to, order.length - 1);
+      for (let i = clampedFrom; i <= clampedTo; i++) {
+        const it = order[i];
+        if (!it) continue;
         if (it.kind === 'page') {
           const [p] = await out.copyPages(srcs[it.doc || 0], [it.oi]);
           p.setRotation(PDFLib.degrees(it.rot || 0));
@@ -83,6 +99,44 @@ export async function createEditor(origBytes) {
           const page = out.addPage([w, h]);
           page.drawImage(img, { x: 0, y: 0, width: w, height: h });
           if (it.rot) page.setRotation(PDFLib.degrees(it.rot));
+        }
+      }
+      return out.save();
+    },
+
+    // Rebuild a fresh PDF from the items in order, applying rotations + embedding image pages.
+    async build() {
+      const out = await PDFLib.PDFDocument.create();
+      for (const it of order) {
+        let page;
+        if (it.kind === 'page') {
+          const [p] = await out.copyPages(srcs[it.doc || 0], [it.oi]);
+          p.setRotation(PDFLib.degrees(it.rot || 0));
+          out.addPage(p);
+          page = p;
+        } else {
+          const img = await out.embedPng(it.bytes);
+          const scale = Math.min(A4_W / img.width, A4_H / img.height, 1);
+          const w = img.width * scale, h = img.height * scale;
+          page = out.addPage([w, h]);
+          page.drawImage(img, { x: 0, y: 0, width: w, height: h });
+          if (it.rot) page.setRotation(PDFLib.degrees(it.rot));
+        }
+        if (this._watermark) {
+          const wm = this._watermark;
+          const { width, height } = page.getSize();
+          const hexColor = wm.color.replace('#', '');
+          const r = parseInt(hexColor.slice(0, 2), 16) / 255;
+          const g = parseInt(hexColor.slice(2, 4), 16) / 255;
+          const b = parseInt(hexColor.slice(4, 6), 16) / 255;
+          page.drawText(wm.text, {
+            x: width / 2 - (wm.text.length * wm.size * 0.3),
+            y: height / 2,
+            size: wm.size,
+            color: PDFLib.rgb(r, g, b),
+            opacity: wm.opacity,
+            rotate: PDFLib.degrees(wm.diagonal ? 45 : 0),
+          });
         }
       }
       return out.save();

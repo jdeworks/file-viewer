@@ -64,6 +64,20 @@ export async function render(intake, ctx = {}) {
       + '</select>'
       + '<button class="imgv-undo" title="Undo last stroke" hidden>↩</button>'
       + '<span class="imgv-sep"></span>'
+      + '<button class="imgv-rot-l" title="Rotate 90° counter-clockwise">↺ 90°</button>'
+      + '<button class="imgv-rot-r" title="Rotate 90° clockwise">↻ 90°</button>'
+      + '<button class="imgv-flip-h" title="Flip horizontally">↔ Flip H</button>'
+      + '<button class="imgv-flip-v" title="Flip vertically">↕ Flip V</button>'
+      + '<span class="imgv-sep"></span>'
+      + '<button class="imgv-filters-btn" title="Show brightness/contrast/saturation controls">⚙ Filters</button>'
+      + '<span class="imgv-filters-panel" hidden style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;">'
+      + '<label style="font-size:0.8em">Brightness <input class="imgv-f-brightness" type="range" min="0" max="200" value="100" style="width:70px"></label>'
+      + '<label style="font-size:0.8em">Contrast <input class="imgv-f-contrast" type="range" min="0" max="200" value="100" style="width:70px"></label>'
+      + '<label style="font-size:0.8em">Saturation <input class="imgv-f-saturation" type="range" min="0" max="200" value="100" style="width:70px"></label>'
+      + '<button class="imgv-f-apply">Apply Filters</button>'
+      + '<button class="imgv-f-reset">Reset</button>'
+      + '</span>'
+      + '<span class="imgv-sep"></span>'
       + '<select class="imgv-export-fmt" title="Export format"><option value="">Original format</option>'
       + '<option value="image/png">PNG</option><option value="image/jpeg">JPEG</option><option value="image/webp">WebP</option>'
       + '<option value="image/avif">AVIF</option>'
@@ -103,6 +117,17 @@ export async function render(intake, ctx = {}) {
   const bgTol = canEdit ? host.querySelector('.imgv-bg-tol') : null;
   const bgOk = canEdit ? host.querySelector('.imgv-bg-ok') : null;
   const bgX = canEdit ? host.querySelector('.imgv-bg-x') : null;
+  const rotLBtn = canEdit ? host.querySelector('.imgv-rot-l') : null;
+  const rotRBtn = canEdit ? host.querySelector('.imgv-rot-r') : null;
+  const flipHBtn = canEdit ? host.querySelector('.imgv-flip-h') : null;
+  const flipVBtn = canEdit ? host.querySelector('.imgv-flip-v') : null;
+  const filtersBtn = canEdit ? host.querySelector('.imgv-filters-btn') : null;
+  const filtersPanel = canEdit ? host.querySelector('.imgv-filters-panel') : null;
+  const fBrightness = canEdit ? host.querySelector('.imgv-f-brightness') : null;
+  const fContrast = canEdit ? host.querySelector('.imgv-f-contrast') : null;
+  const fSaturation = canEdit ? host.querySelector('.imgv-f-saturation') : null;
+  const fApplyBtn = canEdit ? host.querySelector('.imgv-f-apply') : null;
+  const fResetBtn = canEdit ? host.querySelector('.imgv-f-reset') : null;
   let natural = 0, fit = true, zoom = 1, asciiMode = false, asciiText = '';
   let editedUrl = null, editedBlob = null;
   let drawMode = null, isEraserStroke = false;
@@ -268,6 +293,95 @@ export async function render(intake, ctx = {}) {
     img.src = url;
     editReset.hidden = true;
     ctx.onBinaryEdit?.(null);
+  });
+
+  // Helper: draw the current image onto a canvas with a transform, then commit it as the new edit.
+  async function applyTransform(transformFn, newW, newH) {
+    const base = new Image();
+    base.decoding = 'async';
+    base.src = editedUrl || url;
+    await base.decode();
+    const srcW = base.naturalWidth, srcH = base.naturalHeight;
+    const canvas = document.createElement('canvas');
+    canvas.width = newW(srcW, srcH);
+    canvas.height = newH(srcW, srcH);
+    const g = canvas.getContext('2d');
+    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
+    transformFn(g, srcW, srcH, canvas.width, canvas.height);
+    g.drawImage(base, 0, 0);
+    const targetMime = getExportMime();
+    pushUndo();
+    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
+    if (!editedBlob) return;
+    if (editedUrl) URL.revokeObjectURL(editedUrl);
+    editedUrl = URL.createObjectURL(editedBlob);
+    img.src = editedUrl;
+    editReset.hidden = false;
+    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
+  }
+
+  // Rotate left (CCW 90°): new canvas is h×w, pivot at center, rotate -90°
+  rotLBtn?.addEventListener('click', () => applyTransform(
+    (g, sw, sh, cw, ch) => { g.translate(cw / 2, ch / 2); g.rotate(-Math.PI / 2); g.translate(-sh / 2, -sw / 2); },
+    (sw, sh) => sh, (sw, sh) => sw,
+  ));
+
+  // Rotate right (CW 90°): new canvas is h×w, pivot at center, rotate +90°
+  rotRBtn?.addEventListener('click', () => applyTransform(
+    (g, sw, sh, cw, ch) => { g.translate(cw / 2, ch / 2); g.rotate(Math.PI / 2); g.translate(-sh / 2, -sw / 2); },
+    (sw, sh) => sh, (sw, sh) => sw,
+  ));
+
+  // Flip horizontal: scale(-1,1) around center
+  flipHBtn?.addEventListener('click', () => applyTransform(
+    (g, sw, sh, cw, ch) => { g.translate(cw, 0); g.scale(-1, 1); },
+    (sw) => sw, (sw, sh) => sh,
+  ));
+
+  // Flip vertical: scale(1,-1) around center
+  flipVBtn?.addEventListener('click', () => applyTransform(
+    (g, sw, sh, cw, ch) => { g.translate(0, ch); g.scale(1, -1); },
+    (sw) => sw, (sw, sh) => sh,
+  ));
+
+  // Filters panel toggle
+  filtersBtn?.addEventListener('click', () => {
+    if (filtersPanel) filtersPanel.hidden = !filtersPanel.hidden;
+  });
+
+  // Apply CSS filters (brightness/contrast/saturation) to the image via canvas ctx.filter
+  fApplyBtn?.addEventListener('click', async () => {
+    const brightness = fBrightness?.value || '100';
+    const contrast = fContrast?.value || '100';
+    const saturation = fSaturation?.value || '100';
+    const base = new Image();
+    base.decoding = 'async';
+    base.src = editedUrl || url;
+    await base.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = base.naturalWidth;
+    canvas.height = base.naturalHeight;
+    const g = canvas.getContext('2d');
+    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
+    g.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+    g.drawImage(base, 0, 0);
+    g.filter = 'none';
+    const targetMime = getExportMime();
+    pushUndo();
+    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
+    if (!editedBlob) return;
+    if (editedUrl) URL.revokeObjectURL(editedUrl);
+    editedUrl = URL.createObjectURL(editedBlob);
+    img.src = editedUrl;
+    editReset.hidden = false;
+    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
+  });
+
+  // Reset filter sliders to default (no apply — just resets the UI)
+  fResetBtn?.addEventListener('click', () => {
+    if (fBrightness) fBrightness.value = '100';
+    if (fContrast) fContrast.value = '100';
+    if (fSaturation) fSaturation.value = '100';
   });
 
   // Pencil / eraser drawing tools

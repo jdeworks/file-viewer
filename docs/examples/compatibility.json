@@ -25366,7 +25366,9 @@
       "label": "Liquid Template",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.liquid"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25391,7 +25393,9 @@
       "label": "Handlebars Template",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.hbs"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25416,7 +25420,9 @@
       "label": "Jinja2 Template",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.j2"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25441,7 +25447,9 @@
       "label": "Mustache Template",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.mustache"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25466,7 +25474,9 @@
       "label": "SPARQL Query",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.sparql"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25491,7 +25501,9 @@
       "label": "Turtle RDF",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.ttl"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25516,7 +25528,9 @@
       "label": "Graphviz DOT",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.dot"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25541,7 +25555,9 @@
       "label": "Verilog / SystemVerilog",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.v"
+      ],
       "extensions": [
         ".yml"
       ],
