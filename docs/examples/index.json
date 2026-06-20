@@ -7983,5 +7983,53 @@
     "enhanced": true,
     "description": "resticprofile backup configuration: global scheduler settings, repository profiles with backup sources, retention policies, and check schedules.",
     "knownFile": "restic-config"
+  },
+  {
+    "file": "helix.toml",
+    "label": "helix.toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Helix modal text editor configuration: catppuccin_mocha theme, relative line numbers, cursor shapes, statusline layout, LSP settings, and custom key mappings.",
+    "knownFile": "helix-config"
+  },
+  {
+    "file": "lfrc",
+    "label": "lfrc",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "lf terminal file manager configuration: icons, preview, hidden files, panel ratios, key bindings for open/trash/extract, and custom shell commands.",
+    "knownFile": "lfrc"
+  },
+  {
+    "file": "ranger.conf",
+    "label": "ranger.conf",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Ranger terminal file manager configuration: column ratios, preview images (kitty), hidden files, VCS integration, draw borders, key bindings, and aliases.",
+    "knownFile": "ranger-conf"
+  },
+  {
+    "file": "zathurarc",
+    "label": "zathurarc",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Zathura PDF/document viewer configuration: Catppuccin Mocha theme, recolor dark mode, color swatches, adjust-open, scroll/zoom settings, synctex, and key bindings.",
+    "knownFile": "zathurarc"
   }
 ]

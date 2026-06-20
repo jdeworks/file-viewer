@@ -1,0 +1,62 @@
+# lf configuration
+
+# Options
+set icons true
+set preview true
+set previewer ~/.config/lf/previewer
+set cleaner ~/.config/lf/cleaner
+set hidden true
+set drawbox true
+set ignorecase true
+set tabstop 4
+set scrolloff 5
+set ratios 1:2:3
+set info size:time
+set sortby natural
+set shell bash
+set shellopts '-eu'
+set ifs "\n"
+
+# Custom commands
+cmd open ${{
+    case $(file --mime-type $f -b) in
+        text/*) $EDITOR $fx ;;
+        video/*) mpv $fx ;;
+        image/*) sxiv $fx ;;
+        application/pdf) zathura $fx ;;
+        *) xdg-open $f ;;
+    esac
+}}
+
+cmd mkdir $mkdir -p "$@"
+
+cmd trash %trash-put $fx
+
+cmd extract ${{
+    case $f in
+        *.tar.bz2) tar xjf $f ;;
+        *.tar.gz)  tar xzf $f ;;
+        *.tar.xz)  tar xJf $f ;;
+        *.zip)     unzip $f ;;
+        *.7z)      7z x $f ;;
+    esac
+}}
+
+# Key bindings
+map <enter> open
+map D trash
+map E extract
+map au unarchive
+map <c-n> push :mkdir<space>
+map x cut
+map c copy
+map v paste
+map r rename
+map H set hidden!
+map . set hidden!
+map <c-r> reload
+map <c-s> set sortby natural; set info
+map gg top
+map G bottom
+map i $bat --paging=always $f
+map I preview

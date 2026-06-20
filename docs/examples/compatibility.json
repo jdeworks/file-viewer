@@ -8045,7 +8045,7 @@
       "needsRealWorldSample": false
     },
     "ansible-cfg": {
-      "label": "ansible.cfg",
+      "label": "Ansible Config",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
@@ -18271,7 +18271,9 @@
       "label": "Crystal Shard",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "shard.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -18676,6 +18678,114 @@
       "support": "supported",
       "sampleFiles": [
         ".curlrc"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "helix-config": {
+      "label": "Helix Config",
+      "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [
+        "helix.toml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "lfrc": {
+      "label": "lf Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "lfrc"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "ranger-conf": {
+      "label": "Ranger Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "ranger.conf"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "zathurarc": {
+      "label": "Zathura Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "zathurarc"
       ],
       "extensions": [
         ".yml"

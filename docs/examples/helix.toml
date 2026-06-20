@@ -1,0 +1,55 @@
+theme = "catppuccin_mocha"
+
+[editor]
+line-number = "relative"
+mouse = true
+middle-click-paste = false
+scrolloff = 8
+shell = ["bash", "-c"]
+completion-trigger-len = 2
+auto-pairs = true
+auto-save = false
+idle-timeout = 400
+color-modes = true
+
+[editor.cursor-shape]
+insert = "bar"
+normal = "block"
+select = "underline"
+
+[editor.file-picker]
+hidden = false
+git-ignore = true
+git-global = true
+git-exclude = true
+
+[editor.statusline]
+left = ["mode", "spinner", "file-name", "file-modification-indicator"]
+center = []
+right = ["diagnostics", "selections", "position", "file-encoding", "file-line-ending", "file-type"]
+separator = "│"
+mode.normal = "NORMAL"
+mode.insert = "INSERT"
+mode.select = "SELECT"
+
+[editor.lsp]
+display-messages = true
+auto-signature-help = true
+display-inlay-hints = false
+display-signature-help-docs = true
+
+[editor.indent-guides]
+render = true
+character = "│"
+skip-levels = 1
+
+[keys.normal]
+"space" = { f = "file_picker", b = "buffer_picker", "/" = "global_search", "?" = "command_palette" }
+"C-s" = ":write"
+"C-q" = ":quit"
+"g" = { a = "code_action", d = "goto_definition", r = "goto_references", y = "goto_type_definition" }
+"[" = { d = "goto_prev_diag", D = "goto_first_diag" }
+"]" = { d = "goto_next_diag", D = "goto_last_diag" }
+
+[keys.insert]
+"j" = { k = "normal_mode" }

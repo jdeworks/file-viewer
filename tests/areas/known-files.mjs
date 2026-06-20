@@ -3805,4 +3805,40 @@ export async function run(ctx) {
   if (/curl/i.test(curlrcText)) pass('.curlrc: curl badge shown'); else fail('curlrc badge: ' + curlrcText.slice(0, 200));
   if (/redirect|location|max-redirs/i.test(curlrcText)) pass('.curlrc: redirect setting shown'); else fail('curlrc redirect: ' + curlrcText.slice(0, 300));
   if (/max-time|connect-timeout|timeout/i.test(curlrcText)) pass('.curlrc: timeout shown'); else fail('curlrc timeout: ' + curlrcText.slice(0, 300));
+
+  // ── helix.toml (Helix editor config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('helix.toml');
+  await page.waitForSelector('#previewHost .helixcfg-doc', { timeout: 12000 });
+  const helixText = await page.$eval('#previewHost .helixcfg-doc', (e) => e.textContent);
+  if (/helix/i.test(helixText)) pass('helix.toml: Helix badge shown'); else fail('helix-config badge: ' + helixText.slice(0, 200));
+  if (/catppuccin_mocha|theme/i.test(helixText)) pass('helix.toml: theme shown'); else fail('helix-config theme: ' + helixText.slice(0, 300));
+  if (/relative|line.number/i.test(helixText)) pass('helix.toml: line-number setting shown'); else fail('helix-config line-number: ' + helixText.slice(0, 300));
+
+  // ── lfrc (lf file manager config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('lfrc');
+  await page.waitForSelector('#previewHost .lfrc-doc', { timeout: 12000 });
+  const lfrcText = await page.$eval('#previewHost .lfrc-doc', (e) => e.textContent);
+  if (/\blf\b/i.test(lfrcText)) pass('lfrc: lf badge shown'); else fail('lfrc badge: ' + lfrcText.slice(0, 200));
+  if (/icons|setting/i.test(lfrcText)) pass('lfrc: icons setting shown'); else fail('lfrc icons: ' + lfrcText.slice(0, 300));
+  if (/binding|map|key/i.test(lfrcText)) pass('lfrc: key mappings section shown'); else fail('lfrc mappings: ' + lfrcText.slice(0, 300));
+
+  // ── ranger.conf (Ranger terminal file manager config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('ranger.conf');
+  await page.waitForSelector('#previewHost .rangercfg-doc', { timeout: 12000 });
+  const rangerText = await page.$eval('#previewHost .rangercfg-doc', (e) => e.textContent);
+  if (/ranger/i.test(rangerText)) pass('ranger.conf: Ranger badge shown'); else fail('ranger-conf badge: ' + rangerText.slice(0, 200));
+  if (/1,3,4|column.ratios/i.test(rangerText)) pass('ranger.conf: column ratios shown'); else fail('ranger-conf column_ratios: ' + rangerText.slice(0, 300));
+  if (/preview.images|preview_images/i.test(rangerText)) pass('ranger.conf: preview_images chip shown'); else fail('ranger-conf preview_images: ' + rangerText.slice(0, 300));
+
+  // ── zathurarc (Zathura PDF viewer config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('zathurarc');
+  await page.waitForSelector('#previewHost .zathura-doc', { timeout: 12000 });
+  const zathuraText = await page.$eval('#previewHost .zathura-doc', (e) => e.textContent);
+  if (/zathura/i.test(zathuraText)) pass('zathurarc: Zathura badge shown'); else fail('zathurarc badge: ' + zathuraText.slice(0, 200));
+  if (/#1e1e2e|default.bg|default-bg/i.test(zathuraText)) pass('zathurarc: default-bg color shown'); else fail('zathurarc default-bg: ' + zathuraText.slice(0, 300));
+  if (/recolor/i.test(zathuraText)) pass('zathurarc: recolor mode shown'); else fail('zathurarc recolor: ' + zathuraText.slice(0, 300));
 }
