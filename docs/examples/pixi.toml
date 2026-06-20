@@ -1,0 +1,31 @@
+[project]
+name = "ml-pipeline"
+version = "0.2.0"
+description = "Machine learning data pipeline"
+authors = ["Data Team <data@example.com>"]
+channels = ["conda-forge", "defaults"]
+platforms = ["linux-64", "osx-arm64"]
+
+[dependencies]
+python = ">=3.11,<3.12"
+numpy = ">=1.26,<2"
+pandas = ">=2.1"
+scikit-learn = ">=1.4"
+matplotlib = ">=3.8"
+jupyterlab = ">=4.1"
+
+[pypi-dependencies]
+torch = ">=2.2.0"
+transformers = ">=4.38"
+datasets = ">=2.18"
+
+[build-dependencies]
+pip = ">=23"
+setuptools = ">=69"
+
+[tasks]
+train = "python src/train.py --config config/train.yaml"
+evaluate = "python src/evaluate.py"
+notebook = "jupyter lab"
+test = "pytest tests/ -v"
+lint = "ruff check . && ruff format --check ."

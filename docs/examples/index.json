@@ -6172,5 +6172,54 @@
     "enhanced": true,
     "description": "pixi project configuration with conda/PyPI dependencies, channels, platforms, and tasks.",
     "knownFile": "pixi-config"
-  }
+  },
+  {
+    "label": "settings.py (Django)",
+    "file": "settings.py",
+    "mime": "text/x-python",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Django settings: INSTALLED_APPS, PostgreSQL database, Redis cache, DEBUG flag, ALLOWED_HOSTS, and masked SECRET_KEY.",
+    "knownFile": "django-settings"
+  },
+  {
+    "label": "application-production.yml (Spring Boot)",
+    "file": "application-production.yml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Spring Boot production profile: datasource URL, Redis, JWT security (all secrets masked), and logging levels.",
+    "knownFile": "spring-profiles"
+  },
+  {
+    "label": "credentials.yml (Rails)",
+    "file": "credentials.yml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys — all secret values masked.",
+    "knownFile": "rails-credentials"
+  },
+  {
+    "label": "puma.rb (Puma)",
+    "file": "puma.rb",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Puma web server config: 2 workers, threads 2–16, production environment, preload_app enabled, plugins listed.",
+    "knownFile": "puma-config"
+  },
+  {"label": "Harness Pipeline", "file": "harness-pipeline.yaml", "mime": "text/yaml", "category": "Config", "categories": ["Config", "devops"], "enhanced": true}
 ]

@@ -128,6 +128,10 @@ import devboxJson from '../types/text/json/known/devbox-json/index.js';
 import protoConfig from '../types/text/toml/known/proto-config/index.js';
 import aquaConfig from '../types/text/yaml/known/aqua-config/index.js';
 import pixiConfig from '../types/text/toml/known/pixi-config/index.js';
+import djangoSettings from '../types/text/known/django-settings/index.js';
+import springProfiles from '../types/text/yaml/known/spring-profiles/index.js';
+import railsCredentials from '../types/text/yaml/known/rails-credentials/index.js';
+import pumaConfig from '../types/text/known/puma-config/index.js';
 import gitattributes from '../types/text/known/gitattributes/index.js';
 import gemfileLock from '../types/text/known/gemfile-lock/index.js';
 import sonar from '../types/text/known/sonar/index.js';
@@ -375,6 +379,8 @@ import jetbrainsWorkspace from '../types/text/xml/known/jetbrains-workspace/inde
 import neovimConfig from '../types/text/known/neovim-config/index.js';
 import vimConfig from '../types/text/known/vim-config/index.js';
 import emacsConfig from '../types/text/known/emacs-config/index.js';
+import woodpeckerCi from '../types/text/yaml/known/woodpecker-ci/index.js';
+import codefreshConfig from '../types/text/yaml/known/codefresh-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -452,6 +458,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   hostsFile, resolvConf, sshConfig, sshdConfig,
   jetbrainsWorkspace, neovimConfig, vimConfig, emacsConfig,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
+  djangoSettings, springProfiles, railsCredentials, pumaConfig,
+  woodpeckerCi,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -2166,4 +2166,47 @@ export async function run(ctx) {
   if (/Keybindings/i.test(ecText)) pass('init.el: Keybindings section shown'); else fail('ec keybindings: ' + ecText.slice(0, 300));
   if (/evil|company|ivy|magit|flycheck/i.test(ecText)) pass('init.el: package names shown'); else fail('ec packages: ' + ecText.slice(0, 400));
   if (/Custom Variables/i.test(ecText)) pass('init.el: Custom Variables section shown'); else fail('ec custom vars: ' + ecText.slice(0, 400));
+
+  // ── devbox.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('devbox.json');
+  await page.waitForSelector('#previewHost .dvx-doc', { timeout: 12000 });
+  const dvxText = await page.$eval('#previewHost .dvx-doc', (e) => e.textContent);
+  if (/Devbox/i.test(dvxText)) pass('devbox.json: Devbox badge shown'); else fail('dvx badge: ' + dvxText.slice(0, 200));
+  if (/nodejs|python|postgresql/i.test(dvxText)) pass('devbox.json: nix packages shown as chips'); else fail('dvx packages: ' + dvxText.slice(0, 300));
+  if (/NODE_ENV|DATABASE_URL/i.test(dvxText)) pass('devbox.json: env variable keys shown'); else fail('dvx env keys: ' + dvxText.slice(0, 300));
+  if (/\*\*\*\*/.test(dvxText)) pass('devbox.json: secret values are masked'); else fail('dvx masking: ' + dvxText.slice(0, 400));
+  if (/dev|test|lint/i.test(dvxText)) pass('devbox.json: scripts shown'); else fail('dvx scripts: ' + dvxText.slice(0, 400));
+
+  // ── .prototools viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.prototools');
+  await page.waitForSelector('#previewHost .ptc-doc', { timeout: 12000 });
+  const ptcText = await page.$eval('#previewHost .ptc-doc', (e) => e.textContent);
+  if (/proto/i.test(ptcText)) pass('.prototools: proto badge shown'); else fail('ptc badge: ' + ptcText.slice(0, 200));
+  if (/node|python|go|rust/i.test(ptcText)) pass('.prototools: tool names shown in table'); else fail('ptc tools: ' + ptcText.slice(0, 300));
+  if (/20\.11\.0|3\.12\.0|1\.22\.0/i.test(ptcText)) pass('.prototools: tool versions shown'); else fail('ptc versions: ' + ptcText.slice(0, 300));
+  if (/0\.38\.0/i.test(ptcText)) pass('.prototools: proto CLI version highlighted'); else fail('ptc proto ver: ' + ptcText.slice(0, 400));
+
+  // ── aqua.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('aqua.yaml');
+  await page.waitForSelector('#previewHost .aqc-doc', { timeout: 12000 });
+  const aqcText = await page.$eval('#previewHost .aqc-doc', (e) => e.textContent);
+  if (/aqua/i.test(aqcText)) pass('aqua.yaml: aqua badge shown'); else fail('aqc badge: ' + aqcText.slice(0, 200));
+  if (/standard/i.test(aqcText)) pass('aqua.yaml: registry type shown'); else fail('aqc registry: ' + aqcText.slice(0, 300));
+  if (/cli\/cli|jqlang\/jq|sharkdp\/fd/i.test(aqcText)) pass('aqua.yaml: package names shown'); else fail('aqc packages: ' + aqcText.slice(0, 300));
+  if (/v2\.45\.0|jq-1\.7\.1|v9\.0\.0/i.test(aqcText)) pass('aqua.yaml: package versions shown as pills'); else fail('aqc versions: ' + aqcText.slice(0, 400));
+
+  // ── pixi.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pixi.toml');
+  await page.waitForSelector('#previewHost .pxi-doc', { timeout: 12000 });
+  const pxiText = await page.$eval('#previewHost .pxi-doc', (e) => e.textContent);
+  if (/pixi/i.test(pxiText)) pass('pixi.toml: pixi badge shown'); else fail('pxi badge: ' + pxiText.slice(0, 200));
+  if (/ml-pipeline|0\.2\.0/i.test(pxiText)) pass('pixi.toml: project name and version shown'); else fail('pxi project: ' + pxiText.slice(0, 300));
+  if (/conda-forge|defaults/i.test(pxiText)) pass('pixi.toml: channels shown'); else fail('pxi channels: ' + pxiText.slice(0, 300));
+  if (/numpy|pandas|scikit-learn/i.test(pxiText)) pass('pixi.toml: conda dependencies shown'); else fail('pxi deps: ' + pxiText.slice(0, 400));
+  if (/torch|transformers/i.test(pxiText)) pass('pixi.toml: PyPI dependencies shown'); else fail('pxi pypi: ' + pxiText.slice(0, 400));
+  if (/train|evaluate|notebook/i.test(pxiText)) pass('pixi.toml: tasks shown in table'); else fail('pxi tasks: ' + pxiText.slice(0, 400));
 }
