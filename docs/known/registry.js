@@ -246,6 +246,7 @@ import mesonBuild from '../types/text/known/meson-build/index.js';
 import goreleaser from '../types/text/yaml/known/goreleaser/index.js';
 import golangciLint from '../types/text/yaml/known/golangci-lint/index.js';
 import bufConfig from '../types/text/yaml/known/buf-config/index.js';
+import bufGen from '../types/text/yaml/known/buf-gen/index.js';
 import mockeryConfig from '../types/text/yaml/known/mockery-config/index.js';
 import koConfig from '../types/text/yaml/known/ko-config/index.js';
 import sqlcConfig from '../types/text/yaml/known/sqlc-config/index.js';
@@ -307,6 +308,7 @@ import dbtProject from '../types/text/yaml/known/dbt-project/index.js';
 import liquibaseProps from '../types/text/known/liquibase-props/index.js';
 import sqitchConf from '../types/text/known/sqitch-conf/index.js';
 import atlasHcl from '../types/text/known/atlas-hcl/index.js';
+import waypoint from '../types/text/known/waypoint/index.js';
 import projectClj from '../types/text/known/project-clj/index.js';
 import depsEdn from '../types/text/known/deps-edn/index.js';
 import shadowCljs from '../types/text/known/shadow-cljs/index.js';
@@ -622,7 +624,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   viteConfig, webpackConfig, rollupConfig, nextConfig,
   astroConfig, svelteConfig, nuxtConfig, remixConfig, hugoConfig,
   airConfig, spectral, tiltfile, mesonBuild,
-  goreleaser, golangciLint, bufConfig, mockeryConfig, koConfig, sqlcConfig, nfpmConfig, heroku,
+  goreleaser, golangciLint, bufGen, bufConfig, mockeryConfig, koConfig, sqlcConfig, nfpmConfig, heroku,
   readthedocs, citationCff, yamllint, valeIni, coderabbit,
   ionicConfig, metroConfig, reactNativeConfig,
   dotnetGlobal, prismaSchema, nugetConfig,
@@ -635,7 +637,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   rDescription, rProfile,
   docusaurusConfig, vitepressConfig, sphinxConf, doxyfile,
   drizzleConfig, knexfile, alembic, flywayConf,
-  dbtProject, liquibaseProps, sqitchConf, atlasHcl,
+  dbtProject, liquibaseProps, sqitchConf, atlasHcl, waypoint,
   wdioConfig, artilleryYml, k6Config, gatlingConf,
   gaeApp, cloudbuild, googleServices, catalogInfo,
   cursorRules, claudeMd, copilotInstructions, aiderConf,

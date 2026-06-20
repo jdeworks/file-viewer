@@ -8694,5 +8694,15 @@
     "name": "airflow.cfg",
     "category": "Infrastructure",
     "knownFile": "airflow-cfg"
+  },
+  {
+    "name": "waypoint.hcl",
+    "category": "Infrastructure",
+    "knownFile": "waypoint"
+  },
+  {
+    "name": "buf.gen.yaml",
+    "category": "Tooling",
+    "knownFile": "buf-gen"
   }
 ]

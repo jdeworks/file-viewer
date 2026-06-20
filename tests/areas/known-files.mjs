@@ -4669,4 +4669,14 @@ export async function run(ctx) {
   const airflowText = await page.$eval('#previewHost .airflowcfg-doc', el => el.textContent);
   if (!airflowText.includes('Airflow')) fail('airflow.cfg: missing badge'); else pass('airflow.cfg: badge shown');
   if (!airflowText.includes('executor') && !airflowText.includes('CeleryExecutor')) fail('airflow.cfg: no executor shown'); else pass('airflow.cfg: executor shown');
+
+  // ── waypoint.hcl viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('waypoint.hcl');
+  pass(await page.waitForSelector('#previewHost .waypoint-doc', { timeout: 12000 }), 'waypoint.hcl: waypoint-doc shown');
+
+  // ── buf.gen.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('buf.gen.yaml');
+  pass(await page.waitForSelector('#previewHost .bufgen-doc', { timeout: 12000 }), 'buf.gen.yaml: bufgen-doc shown');
 }

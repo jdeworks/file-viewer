@@ -1,0 +1,33 @@
+version: v2
+
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/example/myapp/gen/go
+    except:
+      - buf.build/googleapis/googleapis
+  java_package_prefix:
+    default: com.example.myapp.gen
+
+plugins:
+  - plugin: buf.build/protocolbuffers/go
+    out: gen/go
+    opt:
+      - paths=source_relative
+
+  - plugin: buf.build/grpc/go
+    out: gen/go
+    opt:
+      - paths=source_relative
+      - require_unimplemented_servers=false
+
+  - plugin: buf.build/grpc-ecosystem/gateway/v2
+    out: gen/go
+    opt:
+      - paths=source_relative
+      - generate_unbound_methods=true
+    strategy: all
+
+inputs:
+  - module: buf.build/example/myapp
+  - directory: proto
