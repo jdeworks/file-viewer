@@ -9607,5 +9607,59 @@
     "enhanced": true,
     "description": "Umami website analytics self-hosted server environment configuration with server, security, database, privacy, and embed settings.",
     "knownFile": "umami-config"
+  },
+  {
+    "file": "stirling-pdf-settings.yml",
+    "label": "stirling-pdf-settings.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "Stirling PDF self-hosted PDF tools configuration with security, UI, system, endpoints, and metrics settings.",
+    "knownFile": "stirling-pdf-config"
+  },
+  {
+    "file": "monica.env",
+    "label": "monica.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "Monica Personal CRM environment configuration with application, database, email, storage limits, and feature flags.",
+    "knownFile": "monica-config"
+  },
+  {
+    "file": "n8n.env",
+    "label": "n8n.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Automation"
+    ],
+    "enhanced": true,
+    "description": "n8n workflow automation server environment configuration with server, auth, database, execution, logging, and feature settings.",
+    "knownFile": "n8n-config"
+  },
+  {
+    "file": "nocodb.env",
+    "label": "nocodb.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Database"
+    ],
+    "enhanced": true,
+    "description": "NocoDB open-source Airtable alternative environment configuration with server, security, database, Redis, email, and feature settings.",
+    "knownFile": "nocodb-config"
   }
 ]

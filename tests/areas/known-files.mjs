@@ -5260,4 +5260,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('umami.env');
   pass(await page.waitForSelector('#previewHost .umami-doc', { timeout: 12000 }), 'umami.env: Umami badge shown');
+
+  // ── stirling-pdf-settings.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('stirling-pdf-settings.yml');
+  pass(await page.waitForSelector('#previewHost .strpdf-doc', { timeout: 12000 }), 'stirling-pdf-settings.yml: Stirling PDF badge shown');
+
+  // ── monica.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('monica.env');
+  pass(await page.waitForSelector('#previewHost .monica-doc', { timeout: 12000 }), 'monica.env: Monica CRM badge shown');
 }

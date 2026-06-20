@@ -673,6 +673,10 @@ import outlineConfig from '../types/text/known/outline-config/index.js';
 import linkdingConfig from '../types/text/known/linkding-config/index.js';
 import plausibleConfig from '../types/text/known/plausible-config/index.js';
 import umamiConfig from '../types/text/known/umami-config/index.js';
+import stirlingPdfConfig from '../types/text/yaml/known/stirling-pdf-config/index.js';
+import monicaConfig from '../types/text/known/monica-config/index.js';
+import n8nConfig from '../types/text/known/n8n-config/index.js';
+import nocodbConfig from '../types/text/known/nocodb-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -826,6 +830,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   ntfyConfig, wakapiConfig,
   outlineConfig, linkdingConfig,
   plausibleConfig, umamiConfig,
+  stirlingPdfConfig, monicaConfig,
+  n8nConfig, nocodbConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
