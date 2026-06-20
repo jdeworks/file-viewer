@@ -1,0 +1,30 @@
+watch:
+  workers: 10
+  schedule: "0 */6 * * *"
+  firstCheckNotif: false
+
+providers:
+  docker:
+    watchStopped: false
+    watchByDefault: true
+
+notif:
+  slack:
+    webhookURL: https://hooks.slack.example.com/services/TXXXXXXXX/BXXXXXXXX/your-webhook-token
+  mail:
+    host: smtp.example.com
+    port: 587
+    username: diun@example.com
+    password: s3cr3t-mail-pass
+    from: diun@example.com
+    to:
+      - admin@example.com
+      - ops@example.com
+
+regopts:
+  - name: docker.io
+    username: myuser
+    password: myregistrypassword
+  - name: ghcr.io
+    username: ghuser
+    password: ghp_your-github-personal-access-token

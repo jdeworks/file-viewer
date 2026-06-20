@@ -713,6 +713,8 @@ import conduitConfig from '../types/text/toml/known/conduit-config/index.js';
 import zitadelConfig from '../types/text/yaml/known/zitadel-config/index.js';
 import dendriteConfig from '../types/text/yaml/known/dendrite-config/index.js';
 import watchtowerConfig from '../types/text/known/watchtower-config/index.js';
+import changedetectionConfig from '../types/text/known/changedetection-config/index.js';
+import semaphoreConfig from '../types/text/json/known/semaphore-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -888,6 +890,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   conduitConfig, zitadelConfig,
   dendriteConfig,
   watchtowerConfig,
+  changedetectionConfig,
+  semaphoreConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -10115,5 +10115,18 @@
     "enhanced": true,
     "description": "Watchtower automatic Docker container updater configuration",
     "knownFile": true
+  },
+  {
+    "file": "diun.yaml",
+    "label": "Diun Config",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "DevOps"
+    ],
+    "enhanced": true,
+    "description": "Diun Docker image update notifier configuration with watch schedule, Docker provider, Slack and mail notifications.",
+    "knownFile": true
   }
 ]

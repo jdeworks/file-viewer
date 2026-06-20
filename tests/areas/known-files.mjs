@@ -5479,4 +5479,10 @@ export async function run(ctx) {
   await openExample('watchtower.env');
   await page.waitForSelector('#previewHost .wtower-doc', { timeout: 12000 });
   pass('watchtower.env: Watchtower badge shown');
+
+  // ── diun.yaml viewer (diun-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('diun.yaml');
+  await page.waitForSelector('#previewHost .diun-doc', { timeout: 12000 });
+  pass('diun.yaml: Diun badge shown');
 }
