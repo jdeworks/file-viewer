@@ -5515,4 +5515,16 @@ export async function run(ctx) {
   await openExample('grist.env');
   await page.waitForSelector('#previewHost .grist-doc', { timeout: 12000 });
   pass('grist.env: Grist badge shown');
+
+  // ── open-webui.env viewer (open-webui-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('open-webui.env');
+  await page.waitForSelector('#previewHost .openwebui-doc', { timeout: 12000 });
+  pass('open-webui.env: Open WebUI badge shown');
+
+  // ── maybe.env viewer (maybe-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('maybe.env');
+  await page.waitForSelector('#previewHost .maybe-doc', { timeout: 12000 });
+  pass('maybe.env: Maybe badge shown');
 }

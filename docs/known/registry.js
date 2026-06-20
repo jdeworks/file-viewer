@@ -899,6 +899,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   semaphoreConfig,
   actualBudgetConfig,
   wallosConfig,
+  openWebUiConfig,
+  maybeConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

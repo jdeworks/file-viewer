@@ -10193,5 +10193,32 @@
     "enhanced": true,
     "description": "Grist self-hosted spreadsheet database environment configuration",
     "knownFile": true
+  },
+  {
+    "file": "open-webui.env",
+    "label": "Open WebUI Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "AI",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Open WebUI self-hosted AI chat interface environment configuration",
+    "knownFile": true
+  },
+  {
+    "file": "maybe.env",
+    "label": "Maybe Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Maybe Finance self-hosted personal finance environment configuration",
+    "knownFile": true
   }
 ]
