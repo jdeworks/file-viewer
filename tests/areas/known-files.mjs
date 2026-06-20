@@ -1056,6 +1056,22 @@ export async function run(ctx) {
   const digPats = await page.$$eval('#previewHost .dig-doc .kf-pat code', (els) => els.map((e) => e.textContent));
   if (digPats.some((p) => /node_modules|\.git|dist/.test(p))) pass('.dockerignore: patterns shown'); else fail('dockerignore patterns: ' + digPats.join(','));
 
+  // ── .npmignore upgraded viewer (npmignore-doc class + badge) ──
+  await openExample('.npmignore');
+  await page.waitForSelector('.npmignore-doc');
+  pass('.npmignore: renders');
+  const npmignoreText = await page.$eval('.npmignore-doc', el => el.textContent);
+  if (!npmignoreText.includes('npm')) fail('.npmignore: missing badge'); else pass('.npmignore: badge shown');
+  if (!npmignoreText.includes('pattern') && !npmignoreText.includes('node_modules') && !npmignoreText.includes('test')) fail('.npmignore: no patterns shown'); else pass('.npmignore: patterns shown');
+
+  // ── .dockerignore upgraded viewer (dockerignore-doc class + badge) ──
+  await openExample('.dockerignore');
+  await page.waitForSelector('.dockerignore-doc');
+  pass('.dockerignore: renders');
+  const dockerignoreText = await page.$eval('.dockerignore-doc', el => el.textContent);
+  if (!dockerignoreText.includes('Docker')) fail('.dockerignore: missing badge'); else pass('.dockerignore: badge shown');
+  if (!dockerignoreText.includes('.git') && !dockerignoreText.includes('node_modules') && !dockerignoreText.includes('pattern')) fail('.dockerignore: no patterns shown'); else pass('.dockerignore: patterns shown');
+
   // ── AppVeyor CI viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('appveyor.yml');

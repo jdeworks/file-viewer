@@ -153,6 +153,7 @@ import rush from '../types/text/json/known/rush/index.js';
 import markdownlintJson from '../types/text/json/known/markdownlint/index.js';
 import markdownlintYaml from '../types/text/yaml/known/markdownlint/index.js';
 import clangFormat from '../types/text/yaml/known/clang-format/index.js';
+import clangTidy from '../types/text/yaml/known/clang-tidy/index.js';
 import moonrepo from '../types/text/yaml/known/moonrepo/index.js';
 import brewfile from '../types/text/known/brewfile/index.js';
 import license from '../types/text/known/license/index.js';
@@ -580,7 +581,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   gitattributes, gemfileLock, sonar, hatch,
   mailmap, npmignore, dockerignore,
   appveyor, rubocop, taskfile, mkdocsYml,
-  rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
+  rush, markdownlintJson, markdownlintYaml, clangFormat, clangTidy, moonrepo,
   brewfile, license, ansibleCfg, ansibleHosts, makepkgConf, gemspec, typos, cargoDeny, cargoConfig, rustfmtToml, clippyToml, rustToolchain,
   htaccess, htpasswd, nginxConf, apacheConf, lighttpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, berksfile, caddyfile, renderYaml, railwayJson,
   rsyslogConf,

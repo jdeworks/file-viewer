@@ -375,7 +375,9 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "npmignore",
+    "description": "npm publish ignore file: excludes source, tests, env files, CI config, docs, and dev tooling — keeps only dist/ output and README."
   },
   {
     "label": ".dockerignore",
@@ -385,7 +387,9 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "dockerignore",
+    "description": "Docker build context ignore file: excludes dependencies, git metadata, env secrets, tests, and docs — keeps only what the container needs."
   },
   {
     "label": "requirements.txt",
