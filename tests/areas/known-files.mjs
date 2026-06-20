@@ -3665,4 +3665,21 @@ export async function run(ctx) {
   if (/Zig/i.test(zigzonText)) pass('build.zig.zon: Zig badge shown'); else fail('zig-zon badge: ' + zigzonText.slice(0, 200));
   if (/my_zig_project|0\.2\.0/i.test(zigzonText)) pass('build.zig.zon: package name or version shown'); else fail('zig-zon name/version: ' + zigzonText.slice(0, 300));
 
+  // ── dune-project (Dune build system) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dune-project');
+  await page.waitForSelector('#previewHost .dunebuild-doc', { timeout: 12000 });
+  const duneText = await page.$eval('#previewHost .dunebuild-doc', (e) => e.textContent);
+  if (/Dune/i.test(duneText)) pass('dune-project: Dune badge shown'); else fail('dune-build badge: ' + duneText.slice(0, 200));
+  if (/my-ocaml-project|3\.14|library|executable/i.test(duneText)) pass('dune-project: project name or stanza info shown'); else fail('dune-build content: ' + duneText.slice(0, 300));
+  if (/package/i.test(duneText)) pass('dune-project: package count shown'); else fail('dune-build packages: ' + duneText.slice(0, 300));
+
+  // ── .scalafmt.conf (scalafmt Scala formatter) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.scalafmt.conf');
+  await page.waitForSelector('#previewHost .scalafmt-doc', { timeout: 12000 });
+  const scalafmtText = await page.$eval('#previewHost .scalafmt-doc', (e) => e.textContent);
+  if (/scalafmt/i.test(scalafmtText)) pass('.scalafmt.conf: scalafmt badge shown'); else fail('scalafmt-conf badge: ' + scalafmtText.slice(0, 200));
+  if (/maxColumn|version|3\.7/i.test(scalafmtText)) pass('.scalafmt.conf: version or maxColumn shown'); else fail('scalafmt-conf content: ' + scalafmtText.slice(0, 300));
+  if (/rewrite|SortImports|scala/i.test(scalafmtText)) pass('.scalafmt.conf: rewrite rules or dialect shown'); else fail('scalafmt-conf rewrite: ' + scalafmtText.slice(0, 300));
 }
