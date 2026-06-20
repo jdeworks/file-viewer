@@ -1,0 +1,38 @@
+server.name: my-kibana
+server.host: "0.0.0.0"
+server.port: 5601
+server.publicBaseUrl: "https://kibana.example.com"
+
+elasticsearch.hosts: ["https://es-node-1:9200", "https://es-node-2:9200"]
+elasticsearch.username: "kibana_system"
+elasticsearch.password: "changeme_kibana_password"
+elasticsearch.ssl.verificationMode: certificate
+
+xpack.security.enabled: true
+xpack.security.encryptionKey: "changeme_must_be_32_chars_or_more_1234"
+xpack.security.session.idleTimeout: "1h"
+
+xpack.encryptedSavedObjects.encryptionKey: "changeme_saved_objects_key_32chars!!"
+
+xpack.reporting.encryptionKey: "changeme_reporting_encryption_key_32c"
+
+xpack.fleet.enabled: true
+
+logging:
+  appenders:
+    rolling-file:
+      type: rolling-file
+      fileName: /var/log/kibana/kibana.log
+      policy:
+        type: time-interval
+        interval: 1d
+        modulate: true
+      layout:
+        type: json
+    console:
+      type: console
+      layout:
+        type: pattern
+  root:
+    level: info
+    appenders: [rolling-file, console]

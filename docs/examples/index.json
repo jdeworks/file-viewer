@@ -7344,17 +7344,32 @@
     "knownFile": "elastic-apm-config"
   },
   {
-    "label": "filebeat.yml (Elastic Beats)",
+    "label": "filebeat.yml (Filebeat)",
     "file": "filebeat.yml",
     "mime": "application/yaml",
     "category": "Config",
     "categories": [
       "Config",
-      "Monitoring"
+      "Monitoring",
+      "Observability"
     ],
     "enhanced": true,
-    "description": "Filebeat config: 2 log inputs (myapp and nginx), Elasticsearch output with dual hosts, 3 processors.",
-    "knownFile": "beats-config"
+    "description": "Filebeat config: filestream + Kafka consumer inputs, Elasticsearch output with dual hosts, 2 processors.",
+    "knownFile": "filebeat"
+  },
+  {
+    "label": "heartbeat.yml (Heartbeat)",
+    "file": "heartbeat.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Monitoring",
+      "Observability"
+    ],
+    "enhanced": true,
+    "description": "Heartbeat uptime config: 3 monitors (HTTP health check, TCP port probe, ICMP ping), Elasticsearch output.",
+    "knownFile": "heartbeat"
   },
   {
     "label": "hardhat.config.js (Hardhat)",
@@ -8846,5 +8861,25 @@
     "name": "insomnia.yaml",
     "category": "API",
     "knownFile": "insomnia"
+  },
+  {
+    "name": "kibana.yml",
+    "category": "Observability",
+    "knownFile": "kibana"
+  },
+  {
+    "name": "bruno.json",
+    "category": "API",
+    "knownFile": "bruno"
+  },
+  {
+    "name": "filebeat.yml",
+    "category": "Observability",
+    "knownFile": "filebeat"
+  },
+  {
+    "name": "heartbeat.yml",
+    "category": "Observability",
+    "knownFile": "heartbeat"
   }
 ]

@@ -1,0 +1,47 @@
+{
+  "version": "1",
+  "name": "My API Workspace",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git",
+    "*.env",
+    "secrets"
+  ],
+  "proxy": {
+    "enabled": true,
+    "protocol": "http",
+    "hostname": "proxy.example.com",
+    "port": 8080,
+    "auth": {
+      "enabled": true,
+      "username": "proxyuser",
+      "password": "changeme_proxy_password"
+    },
+    "bypassProxyList": ["localhost", "127.0.0.1"]
+  },
+  "headers": [
+    {
+      "name": "X-App-Name",
+      "value": "my-api-client",
+      "enabled": true
+    },
+    {
+      "name": "Authorization",
+      "value": "Bearer changeme_token",
+      "enabled": true
+    },
+    {
+      "name": "Content-Type",
+      "value": "application/json",
+      "enabled": true
+    }
+  ],
+  "script": {
+    "req": "// pre-request: inject timestamp header\nbru.setRequestHeader('X-Request-Time', new Date().toISOString());",
+    "res": "// post-response: log status\nconsole.log('Status:', res.status);"
+  },
+  "dotenv": {
+    "files": [".env", ".env.local"]
+  }
+}

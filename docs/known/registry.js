@@ -497,6 +497,8 @@ import authentikConfig from '../types/text/yaml/known/authentik-config/index.js'
 import newrelicConfig from '../types/text/yaml/known/newrelic-config/index.js';
 import dynatraceConfig from '../types/text/yaml/known/dynatrace-config/index.js';
 import elasticApmConfig from '../types/text/known/elastic-apm-config/index.js';
+import filebeatConfig from '../types/text/yaml/known/filebeat/index.js';
+import heartbeatConfig from '../types/text/yaml/known/heartbeat/index.js';
 import beatsConfig from '../types/text/yaml/known/beats-config/index.js';
 import hardhatConfig from '../types/text/known/hardhat-config/index.js';
 import truffleConfig from '../types/text/known/truffle-config/index.js';
@@ -513,6 +515,7 @@ import supervisordConf from '../types/text/known/supervisord-conf/index.js';
 import logrotateConf from '../types/text/known/logrotate-conf/index.js';
 import tlpConf from '../types/text/known/tlp-conf/index.js';
 import shellRc from '../types/text/known/shell-rc/index.js';
+import nixDaemonConf from '../types/text/known/nix-daemon-conf/index.js';
 import nixConfig from '../types/text/known/nix-config/index.js';
 import mavenSettings from '../types/text/xml/known/maven-settings/index.js';
 import pgHba from '../types/text/known/pg-hba/index.js';
@@ -524,6 +527,7 @@ import mintlify from '../types/text/json/known/mintlify/index.js';
 import postmanCollection from '../types/text/json/known/postman-collection/index.js';
 import brunoWorkspace from '../types/text/json/known/bruno/index.js';
 import insomnia from '../types/text/yaml/known/insomnia/index.js';
+import openapiGenerator from '../types/text/yaml/known/openapi-generator/index.js';
 import graphqlSchema from '../types/text/known/graphql-schema/index.js';
 import fstab from '../types/text/known/fstab/index.js';
 import crypttab from '../types/text/known/crypttab/index.js';
@@ -609,6 +613,8 @@ import devfile from '../types/text/yaml/known/devfile/index.js';
 import ncurc from '../types/text/json/known/ncurc/index.js';
 import influxdbConf from '../types/text/toml/known/influxdb/index.js';
 import nsqConf from '../types/text/known/nsq-conf/index.js';
+import cloudflared from '../types/text/yaml/known/cloudflared/index.js';
+import dnsmasqConf from '../types/text/known/dnsmasq/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -700,16 +706,16 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   cyclonedxSbom, spdxSbom, slsaProvenance, syftConfig,
   proguardRules, androidStrings,
   keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig,
-  newrelicConfig, dynatraceConfig, elasticApmConfig, beatsConfig,
+  newrelicConfig, dynatraceConfig, elasticApmConfig, filebeatConfig, heartbeatConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
   wireguardConf, openvpnConfig, opensslConf, krb5Conf, gpgConf,
   giteaConf, stunnelConf,
   supervisordConf, logrotateConf, tlpConf,
   shellRc,
-  nixConfig,
+  nixDaemonConf, nixConfig,
   mavenSettings, pgHba,
   dvcPipeline, hydraConfig, mlflowProject, wandbConfig,
-  mintlify, postmanCollection, brunoWorkspace, insomnia, graphqlSchema,
+  mintlify, postmanCollection, brunoWorkspace, insomnia, openapiGenerator, graphqlSchema,
   systemdUnit, crontab,
   clusterConfig, certManager,
   iptablesRules, udevRules, grubConf, nftablesRules, ufwConf,

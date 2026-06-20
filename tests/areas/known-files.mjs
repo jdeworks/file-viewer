@@ -4806,4 +4806,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('insomnia.yaml');
   pass(await page.waitForSelector('#previewHost .insomnia-doc', { timeout: 12000 }), 'insomnia.yaml: insomnia-doc shown');
+
+  // ── kibana.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('kibana.yml');
+  pass(await page.waitForSelector('#previewHost .kibana-doc', { timeout: 12000 }), 'kibana.yml: kibana-doc shown');
+
+  // ── bruno.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('bruno.json');
+  pass(await page.waitForSelector('#previewHost .brunows-doc', { timeout: 12000 }), 'bruno.json: brunows-doc shown');
 }
