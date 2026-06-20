@@ -2611,7 +2611,10 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true,
+    "description": "Python project config (PEP 621): my-library v2.1.0, hatch build backend, 6 deps, optional dev/docs groups, pytest/ruff/mypy tool sections.",
+    "knownFile": "pyproject-toml"
   },
   {
     "label": ".npmrc",
@@ -3580,7 +3583,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "CocoaPods Podfile declaring iOS pod dependencies per target."
+    "description": "CocoaPods Podfile declaring iOS pod dependencies per target.",
+    "knownFile": "podfile"
   },
   {
     "label": "Fastfile",

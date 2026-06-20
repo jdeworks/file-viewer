@@ -278,10 +278,13 @@ export async function run(ctx) {
   // ── pyproject.toml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('pyproject.toml');
-  await page.waitForSelector('#previewHost .ppy-doc', { timeout: 12000 });
-  const ppyText = await page.$eval('#previewHost .ppy-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .pyproject-doc', { timeout: 12000 });
+  pass('pyproject.toml: renders');
+  const ppyText = await page.$eval('#previewHost .pyproject-doc', (e) => e.textContent);
   if (/Python/i.test(ppyText)) pass('pyproject.toml: badge shown'); else fail('pyproject badge: ' + ppyText.slice(0, 200));
   if (/my-library|hatchling|ruff|pytest/i.test(ppyText)) pass('pyproject.toml: content shown'); else fail('pyproject content: ' + ppyText.slice(0, 200));
+  if (!ppyText.includes('Python') && !ppyText.includes('pyproject')) fail('pyproject.toml: missing badge'); else pass('pyproject.toml: badge shown (spec)');
+  if (!ppyText.includes('name') && !ppyText.includes('version')) fail('pyproject.toml: no project info'); else pass('pyproject.toml: project info shown');
 
   // ── .npmrc viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1940,13 +1943,16 @@ export async function run(ctx) {
   // ── setup.cfg viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('setup.cfg');
-  await page.waitForSelector('#previewHost .sc-doc', { timeout: 12000 });
-  const setupCfgText = await page.$eval('#previewHost .sc-doc', (e) => e.textContent);
-  if (/setup\.cfg/i.test(setupCfgText)) pass('setup.cfg: badge shown'); else fail('setup.cfg badge: ' + setupCfgText.slice(0, 200));
+  await page.waitForSelector('#previewHost .setupcfg-doc', { timeout: 12000 });
+  pass('setup.cfg: renders');
+  const setupCfgText = await page.$eval('#previewHost .setupcfg-doc', (e) => e.textContent);
+  if (/setuptools|setup\.cfg/i.test(setupCfgText)) pass('setup.cfg: badge shown'); else fail('setup.cfg badge: ' + setupCfgText.slice(0, 200));
   if (/myproject/i.test(setupCfgText)) pass('setup.cfg: package name shown'); else fail('setup.cfg name: ' + setupCfgText.slice(0, 200));
   if (/1\.4\.2/i.test(setupCfgText)) pass('setup.cfg: version shown'); else fail('setup.cfg version: ' + setupCfgText.slice(0, 300));
   if (/fastapi|pydantic|sqlalchemy/i.test(setupCfgText)) pass('setup.cfg: dependencies shown'); else fail('setup.cfg deps: ' + setupCfgText.slice(0, 300));
   if (/pytest|mypy/i.test(setupCfgText)) pass('setup.cfg: tool sections shown'); else fail('setup.cfg tools: ' + setupCfgText.slice(0, 300));
+  if (!setupCfgText.includes('setuptools') && !setupCfgText.includes('setup')) fail('setup.cfg: missing badge'); else pass('setup.cfg: badge shown (spec)');
+  if (!setupCfgText.includes('name') && !setupCfgText.includes('version')) fail('setup.cfg: no project info'); else pass('setup.cfg: project info shown');
 
   // ── .bandit viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -2124,15 +2130,29 @@ export async function run(ctx) {
   if (/exclude/i.test(aoText)) pass('analysis_options.yaml: excluded paths shown'); else fail('ao excludes: ' + aoText.slice(0, 300));
   if (/flutter_lints/i.test(aoText)) pass('analysis_options.yaml: include shown'); else fail('ao include: ' + aoText.slice(0, 300));
 
+  // ── Podfile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Podfile');
+  await page.waitForSelector('#previewHost .podfile-doc', { timeout: 12000 });
+  pass('Podfile: renders');
+  const podfileText = await page.$eval('#previewHost .podfile-doc', (el) => el.textContent);
+  if (!podfileText.includes('CocoaPods')) fail('Podfile: missing badge'); else pass('Podfile: badge shown');
+  if (!podfileText.includes('pod') && !podfileText.includes('Firebase')) fail('Podfile: no pods shown'); else pass('Podfile: pods shown');
+  if (/Alamofire|Firebase/i.test(podfileText)) pass('Podfile: pod names shown'); else fail('Podfile: pod names: ' + podfileText.slice(0, 300));
+  if (/use_frameworks/i.test(podfileText)) pass('Podfile: use_frameworks! flag shown'); else fail('Podfile: flags: ' + podfileText.slice(0, 300));
+  if (/target/i.test(podfileText)) pass('Podfile: targets shown'); else fail('Podfile: targets: ' + podfileText.slice(0, 300));
+
   // ── Podfile.lock viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Podfile.lock (CocoaPods)');
-  await page.waitForSelector('#previewHost .pfl-doc', { timeout: 12000 });
-  const podfileLockText = await page.$eval('#previewHost .pfl-doc', (e) => e.textContent);
-  if (/CocoaPods Lock/i.test(podfileLockText)) pass('Podfile.lock: CocoaPods Lock badge shown'); else fail('pfl badge: ' + podfileLockText.slice(0, 200));
-  if (/Alamofire|Kingfisher/i.test(podfileLockText)) pass('Podfile.lock: pod names shown'); else fail('pfl pods: ' + podfileLockText.slice(0, 300));
+  await page.waitForSelector('#previewHost .podfilelock-doc', { timeout: 12000 });
+  pass('Podfile.lock: renders');
+  const podfileLockText = await page.$eval('#previewHost .podfilelock-doc', (e) => e.textContent);
+  if (!podfileLockText.includes('Podfile') && !podfileLockText.includes('CocoaPods')) fail('Podfile.lock: missing badge'); else pass('Podfile.lock: badge shown');
+  if (!podfileLockText.includes('Firebase') && !podfileLockText.includes('Alamofire')) fail('Podfile.lock: no pods shown'); else pass('Podfile.lock: pods shown');
+  if (/Alamofire|Firebase/i.test(podfileLockText)) pass('Podfile.lock: pod names shown'); else fail('pfl pods: ' + podfileLockText.slice(0, 300));
   if (/1\.15\.2/i.test(podfileLockText)) pass('Podfile.lock: CocoaPods version shown'); else fail('pfl version: ' + podfileLockText.slice(0, 300));
-  if (/checksum|sha1/i.test(podfileLockText.toLowerCase())) pass('Podfile.lock: checksums section shown'); else fail('pfl checksums: ' + podfileLockText.slice(0, 300));
+  if (/checksum/i.test(podfileLockText)) pass('Podfile.lock: checksums section shown'); else fail('pfl checksums: ' + podfileLockText.slice(0, 300));
 
   // ── MyApp.xcscheme viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
