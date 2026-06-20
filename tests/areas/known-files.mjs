@@ -5030,4 +5030,22 @@ export async function run(ctx) {
   if (/HOME_NET/i.test(surText)) pass('suricata.yaml: HOME_NET variable shown'); else fail('suricata: HOME_NET not shown: ' + surText.replace(/\s+/g, ' ').slice(0, 120));
   if (/eth0/.test(surText)) pass('suricata.yaml: capture interface shown'); else fail('suricata: interface not shown: ' + surText.replace(/\s+/g, ' ').slice(0, 120));
   if (/rule.fil/i.test(surText) || /suricata\.rules/.test(surText)) pass('suricata.yaml: rule files shown'); else fail('suricata: rule files not shown: ' + surText.replace(/\s+/g, ' ').slice(0, 120));
+
+  // ── waybar-config.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('waybar-config.json');
+  pass(await page.waitForSelector('#previewHost .waybar-doc', { timeout: 12000 }), 'waybar-config.json: waybar-doc shown');
+  const waybarText = await page.$eval('#previewHost .waybar-doc', (el) => el.textContent);
+  if (/Waybar/i.test(waybarText)) pass('waybar-config.json: Waybar badge shown'); else fail('waybar badge: ' + waybarText.slice(0, 200));
+  if (/clock|cpu|battery/i.test(waybarText)) pass('waybar-config.json: module names shown'); else fail('waybar modules: ' + waybarText.slice(0, 300));
+  if (/modules-left|modules-center|modules-right|left|center|right/i.test(waybarText)) pass('waybar-config.json: layout sections shown'); else fail('waybar layout: ' + waybarText.slice(0, 300));
+
+  // ── netbird.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('netbird.json');
+  pass(await page.waitForSelector('#previewHost .netbird-doc', { timeout: 12000 }), 'netbird.json: netbird-doc shown');
+  const netbirdText = await page.$eval('#previewHost .netbird-doc', (el) => el.textContent);
+  if (/NetBird/i.test(netbirdText)) pass('netbird.json: NetBird badge shown'); else fail('netbird badge: ' + netbirdText.slice(0, 200));
+  if (/netbird\.io/.test(netbirdText)) pass('netbird.json: management URL shown'); else fail('netbird url: ' + netbirdText.slice(0, 300));
+  if (/\[configured\]/.test(netbirdText)) pass('netbird.json: private key masked as [configured]'); else fail('netbird key mask: ' + netbirdText.slice(0, 300));
 }
