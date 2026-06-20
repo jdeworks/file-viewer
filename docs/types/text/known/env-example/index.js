@@ -3,7 +3,7 @@ export default {
   label: 'Env Template',
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    return n === '.env.example' || n === '.env.sample' || n === '.env.template' || n === '.env.dist' || n === 'env.example';
+    return n === '.env.example' || n === '.env.sample' || n === '.env.template' || n === '.env.dist' || n === 'env.example' || n === 'env.sample';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

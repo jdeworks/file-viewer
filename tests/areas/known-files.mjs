@@ -4389,4 +4389,22 @@ export async function run(ctx) {
   const jestText = await page.$eval('.jestconfig-doc', el => el.textContent);
   if (!jestText.includes('Jest')) fail('jest.config.js: missing badge'); else pass('jest.config.js: badge shown');
   if (!jestText.includes('testEnvironment') && !jestText.includes('transform') && !jestText.includes('coverage')) fail('jest.config.js: no config shown'); else pass('jest.config.js: config shown');
+
+  // ── .env.example (env template) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.env.example (Env Template)');
+  await page.waitForSelector('.envex-doc');
+  pass('.env.example: renders');
+  const envExText = await page.$eval('.envex-doc', el => el.textContent);
+  if (!envExText.includes('.env') && !envExText.includes('example') && !envExText.includes('Template')) fail('.env.example: missing badge/notice'); else pass('.env.example: badge shown');
+  if (!envExText.includes('DATABASE') && !envExText.includes('KEY')) fail('.env.example: no vars shown'); else pass('.env.example: variables shown');
+
+  // ── .envrc (direnv) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.envrc');
+  await page.waitForSelector('.erc-doc');
+  pass('.envrc: renders');
+  const envrcText = await page.$eval('.erc-doc', el => el.textContent);
+  if (!envrcText.includes('direnv') && !envrcText.includes('envrc')) fail('.envrc: missing badge'); else pass('.envrc: badge shown');
+  if (!envrcText.includes('layout') && !envrcText.includes('PATH') && !envrcText.includes('node')) fail('.envrc: no config shown'); else pass('.envrc: config shown');
 }

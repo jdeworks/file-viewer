@@ -3528,7 +3528,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "direnv environment configuration with exports and layout directives."
+    "description": "direnv environment configuration with exports and layout directives.",
+    "knownFile": "envrc"
   },
   {
     "label": "mise.toml",

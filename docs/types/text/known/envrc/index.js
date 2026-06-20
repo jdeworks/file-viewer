@@ -2,7 +2,7 @@ export default {
   id: 'envrc',
   label: '.envrc',
   match: (intake) => {
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return name === '.envrc';
   },
   loadRenderer: () => import('./renderer.js'),
