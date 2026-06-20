@@ -519,7 +519,9 @@ import dvcPipeline from '../types/text/yaml/known/dvc-pipeline/index.js';
 import hydraConfig from '../types/text/yaml/known/hydra-config/index.js';
 import mlflowProject from '../types/text/yaml/known/mlflow-project/index.js';
 import wandbConfig from '../types/text/ini/known/wandb-config/index.js';
+import mintlify from '../types/text/json/known/mintlify/index.js';
 import postmanCollection from '../types/text/json/known/postman-collection/index.js';
+import insomnia from '../types/text/yaml/known/insomnia/index.js';
 import graphqlSchema from '../types/text/known/graphql-schema/index.js';
 import fstab from '../types/text/known/fstab/index.js';
 import crypttab from '../types/text/known/crypttab/index.js';
@@ -705,7 +707,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   nixConfig,
   mavenSettings, pgHba,
   dvcPipeline, hydraConfig, mlflowProject, wandbConfig,
-  postmanCollection, graphqlSchema,
+  mintlify, postmanCollection, insomnia, graphqlSchema,
   systemdUnit, crontab,
   clusterConfig, certManager,
   iptablesRules, udevRules, grubConf, nftablesRules, ufwConf,

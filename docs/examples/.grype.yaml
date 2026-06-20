@@ -1,0 +1,61 @@
+# Grype vulnerability scanner configuration
+# https://github.com/anchore/grype#configuration
+
+output: table
+file: ""
+quiet: false
+check-for-app-update: true
+
+fail-on-severity: high
+
+only-fixed: false
+only-notfixed: false
+
+ignore:
+  - vulnerability: CVE-2023-44487
+    package: ""
+    fix-state: not-fixed
+  - vulnerability: CVE-2022-25883
+    package: semver
+    fix-state: wont-fix
+  - vulnerability: CVE-2023-39320
+    package: ""
+    fix-state: not-fixed
+
+ignore-states:
+  - not-fixed
+  - wont-fix
+
+search:
+  scope: all-layers
+  unindexed-archives: false
+  indexed-archives: true
+
+registry:
+  insecure-skip-tls-verify: false
+  auth:
+    - authority: registry.example.com
+      username: scanner-bot
+      password: s3cr3t-tok3n
+
+db:
+  auto-update: true
+  update-url: "https://toolbox-data.anchore.io/grype/databases/listing.json"
+  cache-dir: "$XDG_CACHE_HOME/grype/db"
+  validate-by-hash-on-start: false
+
+match:
+  java:
+    using-cpes: true
+  python:
+    using-cpes: true
+  javascript:
+    using-cpes: false
+  dotnet:
+    using-cpes: true
+  golang:
+    using-cpes: true
+  ruby:
+    using-cpes: false
+  stock:
+    using-cpes: true

@@ -1,0 +1,66 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: block-suspicious-exec
+  labels:
+    app.kubernetes.io/part-of: security-policies
+spec:
+  kprobes:
+    - call: "sys_execve"
+      syscall: true
+      args:
+        - index: 0
+          type: "string"
+        - index: 1
+          type: "string_array"
+      selectors:
+        - matchBinaries:
+            - operator: In
+              values:
+                - "/bin/bash"
+                - "/bin/sh"
+                - "/usr/bin/python3"
+          matchNamespaces:
+            - namespace: Pid
+              operator: NotIn
+              values:
+                - "host_pid_ns"
+          matchActions:
+            - action: Sigkill
+        - matchPIDs:
+            - operator: NotIn
+              isNamespacePID: false
+              followForks: true
+              values:
+                - 1
+          matchActions:
+            - action: Post
+    - call: "tcp_connect"
+      syscall: false
+      args:
+        - index: 0
+          type: "sock"
+      selectors:
+        - matchArgs:
+            - index: 0
+              operator: DAddr
+              values:
+                - "10.0.0.0/8"
+                - "172.16.0.0/12"
+                - "192.168.0.0/16"
+          matchActions:
+            - action: Post
+  tracepoints:
+    - subsystem: "raw_syscalls"
+      event: "sys_enter"
+      args:
+        - index: 4
+          type: "uint64"
+      selectors:
+        - matchArgs:
+            - index: 4
+              operator: Equal
+              values:
+                - "59"
+          matchActions:
+            - action: Post
