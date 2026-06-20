@@ -3718,6 +3718,19 @@
     "knownFile": "nginx-conf"
   },
   {
+    "file": "httpd.conf",
+    "label": "httpd.conf (Apache HTTP Server)",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Web Server"
+    ],
+    "enhanced": true,
+    "description": "Apache HTTP Server config: virtual hosts, SSL, directory access, proxy, and rewrite rules.",
+    "knownFile": "apache-conf"
+  },
+  {
     "label": "haproxy.cfg",
     "file": "haproxy.cfg",
     "mime": "text/plain",
@@ -7038,6 +7051,51 @@
     "categories": [
       "Config",
       "System"
+    ]
+  },
+  {
+    "file": "myapp.service",
+    "label": "myapp.service (systemd Service)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "System"
+    ]
+  },
+  {
+    "file": "crontab",
+    "label": "crontab (Cron Schedule)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "System"
+    ]
+  },
+  {
+    "file": "cert-manager.yaml",
+    "label": "cert-manager.yaml (cert-manager)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Kubernetes"
+    ]
+  },
+  {
+    "file": "iptables.rules",
+    "label": "iptables.rules (Firewall Rules)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ]
+  },
+  {
+    "file": "ufw.conf",
+    "label": "ufw.conf (UFW Firewall)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
     ]
   }
 ]

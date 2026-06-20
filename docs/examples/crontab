@@ -1,0 +1,22 @@
+# Edit this file to introduce tasks to be run by cron.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=admin@example.com
+
+# Backup database daily at 2am
+0 2 * * * /usr/local/bin/backup-db.sh >> /var/log/backup.log 2>&1
+
+# Clear temp files every hour
+0 * * * * /usr/bin/find /tmp -mtime +1 -delete
+
+# Send weekly report every Monday at 9am
+0 9 * * 1 /usr/local/bin/weekly-report.sh
+
+# Check disk space every 5 minutes
+*/5 * * * * /usr/local/bin/check-disk.sh
+
+# Restart cache on first day of month
+0 0 1 * * systemctl restart redis
+
+@reboot /usr/local/bin/startup-tasks.sh
+@daily /usr/bin/certbot renew --quiet

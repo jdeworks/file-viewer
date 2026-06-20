@@ -1173,6 +1173,26 @@ export async function run(ctx) {
   if (/component/i.test(cyText)) pass('cypress.config.js: component testing section shown'); else fail('cypress component: ' + cyText.slice(0, 200));
   if (/env var/i.test(cyText)) pass('cypress.config.js: env var count shown'); else fail('cypress env: ' + cyText.slice(0, 200));
 
+  // ── wdio.conf.js viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('wdio.conf.js');
+  await page.waitForSelector('#previewHost .wdio-doc', { timeout: 12000 });
+  const wdioText = await page.$eval('#previewHost .wdio-doc', (e) => e.textContent);
+  if (/WebdriverIO/i.test(wdioText)) pass('wdio.conf.js: WebdriverIO badge shown'); else fail('wdio badge: ' + wdioText.slice(0, 200));
+  if (/chrome|firefox/i.test(wdioText)) pass('wdio.conf.js: browsers shown'); else fail('wdio browsers: ' + wdioText.slice(0, 200));
+  if (/localhost:3000/i.test(wdioText)) pass('wdio.conf.js: base URL shown'); else fail('wdio baseURL: ' + wdioText.slice(0, 200));
+  if (/mocha/i.test(wdioText)) pass('wdio.conf.js: framework shown'); else fail('wdio framework: ' + wdioText.slice(0, 200));
+
+  // ── k6.config.js viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('k6.config.js');
+  await page.waitForSelector('#previewHost .k6-doc', { timeout: 12000 });
+  const k6Text = await page.$eval('#previewHost .k6-doc', (e) => e.textContent);
+  if (/k6/i.test(k6Text)) pass('k6.config.js: k6 badge shown'); else fail('k6 badge: ' + k6Text.slice(0, 200));
+  if (/vus|virtual user/i.test(k6Text)) pass('k6.config.js: VU count shown'); else fail('k6 vus: ' + k6Text.slice(0, 200));
+  if (/stage|duration/i.test(k6Text)) pass('k6.config.js: stages shown'); else fail('k6 stages: ' + k6Text.slice(0, 200));
+  if (/threshold|http_req/i.test(k6Text)) pass('k6.config.js: thresholds shown'); else fail('k6 thresholds: ' + k6Text.slice(0, 200));
+
   // ── .goreleaser.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.goreleaser.yaml');
@@ -2149,6 +2169,15 @@ export async function run(ctx) {
   if (/listener_http|listener_https/i.test(evText)) pass('envoy.yaml: listeners shown'); else fail('envoy listeners: ' + evText.slice(0, 300));
   if (/api_service|web_service/i.test(evText)) pass('envoy.yaml: clusters shown'); else fail('envoy clusters: ' + evText.slice(0, 300));
 
+  // ── httpd.conf (Apache) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('httpd.conf (Apache HTTP Server)');
+  await page.waitForSelector('#previewHost .apachecfg-doc', { timeout: 12000 });
+  const apacheText = await page.$eval('#previewHost .apachecfg-doc', (e) => e.textContent);
+  if (/Apache/i.test(apacheText)) pass('httpd.conf: Apache badge shown'); else fail('apache badge: ' + apacheText.slice(0, 200));
+  if (/VirtualHost|example\.com/i.test(apacheText)) pass('httpd.conf: VirtualHost or ServerName shown'); else fail('apache vhosts: ' + apacheText.slice(0, 300));
+  if (/SSL|DocumentRoot/i.test(apacheText)) pass('httpd.conf: SSL or DocumentRoot shown'); else fail('apache ssl/docroot: ' + apacheText.slice(0, 300));
+
   // ── haproxy.cfg viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('haproxy.cfg');
@@ -3044,5 +3073,32 @@ export async function run(ctx) {
   const crytabText = await page.$eval('#previewHost .crytab-doc', (e) => e.textContent);
   if (/crypttab/i.test(crytabText)) pass('crypttab: badge shown'); else fail('crypttab badge: ' + crytabText.slice(0, 200));
   if (/luks/i.test(crytabText)) pass('crypttab: luks option shown'); else fail('crypttab luks: ' + crytabText.slice(0, 300));
+
+  // ── systemd unit viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('myapp.service (systemd Service)');
+  await page.waitForSelector('#previewHost .sysd-doc', { timeout: 12000 });
+  const sysdText = await page.$eval('#previewHost .sysd-doc', (e) => e.textContent);
+  if (/systemd/i.test(sysdText)) pass('myapp.service: systemd badge shown'); else fail('systemd badge: ' + sysdText.slice(0, 200));
+  if (/ExecStart/i.test(sysdText)) pass('myapp.service: ExecStart shown'); else fail('systemd ExecStart: ' + sysdText.slice(0, 300));
+  if (/My Application Service/i.test(sysdText)) pass('myapp.service: description shown'); else fail('systemd description: ' + sysdText.slice(0, 300));
+
+  // ── crontab viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('crontab (Cron Schedule)');
+  await page.waitForSelector('#previewHost .crntab-doc', { timeout: 12000 });
+  const crntabText = await page.$eval('#previewHost .crntab-doc', (e) => e.textContent);
+  if (/cron/i.test(crntabText)) pass('crontab: cron badge shown'); else fail('crontab badge: ' + crntabText.slice(0, 200));
+  if (/backup/i.test(crntabText)) pass('crontab: backup job shown'); else fail('crontab backup: ' + crntabText.slice(0, 300));
+  if (/daily|every|weekly|reboot/i.test(crntabText)) pass('crontab: human schedule descriptions shown'); else fail('crontab schedule: ' + crntabText.slice(0, 300));
+
+  // ── cert-manager viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cert-manager.yaml (cert-manager)');
+  await page.waitForSelector('#previewHost .certmgr-doc', { timeout: 12000 });
+  const certmgrText = await page.$eval('#previewHost .certmgr-doc', (e) => e.textContent);
+  if (/cert-manager/i.test(certmgrText)) pass('cert-manager: badge shown'); else fail('cert-manager badge: ' + certmgrText.slice(0, 200));
+  if (/ClusterIssuer/i.test(certmgrText)) pass('cert-manager: ClusterIssuer kind shown'); else fail('cert-manager ClusterIssuer: ' + certmgrText.slice(0, 300));
+  if (/letsencrypt/i.test(certmgrText)) pass('cert-manager: letsencrypt issuer shown'); else fail('cert-manager letsencrypt: ' + certmgrText.slice(0, 300));
 
 }

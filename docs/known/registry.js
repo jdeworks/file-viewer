@@ -160,6 +160,7 @@ import cargoDeny from '../types/text/toml/known/cargo-deny/index.js';
 import cargoConfig from '../types/text/toml/known/cargo-config/index.js';
 import htaccess from '../types/text/known/htaccess/index.js';
 import nginxConf from '../types/text/known/nginx-conf/index.js';
+import apacheConf from '../types/text/known/apache-conf/index.js';
 import haproxyConfig from '../types/text/known/haproxy-config/index.js';
 import squidConf from '../types/text/known/squid-conf/index.js';
 import moonYml from '../types/text/yaml/known/moon/index.js';
@@ -201,6 +202,8 @@ import cmakePresets from '../types/text/json/known/cmake-presets/index.js';
 import conanfile from '../types/text/known/conanfile/index.js';
 import prometheusConfig from '../types/text/yaml/known/prometheus-config/index.js';
 import alertmanager from '../types/text/yaml/known/alertmanager/index.js';
+import victoriaMetricsConfig from '../types/text/yaml/known/victoria-metrics-config/index.js';
+import thanosConfig from '../types/text/yaml/known/thanos-config/index.js';
 import datadogConfig from '../types/text/yaml/known/datadog-config/index.js';
 import viteConfig from '../types/text/known/vite-config/index.js';
 import webpackConfig from '../types/text/known/webpack-config/index.js';
@@ -392,7 +395,6 @@ import natsConfig from '../types/text/known/nats-config/index.js';
 import zookeeperConfig from '../types/text/known/zookeeper-config/index.js';
 import hostsFile from '../types/text/known/hosts-file/index.js';
 import resolvConf from '../types/text/known/resolv-conf/index.js';
-import sshConfig from '../types/text/known/ssh-config/index.js';
 import sshdConfig from '../types/text/known/sshd-config/index.js';
 import samTemplate from '../types/text/yaml/known/sam-template/index.js';
 import cfnTemplate from '../types/text/yaml/known/cfn-template/index.js';
@@ -448,6 +450,12 @@ import postmanCollection from '../types/text/json/known/postman-collection/index
 import graphqlSchema from '../types/text/known/graphql-schema/index.js';
 import fstab from '../types/text/known/fstab/index.js';
 import crypttab from '../types/text/known/crypttab/index.js';
+import systemdUnit from '../types/text/known/systemd-unit/index.js';
+import crontab from '../types/text/known/crontab/index.js';
+import clusterConfig from '../types/text/yaml/known/cluster-config/index.js';
+import certManager from '../types/text/yaml/known/cert-manager/index.js';
+import iptablesRules from '../types/text/known/iptables-rules/index.js';
+import ufwConf from '../types/text/known/ufw-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -471,7 +479,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   appveyor, rubocop, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
   brewfile, license, ansibleCfg, ansibleHosts, gemspec, typos, cargoDeny, cargoConfig,
-  htaccess, nginxConf, haproxyConfig, squidConf, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
+  htaccess, nginxConf, apacheConf, haproxyConfig, squidConf, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,
   supabaseConfig, netlifyRedirects,
@@ -524,7 +532,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   kafkaServerProps, natsConfig, rabbitmqConf, zookeeperConfig,
   samTemplate, cfnTemplate, cdkJson, awsSamConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson,
-  hostsFile, resolvConf, sshConfig, sshdConfig, fstab, crypttab,
+  hostsFile, resolvConf, sshdConfig, fstab, crypttab,
   jetbrainsWorkspace, neovimConfig, vimConfig, emacsConfig,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,
@@ -545,6 +553,9 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   mavenSettings, pgHba,
   dvcPipeline, hydraConfig, mlflowProject, wandbConfig,
   postmanCollection, graphqlSchema,
+  systemdUnit, crontab,
+  clusterConfig, certManager,
+  iptablesRules, ufwConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

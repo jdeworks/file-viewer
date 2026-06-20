@@ -1,0 +1,22 @@
+[Unit]
+Description=My Application Service
+Documentation=https://docs.example.com
+After=network.target postgresql.service
+Wants=postgresql.service
+ConditionPathExists=/opt/myapp/server.js
+
+[Service]
+Type=simple
+User=myapp
+Group=myapp
+WorkingDirectory=/opt/myapp
+ExecStart=/usr/bin/node /opt/myapp/server.js
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PORT=3000
+EnvironmentFile=/etc/myapp/env
+
+[Install]
+WantedBy=multi-user.target
