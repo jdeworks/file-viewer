@@ -199,6 +199,8 @@ import ninjaBuild from '../types/text/known/ninja-build/index.js';
 import packageSwift from '../types/text/known/package-swift/index.js';
 import mixExs from '../types/text/known/mix-exs/index.js';
 import buildSbt from '../types/text/known/build-sbt/index.js';
+import duneBuild from '../types/text/known/dune-build/index.js';
+import scalafmtConf from '../types/text/known/scalafmt-conf/index.js';
 import playwrightConfig from '../types/text/known/playwright-config/index.js';
 import cypressConfig from '../types/text/known/cypress-config/index.js';
 import vcpkg from '../types/text/json/known/vcpkg/index.js';
@@ -532,7 +534,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   supabaseConfig, netlifyRedirects,
   cmake, jenkinsfile,
   bazel, bazelrc, ninjaBuild,
-  packageSwift, mixExs, buildSbt,
+  packageSwift, mixExs, buildSbt, scalafmtConf,
   playwrightConfig, cypressConfig,
   vcpkg, cmakePresets, conanfile,
   prometheusConfig, alertmanager, victoriaMetricsConfig, thanosConfig, datadogConfig,
@@ -548,7 +550,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   scorecard, socketSecurity, trivyConfig, snykConfig,
   gradleVersionCatalog, gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml,
   csproj, directoryBuild, msbuildProps, nuspec,
-  stackYaml, cabal, packageResolved, rebarConfig, erlangSysConfig, erlangVmArgs, cpanfile,
+  stackYaml, cabal, duneBuild, packageResolved, rebarConfig, erlangSysConfig, erlangVmArgs, cpanfile,
   rDescription, rProfile,
   docusaurusConfig, vitepressConfig, sphinxConf, doxyfile,
   drizzleConfig, knexfile, alembic, flywayConf,

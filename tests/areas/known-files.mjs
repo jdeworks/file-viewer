@@ -3541,4 +3541,20 @@ export async function run(ctx) {
   if (/kitty/i.test(kittyText)) pass('kitty.conf: kitty badge shown'); else fail('kitty-conf badge: ' + kittyText.slice(0, 200));
   if (/font_family|scrollback/i.test(kittyText)) pass('kitty.conf: font_family or scrollback shown'); else fail('kitty-conf content: ' + kittyText.slice(0, 300));
 
+  // ── dunstrc (dunst notification daemon) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dunstrc (dunst notification daemon)');
+  await page.waitForSelector('#previewHost .dunstrc-doc', { timeout: 12000 });
+  const dunstText = await page.$eval('#previewHost .dunstrc-doc', (e) => e.textContent);
+  if (/dunst/i.test(dunstText)) pass('dunstrc: dunst badge shown'); else fail('dunstrc badge: ' + dunstText.slice(0, 200));
+  if (/urgency|timeout/i.test(dunstText)) pass('dunstrc: urgency levels or timeout shown'); else fail('dunstrc urgency: ' + dunstText.slice(0, 300));
+
+  // ── polybar.ini (Polybar status bar) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('polybar.ini (Polybar status bar)');
+  await page.waitForSelector('#previewHost .polybarcfg-doc', { timeout: 12000 });
+  const polybarText = await page.$eval('#previewHost .polybarcfg-doc', (e) => e.textContent);
+  if (/Polybar/i.test(polybarText)) pass('polybar.ini: Polybar badge shown'); else fail('polybar-conf badge: ' + polybarText.slice(0, 200));
+  if (/modules|bar/i.test(polybarText)) pass('polybar.ini: modules or bar configuration shown'); else fail('polybar-conf content: ' + polybarText.slice(0, 300));
+
 }
