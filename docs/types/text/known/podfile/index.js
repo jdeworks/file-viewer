@@ -1,9 +1,10 @@
 export default {
   id: 'podfile',
   label: 'Podfile',
-  match: (intake) => {
-    const name = (intake.filename || '').split('/').pop();
-    return name === 'Podfile';
+  tags: ['cocoapods', 'ios', 'macos', 'swift'],
+  match(intake) {
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    return n === 'podfile';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

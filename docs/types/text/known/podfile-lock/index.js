@@ -1,9 +1,10 @@
 export default {
   id: 'podfile-lock',
-  label: 'Podfile.lock (CocoaPods)',
-  match: (intake) => {
-    const name = (intake.filename || '').split('/').pop();
-    return name === 'Podfile.lock';
+  label: 'Podfile.lock',
+  tags: ['cocoapods', 'ios', 'lockfile'],
+  match(intake) {
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    return n === 'podfile.lock';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

@@ -360,6 +360,7 @@
     "label": ".mailmap",
     "file": ".mailmap",
     "mime": "text/plain",
+    "knownFile": "mailmap",
     "category": "Config",
     "categories": [
       "Config"
@@ -486,6 +487,7 @@
     "label": ".editorconfig",
     "file": ".editorconfig",
     "mime": "text/plain",
+    "knownFile": "editorconfig",
     "category": "Config",
     "categories": [
       "Config"

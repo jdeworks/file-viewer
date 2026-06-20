@@ -127,10 +127,10 @@ export async function run(ctx) {
 
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.editorconfig');
-  await page.waitForSelector('#previewHost .kf-svc', { timeout: 12000 });
-  const ecGlobs = await page.$$eval('#previewHost .kf-svc h3', (els) => els.map((e) => e.textContent));
-  const ecRoot = await page.$$eval('#previewHost .pj-tag', (els) => els.map((e) => e.textContent));
-  if (ecGlobs.some((g) => /\*\.py/.test(g)) && ecRoot.includes('root')) pass('.editorconfig: sections per glob (+ root flag)'); else fail('editorconfig globs=' + ecGlobs.join(',') + ' tags=' + ecRoot.join(','));
+  await page.waitForSelector('#previewHost .editorconfig-doc', { timeout: 12000 });
+  const ecGlobs = await page.$$eval('#previewHost .ec-section-head code', (els) => els.map((e) => e.textContent));
+  const ecRoot = await page.$eval('#previewHost .editorconfig-doc', (el) => el.textContent);
+  if (ecGlobs.some((g) => /\*\.py/.test(g)) && /root/i.test(ecRoot)) pass('.editorconfig: sections per glob (+ root flag)'); else fail('editorconfig globs=' + ecGlobs.join(',') + ' root=' + /root/i.test(ecRoot));
 
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('pom.xml (Maven POM)');
