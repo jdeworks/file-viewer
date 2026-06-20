@@ -5365,4 +5365,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('woodpecker-agent.env');
   pass(await page.waitForSelector('#previewHost .wpcagent-doc', { timeout: 12000 }), 'woodpecker-agent.env: Woodpecker CI badge shown');
+
+  // ── act_runner.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('act_runner.yaml');
+  pass(await page.waitForSelector('#previewHost .actrunner-doc', { timeout: 12000 }), 'act_runner.yaml: Act Runner badge shown');
+
+  // ── vaultwarden.env viewer (vaultwarden-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vaultwarden.env');
+  pass(await page.waitForSelector('#previewHost .vwarden-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
 }

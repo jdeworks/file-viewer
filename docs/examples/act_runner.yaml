@@ -1,0 +1,35 @@
+# Gitea Act Runner configuration
+# https://gitea.com/gitea/act_runner
+
+log:
+  level: info
+  filename: act_runner.log
+
+runner:
+  file: .runner
+  capacity: 1
+  envs:
+    CI_SERVER: gitea
+    RUNNER_TOOL_CACHE: /opt/hostedtoolcache
+  labels:
+    - ubuntu-22.04:docker://node:18-bullseye
+    - ubuntu-20.04:docker://node:16-buster
+    - native:host
+
+cache:
+  enabled: true
+  dir: /tmp/act-runner-cache
+  host: ""
+  port: 0
+  external_server: ""
+
+container:
+  network: bridge
+  privileged: false
+  valid_volumes:
+    - /home/runner/**
+    - /tmp/**
+  docker_host: ""
+
+host:
+  workdir_parent: /tmp/act-runner

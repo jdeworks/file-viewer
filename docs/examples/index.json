@@ -9488,17 +9488,16 @@
   },
   {
     "file": "vaultwarden.env",
-    "label": "vaultwarden.env",
+    "label": "Vaultwarden Config",
     "mime": "text/plain",
     "category": "Config",
     "categories": [
       "Config",
-      "Application",
-      "Security"
+      "Self-hosted"
     ],
     "enhanced": true,
-    "description": "Vaultwarden (Bitwarden_RS fork) self-hosted password manager configuration with server, security, database, email, and logging settings.",
-    "knownFile": "vaultwarden-env"
+    "description": "Vaultwarden self-hosted Bitwarden environment configuration",
+    "knownFile": "vaultwarden-config"
   },
   {
     "file": "woodpecker.yml",
@@ -9898,5 +9897,18 @@
     "enhanced": true,
     "description": "Woodpecker CI agent environment configuration",
     "knownFile": "woodpecker-agent-config"
+  },
+  {
+    "file": "act_runner.yaml",
+    "label": "Act Runner Config",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "CI/CD"
+    ],
+    "enhanced": true,
+    "description": "Gitea Act Runner CI configuration",
+    "knownFile": "act-runner-config"
   }
 ]

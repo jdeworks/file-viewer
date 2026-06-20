@@ -694,6 +694,8 @@ import coderConfig from '../types/text/known/coder-config/index.js';
 import calComConfig from '../types/text/known/cal-com-config/index.js';
 import ralllyConfig from '../types/text/known/rallly-config/index.js';
 import woodpeckerAgentConfig from '../types/text/known/woodpecker-agent-config/index.js';
+import actRunnerConfig from '../types/text/yaml/known/act-runner-config/index.js';
+import vaultwardenConfig from '../types/text/known/vaultwarden-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -858,6 +860,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   komgaConfig, coderConfig,
   calComConfig, ralllyConfig,
   woodpeckerAgentConfig,
+  actRunnerConfig, vaultwardenConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
