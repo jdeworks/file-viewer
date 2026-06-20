@@ -1,22 +1,8 @@
-severity:
-  - CRITICAL
-  - HIGH
-  - MEDIUM
-
-scanners:
-  - vuln
-  - secret
-  - misconfig
-  - license
-
-format: table
-output: trivy-report.txt
-exit-code: 1
-ignore-unfixed: false
-timeout: 5m0s
-cache-dir: /tmp/trivy-cache
-
 scan:
+  scanners:
+    - vuln
+    - config
+    - secret
   skip-dirs:
     - node_modules
     - vendor
@@ -25,23 +11,26 @@ scan:
     - "**/*.test.*"
     - "**/testdata/**"
 
+severity:
+  - CRITICAL
+  - HIGH
+
 vulnerability:
+  type:
+    - os
+    - library
+  ignore-unfixed: true
   ignored-vulnerabilities:
     - CVE-2022-12345
     - CVE-2021-99999
     - CVE-2023-44487
-    - CVE-2023-37920
+
+misconfiguration:
+  include-non-failures: false
 
 secret:
   config: trivy-secret.yaml
 
-misconfig:
-  include-non-failures: false
-  reset-policy-bundle: false
-
-license:
-  ignored-licenses:
-    - GPL-3.0
-  forbidden:
-    - AGPL-3.0
-    - GPL-2.0
+format: table
+exit-code: 1
+timeout: 5m0s

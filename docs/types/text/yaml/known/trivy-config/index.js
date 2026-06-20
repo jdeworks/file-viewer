@@ -1,10 +1,13 @@
 export default {
   id: 'trivy-config',
   label: 'Trivy',
+  tags: ['trivy', 'security', 'scanning'],
   match(intake, baseType) {
     if (baseType?.id !== 'yaml') return false;
-    const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
-    return ['trivy.yaml', 'trivy.yml', '.trivy.yaml', '.trivy.yml', 'trivy-config.yaml', 'trivy-config.yml'].includes(n);
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    if (!['trivy.yaml', 'trivy.yml', '.trivy.yaml', '.trivy.yml', 'trivy-config.yaml', 'trivy-config.yml'].includes(n)) return false;
+    const text = intake.text || '';
+    return text.includes('severity:') || text.includes('vulnerability:') || text.includes('scan:') || text.includes('format:') || text.includes('scanners:');
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

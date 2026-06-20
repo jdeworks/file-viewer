@@ -1,10 +1,10 @@
 export default {
   id: 'hadolint',
   label: 'Hadolint config',
-  match: (intake, baseType) => {
-    if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType.id)) return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
-    return name === '.hadolint.yaml' || name === '.hadolint.yml' || name === 'hadolint.yaml';
+  match(intake, baseType) {
+    if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType?.id)) return false;
+    const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    return n === '.hadolint.yaml' || n === '.hadolint.yml' || n === 'hadolint.yaml';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

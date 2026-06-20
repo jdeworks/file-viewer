@@ -2,25 +2,21 @@ failure-threshold: warning
 
 ignore:
   - DL3008
-  - DL3009
-  - DL3015
-  - SC2086
+  - DL3018
+  - SC2035
 
 override:
-  error:
-    - DL3001
-    - DL3002
   warning:
-    - DL3003
-    - DL3004
+    - DL3045
   info:
     - DL3006
+  error:
+    - DL3001
 
 trusted-registries:
   - docker.io
   - gcr.io
   - ghcr.io
-  - 012345678901.dkr.ecr.us-east-1.amazonaws.com
 
 format: tty
 no-fail: false

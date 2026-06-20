@@ -3218,7 +3218,9 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "knownFile": "hadolint",
+    "enhanced": true,
+    "description": "Hadolint Dockerfile linter config: ignored rules, trusted registries, and failure threshold."
   },
   {
     "label": "Chart.yaml (Helm chart)",
@@ -4680,8 +4682,9 @@
     "categories": [
       "Config"
     ],
+    "knownFile": "trivy-config",
     "enhanced": true,
-    "description": "Trivy vulnerability scanner config: severity filters, ignored CVEs, and scan targets."
+    "description": "Trivy vulnerability scanner config: severity filters, scanners, vulnerability types, and ignored CVEs."
   },
   {
     "label": ".snyk",
@@ -8535,5 +8538,32 @@
     "enhanced": true,
     "knownFile": "semaphore-ci",
     "description": "Semaphore CI v1.0 pipeline: e2-standard-2 agent, Install/Test/Build blocks with parallel jobs, and production/staging promotions."
+  },
+  {
+    "label": ".ansible-lint",
+    "file": ".ansible-lint",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Ansible"
+    ],
+    "enhanced": true,
+    "knownFile": "ansible-lint",
+    "description": "ansible-lint config: moderate profile, 4 skipped rules (risky-shell-pipe, yaml[truthy]), warn_list for experimental rules, exclude paths for .git/ and molecule/."
+  },
+  {
+    "label": "molecule.yml",
+    "file": "molecule.yml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Ansible",
+      "Testing"
+    ],
+    "enhanced": true,
+    "knownFile": "molecule",
+    "description": "Molecule Ansible testing config: Docker driver, Ubuntu 22.04 and Debian 11 platforms, Ansible provisioner and verifier, 7-step test sequence."
   }
 ]

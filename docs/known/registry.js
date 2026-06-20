@@ -569,6 +569,8 @@ import { plugin as preCommitConfig } from '../types/text/yaml/known/pre-commit-c
 import { plugin as conkyConf } from '../types/text/known/conky-conf/index.js';
 import { plugin as semaphoreCi } from '../types/text/yaml/known/semaphore-ci/index.js';
 import nanorc from '../types/text/known/nanorc/index.js';
+import { plugin as ansibleLint } from '../types/text/yaml/known/ansible-lint/index.js';
+import { plugin as molecule } from '../types/text/yaml/known/molecule/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -697,6 +699,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   gdbinit,
   preCommitConfig, conkyConf,
   semaphoreCi,
+  ansibleLint, molecule,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

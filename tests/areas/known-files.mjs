@@ -747,10 +747,20 @@ export async function run(ctx) {
   // ── .hadolint.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.hadolint.yaml');
-  await page.waitForSelector('#previewHost .hdl-doc', { timeout: 12000 });
-  const hdlText = await page.$eval('#previewHost .hdl-doc', (e) => e.textContent);
-  if (/Hadolint/i.test(hdlText)) pass('.hadolint.yaml: badge shown'); else fail('hadolint badge: ' + hdlText.slice(0, 200));
-  if (/DL3008|DL3009|ignore|threshold/i.test(hdlText)) pass('.hadolint.yaml: ignored rules and threshold shown'); else fail('hadolint rules: ' + hdlText.slice(0, 200));
+  await page.waitForSelector('.hadolint-doc', { timeout: 12000 });
+  pass('.hadolint.yaml: renders');
+  const hdlText = await page.$eval('.hadolint-doc', (e) => e.textContent);
+  if (/Hadolint/i.test(hdlText)) pass('.hadolint.yaml: badge shown'); else fail('.hadolint.yaml: missing badge: ' + hdlText.slice(0, 200));
+  if (/DL|registry|rule/i.test(hdlText)) pass('.hadolint.yaml: config shown'); else fail('.hadolint.yaml: no config shown: ' + hdlText.slice(0, 200));
+
+  // ── trivy.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('trivy.yaml');
+  await page.waitForSelector('.trivyyaml-doc', { timeout: 12000 });
+  pass('trivy.yaml: renders');
+  const trivyText = await page.$eval('.trivyyaml-doc', (e) => e.textContent);
+  if (/Trivy/i.test(trivyText)) pass('trivy.yaml: badge shown'); else fail('trivy.yaml: missing badge: ' + trivyText.slice(0, 200));
+  if (/scanner|severity|vuln/i.test(trivyText)) pass('trivy.yaml: scan config shown'); else fail('trivy.yaml: no scan config: ' + trivyText.slice(0, 200));
 
   // ── firebase.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -4504,4 +4514,22 @@ export async function run(ctx) {
   const semaphoreText = await page.$eval('.semaphorecfg-doc', el => el.textContent);
   if (!semaphoreText.includes('Semaphore')) fail('semaphore.yml: missing badge'); else pass('semaphore.yml: badge shown');
   if (!semaphoreText.includes('block') && !semaphoreText.includes('job') && !semaphoreText.includes('Install')) fail('semaphore.yml: no blocks shown'); else pass('semaphore.yml: blocks shown');
+
+  // ── .ansible-lint viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.ansible-lint');
+  await page.waitForSelector('.ansiblelint-doc', { timeout: 12000 });
+  pass('.ansible-lint: renders');
+  const ansiblelintText = await page.$eval('.ansiblelint-doc', el => el.textContent);
+  if (!ansiblelintText.includes('ansible') && !ansiblelintText.includes('lint')) fail('.ansible-lint: missing badge'); else pass('.ansible-lint: badge shown');
+  if (!ansiblelintText.includes('skip') && !ansiblelintText.includes('profile') && !ansiblelintText.includes('rule')) fail('.ansible-lint: no config shown'); else pass('.ansible-lint: config shown');
+
+  // ── molecule.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('molecule.yml');
+  await page.waitForSelector('.moleculeyml-doc', { timeout: 12000 });
+  pass('molecule.yml: renders');
+  const moleculeText = await page.$eval('.moleculeyml-doc', el => el.textContent);
+  if (!moleculeText.includes('Molecule')) fail('molecule.yml: missing badge'); else pass('molecule.yml: badge shown');
+  if (!moleculeText.includes('driver') && !moleculeText.includes('platform') && !moleculeText.includes('ubuntu')) fail('molecule.yml: no platforms shown'); else pass('molecule.yml: platforms shown');
 }
