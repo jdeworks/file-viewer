@@ -2937,4 +2937,36 @@ export async function run(ctx) {
   if (/backend/i.test(ngxText)) pass('nginx.conf: upstream shown'); else fail('nginx upstream: ' + ngxText.slice(0, 300));
   if (/example\.com/i.test(ngxText)) pass('nginx.conf: server_name shown'); else fail('nginx server_name: ' + ngxText.slice(0, 300));
 
+  // ── ansible.cfg viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('ansible.cfg (Ansible Config)');
+  await page.waitForSelector('#previewHost .anscfg-doc', { timeout: 12000 });
+  const anscfgText = await page.$eval('#previewHost .anscfg-doc', (e) => e.textContent);
+  if (/Ansible/i.test(anscfgText)) pass('ansible.cfg: Ansible badge shown'); else fail('ansible-cfg badge: ' + anscfgText.slice(0, 200));
+  if (/defaults/i.test(anscfgText)) pass('ansible.cfg: defaults section shown'); else fail('ansible-cfg defaults: ' + anscfgText.slice(0, 200));
+
+  // ── inventory (Ansible Inventory) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('inventory (Ansible Inventory)');
+  await page.waitForSelector('#previewHost .ansinv-doc', { timeout: 12000 });
+  const ansinvText = await page.$eval('#previewHost .ansinv-doc', (e) => e.textContent);
+  if (/Ansible/i.test(ansinvText)) pass('inventory: Ansible badge shown'); else fail('ansible-hosts badge: ' + ansinvText.slice(0, 200));
+  if (/webservers/i.test(ansinvText)) pass('inventory: groups shown'); else fail('ansible-hosts groups: ' + ansinvText.slice(0, 200));
+
+  // ── supervisord.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('supervisord.conf (Supervisor)');
+  await page.waitForSelector('#previewHost .supd-doc', { timeout: 12000 });
+  const supdText = await page.$eval('#previewHost .supd-doc', (e) => e.textContent);
+  if (/Supervisor/i.test(supdText)) pass('supervisord.conf: badge shown'); else fail('supervisord badge: ' + supdText.slice(0, 200));
+  if (/webapp/i.test(supdText)) pass('supervisord.conf: program shown'); else fail('supervisord program: ' + supdText.slice(0, 300));
+
+  // ── logrotate.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('logrotate.conf (Log Rotation)');
+  await page.waitForSelector('#previewHost .logrot-doc', { timeout: 12000 });
+  const logrotText = await page.$eval('#previewHost .logrot-doc', (e) => e.textContent);
+  if (/logrotate/i.test(logrotText)) pass('logrotate.conf: badge shown'); else fail('logrotate badge: ' + logrotText.slice(0, 200));
+  if (/nginx/i.test(logrotText)) pass('logrotate.conf: log target shown'); else fail('logrotate target: ' + logrotText.slice(0, 300));
+
 }

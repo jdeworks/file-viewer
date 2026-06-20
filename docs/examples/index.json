@@ -6958,5 +6958,7 @@
     "label": "inventory (Ansible Inventory)",
     "category": "Config",
     "categories": ["Config", "Ansible"]
-  }
+  },
+  { "file": "supervisord.conf", "label": "supervisord.conf (Supervisor)", "category": "Config", "categories": ["Config", "Process"] },
+  { "file": "logrotate.conf", "label": "logrotate.conf (Log Rotation)", "category": "Config", "categories": ["Config", "System"] }
 ]

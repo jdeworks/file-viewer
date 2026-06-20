@@ -2,7 +2,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 
 const CSS = `
 .ngx-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.ngx-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#009900;color:#fff;vertical-align:middle;margin-right:8px;}
+.ngx-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#009639;color:#fff;vertical-align:middle;margin-right:8px;}
 .ngx-title{font-size:18px;font-weight:700;margin:0 0 4px;}
 .ngx-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
 .ngx-sec{margin:12px 0;}
