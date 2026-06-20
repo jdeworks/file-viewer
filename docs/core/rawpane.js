@@ -14,6 +14,7 @@ import { applyLayout } from './layout.js';
 import { recordStage1RawEdit } from '../games/metagame/viewer-actions.js';
 import { markdownHeading, markdownLinkForPastedUrl, markdownTable, markdownWrap, markdownCodeBlock, markdownInlineCode, markdownBlockquote, markdownBulletList, markdownOrderedList, markdownStrikethrough, sortMarkdownTable, tableSortOptions } from '../types/markdown/edit-actions.js';
 import { mountWysiwyg, unmountWysiwyg, getWysiwygValue, isWysiwygActive, getWysiwygCodeMirror } from '../types/markdown/wysiwyg.js';
+import { TableEditor } from '../types/text/csv/table-editor.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
@@ -21,6 +22,7 @@ export function initRawPane(deps) { renderPreview = deps.renderPreview; }
 const DISCLAIMER_KEY = 'fv:edit-disclaimer';
 let markdownContextMenu = null;
 let wysiwygMode = false;
+let tableEditor = null;
 
 // Show the in-memory edit banner (B). Wires the dismiss buttons once, idempotently.
 function setDisclaimerVisible(visible) {
@@ -314,8 +316,81 @@ export async function toggleWysiwyg() {
   }
 }
 
+export function setTableMode(on) {
+  const editorEl = document.getElementById('editor');
+  const btn = document.getElementById('tableModeBtn');
+  if (on) {
+    // Detect separator: prefer delimiter setting, fall back to filename extension
+    const settings = state.settingsModel?.values || {};
+    const delimSetting = settings.delimiter;
+    const DELIMS = { comma: ',', semicolon: ';', tab: '\t', pipe: '|' };
+    let sep;
+    if (delimSetting && delimSetting !== 'auto') {
+      sep = DELIMS[delimSetting] || ',';
+    } else {
+      sep = (state.intake?.filename || '').toLowerCase().endsWith('.tsv') ? '\t' : ',';
+    }
+    const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
+    // Freeze Monaco while table is active so its model stays consistent
+    state.rawview?.updateOptions?.({ readOnly: true });
+    // Mount table editor in a sibling div that overlays the editor
+    let host = document.getElementById('tableEditorHost');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'tableEditorHost';
+      // Inherit editor-host positioning + all banner-offset overrides automatically
+      host.className = 'editor-host';
+      editorEl?.parentNode?.insertBefore(host, editorEl);
+    }
+    host.hidden = false;
+    if (editorEl) editorEl.style.display = 'none';
+    tableEditor = new TableEditor(host, text, sep, (newCsv) => {
+      state.intake = { ...state.intake, text: newCsv };
+      state.downloadedSinceEdit = false;
+    });
+  } else {
+    // Flush table editor value back to Monaco before hiding
+    if (tableEditor) {
+      const csv = tableEditor.getValue();
+      tableEditor.destroy();
+      tableEditor = null;
+      if (state.rawview) {
+        state.rawview.setValue(csv);
+        state.rawview.updateOptions?.({ readOnly: false });
+      }
+      state.intake = { ...state.intake, text: csv };
+    }
+    const host = document.getElementById('tableEditorHost');
+    if (host) host.hidden = true;
+    if (editorEl) editorEl.style.display = '';
+  }
+  if (btn) {
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', String(on));
+  }
+}
+
+function wireTableModeBtn() {
+  const btn = document.getElementById('tableModeBtn');
+  if (!btn || btn.dataset.wired) return;
+  btn.dataset.wired = '1';
+  btn.addEventListener('click', () => {
+    const isOn = btn.classList.contains('active');
+    setTableMode(!isOn);
+  });
+}
+
 export async function buildRawView() {
   stopAutosave();
+  // Tear down table editor when rebuilding (e.g. file changed)
+  if (tableEditor) {
+    tableEditor.destroy();
+    tableEditor = null;
+    const host = document.getElementById('tableEditorHost');
+    if (host) host.hidden = true;
+    const editorEl = document.getElementById('editor');
+    if (editorEl) editorEl.style.display = '';
+  }
   // If WYSIWYG was active (e.g. file changed), tear it down first
   if (wysiwygMode) {
     unmountWysiwyg();
@@ -362,6 +437,14 @@ export async function buildRawView() {
   if (state.type?.id === 'markdown' && !state.intake.isBinary) {
     state.rawview.addCommand?.('ctrl+b', () => runMarkdownAction('bold'));
     state.rawview.addCommand?.('ctrl+i', () => runMarkdownAction('italic'));
+  }
+  wireTableModeBtn();
+  const isTabular = state.type?.id === 'csv' && !state.intake.isBinary;
+  const tableModeBtn = document.getElementById('tableModeBtn');
+  if (tableModeBtn) {
+    tableModeBtn.hidden = !isTabular;
+    tableModeBtn.classList.remove('active');
+    tableModeBtn.setAttribute('aria-pressed', 'false');
   }
   syncRawModeButtons();
   showEditDisclaimer();
@@ -431,6 +514,9 @@ export function hasUnsavedWork() {
   if (wysiwygMode && isWysiwygActive() && !state.downloadedSinceEdit &&
       getWysiwygValue() !== (state.intake?.originalText ?? state.intake?.text ?? '')) return true;
   if (state.binaryEdit?.dirty && !state.downloadedSinceEdit) return true;
+  // Table editor: dirty when current CSV differs from the original load
+  if (tableEditor && !state.downloadedSinceEdit &&
+      tableEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
   if (state.sessionEdits.size > 0) return true;
   // Folder edits stashed but not yet exported also count — closing the tab would lose them.
   return state.folderEdits.size > 0 && !state.folderExported;
@@ -481,9 +567,11 @@ export async function downloadCurrent() {
     blob = new Blob([bytes], { type: state.binaryEdit.mimeType || state.intake.mimeType || 'application/octet-stream' });
     state.binaryEdit.dirty = false;
   } else {
-    const text = wysiwygMode && isWysiwygActive()
-      ? getWysiwygValue()
-      : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
+    const text = tableEditor
+      ? tableEditor.getValue()
+      : wysiwygMode && isWysiwygActive()
+        ? getWysiwygValue()
+        : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
     blob = new Blob([text], { type: state.intake.mimeType || 'text/plain' });
   }
   const a = document.createElement('a');
@@ -492,9 +580,11 @@ export async function downloadCurrent() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   if (state.sessionEdits.has(state.intake.filename)) {
-    const text = wysiwygMode && isWysiwygActive()
-      ? getWysiwygValue()
-      : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
+    const text = tableEditor
+      ? tableEditor.getValue()
+      : wysiwygMode && isWysiwygActive()
+        ? getWysiwygValue()
+        : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
     state.sessionIntakes.set(state.intake.filename, { ...state.sessionIntakes.get(state.intake.filename), text });
     state.sessionEdits.delete(state.intake.filename);
     state.treeApi?.setEdited?.(state.intake.filename, false);

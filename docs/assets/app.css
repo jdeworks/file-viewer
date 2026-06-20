@@ -549,3 +549,18 @@ body {
 
 /* preview-only badge in topbar */
 #previewOnlyBadge { display: inline-flex; align-items: center; padding: 1px 6px; background: var(--bg-muted, #f3f4f6); color: var(--text-muted, #6b7280); border-radius: 8px; font-size: 10px; font-weight: 500; white-space: nowrap; }
+
+/* ── Inline CSV/TSV table editor ── */
+/* #tableEditorHost shares the .editor-host class so all banner-offset rules apply automatically */
+#tableEditorHost { overflow: hidden; }
+.te-wrapper { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.te-toolbar { display: flex; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--border, #e0e0e0); background: var(--bg-2, #f6f8fa); flex-shrink: 0; }
+.te-btn { padding: 3px 10px; border: 1px solid var(--border, #e0e0e0); border-radius: 4px; background: var(--bg, #fff); color: var(--fg, #24292f); cursor: pointer; font-size: 12px; }
+.te-btn:hover { background: var(--bg-3, #e8eaed); }
+.te-scroll { flex: 1; overflow: auto; }
+.te-table { border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+.te-idx { background: var(--bg-2, #f6f8fa); color: var(--fg-2, #888); padding: 3px 8px; font-size: 11px; text-align: right; min-width: 32px; user-select: none; border: 1px solid var(--border, #e0e0e0); cursor: context-menu; position: sticky; left: 0; z-index: 1; }
+.te-cell { border: 1px solid var(--border, #e0e0e0); padding: 3px 8px; min-width: 80px; max-width: 300px; outline: none; overflow: hidden; text-overflow: ellipsis; }
+.te-cell:focus { outline: 2px solid var(--accent, #0969da); outline-offset: -2px; background: var(--bg, #fff); }
+.te-header { background: var(--bg-2, #f6f8fa); font-weight: 600; }
+[data-theme="dark"] .te-cell:focus { background: #0d1117; }
