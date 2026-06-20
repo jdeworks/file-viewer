@@ -10089,5 +10089,31 @@
     "enhanced": true,
     "description": "ZITADEL identity provider configuration",
     "knownFile": true
+  },
+  {
+    "file": "dendrite.yaml",
+    "label": "Dendrite Config",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Matrix Dendrite server configuration",
+    "knownFile": true
+  },
+  {
+    "file": "watchtower.env",
+    "label": "Watchtower Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "DevOps"
+    ],
+    "enhanced": true,
+    "description": "Watchtower automatic Docker container updater configuration",
+    "knownFile": true
   }
 ]

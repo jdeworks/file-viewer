@@ -5467,4 +5467,16 @@ export async function run(ctx) {
   await openExample('influxdb.yml');
   await page.waitForSelector('#previewHost .influxdb-doc', { timeout: 12000 });
   pass('influxdb.yml: InfluxDB badge shown');
+
+  // ── dendrite.yaml viewer (dendrite-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dendrite.yaml');
+  await page.waitForSelector('#previewHost .dendrite-doc', { timeout: 12000 });
+  pass('dendrite.yaml: Dendrite badge shown');
+
+  // ── watchtower.env viewer (watchtower-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('watchtower.env');
+  await page.waitForSelector('#previewHost .wtower-doc', { timeout: 12000 });
+  pass('watchtower.env: Watchtower badge shown');
 }

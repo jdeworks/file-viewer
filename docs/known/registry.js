@@ -684,6 +684,7 @@ import n8nConfig from '../types/text/known/n8n-config/index.js';
 import nocodbConfig from '../types/text/known/nocodb-config/index.js';
 import planeConfig from '../types/text/known/plane-config/index.js';
 import infisicalConfig from '../types/text/known/infisical-config/index.js';
+import diunConfig from '../types/text/yaml/known/diun-config/index.js';
 import hoppscotchConfig from '../types/text/known/hoppscotch-config/index.js';
 import twentyCrmConfig from '../types/text/known/twenty-crm-config/index.js';
 import vikunjaConfig from '../types/text/yaml/known/vikunja-config/index.js';
@@ -868,6 +869,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   stirlingPdfConfig, monicaConfig,
   n8nConfig, nocodbConfig,
   planeConfig, infisicalConfig,
+  diunConfig,
   hoppscotchConfig, twentyCrmConfig,
   vikunjaConfig, appsmithConfig,
   glitchtipConfig, archiveboxConfig,
@@ -884,6 +886,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   concourseConfig,
   invoiceNinjaConfig,
   conduitConfig, zitadelConfig,
+  dendriteConfig,
+  watchtowerConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
