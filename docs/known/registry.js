@@ -753,6 +753,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   asyncapi, telegraf,
   devfile, ncurc,
   influxdbConf, nsqConf,
+  cloudflared, dnsmasqConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

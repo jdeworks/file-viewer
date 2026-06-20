@@ -8881,5 +8881,15 @@
     "name": "heartbeat.yml",
     "category": "Observability",
     "knownFile": "heartbeat"
+  },
+  {
+    "name": "nix.conf",
+    "category": "System",
+    "knownFile": "nix-daemon-conf"
+  },
+  {
+    "name": "openapi-generator-config.yaml",
+    "category": "Tooling",
+    "knownFile": "openapi-generator"
   }
 ]

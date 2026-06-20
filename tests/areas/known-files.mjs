@@ -2926,16 +2926,26 @@ export async function run(ctx) {
   if (/••••••••|masked/i.test(apmText)) pass('elastic-apm-agent.properties: secret_token masked'); else fail('elastic-apm token masking: ' + apmText.slice(0, 300));
   if (/0\.25|25%|sample/i.test(apmText)) pass('elastic-apm-agent.properties: sample rate shown'); else fail('elastic-apm sampling: ' + apmText.slice(0, 300));
 
-  // ── Elastic Beats (Filebeat) config viewer ──
+  // ── Filebeat config viewer (specialized plugin) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('filebeat.yml (Elastic Beats)');
-  await page.waitForSelector('#previewHost .beats-doc', { timeout: 12000 });
-  const beatsText = await page.$eval('#previewHost .beats-doc', (e) => e.textContent);
-  if (/Elastic Beats/i.test(beatsText)) pass('filebeat.yml: Elastic Beats badge shown'); else fail('beats badge: ' + beatsText.slice(0, 200));
-  if (/Filebeat/i.test(beatsText)) pass('filebeat.yml: beat type chip shown'); else fail('beats type chip: ' + beatsText.slice(0, 200));
-  if (/app-logs|nginx-access|\/var\/log/i.test(beatsText)) pass('filebeat.yml: inputs shown'); else fail('beats inputs: ' + beatsText.slice(0, 300));
-  if (/elasticsearch/i.test(beatsText)) pass('filebeat.yml: output type shown'); else fail('beats output: ' + beatsText.slice(0, 300));
-  if (/••••••••|masked/i.test(beatsText)) pass('filebeat.yml: output password masked'); else fail('beats password masking: ' + beatsText.slice(0, 300));
+  await openExample('filebeat.yml (Filebeat)');
+  pass(await page.waitForSelector('#previewHost .filebeat-doc', { timeout: 12000 }), 'filebeat.yml: filebeat-doc shown');
+  const fbText = await page.$eval('#previewHost .filebeat-doc', (e) => e.textContent);
+  if (/Elastic Filebeat/i.test(fbText)) pass('filebeat.yml: Elastic Filebeat badge shown'); else fail('filebeat badge: ' + fbText.slice(0, 200));
+  if (/app-logs|kafka-events|\/var\/log/i.test(fbText)) pass('filebeat.yml: inputs shown'); else fail('filebeat inputs: ' + fbText.slice(0, 300));
+  if (/elasticsearch/i.test(fbText)) pass('filebeat.yml: output type shown'); else fail('filebeat output: ' + fbText.slice(0, 300));
+  if (/\[configured\]/i.test(fbText)) pass('filebeat.yml: credentials masked'); else fail('filebeat credential masking: ' + fbText.slice(0, 300));
+
+  // ── Heartbeat config viewer (specialized plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('heartbeat.yml (Heartbeat)');
+  pass(await page.waitForSelector('#previewHost .heartbeat-doc', { timeout: 12000 }), 'heartbeat.yml: heartbeat-doc shown');
+  const hbText = await page.$eval('#previewHost .heartbeat-doc', (e) => e.textContent);
+  if (/Elastic Heartbeat/i.test(hbText)) pass('heartbeat.yml: Elastic Heartbeat badge shown'); else fail('heartbeat badge: ' + hbText.slice(0, 200));
+  if (/api-health|postgres-port|gateway-ping/i.test(hbText)) pass('heartbeat.yml: monitors shown'); else fail('heartbeat monitors: ' + hbText.slice(0, 300));
+  if (/HTTP|TCP|ICMP/i.test(hbText)) pass('heartbeat.yml: monitor type chips shown'); else fail('heartbeat type chips: ' + hbText.slice(0, 300));
+  if (/elasticsearch/i.test(hbText)) pass('heartbeat.yml: output type shown'); else fail('heartbeat output: ' + hbText.slice(0, 300));
+  if (/\[configured\]/i.test(hbText)) pass('heartbeat.yml: credentials masked'); else fail('heartbeat credential masking: ' + hbText.slice(0, 300));
 
   // ── Hardhat config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -4816,4 +4826,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('bruno.json');
   pass(await page.waitForSelector('#previewHost .brunows-doc', { timeout: 12000 }), 'bruno.json: brunows-doc shown');
+
+  // ── nix.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nix.conf');
+  pass(await page.waitForSelector('#previewHost .nixcfg-doc', { timeout: 12000 }), 'nix.conf: nixcfg-doc shown');
+
+  // ── openapi-generator-config.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('openapi-generator-config.yaml');
+  pass(await page.waitForSelector('#previewHost .openapigen-doc', { timeout: 12000 }), 'openapi-generator-config.yaml: openapigen-doc shown');
 }

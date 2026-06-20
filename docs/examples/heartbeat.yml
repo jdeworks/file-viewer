@@ -1,0 +1,64 @@
+# Heartbeat configuration — uptime monitoring
+# https://www.elastic.co/guide/en/beats/heartbeat/current/heartbeat-reference-yml.html
+
+heartbeat.monitors:
+  - type: http
+    id: api-health
+    name: API Health Check
+    urls:
+      - https://api.example.com/health
+      - https://api.example.com/ready
+    schedule: '@every 30s'
+    timeout: 10s
+    check.request:
+      method: GET
+      headers:
+        X-Monitor: heartbeat
+    check.response:
+      status: [200, 204]
+    ssl:
+      verification_mode: full
+
+  - type: tcp
+    id: postgres-port
+    name: Postgres Port
+    hosts:
+      - db.example.com:5432
+    schedule: '@every 1m'
+    timeout: 5s
+
+  - type: icmp
+    id: gateway-ping
+    name: Gateway Ping
+    hosts:
+      - 10.0.0.1
+    schedule: '@every 5m'
+    timeout: 3s
+    wait: 1s
+
+heartbeat.scheduler:
+  limit: 10
+  location: UTC
+
+processors:
+  - add_observer_metadata:
+      geo:
+        name: us-east-1a
+        location: "37.926868, -76.452081"
+  - add_cloud_metadata: ~
+
+output.elasticsearch:
+  hosts:
+    - https://es-node-1.example.com:9200
+    - https://es-node-2.example.com:9200
+  index: "heartbeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+  username: heartbeat_writer
+  api_key: "heartbeat-key:s3cr3t-api-k3y"
+
+logging:
+  level: info
+  to_files: true
+  files:
+    path: /var/log/heartbeat
+    name: heartbeat
+    keepfiles: 7
