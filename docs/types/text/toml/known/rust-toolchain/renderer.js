@@ -1,3 +1,5 @@
+import { parseTOML } from '../../toml.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -56,8 +58,15 @@ export function render(intake) {
     const text = intake.text || (intake.bytes ? new TextDecoder().decode(intake.bytes) : '');
     channel = text.trim().split('\n')[0].trim();
   } else {
-    // TOML format: use parsed object
-    const parsed = intake.parsed && typeof intake.parsed === 'object' ? intake.parsed : {};
+    // TOML format: parse intake.text
+    let parsed = {};
+    try {
+      if (intake.parsed && typeof intake.parsed === 'object') {
+        parsed = intake.parsed;
+      } else {
+        parsed = parseTOML(intake.text || '') || {};
+      }
+    } catch { parsed = {}; }
     const toolchain = parsed.toolchain || {};
     channel = toolchain.channel || null;
     profile = toolchain.profile || null;

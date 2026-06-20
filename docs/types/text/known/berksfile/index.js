@@ -7,6 +7,7 @@ export const plugin = {
     return n === 'berksfile';
   },
   renderer: () => import('./renderer.js'),
+  loadRenderer: () => import('./renderer.js'),
   about: {
     description: 'Berkshelf Berksfile — Chef cookbook dependency manager that declares cookbook sources and version constraints.',
     usedFor: [{ label: 'Berkshelf', description: 'Chef cookbook dependency management', href: 'https://docs.chef.io/workstation/berkshelf/' }],

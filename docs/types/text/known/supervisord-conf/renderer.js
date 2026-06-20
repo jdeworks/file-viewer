@@ -138,7 +138,7 @@ export function render(intake) {
   const subLine = `${programCount} program${programCount !== 1 ? 's' : ''}${groupSections.length ? `, ${groupSections.length} group${groupSections.length !== 1 ? 's' : ''}` : ''}`;
 
   const host = document.createElement('div');
-  host.className = 'supd-doc';
+  host.className = 'supd-doc supervisordcfg-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="supd-title"><span class="supd-badge">Supervisor</span>Supervisord Configuration</div>
 <div class="supd-sub">${subLine}</div>

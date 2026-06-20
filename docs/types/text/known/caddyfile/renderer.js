@@ -107,7 +107,7 @@ export function render(intake) {
     : '';
 
   const host = document.createElement('div');
-  host.className = 'cdf-doc';
+  host.className = 'cdf-doc caddyfile-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="cdf-title"><span class="badge-cdf">Caddy</span>Caddyfile</div>
 <div class="cdf-sub">${esc(sub)}</div>

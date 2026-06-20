@@ -6,8 +6,8 @@ export default {
     if (baseType?.id !== 'json') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (!(n === 'appsettings.json' || /^appsettings\.[a-z]+\.json$/.test(n))) return false;
-    const p = intake.parsed || {};
-    return 'Logging' in p || 'ConnectionStrings' in p || 'AllowedHosts' in p;
+    const text = intake.text || intake.textSample || '';
+    return /Logging|ConnectionStrings|AllowedHosts/.test(text);
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

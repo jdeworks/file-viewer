@@ -79,7 +79,7 @@ export async function render(intake) {
   ].filter(Boolean).join(' · ') || 'Atlantis Terraform PR automation';
 
   const host = document.createElement('div');
-  host.className = 'atl-doc';
+  host.className = 'atl-doc atlantisyaml-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="atl-title"><span class="badge-atl">Atlantis</span>Atlantis config</div>
 <div class="atl-sub">${esc(sub)}</div>

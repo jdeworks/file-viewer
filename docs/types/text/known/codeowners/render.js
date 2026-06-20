@@ -33,7 +33,7 @@ export async function render(intake, _ctx) {
   }).join('');
 
   const el = document.createElement('div');
-  el.className = 'pj-doc';
+  el.className = 'codeowners-doc';
   el.innerHTML =
     '<header class="pj-head"><div class="pj-title">👥 CODEOWNERS</div>'
     + '<div class="pj-meta"><span class="pj-tag">' + rules.length + ' rule' + (rules.length === 1 ? '' : 's') + '</span>'

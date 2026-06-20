@@ -1,3 +1,5 @@
+import { parseTOML } from '../../toml.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -27,9 +29,13 @@ function boolPill(label, val, allowIsGreen) {
 
 export function render(intake) {
   let cfg = {};
-  if (intake.parsed && typeof intake.parsed === 'object') {
-    cfg = intake.parsed;
-  }
+  try {
+    if (intake.parsed && typeof intake.parsed === 'object') {
+      cfg = intake.parsed;
+    } else {
+      cfg = parseTOML(intake.text || '') || {};
+    }
+  } catch { cfg = {}; }
 
   const msrv = cfg['msrv'];
   const cogComplexity = cfg['cognitive-complexity-threshold'];

@@ -66,7 +66,8 @@ function renderStructure(items, depth) {
 }
 
 export function render(intake) {
-  const col = intake.parsed || {};
+  let col = {};
+  try { col = intake.parsed ?? JSON.parse(intake.text || '{}'); } catch { col = {}; }
   const info = col.info || {};
   const items = Array.isArray(col.item) ? col.item : [];
   const variables = Array.isArray(col.variable) ? col.variable : [];

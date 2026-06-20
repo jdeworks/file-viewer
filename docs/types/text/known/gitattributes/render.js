@@ -89,7 +89,7 @@ export async function render(intake, _ctx) {
   ].filter(Boolean).join('');
 
   const el = document.createElement('div');
-  el.className = 'pj-doc gat-doc';
+  el.className = 'pj-doc gat-doc gitattr-doc';
   el.innerHTML =
     '<header class="pj-head"><div class="pj-title">🗂 .gitattributes</div>'
     + '<div class="pj-meta">' + tags + '</div></header>'

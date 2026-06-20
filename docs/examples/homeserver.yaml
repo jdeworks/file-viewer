@@ -1,0 +1,94 @@
+# Matrix Synapse homeserver configuration
+# https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html
+
+server_name: "matrix.example.com"
+public_baseurl: "https://matrix.example.com/"
+
+pid_file: /var/run/matrix-synapse/homeserver.pid
+
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    bind_addresses: ['::1', '127.0.0.1']
+    resources:
+      - names: [client, federation]
+        compress: false
+  - port: 8448
+    type: http
+    tls: false
+    bind_addresses: ['0.0.0.0']
+    resources:
+      - names: [federation]
+        compress: false
+
+database:
+  name: psycopg2
+  txn_limit: 10000
+  allow_unsafe_locale: true
+  args:
+    user: synapse_user
+    password: s3cr3t_db_p@ss
+    database: synapse
+    host: localhost
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+
+log_config: "/etc/matrix-synapse/log.yaml"
+
+media_store_path: /var/lib/matrix-synapse/media
+
+signing_key_path: "/etc/matrix-synapse/homeserver.signing.key"
+
+trusted_key_servers:
+  - server_name: "matrix.org"
+  - server_name: "element.io"
+
+# Federation
+federation_domain_whitelist:
+  - matrix.org
+
+# Registration
+enable_registration: false
+registration_requires_token: true
+registration_shared_secret: "change_me_registration_secret_placeholder"
+
+# Security secrets
+macaroon_secret_key: "change_me_macaroon_secret_placeholder"
+form_secret: "change_me_form_secret_placeholder"
+
+# Presence
+presence:
+  enabled: true
+
+# Default room version
+default_room_version: "10"
+
+# Email (SMTP)
+email:
+  smtp_host: smtp.example.com
+  smtp_port: 587
+  smtp_user: matrix@example.com
+  smtp_pass: smtp_secret_password
+  notif_from: "Your homeserver <noreply@example.com>"
+  app_name: Matrix
+  enable_notifs: true
+
+# Rate limiting
+rc_message:
+  per_second: 0.2
+  burst_count: 10
+
+# URL previews
+url_preview_enabled: true
+url_preview_ip_range_blacklist:
+  - '127.0.0.0/8'
+  - '10.0.0.0/8'
+  - '172.16.0.0/12'
+  - '192.168.0.0/16'
+
+# Retention
+retention:
+  enabled: false

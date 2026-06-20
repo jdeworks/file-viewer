@@ -1,0 +1,43 @@
+extends:
+  - spectral:oas
+  - spectral:asyncapi
+
+aliases:
+  PathItem:
+    - $.paths[*]
+    - $.webhooks[*]
+
+rules:
+  operation-description:
+    description: "Operations must have a description"
+    severity: error
+    given: $.paths[*][*]
+    then:
+      field: description
+      function: truthy
+
+  no-$ref-siblings:
+    severity: off
+
+  operation-tags:
+    description: "All operations should have tags"
+    severity: warn
+    given: "$.paths.*[get,post,put,delete,patch,options,head]"
+    then:
+      field: tags
+      function: truthy
+
+  info-contact:
+    severity: warn
+
+  contact-properties:
+    severity: warn
+
+  tag-description:
+    severity: warn
+
+  operation-operationId:
+    severity: error
+
+  oas3-api-servers:
+    severity: warn

@@ -1,3 +1,5 @@
+import { parseTOML } from '../../toml.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -26,7 +28,14 @@ function kvBool(key, val) {
 }
 
 export function render(intake) {
-  const cfg = intake.parsed || {};
+  let cfg = {};
+  try {
+    if (intake.parsed && typeof intake.parsed === 'object') {
+      cfg = intake.parsed;
+    } else {
+      cfg = parseTOML(intake.text || '') || {};
+    }
+  } catch { cfg = {}; }
   const storage = cfg.storage || {};
   const opts = storage.options || {};
   const overlay = opts.overlay || {};

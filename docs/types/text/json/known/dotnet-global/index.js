@@ -7,8 +7,8 @@ export default {
     if (baseType?.id !== 'json') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (n !== 'global.json') return false;
-    const p = intake.parsed || {};
-    return !!(p.sdk?.version || p['msbuild-sdks']);
+    const text = intake.text || intake.textSample || '';
+    return /"sdk"\s*:/.test(text) || /"msbuild-sdks"\s*:/.test(text);
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

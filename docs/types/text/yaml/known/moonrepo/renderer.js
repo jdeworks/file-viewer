@@ -96,7 +96,7 @@ export async function render(intake) {
   ].filter(Boolean).join(' · ') || 'Moon workspace config';
 
   const host = document.createElement('div');
-  host.className = 'moon-doc';
+  host.className = 'moon-doc moonyml-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="moon-title"><span class="badge-moon">Moon</span>${esc(filename)}</div>
 <div class="moon-sub">${sub}</div>

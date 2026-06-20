@@ -511,6 +511,7 @@ import keycloakRealm from '../types/text/json/known/keycloak-realm/index.js';
 import autheliaConfig from '../types/text/yaml/known/authelia-config/index.js';
 import oauth2ProxyConfig from '../types/text/known/oauth2-proxy-config/index.js';
 import authentikConfig from '../types/text/yaml/known/authentik-config/index.js';
+import synapseConfig from '../types/text/yaml/known/synapse-config/index.js';
 import newrelicConfig from '../types/text/yaml/known/newrelic-config/index.js';
 import dynatraceConfig from '../types/text/yaml/known/dynatrace-config/index.js';
 import elasticApmConfig from '../types/text/known/elastic-apm-config/index.js';
@@ -522,6 +523,7 @@ import truffleConfig from '../types/text/known/truffle-config/index.js';
 import foundryToml from '../types/text/toml/known/foundry-toml/index.js';
 import anchorToml from '../types/text/toml/known/anchor-toml/index.js';
 import wireguardConf from '../types/text/known/wireguard-conf/index.js';
+import coturnConf from '../types/text/known/coturn-conf/index.js';
 import netbirdConfig from '../types/text/json/known/netbird-config/index.js';
 import tailscaleAcl from '../types/text/json/known/tailscale-acl/index.js';
 import openvpnConfig from '../types/text/known/openvpn-config/index.js';
@@ -570,6 +572,7 @@ import corefile from '../types/text/known/corefile/index.js';
 import containerdConfig from '../types/text/known/containerd-config/index.js';
 import postfixConf from '../types/text/known/postfix-conf/index.js';
 import dovecotConf from '../types/text/known/dovecot-conf/index.js';
+import nagiosConf from '../types/text/known/nagios-conf/index.js';
 import zabbixConf from '../types/text/known/zabbix-conf/index.js';
 import eximConf from '../types/text/known/exim-conf/index.js';
 import chronyConf from '../types/text/known/chrony-conf/index.js';
@@ -629,6 +632,7 @@ import harbor from '../types/text/yaml/known/harbor/index.js';
 import gardenIo from '../types/text/yaml/known/garden-io/index.js';
 import stryker from '../types/text/json/known/stryker/index.js';
 import airflowCfg from '../types/text/ini/known/airflow/index.js';
+import radicaleConfig from '../types/text/ini/known/radicale-config/index.js';
 import registriesConf from '../types/text/toml/known/registries-conf/index.js';
 import storageConf from '../types/text/toml/known/storage-conf/index.js';
 import asyncapi from '../types/text/yaml/known/asyncapi/index.js';
@@ -645,6 +649,7 @@ import { plugin as pdnsConf } from '../types/text/known/pdns-conf/index.js';
 import { plugin as pdnsRecursorConf } from '../types/text/known/pdns-recursor-conf/index.js';
 import corosyncConf from '../types/text/known/corosync-conf/index.js';
 import nushellConfig from '../types/text/known/nushell-config/index.js';
+import gitoliteConf from '../types/text/known/gitolite-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -735,7 +740,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   pulsarConf,
   cyclonedxSbom, spdxSbom, slsaProvenance, syftConfig,
   proguardRules, androidStrings,
-  keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig,
+  keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig, synapseConfig,
   newrelicConfig, dynatraceConfig, elasticApmConfig, filebeatConfig, heartbeatConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
   wireguardConf, netbirdConfig, tailscaleAcl, openvpnConfig, opensslConf, krb5Conf, gpgConf,
@@ -751,7 +756,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   iptablesRules, udevRules, grubConf, nftablesRules, ufwConf,
   fail2banConf, apparmorProfile, suricataConfig, smbConf,
   corefile, containerdConfig,
-  postfixConf, dovecotConf, zabbixConf, eximConf, chronyConf,
+  postfixConf, dovecotConf, nagiosConf, zabbixConf, eximConf, chronyConf,
   namedConf, unboundConf, piholeSetupvars, dhcpdConf,
   netdataConf, yarnrc,
   hyprlandConf, lxcConfig,
@@ -786,6 +791,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   cloudflared, dnsmasqConf,
   frpcConfig, frpsConfig,
   pdnsConf, pdnsRecursorConf,
+  coturnConf, radicaleConfig, gitoliteConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

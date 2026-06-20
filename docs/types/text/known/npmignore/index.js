@@ -4,6 +4,6 @@ export default {
   id: 'npmignore',
   label: '.npmignore',
   match: (intake) => /(^|\/)\.npmignore$/i.test(intake.filename || ''),
-  loadRenderer: () => import('./render.js'),
+  loadRenderer: () => import('./renderer.js'),
   loadDiffRenderer: () => import('../../../../core/diff-renderer.js'),
 };

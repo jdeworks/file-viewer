@@ -4038,7 +4038,10 @@
     "label": "kamal.yml",
     "mime": "text/x-yaml",
     "category": "DevOps",
-    "categories": ["DevOps", "Config"],
+    "categories": [
+      "DevOps",
+      "Config"
+    ],
     "enhanced": true,
     "description": "Kamal 2 deployment configuration for containerized applications.",
     "knownFile": "kamal-config"
@@ -4048,7 +4051,10 @@
     "label": "prefect.yaml",
     "mime": "text/x-yaml",
     "category": "DevOps",
-    "categories": ["DevOps", "Config"],
+    "categories": [
+      "DevOps",
+      "Config"
+    ],
     "enhanced": true,
     "description": "Prefect 2 workflow orchestration configuration with deployments and schedules.",
     "knownFile": "prefect-config"
@@ -4457,7 +4463,10 @@
     "label": "ejabberd.yml",
     "mime": "text/x-yaml",
     "category": "Config",
-    "categories": ["Config", "Messaging"],
+    "categories": [
+      "Config",
+      "Messaging"
+    ],
     "enhanced": true,
     "description": "ejabberd XMPP server configuration with hosts, listeners, and modules.",
     "knownFile": "ejabberd-config"
@@ -6612,7 +6621,10 @@
     "label": "mosquitto.conf",
     "mime": "text/plain",
     "category": "Config",
-    "categories": ["Config", "Networking"],
+    "categories": [
+      "Config",
+      "Networking"
+    ],
     "enhanced": true,
     "description": "Eclipse Mosquitto MQTT broker configuration with listeners and security settings.",
     "knownFile": "mosquitto-conf"
@@ -6889,7 +6901,10 @@
     "label": "starship.toml",
     "mime": "text/x-toml",
     "category": "Config",
-    "categories": ["Config", "Terminal"],
+    "categories": [
+      "Config",
+      "Terminal"
+    ],
     "enhanced": true,
     "description": "Starship cross-shell prompt configuration with modules and palette.",
     "knownFile": "starship-config"
@@ -8079,7 +8094,10 @@
     "label": "corosync.conf",
     "mime": "text/plain",
     "category": "Config",
-    "categories": ["Config", "Networking"],
+    "categories": [
+      "Config",
+      "Networking"
+    ],
     "enhanced": true,
     "description": "Corosync cluster messaging layer configuration for high-availability clusters.",
     "knownFile": "corosync-conf"
@@ -8218,7 +8236,10 @@
     "label": "zabbix_agentd.conf",
     "mime": "text/plain",
     "category": "Monitoring",
-    "categories": ["Monitoring", "Config"],
+    "categories": [
+      "Monitoring",
+      "Config"
+    ],
     "enhanced": true,
     "description": "Zabbix monitoring agent configuration.",
     "knownFile": "zabbix-conf"
@@ -8304,7 +8325,10 @@
     "label": "config.nu",
     "mime": "text/plain",
     "category": "Config",
-    "categories": ["Config", "Terminal"],
+    "categories": [
+      "Config",
+      "Terminal"
+    ],
     "enhanced": true,
     "description": "Nushell shell configuration with settings, keybindings, and custom commands.",
     "knownFile": "nushell-config"
@@ -9115,7 +9139,10 @@
     "label": "borgmatic.yaml",
     "mime": "text/x-yaml",
     "category": "DevOps",
-    "categories": ["DevOps", "Config"],
+    "categories": [
+      "DevOps",
+      "Config"
+    ],
     "enhanced": true,
     "description": "Borgmatic backup configuration for Borg with repositories, retention, and hooks.",
     "knownFile": "borgmatic-config"
@@ -9125,7 +9152,10 @@
     "label": "suricata.yaml",
     "mime": "text/x-yaml",
     "category": "Security",
-    "categories": ["Security", "Config"],
+    "categories": [
+      "Security",
+      "Config"
+    ],
     "enhanced": true,
     "description": "Suricata IDS/IPS configuration with network vars, interfaces, and output settings.",
     "knownFile": "suricata-config"
@@ -9135,7 +9165,10 @@
     "label": "waybar/config",
     "mime": "application/json",
     "category": "Config",
-    "categories": ["Config", "Desktop"],
+    "categories": [
+      "Config",
+      "Desktop"
+    ],
     "enhanced": true,
     "description": "Waybar status bar configuration with modules and display settings.",
     "knownFile": "waybar-config"
@@ -9145,7 +9178,10 @@
     "label": "netbird.json",
     "mime": "application/json",
     "category": "Networking",
-    "categories": ["Networking", "Config"],
+    "categories": [
+      "Networking",
+      "Config"
+    ],
     "enhanced": true,
     "description": "NetBird WireGuard-based VPN client configuration.",
     "knownFile": "netbird-config"
@@ -9155,7 +9191,10 @@
     "label": "tailscale-acl.hujson",
     "mime": "application/json",
     "category": "Networking",
-    "categories": ["Networking", "Security"],
+    "categories": [
+      "Networking",
+      "Security"
+    ],
     "enhanced": true,
     "description": "Tailscale network ACL policy with groups, hosts, and access rules.",
     "knownFile": "tailscale-acl"
@@ -9165,7 +9204,10 @@
     "label": "setupVars.conf (Pi-hole)",
     "mime": "text/plain",
     "category": "Networking",
-    "categories": ["Networking", "Config"],
+    "categories": [
+      "Networking",
+      "Config"
+    ],
     "enhanced": true,
     "description": "Pi-hole DNS ad-blocker configuration with network and DNS settings.",
     "knownFile": "pihole-setupvars"
@@ -9175,7 +9217,10 @@
     "label": "graylog.conf",
     "mime": "text/plain",
     "category": "Monitoring",
-    "categories": ["Monitoring", "Config"],
+    "categories": [
+      "Monitoring",
+      "Config"
+    ],
     "enhanced": true,
     "description": "Graylog log management server configuration with Elasticsearch and MongoDB settings.",
     "knownFile": "graylog-conf"
@@ -9185,9 +9230,64 @@
     "label": "odoo.conf",
     "mime": "text/plain",
     "category": "Config",
-    "categories": ["Config", "Application"],
+    "categories": [
+      "Config",
+      "Application"
+    ],
     "enhanced": true,
     "description": "Odoo ERP server configuration with database, workers, and performance settings.",
     "knownFile": "odoo-conf"
+  },
+  {
+    "file": "homeserver.yaml",
+    "label": "homeserver.yaml (Synapse)",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Messaging"
+    ],
+    "enhanced": true,
+    "description": "Matrix Synapse homeserver configuration with server name, database, media, and federation settings.",
+    "knownFile": "synapse-config"
+  },
+  {
+    "file": "coturn.conf",
+    "label": "coturn.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Networking"
+    ],
+    "enhanced": true,
+    "description": "coturn TURN/STUN server configuration for WebRTC and VoIP relay.",
+    "knownFile": "coturn-conf"
+  },
+  {
+    "file": "nagios.cfg",
+    "label": "nagios.cfg",
+    "mime": "text/plain",
+    "category": "Monitoring",
+    "categories": [
+      "Monitoring",
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Nagios core monitoring configuration with check intervals, paths, and logging settings.",
+    "knownFile": "nagios-conf"
+  },
+  {
+    "file": "radicale.conf",
+    "label": "radicale.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "Radicale CalDAV/CardDAV server configuration with auth, storage, and server settings.",
+    "knownFile": "radicale-config"
   }
 ]

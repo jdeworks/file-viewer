@@ -4,6 +4,8 @@ export default {
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (n === 'justfile' || n === '.justfile') return true;
+    // Exclude YAML files — they have their own plugins (Taskfile, etc.)
+    if (n.endsWith('.yml') || n.endsWith('.yaml')) return false;
     const text = intake.textSample || intake.text || '';
     // Just recipes: `recipe-name arg:` followed by indented commands
     if (text.match(/^[a-z][\w-]*(\s+\S+)*:$/m) && text.includes('{{')) return true;

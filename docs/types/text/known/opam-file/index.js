@@ -9,5 +9,6 @@ export const plugin = {
     return /^opam-version:/m.test(t);
   },
   renderer: () => import('./renderer.js'),
+  loadRenderer: () => import('./renderer.js'),
 };
 export default plugin;

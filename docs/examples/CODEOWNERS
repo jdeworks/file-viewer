@@ -1,10 +1,15 @@
 # Default owners for everything in the repo
-*       @acme/maintainers
+*       @acme/platform-team
 
-# Front-end
+# frontend
 /docs/          @acme/web-team @ada
 *.css           @ada
+*.tsx           @acme/frontend
 
 # Build & CI
 /.github/       @acme/devops
 Dockerfile      ops@example.com
+
+# Backend
+/api/           @acme/backend
+*.go            @acme/platform-team

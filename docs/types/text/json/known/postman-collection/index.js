@@ -4,10 +4,10 @@ export default {
   match(intake, baseType) {
     if (!baseType || baseType.id !== 'json') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    const parsed = intake.parsed || {};
     // Named *.postman_collection.json or has Postman collection structure
     if (n.endsWith('.postman_collection.json')) return true;
-    if (parsed.info && parsed.info._postman_id && Array.isArray(parsed.item)) return true;
+    const text = intake.text || intake.textSample || '';
+    if (/"_postman_id"/.test(text) && /"item"\s*:/.test(text)) return true;
     return false;
   },
   loadRenderer: () => import('./renderer.js'),

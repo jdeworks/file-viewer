@@ -1,3 +1,4 @@
+import { parseTOML } from '../../toml.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const SECRET_RE = /secret|token|key|password|api/i;
@@ -30,7 +31,14 @@ function kv(key, val) {
 }
 
 export function render(intake) {
-  const cfg = intake.parsed || {};
+  let cfg = {};
+  try {
+    if (intake.parsed && typeof intake.parsed === 'object') {
+      cfg = intake.parsed;
+    } else {
+      cfg = parseTOML(intake.text || '') || {};
+    }
+  } catch { cfg = {}; }
 
   const appName = cfg.app || '—';
   const region = cfg.primary_region || '';
