@@ -17971,7 +17971,7 @@
       "needsRealWorldSample": false
     },
     "scalafmt-conf": {
-      "label": "scalafmt Config",
+      "label": "Scalafmt Config",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
@@ -17998,7 +17998,7 @@
       "needsRealWorldSample": false
     },
     "dune-build": {
-      "label": "dune-build",
+      "label": "Dune Build",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [
@@ -18165,6 +18165,60 @@
       "support": "supported",
       "sampleFiles": [
         "pipewire.conf"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "wezterm-conf": {
+      "label": "WezTerm Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        ".wezterm.lua"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "aria2-conf": {
+      "label": "aria2 Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "aria2.conf"
       ],
       "extensions": [
         ".yml"

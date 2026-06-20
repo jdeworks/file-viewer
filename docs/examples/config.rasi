@@ -1,0 +1,31 @@
+configuration {
+    modi: "drun,run,window,filebrowser";
+    width: 50;
+    lines: 8;
+    font: "JetBrains Mono 12";
+    location: 0;
+    padding: 0;
+    yoffset: 0;
+    xoffset: 0;
+    fixed-num-lines: true;
+    terminal: "alacritty";
+    run-shell-command: "{terminal} -e {cmd}";
+    drun-display-format: "{name}";
+    show-icons: true;
+    icon-theme: "Papirus";
+    matching: "fuzzy";
+    sort: true;
+    sorting-method: "fzf";
+    kb-primary-paste: "ctrl+v";
+    kb-secondary-paste: "shift+Insert";
+    kb-move-front: "";
+    kb-move-end: "";
+    kb-remove-to-eol: "";
+    kb-remove-to-sol: "";
+    kb-accept-entry: "Return,KP_Enter";
+    kb-cancel: "Escape,ctrl+g,ctrl+bracketleft";
+    kb-row-up: "Up,ctrl+p";
+    kb-row-down: "Down,ctrl+n";
+    kb-page-prev: "Page_Up";
+    kb-page-next: "Page_Down";
+}

@@ -7800,5 +7800,30 @@
     "enhanced": true,
     "description": "mako Wayland notification daemon configuration: appearance, timeout, anchor position, and per-urgency or per-app criteria.",
     "knownFile": "mako-conf"
+  },
+  {
+    "file": "picom.conf",
+    "label": "picom.conf",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "picom X11 compositor configuration: backend, shadows, blur, corners, opacity rules, and fading.",
+    "knownFile": "picom-conf"
+  },
+  {
+    "file": "mpd.conf",
+    "label": "mpd.conf",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Audio"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Music Player Daemon (MPD) configuration: music library, audio outputs (PipeWire, PulseAudio, HTTP stream), network settings, and playback options.",
+    "knownFile": "mpd-conf"
   }
 ]

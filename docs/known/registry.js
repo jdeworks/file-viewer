@@ -510,6 +510,8 @@ import rofiConfig from '../types/text/known/rofi-config/index.js';
 import makoConf from '../types/text/known/mako-conf/index.js';
 import pulseaudioConf from '../types/text/known/pulseaudio-conf/index.js';
 import pipewireConf from '../types/text/known/pipewire-conf/index.js';
+import weztermConf from '../types/text/known/wezterm-conf/index.js';
+import aria2Conf from '../types/text/known/aria2-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -622,6 +624,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   muttrc, footConfig,
   rofiConfig, makoConf,
   pulseaudioConf, pipewireConf,
+  weztermConf, aria2Conf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

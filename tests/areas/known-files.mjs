@@ -3609,10 +3609,27 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('pipewire.conf');
   await page.waitForSelector('#previewHost .pwcfg-doc', { timeout: 12000 });
-  const pwText = await page.$eval('#previewHost .pwcfg-doc', (e) => e.textContent);
-  if (/PipeWire/i.test(pwText)) pass('pipewire.conf: PipeWire badge shown'); else fail('pipewire-conf badge: ' + pwText.slice(0, 200));
-  if (/48000|default\.clock\.rate/i.test(pwText)) pass('pipewire.conf: clock rate shown'); else fail('pipewire-conf clock-rate: ' + pwText.slice(0, 300));
-  if (/wireplumber|pipewire-pulse/i.test(pwText)) pass('pipewire.conf: exec entries shown'); else fail('pipewire-conf exec: ' + pwText.slice(0, 300));
-  if (/protocol|rt|session/i.test(pwText)) pass('pipewire.conf: modules grouped and listed'); else fail('pipewire-conf modules: ' + pwText.slice(0, 300));
+  const pipewireText = await page.$eval('#previewHost .pwcfg-doc', (e) => e.textContent);
+  if (/PipeWire/i.test(pipewireText)) pass('pipewire.conf: PipeWire badge shown'); else fail('pipewire-conf badge: ' + pipewireText.slice(0, 200));
+  if (/48000|default\.clock\.rate/i.test(pipewireText)) pass('pipewire.conf: clock rate shown'); else fail('pipewire-conf clock-rate: ' + pipewireText.slice(0, 300));
+  if (/wireplumber|pipewire-pulse/i.test(pipewireText)) pass('pipewire.conf: exec entries shown'); else fail('pipewire-conf exec: ' + pipewireText.slice(0, 300));
+  if (/protocol|rt|session/i.test(pipewireText)) pass('pipewire.conf: modules grouped and listed'); else fail('pipewire-conf modules: ' + pipewireText.slice(0, 300));
+
+  // ── .wezterm.lua (WezTerm terminal emulator config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.wezterm.lua');
+  await page.waitForSelector('#previewHost .weztermcfg-doc', { timeout: 12000 });
+  const weztermText = await page.$eval('#previewHost .weztermcfg-doc', (e) => e.textContent);
+  if (/WezTerm/i.test(weztermText)) pass('.wezterm.lua: WezTerm badge shown'); else fail('wezterm-conf badge: ' + weztermText.slice(0, 200));
+  if (/JetBrains Mono|Catppuccin/i.test(weztermText)) pass('.wezterm.lua: font or color scheme shown'); else fail('wezterm-conf font/color: ' + weztermText.slice(0, 300));
+
+  // ── aria2.conf (aria2 download manager config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('aria2.conf');
+  await page.waitForSelector('#previewHost .aria2cfg-doc', { timeout: 12000 });
+  const aria2Text = await page.$eval('#previewHost .aria2cfg-doc', (e) => e.textContent);
+  if (/aria2/i.test(aria2Text)) pass('aria2.conf: aria2 badge shown'); else fail('aria2-conf badge: ' + aria2Text.slice(0, 200));
+  if (/Downloads|concurrent/i.test(aria2Text)) pass('aria2.conf: download dir or concurrency shown'); else fail('aria2-conf general: ' + aria2Text.slice(0, 300));
+  if (/\[configured\]/.test(aria2Text) && !/mysecrettoken/.test(aria2Text)) pass('aria2.conf: RPC secret is masked'); else fail('aria2-conf rpc-secret not masked: ' + aria2Text.slice(0, 400));
 
 }

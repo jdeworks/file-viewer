@@ -1,0 +1,22 @@
+(lang dune 3.14)
+(name my-ocaml-project)
+
+(package
+ (name my-ocaml-project)
+ (synopsis "A sample OCaml project")
+ (description "An example Dune project configuration.")
+ (depends
+  (ocaml (>= 5.0))
+  lwt
+  cmdliner
+  alcotest))
+
+(library
+ (name mylib)
+ (public_name my-ocaml-project.mylib)
+ (libraries lwt lwt.unix))
+
+(executable
+ (name main)
+ (public_name my-ocaml-project)
+ (libraries mylib cmdliner))
