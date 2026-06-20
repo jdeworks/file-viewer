@@ -4953,7 +4953,7 @@
   },
   "knownFiles": {
     "build-gradle": {
-      "label": "build.gradle",
+      "label": "Gradle Build",
       "baseType": "raw",
       "support": "enhanced",
       "sampleFiles": [
@@ -5465,7 +5465,7 @@
       "baseType": "yaml"
     },
     "pubspec": {
-      "label": "Flutter / Dart pubspec",
+      "label": "pubspec.yaml",
       "support": "supported",
       "sampleFiles": [
         "pubspec.yaml"
@@ -5519,7 +5519,7 @@
       "baseType": "toml"
     },
     "vercel-json": {
-      "label": "Vercel Config",
+      "label": "Vercel",
       "support": "supported",
       "sampleFiles": [
         "vercel.json"
@@ -5573,7 +5573,7 @@
       "needsRealWorldSample": false
     },
     "npmrc": {
-      "label": "npmrc",
+      "label": ".npmrc",
       "baseType": "text",
       "support": "supported",
       "sampleFiles": [
@@ -5917,7 +5917,7 @@
       "needsRealWorldSample": false
     },
     "fly-toml": {
-      "label": "Fly.io config",
+      "label": "Fly.io",
       "baseType": "toml",
       "support": "supported",
       "sampleFiles": [
@@ -7232,7 +7232,7 @@
       "needsRealWorldSample": false
     },
     "kube-helm-values": {
-      "label": "Helm values",
+      "label": "Helm Values",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [
@@ -8226,7 +8226,7 @@
       "needsRealWorldSample": true
     },
     "moon-yml": {
-      "label": "Moonrepo project",
+      "label": "Moon",
       "baseType": "yaml",
       "support": "enhanced",
       "sampleFiles": [
@@ -9004,7 +9004,7 @@
       "needsRealWorldSample": false
     },
     "mix-exs": {
-      "label": "Elixir/Mix",
+      "label": "Mix",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
@@ -9652,7 +9652,7 @@
       "needsRealWorldSample": false
     },
     "yamllint": {
-      "label": "yamllint config",
+      "label": ".yamllint",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [
@@ -12840,7 +12840,7 @@
       "needsRealWorldSample": false
     },
     "pip-conf": {
-      "label": "pip Config",
+      "label": "pip.conf",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
@@ -13542,7 +13542,7 @@
       "needsRealWorldSample": false
     },
     "podfile-lock": {
-      "label": "Podfile.lock (CocoaPods)",
+      "label": "Podfile.lock",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [
@@ -15514,7 +15514,7 @@
       "needsRealWorldSample": false
     },
     "authentik-config": {
-      "label": "Authentik blueprint",
+      "label": "Authentik Config",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [
@@ -17971,7 +17971,7 @@
       "needsRealWorldSample": false
     },
     "scalafmt-conf": {
-      "label": "Scalafmt Config",
+      "label": ".scalafmt.conf",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
@@ -19858,7 +19858,9 @@
       "label": "Harbor registry",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "harbor.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -21878,7 +21880,7 @@
       "needsRealWorldSample": false
     },
     "headscale-config": {
-      "label": "Headscale config",
+      "label": "Headscale Config",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [
@@ -22067,7 +22069,7 @@
       "needsRealWorldSample": false
     },
     "plausible-config": {
-      "label": "Plausible Analytics Config",
+      "label": "Plausible Config",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
@@ -22121,7 +22123,7 @@
       "needsRealWorldSample": false
     },
     "stirling-pdf-config": {
-      "label": "Stirling PDF Config",
+      "label": "Stirling-PDF Settings",
       "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [
@@ -24123,6 +24125,573 @@
         "diff": true,
         "magicSelector": false,
         "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "plist-config": {
+      "label": "Apple Property List",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.plist"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "steam-acf": {
+      "label": "Steam App Manifest",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.acf"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "jest-config": {
+      "label": "Jest Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "jest.config.js"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "babelrc": {
+      "label": ".babelrc",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        ".babelrc"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "tox-ini": {
+      "label": "tox Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "tox.ini"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "pytest-ini": {
+      "label": "pytest Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "pytest.ini"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "htpasswd": {
+      "label": ".htpasswd",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        ".htpasswd"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "vsftpd-conf": {
+      "label": "vsftpd Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "proftpd-conf": {
+      "label": "ProFTPD Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "vale-ini": {
+      "label": "vale.ini",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "vale.ini"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "grype": {
+      "label": "Grype config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        ".grype.yaml"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "tetragon": {
+      "label": "Tetragon policy",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "tetragon.yaml"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "pre-commit-config": {
+      "label": "pre-commit config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "pre-commit-config.yaml"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "conky-conf": {
+      "label": "Conky config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "conky.conf"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "semaphore-ci": {
+      "label": "Semaphore CI",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "semaphore.yml"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "ansible-lint": {
+      "label": ".ansible-lint",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        ".ansible-lint"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "molecule": {
+      "label": "Molecule",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "molecule.yml"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "helmfile": {
+      "label": "Helmfile",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "helmfile.yaml"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "release-it": {
+      "label": "release-it config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        ".release-it.yml"
+      ],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "frpc-config": {
+      "label": "FRP Client Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "frps-config": {
+      "label": "FRP Server Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "pdns-conf": {
+      "label": "PowerDNS Authoritative Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "pdns-recursor-conf": {
+      "label": "PowerDNS Recursor Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": false
       },
       "previewDepth": "basic",
       "metadataDepth": "basic",

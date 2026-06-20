@@ -226,6 +226,33 @@ export async function run(ctx) {
   if (/changed/.test(xmlDiffHead)) pass('XML structural diff flags a changed text node'); else fail('xml diff: ' + xmlDiffHead.slice(0, 80));
   await page.click('#rawMode button[data-raw="current"]');
 
+  // ── XML toolbar ── Format / Validate buttons appear for XML files in raw view.
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
+  const xmlToolsHidden = await page.$eval('#xmlTools', (el) => el.hidden);
+  if (!xmlToolsHidden) pass('XML toolbar visible in raw view for XML files'); else fail('xml toolbar hidden');
+  const xmlFormatBtn = await page.$('#xmlFormatBtn');
+  const xmlValidateBtn = await page.$('#xmlValidateBtn');
+  if (xmlFormatBtn && xmlValidateBtn) pass('XML toolbar has Format and Validate buttons'); else fail('xml toolbar buttons missing');
+  // Validate: sample.xml is valid → indicator shows ✓
+  await page.click('#xmlValidateBtn');
+  await page.waitForFunction(() => !document.getElementById('xmlValidIndicator')?.hidden, null, { timeout: 4000 });
+  const xmlValidText = await page.$eval('#xmlValidIndicator', (el) => el.textContent);
+  if (/✓/.test(xmlValidText)) pass('XML validate shows ✓ for valid XML'); else fail('xml valid indicator: ' + xmlValidText);
+  // Format: round-trip through DOMParser/XMLSerializer should preserve structure
+  await page.click('#xmlFormatBtn');
+  await page.waitForFunction(() => window.__fv.state.rawview.getValue().includes('<'), null, { timeout: 3000 });
+  const formattedXml = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (formattedXml.includes('<catalog') && formattedXml.includes('\n')) pass('XML format produces indented output'); else fail('xml format result: ' + formattedXml.slice(0, 80));
+  // Validate invalid XML → indicator shows ✗
+  await page.evaluate(() => window.__fv.state.rawview.setValue('<unclosed>'));
+  await page.click('#xmlValidateBtn');
+  await page.waitForFunction(() => /✗/.test(document.getElementById('xmlValidIndicator')?.textContent || ''), null, { timeout: 4000 });
+  const xmlInvalidText = await page.$eval('#xmlValidIndicator', (el) => el.textContent);
+  if (/✗/.test(xmlInvalidText)) pass('XML validate shows ✗ for invalid XML'); else fail('xml invalid indicator: ' + xmlInvalidText);
+  // YAML toolbar must remain hidden for XML files
+  const yamlToolsHiddenForXml = await page.$eval('#yamlTools', (el) => el.hidden);
+  if (yamlToolsHiddenForXml) pass('YAML toolbar hidden while XML toolbar is active'); else fail('yaml toolbar unexpectedly visible for xml in raw view');
+
   // ── INI / .env ── key-value tables grouped by section. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.ini');

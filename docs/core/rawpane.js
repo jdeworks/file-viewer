@@ -236,6 +236,77 @@ async function runYamlAction(action) {
   }
 }
 
+// ── XML toolbar ──────────────────────────────────────────────────────────────
+function setXmlToolsVisible(visible) {
+  const el = $('xmlTools');
+  if (!el) return;
+  el.hidden = !visible;
+  $('rawPane')?.classList.toggle('has-tools', visible);
+  if (!visible) {
+    const indicator = $('xmlValidIndicator');
+    if (indicator) indicator.hidden = true;
+  }
+}
+
+function wireXmlTools() {
+  const el = $('xmlTools');
+  if (!el || el.dataset.wired) return;
+  el.dataset.wired = '1';
+  $('xmlFormatBtn')?.addEventListener('click', () => runXmlAction('format'));
+  $('xmlValidateBtn')?.addEventListener('click', () => runXmlAction('validate'));
+}
+
+function updateXmlValidation(valid, message) {
+  const indicator = $('xmlValidIndicator');
+  if (!indicator) return;
+  indicator.textContent = valid ? '✓ Valid XML' : ('✗ ' + (message || 'Invalid XML'));
+  indicator.className = 'json-valid-indicator ' + (valid ? 'json-valid' : 'json-invalid');
+  indicator.hidden = false;
+  clearTimeout(indicator._hideTimer);
+  indicator._hideTimer = setTimeout(() => { indicator.hidden = true; }, 4000);
+}
+
+function formatXml(text) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'text/xml');
+  const err = doc.querySelector('parseerror, parsererror');
+  if (err) throw new Error(err.textContent.split('\n')[0].trim());
+  const raw = new XMLSerializer().serializeToString(doc);
+  let indent = 0;
+  return raw
+    .replace(/></g, '>\n<')
+    .split('\n')
+    .map((line) => {
+      if (line.match(/^<\/\w/)) indent--;
+      const result = '  '.repeat(Math.max(0, indent)) + line.trim();
+      if (line.match(/^<\w[^>]*[^/]>$/) && !line.match(/<.*<.*>/)) indent++;
+      return result;
+    })
+    .join('\n');
+}
+
+function runXmlAction(action) {
+  if (!state.rawview) return;
+  const text = state.rawview.getValue();
+  if (action === 'format') {
+    try {
+      state.rawview.setValue(formatXml(text));
+    } catch (err) {
+      toast('Cannot format: ' + (err.message || 'invalid XML'));
+    }
+  } else if (action === 'validate') {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, 'text/xml');
+      const err = doc.querySelector('parseerror, parsererror');
+      if (err) throw new Error(err.textContent.split('\n')[0].trim());
+      updateXmlValidation(true, null);
+    } catch (err) {
+      updateXmlValidation(false, (err.message || 'Invalid XML').slice(0, 80));
+    }
+  }
+}
+
 let tablePicker = null;
 
 function closeTablePicker() {
@@ -717,6 +788,8 @@ export async function buildRawView() {
   setJsonToolsVisible(state.type?.id === 'json' && !state.intake.isBinary);
   wireYamlTools();
   setYamlToolsVisible(state.type?.id === 'yaml' && !state.intake.isBinary);
+  wireXmlTools();
+  setXmlToolsVisible(state.type?.id === 'xml' && !state.intake.isBinary);
   wireTableModeBtn();
   const isTabular = state.type?.id === 'csv' && !state.intake.isBinary;
   const tableModeBtn = document.getElementById('tableModeBtn');
