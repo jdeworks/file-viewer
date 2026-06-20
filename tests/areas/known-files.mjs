@@ -1752,6 +1752,44 @@ export async function run(ctx) {
   if (/GHSA-|CVE-/i.test(osvText)) pass('osv-scanner.toml: vulnerability IDs shown'); else fail('osv-scanner ids: ' + osvText.slice(0, 300));
   if (/1\.21\.0/i.test(osvText)) pass('osv-scanner.toml: GoVersionOverride shown'); else fail('osv-scanner go version: ' + osvText.slice(0, 300));
 
+  // ── opencost.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('opencost.yaml');
+  await page.waitForSelector('#previewHost .oc-doc', { timeout: 12000 });
+  const ocText = await page.$eval('#previewHost .oc-doc', (e) => e.textContent);
+  if (/OpenCost/i.test(ocText)) pass('opencost.yaml: OpenCost badge shown'); else fail('opencost badge: ' + ocText.slice(0, 200));
+  if (/production-k8s/i.test(ocText)) pass('opencost.yaml: cluster_id shown'); else fail('opencost cluster_id: ' + ocText.slice(0, 200));
+  if (/prometheus/i.test(ocText)) pass('opencost.yaml: prometheus host shown'); else fail('opencost prometheus: ' + ocText.slice(0, 300));
+
+  // ── crossplane-config.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('crossplane-config.yaml (Crossplane)');
+  await page.waitForSelector('#previewHost .xp-doc', { timeout: 12000 });
+  const xpText = await page.$eval('#previewHost .xp-doc', (e) => e.textContent);
+  if (/Crossplane/i.test(xpText)) pass('crossplane-config.yaml: Crossplane badge shown'); else fail('crossplane badge: ' + xpText.slice(0, 200));
+  if (/Provider/i.test(xpText)) pass('crossplane-config.yaml: kind shown'); else fail('crossplane kind: ' + xpText.slice(0, 200));
+  if (/provider-aws/i.test(xpText)) pass('crossplane-config.yaml: name shown'); else fail('crossplane name: ' + xpText.slice(0, 200));
+
+  // ── keda-scaledobject.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('keda-scaledobject.yaml (KEDA)');
+  await page.waitForSelector('#previewHost .kd-doc', { timeout: 12000 });
+  const kdText = await page.$eval('#previewHost .kd-doc', (e) => e.textContent);
+  if (/KEDA/i.test(kdText)) pass('keda-scaledobject.yaml: KEDA badge shown'); else fail('keda badge: ' + kdText.slice(0, 200));
+  if (/ScaledObject/i.test(kdText)) pass('keda-scaledobject.yaml: kind shown'); else fail('keda kind: ' + kdText.slice(0, 200));
+  if (/my-app-scaler/i.test(kdText)) pass('keda-scaledobject.yaml: name shown'); else fail('keda name: ' + kdText.slice(0, 200));
+  if (/rabbitmq|cpu/i.test(kdText)) pass('keda-scaledobject.yaml: triggers shown'); else fail('keda triggers: ' + kdText.slice(0, 300));
+
+  // ── velero-schedule.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('velero-schedule.yaml (Velero)');
+  await page.waitForSelector('#previewHost .vl-doc', { timeout: 12000 });
+  const vlText = await page.$eval('#previewHost .vl-doc', (e) => e.textContent);
+  if (/Velero/i.test(vlText)) pass('velero-schedule.yaml: Velero badge shown'); else fail('velero badge: ' + vlText.slice(0, 200));
+  if (/Schedule/i.test(vlText)) pass('velero-schedule.yaml: kind shown'); else fail('velero kind: ' + vlText.slice(0, 200));
+  if (/daily-backup/i.test(vlText)) pass('velero-schedule.yaml: name shown'); else fail('velero name: ' + vlText.slice(0, 200));
+  if (/0 2 \* \* \*/i.test(vlText)) pass('velero-schedule.yaml: cron schedule shown'); else fail('velero schedule: ' + vlText.slice(0, 300));
+
   // ── .codeclimate.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.codeclimate.yml');
@@ -1840,4 +1878,80 @@ export async function run(ctx) {
   if (/default|staging|prod/i.test(smcText)) pass('samconfig.toml: environments shown'); else fail('smc environments: ' + smcText.slice(0, 300));
   if (/stack_name|notes-app/i.test(smcText)) pass('samconfig.toml: stack_name shown'); else fail('smc stack_name: ' + smcText.slice(0, 300));
   if (/region|us-east-1|eu-west-1/i.test(smcText)) pass('samconfig.toml: regions shown'); else fail('smc regions: ' + smcText.slice(0, 300));
+
+  // ── analysis_options.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('analysis_options.yaml (Dart Analyzer)');
+  await page.waitForSelector('#previewHost .ao-doc', { timeout: 12000 });
+  const aoText = await page.$eval('#previewHost .ao-doc', (e) => e.textContent);
+  if (/Dart Analyzer/i.test(aoText)) pass('analysis_options.yaml: Dart Analyzer badge shown'); else fail('ao badge: ' + aoText.slice(0, 200));
+  if (/prefer_const_constructors|avoid_print/i.test(aoText)) pass('analysis_options.yaml: linter rules shown'); else fail('ao rules: ' + aoText.slice(0, 300));
+  if (/exclude/i.test(aoText)) pass('analysis_options.yaml: excluded paths shown'); else fail('ao excludes: ' + aoText.slice(0, 300));
+  if (/flutter_lints/i.test(aoText)) pass('analysis_options.yaml: include shown'); else fail('ao include: ' + aoText.slice(0, 300));
+
+  // ── Podfile.lock viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Podfile.lock (CocoaPods)');
+  await page.waitForSelector('#previewHost .pfl-doc', { timeout: 12000 });
+  const pflText = await page.$eval('#previewHost .pfl-doc', (e) => e.textContent);
+  if (/CocoaPods Lock/i.test(pflText)) pass('Podfile.lock: CocoaPods Lock badge shown'); else fail('pfl badge: ' + pflText.slice(0, 200));
+  if (/Alamofire|Kingfisher/i.test(pflText)) pass('Podfile.lock: pod names shown'); else fail('pfl pods: ' + pflText.slice(0, 300));
+  if (/1\.15\.2/i.test(pflText)) pass('Podfile.lock: CocoaPods version shown'); else fail('pfl version: ' + pflText.slice(0, 300));
+  if (/checksum|sha1/i.test(pflText.toLowerCase())) pass('Podfile.lock: checksums section shown'); else fail('pfl checksums: ' + pflText.slice(0, 300));
+
+  // ── MyApp.xcscheme viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('MyApp.xcscheme (Xcode Scheme)');
+  await page.waitForSelector('#previewHost .xs-doc', { timeout: 12000 });
+  const xsText = await page.$eval('#previewHost .xs-doc', (e) => e.textContent);
+  if (/Xcode Scheme/i.test(xsText)) pass('MyApp.xcscheme: Xcode Scheme badge shown'); else fail('xs badge: ' + xsText.slice(0, 200));
+  if (/MyApp|MyAppTests/i.test(xsText)) pass('MyApp.xcscheme: build targets shown'); else fail('xs targets: ' + xsText.slice(0, 300));
+  if (/Debug|Release/i.test(xsText)) pass('MyApp.xcscheme: build configurations shown'); else fail('xs configs: ' + xsText.slice(0, 300));
+  if (/test targets/i.test(xsText)) pass('MyApp.xcscheme: test targets section shown'); else fail('xs test targets: ' + xsText.slice(0, 300));
+
+  // ── eas.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('eas.json (Expo EAS)');
+  await page.waitForSelector('#previewHost .eas-doc', { timeout: 12000 });
+  const easText = await page.$eval('#previewHost .eas-doc', (e) => e.textContent);
+  if (/\bEAS\b/i.test(easText)) pass('eas.json: EAS badge shown'); else fail('eas badge: ' + easText.slice(0, 200));
+  if (/development|preview|production/i.test(easText)) pass('eas.json: build profiles shown'); else fail('eas profiles: ' + easText.slice(0, 300));
+  if (/distribution|channel/i.test(easText)) pass('eas.json: profile settings shown'); else fail('eas settings: ' + easText.slice(0, 300));
+  if (/submit/i.test(easText)) pass('eas.json: submit profiles section shown'); else fail('eas submit: ' + easText.slice(0, 300));
+
+  // ── .rspec viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.rspec');
+  await page.waitForSelector('#previewHost .rsc-doc', { timeout: 12000 });
+  const rscText = await page.$eval('#previewHost .rsc-doc', (e) => e.textContent);
+  if (/RSpec/i.test(rscText)) pass('.rspec: badge shown'); else fail('rspec badge: ' + rscText.slice(0, 200));
+  if (/documentation|format/i.test(rscText)) pass('.rspec: format flag shown'); else fail('rspec format: ' + rscText.slice(0, 300));
+  if (/spec_helper|require/i.test(rscText)) pass('.rspec: require entry shown'); else fail('rspec require: ' + rscText.slice(0, 300));
+
+  // ── .bundler-audit.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.bundler-audit.yml');
+  await page.waitForSelector('#previewHost .bac-doc', { timeout: 12000 });
+  const bacText = await page.$eval('#previewHost .bac-doc', (e) => e.textContent);
+  if (/Bundler Audit/i.test(bacText)) pass('.bundler-audit.yml: badge shown'); else fail('bundler-audit badge: ' + bacText.slice(0, 200));
+  if (/CVE-2020-8165|CVE-2021-22942|CVE-2022-32224/i.test(bacText)) pass('.bundler-audit.yml: CVE IDs shown'); else fail('bundler-audit CVEs: ' + bacText.slice(0, 300));
+  if (/ignore|CVE/i.test(bacText)) pass('.bundler-audit.yml: ignore section shown'); else fail('bundler-audit ignore: ' + bacText.slice(0, 300));
+
+  // ── .standard.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.standard.yml');
+  await page.waitForSelector('#previewHost .srb-doc', { timeout: 12000 });
+  const srbText = await page.$eval('#previewHost .srb-doc', (e) => e.textContent);
+  if (/Standard Ruby/i.test(srbText)) pass('.standard.yml: badge shown'); else fail('standardrb badge: ' + srbText.slice(0, 200));
+  if (/3\.2|ruby_version|Ruby/i.test(srbText)) pass('.standard.yml: ruby version shown'); else fail('standardrb version: ' + srbText.slice(0, 300));
+  if (/standard-rails|standard-performance|extend/i.test(srbText)) pass('.standard.yml: extends shown'); else fail('standardrb extends: ' + srbText.slice(0, 300));
+
+  // ── sorbet.config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sorbet.config');
+  await page.waitForSelector('#previewHost .sbt-doc', { timeout: 12000 });
+  const sbtText = await page.$eval('#previewHost .sbt-doc', (e) => e.textContent);
+  if (/Sorbet/i.test(sbtText)) pass('sorbet.config: badge shown'); else fail('sorbet badge: ' + sbtText.slice(0, 200));
+  if (/vendor|node_modules|ignore/i.test(sbtText)) pass('sorbet.config: ignore patterns shown'); else fail('sorbet ignore: ' + sbtText.slice(0, 300));
+  if (/requires-ancestor|ruby3-keyword|experimental/i.test(sbtText)) pass('sorbet.config: experimental features shown'); else fail('sorbet experimental: ' + sbtText.slice(0, 300));
 }

@@ -1,0 +1,20 @@
+cluster_id: production-k8s
+
+prometheus:
+  external:
+    url: http://prometheus.monitoring.svc.cluster.local:9090
+
+opencost:
+  exporter:
+    default_idle_node_overhead_pct: 0.05
+    cloud_provider_api_key: ""
+    api_port: 9003
+
+storage:
+  config:
+    type: prometheus
+
+ui:
+  enabled: true
+  image:
+    full: gcr.io/kubecost1/frontend:latest

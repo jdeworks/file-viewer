@@ -149,6 +149,8 @@ import cargoDeny from '../types/text/toml/known/cargo-deny/index.js';
 import cargoConfig from '../types/text/toml/known/cargo-config/index.js';
 import htaccess from '../types/text/known/htaccess/index.js';
 import nginxConf from '../types/text/known/nginx-conf/index.js';
+import haproxyConfig from '../types/text/known/haproxy-config/index.js';
+import squidConf from '../types/text/known/squid-conf/index.js';
 import moonYml from '../types/text/yaml/known/moon/index.js';
 import vagrantfile from '../types/text/known/vagrantfile/index.js';
 import caddyfile from '../types/text/known/caddyfile/index.js';
@@ -159,6 +161,10 @@ import crowdinYml from '../types/text/yaml/known/crowdin-yml/index.js';
 import matchfile from '../types/text/known/matchfile/index.js';
 import appfile from '../types/text/known/appfile/index.js';
 import rubyVersion from '../types/text/known/ruby-version/index.js';
+import rspecConfig from '../types/text/known/rspec-config/index.js';
+import sorbetConfig from '../types/text/known/sorbet-config/index.js';
+import bundlerAuditConfig from '../types/text/yaml/known/bundler-audit-config/index.js';
+import standardrbConfig from '../types/text/yaml/known/standardrb-config/index.js';
 import pythonVersion from '../types/text/known/python-version/index.js';
 import earthfile from '../types/text/known/earthfile/index.js';
 import gitmodules from '../types/text/known/gitmodules/index.js';
@@ -239,6 +245,10 @@ import drizzleConfig from '../types/text/known/drizzle-config/index.js';
 import knexfile from '../types/text/known/knexfile/index.js';
 import alembic from '../types/text/ini/known/alembic/index.js';
 import flywayConf from '../types/text/known/flyway-conf/index.js';
+import dbtProject from '../types/text/yaml/known/dbt-project/index.js';
+import liquibaseProps from '../types/text/known/liquibase-props/index.js';
+import sqitchConf from '../types/text/known/sqitch-conf/index.js';
+import atlasHcl from '../types/text/known/atlas-hcl/index.js';
 import projectClj from '../types/text/known/project-clj/index.js';
 import depsEdn from '../types/text/known/deps-edn/index.js';
 import shadowCljs from '../types/text/known/shadow-cljs/index.js';
@@ -270,6 +280,10 @@ import atlantis from '../types/text/yaml/known/atlantis/index.js';
 import checkov from '../types/text/yaml/known/checkov/index.js';
 import terraformDocs from '../types/text/yaml/known/terraform-docs/index.js';
 import infracost from '../types/text/yaml/known/infracost/index.js';
+import opencostConfig from '../types/text/yaml/known/opencost-config/index.js';
+import crossplaneConfig from '../types/text/yaml/known/crossplane-config/index.js';
+import kedaConfig from '../types/text/yaml/known/keda-config/index.js';
+import veleroConfig from '../types/text/yaml/known/velero-config/index.js';
 import androidManifest from '../types/text/xml/known/android-manifest/index.js';
 import appConfig from '../types/text/xml/known/app-config/index.js';
 import buildZigZon from '../types/text/known/build-zig-zon/index.js';
@@ -290,6 +304,8 @@ import growthbook from '../types/text/json/known/growthbook/index.js';
 import jekyllConfig from '../types/text/yaml/known/jekyll-config/index.js';
 import juliaProject from '../types/text/toml/known/julia-project/index.js';
 import kongConfig from '../types/text/yaml/known/kong-config/index.js';
+import apisixConfig from '../types/text/yaml/known/apisix-config/index.js';
+import envoyConfig from '../types/text/yaml/known/envoy-config/index.js';
 import launchSettings from '../types/text/json/known/launch-settings/index.js';
 import nimble from '../types/text/known/nimble/index.js';
 import packagesConfig from '../types/text/xml/known/packages-config/index.js';
@@ -331,10 +347,18 @@ import kafkaServerProps from '../types/text/known/kafka-server-props/index.js';
 import rabbitmqConf from '../types/text/known/rabbitmq-conf/index.js';
 import natsConfig from '../types/text/known/nats-config/index.js';
 import zookeeperConfig from '../types/text/known/zookeeper-config/index.js';
+import hostsFile from '../types/text/known/hosts-file/index.js';
+import resolvConf from '../types/text/known/resolv-conf/index.js';
+import sshConfig from '../types/text/known/ssh-config/index.js';
+import sshdConfig from '../types/text/known/sshd-config/index.js';
 import samTemplate from '../types/text/yaml/known/sam-template/index.js';
 import cfnTemplate from '../types/text/yaml/known/cfn-template/index.js';
 import cdkJson from '../types/text/json/known/cdk-json/index.js';
 import awsSamConfig from '../types/text/toml/known/aws-sam-config/index.js';
+import analysisOptions from '../types/text/yaml/known/analysis-options/index.js';
+import podfileLock from '../types/text/known/podfile-lock/index.js';
+import xcodeScheme from '../types/text/xml/known/xcode-scheme/index.js';
+import easJson from '../types/text/json/known/eas-json/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -358,8 +382,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   appveyor, rubocop, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
   brewfile, license, ansibleCfg, gemspec, typos, cargoDeny, cargoConfig,
-  htaccess, nginxConf, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
-  crowdinYml, matchfile, appfile, rubyVersion, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
+  htaccess, nginxConf, haproxyConfig, squidConf, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
+  crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,
   supabaseConfig, netlifyRedirects,
   cmake, jenkinsfile,
@@ -382,6 +406,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   stackYaml, cabal, packageResolved, rebarConfig,
   docusaurusConfig, vitepressConfig, sphinxConf, doxyfile,
   drizzleConfig, knexfile, alembic, flywayConf,
+  dbtProject, liquibaseProps, sqitchConf, atlasHcl,
   wdioConfig, artilleryYml, k6Config, gatlingConf,
   gaeApp, cloudbuild, googleServices, catalogInfo,
   cursorRules, claudeMd, copilotInstructions, aiderConf,
@@ -390,10 +415,11 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   tsupConfig, rspackConfig, parcelrc, bunfigToml,
   shadowCljs, projectClj, depsEdn,
   atlantis, checkov, terraformDocs, infracost,
+  opencostConfig, crossplaneConfig, kedaConfig, veleroConfig,
   androidManifest, appConfig, buildZigZon, cartfile,
   electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, forgeConfig,
   gleamToml, goWork, grafanaIni, growthbook,
-  jekyllConfig, juliaProject, kongConfig, launchSettings,
+  jekyllConfig, juliaProject, kongConfig, apisixConfig, envoyConfig, launchSettings,
   nimble, packagesConfig, podspec, redisConf, mongodConf, myCnf, postgresqlConf, pgbouncerIni, shardYml,
   tauriConf, traefikConfig, unleashConfig, vaultHcl, consulConfig,
   vectorToml, wailsJson, webConfig, xcconfig,
@@ -404,7 +430,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   flake8, pylintrc, setupCfg, banditYaml,
   istioConfig, linkerdConfig, etcdConfig,
   samTemplate, cfnTemplate, cdkJson, awsSamConfig,
-  kafkaServerProps, rabbitmqConf, natsConfig, zookeeperConfig,
+  analysisOptions, podfileLock, xcodeScheme, easJson,
+  hostsFile, resolvConf, sshConfig, sshdConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
