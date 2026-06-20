@@ -1,0 +1,47 @@
+# Zathura configuration
+
+# Catppuccin Mocha theme
+set default-bg "#1e1e2e"
+set default-fg "#cdd6f4"
+set statusbar-h-padding 0
+set statusbar-v-padding 0
+set statusbar-basename true
+set completion-bg "#313244"
+set completion-fg "#cdd6f4"
+set completion-highlight-bg "#575268"
+set completion-highlight-fg "#cdd6f4"
+set completion-group-bg "#1e1e2e"
+set completion-group-fg "#89b4fa"
+set inputbar-bg "#1e1e2e"
+set inputbar-fg "#cdd6f4"
+set notification-error-bg "#f38ba8"
+set notification-error-fg "#1e1e2e"
+set notification-warning-bg "#f9e2af"
+set notification-warning-fg "#1e1e2e"
+set notification-bg "#313244"
+set notification-fg "#cdd6f4"
+set highlight-color "#f9e2af"
+set highlight-active-color "#89dceb"
+set selection-clipboard clipboard
+
+# Recolor (dark mode)
+set recolor true
+set recolor-lightcolor "#1e1e2e"
+set recolor-darkcolor "#cdd6f4"
+set recolor-keephue true
+
+# Behavior
+set adjust-open best-fit
+set pages-per-row 1
+set scroll-step 50
+set zoom-step 10
+set zoom-min 10
+set zoom-max 1000
+set synctex true
+set synctex-editor-command "nvim --remote-silent +%{line} %{input}"
+
+# Key bindings
+map <C-b> toggle_statusbar
+map K zoom in
+map J zoom out
+map r recolor
