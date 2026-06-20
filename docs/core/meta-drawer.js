@@ -100,6 +100,102 @@ function appendTextRow(body, key, value, className = '') {
   body.appendChild(row);
 }
 
+function showTypeInfoModal(info, known) {
+  const dialog = document.createElement('dialog');
+  dialog.className = 'type-info-dialog';
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'type-info-dialog-header';
+  const heading = document.createElement('h2');
+  heading.textContent = info.name;
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'type-info-dialog-close';
+  closeBtn.textContent = '✕';
+  closeBtn.setAttribute('aria-label', 'Close');
+  closeBtn.addEventListener('click', () => dialog.close());
+  header.append(heading, closeBtn);
+  dialog.appendChild(header);
+
+  // Body
+  const bodyEl = document.createElement('div');
+  bodyEl.className = 'type-info-dialog-body';
+
+  const desc = document.createElement('p');
+  desc.textContent = info.description.charAt(0).toUpperCase() + info.description.slice(1);
+  bodyEl.appendChild(desc);
+
+  // Links
+  const linksRow = document.createElement('div');
+  linksRow.className = 'type-info-dialog-links';
+  const fmtLink = document.createElement('a');
+  fmtLink.href = info.href;
+  fmtLink.target = '_blank';
+  fmtLink.rel = 'noopener noreferrer';
+  fmtLink.textContent = info.name + ' ↗';
+  linksRow.appendChild(fmtLink);
+  if (info.fileExamplesHref) {
+    const exLink = document.createElement('a');
+    exLink.href = info.fileExamplesHref;
+    exLink.target = '_blank';
+    exLink.rel = 'noopener noreferrer';
+    exLink.textContent = 'File Examples ↗';
+    linksRow.appendChild(exLink);
+  }
+  bodyEl.appendChild(linksRow);
+
+  // Plugin details
+  if (known && known.about) {
+    const section = document.createElement('div');
+    section.className = 'type-info-used-for';
+    const sectionHead = document.createElement('h3');
+    sectionHead.textContent = 'Plugin details';
+    section.appendChild(sectionHead);
+    if (known.about.description) {
+      const pluginDesc = document.createElement('p');
+      pluginDesc.style.marginBottom = '8px';
+      pluginDesc.textContent = known.about.description;
+      section.appendChild(pluginDesc);
+    }
+    if (Array.isArray(known.about.usedFor)) {
+      for (const item of known.about.usedFor) {
+        const card = document.createElement('div');
+        card.className = 'type-info-used-card';
+        if (item.label) {
+          const label = document.createElement('strong');
+          label.textContent = item.label;
+          card.appendChild(label);
+        }
+        if (item.description) {
+          const itemDesc = document.createElement('p');
+          itemDesc.textContent = item.description;
+          card.appendChild(itemDesc);
+        }
+        if (item.href) {
+          const itemLink = document.createElement('a');
+          itemLink.href = item.href;
+          itemLink.target = '_blank';
+          itemLink.rel = 'noopener noreferrer';
+          itemLink.textContent = 'Learn more ↗';
+          card.appendChild(itemLink);
+        }
+        section.appendChild(card);
+      }
+    }
+    bodyEl.appendChild(section);
+  }
+
+  dialog.appendChild(bodyEl);
+
+  // Close on backdrop click
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+  dialog.addEventListener('close', () => dialog.remove());
+
+  document.body.appendChild(dialog);
+  dialog.showModal();
+}
+
 function appendTypeInfo(body, basics) {
   const info = getTypeInfo(state.type, state.known && !state.forceBase ? state.known : null, state.intake);
   appendTextRow(body, 'Used for', info.description);
@@ -128,6 +224,14 @@ function appendTypeInfo(body, basics) {
   row.append(key, value);
   body.appendChild(row);
   for (const [k, v] of basics) appendTextRow(body, k, v);
+
+  const infoBtn = document.createElement('button');
+  infoBtn.type = 'button';
+  infoBtn.className = 'meta-info-btn';
+  infoBtn.title = 'About this format';
+  infoBtn.textContent = 'ⓘ About';
+  infoBtn.addEventListener('click', () => showTypeInfoModal(info, state.known));
+  body.appendChild(infoBtn);
 }
 
 function appendSection(body, title, rows, open = false) {
