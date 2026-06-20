@@ -1,0 +1,62 @@
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4318
+        grpc:
+          endpoint: 0.0.0.0:4317
+    jaeger:
+      protocols:
+        thrift_http:
+          endpoint: 0.0.0.0:14268
+        grpc:
+          endpoint: 0.0.0.0:14250
+    zipkin:
+      endpoint: 0.0.0.0:9411
+    opencensus:
+      endpoint: 0.0.0.0:55678
+
+ingester:
+  max_block_duration: 5m
+  trace_idle_period: 10s
+  lifecycler:
+    ring:
+      replication_factor: 3
+      kvstore:
+        store: memberlist
+
+storage:
+  backend: s3
+  s3:
+    bucket: tempo-traces
+    endpoint: s3.us-east-1.amazonaws.com
+    region: us-east-1
+    access_key: AKIAIOSFODNN7EXAMPLE
+    secret_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+compactor:
+  working_directory: /var/tempo/compactor
+  block_retention: 336h
+
+query_frontend:
+  search:
+    max_duration: 0s
+
+querier:
+  frontend_worker:
+    address: tempo-query-frontend:9095
+
+metrics_generator:
+  ring:
+    kvstore:
+      store: memberlist
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
