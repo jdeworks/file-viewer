@@ -1,0 +1,116 @@
+      *> COBOL Sample Program - Payroll Calculator
+      *> Demonstrates all four divisions, working-storage, file handling
+
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.    PAYROLL-CALC.
+       AUTHOR.        SAMPLE AUTHOR.
+       DATE-WRITTEN.  2026-06-20.
+
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       SOURCE-COMPUTER. IBM-Z.
+       OBJECT-COMPUTER. IBM-Z.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT EMPLOYEE-FILE ASSIGN TO 'EMPFILE.DAT'
+               ORGANIZATION IS SEQUENTIAL.
+           SELECT REPORT-FILE ASSIGN TO 'PAYROLL.RPT'
+               ORGANIZATION IS SEQUENTIAL.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  EMPLOYEE-FILE
+           RECORD CONTAINS 80 CHARACTERS.
+       01  EMPLOYEE-RECORD.
+           05  EMP-ID         PIC X(6).
+           05  EMP-NAME       PIC X(30).
+           05  EMP-HOURS      PIC 9(3)V9(1).
+           05  EMP-RATE       PIC 9(5)V9(2).
+           05  FILLER         PIC X(30).
+
+       FD  REPORT-FILE
+           RECORD CONTAINS 132 CHARACTERS.
+       01  REPORT-LINE        PIC X(132).
+
+       WORKING-STORAGE SECTION.
+       01  WS-FLAGS.
+           05  WS-EOF-FLAG    PIC X(1)  VALUE 'N'.
+           05  WS-ERROR-FLAG  PIC X(1)  VALUE 'N'.
+       01  WS-COUNTERS.
+           05  WS-EMP-COUNT   PIC 9(5)  VALUE ZEROS.
+           05  WS-TOTAL-PAY   PIC 9(9)V9(2) VALUE ZEROS.
+       01  WS-CALC-FIELDS.
+           05  WS-GROSS-PAY   PIC 9(7)V9(2).
+           05  WS-OVERTIME    PIC 9(5)V9(2).
+           05  WS-TAX-AMOUNT  PIC 9(7)V9(2).
+           05  WS-NET-PAY     PIC 9(7)V9(2).
+       01  WS-CONSTANTS.
+           05  WS-OT-THRESHOLD PIC 9(3)  VALUE 40.
+           05  WS-OT-RATE      PIC 9(1)V9(1) VALUE 1.5.
+           05  WS-TAX-RATE     PIC 9(2)V9(2) VALUE 0.20.
+
+       PROCEDURE DIVISION.
+
+       MAIN-SECTION SECTION.
+       MAIN-PARA.
+           PERFORM INITIALIZATION
+           PERFORM PROCESS-EMPLOYEES UNTIL WS-EOF-FLAG = 'Y'
+           PERFORM PRINT-TOTALS
+           PERFORM CLEANUP
+           STOP RUN.
+
+       INITIALIZATION SECTION.
+       INIT-PARA.
+           OPEN INPUT EMPLOYEE-FILE
+           OPEN OUTPUT REPORT-FILE
+           WRITE REPORT-LINE FROM 'PAYROLL CALCULATION REPORT'
+           WRITE REPORT-LINE FROM SPACES
+           PERFORM READ-EMPLOYEE.
+
+       PROCESS-SECTION SECTION.
+       PROCESS-EMPLOYEES.
+           PERFORM CALCULATE-PAY
+           PERFORM WRITE-REPORT-LINE
+           ADD 1 TO WS-EMP-COUNT
+           PERFORM READ-EMPLOYEE.
+
+       CALCULATE-PAY.
+           IF EMP-HOURS > WS-OT-THRESHOLD
+               COMPUTE WS-OVERTIME = (EMP-HOURS - WS-OT-THRESHOLD)
+                   * EMP-RATE * WS-OT-RATE
+               COMPUTE WS-GROSS-PAY = WS-OT-THRESHOLD * EMP-RATE
+                   + WS-OVERTIME
+           ELSE
+               COMPUTE WS-GROSS-PAY = EMP-HOURS * EMP-RATE
+               MOVE ZEROS TO WS-OVERTIME
+           END-IF
+           COMPUTE WS-TAX-AMOUNT = WS-GROSS-PAY * WS-TAX-RATE
+           COMPUTE WS-NET-PAY = WS-GROSS-PAY - WS-TAX-AMOUNT
+           ADD WS-GROSS-PAY TO WS-TOTAL-PAY.
+
+       WRITE-REPORT-LINE.
+           STRING EMP-ID DELIMITED SPACE
+                  '  ' DELIMITED SIZE
+                  EMP-NAME DELIMITED SPACE
+                  INTO REPORT-LINE
+           WRITE REPORT-LINE.
+
+       IO-SECTION SECTION.
+       READ-EMPLOYEE.
+           READ EMPLOYEE-FILE
+               AT END MOVE 'Y' TO WS-EOF-FLAG
+           END-READ.
+
+       PRINT-TOTALS.
+           WRITE REPORT-LINE FROM SPACES
+           STRING 'TOTAL EMPLOYEES: ' WS-EMP-COUNT
+               INTO REPORT-LINE
+           WRITE REPORT-LINE
+           STRING 'TOTAL GROSS PAY: ' WS-TOTAL-PAY
+               INTO REPORT-LINE
+           WRITE REPORT-LINE.
+
+       CLEANUP-SECTION SECTION.
+       CLEANUP.
+           CLOSE EMPLOYEE-FILE
+           CLOSE REPORT-FILE.

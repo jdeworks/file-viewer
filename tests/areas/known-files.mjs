@@ -6382,4 +6382,41 @@ export async function run(ctx) {
   await openExample('sample.ps1');
   await page.waitForSelector('#previewHost .ps1-doc', { timeout: 12000 });
   pass('powershell-lang: rendered');
+
+  // ── solidity-lang: Solidity smart contract viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.sol');
+  await page.waitForSelector('#previewHost .sol-doc', { timeout: 12000 });
+  pass('solidity-lang: rendered');
+  const solText = await page.$eval('#previewHost .sol-doc', (e) => e.textContent);
+  if (/Smart Contract|Interface|Library/i.test(solText)) pass('solidity-lang: badge shown'); else fail('solidity-lang badge: ' + solText.slice(0, 200));
+  if (/pragma|solidity/i.test(solText)) pass('solidity-lang: pragma version shown'); else fail('solidity-lang pragma: ' + solText.slice(0, 300));
+  if (/contract|interface|library/i.test(solText)) pass('solidity-lang: definitions listed'); else fail('solidity-lang defs: ' + solText.slice(0, 300));
+
+  // ── vhdl-lang: VHDL hardware description viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.vhd');
+  await page.waitForSelector('#previewHost .vhd-doc', { timeout: 12000 });
+  pass('vhdl-lang: rendered');
+  const vhdText = await page.$eval('#previewHost .vhd-doc', (e) => e.textContent);
+  if (/VHDL Entity|VHDL Package|VHDL Architecture/i.test(vhdText)) pass('vhdl-lang: badge shown'); else fail('vhdl-lang badge: ' + vhdText.slice(0, 200));
+  if (/entity|architecture/i.test(vhdText)) pass('vhdl-lang: entity or architecture shown'); else fail('vhdl-lang entity: ' + vhdText.slice(0, 300));
+
+  // ── arduino-sketch: Arduino sketch viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.ino');
+  await page.waitForSelector('#previewHost .ino-doc', { timeout: 12000 });
+  pass('arduino-sketch: rendered');
+  const inoText = await page.$eval('#previewHost .ino-doc', (e) => e.textContent);
+  if (/Arduino Sketch/i.test(inoText)) pass('arduino-sketch: badge shown'); else fail('arduino-sketch badge: ' + inoText.slice(0, 200));
+  if (/include|library/i.test(inoText)) pass('arduino-sketch: includes shown'); else fail('arduino-sketch includes: ' + inoText.slice(0, 300));
+
+  // ── cobol-lang: COBOL program viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.cob');
+  await page.waitForSelector('#previewHost .cob-doc', { timeout: 12000 });
+  pass('cobol-lang: rendered');
+  const cobText = await page.$eval('#previewHost .cob-doc', (e) => e.textContent);
+  if (/COBOL Program|COBOL Copybook/i.test(cobText)) pass('cobol-lang: badge shown'); else fail('cobol-lang badge: ' + cobText.slice(0, 200));
+  if (/DIVISION|division/i.test(cobText)) pass('cobol-lang: divisions listed'); else fail('cobol-lang divisions: ' + cobText.slice(0, 300));
 }
