@@ -221,6 +221,35 @@ export function render(intake, _ctx) {
     + (titleLine ? `<span class="kicad-title">${esc(titleLine)}</span>` : '')
     + '</div>';
 
-  const bodyHtml = `<div class="kicad-preview">${headerHtml}${statsHtml}${metaHtml}</div>`;
+  const style = `<style>
+    .kicad-preview{max-width:860px;margin:0 auto;padding:18px;font-family:system-ui,sans-serif;color:#172033}
+    .kicad-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+    .kicad-badge{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;background:#1a4e96;color:#fff;border-radius:999px;padding:4px 10px;white-space:nowrap}
+    .kicad-title{font-weight:600;font-size:1.05rem}
+    .kicad-stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+    .kicad-stat{border:1px solid #d1dce8;border-radius:8px;padding:10px 14px;min-width:90px;background:#f4f8fc;text-align:center}
+    .kicad-stat-value{font-size:1.35rem;font-weight:700;color:#1a4e96}
+    .kicad-stat-label{font-size:.78rem;color:#5a6678;margin-top:2px}
+    .kicad-section{margin-bottom:14px}
+    .kicad-label{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#5a6678;margin-bottom:6px}
+    .kicad-table{border-collapse:collapse;font-size:.9rem}
+    .kicad-table td{padding:5px 10px 5px 0;border-bottom:1px solid #e8edf4;vertical-align:top}
+    .kicad-key{color:#5a6678;white-space:nowrap;padding-right:16px}
+    .kicad-chips{display:flex;flex-wrap:wrap;gap:6px}
+    .kicad-chip{font-size:.8rem;border:1px solid #d1dce8;border-radius:6px;padding:3px 8px;background:#f4f8fc}
+    .kicad-chip-more{color:#5a6678;font-style:italic}
+    .fv-dark .kicad-preview{color:#e0e8f7}
+    .fv-dark .kicad-badge{background:#2c6bc7}
+    .fv-dark .kicad-stat{background:#111d2e;border-color:#2a3d52}
+    .fv-dark .kicad-stat-value{color:#5ea3f0}
+    .fv-dark .kicad-stat-label{color:#8a9bb8}
+    .fv-dark .kicad-label{color:#8a9bb8}
+    .fv-dark .kicad-table td{border-bottom-color:#2a3d52}
+    .fv-dark .kicad-key{color:#8a9bb8}
+    .fv-dark .kicad-chip{background:#111d2e;border-color:#2a3d52}
+    .fv-dark .kicad-chip-more{color:#8a9bb8}
+  </style>`;
+
+  const bodyHtml = style + `<div class="kicad-preview">${headerHtml}${statsHtml}${metaHtml}</div>`;
   return { bodyHtml };
 }
