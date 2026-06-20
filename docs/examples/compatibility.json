@@ -26392,7 +26392,9 @@
       "label": "Ruby",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.rb"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26417,7 +26419,9 @@
       "label": "Perl",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.pm"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26442,7 +26446,9 @@
       "label": "PHP",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.php"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26467,7 +26473,9 @@
       "label": "PowerShell",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.ps1"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26492,7 +26500,9 @@
       "label": "Solidity",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.sol"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26517,7 +26527,9 @@
       "label": "VHDL",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.vhd"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26542,7 +26554,9 @@
       "label": "Arduino Sketch",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.ino"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -26567,7 +26581,9 @@
       "label": "COBOL",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.cob"
+      ],
       "extensions": [
         ".yml"
       ],
