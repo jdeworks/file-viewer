@@ -25898,7 +25898,9 @@
       "label": "Kotlin",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.kt"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25923,7 +25925,9 @@
       "label": "Scala",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.scala"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25948,7 +25952,9 @@
       "label": "Nim",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.nim"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25973,7 +25979,9 @@
       "label": "Dart",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.dart"
+      ],
       "extensions": [
         ".yml"
       ],

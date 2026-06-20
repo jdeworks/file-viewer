@@ -11695,5 +11695,57 @@
     "enhanced": true,
     "description": "Haskell language sample.",
     "knownFile": "haskell-lang"
+  },
+  {
+    "label": "sample.dart",
+    "file": "sample.dart",
+    "mime": "text/plain",
+    "category": "Mobile",
+    "categories": [
+      "Mobile",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Dart/Flutter application with widgets, async/await patterns, and class definitions.",
+    "knownFile": "dart-lang"
+  },
+  {
+    "label": "sample.kt",
+    "file": "sample.kt",
+    "mime": "text/plain",
+    "category": "JVM",
+    "categories": [
+      "JVM",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Kotlin JVM class with data classes, sealed classes, extension functions, and coroutine patterns.",
+    "knownFile": "kotlin-lang"
+  },
+  {
+    "label": "sample.nim",
+    "file": "sample.nim",
+    "mime": "text/plain",
+    "category": "Systems",
+    "categories": [
+      "Systems",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Nim systems language with type definitions, proc declarations, and template/macro usage.",
+    "knownFile": "nim-lang"
+  },
+  {
+    "label": "sample.scala",
+    "file": "sample.scala",
+    "mime": "text/plain",
+    "category": "JVM",
+    "categories": [
+      "JVM",
+      "Functional"
+    ],
+    "enhanced": true,
+    "description": "Scala JVM application with case classes, pattern matching, traits, and functional collections.",
+    "knownFile": "scala-lang"
   }
 ]
