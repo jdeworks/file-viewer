@@ -5239,7 +5239,7 @@ export async function run(ctx) {
   // ── vaultwarden.env viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('vaultwarden.env');
-  pass(await page.waitForSelector('#previewHost .vwarden-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
+  pass(await page.waitForSelector('#previewHost .vw-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
 
   // ── ntfy-server.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -5395,7 +5395,12 @@ export async function run(ctx) {
   // ── vaultwarden.env viewer (vaultwarden-config) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('vaultwarden.env');
-  pass(await page.waitForSelector('#previewHost .vwarden-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
+  pass(await page.waitForSelector('#previewHost .vw-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
+
+  // ── keycloak.conf viewer (keycloak-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('keycloak.conf');
+  pass(await page.waitForSelector('#previewHost .kc-doc', { timeout: 12000 }), 'keycloak.conf: Keycloak badge shown');
 
   // ── filebrowser.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

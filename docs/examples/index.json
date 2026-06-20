@@ -7614,6 +7614,19 @@
     "knownFile": "keycloak-realm"
   },
   {
+    "file": "keycloak.conf",
+    "label": "Keycloak Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security"
+    ],
+    "enhanced": true,
+    "description": "Keycloak IAM server configuration: database, hostname, admin credentials, features, cache, proxy, and TLS settings.",
+    "knownFile": "keycloak-config"
+  },
+  {
     "label": "authelia-config.yml (Authelia)",
     "file": "authelia-config.yml",
     "mime": "application/yaml",
@@ -10326,7 +10339,11 @@
     "label": "Glances config",
     "mime": "text/plain",
     "category": "Monitoring",
-    "categories": ["Monitoring", "System", "Self-Hosted"],
+    "categories": [
+      "Monitoring",
+      "System",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Glances cross-platform system monitoring tool configuration",
     "knownFile": true
@@ -10336,7 +10353,11 @@
     "label": "Homarr dashboard config",
     "mime": "text/yaml",
     "category": "Dashboard",
-    "categories": ["Dashboard", "Self-Hosted", "YAML"],
+    "categories": [
+      "Dashboard",
+      "Self-Hosted",
+      "YAML"
+    ],
     "enhanced": true,
     "description": "Homarr self-hosted application dashboard configuration",
     "knownFile": true
@@ -10346,7 +10367,11 @@
     "label": "Kavita config",
     "mime": "application/json",
     "category": "Media",
-    "categories": ["Media", "Books", "Self-Hosted"],
+    "categories": [
+      "Media",
+      "Books",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Kavita self-hosted comic and book reader server configuration",
     "knownFile": true
@@ -10356,7 +10381,11 @@
     "label": "Tandoor Recipes config",
     "mime": "text/plain",
     "category": "Productivity",
-    "categories": ["Productivity", "Food", "Self-Hosted"],
+    "categories": [
+      "Productivity",
+      "Food",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Tandoor self-hosted recipe manager configuration",
     "knownFile": true
@@ -10366,7 +10395,11 @@
     "label": "Audiobookshelf config",
     "mime": "text/plain",
     "category": "Media",
-    "categories": ["Media", "Audio", "Self-Hosted"],
+    "categories": [
+      "Media",
+      "Audio",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Audiobookshelf self-hosted audiobook and podcast server configuration",
     "knownFile": true
@@ -10376,7 +10409,11 @@
     "label": "Dashy dashboard config",
     "mime": "text/yaml",
     "category": "Dashboard",
-    "categories": ["Dashboard", "Self-Hosted", "YAML"],
+    "categories": [
+      "Dashboard",
+      "Self-Hosted",
+      "YAML"
+    ],
     "enhanced": true,
     "description": "Dashy self-hosted personal dashboard configuration",
     "knownFile": true
@@ -10386,7 +10423,11 @@
     "label": "Jellyseerr config",
     "mime": "application/json",
     "category": "Media",
-    "categories": ["Media", "Requests", "Self-Hosted"],
+    "categories": [
+      "Media",
+      "Requests",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Jellyseerr media request manager configuration",
     "knownFile": true
@@ -10396,7 +10437,11 @@
     "label": "Bazarr config",
     "mime": "text/yaml",
     "category": "Media",
-    "categories": ["Media", "Subtitles", "Self-Hosted"],
+    "categories": [
+      "Media",
+      "Subtitles",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Bazarr automatic subtitle downloader for Sonarr and Radarr configuration",
     "knownFile": true
@@ -10406,7 +10451,11 @@
     "label": "Scrutiny config",
     "mime": "text/yaml",
     "category": "Monitoring",
-    "categories": ["Monitoring", "Storage", "Self-Hosted"],
+    "categories": [
+      "Monitoring",
+      "Storage",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Scrutiny hard drive health monitoring dashboard configuration",
     "knownFile": true
@@ -10416,7 +10465,11 @@
     "label": "Overseerr config",
     "mime": "application/json",
     "category": "Media",
-    "categories": ["Media", "Requests", "Self-Hosted"],
+    "categories": [
+      "Media",
+      "Requests",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Overseerr media request manager configuration (Plex-based)",
     "knownFile": true
@@ -10426,7 +10479,11 @@
     "label": "FreshRSS config",
     "mime": "text/plain",
     "category": "Productivity",
-    "categories": ["Productivity", "RSS", "Self-Hosted"],
+    "categories": [
+      "Productivity",
+      "RSS",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "FreshRSS self-hosted RSS feed aggregator configuration",
     "knownFile": true
@@ -10436,7 +10493,11 @@
     "label": "Homepage services config",
     "mime": "text/yaml",
     "category": "Dashboard",
-    "categories": ["Dashboard", "Self-Hosted", "YAML"],
+    "categories": [
+      "Dashboard",
+      "Self-Hosted",
+      "YAML"
+    ],
     "enhanced": true,
     "description": "Homepage dashboard services configuration file",
     "knownFile": true
@@ -10446,7 +10507,11 @@
     "label": "Wallabag config",
     "mime": "text/plain",
     "category": "Productivity",
-    "categories": ["Productivity", "Reading", "Self-Hosted"],
+    "categories": [
+      "Productivity",
+      "Reading",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Wallabag self-hosted read-it-later application configuration",
     "knownFile": true
@@ -10456,7 +10521,11 @@
     "label": "Linkwarden config",
     "mime": "text/plain",
     "category": "Productivity",
-    "categories": ["Productivity", "Bookmarks", "Self-Hosted"],
+    "categories": [
+      "Productivity",
+      "Bookmarks",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Linkwarden self-hosted bookmark manager and link archiver configuration",
     "knownFile": true
@@ -10466,7 +10535,11 @@
     "label": "ArchiveBox config",
     "mime": "text/plain",
     "category": "Productivity",
-    "categories": ["Productivity", "Archiving", "Self-Hosted"],
+    "categories": [
+      "Productivity",
+      "Archiving",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "ArchiveBox self-hosted web archiving configuration",
     "knownFile": true
@@ -10476,7 +10549,11 @@
     "label": "Memos config",
     "mime": "text/plain",
     "category": "Productivity",
-    "categories": ["Productivity", "Notes", "Self-Hosted"],
+    "categories": [
+      "Productivity",
+      "Notes",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Memos self-hosted lightweight note-taking server configuration",
     "knownFile": true
@@ -10486,7 +10563,11 @@
     "label": "Wakapi config",
     "mime": "text/yaml",
     "category": "Productivity",
-    "categories": ["Productivity", "Coding", "Self-Hosted"],
+    "categories": [
+      "Productivity",
+      "Coding",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Wakapi self-hosted coding activity tracker (WakaTime-compatible) configuration",
     "knownFile": true
@@ -10496,7 +10577,11 @@
     "label": "Hoarder / Karakeep config",
     "mime": "text/plain",
     "category": "Productivity",
-    "categories": ["Productivity", "Bookmarks", "Self-Hosted"],
+    "categories": [
+      "Productivity",
+      "Bookmarks",
+      "Self-Hosted"
+    ],
     "enhanced": true,
     "description": "Hoarder (Karakeep) self-hosted bookmark manager with AI tagging configuration",
     "knownFile": true
