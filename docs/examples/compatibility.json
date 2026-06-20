@@ -22664,7 +22664,9 @@
       "label": "Woodpecker CI Agent Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "woodpecker-agent.env"
+      ],
       "extensions": [
         ".yml"
       ],

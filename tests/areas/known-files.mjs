@@ -5360,4 +5360,9 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('rallly.env');
   pass(await page.waitForSelector('#previewHost .rallly-doc', { timeout: 12000 }), 'rallly.env: Rallly badge shown');
+
+  // ── woodpecker-agent.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('woodpecker-agent.env');
+  pass(await page.waitForSelector('#previewHost .wpcagent-doc', { timeout: 12000 }), 'woodpecker-agent.env: Woodpecker CI badge shown');
 }
