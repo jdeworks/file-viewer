@@ -1,0 +1,11 @@
+# /etc/fstab: static file system information
+#
+# <file system>             <mount point>  <type>   <options>              <dump> <pass>
+UUID=1234-5678              /              ext4     errors=remount-ro       0      1
+UUID=abcd-ef01              /boot          ext4     defaults                0      2
+UUID=5678-9abc              /home          xfs      defaults,noatime        0      2
+UUID=ef01-2345              /var           ext4     defaults,noatime        0      2
+UUID=2345-6789              none           swap     sw                      0      0
+tmpfs                       /tmp           tmpfs    defaults,size=2G        0      0
+/dev/cdrom                  /media/cdrom0  udf,iso9660 user,noauto         0      0
+192.168.1.10:/data          /mnt/nas       nfs      defaults,noatime,nofail 0      0

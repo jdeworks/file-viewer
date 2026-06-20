@@ -2980,8 +2980,8 @@ export async function run(ctx) {
   // ── ssh_config viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('ssh_config (SSH Client Config)');
-  await page.waitForSelector('#previewHost .sshcfg-doc', { timeout: 12000 });
-  const sshcfgText = await page.$eval('#previewHost .sshcfg-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .sc-root', { timeout: 12000 });
+  const sshcfgText = await page.$eval('#previewHost .sc-root', (e) => e.textContent);
   if (/SSH/i.test(sshcfgText)) pass('ssh_config: badge shown'); else fail('ssh_config badge: ' + sshcfgText.slice(0, 200));
   if (/github\.com/i.test(sshcfgText)) pass('ssh_config: github.com host shown'); else fail('ssh_config host: ' + sshcfgText.slice(0, 300));
   if (/prod-web|prod-db|IdentityFile/i.test(sshcfgText)) pass('ssh_config: host settings shown'); else fail('ssh_config settings: ' + sshcfgText.slice(0, 300));
@@ -3012,5 +3012,21 @@ export async function run(ctx) {
   if (/GraphQL/i.test(gqlText)) pass('schema.graphql: GraphQL badge shown'); else fail('graphql badge: ' + gqlText.slice(0, 200));
   if (/Query/i.test(gqlText)) pass('schema.graphql: Query operations shown'); else fail('graphql query: ' + gqlText.slice(0, 300));
   if (/Mutation|User|Post/i.test(gqlText)) pass('schema.graphql: types/mutations shown'); else fail('graphql types: ' + gqlText.slice(0, 300));
+
+  // ── fstab viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('fstab (Linux Filesystem Table)');
+  await page.waitForSelector('#previewHost .fstab-doc', { timeout: 12000 });
+  const fstabText = await page.$eval('#previewHost .fstab-doc', (e) => e.textContent);
+  if (/fstab/i.test(fstabText)) pass('fstab: badge shown'); else fail('fstab badge: ' + fstabText.slice(0, 200));
+  if (/ext4/i.test(fstabText)) pass('fstab: ext4 fs type shown'); else fail('fstab ext4: ' + fstabText.slice(0, 300));
+
+  // ── crypttab viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('crypttab (Linux Encrypted Devices)');
+  await page.waitForSelector('#previewHost .crytab-doc', { timeout: 12000 });
+  const crytabText = await page.$eval('#previewHost .crytab-doc', (e) => e.textContent);
+  if (/crypttab/i.test(crytabText)) pass('crypttab: badge shown'); else fail('crypttab badge: ' + crytabText.slice(0, 200));
+  if (/luks/i.test(crytabText)) pass('crypttab: luks option shown'); else fail('crypttab luks: ' + crytabText.slice(0, 300));
 
 }

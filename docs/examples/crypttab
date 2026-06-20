@@ -1,0 +1,5 @@
+# /etc/crypttab: encrypted device configuration
+# <name>          <device>                                    <keyfile>  <options>
+crypt-home        UUID=a1b2c3d4-e5f6-7890-abcd-ef1234567890  none       luks
+crypt-data        UUID=b2c3d4e5-f6a7-8901-bcde-f12345678901  /etc/keys/data.key  luks,nofail
+crypt-backup      /dev/sdb1                                   none       luks,discard

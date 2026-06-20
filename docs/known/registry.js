@@ -446,6 +446,8 @@ import mlflowProject from '../types/text/yaml/known/mlflow-project/index.js';
 import wandbConfig from '../types/text/ini/known/wandb-config/index.js';
 import postmanCollection from '../types/text/json/known/postman-collection/index.js';
 import graphqlSchema from '../types/text/known/graphql-schema/index.js';
+import fstab from '../types/text/known/fstab/index.js';
+import crypttab from '../types/text/known/crypttab/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -522,7 +524,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   kafkaServerProps, natsConfig, rabbitmqConf, zookeeperConfig,
   samTemplate, cfnTemplate, cdkJson, awsSamConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson,
-  hostsFile, resolvConf, sshConfig, sshdConfig,
+  hostsFile, resolvConf, sshConfig, sshdConfig, fstab, crypttab,
   jetbrainsWorkspace, neovimConfig, vimConfig, emacsConfig,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,

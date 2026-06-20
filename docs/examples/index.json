@@ -5994,7 +5994,8 @@
     "mime": "text/plain",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "Network"
     ],
     "enhanced": true,
     "description": "System hosts file: loopback entries, development service overrides, and ad-blocking null routes.",
@@ -6006,7 +6007,8 @@
     "mime": "text/plain",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "Network"
     ],
     "enhanced": true,
     "description": "DNS resolver config: public nameservers, search domains, local domain, and resolver options.",
@@ -7018,6 +7020,24 @@
     "categories": [
       "API",
       "Config"
+    ]
+  },
+  {
+    "file": "fstab",
+    "label": "fstab (Linux Filesystem Table)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "System"
+    ]
+  },
+  {
+    "file": "crypttab",
+    "label": "crypttab (Linux Encrypted Devices)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "System"
     ]
   }
 ]
