@@ -21154,7 +21154,9 @@
       "label": "Waybar Config",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "waybar-config.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -21179,7 +21181,9 @@
       "label": "Corosync Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "corosync.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -21204,7 +21208,36 @@
       "label": "NetBird Config",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "netbird.json"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "nushell-config": {
+      "label": "Nushell Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "config.nu"
+      ],
       "extensions": [
         ".yml"
       ],

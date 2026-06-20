@@ -1,0 +1,41 @@
+{
+  "ManagementURL": "https://api.netbird.io:443",
+  "AdminURL": "https://app.netbird.io:443",
+  "SignalURL": "https://signal.netbird.io:10000",
+  "WgIface": "wt0",
+  "WgPort": 51820,
+  "IPAddress": "100.72.48.133/16",
+  "PrivateKey": "sGn9xHkV7mQwP3rL2tY8cXzA1bN4oJ6eKfI0uD5WvM=",
+  "PublicKey": "QpR7mXkL9nT2wA3zY4cV6bJ0eN8sI1gK5hF2uD7oE=",
+  "PreSharedKey": "jK8mP3nQ7rT1vZ9wL4xY2cA6bN0sI5eK8hF3uD7oE=",
+  "SSHEnabled": true,
+  "RosenpassEnabled": false,
+  "DisableAutoConnect": false,
+  "TURNs": [
+    {
+      "Proto": "udp",
+      "URI": "turn:turn.netbird.io:3478",
+      "Username": "1687534829:netbird",
+      "Password": "turn-password-token"
+    },
+    {
+      "Proto": "tcp",
+      "URI": "turn:turn.netbird.io:443",
+      "Username": "1687534829:netbird",
+      "Password": "turn-password-token"
+    }
+  ],
+  "STUNs": [
+    {
+      "Proto": "udp",
+      "URI": "stun:stun.netbird.io:3478",
+      "Username": "",
+      "Password": ""
+    }
+  ],
+  "IfaceBlacklist": ["docker0", "virbr0", "br-"],
+  "CustomDNSAddress": "100.72.48.1:5353",
+  "NetworkMap": {
+    "Serial": 12345
+  }
+}

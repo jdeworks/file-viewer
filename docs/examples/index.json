@@ -8300,6 +8300,16 @@
     "knownFile": "tmux-conf"
   },
   {
+    "file": "config.nu",
+    "label": "config.nu",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": ["Config", "Terminal"],
+    "enhanced": true,
+    "description": "Nushell shell configuration with settings, keybindings, and custom commands.",
+    "knownFile": "nushell-config"
+  },
+  {
     "file": ".screenrc",
     "label": ".screenrc",
     "category": "Config",

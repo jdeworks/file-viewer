@@ -5048,4 +5048,22 @@ export async function run(ctx) {
   if (/NetBird/i.test(netbirdText)) pass('netbird.json: NetBird badge shown'); else fail('netbird badge: ' + netbirdText.slice(0, 200));
   if (/netbird\.io/.test(netbirdText)) pass('netbird.json: management URL shown'); else fail('netbird url: ' + netbirdText.slice(0, 300));
   if (/\[configured\]/.test(netbirdText)) pass('netbird.json: private key masked as [configured]'); else fail('netbird key mask: ' + netbirdText.slice(0, 300));
+
+  // ── corosync.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('corosync.conf');
+  pass(await page.waitForSelector('#previewHost .corosync-doc', { timeout: 12000 }), 'corosync.conf: badge shown');
+  const corosyncText = await page.$eval('#previewHost .corosync-doc', (el) => el.textContent);
+  if (/ha-cluster/i.test(corosyncText)) pass('corosync.conf: cluster_name extracted'); else fail('corosync.conf: missing cluster_name, got: ' + corosyncText.slice(0, 200));
+  if (/node/i.test(corosyncText) && (/nodeid|node id|node list/i.test(corosyncText))) pass('corosync.conf: node list section shown'); else fail('corosync.conf: missing node list: ' + corosyncText.slice(0, 300));
+  if (/quorum/i.test(corosyncText)) pass('corosync.conf: quorum section shown'); else fail('corosync.conf: missing quorum section');
+
+  // ── config.nu viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('config.nu');
+  pass(await page.waitForSelector('#previewHost .nushell-doc', { timeout: 12000 }), 'config.nu: badge shown');
+  const nuText = await page.$eval('#previewHost .nushell-doc', (el) => el.textContent);
+  if (/vi/i.test(nuText)) pass('config.nu: edit_mode extracted'); else fail('config.nu: missing edit_mode, got: ' + nuText.slice(0, 200));
+  if (/custom command/i.test(nuText)) pass('config.nu: custom commands counted'); else fail('config.nu: missing custom command count: ' + nuText.slice(0, 300));
+  if (/alias/i.test(nuText)) pass('config.nu: aliases section shown'); else fail('config.nu: missing aliases section');
 }
