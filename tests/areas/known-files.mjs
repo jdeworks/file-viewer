@@ -2537,4 +2537,44 @@ export async function run(ctx) {
   if (/plural|notification/i.test(asText)) pass('strings.xml: plurals section shown'); else fail('android-strings plurals: ' + asText.slice(0, 300));
   const asSearch = await page.$('#previewHost .as-search');
   if (asSearch) pass('strings.xml: search input rendered'); else fail('android-strings search input missing');
+
+  // ── DVC Pipeline viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dvc.yaml (DVC Pipeline)');
+  await page.waitForSelector('#previewHost .dvc-doc', { timeout: 12000 });
+  const dvcText = await page.$eval('#previewHost .dvc-doc', (e) => e.textContent);
+  if (/DVC/i.test(dvcText)) pass('dvc.yaml: DVC badge shown'); else fail('dvc badge: ' + dvcText.slice(0, 200));
+  if (/prepare|train|evaluate/i.test(dvcText)) pass('dvc.yaml: pipeline stages shown'); else fail('dvc stages: ' + dvcText.slice(0, 300));
+  if (/python src\/prepare\.py|python src\/train\.py/i.test(dvcText)) pass('dvc.yaml: stage commands shown'); else fail('dvc commands: ' + dvcText.slice(0, 300));
+  if (/Dependencies|Outputs|Parameters/i.test(dvcText)) pass('dvc.yaml: stage dep/out/param lists shown'); else fail('dvc lists: ' + dvcText.slice(0, 300));
+
+  // ── MLflow Project viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('MLproject (MLflow Project)');
+  await page.waitForSelector('#previewHost .mlf-doc', { timeout: 12000 });
+  const mlfText = await page.$eval('#previewHost .mlf-doc', (e) => e.textContent);
+  if (/MLflow/i.test(mlfText)) pass('MLproject: MLflow badge shown'); else fail('mlflow badge: ' + mlfText.slice(0, 200));
+  if (/my-sklearn-project/i.test(mlfText)) pass('MLproject: project name shown'); else fail('mlflow name: ' + mlfText.slice(0, 300));
+  if (/train|predict/i.test(mlfText)) pass('MLproject: entry points shown'); else fail('mlflow entry points: ' + mlfText.slice(0, 300));
+  if (/alpha|l1_ratio|max_iter/i.test(mlfText)) pass('MLproject: parameters shown'); else fail('mlflow params: ' + mlfText.slice(0, 300));
+
+  // ── Hydra Config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('hydra-config.yaml (Hydra Config)');
+  await page.waitForSelector('#previewHost .hyd-doc', { timeout: 12000 });
+  const hydText = await page.$eval('#previewHost .hyd-doc', (e) => e.textContent);
+  if (/Hydra/i.test(hydText)) pass('hydra-config.yaml: Hydra badge shown'); else fail('hydra badge: ' + hydText.slice(0, 200));
+  if (/model|dataset|optimizer|scheduler/i.test(hydText)) pass('hydra-config.yaml: defaults groups shown'); else fail('hydra defaults: ' + hydText.slice(0, 300));
+  if (/src\.trainer\.ImageClassifier|_self_/i.test(hydText)) pass('hydra-config.yaml: target class or _self_ shown'); else fail('hydra target: ' + hydText.slice(0, 300));
+  if (/max_epochs|batch_size|num_workers/i.test(hydText)) pass('hydra-config.yaml: config values shown'); else fail('hydra values: ' + hydText.slice(0, 300));
+
+  // ── W&B Config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('wandb-settings (W&B Config)');
+  await page.waitForSelector('#previewHost .wb-doc', { timeout: 12000 });
+  const wbText = await page.$eval('#previewHost .wb-doc', (e) => e.textContent);
+  if (/W&B|Weights.*Biases/i.test(wbText)) pass('wandb-settings: W&B badge shown'); else fail('wandb badge: ' + wbText.slice(0, 200));
+  if (/my-team/i.test(wbText)) pass('wandb-settings: entity shown'); else fail('wandb entity: ' + wbText.slice(0, 300));
+  if (/image-classification/i.test(wbText)) pass('wandb-settings: project shown'); else fail('wandb project: ' + wbText.slice(0, 300));
+  if (/online/i.test(wbText)) pass('wandb-settings: mode shown'); else fail('wandb mode: ' + wbText.slice(0, 300));
 }

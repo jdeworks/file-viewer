@@ -6550,7 +6550,10 @@
     "file": "dvc.yaml",
     "mime": "application/yaml",
     "category": "Config",
-    "categories": ["Config", "Data Science"],
+    "categories": [
+      "Config",
+      "Data Science"
+    ],
     "enhanced": true,
     "description": "DVC pipeline: 3 stages (prepare, train, evaluate) with commands, dependencies, outputs, params, and metrics.",
     "knownFile": "dvc-pipeline"
@@ -6560,7 +6563,10 @@
     "file": "MLproject",
     "mime": "application/yaml",
     "category": "Config",
-    "categories": ["Config", "Data Science"],
+    "categories": [
+      "Config",
+      "Data Science"
+    ],
     "enhanced": true,
     "description": "MLflow project: sklearn ElasticNet model with conda env, train entry point (alpha, l1_ratio, max_iter), and predict entry point.",
     "knownFile": "mlflow-project"
@@ -6570,7 +6576,10 @@
     "file": "hydra-config.yaml",
     "mime": "application/yaml",
     "category": "Config",
-    "categories": ["Config", "Data Science"],
+    "categories": [
+      "Config",
+      "Data Science"
+    ],
     "enhanced": true,
     "description": "Hydra config: defaults list with model, dataset, optimizer, scheduler groups; _target_ class; training and logging values.",
     "knownFile": "hydra-config"
@@ -6580,9 +6589,116 @@
     "file": "wandb-settings",
     "mime": "text/plain",
     "category": "Config",
-    "categories": ["Config", "Data Science"],
+    "categories": [
+      "Config",
+      "Data Science"
+    ],
     "enhanced": true,
     "description": "Weights & Biases settings: entity, project, online mode, api.wandb.ai base URL, group and job_type.",
     "knownFile": "wandb-config"
+  },
+  {
+    "label": "newrelic.yml (New Relic Agent)",
+    "file": "newrelic.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Monitoring"
+    ],
+    "enhanced": true,
+    "description": "New Relic Java agent config: MyApp with distributed tracing, transaction tracing, error collector, and 3 environments.",
+    "knownFile": "newrelic-config"
+  },
+  {
+    "label": "dtconfig.yaml (Dynatrace OneAgent)",
+    "file": "dtconfig.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Monitoring"
+    ],
+    "enhanced": true,
+    "description": "Dynatrace OneAgent config: environment abc12345, 2 network zones, production host group, and feature flags.",
+    "knownFile": "dynatrace-config"
+  },
+  {
+    "label": "elastic-apm-agent.properties (Elastic APM Agent)",
+    "file": "elastic-apm-agent.properties",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Monitoring"
+    ],
+    "enhanced": true,
+    "description": "Elastic APM Java agent: payment-service v2.4.1 in production, dual server URLs, 25% sampling rate.",
+    "knownFile": "elastic-apm-config"
+  },
+  {
+    "label": "filebeat.yml (Elastic Beats)",
+    "file": "filebeat.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Monitoring"
+    ],
+    "enhanced": true,
+    "description": "Filebeat config: 2 log inputs (myapp and nginx), Elasticsearch output with dual hosts, 3 processors.",
+    "knownFile": "beats-config"
+  },
+  {
+    "label": "hardhat.config.js (Hardhat)",
+    "file": "hardhat.config.js",
+    "mime": "text/javascript",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Blockchain"
+    ],
+    "enhanced": true,
+    "description": "Hardhat Ethereum dev config: 4 networks (hardhat, localhost, mainnet, goerli), Solidity 0.8.24, optimizer 200 runs, Etherscan configured.",
+    "knownFile": "hardhat-config"
+  },
+  {
+    "label": "truffle-config.js (Truffle)",
+    "file": "truffle-config.js",
+    "mime": "text/javascript",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Blockchain"
+    ],
+    "enhanced": true,
+    "description": "Truffle Ethereum config: 4 networks (development, test, mainnet, ropsten), Solidity 0.8.17, optimizer enabled.",
+    "knownFile": "truffle-config"
+  },
+  {
+    "label": "foundry.toml (Foundry)",
+    "file": "foundry.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Blockchain"
+    ],
+    "enhanced": true,
+    "description": "Foundry Solidity config: default/ci/production profiles, Solidity 0.8.24, 3 RPC endpoints, 3 Etherscan entries, remappings.",
+    "knownFile": "foundry-toml"
+  },
+  {
+    "label": "Anchor.toml (Anchor)",
+    "file": "Anchor.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Blockchain"
+    ],
+    "enhanced": true,
+    "description": "Anchor Solana config: 2 programs across localnet/devnet/mainnet clusters, wallet path, workspace members, test validator.",
+    "knownFile": "anchor-toml"
   }
 ]

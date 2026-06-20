@@ -1,0 +1,46 @@
+vars:
+  - params.yaml
+
+stages:
+  prepare:
+    cmd: python src/prepare.py --input data/raw --output data/processed
+    deps:
+      - src/prepare.py
+      - data/raw
+    params:
+      - prepare.split
+      - prepare.seed
+    outs:
+      - data/processed
+
+  train:
+    cmd: python src/train.py --data data/processed --model models/model.pkl
+    deps:
+      - src/train.py
+      - data/processed
+    params:
+      - train.n_estimators
+      - train.max_depth
+      - train.learning_rate
+    outs:
+      - models/model.pkl
+    metrics:
+      - metrics/train.json:
+          cache: false
+
+  evaluate:
+    cmd: python src/evaluate.py --model models/model.pkl --data data/test
+    deps:
+      - src/evaluate.py
+      - models/model.pkl
+      - data/test
+    params:
+      - evaluate.threshold
+    metrics:
+      - metrics/eval.json:
+          cache: false
+    plots:
+      - plots/precision_recall.csv:
+          cache: false
+      - plots/confusion_matrix.csv:
+          cache: false

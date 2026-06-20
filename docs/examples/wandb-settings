@@ -1,0 +1,11 @@
+[default]
+entity = my-team
+project = image-classification
+base_url = https://api.wandb.ai
+mode = online
+run_mode = online
+group = experiment-batch-01
+job_type = training
+anonymous = never
+tags = ["v2", "resnet", "production"]
+run_dir = ./wandb

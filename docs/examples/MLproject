@@ -1,0 +1,30 @@
+name: my-sklearn-project
+
+conda_env: conda.yaml
+
+entry_points:
+  train:
+    parameters:
+      alpha:
+        type: float
+        default: 0.5
+      l1_ratio:
+        type: float
+        default: 0.1
+      max_iter:
+        type: int
+        default: 100
+    command: "python train.py --alpha {alpha} --l1-ratio {l1_ratio} --max-iter {max_iter}"
+
+  predict:
+    parameters:
+      model_uri:
+        type: str
+        default: "models:/sklearn-elasticnet/production"
+      input_path:
+        type: str
+        default: "data/input.csv"
+      output_path:
+        type: str
+        default: "data/predictions.csv"
+    command: "python predict.py --model-uri {model_uri} --input {input_path} --output {output_path}"

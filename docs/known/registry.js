@@ -406,6 +406,14 @@ import slsaProvenance from '../types/text/json/known/slsa-provenance/index.js';
 import syftConfig from '../types/text/yaml/known/syft-config/index.js';
 import proguardRules from '../types/text/known/proguard-rules/index.js';
 import androidStrings from '../types/text/xml/known/android-strings/index.js';
+import keycloakRealm from '../types/text/json/known/keycloak-realm/index.js';
+import autheliaConfig from '../types/text/yaml/known/authelia-config/index.js';
+import oauth2ProxyConfig from '../types/text/known/oauth2-proxy-config/index.js';
+import authentikConfig from '../types/text/yaml/known/authentik-config/index.js';
+import newrelicConfig from '../types/text/yaml/known/newrelic-config/index.js';
+import dynatraceConfig from '../types/text/yaml/known/dynatrace-config/index.js';
+import elasticApmConfig from '../types/text/known/elastic-apm-config/index.js';
+import beatsConfig from '../types/text/yaml/known/beats-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -491,6 +499,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   actConfig,
   cyclonedxSbom, spdxSbom, slsaProvenance, syftConfig,
   proguardRules, androidStrings,
+  keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig,
+  newrelicConfig, dynatraceConfig, elasticApmConfig, beatsConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

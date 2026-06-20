@@ -1,0 +1,26 @@
+defaults:
+  - model: resnet50
+  - dataset: imagenet
+  - optimizer: adamw
+  - scheduler: cosine
+  - _self_
+
+_target_: src.trainer.ImageClassifier
+
+# Training settings
+training:
+  max_epochs: 100
+  batch_size: 64
+  num_workers: 8
+  gradient_clip_val: 1.0
+  precision: 16-mixed
+
+# Logging and checkpointing
+logging:
+  project: image-classification
+  save_dir: outputs/
+  log_every_n_steps: 50
+
+# Hardware
+device: cuda
+seed: 42
