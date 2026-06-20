@@ -376,6 +376,7 @@ import externalSecrets from '../types/text/yaml/known/external-secrets/index.js'
 import fluentBit from '../types/text/known/fluent-bit/index.js';
 import logstashConf from '../types/text/known/logstash-conf/index.js';
 import fluentdConf from '../types/text/known/fluentd-conf/index.js';
+import graylogConf from '../types/text/known/graylog-conf/index.js';
 import lokiConfig from '../types/text/yaml/known/loki-config/index.js';
 import promtailConfig from '../types/text/yaml/known/promtail-config/index.js';
 import tempoConfig from '../types/text/yaml/known/tempo/index.js';
@@ -409,6 +410,7 @@ import clickhouseConfig from '../types/text/xml/known/clickhouse-config/index.js
 import mongodConf from '../types/text/known/mongod-conf/index.js';
 import myCnf from '../types/text/known/my-cnf/index.js';
 import postgresqlConf from '../types/text/known/postgresql-conf/index.js';
+import odooConf from '../types/text/ini/known/odoo-conf/index.js';
 import pgbouncerIni from '../types/text/known/pgbouncer-ini/index.js';
 import pgbackrestConf from '../types/text/known/pgbackrest-conf/index.js';
 import patroniConfig from '../types/text/yaml/known/patroni-config/index.js';
@@ -521,6 +523,7 @@ import foundryToml from '../types/text/toml/known/foundry-toml/index.js';
 import anchorToml from '../types/text/toml/known/anchor-toml/index.js';
 import wireguardConf from '../types/text/known/wireguard-conf/index.js';
 import netbirdConfig from '../types/text/json/known/netbird-config/index.js';
+import tailscaleAcl from '../types/text/json/known/tailscale-acl/index.js';
 import openvpnConfig from '../types/text/known/openvpn-config/index.js';
 import opensslConf from '../types/text/known/openssl-conf/index.js';
 import krb5Conf from '../types/text/known/krb5-conf/index.js';
@@ -572,6 +575,7 @@ import eximConf from '../types/text/known/exim-conf/index.js';
 import chronyConf from '../types/text/known/chrony-conf/index.js';
 import namedConf from '../types/text/known/named-conf/index.js';
 import unboundConf from '../types/text/known/unbound-conf/index.js';
+import piholeSetupvars from '../types/text/known/pihole-setupvars/index.js';
 import dhcpdConf from '../types/text/known/dhcpd-conf/index.js';
 import netdataConf from '../types/text/known/netdata-conf/index.js';
 import yarnrc from '../types/text/known/yarnrc/index.js';
@@ -703,10 +707,10 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   atlantis, spaceliftConfig, kamalConfig, prefectConfig, checkov, terraformDocs, infracost,
   opencostConfig, crossplaneConfig, kedaConfig, veleroConfig,
   androidManifest, appConfig, buildZigZon, zigZon, cartfile,
-  electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, tempoConfig, mimirConfig, cortexConfig, grafanaAlloy, forgeConfig,
+  electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, graylogConf, lokiConfig, promtailConfig, tempoConfig, mimirConfig, cortexConfig, grafanaAlloy, forgeConfig,
   gleamToml, goWork, grafanaIni, podmanQuadlet, growthbook,
   jekyllConfig, juliaProject, juliaManifest, kongConfig, apisixConfig, envoyConfig, launchSettings, appSettings,
-  nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, kibana, clickhouseConfig, shardYml, crystalShard,
+  nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, odooConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, kibana, clickhouseConfig, shardYml, crystalShard,
   tauriConf, traefikConfig, unleashConfig, vaultHcl, nomadJob, consulConfig,
   vectorToml, vectorConfig, keepalivedConf, corosyncConf, wailsJson, webConfig, xcconfig,
   bitbucketPipelines, tektonPipeline, argoCdApp, fluxKustomization, fluxHelmRelease, dockerStack,
@@ -734,7 +738,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig,
   newrelicConfig, dynatraceConfig, elasticApmConfig, filebeatConfig, heartbeatConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
-  wireguardConf, netbirdConfig, openvpnConfig, opensslConf, krb5Conf, gpgConf,
+  wireguardConf, netbirdConfig, tailscaleAcl, openvpnConfig, opensslConf, krb5Conf, gpgConf,
   giteaConf, stunnelConf,
   supervisordConf, logrotateConf, tlpConf,
   shellRc,
@@ -748,7 +752,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   fail2banConf, apparmorProfile, suricataConfig, smbConf,
   corefile, containerdConfig,
   postfixConf, dovecotConf, zabbixConf, eximConf, chronyConf,
-  namedConf, unboundConf, dhcpdConf,
+  namedConf, unboundConf, piholeSetupvars, dhcpdConf,
   netdataConf, yarnrc,
   hyprlandConf, lxcConfig,
   muttrc, footConfig,

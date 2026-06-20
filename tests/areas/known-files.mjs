@@ -5049,6 +5049,26 @@ export async function run(ctx) {
   if (/netbird\.io/.test(netbirdText)) pass('netbird.json: management URL shown'); else fail('netbird url: ' + netbirdText.slice(0, 300));
   if (/\[configured\]/.test(netbirdText)) pass('netbird.json: private key masked as [configured]'); else fail('netbird key mask: ' + netbirdText.slice(0, 300));
 
+  // ── tailscale-acl.hujson viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('tailscale-acl.hujson');
+  pass(await page.waitForSelector('#previewHost .tailscale-acl-doc', { timeout: 12000 }), 'tailscale-acl.hujson: badge shown');
+  const tsAclText = await page.$eval('#previewHost .tailscale-acl-doc', (el) => el.textContent);
+  if (/Tailscale/i.test(tsAclText)) pass('tailscale-acl.hujson: Tailscale badge shown'); else fail('tailscale badge: ' + tsAclText.slice(0, 200));
+  if (/group:dev|group:ops/i.test(tsAclText)) pass('tailscale-acl.hujson: groups shown'); else fail('tailscale groups: ' + tsAclText.slice(0, 300));
+  if (/accept/i.test(tsAclText)) pass('tailscale-acl.hujson: accept rules shown'); else fail('tailscale accept: ' + tsAclText.slice(0, 300));
+  if (/accept rules present/i.test(tsAclText)) pass('tailscale-acl.hujson: accept-rules-present status shown'); else fail('tailscale accept status: ' + tsAclText.slice(0, 300));
+
+  // ── pihole-setupVars.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('setupVars.conf (Pi-hole)');
+  pass(await page.waitForSelector('#previewHost .pihole-doc', { timeout: 12000 }), 'pihole-setupVars.conf: badge shown');
+  const piholeText = await page.$eval('#previewHost .pihole-doc', (el) => el.textContent);
+  if (/Pi-hole/i.test(piholeText)) pass('pihole-setupVars.conf: Pi-hole badge shown'); else fail('pihole badge: ' + piholeText.slice(0, 200));
+  if (/8\.8\.8\.8|1\.1\.1\.1/.test(piholeText)) pass('pihole-setupVars.conf: upstream DNS servers shown'); else fail('pihole dns: ' + piholeText.slice(0, 300));
+  if (/eth0/.test(piholeText)) pass('pihole-setupVars.conf: interface shown'); else fail('pihole interface: ' + piholeText.slice(0, 300));
+  if (/\[configured\]/.test(piholeText)) pass('pihole-setupVars.conf: WEBPASSWORD masked'); else fail('pihole webpassword: ' + piholeText.slice(0, 300));
+
   // ── corosync.conf viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('corosync.conf');

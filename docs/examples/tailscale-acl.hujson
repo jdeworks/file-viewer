@@ -1,0 +1,81 @@
+// Tailscale ACL policy
+// https://tailscale.com/kb/1018/acls/
+{
+  // Groups of users
+  "groups": {
+    "group:dev": ["alice@example.com", "bob@example.com", "carol@example.com"],
+    "group:ops": ["dave@example.com", "eve@example.com"]
+  },
+
+  // Named host aliases
+  "hosts": {
+    "bastion":       "100.64.0.1",
+    "prod-db":       "100.64.0.10",
+    "staging-web":   "100.64.0.20"
+  },
+
+  // Tag owners: who can apply each tag
+  "tagOwners": {
+    "tag:server":  ["group:ops"],
+    "tag:staging": ["group:dev", "group:ops"],
+    "tag:monitor": ["group:ops"]
+  },
+
+  // ACL rules
+  "acls": [
+    // Dev team can SSH and access web ports on staging servers
+    {
+      "action": "accept",
+      "src":    ["group:dev"],
+      "dst":    ["tag:staging:22,80,443"]
+    },
+    // Ops team has full access to all servers
+    {
+      "action": "accept",
+      "src":    ["group:ops"],
+      "dst":    ["tag:server:*", "tag:staging:*"]
+    },
+    // All users can access the monitoring dashboard
+    {
+      "action": "accept",
+      "src":    ["autogroup:member"],
+      "dst":    ["tag:monitor:3000"]
+    },
+    // Internal services can communicate
+    {
+      "action": "accept",
+      "src":    ["tag:server"],
+      "dst":    ["tag:server:5432,6379"]
+    }
+  ],
+
+  // SSH access rules
+  "ssh": [
+    {
+      "action": "accept",
+      "src":    ["group:ops"],
+      "dst":    ["tag:server"],
+      "users":  ["root", "ubuntu"]
+    },
+    {
+      "action": "accept",
+      "src":    ["group:dev"],
+      "dst":    ["tag:staging"],
+      "users":  ["deploy"]
+    }
+  ],
+
+  // Policy tests
+  "tests": [
+    {
+      "src":    "alice@example.com",
+      "dst":    "tag:staging:443",
+      "expect": "accept"
+    },
+    {
+      "src":    "alice@example.com",
+      "dst":    "tag:server:22",
+      "expect": "deny"
+    }
+  ]
+}

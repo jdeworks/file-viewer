@@ -9149,5 +9149,45 @@
     "enhanced": true,
     "description": "NetBird WireGuard-based VPN client configuration.",
     "knownFile": "netbird-config"
+  },
+  {
+    "file": "tailscale-acl.hujson",
+    "label": "tailscale-acl.hujson",
+    "mime": "application/json",
+    "category": "Networking",
+    "categories": ["Networking", "Security"],
+    "enhanced": true,
+    "description": "Tailscale network ACL policy with groups, hosts, and access rules.",
+    "knownFile": "tailscale-acl"
+  },
+  {
+    "file": "pihole-setupVars.conf",
+    "label": "setupVars.conf (Pi-hole)",
+    "mime": "text/plain",
+    "category": "Networking",
+    "categories": ["Networking", "Config"],
+    "enhanced": true,
+    "description": "Pi-hole DNS ad-blocker configuration with network and DNS settings.",
+    "knownFile": "pihole-setupvars"
+  },
+  {
+    "file": "graylog.conf",
+    "label": "graylog.conf",
+    "mime": "text/plain",
+    "category": "Monitoring",
+    "categories": ["Monitoring", "Config"],
+    "enhanced": true,
+    "description": "Graylog log management server configuration with Elasticsearch and MongoDB settings.",
+    "knownFile": "graylog-conf"
+  },
+  {
+    "file": "odoo.conf",
+    "label": "odoo.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": ["Config", "Application"],
+    "enhanced": true,
+    "description": "Odoo ERP server configuration with database, workers, and performance settings.",
+    "knownFile": "odoo-conf"
   }
 ]
