@@ -265,10 +265,11 @@ export async function run(ctx) {
   // ── renovate.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('renovate.json');
-  await page.waitForSelector('#previewHost .rnv-doc', { timeout: 12000 });
-  const rnvText = await page.$eval('#previewHost .rnv-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .renovate-doc', { timeout: 12000 });
+  const rnvText = await page.$eval('#previewHost .renovate-doc', (e) => e.textContent);
   if (/Renovate/i.test(rnvText)) pass('renovate.json: badge shown'); else fail('renovate badge: ' + rnvText.slice(0, 200));
-  if (/package rule|automerge|schedule/i.test(rnvText)) pass('renovate.json: rules/settings shown'); else fail('renovate content: ' + rnvText.slice(0, 200));
+  if (rnvText.includes('config:recommended')) pass('renovate.json: extends shown'); else fail('renovate.json: extends not shown: ' + rnvText.slice(0, 200));
+  if (rnvText.includes('devDependencies')) pass('renovate.json: package rules shown'); else fail('renovate.json: package rules not shown: ' + rnvText.slice(0, 200));
 
   // ── .prettierrc.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -399,10 +400,11 @@ export async function run(ctx) {
   // ── codecov.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('codecov.yml');
-  await page.waitForSelector('#previewHost .ccv-doc', { timeout: 12000 });
-  const ccvText = await page.$eval('#previewHost .ccv-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .codecov-doc', { timeout: 12000 });
+  const ccvText = await page.$eval('#previewHost .codecov-doc', (e) => e.textContent);
   if (/Codecov/i.test(ccvText)) pass('codecov.yml: badge shown'); else fail('codecov badge: ' + ccvText.slice(0, 200));
-  if (/80|70|unit|integration/i.test(ccvText)) pass('codecov.yml: targets or flags shown'); else fail('codecov content: ' + ccvText.slice(0, 200));
+  if (ccvText.includes('80')) pass('codecov.yml: coverage target shown'); else fail('codecov.yml: coverage target not shown: ' + ccvText.slice(0, 200));
+  if (ccvText.includes('frontend')) pass('codecov.yml: flags shown'); else fail('codecov.yml: flags not shown: ' + ccvText.slice(0, 200));
 
   // ── serverless.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -663,8 +665,8 @@ export async function run(ctx) {
   // ── skaffold.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('skaffold.yaml');
-  await page.waitForSelector('#previewHost .skf-doc', { timeout: 12000 });
-  const skfText = await page.$eval('#previewHost .skf-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .skaffold-doc', { timeout: 12000 });
+  const skfText = await page.$eval('#previewHost .skaffold-doc', (e) => e.textContent);
   if (/Skaffold/i.test(skfText)) pass('skaffold.yaml: badge shown'); else fail('skaffold badge: ' + skfText.slice(0, 200));
   if (/artifact|deploy|kubectl|profile/i.test(skfText)) pass('skaffold.yaml: build and deploy shown'); else fail('skaffold config: ' + skfText.slice(0, 200));
 
@@ -743,10 +745,10 @@ export async function run(ctx) {
   // ── Chart.yaml (Helm chart) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Chart.yaml (Helm chart)');
-  await page.waitForSelector('#previewHost .hc-doc', { timeout: 12000 });
-  const hcText = await page.$eval('#previewHost .hc-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .helmchart-doc', { timeout: 12000 });
+  const hcText = await page.$eval('#previewHost .helmchart-doc', (e) => e.textContent);
   if (/Helm/i.test(hcText)) pass('Chart.yaml: Helm badge shown'); else fail('helm-chart badge: ' + hcText.slice(0, 200));
-  if (/my-webapp|postgresql|redis/i.test(hcText)) pass('Chart.yaml: chart name and dependencies shown'); else fail('helm-chart content: ' + hcText.slice(0, 200));
+  if (/my-app|postgresql|redis/i.test(hcText)) pass('Chart.yaml: chart name and dependencies shown'); else fail('helm-chart content: ' + hcText.slice(0, 200));
 
   // ── kustomization.yaml (Kustomize) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

@@ -3,7 +3,7 @@ export default {
   label: 'Codecov config',
   match: (intake, baseType) => {
     if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType.id)) return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return ['codecov.yml', 'codecov.yaml', '.codecov.yml'].includes(name);
   },
   loadRenderer: () => import('./renderer.js'),

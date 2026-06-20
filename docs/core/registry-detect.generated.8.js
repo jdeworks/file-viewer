@@ -3,6 +3,28 @@ import { isCode } from '../types/text/code/langmap.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_emulatorjs=(()=>{
+const EXT_CORE = {
+  '.nes': 'fceumm', '.fds': 'fceumm',
+  '.sfc': 'snes9x', '.smc': 'snes9x',
+  '.gb': 'gambatte', '.gbc': 'gambatte', '.sgb': 'gambatte',
+  '.gba': 'mgba',
+  '.gen': 'genesis_plus_gx', '.smd': 'genesis_plus_gx',
+  '.a26': 'stella2014',
+};
+
+function detect(intake) {
+  if (!intake.isBinary) return 0;
+  const ext = '.' + intake.filename.split('.').pop().toLowerCase();
+  if (EXT_CORE[ext]) return 0.92;
+  // NES magic: 4E 45 53 1A
+  const b = intake.bytes;
+  if (b[0] === 0x4e && b[1] === 0x45 && b[2] === 0x53 && b[3] === 0x1a) return 0.98;
+  return 0;
+}
+return detect;
+})();
+
 const detect_code=(()=>{
 // Source code: matched by extension/filename. Scores below dedicated types (md/csv/json)
 // so those win, but above the raw fallback. Never executes — it's a syntax-only raw view.
@@ -24,4 +46,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"code":detect_code,"raw":detect_raw};
+export const DETECTORS={"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};

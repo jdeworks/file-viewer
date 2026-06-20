@@ -3,7 +3,7 @@ export default {
   label: 'Renovate config',
   match: (intake, baseType) => {
     if (baseType.id !== 'json') return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return name === 'renovate.json' || name === 'renovate.json5' || name === '.renovaterc' || name === '.renovaterc.json';
   },
   loadRenderer: () => import('./renderer.js'),

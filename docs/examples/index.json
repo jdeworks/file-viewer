@@ -2611,7 +2611,10 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true,
+    "description": "Renovate dependency update bot configuration — extends presets, PR limits, package rules, and vulnerability alert settings.",
+    "knownFile": "renovate"
   },
   {
     "label": ".prettierrc.json",
@@ -2773,7 +2776,10 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true,
+    "description": "Codecov CI coverage configuration — coverage targets, flags with paths and carryforward, ignore patterns, and PR comment layout.",
+    "knownFile": "codecov"
   },
   {
     "label": "serverless.yml",
@@ -3088,6 +3094,7 @@
       "Config",
       "devops"
     ],
+    "knownFile": "skaffold",
     "enhanced": true
   },
   {
@@ -3104,13 +3111,14 @@
     "label": "Chart.yaml (Helm chart)",
     "file": "Chart.yaml",
     "mime": "application/yaml",
-    "category": "DevOps",
+    "category": "Config",
     "categories": [
-      "DevOps",
-      "Config"
+      "Config",
+      "DevOps"
     ],
+    "knownFile": "helm-chart",
     "enhanced": true,
-    "description": "Helm chart metadata with name, version, and chart dependencies."
+    "description": "Helm chart metadata with name, version, maintainers, and chart dependencies."
   },
   {
     "label": "kustomization.yaml (Kustomize)",

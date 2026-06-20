@@ -3,6 +3,27 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_bson=(()=>{
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isBsonExt = ext === 'bson';
+
+  if (!b || b.length < 5) return isBsonExt ? 0.6 : 0;
+
+  // BSON document: first 4 bytes = LE int32 document length (includes itself),
+  // last byte of the stated length must be 0x00 (document terminator).
+  const docLen = b[0] | (b[1] << 8) | (b[2] << 16) | (b[3] << 24);
+  const validLen = docLen >= 5 && docLen <= b.length;
+  const terminator = validLen && b[docLen - 1] === 0x00;
+  const structural = validLen && terminator;
+
+  if (isBsonExt) return structural ? 0.97 : 0.65;
+  return structural ? 0.75 : 0;
+}
+return detect;
+})();
+
 const detect_exr=(()=>{
 // OpenEXR magic: 0x76 0x2F 0x31 0x01
 const MAGIC = [0x76, 0x2f, 0x31, 0x01];
@@ -298,18 +319,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_rpm=(()=>{
-function detect(intake) {
-  const { filename, bytes: b } = intake;
-  const ext = (filename || '').split('.').pop().toLowerCase();
-  const isRpm = ext === 'rpm' || ext === 'srpm';
-  if (!b || b.length < 4) return isRpm ? 0.6 : 0;
-  // RPM magic: ED AB EE DB
-  const isRpmMagic = b[0] === 0xed && b[1] === 0xab && b[2] === 0xee && b[3] === 0xdb;
-  if (isRpmMagic) return isRpm ? 0.99 : 0.97;
-  return isRpm ? 0.3 : 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"exr":detect_exr,"dbf":detect_dbf,"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"lmms":detect_lmms,"f3d":detect_f3d,"deb":detect_deb,"rpm":detect_rpm};
+export const DETECTORS={"bson":detect_bson,"exr":detect_exr,"dbf":detect_dbf,"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"lmms":detect_lmms,"f3d":detect_f3d,"deb":detect_deb};

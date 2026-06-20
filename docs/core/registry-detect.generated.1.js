@@ -57,6 +57,9 @@ function detect(intake) {
   const name = (intake.filename || '').toLowerCase().split('/').pop();
   if (/^\.env(\.|$)/.test(name) || name === '.editorconfig') return 0.9;
   if (hasExtension(intake, 'ini', 'env', 'cfg', 'conf', 'properties')) return 0.85;
+  // Well-known INI-format config files without a distinctive extension
+  if (/^\.(pylintrc|flake8|coveragerc|tox|pytest\.ini)$/.test(name) ||
+      /^(setup\.cfg|mypy\.ini|tox\.ini|pytest\.ini|pipenv|gitconfig|hgrc)$/.test(name)) return 0.85;
   // Weak sniff: several `key=value` / `key: value` lines and/or a [section] header.
   const t = intake.textSample || '';
   const kvLines = (t.match(/^[ \t]*[\w.-]+\s*[=:]\s*\S/gm) || []).length;
@@ -298,28 +301,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_bio=(()=>{
-const FASTA_EXT = ['fa', 'fasta', 'fna', 'faa', 'ffn', 'frn', 'fsa', 'mpfa'];
-const FASTQ_EXT = ['fq', 'fastq'];
-const VCF_EXT = ['bcf'];
-const GFF_EXT = ['gff', 'gff3', 'gtf'];
-const BED_EXT = ['bed'];
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, ...FASTA_EXT)) return 0.92;
-  if (hasExtension(intake, ...FASTQ_EXT)) return 0.92;
-  if (hasExtension(intake, ...VCF_EXT)) return 0.92;
-  if (hasExtension(intake, ...GFF_EXT)) return 0.88;
-  if (hasExtension(intake, ...BED_EXT)) return 0.82;
-  const head = (intake.text || '').slice(0, 600);
-  if (/^>[\w\s]/.test(head)) return 0.75;           // FASTA >header
-  if (/^@[\w\s]/.test(head) && /^\+/m.test(head)) return 0.7;  // FASTQ @header + +
-  if (/^##fileformat=VCF/i.test(head)) return 0.85; // VCF meta
-  if (/^##gff-version/i.test(head)) return 0.82;    // GFF
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"xml":detect_xml,"als":detect_als,"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"bio":detect_bio};
+export const DETECTORS={"xml":detect_xml,"als":detect_als,"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx};

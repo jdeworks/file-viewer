@@ -1,40 +1,43 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
+    "config:recommended",
+    "schedule:weeklyNonOfficeHours",
     ":dependencyDashboard",
     ":semanticCommits",
-    "group:allNonMajor"
+    "group:monorepos"
   ],
-  "schedule": ["before 6am on Monday"],
-  "timezone": "Europe/Berlin",
-  "labels": ["dependencies", "renovate"],
   "automerge": false,
-  "prHourlyLimit": 4,
-  "prConcurrentLimit": 10,
-  "baseBranches": ["main", "next"],
-  "ignoreDeps": ["lodash", "moment"],
+  "automergeType": "pr",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "assignees": ["@janesmith"],
+  "reviewers": ["@bobsmith"],
+  "labels": ["dependencies"],
   "packageRules": [
     {
-      "matchUpdateTypes": ["patch", "minor"],
       "matchDepTypes": ["devDependencies"],
       "automerge": true,
-      "labels": ["auto-merge"]
+      "automergeType": "branch"
     },
     {
       "matchPackagePatterns": ["^@types/"],
-      "groupName": "TypeScript type definitions",
-      "automerge": true
+      "groupName": "DefinitelyTyped"
     },
     {
-      "matchPackageNames": ["node"],
-      "matchDepTypes": ["engines"],
-      "enabled": false
+      "matchManagers": ["docker"],
+      "enabled": true
     },
     {
       "matchUpdateTypes": ["major"],
-      "labels": ["major-update"],
-      "minimumReleaseAge": "3 days"
+      "labels": ["breaking-change", "dependencies"],
+      "automerge": false
     }
-  ]
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "automerge": true,
+    "labels": ["security"]
+  },
+  "schedule": ["before 9am on monday"]
 }
