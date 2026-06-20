@@ -4970,7 +4970,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Gradle project properties: JVM args, Kotlin/Android SDK versions."
+    "description": "Gradle project properties: JVM heap config, daemon, parallel builds, configuration cache, Android settings, and project properties."
   },
   {
     "label": ".cursorrules",
@@ -8126,5 +8126,30 @@
     "enhanced": true,
     "description": "Arch Linux pacman configuration: core, extra, multilib, and chaotic-aur repositories with parallel downloads and ILoveCandy.",
     "knownFile": "pacman-conf"
+  },
+  {
+    "label": "dnf.conf",
+    "file": "dnf.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Linux"
+    ],
+    "enhanced": true,
+    "description": "DNF package manager configuration: GPG verification, parallel downloads, fastest mirror, and cache settings for Fedora/RHEL systems.",
+    "knownFile": "dnf-conf"
+  },
+  {
+    "file": ".gdbinit",
+    "label": ".gdbinit",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "GDB debugger initialization: display settings, history, disassembly flavor, fork mode, custom commands, Python extensions, and sourced frameworks (GEF, PWNDBG, PEDA).",
+    "knownFile": "gdbinit"
   }
 ]

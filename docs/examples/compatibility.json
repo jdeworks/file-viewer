@@ -5573,7 +5573,7 @@
       "needsRealWorldSample": false
     },
     "npmrc": {
-      "label": ".npmrc",
+      "label": "npmrc",
       "baseType": "text",
       "support": "supported",
       "sampleFiles": [
@@ -12840,7 +12840,7 @@
       "needsRealWorldSample": false
     },
     "pip-conf": {
-      "label": "pip.conf",
+      "label": "pip Config",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
@@ -18976,6 +18976,60 @@
       "support": "supported",
       "sampleFiles": [
         "pacman.conf"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "dnf-conf": {
+      "label": "DNF Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "dnf.conf"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "gdbinit": {
+      "label": "GDB Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        ".gdbinit"
       ],
       "extensions": [
         ".yml"

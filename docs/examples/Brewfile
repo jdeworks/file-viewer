@@ -1,14 +1,65 @@
+# Homebrew Brewfile
+
+# Taps
 tap "homebrew/bundle"
-tap "homebrew/cask"
+tap "homebrew/cask-fonts"
+tap "homebrew/cask-versions"
+tap "homebrew/services"
+tap "nicoverbruggen/homebrew-cask"
 
+# CLI tools
 brew "git"
-brew "node"
-brew "ripgrep"
-brew "jq"
 brew "gh"
+brew "curl"
+brew "wget"
+brew "jq"
+brew "yq"
+brew "fzf"
+brew "fd"
+brew "ripgrep"
+brew "bat"
+brew "eza"
+brew "delta"
+brew "zoxide"
+brew "starship"
+brew "tmux"
+brew "neovim"
+brew "htop"
+brew "btop"
+brew "tldr"
+brew "tree"
+brew "direnv"
+brew "gnupg"
+brew "pinentry-mac"
+brew "age"
+brew "sops"
+brew "terraform"
+brew "kubectl"
+brew "helm"
+brew "k9s"
+brew "docker-compose"
 
+# GUI Applications (casks)
+cask "warp"
 cask "visual-studio-code"
-cask "docker"
+cask "jetbrains-toolbox"
 cask "iterm2"
+cask "raycast"
+cask "1password"
+cask "firefox"
+cask "arc"
+cask "slack"
+cask "zoom"
+cask "obsidian"
+cask "font-jetbrains-mono-nerd-font"
+cask "font-fira-code-nerd-font"
 
+# Mac App Store
 mas "Xcode", id: 497799835
+mas "TestFlight", id: 899247664
+mas "Amphetamine", id: 937984704
+
+# VS Code Extensions
+vscode "ms-vscode-remote.remote-ssh"
+vscode "github.copilot"
+vscode "eamodio.gitlens"

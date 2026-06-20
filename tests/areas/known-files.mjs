@@ -3252,10 +3252,10 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('gradle-wrapper.properties');
   await page.waitForSelector('#previewHost .gw-doc', { timeout: 12000 });
-  const gwText = await page.$eval('#previewHost .gw-doc', (e) => e.textContent);
-  if (/Gradle Wrapper/i.test(gwText)) pass('gradle-wrapper.properties: badge shown'); else fail('gradle-wrapper badge: ' + gwText.slice(0, 200));
-  if (/8\.7|8\.\d/i.test(gwText)) pass('gradle-wrapper.properties: Gradle version shown'); else fail('gradle-wrapper version: ' + gwText.slice(0, 200));
-  if (/bin|services\.gradle\.org/i.test(gwText)) pass('gradle-wrapper.properties: distribution info shown'); else fail('gradle-wrapper dist: ' + gwText.slice(0, 300));
+  const gradleWrapperText = await page.$eval('#previewHost .gw-doc', (e) => e.textContent);
+  if (/Gradle Wrapper/i.test(gradleWrapperText)) pass('gradle-wrapper.properties: badge shown'); else fail('gradle-wrapper badge: ' + gradleWrapperText.slice(0, 200));
+  if (/8\.7|8\.\d/i.test(gradleWrapperText)) pass('gradle-wrapper.properties: Gradle version shown'); else fail('gradle-wrapper version: ' + gradleWrapperText.slice(0, 200));
+  if (/bin|services\.gradle\.org/i.test(gradleWrapperText)) pass('gradle-wrapper.properties: distribution info shown'); else fail('gradle-wrapper dist: ' + gradleWrapperText.slice(0, 300));
 
   // ── gradle.properties viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -3915,4 +3915,23 @@ export async function run(ctx) {
   if (/repositor/i.test(pacmanText)) pass('pacman.conf: repositories count shown'); else fail('pacman repos: ' + pacmanText.slice(0, 300));
   if (/ParallelDownloads|5/i.test(pacmanText)) pass('pacman.conf: ParallelDownloads shown'); else fail('pacman parallel: ' + pacmanText.slice(0, 300));
   if (/chaotic-aur|multilib|extra|core/i.test(pacmanText)) pass('pacman.conf: repository names shown'); else fail('pacman repo names: ' + pacmanText.slice(0, 300));
+
+  // ── Brewfile (Homebrew bundle manifest) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Brewfile');
+  await page.waitForSelector('#previewHost .brew-doc', { timeout: 12000 });
+  const brewText = await page.$eval('#previewHost .brew-doc', (e) => e.textContent);
+  if (/homebrew/i.test(brewText)) pass('Brewfile: Homebrew badge shown'); else fail('Brewfile badge: ' + brewText.slice(0, 200));
+  if (/tap/i.test(brewText)) pass('Brewfile: taps section shown'); else fail('Brewfile taps: ' + brewText.slice(0, 300));
+  if (/formulae|formula/i.test(brewText)) pass('Brewfile: formulae section shown'); else fail('Brewfile formulae: ' + brewText.slice(0, 300));
+  if (/cask/i.test(brewText)) pass('Brewfile: casks section shown'); else fail('Brewfile casks: ' + brewText.slice(0, 300));
+
+  // ── dnf.conf (DNF package manager config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dnf.conf');
+  await page.waitForSelector('#previewHost .dnfcfg-doc', { timeout: 12000 });
+  const dnfText = await page.$eval('#previewHost .dnfcfg-doc', (e) => e.textContent);
+  if (/DNF/i.test(dnfText)) pass('dnf.conf: DNF badge shown'); else fail('dnf-conf badge: ' + dnfText.slice(0, 200));
+  if (/GPG enabled|gpgcheck/i.test(dnfText)) pass('dnf.conf: GPG check chip shown'); else fail('dnf-conf gpgcheck: ' + dnfText.slice(0, 300));
+  if (/parallel|max_parallel_downloads/i.test(dnfText)) pass('dnf.conf: parallel downloads shown'); else fail('dnf-conf parallel: ' + dnfText.slice(0, 300));
 }
