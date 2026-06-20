@@ -9745,5 +9745,33 @@
     "enhanced": true,
     "description": "Twenty CRM open-source Salesforce alternative environment configuration with server, auth tokens, database, Redis, storage, email, and Gmail OAuth settings.",
     "knownFile": "twenty-crm-config"
+  },
+  {
+    "file": "glitchtip.env",
+    "label": "glitchtip.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Monitoring"
+    ],
+    "enhanced": true,
+    "description": "GlitchTip open-source error tracking (Sentry alternative) environment configuration with server, security, database, Redis, email, and OAuth settings.",
+    "knownFile": "glitchtip-config"
+  },
+  {
+    "file": "ArchiveBox.conf",
+    "label": "ArchiveBox.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Archiving"
+    ],
+    "enhanced": true,
+    "description": "ArchiveBox web archiving tool configuration with server, security, admin, archiving formats, limits, and binary paths.",
+    "knownFile": "archivebox-config"
   }
 ]

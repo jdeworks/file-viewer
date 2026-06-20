@@ -5310,4 +5310,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('twenty.env');
   pass(await page.waitForSelector('#previewHost .twenty-doc', { timeout: 12000 }), 'twenty.env: Twenty CRM badge shown');
+
+  // ── glitchtip.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('glitchtip.env');
+  pass(await page.waitForSelector('#previewHost .gtip-doc', { timeout: 12000 }), 'glitchtip.env: GlitchTip badge shown');
+
+  // ── ArchiveBox.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('ArchiveBox.conf');
+  pass(await page.waitForSelector('#previewHost .abox-doc', { timeout: 12000 }), 'ArchiveBox.conf: ArchiveBox badge shown');
 }
