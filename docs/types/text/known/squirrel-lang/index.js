@@ -6,10 +6,18 @@ export const plugin = {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.nut')) return true;
     const text = intake.text || '';
-    return (
-      text.includes('function ') &&
-      (text.includes('local ') || text.includes('::') || text.includes('this.') || text.includes('foreach') || text.includes('class '))
-    );
+    // Reject files with unambiguous other-language markers
+    if (text.includes('<?php') || text.includes('<?=')) return false;
+    if (/^\s*(namespace|use |require_once|declare\s*\()/m.test(text)) return false;
+    if (/\$[a-zA-Z_]/.test(text)) return false; // PHP/Perl/Ruby $variables
+    // Require at least two Squirrel-specific signals
+    const signals = [
+      text.includes('local '),
+      /\bforeach\s*\(/.test(text) && !text.includes('for each'),
+      /\b[A-Za-z_]\w*\s*<-\s/.test(text),  // Squirrel slot assignment
+      text.includes('::') && text.includes('function '),
+    ].filter(Boolean).length;
+    return signals >= 2;
   },
   loadRenderer: () => import('./renderer.js'),
   about: {
