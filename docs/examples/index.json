@@ -8913,5 +8913,15 @@
     "name": "dnsmasq.conf",
     "category": "Infrastructure",
     "knownFile": "dnsmasq"
+  },
+  {
+    "name": "01-netcfg.yaml",
+    "category": "System",
+    "knownFile": "netplan"
+  },
+  {
+    "name": "syslog-ng.conf",
+    "category": "System",
+    "knownFile": "syslog-ng"
   }
 ]

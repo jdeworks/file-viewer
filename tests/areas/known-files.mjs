@@ -4855,4 +4855,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('dnsmasq.conf');
   pass(await page.waitForSelector('#previewHost .dnsmasq-doc', { timeout: 12000 }), 'dnsmasq.conf: dnsmasq-doc shown');
+
+  // ── 01-netcfg.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('01-netcfg.yaml');
+  pass(await page.waitForSelector('#previewHost .netplan-doc', { timeout: 12000 }), '01-netcfg.yaml: netplan-doc shown');
+
+  // ── syslog-ng.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('syslog-ng.conf');
+  pass(await page.waitForSelector('#previewHost .syslogng-doc', { timeout: 12000 }), 'syslog-ng.conf: syslogng-doc shown');
 }

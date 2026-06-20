@@ -181,6 +181,8 @@ import nginxConf from '../types/text/known/nginx-conf/index.js';
 import apacheConf from '../types/text/known/apache-conf/index.js';
 import lighttpdConf from '../types/text/known/lighttpd-conf/index.js';
 import rsyslogConf from '../types/text/known/rsyslog-conf/index.js';
+import netplan from '../types/text/yaml/known/netplan/index.js';
+import syslogNg from '../types/text/known/syslog-ng/index.js';
 import haproxyConfig from '../types/text/known/haproxy-config/index.js';
 import haproxyConf from '../types/text/known/haproxy-conf/index.js';
 import squidConf from '../types/text/known/squid-conf/index.js';
@@ -640,7 +642,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   rush, markdownlintJson, markdownlintYaml, clangFormat, clangTidy, moonrepo,
   brewfile, license, ansibleCfg, ansibleHosts, makepkgConf, gemspec, typos, cargoDeny, cargoConfig, rustfmtToml, clippyToml, rustToolchain,
   htaccess, htpasswd, nginxConf, apacheConf, lighttpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, berksfile, caddyfile, renderYaml, railwayJson, appJson,
-  rsyslogConf,
+  rsyslogConf, netplan, syslogNg,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,
   supabaseConfig, netlifyRedirects,
