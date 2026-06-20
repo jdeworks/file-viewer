@@ -3648,4 +3648,21 @@ export async function run(ctx) {
   if (/MPD/i.test(mpdText)) pass('mpd.conf: MPD badge shown'); else fail('mpd-conf badge: ' + mpdText.slice(0, 200));
   if (/Music|audio|pipewire/i.test(mpdText)) pass('mpd.conf: music directory or audio outputs shown'); else fail('mpd-conf content: ' + mpdText.slice(0, 300));
 
+  // ── shard.yml (Crystal Shard) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('shard.yml');
+  await page.waitForSelector('#previewHost .crystalshard-doc', { timeout: 12000 });
+  const shardText = await page.$eval('#previewHost .crystalshard-doc', (e) => e.textContent);
+  if (/Crystal/i.test(shardText)) pass('shard.yml: Crystal badge shown'); else fail('crystal-shard badge: ' + shardText.slice(0, 200));
+  if (/my_crystal_app|0\.3\.1/i.test(shardText)) pass('shard.yml: package name or version shown'); else fail('crystal-shard name/version: ' + shardText.slice(0, 300));
+  if (/kemal|jennifer|pg/i.test(shardText)) pass('shard.yml: dependencies shown'); else fail('crystal-shard deps: ' + shardText.slice(0, 300));
+
+  // ── build.zig.zon (Zig Package Manifest) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('build.zig.zon');
+  await page.waitForSelector('#previewHost .zigzon-doc', { timeout: 12000 });
+  const zigzonText = await page.$eval('#previewHost .zigzon-doc', (e) => e.textContent);
+  if (/Zig/i.test(zigzonText)) pass('build.zig.zon: Zig badge shown'); else fail('zig-zon badge: ' + zigzonText.slice(0, 200));
+  if (/my_zig_project|0\.2\.0/i.test(zigzonText)) pass('build.zig.zon: package name or version shown'); else fail('zig-zon name/version: ' + zigzonText.slice(0, 300));
+
 }
