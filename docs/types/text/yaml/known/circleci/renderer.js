@@ -2,7 +2,7 @@ import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.cci-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.circleciconfig-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
 .badge-cci{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#343434;color:#fff;vertical-align:middle;margin-right:8px;}
 .cci-title{font-size:18px;font-weight:700;margin:0 0 4px;}
 .cci-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 12px;}
@@ -46,7 +46,7 @@ export async function render(intake) {
   const sub = [`v${esc(version)}`, workflows.length ? `${workflows.length} workflow${workflows.length !== 1 ? 's' : ''}` : '', jobs.length ? `${jobs.length} job${jobs.length !== 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
 
   const host = document.createElement('div');
-  host.className = 'cci-doc';
+  host.className = 'circleciconfig-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="cci-title"><span class="badge-cci">CircleCI</span>Pipeline config</div>
 <div class="cci-sub">${sub}</div>

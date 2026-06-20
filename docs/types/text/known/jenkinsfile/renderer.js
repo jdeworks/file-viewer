@@ -1,8 +1,8 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.jkf-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
-.badge-jkf{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#d33833;color:#fff;vertical-align:middle;margin-right:8px}
+.jenkinsfile-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
+.badge-jkf{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#d24939;color:#fff;vertical-align:middle;margin-right:8px}
 .jkf-title{font-size:18px;font-weight:700;margin:0 0 4px}
 .jkf-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 12px}
 .jkf-sec{margin:12px 0}
@@ -106,7 +106,7 @@ export function render(intake) {
     : '';
 
   const host = document.createElement('div');
-  host.className = 'jkf-doc';
+  host.className = 'jenkinsfile-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="jkf-title"><span class="badge-jkf">Jenkins</span>Jenkinsfile</div>
 <div class="jkf-sub">${esc(subParts.join(' · ')) || 'Jenkins pipeline'}</div>

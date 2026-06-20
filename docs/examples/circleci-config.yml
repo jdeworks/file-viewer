@@ -1,0 +1,83 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5
+  aws-cli: circleci/aws-cli@4
+
+executors:
+  node-executor:
+    docker:
+      - image: cimg/node:20.11
+    working_directory: ~/project
+
+jobs:
+  install-and-lint:
+    executor: node-executor
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
+      - run:
+          name: Lint
+          command: npm run lint
+      - run:
+          name: Type check
+          command: npm run type-check
+      - persist_to_workspace:
+          root: .
+          paths:
+            - node_modules
+
+  test:
+    executor: node-executor
+    environment:
+      NODE_ENV: test
+      CI: "true"
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Run unit tests
+          command: npm test -- --ci --coverage
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: coverage
+
+  build-and-deploy:
+    executor: node-executor
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Build
+          command: npm run build
+      - aws-cli/setup:
+          aws_access_key_id: AWS_ACCESS_KEY_ID
+          aws_secret_access_key: AWS_SECRET_ACCESS_KEY
+      - run:
+          name: Deploy to S3
+          command: aws s3 sync dist/ s3://$S3_BUCKET --delete
+      - run:
+          name: Invalidate CloudFront
+          command: aws cloudfront create-invalidation --distribution-id $CF_DISTRIBUTION_ID --paths "/*"
+
+workflows:
+  ci-cd:
+    jobs:
+      - install-and-lint
+      - test:
+          requires:
+            - install-and-lint
+          context:
+            - test-secrets
+      - build-and-deploy:
+          requires:
+            - test
+          filters:
+            branches:
+              only: main
+          context:
+            - aws-production

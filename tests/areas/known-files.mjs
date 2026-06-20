@@ -813,8 +813,10 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Chart.yaml (Helm chart)');
   await page.waitForSelector('#previewHost .helmchart-doc', { timeout: 12000 });
+  pass('Chart.yaml: renders');
   const hcText = await page.$eval('#previewHost .helmchart-doc', (e) => e.textContent);
   if (/Helm/i.test(hcText)) pass('Chart.yaml: Helm badge shown'); else fail('helm-chart badge: ' + hcText.slice(0, 200));
+  if (/version|name/i.test(hcText)) pass('Chart.yaml: chart info shown'); else fail('helm-chart content: ' + hcText.slice(0, 200));
   if (/my-app|postgresql|redis/i.test(hcText)) pass('Chart.yaml: chart name and dependencies shown'); else fail('helm-chart content: ' + hcText.slice(0, 200));
 
   // ── kustomization.yaml (Kustomize) viewer ──
@@ -871,10 +873,11 @@ export async function run(ctx) {
   // ── values.yaml (Helm values) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('values.yaml (Helm values)');
-  await page.waitForSelector('#previewHost .hv-doc', { timeout: 12000 });
-  const hvText = await page.$eval('#previewHost .hv-doc', (e) => e.textContent);
-  if (/Helm/i.test(hvText)) pass('values.yaml: Helm values badge shown'); else fail('helm-values badge: ' + hvText.slice(0, 200));
-  if (/replicaCount|image|service|ingress/i.test(hvText)) pass('values.yaml: key sections shown'); else fail('helm-values content: ' + hvText.slice(0, 200));
+  await page.waitForSelector('#previewHost .helmvalues-doc', { timeout: 12000 });
+  pass('values.yaml: renders');
+  const hvText = await page.$eval('#previewHost .helmvalues-doc', (e) => e.textContent);
+  if (/Helm/i.test(hvText)) pass('values.yaml: Helm Values badge shown'); else fail('helm-values badge: ' + hvText.slice(0, 200));
+  if (/image|service/i.test(hvText)) pass('values.yaml: values info shown'); else fail('helm-values content: ' + hvText.slice(0, 200));
 
   // ── package-lock.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
