@@ -26012,9 +26012,11 @@
     },
     "groovy-lang": {
       "label": "Groovy",
+      "sampleFiles": [
+        "sample.groovy"
+      ],
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -26037,9 +26039,11 @@
     },
     "crystal-lang": {
       "label": "Crystal",
+      "sampleFiles": [
+        "sample.cr"
+      ],
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -26062,9 +26066,11 @@
     },
     "julia-lang": {
       "label": "Julia",
+      "sampleFiles": [
+        "sample.jl"
+      ],
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -26087,9 +26093,11 @@
     },
     "r-lang": {
       "label": "R",
+      "sampleFiles": [
+        "sample.R"
+      ],
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -26112,9 +26120,11 @@
     },
     "lua-lang": {
       "label": "Lua",
+      "sampleFiles": [
+        "sample.lua"
+      ],
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -26137,9 +26147,11 @@
     },
     "purescript-lang": {
       "label": "PureScript",
+      "sampleFiles": [
+        "sample.purs"
+      ],
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
       "extensions": [
         ".yml"
       ],
@@ -26162,6 +26174,114 @@
     },
     "swift-lang": {
       "label": "Swift",
+      "sampleFiles": [
+        "sample.swift"
+      ],
+      "baseType": "raw",
+      "support": "supported",
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "erlang-source": {
+      "label": "Erlang",
+      "sampleFiles": [
+        "sample.erl"
+      ],
+      "baseType": "raw",
+      "support": "supported",
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "haproxy-cfg": {
+      "label": "HAProxy Config",
+      "sampleFiles": [
+        "haproxy.cfg"
+      ],
+      "baseType": "raw",
+      "support": "supported",
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "traefik-conf": {
+      "label": "Traefik Config",
+      "sampleFiles": [
+        "traefik.toml"
+      ],
+      "baseType": "raw",
+      "support": "supported",
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "tcl-lang": {
+      "label": "Tcl",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [],
@@ -26185,8 +26305,58 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "erlang-source": {
-      "label": "Erlang",
+    "scheme-lang": {
+      "label": "Scheme",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "racket-lang": {
+      "label": "Racket",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "fortran-lang": {
+      "label": "Fortran",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [],

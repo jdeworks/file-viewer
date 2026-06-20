@@ -2470,8 +2470,8 @@ export async function run(ctx) {
   // ── haproxy.cfg viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('haproxy.cfg');
-  await page.waitForSelector('#previewHost .ha-doc', { timeout: 12000 });
-  const haText = await page.$eval('#previewHost .ha-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .hpcfg-doc', { timeout: 12000 });
+  const haText = await page.$eval('#previewHost .hpcfg-doc', (e) => e.textContent);
   if (/HAProxy/i.test(haText)) pass('haproxy.cfg: HAProxy badge shown'); else fail('haproxy badge: ' + haText.slice(0, 200));
   if (/50000/i.test(haText)) pass('haproxy.cfg: maxconn shown'); else fail('haproxy maxconn: ' + haText.slice(0, 300));
   if (/http_front|https_front/i.test(haText)) pass('haproxy.cfg: frontend blocks shown'); else fail('haproxy frontends: ' + haText.slice(0, 300));
@@ -6334,4 +6334,28 @@ export async function run(ctx) {
   if (/Traefik/i.test(trkCfgText)) pass('traefik-conf: badge shown'); else fail('traefik-conf badge: ' + trkCfgText.slice(0, 200));
   if (/entrypoint|websecure|web/i.test(trkCfgText)) pass('traefik-conf: entrypoints shown'); else fail('traefik-conf entrypoints: ' + trkCfgText.slice(0, 300));
   if (/docker|file/i.test(trkCfgText)) pass('traefik-conf: providers shown'); else fail('traefik-conf providers: ' + trkCfgText.slice(0, 300));
+
+  // ── sample.tcl viewer (tcl-lang plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.tcl');
+  await page.waitForSelector('#previewHost .tcl-doc', { timeout: 12000 });
+  pass('tcl-lang: sample.tcl renders');
+
+  // ── sample.scm viewer (scheme-lang plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.scm');
+  await page.waitForSelector('#previewHost .scm-doc', { timeout: 12000 });
+  pass('scheme-lang: sample.scm renders');
+
+  // ── sample.rkt viewer (racket-lang plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.rkt');
+  await page.waitForSelector('#previewHost .rkt-doc', { timeout: 12000 });
+  pass('racket-lang: sample.rkt renders');
+
+  // ── sample.f90 viewer (fortran-lang plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.f90');
+  await page.waitForSelector('#previewHost .f90-doc', { timeout: 12000 });
+  pass('fortran-lang: sample.f90 renders');
 }

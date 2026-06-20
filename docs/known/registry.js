@@ -808,7 +808,11 @@ import luaLang from '../types/text/known/lua-lang/index.js';
 import purescriptLang from '../types/text/known/purescript-lang/index.js';
 import swiftLang from '../types/text/known/swift-lang/index.js';
 import erlangSource from '../types/text/known/erlang-source/index.js';
-export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
+import tclLang from '../types/text/known/tcl-lang/index.js';
+import schemeLang from '../types/text/known/scheme-lang/index.js';
+import racketLang from '../types/text/known/racket-lang/index.js';
+import fortranLang from '../types/text/known/fortran-lang/index.js';
+export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
