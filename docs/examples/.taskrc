@@ -1,0 +1,42 @@
+# Taskwarrior configuration
+data.location=~/.local/share/task
+
+# Sync (taskd)
+taskd.server=inthe.am:53589
+taskd.credentials=[configured]
+taskd.certificate=~/.task/private.certificate.pem
+taskd.key=~/.task/private.key.pem
+taskd.ca=~/.task/ca.cert.pem
+
+# Date format
+dateformat=Y-M-D
+dateformat.report=Y-M-D
+dateformat.holiday=YMD
+weekstart=Monday
+due=7
+
+# Display
+color=on
+default.command=next
+_forcecolor=yes
+editor=nvim
+bulk=3
+
+# Urgency coefficients
+urgency.user.tag.next.coefficient=15.0
+urgency.due.coefficient=12.0
+urgency.blocking.coefficient=8.0
+urgency.active.coefficient=4.0
+urgency.scheduled.coefficient=5.0
+urgency.age.coefficient=2.0
+urgency.annotations.coefficient=1.0
+urgency.tags.coefficient=1.0
+urgency.project.coefficient=1.0
+urgency.waiting.coefficient=-3.0
+urgency.blocked.coefficient=-5.0
+
+# Reports
+report.next.columns=id,start.age,entry.age,depends,priority,project,tags,recur,scheduled.countdown,due.relative,until.remaining,description,urgency
+report.next.labels=ID,Active,Age,Deps,P,Project,Tags,Recur,S,Due,Until,Description,Urg
+
+include ~/.local/share/task/dark-256.theme

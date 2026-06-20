@@ -527,6 +527,8 @@ import mpvConf from '../types/text/known/mpv-conf/index.js';
 import ytdlpConf from '../types/text/known/ytdlp-conf/index.js';
 import rcloneConf from '../types/text/known/rclone-conf/index.js';
 import resticConfig from '../types/text/known/restic-config/index.js';
+import taskrc from '../types/text/known/taskrc/index.js';
+import curlrc from '../types/text/known/curlrc/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -646,6 +648,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   mpvConf, ytdlpConf,
   xresources, xorgConf,
   rcloneConf, resticConfig,
+  taskrc, curlrc,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

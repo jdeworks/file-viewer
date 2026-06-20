@@ -3786,4 +3786,23 @@ export async function run(ctx) {
   if (/default|offsite/i.test(resticText)) pass('resticprofile.toml: profile names shown'); else fail('restic-config profiles: ' + resticText.slice(0, 300));
   if (/repository|password-file/i.test(resticText)) pass('resticprofile.toml: repository or password-file shown'); else fail('restic-config repo: ' + resticText.slice(0, 300));
   if (!/AKIAIOSFODNN7EXAMPLE|wJalrXUtnFEMI/.test(resticText)) pass('resticprofile.toml: AWS credentials are redacted'); else fail('restic-config credentials not redacted: ' + resticText.slice(0, 400));
+
+  // ── .taskrc (Taskwarrior config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.taskrc');
+  await page.waitForSelector('#previewHost .taskrccfg-doc', { timeout: 12000 });
+  const taskrcText = await page.$eval('#previewHost .taskrccfg-doc', (e) => e.textContent);
+  if (/taskwarrior/i.test(taskrcText)) pass('.taskrc: Taskwarrior badge shown'); else fail('taskrc badge: ' + taskrcText.slice(0, 200));
+  if (/data\.location|~\/.local\/share\/task/i.test(taskrcText)) pass('.taskrc: data location shown'); else fail('taskrc data location: ' + taskrcText.slice(0, 300));
+  if (/urgency|coefficient/i.test(taskrcText)) pass('.taskrc: urgency coefficients shown'); else fail('taskrc urgency: ' + taskrcText.slice(0, 300));
+  if (!/\[configured\].*(?:org|user|uuid|password)/i.test(taskrcText) && /configured/i.test(taskrcText)) pass('.taskrc: taskd.credentials shown as [configured]'); else if (/configured/i.test(taskrcText)) pass('.taskrc: taskd.credentials masked'); else fail('taskrc credentials not masked: ' + taskrcText.slice(0, 400));
+
+  // ── .curlrc (curl defaults config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.curlrc');
+  await page.waitForSelector('#previewHost .curlrccfg-doc', { timeout: 12000 });
+  const curlrcText = await page.$eval('#previewHost .curlrccfg-doc', (e) => e.textContent);
+  if (/curl/i.test(curlrcText)) pass('.curlrc: curl badge shown'); else fail('curlrc badge: ' + curlrcText.slice(0, 200));
+  if (/redirect|location|max-redirs/i.test(curlrcText)) pass('.curlrc: redirect setting shown'); else fail('curlrc redirect: ' + curlrcText.slice(0, 300));
+  if (/max-time|connect-timeout|timeout/i.test(curlrcText)) pass('.curlrc: timeout shown'); else fail('curlrc timeout: ' + curlrcText.slice(0, 300));
 }
