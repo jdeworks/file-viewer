@@ -321,17 +321,13 @@ function closeDrawers() {
 /* ─────────────────────────── metaBtn Easter egg ─────────────────────────── */
 
 let metaBtnClicks = 0;
-const META_BTN_MSGS = ['Stop it.', 'That hurts!', 'Why are you doing this?', 'Leave me alone!'];
-function showMetaBtnEgg(msg, onDismiss) {
-  const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;';
-  const card = document.createElement('div');
-  card.style.cssText = 'background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:12px;padding:2rem 2.5rem;max-width:320px;text-align:center;font-size:1.1rem;font-weight:600;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.3);';
-  card.textContent = msg;
-  ov.appendChild(card);
-  document.body.appendChild(ov);
-  ov.addEventListener('click', () => { ov.remove(); onDismiss?.(); }, { once: true });
-}
+let _metaBtnTimer = null;
+const META_BTN_MSGS = [
+  'You found a secret. Keep clicking...',
+  'Interesting. Most people stop before now.',
+  'Almost there...',
+  'One more.',
+];
 
 /* ─────────────────────────── Examples ─────────────────────────── */
 
@@ -421,9 +417,16 @@ function init() {
   $('typeHelpBtn').addEventListener('click', () => openDrawer('typeHelpDrawer', () => buildTypeHelp(state.type?.id)));
   $('metaBtn').addEventListener('click', () => {
     metaBtnClicks++;
-    if (metaBtnClicks <= 4) openDrawer('metaDrawer', buildMetadata);
-    else if (metaBtnClicks <= 8) showMetaBtnEgg(META_BTN_MSGS[metaBtnClicks - 5]);
-    else showMetaBtnEgg('Ok, FINE. Take this and leave me alone.', () => { state.games?.unlock(); $('gamesBtn').hidden = false; state.games?.open(); });
+    clearTimeout(_metaBtnTimer);
+    _metaBtnTimer = setTimeout(() => { metaBtnClicks = 0; }, 2000);
+    if (metaBtnClicks <= 4) { openDrawer('metaDrawer', buildMetadata); return; }
+    if (metaBtnClicks <= 8) { toast(META_BTN_MSGS[metaBtnClicks - 5]); return; }
+    metaBtnClicks = 0;
+    clearTimeout(_metaBtnTimer);
+    state.games?.unlock();
+    $('gamesBtn').hidden = false;
+    toast('🎮 Games unlocked!');
+    state.games?.open();
   });
   $('scrim').addEventListener('click', () => { closeDrawers(); if (isMobile()) setTree(false); });
   document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeDrawers));
