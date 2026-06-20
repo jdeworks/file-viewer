@@ -148,8 +148,11 @@ import mailmap from '../types/text/known/mailmap/index.js';
 import npmignore from '../types/text/known/npmignore/index.js';
 import dockerignore from '../types/text/known/dockerignore/index.js';
 import gcloudignore from '../types/text/known/gcloudignore/index.js';
+import eslintignore from '../types/text/known/eslintignore/index.js';
+import prettierignore from '../types/text/known/prettierignore/index.js';
 import appveyor from '../types/text/yaml/known/appveyor/index.js';
 import rubocop from '../types/text/yaml/known/rubocop/index.js';
+import rubocopTodo from '../types/text/yaml/known/rubocop-todo/index.js';
 import taskfile from '../types/text/yaml/known/taskfile/index.js';
 import mkdocsYml from '../types/text/yaml/known/mkdocs/index.js';
 import rush from '../types/text/json/known/rush/index.js';
@@ -583,8 +586,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   packageLock, composerLock, pnpmLock, cargoLock, poetryLock, goSum,
   makefileKf, justfile, procfile, envExample, envrc, miseConfig, toolVersions,
   gitattributes, gemfileLock, sonar, hatch,
-  mailmap, npmignore, dockerignore, gcloudignore,
-  appveyor, rubocop, taskfile, mkdocsYml,
+  mailmap, npmignore, dockerignore, gcloudignore, eslintignore, prettierignore,
+  appveyor, rubocop, rubocopTodo, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, clangTidy, moonrepo,
   brewfile, license, ansibleCfg, ansibleHosts, makepkgConf, gemspec, typos, cargoDeny, cargoConfig, rustfmtToml, clippyToml, rustToolchain,
   htaccess, htpasswd, nginxConf, apacheConf, lighttpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, berksfile, caddyfile, renderYaml, railwayJson, appJson,

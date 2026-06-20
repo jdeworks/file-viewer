@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Minified files
+**/*.min.js
+
+# Cache directories
+.cache/
+
+# Storybook
+storybook-static/

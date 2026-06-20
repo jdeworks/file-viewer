@@ -392,6 +392,30 @@
     "description": "Docker build context ignore file: excludes dependencies, git metadata, env secrets, tests, and docs \u2014 keeps only what the container needs."
   },
   {
+    "label": ".eslintignore",
+    "file": ".eslintignore",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "eslintignore",
+    "description": "ESLint ignore file: excludes dependencies, build output, coverage, minified files, and cache directories from linting."
+  },
+  {
+    "label": ".prettierignore",
+    "file": ".prettierignore",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "prettierignore",
+    "description": "Prettier ignore file: excludes dependencies, build output, lock files, minified files, and auto-generated changelogs from formatting."
+  },
+  {
     "label": "requirements.txt",
     "file": "requirements.txt",
     "mime": "text/plain",
@@ -3676,7 +3700,21 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "rubocop",
+    "description": "RuboCop linter config: TargetRubyVersion 3.1, NewCops enabled, inherit_from .rubocop_todo.yml, rubocop-rails+rspec extensions, Layout/LineLength Max 120, Style/Metrics/Naming/Lint cops configured."
+  },
+  {
+    "label": ".rubocop_todo.yml",
+    "file": ".rubocop_todo.yml",
+    "mime": "application/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "rubocop-todo",
+    "description": "RuboCop auto-generated TODO: 10 cops with violations across Layout, Metrics, Style, and Naming departments."
   },
   {
     "label": "Taskfile.yml",

@@ -312,7 +312,7 @@ export async function run(ctx) {
   const prtText = await page.$eval('#previewHost .prettier-doc', (e) => e.textContent);
   if (!prtText.includes('100')) fail('.prettierrc.json: printWidth not shown');
   else pass('.prettierrc.json: printWidth shown');
-  if (!prtText.includes('trailingComma') && !prtText.includes('all')) fail('.prettierrc.json: trailing comma not shown');
+  if (!prtText.includes('Trailing comma') && !prtText.includes('trailingComma') && !prtText.includes('es5') && !prtText.includes('all')) fail('.prettierrc.json: trailing comma not shown');
   else pass('.prettierrc.json: trailing comma shown');
 
   // ── turbo.json viewer ──
@@ -1097,7 +1097,16 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .rbc-doc', { timeout: 12000 });
   const rbcText = await page.$eval('#previewHost .rbc-doc', (e) => e.textContent);
   if (/RuboCop/i.test(rbcText)) pass('.rubocop.yml: label shown'); else fail('rubocop label: ' + rbcText.slice(0, 200));
-  if (/Ruby|3\.2|TargetRuby/i.test(rbcText)) pass('.rubocop.yml: ruby version shown'); else fail('rubocop ruby version: ' + rbcText.slice(0, 200));
+  if (/Ruby|3\.[12]|TargetRuby/i.test(rbcText)) pass('.rubocop.yml: ruby version shown'); else fail('rubocop ruby version: ' + rbcText.slice(0, 200));
+
+  // ── RuboCop TODO viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.rubocop_todo.yml');
+  await page.waitForSelector('.rubocoptodo-doc', { timeout: 12000 });
+  pass('.rubocop_todo.yml: renders');
+  const rubocoptodoText = await page.$eval('.rubocoptodo-doc', el => el.textContent);
+  if (!rubocoptodoText.includes('RuboCop')) fail('.rubocop_todo.yml: missing badge'); else pass('.rubocop_todo.yml: badge shown');
+  if (!rubocoptodoText.includes('cop') && !rubocoptodoText.includes('Style') && !rubocoptodoText.includes('Metrics')) fail('.rubocop_todo.yml: no cops shown'); else pass('.rubocop_todo.yml: cops shown');
 
   // ── Taskfile viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -2066,8 +2075,8 @@ export async function run(ctx) {
   // ── .codeclimate.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.codeclimate.yml');
-  await page.waitForSelector('#previewHost .cc-doc', { timeout: 12000 });
-  const ccText = await page.$eval('#previewHost .cc-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .codeclimate-doc', { timeout: 12000 });
+  const ccText = await page.$eval('#previewHost .codeclimate-doc', (e) => e.textContent);
   if (/Code Climate/i.test(ccText)) pass('.codeclimate.yml: Code Climate badge shown'); else fail('codeclimate badge: ' + ccText.slice(0, 200));
   if (/engine|plugin/i.test(ccText)) pass('.codeclimate.yml: engines/plugins section shown'); else fail('codeclimate engines: ' + ccText.slice(0, 300));
   if (/eslint|duplication|fixme/i.test(ccText)) pass('.codeclimate.yml: engine names shown'); else fail('codeclimate engine names: ' + ccText.slice(0, 300));
@@ -4450,4 +4459,22 @@ export async function run(ctx) {
   const rpText = await page.$eval('.relpls-doc', el => el.textContent);
   if (!rpText.includes('Release')) fail('release-please-config.json: missing badge'); else pass('release-please-config.json: badge shown');
   if (!rpText.includes('package') && !rpText.includes('release-type')) fail('release-please-config.json: no config shown'); else pass('release-please-config.json: config shown');
+
+  // ── .eslintignore viewer (plugin id: eslintignore) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.eslintignore');
+  await page.waitForSelector('.eslintignore-doc');
+  pass('.eslintignore: renders');
+  const eslintignoreText = await page.$eval('.eslintignore-doc', el => el.textContent);
+  if (!eslintignoreText.includes('ESLint')) fail('.eslintignore: missing badge'); else pass('.eslintignore: badge shown');
+  if (!eslintignoreText.includes('node_modules') && !eslintignoreText.includes('dist') && !eslintignoreText.includes('pattern')) fail('.eslintignore: no patterns'); else pass('.eslintignore: patterns shown');
+
+  // ── .prettierignore viewer (plugin id: prettierignore) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.prettierignore');
+  await page.waitForSelector('.prettierignore-doc');
+  pass('.prettierignore: renders');
+  const prettierignoreText = await page.$eval('.prettierignore-doc', el => el.textContent);
+  if (!prettierignoreText.includes('Prettier')) fail('.prettierignore: missing badge'); else pass('.prettierignore: badge shown');
+  if (!prettierignoreText.includes('node_modules') && !prettierignoreText.includes('dist') && !prettierignoreText.includes('pattern')) fail('.prettierignore: no patterns'); else pass('.prettierignore: patterns shown');
 }

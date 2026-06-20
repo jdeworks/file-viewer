@@ -3,25 +3,6 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
-const detect_sqlite=(()=>{
-// SQLite database files. By extension, or the 16-byte magic header "SQLite format 3\0".
-function detect(intake) {
-  if (hasExtension(intake, 'sqlite', 'sqlite3', 'db', 'db3', 'gpkg')) {
-    return magic(intake) ? 0.97 : 0.8;   // extension + magic = very confident
-  }
-  return magic(intake) ? 0.9 : 0;
-}
-
-function magic(intake) {
-  const b = intake.bytes;
-  if (!b || b.length < 16) return false;
-  const sig = 'SQLite format 3\0';
-  for (let i = 0; i < sig.length; i++) if (b[i] !== sig.charCodeAt(i)) return false;
-  return true;
-}
-return detect;
-})();
-
 const detect_epub=(()=>{
 // EPUB e-books. A .epub is a zip, so we must outscore the generic archive type (0.9) on the
 // extension. As a fallback, sniff the uncompressed "mimetype" entry that every EPUB stores
@@ -322,4 +303,24 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb};
+const detect_pcap=(()=>{
+function detect(intake) {
+  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  const b = intake.bytes;
+  // PCAP classic: LE or BE magic
+  if ((b[0] === 0xd4 && b[1] === 0xc3 && b[2] === 0xb2 && b[3] === 0xa1) ||
+      (b[0] === 0xa1 && b[1] === 0xb2 && b[2] === 0xc3 && b[3] === 0xd4) ||
+      // nanosecond variants
+      (b[0] === 0x4d && b[1] === 0x3c && b[2] === 0xb2 && b[3] === 0xa1) ||
+      (b[0] === 0xa1 && b[1] === 0xb2 && b[2] === 0x3c && b[3] === 0x4d)) {
+    return 0.98;
+  }
+  // PCAPNG: section header block magic
+  if (b[0] === 0x0a && b[1] === 0x0d && b[2] === 0x0d && b[3] === 0x0a) return 0.98;
+  if (hasExtension(intake, 'pcap', 'pcapng', 'cap')) return 0.7;
+  return 0;
+}
+return detect;
+})();
+
+export const DETECTORS={"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap};

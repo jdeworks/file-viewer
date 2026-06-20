@@ -3,30 +3,6 @@ import { mediaInfo } from '../types/media/medialib.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
-const detect_bio=(()=>{
-const FASTA_EXT = ['fa', 'fasta', 'fna', 'faa', 'ffn', 'frn', 'fsa', 'mpfa'];
-const FASTQ_EXT = ['fq', 'fastq'];
-const VCF_EXT = ['bcf'];
-const GFF_EXT = ['gff', 'gff3', 'gtf'];
-const BED_EXT = ['bed'];
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, ...FASTA_EXT)) return 0.92;
-  if (hasExtension(intake, ...FASTQ_EXT)) return 0.92;
-  if (hasExtension(intake, ...VCF_EXT)) return 0.92;
-  if (hasExtension(intake, ...GFF_EXT)) return 0.88;
-  if (hasExtension(intake, ...BED_EXT)) return 0.82;
-  const head = (intake.text || '').slice(0, 600);
-  if (/^>[\w\s]/.test(head)) return 0.75;           // FASTA >header
-  if (/^@[\w\s]/.test(head) && /^\+/m.test(head)) return 0.7;  // FASTQ @header + +
-  if (/^##fileformat=VCF/i.test(head)) return 0.85; // VCF meta
-  if (/^##gff-version/i.test(head)) return 0.82;    // GFF
-  return 0;
-}
-return detect;
-})();
-
 const detect_gff=(()=>{
 // GFF3: General Feature Format v3 — starts with ##gff-version 3
 // GFF2/GTF: starts with ##gff-version 2 or tab-delimited with 9 columns starting with seqname
@@ -318,4 +294,23 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"bio":detect_bio,"gff":detect_gff,"sarif":detect_sarif,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip};
+const detect_sqlite=(()=>{
+// SQLite database files. By extension, or the 16-byte magic header "SQLite format 3\0".
+function detect(intake) {
+  if (hasExtension(intake, 'sqlite', 'sqlite3', 'db', 'db3', 'gpkg')) {
+    return magic(intake) ? 0.97 : 0.8;   // extension + magic = very confident
+  }
+  return magic(intake) ? 0.9 : 0;
+}
+
+function magic(intake) {
+  const b = intake.bytes;
+  if (!b || b.length < 16) return false;
+  const sig = 'SQLite format 3\0';
+  for (let i = 0; i < sig.length; i++) if (b[i] !== sig.charCodeAt(i)) return false;
+  return true;
+}
+return detect;
+})();
+
+export const DETECTORS={"gff":detect_gff,"sarif":detect_sarif,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite};

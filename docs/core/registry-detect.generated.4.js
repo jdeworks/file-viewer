@@ -3,26 +3,6 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
-const detect_pcap=(()=>{
-function detect(intake) {
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
-  const b = intake.bytes;
-  // PCAP classic: LE or BE magic
-  if ((b[0] === 0xd4 && b[1] === 0xc3 && b[2] === 0xb2 && b[3] === 0xa1) ||
-      (b[0] === 0xa1 && b[1] === 0xb2 && b[2] === 0xc3 && b[3] === 0xd4) ||
-      // nanosecond variants
-      (b[0] === 0x4d && b[1] === 0x3c && b[2] === 0xb2 && b[3] === 0xa1) ||
-      (b[0] === 0xa1 && b[1] === 0xb2 && b[2] === 0x3c && b[3] === 0x4d)) {
-    return 0.98;
-  }
-  // PCAPNG: section header block magic
-  if (b[0] === 0x0a && b[1] === 0x0d && b[2] === 0x0d && b[3] === 0x0a) return 0.98;
-  if (hasExtension(intake, 'pcap', 'pcapng', 'cap')) return 0.7;
-  return 0;
-}
-return detect;
-})();
-
 const detect_xyz=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -312,4 +292,25 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad,"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"hdf5":detect_hdf5,"msgpack":detect_msgpack};
+const detect_bson=(()=>{
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isBsonExt = ext === 'bson';
+
+  if (!b || b.length < 5) return isBsonExt ? 0.6 : 0;
+
+  // BSON document: first 4 bytes = LE int32 document length (includes itself),
+  // last byte of the stated length must be 0x00 (document terminator).
+  const docLen = b[0] | (b[1] << 8) | (b[2] << 16) | (b[3] << 24);
+  const validLen = docLen >= 5 && docLen <= b.length;
+  const terminator = validLen && b[docLen - 1] === 0x00;
+  const structural = validLen && terminator;
+
+  if (isBsonExt) return structural ? 0.97 : 0.65;
+  return structural ? 0.75 : 0;
+}
+return detect;
+})();
+
+export const DETECTORS={"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad,"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"hdf5":detect_hdf5,"msgpack":detect_msgpack,"bson":detect_bson};
