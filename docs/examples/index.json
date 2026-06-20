@@ -10128,5 +10128,31 @@
     "enhanced": true,
     "description": "Diun Docker image update notifier configuration with watch schedule, Docker provider, Slack and mail notifications.",
     "knownFile": true
+  },
+  {
+    "file": "changedetection.env",
+    "label": "changedetection.io Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "changedetection.io web page change monitoring configuration",
+    "knownFile": true
+  },
+  {
+    "file": "semaphore-config.json",
+    "label": "Semaphore Config",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "CI/CD"
+    ],
+    "enhanced": true,
+    "description": "Ansible Semaphore task runner configuration",
+    "knownFile": true
   }
 ]

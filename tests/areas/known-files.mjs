@@ -5485,4 +5485,16 @@ export async function run(ctx) {
   await openExample('diun.yaml');
   await page.waitForSelector('#previewHost .diun-doc', { timeout: 12000 });
   pass('diun.yaml: Diun badge shown');
+
+  // ── changedetection.env viewer (changedetection-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('changedetection.env');
+  await page.waitForSelector('#previewHost .chgdet-doc', { timeout: 12000 });
+  pass('changedetection.env: changedetection.io badge shown');
+
+  // ── semaphore-config.json viewer (semaphore-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('semaphore-config.json');
+  await page.waitForSelector('#previewHost .semaphore-doc', { timeout: 12000 });
+  pass('semaphore-config.json: Semaphore badge shown');
 }

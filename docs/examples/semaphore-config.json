@@ -1,0 +1,56 @@
+{
+  "web_host": "https://semaphore.example.com",
+  "interface": "",
+  "port": 3000,
+  "tmp_path": "/tmp/semaphore",
+
+  "dialect": "postgres",
+  "postgres": {
+    "host": "postgres.example.com",
+    "user": "semaphore",
+    "pass": "s3cr3tpassword",
+    "name": "semaphore"
+  },
+
+  "cookie_hash": "changeme1234567890abcdef1234567890ab",
+  "cookie_encryption": "changeme1234567890abcdef12345678",
+  "access_key_encryption": "changeme1234567890abcdef12345678",
+
+  "email_alert": false,
+  "email_sender": "semaphore@example.com",
+  "email_host": "smtp.example.com",
+  "email_port": 587,
+  "email_username": "semaphore@example.com",
+  "email_password": "smtp-secret-password",
+  "email_secure": true,
+
+  "telegram_chat": "",
+  "telegram_token": "",
+
+  "oidc": {
+    "name": "Corporate SSO",
+    "client_id": "semaphore-app",
+    "client_secret": "oidc-client-secret-value",
+    "redirect_url": "https://semaphore.example.com/api/auth/oidc-redirect",
+    "endpoint": {
+      "auth": "https://sso.example.com/oauth2/authorize",
+      "token": "https://sso.example.com/oauth2/token",
+      "userinfo": "https://sso.example.com/oauth2/userinfo"
+    }
+  },
+
+  "git_client": "go_git",
+  "ssh_config_path": "",
+
+  "runner": {
+    "token": "runner-api-token-value",
+    "registration_token": "runner-registration-token"
+  },
+
+  "ldap": {
+    "enable": false,
+    "host": "ldap.example.com",
+    "dn": "uid=%s,ou=users,dc=example,dc=com",
+    "password": ""
+  }
+}
