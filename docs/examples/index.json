@@ -10460,5 +10460,25 @@
     "enhanced": true,
     "description": "Linkwarden self-hosted bookmark manager and link archiver configuration",
     "knownFile": true
+  },
+  {
+    "file": "archivebox.conf",
+    "label": "ArchiveBox config",
+    "mime": "text/plain",
+    "category": "Productivity",
+    "categories": ["Productivity", "Archiving", "Self-Hosted"],
+    "enhanced": true,
+    "description": "ArchiveBox self-hosted web archiving configuration",
+    "knownFile": true
+  },
+  {
+    "file": "memos.env",
+    "label": "Memos config",
+    "mime": "text/plain",
+    "category": "Productivity",
+    "categories": ["Productivity", "Notes", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Memos self-hosted lightweight note-taking server configuration",
+    "knownFile": true
   }
 ]

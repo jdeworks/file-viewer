@@ -5677,4 +5677,16 @@ export async function run(ctx) {
   await openExample('linkwarden.env');
   await page.waitForSelector('#previewHost .linkwarden-doc', { timeout: 12000 });
   pass('linkwarden.env: Linkwarden badge shown');
+
+  // ── archivebox.conf viewer (archivebox-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('archivebox.conf');
+  await page.waitForSelector('#previewHost .archivebox-doc', { timeout: 12000 });
+  pass('archivebox.conf: ArchiveBox badge shown');
+
+  // ── memos.env viewer (memos-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('memos.env');
+  await page.waitForSelector('#previewHost .memos-doc', { timeout: 12000 });
+  pass('memos.env: Memos badge shown');
 }

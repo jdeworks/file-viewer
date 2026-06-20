@@ -692,6 +692,7 @@ import gristConfig from '../types/text/known/grist-config/index.js';
 import appsmithConfig from '../types/text/known/appsmith-config/index.js';
 import glitchtipConfig from '../types/text/known/glitchtip-config/index.js';
 import archiveboxConfig from '../types/text/known/archivebox-config/index.js';
+import memosConfig from '../types/text/known/memos-config/index.js';
 import dexConfig from '../types/text/yaml/known/dex-config/index.js';
 import lldapConfig from '../types/text/toml/known/lldap-config/index.js';
 import invidiousConfig from '../types/text/yaml/known/invidious-config/index.js';
@@ -742,6 +743,7 @@ import overseerrConfig from '../types/text/json/known/overseerr-config/index.js'
 import freshRssConfig from '../types/text/known/freshrss-config/index.js';
 import wallabagConfig from '../types/text/known/wallabag-config/index.js';
 import linkwardenConfig from '../types/text/known/linkwarden-config/index.js';
+import hoarderConfig from '../types/text/known/hoarder-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -901,7 +903,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   diunConfig,
   hoppscotchConfig, twentyCrmConfig,
   vikunjaConfig, gristConfig, appsmithConfig,
-  glitchtipConfig, archiveboxConfig,
+  glitchtipConfig, archiveboxConfig, memosConfig,
   dexConfig, lldapConfig, invidiousConfig,
   listmonkConfig, windmillConfig,
   komgaConfig, coderConfig,
@@ -944,6 +946,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   homepageConfig,
   wallabagConfig,
   linkwardenConfig,
+  hoarderConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
