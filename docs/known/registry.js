@@ -731,6 +731,8 @@ import forgejoConfig from '../types/text/ini/known/forgejo-config/index.js';
 import glancesConfig from '../types/text/ini/known/glances-config/index.js';
 import homarrConfig from '../types/text/yaml/known/homarr-config/index.js';
 import kavitaConfig from '../types/text/json/known/kavita-config/index.js';
+import tandoorConfig from '../types/text/known/tandoor-config/index.js';
+import audiobookshelfConfig from '../types/text/known/audiobookshelf-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -922,6 +924,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   glancesConfig,
   homarrConfig,
   kavitaConfig,
+  tandoorConfig,
+  audiobookshelfConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

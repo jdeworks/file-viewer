@@ -10350,5 +10350,25 @@
     "enhanced": true,
     "description": "Kavita self-hosted comic and book reader server configuration",
     "knownFile": true
+  },
+  {
+    "file": "tandoor.env",
+    "label": "Tandoor Recipes config",
+    "mime": "text/plain",
+    "category": "Productivity",
+    "categories": ["Productivity", "Food", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Tandoor self-hosted recipe manager configuration",
+    "knownFile": true
+  },
+  {
+    "file": "audiobookshelf.env",
+    "label": "Audiobookshelf config",
+    "mime": "text/plain",
+    "category": "Media",
+    "categories": ["Media", "Audio", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Audiobookshelf self-hosted audiobook and podcast server configuration",
+    "knownFile": true
   }
 ]

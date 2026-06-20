@@ -5611,4 +5611,16 @@ export async function run(ctx) {
   await openExample('komga.yml');
   await page.waitForSelector('#previewHost .komga-doc', { timeout: 12000 });
   pass('komga.yml: Komga badge shown');
+
+  // ── tandoor.env viewer (tandoor-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('tandoor.env');
+  await page.waitForSelector('#previewHost .tandoor-doc', { timeout: 12000 });
+  pass('tandoor.env: Tandoor badge shown');
+
+  // ── audiobookshelf.env viewer (audiobookshelf-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('audiobookshelf.env');
+  await page.waitForSelector('#previewHost .abs-doc', { timeout: 12000 });
+  pass('audiobookshelf.env: Audiobookshelf badge shown');
 }
