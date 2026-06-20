@@ -5865,4 +5865,44 @@ export async function run(ctx) {
   if (/KDL/i.test(kdlText)) pass('sample.kdl: KDL badge shown'); else fail('kdl badge: ' + kdlText.slice(0, 200));
   if (/project|dependencies|scripts|config/i.test(kdlText)) pass('sample.kdl: top-level nodes shown'); else fail('kdl nodes: ' + kdlText.slice(0, 300));
   if (/Top-level nodes|node/i.test(kdlText)) pass('sample.kdl: node count shown'); else fail('kdl count: ' + kdlText.slice(0, 300));
+
+  // ── sample.mmd viewer (Mermaid Diagram) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.mmd');
+  await page.waitForSelector('#previewHost .mmd-doc', { timeout: 12000 });
+  pass('sample.mmd: renders');
+  const mmdText = await page.$eval('#previewHost .mmd-doc', (e) => e.textContent);
+  if (/Mermaid/i.test(mmdText)) pass('sample.mmd: Mermaid badge shown'); else fail('mermaid badge: ' + mmdText.slice(0, 200));
+  if (/flowchart|Flowchart|graph/i.test(mmdText)) pass('sample.mmd: diagram type shown'); else fail('mermaid type: ' + mmdText.slice(0, 300));
+  if (/mermaid\.live|Mermaid\.js/i.test(mmdText)) pass('sample.mmd: render note shown'); else fail('mermaid note: ' + mmdText.slice(0, 300));
+
+  // ── sample.puml viewer (PlantUML) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.puml');
+  await page.waitForSelector('#previewHost .puml-doc', { timeout: 12000 });
+  pass('sample.puml: renders');
+  const pumlText = await page.$eval('#previewHost .puml-doc', (e) => e.textContent);
+  if (/PlantUML/i.test(pumlText)) pass('sample.puml: PlantUML badge shown'); else fail('plantuml badge: ' + pumlText.slice(0, 200));
+  if (/Sequence|sequence|Authentication/i.test(pumlText)) pass('sample.puml: diagram type or title shown'); else fail('plantuml type: ' + pumlText.slice(0, 300));
+
+  // ── sample.rego viewer (Rego Policy) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.rego');
+  await page.waitForSelector('#previewHost .rego-doc', { timeout: 12000 });
+  pass('sample.rego: renders');
+  const regoText = await page.$eval('#previewHost .rego-doc', (e) => e.textContent);
+  if (/OPA Rego|Rego/i.test(regoText)) pass('sample.rego: OPA Rego badge shown'); else fail('rego badge: ' + regoText.slice(0, 200));
+  if (/authz/.test(regoText)) pass('sample.rego: package name shown'); else fail('rego package: ' + regoText.slice(0, 300));
+  if (/allow|deny/i.test(regoText)) pass('sample.rego: rules shown'); else fail('rego rules: ' + regoText.slice(0, 300));
+
+  // ── sample.adoc viewer (AsciiDoc) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.adoc');
+  await page.waitForSelector('#previewHost .adoc-doc', { timeout: 12000 });
+  pass('sample.adoc: renders');
+  const adocText = await page.$eval('#previewHost .adoc-doc', (e) => e.textContent);
+  if (/AsciiDoc/i.test(adocText)) pass('sample.adoc: AsciiDoc badge shown'); else fail('asciidoc badge: ' + adocText.slice(0, 200));
+  if (/Getting Started/i.test(adocText)) pass('sample.adoc: document title shown'); else fail('asciidoc title: ' + adocText.slice(0, 300));
+  if (/Jane Developer/i.test(adocText)) pass('sample.adoc: author shown'); else fail('asciidoc author: ' + adocText.slice(0, 300));
+  if (/Installation|Usage|Introduction/i.test(adocText)) pass('sample.adoc: section headings shown'); else fail('asciidoc sections: ' + adocText.slice(0, 300));
 }
