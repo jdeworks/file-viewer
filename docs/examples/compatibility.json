@@ -16300,7 +16300,9 @@
       "label": "Ansible Inventory",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "inventory"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16325,7 +16327,9 @@
       "label": "Supervisord Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "supervisord.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16348,6 +16352,33 @@
     },
     "logrotate-conf": {
       "label": "Logrotate Config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "logrotate.conf"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "env-example": {
+      "label": "Env Template",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [],

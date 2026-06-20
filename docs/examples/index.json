@@ -1938,7 +1938,10 @@
     "file": "ssh_config",
     "label": "ssh_config (SSH Client Config)",
     "category": "Config",
-    "categories": ["Config", "Network"],
+    "categories": [
+      "Config",
+      "Network"
+    ],
     "mime": "text/plain",
     "enhanced": true,
     "description": "SSH client config: named host aliases, HostName, User, Port, IdentityFile paths, ProxyJump chains, wildcard fallback.",
@@ -3153,7 +3156,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
+    "description": "typos source code spell checker configuration — word overrides, file ignores, and check settings.",
     "knownFile": "typos"
   },
   {
@@ -3353,7 +3356,8 @@
       "Environment"
     ],
     "enhanced": true,
-    "description": "Environment variable template with placeholders for app, database, auth, cloud, and feature flag settings."
+    "description": "Environment variable template with placeholders for app, database, auth, cloud, and feature flag settings.",
+    "knownFile": "env-example"
   },
   {
     "label": ".envrc",
@@ -6291,7 +6295,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys \u2014 all secret values masked.",
+    "description": "Rails plaintext credentials: AWS, Stripe, SendGrid keys — all secret values masked.",
     "knownFile": "rails-credentials"
   },
   {
@@ -6303,7 +6307,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Puma web server config: 2 workers, threads 2\u201316, production environment, preload_app enabled, plugins listed.",
+    "description": "Puma web server config: 2 workers, threads 2–16, production environment, preload_app enabled, plugins listed.",
     "knownFile": "puma-config"
   },
   {
@@ -6974,14 +6978,37 @@
     "file": "ansible.cfg",
     "label": "ansible.cfg (Ansible Config)",
     "category": "Config",
-    "categories": ["Config", "Ansible"]
+    "categories": [
+      "Config",
+      "Ansible"
+    ]
   },
   {
     "file": "inventory",
     "label": "inventory (Ansible Inventory)",
     "category": "Config",
-    "categories": ["Config", "Ansible"]
+    "categories": [
+      "Config",
+      "Ansible"
+    ],
+    "knownFile": "ansible-hosts"
   },
-  { "file": "supervisord.conf", "label": "supervisord.conf (Supervisor)", "category": "Config", "categories": ["Config", "Process"] },
-  { "file": "logrotate.conf", "label": "logrotate.conf (Log Rotation)", "category": "Config", "categories": ["Config", "System"] }
+  {
+    "file": "supervisord.conf",
+    "label": "supervisord.conf (Supervisor)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Process"
+    ]
+  },
+  {
+    "file": "logrotate.conf",
+    "label": "logrotate.conf (Log Rotation)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "System"
+    ]
+  }
 ]

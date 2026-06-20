@@ -2969,4 +2969,12 @@ export async function run(ctx) {
   if (/logrotate/i.test(logrotText)) pass('logrotate.conf: badge shown'); else fail('logrotate badge: ' + logrotText.slice(0, 200));
   if (/nginx/i.test(logrotText)) pass('logrotate.conf: log target shown'); else fail('logrotate target: ' + logrotText.slice(0, 300));
 
+  // ── .env.example viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.env.example (Env Template)');
+  await page.waitForSelector('#previewHost .envex-doc', { timeout: 12000 });
+  const envexText = await page.$eval('#previewHost .envex-doc', (e) => e.textContent);
+  if (/ENV/i.test(envexText)) pass('.env.example: ENV badge shown'); else fail('env-example badge: ' + envexText.slice(0, 200));
+  if (/DATABASE_URL/i.test(envexText)) pass('.env.example: variables shown'); else fail('env-example vars: ' + envexText.slice(0, 200));
+
 }
