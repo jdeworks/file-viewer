@@ -1,8 +1,8 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.rc-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.rc-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#0969da;color:#fff;vertical-align:middle;margin-right:8px;}
+.resolvconf-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.rc-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#0070C0;color:#fff;vertical-align:middle;margin-right:8px;}
 .rc-title{font-size:18px;font-weight:700;margin:0 0 4px;}
 .rc-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 16px;}
 .rc-section{margin:0 0 6px;font-size:13px;font-weight:600;color:var(--fg-2,#888);text-transform:uppercase;letter-spacing:.04em;}
@@ -18,6 +18,19 @@ const CSS = `
 .rc-opts-table td:first-child{color:var(--fg-2,#888);width:40%;}
 .rc-domain-val{font-family:ui-monospace,monospace;font-size:13px;font-weight:600;}
 `;
+
+const KNOWN_DNS = {
+  '1.1.1.1': 'Cloudflare',
+  '1.0.0.1': 'Cloudflare',
+  '8.8.8.8': 'Google',
+  '8.8.4.4': 'Google',
+  '9.9.9.9': 'Quad9',
+  '149.112.112.112': 'Quad9',
+  '208.67.222.222': 'OpenDNS',
+  '208.67.220.220': 'OpenDNS',
+  '4.2.2.1': 'Level3',
+  '4.2.2.2': 'Level3',
+};
 
 function parseResolvConf(text) {
   const nameservers = [];
@@ -47,16 +60,12 @@ function parseResolvConf(text) {
   return { nameservers, search, domain, options };
 }
 
-function isPublicDns(ip) {
-  const PUBLIC = ['8.8.8.8', '8.8.4.4', '1.1.1.1', '1.0.0.1', '9.9.9.9', '208.67.222.222', '208.67.220.220'];
-  return PUBLIC.includes(ip);
-}
-
 export function render(intake) {
   const { nameservers, search, domain, options } = parseResolvConf(intake.text || '');
 
   const nsItems = nameservers.map((ip) => {
-    const note = isPublicDns(ip) ? '<span class="rc-ns-note">(public DNS — pingable from internet)</span>' : '';
+    const provider = KNOWN_DNS[ip];
+    const note = provider ? `<span class="rc-ns-note">${esc(provider)}</span>` : '';
     return `<li><span class="rc-ns-ip">${esc(ip)}</span>${note}</li>`;
   }).join('');
 
@@ -90,9 +99,9 @@ export function render(intake) {
   const totalDirectives = nameservers.length + (search.length ? 1 : 0) + (domain ? 1 : 0) + optKeys.length;
 
   const host = document.createElement('div');
-  host.className = 'rc-doc';
+  host.className = 'resolvconf-doc';
   host.innerHTML = `<style>${CSS}</style>
-<div class="rc-title"><span class="rc-badge">resolv.conf</span>resolv.conf</div>
+<div class="rc-title"><span class="rc-badge">DNS</span>resolv.conf</div>
 <div class="rc-sub">DNS resolver configuration · ${nameservers.length} nameserver${nameservers.length !== 1 ? 's' : ''} · ${totalDirectives} directive${totalDirectives !== 1 ? 's' : ''}</div>
 ${nsSection}${searchSection}${domainSection}${optsSection}
 ${!nameservers.length && !search.length && !domain && !optKeys.length ? '<p style="color:var(--fg-2,#888);font-size:13px;">No directives found.</p>' : ''}`;

@@ -3013,6 +3013,22 @@ export async function run(ctx) {
   if (/Query/i.test(gqlText)) pass('schema.graphql: Query operations shown'); else fail('graphql query: ' + gqlText.slice(0, 300));
   if (/Mutation|User|Post/i.test(gqlText)) pass('schema.graphql: types/mutations shown'); else fail('graphql types: ' + gqlText.slice(0, 300));
 
+  // ── hosts-file viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('hosts');
+  await page.waitForSelector('#previewHost .hostsf-doc', { timeout: 12000 });
+  const hostsfText = await page.$eval('#previewHost .hostsf-doc', (e) => e.textContent);
+  if (/hosts/i.test(hostsfText)) pass('hosts: hosts badge shown'); else fail('hosts badge: ' + hostsfText.slice(0, 200));
+  if (/localhost/i.test(hostsfText)) pass('hosts: localhost entry shown'); else fail('hosts localhost: ' + hostsfText.slice(0, 300));
+
+  // ── resolv-conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('resolv.conf');
+  await page.waitForSelector('#previewHost .resolvconf-doc', { timeout: 12000 });
+  const resolvText = await page.$eval('#previewHost .resolvconf-doc', (e) => e.textContent);
+  if (/DNS/i.test(resolvText)) pass('resolv.conf: DNS badge shown'); else fail('resolv.conf badge: ' + resolvText.slice(0, 200));
+  if (/Cloudflare/i.test(resolvText)) pass('resolv.conf: Cloudflare nameserver shown'); else fail('resolv.conf cloudflare: ' + resolvText.slice(0, 300));
+
   // ── fstab viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('fstab (Linux Filesystem Table)');

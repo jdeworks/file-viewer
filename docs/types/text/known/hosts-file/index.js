@@ -1,14 +1,17 @@
 export default {
   id: 'hosts-file',
-  label: 'hosts',
-  match: (intake) => {
-    const name = (intake.filename || '').split('/').pop();
-    const text = intake.text || '';
-    return name === 'hosts' && (text.includes('127.0.0.1') || text.includes('localhost'));
+  label: 'Hosts File',
+  match(intake) {
+    const fullPath = intake.name || intake.filename || '';
+    const n = fullPath.split('/').pop().toLowerCase();
+    const text = intake.textSample || intake.text || '';
+    if (n === 'hosts' && (text.includes('localhost') || text.includes('127.0.0.1'))) return true;
+    if (n === 'hosts.txt') return true;
+    return false;
   },
   loadRenderer: () => import('./renderer.js'),
   about: {
-    description: 'System hosts file — maps hostnames to IP addresses, bypassing DNS resolution.',
-    usedFor: [{ label: 'hosts', description: 'Static hostname-to-IP mapping used by the OS resolver before DNS', href: 'https://en.wikipedia.org/wiki/Hosts_(file)' }],
+    description: 'Host name resolution table — maps IP addresses to hostnames, bypassing DNS for local overrides.',
+    usedFor: [{ label: '/etc/hosts', description: 'System hostname resolution', href: 'https://man7.org/linux/man-pages/man5/hosts.5.html' }],
   },
 };

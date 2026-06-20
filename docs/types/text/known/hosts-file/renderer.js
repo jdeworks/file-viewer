@@ -1,8 +1,8 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.hf-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.hf-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#6e7781;color:#fff;vertical-align:middle;margin-right:8px;}
+.hostsf-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.hf-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#555555;color:#fff;vertical-align:middle;margin-right:8px;}
 .hf-title{font-size:18px;font-weight:700;margin:0 0 4px;}
 .hf-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
 .hf-stats{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 16px;}
@@ -74,7 +74,7 @@ export function render(intake) {
 </table>` : '<p style="color:var(--fg-2,#888);font-size:13px;margin:16px 0;">No custom host entries found.</p>';
 
   const host = document.createElement('div');
-  host.className = 'hf-doc';
+  host.className = 'hostsf-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="hf-title"><span class="hf-badge">hosts</span>hosts</div>
 <div class="hf-sub">System hosts file — static hostname-to-IP mapping</div>
