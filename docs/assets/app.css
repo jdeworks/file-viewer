@@ -761,3 +761,22 @@ body {
 .ini-add-row:hover { background: var(--bg-3, #e8eaed); color: var(--fg, #24292f); }
 .ini-add-section { padding: 3px 12px; border: 1px solid var(--border, #e0e0e0); border-radius: 4px; background: var(--bg, #fff); color: var(--fg, #24292f); cursor: pointer; font-size: 12px; }
 .ini-add-section:hover { background: var(--bg-3, #e8eaed); }
+
+/* ── Inline TOML form editor ── */
+/* #tomlFormHost shares .editor-host so banner-offset rules apply automatically */
+#tomlFormHost { overflow: hidden; }
+.toml-form { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+/* .toml-section, .toml-row reuse .ini-section / .ini-row styles */
+.toml-key { font-family: ui-monospace, monospace; font-size: 13px; font-weight: 600; color: var(--accent, #0969da); min-width: 100px; max-width: 220px; flex-shrink: 0; }
+.toml-num { font-family: ui-monospace, monospace; font-size: 13px; flex: 1; border: none; background: transparent; outline: none; color: var(--fg, #24292f); min-width: 0; max-width: 160px; }
+.toml-num:focus { background: var(--bg, #fff); border-radius: 3px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #0969da) 25%, transparent); }
+.toml-str, .toml-arr { font-family: ui-monospace, monospace; font-size: 13px; flex: 1; border: none; background: transparent; outline: none; color: var(--fg, #24292f); min-width: 0; }
+.toml-str:focus, .toml-arr:focus { background: var(--bg, #fff); border-radius: 3px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #0969da) 25%, transparent); }
+.toml-arr-note { font-size: 11px; color: var(--fg-2, #888); margin-left: 4px; flex-shrink: 0; white-space: nowrap; }
+.toml-bool-label { display: inline-flex; align-items: center; gap: 4px; flex: 1; cursor: pointer; }
+.toml-bool { width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent, #0969da); }
+.toml-textarea { font-family: ui-monospace, monospace; font-size: 12px; flex: 1; border: 1px solid var(--border, #e0e0e0); border-radius: 3px; background: var(--bg, #fff); color: var(--fg, #24292f); padding: 4px 6px; resize: vertical; outline: none; min-width: 0; }
+.toml-textarea:focus { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #0969da) 25%, transparent); }
+.toml-row-multiline { align-items: flex-start; padding-top: 6px; padding-bottom: 6px; }
+.toml-readonly { font-family: ui-monospace, monospace; font-size: 12px; color: var(--fg-2, #888); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.toml-readonly-badge { font-size: 10px; color: var(--fg-2, #888); background: var(--bg-3, #e8eaed); border-radius: 3px; padding: 1px 5px; margin-left: 6px; flex-shrink: 0; white-space: nowrap; }

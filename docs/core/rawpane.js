@@ -19,6 +19,7 @@ import { HtmlWysiwygEditor } from '../types/html/wysiwyg-html.js';
 import { TableEditor } from '../types/text/csv/table-editor.js';
 import { EnvFormEditor } from '../types/text/env/form-editor.js';
 import { IniFormEditor } from '../types/text/ini/form-editor.js';
+import { TomlFormEditor } from '../types/text/toml/form-editor.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
@@ -30,6 +31,7 @@ let htmlWysiwyg = null;
 let tableEditor = null;
 let envFormEditor = null;
 let iniFormEditor = null;
+let tomlFormEditor = null;
 
 // Show the in-memory edit banner (B). Wires the dismiss buttons once, idempotently.
 function setDisclaimerVisible(visible) {
@@ -874,6 +876,56 @@ function wireIniFormBtn() {
   });
 }
 
+export function setTomlFormMode(on) {
+  const editorEl = document.getElementById('editor');
+  const btn = document.getElementById('tomlFormBtn');
+  if (on) {
+    const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
+    // Freeze Monaco while form is active
+    state.rawview?.updateOptions?.({ readOnly: true });
+    let host = document.getElementById('tomlFormHost');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'tomlFormHost';
+      host.className = 'editor-host';
+      editorEl?.parentNode?.insertBefore(host, editorEl);
+    }
+    host.hidden = false;
+    if (editorEl) editorEl.style.display = 'none';
+    tomlFormEditor = new TomlFormEditor(host);
+    tomlFormEditor.setValue(text);
+  } else {
+    // Flush form value back to Monaco before hiding
+    if (tomlFormEditor) {
+      const text = tomlFormEditor.getValue();
+      tomlFormEditor.destroy();
+      tomlFormEditor = null;
+      if (state.rawview) {
+        state.rawview.setValue(text);
+        state.rawview.updateOptions?.({ readOnly: false });
+      }
+      state.intake = { ...state.intake, text };
+    }
+    const host = document.getElementById('tomlFormHost');
+    if (host) host.hidden = true;
+    if (editorEl) editorEl.style.display = '';
+  }
+  if (btn) {
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', String(on));
+  }
+}
+
+function wireTomlFormBtn() {
+  const btn = document.getElementById('tomlFormBtn');
+  if (!btn || btn.dataset.wired) return;
+  btn.dataset.wired = '1';
+  btn.addEventListener('click', () => {
+    const isOn = btn.classList.contains('active');
+    setTomlFormMode(!isOn);
+  });
+}
+
 function updateWordCount(text, typeId) {
   const bar = document.getElementById('wordCountBar');
   if (!bar) return;
@@ -931,6 +983,8 @@ export async function buildRawView() {
   setEnvFormMode(false);
   // Tear down ini form editor when rebuilding (e.g. file changed)
   setIniFormMode(false);
+  // Tear down toml form editor when rebuilding (e.g. file changed)
+  setTomlFormMode(false);
   // If WYSIWYG was active (e.g. file changed), tear it down first
   if (wysiwygMode) {
     unmountWysiwyg();
@@ -1023,6 +1077,13 @@ export async function buildRawView() {
     iniFormBtn.hidden = !isIni;
     iniFormBtn.classList.remove('active');
     iniFormBtn.setAttribute('aria-pressed', 'false');
+  }
+  wireTomlFormBtn();
+  // Reset tomlFormBtn active state (visibility is inherited from #tomlTools parent)
+  const tomlFormBtn = document.getElementById('tomlFormBtn');
+  if (tomlFormBtn) {
+    tomlFormBtn.classList.remove('active');
+    tomlFormBtn.setAttribute('aria-pressed', 'false');
   }
   // HTML Visual button
   const htmlVisualBtn = document.getElementById('htmlVisualBtn');
@@ -1117,6 +1178,9 @@ export function hasUnsavedWork() {
   // INI form editor: dirty when current text differs from the original load
   if (iniFormEditor && !state.downloadedSinceEdit &&
       iniFormEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
+  // TOML form editor: dirty when current text differs from the original load
+  if (tomlFormEditor && !state.downloadedSinceEdit &&
+      tomlFormEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
   if (state.sessionEdits.size > 0) return true;
   // Folder edits stashed but not yet exported also count — closing the tab would lose them.
   return state.folderEdits.size > 0 && !state.folderExported;
@@ -1173,11 +1237,13 @@ export async function downloadCurrent() {
         ? envFormEditor.getValue()
         : iniFormEditor
           ? iniFormEditor.getValue()
-          : htmlWysiwyg
-            ? htmlWysiwyg.getValue()
-            : wysiwygMode && isWysiwygActive()
-              ? getWysiwygValue()
-              : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
+          : tomlFormEditor
+            ? tomlFormEditor.getValue()
+            : htmlWysiwyg
+              ? htmlWysiwyg.getValue()
+              : wysiwygMode && isWysiwygActive()
+                ? getWysiwygValue()
+                : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
     blob = new Blob([text], { type: state.intake.mimeType || 'text/plain' });
   }
   const a = document.createElement('a');
@@ -1192,11 +1258,13 @@ export async function downloadCurrent() {
         ? envFormEditor.getValue()
         : iniFormEditor
           ? iniFormEditor.getValue()
-          : htmlWysiwyg
-            ? htmlWysiwyg.getValue()
-            : wysiwygMode && isWysiwygActive()
-              ? getWysiwygValue()
-              : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
+          : tomlFormEditor
+            ? tomlFormEditor.getValue()
+            : htmlWysiwyg
+              ? htmlWysiwyg.getValue()
+              : wysiwygMode && isWysiwygActive()
+                ? getWysiwygValue()
+                : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
     state.sessionIntakes.set(state.intake.filename, { ...state.sessionIntakes.get(state.intake.filename), text });
     state.sessionEdits.delete(state.intake.filename);
     state.treeApi?.setEdited?.(state.intake.filename, false);

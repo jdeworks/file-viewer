@@ -228,6 +228,37 @@ export async function run(ctx) {
   const xmlToolsHiddenForToml = await page.$eval('#xmlTools', (el) => el.hidden);
   if (xmlToolsHiddenForToml) pass('XML toolbar hidden while TOML toolbar is active'); else fail('xml toolbar unexpectedly visible for toml in raw view');
 
+  // ── TOML form editor ── Form button in TOML toolbar; clicking renders typed inputs.
+  // Re-use the already-open Sample.toml page (now at raw view); navigate back to it.
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.toml');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.click('#viewMode button[data-mode="raw"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
+  const tomlFormBtnEl = await page.$('#tomlFormBtn');
+  if (tomlFormBtnEl) pass('TOML toolbar has Form button for .toml file'); else fail('tomlFormBtn missing');
+  await page.click('#tomlFormBtn');
+  // Wait for form host to appear and contain a .toml-form element
+  await page.waitForFunction(() => {
+    const host = document.getElementById('tomlFormHost');
+    return host && !host.hidden && host.querySelector('.toml-form');
+  }, null, { timeout: 5000 });
+  const tomlFormVisible = await page.$eval('#tomlFormHost', (el) => !el.hidden);
+  if (tomlFormVisible) pass('TOML form editor renders into #tomlFormHost'); else fail('tomlFormHost hidden after click');
+  const tomlSections = await page.$$eval('#tomlFormHost .ini-section', (els) => els.length);
+  if (tomlSections >= 1) pass('TOML form editor renders sections from Sample.toml (' + tomlSections + ')'); else fail('toml form sections: ' + tomlSections);
+  // Toggle off: form host hides
+  await page.click('#tomlFormBtn');
+  await page.waitForFunction(() => {
+    const host = document.getElementById('tomlFormHost');
+    return !host || host.hidden;
+  }, null, { timeout: 4000 });
+  const tomlFormOff = await page.evaluate(() => {
+    const host = document.getElementById('tomlFormHost');
+    return !host || host.hidden;
+  });
+  if (tomlFormOff) pass('TOML form editor hides when toggled off'); else fail('tomlFormHost still visible after toggle off');
+
   // ── XML ── element tree (reuses JSON tree styling) + structural diff. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.xml');

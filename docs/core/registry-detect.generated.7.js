@@ -66,6 +66,28 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_proto=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, 'proto')) return 0.96;
+  const t = (intake.textSample || '');
+  if (t.includes('syntax = "proto') || t.includes("syntax = 'proto")) return 0.7;
+  return 0;
+}
+return detect;
+})();
+
+const detect_thrift=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, 'thrift')) return 0.96;
+  const t = (intake.textSample || '');
+  if ((t.includes('namespace ') || t.includes('struct ') || t.includes('service ')) && t.includes('typedef ') || t.includes('exception ')) return 0.5;
+  return 0;
+}
+return detect;
+})();
+
 const detect_gcode=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -295,26 +317,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_emulatorjs=(()=>{
-const EXT_CORE = {
-  '.nes': 'fceumm', '.fds': 'fceumm',
-  '.sfc': 'snes9x', '.smc': 'snes9x',
-  '.gb': 'gambatte', '.gbc': 'gambatte', '.sgb': 'gambatte',
-  '.gba': 'mgba',
-  '.gen': 'genesis_plus_gx', '.smd': 'genesis_plus_gx',
-  '.a26': 'stella2014',
-};
-
-function detect(intake) {
-  if (!intake.isBinary) return 0;
-  const ext = '.' + intake.filename.split('.').pop().toLowerCase();
-  if (EXT_CORE[ext]) return 0.92;
-  // NES magic: 4E 45 53 1A
-  const b = intake.bytes;
-  if (b[0] === 0x4e && b[1] === 0x45 && b[2] === 0x53 && b[3] === 0x1a) return 0.98;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk,"iso":detect_iso,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs};
+export const DETECTORS={"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk,"iso":detect_iso,"ruffle":detect_ruffle,"v86":detect_v86};
