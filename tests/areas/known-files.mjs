@@ -3896,4 +3896,23 @@ export async function run(ctx) {
   if (/systemd-boot/i.test(loaderText)) pass('loader.conf: systemd-boot badge shown'); else fail('loader-conf badge: ' + loaderText.slice(0, 200));
   if (/arch-linux\.conf|default/i.test(loaderText)) pass('loader.conf: default entry shown'); else fail('loader-conf default: ' + loaderText.slice(0, 300));
   if (/timeout|3/i.test(loaderText)) pass('loader.conf: timeout shown'); else fail('loader-conf timeout: ' + loaderText.slice(0, 300));
+
+  // ── cmus.rc (cmus terminal music player config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cmus.rc');
+  await page.waitForSelector('#previewHost .cmuscfg-doc', { timeout: 12000 });
+  const cmusText = await page.$eval('#previewHost .cmuscfg-doc', (e) => e.textContent);
+  if (/cmus/i.test(cmusText)) pass('cmus.rc: cmus badge shown'); else fail('cmus badge: ' + cmusText.slice(0, 200));
+  if (/pipewire|output.plugin/i.test(cmusText)) pass('cmus.rc: output plugin shown'); else fail('cmus output plugin: ' + cmusText.slice(0, 300));
+  if (/zenburn|colorscheme/i.test(cmusText)) pass('cmus.rc: colorscheme shown'); else fail('cmus colorscheme: ' + cmusText.slice(0, 300));
+
+  // ── pacman.conf (Arch Linux pacman config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pacman.conf');
+  await page.waitForSelector('#previewHost .pacmancfg-doc', { timeout: 12000 });
+  const pacmanText = await page.$eval('#previewHost .pacmancfg-doc', (e) => e.textContent);
+  if (/pacman/i.test(pacmanText)) pass('pacman.conf: pacman badge shown'); else fail('pacman badge: ' + pacmanText.slice(0, 200));
+  if (/repositor/i.test(pacmanText)) pass('pacman.conf: repositories count shown'); else fail('pacman repos: ' + pacmanText.slice(0, 300));
+  if (/ParallelDownloads|5/i.test(pacmanText)) pass('pacman.conf: ParallelDownloads shown'); else fail('pacman parallel: ' + pacmanText.slice(0, 300));
+  if (/chaotic-aur|multilib|extra|core/i.test(pacmanText)) pass('pacman.conf: repository names shown'); else fail('pacman repo names: ' + pacmanText.slice(0, 300));
 }

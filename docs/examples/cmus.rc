@@ -1,0 +1,51 @@
+colorscheme zenburn
+
+set output_plugin=pipewire
+set replaygain=auto
+set replaygain_preamp=0
+set show_hidden=false
+set show_playlistwin_artist=true
+set show_remaining_time=true
+set play_sorted=false
+set continue=true
+set shuffle=false
+set repeat=false
+set repeat_current=false
+set aaa_mode=all
+set filename_format=%a - %l - %02n - %t
+set sort=artist filename
+
+# Colors
+set color_win_title=blue
+set color_win_bg=-1
+set color_win_fg=default
+set color_win_cur=yellow
+set color_win_cur_sel=yellow
+set color_win_sel=white
+set color_win_marked=red
+set color_win_inactive_sel=gray
+
+# Key bindings - common
+bind -k a win-add-l
+bind -k b player-next
+bind -k c player-pause
+bind -k e win-add-q
+bind -k i win-activate
+bind -k n search-next
+bind -k N search-prev
+bind -k p player-prev
+bind -k q quit
+bind -k v player-stop
+bind -k x player-play
+bind -k z player-prev
+
+# Library view
+bind -f library up win-up
+bind -f library down win-down
+bind -f library enter win-activate
+bind -f library tab win-next
+
+# File browser
+bind -f browser h browser-up
+bind -f browser l win-activate
+bind -f browser a win-add-l
