@@ -117,6 +117,7 @@ export function extractMessage(text) {
   const h = root.headers;
   return {
     from: decodeWords(h.from || ''), to: decodeWords(h.to || ''), cc: decodeWords(h.cc || ''),
+    bcc: decodeWords(h.bcc || ''), messageId: h['message-id'] || '',
     subject: decodeWords(h.subject || ''), date: h.date || '',
     html, plain, attachments,
   };

@@ -83,7 +83,12 @@ export async function createHarness() {
     if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u);
   });
 
-  const openExample = (label, pg) => (pg || page).evaluate((l) => window.__fv.openExampleByLabel(l), label);
+  const openExample = async (label, pg) => {
+    const p = pg || page;
+    // Wait until window.__fv is set (app may still be initialising after networkidle)
+    await p.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
+    return p.evaluate((l) => window.__fv.openExampleByLabel(l), label);
+  };
 
   return { browser, server, page, origin, ROOT, frameOf, pass, fail, consoleErrors, offOrigin, openExample };
 }

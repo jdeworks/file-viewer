@@ -119,22 +119,25 @@ export async function run(ctx) {
   });
   if (comicSpread) pass('comic book mode: two-page spread'); else fail('comic spread not two-up');
 
-  // ── Email (.eml) ── parsed MIME: header card + sanitized HTML body, encoded subject decoded.
+  // ── Email (.eml) ── parentNode: header card (encoded subject decoded), sandboxed HTML body,
+  //    attachment list. Uses nested srcdoc iframe — no outer fv-preview-frame.
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.eml');
-  const eframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const ef = await frameOf('iframe.fv-preview-frame');
-  await ef.waitForSelector('.eml-head', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .eml-head', { timeout: 12000 });
   const emlType2 = await page.$eval('#typeSelect', (s) => s.value);
   if (emlType2 === 'eml') pass('.eml detected as Email'); else fail('eml type: ' + emlType2);
-  const emlHead = await ef.$eval('.eml-head', (e) => e.textContent);
+  const emlHead = await page.$eval('#previewHost .eml-head', (e) => e.textContent);
   if (/Hello from File Viewer/.test(emlHead) && /alice@example\.com/.test(emlHead)) pass('email header card (encoded subject decoded + From)'); else fail('eml head: ' + emlHead.slice(0, 80));
-  const emlBody = await ef.$eval('.eml-html', (e) => e.innerHTML);
-  if (/<b>File Viewer<\/b>/.test(emlBody) && !/<script/i.test(emlBody)) pass('email HTML body rendered + sanitized (script stripped)'); else fail('eml body: ' + emlBody.slice(0, 80));
+  // HTML body is in a sandboxed srcdoc iframe; check the srcdoc attribute for script removal.
+  const emlSrcdoc = await page.$eval('#previewHost .eml-html iframe', (f) => f.getAttribute('sandbox') + '|' + (f.srcdoc || f.getAttribute('srcdoc') || ''));
+  if (/allow-same-origin/.test(emlSrcdoc) && !/<script/i.test(emlSrcdoc)) pass('email HTML body in sandboxed iframe (allow-same-origin only, script stripped)'); else fail('eml iframe sandbox: ' + emlSrcdoc.slice(0, 120));
+  // Attachment list: sample.eml has 1 attachment (report.pdf)
+  const emlAttText = await page.$eval('#previewHost .eml-att', (e) => e.textContent);
+  if (/1 attachment/.test(emlAttText) && /report\.pdf/.test(emlAttText)) pass('email attachment badge shows 1 attachment'); else fail('eml att: ' + emlAttText.slice(0, 80));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const emlMeta = await page.$eval('#metaBody', (e) => e.textContent);
-  if (/Body\s*HTML/.test(emlMeta) && /Attachments\s*0/.test(emlMeta)) pass('email metadata includes body kind and attachments'); else fail('eml meta: ' + emlMeta.replace(/\s+/g, ' ').slice(0, 160));
+  if (/Body\s*HTML/.test(emlMeta) && /Attachments\s*1/.test(emlMeta)) pass('email metadata includes body kind and attachments'); else fail('eml meta: ' + emlMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
 
   // ── Outlook .msg ── CFB-backed email preview; regression for Uint8Array/TextDecoder handling.

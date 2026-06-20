@@ -100,6 +100,7 @@
   .nb-rich{margin:6px 0;overflow:auto;}
   .nb-empty{color:#888;}
   @media (max-width:620px){.nb-prompt{display:none;}.nb-out{margin-left:0;}.nb-code{padding-left:8px;}}
+  .eml-wrap{font-family:system-ui,sans-serif;font-size:13px;}
   .eml-head{border-collapse:collapse;font:13px/1.5 system-ui,sans-serif;margin:0 0 6px;}
   .eml-head th{text-align:right;vertical-align:top;color:#888;font-weight:600;padding:2px 10px 2px 0;white-space:nowrap;}
   .eml-head td{padding:2px 0;word-break:break-word;}
@@ -107,8 +108,19 @@
   body.fv-dark .eml-att{color:#aaa;}
   .eml-sep{border:0;border-top:1px solid #0002;margin:12px 0;}
   body.fv-dark .eml-sep{border-top-color:#fff2;}
-  .eml-plain{white-space:pre-wrap;word-break:break-word;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .eml-sandbox-notice{background:#fff8e1;border:1px solid #f9c440;border-radius:4px;padding:6px 10px;font-size:12px;color:#7a5c00;margin-bottom:8px;}
+  body.fv-dark .eml-sandbox-notice{background:#2a2000;border-color:#6a5000;color:#f9c440;}
   .eml-html{overflow:auto;}
+  .eml-body-iframe{width:100%;min-height:200px;border:1px solid #ddd;border-radius:4px;display:block;}
+  body.fv-dark .eml-body-iframe{border-color:#444;}
+  .eml-plain{white-space:pre-wrap;word-break:break-word;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .eml-att-heading{font:600 12px system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:#888;margin:0 0 6px;}
+  .eml-att-list{list-style:none;margin:0;padding:0;}
+  .eml-att-item{display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid #0001;font-size:13px;}
+  .eml-att-item:last-child{border-bottom:none;}
+  body.fv-dark .eml-att-item{border-bottom-color:#fff1;}
+  .eml-att-name{word-break:break-word;}
+  .eml-att-meta{color:#888;font-size:12px;white-space:nowrap;}
   .mbox-head{font:600 14px system-ui,sans-serif;margin:0 0 12px;}
   .mbox-msg{border:1px solid #0001;border-radius:8px;padding:10px 12px;margin:0 0 8px;}
   body.fv-dark .mbox-msg{border-color:#fff2;}

@@ -1,17 +1,36 @@
 From: Alice Example <alice@example.com>
 To: Bob <bob@example.com>
+CC: Carol <carol@example.com>
 Subject: =?utf-8?B?SGVsbG8gZnJvbSBGaWxlIFZpZXdlcg==?=
 Date: Mon, 13 Jun 2026 10:00:00 +0000
+Message-ID: <sample-001@file-viewer.example>
 MIME-Version: 1.0
-Content-Type: multipart/alternative; boundary="bound42"
+Content-Type: multipart/mixed; boundary="outer42"
 
---bound42
+--outer42
+Content-Type: multipart/alternative; boundary="inner42"
+
+--inner42
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
 
 Hello from a sample email =E2=80=94 this is the plain-text part.
---bound42
+
+Best regards,
+Alice
+--inner42
 Content-Type: text/html; charset=utf-8
 
-<h2>Hello from <b>File Viewer</b></h2><p>This is the <i>HTML</i> part. <script>document.title="x"</script></p>
---bound42--
+<h2>Hello from <b>File Viewer</b></h2>
+<p>This is the <i>HTML</i> part. <script>document.title="x"</script></p>
+<p>Enjoy viewing your <strong>email files</strong> right in the browser.</p>
+--inner42--
+
+--outer42
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="report.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjAKdHJhaWxlcgo8PCAvU2l6ZSAxID4+CiUlRU9G
+
+--outer42--
