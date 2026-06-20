@@ -7017,7 +7017,31 @@ export async function run(ctx) {
 
   // ── coq-lang viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('sample.v');
+  await openExample('sample.coq');
   await page.waitForSelector('#previewHost .coq-doc', { timeout: 12000 });
   pass('coq-lang: rendered');
+
+  // ── flatpak-manifest viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('org.example.App.yaml');
+  await page.waitForSelector('#previewHost .fpm-doc', { timeout: 12000 });
+  pass('flatpak-manifest: rendered');
+
+  // ── snapcraft-yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('snapcraft.yaml');
+  await page.waitForSelector('#previewHost .snap-doc', { timeout: 12000 });
+  pass('snapcraft-yaml: rendered');
+
+  // ── smtlib viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.smt2');
+  await page.waitForSelector('#previewHost .smt-doc', { timeout: 12000 });
+  pass('smtlib: rendered');
+
+  // ── promela viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.pml');
+  await page.waitForSelector('#previewHost .pml-doc', { timeout: 12000 });
+  pass('promela: rendered');
 }

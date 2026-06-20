@@ -1440,13 +1440,16 @@
     ]
   },
   {
-    "label": "Sample.als",
+    "label": "sample.als (Alloy)",
     "file": "sample.als",
-    "mime": "application/x-ableton-live-set",
-    "category": "Media",
+    "mime": "text/plain",
+    "category": "Code",
     "categories": [
-      "Media"
-    ]
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Alloy formal specification with signatures, predicates, facts, and assertions for relational model checking.",
+    "knownFile": "alloy-lang"
   },
   {
     "label": "Sample.mid",
@@ -12871,5 +12874,185 @@
     "enhanced": true,
     "description": "Eiffel class definition with features, routines, and design-by-contract constructs.",
     "knownFile": "eiffel-lang"
+  },
+  {
+    "label": "avahi-daemon.conf (Avahi Daemon Config)",
+    "file": "avahi-daemon.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Avahi daemon configuration for mDNS/DNS-SD local network service discovery.",
+    "knownFile": "avahi-daemon-conf"
+  },
+  {
+    "label": ".neomuttrc (NeoMutt Config)",
+    "file": ".neomuttrc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "NeoMutt email client configuration with account settings, keybindings, and sidebar options.",
+    "knownFile": "neomutt-conf"
+  },
+  {
+    "label": ".msmtprc (msmtp Config)",
+    "file": ".msmtprc",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "msmtp SMTP client configuration with account definitions for sending email.",
+    "knownFile": "msmtp-conf"
+  },
+  {
+    "label": "slapd.conf (OpenLDAP Config)",
+    "file": "slapd.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "OpenLDAP slapd server configuration defining database backends, schemas, and access controls.",
+    "knownFile": "openldap-conf"
+  },
+  {
+    "label": "sample.gnuplot (gnuplot)",
+    "file": "sample.gnuplot",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "gnuplot script for plotting data with terminal settings, axes labels, and plot commands.",
+    "knownFile": "gnuplot-script"
+  },
+  {
+    "label": "sample.wl (Wolfram Language)",
+    "file": "sample.wl",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Wolfram Language source file with symbolic computation, pattern matching, and function definitions.",
+    "knownFile": "wolfram-lang"
+  },
+  {
+    "label": "sample.do (Stata)",
+    "file": "sample.do",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Stata do-file with data manipulation commands, statistical analysis, and regression models.",
+    "knownFile": "stata-do"
+  },
+  {
+    "label": "sample.tla (TLA+)",
+    "file": "sample.tla",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "TLA+ formal specification module with state variables, invariants, and temporal logic formulas.",
+    "knownFile": "tla-plus"
+  },
+  {
+    "label": "sample.spec (RPM Spec)",
+    "file": "sample.spec",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "RPM package specification with metadata headers, build instructions, and file lists.",
+    "knownFile": "rpm-spec"
+  },
+  {
+    "label": "control (Debian Control)",
+    "file": "control",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Debian package control file with package metadata, dependencies, and description.",
+    "knownFile": "debian-control"
+  },
+  {
+    "label": "cupsd.conf (CUPS)",
+    "file": "cupsd.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "CUPS printing daemon configuration with server settings, listen addresses, and access controls.",
+    "knownFile": "cups-conf"
+  },
+  {
+    "label": "sample.dfy (Dafny)",
+    "file": "sample.dfy",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Dafny verification-aware program with methods, preconditions, postconditions, and loop invariants.",
+    "knownFile": "dafny"
+  },
+  {
+    "label": "sample.desktop (Desktop Entry)",
+    "file": "sample.desktop",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "XDG desktop entry file defining an application launcher with name, icon, and exec command.",
+    "knownFile": "xdg-desktop-entry"
+  },
+  {
+    "label": "sample.thy (Isabelle/HOL)",
+    "file": "sample.thy",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Isabelle/HOL theory file with formal proofs, lemmas, and theorem definitions.",
+    "knownFile": "isabelle-thy"
+  },
+  {
+    "label": "sample.coq (Coq)",
+    "file": "sample.coq",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Coq proof assistant source file with inductive definitions, theorems, and formal proofs.",
+    "knownFile": "coq-lang"
   }
 ]

@@ -902,6 +902,10 @@ import xdgDesktopEntry from '../types/text/known/xdg-desktop-entry/index.js';
 import isabelleThy from '../types/text/known/isabelle-thy/index.js';
 import alloyLang from '../types/text/known/alloy-lang/index.js';
 import coqLang from '../types/text/known/coq-lang/index.js';
+import flatpakManifest from '../types/text/known/flatpak-manifest/index.js';
+import snapcraftYaml from '../types/text/known/snapcraft-yaml/index.js';
+import smtlib from '../types/text/known/smtlib/index.js';
+import promela from '../types/text/known/promela/index.js';
 export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks,
   // Extension-specific language plugins — listed BEFORE broad content-heuristic matchers to avoid interception.
   // Within this block: more-specific (fewer heuristics) goes first to avoid false-positive interception.
@@ -922,6 +926,8 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   aptSources, pkgbuild, limitsConf, auditRules,
   journaldConf, tmpfilesD, nsswitchConf, mkinitcpioConf,
   wpaSupplicantConf, sssdConf,
+  rpmSpec, debianControl, cupsConf, dafnyLang,
+  xdgDesktopEntry, isabelleThy, alloyLang, coqLang,
   haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, rubyLang, perlLang, phpLang, powershellLang, solidityLang, vhdlLang, arduinoSketch, cobolLang, gleamLang, odinLang, haxeLang, adaLang, prologLang, asmLang, objcLang, dLang, ponyLang, wrenLang, mojoLang, janetLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
@@ -1130,8 +1136,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   linkwardenConfig,
   hoarderConfig,
   frigateConfig,
-  rpmSpec, debianControl, cupsConf, dafnyLang,
-  xdgDesktopEntry, isabelleThy, alloyLang, coqLang,
+  flatpakManifest, snapcraftYaml, smtlib, promela,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -1,0 +1,23 @@
+app-id: org.example.App
+runtime: org.gnome.Platform
+runtime-version: '45'
+sdk: org.gnome.Sdk
+command: my-app
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+modules:
+  - name: my-app
+    buildsystem: meson
+    sources:
+      - type: archive
+        url: https://example.org/my-app-1.0.tar.gz
+        sha256: abc123
+  - name: libfoo
+    buildsystem: autotools
+    sources:
+      - type: git
+        url: https://github.com/example/libfoo.git
+        tag: v2.1.0

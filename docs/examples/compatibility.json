@@ -28374,7 +28374,9 @@
       "label": "Avahi Daemon Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "avahi-daemon.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28399,7 +28401,9 @@
       "label": "NeoMutt Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".neomuttrc"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28424,7 +28428,9 @@
       "label": "msmtp Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".msmtprc"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28449,7 +28455,9 @@
       "label": "OpenLDAP Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "slapd.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28474,7 +28482,9 @@
       "label": "gnuplot",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.gnuplot"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28499,7 +28509,9 @@
       "label": "Wolfram Language",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.wl"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28524,7 +28536,9 @@
       "label": "Stata",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.do"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28549,7 +28563,9 @@
       "label": "TLA+",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.tla"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28574,7 +28590,9 @@
       "label": "RPM Spec",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.spec"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28599,7 +28617,9 @@
       "label": "Debian Control",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "control"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28624,7 +28644,9 @@
       "label": "CUPS",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "cupsd.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28649,7 +28671,9 @@
       "label": "Dafny",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.dfy"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28674,7 +28698,9 @@
       "label": "Desktop Entry",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.desktop"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28699,7 +28725,9 @@
       "label": "Isabelle/HOL",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.thy"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28724,7 +28752,9 @@
       "label": "Alloy",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.als"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -28747,6 +28777,108 @@
     },
     "coq-lang": {
       "label": "Coq",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.coq"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "flatpak-manifest": {
+      "label": "Flatpak Manifest",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "snapcraft-yaml": {
+      "label": "Snapcraft",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "smtlib": {
+      "label": "SMT-LIB 2",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "promela": {
+      "label": "PROMELA",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [],
