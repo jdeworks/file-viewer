@@ -3227,4 +3227,20 @@ export async function run(ctx) {
   if (/MyApp/i.test(antText)) pass('build.xml: project name shown'); else fail('ant-build name: ' + antText.slice(0, 200));
   if (/compile|package|clean/i.test(antText)) pass('build.xml: targets shown'); else fail('ant-build targets: ' + antText.slice(0, 300));
 
+  // ── sudoers viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sudoers');
+  await page.waitForSelector('#previewHost .sudoers-doc', { timeout: 12000 });
+  const sudoText = await page.$eval('#previewHost .sudoers-doc', (e) => e.textContent);
+  if (/sudoers/i.test(sudoText)) pass('sudoers: badge shown'); else fail('sudoers badge: ' + sudoText.slice(0, 200));
+  if (/NOPASSWD|%sudo/i.test(sudoText)) pass('sudoers: access rules shown (NOPASSWD or %sudo)'); else fail('sudoers rules: ' + sudoText.slice(0, 300));
+
+  // ── NFS exports viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('exports');
+  await page.waitForSelector('#previewHost .nfsexp-doc', { timeout: 12000 });
+  const nfsText = await page.$eval('#previewHost .nfsexp-doc', (e) => e.textContent);
+  if (/NFS/i.test(nfsText)) pass('exports: NFS badge shown'); else fail('nfs-exports badge: ' + nfsText.slice(0, 200));
+  if (/rw|sync/i.test(nfsText)) pass('exports: export options shown'); else fail('nfs-exports options: ' + nfsText.slice(0, 300));
+
 }

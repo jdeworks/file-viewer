@@ -1,0 +1,30 @@
+# /etc/sudoers - sudo access control
+# This file MUST be edited with the 'visudo' command
+
+Defaults env_reset
+Defaults mail_badpass
+Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# User alias specification
+User_Alias ADMINS = alice, bob
+User_Alias DEVELOPERS = charlie, diana
+
+# Command alias specification
+Cmnd_Alias NETWORK = /sbin/ifconfig, /sbin/route, /usr/bin/netstat
+Cmnd_Alias SERVICES = /usr/bin/systemctl
+
+# User privilege specification
+root    ALL=(ALL:ALL) ALL
+
+# Allow admins full access
+ADMINS  ALL=(ALL:ALL) ALL
+
+# Allow developers to restart services without password
+DEVELOPERS ALL=(root) NOPASSWD: SERVICES
+
+# Single user with specific commands
+deploy  ALL=(root) NOPASSWD: /usr/bin/docker, /usr/bin/kubectl
+
+# Allow sudo group
+%sudo   ALL=(ALL:ALL) ALL
+%wheel  ALL=(ALL) NOPASSWD: ALL

@@ -7202,5 +7202,49 @@
       "System"
     ],
     "knownFile": "chrony-conf"
+  },
+  {
+    "file": "sudoers",
+    "label": "sudoers (sudo access control)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security"
+    ],
+    "knownFile": "sudoers"
+  },
+  {
+    "file": "exports",
+    "label": "exports (NFS exports)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ],
+    "knownFile": "nfs-exports"
+  },
+  {
+    "file": "named.conf",
+    "label": "named.conf (BIND DNS)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "knownFile": "named-conf"
+  },
+  {
+    "file": "dhcpd.conf",
+    "label": "dhcpd.conf (ISC DHCP Server)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "knownFile": "dhcpd-conf"
   }
 ]

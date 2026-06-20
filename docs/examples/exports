@@ -1,0 +1,18 @@
+# /etc/exports - NFS server export configuration
+# See exports(5) for more details
+
+# Share /srv/nfs/data read-write to local network
+/srv/nfs/data   192.168.1.0/24(rw,sync,no_subtree_check,no_root_squash)
+
+# Share home directories read-only to specific host
+/home           192.168.1.10(ro,sync,no_subtree_check,root_squash)
+
+# Share /mnt/backup to multiple clients
+/mnt/backup     192.168.1.20(rw,sync,no_subtree_check) \
+                192.168.1.21(ro,sync,no_subtree_check)
+
+# Public read-only share
+/srv/public     *(ro,sync,no_subtree_check,root_squash)
+
+# Admin workstation with root access
+/srv/admin      adminhost.example.com(rw,sync,no_subtree_check,no_root_squash)

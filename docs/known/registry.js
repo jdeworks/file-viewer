@@ -397,6 +397,8 @@ import zookeeperConfig from '../types/text/known/zookeeper-config/index.js';
 import hostsFile from '../types/text/known/hosts-file/index.js';
 import resolvConf from '../types/text/known/resolv-conf/index.js';
 import sshdConfig from '../types/text/known/sshd-config/index.js';
+import sudoers from '../types/text/known/sudoers/index.js';
+import nfsExports from '../types/text/known/nfs-exports/index.js';
 import samTemplate from '../types/text/yaml/known/sam-template/index.js';
 import cfnTemplate from '../types/text/yaml/known/cfn-template/index.js';
 import cdkJson from '../types/text/json/known/cdk-json/index.js';
@@ -539,7 +541,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   kafkaServerProps, natsConfig, rabbitmqConf, zookeeperConfig,
   samTemplate, cfnTemplate, cdkJson, awsSamConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson,
-  hostsFile, resolvConf, sshdConfig, fstab, crypttab,
+  hostsFile, resolvConf, sshdConfig, sudoers, nfsExports, fstab, crypttab,
   jetbrainsWorkspace, neovimConfig, vimConfig, emacsConfig,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,
