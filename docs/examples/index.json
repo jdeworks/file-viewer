@@ -4312,13 +4312,14 @@
   {
     "label": "nuget.config",
     "file": "nuget.config",
-    "mime": "text/xml",
+    "mime": "application/xml",
     "category": "Config",
     "categories": [
       "Config"
     ],
     "enhanced": true,
-    "description": "NuGet config: clears default package sources and adds nuget.org v3 as the sole feed."
+    "description": "NuGet.Config: sets nuget.org v3 as primary source plus a private Azure Artifacts feed; disables the private feed by default.",
+    "knownFile": "nuget-config"
   },
   {
     "label": "scorecard.yml",
@@ -4591,24 +4592,38 @@
   {
     "label": "app.csproj",
     "file": "app.csproj",
-    "mime": "text/xml",
+    "mime": "application/xml",
     "category": "Config",
     "categories": [
       "Config"
     ],
     "enhanced": true,
-    "description": "C# project file."
+    "description": "SDK-style .NET 8 console app with 7 package references and 2 project references.",
+    "knownFile": "csproj"
   },
   {
     "label": "Directory.Build.props",
     "file": "Directory.Build.props",
-    "mime": "text/xml",
+    "mime": "application/xml",
     "category": "Config",
     "categories": [
       "Config"
     ],
     "enhanced": true,
-    "description": ".NET Directory.Build.props shared MSBuild settings."
+    "description": "Directory.Build.props: repo-wide MSBuild settings (LangVersion, Nullable, TreatWarningsAsErrors, CPM) plus a shared PackageReference.",
+    "knownFile": "directory-build"
+  },
+  {
+    "label": "Common.props (MSBuild)",
+    "file": "Common.props",
+    "mime": "application/xml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Shared MSBuild .props file: common build properties, central package versions, a custom import, and a build-info target.",
+    "knownFile": "msbuild-props"
   },
   {
     "label": "package.nuspec",
@@ -6505,5 +6520,69 @@
     "enhanced": true,
     "description": "nfpm package config: myapp v1.2.3 for deb, rpm, and apk formats with install scripts.",
     "knownFile": "nfpm-config"
+  },
+  {
+    "label": "proguard-rules.pro (ProGuard Rules)",
+    "file": "proguard-rules.pro",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Android ProGuard/R8 rules: keep rules for Retrofit, Room, and Gson; -dontwarn and -assumenosideeffects for release builds.",
+    "knownFile": "proguard-rules"
+  },
+  {
+    "label": "strings.xml (Android Strings)",
+    "file": "strings.xml",
+    "mime": "text/xml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Android string resources: 20+ strings for navigation, actions, and errors; 1 string-array with sort options; 1 plurals for notifications.",
+    "knownFile": "android-strings"
+  },
+  {
+    "label": "dvc.yaml (DVC Pipeline)",
+    "file": "dvc.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": ["Config", "Data Science"],
+    "enhanced": true,
+    "description": "DVC pipeline: 3 stages (prepare, train, evaluate) with commands, dependencies, outputs, params, and metrics.",
+    "knownFile": "dvc-pipeline"
+  },
+  {
+    "label": "MLproject (MLflow Project)",
+    "file": "MLproject",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": ["Config", "Data Science"],
+    "enhanced": true,
+    "description": "MLflow project: sklearn ElasticNet model with conda env, train entry point (alpha, l1_ratio, max_iter), and predict entry point.",
+    "knownFile": "mlflow-project"
+  },
+  {
+    "label": "hydra-config.yaml (Hydra Config)",
+    "file": "hydra-config.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": ["Config", "Data Science"],
+    "enhanced": true,
+    "description": "Hydra config: defaults list with model, dataset, optimizer, scheduler groups; _target_ class; training and logging values.",
+    "knownFile": "hydra-config"
+  },
+  {
+    "label": "wandb-settings (W&B Config)",
+    "file": "wandb-settings",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": ["Config", "Data Science"],
+    "enhanced": true,
+    "description": "Weights & Biases settings: entity, project, online mode, api.wandb.ai base URL, group and job_type.",
+    "knownFile": "wandb-config"
   }
 ]

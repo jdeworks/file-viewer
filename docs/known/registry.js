@@ -248,6 +248,7 @@ import springApp from '../types/text/known/spring-app/index.js';
 import springAppYml from '../types/text/yaml/known/spring-app/index.js';
 import csproj from '../types/text/xml/known/csproj/index.js';
 import directoryBuild from '../types/text/xml/known/directory-build/index.js';
+import msbuildProps from '../types/text/xml/known/msbuild-props/index.js';
 import nuspec from '../types/text/xml/known/nuspec/index.js';
 import stackYaml from '../types/text/yaml/known/stack-yaml/index.js';
 import cabal from '../types/text/known/cabal/index.js';
@@ -403,6 +404,8 @@ import cyclonedxSbom from '../types/text/json/known/cyclonedx-sbom/index.js';
 import spdxSbom from '../types/text/known/spdx-sbom/index.js';
 import slsaProvenance from '../types/text/json/known/slsa-provenance/index.js';
 import syftConfig from '../types/text/yaml/known/syft-config/index.js';
+import proguardRules from '../types/text/known/proguard-rules/index.js';
+import androidStrings from '../types/text/xml/known/android-strings/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -447,7 +450,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   prometheusRules, grafanaDashboard, jaegerConfig, otelK8s,
   scorecard, socketSecurity, trivyConfig, snykConfig,
   gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml,
-  csproj, directoryBuild, nuspec,
+  csproj, directoryBuild, msbuildProps, nuspec,
   stackYaml, cabal, packageResolved, rebarConfig,
   docusaurusConfig, vitepressConfig, sphinxConf, doxyfile,
   drizzleConfig, knexfile, alembic, flywayConf,
@@ -487,6 +490,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   harnessPipeline,
   actConfig,
   cyclonedxSbom, spdxSbom, slsaProvenance, syftConfig,
+  proguardRules, androidStrings,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

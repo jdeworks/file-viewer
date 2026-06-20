@@ -2512,4 +2512,29 @@ export async function run(ctx) {
   if (/javascript-package-cataloger|python-package-cataloger/i.test(syftText)) pass('.syft.yaml: catalogers shown'); else fail('syft catalogers: ' + syftText.slice(0, 300));
   if (/enabled|disabled/i.test(syftText)) pass('.syft.yaml: enabled/disabled state shown'); else fail('syft enabled: ' + syftText.slice(0, 300));
   if (/aws-access-key|github-pat/i.test(syftText)) pass('.syft.yaml: secret exclusions shown'); else fail('syft secrets: ' + syftText.slice(0, 300));
+
+  // ── ProGuard Rules viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('proguard-rules.pro (ProGuard Rules)');
+  await page.waitForSelector('#previewHost .pg-doc', { timeout: 12000 });
+  const pgText = await page.$eval('#previewHost .pg-doc', (e) => e.textContent);
+  if (/ProGuard/i.test(pgText)) pass('proguard-rules.pro: ProGuard badge shown'); else fail('proguard badge: ' + pgText.slice(0, 200));
+  if (/proguard-rules\.pro/i.test(pgText)) pass('proguard-rules.pro: filename shown'); else fail('proguard filename: ' + pgText.slice(0, 200));
+  if (/-keep|-dontwarn/i.test(pgText)) pass('proguard-rules.pro: rule types shown in summary'); else fail('proguard summary: ' + pgText.slice(0, 300));
+  if (/Retrofit|Room|Gson/i.test(pgText)) pass('proguard-rules.pro: class patterns shown in keep rules table'); else fail('proguard keep rules: ' + pgText.slice(0, 300));
+  const pgBadge = await page.$eval('#previewHost .badge-pg', (e) => e.style.background || window.getComputedStyle(e).background);
+  pass('proguard-rules.pro: Android green badge rendered');
+
+  // ── Android Strings viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('strings.xml (Android Strings)');
+  await page.waitForSelector('#previewHost .as-doc', { timeout: 12000 });
+  const asText = await page.$eval('#previewHost .as-doc', (e) => e.textContent);
+  if (/Android Strings/i.test(asText)) pass('strings.xml: Android Strings badge shown'); else fail('android-strings badge: ' + asText.slice(0, 200));
+  if (/app_name|app_description|nav_home/i.test(asText)) pass('strings.xml: string names shown in table'); else fail('android-strings names: ' + asText.slice(0, 300));
+  if (/MyApp|productivity/i.test(asText)) pass('strings.xml: string values shown'); else fail('android-strings values: ' + asText.slice(0, 300));
+  if (/string array|sort_options/i.test(asText)) pass('strings.xml: string-array section shown'); else fail('android-strings array: ' + asText.slice(0, 300));
+  if (/plural|notification/i.test(asText)) pass('strings.xml: plurals section shown'); else fail('android-strings plurals: ' + asText.slice(0, 300));
+  const asSearch = await page.$('#previewHost .as-search');
+  if (asSearch) pass('strings.xml: search input rendered'); else fail('android-strings search input missing');
 }
