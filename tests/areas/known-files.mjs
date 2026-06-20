@@ -1193,6 +1193,46 @@ export async function run(ctx) {
   if (/v2/i.test(bufText)) pass('buf.yaml: version shown'); else fail('buf version: ' + bufText.slice(0, 200));
   if (/googleapis|grpc-gateway/i.test(bufText)) pass('buf.yaml: dependencies shown'); else fail('buf deps: ' + bufText.slice(0, 200));
 
+  // ── .mockery.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.mockery.yaml');
+  await page.waitForSelector('#previewHost .mky-doc', { timeout: 12000 });
+  const mkyText = await page.$eval('#previewHost .mky-doc', (e) => e.textContent);
+  if (/mockery/i.test(mkyText)) pass('.mockery.yaml: mockery badge shown'); else fail('mockery badge: ' + mkyText.slice(0, 200));
+  if (/service|repository|notifier/i.test(mkyText)) pass('.mockery.yaml: packages shown'); else fail('mockery packages: ' + mkyText.slice(0, 200));
+  if (/UserService|AuthService|PaymentService/i.test(mkyText)) pass('.mockery.yaml: interfaces shown'); else fail('mockery interfaces: ' + mkyText.slice(0, 300));
+  if (/with-expecter|expecter/i.test(mkyText)) pass('.mockery.yaml: with-expecter setting shown'); else fail('mockery expecter: ' + mkyText.slice(0, 300));
+
+  // ── .ko.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.ko.yaml');
+  await page.waitForSelector('#previewHost .ko-doc', { timeout: 12000 });
+  const koText = await page.$eval('#previewHost .ko-doc', (e) => e.textContent);
+  if (/\bko\b/i.test(koText)) pass('.ko.yaml: ko badge shown'); else fail('ko badge: ' + koText.slice(0, 200));
+  if (/distroless/i.test(koText)) pass('.ko.yaml: base image shown'); else fail('ko base image: ' + koText.slice(0, 200));
+  if (/linux\/amd64|linux\/arm64/i.test(koText)) pass('.ko.yaml: platforms shown'); else fail('ko platforms: ' + koText.slice(0, 200));
+  if (/spdx|sbom/i.test(koText)) pass('.ko.yaml: SBOM setting shown'); else fail('ko sbom: ' + koText.slice(0, 300));
+
+  // ── sqlc.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sqlc.yaml');
+  await page.waitForSelector('#previewHost .sqlc-doc', { timeout: 12000 });
+  const sqlcText = await page.$eval('#previewHost .sqlc-doc', (e) => e.textContent);
+  if (/sqlc/i.test(sqlcText)) pass('sqlc.yaml: sqlc badge shown'); else fail('sqlc badge: ' + sqlcText.slice(0, 200));
+  if (/postgresql/i.test(sqlcText)) pass('sqlc.yaml: SQL engine shown'); else fail('sqlc engine: ' + sqlcText.slice(0, 200));
+  if (/queries|schema/i.test(sqlcText)) pass('sqlc.yaml: queries/schema paths shown'); else fail('sqlc paths: ' + sqlcText.slice(0, 300));
+  if (/internal\/db|analytics/i.test(sqlcText)) pass('sqlc.yaml: output dirs shown'); else fail('sqlc output: ' + sqlcText.slice(0, 300));
+
+  // ── nfpm.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nfpm.yaml');
+  await page.waitForSelector('#previewHost .nfpm-doc', { timeout: 12000 });
+  const nfpmText = await page.$eval('#previewHost .nfpm-doc', (e) => e.textContent);
+  if (/nfpm/i.test(nfpmText)) pass('nfpm.yaml: nfpm badge shown'); else fail('nfpm badge: ' + nfpmText.slice(0, 200));
+  if (/myapp/i.test(nfpmText)) pass('nfpm.yaml: package name shown'); else fail('nfpm name: ' + nfpmText.slice(0, 200));
+  if (/deb|rpm|apk/i.test(nfpmText)) pass('nfpm.yaml: package formats shown'); else fail('nfpm formats: ' + nfpmText.slice(0, 300));
+  if (/preinstall|postinstall/i.test(nfpmText)) pass('nfpm.yaml: install scripts shown'); else fail('nfpm scripts: ' + nfpmText.slice(0, 300));
+
   // ── heroku.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('heroku.yml');
