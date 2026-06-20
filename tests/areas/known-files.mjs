@@ -3979,4 +3979,39 @@ export async function run(ctx) {
   else pass('50-usb.rules: USB subsystem shown');
   if (!udevText.includes('plugdev')) fail('50-usb.rules: group not shown');
   else pass('50-usb.rules: plugdev group shown');
+
+  // ── .pre-commit-config.yaml enhanced viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.pre-commit-config.yaml');
+  await page.waitForSelector('#previewHost .precommit-doc', { timeout: 12000 });
+  pass('.pre-commit-config.yaml: badge shown');
+  const precommitText = await page.$eval('#previewHost .precommit-doc', el => el.textContent);
+  if (!precommitText.includes('pre-commit-hooks')) fail('.pre-commit-config.yaml: repos not shown');
+  else pass('.pre-commit-config.yaml: repo shown');
+  if (!precommitText.includes('black')) fail('.pre-commit-config.yaml: hook not shown');
+  else pass('.pre-commit-config.yaml: hook shown');
+
+  // ── conky.conf enhanced viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('conky.conf');
+  await page.waitForSelector('#previewHost .conky-doc', { timeout: 12000 });
+  pass('conky.conf: badge shown');
+  const conkyText = await page.$eval('#previewHost .conky-doc', el => el.textContent);
+  if (!conkyText.includes('top_right')) fail('conky.conf: alignment not shown');
+  else pass('conky.conf: alignment shown');
+  if (!conkyText.includes('1.0')) fail('conky.conf: update interval not shown');
+  else pass('conky.conf: update interval shown');
+
+  // ── mypackage.opam (OCaml opam package descriptor) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mypackage.opam');
+  await page.waitForSelector('#previewHost .opam-doc', { timeout: 12000 });
+  pass('mypackage.opam: badge shown');
+  const opamText = await page.$eval('#previewHost .opam-doc', (e) => e.textContent);
+  if (!opamText.includes('mypackage')) fail('mypackage.opam: package name not shown');
+  else pass('mypackage.opam: package name shown');
+  if (!opamText.includes('yojson')) fail('mypackage.opam: dependencies not shown');
+  else pass('mypackage.opam: dependencies shown');
+  if (/MIT/i.test(opamText)) pass('mypackage.opam: license shown'); else fail('opam license: ' + opamText.slice(0, 300));
+  if (/Jane Smith|maintainer/i.test(opamText)) pass('mypackage.opam: maintainer shown'); else fail('opam maintainer: ' + opamText.slice(0, 300));
 }

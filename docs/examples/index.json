@@ -3912,7 +3912,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Clang-Format C/C++ code formatting configuration."
+    "description": "Clang-Format C/C++ code formatting configuration.",
+    "knownFile": "clang-format"
   },
   {
     "label": "Jenkinsfile",
@@ -4791,6 +4792,19 @@
     ],
     "enhanced": true,
     "description": "Haskell Cabal package description."
+  },
+  {
+    "label": "mypackage.opam",
+    "file": "mypackage.opam",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code",
+      "OCaml"
+    ],
+    "enhanced": true,
+    "knownFile": "opam-file",
+    "description": "OCaml opam package descriptor: metadata, dependencies with constraints, and dune build steps."
   },
   {
     "name": "dune-project",
