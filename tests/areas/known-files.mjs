@@ -5086,4 +5086,24 @@ export async function run(ctx) {
   if (/vi/i.test(nuText)) pass('config.nu: edit_mode extracted'); else fail('config.nu: missing edit_mode, got: ' + nuText.slice(0, 200));
   if (/custom command/i.test(nuText)) pass('config.nu: custom commands counted'); else fail('config.nu: missing custom command count: ' + nuText.slice(0, 300));
   if (/alias/i.test(nuText)) pass('config.nu: aliases section shown'); else fail('config.nu: missing aliases section');
+
+  // ── graylog.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('graylog.conf');
+  pass(await page.waitForSelector('#previewHost .graylog-doc', { timeout: 12000 }), 'graylog.conf: badge shown');
+  const graylogText = await page.$eval('#previewHost .graylog-doc', (el) => el.textContent);
+  if (/Graylog/i.test(graylogText)) pass('graylog.conf: Graylog badge shown'); else fail('graylog badge: ' + graylogText.slice(0, 200));
+  if (/master/i.test(graylogText)) pass('graylog.conf: is_master chip shown'); else fail('graylog is_master: ' + graylogText.slice(0, 300));
+  if (/localhost:9200/.test(graylogText)) pass('graylog.conf: Elasticsearch host shown'); else fail('graylog elasticsearch: ' + graylogText.slice(0, 300));
+  if (/\[configured\]/.test(graylogText)) pass('graylog.conf: secrets masked'); else fail('graylog secrets: ' + graylogText.slice(0, 300));
+
+  // ── odoo.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('odoo.conf');
+  pass(await page.waitForSelector('#previewHost .odoo-doc', { timeout: 12000 }), 'odoo.conf: badge shown');
+  const odooText = await page.$eval('#previewHost .odoo-doc', (el) => el.textContent);
+  if (/Odoo/i.test(odooText)) pass('odoo.conf: Odoo badge shown'); else fail('odoo badge: ' + odooText.slice(0, 200));
+  if (/8069/.test(odooText)) pass('odoo.conf: xmlrpc_port shown'); else fail('odoo port: ' + odooText.slice(0, 300));
+  if (/workers/.test(odooText)) pass('odoo.conf: workers setting shown'); else fail('odoo workers: ' + odooText.slice(0, 300));
+  if (/\[configured\]/.test(odooText)) pass('odoo.conf: secrets masked'); else fail('odoo secrets: ' + odooText.slice(0, 300));
 }
