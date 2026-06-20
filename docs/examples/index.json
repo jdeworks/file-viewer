@@ -10180,5 +10180,18 @@
     "enhanced": true,
     "description": "Wallos subscription tracker environment configuration",
     "knownFile": true
+  },
+  {
+    "file": "grist.env",
+    "label": "Grist Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Grist self-hosted spreadsheet database environment configuration",
+    "knownFile": true
   }
 ]

@@ -688,6 +688,7 @@ import diunConfig from '../types/text/yaml/known/diun-config/index.js';
 import hoppscotchConfig from '../types/text/known/hoppscotch-config/index.js';
 import twentyCrmConfig from '../types/text/known/twenty-crm-config/index.js';
 import vikunjaConfig from '../types/text/yaml/known/vikunja-config/index.js';
+import gristConfig from '../types/text/known/grist-config/index.js';
 import appsmithConfig from '../types/text/known/appsmith-config/index.js';
 import glitchtipConfig from '../types/text/known/glitchtip-config/index.js';
 import archiveboxConfig from '../types/text/known/archivebox-config/index.js';
@@ -717,6 +718,8 @@ import changedetectionConfig from '../types/text/known/changedetection-config/in
 import semaphoreConfig from '../types/text/json/known/semaphore-config/index.js';
 import actualBudgetConfig from '../types/text/json/known/actual-budget-config/index.js';
 import wallosConfig from '../types/text/known/wallos-config/index.js';
+import openWebUiConfig from '../types/text/known/open-webui-config/index.js';
+import maybeConfig from '../types/text/known/maybe-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -875,7 +878,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   planeConfig, infisicalConfig,
   diunConfig,
   hoppscotchConfig, twentyCrmConfig,
-  vikunjaConfig, appsmithConfig,
+  vikunjaConfig, gristConfig, appsmithConfig,
   glitchtipConfig, archiveboxConfig,
   dexConfig, lldapConfig, invidiousConfig,
   listmonkConfig, windmillConfig,

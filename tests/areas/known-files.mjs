@@ -5509,4 +5509,10 @@ export async function run(ctx) {
   await openExample('wallos.env');
   await page.waitForSelector('#previewHost .wallos-doc', { timeout: 12000 });
   pass('wallos.env: Wallos badge shown');
+
+  // ── grist.env viewer (grist-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('grist.env');
+  await page.waitForSelector('#previewHost .grist-doc', { timeout: 12000 });
+  pass('grist.env: Grist badge shown');
 }
