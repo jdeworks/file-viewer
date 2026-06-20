@@ -88,7 +88,7 @@ function showAutosaveBanner(saved) {
 // Called after each setXxxToolsVisible so that showing one toolbar and then hiding another
 // doesn't incorrectly clear the class when a third toolbar is still active.
 function syncHasToolsClass() {
-  const anyVisible = ['markdownTools', 'jsonTools', 'yamlTools', 'xmlTools', 'htmlToolbar'].some(
+  const anyVisible = ['markdownTools', 'jsonTools', 'yamlTools', 'xmlTools', 'tomlTools', 'htmlToolbar'].some(
     (id) => { const el = $(id) || document.getElementById(id); return el && !el.hidden; }
   );
   $('rawPane')?.classList.toggle('has-tools', anyVisible);
@@ -334,6 +334,44 @@ function updateXmlValidation(valid, message) {
   const indicator = $('xmlValidIndicator');
   if (!indicator) return;
   indicator.textContent = valid ? '✓ Valid XML' : ('✗ ' + (message || 'Invalid XML'));
+  indicator.className = 'json-valid-indicator ' + (valid ? 'json-valid' : 'json-invalid');
+  indicator.hidden = false;
+  clearTimeout(indicator._hideTimer);
+  indicator._hideTimer = setTimeout(() => { indicator.hidden = true; }, 4000);
+}
+
+// ── TOML toolbar ──────────────────────────────────────────────────────────────
+function setTomlToolsVisible(visible) {
+  const el = $('tomlTools');
+  if (!el) return;
+  el.hidden = !visible;
+  syncHasToolsClass();
+  if (!visible) {
+    const indicator = $('tomlValidIndicator');
+    if (indicator) indicator.hidden = true;
+  }
+}
+
+function wireTomlTools() {
+  const el = $('tomlTools');
+  if (!el || el.dataset.wired) return;
+  el.dataset.wired = '1';
+  $('tomlValidateBtn')?.addEventListener('click', async () => {
+    if (!state.rawview) return;
+    try {
+      const { parseTOML } = await import('../types/text/toml/toml.js');
+      parseTOML(state.rawview.getValue());
+      updateTomlValidation(true, '');
+    } catch (e) {
+      updateTomlValidation(false, (e.message || 'Invalid TOML').slice(0, 80));
+    }
+  });
+}
+
+function updateTomlValidation(valid, message) {
+  const indicator = $('tomlValidIndicator');
+  if (!indicator) return;
+  indicator.textContent = valid ? '✓ Valid TOML' : ('✗ ' + (message || 'Invalid TOML'));
   indicator.className = 'json-valid-indicator ' + (valid ? 'json-valid' : 'json-invalid');
   indicator.hidden = false;
   clearTimeout(indicator._hideTimer);
@@ -951,6 +989,8 @@ export async function buildRawView() {
   setYamlToolsVisible(state.type?.id === 'yaml' && !state.intake.isBinary);
   wireXmlTools();
   setXmlToolsVisible(state.type?.id === 'xml' && !state.intake.isBinary);
+  wireTomlTools();
+  setTomlToolsVisible(state.type?.id === 'toml' && !state.intake.isBinary);
   wireTableModeBtn();
   const isTabular = state.type?.id === 'csv' && !state.intake.isBinary;
   const tableModeBtn = document.getElementById('tableModeBtn');

@@ -206,6 +206,28 @@ export async function run(ctx) {
   const tNum = await tf.$$eval('.json-tree .j-num', (els) => els.length);
   if (tBool >= 4 && tNum >= 2) pass('TOML scalar types preserved (booleans + numbers)'); else fail('toml scalars: bool=' + tBool + ' num=' + tNum);
 
+  // ── TOML toolbar ── Validate button appears for TOML files in raw view.
+  await page.click('#viewMode button[data-mode="raw"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
+  const tomlToolsHidden = await page.$eval('#tomlTools', (el) => el.hidden);
+  if (!tomlToolsHidden) pass('TOML toolbar visible in raw view for TOML files'); else fail('toml toolbar hidden');
+  const tomlValidateBtn = await page.$('#tomlValidateBtn');
+  if (tomlValidateBtn) pass('TOML toolbar has Validate button'); else fail('toml toolbar button missing');
+  // Validate: Sample.toml is valid → indicator shows ✓
+  await page.click('#tomlValidateBtn');
+  await page.waitForFunction(() => !document.getElementById('tomlValidIndicator')?.hidden, null, { timeout: 4000 });
+  const tomlValidText = await page.$eval('#tomlValidIndicator', (el) => el.textContent);
+  if (/✓/.test(tomlValidText)) pass('TOML validate shows ✓ for valid TOML'); else fail('toml valid indicator: ' + tomlValidText);
+  // Validate invalid TOML → indicator shows ✗
+  await page.evaluate(() => window.__fv.state.rawview.setValue('[bad\nkey = "unclosed'));
+  await page.click('#tomlValidateBtn');
+  await page.waitForFunction(() => /✗/.test(document.getElementById('tomlValidIndicator')?.textContent || ''), null, { timeout: 4000 });
+  const tomlInvalidText = await page.$eval('#tomlValidIndicator', (el) => el.textContent);
+  if (/✗/.test(tomlInvalidText)) pass('TOML validate shows ✗ for invalid TOML'); else fail('toml invalid indicator: ' + tomlInvalidText);
+  // XML toolbar must remain hidden for TOML files
+  const xmlToolsHiddenForToml = await page.$eval('#xmlTools', (el) => el.hidden);
+  if (xmlToolsHiddenForToml) pass('XML toolbar hidden while TOML toolbar is active'); else fail('xml toolbar unexpectedly visible for toml in raw view');
+
   // ── XML ── element tree (reuses JSON tree styling) + structural diff. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.xml');

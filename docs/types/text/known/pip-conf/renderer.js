@@ -3,7 +3,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 const ext = (href, text) => `<a class="pc-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(text)} <span class="pc-ext">↗</span></a>`;
 
 const CSS = `
-.pc-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.pipcfg-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
 .badge-pc{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#3572a5;color:#fff;vertical-align:middle;margin-right:8px;}
 .pc-title{font-size:18px;font-weight:700;margin:0 0 4px;}
 .pc-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
@@ -75,7 +75,7 @@ export function render(intake) {
   const sectionChips = allSections.map((s) => `<span class="pc-chip section">[${esc(s)}]</span>`).join('');
 
   const host = document.createElement('div');
-  host.className = 'pc-doc';
+  host.className = 'pipcfg-doc';
 
   let html = `<style>${CSS}</style>
 <div class="pc-title"><span class="badge-pc">pip</span>${esc(filename)}</div>

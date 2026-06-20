@@ -18,19 +18,47 @@ export async function render(intake, _ctx) {
   const lines = (intake.text || '').split(/\r?\n/);
   const rules = [];
   let owners = new Set();
+  // Collect rules and section headings in order
+  const entries = []; // { type: 'rule'|'section', ... }
   for (let raw of lines) {
     const line = raw.trim();
-    if (!line || line.startsWith('#')) continue;
+    if (!line) continue;
+    if (line.startsWith('#')) {
+      const heading = line.replace(/^#+\s*/, '').trim();
+      if (heading) entries.push({ type: 'section', heading });
+      continue;
+    }
     const parts = line.split(/\s+/);
     const pattern = parts.shift();
     parts.forEach((o) => owners.add(o));
     rules.push({ pattern, owners: parts });
+    entries.push({ type: 'rule', pattern, owners: parts });
   }
 
-  const rows = rules.map((r) => {
-    const owns = r.owners.length ? r.owners.map(ownerHtml).join(' ') : '<span class="kf-note">(no owner)</span>';
-    return '<li class="kf-pat"><code>' + esc(r.pattern) + '</code><span style="flex:1"></span>' + owns + '</li>';
-  }).join('');
+  // Build grouped HTML by section
+  let bodyHtml = '';
+  let currentSection = null;
+  let sectionItems = [];
+  const flushSection = () => {
+    if (sectionItems.length === 0 && !currentSection) return;
+    const heading = currentSection ? '<section class="pj-sec"><h3>' + esc(currentSection) + '</h3>' : '<section class="pj-sec">';
+    const ul = sectionItems.length
+      ? '<ul class="kf-list">' + sectionItems.join('') + '</ul>'
+      : '';
+    bodyHtml += heading + ul + '</section>';
+    sectionItems = [];
+    currentSection = null;
+  };
+  for (const entry of entries) {
+    if (entry.type === 'section') {
+      flushSection();
+      currentSection = entry.heading;
+    } else {
+      const owns = entry.owners.length ? entry.owners.map(ownerHtml).join(' ') : '<span class="kf-note">(no owner)</span>';
+      sectionItems.push('<li class="kf-pat"><code>' + esc(entry.pattern) + '</code><span style="flex:1"></span>' + owns + '</li>');
+    }
+  }
+  flushSection();
 
   const el = document.createElement('div');
   el.className = 'codeowners-doc';
@@ -38,8 +66,6 @@ export async function render(intake, _ctx) {
     '<header class="pj-head"><div class="pj-title">👥 CODEOWNERS</div>'
     + '<div class="pj-meta"><span class="pj-tag">' + rules.length + ' rule' + (rules.length === 1 ? '' : 's') + '</span>'
     + '<span class="pj-tag">' + owners.size + ' owner' + (owners.size === 1 ? '' : 's') + '</span></div></header>'
-    + (rules.length
-        ? '<section class="pj-sec"><h3>Rules <span class="pj-count">' + rules.length + '</span></h3><ul class="kf-list">' + rows + '</ul></section>'
-        : '<p class="kf-note">No ownership rules found.</p>');
+    + (bodyHtml || '<p class="kf-note">No ownership rules found.</p>');
   return { parentNode: el };
 }
