@@ -4,7 +4,12 @@ export default {
   match(intake, baseType) {
     if (baseType?.id !== 'ini') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    return n === 'grafana.ini' || n === 'grafana-config.ini';
+    if (n === 'grafana.ini' || n === 'grafana-config.ini') return true;
+    if (n === 'defaults.ini') {
+      const t = intake.text || '';
+      return t.includes('[server]') && (t.includes('http_port') || (t.includes('[database]') && t.includes('type =')));
+    }
+    return false;
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

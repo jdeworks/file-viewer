@@ -420,11 +420,13 @@
     "label": "Gemfile",
     "file": "Gemfile",
     "mime": "text/plain",
-    "category": "Config",
+    "category": "Code",
     "categories": [
-      "Config"
+      "Code"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "gemfile",
+    "description": "Ruby/Bundler Gemfile with core gems, group cards for development/test, and a JRuby platform block."
   },
   {
     "label": "build.gradle",
@@ -2570,7 +2572,8 @@
       "Config",
       "devops"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "netlify-toml"
   },
   {
     "file": "vercel.json",
@@ -4108,7 +4111,8 @@
       "Code"
     ],
     "enhanced": true,
-    "description": "Elixir Mix build file with project config, deps, and OTP application."
+    "knownFile": "mix-exs",
+    "description": "Elixir Mix build file with project config, deps (dev/test env splits), and OTP application."
   },
   {
     "label": "build.sbt",
@@ -4252,7 +4256,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Alertmanager config with route, Slack and PagerDuty receivers, inhibit rules, and mute intervals."
+    "description": "Alertmanager config with route, Slack and PagerDuty receivers, inhibit rules, and mute intervals.",
+    "knownFile": "alertmanager"
   },
   {
     "label": "datadog.yaml",
@@ -5060,7 +5065,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Doxygen documentation generator config: project MyC++ Library v3.1.0, HTML/XML output, dot graphs, UML."
+    "description": "Doxygen documentation generator config: project MyC++ Library v3.1.0, HTML/XML output, dot graphs, UML.",
+    "knownFile": "doxyfile"
   },
   {
     "label": "gradle-wrapper.properties",
@@ -5214,7 +5220,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Grafana server config: auth, database, and dashboard settings."
+    "description": "Grafana server config: HTTP port, PostgreSQL database, GitHub auth, SMTP, and security settings.",
+    "knownFile": "grafana-ini"
   },
   {
     "label": "redis.conf",

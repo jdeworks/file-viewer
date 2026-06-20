@@ -4,7 +4,9 @@ export default {
   match(intake, baseType) {
     if (baseType?.id !== 'yaml') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    return n === 'alertmanager.yml' || n === 'alertmanager.yaml';
+    if (n === 'alertmanager.yml' || n === 'alertmanager.yaml') return true;
+    const t = intake.text || '';
+    return t.includes('route:') && t.includes('receivers:');
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

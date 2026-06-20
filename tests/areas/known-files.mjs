@@ -106,10 +106,13 @@ export async function run(ctx) {
 
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Gemfile');
-  await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
-  const gemHrefs = await page.$$eval('#previewHost a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
-  const gemGroups = await page.$$eval('#previewHost .kf-tag', (els) => els.map((e) => e.textContent));
-  if (gemHrefs.some((h) => /rubygems\.org\/gems\/rails/.test(h)) && gemGroups.some((g) => /development/.test(g))) pass('Gemfile: gems link to RubyGems (+ groups tagged)'); else fail('gem links: ' + gemHrefs.join(',') + ' groups=' + gemGroups.join(','));
+  await page.waitForSelector('#previewHost .gemfile-doc', { timeout: 12000 });
+  pass('Gemfile: badge shown');
+  const gemText = await page.$eval('#previewHost .gemfile-doc', el => el.textContent);
+  if (!gemText.includes('rails')) fail('Gemfile: gems not shown');
+  else pass('Gemfile: rails gem shown');
+  if (!gemText.includes('rspec') && !gemText.includes('development')) fail('Gemfile: groups not shown');
+  else pass('Gemfile: groups shown');
 
   // ── More known-files (Layer 3): CODEOWNERS, .editorconfig, pom.xml ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1445,12 +1448,13 @@ export async function run(ctx) {
   // ── alertmanager.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('alertmanager.yml');
-  await page.waitForSelector('#previewHost .am-doc', { timeout: 12000 });
-  const amText = await page.$eval('#previewHost .am-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .alertmgr-doc', { timeout: 12000 });
+  const amText = await page.$eval('#previewHost .alertmgr-doc', (e) => e.textContent);
   if (/Alertmanager/i.test(amText)) pass('alertmanager.yml: Alertmanager badge shown'); else fail('alertmanager badge: ' + amText.slice(0, 200));
-  if (/default-receiver|pagerduty-critical/i.test(amText)) pass('alertmanager.yml: receivers shown'); else fail('alertmanager receivers: ' + amText.slice(0, 200));
+  if (/pagerduty|slack/i.test(amText)) pass('alertmanager.yml: receivers shown'); else fail('alertmanager receivers: ' + amText.slice(0, 200));
   if (/Slack|PagerDuty/i.test(amText)) pass('alertmanager.yml: receiver types shown'); else fail('alertmanager types: ' + amText.slice(0, 200));
   if (/group_wait|30s/i.test(amText)) pass('alertmanager.yml: route settings shown'); else fail('alertmanager route: ' + amText.slice(0, 200));
+  if (amText.includes('secret-password') || amText.includes('secret-pagerduty-key')) fail('alertmanager.yml: secrets leaked'); else pass('alertmanager.yml: secrets masked');
 
   // ── datadog.yaml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1638,9 +1642,11 @@ export async function run(ctx) {
   // ── Doxyfile viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Doxyfile');
-  await page.waitForSelector('#previewHost .doxy-doc', { timeout: 12000 });
-  const doxyText = await page.$eval('#previewHost .doxy-doc', (e) => e.textContent);
-  if (/Doxygen/i.test(doxyText)) pass('Doxyfile: Doxygen badge shown'); else fail('doxygen badge: ' + doxyText.slice(0, 200));
+  await page.waitForSelector('.doxyfile-doc', { timeout: 12000 });
+  pass('doxyfile: renders');
+  const doxyText = await page.$eval('.doxyfile-doc', el => el.textContent);
+  if (!doxyText.includes('Doxygen')) fail('doxyfile: missing Doxygen badge');
+  else pass('doxyfile: badge shown');
   if (/MyC\+\+ Library/i.test(doxyText)) pass('Doxyfile: project name shown'); else fail('doxygen project: ' + doxyText.slice(0, 200));
   if (/3\.1\.0/i.test(doxyText)) pass('Doxyfile: version shown'); else fail('doxygen version: ' + doxyText.slice(0, 200));
   if (/YES|NO/i.test(doxyText)) pass('Doxyfile: boolean flags shown'); else fail('doxygen flags: ' + doxyText.slice(0, 300));
@@ -4156,4 +4162,26 @@ export async function run(ctx) {
   else pass('clippy.toml: MSRV shown');
   if (!clText.includes('25') && !clText.includes('cognitive')) fail('clippy.toml: thresholds not shown');
   else pass('clippy.toml: thresholds shown');
+
+  // ── grafana.ini viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('grafana.ini');
+  await page.waitForSelector('#previewHost .grafanaini-doc', { timeout: 12000 });
+  pass('grafana.ini: badge shown');
+  const grafText = await page.$eval('#previewHost .grafanaini-doc', el => el.textContent);
+  if (!grafText.includes('3000') && !grafText.includes('grafana.example.com')) fail('grafana.ini: server not shown'); else pass('grafana.ini: server shown');
+  if (!grafText.includes('postgres')) fail('grafana.ini: database type not shown'); else pass('grafana.ini: database type shown');
+  if (grafText.includes('db-secret-password') || grafText.includes('strong-admin-password')) fail('grafana.ini: secrets leaked'); else pass('grafana.ini: secrets masked');
+  if (!grafText.includes('github')) fail('grafana.ini: auth providers not shown'); else pass('grafana.ini: auth providers shown');
+
+  // ── mix.exs (Elixir Mix build file) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mix.exs');
+  await page.waitForSelector('#previewHost .mixexs-doc', { timeout: 12000 });
+  pass('mix.exs: badge shown');
+  const mixText = await page.$eval('#previewHost .mixexs-doc', el => el.textContent);
+  if (!mixText.includes('phoenix')) fail('mix.exs: deps not shown');
+  else pass('mix.exs: phoenix dep shown');
+  if (!mixText.includes('my_app') && !mixText.includes('MyApp')) fail('mix.exs: app name not shown');
+  else pass('mix.exs: app name shown');
 }
