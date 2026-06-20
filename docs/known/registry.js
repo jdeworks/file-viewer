@@ -898,6 +898,10 @@ import rpmSpec from '../types/text/known/rpm-spec/index.js';
 import debianControl from '../types/text/known/debian-control/index.js';
 import cupsConf from '../types/text/known/cups-conf/index.js';
 import dafnyLang from '../types/text/known/dafny/index.js';
+import xdgDesktopEntry from '../types/text/known/xdg-desktop-entry/index.js';
+import isabelleThy from '../types/text/known/isabelle-thy/index.js';
+import alloyLang from '../types/text/known/alloy-lang/index.js';
+import coqLang from '../types/text/known/coq-lang/index.js';
 export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks,
   // Extension-specific language plugins — listed BEFORE broad content-heuristic matchers to avoid interception.
   // Within this block: more-specific (fewer heuristics) goes first to avoid false-positive interception.
@@ -1127,6 +1131,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   hoarderConfig,
   frigateConfig,
   rpmSpec, debianControl, cupsConf, dafnyLang,
+  xdgDesktopEntry, isabelleThy, alloyLang, coqLang,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

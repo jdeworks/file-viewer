@@ -6996,4 +6996,28 @@ export async function run(ctx) {
   await openExample('sample.dfy');
   await page.waitForSelector('#previewHost .dfy-doc', { timeout: 12000 });
   pass('dafny: rendered');
+
+  // ── xdg-desktop-entry viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.desktop');
+  await page.waitForSelector('#previewHost .de-doc', { timeout: 12000 });
+  pass('xdg-desktop-entry: rendered');
+
+  // ── isabelle-thy viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.thy');
+  await page.waitForSelector('#previewHost .isa-doc', { timeout: 12000 });
+  pass('isabelle-thy: rendered');
+
+  // ── alloy-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.als');
+  await page.waitForSelector('#previewHost .als-doc', { timeout: 12000 });
+  pass('alloy-lang: rendered');
+
+  // ── coq-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.v');
+  await page.waitForSelector('#previewHost .coq-doc', { timeout: 12000 });
+  pass('coq-lang: rendered');
 }
