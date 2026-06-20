@@ -6,7 +6,8 @@ export const plugin = {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.vala') || name.endsWith('.vapi')) return true;
     const text = intake.text || '';
-    return /using\s+GLib|using\s+Gtk|class\s+\w+|public\s+static\s+int\s+main/.test(text);
+    // Require Vala-specific namespace imports or C-style modifiers (avoids matching Lisp defclass, Kotlin class, etc.)
+    return /using\s+GLib|using\s+Gtk|public\s+static\s+int\s+main|\bpublic\s+class\s+\w|\bprivate\s+class\s+\w/.test(text);
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

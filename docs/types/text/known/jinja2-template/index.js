@@ -5,6 +5,8 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').toLowerCase();
     if (name.endsWith('.j2') || name.endsWith('.jinja') || name.endsWith('.jinja2')) return true;
+    // TOML files may embed Jinja2/template-like syntax in string values (e.g. cliff.toml body templates)
+    if (name.endsWith('.toml')) return false;
     // Content-based: needs at least 2 different tag types to avoid false positives
     const text = intake.text || '';
     const hasOutput = /\{\{\s/.test(text);

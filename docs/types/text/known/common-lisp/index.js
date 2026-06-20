@@ -5,6 +5,8 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.lisp') || name.endsWith('.cl') || name.endsWith('.lsp')) return true;
+    // .el files are Emacs Lisp (handled by emacs-lisp plugin) — don't poach them
+    if (name.endsWith('.el')) return false;
     const text = intake.text || '';
     return (
       text.includes('(defun ') ||
