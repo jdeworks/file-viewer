@@ -5689,4 +5689,16 @@ export async function run(ctx) {
   await openExample('memos.env');
   await page.waitForSelector('#previewHost .memos-doc', { timeout: 12000 });
   pass('memos.env: Memos badge shown');
+
+  // ── wakapi.yaml viewer (wakapi-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('wakapi.yaml');
+  await page.waitForSelector('#previewHost .wakapi-doc', { timeout: 12000 });
+  pass('wakapi.yaml: Wakapi badge shown');
+
+  // ── hoarder.env viewer (hoarder-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('hoarder.env');
+  await page.waitForSelector('#previewHost .hoarder-doc', { timeout: 12000 });
+  pass('hoarder.env: Hoarder badge shown');
 }

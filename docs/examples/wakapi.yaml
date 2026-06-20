@@ -1,0 +1,49 @@
+env: production
+
+server:
+  port: 3000
+  listen_ipv4: 0.0.0.0
+  listen_ipv6: ""
+  base_path: /
+  public_url: https://wakapi.example.com
+  tls_cert_path: ""
+  tls_key_path: ""
+
+app:
+  leaderboard_enabled: true
+  leaderboard_scope: 7_days
+  heartbeat_max_age: 4320h
+  inactive_days: 7
+  import_batch_size: 50
+  aggregation_time: "02:15"
+  report_time_weekly: "Mon,09:00"
+  avatar_url_template: ""
+
+security:
+  password_salt: very-long-random-salt-string-here
+  insecure_cookies: false
+  allow_signup: true
+  expose_metrics: false
+
+db:
+  host: localhost
+  port: 0
+  socket: ""
+  user: ""
+  password: ""
+  name: /var/lib/wakapi/wakapi.db
+  dialect: sqlite3
+  charset: utf8mb4
+  max_conn: 2
+  ssl: false
+  automigrate: true
+
+mail:
+  enabled: false
+  sender: noreply@wakapi.example.com
+  provider: smtp
+  smtp_host: smtp.example.com
+  smtp_port: 587
+  smtp_user: noreply@example.com
+  smtp_pass: smtp_password_here
+  tls: true

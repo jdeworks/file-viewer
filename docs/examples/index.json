@@ -10480,5 +10480,25 @@
     "enhanced": true,
     "description": "Memos self-hosted lightweight note-taking server configuration",
     "knownFile": true
+  },
+  {
+    "file": "wakapi.yaml",
+    "label": "Wakapi config",
+    "mime": "text/yaml",
+    "category": "Productivity",
+    "categories": ["Productivity", "Coding", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Wakapi self-hosted coding activity tracker (WakaTime-compatible) configuration",
+    "knownFile": true
+  },
+  {
+    "file": "hoarder.env",
+    "label": "Hoarder / Karakeep config",
+    "mime": "text/plain",
+    "category": "Productivity",
+    "categories": ["Productivity", "Bookmarks", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Hoarder (Karakeep) self-hosted bookmark manager with AI tagging configuration",
+    "knownFile": true
   }
 ]

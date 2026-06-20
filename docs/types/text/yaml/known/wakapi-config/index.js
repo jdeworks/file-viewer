@@ -3,9 +3,15 @@ export default {
   label: 'Wakapi Config',
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    if (n !== 'wakapi.yml' && n !== 'config.yml') return false;
+    if (n === 'wakapi.yaml' || n === 'wakapi.yml' || n === 'wakapi.cfg') return true;
     const text = intake.text || '';
-    return (text.includes('password_salt:') || text.includes('wakatime')) && text.includes('database:');
+    if (text.includes('security.password_salt:') || text.includes('password_salt:')) return true;
+    if (text.includes('aggregation_time:') && text.includes('server:') && text.includes('db:')) return true;
+    return false;
   },
   loadRenderer: () => import('./renderer.js'),
+  about: {
+    description: 'Wakapi self-hosted coding activity tracker (WakaTime-compatible) configuration file.',
+    tags: ['wakapi', 'wakatime', 'coding-stats', 'self-hosted', 'config'],
+  },
 };
