@@ -100,7 +100,8 @@ export async function render(intake, ctx = {}) {
       + '<button class="imgv-resize-apply">Apply Resize</button>'
       + '<button class="imgv-resize-cancel">Cancel</button>'
       + '</span>'
-      + '<button class="imgv-text-reset" title="Reset all edits" hidden>Reset</button>' : '')
+      + '<button class="imgv-text-reset" title="Reset all edits" hidden>Reset</button>'
+      + '<span class="imgv-dirty-indicator" hidden style="color:var(--accent,#f59e0b);font-size:0.75em;align-self:center;">● Modified</span>' : '')
     + '</div>'
     + '<div class="imgv-stage"><img class="imgv-img" draggable="false" alt="' + esc(intake.filename) + '"><div class="imgv-note" hidden></div></div>'
     + '<div class="imgv-ascii-out" hidden></div>';
@@ -167,6 +168,7 @@ export async function render(intake, ctx = {}) {
   function pushUndo() {
     undoStack.push({ blob: editedBlob || null, url: editedUrl || null });
     if (undoBtn) undoBtn.hidden = false;
+    host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden');
   }
 
   function apply() {
@@ -294,33 +296,104 @@ export async function render(intake, ctx = {}) {
     });
   }
 
+  let textDragDiv = null, textCommitBtn = null, textCancelBtn = null;
+
   function exitTextPlaceMode() {
     textPlaceMode = false;
-    img.style.cursor = '';
+    if (textDragDiv) { textDragDiv.remove(); textDragDiv = null; }
+    if (textCommitBtn) { textCommitBtn.remove(); textCommitBtn = null; }
+    if (textCancelBtn) { textCancelBtn.remove(); textCancelBtn = null; }
     if (editApply) { editApply.textContent = 'Add text'; editApply.classList.remove('active'); }
   }
 
   function enterTextPlaceMode() {
     const text = (editInput?.value || '').trim();
     if (!text) { editInput?.focus(); return; }
+    if (textPlaceMode) { exitTextPlaceMode(); return; }
     textPlaceMode = true;
-    img.style.cursor = 'crosshair';
-    if (editApply) { editApply.textContent = 'Click image to place'; editApply.classList.add('active'); }
+    if (editApply) { editApply.textContent = 'Cancel'; editApply.classList.add('active'); }
+
+    // Create draggable text overlay div
+    const stage = host.querySelector('.imgv-stage');
+    stage.style.position = 'relative';
+    const fontSize = Math.max(8, Math.min(240, parseInt(editSize?.value, 10) || 32));
+    const fontFamily = editFont?.value || 'system-ui,sans-serif';
+    const color = editColor?.value || '#ffffff';
+
+    textDragDiv = document.createElement('div');
+    textDragDiv.textContent = text;
+    textDragDiv.style.cssText = [
+      'position:absolute',
+      'z-index:10',
+      'cursor:move',
+      'user-select:none',
+      `font-size:${fontSize}px`,
+      `font-family:${fontFamily}`,
+      `color:${color}`,
+      'font-weight:700',
+      'background:rgba(255,255,255,0.15)',
+      'padding:2px 4px',
+      'border-radius:3px',
+      'white-space:nowrap',
+      'touch-action:none',
+    ].join(';');
+    // Start at 10%, 10% of stage
+    textDragDiv.style.left = '10%';
+    textDragDiv.style.top = '10%';
+    stage.appendChild(textDragDiv);
+
+    // Drag logic
+    let dragOffX = 0, dragOffY = 0, dragging = false;
+    textDragDiv.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      textDragDiv.setPointerCapture(e.pointerId);
+      const r = textDragDiv.getBoundingClientRect();
+      dragOffX = e.clientX - r.left;
+      dragOffY = e.clientY - r.top;
+      dragging = true;
+    });
+    textDragDiv.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      e.preventDefault();
+      const stageR = stage.getBoundingClientRect();
+      const x = e.clientX - stageR.left - dragOffX;
+      const y = e.clientY - stageR.top - dragOffY;
+      textDragDiv.style.left = x + 'px';
+      textDragDiv.style.top = y + 'px';
+    });
+    textDragDiv.addEventListener('pointerup', () => { dragging = false; });
+
+    // Commit and Cancel buttons injected into the bar
+    const bar = host.querySelector('.imgv-bar');
+    textCommitBtn = document.createElement('button');
+    textCommitBtn.textContent = 'Commit text';
+    textCommitBtn.className = 'imgv-text-commit';
+    textCommitBtn.title = 'Place the text at its current position';
+    bar.appendChild(textCommitBtn);
+
+    textCancelBtn = document.createElement('button');
+    textCancelBtn.textContent = 'Cancel';
+    textCancelBtn.className = 'imgv-text-cancel-place';
+    textCancelBtn.title = 'Cancel text placement';
+    bar.appendChild(textCancelBtn);
+
+    textCommitBtn.addEventListener('click', () => {
+      // Compute position as fraction of img display rect
+      const imgR = img.getBoundingClientRect();
+      const divR = textDragDiv.getBoundingClientRect();
+      const nx = (divR.left - imgR.left) / imgR.width;
+      const ny = (divR.bottom - imgR.top) / imgR.height; // bottom = baseline
+      exitTextPlaceMode();
+      commitText(nx, ny).catch((err) => { if (editApply) editApply.title = err.message || String(err); });
+    });
+
+    textCancelBtn.addEventListener('click', () => {
+      exitTextPlaceMode();
+    });
   }
 
-
   editApply?.addEventListener('click', () => {
-    if (textPlaceMode) { exitTextPlaceMode(); return; }
     enterTextPlaceMode();
-  });
-
-  img.addEventListener('click', (e) => {
-    if (!textPlaceMode) return;
-    const r = img.getBoundingClientRect();
-    const nx = (e.clientX - r.left) / r.width;
-    const ny = (e.clientY - r.top) / r.height;
-    exitTextPlaceMode();
-    commitText(nx, ny).catch((err) => { if (editApply) editApply.title = err.message || String(err); });
   });
   editReset?.addEventListener('click', () => {
     exitTextPlaceMode();
@@ -331,7 +404,10 @@ export async function render(intake, ctx = {}) {
     editedUrl = null;
     editedBlob = null;
     img.src = url;
+    img.style.filter = '';
     editReset.hidden = true;
+    const dirtyIndicator = host.querySelector('.imgv-dirty-indicator');
+    if (dirtyIndicator) dirtyIndicator.hidden = true;
     ctx.onBinaryEdit?.(null);
   });
 
@@ -389,11 +465,20 @@ export async function render(intake, ctx = {}) {
     if (filtersPanel) filtersPanel.hidden = !filtersPanel.hidden;
   });
 
-  // Apply CSS filters (brightness/contrast/saturation) to the image via canvas ctx.filter
+  // Live filter preview — apply as CSS filter on img while sliding
+  function updateFilterPreview() {
+    img.style.filter = `brightness(${fBrightness.value}%) contrast(${fContrast.value}%) saturate(${fSaturation.value}%)`;
+  }
+  fBrightness?.addEventListener('input', updateFilterPreview);
+  fContrast?.addEventListener('input', updateFilterPreview);
+  fSaturation?.addEventListener('input', updateFilterPreview);
+
+  // Apply filters — bake current CSS filter into the canvas, then clear the live preview
   fApplyBtn?.addEventListener('click', async () => {
     const brightness = fBrightness?.value || '100';
     const contrast = fContrast?.value || '100';
     const saturation = fSaturation?.value || '100';
+    img.style.filter = ''; // clear live preview before baking
     const base = new Image();
     base.decoding = 'async';
     base.src = editedUrl || url;
@@ -417,11 +502,12 @@ export async function render(intake, ctx = {}) {
     ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
   });
 
-  // Reset filter sliders to default (no apply — just resets the UI)
+  // Reset filter sliders to default and clear any live preview
   fResetBtn?.addEventListener('click', () => {
     if (fBrightness) fBrightness.value = '100';
     if (fContrast) fContrast.value = '100';
     if (fSaturation) fSaturation.value = '100';
+    img.style.filter = '';
   });
 
   // Pencil / eraser drawing tools
@@ -464,6 +550,14 @@ export async function render(intake, ctx = {}) {
     return { x: (src.clientX - r.left) * sx, y: (src.clientY - r.top) * sy };
   }
 
+  function getCanvasBrushSize() {
+    const displayPx = parseInt(drawSizePicker?.value || '8', 10);
+    if (!drawOverlay) return displayPx;
+    const r = drawOverlay.getBoundingClientRect();
+    const scale = r.width > 0 ? drawOverlay.width / r.width : 1;
+    return Math.max(1, Math.round(displayPx * scale));
+  }
+
   function applyStrokeStyle(sz) {
     drawOCtx.globalCompositeOperation = isEraserStroke ? 'destination-out' : 'source-over';
     drawOCtx.strokeStyle = drawColorPicker?.value || '#ff0000';
@@ -487,8 +581,12 @@ export async function render(intake, ctx = {}) {
     } else if (!drawOverlay.width || !img.naturalWidth) {
       drawOverlay.width = img.naturalWidth || 1; drawOverlay.height = img.naturalHeight || 1;
     }
+    if (!isEraserStroke && img.naturalWidth && drawOverlay.width !== img.naturalWidth) {
+      drawOverlay.width = img.naturalWidth;
+      drawOverlay.height = img.naturalHeight;
+    }
     lastPt = ptToCanvas(e);
-    const sz = parseInt(drawSizePicker?.value || '8', 10);
+    const sz = getCanvasBrushSize();
     applyStrokeStyle(sz);
     drawOCtx.beginPath(); drawOCtx.arc(lastPt.x, lastPt.y, sz / 2, 0, Math.PI * 2); drawOCtx.fill();
   }
@@ -497,7 +595,7 @@ export async function render(intake, ctx = {}) {
     if (!isPointerDown || !drawOCtx) return;
     e.preventDefault();
     const pt = ptToCanvas(e);
-    const sz = parseInt(drawSizePicker?.value || '8', 10);
+    const sz = getCanvasBrushSize();
     applyStrokeStyle(sz);
     drawOCtx.beginPath(); drawOCtx.moveTo(lastPt.x, lastPt.y); drawOCtx.lineTo(pt.x, pt.y); drawOCtx.stroke();
     lastPt = pt;

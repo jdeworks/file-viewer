@@ -9,6 +9,27 @@ import { REGISTRY } from './registry-runtime.generated.js';
 import { getTypeInfo, sampleDescription } from './type-info.js';
 
 const EXAMPLE_CATEGORY_ORDER = ['Documents', 'Ebook', 'Data', 'Office', 'Config', 'Code', 'Image', 'Media', '3D', 'Archive & Binary', 'Secrets', 'Binary', 'Emulator', 'Text', 'Other', 'Metagame'];
+
+const SUPER_CATEGORIES = {
+  'Documents':        'Files',
+  'Ebook':            'Files',
+  'Office':           'Files',
+  'Text':             'Files',
+  'Data':             'Code & Config',
+  'Config':           'Code & Config',
+  'Code':             'Code & Config',
+  'Image':            'Media & 3D',
+  'Media':            'Media & 3D',
+  '3D':               'Media & 3D',
+  'Archive & Binary': 'System',
+  'Binary':           'System',
+  'Emulator':         'System',
+  'Secrets':          'System',
+  'Metagame':         'Other',
+  'Other':            'Other',
+};
+const SUPER_ORDER = ['Files', 'Code & Config', 'Media & 3D', 'System', 'Other'];
+const SUPER_SS_KEY = 'fv:examples:supercat:';
 const CATEGORY_ICONS = {
   Documents: '📄', Data: '📊', Office: '📁', Config: '⚙️',
   Code: '💻', Image: '🖼️', Media: '🎞️', '3D': '◩', Ebook: '▤',
@@ -304,30 +325,75 @@ function renderGallery(host, list, onPick) {
     appendExternalExamplesLink(host);
   }
 
+  function readSuperOpen(superCat) {
+    try { return sessionStorage.getItem(SUPER_SS_KEY + superCat) !== '0'; } catch { return true; }
+  }
+  function saveSuperOpen(superCat, open) {
+    try { sessionStorage.setItem(SUPER_SS_KEY + superCat, open ? '1' : '0'); } catch { /* ok */ }
+  }
+
   function showGrid() {
     host.textContent = '';
 
-    const grid = document.createElement('div');
-    grid.className = 'ex-folder-grid';
-
+    // Group categories by super-category
+    const superGroups = new Map(); // superCat -> [cat, ...]
     for (const cat of cats) {
-      const count = (groups.get(cat) || []).length;
-      const card = document.createElement('button');
-      card.className = 'ex-folder-card';
-      card.dataset.categories = cat;
-      card.dataset.search = [cat, ...(groups.get(cat) || []).flatMap((ex) => [ex.label, ex.file, ex.mime])].join(' ').toLowerCase();
-      card.dataset.editable = (groups.get(cat) || []).some((ex) => exampleInfo(ex).editable) ? '1' : '0';
-      card.dataset.binary = (groups.get(cat) || []).some(isBinaryExample) ? '1' : '0';
-      card.dataset.enhanced = (groups.get(cat) || []).some(isEnhancedExample) ? '1' : '0';
-      card.dataset.partial = (groups.get(cat) || []).some(isPartialExample) ? '1' : '0';
-      card.innerHTML =
-        `<span class="ex-folder-icon">${CATEGORY_ICONS[cat] || '📂'}</span>`
-        + `<span class="ex-folder-label">${cat}</span>`
-        + `<span class="ex-folder-count">${count}</span>`;
-      card.onclick = () => showCategory(cat);
-      grid.appendChild(card);
+      const superCat = SUPER_CATEGORIES[cat] || 'Other';
+      if (!superGroups.has(superCat)) superGroups.set(superCat, []);
+      superGroups.get(superCat).push(cat);
     }
-    host.appendChild(grid);
+    const supers = SUPER_ORDER.filter((s) => superGroups.has(s));
+
+    for (const superCat of supers) {
+      const catList = superGroups.get(superCat) || [];
+      const isOpen = readSuperOpen(superCat);
+
+      const section = document.createElement('div');
+      section.className = 'ex-super-section';
+
+      const header = document.createElement('button');
+      header.className = 'ex-super-header';
+      header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      const totalCount = catList.reduce((n, cat) => n + (groups.get(cat) || []).length, 0);
+      header.innerHTML =
+        `<span class="ex-super-arrow">${isOpen ? '▾' : '▸'}</span>`
+        + `<span class="ex-super-label">${superCat}</span>`
+        + `<span class="ex-super-count">${catList.length} ${catList.length === 1 ? 'category' : 'categories'}, ${totalCount} files</span>`;
+
+      const grid = document.createElement('div');
+      grid.className = 'ex-folder-grid';
+      if (!isOpen) grid.hidden = true;
+
+      header.onclick = () => {
+        const nowOpen = grid.hidden;
+        grid.hidden = !nowOpen;
+        header.setAttribute('aria-expanded', nowOpen ? 'true' : 'false');
+        header.querySelector('.ex-super-arrow').textContent = nowOpen ? '▾' : '▸';
+        saveSuperOpen(superCat, nowOpen);
+      };
+
+      for (const cat of catList) {
+        const count = (groups.get(cat) || []).length;
+        const card = document.createElement('button');
+        card.className = 'ex-folder-card';
+        card.dataset.categories = cat;
+        card.dataset.search = [cat, ...(groups.get(cat) || []).flatMap((ex) => [ex.label, ex.file, ex.mime])].join(' ').toLowerCase();
+        card.dataset.editable = (groups.get(cat) || []).some((ex) => exampleInfo(ex).editable) ? '1' : '0';
+        card.dataset.binary = (groups.get(cat) || []).some(isBinaryExample) ? '1' : '0';
+        card.dataset.enhanced = (groups.get(cat) || []).some(isEnhancedExample) ? '1' : '0';
+        card.dataset.partial = (groups.get(cat) || []).some(isPartialExample) ? '1' : '0';
+        card.innerHTML =
+          `<span class="ex-folder-icon">${CATEGORY_ICONS[cat] || '📂'}</span>`
+          + `<span class="ex-folder-label">${cat}</span>`
+          + `<span class="ex-folder-count">${count}</span>`;
+        card.onclick = () => showCategory(cat);
+        grid.appendChild(card);
+      }
+
+      section.appendChild(header);
+      section.appendChild(grid);
+      host.appendChild(section);
+    }
 
     const showall = document.createElement('button');
     showall.className = 'ex-showall-btn';

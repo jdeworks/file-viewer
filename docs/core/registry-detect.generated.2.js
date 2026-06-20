@@ -109,7 +109,8 @@ function detect(intake) {
     // Check ftyp box at offset 4-7
     if (b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) {
       const brand = String.fromCharCode(b[8], b[9], b[10], b[11]);
-      if (['heic', 'heix', 'mif1', 'msf1', 'hevc', 'heim', 'heis', 'avif'].includes(brand)) return 0.99;
+      if (['heic', 'heix', 'mif1', 'msf1', 'hevc', 'heim', 'heis'].includes(brand)) return 0.99;
+      if (brand === 'avif') return 0; // AVIF is handled by the base image renderer natively
     }
   }
   const ext = intake.filename?.toLowerCase().split('.').pop();
