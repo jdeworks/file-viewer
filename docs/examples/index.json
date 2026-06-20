@@ -2749,7 +2749,7 @@
     ],
     "enhanced": true,
     "knownFile": "release-please-config",
-    "description": "Release Please configuration — automated changelog generation and GitHub releases via Conventional Commits."
+    "description": "Release Please configuration \u2014 automated changelog generation and GitHub releases via Conventional Commits."
   },
   {
     "label": "lerna.json",
@@ -2973,7 +2973,10 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true,
+    "knownFile": "mypy-ini",
+    "description": "mypy static type checker config: Python 3.11, strictness flags, 6 module overrides."
   },
   {
     "label": "Angular workspace",
@@ -3210,7 +3213,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Ruff Python linter configuration with rule selection, ignores, and format settings."
+    "description": "Ruff Python linter configuration: py311, line-length 120, rule selection, per-file ignores, and format settings.",
+    "knownFile": "ruff-toml"
   },
   {
     "label": "typos.toml (typos spell checker)",

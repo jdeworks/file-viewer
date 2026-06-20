@@ -1,24 +1,34 @@
-line-length = 100
+# Ruff configuration
 target-version = "py311"
-exclude = [
-  ".git",
-  ".venv",
-  "__pycache__",
-  "build",
-  "dist",
-  "migrations",
-]
+line-length = 120
+indent-width = 4
+extend-exclude = ["migrations", "vendor"]
 
 [lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
-ignore = ["E501", "B008", "N805", "SIM108"]
+select = ["E", "F", "W", "B", "I", "N", "UP", "YTT", "ANN", "S", "FBT", "A", "C4", "ISC", "ICN", "PIE", "T20", "PT", "Q", "RSE", "RET", "SIM", "TID", "TCH", "ARG", "PTH", "ERA", "PL", "RUF"]
+ignore = ["ANN101", "ANN102", "S101", "PLR0913"]
 fixable = ["ALL"]
 unfixable = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [lint.per-file-ignores]
-"tests/**" = ["S101", "ANN"]
-"scripts/**" = ["T201"]
+"__init__.py" = ["F401"]
+"tests/**" = ["ANN", "S101", "ARG"]
+"scripts/**" = ["T20"]
+
+[lint.isort]
+known-first-party = ["myapp"]
+force-sort-within-sections = true
+
+[lint.pydocstyle]
+convention = "google"
+
+[lint.flake8-annotations]
+allow-star-arg-any = true
 
 [format]
 quote-style = "double"
 indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true

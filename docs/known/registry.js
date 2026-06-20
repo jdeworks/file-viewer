@@ -83,7 +83,7 @@ import pyrightconfig from '../types/text/json/known/pyrightconfig/index.js';
 import tox from '../types/text/known/tox/index.js';
 import { plugin as toxIni } from '../types/text/known/tox-ini/index.js';
 import { plugin as pytestIni } from '../types/text/known/pytest-ini/index.js';
-import mypy from '../types/text/known/mypy/index.js';
+import mypy from '../types/text/known/mypy-ini/index.js';
 import angularJson from '../types/text/json/known/angular/index.js';
 import capacitor from '../types/text/json/known/capacitor/index.js';
 import nycrc from '../types/text/json/known/nycrc/index.js';
@@ -111,7 +111,7 @@ import kustomize from '../types/text/yaml/known/kustomize/index.js';
 import ansiblePlaybook from '../types/text/yaml/known/ansible-playbook/index.js';
 import pulumi from '../types/text/yaml/known/pulumi/index.js';
 import packer from '../types/text/json/known/packer/index.js';
-import ruff from '../types/text/toml/known/ruff/index.js';
+import ruff from '../types/text/toml/known/ruff-toml/index.js';
 import uv from '../types/text/toml/known/uv/index.js';
 import kubeHelmValues from '../types/text/yaml/known/kube-helm-values/index.js';
 import firebase from '../types/text/json/known/firebase/index.js';
@@ -358,6 +358,7 @@ import kongConfig from '../types/text/yaml/known/kong-config/index.js';
 import apisixConfig from '../types/text/yaml/known/apisix-config/index.js';
 import envoyConfig from '../types/text/yaml/known/envoy-config/index.js';
 import launchSettings from '../types/text/json/known/launch-settings/index.js';
+import appSettings from '../types/text/json/known/appsettings/index.js';
 import nimble from '../types/text/known/nimble/index.js';
 import packagesConfig from '../types/text/xml/known/packages-config/index.js';
 import podspec from '../types/text/known/podspec/index.js';
@@ -614,7 +615,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   androidManifest, appConfig, buildZigZon, zigZon, cartfile,
   electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, forgeConfig,
   gleamToml, goWork, grafanaIni, podmanQuadlet, growthbook,
-  jekyllConfig, juliaProject, juliaManifest, kongConfig, apisixConfig, envoyConfig, launchSettings,
+  jekyllConfig, juliaProject, juliaManifest, kongConfig, apisixConfig, envoyConfig, launchSettings, appSettings,
   nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, clickhouseConfig, shardYml, crystalShard,
   tauriConf, traefikConfig, unleashConfig, vaultHcl, nomadJob, consulConfig,
   vectorToml, vectorConfig, keepalivedConf, wailsJson, webConfig, xcconfig,
