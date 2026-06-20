@@ -14001,7 +14001,7 @@
       "needsRealWorldSample": false
     },
     "hosts-file": {
-      "label": "hosts",
+      "label": "Hosts File",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
@@ -16570,7 +16570,9 @@
       "label": "K8s Cluster Config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "cluster-config.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16622,7 +16624,9 @@
       "label": "iptables Rules",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "iptables.rules"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16647,7 +16651,9 @@
       "label": "UFW Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "ufw.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16672,7 +16678,9 @@
       "label": "VictoriaMetrics Config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "victoria-metrics.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16697,7 +16705,9 @@
       "label": "Thanos Config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "thanos-bucket.yml"
+      ],
       "extensions": [
         ".yml"
       ],
