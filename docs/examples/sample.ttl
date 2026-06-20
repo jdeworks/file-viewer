@@ -1,0 +1,42 @@
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:   <http://example.org/ontology#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+# Ontology declaration
+<http://example.org/ontology>
+    a owl:Ontology ;
+    rdfs:label "Example Library Ontology"@en ;
+    rdfs:comment "A simple ontology describing books and authors."@en .
+
+# Classes
+ex:Book a owl:Class ;
+    rdfs:label "Book"@en ;
+    rdfs:comment "A written work published as a volume."@en .
+
+ex:Author a owl:Class ;
+    owl:equivalentClass foaf:Person ;
+    rdfs:label "Author"@en .
+
+# Properties
+ex:writtenBy a owl:ObjectProperty ;
+    rdfs:domain ex:Book ;
+    rdfs:range ex:Author ;
+    rdfs:label "written by"@en .
+
+ex:publicationYear a owl:DatatypeProperty ;
+    rdfs:domain ex:Book ;
+    rdfs:range xsd:integer ;
+    rdfs:label "publication year"@en .
+
+# Instance data
+ex:book1 a ex:Book ;
+    rdfs:label "Semantic Web Primer"@en ;
+    ex:writtenBy ex:author1 ;
+    ex:publicationYear 2004 .
+
+ex:author1 a ex:Author ;
+    foaf:name "Tim Berners-Lee" ;
+    foaf:homepage <https://www.w3.org/People/Berners-Lee/> .

@@ -1,0 +1,39 @@
+// Build pipeline dependency graph
+digraph BuildPipeline {
+    rankdir=LR;
+    node [shape=box, style=filled, fontname="Helvetica"];
+
+    // Source nodes
+    src [label="Source Code", shape=ellipse, color=lightblue, fillcolor=lightblue];
+    tests [label="Test Files", shape=ellipse, color=lightblue, fillcolor=lightblue];
+
+    // Build stages
+    lint [label="Lint", color=lightyellow, fillcolor=lightyellow];
+    compile [label="Compile", color=lightyellow, fillcolor=lightyellow];
+    unit_test [label="Unit Tests", color=lightyellow, fillcolor=lightyellow];
+    bundle [label="Bundle", color=lightyellow, fillcolor=lightyellow];
+
+    // Integration and deploy
+    integration [label="Integration Tests", color=lightgreen, fillcolor=lightgreen];
+    staging [label="Deploy: Staging", color=lightcoral, fillcolor=lightcoral];
+    production [label="Deploy: Production", color=red, fillcolor=red, fontcolor=white];
+
+    // Edges
+    src -> lint;
+    src -> compile;
+    tests -> unit_test;
+    compile -> unit_test;
+    compile -> bundle;
+    lint -> bundle [style=dashed];
+    unit_test -> integration;
+    bundle -> staging;
+    integration -> staging;
+    staging -> production [label="approved", fontsize=10];
+
+    // Subgraph for CI environment
+    subgraph cluster_ci {
+        label="CI Environment";
+        style=dotted;
+        lint; compile; unit_test; integration;
+    }
+}
