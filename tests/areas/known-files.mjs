@@ -432,17 +432,20 @@ export async function run(ctx) {
   // ── lerna.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('lerna.json');
-  await page.waitForSelector('#previewHost .lrn-doc', { timeout: 12000 });
-  const lrnText = await page.$eval('#previewHost .lrn-doc', (e) => e.textContent);
-  if (/Lerna/i.test(lrnText)) pass('lerna.json: badge shown'); else fail('lerna badge: ' + lrnText.slice(0, 200));
+  await page.waitForSelector('.lernajson-doc', { timeout: 12000 });
+  pass('lerna.json: renders');
+  const lernaText = await page.$eval('.lernajson-doc', el => el.textContent);
+  if (!lernaText.includes('Lerna')) fail('lerna.json: missing badge'); else pass('lerna.json: badge shown');
+  if (!lernaText.includes('version') && !lernaText.includes('package')) fail('lerna.json: no config shown'); else pass('lerna.json: config shown');
 
   // ── nx.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('nx.json');
-  await page.waitForSelector('#previewHost .nx-doc', { timeout: 12000 });
-  const nxText = await page.$eval('#previewHost .nx-doc', (e) => e.textContent);
-  if (/Nx/i.test(nxText)) pass('nx.json: badge shown'); else fail('nx badge: ' + nxText.slice(0, 200));
-  if (/build/i.test(nxText)) pass('nx.json: build target shown'); else fail('nx.json: build target not shown');
+  await page.waitForSelector('.nxjson-doc', { timeout: 12000 });
+  pass('nx.json: renders');
+  const nxText = await page.$eval('.nxjson-doc', el => el.textContent);
+  if (!nxText.includes('Nx')) fail('nx.json: missing badge'); else pass('nx.json: badge shown');
+  if (!nxText.includes('cache') && !nxText.includes('target') && !nxText.includes('build')) fail('nx.json: no config shown'); else pass('nx.json: config shown');
   if (nxText.includes('abc123xyz')) fail('nx.json: cloud token leaked'); else pass('nx.json: cloud token masked');
 
   // ── biome.json viewer ──
@@ -4410,4 +4413,21 @@ export async function run(ctx) {
   const envrcText = await page.$eval('.erc-doc', el => el.textContent);
   if (!envrcText.includes('direnv') && !envrcText.includes('envrc')) fail('.envrc: missing badge'); else pass('.envrc: badge shown');
   if (!envrcText.includes('layout') && !envrcText.includes('PATH') && !envrcText.includes('node')) fail('.envrc: no config shown'); else pass('.envrc: config shown');
+
+  // ── .gcloudignore viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.gcloudignore');
+  await page.waitForSelector('.gcloudignore-doc');
+  pass('.gcloudignore: renders');
+  const gcloudignoreText = await page.$eval('.gcloudignore-doc', el => el.textContent);
+  if (!gcloudignoreText.includes('gcloud') && !gcloudignoreText.includes('Google')) fail('.gcloudignore: missing badge'); else pass('.gcloudignore: badge shown');
+
+  // ── app.json (Heroku) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('heroku-app.json');
+  await page.waitForSelector('.appjson-doc');
+  pass('app.json: renders');
+  const appjsonText = await page.$eval('.appjson-doc', el => el.textContent);
+  if (!appjsonText.includes('Heroku')) fail('app.json: missing badge'); else pass('app.json: badge shown');
+  if (!appjsonText.includes('buildpack') && !appjsonText.includes('addon') && !appjsonText.includes('formation')) fail('app.json: no config shown'); else pass('app.json: config shown');
 }
