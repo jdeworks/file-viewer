@@ -3912,6 +3912,18 @@
     "knownFile": "vagrantfile"
   },
   {
+    "label": "Berksfile",
+    "file": "Berksfile",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Berkshelf Berksfile declaring Chef cookbook dependencies with version constraints, community sources, and path/git locations.",
+    "knownFile": "berksfile"
+  },
+  {
     "label": "Caddyfile",
     "file": "Caddyfile",
     "mime": "text/plain",
@@ -4758,6 +4770,7 @@
       "Config"
     ],
     "enhanced": true,
+    "knownFile": "atlantis",
     "description": "Atlantis Terraform PR automation: projects, workflows, and policies."
   },
   {

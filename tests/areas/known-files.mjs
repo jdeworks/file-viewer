@@ -1230,8 +1230,8 @@ export async function run(ctx) {
   // ── Vagrantfile viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Vagrantfile');
-  await page.waitForSelector('#previewHost .vgf-doc', { timeout: 12000 });
-  const vgfText = await page.$eval('#previewHost .vgf-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .vagrantfile-doc', { timeout: 12000 });
+  const vgfText = await page.$eval('#previewHost .vagrantfile-doc', (e) => e.textContent);
   if (/Vagrant/i.test(vgfText)) pass('Vagrantfile: badge shown'); else fail('vagrantfile badge: ' + vgfText.slice(0, 200));
   if (/ubuntu\/jammy64/i.test(vgfText)) pass('Vagrantfile: box shown'); else fail('vagrantfile box: ' + vgfText.slice(0, 200));
 
@@ -4236,4 +4236,30 @@ export async function run(ctx) {
   const renderText = await page.$eval('#previewHost .renderyaml-doc', el => el.textContent);
   if (!renderText.includes('Render')) fail('render.yaml: missing badge'); else pass('render.yaml: badge shown');
   if (!renderText.includes('web-app') && !renderText.includes('web')) fail('render.yaml: services not shown'); else pass('render.yaml: services shown');
+
+  // ── .htaccess (Apache per-directory config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.htaccess');
+  await page.waitForSelector('#previewHost .htaccess-doc', { timeout: 12000 });
+  pass('.htaccess: renders');
+  const htaccessText = await page.$eval('#previewHost .htaccess-doc', el => el.textContent);
+  if (!htaccessText.includes('Apache') && !htaccessText.includes('htaccess')) fail('.htaccess: missing badge'); else pass('.htaccess: badge shown');
+  if (!htaccessText.includes('Rewrite') && !htaccessText.includes('redirect')) fail('.htaccess: no rules shown'); else pass('.htaccess: rewrite rules shown');
+
+  // ── .htpasswd (Apache auth credential file) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.htpasswd');
+  await page.waitForSelector('#previewHost .htpasswd-doc', { timeout: 12000 });
+  pass('.htpasswd: renders');
+  const htpasswdText = await page.$eval('#previewHost .htpasswd-doc', el => el.textContent);
+  if (!htpasswdText.includes('Apache') && !htpasswdText.includes('Auth')) fail('.htpasswd: missing badge'); else pass('.htpasswd: badge shown');
+  if (htpasswdText.match(/\$apr1\$|\$2y\$/)) fail('.htpasswd: hashes leaked!'); else pass('.htpasswd: hashes hidden');
+
+  // ── Berksfile (Berkshelf cookbook deps) viewer ──
+  await openExample('Berksfile');
+  await page.waitForSelector('.berksfile-doc');
+  pass('Berksfile: renders');
+  const berksText = await page.$eval('.berksfile-doc', el => el.textContent);
+  if (!berksText.includes('Berkshelf') && !berksText.includes('Berks')) fail('Berksfile: missing badge'); else pass('Berksfile: badge shown');
+  if (!berksText.includes('cookbook')) fail('Berksfile: no cookbooks'); else pass('Berksfile: cookbooks shown');
 }

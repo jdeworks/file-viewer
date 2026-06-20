@@ -72,7 +72,7 @@ import vscodeExtensions from '../types/text/json/known/vscode-extensions/index.j
 import vscodeLaunch from '../types/text/json/known/vscode-launch/index.js';
 import vscodeTasks from '../types/text/json/known/vscode-tasks/index.js';
 import travis from '../types/text/yaml/known/travis/index.js';
-import circleci from '../types/text/yaml/known/circleci/index.js';
+import { plugin as circleci } from '../types/text/yaml/known/circleci/index.js';
 import amplify from '../types/text/yaml/known/amplify/index.js';
 import codebuild from '../types/text/yaml/known/codebuild/index.js';
 import jsconfigJson from '../types/text/json/known/jsconfig/index.js';
@@ -178,6 +178,7 @@ import squidConf from '../types/text/known/squid-conf/index.js';
 import varnishVcl from '../types/text/known/varnish-vcl/index.js';
 import moonYml from '../types/text/yaml/known/moon/index.js';
 import vagrantfile from '../types/text/known/vagrantfile/index.js';
+import berksfile from '../types/text/known/berksfile/index.js';
 import caddyfile from '../types/text/known/caddyfile/index.js';
 import consulConfig from '../types/text/known/consul-config/index.js';
 import renderYaml from '../types/text/yaml/known/render-yaml/index.js';
@@ -201,7 +202,7 @@ import snapfile from '../types/text/known/snapfile/index.js';
 import supabaseConfig from '../types/text/toml/known/supabase-config/index.js';
 import netlifyRedirects from '../types/text/known/redirects/index.js';
 import cmake from '../types/text/known/cmake/index.js';
-import jenkinsfile from '../types/text/known/jenkinsfile/index.js';
+import { plugin as jenkinsfile } from '../types/text/known/jenkinsfile/index.js';
 import bazel from '../types/text/known/bazel/index.js';
 import bazelrc from '../types/text/known/bazelrc/index.js';
 import ninjaBuild from '../types/text/known/ninja-build/index.js';
@@ -581,7 +582,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   appveyor, rubocop, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
   brewfile, license, ansibleCfg, ansibleHosts, makepkgConf, gemspec, typos, cargoDeny, cargoConfig, rustfmtToml, clippyToml, rustToolchain,
-  htaccess, htpasswd, nginxConf, apacheConf, lighttpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
+  htaccess, htpasswd, nginxConf, apacheConf, lighttpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, berksfile, caddyfile, renderYaml, railwayJson,
   rsyslogConf,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,
   podfile, fastfile, snapfile,
