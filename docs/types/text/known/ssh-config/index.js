@@ -1,15 +1,14 @@
 export default {
-  id: 'ssh-config',
-  label: 'SSH Config',
-  match(intake) {
+  id: 'ssh-client-config',
+  label: 'SSH Client Config',
+  match(intake, baseType) {
+    // Don't override the dedicated ssh-config base type renderer.
+    if (baseType && baseType.id === 'ssh-config') return false;
     const fullPath = intake.name || intake.filename || '';
     const n = fullPath.split('/').pop().toLowerCase();
-    const text = intake.textSample || intake.text || '';
-    // Standard SSH config file names
+    // Match the canonical Unix client config filename (underscore form) only.
+    if (n === 'ssh_config') return true;
     if (n === 'config' && fullPath.includes('.ssh/')) return true;
-    if (n === 'ssh_config' || n === 'ssh-config') return true;
-    // Content heuristic: Host blocks with HostName/IdentityFile
-    if (text.includes('Host ') && (text.includes('HostName') || text.includes('IdentityFile'))) return true;
     return false;
   },
   loadRenderer: () => import('./renderer.js'),

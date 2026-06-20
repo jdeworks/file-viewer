@@ -488,7 +488,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   packageSwift, mixExs, buildSbt,
   playwrightConfig, cypressConfig,
   vcpkg, cmakePresets, conanfile,
-  prometheusConfig, alertmanager, datadogConfig,
+  prometheusConfig, alertmanager, victoriaMetricsConfig, thanosConfig, datadogConfig,
   viteConfig, webpackConfig, rollupConfig, nextConfig,
   astroConfig, svelteConfig, nuxtConfig, remixConfig, hugoConfig,
   airConfig, spectral, tiltfile, mesonBuild,
