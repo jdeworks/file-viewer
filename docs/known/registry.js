@@ -233,6 +233,9 @@ import sentryProps from '../types/text/known/sentry-props/index.js';
 import otelCollector from '../types/text/yaml/known/otel-collector/index.js';
 import logback from '../types/text/xml/known/logback/index.js';
 import log4j2 from '../types/text/xml/known/log4j2/index.js';
+import mavenPom from '../types/text/xml/known/maven-pom/index.js';
+import checkstyleXml from '../types/text/xml/known/checkstyle-xml/index.js';
+import spotbugsConfig from '../types/text/xml/known/spotbugs-config/index.js';
 import prometheusRules from '../types/text/yaml/known/prometheus-rules/index.js';
 import grafanaDashboard from '../types/text/json/known/grafana-dashboard/index.js';
 import jaegerConfig from '../types/text/yaml/known/jaeger-config/index.js';
@@ -318,6 +321,7 @@ import fluentdConf from '../types/text/known/fluentd-conf/index.js';
 import lokiConfig from '../types/text/yaml/known/loki-config/index.js';
 import promtailConfig from '../types/text/yaml/known/promtail-config/index.js';
 import forgeConfig from '../types/text/known/forge-config/index.js';
+import gradleVersionCatalog from '../types/text/toml/known/gradle-version-catalog/index.js';
 import gleamToml from '../types/text/toml/known/gleam-toml/index.js';
 import goWork from '../types/text/known/go-work/index.js';
 import grafanaIni from '../types/text/ini/known/grafana-ini/index.js';
@@ -423,7 +427,7 @@ import truffleConfig from '../types/text/known/truffle-config/index.js';
 import foundryToml from '../types/text/toml/known/foundry-toml/index.js';
 import anchorToml from '../types/text/toml/known/anchor-toml/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
-  requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, pomXml,
+  requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
   eslint, jest, stylelint, babel, commitlint, lefthook,
@@ -462,10 +466,10 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   readthedocs, citationCff, yamllint, coderabbit,
   ionicConfig, metroConfig, reactNativeConfig,
   dotnetGlobal, prismaSchema, nugetConfig,
-  sentryProps, otelCollector, logback, log4j2,
+  sentryProps, otelCollector, logback, log4j2, checkstyleXml, spotbugsConfig,
   prometheusRules, grafanaDashboard, jaegerConfig, otelK8s,
   scorecard, socketSecurity, trivyConfig, snykConfig,
-  gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml,
+  gradleVersionCatalog, gradleProps, gradleWrapper, settingsGradle, springApp, springAppYml,
   csproj, directoryBuild, msbuildProps, nuspec,
   stackYaml, cabal, packageResolved, rebarConfig,
   docusaurusConfig, vitepressConfig, sphinxConf, doxyfile,

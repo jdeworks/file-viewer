@@ -2702,4 +2702,92 @@ export async function run(ctx) {
   if (/NP_NULL_ON_SOME_PATH|BC_UNCONFIRMED_CAST|SE_NO_SERIALVERSIONID/i.test(sbText)) pass('spotbugs-exclude.xml: bug pattern names shown'); else fail('spotbugs patterns: ' + sbText.slice(0, 300));
   if (/com\.acme/i.test(sbText)) pass('spotbugs-exclude.xml: class / package filters shown'); else fail('spotbugs classes: ' + sbText.slice(0, 300));
   if (/Exclude|match rule/i.test(sbText)) pass('spotbugs-exclude.xml: filter type and match count shown'); else fail('spotbugs filter type: ' + sbText.slice(0, 300));
+
+  // ── php-ini viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('php.ini');
+  await page.waitForSelector('#previewHost .php-doc', { timeout: 12000 });
+  const phpIniText = await page.$eval('#previewHost .php-doc', (e) => e.textContent);
+  if (/PHP Config/i.test(phpIniText)) pass('php.ini: PHP Config badge shown'); else fail('php-ini badge: ' + phpIniText.slice(0, 200));
+  if (/128M/i.test(phpIniText)) pass('php.ini: memory_limit shown'); else fail('php-ini memory: ' + phpIniText.slice(0, 300));
+  if (/upload_max_filesize/i.test(phpIniText)) pass('php.ini: upload_max_filesize shown'); else fail('php-ini upload: ' + phpIniText.slice(0, 300));
+  if (/Europe\/Berlin/i.test(phpIniText)) pass('php.ini: timezone shown'); else fail('php-ini timezone: ' + phpIniText.slice(0, 300));
+  if (/session\.save_handler|opcache/i.test(phpIniText)) pass('php.ini: session/opcache sections shown'); else fail('php-ini session: ' + phpIniText.slice(0, 300));
+
+  // ── psalm-config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('psalm.xml');
+  await page.waitForSelector('#previewHost .ps-doc', { timeout: 12000 });
+  const psalmText = await page.$eval('#previewHost .ps-doc', (e) => e.textContent);
+  if (/Psalm/i.test(psalmText)) pass('psalm.xml: Psalm badge shown'); else fail('psalm badge: ' + psalmText.slice(0, 200));
+  if (/errorLevel|3/i.test(psalmText)) pass('psalm.xml: error level shown'); else fail('psalm errorLevel: ' + psalmText.slice(0, 300));
+  if (/8\.1/i.test(psalmText)) pass('psalm.xml: PHP version shown'); else fail('psalm phpVersion: ' + psalmText.slice(0, 300));
+  if (/SymfonyPlugin|PhpUnitPlugin/i.test(psalmText)) pass('psalm.xml: plugins shown'); else fail('psalm plugins: ' + psalmText.slice(0, 300));
+  if (/MissingReturnType|PropertyNotSetInConstructor/i.test(psalmText)) pass('psalm.xml: issue handlers shown'); else fail('psalm issues: ' + psalmText.slice(0, 300));
+
+  // ── phpunit-config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('phpunit.xml.dist (PHPUnit Config)');
+  await page.waitForSelector('#previewHost .puc-doc', { timeout: 12000 });
+  const pucText = await page.$eval('#previewHost .puc-doc', (e) => e.textContent);
+  if (/PHPUnit/i.test(pucText)) pass('phpunit.xml.dist: PHPUnit badge shown'); else fail('phpunit-config badge: ' + pucText.slice(0, 200));
+  if (/unit|integration/i.test(pucText)) pass('phpunit.xml.dist: test suites shown'); else fail('phpunit-config suites: ' + pucText.slice(0, 300));
+  if (/vendor\/autoload\.php|bootstrap/i.test(pucText)) pass('phpunit.xml.dist: bootstrap shown'); else fail('phpunit-config bootstrap: ' + pucText.slice(0, 300));
+  if (/coverage|src/i.test(pucText)) pass('phpunit.xml.dist: coverage paths shown'); else fail('phpunit-config coverage: ' + pucText.slice(0, 300));
+
+  // ── rector-config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('rector.php (Rector Config)');
+  await page.waitForSelector('#previewHost .rc-doc', { timeout: 12000 });
+  const rcText = await page.$eval('#previewHost .rc-doc', (e) => e.textContent);
+  if (/Rector/i.test(rcText)) pass('rector.php: Rector badge shown'); else fail('rector badge: ' + rcText.slice(0, 200));
+  if (/8\.1/i.test(rcText)) pass('rector.php: PHP version shown'); else fail('rector phpVersion: ' + rcText.slice(0, 300));
+  if (/php81|php sets/i.test(rcText)) pass('rector.php: PHP sets shown'); else fail('rector sets: ' + rcText.slice(0, 300));
+  if (/FirstClassCallable|ClassPropertyAssign|RemoveUnused/i.test(rcText)) pass('rector.php: rules shown'); else fail('rector rules: ' + rcText.slice(0, 300));
+  if (/dead.*code|20/i.test(rcText)) pass('rector.php: dead code level shown'); else fail('rector deadCode: ' + rcText.slice(0, 300));
+
+  // ── Keycloak Realm viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('keycloak-realm.json (Keycloak Realm)');
+  await page.waitForSelector('#previewHost .kc-doc', { timeout: 12000 });
+  const kcText = await page.$eval('#previewHost .kc-doc', (e) => e.textContent);
+  if (/Keycloak/i.test(kcText)) pass('keycloak-realm.json: Keycloak badge shown'); else fail('keycloak badge: ' + kcText.slice(0, 200));
+  if (/myrealm/i.test(kcText)) pass('keycloak-realm.json: realm name shown'); else fail('keycloak realm name: ' + kcText.slice(0, 300));
+  if (/app-frontend|app-backend|admin-cli/i.test(kcText)) pass('keycloak-realm.json: clients shown'); else fail('keycloak clients: ' + kcText.slice(0, 300));
+  if (!/EXAMPLE_SECRET_DO_NOT_USE/i.test(kcText)) pass('keycloak-realm.json: client secret masked'); else fail('keycloak secret not masked');
+  if (/admin|user|readonly/i.test(kcText)) pass('keycloak-realm.json: realm roles shown'); else fail('keycloak roles: ' + kcText.slice(0, 300));
+  if (/github/i.test(kcText)) pass('keycloak-realm.json: identity provider shown'); else fail('keycloak idp: ' + kcText.slice(0, 300));
+
+  // ── Authelia Config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('authelia-config.yml (Authelia)');
+  await page.waitForSelector('#previewHost .au-doc', { timeout: 12000 });
+  const auText = await page.$eval('#previewHost .au-doc', (e) => e.textContent);
+  if (/Authelia/i.test(auText)) pass('authelia-config.yml: Authelia badge shown'); else fail('authelia badge: ' + auText.slice(0, 200));
+  if (/ldap/i.test(auText)) pass('authelia-config.yml: backend type shown'); else fail('authelia backend: ' + auText.slice(0, 300));
+  if (/example\.com/i.test(auText)) pass('authelia-config.yml: session domain shown'); else fail('authelia session: ' + auText.slice(0, 300));
+  if (/deny|bypass|two_factor/i.test(auText)) pass('authelia-config.yml: access control policies shown'); else fail('authelia policies: ' + auText.slice(0, 300));
+  if (!/EXAMPLE_PASSWORD_DO_NOT_USE|EXAMPLE_OIDC_SECRET/i.test(auText)) pass('authelia-config.yml: secrets masked'); else fail('authelia secrets not masked');
+
+  // ── OAuth2 Proxy Config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('oauth2-proxy.cfg (OAuth2 Proxy)');
+  await page.waitForSelector('#previewHost .op2-doc', { timeout: 12000 });
+  const op2Text = await page.$eval('#previewHost .op2-doc', (e) => e.textContent);
+  if (/OAuth2 Proxy/i.test(op2Text)) pass('oauth2-proxy.cfg: OAuth2 Proxy badge shown'); else fail('oauth2-proxy badge: ' + op2Text.slice(0, 200));
+  if (/github/i.test(op2Text)) pass('oauth2-proxy.cfg: provider shown'); else fail('oauth2-proxy provider: ' + op2Text.slice(0, 300));
+  if (/localhost:3000/i.test(op2Text)) pass('oauth2-proxy.cfg: upstream shown'); else fail('oauth2-proxy upstream: ' + op2Text.slice(0, 300));
+  if (/example\.com/i.test(op2Text)) pass('oauth2-proxy.cfg: cookie domain / email domain shown'); else fail('oauth2-proxy domain: ' + op2Text.slice(0, 300));
+  if (!/EXAMPLE_SECRET_DO_NOT_USE|EXAMPLE_COOKIE_SECRET/i.test(op2Text)) pass('oauth2-proxy.cfg: secrets masked'); else fail('oauth2-proxy secrets not masked');
+
+  // ── Authentik Blueprint viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('authentik-blueprint.yaml (Authentik)');
+  await page.waitForSelector('#previewHost .atk-doc', { timeout: 12000 });
+  const atkText = await page.$eval('#previewHost .atk-doc', (e) => e.textContent);
+  if (/Authentik/i.test(atkText)) pass('authentik-blueprint.yaml: Authentik badge shown'); else fail('authentik badge: ' + atkText.slice(0, 200));
+  if (/version|blueprint/i.test(atkText)) pass('authentik-blueprint.yaml: blueprint version shown'); else fail('authentik version: ' + atkText.slice(0, 300));
+  if (/application|provider|flow/i.test(atkText)) pass('authentik-blueprint.yaml: model types shown'); else fail('authentik models: ' + atkText.slice(0, 300));
+  if (/example-application|example-login-flow|myapp-provider/i.test(atkText)) pass('authentik-blueprint.yaml: entry identifiers shown'); else fail('authentik entries: ' + atkText.slice(0, 300));
+  if (!/EXAMPLE_SECRET_DO_NOT_USE/i.test(atkText)) pass('authentik-blueprint.yaml: secrets masked'); else fail('authentik secrets not masked');
 }
