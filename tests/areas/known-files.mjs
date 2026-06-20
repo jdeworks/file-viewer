@@ -4894,4 +4894,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('proftpd.conf');
   pass(await page.waitForSelector('#previewHost .prf-doc', { timeout: 12000 }), 'proftpd.conf: ProFTPD badge shown');
+
+  // ── pdns.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pdns.conf');
+  pass(await page.waitForSelector('#previewHost .pdns-doc', { timeout: 12000 }), 'pdns.conf: PowerDNS badge shown');
+
+  // ── recursor.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('recursor.conf');
+  pass(await page.waitForSelector('#previewHost .rec-doc', { timeout: 12000 }), 'recursor.conf: PowerDNS Recursor badge shown');
 }

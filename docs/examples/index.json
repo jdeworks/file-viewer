@@ -8955,5 +8955,15 @@
     "name": "proftpd.conf",
     "category": "Server",
     "knownFile": true
+  },
+  {
+    "name": "pdns.conf",
+    "category": "Network",
+    "knownFile": true
+  },
+  {
+    "name": "recursor.conf",
+    "category": "Network",
+    "knownFile": true
   }
 ]

@@ -623,6 +623,8 @@ import cloudflared from '../types/text/yaml/known/cloudflared/index.js';
 import dnsmasqConf from '../types/text/known/dnsmasq/index.js';
 import { plugin as frpcConfig } from '../types/text/toml/known/frpc-config/index.js';
 import { plugin as frpsConfig } from '../types/text/toml/known/frps-config/index.js';
+import { plugin as pdnsConf } from '../types/text/known/pdns-conf/index.js';
+import { plugin as pdnsRecursorConf } from '../types/text/known/pdns-recursor-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -763,6 +765,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   influxdbConf, nsqConf,
   cloudflared, dnsmasqConf,
   frpcConfig, frpsConfig,
+  pdnsConf, pdnsRecursorConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
