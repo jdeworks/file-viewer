@@ -254,6 +254,24 @@ body {
 .edit-disclaimer-close { background: none; border: none; color: var(--fg-2); font-size: 13px;
   cursor: pointer; padding: 2px 5px; line-height: 1; border-radius: 3px; }
 .edit-disclaimer-close:hover { background: var(--bg-3, var(--border)); color: var(--fg); }
+/* Autosave restore banner — stacks below edit-disclaimer when both are open */
+.autosave-banner { position: absolute; top: 0; left: 0; right: 0; height: 28px; z-index: 4;
+  display: flex; align-items: center; gap: 8px; padding: 0 10px;
+  background: #fff8e1; border-bottom: 1px solid #ffc107; font-size: 11.5px; color: #5d4037; }
+.autosave-banner[hidden] { display: none; }
+[data-theme="dark"] .autosave-banner { background: #2d2200; border-color: #ffc107; color: #ffe082; }
+.autosave-icon { font-size: 14px; }
+.autosave-age { flex: 1; }
+.autosave-banner button { padding: 2px 10px; border-radius: 4px; border: 1px solid currentColor;
+  background: transparent; cursor: pointer; font-size: 11px; color: inherit; }
+.autosave-restore { font-weight: 600; }
+.raw-pane.has-autosave .editor-host { top: 28px; }
+.raw-pane.has-disclaimer .autosave-banner { top: 28px; }
+.raw-pane.has-disclaimer.has-autosave .editor-host { top: 56px; }
+.raw-pane.comparing .autosave-banner { top: 30px; }
+.raw-pane.comparing.has-autosave .editor-host { top: 58px; }
+.raw-pane.comparing.has-disclaimer .autosave-banner { top: 58px; }
+.raw-pane.comparing.has-disclaimer.has-autosave .editor-host { top: 86px; }
 /* Markdown toolbar — horizontal button strip */
 .md-tools-bar { position: absolute; top: 0; left: 0; right: 0; height: 34px; z-index: 6;
   display: flex; align-items: center; gap: 2px; padding: 2px 8px;
@@ -304,9 +322,17 @@ body {
 .raw-pane.comparing.has-tools .editor-host { top: 64px; }
 .raw-pane.has-disclaimer.has-tools .editor-host { top: 62px; }
 .raw-pane.comparing.has-disclaimer.has-tools .editor-host { top: 92px; }
+.raw-pane.has-autosave.has-tools .editor-host { top: 62px; }
+.raw-pane.has-disclaimer.has-autosave.has-tools .editor-host { top: 90px; }
+.raw-pane.comparing.has-autosave.has-tools .editor-host { top: 92px; }
+.raw-pane.comparing.has-disclaimer.has-autosave.has-tools .editor-host { top: 120px; }
 .raw-pane.comparing .md-tools-bar { top: 30px; }
 .raw-pane.has-disclaimer .md-tools-bar { top: 28px; }
 .raw-pane.comparing.has-disclaimer .md-tools-bar { top: 58px; }
+.raw-pane.has-autosave .md-tools-bar { top: 28px; }
+.raw-pane.has-disclaimer.has-autosave .md-tools-bar { top: 56px; }
+.raw-pane.comparing.has-autosave .md-tools-bar { top: 58px; }
+.raw-pane.comparing.has-disclaimer.has-autosave .md-tools-bar { top: 86px; }
 #compareBtn.active { color: var(--accent); }
 .preview-host { position: absolute; inset: 0; overflow: auto; background: var(--bg); }
 /* display:block kills the inline-iframe baseline gap that otherwise pushes content a few px

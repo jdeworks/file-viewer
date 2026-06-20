@@ -3,6 +3,7 @@
 // Extracted from app.js; renderPreview (the core re-render) is injected via initRawPane so this
 // module doesn't import app.js back.
 import { state, $, toast, themeIsDark, debounce } from './state.js';
+import { startAutosave, stopAutosave, saveNow, clearAutosave, getAutosave } from './autosave.js';
 import { createRawView } from './rawview.js';
 import { hexDump } from './hexdump.js';
 import { monacoOptions } from './settings.js';
@@ -41,6 +42,37 @@ function showEditDisclaimer() {
     try { localStorage.setItem(DISCLAIMER_KEY, 'never'); } catch { /* private mode */ }
     setDisclaimerVisible(false);
   });
+}
+
+function formatAgo(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+  return Math.floor(diff / 86400000) + 'd ago';
+}
+
+function showAutosaveBanner(saved) {
+  const el = $('autosaveBanner');
+  if (!el) return;
+  el.querySelector('.autosave-age').textContent = `Autosave from ${formatAgo(saved.ts)} found.`;
+  el.hidden = false;
+  $('rawPane')?.classList.add('has-autosave');
+
+  if (!el.dataset.wired) {
+    el.dataset.wired = '1';
+    el.querySelector('.autosave-restore').addEventListener('click', () => {
+      state.rawview?.setValue?.(saved.text);
+      state.intake = { ...state.intake, text: saved.text };
+      el.hidden = true;
+      $('rawPane')?.classList.remove('has-autosave');
+    });
+    el.querySelector('.autosave-dismiss').addEventListener('click', () => {
+      el.hidden = true;
+      $('rawPane')?.classList.remove('has-autosave');
+      clearAutosave(state.intake?.filename || state.intake?.name);
+    });
+  }
 }
 
 function setMarkdownToolsVisible(visible) {
@@ -283,6 +315,7 @@ export async function toggleWysiwyg() {
 }
 
 export async function buildRawView() {
+  stopAutosave();
   // If WYSIWYG was active (e.g. file changed), tear it down first
   if (wysiwygMode) {
     unmountWysiwyg();
@@ -332,6 +365,17 @@ export async function buildRawView() {
   }
   syncRawModeButtons();
   showEditDisclaimer();
+  // Autosave: hide any previous banner, then check for a saved version
+  const _autosaveBanner = $('autosaveBanner');
+  if (_autosaveBanner) { _autosaveBanner.hidden = true; $('rawPane')?.classList.remove('has-autosave'); }
+  if (!state.intake?.isBinary) {
+    const filename = state.intake?.filename || state.intake?.name;
+    const saved = getAutosave(filename);
+    if (saved && saved.text !== (state.intake?.text || '')) {
+      showAutosaveBanner(saved);
+    }
+    startAutosave();
+  }
 }
 
 // §10A.3 — The Defragmenter cheat-disable toast. Prefer the app's toast; else a 3s DIY overlay.
@@ -456,4 +500,5 @@ export async function downloadCurrent() {
     state.treeApi?.setEdited?.(state.intake.filename, false);
   }
   state.downloadedSinceEdit = true;    // current edits are now saved to disk
+  clearAutosave(state.intake?.filename || state.intake?.name);
 }
