@@ -1,0 +1,35 @@
+[DEFAULT]
+bantime  = 3600
+findtime = 600
+maxretry = 5
+backend = systemd
+banaction = iptables-multiport
+banaction_allports = iptables-allports
+ignoreip = 127.0.0.1/8 ::1 192.168.1.0/24
+
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+bantime = 86400
+
+[nginx-http-auth]
+enabled = true
+filter = nginx-http-auth
+logpath = /var/log/nginx/error.log
+maxretry = 5
+
+[nginx-limit-req]
+enabled = true
+filter = nginx-limit-req
+port = http,https
+logpath = /var/log/nginx/error.log
+maxretry = 10
+
+[postfix]
+enabled = false
+mode = more
+port = smtp,465,submission
+logpath = /var/log/mail.log

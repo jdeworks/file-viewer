@@ -456,6 +456,12 @@ import clusterConfig from '../types/text/yaml/known/cluster-config/index.js';
 import certManager from '../types/text/yaml/known/cert-manager/index.js';
 import iptablesRules from '../types/text/known/iptables-rules/index.js';
 import ufwConf from '../types/text/known/ufw-conf/index.js';
+import fail2banConf from '../types/text/known/fail2ban-conf/index.js';
+import smbConf from '../types/text/known/smb-conf/index.js';
+import corefile from '../types/text/known/corefile/index.js';
+import containerdConfig from '../types/text/known/containerd-config/index.js';
+import postfixConf from '../types/text/known/postfix-conf/index.js';
+import chronyConf from '../types/text/known/chrony-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -556,6 +562,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   systemdUnit, crontab,
   clusterConfig, certManager,
   iptablesRules, ufwConf,
+  fail2banConf, smbConf,
+  corefile, containerdConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

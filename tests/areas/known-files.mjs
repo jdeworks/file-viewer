@@ -3037,10 +3037,10 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('schema.graphql (GraphQL Schema)');
   await page.waitForSelector('#previewHost .gql-doc', { timeout: 12000 });
-  const gqlText = await page.$eval('#previewHost .gql-doc', (e) => e.textContent);
-  if (/GraphQL/i.test(gqlText)) pass('schema.graphql: GraphQL badge shown'); else fail('graphql badge: ' + gqlText.slice(0, 200));
-  if (/Query/i.test(gqlText)) pass('schema.graphql: Query operations shown'); else fail('graphql query: ' + gqlText.slice(0, 300));
-  if (/Mutation|User|Post/i.test(gqlText)) pass('schema.graphql: types/mutations shown'); else fail('graphql types: ' + gqlText.slice(0, 300));
+  const gqlSchemaText = await page.$eval('#previewHost .gql-doc', (e) => e.textContent);
+  if (/GraphQL/i.test(gqlSchemaText)) pass('schema.graphql: GraphQL badge shown'); else fail('graphql badge: ' + gqlSchemaText.slice(0, 200));
+  if (/Query/i.test(gqlSchemaText)) pass('schema.graphql: Query operations shown'); else fail('graphql query: ' + gqlSchemaText.slice(0, 300));
+  if (/Mutation|User|Post/i.test(gqlSchemaText)) pass('schema.graphql: types/mutations shown'); else fail('graphql types: ' + gqlSchemaText.slice(0, 300));
 
   // ── hosts-file viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -3133,5 +3133,21 @@ export async function run(ctx) {
   if (/Thanos/i.test(thanosText)) pass('thanos-bucket.yml: Thanos badge shown'); else fail('thanoscfg badge: ' + thanosText.slice(0, 200));
   if (/S3/i.test(thanosText)) pass('thanos-bucket.yml: S3 storage type shown'); else fail('thanoscfg type: ' + thanosText.slice(0, 300));
   if (/bucket/i.test(thanosText)) pass('thanos-bucket.yml: bucket shown'); else fail('thanoscfg bucket: ' + thanosText.slice(0, 300));
+
+  // ── fail2ban jail.local viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('jail.local (Fail2ban)');
+  await page.waitForSelector('#previewHost .f2b-doc', { timeout: 12000 });
+  const f2bText = await page.$eval('#previewHost .f2b-doc', (e) => e.textContent);
+  if (/Fail2ban/i.test(f2bText)) pass('jail.local: Fail2ban badge shown'); else fail('fail2ban badge: ' + f2bText.slice(0, 200));
+  if (/sshd|bantime/i.test(f2bText)) pass('jail.local: sshd jail or bantime shown'); else fail('fail2ban content: ' + f2bText.slice(0, 300));
+
+  // ── smb.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('smb.conf (Samba)');
+  await page.waitForSelector('#previewHost .smbcfg-doc', { timeout: 12000 });
+  const smbText = await page.$eval('#previewHost .smbcfg-doc', (e) => e.textContent);
+  if (/Samba/i.test(smbText)) pass('smb.conf: Samba badge shown'); else fail('samba badge: ' + smbText.slice(0, 200));
+  if (/data|workgroup/i.test(smbText)) pass('smb.conf: data share or workgroup shown'); else fail('samba content: ' + smbText.slice(0, 300));
 
 }

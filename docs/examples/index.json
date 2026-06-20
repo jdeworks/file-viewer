@@ -7130,5 +7130,23 @@
     "enhanced": true,
     "description": "Kubernetes cluster-level resources: StorageClass (fast-ssd, standard) and PriorityClass definitions.",
     "knownFile": "cluster-config"
+  },
+  {
+    "file": "jail.local",
+    "label": "jail.local (Fail2ban)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security"
+    ]
+  },
+  {
+    "file": "smb.conf",
+    "label": "smb.conf (Samba)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ]
   }
 ]
