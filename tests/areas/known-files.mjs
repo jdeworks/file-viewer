@@ -1051,10 +1051,11 @@ export async function run(ctx) {
   // ── .markdownlint.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.markdownlint.json');
-  await page.waitForSelector('#previewHost .mdl-doc', { timeout: 12000 });
-  const mdlText = await page.$eval('#previewHost .mdl-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .mdlint-doc', { timeout: 12000 });
+  const mdlText = await page.$eval('#previewHost .mdlint-doc', (e) => e.textContent);
   if (/markdownlint/i.test(mdlText)) pass('.markdownlint.json: badge shown'); else fail('markdownlint badge: ' + mdlText.slice(0, 200));
   if (/MD013|MD033|disabled|enabled/i.test(mdlText)) pass('.markdownlint.json: rules shown'); else fail('markdownlint rules: ' + mdlText.slice(0, 200));
+  if (/120/.test(mdlText)) pass('.markdownlint.json: line length shown'); else fail('markdownlint line length: ' + mdlText.slice(0, 200));
 
   // ── .clang-format viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

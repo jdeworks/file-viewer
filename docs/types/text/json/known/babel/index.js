@@ -3,7 +3,7 @@ export default {
   label: 'Babel config',
   match: (intake, baseType) => {
     if (baseType.id !== 'json') return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return ['babel.config.json', '.babelrc', '.babelrc.json'].includes(name);
   },
   loadRenderer: () => import('./renderer.js'),

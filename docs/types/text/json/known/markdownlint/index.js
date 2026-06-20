@@ -3,8 +3,8 @@ export default {
   label: 'Markdownlint config',
   match: (intake, baseType) => {
     if (baseType.id !== 'json') return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
-    return name === '.markdownlint.json' || name === '.markdownlintrc.json' || name === 'markdownlint.json';
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    return name === '.markdownlint.json' || name === '.markdownlint.jsonc' || name === '.markdownlintrc.json' || name === 'markdownlint.json';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {
