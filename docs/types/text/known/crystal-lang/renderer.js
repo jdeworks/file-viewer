@@ -1,7 +1,7 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.cr-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.crl-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
 .cr-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#000;color:#fff;vertical-align:middle;margin-right:8px;}
 .cr-badge-sub{display:inline-block;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700;background:#f0f0f0;color:#333;vertical-align:middle;margin-left:6px;}
 .cr-title{font-size:18px;font-weight:700;margin:0 0 4px;}
@@ -105,7 +105,7 @@ export async function render(intake) {
   const { requires, types, defs, annotations, aliases, abstractCount, hasVersion } = analyzeCrystal(text);
 
   const host = document.createElement('div');
-  host.className = 'cr-doc';
+  host.className = 'crl-doc';
 
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
