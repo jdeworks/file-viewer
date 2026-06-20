@@ -7884,5 +7884,31 @@
     "enhanced": true,
     "description": "yt-dlp video downloader configuration: format selection, output path template, metadata embedding, network settings, and cookie source.",
     "knownFile": "ytdlp-conf"
+  },
+  {
+    "file": ".Xresources",
+    "label": ".Xresources",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Desktop"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "X11 .Xresources resource database: terminal colors (Catppuccin Mocha), Xft DPI and font settings, URxvt configuration, and rofi settings.",
+    "knownFile": "xresources"
+  },
+  {
+    "file": "xorg.conf",
+    "label": "xorg.conf",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Desktop"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Xorg X11 server configuration: amdgpu driver with TearFree and VariableRefresh, touchpad with tapping and natural scrolling, screen modes, and DPMS monitor settings.",
+    "knownFile": "xorg-conf"
   }
 ]

@@ -3036,6 +3036,15 @@ export async function run(ctx) {
   if (/logrotate/i.test(logrotText)) pass('logrotate.conf: badge shown'); else fail('logrotate badge: ' + logrotText.slice(0, 200));
   if (/nginx/i.test(logrotText)) pass('logrotate.conf: log target shown'); else fail('logrotate target: ' + logrotText.slice(0, 300));
 
+  // ── tlp.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('tlp.conf (TLP Power)');
+  await page.waitForSelector('#previewHost .tlpcfg-doc', { timeout: 12000 });
+  const tlpText = await page.$eval('#previewHost .tlpcfg-doc', (e) => e.textContent);
+  if (/TLP/i.test(tlpText)) pass('tlp.conf: TLP badge shown'); else fail('tlp-conf badge: ' + tlpText.slice(0, 200));
+  if (/powersave|performance/i.test(tlpText)) pass('tlp.conf: CPU governor shown'); else fail('tlp-conf governor: ' + tlpText.slice(0, 300));
+  if (/40%|80%/i.test(tlpText)) pass('tlp.conf: battery charge threshold shown'); else fail('tlp-conf battery threshold: ' + tlpText.slice(0, 300));
+
   // ── .env.example viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.env.example (Env Template)');
@@ -3702,4 +3711,22 @@ export async function run(ctx) {
   if (/binding|shortcut/i.test(sxhkdText)) pass('sxhkdrc: binding count shown'); else fail('sxhkdrc binding count: ' + sxhkdText.slice(0, 300));
   if (/super\s*\+/i.test(sxhkdText)) pass('sxhkdrc: Super key bindings shown'); else fail('sxhkdrc key combos: ' + sxhkdText.slice(0, 300));
   if (/alacritty|rofi|bspc/i.test(sxhkdText)) pass('sxhkdrc: commands listed'); else fail('sxhkdrc commands: ' + sxhkdText.slice(0, 300));
+
+  // ── mpv.conf (mpv media player config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mpv.conf');
+  await page.waitForSelector('#previewHost .mpvcfg-doc', { timeout: 12000 });
+  const mpvText = await page.$eval('#previewHost .mpvcfg-doc', (e) => e.textContent);
+  if (/mpv/i.test(mpvText)) pass('mpv.conf: mpv badge shown'); else fail('mpv-conf badge: ' + mpvText.slice(0, 200));
+  if (/gpu-next|vo/i.test(mpvText)) pass('mpv.conf: video output shown'); else fail('mpv-conf vo: ' + mpvText.slice(0, 300));
+  if (/auto-safe|hwdec/i.test(mpvText)) pass('mpv.conf: hwdec shown'); else fail('mpv-conf hwdec: ' + mpvText.slice(0, 300));
+
+  // ── yt-dlp.conf (yt-dlp downloader config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('yt-dlp.conf');
+  await page.waitForSelector('#previewHost .ytdlpcfg-doc', { timeout: 12000 });
+  const ytdlpText = await page.$eval('#previewHost .ytdlpcfg-doc', (e) => e.textContent);
+  if (/yt-dlp/i.test(ytdlpText)) pass('yt-dlp.conf: yt-dlp badge shown'); else fail('ytdlp-conf badge: ' + ytdlpText.slice(0, 200));
+  if (/format|bestvideo/i.test(ytdlpText)) pass('yt-dlp.conf: format spec shown'); else fail('ytdlp-conf format: ' + ytdlpText.slice(0, 300));
+  if (/output|Downloads/i.test(ytdlpText)) pass('yt-dlp.conf: output path shown'); else fail('ytdlp-conf output: ' + ytdlpText.slice(0, 300));
 }

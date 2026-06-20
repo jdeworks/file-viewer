@@ -517,6 +517,8 @@ import weztermConf from '../types/text/known/wezterm-conf/index.js';
 import aria2Conf from '../types/text/known/aria2-conf/index.js';
 import picomConf from '../types/text/known/picom-conf/index.js';
 import mpdConf from '../types/text/known/mpd-conf/index.js';
+import xresources from '../types/text/known/xresources/index.js';
+import xorgConf from '../types/text/known/xorg-conf/index.js';
 import bspwmrc from '../types/text/known/bspwmrc/index.js';
 import sxhkdrc from '../types/text/known/sxhkdrc/index.js';
 import mpvConf from '../types/text/known/mpv-conf/index.js';
@@ -637,6 +639,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   picomConf, mpdConf,
   bspwmrc, sxhkdrc,
   mpvConf, ytdlpConf,
+  xresources, xorgConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
