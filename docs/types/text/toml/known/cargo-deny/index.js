@@ -2,8 +2,8 @@ export default {
   id: 'cargo-deny',
   label: 'cargo-deny config',
   match: (intake) => {
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
-    return name === 'deny.toml';
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    return name === 'deny.toml' || name === 'cargo-deny.toml';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

@@ -2740,6 +2740,18 @@
     ]
   },
   {
+    "label": "release-please-config.json",
+    "file": "release-please-config.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "release-please-config",
+    "description": "Release Please configuration — automated changelog generation and GitHub releases via Conventional Commits."
+  },
+  {
     "label": "lerna.json",
     "file": "lerna.json",
     "mime": "application/json",

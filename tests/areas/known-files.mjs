@@ -397,9 +397,11 @@ export async function run(ctx) {
   // ── biome.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('biome.json');
-  await page.waitForSelector('#previewHost .bmo-doc', { timeout: 12000 });
-  const bmoText = await page.$eval('#previewHost .bmo-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .biome-doc', { timeout: 12000 });
+  const bmoText = await page.$eval('#previewHost .biome-doc', (e) => e.textContent);
   if (/Biome/i.test(bmoText)) pass('biome.json: badge shown'); else fail('biome badge: ' + bmoText.slice(0, 200));
+  if (/100|lineWidth/.test(bmoText)) pass('biome.json: formatter shown'); else fail('biome.json: formatter not shown: ' + bmoText.slice(0, 200));
+  if (/single|quoteStyle/.test(bmoText)) pass('biome.json: JS settings shown'); else fail('biome.json: JS settings not shown: ' + bmoText.slice(0, 200));
 
   // ── codecov.yml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -591,10 +593,11 @@ export async function run(ctx) {
   // ── devcontainer.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('devcontainer.json');
-  await page.waitForSelector('#previewHost .dvc-doc', { timeout: 12000 });
-  const dvcText = await page.$eval('#previewHost .dvc-doc', (e) => e.textContent);
-  if (/Dev Container/i.test(dvcText)) pass('devcontainer.json: badge shown'); else fail('devcontainer badge: ' + dvcText.slice(0, 200));
-  if (/Node\.js|typescript|3000|5432/i.test(dvcText)) pass('devcontainer.json: config shown'); else fail('devcontainer config: ' + dvcText.slice(0, 200));
+  await page.waitForSelector('#previewHost .devcontainer-doc', { timeout: 12000 });
+  const dvcText = await page.$eval('#previewHost .devcontainer-doc', (e) => e.textContent);
+  if (/devcontainer/i.test(dvcText)) pass('devcontainer.json: badge shown'); else fail('devcontainer badge: ' + dvcText.slice(0, 200));
+  if (/Node\.js|TypeScript|3000|5432/i.test(dvcText)) pass('devcontainer.json: name shown'); else fail('devcontainer name: ' + dvcText.slice(0, 200));
+  if (/3000/.test(dvcText)) pass('devcontainer.json: ports shown'); else fail('devcontainer ports: ' + dvcText.slice(0, 200));
 
   // ── knip.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -4032,4 +4035,26 @@ export async function run(ctx) {
   else pass('mypackage.opam: dependencies shown');
   if (/MIT/i.test(opamText)) pass('mypackage.opam: license shown'); else fail('opam license: ' + opamText.slice(0, 300));
   if (/Jane Smith|maintainer/i.test(opamText)) pass('mypackage.opam: maintainer shown'); else fail('opam maintainer: ' + opamText.slice(0, 300));
+
+  // ── deny.toml (cargo-deny) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('deny.toml');
+  await page.waitForSelector('#previewHost .cargodeny-doc', { timeout: 12000 });
+  pass('deny.toml: badge shown');
+  const denyText = await page.$eval('#previewHost .cargodeny-doc', el => el.textContent);
+  if (!denyText.includes('MIT')) fail('deny.toml: allowed licenses not shown');
+  else pass('deny.toml: licenses shown');
+  if (!denyText.includes('vulnerability')) fail('deny.toml: advisories not shown');
+  else pass('deny.toml: advisories shown');
+
+  // ── release-please-config.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('release-please-config.json');
+  await page.waitForSelector('#previewHost .relpls-doc', { timeout: 12000 });
+  pass('release-please-config.json: badge shown');
+  const rplText = await page.$eval('#previewHost .relpls-doc', el => el.textContent);
+  if (!rplText.includes('node')) fail('release-please-config.json: release type not shown');
+  else pass('release-please-config.json: release type shown');
+  if (!rplText.includes('packages/api')) fail('release-please-config.json: packages not shown');
+  else pass('release-please-config.json: packages shown');
 }

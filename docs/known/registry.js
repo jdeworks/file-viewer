@@ -422,6 +422,7 @@ import nfsExports from '../types/text/known/nfs-exports/index.js';
 import samTemplate from '../types/text/yaml/known/sam-template/index.js';
 import cfnTemplate from '../types/text/yaml/known/cfn-template/index.js';
 import cdkJson from '../types/text/json/known/cdk-json/index.js';
+import releasePleaseConfig from '../types/text/json/known/release-please-config/index.js';
 import awsSamConfig from '../types/text/toml/known/aws-sam-config/index.js';
 import analysisOptions from '../types/text/yaml/known/analysis-options/index.js';
 import podfileLock from '../types/text/known/podfile-lock/index.js';
@@ -624,7 +625,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   kubeconfig, gcpServiceAccount, banditYaml,
   istioConfig, linkerdConfig, etcdConfig,
   kafkaServerProps, natsConfig, rabbitmqConf, zookeeperConfig,
-  samTemplate, cfnTemplate, cdkJson, awsSamConfig,
+  samTemplate, cfnTemplate, cdkJson, awsSamConfig, releasePleaseConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson,
   hostsFile, resolvConf, sshdConfig, sudoers, nfsExports, fstab, crypttab,
   sysctlConf, modprobeConf,
