@@ -5300,4 +5300,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('appsmith.env');
   pass(await page.waitForSelector('#previewHost .appsm-doc', { timeout: 12000 }), 'appsmith.env: Appsmith badge shown');
+
+  // ── hoppscotch.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('hoppscotch.env');
+  pass(await page.waitForSelector('#previewHost .hopp-doc', { timeout: 12000 }), 'hoppscotch.env: Hoppscotch badge shown');
+
+  // ── twenty.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('twenty.env');
+  pass(await page.waitForSelector('#previewHost .twenty-doc', { timeout: 12000 }), 'twenty.env: Twenty CRM badge shown');
 }

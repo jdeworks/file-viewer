@@ -9717,5 +9717,33 @@
     "enhanced": true,
     "description": "Appsmith low-code app builder environment configuration with encryption, MongoDB, Redis, email, OAuth, and feature flags.",
     "knownFile": "appsmith-config"
+  },
+  {
+    "file": "hoppscotch.env",
+    "label": "hoppscotch.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "API"
+    ],
+    "enhanced": true,
+    "description": "Hoppscotch API testing platform environment configuration with server URLs, JWT security, database, email, and OAuth provider settings.",
+    "knownFile": "hoppscotch-config"
+  },
+  {
+    "file": "twenty.env",
+    "label": "twenty.env",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "CRM"
+    ],
+    "enhanced": true,
+    "description": "Twenty CRM open-source Salesforce alternative environment configuration with server, auth tokens, database, Redis, storage, email, and Gmail OAuth settings.",
+    "knownFile": "twenty-crm-config"
   }
 ]
