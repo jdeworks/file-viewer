@@ -6713,4 +6713,47 @@ export async function run(ctx) {
   if (/BBCode/i.test(bbcText)) pass('bbcode-text: badge shown'); else fail('bbcode-text badge: ' + bbcText.slice(0, 200));
   if (/tag type|link|quote|code block|bold|italic/i.test(bbcText)) pass('bbcode-text: stats shown'); else fail('bbcode-text stats: ' + bbcText.slice(0, 300));
   if (/url|img|quote|code/i.test(bbcText)) pass('bbcode-text: tag inventory shown'); else fail('bbcode-text tags: ' + bbcText.slice(0, 300));
+
+  // ── vala-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.vala');
+  await page.waitForSelector('#previewHost .vla-doc', { timeout: 12000 });
+  pass('vala-lang: rendered');
+  const valaText = await page.$eval('#previewHost .vla-doc', (e) => e.textContent);
+  if (/Vala/i.test(valaText)) pass('vala-lang: badge shown'); else fail('vala-lang badge: ' + valaText.slice(0, 200));
+  if (/Hello|Greeter|Color/i.test(valaText)) pass('vala-lang: types listed'); else fail('vala-lang types: ' + valaText.slice(0, 300));
+  if (/GLib|Gtk/i.test(valaText)) pass('vala-lang: namespaces shown'); else fail('vala-lang namespaces: ' + valaText.slice(0, 300));
+  if (/main/i.test(valaText)) pass('vala-lang: main() presence noted'); else fail('vala-lang main: ' + valaText.slice(0, 300));
+
+  // ── idris-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.idr');
+  await page.waitForSelector('#previewHost .idr-doc', { timeout: 12000 });
+  pass('idris-lang: rendered');
+  const idrisText = await page.$eval('#previewHost .idr-doc', (e) => e.textContent);
+  if (/Idris/i.test(idrisText)) pass('idris-lang: badge shown'); else fail('idris-lang badge: ' + idrisText.slice(0, 200));
+  if (/Main/i.test(idrisText)) pass('idris-lang: module name shown'); else fail('idris-lang module: ' + idrisText.slice(0, 300));
+  if (/Shape|Circle|Rectangle|Triangle/i.test(idrisText)) pass('idris-lang: data types listed'); else fail('idris-lang data types: ' + idrisText.slice(0, 300));
+  if (/total|partial/i.test(idrisText)) pass('idris-lang: totality annotations shown'); else fail('idris-lang totality: ' + idrisText.slice(0, 300));
+
+  // ── sml-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.sml');
+  await page.waitForSelector('#previewHost .sml-doc', { timeout: 12000 });
+  pass('sml-lang: rendered');
+  const smlText = await page.$eval('#previewHost .sml-doc', (e) => e.textContent);
+  if (/Standard ML/i.test(smlText)) pass('sml-lang: badge shown'); else fail('sml-lang badge: ' + smlText.slice(0, 200));
+  if (/Main|Math|MakeSet/i.test(smlText)) pass('sml-lang: structure/functor names listed'); else fail('sml-lang modules: ' + smlText.slice(0, 300));
+  if (/val|fun/i.test(smlText)) pass('sml-lang: binding counts shown'); else fail('sml-lang bindings: ' + smlText.slice(0, 300));
+
+  // ── tex-doc viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.tex');
+  await page.waitForSelector('#previewHost .tex-doc', { timeout: 12000 });
+  pass('tex-doc: rendered');
+  const texText = await page.$eval('#previewHost .tex-doc', (e) => e.textContent);
+  if (/LaTeX/i.test(texText)) pass('tex-doc: badge shown'); else fail('tex-doc badge: ' + texText.slice(0, 200));
+  if (/article/i.test(texText)) pass('tex-doc: document class shown'); else fail('tex-doc class: ' + texText.slice(0, 300));
+  if (/amsmath|graphicx|hyperref/i.test(texText)) pass('tex-doc: packages listed'); else fail('tex-doc packages: ' + texText.slice(0, 300));
+  if (/Introduction|Mathematics|Conclusion/i.test(texText)) pass('tex-doc: section titles shown'); else fail('tex-doc sections: ' + texText.slice(0, 300));
 }

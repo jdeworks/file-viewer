@@ -858,6 +858,10 @@ import typstDoc from '../types/text/known/typst-doc/index.js';
 import textileMarkup from '../types/text/known/textile-markup/index.js';
 import mediawikiMarkup from '../types/text/known/mediawiki-markup/index.js';
 import bbcodeText from '../types/text/known/bbcode-text/index.js';
+import valaLang from '../types/text/known/vala-lang/index.js';
+import idrisLang from '../types/text/known/idris-lang/index.js';
+import smlLang from '../types/text/known/sml-lang/index.js';
+import texDoc from '../types/text/known/tex-doc/index.js';
 export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, rubyLang, perlLang, phpLang, powershellLang, solidityLang, vhdlLang, arduinoSketch, cobolLang, gleamLang, odinLang, haxeLang, adaLang, prologLang, asmLang, objcLang, dLang, ponyLang, wrenLang, mojoLang, janetLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
@@ -1069,6 +1073,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   coffeescriptLang, livescriptLang, rescriptLang, reasonLang,
   gdscriptLang, inkScript, fennelLang, ballerinaLang,
   typstDoc, textileMarkup, mediawikiMarkup, bbcodeText,
+  valaLang, idrisLang, smlLang, texDoc,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

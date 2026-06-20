@@ -12535,5 +12535,53 @@
     "enhanced": true,
     "description": "BBCode forum markup post",
     "knownFile": "bbcode-text"
+  },
+  {
+    "label": "sample.vala (Vala)",
+    "file": "sample.vala",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Vala language sample with GLib/Gtk class and main entry point.",
+    "knownFile": "vala-lang"
+  },
+  {
+    "label": "sample.idr (Idris)",
+    "file": "sample.idr",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Idris language sample with dependent types and totality annotations.",
+    "knownFile": "idris-lang"
+  },
+  {
+    "label": "sample.sml (Standard ML)",
+    "file": "sample.sml",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Standard ML sample with structure, signature, and functor definitions.",
+    "knownFile": "sml-lang"
+  },
+  {
+    "label": "sample.tex (LaTeX)",
+    "file": "sample.tex",
+    "mime": "text/plain",
+    "category": "Document",
+    "categories": [
+      "Document"
+    ],
+    "enhanced": true,
+    "description": "LaTeX document with usepackage, sections, math, and author metadata.",
+    "knownFile": "tex-doc"
   }
 ]
