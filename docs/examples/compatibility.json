@@ -10219,7 +10219,7 @@
       "needsRealWorldSample": false
     },
     "csproj": {
-      "label": "C# Project",
+      "label": ".NET Project",
       "baseType": "xml",
       "support": "supported",
       "sampleFiles": [
