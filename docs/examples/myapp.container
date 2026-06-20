@@ -1,0 +1,26 @@
+[Unit]
+Description=My App Container
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/myorg/myapp:1.2.3
+Environment=APP_ENV=production
+Environment=APP_PORT=8080
+Environment=DB_HOST=postgres.internal
+Environment=DB_PASSWORD=s3cr3tdbpass
+Environment=API_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+Environment=FEATURE_FLAGS=new-ui,dark-mode
+Environment=LOG_LEVEL=info
+Volume=myapp-data:/data:Z
+Volume=myapp-config:/etc/myapp:ro,Z
+Network=myapp-net
+PublishPort=8080:8080
+PublishPort=9090:9090
+
+[Service]
+Restart=always
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target default.target

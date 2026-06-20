@@ -2294,18 +2294,6 @@ export async function run(ctx) {
   if (/ubuntu|platform|runner/i.test(actText)) pass('.actrc: platform mappings shown'); else fail('act platforms: ' + actText.slice(0, 200));
   if (/env|secret/i.test(actText)) pass('.actrc: env/secrets shown'); else fail('act env/secrets: ' + actText.slice(0, 200));
   if (/ghcr\.io|catthehacker|docker/i.test(actText)) pass('.actrc: docker image shown'); else fail('act docker image: ' + actText.slice(0, 200));
-}
-
-  // ── .actrc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('.actrc');
-  await page.waitForSelector('#previewHost .act-doc', { timeout: 12000 });
-  const actText = await page.$eval('#previewHost .act-doc', (e) => e.textContent);
-  if (/\bact\b/i.test(actText)) pass('.actrc: act badge shown'); else fail('act badge: ' + actText.slice(0, 200));
-  if (/ubuntu|platform|runner/i.test(actText)) pass('.actrc: platform mappings shown'); else fail('act platforms: ' + actText.slice(0, 200));
-  if (/env|secret/i.test(actText)) pass('.actrc: env/secrets shown'); else fail('act env/secrets: ' + actText.slice(0, 200));
-  if (/ghcr\.io|catthehacker|docker/i.test(actText)) pass('.actrc: docker image shown'); else fail('act docker image: ' + actText.slice(0, 200));
-
   // ── clickhouse config.xml viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('config.xml (ClickHouse)');
@@ -2349,4 +2337,139 @@ export async function run(ctx) {
   if (/redis-primary|redis-cache/i.test(rdsText)) pass('sentinel.conf: monitored master names shown'); else fail('sentinel masters: ' + rdsText.slice(0, 300));
   if (/••••••••|sensitive/i.test(rdsText)) pass('sentinel.conf: passwords are masked'); else fail('sentinel masking: ' + rdsText.slice(0, 300));
   if (/30000|180000/i.test(rdsText)) pass('sentinel.conf: down-after/failover-timeout shown'); else fail('sentinel timeouts: ' + rdsText.slice(0, 300));
+  // ── django-settings viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('settings.py (Django)');
+  await page.waitForSelector('#previewHost .dj-doc', { timeout: 12000 });
+  const djText = await page.$eval('#previewHost .dj-doc', (e) => e.textContent);
+  if (/Django Settings/i.test(djText)) pass('settings.py: Django Settings badge shown'); else fail('dj badge: ' + djText.slice(0, 200));
+  if (/rest_framework|corsheaders|myapp/i.test(djText)) pass('settings.py: INSTALLED_APPS listed'); else fail('dj apps: ' + djText.slice(0, 300));
+  if (/postgresql|django\.db\.backends/i.test(djText)) pass('settings.py: database engine shown'); else fail('dj db engine: ' + djText.slice(0, 300));
+  if (/\u2022{4,}/.test(djText)) pass('settings.py: SECRET_KEY and DB password masked'); else fail('dj masking: ' + djText.slice(0, 300));
+  if (/DEBUG/i.test(djText)) pass('settings.py: DEBUG flag shown'); else fail('dj debug: ' + djText.slice(0, 300));
+  if (/example\.com|10\.0\.0\.1/i.test(djText)) pass('settings.py: ALLOWED_HOSTS shown'); else fail('dj hosts: ' + djText.slice(0, 300));
+
+  // ── spring-profiles viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('application-production.yml (Spring Boot)');
+  await page.waitForSelector('#previewHost .sp-doc', { timeout: 12000 });
+  const spText = await page.$eval('#previewHost .sp-doc', (e) => e.textContent);
+  if (/Spring Boot/i.test(spText)) pass('application-production.yml: Spring Boot badge shown'); else fail('sp badge: ' + spText.slice(0, 200));
+  if (/payment-service/i.test(spText)) pass('application-production.yml: application name shown'); else fail('sp appname: ' + spText.slice(0, 300));
+  if (/8080/i.test(spText)) pass('application-production.yml: server port shown'); else fail('sp port: ' + spText.slice(0, 300));
+  if (/prod-db\.internal|postgresql/i.test(spText)) pass('application-production.yml: datasource URL shown'); else fail('sp datasource: ' + spText.slice(0, 300));
+  if (/\u2022{4,}/.test(spText)) pass('application-production.yml: secrets masked'); else fail('sp masking: ' + spText.slice(0, 300));
+  if (/prod-redis\.internal/i.test(spText)) pass('application-production.yml: Redis host shown'); else fail('sp redis: ' + spText.slice(0, 300));
+  if (/com\.example\.payment|WARN|INFO/i.test(spText)) pass('application-production.yml: logging levels shown'); else fail('sp logging: ' + spText.slice(0, 300));
+
+  // ── rails-credentials viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('credentials.yml (Rails)');
+  await page.waitForSelector('#previewHost .rc-doc', { timeout: 12000 });
+  const rcText = await page.$eval('#previewHost .rc-doc', (e) => e.textContent);
+  if (/Rails Credentials/i.test(rcText)) pass('credentials.yml: Rails Credentials badge shown'); else fail('rc badge: ' + rcText.slice(0, 200));
+  if (/aws|stripe|sendgrid/i.test(rcText)) pass('credentials.yml: credential sections shown'); else fail('rc sections: ' + rcText.slice(0, 300));
+  if (/\u2022{4,}/.test(rcText)) pass('credentials.yml: secret values masked'); else fail('rc masking: ' + rcText.slice(0, 300));
+  if (/never commit|sensitive/i.test(rcText)) pass('credentials.yml: security warning shown'); else fail('rc warning: ' + rcText.slice(0, 300));
+
+  // ── puma-config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('puma.rb (Puma)');
+  await page.waitForSelector('#previewHost .pu-doc', { timeout: 12000 });
+  const puText = await page.$eval('#previewHost .pu-doc', (e) => e.textContent);
+  if (/Puma/i.test(puText)) pass('puma.rb: Puma badge shown'); else fail('pu badge: ' + puText.slice(0, 200));
+  if (/worker|WEB_CONCURRENCY/i.test(puText)) pass('puma.rb: workers shown'); else fail('pu workers: ' + puText.slice(0, 300));
+  if (/2.*16|threads/i.test(puText)) pass('puma.rb: thread range shown'); else fail('pu threads: ' + puText.slice(0, 300));
+  if (/production/i.test(puText)) pass('puma.rb: environment shown'); else fail('pu env: ' + puText.slice(0, 300));
+  if (/preload_app/i.test(puText)) pass('puma.rb: preload_app status shown'); else fail('pu preload: ' + puText.slice(0, 300));
+  if (/tmp_restart|telemetry/i.test(puText)) pass('puma.rb: plugins listed'); else fail('pu plugins: ' + puText.slice(0, 300));
+
+
+  // ── nomad-job viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('example.nomad (Nomad Job)');
+  await page.waitForSelector('#previewHost .nj-doc', { timeout: 12000 });
+  const nomadText = await page.$eval('#previewHost .nj-doc', (e) => e.textContent);
+  if (/Nomad Job/i.test(nomadText)) pass('example.nomad: Nomad Job badge shown'); else fail('nomad badge: ' + nomadText.slice(0, 200));
+  if (/web-api/i.test(nomadText)) pass('example.nomad: job name shown'); else fail('nomad job name: ' + nomadText.slice(0, 300));
+  if (/service/i.test(nomadText)) pass('example.nomad: job type shown'); else fail('nomad type: ' + nomadText.slice(0, 300));
+  if (/dc1|dc2/i.test(nomadText)) pass('example.nomad: datacenters shown'); else fail('nomad datacenters: ' + nomadText.slice(0, 300));
+  if (/api|worker/i.test(nomadText)) pass('example.nomad: task groups shown'); else fail('nomad groups: ' + nomadText.slice(0, 300));
+
+  // ── docker-stack viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('docker-stack.yml (Docker Stack)');
+  await page.waitForSelector('#previewHost .ds-doc', { timeout: 12000 });
+  const dsText = await page.$eval('#previewHost .ds-doc', (e) => e.textContent);
+  if (/Docker Stack/i.test(dsText)) pass('docker-stack.yml: Docker Stack badge shown'); else fail('docker-stack badge: ' + dsText.slice(0, 200));
+  if (/web|api|db/i.test(dsText)) pass('docker-stack.yml: service names shown'); else fail('docker-stack services: ' + dsText.slice(0, 300));
+  if (/replica|replicated/i.test(dsText)) pass('docker-stack.yml: replica info shown'); else fail('docker-stack replicas: ' + dsText.slice(0, 300));
+  if (/restart_policy|on-failure|any/i.test(dsText)) pass('docker-stack.yml: restart policy shown'); else fail('docker-stack restart: ' + dsText.slice(0, 300));
+  if (/db_password|api_key|secret/i.test(dsText)) pass('docker-stack.yml: secrets shown'); else fail('docker-stack secrets: ' + dsText.slice(0, 300));
+
+  // ── podman-quadlet viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('myapp.container (Podman Quadlet)');
+  await page.waitForSelector('#previewHost .pq-doc', { timeout: 12000 });
+  const pqText = await page.$eval('#previewHost .pq-doc', (e) => e.textContent);
+  if (/Podman Quadlet/i.test(pqText)) pass('myapp.container: Podman Quadlet badge shown'); else fail('podman-quadlet badge: ' + pqText.slice(0, 200));
+  if (/myorg\/myapp|myapp/i.test(pqText)) pass('myapp.container: image shown'); else fail('podman-quadlet image: ' + pqText.slice(0, 300));
+  if (/\*\*\*|masked|REDACTED/i.test(pqText)) pass('myapp.container: secrets masked'); else fail('podman-quadlet masking: ' + pqText.slice(0, 300));
+  if (/8080|port/i.test(pqText)) pass('myapp.container: port shown'); else fail('podman-quadlet port: ' + pqText.slice(0, 300));
+  if (/\/data|volume/i.test(pqText)) pass('myapp.container: volume shown'); else fail('podman-quadlet volume: ' + pqText.slice(0, 300));
+
+  // ── flux-kustomization viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('flux-kustomization.yaml (Flux Kustomization)');
+  await page.waitForSelector('#previewHost .fkust-doc', { timeout: 12000 });
+  const fkText = await page.$eval('#previewHost .fkust-doc', (e) => e.textContent);
+  if (/Flux Kustomization/i.test(fkText)) pass('flux-kustomization.yaml: Flux Kustomization badge shown'); else fail('flux-kust badge: ' + fkText.slice(0, 200));
+  if (/production-apps/i.test(fkText)) pass('flux-kustomization.yaml: name shown'); else fail('flux-kust name: ' + fkText.slice(0, 300));
+  if (/clusters\/production|\.\/clusters/i.test(fkText)) pass('flux-kustomization.yaml: path shown'); else fail('flux-kust path: ' + fkText.slice(0, 300));
+  if (/prune|force|wait/i.test(fkText)) pass('flux-kustomization.yaml: sync settings shown'); else fail('flux-kust settings: ' + fkText.slice(0, 300));
+  if (/infrastructure|dependsOn/i.test(fkText)) pass('flux-kustomization.yaml: dependsOn shown'); else fail('flux-kust deps: ' + fkText.slice(0, 300));
+
+  // ── CycloneDX SBOM viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sbom.cyclonedx.json (CycloneDX SBOM)');
+  await page.waitForSelector('#previewHost .cdx-doc', { timeout: 12000 });
+  const cdxText = await page.$eval('#previewHost .cdx-doc', (e) => e.textContent);
+  if (/CycloneDX SBOM/i.test(cdxText)) pass('sbom.cyclonedx.json: CycloneDX SBOM badge shown'); else fail('cyclonedx badge: ' + cdxText.slice(0, 200));
+  if (/1\.5/i.test(cdxText)) pass('sbom.cyclonedx.json: spec version shown'); else fail('cyclonedx spec version: ' + cdxText.slice(0, 300));
+  if (/express|lodash|react/i.test(cdxText)) pass('sbom.cyclonedx.json: component names shown'); else fail('cyclonedx components: ' + cdxText.slice(0, 300));
+  if (/CVE-2024-12345|high/i.test(cdxText)) pass('sbom.cyclonedx.json: vulnerability shown'); else fail('cyclonedx vuln: ' + cdxText.slice(0, 300));
+  if (/cdxgen/i.test(cdxText)) pass('sbom.cyclonedx.json: tool name shown'); else fail('cyclonedx tools: ' + cdxText.slice(0, 300));
+
+  // ── SPDX SBOM viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sbom.spdx (SPDX SBOM)');
+  await page.waitForSelector('#previewHost .spdx-doc', { timeout: 12000 });
+  const spdxText = await page.$eval('#previewHost .spdx-doc', (e) => e.textContent);
+  if (/SPDX SBOM/i.test(spdxText)) pass('sbom.spdx: SPDX SBOM badge shown'); else fail('spdx badge: ' + spdxText.slice(0, 200));
+  if (/SPDX-2\.3/i.test(spdxText)) pass('sbom.spdx: SPDX version shown'); else fail('spdx version: ' + spdxText.slice(0, 300));
+  if (/my-web-app-sbom/i.test(spdxText)) pass('sbom.spdx: document name shown'); else fail('spdx docname: ' + spdxText.slice(0, 300));
+  if (/express|lodash|axios/i.test(spdxText)) pass('sbom.spdx: package names shown'); else fail('spdx packages: ' + spdxText.slice(0, 300));
+  if (/MIT/i.test(spdxText)) pass('sbom.spdx: license info shown'); else fail('spdx license: ' + spdxText.slice(0, 300));
+
+  // ── SLSA Provenance viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('provenance.json (SLSA Provenance)');
+  await page.waitForSelector('#previewHost .slsa-doc', { timeout: 12000 });
+  const slsaText = await page.$eval('#previewHost .slsa-doc', (e) => e.textContent);
+  if (/SLSA Provenance/i.test(slsaText)) pass('provenance.json: SLSA Provenance badge shown'); else fail('slsa badge: ' + slsaText.slice(0, 200));
+  if (/in-toto\.io|slsa\.dev/i.test(slsaText)) pass('provenance.json: statement type shown'); else fail('slsa type: ' + slsaText.slice(0, 300));
+  if (/my-web-app-linux/i.test(slsaText)) pass('provenance.json: subject name shown'); else fail('slsa subject: ' + slsaText.slice(0, 300));
+  if (/release\.yml|builder/i.test(slsaText)) pass('provenance.json: builder info shown'); else fail('slsa builder: ' + slsaText.slice(0, 300));
+  if (/express|lodash|react/i.test(slsaText)) pass('provenance.json: materials shown'); else fail('slsa materials: ' + slsaText.slice(0, 300));
+
+  // ── Syft config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.syft.yaml (Syft config)');
+  await page.waitForSelector('#previewHost .syft-doc', { timeout: 12000 });
+  const syftText = await page.$eval('#previewHost .syft-doc', (e) => e.textContent);
+  if (/Syft/i.test(syftText)) pass('.syft.yaml: Syft badge shown'); else fail('syft badge: ' + syftText.slice(0, 200));
+  if (/spdx-json|cyclonedx-json/i.test(syftText)) pass('.syft.yaml: output formats shown'); else fail('syft outputs: ' + syftText.slice(0, 300));
+  if (/javascript-package-cataloger|python-package-cataloger/i.test(syftText)) pass('.syft.yaml: catalogers shown'); else fail('syft catalogers: ' + syftText.slice(0, 300));
+  if (/enabled|disabled/i.test(syftText)) pass('.syft.yaml: enabled/disabled state shown'); else fail('syft enabled: ' + syftText.slice(0, 300));
+  if (/aws-access-key|github-pat/i.test(syftText)) pass('.syft.yaml: secret exclusions shown'); else fail('syft secrets: ' + syftText.slice(0, 300));
 }

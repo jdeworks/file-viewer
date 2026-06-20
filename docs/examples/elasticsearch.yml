@@ -1,0 +1,37 @@
+# Elasticsearch configuration
+cluster.name: my-production-cluster
+node.name: es-node-01
+
+# Node roles
+node.roles: [master, data, ingest]
+
+# Paths
+path.data: /var/data/elasticsearch
+path.logs: /var/log/elasticsearch
+
+# Network
+network.host: 0.0.0.0
+http.port: 9200
+transport.port: 9300
+
+# Discovery
+discovery.seed_hosts:
+  - "10.0.1.10:9300"
+  - "10.0.1.11:9300"
+  - "10.0.1.12:9300"
+
+cluster.initial_master_nodes:
+  - es-node-01
+  - es-node-02
+  - es-node-03
+
+# Indices
+indices.memory.index_buffer_size: 20%
+indices.recovery.max_bytes_per_sec: 40mb
+
+# X-Pack Security
+xpack.security.enabled: true
+xpack.security.http.ssl.enabled: true
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.keystore.path: elastic-certificates.p12
+xpack.security.transport.ssl.truststore.path: elastic-certificates.p12

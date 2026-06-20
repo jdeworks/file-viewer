@@ -1,0 +1,59 @@
+# Cassandra storage config YAML
+cluster_name: 'MyProductionCluster'
+num_tokens: 256
+allocate_tokens_for_local_replication_factor: 3
+
+hints_directory: /var/lib/cassandra/hints
+data_file_directories:
+  - /var/lib/cassandra/data
+  - /mnt/cassandra-data2
+
+commitlog_directory: /var/lib/cassandra/commitlog
+cdc_enabled: false
+saved_caches_directory: /var/lib/cassandra/saved_caches
+
+seed_provider:
+  - class_name: org.apache.cassandra.locator.SimpleSeedProvider
+    parameters:
+      - seeds: "10.0.1.10,10.0.1.11,10.0.1.12"
+
+concurrent_reads: 32
+concurrent_writes: 32
+concurrent_counter_writes: 16
+
+memtable_allocation_type: heap_buffers
+
+listen_address: 10.0.1.10
+broadcast_address: 10.0.1.10
+rpc_address: 0.0.0.0
+broadcast_rpc_address: 10.0.1.10
+
+native_transport_port: 9042
+storage_port: 7000
+ssl_storage_port: 7001
+
+endpoint_snitch: GossipingPropertyFileSnitch
+partitioner: org.apache.cassandra.dht.Murmur3Partitioner
+
+compaction_throughput_mb_per_sec: 16
+
+authenticator: PasswordAuthenticator
+authorizer: CassandraAuthorizer
+role_manager: CassandraRoleManager
+
+permissions_validity_in_ms: 120000
+permissions_update_interval_in_ms: 2000
+roles_validity_in_ms: 2000
+
+read_request_timeout_in_ms: 5000
+range_request_timeout_in_ms: 10000
+write_request_timeout_in_ms: 2000
+request_timeout_in_ms: 10000
+
+slow_query_log_timeout_in_ms: 500
+
+internode_compression: dc
+inter_dc_tcp_nodelay: false
+
+gc_log_threshold_in_ms: 200
+gc_warn_threshold_in_ms: 1000

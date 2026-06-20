@@ -1,0 +1,115 @@
+version: "3.8"
+
+services:
+  web:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - frontend
+    deploy:
+      mode: replicated
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      placement:
+        constraints:
+          - node.role == worker
+          - node.labels.zone == public
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api:
+    image: myorg/api-server:2.4.1
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+    networks:
+      - frontend
+      - backend
+    secrets:
+      - db_password
+      - api_key
+    deploy:
+      mode: replicated
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 15s
+        failure_action: rollback
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+        window: 60s
+      placement:
+        constraints:
+          - node.role == worker
+        preferences:
+          - spread: node.labels.rack
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    secrets:
+      - db_password
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+        failure_action: rollback
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      placement:
+        constraints:
+          - node.role == manager
+          - node.labels.tier == db
+
+networks:
+  frontend:
+    driver: overlay
+    attachable: true
+  backend:
+    driver: overlay
+    internal: true
+
+volumes:
+  db-data:
+    driver: local
+
+secrets:
+  db_password:
+    external: true
+  api_key:
+    external: true

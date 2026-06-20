@@ -14869,7 +14869,9 @@
       "label": "Podman Quadlet",
       "baseType": "ini",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "myapp.container"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -14894,7 +14896,9 @@
       "label": "Redis Sentinel config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sentinel.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -14919,7 +14923,9 @@
       "label": "Cassandra config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "cassandra.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -14944,7 +14950,9 @@
       "label": "Elasticsearch config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "elasticsearch.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -14969,7 +14977,9 @@
       "label": "ClickHouse config",
       "baseType": "xml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "config.xml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -14994,7 +15004,9 @@
       "label": "Nomad Job",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "example.nomad"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15019,7 +15031,9 @@
       "label": "Flux Kustomization",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "flux-kustomization.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15044,7 +15058,9 @@
       "label": "Docker Stack",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "docker-stack.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15069,7 +15085,9 @@
       "label": "CycloneDX SBOM",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sbom.cyclonedx.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15094,7 +15112,9 @@
       "label": "SPDX SBOM",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sbom.spdx"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15119,7 +15139,9 @@
       "label": "SLSA Provenance",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "provenance.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15144,7 +15166,117 @@
       "label": "Syft config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".syft.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "mockery-config": {
+      "label": "mockery",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        ".mockery.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "ko-config": {
+      "label": "ko",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        ".ko.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "sqlc-config": {
+      "label": "sqlc",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "sqlc.yaml"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "nfpm-config": {
+      "label": "nfpm",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [
+        "nfpm.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
