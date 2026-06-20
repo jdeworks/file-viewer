@@ -6254,4 +6254,48 @@ export async function run(ctx) {
   if (/R Script/i.test(rText)) pass('sample.R: R Script badge shown'); else fail('r badge: ' + rText.slice(0, 200));
   if (/stats|utils|methods/i.test(rText)) pass('sample.R: libraries listed'); else fail('r libraries: ' + rText.slice(0, 300));
   if (/summarize_vector|normalize|simple_lm|clip/i.test(rText)) pass('sample.R: functions listed'); else fail('r functions: ' + rText.slice(0, 300));
+
+  // ── sample.lua viewer (Lua) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.lua');
+  await page.waitForSelector('#previewHost .lua-doc', { timeout: 12000 });
+  pass('sample.lua: renders');
+  const luaText = await page.$eval('#previewHost .lua-doc', (e) => e.textContent);
+  if (/Lua/i.test(luaText)) pass('sample.lua: Lua badge shown'); else fail('lua badge: ' + luaText.slice(0, 200));
+  if (/json|utils|socket/i.test(luaText)) pass('sample.lua: requires listed'); else fail('lua requires: ' + luaText.slice(0, 300));
+  if (/Animal|Dog/i.test(luaText)) pass('sample.lua: classes listed'); else fail('lua classes: ' + luaText.slice(0, 300));
+  if (/greet|deepCopy/i.test(luaText)) pass('sample.lua: functions listed'); else fail('lua functions: ' + luaText.slice(0, 300));
+
+  // ── sample.purs viewer (PureScript) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.purs');
+  await page.waitForSelector('#previewHost .purs-doc', { timeout: 12000 });
+  pass('sample.purs: renders');
+  const pursText = await page.$eval('#previewHost .purs-doc', (e) => e.textContent);
+  if (/PureScript/i.test(pursText)) pass('sample.purs: PureScript badge shown'); else fail('purs badge: ' + pursText.slice(0, 200));
+  if (/Data\.Sample/i.test(pursText)) pass('sample.purs: module name shown'); else fail('purs module: ' + pursText.slice(0, 300));
+  if (/Point|Shape/i.test(pursText)) pass('sample.purs: data types listed'); else fail('purs types: ' + pursText.slice(0, 300));
+  if (/Renderable|HasArea/i.test(pursText)) pass('sample.purs: classes listed'); else fail('purs classes: ' + pursText.slice(0, 300));
+
+  // ── sample.swift viewer (Swift) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.swift');
+  await page.waitForSelector('#previewHost .swift-doc', { timeout: 12000 });
+  pass('sample.swift: renders');
+  const swiftText = await page.$eval('#previewHost .swift-doc', (e) => e.textContent);
+  if (/SwiftUI/i.test(swiftText)) pass('sample.swift: SwiftUI badge shown'); else fail('swift badge: ' + swiftText.slice(0, 200));
+  if (/Foundation|SwiftUI|Combine/i.test(swiftText)) pass('sample.swift: imports listed'); else fail('swift imports: ' + swiftText.slice(0, 300));
+  if (/MapViewModel|Coordinate|TransportMode/i.test(swiftText)) pass('sample.swift: types listed'); else fail('swift types: ' + swiftText.slice(0, 300));
+  if (/Coordinate|TransportMode/i.test(swiftText)) pass('sample.swift: extensions listed'); else fail('swift extensions: ' + swiftText.slice(0, 300));
+
+  // ── sample.erl viewer (Erlang) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.erl');
+  await page.waitForSelector('#previewHost .erl-doc', { timeout: 12000 });
+  pass('sample.erl: renders');
+  const erlText = await page.$eval('#previewHost .erl-doc', (e) => e.textContent);
+  if (/Erlang Module/i.test(erlText)) pass('sample.erl: Erlang Module badge shown'); else fail('erl badge: ' + erlText.slice(0, 200));
+  if (/sample/i.test(erlText)) pass('sample.erl: module name shown'); else fail('erl module: ' + erlText.slice(0, 300));
+  if (/gen_server/i.test(erlText)) pass('sample.erl: behaviour shown'); else fail('erl behaviour: ' + erlText.slice(0, 300));
+  if (/start_link|stop|add|lookup/i.test(erlText)) pass('sample.erl: exports listed'); else fail('erl exports: ' + erlText.slice(0, 300));
 }

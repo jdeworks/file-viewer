@@ -189,6 +189,7 @@ import netplan from '../types/text/yaml/known/netplan/index.js';
 import syslogNg from '../types/text/known/syslog-ng/index.js';
 import haproxyConfig from '../types/text/known/haproxy-config/index.js';
 import haproxyConf from '../types/text/known/haproxy-conf/index.js';
+import { plugin as haproxyCfg } from '../types/text/known/haproxy-cfg/index.js';
 import squidConf from '../types/text/known/squid-conf/index.js';
 import varnishVcl from '../types/text/known/varnish-vcl/index.js';
 import moonYml from '../types/text/yaml/known/moon/index.js';
@@ -422,6 +423,7 @@ import shardYml from '../types/text/yaml/known/shard-yml/index.js';
 import crystalShard from '../types/text/yaml/known/crystal-shard/index.js';
 import tauriConf from '../types/text/json/known/tauri-conf/index.js';
 import traefikConfig from '../types/text/yaml/known/traefik-config/index.js';
+import { plugin as traefikConf } from '../types/text/known/traefik-conf/index.js';
 import unleashConfig from '../types/text/known/unleash-config/index.js';
 import vaultHcl from '../types/text/known/vault-hcl/index.js';
 import nomadJob from '../types/text/known/nomad-job/index.js';
@@ -802,7 +804,11 @@ import groovyLang from '../types/text/known/groovy-lang/index.js';
 import crystalLang from '../types/text/known/crystal-lang/index.js';
 import juliaLang from '../types/text/known/julia-lang/index.js';
 import rLang from '../types/text/known/r-lang/index.js';
-export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
+import luaLang from '../types/text/known/lua-lang/index.js';
+import purescriptLang from '../types/text/known/purescript-lang/index.js';
+import swiftLang from '../types/text/known/swift-lang/index.js';
+import erlangSource from '../types/text/known/erlang-source/index.js';
+export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
