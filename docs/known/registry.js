@@ -433,6 +433,8 @@ import foundryToml from '../types/text/toml/known/foundry-toml/index.js';
 import anchorToml from '../types/text/toml/known/anchor-toml/index.js';
 import wireguardConf from '../types/text/known/wireguard-conf/index.js';
 import openvpnConfig from '../types/text/known/openvpn-config/index.js';
+import supervisordConf from '../types/text/known/supervisord-conf/index.js';
+import logrotateConf from '../types/text/known/logrotate-conf/index.js';
 import shellRc from '../types/text/known/shell-rc/index.js';
 import nixConfig from '../types/text/known/nix-config/index.js';
 import mavenSettings from '../types/text/xml/known/maven-settings/index.js';
@@ -532,6 +534,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   newrelicConfig, dynatraceConfig, elasticApmConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
   wireguardConf, openvpnConfig,
+  supervisordConf, logrotateConf,
   shellRc,
   nixConfig,
   mavenSettings, pgHba,

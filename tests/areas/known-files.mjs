@@ -1112,6 +1112,14 @@ export async function run(ctx) {
   if (/Jenkins/i.test(jkfText)) pass('Jenkinsfile: badge shown'); else fail('jenkins badge: ' + jkfText.slice(0, 200));
   if (/Install|Lint|Test|Build|Deploy/i.test(jkfText)) pass('Jenkinsfile: stages shown'); else fail('jenkins stages: ' + jkfText.slice(0, 200));
 
+  // ── Vagrantfile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Vagrantfile');
+  await page.waitForSelector('#previewHost .vgf-doc', { timeout: 12000 });
+  const vgfText = await page.$eval('#previewHost .vgf-doc', (e) => e.textContent);
+  if (/Vagrant/i.test(vgfText)) pass('Vagrantfile: badge shown'); else fail('vagrantfile badge: ' + vgfText.slice(0, 200));
+  if (/ubuntu\/jammy64/i.test(vgfText)) pass('Vagrantfile: box shown'); else fail('vagrantfile box: ' + vgfText.slice(0, 200));
+
   // ── BUILD.bazel viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('BUILD.bazel');

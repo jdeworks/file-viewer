@@ -6946,5 +6946,17 @@
       "Database"
     ],
     "knownFile": "pg-hba"
+  },
+  {
+    "file": "ansible.cfg",
+    "label": "ansible.cfg (Ansible Config)",
+    "category": "Config",
+    "categories": ["Config", "Ansible"]
+  },
+  {
+    "file": "inventory",
+    "label": "inventory (Ansible Inventory)",
+    "category": "Config",
+    "categories": ["Config", "Ansible"]
   }
 ]
