@@ -515,6 +515,10 @@ export async function run(ctx) {
   if (italicEls.length >= 1) pass('RTF italic formatting rendered'); else fail('rtf italic spans: ' + italicEls.length);
   const rtfToolbar = await page.$('#previewHost .rtf-editor-toolbar');
   if (rtfToolbar) pass('RTF WYSIWYG toolbar present'); else fail('rtf toolbar missing');
+  const rtfRowBreak = await page.$('#previewHost .rtf-tb-row-break');
+  if (rtfRowBreak) pass('RTF toolbar row 2 present'); else fail('rtf toolbar row 2 missing');
+  const rtfColorInput = await page.$('#previewHost .rtf-tb-color');
+  if (rtfColorInput) pass('RTF text color picker present'); else fail('rtf color picker missing');
 
   // ── SVG dual-pane viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

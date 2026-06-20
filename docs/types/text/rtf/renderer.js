@@ -9,8 +9,8 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 const W1252 = {
   0x80: '€', 0x82: '‚', 0x83: 'ƒ', 0x84: '„', 0x85: '…',
   0x86: '†', 0x87: '‡', 0x88: 'ˆ', 0x89: '‰', 0x8A: 'Š',
-  0x8B: '‹', 0x8C: 'Œ', 0x8E: 'Ž', 0x91: ''', 0x92: ''',
-  0x93: '"', 0x94: '"', 0x95: '•', 0x96: '–', 0x97: '—',
+  0x8B: '‹', 0x8C: 'Œ', 0x8E: 'Ž', 0x91: '‘', 0x92: '’',
+  0x93: '“', 0x94: '”', 0x95: '•', 0x96: '–', 0x97: '—',
   0x98: '˜', 0x99: '™', 0x9A: 'š', 0x9B: '›', 0x9C: 'œ',
   0x9E: 'ž', 0x9F: 'Ÿ',
 };
@@ -305,32 +305,48 @@ export async function render(intake, _ctx) {
   const host = document.createElement('div');
   host.className = 'rtf-doc';
 
+  // ── Toolbar helpers ──
+  // mkBtn and mkSep reference `paper` via closure; paper is defined below.
+  function mkBtn(html, cmd, title, val = null) {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'rtf-tb-btn'; btn.title = title;
+    btn.innerHTML = html;
+    btn.addEventListener('mousedown', (e) => {
+      e.preventDefault();   // keep selection/focus in paper
+      document.execCommand(cmd, false, val);
+      paper.focus();
+    });
+    return btn;
+  }
+  function mkSep() { return Object.assign(document.createElement('div'), { className: 'rtf-tb-sep' }); }
+
+  // Save selection before toolbar controls steal focus (selects, color input)
+  let savedRange = null;
+  function saveRange() {
+    const sel = window.getSelection();
+    savedRange = (sel && sel.rangeCount) ? sel.getRangeAt(0).cloneRange() : null;
+  }
+  function restoreRange() {
+    if (!savedRange) return;
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
+  }
+
   // ── Toolbar ──
   const toolbar = document.createElement('div');
   toolbar.className = 'rtf-editor-toolbar';
   toolbar.setAttribute('role', 'toolbar');
   toolbar.setAttribute('aria-label', 'Formatting toolbar');
 
-  // Buttons: bold, italic, underline, strikethrough
-  const fmts = [
-    { cmd: 'bold',          html: '<b>B</b>',  title: 'Bold (Ctrl+B)' },
-    { cmd: 'italic',        html: '<i>I</i>',  title: 'Italic (Ctrl+I)' },
-    { cmd: 'underline',     html: '<u>U</u>',  title: 'Underline (Ctrl+U)' },
-    { cmd: 'strikeThrough', html: '<s>S</s>',  title: 'Strikethrough' },
-  ];
-  fmts.forEach(({ cmd, html, title }) => {
-    const btn = document.createElement('button');
-    btn.type = 'button'; btn.className = 'rtf-tb-btn'; btn.title = title;
-    btn.innerHTML = html;
-    btn.addEventListener('mousedown', (e) => {
-      e.preventDefault();   // keep selection/focus in paper
-      document.execCommand(cmd, false, null);
-      paper.focus();
-    });
-    toolbar.appendChild(btn);
-  });
-
-  toolbar.appendChild(Object.assign(document.createElement('div'), { className: 'rtf-tb-sep' }));
+  // ── Row 1: B/I/U/S | Style | Align | Clear | Download ──
+  toolbar.append(
+    mkBtn('<b>B</b>', 'bold',          'Bold (Ctrl+B)'),
+    mkBtn('<i>I</i>', 'italic',        'Italic (Ctrl+I)'),
+    mkBtn('<u>U</u>', 'underline',     'Underline (Ctrl+U)'),
+    mkBtn('<s>S</s>', 'strikeThrough', 'Strikethrough'),
+    mkSep(),
+  );
 
   // Paragraph style select
   const styleSelect = document.createElement('select');
@@ -338,34 +354,25 @@ export async function render(intake, _ctx) {
   [['', 'Style…'], ['p', 'Normal'], ['h1', 'Heading 1'], ['h2', 'Heading 2'], ['h3', 'Heading 3']].forEach(([v, t]) => {
     styleSelect.appendChild(Object.assign(document.createElement('option'), { value: v, textContent: t }));
   });
+  styleSelect.addEventListener('mousedown', saveRange);
   styleSelect.addEventListener('change', () => {
-    const val = styleSelect.value;
-    if (val) document.execCommand('formatBlock', false, val);
+    paper.focus(); restoreRange();
+    if (styleSelect.value) document.execCommand('formatBlock', false, styleSelect.value);
     styleSelect.value = '';
-    paper.focus();
   });
-  toolbar.appendChild(styleSelect);
+  toolbar.append(styleSelect, mkSep());
 
-  toolbar.appendChild(Object.assign(document.createElement('div'), { className: 'rtf-tb-sep' }));
+  // Align + full justify
+  [
+    ['justifyLeft',   'L', 'Align left'],
+    ['justifyCenter', 'C', 'Center'],
+    ['justifyRight',  'R', 'Align right'],
+    ['justifyFull',   'J', 'Justify'],
+  ].forEach(([cmd, label, title]) => toolbar.appendChild(mkBtn(label, cmd, title)));
+  toolbar.append(mkSep());
 
-  // Text align
-  const aligns = [
-    { cmd: 'justifyLeft',   label: '⬛⬜⬜', title: 'Align left' },
-    { cmd: 'justifyCenter', label: '⬜⬛⬜', title: 'Center' },
-    { cmd: 'justifyRight',  label: '⬜⬜⬛', title: 'Align right' },
-  ];
-  aligns.forEach(({ cmd, label, title }) => {
-    const btn = document.createElement('button');
-    btn.type = 'button'; btn.className = 'rtf-tb-btn rtf-tb-align'; btn.title = title;
-    // Use text characters for alignment icons
-    btn.textContent = title.replace('Align ', '').replace('Center', 'Ctr');
-    btn.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      document.execCommand(cmd, false, null);
-      paper.focus();
-    });
-    toolbar.appendChild(btn);
-  });
+  // Clear formatting
+  toolbar.appendChild(mkBtn('✕fmt', 'removeFormat', 'Clear formatting'));
 
   // Download button (pushed to right)
   const dlBtn = document.createElement('button');
@@ -380,6 +387,55 @@ export async function render(intake, _ctx) {
     downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), filename + '.html');
   });
   toolbar.appendChild(dlBtn);
+
+  // ── Row 2: Undo/Redo | Lists | Indent | Font size | Color ──
+  toolbar.appendChild(Object.assign(document.createElement('div'), { className: 'rtf-tb-row-break' }));
+
+  toolbar.append(
+    mkBtn('↶', 'undo',                  'Undo (Ctrl+Z)'),
+    mkBtn('↷', 'redo',                  'Redo (Ctrl+Y)'),
+    mkSep(),
+    mkBtn('•≡', 'insertUnorderedList',  'Bullet list'),
+    mkBtn('1.≡', 'insertOrderedList',   'Numbered list'),
+    mkSep(),
+    mkBtn('⇤',  'outdent',              'Decrease indent'),
+    mkBtn('⇥',  'indent',               'Increase indent'),
+    mkSep(),
+  );
+
+  // Font size select — uses fontSize marker trick to apply pt values
+  const sizeSelect = document.createElement('select');
+  sizeSelect.className = 'rtf-tb-select'; sizeSelect.title = 'Font size';
+  [['', 'Size…'], ['8', '8pt'], ['10', '10pt'], ['11', '11pt'], ['12', '12pt'],
+   ['14', '14pt'], ['16', '16pt'], ['18', '18pt'], ['24', '24pt'], ['36', '36pt']].forEach(([v, t]) => {
+    sizeSelect.appendChild(Object.assign(document.createElement('option'), { value: v, textContent: t }));
+  });
+  sizeSelect.addEventListener('mousedown', saveRange);
+  sizeSelect.addEventListener('change', () => {
+    const pt = sizeSelect.value; sizeSelect.value = '';
+    if (!pt) return;
+    paper.focus(); restoreRange();
+    document.execCommand('styleWithCSS', false, false);
+    document.execCommand('fontSize', false, '7');
+    paper.querySelectorAll('font[size="7"]').forEach(el => {
+      const span = document.createElement('span');
+      span.style.fontSize = pt + 'pt';
+      span.innerHTML = el.innerHTML;
+      el.replaceWith(span);
+    });
+  });
+  toolbar.append(sizeSelect, mkSep());
+
+  // Text color — native color picker
+  const colorInput = document.createElement('input');
+  colorInput.type = 'color'; colorInput.className = 'rtf-tb-color'; colorInput.title = 'Text color';
+  colorInput.value = '#000000';
+  colorInput.addEventListener('mousedown', saveRange);
+  colorInput.addEventListener('change', () => {
+    paper.focus(); restoreRange();
+    document.execCommand('foreColor', false, colorInput.value);
+  });
+  toolbar.appendChild(colorInput);
 
   // ── Paper ──
   const paperWrap = document.createElement('div');
