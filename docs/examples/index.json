@@ -9859,5 +9859,44 @@
     "enhanced": true,
     "description": "Coder cloud development environment platform configuration with access URL, TLS, PostgreSQL database, Prometheus observability, GitHub OAuth2, and OIDC settings.",
     "knownFile": "coder-config"
+  },
+  {
+    "file": "cal-com.env",
+    "label": "Cal.com Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Cal.com self-hosted scheduling configuration",
+    "knownFile": "cal-com-config"
+  },
+  {
+    "file": "rallly.env",
+    "label": "Rallly Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Rallly scheduling app environment configuration",
+    "knownFile": "rallly-config"
+  },
+  {
+    "file": "woodpecker-agent.env",
+    "label": "Woodpecker CI Agent Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "CI/CD"
+    ],
+    "enhanced": true,
+    "description": "Woodpecker CI agent environment configuration",
+    "knownFile": "woodpecker-agent-config"
   }
 ]

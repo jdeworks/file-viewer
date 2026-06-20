@@ -5350,4 +5350,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('coder.env');
   pass(await page.waitForSelector('#previewHost .coder-doc', { timeout: 12000 }), 'coder.env: Coder badge shown');
+
+  // ── cal-com.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cal-com.env');
+  pass(await page.waitForSelector('#previewHost .calcom-doc', { timeout: 12000 }), 'cal-com.env: Cal.com badge shown');
+
+  // ── rallly.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('rallly.env');
+  pass(await page.waitForSelector('#previewHost .rallly-doc', { timeout: 12000 }), 'rallly.env: Rallly badge shown');
 }
