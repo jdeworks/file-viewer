@@ -3,6 +3,21 @@ import { isCode } from '../types/text/code/langmap.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_v86=(()=>{
+function detect(intake) {
+  if (!intake.isBinary) return 0;
+  const n = intake.filename.toLowerCase();
+  // Floppy images
+  if (n.endsWith('.img') || n.endsWith('.ima')) return 0.85;
+  // CD/DVD images
+  if (n.endsWith('.iso')) return 0.80;
+  // Hard disk images
+  if (n.endsWith('.vhd') || n.endsWith('.qcow2')) return 0.75;
+  return 0;
+}
+return detect;
+})();
+
 const detect_emulatorjs=(()=>{
 const EXT_CORE = {
   '.nes': 'fceumm', '.fds': 'fceumm',
@@ -46,4 +61,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
+export const DETECTORS={"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};

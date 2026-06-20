@@ -3,6 +3,20 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_rpm=(()=>{
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = (filename || '').split('.').pop().toLowerCase();
+  const isRpm = ext === 'rpm' || ext === 'srpm';
+  if (!b || b.length < 4) return isRpm ? 0.6 : 0;
+  // RPM magic: ED AB EE DB
+  const isRpmMagic = b[0] === 0xed && b[1] === 0xab && b[2] === 0xee && b[3] === 0xdb;
+  if (isRpmMagic) return isRpm ? 0.99 : 0.97;
+  return isRpm ? 0.3 : 0;
+}
+return detect;
+})();
+
 const detect_nupkg=(()=>{
 function detect(intake) {
   const { filename, bytes: b } = intake;
@@ -305,15 +319,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_kml=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0; // KMZ handled by kmz type
-  if (hasExtension(intake, 'kml')) return 0.97;
-  const head = (intake.textSample || '').slice(0, 400);
-  if (/<kml[\s>]/.test(head) || /xmlns\.google\.com\/kml/.test(head)) return 0.95;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"nupkg":detect_nupkg,"ipa":detect_ipa,"qif":detect_qif,"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml};
+export const DETECTORS={"rpm":detect_rpm,"nupkg":detect_nupkg,"ipa":detect_ipa,"qif":detect_qif,"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits};

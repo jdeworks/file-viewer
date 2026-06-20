@@ -3,6 +3,17 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_kml=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0; // KMZ handled by kmz type
+  if (hasExtension(intake, 'kml')) return 0.97;
+  const head = (intake.textSample || '').slice(0, 400);
+  if (/<kml[\s>]/.test(head) || /xmlns\.google\.com\/kml/.test(head)) return 0.95;
+  return 0;
+}
+return detect;
+})();
+
 const detect_abc=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -302,19 +313,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_v86=(()=>{
-function detect(intake) {
-  if (!intake.isBinary) return 0;
-  const n = intake.filename.toLowerCase();
-  // Floppy images
-  if (n.endsWith('.img') || n.endsWith('.ima')) return 0.85;
-  // CD/DVD images
-  if (n.endsWith('.iso')) return 0.80;
-  // Hard disk images
-  if (n.endsWith('.vhd') || n.endsWith('.qcow2')) return 0.75;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk,"iso":detect_iso,"ruffle":detect_ruffle,"v86":detect_v86};
+export const DETECTORS={"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk,"iso":detect_iso,"ruffle":detect_ruffle};

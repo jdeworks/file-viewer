@@ -157,6 +157,28 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_svg=(()=>{
+// SVG: plain-text XML with <svg root, or .svg / .svgz extension.
+// Must score above the generic image type's 0.92 for .svg extension.
+function detect(intake) {
+  // SVGZ (gzip-compressed SVG): gzip magic bytes 1f 8b
+  if (intake.bytes && intake.bytes.length >= 2 &&
+      intake.bytes[0] === 0x1f && intake.bytes[1] === 0x8b &&
+      hasExtension(intake, 'svgz')) return 0.97;
+
+  // Strong: content starts with <svg or <?xml ... <svg
+  const t = (intake.textSample || '').trimStart();
+  if (t.startsWith('<svg') || (t.startsWith('<?xml') && t.includes('<svg'))) return 0.96;
+
+  // Extension + MIME
+  if (hasExtension(intake, 'svg', 'svgz')) return 0.95;
+  if (mimeMatches(intake, 'image/svg')) return 0.95;
+
+  return 0;
+}
+return detect;
+})();
+
 const detect_image=(()=>{
 // Raster images detect by magic bytes; SVG (text) by content/extension.
 function detect(intake) {
@@ -294,23 +316,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_sqlite=(()=>{
-// SQLite database files. By extension, or the 16-byte magic header "SQLite format 3\0".
-function detect(intake) {
-  if (hasExtension(intake, 'sqlite', 'sqlite3', 'db', 'db3', 'gpkg')) {
-    return magic(intake) ? 0.97 : 0.8;   // extension + magic = very confident
-  }
-  return magic(intake) ? 0.9 : 0;
-}
-
-function magic(intake) {
-  const b = intake.bytes;
-  if (!b || b.length < 16) return false;
-  const sig = 'SQLite format 3\0';
-  for (let i = 0; i < sig.length; i++) if (b[i] !== sig.charCodeAt(i)) return false;
-  return true;
-}
-return detect;
-})();
-
-export const DETECTORS={"gff":detect_gff,"sarif":detect_sarif,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite};
+export const DETECTORS={"gff":detect_gff,"sarif":detect_sarif,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"svg":detect_svg,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip};

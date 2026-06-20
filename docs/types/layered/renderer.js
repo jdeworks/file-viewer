@@ -210,7 +210,7 @@ function detectFormat(intake) {
   if (b[0] === 0x38 && b[1] === 0x42) return 'psd';
   if (b[0] === 0x67 && b[1] === 0x69 && b[2] === 0x6d && b[3] === 0x70) return 'xcf';
   if (b[0] === 0x50 && b[1] === 0x4b) {
-    const name = intake.name || '';
+    const name = intake.filename || intake.name || '';
     if (name.endsWith('.kra')) return 'kra';
   }
   return 'ora';
@@ -246,8 +246,11 @@ export async function render(intake, _ctx) {
 
   function getEffectiveZoom() {
     if (currentZoom === 0) {
-      const avail = canvasWrap.clientWidth - 32;
-      return canvas.width > 0 ? Math.min(1, avail / canvas.width) : 1;
+      // canvasWrap.clientWidth is 0 when the element is not yet in the DOM;
+      // fall back to 1 (100%) in that case so the canvas has a valid size.
+      const avail = canvasWrap.clientWidth > 0 ? canvasWrap.clientWidth - 32 : 0;
+      if (avail <= 0 || canvas.width <= 0) return 1;
+      return Math.min(1, avail / canvas.width);
     }
     return currentZoom;
   }
@@ -343,6 +346,20 @@ export async function render(intake, _ctx) {
 
     recomposite();
     buildLayerList(layerList, layers, recomposite);
+
+    // Re-apply fit zoom once the element is actually in the DOM and has a measured width.
+    // This handles the case where applyZoom() above ran off-DOM (clientWidth = 0).
+    let ro = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => {
+        if (canvasWrap.clientWidth > 0 && currentZoom === 0) {
+          applyZoom();
+          ro.disconnect();
+          ro = null;
+        }
+      });
+      ro.observe(canvasWrap);
+    }
   } catch (e) {
     wrap.innerHTML = '<div class="layered-error"><strong>Could not read file:</strong><br>' + esc(e.message) + '</div>';
   }

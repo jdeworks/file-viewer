@@ -116,6 +116,7 @@ body {
 .ft-arrow { display: inline-block; width: 1em; color: var(--fg-2); font-size: 10px; flex: 0 0 auto; }
 .ft-folder .ft-name { color: var(--fg); }
 .ft-dot { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 auto; }
+.ft-icon { font-size: 11px; line-height: 1; flex: 0 0 auto; user-select: none; }
 .ft-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--fg); }
 .ft-size { margin-left: auto; padding-left: 10px; color: var(--fg-2); font-size: 11px; flex: 0 0 auto; }
 .ft-file.active { background: color-mix(in srgb, var(--accent) 18%, transparent); box-shadow: inset 2px 0 0 var(--accent); }

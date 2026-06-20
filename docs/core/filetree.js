@@ -11,6 +11,14 @@ const TYPE_DOT = {
   markdown: '#519aff', pdf: '#e5534b', csv: '#3fb950', xlsx: '#3fb950', docx: '#4c9aff',
   pptx: '#e3a008', json: '#e3b341', image: '#a371f7', code: '#56b6c2', text: '#8b949e',
 };
+// Small type icon shown next to the colored dot in file rows.
+const TYPE_ICON = {
+  js: '{ }', ts: '{ }', code: '{ }',
+  json: '{ }', yaml: '{ }', toml: '{ }',
+  image: '🖼', pdf: '📋',
+  video: '🎬', audio: '🎬', media: '🎬',
+  markdown: '¶',
+};
 const EXT_TYPE = {
   md: 'markdown', markdown: 'markdown', mdown: 'markdown', mkd: 'markdown',
   pdf: 'pdf', csv: 'csv', tsv: 'csv',
@@ -158,7 +166,9 @@ export function renderTree(host, root, { onOpen, onMove, initialOpenDepth = Infi
     row.style.paddingLeft = pad + 'px';
 
     if (item.isFolder) {
-      row.innerHTML = '<span class="ft-arrow">' + (openFolders.has(item.folderPath) ? '▾' : '▸') + '</span>'
+      const isOpen = openFolders.has(item.folderPath);
+      row.innerHTML = '<span class="ft-arrow">' + (isOpen ? '▾' : '▸') + '</span>'
+        + '<span class="ft-icon">' + (isOpen ? '📂' : '📁') + '</span>'
         + '<span class="ft-name">' + escapeHtml(item.node.name) + '</span>';
       row.tabIndex = -1;
       row.addEventListener('click', () => {
@@ -191,7 +201,9 @@ export function renderTree(host, root, { onOpen, onMove, initialOpenDepth = Infi
       row.tabIndex = 0;
       row.draggable = true;
       const id = quickType(item.node.name);
+      const typeIcon = TYPE_ICON[id] || '▫';
       row.innerHTML = '<span class="ft-dot" style="background:' + dotColor(id) + '"></span>'
+        + '<span class="ft-icon ft-icon-type" title="' + id + '">' + typeIcon + '</span>'
         + '<span class="ft-name">' + escapeHtml(item.node.name) + '</span>'
         + (movedPaths.has(item.node.path) ? '<span class="ft-move-dest">→ ' + escapeHtml(movedPaths.get(item.node.path)) + '</span>' : '')
         + '<span class="ft-size">' + fmtSize(item.node.file.size) + '</span>';

@@ -501,4 +501,20 @@ export async function run(ctx) {
   await secretf.waitForSelector('.plain-doc .plain-text', { timeout: 8000 });
   const secretText = await secretf.$eval('.plain-doc .plain-text', (e) => e.textContent);
   if (/Archivist/i.test(secretText)) pass('secret.txt Easter egg loads as plain text with Archivist lore'); else fail('secret.txt text: ' + secretText.slice(0, 200));
+
+  // ── SVG dual-pane viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('example.svg');
+  // SVG type: split mode — editor on left, preview iframe on right
+  const svgTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (svgTypeId === 'svg') pass('example.svg detected as SVG type'); else fail('svg typeId: ' + svgTypeId);
+  // Preview iframe should render the SVG
+  const svgFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const svgf = await frameOf('iframe.fv-preview-frame');
+  await svgf.waitForSelector('svg', { timeout: 8000 });
+  const svgEl = await svgf.$('svg');
+  if (svgEl) pass('SVG element rendered in preview iframe'); else fail('SVG element not found in preview');
+  // Monaco editor should be present (rawView: true)
+  const svgModeMenu = await page.$('#rawBtn,#splitBtn,[data-mode]');
+  if (svgModeMenu) pass('SVG mode controls present (rawView: true)'); else fail('SVG mode controls missing');
 }
