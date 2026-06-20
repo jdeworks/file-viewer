@@ -4740,4 +4740,24 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('tspconfig.yaml');
   pass(await page.waitForSelector('#previewHost .tspconfig-doc', { timeout: 12000 }), 'tspconfig.yaml: tspconfig-doc shown');
+
+  // ── asyncapi.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('asyncapi.yml');
+  pass(await page.waitForSelector('#previewHost .asyncapi-doc', { timeout: 12000 }), 'asyncapi.yml: asyncapi-doc shown');
+
+  // ── telegraf.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('telegraf.conf');
+  pass(await page.waitForSelector('#previewHost .telegraf-doc', { timeout: 12000 }), 'telegraf.conf: telegraf-doc shown');
+
+  // ── devfile.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('devfile.yaml');
+  pass(await page.waitForSelector('#previewHost .devfile-doc', { timeout: 12000 }), 'devfile.yaml: devfile-doc shown');
+
+  // ── .ncurc.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.ncurc.json');
+  pass(await page.waitForSelector('#previewHost .ncurc-doc', { timeout: 12000 }), '.ncurc.json: ncurc-doc shown');
 }

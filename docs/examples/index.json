@@ -8772,5 +8772,25 @@
     "name": "tspconfig.yaml",
     "category": "Tooling",
     "knownFile": "tspconfig"
+  },
+  {
+    "name": "asyncapi.yml",
+    "category": "API",
+    "knownFile": "asyncapi"
+  },
+  {
+    "name": "telegraf.conf",
+    "category": "Observability",
+    "knownFile": "telegraf"
+  },
+  {
+    "name": "devfile.yaml",
+    "category": "DevOps",
+    "knownFile": "devfile"
+  },
+  {
+    "name": ".ncurc.json",
+    "category": "Tooling",
+    "knownFile": "ncurc"
   }
 ]

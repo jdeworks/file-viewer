@@ -595,6 +595,10 @@ import stryker from '../types/text/json/known/stryker/index.js';
 import airflowCfg from '../types/text/ini/known/airflow/index.js';
 import registriesConf from '../types/text/toml/known/registries-conf/index.js';
 import storageConf from '../types/text/toml/known/storage-conf/index.js';
+import asyncapi from '../types/text/yaml/known/asyncapi/index.js';
+import telegraf from '../types/text/toml/known/telegraf/index.js';
+import devfile from '../types/text/yaml/known/devfile/index.js';
+import ncurc from '../types/text/json/known/ncurc/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -729,6 +733,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   harbor, gardenIo,
   stryker, airflowCfg,
   registriesConf, storageConf,
+  asyncapi, telegraf,
+  devfile, ncurc,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

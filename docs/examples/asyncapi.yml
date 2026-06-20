@@ -1,0 +1,152 @@
+asyncapi: '2.6.0'
+info:
+  title: SmartCity Events API
+  version: '1.0.0'
+  description: >
+    Real-time event-driven API for the SmartCity platform. Handles sensor telemetry,
+    alert broadcasting, and command dispatch across city infrastructure.
+  contact:
+    name: SmartCity Platform Team
+    email: platform@smartcity.example.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  production-kafka:
+    url: kafka.smartcity.example.com:9092
+    protocol: kafka
+    description: Production Kafka cluster
+    security:
+      - saslScram: []
+  staging-mqtt:
+    url: mqtt://staging.smartcity.example.com:1883
+    protocol: mqtt
+    description: Staging MQTT broker for IoT sensors
+
+channels:
+  city/sensors/{sensorId}/telemetry:
+    description: Raw telemetry data published by city sensors (temperature, air quality, traffic).
+    parameters:
+      sensorId:
+        description: Unique identifier of the sensor device
+        schema:
+          type: string
+    subscribe:
+      summary: Receive sensor telemetry readings
+      operationId: onSensorTelemetry
+      message:
+        $ref: '#/components/messages/SensorTelemetry'
+    bindings:
+      kafka:
+        topic: city-sensor-telemetry
+
+  city/alerts/{zone}:
+    description: Alert notifications for city zones (flood, traffic incident, air quality warning).
+    parameters:
+      zone:
+        description: City zone identifier
+        schema:
+          type: string
+    publish:
+      summary: Publish a zone alert
+      operationId: publishZoneAlert
+      message:
+        $ref: '#/components/messages/ZoneAlert'
+    subscribe:
+      summary: Receive zone alerts
+      operationId: onZoneAlert
+      message:
+        $ref: '#/components/messages/ZoneAlert'
+
+  city/commands/traffic-lights:
+    description: Control channel for traffic light management commands.
+    publish:
+      summary: Send traffic light command
+      operationId: sendTrafficLightCommand
+      message:
+        $ref: '#/components/messages/TrafficLightCommand'
+
+components:
+  messages:
+    SensorTelemetry:
+      name: SensorTelemetry
+      summary: Sensor telemetry reading
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SensorTelemetryPayload'
+    ZoneAlert:
+      name: ZoneAlert
+      summary: City zone alert event
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ZoneAlertPayload'
+    TrafficLightCommand:
+      name: TrafficLightCommand
+      summary: Traffic light control command
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TrafficLightCommandPayload'
+
+  schemas:
+    SensorTelemetryPayload:
+      type: object
+      required:
+        - sensorId
+        - timestamp
+        - readings
+      properties:
+        sensorId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        readings:
+          type: object
+          properties:
+            temperature:
+              type: number
+            humidity:
+              type: number
+            pm25:
+              type: number
+              description: Fine particulate matter (PM2.5) in µg/m³
+    ZoneAlertPayload:
+      type: object
+      required:
+        - alertId
+        - zone
+        - severity
+        - message
+      properties:
+        alertId:
+          type: string
+        zone:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    TrafficLightCommandPayload:
+      type: object
+      required:
+        - intersectionId
+        - command
+      properties:
+        intersectionId:
+          type: string
+        command:
+          type: string
+          enum: [green, red, amber, flash, off]
+        duration:
+          type: integer
+          description: Duration in seconds
+
+  securitySchemes:
+    saslScram:
+      type: scramSha256
+      description: SASL/SCRAM-SHA-256 authentication for Kafka
