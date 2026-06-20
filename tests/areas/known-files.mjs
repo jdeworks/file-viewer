@@ -6840,4 +6840,16 @@ export async function run(ctx) {
 
   // ── audit-rules viewer ──
   await t.testKnown('audit-rules', 'audit.rules', '.audr-doc');
+
+  // ── common-lisp viewer ──
+  await t.testKnown('common-lisp', 'sample.lisp', '.cl-doc');
+
+  // ── emacs-lisp viewer ──
+  await t.testKnown('emacs-lisp', 'sample.el', '.el-doc');
+
+  // ── squirrel-lang viewer ──
+  await t.testKnown('squirrel-lang', 'sample.nut', '.nut-doc');
+
+  // ── red-lang viewer ──
+  await t.testKnown('red-lang', 'sample.red', '.red-doc');
 }

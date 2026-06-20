@@ -874,6 +874,10 @@ import aptSources from '../types/text/known/apt-sources/index.js';
 import pkgbuild from '../types/text/known/pkgbuild/index.js';
 import limitsConf from '../types/text/known/limits-conf/index.js';
 import auditRules from '../types/text/known/audit-rules/index.js';
+import commonLisp from '../types/text/known/common-lisp/index.js';
+import emacsLisp from '../types/text/known/emacs-lisp/index.js';
+import squirrelLang from '../types/text/known/squirrel-lang/index.js';
+import redLang from '../types/text/known/red-lang/index.js';
 export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, ocamlLang, fsharpLang, clojureLang, elmLang, kotlinLang, scalaLang, nimLang, dartLang, groovyLang, crystalLang, juliaLang, rLang, luaLang, purescriptLang, swiftLang, erlangSource, tclLang, schemeLang, racketLang, fortranLang, rubyLang, perlLang, phpLang, powershellLang, solidityLang, vhdlLang, arduinoSketch, cobolLang, gleamLang, odinLang, haxeLang, adaLang, prologLang, asmLang, objcLang, dLang, ponyLang, wrenLang, mojoLang, janetLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
@@ -1089,6 +1093,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   forthLang, leanLang, agdaLang, chapelLang,
   kokaLang, carbonLang, grainLang, factorLang,
   aptSources, pkgbuild, limitsConf, auditRules,
+  commonLisp, emacsLisp, squirrelLang, redLang,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {
