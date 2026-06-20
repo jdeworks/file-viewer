@@ -3682,4 +3682,24 @@ export async function run(ctx) {
   if (/scalafmt/i.test(scalafmtText)) pass('.scalafmt.conf: scalafmt badge shown'); else fail('scalafmt-conf badge: ' + scalafmtText.slice(0, 200));
   if (/maxColumn|version|3\.7/i.test(scalafmtText)) pass('.scalafmt.conf: version or maxColumn shown'); else fail('scalafmt-conf content: ' + scalafmtText.slice(0, 300));
   if (/rewrite|SortImports|scala/i.test(scalafmtText)) pass('.scalafmt.conf: rewrite rules or dialect shown'); else fail('scalafmt-conf rewrite: ' + scalafmtText.slice(0, 300));
+
+  // ── bspwmrc (bspwm tiling window manager config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('bspwmrc');
+  await page.waitForSelector('#previewHost .bspwmrc-doc', { timeout: 12000 });
+  const bspwmText = await page.$eval('#previewHost .bspwmrc-doc', (e) => e.textContent);
+  if (/bspwm/i.test(bspwmText)) pass('bspwmrc: bspwm badge shown'); else fail('bspwmrc badge: ' + bspwmText.slice(0, 200));
+  if (/HDMI-1|eDP-1/i.test(bspwmText)) pass('bspwmrc: monitor names shown'); else fail('bspwmrc monitors: ' + bspwmText.slice(0, 300));
+  if (/border_width|window_gap|split_ratio/i.test(bspwmText)) pass('bspwmrc: layout settings shown'); else fail('bspwmrc layout: ' + bspwmText.slice(0, 300));
+  if (/#45475a|#89b4fa|#cba6f7/i.test(bspwmText)) pass('bspwmrc: border colors shown'); else fail('bspwmrc colors: ' + bspwmText.slice(0, 300));
+
+  // ── sxhkdrc (sxhkd hotkey daemon config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sxhkdrc');
+  await page.waitForSelector('#previewHost .sxhkdrc-doc', { timeout: 12000 });
+  const sxhkdText = await page.$eval('#previewHost .sxhkdrc-doc', (e) => e.textContent);
+  if (/sxhkd/i.test(sxhkdText)) pass('sxhkdrc: sxhkd badge shown'); else fail('sxhkdrc badge: ' + sxhkdText.slice(0, 200));
+  if (/binding|shortcut/i.test(sxhkdText)) pass('sxhkdrc: binding count shown'); else fail('sxhkdrc binding count: ' + sxhkdText.slice(0, 300));
+  if (/super\s*\+/i.test(sxhkdText)) pass('sxhkdrc: Super key bindings shown'); else fail('sxhkdrc key combos: ' + sxhkdText.slice(0, 300));
+  if (/alacritty|rofi|bspc/i.test(sxhkdText)) pass('sxhkdrc: commands listed'); else fail('sxhkdrc commands: ' + sxhkdText.slice(0, 300));
 }

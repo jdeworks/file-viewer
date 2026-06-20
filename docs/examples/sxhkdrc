@@ -1,0 +1,67 @@
+# Terminal emulator
+super + Return
+    alacritty
+
+# Program launcher
+super + @space
+    rofi -show drun
+
+super + shift + @space
+    rofi -show run
+
+# Make sxhkd reload its configuration files
+super + Escape
+    pkill -USR1 -x sxhkd
+
+# bspwm hotkeys
+super + alt + {q,r}
+    bspc {quit,wm -r}
+
+super + {_,shift + }w
+    bspc node -{c,k}
+
+super + m
+    bspc desktop -l next
+
+super + y
+    bspc node newest.marked.local -n newest.!automatic.local
+
+super + g
+    bspc node -s biggest.window
+
+# State and flags
+super + {t,shift + t,s,f}
+    bspc node -t {tiled,pseudo_tiled,floating,fullscreen}
+
+super + ctrl + {m,x,y,z}
+    bspc node -g {marked,locked,sticky,private}
+
+# Focus/swap
+super + {_,shift + }{h,j,k,l}
+    bspc node -{f,s} {west,south,north,east}
+
+# Desktop navigation
+super + {1-9,0}
+    bspc desktop -f '^{1-9,10}'
+
+super + shift + {1-9,0}
+    bspc node -d '^{1-9,10}'
+
+# Media keys
+XF86AudioRaiseVolume
+    pamixer -i 5
+
+XF86AudioLowerVolume
+    pamixer -d 5
+
+XF86AudioMute
+    pamixer -t
+
+XF86AudioPlay
+    playerctl play-pause
+
+XF86BrightnessUp
+    brightnessctl s +10%
+
+XF86BrightnessDown
+    brightnessctl s 10%-

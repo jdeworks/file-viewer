@@ -469,6 +469,7 @@ import giteaConf from '../types/text/known/gitea-conf/index.js';
 import stunnelConf from '../types/text/known/stunnel-conf/index.js';
 import supervisordConf from '../types/text/known/supervisord-conf/index.js';
 import logrotateConf from '../types/text/known/logrotate-conf/index.js';
+import tlpConf from '../types/text/known/tlp-conf/index.js';
 import shellRc from '../types/text/known/shell-rc/index.js';
 import nixConfig from '../types/text/known/nix-config/index.js';
 import mavenSettings from '../types/text/xml/known/maven-settings/index.js';
@@ -516,6 +517,10 @@ import weztermConf from '../types/text/known/wezterm-conf/index.js';
 import aria2Conf from '../types/text/known/aria2-conf/index.js';
 import picomConf from '../types/text/known/picom-conf/index.js';
 import mpdConf from '../types/text/known/mpd-conf/index.js';
+import bspwmrc from '../types/text/known/bspwmrc/index.js';
+import sxhkdrc from '../types/text/known/sxhkdrc/index.js';
+import mpvConf from '../types/text/known/mpv-conf/index.js';
+import ytdlpConf from '../types/text/known/ytdlp-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -610,7 +615,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
   wireguardConf, openvpnConfig, opensslConf, krb5Conf, gpgConf,
   giteaConf, stunnelConf,
-  supervisordConf, logrotateConf,
+  supervisordConf, logrotateConf, tlpConf,
   shellRc,
   nixConfig,
   mavenSettings, pgHba,
@@ -630,6 +635,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   pulseaudioConf, pipewireConf,
   weztermConf, aria2Conf,
   picomConf, mpdConf,
+  bspwmrc, sxhkdrc,
+  mpvConf, ytdlpConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

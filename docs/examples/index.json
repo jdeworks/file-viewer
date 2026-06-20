@@ -5242,7 +5242,7 @@
       "Package"
     ],
     "enhanced": true,
-    "description": "Crystal language shard.yml package manifest — dependencies, version, and build targets."
+    "description": "Crystal language shard.yml package manifest \u2014 dependencies, version, and build targets."
   },
   {
     "label": "go.work",
@@ -5264,7 +5264,7 @@
       "Package"
     ],
     "enhanced": true,
-    "description": "Zig build.zig.zon package manifest — name, version, and dependencies in ZON format."
+    "description": "Zig build.zig.zon package manifest \u2014 name, version, and dependencies in ZON format."
   },
   {
     "file": "wdio.conf.js",
@@ -7254,6 +7254,15 @@
     ]
   },
   {
+    "file": "tlp.conf",
+    "label": "tlp.conf (TLP Power)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "System"
+    ]
+  },
+  {
     "file": "api.postman_collection.json",
     "label": "api.postman_collection.json (Postman)",
     "category": "API",
@@ -7825,5 +7834,55 @@
     "enhanced": true,
     "description": "Music Player Daemon (MPD) configuration: music library, audio outputs (PipeWire, PulseAudio, HTTP stream), network settings, and playback options.",
     "knownFile": "mpd-conf"
+  },
+  {
+    "file": "bspwmrc",
+    "label": "bspwmrc (bspwm WM)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Desktop"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "bspwm binary space partitioning window manager configuration: monitors, desktops, border/gap settings, color swatches, window rules, and autostart commands.",
+    "knownFile": "bspwmrc"
+  },
+  {
+    "file": "sxhkdrc",
+    "label": "sxhkdrc (sxhkd hotkey daemon)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Desktop"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "sxhkd simple X hotkey daemon configuration: keyboard bindings grouped by modifier pattern (Super, Super+Shift, Super+Ctrl), brace-expansion counts, and media keys.",
+    "knownFile": "sxhkdrc"
+  },
+  {
+    "file": "mpv.conf",
+    "label": "mpv.conf",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "mpv media player configuration: video output driver, hardware decoding, audio output, subtitle styling, and profile sections.",
+    "knownFile": "mpv-conf"
+  },
+  {
+    "file": "yt-dlp.conf",
+    "label": "yt-dlp.conf",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "yt-dlp video downloader configuration: format selection, output path template, metadata embedding, network settings, and cookie source.",
+    "knownFile": "ytdlp-conf"
   }
 ]
