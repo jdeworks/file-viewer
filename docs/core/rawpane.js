@@ -506,7 +506,13 @@ function runMarkdownActionWysiwyg(action, btn) {
   const selected = cm.getSelection();
   function wrap(before, after, placeholder) {
     const text = selected || placeholder || '';
-    cm.replaceSelection(before + text + (after ?? before));
+    const aft = after ?? before;
+    // Toggle off if selection is already wrapped with these markers
+    if (selected && selected.startsWith(before) && selected.endsWith(aft) && selected.length >= before.length + aft.length) {
+      cm.replaceSelection(selected.slice(before.length, selected.length - aft.length));
+      return;
+    }
+    cm.replaceSelection(before + text + aft);
   }
   function wrapLines(prefix, placeholder) {
     const text = selected || placeholder || '';

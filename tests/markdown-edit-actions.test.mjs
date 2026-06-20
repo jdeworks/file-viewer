@@ -24,6 +24,10 @@ const bold = markdownWrap('name', '**', 'strong text');
 ok(bold.text === '**name**' && bold.selectStart === 2 && bold.selectEnd === 6, 'bold: wraps selected text and reports inner selection');
 const italic = markdownWrap('', '*', 'emphasis');
 ok(italic.text === '*emphasis*' && italic.selectStart === 1 && italic.selectEnd === 9, 'italic: inserts placeholder when selection is empty');
+const boldToggle = markdownWrap('**name**', '**', 'strong text');
+ok(boldToggle.text === 'name' && boldToggle.selectStart === 0 && boldToggle.selectEnd === 4, 'bold: unwraps when selection is already bold');
+const italicToggle = markdownWrap('*hi*', '*', 'emphasis');
+ok(italicToggle.text === 'hi' && italicToggle.selectStart === 0 && italicToggle.selectEnd === 2, 'italic: unwraps when selection is already italic');
 
 ok(markdownLinkForPastedUrl('OpenAI', 'https://openai.com/') === '[OpenAI](https://openai.com/)', 'paste URL: selected text becomes markdown link');
 ok(markdownLinkForPastedUrl('', 'https://openai.com/') === null, 'paste URL: empty selection is left to normal paste');

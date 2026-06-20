@@ -28,6 +28,7 @@ export async function mountWysiwyg(container, text, onChange) {
     toolbar: false,           // we use our own toolbar
     status: false,
     minHeight: '300px',
+    sideBySideFullscreen: false,  // keep inside editor container so app toolbar stays accessible
     renderingConfig: { singleLineBreaks: false },
   });
   easyMDE.codemirror.on('change', () => {

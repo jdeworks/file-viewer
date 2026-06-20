@@ -9,6 +9,11 @@ export function markdownHeading(text, level = 1) {
 
 export function markdownWrap(text, marker, placeholder) {
   const value = String(text || '');
+  // Toggle off: if the selection is already wrapped with this marker, unwrap it.
+  if (value.length >= marker.length * 2 && value.startsWith(marker) && value.endsWith(marker)) {
+    const inner = value.slice(marker.length, value.length - marker.length);
+    return { text: inner, selectStart: 0, selectEnd: inner.length };
+  }
   const inner = value || placeholder;
   return {
     text: marker + inner + marker,
