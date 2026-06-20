@@ -4,7 +4,7 @@ export default {
   label: 'NuGet packages.config',
   match(intake, baseType) {
     if (baseType?.id !== 'xml') return false;
-    return (intake.name || '').toLowerCase() === 'packages.config';
+    return (intake.filename || intake.name || '').split('/').pop().toLowerCase() === 'packages.config';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

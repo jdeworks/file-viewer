@@ -2,7 +2,7 @@ export default {
   id: 'flyway-conf',
   label: 'Flyway Config',
   match(intake) {
-    const n = (intake.name || '').toLowerCase();
+    const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
     return n === 'flyway.conf' || n === 'flyway.properties' || n === 'flyway.toml';
   },
   loadRenderer: () => import('./renderer.js'),

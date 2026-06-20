@@ -3,7 +3,7 @@ export default {
   label: 'OpenSSF Scorecard',
   match(intake, baseType) {
     if (baseType?.id !== 'yaml') return false;
-    const n = (intake.name || '').toLowerCase();
+    const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
     return ['scorecard.yml', 'scorecard.yaml', '.scorecard.yml', '.scorecard.yaml'].includes(n);
   },
   loadRenderer: () => import('./renderer.js'),

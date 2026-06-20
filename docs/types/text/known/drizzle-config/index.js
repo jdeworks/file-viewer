@@ -2,7 +2,7 @@ export default {
   id: 'drizzle-config',
   label: 'Drizzle ORM Config',
   match(intake) {
-    const n = (intake.name || '').toLowerCase();
+    const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
     return n === 'drizzle.config.ts' || n === 'drizzle.config.js';
   },
   loadRenderer: () => import('./renderer.js'),

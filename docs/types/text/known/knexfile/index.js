@@ -2,7 +2,7 @@ export default {
   id: 'knexfile',
   label: 'Knex.js Config',
   match(intake) {
-    const n = (intake.name || '').toLowerCase();
+    const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
     return n === 'knexfile.js' || n === 'knexfile.ts' || n === 'knexfile.mjs';
   },
   loadRenderer: () => import('./renderer.js'),

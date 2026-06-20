@@ -4,7 +4,7 @@ export default {
   label: '.NET App Config',
   match(intake, baseType) {
     if (baseType?.id !== 'xml') return false;
-    return (intake.name || '').toLowerCase() === 'app.config';
+    return (intake.filename || intake.name || '').split('/').pop().toLowerCase() === 'app.config';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

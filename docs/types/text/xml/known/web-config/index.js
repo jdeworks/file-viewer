@@ -4,7 +4,7 @@ export default {
   label: 'IIS/ASP.NET Config',
   match(intake, baseType) {
     if (baseType?.id !== 'xml') return false;
-    return (intake.name || '').toLowerCase() === 'web.config';
+    return (intake.filename || intake.name || '').split('/').pop().toLowerCase() === 'web.config';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

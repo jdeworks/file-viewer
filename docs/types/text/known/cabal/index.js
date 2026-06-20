@@ -2,7 +2,7 @@ export default {
   id: 'cabal',
   label: 'Haskell Cabal',
   match(intake) {
-    return (intake.name || '').toLowerCase().endsWith('.cabal');
+    return (intake.filename || intake.name || '').split('/').pop().toLowerCase().endsWith('.cabal');
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

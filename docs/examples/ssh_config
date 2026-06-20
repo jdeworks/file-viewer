@@ -1,0 +1,37 @@
+# Default settings
+Host *
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    ControlMaster auto
+    ControlPath ~/.ssh/cm_%r@%h:%p
+    ControlPersist 10m
+    AddKeysToAgent yes
+
+# Production servers
+Host prod-web
+    HostName 203.0.113.10
+    User ubuntu
+    Port 22
+    IdentityFile ~/.ssh/prod_rsa
+    ForwardAgent no
+
+Host prod-db
+    HostName 203.0.113.11
+    User ubuntu
+    IdentityFile ~/.ssh/prod_rsa
+    ProxyJump prod-web
+
+# Development
+Host dev
+    HostName 192.168.1.100
+    User vagrant
+    Port 2222
+    IdentityFile ~/.ssh/id_rsa
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+# GitHub
+Host github.com
+    User git
+    IdentityFile ~/.ssh/github_ed25519
+    IdentitiesOnly yes

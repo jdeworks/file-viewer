@@ -4,7 +4,7 @@ export default {
   label: 'ASP.NET Core Launch Settings',
   match(intake, baseType) {
     if (baseType?.id !== 'json') return false;
-    return (intake.name || '').toLowerCase() === 'launchsettings.json';
+    return (intake.filename || intake.name || '').split('/').pop().toLowerCase() === 'launchsettings.json';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

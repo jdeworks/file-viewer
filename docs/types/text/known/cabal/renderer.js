@@ -44,7 +44,7 @@ function parseMultilineField(text, field) {
 function parseBuildDepends(text) {
   // Find all build-depends fields across all stanzas
   const deps = new Set();
-  const re = /^build-depends\s*:([\s\S]*?)(?=\n[a-z])/gim;
+  const re = /^\s*build-depends\s*:([\s\S]*?)(?=\n\s*[a-z])/gim;
   let m;
   while ((m = re.exec(text)) !== null) {
     // Split by commas, handling multi-line
@@ -55,7 +55,7 @@ function parseBuildDepends(text) {
     }
   }
   // Also catch trailing block at end of file
-  const lastRe = /^build-depends\s*:([\s\S]*)$/im;
+  const lastRe = /^\s*build-depends\s*:([\s\S]*)$/im;
   const last = lastRe.exec(text);
   if (last) {
     const block = last[1].replace(/\n\s+/g, ' ');

@@ -33,7 +33,7 @@ function fnChipClass(type) {
 export async function render(intake) {
   const jsYaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
   let tpl = {};
-  try { tpl = (jsYaml.loadAll(intake.text || \'\') || [])[0] || {}; } catch { tpl = {}; }
+  try { tpl = (jsYaml.loadAll(intake.text || '') || [])[0] || {}; } catch { tpl = {}; }
 
   const transform = tpl.Transform || '';
   const description = tpl.Description || '';

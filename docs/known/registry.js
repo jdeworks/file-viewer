@@ -444,6 +444,8 @@ import dvcPipeline from '../types/text/yaml/known/dvc-pipeline/index.js';
 import hydraConfig from '../types/text/yaml/known/hydra-config/index.js';
 import mlflowProject from '../types/text/yaml/known/mlflow-project/index.js';
 import wandbConfig from '../types/text/ini/known/wandb-config/index.js';
+import postmanCollection from '../types/text/json/known/postman-collection/index.js';
+import graphqlSchema from '../types/text/known/graphql-schema/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -540,6 +542,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   nixConfig,
   mavenSettings, pgHba,
   dvcPipeline, hydraConfig, mlflowProject, wandbConfig,
+  postmanCollection, graphqlSchema,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

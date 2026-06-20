@@ -8203,7 +8203,7 @@
       "needsRealWorldSample": true
     },
     "nginx-conf": {
-      "label": "nginx config",
+      "label": "Nginx Config",
       "baseType": "plain",
       "support": "enhanced",
       "sampleFiles": [
@@ -8819,7 +8819,7 @@
       "needsRealWorldSample": false
     },
     "cmake": {
-      "label": "CMakeLists.txt",
+      "label": "CMakeLists",
       "baseType": "plain",
       "support": "supported",
       "sampleFiles": [
@@ -16381,7 +16381,9 @@
       "label": "Env Template",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".env.example"
+      ],
       "extensions": [
         ".yml"
       ],

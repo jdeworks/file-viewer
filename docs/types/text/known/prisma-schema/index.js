@@ -3,7 +3,7 @@ export default {
   id: 'prisma-schema',
   label: 'Prisma Schema',
   match(intake) {
-    const n = (intake.name || '').toLowerCase();
+    const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
     return n === 'schema.prisma' || n.endsWith('.prisma');
   },
   loadRenderer: () => import('./renderer.js'),

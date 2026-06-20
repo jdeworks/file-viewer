@@ -1,15 +1,84 @@
-type Query {
-  project(id: ID!): Project
-}
+scalar DateTime
+scalar JSON
 
-type Project {
+interface Node {
   id: ID!
-  name: String!
-  samples: [Sample!]!
 }
 
-type Sample {
-  filename: String!
-  mime: String
-  enhanced: Boolean!
+enum UserRole {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+type User implements Node {
+  id: ID!
+  email: String!
+  name: String!
+  role: UserRole!
+  posts: [Post!]!
+  createdAt: DateTime!
+}
+
+type Post implements Node {
+  id: ID!
+  title: String!
+  body: String!
+  author: User!
+  tags: [String!]!
+  publishedAt: DateTime
+}
+
+type Order implements Node {
+  id: ID!
+  user: User!
+  items: [OrderItem!]!
+  status: OrderStatus!
+  total: Float!
+}
+
+type OrderItem {
+  product: String!
+  quantity: Int!
+  price: Float!
+}
+
+input CreateUserInput {
+  email: String!
+  name: String!
+  role: UserRole = VIEWER
+}
+
+input UpdatePostInput {
+  title: String
+  body: String
+  tags: [String!]
+}
+
+type Query {
+  user(id: ID!): User
+  users(role: UserRole, limit: Int = 10, offset: Int = 0): [User!]!
+  post(id: ID!): Post
+  posts(authorId: ID, limit: Int = 20): [Post!]!
+  orders(status: OrderStatus): [Order!]!
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User!
+  updatePost(id: ID!, input: UpdatePostInput!): Post!
+  deletePost(id: ID!): Boolean!
+  placeOrder(userId: ID!, items: [JSON!]!): Order!
+}
+
+type Subscription {
+  orderStatusChanged(orderId: ID!): Order!
+  newPost(authorId: ID): Post!
 }

@@ -5,7 +5,7 @@ export default {
   label: '.NET global.json',
   match(intake, baseType) {
     if (baseType?.id !== 'json') return false;
-    return (intake.name || '').toLowerCase() === 'global.json';
+    return (intake.filename || intake.name || '').split('/').pop().toLowerCase() === 'global.json';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

@@ -3,7 +3,7 @@ export default {
   label: 'Socket Security',
   match(intake, baseType) {
     if (baseType?.id !== 'yaml') return false;
-    const n = (intake.name || '').toLowerCase();
+    const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
     return n === 'socket.yml' || n === '.socket.yml' || n === 'socket.yaml';
   },
   loadRenderer: () => import('./renderer.js'),

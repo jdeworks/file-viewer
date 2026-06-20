@@ -3,7 +3,7 @@ export default {
   label: 'Swift Package.resolved',
   match(intake, baseType) {
     if (baseType?.id !== 'json') return false;
-    return (intake.name || '') === 'Package.resolved';
+    return (intake.filename || intake.name || '').split('/').pop() === 'Package.resolved';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

@@ -2,7 +2,7 @@ export default {
   id: 'rebar-config',
   label: 'Erlang rebar3',
   match(intake) {
-    const n = (intake.name || '').toLowerCase();
+    const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
     return n === 'rebar.config' || n === 'rebar3.config';
   },
   loadRenderer: () => import('./renderer.js'),

@@ -3,7 +3,7 @@ export default {
   label: 'Trivy',
   match(intake, baseType) {
     if (baseType?.id !== 'yaml') return false;
-    const n = (intake.name || '').toLowerCase();
+    const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
     return ['trivy.yaml', 'trivy.yml', '.trivy.yaml', '.trivy.yml', 'trivy-config.yaml', 'trivy-config.yml'].includes(n);
   },
   loadRenderer: () => import('./renderer.js'),

@@ -3,7 +3,7 @@ export default {
   label: 'Alembic Migrations',
   match(intake, baseType) {
     if (baseType?.id !== 'ini') return false;
-    const n = (intake.name || '').toLowerCase();
+    const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
     return n === 'alembic.ini';
   },
   loadRenderer: () => import('./renderer.js'),

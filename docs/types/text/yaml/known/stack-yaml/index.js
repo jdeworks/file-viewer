@@ -3,7 +3,8 @@ export default {
   label: 'Haskell Stack',
   match(intake, baseType) {
     if (baseType?.id !== 'yaml') return false;
-    return (intake.name || '').toLowerCase() === 'stack.yaml';
+    const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
+    return n === 'stack.yaml';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

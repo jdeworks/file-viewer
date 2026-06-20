@@ -2977,4 +2977,22 @@ export async function run(ctx) {
   if (/ENV/i.test(envexText)) pass('.env.example: ENV badge shown'); else fail('env-example badge: ' + envexText.slice(0, 200));
   if (/DATABASE_URL/i.test(envexText)) pass('.env.example: variables shown'); else fail('env-example vars: ' + envexText.slice(0, 200));
 
+  // ── ssh_config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('ssh_config (SSH Client Config)');
+  await page.waitForSelector('#previewHost .sshcfg-doc', { timeout: 12000 });
+  const sshcfgText = await page.$eval('#previewHost .sshcfg-doc', (e) => e.textContent);
+  if (/SSH/i.test(sshcfgText)) pass('ssh_config: badge shown'); else fail('ssh_config badge: ' + sshcfgText.slice(0, 200));
+  if (/github\.com/i.test(sshcfgText)) pass('ssh_config: github.com host shown'); else fail('ssh_config host: ' + sshcfgText.slice(0, 300));
+  if (/prod-web|prod-db|IdentityFile/i.test(sshcfgText)) pass('ssh_config: host settings shown'); else fail('ssh_config settings: ' + sshcfgText.slice(0, 300));
+
+  // ── sshd_config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sshd_config');
+  await page.waitForSelector('#previewHost .sshdcfg-doc', { timeout: 12000 });
+  const sshdcfgText = await page.$eval('#previewHost .sshdcfg-doc', (e) => e.textContent);
+  if (/SSHD|sshd_config/i.test(sshdcfgText)) pass('sshd_config: badge shown'); else fail('sshd_config badge: ' + sshdcfgText.slice(0, 200));
+  if (/PermitRootLogin/i.test(sshdcfgText)) pass('sshd_config: PermitRootLogin shown'); else fail('sshd_config permit-root: ' + sshdcfgText.slice(0, 300));
+  if (/PasswordAuthentication/i.test(sshdcfgText)) pass('sshd_config: PasswordAuthentication shown'); else fail('sshd_config passwd-auth: ' + sshdcfgText.slice(0, 300));
+
 }
