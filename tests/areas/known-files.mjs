@@ -4432,6 +4432,15 @@ export async function run(ctx) {
   if (!atlantisText.includes('Atlantis')) fail('atlantis.yaml: missing badge'); else pass('atlantis.yaml: badge shown');
   if (!atlantisText.includes('project') && !atlantisText.includes('workflow')) fail('atlantis.yaml: no projects'); else pass('atlantis.yaml: projects shown');
 
+  // ── spacelift-config.yml (Spacelift IaC CI/CD) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('spacelift-config.yml');
+  await page.waitForSelector('#previewHost .spaceliftcfg-doc', { timeout: 12000 });
+  pass('spacelift-config.yml: renders');
+  const spaceliftText = await page.$eval('#previewHost .spaceliftcfg-doc', el => el.textContent);
+  if (!spaceliftText.includes('Spacelift')) fail('spacelift-config.yml: missing badge'); else pass('spacelift-config.yml: badge shown');
+  if (!spaceliftText.includes('production') && !spaceliftText.includes('staging')) fail('spacelift-config.yml: no stacks shown'); else pass('spacelift-config.yml: stacks shown');
+
   // ── Caddyfile viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Caddyfile');
@@ -4865,4 +4874,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('syslog-ng.conf');
   pass(await page.waitForSelector('#previewHost .syslogng-doc', { timeout: 12000 }), 'syslog-ng.conf: syslogng-doc shown');
+
+  // ── frpc.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('frpc.toml');
+  pass(await page.waitForSelector('#previewHost .frpc-doc', { timeout: 12000 }), 'frpc.toml: FRP client badge shown');
+
+  // ── frps.toml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('frps.toml');
+  pass(await page.waitForSelector('#previewHost .frps-doc', { timeout: 12000 }), 'frps.toml: FRP server badge shown');
 }

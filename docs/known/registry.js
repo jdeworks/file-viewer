@@ -352,6 +352,7 @@ import bunfigToml from '../types/text/toml/known/bunfig/index.js';
 import shopifyApp from '../types/text/toml/known/shopify-app/index.js';
 import lighthouserc from '../types/text/json/known/lighthouserc/index.js';
 import atlantis from '../types/text/yaml/known/atlantis/index.js';
+import spaceliftConfig from '../types/text/yaml/known/spacelift-config/index.js';
 import checkov from '../types/text/yaml/known/checkov/index.js';
 import terraformDocs from '../types/text/yaml/known/terraform-docs/index.js';
 import infracost from '../types/text/yaml/known/infracost/index.js';
@@ -679,7 +680,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   terragrunt, tflint, tfLock, versionsTf,
   tsupConfig, rspackConfig, esbuildConfig, parcelrc, bunfigToml, shopifyApp, lighthouserc,
   shadowCljs, projectClj, depsEdn,
-  atlantis, checkov, terraformDocs, infracost,
+  atlantis, spaceliftConfig, checkov, terraformDocs, infracost,
   opencostConfig, crossplaneConfig, kedaConfig, veleroConfig,
   androidManifest, appConfig, buildZigZon, zigZon, cartfile,
   electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, tempoConfig, mimirConfig, cortexConfig, grafanaAlloy, forgeConfig,

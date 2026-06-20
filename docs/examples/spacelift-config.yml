@@ -1,0 +1,19 @@
+stacks:
+  - name: production
+    backend: terraform
+    branch: main
+    project_root: terraform/production
+    auto_apply: false
+    runner_image: public.ecr.aws/spacelift/runner-terraform:latest
+
+  - name: staging
+    backend: terraform
+    branch: develop
+    project_root: terraform/staging
+    auto_apply: true
+
+  - name: pulumi-infra
+    backend: pulumi
+    branch: main
+    project_root: infra/pulumi
+    auto_apply: false

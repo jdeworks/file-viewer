@@ -4912,6 +4912,18 @@
     "description": "Atlantis Terraform PR automation: projects, workflows, and policies."
   },
   {
+    "label": "spacelift-config.yml",
+    "file": "spacelift-config.yml",
+    "mime": "text/x-yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "spacelift-config",
+    "description": "Spacelift IaC CI/CD configuration: stacks, backend, branch, and auto-apply settings."
+  },
+  {
     "label": ".checkov.yaml",
     "file": ".checkov.yaml",
     "mime": "text/x-yaml",
