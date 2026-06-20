@@ -6393,6 +6393,19 @@
     "knownFile": "alacritty-conf"
   },
   {
+    "label": ".wezterm.lua",
+    "file": ".wezterm.lua",
+    "mime": "text/x-lua",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Terminal"
+    ],
+    "enhanced": true,
+    "description": "WezTerm GPU-accelerated terminal configuration: font (JetBrains Mono), color scheme (Catppuccin Mocha), window opacity, tab bar, WebGpu renderer, keybindings, and unix domain multiplexer.",
+    "knownFile": "wezterm-conf"
+  },
+  {
     "file": "dunstrc",
     "label": "dunstrc (dunst notification daemon)",
     "category": "Config",
@@ -6430,6 +6443,18 @@
     "enhanced": true,
     "description": "kitty GPU terminal configuration: font stack, window opacity, colors (Catppuccin Mocha), cursor, scrollback, tab bar, and keybindings.",
     "knownFile": "kitty-conf"
+  },
+  {
+    "label": "aria2.conf",
+    "file": "aria2.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "aria2 multi-protocol download manager configuration: concurrency, split connections, BitTorrent (DHT, LPD), RPC server, and session persistence.",
+    "knownFile": "aria2-conf"
   },
   {
     "label": "devbox.json",

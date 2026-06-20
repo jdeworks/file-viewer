@@ -3576,4 +3576,43 @@ export async function run(ctx) {
   if (/JetBrains Mono|font/i.test(footText)) pass('foot.ini: font shown'); else fail('foot-config font: ' + footText.slice(0, 300));
   if (/opacity|alpha|95/i.test(footText)) pass('foot.ini: opacity shown'); else fail('foot-config opacity: ' + footText.slice(0, 300));
 
+  // ── config.rasi (Rofi window switcher/launcher config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('config.rasi (Rofi)');
+  await page.waitForSelector('#previewHost .roficfg-doc', { timeout: 12000 });
+  const rofiText = await page.$eval('#previewHost .roficfg-doc', (e) => e.textContent);
+  if (/Rofi/i.test(rofiText)) pass('config.rasi: Rofi badge shown'); else fail('rofi-config badge: ' + rofiText.slice(0, 200));
+  if (/drun|run|window/i.test(rofiText)) pass('config.rasi: launch mode chips shown'); else fail('rofi-config modes: ' + rofiText.slice(0, 300));
+  if (/fuzzy|JetBrains/i.test(rofiText)) pass('config.rasi: matching or font shown'); else fail('rofi-config settings: ' + rofiText.slice(0, 300));
+
+  // ── mako (mako Wayland notification daemon config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mako (mako notification daemon)');
+  await page.waitForSelector('#previewHost .makocfg-doc', { timeout: 12000 });
+  const makoText = await page.$eval('#previewHost .makocfg-doc', (e) => e.textContent);
+  if (/mako/i.test(makoText)) pass('mako: mako badge shown'); else fail('mako-conf badge: ' + makoText.slice(0, 200));
+  if (/top-right|anchor/i.test(makoText)) pass('mako: anchor position shown'); else fail('mako-conf anchor: ' + makoText.slice(0, 300));
+  if (/5s|5000|timeout/i.test(makoText)) pass('mako: timeout shown'); else fail('mako-conf timeout: ' + makoText.slice(0, 300));
+  if (/urgency|do-not-disturb|Spotify/i.test(makoText)) pass('mako: criteria sections shown'); else fail('mako-conf criteria: ' + makoText.slice(0, 300));
+
+  // ── daemon.conf (PulseAudio daemon config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('daemon.conf');
+  await page.waitForSelector('#previewHost .pulsecfg-doc', { timeout: 12000 });
+  const pulseText = await page.$eval('#previewHost .pulsecfg-doc', (e) => e.textContent);
+  if (/PulseAudio/i.test(pulseText)) pass('daemon.conf: PulseAudio badge shown'); else fail('pulseaudio-conf badge: ' + pulseText.slice(0, 200));
+  if (/s16le|default-sample-format/i.test(pulseText)) pass('daemon.conf: sample format shown'); else fail('pulseaudio-conf sample-format: ' + pulseText.slice(0, 300));
+  if (/44100|48000/i.test(pulseText)) pass('daemon.conf: sample rate shown'); else fail('pulseaudio-conf sample-rate: ' + pulseText.slice(0, 300));
+  if (/realtime|speex/i.test(pulseText)) pass('daemon.conf: realtime or resample settings shown'); else fail('pulseaudio-conf system: ' + pulseText.slice(0, 300));
+
+  // ── pipewire.conf (PipeWire audio/video server config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pipewire.conf');
+  await page.waitForSelector('#previewHost .pwcfg-doc', { timeout: 12000 });
+  const pwText = await page.$eval('#previewHost .pwcfg-doc', (e) => e.textContent);
+  if (/PipeWire/i.test(pwText)) pass('pipewire.conf: PipeWire badge shown'); else fail('pipewire-conf badge: ' + pwText.slice(0, 200));
+  if (/48000|default\.clock\.rate/i.test(pwText)) pass('pipewire.conf: clock rate shown'); else fail('pipewire-conf clock-rate: ' + pwText.slice(0, 300));
+  if (/wireplumber|pipewire-pulse/i.test(pwText)) pass('pipewire.conf: exec entries shown'); else fail('pipewire-conf exec: ' + pwText.slice(0, 300));
+  if (/protocol|rt|session/i.test(pwText)) pass('pipewire.conf: modules grouped and listed'); else fail('pipewire-conf modules: ' + pwText.slice(0, 300));
+
 }
