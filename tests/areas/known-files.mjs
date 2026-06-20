@@ -5635,4 +5635,16 @@ export async function run(ctx) {
   await openExample('jellyseerr-settings.json');
   await page.waitForSelector('#previewHost .jellyseerr-doc', { timeout: 12000 });
   pass('jellyseerr-settings.json: Jellyseerr badge shown');
+
+  // ── bazarr.yaml viewer (bazarr-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('bazarr.yaml');
+  await page.waitForSelector('#previewHost .bazarr-doc', { timeout: 12000 });
+  pass('bazarr.yaml: Bazarr badge shown');
+
+  // ── scrutiny.yaml viewer (scrutiny-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('scrutiny.yaml');
+  await page.waitForSelector('#previewHost .scrutiny-doc', { timeout: 12000 });
+  pass('scrutiny.yaml: Scrutiny badge shown');
 }

@@ -1,0 +1,41 @@
+general:
+  ip: 0.0.0.0
+  port: 6767
+  base_url: "/"
+  use_sonarr: true
+  use_radarr: true
+  use_embedded_subs: true
+  single_language: false
+  minimum_score: 90
+  wanted_languages:
+    - en
+    - de
+
+sonarr:
+  ip: sonarr
+  port: 8989
+  base_url: "/"
+  ssl: false
+  apikey: your-sonarr-api-key-here
+  full_update: Daily
+  minimum_score: 90
+
+radarr:
+  ip: radarr
+  port: 7878
+  base_url: "/"
+  ssl: false
+  apikey: your-radarr-api-key-here
+  full_update: Daily
+  minimum_score: 90
+
+subtitles:
+  hearing_impaired: false
+  forced_only: false
+  utf8_encode: true
+
+notifications:
+  enabled: true
+  providers:
+    - discord
+    - ntfy

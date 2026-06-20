@@ -10390,5 +10390,25 @@
     "enhanced": true,
     "description": "Jellyseerr media request manager configuration",
     "knownFile": true
+  },
+  {
+    "file": "bazarr.yaml",
+    "label": "Bazarr config",
+    "mime": "text/yaml",
+    "category": "Media",
+    "categories": ["Media", "Subtitles", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Bazarr automatic subtitle downloader for Sonarr and Radarr configuration",
+    "knownFile": true
+  },
+  {
+    "file": "scrutiny.yaml",
+    "label": "Scrutiny config",
+    "mime": "text/yaml",
+    "category": "Monitoring",
+    "categories": ["Monitoring", "Storage", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Scrutiny hard drive health monitoring dashboard configuration",
+    "knownFile": true
   }
 ]
