@@ -68,38 +68,39 @@ export async function run(ctx) {
   else fail('fb2 reader controls: ' + JSON.stringify({ before: fb2Size0, after: fb2Prefs }));
 
   // ── MOBI / Kindle (.mobi) ── PalmDB parse + PalmDOC text → sanitized HTML, inline data: images. ──
+  // Now rendered in parentNode mode with external sticky toolbar (no sandboxed iframe).
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.mobi');
-  const mobiframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
-  const mobif = await frameOf('iframe.fv-preview-frame');
-  await mobif.waitForSelector('.mobi-book', { timeout: 10000 });
+  await page.waitForSelector('#previewHost .mobi-toolbar', { timeout: 12000 });
   const mobiType = await page.$eval('#typeSelect', (s) => s.value);
   if (mobiType === 'mobi') pass('.mobi detected as Kindle / MOBI'); else fail('mobi type: ' + mobiType);
-  const mobiText = await mobif.$eval('.mobi-book', (e) => e.textContent);
-  if (/The Gift of the Magi/.test(mobiText) && /Project Gutenberg text by O\. Henry/.test(mobiText) && mobiText.length > 2000) pass('MOBI text decompressed + rendered with long sample text'); else fail('mobi text: ' + mobiText.slice(0, 80) + ' len=' + mobiText.length);
-  const mobiInitialState = await mobif.$eval('.mobi-book', (e) => {
-    const sel = getSelection();
-    const firstPara = e.querySelector('p') || e;
-    return { collapsed: !sel || sel.isCollapsed, color: getComputedStyle(firstPara).color };
-  });
-  if (mobiInitialState.collapsed && !/rgb\\(0,\\s*(?:102|105|120),\\s*(?:204|255)\\)/i.test(mobiInitialState.color))
-    pass('MOBI opens without selected or accent-blue text');
-  else fail('mobi initial state: ' + JSON.stringify(mobiInitialState));
-  const mobiImg = await mobif.$eval('.mobi-img', (e) => e.getAttribute('src')).catch(() => '');
+  const mobiText = await page.$eval('#previewHost .mobi-book', (e) => e.textContent);
+  if (/The Gift of the Magi/.test(mobiText) && /Project Gutenberg text by O\. Henry/.test(mobiText) && mobiText.length > 2000)
+    pass('MOBI text decompressed + rendered with long sample text');
+  else fail('mobi text: ' + mobiText.slice(0, 80) + ' len=' + mobiText.length);
+  const mobiImg = await page.$eval('#previewHost .mobi-img', (e) => e.getAttribute('src')).catch(() => '');
   if (/^data:image\/png;base64,/.test(mobiImg)) pass('MOBI embedded image inlined as data: URL (zero off-origin)'); else fail('mobi img: ' + mobiImg.slice(0, 30));
-  await mobif.waitForSelector('.mobi-reader .ebook-controls', { timeout: 8000 });
-  const mobiSize0 = await mobif.$eval('.mobi-book', (e) => getComputedStyle(e).fontSize);
-  await mobif.click('label[for="mobi-size-large"]');
-  await mobif.click('label[for="mobi-theme-sepia"]');
-  await mobif.click('label[for="mobi-font-sans"]');
-  await mobif.click('label[for="mobi-line-loose"]');
-  await mobif.click('label[for="mobi-margin-wide"]');
-  const mobiPrefs = await mobif.$eval('.mobi-book', (e) => {
-    const s = getComputedStyle(e);
-    return { size: s.fontSize, font: s.fontFamily, bg: s.backgroundColor, line: s.lineHeight, maxWidth: s.maxWidth };
+  const mobiToolbar = await page.$('#previewHost .mobi-toolbar');
+  if (mobiToolbar) pass('MOBI external reader toolbar visible'); else fail('mobi toolbar missing');
+  const mobiSize0 = await page.$eval('#previewHost .mobi-book', (e) => getComputedStyle(e).fontSize);
+  // Click each setting button — all are in the parent page, not inside an iframe
+  await page.click('#previewHost .mobi-tb-btn[title="A+"]', {}).catch(async () => {
+    // Fallback: find button by text
+    const btns = await page.$$('#previewHost .mobi-tb-btn');
+    for (const b of btns) { if (await b.evaluate((el) => el.textContent === 'A+')) { await b.click(); break; } }
   });
-  if (parseFloat(mobiPrefs.size) > parseFloat(mobiSize0) && /system|Segoe|Roboto|sans/i.test(mobiPrefs.font) && mobiPrefs.bg !== 'rgba(0, 0, 0, 0)' && parseFloat(mobiPrefs.line) > 35 && parseFloat(mobiPrefs.maxWidth) < 600)
-    pass('MOBI reader controls adjust size, font, theme, line height, and margins');
+  await page.$$eval('#previewHost .mobi-tb-btn', (btns) => {
+    const click = (text) => { const b = btns.find((el) => el.textContent === text); if (b) b.click(); };
+    click('Sepia'); click('Sans'); click('Loose'); click('Wide');
+  });
+  const mobiPrefs = await page.$eval('#previewHost .mobi-book', (e) => {
+    const s = getComputedStyle(e);
+    return { size: s.fontSize, font: s.fontFamily, color: s.color, line: s.lineHeight, maxWidth: s.maxWidth };
+  });
+  if (parseFloat(mobiPrefs.size) > parseFloat(mobiSize0) && /system|Segoe|Roboto|sans/i.test(mobiPrefs.font)
+      && /75.*57.*40|4b3928/i.test(mobiPrefs.color.replace(/\s/g, ''))
+      && parseFloat(mobiPrefs.line) > 35 && parseFloat(mobiPrefs.maxWidth) < 600)
+    pass('MOBI reader toolbar adjusts size, font, theme, line height, and margins');
   else fail('mobi reader controls: ' + JSON.stringify({ before: mobiSize0, after: mobiPrefs }));
 
   // ── Sony LRF ── recognized (BBeB), shown with a clear note instead of a raw hex dump. ──

@@ -643,3 +643,28 @@
   .rtf-paper { width: 100%; min-height: unset; padding: 24px 20px; box-shadow: none; }
   .rtf-doc { background: var(--bg); }
 }
+
+/* MOBI reader — external toolbar (parentNode mode) */
+.mobi-reader { display: flex; flex-direction: column; min-height: 100%; }
+.mobi-toolbar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 7px 12px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.mobi-tb-group { display: flex; align-items: center; gap: 3px; }
+.mobi-tb-label { font: 11px/1 system-ui, sans-serif; color: var(--fg-2); margin-right: 4px; }
+.mobi-tb-btn { font: 12px/1.2 system-ui, sans-serif; padding: 4px 9px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--fg); cursor: pointer; }
+.mobi-tb-btn:hover { background: var(--bg-3); }
+.mobi-tb-btn.mk-active { background: #eaf3ff; color: #0b69c7; border-color: #4c9aff; }
+.fv-dark .mobi-tb-btn.mk-active { background: #143250; color: #8ec5ff; border-color: #4c9aff; }
+.mobi-book { flex: 1; padding: 24px 16px; max-width: 42rem; margin: 0 auto; font-family: Georgia, "Times New Roman", serif; font-size: 18px; line-height: 1.55; word-break: break-word; }
+.mobi-book p { margin: 0 0 10px; text-align: justify; }
+.mobi-reader.mk-size-large .mobi-book { font-size: 22px; }
+.mobi-reader.mk-font-sans .mobi-book { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+.mobi-reader.mk-line-loose .mobi-book { line-height: 1.85; }
+.mobi-reader.mk-margin-wide .mobi-book { max-width: 34rem; }
+.mobi-reader.mk-theme-sepia { background: #f4ecd8; }
+.mobi-reader.mk-theme-sepia .mobi-book { color: #4b3928; }
+.mobi-reader.mk-theme-sepia .mobi-toolbar { background: #f4ecd8f2; border-color: #c8a882; }
+.mobi-reader.mk-theme-dark { background: #14171c; }
+.mobi-reader.mk-theme-dark .mobi-book { color: #c9d1d9; }
+.mobi-reader.mk-theme-dark .mobi-toolbar { background: #1f2630f2; border-color: #ffffff22; }
+.mobi-reader.mk-theme-dark .mobi-tb-btn { background: #111827; color: #d1d5db; border-color: #ffffff2a; }
+.mobi-reader.mk-theme-dark .mobi-tb-btn.mk-active { background: #143250; color: #8ec5ff; border-color: #4c9aff; }
+.mobi-reader.mk-theme-dark .mobi-tb-label { color: #9ca3af; }
