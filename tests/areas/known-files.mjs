@@ -6830,26 +6830,74 @@ export async function run(ctx) {
   if (/word|USING|TUPLE|SYMBOL|vocabulary/i.test(fctrText)) pass('factor-lang: stats shown'); else fail('factor-lang stats: ' + fctrText.slice(0, 300));
 
   // ── apt-sources viewer ──
-  await t.testKnown('apt-sources', 'sources.list', '.apts-doc');
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sources.list');
+  await page.waitForSelector('#previewHost .apts-doc', { timeout: 12000 });
+  pass('apt-sources: rendered');
 
   // ── pkgbuild viewer ──
-  await t.testKnown('pkgbuild', 'PKGBUILD', '.pkgb-doc');
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('PKGBUILD');
+  await page.waitForSelector('#previewHost .pkgb-doc', { timeout: 12000 });
+  pass('pkgbuild: rendered');
 
   // ── limits-conf viewer ──
-  await t.testKnown('limits-conf', 'limits.conf', '.lim-doc');
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('limits.conf');
+  await page.waitForSelector('#previewHost .lim-doc', { timeout: 12000 });
+  pass('limits-conf: rendered');
 
   // ── audit-rules viewer ──
-  await t.testKnown('audit-rules', 'audit.rules', '.audr-doc');
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('audit.rules');
+  await page.waitForSelector('#previewHost .audr-doc', { timeout: 12000 });
+  pass('audit-rules: rendered');
 
   // ── common-lisp viewer ──
-  await t.testKnown('common-lisp', 'sample.lisp', '.cl-doc');
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.lisp');
+  await page.waitForSelector('#previewHost .cl-doc', { timeout: 12000 });
+  pass('common-lisp: rendered');
 
   // ── emacs-lisp viewer ──
-  await t.testKnown('emacs-lisp', 'sample.el', '.el-doc');
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.el');
+  await page.waitForSelector('#previewHost .el-doc', { timeout: 12000 });
+  pass('emacs-lisp: rendered');
 
   // ── squirrel-lang viewer ──
-  await t.testKnown('squirrel-lang', 'sample.nut', '.nut-doc');
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.nut');
+  await page.waitForSelector('#previewHost .nut-doc', { timeout: 12000 });
+  pass('squirrel-lang: rendered');
 
   // ── red-lang viewer ──
-  await t.testKnown('red-lang', 'sample.red', '.red-doc');
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.red');
+  await page.waitForSelector('#previewHost .red-doc', { timeout: 12000 });
+  pass('red-lang: rendered');
+
+  // ── journald-conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('journald.conf');
+  await page.waitForSelector('#previewHost .jnld-doc', { timeout: 12000 });
+  pass('journald-conf: rendered');
+
+  // ── tmpfiles-d viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.tmpfiles');
+  await page.waitForSelector('#previewHost .tmf-doc', { timeout: 12000 });
+  pass('tmpfiles-d: rendered');
+
+  // ── nsswitch-conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nsswitch.conf');
+  await page.waitForSelector('#previewHost .nsswitch-doc', { timeout: 12000 });
+  pass('nsswitch-conf: rendered');
+
+  // ── mkinitcpio-conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mkinitcpio.conf');
+  await page.waitForSelector('#previewHost .mki-doc', { timeout: 12000 });
+  pass('mkinitcpio-conf: rendered');
 }

@@ -1,0 +1,4 @@
+d /tmp/myapp 0755 myapp myapp -
+f /etc/myapp/config 0644 root root - default-config
+L /usr/local/bin/myapp - - - - /opt/myapp/bin/myapp
+D /var/cache/myapp 0750 myapp myapp 7d
