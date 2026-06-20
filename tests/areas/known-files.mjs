@@ -2661,4 +2661,45 @@ export async function run(ctx) {
   if (/my_program|token_vault/i.test(ancText)) pass('Anchor.toml: program names shown'); else fail('anchor programs: ' + ancText.slice(0, 300));
   if (/localnet|devnet|mainnet/i.test(ancText)) pass('Anchor.toml: cluster names shown'); else fail('anchor clusters: ' + ancText.slice(0, 300));
   if (/~\/.config\/solana\/id\.json/i.test(ancText)) pass('Anchor.toml: wallet path shown'); else fail('anchor wallet: ' + ancText.slice(0, 300));
+
+  // ── Maven POM viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pom.xml (Maven POM)');
+  await page.waitForSelector('#previewHost .mvn-doc', { timeout: 12000 });
+  const mvnText = await page.$eval('#previewHost .mvn-doc', (e) => e.textContent);
+  if (/Maven POM/i.test(mvnText)) pass('pom.xml: Maven POM badge shown'); else fail('maven-pom badge: ' + mvnText.slice(0, 200));
+  if (/com\.acme|file-service/i.test(mvnText)) pass('pom.xml: groupId / artifactId shown'); else fail('maven-pom coords: ' + mvnText.slice(0, 300));
+  if (/spring-boot-starter-web|guava/i.test(mvnText)) pass('pom.xml: dependency names shown'); else fail('maven-pom deps: ' + mvnText.slice(0, 300));
+  if (/test/i.test(mvnText)) pass('pom.xml: test scope shown'); else fail('maven-pom scope: ' + mvnText.slice(0, 300));
+
+  // ── Gradle Version Catalog viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('libs.versions.toml (Gradle Version Catalog)');
+  await page.waitForSelector('#previewHost .gvc-doc', { timeout: 12000 });
+  const gvcText = await page.$eval('#previewHost .gvc-doc', (e) => e.textContent);
+  if (/Gradle Catalog/i.test(gvcText)) pass('libs.versions.toml: Gradle Catalog badge shown'); else fail('gradle-version-catalog badge: ' + gvcText.slice(0, 200));
+  if (/kotlin|spring-boot/i.test(gvcText)) pass('libs.versions.toml: version aliases shown'); else fail('gradle-version-catalog versions: ' + gvcText.slice(0, 300));
+  if (/kotlin-stdlib|jackson-databind/i.test(gvcText)) pass('libs.versions.toml: library aliases shown'); else fail('gradle-version-catalog libraries: ' + gvcText.slice(0, 300));
+  if (/coroutines|testing/i.test(gvcText)) pass('libs.versions.toml: bundle aliases shown'); else fail('gradle-version-catalog bundles: ' + gvcText.slice(0, 300));
+  if (/kotlin-jvm|spring-boot/i.test(gvcText)) pass('libs.versions.toml: plugin aliases shown'); else fail('gradle-version-catalog plugins: ' + gvcText.slice(0, 300));
+
+  // ── Checkstyle viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('checkstyle.xml (Checkstyle)');
+  await page.waitForSelector('#previewHost .cs-doc', { timeout: 12000 });
+  const csText = await page.$eval('#previewHost .cs-doc', (e) => e.textContent);
+  if (/Checkstyle/i.test(csText)) pass('checkstyle.xml: Checkstyle badge shown'); else fail('checkstyle badge: ' + csText.slice(0, 200));
+  if (/Checker/i.test(csText)) pass('checkstyle.xml: Checker module shown'); else fail('checkstyle Checker: ' + csText.slice(0, 300));
+  if (/TreeWalker/i.test(csText)) pass('checkstyle.xml: TreeWalker module shown'); else fail('checkstyle TreeWalker: ' + csText.slice(0, 300));
+  if (/ConstantName|MethodName|JavadocMethod/i.test(csText)) pass('checkstyle.xml: check module names shown'); else fail('checkstyle modules: ' + csText.slice(0, 300));
+
+  // ── SpotBugs viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('spotbugs-exclude.xml (SpotBugs)');
+  await page.waitForSelector('#previewHost .sb-doc', { timeout: 12000 });
+  const sbText = await page.$eval('#previewHost .sb-doc', (e) => e.textContent);
+  if (/SpotBugs/i.test(sbText)) pass('spotbugs-exclude.xml: SpotBugs badge shown'); else fail('spotbugs badge: ' + sbText.slice(0, 200));
+  if (/NP_NULL_ON_SOME_PATH|BC_UNCONFIRMED_CAST|SE_NO_SERIALVERSIONID/i.test(sbText)) pass('spotbugs-exclude.xml: bug pattern names shown'); else fail('spotbugs patterns: ' + sbText.slice(0, 300));
+  if (/com\.acme/i.test(sbText)) pass('spotbugs-exclude.xml: class / package filters shown'); else fail('spotbugs classes: ' + sbText.slice(0, 300));
+  if (/Exclude|match rule/i.test(sbText)) pass('spotbugs-exclude.xml: filter type and match count shown'); else fail('spotbugs filter type: ' + sbText.slice(0, 300));
 }

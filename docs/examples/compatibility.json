@@ -15869,7 +15869,7 @@
       "baseType": "xml",
       "support": "supported",
       "sampleFiles": [
-        "phpunit-app.xml"
+        "phpunit.xml"
       ],
       "extensions": [
         ".yml"

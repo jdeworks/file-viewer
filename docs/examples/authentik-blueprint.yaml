@@ -1,0 +1,40 @@
+version: 1
+metadata:
+  name: Example Application Blueprint
+  description: Provisions an OAuth2 application with provider and login flow
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+
+entries:
+  - model: authentik_flows.flow
+    state: present
+    id: flow-login
+    attrs:
+      name: example-login-flow
+      slug: example-login-flow
+      title: "Login to Example App"
+      designation: authentication
+
+  - model: authentik_providers_oauth2.oauth2provider
+    state: present
+    id: provider-myapp
+    attrs:
+      name: myapp-provider
+      client_type: confidential
+      client_id: example-app-client-id
+      client_secret: EXAMPLE_SECRET_DO_NOT_USE
+      authorization_flow: !KeyOf flow-login
+      redirect_uris: "https://app.example.com/oauth2/callback\nhttps://app.example.com/login"
+      signing_key: !Find [authentik_crypto.certificatekeypair, [name, example-cert]]
+
+  - model: authentik_core.application
+    state: present
+    id: app-myapp
+    attrs:
+      name: Example Application
+      slug: example-application
+      provider: !KeyOf provider-myapp
+      meta_launch_url: "https://app.example.com"
+      meta_description: "Example OAuth2 application"
+      meta_publisher: "Example Corp"
+      open_in_new_tab: false

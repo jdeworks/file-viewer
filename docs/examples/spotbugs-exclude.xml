@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!-- Exclude known false-positives in generated code -->
+  <Match>
+    <Class name="~.*\.generated\..*"/>
+    <Bug category="CORRECTNESS"/>
+  </Match>
+
+  <!-- Ignore null-check warnings in DTO classes -->
+  <Match>
+    <Package name="com.acme.dto"/>
+    <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+  </Match>
+
+  <!-- Suppress unchecked cast in legacy adapter -->
+  <Match>
+    <Class name="com.acme.legacy.LegacyAdapter"/>
+    <Method name="convert" params="java.lang.Object" returns="java.lang.Object"/>
+    <Bug pattern="BC_UNCONFIRMED_CAST"/>
+  </Match>
+
+  <!-- Ignore synchronization issues in test helpers -->
+  <Match>
+    <Class name="~.*Test.*"/>
+    <Bug category="MT_CORRECTNESS"/>
+  </Match>
+
+  <!-- Allow serializable without serialVersionUID in DTOs -->
+  <Match>
+    <Package name="com.acme.dto"/>
+    <Bug pattern="SE_NO_SERIALVERSIONID"/>
+  </Match>
+
+  <!-- Suppress known issue in Spring-generated proxy classes -->
+  <Match>
+    <Class name="~.*\$\$EnhancerBySpringCGLIB\$\$.*"/>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+  </Match>
+
+  <!-- Exclude all findings for a known-bad third-party util -->
+  <Match>
+    <Class name="com.acme.util.LegacyStringUtil"/>
+  </Match>
+
+  <!-- Exclude field exposure in value objects -->
+  <Match>
+    <Package name="com.acme.valueobjects"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+</FindBugsFilter>

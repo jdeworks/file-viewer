@@ -42,7 +42,7 @@ export async function render(intake) {
   let cfg = {};
   try {
     const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
-    cfg = jsyaml.load(intake.text || '') || {};
+    cfg = (jsyaml.loadAll(intake.text || \'\') || [])[0] || {};
   } catch { cfg = {}; }
 
   const filename = (intake.name || intake.filename || '').split('/').pop() || 'filebeat.yml';

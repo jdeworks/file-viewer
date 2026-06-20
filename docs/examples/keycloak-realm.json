@@ -1,0 +1,66 @@
+{
+  "id": "myrealm",
+  "realm": "myrealm",
+  "displayName": "My Application Realm",
+  "enabled": true,
+  "registrationAllowed": true,
+  "resetPasswordAllowed": true,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "loginTheme": "keycloak",
+  "accessTokenLifespan": 300,
+  "clients": [
+    {
+      "clientId": "app-frontend",
+      "name": "Application Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "redirectUris": ["https://app.example.com/*"],
+      "webOrigins": ["https://app.example.com"]
+    },
+    {
+      "clientId": "app-backend",
+      "name": "Application Backend",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "secret": "EXAMPLE_SECRET_DO_NOT_USE",
+      "redirectUris": ["https://api.example.com/*"]
+    },
+    {
+      "clientId": "admin-cli",
+      "name": "Admin CLI",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "id": "role-admin", "name": "admin", "description": "Administrator role" },
+      { "id": "role-user", "name": "user", "description": "Standard user role" },
+      { "id": "role-readonly", "name": "readonly", "description": "Read-only access role" }
+    ],
+    "client": {
+      "app-backend": [
+        { "id": "role-api-read", "name": "api-read" },
+        { "id": "role-api-write", "name": "api-write" }
+      ]
+    }
+  },
+  "identityProviders": [
+    {
+      "alias": "github",
+      "displayName": "GitHub",
+      "providerId": "github",
+      "enabled": true,
+      "config": {
+        "clientId": "EXAMPLE_GITHUB_CLIENT_ID",
+        "clientSecret": "EXAMPLE_GITHUB_SECRET_DO_NOT_USE"
+      }
+    }
+  ]
+}
