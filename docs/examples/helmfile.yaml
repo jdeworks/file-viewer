@@ -1,0 +1,67 @@
+repositories:
+  - name: stable
+    url: https://charts.helm.sh/stable
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+  - name: ingress-nginx
+    url: https://kubernetes.github.io/ingress-nginx
+
+helmDefaults:
+  createNamespace: true
+  wait: true
+  atomic: true
+  timeout: 300
+  cleanupOnFail: true
+
+releases:
+  - name: nginx-ingress
+    namespace: ingress-nginx
+    chart: ingress-nginx/ingress-nginx
+    version: 4.9.0
+    values:
+      - values/ingress-nginx.yaml
+      - controller:
+          replicaCount: 2
+          service:
+            type: LoadBalancer
+
+  - name: cert-manager
+    namespace: cert-manager
+    chart: stable/cert-manager
+    version: 1.14.3
+    values:
+      - values/cert-manager.yaml
+      - installCRDs: true
+
+  - name: prometheus-stack
+    namespace: monitoring
+    chart: bitnami/kube-prometheus
+    version: 8.21.5
+    values:
+      - values/prometheus.yaml
+      - grafana:
+          enabled: true
+          adminPassword: "{{ requiredEnv \"GRAFANA_PASSWORD\" }}"
+
+  - name: myapp
+    namespace: production
+    chart: ./charts/myapp
+    version: 2.1.0
+    values:
+      - values/myapp-common.yaml
+      - values/myapp-production.yaml
+    set:
+      - name: image.tag
+        value: "{{ env \"IMAGE_TAG\" | default \"latest\" }}"
+      - name: replicaCount
+        value: 3
+
+environments:
+  staging:
+    values:
+      - environments/staging.yaml
+  production:
+    values:
+      - environments/production.yaml
+    secrets:
+      - secrets/production.yaml

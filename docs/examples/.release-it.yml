@@ -1,0 +1,46 @@
+git:
+  tagName: "v${version}"
+  tagAnnotation: "Release v${version}"
+  commitMessage: "chore: release v${version}"
+  pushRepo: origin
+  requireBranch: main
+  requireCleanWorkingDir: true
+
+version:
+  current: 1.4.2
+
+github:
+  release: true
+  draft: false
+  preRelease: false
+  releaseName: "Release v${version}"
+  tokenRef: GITHUB_TOKEN
+  assets:
+    - dist/*.tgz
+    - dist/checksums.txt
+
+changelog:
+  generator: conventional-changelog
+  preset: angular
+  infile: CHANGELOG.md
+  header: "# Changelog"
+
+npm:
+  publish: true
+  access: public
+  tag: latest
+  skipChecks: false
+
+plugins:
+  "@release-it/conventional-changelog":
+    preset: angular
+    infile: CHANGELOG.md
+
+hooks:
+  before:init:
+    - npm run lint
+    - npm test
+  after:bump:
+    - npm run build
+  after:release:
+    - echo "Successfully released ${name} ${version}!"

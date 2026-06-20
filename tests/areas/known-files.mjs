@@ -4615,4 +4615,36 @@ export async function run(ctx) {
   const lhciText = await page.$eval('#previewHost .lhci-doc', el => el.textContent);
   if (!lhciText.includes('Lighthouse')) fail('.lighthouserc.json: missing badge'); else pass('.lighthouserc.json: badge shown');
   if (!lhciText.includes('lighthouse:recommended') && !lhciText.includes('assert') && !lhciText.includes('performance')) fail('.lighthouserc.json: no assertions shown'); else pass('.lighthouserc.json: assertions shown');
+
+  // ── harbor.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('harbor.yml');
+  pass(await page.waitForSelector('#previewHost .harbor-doc', { timeout: 12000 }), 'harbor.yml: harbor-doc shown');
+  const harborText = await page.$eval('#previewHost .harbor-doc', el => el.textContent);
+  if (!harborText.includes('Harbor')) fail('harbor.yml: missing badge'); else pass('harbor.yml: badge shown');
+  if (!harborText.includes('registry.example.com') && !harborText.includes('hostname')) fail('harbor.yml: no hostname shown'); else pass('harbor.yml: hostname shown');
+
+  // ── garden.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('garden.yml');
+  pass(await page.waitForSelector('#previewHost .gardenio-doc', { timeout: 12000 }), 'garden.yml: gardenio-doc shown');
+  const gardenText = await page.$eval('#previewHost .gardenio-doc', el => el.textContent);
+  if (!gardenText.includes('Garden')) fail('garden.yml: missing badge'); else pass('garden.yml: badge shown');
+  if (!gardenText.includes('Project') && !gardenText.includes('kind')) fail('garden.yml: no kind shown'); else pass('garden.yml: kind shown');
+
+  // ── stryker.conf.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('stryker.conf.json');
+  pass(await page.waitForSelector('#previewHost .stryker-doc', { timeout: 12000 }), 'stryker.conf.json: stryker-doc shown');
+  const strykerText = await page.$eval('#previewHost .stryker-doc', el => el.textContent);
+  if (!strykerText.includes('Stryker')) fail('stryker.conf.json: missing badge'); else pass('stryker.conf.json: badge shown');
+  if (!strykerText.includes('jest') && !strykerText.includes('runner')) fail('stryker.conf.json: no test runner shown'); else pass('stryker.conf.json: test runner shown');
+
+  // ── airflow.cfg viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('airflow.cfg');
+  pass(await page.waitForSelector('#previewHost .airflowcfg-doc', { timeout: 12000 }), 'airflow.cfg: airflowcfg-doc shown');
+  const airflowText = await page.$eval('#previewHost .airflowcfg-doc', el => el.textContent);
+  if (!airflowText.includes('Airflow')) fail('airflow.cfg: missing badge'); else pass('airflow.cfg: badge shown');
+  if (!airflowText.includes('executor') && !airflowText.includes('CeleryExecutor')) fail('airflow.cfg: no executor shown'); else pass('airflow.cfg: executor shown');
 }

@@ -8660,5 +8660,15 @@
     "name": ".lighthouserc.json",
     "category": "Tooling",
     "knownFile": "lighthouserc"
+  },
+  {
+    "name": "stryker.conf.json",
+    "category": "Testing",
+    "knownFile": "stryker"
+  },
+  {
+    "name": "airflow.cfg",
+    "category": "Infrastructure",
+    "knownFile": "airflow-cfg"
   }
 ]

@@ -1,0 +1,49 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "http://localhost:3000/",
+        "http://localhost:3000/about",
+        "http://localhost:3000/products"
+      ],
+      "numberOfRuns": 3,
+      "startServerCommand": "npm run start",
+      "settings": {
+        "formFactor": "desktop",
+        "throttling": {
+          "rttMs": 40,
+          "throughputKbps": 10240,
+          "cpuSlowdownMultiplier": 1
+        },
+        "screenEmulation": {
+          "mobile": false,
+          "width": 1350,
+          "height": 940,
+          "deviceScaleFactor": 1
+        }
+      }
+    },
+    "assert": {
+      "preset": "lighthouse:recommended",
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.9 }],
+        "categories:accessibility": ["error", { "minScore": 0.95 }],
+        "categories:best-practices": ["warn", { "minScore": 0.9 }],
+        "categories:seo": ["warn", { "minScore": 0.9 }],
+        "first-contentful-paint": ["warn", { "maxNumericValue": 2000 }],
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "total-blocking-time": ["error", { "maxNumericValue": 200 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
+        "interactive": ["warn", { "maxNumericValue": 3800 }],
+        "uses-optimized-images": ["warn", {}],
+        "unused-javascript": ["warn", {}],
+        "uses-text-compression": ["error", {}]
+      }
+    },
+    "upload": {
+      "target": "lhci",
+      "serverBaseUrl": "https://lhci.example.com",
+      "token": "LHCI_BUILD_TOKEN"
+    }
+  }
+}

@@ -647,7 +647,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   atlantis, checkov, terraformDocs, infracost,
   opencostConfig, crossplaneConfig, kedaConfig, veleroConfig,
   androidManifest, appConfig, buildZigZon, zigZon, cartfile,
-  electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, forgeConfig,
+  electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, tempoConfig, mimirConfig, forgeConfig,
   gleamToml, goWork, grafanaIni, podmanQuadlet, growthbook,
   jekyllConfig, juliaProject, juliaManifest, kongConfig, apisixConfig, envoyConfig, launchSettings, appSettings,
   nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, clickhouseConfig, shardYml, crystalShard,
