@@ -1,0 +1,24 @@
+Package: mypackage
+Type: Package
+Title: A Sample R Package
+Version: 0.3.1
+Authors@R:
+    person("Jane", "Doe", email = "jane@example.com", role = c("aut", "cre"))
+Description: Provides utility functions for data analysis and visualization.
+    Includes tools for statistical modeling and report generation.
+License: MIT + file LICENSE
+Depends: R (>= 4.0.0)
+Imports:
+    dplyr (>= 1.0.0),
+    ggplot2 (>= 3.3.0),
+    stringr,
+    readr
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Encoding: UTF-8
+LazyData: true
+URL: https://github.com/example/mypackage
+BugReports: https://github.com/example/mypackage/issues
+RoxygenNote: 7.2.3
