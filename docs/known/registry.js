@@ -339,6 +339,10 @@ import dockerBake from '../types/text/known/docker-bake/index.js';
 import flake8 from '../types/text/ini/known/flake8/index.js';
 import pylintrc from '../types/text/ini/known/pylintrc/index.js';
 import setupCfg from '../types/text/ini/known/setup-cfg/index.js';
+import awsCredentials from '../types/text/ini/known/aws-credentials/index.js';
+import awsConfig from '../types/text/ini/known/aws-config/index.js';
+import kubeconfig from '../types/text/yaml/known/kubeconfig/index.js';
+import gcpServiceAccount from '../types/text/json/known/gcp-service-account/index.js';
 import banditYaml from '../types/text/yaml/known/bandit-yaml/index.js';
 import istioConfig from '../types/text/yaml/known/istio-config/index.js';
 import linkerdConfig from '../types/text/yaml/known/linkerd-config/index.js';
@@ -427,7 +431,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress,
   semgrepConfig, codeclimateConfig, gitleaksConfig, osvScanner,
   condaEnv, pipConf, nodeVersionFile, dockerBake,
-  flake8, pylintrc, setupCfg, banditYaml,
+  flake8, pylintrc, setupCfg, awsCredentials, awsConfig,
+  kubeconfig, gcpServiceAccount, banditYaml,
   istioConfig, linkerdConfig, etcdConfig,
   samTemplate, cfnTemplate, cdkJson, awsSamConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson,

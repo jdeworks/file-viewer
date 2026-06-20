@@ -1954,4 +1954,46 @@ export async function run(ctx) {
   if (/Sorbet/i.test(sbtText)) pass('sorbet.config: badge shown'); else fail('sorbet badge: ' + sbtText.slice(0, 200));
   if (/vendor|node_modules|ignore/i.test(sbtText)) pass('sorbet.config: ignore patterns shown'); else fail('sorbet ignore: ' + sbtText.slice(0, 300));
   if (/requires-ancestor|ruby3-keyword|experimental/i.test(sbtText)) pass('sorbet.config: experimental features shown'); else fail('sorbet experimental: ' + sbtText.slice(0, 300));
+
+  // ── dbt_project.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dbt_project.yml');
+  await page.waitForSelector('#previewHost .dbt-doc', { timeout: 12000 });
+  const dbtText = await page.$eval('#previewHost .dbt-doc', (e) => e.textContent);
+  if (/dbt/i.test(dbtText)) pass('dbt_project.yml: dbt badge shown'); else fail('dbt badge: ' + dbtText.slice(0, 200));
+  if (/jaffle_shop/i.test(dbtText)) pass('dbt_project.yml: project name shown'); else fail('dbt name: ' + dbtText.slice(0, 200));
+  if (/profile/i.test(dbtText)) pass('dbt_project.yml: profile shown'); else fail('dbt profile: ' + dbtText.slice(0, 200));
+  if (/incremental|table|view/i.test(dbtText)) pass('dbt_project.yml: materializations shown'); else fail('dbt materializations: ' + dbtText.slice(0, 300));
+  if (/start_date|payment_method|environment/i.test(dbtText)) pass('dbt_project.yml: vars shown'); else fail('dbt vars: ' + dbtText.slice(0, 300));
+
+  // ── liquibase.properties viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('liquibase.properties');
+  await page.waitForSelector('#previewHost .lq-doc', { timeout: 12000 });
+  const lqText = await page.$eval('#previewHost .lq-doc', (e) => e.textContent);
+  if (/Liquibase/i.test(lqText)) pass('liquibase.properties: Liquibase badge shown'); else fail('lq badge: ' + lqText.slice(0, 200));
+  if (/db\.example\.com/i.test(lqText)) pass('liquibase.properties: host shown'); else fail('lq host: ' + lqText.slice(0, 200));
+  if (/liquibase_user/i.test(lqText)) pass('liquibase.properties: username shown'); else fail('lq username: ' + lqText.slice(0, 200));
+  if (/•{4,}|password masked/i.test(lqText)) pass('liquibase.properties: password masked'); else fail('lq password masking: ' + lqText.slice(0, 300));
+  if (/changelog-master|changelog/i.test(lqText)) pass('liquibase.properties: changeLogFile shown'); else fail('lq changelog: ' + lqText.slice(0, 300));
+
+  // ── sqitch.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sqitch.conf');
+  await page.waitForSelector('#previewHost .sq-doc', { timeout: 12000 });
+  const sqText = await page.$eval('#previewHost .sq-doc', (e) => e.textContent);
+  if (/Sqitch/i.test(sqText)) pass('sqitch.conf: Sqitch badge shown'); else fail('sq badge: ' + sqText.slice(0, 200));
+  if (/core|engine|plan/i.test(sqText)) pass('sqitch.conf: core section shown'); else fail('sq core: ' + sqText.slice(0, 200));
+  if (/dev|staging|production/i.test(sqText)) pass('sqitch.conf: targets shown'); else fail('sq targets: ' + sqText.slice(0, 300));
+  if (/\*{3}/i.test(sqText)) pass('sqitch.conf: credentials masked in URIs'); else fail('sq credential masking: ' + sqText.slice(0, 300));
+
+  // ── atlas.hcl viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('atlas.hcl');
+  await page.waitForSelector('#previewHost .at-doc', { timeout: 12000 });
+  const atText = await page.$eval('#previewHost .at-doc', (e) => e.textContent);
+  if (/Atlas/i.test(atText)) pass('atlas.hcl: Atlas badge shown'); else fail('at badge: ' + atText.slice(0, 200));
+  if (/local|staging|production/i.test(atText)) pass('atlas.hcl: env blocks shown'); else fail('at envs: ' + atText.slice(0, 200));
+  if (/variable|db_url|dev_url/i.test(atText)) pass('atlas.hcl: variables shown'); else fail('at variables: ' + atText.slice(0, 300));
+  if (/\*{3}/i.test(atText)) pass('atlas.hcl: credentials masked in URLs'); else fail('at credential masking: ' + atText.slice(0, 300));
 }
