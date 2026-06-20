@@ -5425,4 +5425,10 @@ export async function run(ctx) {
   await openExample('sftpgo.json');
   await page.waitForSelector('#previewHost .sftpgo-doc', { timeout: 12000 });
   pass('sftpgo.json: SFTPGo badge shown');
+
+  // ── invidious-config.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('invidious-config.yml');
+  await page.waitForSelector('#previewHost .invidious-doc', { timeout: 12000 });
+  pass('invidious-config.yml: Invidious badge shown');
 }

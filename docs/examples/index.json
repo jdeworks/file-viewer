@@ -9994,5 +9994,18 @@
     "enhanced": true,
     "description": "SFTPGo SFTP/FTP/WebDAV server configuration",
     "knownFile": true
+  },
+  {
+    "file": "invidious-config.yml",
+    "label": "Invidious Config",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Invidious self-hosted YouTube frontend configuration",
+    "knownFile": true
   }
 ]

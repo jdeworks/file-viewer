@@ -1,0 +1,45 @@
+# Invidious configuration
+# https://github.com/iv-org/invidious/blob/master/config/config.example.yml
+
+# Server
+port: 3000
+host: "0.0.0.0"
+https_only: false
+domain: "invidious.example.com"
+external_port: 443
+
+# Database
+db:
+  dbname: invidious
+  user: invidious
+  password: "s3cr3t-db-password"
+  host: localhost
+  port: 5432
+
+# Security
+hmac_key: "a-very-long-random-hmac-key-change-this-in-production"
+
+# Performance
+channel_threads: 1
+feed_threads: 1
+pool_size: 100
+
+# Features
+registration_enabled: false
+login_enabled: true
+captcha_enabled: false
+admins:
+  - "admin"
+
+# Default preferences
+default_home: "Popular"
+feed_menu:
+  - "Subscriptions"
+  - "Playlists"
+  - "History"
+dark_mode: true
+locale: "en-US"
+
+# Cache & statistics
+cache_annotations: false
+statistics_enabled: false

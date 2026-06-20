@@ -691,6 +691,7 @@ import glitchtipConfig from '../types/text/known/glitchtip-config/index.js';
 import archiveboxConfig from '../types/text/known/archivebox-config/index.js';
 import dexConfig from '../types/text/yaml/known/dex-config/index.js';
 import lldapConfig from '../types/text/toml/known/lldap-config/index.js';
+import invidiousConfig from '../types/text/yaml/known/invidious-config/index.js';
 import listmonkConfig from '../types/text/toml/known/listmonk-config/index.js';
 import windmillConfig from '../types/text/known/windmill-config/index.js';
 import komgaConfig from '../types/text/yaml/known/komga-config/index.js';
@@ -862,7 +863,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   hoppscotchConfig, twentyCrmConfig,
   vikunjaConfig, appsmithConfig,
   glitchtipConfig, archiveboxConfig,
-  dexConfig, lldapConfig,
+  dexConfig, lldapConfig, invidiousConfig,
   listmonkConfig, windmillConfig,
   komgaConfig, coderConfig,
   calComConfig, ralllyConfig,
