@@ -3579,6 +3579,15 @@ export async function run(ctx) {
   if (/example\.com/i.test(namedText)) pass('named.conf: zone names shown'); else fail('named-conf zones: ' + namedText.slice(0, 300));
   if (/master|primary/i.test(namedText)) pass('named.conf: zone types shown'); else fail('named-conf zone types: ' + namedText.slice(0, 300));
 
+  // ── unbound.conf (Unbound DNS) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('unbound.conf (Unbound DNS)');
+  await page.waitForSelector('#previewHost .unboundcfg-doc', { timeout: 12000 });
+  const unboundText = await page.$eval('#previewHost .unboundcfg-doc', (e) => e.textContent);
+  if (/Unbound/i.test(unboundText)) pass('unbound.conf: Unbound badge shown'); else fail('unbound-conf badge: ' + unboundText.slice(0, 200));
+  if (/cloudflare|1\.1\.1\.1/i.test(unboundText)) pass('unbound.conf: forward addresses shown'); else fail('unbound-conf forward addrs: ' + unboundText.slice(0, 300));
+  if (/access.control|allow|refuse/i.test(unboundText)) pass('unbound.conf: access control shown'); else fail('unbound-conf acl: ' + unboundText.slice(0, 300));
+
   // ── dhcpd.conf (ISC DHCP Server) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('dhcpd.conf (ISC DHCP Server)');

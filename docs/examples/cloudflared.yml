@@ -1,0 +1,30 @@
+# cloudflared tunnel configuration
+# https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/
+
+tunnel: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+credentials-file: /home/user/.cloudflared/a1b2c3d4-e5f6-7890-abcd-ef1234567890.json
+
+# Route incoming requests to local services
+ingress:
+  - hostname: app.example.com
+    service: http://localhost:3000
+
+  - hostname: api.example.com
+    service: https://localhost:8443
+    originRequest:
+      noTLSVerify: true
+
+  - hostname: ssh.example.com
+    service: ssh://localhost:22
+
+  # Catch-all rule — required as the last entry
+  - service: http_status:404
+
+# Metrics server for prometheus scraping
+metrics: localhost:2000
+
+# Warp routing (Zero Trust network access)
+warp-routing:
+  enabled: true
+
+loglevel: info

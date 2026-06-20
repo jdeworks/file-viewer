@@ -7913,6 +7913,18 @@
     "knownFile": "named-conf"
   },
   {
+    "file": "unbound.conf",
+    "label": "unbound.conf (Unbound DNS)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "knownFile": "unbound-conf"
+  },
+  {
     "file": "dhcpd.conf",
     "label": "dhcpd.conf (ISC DHCP Server)",
     "category": "Config",
