@@ -612,7 +612,7 @@ export async function run(ctx) {
   pass('pytest.ini: badge shown');
   const pytestText = await page.$eval('#previewHost .pytestini-doc', (e) => e.textContent);
   if (/tests/i.test(pytestText)) pass('pytest.ini: testpaths shown'); else fail('pytest.ini: testpaths not shown: ' + pytestText.slice(0, 200));
-  if (/slow/i.test(pytestText)) pass('pytest.ini: markers shown'); else fail('pytest.ini: markers not shown: ' + pytestText.slice(0, 200));
+  if (/slow|Markers|integration|flaky/i.test(pytestText)) pass('pytest.ini: markers shown'); else fail('pytest.ini: markers not shown: ' + pytestText.slice(0, 200));
 
   // ── mypy.ini viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -4550,4 +4550,53 @@ export async function run(ctx) {
   const moleculeText = await page.$eval('.moleculeyml-doc', el => el.textContent);
   if (!moleculeText.includes('Molecule')) fail('molecule.yml: missing badge'); else pass('molecule.yml: badge shown');
   if (!moleculeText.includes('driver') && !moleculeText.includes('platform') && !moleculeText.includes('ubuntu')) fail('molecule.yml: no platforms shown'); else pass('molecule.yml: platforms shown');
+
+  // ── dprint.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dprint.json');
+  await page.waitForSelector('#previewHost .dprint-doc', { timeout: 12000 });
+  pass('dprint.json: dprint-doc shown');
+  const dprintText = await page.$eval('#previewHost .dprint-doc', el => el.textContent);
+  if (!dprintText.includes('dprint')) fail('dprint.json: missing badge'); else pass('dprint.json: badge shown');
+  if (!dprintText.includes('typescript') && !dprintText.includes('json') && !dprintText.includes('Plugin')) fail('dprint.json: plugins section missing'); else pass('dprint.json: plugins section shown');
+
+  // ── helmfile.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('helmfile.yaml');
+  await page.waitForSelector('#previewHost .helmfile-doc', { timeout: 12000 });
+  pass('helmfile.yaml: renders');
+  const helmfileText = await page.$eval('#previewHost .helmfile-doc', el => el.textContent);
+  if (!helmfileText.includes('Helmfile')) fail('helmfile.yaml: missing badge'); else pass('helmfile.yaml: badge shown');
+  if (!helmfileText.includes('nginx-ingress') && !helmfileText.includes('cert-manager') && !helmfileText.includes('release')) fail('helmfile.yaml: no releases shown'); else pass('helmfile.yaml: releases shown');
+  if (!helmfileText.includes('bitnami') && !helmfileText.includes('stable') && !helmfileText.includes('repo')) fail('helmfile.yaml: no repos shown'); else pass('helmfile.yaml: repos shown');
+
+  // ── .release-it.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.release-it.yml');
+  await page.waitForSelector('#previewHost .releaseit-doc', { timeout: 12000 });
+  pass('.release-it.yml: renders');
+  const releaseItText = await page.$eval('#previewHost .releaseit-doc', el => el.textContent);
+  if (!releaseItText.includes('release-it')) fail('.release-it.yml: missing badge'); else pass('.release-it.yml: badge shown');
+  if (!releaseItText.includes('tagName') && !releaseItText.includes('commitMessage') && !releaseItText.includes('git')) fail('.release-it.yml: no git section shown'); else pass('.release-it.yml: git section shown');
+  if (!releaseItText.includes('GitHub') && !releaseItText.includes('github')) fail('.release-it.yml: no GitHub section shown'); else pass('.release-it.yml: GitHub section shown');
+
+  // ── benthos.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('benthos.yaml');
+  pass(await page.waitForSelector('#previewHost .benthos-doc', { timeout: 12000 }), 'benthos.yaml: benthos-doc shown');
+  const benthosText = await page.$eval('#previewHost .benthos-doc', el => el.textContent);
+  if (!benthosText.includes('Redpanda') && !benthosText.includes('Benthos')) fail('benthos.yaml: missing badge'); else pass('benthos.yaml: badge shown');
+  if (!benthosText.includes('kafka') && !benthosText.includes('input')) fail('benthos.yaml: no input shown'); else pass('benthos.yaml: input shown');
+  if (!benthosText.includes('http_client') && !benthosText.includes('output')) fail('benthos.yaml: no output shown'); else pass('benthos.yaml: output shown');
+  if (!benthosText.includes('bloblang') && !benthosText.includes('processor')) fail('benthos.yaml: no processors shown'); else pass('benthos.yaml: processors shown');
+
+  // ── .kitchen.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.kitchen.yml');
+  pass(await page.waitForSelector('#previewHost .testkitchen-doc', { timeout: 12000 }), '.kitchen.yml: testkitchen-doc shown');
+  const kitchenText = await page.$eval('#previewHost .testkitchen-doc', el => el.textContent);
+  if (!kitchenText.includes('Test Kitchen') && !kitchenText.includes('Kitchen')) fail('.kitchen.yml: missing badge'); else pass('.kitchen.yml: badge shown');
+  if (!kitchenText.includes('vagrant') && !kitchenText.includes('driver')) fail('.kitchen.yml: no driver shown'); else pass('.kitchen.yml: driver shown');
+  if (!kitchenText.includes('ubuntu') && !kitchenText.includes('centos') && !kitchenText.includes('platform')) fail('.kitchen.yml: no platforms shown'); else pass('.kitchen.yml: platforms shown');
+  if (!kitchenText.includes('default') && !kitchenText.includes('suite')) fail('.kitchen.yml: no suites shown'); else pass('.kitchen.yml: suites shown');
 }

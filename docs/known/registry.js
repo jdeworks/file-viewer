@@ -339,6 +339,8 @@ import rspackConfig from '../types/text/known/rspack-config/index.js';
 import esbuildConfig from '../types/text/known/esbuild-config/index.js';
 import parcelrc from '../types/text/json/known/parcelrc/index.js';
 import bunfigToml from '../types/text/toml/known/bunfig/index.js';
+import shopifyApp from '../types/text/toml/known/shopify-app/index.js';
+import lighthouserc from '../types/text/json/known/lighthouserc/index.js';
 import atlantis from '../types/text/yaml/known/atlantis/index.js';
 import checkov from '../types/text/yaml/known/checkov/index.js';
 import terraformDocs from '../types/text/yaml/known/terraform-docs/index.js';
@@ -446,6 +448,7 @@ import analysisOptions from '../types/text/yaml/known/analysis-options/index.js'
 import podfileLock from '../types/text/known/podfile-lock/index.js';
 import xcodeScheme from '../types/text/xml/known/xcode-scheme/index.js';
 import easJson from '../types/text/json/known/eas-json/index.js';
+import dprintConfig from '../types/text/json/known/dprint/index.js';
 import opaPolicy from '../types/text/known/opa-policy/index.js';
 import falcoRules from '../types/text/yaml/known/falco-rules/index.js';
 import kyvernoPolicy from '../types/text/yaml/known/kyverno-policy/index.js';
@@ -572,6 +575,12 @@ import { plugin as semaphoreCi } from '../types/text/yaml/known/semaphore-ci/ind
 import nanorc from '../types/text/known/nanorc/index.js';
 import { plugin as ansibleLint } from '../types/text/yaml/known/ansible-lint/index.js';
 import { plugin as molecule } from '../types/text/yaml/known/molecule/index.js';
+import { plugin as helmfile } from '../types/text/yaml/known/helmfile/index.js';
+import { plugin as releaseIt } from '../types/text/yaml/known/release-it/index.js';
+import benthos from '../types/text/yaml/known/benthos/index.js';
+import testKitchen from '../types/text/yaml/known/test-kitchen/index.js';
+import harbor from '../types/text/yaml/known/harbor/index.js';
+import gardenIo from '../types/text/yaml/known/garden-io/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -629,7 +638,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   phpunit, phpstan, phpCsFixer, behat,
   phpIni, psalmConfig, phpunitConfig, rectorConfig,
   terragrunt, tflint, tfLock, versionsTf,
-  tsupConfig, rspackConfig, esbuildConfig, parcelrc, bunfigToml,
+  tsupConfig, rspackConfig, esbuildConfig, parcelrc, bunfigToml, shopifyApp, lighthouserc,
   shadowCljs, projectClj, depsEdn,
   atlantis, checkov, terraformDocs, infracost,
   opencostConfig, crossplaneConfig, kedaConfig, veleroConfig,
@@ -648,7 +657,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   istioConfig, linkerdConfig, etcdConfig,
   kafkaServerProps, natsConfig, rabbitmqConf, zookeeperConfig,
   samTemplate, cfnTemplate, cdkJson, awsSamConfig, releasePleaseConfig,
-  analysisOptions, podfileLock, xcodeScheme, easJson,
+  analysisOptions, podfileLock, xcodeScheme, easJson, dprintConfig,
   hostsFile, resolvConf, sshdConfig, sshClientConfig, sudoers, nfsExports, fstab, crypttab,
   sysctlConf, modprobeConf,
   jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, emacsConfig, tmuxConf, screenrc, i3Config, swayConfig, dunstrc, polybarConf, nanorc,
@@ -701,6 +710,9 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   preCommitConfig, conkyConf,
   semaphoreCi,
   ansibleLint, molecule,
+  helmfile, releaseIt,
+  benthos, testKitchen,
+  harbor, gardenIo,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

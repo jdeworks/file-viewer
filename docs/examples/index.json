@@ -6493,6 +6493,19 @@
     "knownFile": "eas-json"
   },
   {
+    "label": "dprint.json",
+    "file": "dprint.json",
+    "mime": "application/json",
+    "category": "Tooling",
+    "categories": [
+      "Tooling",
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "dprint",
+    "description": "dprint formatter config: typescript, json, markdown, toml plugins with lineWidth 100, single quotes, always semis, and include/exclude globs."
+  },
+  {
     "label": "rabbitmq.conf",
     "file": "rabbitmq.conf",
     "mime": "text/plain",
@@ -8590,5 +8603,52 @@
     "enhanced": true,
     "knownFile": "vale-ini",
     "description": "Vale prose linter config: write-good and proselint packages, BasedOnStyles for .md/.rst/.txt globs, suggestion-level alerts."
+  },
+  {
+    "label": "helmfile.yaml",
+    "file": "helmfile.yaml",
+    "mime": "application/yaml",
+    "category": "Infrastructure",
+    "categories": [
+      "Infrastructure",
+      "Kubernetes",
+      "Helm"
+    ],
+    "enhanced": true,
+    "knownFile": "helmfile",
+    "description": "Helmfile Kubernetes deployment spec: 3 repos (stable, bitnami, ingress-nginx), 4 releases (nginx-ingress, cert-manager, prometheus-stack, myapp), staging and production environments."
+  },
+  {
+    "label": ".release-it.yml",
+    "file": ".release-it.yml",
+    "mime": "text/x-yaml",
+    "category": "DevOps",
+    "categories": [
+      "DevOps",
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "release-it",
+    "description": "release-it automation config: git tag v${version}, GitHub release (draft: false), angular changelog preset into CHANGELOG.md, npm publish public, @release-it/conventional-changelog plugin, before/after hooks."
+  },
+  {
+    "name": "benthos.yaml",
+    "category": "Infrastructure",
+    "knownFile": "benthos"
+  },
+  {
+    "name": ".kitchen.yml",
+    "category": "DevOps",
+    "knownFile": "test-kitchen"
+  },
+  {
+    "name": "harbor.yml",
+    "category": "Infrastructure",
+    "knownFile": "harbor"
+  },
+  {
+    "name": "garden.yml",
+    "category": "DevOps",
+    "knownFile": "garden-io"
   }
 ]
