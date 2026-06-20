@@ -1,0 +1,31 @@
+# OpenAPI Generator CLI configuration
+# See: https://openapi-generator.tech/docs/configuration
+
+generatorName: typescript-axios
+inputSpec: https://petstore3.swagger.io/api/v3/openapi.json
+outputDir: src/api/generated
+
+additionalProperties:
+  supportsES6: true
+  withInterfaces: true
+  modelPropertyNaming: camelCase
+  enumNameSuffix: Enum
+  useSingleRequestParameter: true
+  withSeparateModelsAndApi: true
+  apiPackage: api
+  modelPackage: models
+
+globalProperties:
+  models: ""
+  apis: ""
+  supportingFiles: ""
+
+typeMappings:
+  set: Array
+  file: Blob
+
+importMappings:
+  OffsetDateTime: java.time.OffsetDateTime
+  LocalDate: java.time.LocalDate
+
+templateDir: templates/typescript-axios

@@ -4836,4 +4836,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('openapi-generator-config.yaml');
   pass(await page.waitForSelector('#previewHost .openapigen-doc', { timeout: 12000 }), 'openapi-generator-config.yaml: openapigen-doc shown');
+
+  // ── cloudflared.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('cloudflared.yml');
+  pass(await page.waitForSelector('#previewHost .cfd-doc', { timeout: 12000 }), 'cloudflared.yml: cfd-doc shown');
+
+  // ── dnsmasq.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dnsmasq.conf');
+  pass(await page.waitForSelector('#previewHost .dnsmasq-doc', { timeout: 12000 }), 'dnsmasq.conf: dnsmasq-doc shown');
 }

@@ -8891,5 +8891,15 @@
     "name": "openapi-generator-config.yaml",
     "category": "Tooling",
     "knownFile": "openapi-generator"
+  },
+  {
+    "name": "cloudflared.yml",
+    "category": "Infrastructure",
+    "knownFile": "cloudflared"
+  },
+  {
+    "name": "dnsmasq.conf",
+    "category": "Infrastructure",
+    "knownFile": "dnsmasq"
   }
 ]

@@ -552,6 +552,7 @@ import dovecotConf from '../types/text/known/dovecot-conf/index.js';
 import eximConf from '../types/text/known/exim-conf/index.js';
 import chronyConf from '../types/text/known/chrony-conf/index.js';
 import namedConf from '../types/text/known/named-conf/index.js';
+import unboundConf from '../types/text/known/unbound-conf/index.js';
 import dhcpdConf from '../types/text/known/dhcpd-conf/index.js';
 import netdataConf from '../types/text/known/netdata-conf/index.js';
 import yarnrc from '../types/text/known/yarnrc/index.js';
@@ -722,7 +723,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   fail2banConf, apparmorProfile, smbConf,
   corefile, containerdConfig,
   postfixConf, dovecotConf, eximConf, chronyConf,
-  namedConf, dhcpdConf,
+  namedConf, unboundConf, dhcpdConf,
   netdataConf, yarnrc,
   hyprlandConf, lxcConfig,
   muttrc, footConfig,
