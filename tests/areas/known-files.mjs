@@ -5270,4 +5270,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('monica.env');
   pass(await page.waitForSelector('#previewHost .monica-doc', { timeout: 12000 }), 'monica.env: Monica CRM badge shown');
+
+  // ── n8n.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('n8n.env');
+  pass(await page.waitForSelector('#previewHost .n8n-doc', { timeout: 12000 }), 'n8n.env: n8n badge shown');
+
+  // ── nocodb.env viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('nocodb.env');
+  pass(await page.waitForSelector('#previewHost .noco-doc', { timeout: 12000 }), 'nocodb.env: NocoDB badge shown');
 }
