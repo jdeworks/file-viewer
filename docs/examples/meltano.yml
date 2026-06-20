@@ -1,0 +1,95 @@
+version: 1
+default_environment: dev
+project_id: analytics-platform
+
+environments:
+- name: dev
+- name: staging
+- name: prod
+
+plugins:
+  extractors:
+  - name: tap-github
+    variant: MeltanoLabs
+    pip_url: git+https://github.com/MeltanoLabs/tap-github.git
+    config:
+      organizations: [my-org]
+      start_date: '2023-01-01T00:00:00Z'
+      stream_maps:
+        repositories:
+          __filter__: record['stargazers_count'] > 10
+  - name: tap-postgres
+    variant: MeltanoLabs
+    pip_url: meltanolabs-tap-postgres
+    config:
+      host: ${PG_HOST}
+      port: 5432
+      database: ${PG_DB}
+      user: ${PG_USER}
+      password: ${PG_PASSWORD}
+      filter_schemas:
+      - public
+      - analytics
+
+  loaders:
+  - name: target-postgres
+    variant: MeltanoLabs
+    pip_url: meltanolabs-target-postgres
+    config:
+      host: ${TARGET_PG_HOST}
+      port: 5432
+      database: ${TARGET_PG_DB}
+      user: ${TARGET_PG_USER}
+      password: ${TARGET_PG_PASSWORD}
+      default_target_schema: raw
+      add_record_metadata: true
+  - name: target-jsonl
+    variant: andyh1203
+    pip_url: target-jsonl
+    config:
+      destination_path: output/
+
+  transforms:
+  - name: dbt-postgres
+    variant: dbt-labs
+    pip_url: dbt-core~=1.7.0 dbt-postgres~=1.7.0
+    config:
+      project_dir: transform/
+      profiles_dir: transform/
+
+  orchestrators:
+  - name: airflow
+    variant: apache
+    pip_url: git+https://github.com/meltano/airflow-ext.git@main apache-airflow==2.8.0
+
+  utilities:
+  - name: meltano-map-transformer
+    variant: meltano
+    pip_url: meltano-map-transformer
+
+schedules:
+- name: daily-github-to-postgres
+  job: github-to-warehouse
+  interval: '0 2 * * *'
+- name: hourly-postgres-sync
+  extractor: tap-postgres
+  loader: target-jsonl
+  interval: '@hourly'
+- name: weekly-transforms
+  job: run-dbt
+  interval: '0 4 * * 0'
+
+jobs:
+- name: github-to-warehouse
+  tasks:
+  - tap-github target-postgres
+- name: run-dbt
+  tasks:
+  - dbt-postgres:run
+  - dbt-postgres:test
+- name: full-pipeline
+  tasks:
+  - tap-github target-postgres
+  - tap-postgres target-postgres
+  - dbt-postgres:run
+  - dbt-postgres:test

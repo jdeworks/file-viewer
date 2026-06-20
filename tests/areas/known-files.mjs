@@ -4957,4 +4957,24 @@ export async function run(ctx) {
   if (/data-pipeline/i.test(prefectText)) pass('prefect.yaml: project name shown'); else fail('prefect project: ' + prefectText.slice(0, 200));
   if (/etl-daily|ml-training/i.test(prefectText)) pass('prefect.yaml: deployments listed'); else fail('prefect deployments: ' + prefectText.slice(0, 200));
   if (/cron/i.test(prefectText)) pass('prefect.yaml: schedules shown'); else fail('prefect schedules: ' + prefectText.slice(0, 200));
+
+  // ── meltano.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('meltano.yml');
+  pass(await page.waitForSelector('#previewHost .meltano-doc', { timeout: 12000 }), 'meltano.yml: badge shown');
+  const meltanoText = await page.$eval('#previewHost .meltano-doc', (e) => e.textContent);
+  if (/Meltano/i.test(meltanoText)) pass('meltano.yml: Meltano badge text shown'); else fail('meltano badge text: ' + meltanoText.slice(0, 200));
+  if (/tap-github|tap-postgres/i.test(meltanoText)) pass('meltano.yml: extractors shown'); else fail('meltano extractors: ' + meltanoText.slice(0, 300));
+  if (/target-postgres|target-jsonl/i.test(meltanoText)) pass('meltano.yml: loaders shown'); else fail('meltano loaders: ' + meltanoText.slice(0, 300));
+  if (/daily-github-to-postgres|hourly-postgres-sync/i.test(meltanoText)) pass('meltano.yml: schedules shown'); else fail('meltano schedules: ' + meltanoText.slice(0, 300));
+
+  // ── dagster.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('dagster.yaml');
+  pass(await page.waitForSelector('#previewHost .dagster-doc', { timeout: 12000 }), 'dagster.yaml: badge shown');
+  const dagsterText = await page.$eval('#previewHost .dagster-doc', (e) => e.textContent);
+  if (/Dagster/i.test(dagsterText)) pass('dagster.yaml: Dagster badge text shown'); else fail('dagster badge text: ' + dagsterText.slice(0, 200));
+  if (/data_platform\.pipelines|pipelines/i.test(dagsterText)) pass('dagster.yaml: code location packages shown'); else fail('dagster packages: ' + dagsterText.slice(0, 300));
+  if (/grpc.server|ml-dagster-grpc|ml-pipelines/i.test(dagsterText)) pass('dagster.yaml: gRPC server location shown'); else fail('dagster grpc: ' + dagsterText.slice(0, 300));
+  if (/4 code location/i.test(dagsterText)) pass('dagster.yaml: location count shown'); else fail('dagster count: ' + dagsterText.slice(0, 300));
 }

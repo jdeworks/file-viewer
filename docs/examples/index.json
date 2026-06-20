@@ -9049,5 +9049,25 @@
     "name": "recursor.conf",
     "category": "Network",
     "knownFile": true
+  },
+  {
+    "file": "borgmatic.yaml",
+    "label": "borgmatic.yaml",
+    "mime": "text/x-yaml",
+    "category": "DevOps",
+    "categories": ["DevOps", "Config"],
+    "enhanced": true,
+    "description": "Borgmatic backup configuration for Borg with repositories, retention, and hooks.",
+    "knownFile": "borgmatic-config"
+  },
+  {
+    "file": "suricata.yaml",
+    "label": "suricata.yaml",
+    "mime": "text/x-yaml",
+    "category": "Security",
+    "categories": ["Security", "Config"],
+    "enhanced": true,
+    "description": "Suricata IDS/IPS configuration with network vars, interfaces, and output settings.",
+    "knownFile": "suricata-config"
   }
 ]

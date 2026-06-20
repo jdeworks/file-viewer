@@ -454,6 +454,7 @@ import etcdConfig from '../types/text/yaml/known/etcd-config/index.js';
 import kafkaServerProps from '../types/text/known/kafka-server-props/index.js';
 import rabbitmqConf from '../types/text/known/rabbitmq-conf/index.js';
 import natsConfig from '../types/text/known/nats-config/index.js';
+import mosquittoConf from '../types/text/known/mosquitto-conf/index.js';
 import zookeeperConfig from '../types/text/known/zookeeper-config/index.js';
 import hostsFile from '../types/text/known/hosts-file/index.js';
 import resolvConf from '../types/text/known/resolv-conf/index.js';
@@ -666,7 +667,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   packageSwift, mixExs, buildSbt, scalafmtConf, scalafixConf,
   playwrightConfig, cypressConfig,
   vcpkg, cmakePresets, conanfile,
-  prometheusConfig, alertmanager, blackboxExporter, snmpExporter, victoriaMetricsConfig, thanosConfig, datadogConfig,
+  prometheusConfig, alertmanager, blackboxExporter, snmpExporter, victoriaMetricsConfig, thanosConfig, datadogConfig, ejabberdConfig,
   viteConfig, webpackConfig, rollupConfig, nextConfig,
   astroConfig, svelteConfig, nuxtConfig, remixConfig, hugoConfig,
   airConfig, spectral, tiltfile, mesonBuild,
@@ -739,7 +740,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   iptablesRules, udevRules, grubConf, nftablesRules, ufwConf,
   fail2banConf, apparmorProfile, smbConf,
   corefile, containerdConfig,
-  postfixConf, dovecotConf, eximConf, chronyConf,
+  postfixConf, dovecotConf, zabbixConf, eximConf, chronyConf,
   namedConf, unboundConf, dhcpdConf,
   netdataConf, yarnrc,
   hyprlandConf, lxcConfig,

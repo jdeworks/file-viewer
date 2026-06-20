@@ -1,0 +1,17 @@
+load_from:
+  - python_package:
+      package_name: data_platform.pipelines
+      location_name: pipelines
+      working_directory: /app
+  - python_package:
+      package_name: data_platform.sensors
+      location_name: sensors
+      working_directory: /app
+  - python_file:
+      python_file: jobs/adhoc_jobs.py
+      location_name: adhoc
+      working_directory: /app
+  - grpc_server:
+      host: ml-dagster-grpc
+      port: 4266
+      location_name: ml-pipelines
