@@ -504,6 +504,10 @@ import netdataConf from '../types/text/known/netdata-conf/index.js';
 import yarnrc from '../types/text/known/yarnrc/index.js';
 import hyprlandConf from '../types/text/known/hyprland-conf/index.js';
 import lxcConfig from '../types/text/known/lxc-config/index.js';
+import muttrc from '../types/text/known/muttrc/index.js';
+import footConfig from '../types/text/known/foot-config/index.js';
+import rofiConfig from '../types/text/known/rofi-config/index.js';
+import makoConf from '../types/text/known/mako-conf/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, netlifyToml, vercelJson,
@@ -613,6 +617,8 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   namedConf, dhcpdConf,
   netdataConf, yarnrc,
   hyprlandConf, lxcConfig,
+  muttrc, footConfig,
+  rofiConfig, makoConf,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

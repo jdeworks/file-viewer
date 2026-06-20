@@ -3557,4 +3557,23 @@ export async function run(ctx) {
   if (/Polybar/i.test(polybarText)) pass('polybar.ini: Polybar badge shown'); else fail('polybar-conf badge: ' + polybarText.slice(0, 200));
   if (/modules|bar/i.test(polybarText)) pass('polybar.ini: modules or bar configuration shown'); else fail('polybar-conf content: ' + polybarText.slice(0, 300));
 
+  // ── .muttrc (NeoMutt/Mutt email client config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.muttrc');
+  await page.waitForSelector('#previewHost .muttrc-doc', { timeout: 12000 });
+  const muttText = await page.$eval('#previewHost .muttrc-doc', (e) => e.textContent);
+  if (/NeoMutt|Mutt/i.test(muttText)) pass('.muttrc: Mutt/NeoMutt badge shown'); else fail('muttrc badge: ' + muttText.slice(0, 200));
+  if (/user@example\.com|imap|account/i.test(muttText)) pass('.muttrc: account settings shown'); else fail('muttrc account: ' + muttText.slice(0, 300));
+  if (!/secret123/.test(muttText)) pass('.muttrc: raw passwords not exposed'); else fail('muttrc password leak: ' + muttText.slice(0, 300));
+  if (/configured|binding|color/i.test(muttText)) pass('.muttrc: bindings or color rules shown'); else fail('muttrc content: ' + muttText.slice(0, 300));
+
+  // ── foot.ini (foot Wayland terminal emulator config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('foot.ini');
+  await page.waitForSelector('#previewHost .footcfg-doc', { timeout: 12000 });
+  const footText = await page.$eval('#previewHost .footcfg-doc', (e) => e.textContent);
+  if (/foot/i.test(footText)) pass('foot.ini: foot badge shown'); else fail('foot-config badge: ' + footText.slice(0, 200));
+  if (/JetBrains Mono|font/i.test(footText)) pass('foot.ini: font shown'); else fail('foot-config font: ' + footText.slice(0, 300));
+  if (/opacity|alpha|95/i.test(footText)) pass('foot.ini: opacity shown'); else fail('foot-config opacity: ' + footText.slice(0, 300));
+
 }

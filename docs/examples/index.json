@@ -7703,5 +7703,77 @@
     ],
     "mime": "text/plain",
     "knownFile": "screenrc"
+  },
+  {
+    "file": ".muttrc",
+    "label": ".muttrc",
+    "category": "Email",
+    "categories": [
+      "Email",
+      "Config"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "NeoMutt/Mutt email client configuration: account settings, keybindings, color scheme, hooks, and sourced files.",
+    "knownFile": "muttrc"
+  },
+  {
+    "file": "foot.ini",
+    "label": "foot.ini",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Terminal"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "foot Wayland terminal emulator configuration: font, opacity, colors (Catppuccin Mocha), scrollback, mouse, keybindings, and URL handler.",
+    "knownFile": "foot-config"
+  },
+  {
+    "file": "daemon.conf",
+    "label": "daemon.conf",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "knownFile": "pulseaudio-conf"
+  },
+  {
+    "file": "pipewire.conf",
+    "label": "pipewire.conf",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "mime": "text/plain",
+    "knownFile": "pipewire-conf"
+  },
+  {
+    "file": "config.rasi",
+    "label": "config.rasi (Rofi)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Desktop"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Rofi window switcher and application launcher configuration: launch modes, font, matching algorithm, icon theme, and key bindings.",
+    "knownFile": "rofi-config"
+  },
+  {
+    "file": "mako",
+    "label": "mako (mako notification daemon)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Desktop"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "mako Wayland notification daemon configuration: appearance, timeout, anchor position, and per-urgency or per-app criteria.",
+    "knownFile": "mako-conf"
   }
 ]

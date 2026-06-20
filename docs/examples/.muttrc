@@ -1,0 +1,46 @@
+# NeoMutt configuration
+set from = "user@example.com"
+set realname = "John Doe"
+set folder = "imaps://imap.example.com/"
+set imap_user = "user@example.com"
+set imap_pass = "secret123"
+set smtp_url = "smtps://user@example.com:465/"
+set smtp_pass = "secret123"
+set mbox_type = Maildir
+set sort = "threads"
+set sort_aux = "reverse-last-date-received"
+set date_format = "%d/%m/%y %I:%M"
+set index_format = "[%Z] %D %-20.20F %s"
+set header_cache = ~/.mutt/cache/headers
+set message_cachedir = ~/.mutt/cache/bodies
+set certificate_file = ~/.mutt/certificates
+
+# Sidebar
+set sidebar_visible = yes
+set sidebar_width = 25
+set sidebar_format = "%B%?F? [%F]?%* %?N?%N/?%S"
+
+# Key bindings
+bind index,pager \Ck sidebar-prev
+bind index,pager \Cj sidebar-next
+bind index,pager \Co sidebar-open
+bind index gg first-entry
+bind index G last-entry
+macro index \Cr "T~U<enter><tag-prefix><clear-flag>N<untag-pattern>.<enter>" "mark all messages as read"
+
+# Colors
+color normal default default
+color header brightwhite default "^(From|Subject|Date):"
+color quoted green default
+color signature cyan default
+color attachment yellow default
+color error brightred default
+color status brightwhite blue
+
+# Hooks
+folder-hook . 'set sort=threads'
+folder-hook INBOX 'set sort=date-received'
+send-hook . 'set envelope_from=yes'
+
+source ~/.mutt/aliases
+source ~/.mutt/colors
