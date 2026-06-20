@@ -2629,7 +2629,10 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true,
+    "knownFile": "turbo",
+    "description": "Turborepo build system configuration \u2014 tasks, caching, dependencies, and global env vars."
   },
   {
     "label": "dependabot.yml",
@@ -2737,7 +2740,10 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true,
+    "knownFile": "lerna",
+    "description": "Lerna monorepo configuration \u2014 versioning, publishing, npm client, workspace globs, and command settings."
   },
   {
     "label": "nx.json",
@@ -3742,7 +3748,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "HAProxy load balancer config: global settings, frontends, backends, and server pools."
+    "description": "HAProxy load balancer config: global settings, frontends, backends, listen blocks, and server pools with stats password masking.",
+    "knownFile": "haproxy-conf"
   },
   {
     "label": "squid.conf",
@@ -8151,5 +8158,18 @@
     "enhanced": true,
     "description": "GDB debugger initialization: display settings, history, disassembly flavor, fork mode, custom commands, Python extensions, and sourced frameworks (GEF, PWNDBG, PEDA).",
     "knownFile": "gdbinit"
+  },
+  {
+    "label": "50-usb.rules",
+    "file": "50-usb.rules",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Linux"
+    ],
+    "enhanced": true,
+    "description": "Linux udev rules: USB storage permissions, YubiKey access, tty device groups, network interface naming, and script automation on device events.",
+    "knownFile": "udev-rules"
   }
 ]

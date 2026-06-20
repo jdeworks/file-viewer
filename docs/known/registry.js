@@ -166,6 +166,7 @@ import apacheConf from '../types/text/known/apache-conf/index.js';
 import lighttpdConf from '../types/text/known/lighttpd-conf/index.js';
 import rsyslogConf from '../types/text/known/rsyslog-conf/index.js';
 import haproxyConfig from '../types/text/known/haproxy-config/index.js';
+import haproxyConf from '../types/text/known/haproxy-conf/index.js';
 import squidConf from '../types/text/known/squid-conf/index.js';
 import varnishVcl from '../types/text/known/varnish-vcl/index.js';
 import moonYml from '../types/text/yaml/known/moon/index.js';

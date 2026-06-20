@@ -3934,4 +3934,22 @@ export async function run(ctx) {
   if (/DNF/i.test(dnfText)) pass('dnf.conf: DNF badge shown'); else fail('dnf-conf badge: ' + dnfText.slice(0, 200));
   if (/GPG enabled|gpgcheck/i.test(dnfText)) pass('dnf.conf: GPG check chip shown'); else fail('dnf-conf gpgcheck: ' + dnfText.slice(0, 300));
   if (/parallel|max_parallel_downloads/i.test(dnfText)) pass('dnf.conf: parallel downloads shown'); else fail('dnf-conf parallel: ' + dnfText.slice(0, 300));
+
+  // ── .gdbinit (GDB debugger init) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.gdbinit');
+  await page.waitForSelector('#previewHost .gdbinit-doc', { timeout: 12000 });
+  const gdbText = await page.$eval('#previewHost .gdbinit-doc', (e) => e.textContent);
+  if (/GDB/i.test(gdbText)) pass('.gdbinit: GDB badge shown'); else fail('gdbinit badge: ' + gdbText.slice(0, 200));
+  if (/print pretty|history|pagination/i.test(gdbText)) pass('.gdbinit: display settings or history shown'); else fail('gdbinit settings: ' + gdbText.slice(0, 300));
+  if (/GEF|hook-stop|plist/i.test(gdbText)) pass('.gdbinit: extensions or custom commands shown'); else fail('gdbinit extensions: ' + gdbText.slice(0, 300));
+
+  // ── gradle.properties enhanced viewer (JVM heap + Android + performance) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('gradle.properties');
+  await page.waitForSelector('#previewHost .gp-doc', { timeout: 12000 });
+  const gpEnhText = await page.$eval('#previewHost .gp-doc', (e) => e.textContent);
+  if (/Xmx|Xms|Heap/i.test(gpEnhText)) pass('gradle.properties: JVM heap shown'); else fail('gradle-props jvm-heap: ' + gpEnhText.slice(0, 300));
+  if (/useAndroidX|Android/i.test(gpEnhText)) pass('gradle.properties: Android section shown'); else fail('gradle-props android: ' + gpEnhText.slice(0, 300));
+  if (/configuration.cache|parallel|caching/i.test(gpEnhText)) pass('gradle.properties: performance settings shown'); else fail('gradle-props perf: ' + gpEnhText.slice(0, 300));
 }
