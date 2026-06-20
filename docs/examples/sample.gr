@@ -1,0 +1,41 @@
+// Grain WebAssembly-first language sample
+module Main
+
+import List from "immutable/list"
+from "string" import { concat, length }
+
+// A simple record type
+record Point {
+  x: Number,
+  y: Number
+}
+
+// An enum for color
+enum Color {
+  Red,
+  Green,
+  Blue
+}
+
+// A record for a person
+record Person {
+  name: String,
+  age: Number
+}
+
+// Exported greeting function
+export let greet = (name: String) => "Hello, " ++ name
+
+// Exported distance calculator
+export let distance = (p1: Point, p2: Point) => {
+  let dx = p1.x - p2.x
+  let dy = p1.y - p2.y
+  (dx * dx + dy * dy)
+}
+
+// Map colors to strings
+export let colorName = (c: Color) => match c {
+  Red => "red",
+  Green => "green",
+  Blue => "blue"
+}

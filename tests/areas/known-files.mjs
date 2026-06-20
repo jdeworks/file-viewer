@@ -6792,4 +6792,40 @@ export async function run(ctx) {
   const chplText = await page.$eval('#previewHost .chpl-doc', (e) => e.textContent);
   if (/Chapel/i.test(chplText)) pass('chapel-lang: badge shown'); else fail('chapel-lang badge: ' + chplText.slice(0, 200));
   if (/proc|config|coforall|forall|module/i.test(chplText)) pass('chapel-lang: stats shown'); else fail('chapel-lang stats: ' + chplText.slice(0, 300));
+
+  // ── koka-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.koka');
+  await page.waitForSelector('#previewHost .kka-doc', { timeout: 12000 });
+  pass('koka-lang: rendered');
+  const kkaText = await page.$eval('#previewHost .kka-doc', (e) => e.textContent);
+  if (/Koka/i.test(kkaText)) pass('koka-lang: badge shown'); else fail('koka-lang badge: ' + kkaText.slice(0, 200));
+  if (/effect|fun|handler|module/i.test(kkaText)) pass('koka-lang: stats shown'); else fail('koka-lang stats: ' + kkaText.slice(0, 300));
+
+  // ── carbon-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.carbon');
+  await page.waitForSelector('#previewHost .cbn-doc', { timeout: 12000 });
+  pass('carbon-lang: rendered');
+  const cbnText = await page.$eval('#previewHost .cbn-doc', (e) => e.textContent);
+  if (/Carbon/i.test(cbnText)) pass('carbon-lang: badge shown'); else fail('carbon-lang badge: ' + cbnText.slice(0, 200));
+  if (/fn|class|interface|impl|package/i.test(cbnText)) pass('carbon-lang: stats shown'); else fail('carbon-lang stats: ' + cbnText.slice(0, 300));
+
+  // ── grain-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.gr');
+  await page.waitForSelector('#previewHost .grn-doc', { timeout: 12000 });
+  pass('grain-lang: rendered');
+  const grnText = await page.$eval('#previewHost .grn-doc', (e) => e.textContent);
+  if (/Grain/i.test(grnText)) pass('grain-lang: badge shown'); else fail('grain-lang badge: ' + grnText.slice(0, 200));
+  if (/import|export|record|enum|module/i.test(grnText)) pass('grain-lang: stats shown'); else fail('grain-lang stats: ' + grnText.slice(0, 300));
+
+  // ── factor-lang viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.factor');
+  await page.waitForSelector('#previewHost .fctr-doc', { timeout: 12000 });
+  pass('factor-lang: rendered');
+  const fctrText = await page.$eval('#previewHost .fctr-doc', (e) => e.textContent);
+  if (/Factor/i.test(fctrText)) pass('factor-lang: badge shown'); else fail('factor-lang badge: ' + fctrText.slice(0, 200));
+  if (/word|USING|TUPLE|SYMBOL|vocabulary/i.test(fctrText)) pass('factor-lang: stats shown'); else fail('factor-lang stats: ' + fctrText.slice(0, 300));
 }

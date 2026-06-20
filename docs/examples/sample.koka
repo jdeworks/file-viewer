@@ -1,0 +1,29 @@
+// Koka effect-based functional language sample
+module Demo
+
+// Define an effect for console I/O
+effect Console
+  fun println(msg: string): ()
+  fun readLine(): string
+
+// Define a greeting function using the Console effect
+fun greet(name: string): console ()
+  println("Hello, " ++ name ++ "!")
+
+// Handle the Console effect
+fun runConsole(action: () -> console ()): ()
+  with handler
+    fun println(msg) { print(msg ++ "\n") }
+    fun readLine()   { "" }
+  action()
+
+// A pure fibonacci function
+fun fib(n: int): int
+  if n <= 1 then n
+  else fib(n - 1) + fib(n - 2)
+
+// Main entry point
+fun main(): console ()
+  greet("World")
+  val result = fib(10)
+  println("fib(10) = " ++ show(result))
