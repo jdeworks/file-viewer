@@ -1,0 +1,20 @@
+[common]
+serverAddr = "proxy.example.com"
+serverPort = 7000
+token = "super-secret-token"
+
+[ssh]
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 22
+remotePort = 6000
+
+[web]
+type = "http"
+localPort = 80
+customDomains = ["myapp.example.com"]
+
+[rdp]
+type = "tcp"
+localPort = 3389
+remotePort = 6001

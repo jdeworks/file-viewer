@@ -8923,5 +8923,15 @@
     "name": "syslog-ng.conf",
     "category": "System",
     "knownFile": "syslog-ng"
+  },
+  {
+    "name": "frpc.toml",
+    "category": "DevOps",
+    "knownFile": true
+  },
+  {
+    "name": "frps.toml",
+    "category": "DevOps",
+    "knownFile": true
   }
 ]

@@ -1,0 +1,13 @@
+[common]
+bindAddr = "0.0.0.0"
+bindPort = 7000
+token = "super-secret-token"
+maxPoolCount = 5
+
+dashboardAddr = "0.0.0.0"
+dashboardPort = 7500
+dashboardUser = "admin"
+dashboardPwd = "admin-password"
+
+subdomainHost = "frps.example.com"
+allowPorts = "6000-7000"
