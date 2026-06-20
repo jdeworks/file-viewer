@@ -292,9 +292,38 @@ body {
   background: var(--bg); cursor: pointer; }
 .md-table-picker-cell.active { background: var(--accent, #0969da); border-color: var(--accent, #0969da); opacity: 0.7; }
 .md-table-picker-cell:hover { border-color: var(--accent, #0969da); }
-/* WYSIWYG toggle button */
+/* WYSIWYG toggle button (markdown) */
 #wysiwygBtn { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
 #wysiwygBtn.active { background: var(--accent, #0969da); color: #fff; border-radius: 4px; }
+/* HTML Visual toggle button */
+#htmlVisualBtn { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+#htmlVisualBtn.active { background: var(--accent, #0969da); color: #fff; border-radius: 4px; }
+/* HTML WYSIWYG toolbar — same geometry as .md-tools-bar */
+.html-toolbar { position: absolute; top: 0; left: 0; right: 0; height: 34px; z-index: 6;
+  display: flex; align-items: center; gap: 2px; padding: 2px 8px;
+  background: var(--bg-2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.html-toolbar[hidden] { display: none; }
+.ht-btn { padding: 3px 7px; border: none; background: transparent; border-radius: 4px;
+  cursor: pointer; font-size: 13px; color: var(--fg, #24292f); font-family: inherit;
+  line-height: 1.4; white-space: nowrap; }
+.ht-btn:hover { background: var(--bg-3, #e8eaed); }
+.ht-italic { font-style: italic; }
+.ht-underline { text-decoration: underline; }
+.ht-sep { display: inline-block; width: 1px; height: 18px; background: var(--border, #e0e0e0); margin: 0 4px; flex-shrink: 0; }
+/* HTML WYSIWYG editing area — reuses editor-host positioning so has-tools offsets apply */
+.html-wysiwyg-host { overflow-y: auto; padding: 16px 20px; outline: none; font-family: inherit;
+  font-size: 14px; line-height: 1.6; background: var(--bg); color: var(--fg); }
+.html-wysiwyg-host:focus { outline: none; }
+[data-theme="dark"] .html-wysiwyg-host { background: #1e1e1e; color: #e6e6e6; }
+/* Reuse the same top-offset rules (.has-tools) for HTML toolbar — no extra selectors needed
+   because .html-toolbar shares the same 34px height as .md-tools-bar. */
+.raw-pane.comparing .html-toolbar { top: 30px; }
+.raw-pane.has-disclaimer .html-toolbar { top: 28px; }
+.raw-pane.comparing.has-disclaimer .html-toolbar { top: 58px; }
+.raw-pane.has-autosave .html-toolbar { top: 28px; }
+.raw-pane.has-disclaimer.has-autosave .html-toolbar { top: 56px; }
+.raw-pane.comparing.has-autosave .html-toolbar { top: 58px; }
+.raw-pane.comparing.has-disclaimer.has-autosave .html-toolbar { top: 86px; }
 /* EasyMDE container overrides to fit the app layout */
 .EasyMDEContainer { height: 100%; display: flex; flex-direction: column; }
 .EasyMDEContainer .CodeMirror {
