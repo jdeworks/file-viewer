@@ -11599,5 +11599,101 @@
     "enhanced": true,
     "description": "Verilog HDL 4-bit synchronous counter and multiplexer modules with input/output declarations.",
     "knownFile": "verilog"
+  },
+  {
+    "label": "sample.zig (Zig)",
+    "file": "sample.zig",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Zig language sample code.",
+    "knownFile": "zig-lang"
+  },
+  {
+    "label": "sample.ex (Elixir)",
+    "file": "sample.ex",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Elixir language sample code.",
+    "knownFile": "elixir-lang"
+  },
+  {
+    "label": "sample.pug (Pug/Jade)",
+    "file": "sample.pug",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Pug/Jade template sample.",
+    "knownFile": "pug-template"
+  },
+  {
+    "label": "sample.ejs (EJS Template)",
+    "file": "sample.ejs",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "EJS template sample.",
+    "knownFile": "ejs-template"
+  },
+  {
+    "label": "sample.xsl (XSLT Stylesheet)",
+    "file": "sample.xsl",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "XSLT Stylesheet sample.",
+    "knownFile": "xslt-stylesheet"
+  },
+  {
+    "label": "sample.svelte (Svelte Component)",
+    "file": "sample.svelte",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Svelte component sample.",
+    "knownFile": "svelte-component"
+  },
+  {
+    "label": "sample.njk (Nunjucks Template)",
+    "file": "sample.njk",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Nunjucks template sample.",
+    "knownFile": "nunjucks"
+  },
+  {
+    "label": "sample.hs (Haskell)",
+    "file": "sample.hs",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Haskell language sample.",
+    "knownFile": "haskell-lang"
   }
 ]
