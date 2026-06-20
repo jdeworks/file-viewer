@@ -1,0 +1,51 @@
+# Wakapi configuration
+# https://github.com/muety/wakapi
+
+server:
+  port: 3000
+  listen_addr: 0.0.0.0
+  base_path: /
+  public_url: https://wakapi.example.com
+  tls_cert_path: ""
+  tls_key_path: ""
+
+database:
+  dialect: postgres
+  host: localhost
+  port: 5432
+  name: wakapi
+  user: wakapi
+  password: s3cr3tpassword
+  charset: utf8mb4
+  max_conn: 2
+  ssl: true
+
+security:
+  password_salt: change-me-to-a-long-random-string
+  insecure_cookies: false
+  allow_signup: true
+  expose_metrics: false
+  enable_proxy: false
+
+app:
+  custom_languages:
+    vue: Vue
+    jsx: JavaScript (React)
+  week_start: 0
+  support_contact: support@example.com
+  import_batch_size: 50
+
+mail:
+  enabled: true
+  provider: smtp
+  sender: Wakapi <noreply@example.com>
+  smtp:
+    host: smtp.example.com
+    port: 587
+    username: noreply@example.com
+    password: smtp-password
+    tls: false
+
+leaderboard:
+  enabled: true
+  scope: country

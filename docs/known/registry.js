@@ -667,6 +667,8 @@ import bookstackEnv from '../types/text/known/bookstack-env/index.js';
 import mattermostConfig from '../types/text/json/known/mattermost-config/index.js';
 import netboxConfig from '../types/text/known/netbox-config/index.js';
 import vaultwardenEnv from '../types/text/known/vaultwarden-env/index.js';
+import ntfyConfig from '../types/text/yaml/known/ntfy-config/index.js';
+import wakapiConfig from '../types/text/yaml/known/wakapi-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -817,6 +819,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   photoprismConfig, paperlessConf,
   bookstackEnv, mattermostConfig,
   netboxConfig, vaultwardenEnv,
+  ntfyConfig, wakapiConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

@@ -9525,5 +9525,33 @@
     "enhanced": true,
     "description": "Headscale WireGuard VPN control plane configuration with server, database, DERP, DNS, and security settings.",
     "knownFile": "headscale-config"
+  },
+  {
+    "file": "ntfy-server.yml",
+    "label": "ntfy-server.yml (ntfy)",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Notifications"
+    ],
+    "enhanced": true,
+    "description": "ntfy push notification server configuration with HTTP/HTTPS listeners, authentication, cache, file attachments, SMTP bridge, and upstream relay settings.",
+    "knownFile": "ntfy-config"
+  },
+  {
+    "file": "wakapi.yml",
+    "label": "wakapi.yml (Wakapi)",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application",
+      "Developer Tools"
+    ],
+    "enhanced": true,
+    "description": "Wakapi WakaTime-compatible time tracking server configuration with database, security, mail, and leaderboard settings.",
+    "knownFile": "wakapi-config"
   }
 ]

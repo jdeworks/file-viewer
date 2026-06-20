@@ -1,0 +1,41 @@
+# ntfy server configuration
+# https://docs.ntfy.sh/config/
+
+# Public-facing base URL of the ntfy server
+base-url: https://ntfy.example.com
+
+# Listen on HTTP (usually behind a reverse proxy)
+listen-http: :2586
+listen-https: ""
+
+# Run behind a reverse proxy (nginx, Caddy, etc.)
+behind-proxy: true
+
+# Default access for anonymous users
+# Options: read-write, read-only, deny-all
+auth-default-access: deny-all
+auth-file: /var/lib/ntfy/user.db
+
+# Upstream ntfy.sh relay for iOS push notifications
+upstream-base-url: https://ntfy.sh
+
+# Message cache
+cache-file: /var/cache/ntfy/cache.db
+cache-duration: 12h
+cache-startup-queries: ""
+
+# File attachments
+attachment-cache-dir: /var/cache/ntfy/attachments
+attachment-total-size-limit: 5G
+attachment-file-size-limit: 15m
+attachment-expiry-duration: 3h
+
+# SMTP server for email-to-ntfy bridge
+smtp:
+  listen-addr: :25
+  domain: ntfy.example.com
+  addr-prefix: ""
+
+# Log settings
+log-level: info
+log-format: text

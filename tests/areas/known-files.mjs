@@ -5230,4 +5230,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('vaultwarden.env');
   pass(await page.waitForSelector('#previewHost .vwarden-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
+
+  // ── ntfy-server.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('ntfy-server.yml');
+  pass(await page.waitForSelector('#previewHost .ntfy-doc', { timeout: 12000 }), 'ntfy-server.yml: ntfy badge shown');
+
+  // ── wakapi.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('wakapi.yml');
+  pass(await page.waitForSelector('#previewHost .wkapi-doc', { timeout: 12000 }), 'wakapi.yml: Wakapi badge shown');
 }
