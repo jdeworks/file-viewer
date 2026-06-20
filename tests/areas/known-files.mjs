@@ -5106,4 +5106,22 @@ export async function run(ctx) {
   if (/8069/.test(odooText)) pass('odoo.conf: xmlrpc_port shown'); else fail('odoo port: ' + odooText.slice(0, 300));
   if (/workers/.test(odooText)) pass('odoo.conf: workers setting shown'); else fail('odoo workers: ' + odooText.slice(0, 300));
   if (/\[configured\]/.test(odooText)) pass('odoo.conf: secrets masked'); else fail('odoo secrets: ' + odooText.slice(0, 300));
+
+  // ── miniflux.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('miniflux.conf');
+  pass(await page.waitForSelector('#previewHost .mflux-doc', { timeout: 12000 }), 'miniflux.conf: badge shown');
+  const mfluxText = await page.$eval('#previewHost .mflux-doc', (el) => el.textContent);
+  if (/Miniflux/i.test(mfluxText)) pass('miniflux.conf: Miniflux badge shown'); else fail('miniflux badge: ' + mfluxText.slice(0, 200));
+  if (/LISTEN_ADDR|BASE_URL/.test(mfluxText)) pass('miniflux.conf: server settings shown'); else fail('miniflux server: ' + mfluxText.slice(0, 300));
+  if (/\[configured\]/.test(mfluxText)) pass('miniflux.conf: secrets masked'); else fail('miniflux secrets: ' + mfluxText.slice(0, 300));
+
+  // ── config.production.json (Ghost) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('config.production.json (Ghost)');
+  pass(await page.waitForSelector('#previewHost .ghost-doc', { timeout: 12000 }), 'config.production.json: Ghost badge shown');
+  const ghostText = await page.$eval('#previewHost .ghost-doc', (el) => el.textContent);
+  if (/Ghost/i.test(ghostText)) pass('config.production.json: Ghost badge shown in text'); else fail('ghost badge: ' + ghostText.slice(0, 200));
+  if (/blog\.example\.com|127\.0\.0\.1/.test(ghostText)) pass('config.production.json: server info shown'); else fail('ghost server: ' + ghostText.slice(0, 300));
+  if (/\[configured\]/.test(ghostText)) pass('config.production.json: secrets masked'); else fail('ghost secrets: ' + ghostText.slice(0, 300));
 }

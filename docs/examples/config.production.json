@@ -1,0 +1,49 @@
+{
+  "url": "https://blog.example.com",
+  "server": {
+    "host": "127.0.0.1",
+    "port": 2368,
+    "url": "https://blog.example.com"
+  },
+  "database": {
+    "client": "mysql",
+    "connection": {
+      "host": "127.0.0.1",
+      "port": 3306,
+      "user": "ghost_user",
+      "password": "db-secret-password",
+      "database": "ghost_production"
+    }
+  },
+  "mail": {
+    "transport": "SMTP",
+    "options": {
+      "service": "Mailgun",
+      "host": "smtp.mailgun.org",
+      "port": 465,
+      "auth": {
+        "user": "postmaster@mg.example.com",
+        "pass": "mailgun-smtp-secret"
+      }
+    }
+  },
+  "storage": {
+    "active": "LocalFileStorage"
+  },
+  "logging": {
+    "level": "info",
+    "rotation": {
+      "enabled": true,
+      "count": 10
+    },
+    "transports": ["file"]
+  },
+  "privacy": {
+    "useTinfoil": false,
+    "useStructuredData": true
+  },
+  "process": "systemd",
+  "paths": {
+    "contentPath": "/var/lib/ghost/content"
+  }
+}

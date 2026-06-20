@@ -198,6 +198,8 @@ import renderYaml from '../types/text/yaml/known/render-yaml/index.js';
 import railwayJson from '../types/text/json/known/railway-json/index.js';
 import appJson from '../types/text/json/known/app-json/index.js';
 import crowdinYml from '../types/text/yaml/known/crowdin-yml/index.js';
+import crowdsecConfig from '../types/text/yaml/known/crowdsec-config/index.js';
+import crowdsecAcquis from '../types/text/yaml/known/crowdsec-acquis/index.js';
 import matchfile from '../types/text/known/matchfile/index.js';
 import appfile from '../types/text/known/appfile/index.js';
 import rubyVersion from '../types/text/known/ruby-version/index.js';
@@ -512,6 +514,8 @@ import autheliaConfig from '../types/text/yaml/known/authelia-config/index.js';
 import oauth2ProxyConfig from '../types/text/known/oauth2-proxy-config/index.js';
 import authentikConfig from '../types/text/yaml/known/authentik-config/index.js';
 import synapseConfig from '../types/text/yaml/known/synapse-config/index.js';
+import gotosocialConfig from '../types/text/yaml/known/gotosocial-config/index.js';
+import searxngConfig from '../types/text/yaml/known/searxng-config/index.js';
 import newrelicConfig from '../types/text/yaml/known/newrelic-config/index.js';
 import dynatraceConfig from '../types/text/yaml/known/dynatrace-config/index.js';
 import elasticApmConfig from '../types/text/known/elastic-apm-config/index.js';
@@ -650,6 +654,10 @@ import { plugin as pdnsRecursorConf } from '../types/text/known/pdns-recursor-co
 import corosyncConf from '../types/text/known/corosync-conf/index.js';
 import nushellConfig from '../types/text/known/nushell-config/index.js';
 import gitoliteConf from '../types/text/known/gitolite-conf/index.js';
+import homerConfig from '../types/text/yaml/known/homer-config/index.js';
+import uptimeKumaConfig from '../types/text/json/known/uptime-kuma-config/index.js';
+import minifluxConf from '../types/text/known/miniflux-conf/index.js';
+import ghostConfig from '../types/text/json/known/ghost-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -741,6 +749,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   cyclonedxSbom, spdxSbom, slsaProvenance, syftConfig,
   proguardRules, androidStrings,
   keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig, synapseConfig,
+  gotosocialConfig, searxngConfig,
   newrelicConfig, dynatraceConfig, elasticApmConfig, filebeatConfig, heartbeatConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
   wireguardConf, netbirdConfig, tailscaleAcl, openvpnConfig, opensslConf, krb5Conf, gpgConf,
@@ -792,6 +801,9 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   frpcConfig, frpsConfig,
   pdnsConf, pdnsRecursorConf,
   coturnConf, radicaleConfig, gitoliteConf,
+  minifluxConf, ghostConfig,
+  crowdsecConfig, crowdsecAcquis,
+  homerConfig, uptimeKumaConfig,
 ];
 export function matchKnown(intake, baseType) {
   for (const k of KNOWN) {

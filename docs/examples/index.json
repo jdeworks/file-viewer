@@ -9252,6 +9252,32 @@
     "knownFile": "synapse-config"
   },
   {
+    "file": "gotosocial-config.yaml",
+    "label": "gotosocial-config.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Social"
+    ],
+    "enhanced": true,
+    "description": "GoToSocial ActivityPub social server configuration with server, database, storage, email, and OIDC settings.",
+    "knownFile": "gotosocial-config"
+  },
+  {
+    "file": "searxng-settings.yml",
+    "label": "searxng-settings.yml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Search"
+    ],
+    "enhanced": true,
+    "description": "SearXNG privacy-respecting metasearch engine configuration with server, search engines, UI, and outgoing settings.",
+    "knownFile": "searxng-config"
+  },
+  {
     "file": "coturn.conf",
     "label": "coturn.conf",
     "mime": "text/plain",
@@ -9289,5 +9315,57 @@
     "enhanced": true,
     "description": "Radicale CalDAV/CardDAV server configuration with auth, storage, and server settings.",
     "knownFile": "radicale-config"
+  },
+  {
+    "file": "miniflux.conf",
+    "label": "miniflux.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "Miniflux RSS reader environment-variable configuration with server, database, auth, and feed settings.",
+    "knownFile": "miniflux-conf"
+  },
+  {
+    "file": "config.production.json",
+    "label": "config.production.json (Ghost)",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Application"
+    ],
+    "enhanced": true,
+    "description": "Ghost CMS production configuration with server, database, mail, storage, and logging settings.",
+    "knownFile": "ghost-config"
+  },
+  {
+    "label": "crowdsec-config.yaml (CrowdSec Config)",
+    "file": "crowdsec-config.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security"
+    ],
+    "enhanced": true,
+    "description": "CrowdSec security engine configuration with database, API client/server, and Prometheus settings.",
+    "knownFile": "crowdsec-config"
+  },
+  {
+    "label": "acquis.yaml (CrowdSec Acquis)",
+    "file": "acquis.yaml",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Security"
+    ],
+    "enhanced": true,
+    "description": "CrowdSec acquisition configuration defining log sources for different service types.",
+    "knownFile": "crowdsec-acquis"
   }
 ]
