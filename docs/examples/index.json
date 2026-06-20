@@ -11915,5 +11915,69 @@
     "enhanced": true,
     "description": "Traefik v2 static configuration in TOML format: entryPoints, providers, TLS, and middleware.",
     "knownFile": "traefik-conf"
+  },
+  {
+    "label": "sample.tcl",
+    "file": "sample.tcl",
+    "mime": "text/plain",
+    "category": "Scripting",
+    "categories": [
+      "Scripting",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "Tcl scripting language with procedures, lists, string operations, and event-driven patterns.",
+    "knownFile": "tcl-lang"
+  },
+  {
+    "label": "sample.scm",
+    "file": "sample.scm",
+    "mime": "text/plain",
+    "category": "Functional",
+    "categories": [
+      "Functional",
+      "Lisp"
+    ],
+    "enhanced": true,
+    "description": "Scheme LISP dialect with lambda calculus, tail calls, macros, and proper tail recursion.",
+    "knownFile": "scheme-lang"
+  },
+  {
+    "label": "sample.rkt",
+    "file": "sample.rkt",
+    "mime": "text/plain",
+    "category": "Functional",
+    "categories": [
+      "Functional",
+      "Lisp"
+    ],
+    "enhanced": true,
+    "description": "Racket language with modules, contracts, macros, and language-oriented programming patterns.",
+    "knownFile": "racket-lang"
+  },
+  {
+    "label": "sample.f90",
+    "file": "sample.f90",
+    "mime": "text/plain",
+    "category": "Science",
+    "categories": [
+      "Science",
+      "Systems"
+    ],
+    "enhanced": true,
+    "description": "Fortran 90 scientific computing with modules, subroutines, and array operations.",
+    "knownFile": "fortran-lang"
+  },
+  {
+    "label": "sample.htaccess",
+    "file": "sample.htaccess",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Apache .htaccess per-directory configuration with URL rewriting, auth, and access control.",
+    "knownFile": "apache-conf"
   }
 ]

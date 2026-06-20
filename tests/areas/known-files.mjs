@@ -6358,4 +6358,28 @@ export async function run(ctx) {
   await openExample('sample.f90');
   await page.waitForSelector('#previewHost .f90-doc', { timeout: 12000 });
   pass('fortran-lang: sample.f90 renders');
+
+  // ── sample.rb viewer (ruby-lang plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.rb');
+  await page.waitForSelector('#previewHost .rb-doc', { timeout: 12000 });
+  pass('ruby-lang: rendered');
+
+  // ── sample.pm viewer (perl-lang plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.pm');
+  await page.waitForSelector('#previewHost .pm-doc', { timeout: 12000 });
+  pass('perl-lang: rendered');
+
+  // ── sample.php viewer (php-lang plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.php');
+  await page.waitForSelector('#previewHost .php-doc', { timeout: 12000 });
+  pass('php-lang: rendered');
+
+  // ── sample.ps1 viewer (powershell-lang plugin) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.ps1');
+  await page.waitForSelector('#previewHost .ps1-doc', { timeout: 12000 });
+  pass('powershell-lang: rendered');
 }
