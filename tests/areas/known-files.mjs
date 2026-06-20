@@ -5449,4 +5449,16 @@ export async function run(ctx) {
   await openExample('invoiceninja.env');
   await page.waitForSelector('#previewHost .invninja-doc', { timeout: 12000 });
   pass('invoiceninja.env: Invoice Ninja badge shown');
+
+  // ── conduit.toml viewer (conduit-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('conduit.toml');
+  await page.waitForSelector('#previewHost .conduit-doc', { timeout: 12000 });
+  pass('conduit.toml: Conduit badge shown');
+
+  // ── zitadel.yaml viewer (zitadel-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('zitadel.yaml');
+  await page.waitForSelector('#previewHost .zitadel-doc', { timeout: 12000 });
+  pass('zitadel.yaml: ZITADEL badge shown');
 }

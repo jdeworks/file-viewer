@@ -1,0 +1,25 @@
+[global]
+server_name = "matrix.example.com"
+port = 6167
+address = "0.0.0.0"
+database_backend = "rocksdb"
+database_path = "/var/lib/matrix-conduit/"
+
+allow_registration = false
+registration_token = "supersecrettoken123"
+
+allow_federation = true
+trusted_servers = ["matrix.org", "element.io", "fedora.im"]
+
+max_request_size = 20_000_000
+max_concurrent_requests = 100
+
+log = "info"
+
+[global.tls]
+certs = "/etc/letsencrypt/live/matrix.example.com/fullchain.pem"
+key = "/etc/letsencrypt/live/matrix.example.com/privkey.pem"
+
+[global.well_known]
+client = "https://matrix.example.com"
+server = "matrix.example.com:443"

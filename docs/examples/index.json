@@ -10046,5 +10046,31 @@
     "enhanced": true,
     "description": "Invoice Ninja self-hosted invoicing platform environment configuration with app, security, database, mail, storage, and queue settings.",
     "knownFile": "invoiceninja-config"
+  },
+  {
+    "file": "conduit.toml",
+    "label": "Conduit Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "Matrix Conduit self-hosted Matrix server configuration",
+    "knownFile": true
+  },
+  {
+    "file": "zitadel.yaml",
+    "label": "ZITADEL Config",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "ZITADEL identity provider configuration",
+    "knownFile": true
   }
 ]

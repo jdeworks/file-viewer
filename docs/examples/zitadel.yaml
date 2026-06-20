@@ -1,0 +1,36 @@
+ExternalDomain: auth.example.com
+ExternalPort: 443
+ExternalSecure: true
+
+Port: 8080
+
+TLS:
+  Enabled: false
+
+Log:
+  Level: info
+
+MachineKeyPath: /var/lib/zitadel/machinekey/zitadel-admin-sa.json
+
+Database:
+  postgres:
+    Host: localhost
+    Port: 5432
+    Database: zitadel
+    User:
+      Username: zitadel
+      Password: zitadel-db-secret-password
+      SSL:
+        Mode: disable
+    Admin:
+      Username: postgres
+      Password: postgres-admin-secret-password
+      SSL:
+        Mode: disable
+
+FirstInstance:
+  Org:
+    Name: Example Org
+    Human:
+      UserName: admin@example.com
+      Password: Admin1234!
