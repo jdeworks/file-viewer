@@ -5587,4 +5587,16 @@ export async function run(ctx) {
   await openExample('forgejo.ini');
   await page.waitForSelector('#previewHost .forgejo-doc', { timeout: 12000 });
   pass('forgejo.ini: Forgejo badge shown');
+
+  // ── glances.conf viewer (glances-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('glances.conf');
+  await page.waitForSelector('#previewHost .glances-doc', { timeout: 12000 });
+  pass('glances.conf: Glances badge shown');
+
+  // ── homarr.yaml viewer (homarr-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('homarr.yaml');
+  await page.waitForSelector('#previewHost .homarr-doc', { timeout: 12000 });
+  pass('homarr.yaml: Homarr badge shown');
 }

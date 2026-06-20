@@ -1,0 +1,48 @@
+name: My Dashboard
+background: ""
+favicon: ""
+
+sections:
+  - name: Media
+    position: 0
+    type: category
+  - name: Tools
+    position: 1
+    type: category
+
+apps:
+  - name: Plex
+    url: https://plex.example.com
+    icon: /imgs/tools/plex.png
+    section: Media
+    integration:
+      type: Plex
+      properties:
+        - field: apiKey
+          value: placeholder
+  - name: Jellyfin
+    url: https://jellyfin.example.com
+    icon: /imgs/tools/jellyfin.png
+    section: Media
+    integration:
+      type: Jellyfin
+  - name: Portainer
+    url: https://portainer.example.com
+    icon: /imgs/tools/portainer.png
+    section: Tools
+  - name: Traefik
+    url: https://traefik.example.com
+    icon: /imgs/tools/traefik.png
+    section: Tools
+
+widgets:
+  - type: clock
+    properties:
+      display: analog
+      timezone: UTC
+  - type: weather
+    properties:
+      location: London
+  - type: usenet
+    properties:
+      rowsBeforeCollapse: 5

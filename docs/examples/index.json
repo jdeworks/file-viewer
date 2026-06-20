@@ -10320,5 +10320,25 @@
     "enhanced": true,
     "description": "Forgejo self-hosted Git service configuration",
     "knownFile": true
+  },
+  {
+    "file": "glances.conf",
+    "label": "Glances config",
+    "mime": "text/plain",
+    "category": "Monitoring",
+    "categories": ["Monitoring", "System", "Self-Hosted"],
+    "enhanced": true,
+    "description": "Glances cross-platform system monitoring tool configuration",
+    "knownFile": true
+  },
+  {
+    "file": "homarr.yaml",
+    "label": "Homarr dashboard config",
+    "mime": "text/yaml",
+    "category": "Dashboard",
+    "categories": ["Dashboard", "Self-Hosted", "YAML"],
+    "enhanced": true,
+    "description": "Homarr self-hosted application dashboard configuration",
+    "knownFile": true
   }
 ]
