@@ -9968,5 +9968,31 @@
     "enhanced": true,
     "description": "File Browser self-hosted file manager configuration",
     "knownFile": "filebrowser-config"
+  },
+  {
+    "file": "drone.env",
+    "label": "Drone CI Config",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "CI/CD"
+    ],
+    "enhanced": true,
+    "description": "Drone CI server environment configuration",
+    "knownFile": true
+  },
+  {
+    "file": "sftpgo.json",
+    "label": "SFTPGo Config",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Self-hosted"
+    ],
+    "enhanced": true,
+    "description": "SFTPGo SFTP/FTP/WebDAV server configuration",
+    "knownFile": true
   }
 ]

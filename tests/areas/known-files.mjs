@@ -5401,4 +5401,28 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('filebrowser.json');
   pass(await page.waitForSelector('#previewHost .fbrowser-doc', { timeout: 12000 }), 'filebrowser.json: File Browser badge shown');
+
+  // ── bookstack.env viewer (bookstack-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('bookstack.env');
+  await page.waitForSelector('#previewHost .bstack-doc', { timeout: 12000 });
+  pass('bookstack.env: BookStack badge shown');
+
+  // ── harbor.yml viewer (harbor-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('harbor.yml');
+  await page.waitForSelector('#previewHost .harbor-doc', { timeout: 12000 });
+  pass('harbor.yml: Harbor badge shown');
+
+  // ── drone.env viewer (drone-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('drone.env');
+  await page.waitForSelector('#previewHost .droneci-doc', { timeout: 12000 });
+  pass('drone.env: Drone CI badge shown');
+
+  // ── sftpgo.json viewer (sftpgo-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sftpgo.json');
+  await page.waitForSelector('#previewHost .sftpgo-doc', { timeout: 12000 });
+  pass('sftpgo.json: SFTPGo badge shown');
 }
