@@ -1,0 +1,43 @@
+## Erlang VM configuration
+
+## Node name (distributed mode)
+-name myapp@192.168.1.10
+
+## Cluster cookie (security secret - keep private!)
+-setcookie my_cluster_secret_cookie
+
+## Heartbeat monitoring
+-heart
+
+## Increase number of concurrent processes
++P 1048576
+
+## Max number of ports
++Q 65536
+
+## Kernel poll
++K true
+
+## Async threads
++A 64
+
+## Schedulers (online:total)
++S 8:8
+
+## Warnings as errors
++W w
+
+## Memory allocator settings
++MBas aoffcbf
++MHas aoffcbf
++MSas aoffcbf
+
+## Increase ETS table limit
+-env ERL_MAX_ETS_TABLES 50000
+
+## Enable distribution over TLS
+-proto_dist inet_tls
+-ssl_dist_optfile /app/etc/ssl_dist.conf
+
+## Initial call for crash dumping
++zdbbl 32768

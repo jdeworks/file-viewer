@@ -451,6 +451,8 @@ import anchorToml from '../types/text/toml/known/anchor-toml/index.js';
 import wireguardConf from '../types/text/known/wireguard-conf/index.js';
 import openvpnConfig from '../types/text/known/openvpn-config/index.js';
 import opensslConf from '../types/text/known/openssl-conf/index.js';
+import krb5Conf from '../types/text/known/krb5-conf/index.js';
+import gpgConf from '../types/text/known/gpg-conf/index.js';
 import supervisordConf from '../types/text/known/supervisord-conf/index.js';
 import logrotateConf from '../types/text/known/logrotate-conf/index.js';
 import shellRc from '../types/text/known/shell-rc/index.js';
@@ -578,7 +580,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig,
   newrelicConfig, dynatraceConfig, elasticApmConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
-  wireguardConf, openvpnConfig, opensslConf,
+  wireguardConf, openvpnConfig, opensslConf, krb5Conf, gpgConf,
   supervisordConf, logrotateConf,
   shellRc,
   nixConfig,
