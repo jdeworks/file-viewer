@@ -396,6 +396,7 @@ import redisConf from '../types/text/known/redis-conf/index.js';
 import redisSentinel from '../types/text/known/redis-sentinel/index.js';
 import cassandraConfig from '../types/text/yaml/known/cassandra-config/index.js';
 import elasticsearchConfig from '../types/text/yaml/known/elasticsearch-config/index.js';
+import kibana from '../types/text/yaml/known/kibana/index.js';
 import clickhouseConfig from '../types/text/xml/known/clickhouse-config/index.js';
 import mongodConf from '../types/text/known/mongod-conf/index.js';
 import myCnf from '../types/text/known/my-cnf/index.js';
@@ -521,6 +522,7 @@ import mlflowProject from '../types/text/yaml/known/mlflow-project/index.js';
 import wandbConfig from '../types/text/ini/known/wandb-config/index.js';
 import mintlify from '../types/text/json/known/mintlify/index.js';
 import postmanCollection from '../types/text/json/known/postman-collection/index.js';
+import brunoWorkspace from '../types/text/json/known/bruno/index.js';
 import insomnia from '../types/text/yaml/known/insomnia/index.js';
 import graphqlSchema from '../types/text/known/graphql-schema/index.js';
 import fstab from '../types/text/known/fstab/index.js';
@@ -672,7 +674,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   electronBuilder, elmJson, externalSecrets, fluentBit, logstashConf, fluentdConf, lokiConfig, promtailConfig, tempoConfig, mimirConfig, cortexConfig, grafanaAlloy, forgeConfig,
   gleamToml, goWork, grafanaIni, podmanQuadlet, growthbook,
   jekyllConfig, juliaProject, juliaManifest, kongConfig, apisixConfig, envoyConfig, launchSettings, appSettings,
-  nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, clickhouseConfig, shardYml, crystalShard,
+  nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, kibana, clickhouseConfig, shardYml, crystalShard,
   tauriConf, traefikConfig, unleashConfig, vaultHcl, nomadJob, consulConfig,
   vectorToml, vectorConfig, keepalivedConf, wailsJson, webConfig, xcconfig,
   bitbucketPipelines, tektonPipeline, argoCdApp, fluxKustomization, fluxHelmRelease, dockerStack,
@@ -707,7 +709,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   nixConfig,
   mavenSettings, pgHba,
   dvcPipeline, hydraConfig, mlflowProject, wandbConfig,
-  mintlify, postmanCollection, insomnia, graphqlSchema,
+  mintlify, postmanCollection, brunoWorkspace, insomnia, graphqlSchema,
   systemdUnit, crontab,
   clusterConfig, certManager,
   iptablesRules, udevRules, grubConf, nftablesRules, ufwConf,

@@ -8836,5 +8836,15 @@
     "name": "standalone.conf",
     "category": "Infrastructure",
     "knownFile": "pulsar-conf"
+  },
+  {
+    "name": "mint.json",
+    "category": "Documentation",
+    "knownFile": "mintlify"
+  },
+  {
+    "name": "insomnia.yaml",
+    "category": "API",
+    "knownFile": "insomnia"
   }
 ]

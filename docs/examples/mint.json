@@ -1,0 +1,88 @@
+{
+  "name": "Acme Platform Docs",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#00D492",
+    "light": "#f0fdf9",
+    "dark": "#0a1628"
+  },
+  "tabs": [
+    { "name": "Guides", "icon": "book-open" },
+    { "name": "API Reference", "icon": "code" },
+    { "name": "SDKs", "icon": "cube" }
+  ],
+  "anchors": [
+    { "name": "Blog", "url": "https://acme.io/blog" },
+    { "name": "Changelog", "url": "https://acme.io/changelog" }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "authentication",
+        "rate-limits",
+        "errors"
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        "concepts/workspaces",
+        "concepts/projects",
+        "concepts/members",
+        "concepts/permissions",
+        {
+          "group": "Integrations",
+          "pages": [
+            "concepts/integrations/github",
+            "concepts/integrations/slack",
+            "concepts/integrations/jira"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/overview",
+        "api-reference/workspaces",
+        "api-reference/projects",
+        "api-reference/members",
+        "api-reference/webhooks"
+      ]
+    }
+  ],
+  "topbarLinks": [
+    { "name": "Support", "url": "https://acme.io/support" }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "https://app.acme.io/signup"
+  },
+  "api": {
+    "baseUrl": "https://api.acme.io/v1",
+    "auth": {
+      "method": "bearer"
+    },
+    "playground": "show"
+  },
+  "integrations": {
+    "analytics": {
+      "ga4": "G-XXXXXXXXXX",
+      "posthog": "phc_xxxxxxxxxxxxxxxxxxxx"
+    },
+    "support": {
+      "intercom": "acme-intercom-id"
+    }
+  },
+  "versions": [
+    { "name": "v2 (latest)" },
+    { "name": "v1 (legacy)" }
+  ]
+}

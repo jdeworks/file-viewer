@@ -4796,4 +4796,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('tetragon.yaml');
   pass(await page.waitForSelector('#previewHost .tetragon-doc', { timeout: 12000 }), 'tetragon.yaml: tetragon-doc shown');
+
+  // ── mint.json viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('mint.json');
+  pass(await page.waitForSelector('#previewHost .mintlify-doc', { timeout: 12000 }), 'mint.json: mintlify-doc shown');
+
+  // ── insomnia.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('insomnia.yaml');
+  pass(await page.waitForSelector('#previewHost .insomnia-doc', { timeout: 12000 }), 'insomnia.yaml: insomnia-doc shown');
 }

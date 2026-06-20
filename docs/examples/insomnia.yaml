@@ -1,0 +1,70 @@
+type: Collection
+name: Acme API Collection
+meta:
+  id: wrk_acme_api_001
+  created: 2024-09-01T10:00:00.000Z
+  modified: 2025-03-15T14:23:00.000Z
+
+collection:
+  - name: Authentication
+    children:
+      - name: Get Access Token
+        method: POST
+        url: https://api.acme.io/v1/auth/token
+        authentication:
+          type: basic
+          username: "{{ CLIENT_ID }}"
+          password: "[configured]"
+        body:
+          mimeType: application/x-www-form-urlencoded
+          params:
+            - name: grant_type
+              value: client_credentials
+
+      - name: Refresh Token
+        method: POST
+        url: https://api.acme.io/v1/auth/refresh
+        body:
+          mimeType: application/json
+          text: '{"refresh_token": "{{ REFRESH_TOKEN }}"}'
+
+  - name: Projects
+    children:
+      - name: List Projects
+        method: GET
+        url: https://api.acme.io/v1/projects
+        authentication:
+          type: bearer
+          token: "[configured]"
+        params:
+          - name: page
+            value: "1"
+          - name: per_page
+            value: "20"
+
+      - name: Create Project
+        method: POST
+        url: https://api.acme.io/v1/projects
+        authentication:
+          type: bearer
+          token: "[configured]"
+        body:
+          mimeType: application/json
+          text: '{"name": "My New Project", "visibility": "private"}'
+
+      - name: Delete Project
+        method: DELETE
+        url: https://api.acme.io/v1/projects/{{ PROJECT_ID }}
+        authentication:
+          type: bearer
+          token: "[configured]"
+
+environments:
+  - name: Production
+    data:
+      BASE_URL: https://api.acme.io/v1
+      CLIENT_ID: prod-client-id
+  - name: Staging
+    data:
+      BASE_URL: https://api-staging.acme.io/v1
+      CLIENT_ID: staging-client-id
