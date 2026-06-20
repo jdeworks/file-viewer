@@ -277,10 +277,13 @@ export async function run(ctx) {
   // ── .prettierrc.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.prettierrc.json');
-  await page.waitForSelector('#previewHost .prt-doc', { timeout: 12000 });
-  const prtText = await page.$eval('#previewHost .prt-doc', (e) => e.textContent);
-  if (/Prettier/i.test(prtText)) pass('.prettierrc.json: badge shown'); else fail('prettierrc badge: ' + prtText.slice(0, 200));
-  if (/single quote|tab width|trailing comma/i.test(prtText)) pass('.prettierrc.json: options shown'); else fail('prettierrc options: ' + prtText.slice(0, 200));
+  await page.waitForSelector('#previewHost .prettier-doc', { timeout: 12000 });
+  pass('.prettierrc.json: badge shown');
+  const prtText = await page.$eval('#previewHost .prettier-doc', (e) => e.textContent);
+  if (!prtText.includes('100')) fail('.prettierrc.json: printWidth not shown');
+  else pass('.prettierrc.json: printWidth shown');
+  if (!prtText.includes('trailingComma') && !prtText.includes('all')) fail('.prettierrc.json: trailing comma not shown');
+  else pass('.prettierrc.json: trailing comma shown');
 
   // ── turbo.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -330,10 +333,13 @@ export async function run(ctx) {
   // ── .stylelintrc.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.stylelintrc.json');
-  await page.waitForSelector('#previewHost .stl-doc', { timeout: 12000 });
-  const stlText = await page.$eval('#previewHost .stl-doc', (e) => e.textContent);
-  if (/Stylelint/i.test(stlText)) pass('.stylelintrc.json: badge shown'); else fail('stylelint badge: ' + stlText.slice(0, 200));
-  if (/color-no-invalid-hex|block-no-empty/i.test(stlText)) pass('.stylelintrc.json: rules shown'); else fail('stylelint rules: ' + stlText.slice(0, 200));
+  await page.waitForSelector('#previewHost .stylelint-doc', { timeout: 12000 });
+  pass('.stylelintrc.json: badge shown');
+  const stlText = await page.$eval('#previewHost .stylelint-doc', (e) => e.textContent);
+  if (!stlText.includes('stylelint-config-standard')) fail('.stylelintrc.json: extends not shown');
+  else pass('.stylelintrc.json: extends shown');
+  if (!stlText.includes('scss')) fail('.stylelintrc.json: SCSS plugin not shown');
+  else pass('.stylelintrc.json: SCSS plugin shown');
 
   // ── babel.config.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -2663,12 +2669,12 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('strings.xml (Android Strings)');
   await page.waitForSelector('#previewHost .as-doc', { timeout: 12000 });
-  const asText = await page.$eval('#previewHost .as-doc', (e) => e.textContent);
-  if (/Android Strings/i.test(asText)) pass('strings.xml: Android Strings badge shown'); else fail('android-strings badge: ' + asText.slice(0, 200));
-  if (/app_name|app_description|nav_home/i.test(asText)) pass('strings.xml: string names shown in table'); else fail('android-strings names: ' + asText.slice(0, 300));
-  if (/MyApp|productivity/i.test(asText)) pass('strings.xml: string values shown'); else fail('android-strings values: ' + asText.slice(0, 300));
-  if (/string array|sort_options/i.test(asText)) pass('strings.xml: string-array section shown'); else fail('android-strings array: ' + asText.slice(0, 300));
-  if (/plural|notification/i.test(asText)) pass('strings.xml: plurals section shown'); else fail('android-strings plurals: ' + asText.slice(0, 300));
+  const androidStringsText = await page.$eval('#previewHost .as-doc', (e) => e.textContent);
+  if (/Android Strings/i.test(androidStringsText)) pass('strings.xml: Android Strings badge shown'); else fail('android-strings badge: ' + androidStringsText.slice(0, 200));
+  if (/app_name|app_description|nav_home/i.test(androidStringsText)) pass('strings.xml: string names shown in table'); else fail('android-strings names: ' + androidStringsText.slice(0, 300));
+  if (/MyApp|productivity/i.test(androidStringsText)) pass('strings.xml: string values shown'); else fail('android-strings values: ' + androidStringsText.slice(0, 300));
+  if (/string array|sort_options/i.test(androidStringsText)) pass('strings.xml: string-array section shown'); else fail('android-strings array: ' + androidStringsText.slice(0, 300));
+  if (/plural|notification/i.test(androidStringsText)) pass('strings.xml: plurals section shown'); else fail('android-strings plurals: ' + androidStringsText.slice(0, 300));
   const asSearch = await page.$('#previewHost .as-search');
   if (asSearch) pass('strings.xml: search input rendered'); else fail('android-strings search input missing');
 
@@ -4105,4 +4111,26 @@ export async function run(ctx) {
   else pass('global.json: SDK version shown');
   if (!gjText.includes('latestPatch')) fail('global.json: rollForward not shown');
   else pass('global.json: rollForward shown');
+
+  // ── rustfmt.toml (Rust formatter config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('rustfmt.toml (rustfmt)');
+  await page.waitForSelector('#previewHost .rustfmt-doc', { timeout: 12000 });
+  pass('rustfmt.toml: badge shown');
+  const rfText = await page.$eval('#previewHost .rustfmt-doc', el => el.textContent);
+  if (!rfText.includes('100')) fail('rustfmt.toml: max_width not shown');
+  else pass('rustfmt.toml: max_width shown');
+  if (!rfText.includes('2021')) fail('rustfmt.toml: edition not shown');
+  else pass('rustfmt.toml: edition shown');
+
+  // ── clippy.toml (Clippy linter config) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('clippy.toml (Clippy)');
+  await page.waitForSelector('#previewHost .clippy-doc', { timeout: 12000 });
+  pass('clippy.toml: badge shown');
+  const clText = await page.$eval('#previewHost .clippy-doc', el => el.textContent);
+  if (!clText.includes('1.70')) fail('clippy.toml: MSRV not shown');
+  else pass('clippy.toml: MSRV shown');
+  if (!clText.includes('25') && !clText.includes('cognitive')) fail('clippy.toml: thresholds not shown');
+  else pass('clippy.toml: thresholds shown');
 }

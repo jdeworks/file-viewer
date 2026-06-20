@@ -1,21 +1,21 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.stl-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.badge-stl{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#263238;color:#fff;vertical-align:middle;margin-right:8px;}
-.stl-title{font-size:18px;font-weight:700;margin:0 0 4px;}
-.stl-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
-.stl-sec{margin:12px 0;}
-.stl-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px;}
-.stl-chip{display:inline-block;font-size:11px;padding:1px 8px;border-radius:8px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace;margin:1px 3px 1px 0;}
-.stl-chip-list{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0;}
-.stl-table{width:100%;border-collapse:collapse;font-size:13px;}
-.stl-table th{text-align:left;color:var(--fg-2,#888);font-size:11px;text-transform:uppercase;padding:3px 8px 3px 0;border-bottom:2px solid var(--border,#e0e0e0);}
-.stl-table td{padding:5px 8px 5px 0;border-bottom:1px solid var(--border,#e0e0e0);vertical-align:top;}
-.stl-rule{font:12px/1.4 ui-monospace,monospace;}
-.stl-sev-error{color:#dc2626;font-weight:600;}
-.stl-sev-warn{color:#ca8a04;font-weight:600;}
-.stl-sev-null{color:var(--fg-2,#888);}
+.stylelint-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.stylelint-doc .badge-stl{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#263238;color:#fff;vertical-align:middle;margin-right:8px;}
+.stylelint-doc .stl-title{font-size:18px;font-weight:700;margin:0 0 4px;}
+.stylelint-doc .stl-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
+.stylelint-doc .stl-sec{margin:12px 0;}
+.stylelint-doc .stl-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px;}
+.stylelint-doc .stl-chip{display:inline-block;font-size:11px;padding:1px 8px;border-radius:8px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace;margin:1px 3px 1px 0;}
+.stylelint-doc .stl-chip-list{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0;}
+.stylelint-doc .stl-table{width:100%;border-collapse:collapse;font-size:13px;}
+.stylelint-doc .stl-table th{text-align:left;color:var(--fg-2,#888);font-size:11px;text-transform:uppercase;padding:3px 8px 3px 0;border-bottom:2px solid var(--border,#e0e0e0);}
+.stylelint-doc .stl-table td{padding:5px 8px 5px 0;border-bottom:1px solid var(--border,#e0e0e0);vertical-align:top;}
+.stylelint-doc .stl-rule{font:12px/1.4 ui-monospace,monospace;}
+.stylelint-doc .stl-sev-error{color:#dc2626;font-weight:600;}
+.stylelint-doc .stl-sev-warn{color:#ca8a04;font-weight:600;}
+.stylelint-doc .stl-sev-null{color:var(--fg-2,#888);}
 `;
 
 function sevLabel(v) {
@@ -32,9 +32,9 @@ function sevFromRule(val) {
 
 export function render(intake) {
   let cfg;
-  try { cfg = JSON.parse(intake.text || '{}'); } catch {
+  try { cfg = intake.parsed ?? JSON.parse(intake.text || '{}'); } catch {
     const host = document.createElement('div');
-    host.className = 'stl-doc';
+    host.className = 'stylelint-doc';
     host.innerHTML = `<style>${CSS}</style><div class="stl-title"><span class="badge-stl">Stylelint</span>Invalid JSON</div>`;
     return { parentNode: host };
   }
@@ -64,7 +64,7 @@ export function render(intake) {
   const ignoreHtml = ignoreFiles.length ? `<div class="stl-sec"><h3>Ignore files</h3><div class="stl-chip-list">${ignoreFiles.map((f) => `<span class="stl-chip">${esc(f)}</span>`).join('')}</div></div>` : '';
 
   const host = document.createElement('div');
-  host.className = 'stl-doc';
+  host.className = 'stylelint-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="stl-title"><span class="badge-stl">Stylelint</span>Stylelint config</div>
 <div class="stl-sub">${ruleKeys.length} rule${ruleKeys.length !== 1 ? 's' : ''}${plugins.length ? ` · ${plugins.length} plugin${plugins.length !== 1 ? 's' : ''}` : ''}${overrides.length ? ` · ${overrides.length} override${overrides.length !== 1 ? 's' : ''}` : ''}</div>

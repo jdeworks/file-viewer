@@ -2623,7 +2623,8 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "knownFile": "prettierrc"
   },
   {
     "label": "turbo.json",
@@ -2671,7 +2672,8 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "knownFile": "stylelint"
   },
   {
     "label": "babel.config.json",
@@ -3227,6 +3229,30 @@
     "enhanced": true,
     "description": "typos source code spell checker configuration \u2014 word overrides, file ignores, and check settings.",
     "knownFile": "typos"
+  },
+  {
+    "label": "rustfmt.toml (rustfmt)",
+    "file": "rustfmt.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "rustfmt Rust code formatter configuration \u2014 edition 2021, max_width 100, import ordering, and style options.",
+    "knownFile": "rustfmt-toml"
+  },
+  {
+    "label": "clippy.toml (Clippy)",
+    "file": "clippy.toml",
+    "mime": "application/toml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "Clippy Rust linter configuration \u2014 MSRV 1.70, complexity thresholds, size limits, and test allowances.",
+    "knownFile": "clippy-toml"
   },
   {
     "label": "uv.toml (uv package manager)",

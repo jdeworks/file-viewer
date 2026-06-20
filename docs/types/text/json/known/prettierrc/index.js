@@ -3,8 +3,8 @@ export default {
   label: 'Prettier config',
   match: (intake, baseType) => {
     if (baseType.id !== 'json') return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
-    return ['.prettierrc', '.prettierrc.json', 'prettier.config.json'].includes(name);
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    return ['.prettierrc', '.prettierrc.json', '.prettierrc.jsonc', 'prettier.config.json'].includes(name);
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

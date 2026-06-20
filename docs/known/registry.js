@@ -162,6 +162,9 @@ import gemspec from '../types/text/known/gemspec/index.js';
 import typos from '../types/text/toml/known/typos/index.js';
 import cargoDeny from '../types/text/toml/known/cargo-deny/index.js';
 import cargoConfig from '../types/text/toml/known/cargo-config/index.js';
+import rustfmtToml from '../types/text/toml/known/rustfmt-toml/index.js';
+import clippyToml from '../types/text/toml/known/clippy-toml/index.js';
+import rustToolchain from '../types/text/toml/known/rust-toolchain/index.js';
 import htaccess from '../types/text/known/htaccess/index.js';
 import nginxConf from '../types/text/known/nginx-conf/index.js';
 import apacheConf from '../types/text/known/apache-conf/index.js';
@@ -575,7 +578,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   mailmap, npmignore, dockerignore,
   appveyor, rubocop, taskfile, mkdocsYml,
   rush, markdownlintJson, markdownlintYaml, clangFormat, moonrepo,
-  brewfile, license, ansibleCfg, ansibleHosts, makepkgConf, gemspec, typos, cargoDeny, cargoConfig,
+  brewfile, license, ansibleCfg, ansibleHosts, makepkgConf, gemspec, typos, cargoDeny, cargoConfig, rustfmtToml, clippyToml, rustToolchain,
   htaccess, nginxConf, apacheConf, lighttpdConf, haproxyConfig, haproxyConf, squidConf, varnishVcl, moonYml, vagrantfile, caddyfile, renderYaml, railwayJson,
   rsyslogConf,
   crowdinYml, matchfile, appfile, rubyVersion, rspecConfig, sorbetConfig, bundlerAuditConfig, standardrbConfig, pythonVersion, earthfile, gitmodules, gitconfig, tfvars,

@@ -21,21 +21,21 @@ const OPTION_LABELS = {
 };
 
 const CSS = `
-.prt-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.badge-prettier{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#bf4b8a;color:#fff;vertical-align:middle;margin-right:8px;}
-.prt-title{font-size:18px;font-weight:700;margin:0 0 4px;}
-.prt-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
-.prt-sec{margin:12px 0;}
-.prt-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px;}
-.prt-table{width:100%;border-collapse:collapse;font-size:13px;}
-.prt-table th{text-align:left;color:var(--fg-2,#888);font-size:11px;text-transform:uppercase;padding:3px 8px 3px 0;border-bottom:2px solid var(--border,#e0e0e0);}
-.prt-table td{padding:5px 8px 5px 0;border-bottom:1px solid var(--border,#e0e0e0);vertical-align:top;}
-.prt-key{font:12px/1.4 ui-monospace,monospace;color:var(--fg-2,#888);}
-.prt-val{font:12px/1.4 ui-monospace,monospace;font-weight:600;}
-.prt-val.on{color:#16a34a;}
-.prt-val.off{color:#dc2626;}
-.prt-override{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;}
-.prt-override-chip{font-size:12px;padding:3px 10px;border-radius:12px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace;}
+.prettier-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.prettier-doc .badge-prettier{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#f7b93e;color:#1a1a1a;vertical-align:middle;margin-right:8px;}
+.prettier-doc .prt-title{font-size:18px;font-weight:700;margin:0 0 4px;}
+.prettier-doc .prt-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
+.prettier-doc .prt-sec{margin:12px 0;}
+.prettier-doc .prt-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px;}
+.prettier-doc .prt-table{width:100%;border-collapse:collapse;font-size:13px;}
+.prettier-doc .prt-table th{text-align:left;color:var(--fg-2,#888);font-size:11px;text-transform:uppercase;padding:3px 8px 3px 0;border-bottom:2px solid var(--border,#e0e0e0);}
+.prettier-doc .prt-table td{padding:5px 8px 5px 0;border-bottom:1px solid var(--border,#e0e0e0);vertical-align:top;}
+.prettier-doc .prt-key{font:12px/1.4 ui-monospace,monospace;color:var(--fg-2,#888);}
+.prettier-doc .prt-val{font:12px/1.4 ui-monospace,monospace;font-weight:600;}
+.prettier-doc .prt-val.on{color:#16a34a;}
+.prettier-doc .prt-val.off{color:#dc2626;}
+.prettier-doc .prt-override{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;}
+.prettier-doc .prt-override-chip{font-size:12px;padding:3px 10px;border-radius:12px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace;}
 `;
 
 function fmtVal(key, val) {
@@ -48,9 +48,9 @@ function fmtVal(key, val) {
 
 export function render(intake) {
   let cfg;
-  try { cfg = JSON.parse(intake.text || '{}'); } catch {
+  try { cfg = intake.parsed ?? JSON.parse(intake.text || '{}'); } catch {
     const host = document.createElement('div');
-    host.className = 'prt-doc';
+    host.className = 'prettier-doc';
     host.innerHTML = `<style>${CSS}</style><div class="prt-title"><span class="badge-prettier">Prettier</span>Invalid JSON</div>`;
     return { parentNode: host };
   }
@@ -77,7 +77,7 @@ export function render(intake) {
   </div>` : '';
 
   const host = document.createElement('div');
-  host.className = 'prt-doc';
+  host.className = 'prettier-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="prt-title"><span class="badge-prettier">Prettier</span>Prettier config</div>
 <div class="prt-sub">${optionEntries.length} option${optionEntries.length !== 1 ? 's' : ''}${overrides.length ? ` · ${overrides.length} override${overrides.length !== 1 ? 's' : ''}` : ''}${unknownEntries.length ? ` · ${unknownEntries.length} custom` : ''}</div>

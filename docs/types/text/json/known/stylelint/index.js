@@ -3,8 +3,8 @@ export default {
   label: 'Stylelint config',
   match: (intake, baseType) => {
     if (baseType.id !== 'json') return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
-    return ['.stylelintrc', '.stylelintrc.json', 'stylelint.config.json'].includes(name);
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    return ['.stylelintrc', '.stylelintrc.json', '.stylelintrc.jsonc', 'stylelint.config.json'].includes(name);
   },
   loadRenderer: () => import('./renderer.js'),
   about: {
