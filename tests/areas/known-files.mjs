@@ -3367,9 +3367,9 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('default.vcl (Varnish VCL)');
   await page.waitForSelector('#previewHost .vclcfg-doc', { timeout: 12000 });
-  const vclText = await page.$eval('#previewHost .vclcfg-doc', (e) => e.textContent);
-  if (/Varnish/i.test(vclText)) pass('default.vcl: Varnish badge shown'); else fail('varnish-vcl badge: ' + vclText.slice(0, 200));
-  if (/backend|vcl_recv/i.test(vclText)) pass('default.vcl: backend or vcl_recv info shown'); else fail('varnish-vcl content: ' + vclText.slice(0, 300));
+  const varnishVclText = await page.$eval('#previewHost .vclcfg-doc', (e) => e.textContent);
+  if (/Varnish/i.test(varnishVclText)) pass('default.vcl: Varnish badge shown'); else fail('varnish-vcl badge: ' + varnishVclText.slice(0, 200));
+  if (/backend|vcl_recv/i.test(varnishVclText)) pass('default.vcl: backend or vcl_recv info shown'); else fail('varnish-vcl content: ' + varnishVclText.slice(0, 300));
 
   // ── usr.bin.nginx (AppArmor profile) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
