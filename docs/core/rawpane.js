@@ -3,6 +3,7 @@
 // Extracted from app.js; renderPreview (the core re-render) is injected via initRawPane so this
 // module doesn't import app.js back.
 import { state, $, toast, themeIsDark, debounce } from './state.js';
+import { loadGlobal, vendor } from './script-loader.js';
 import { startAutosave, stopAutosave, saveNow, clearAutosave, getAutosave } from './autosave.js';
 import { createRawView } from './rawview.js';
 import { hexDump } from './hexdump.js';
@@ -174,6 +175,63 @@ function runJsonAction(action) {
       updateJsonValidation(true, null);
     } catch (err) {
       updateJsonValidation(false, err.message);
+    }
+  }
+}
+
+// ── YAML toolbar ──────────────────────────────────────────────────────────────
+function setYamlToolsVisible(visible) {
+  const el = $('yamlTools');
+  if (!el) return;
+  el.hidden = !visible;
+  $('rawPane')?.classList.toggle('has-tools', visible);
+  if (!visible) {
+    const indicator = $('yamlValidIndicator');
+    if (indicator) indicator.hidden = true;
+  }
+}
+
+function wireYamlTools() {
+  const el = $('yamlTools');
+  if (!el || el.dataset.wired) return;
+  el.dataset.wired = '1';
+  $('yamlFormatBtn')?.addEventListener('click', () => runYamlAction('format'));
+  $('yamlValidateBtn')?.addEventListener('click', () => runYamlAction('validate'));
+}
+
+function updateYamlValidation(valid, message) {
+  const indicator = $('yamlValidIndicator');
+  if (!indicator) return;
+  indicator.textContent = valid ? '✓ Valid YAML' : ('✗ ' + (message || 'Invalid YAML'));
+  indicator.className = 'json-valid-indicator ' + (valid ? 'json-valid' : 'json-invalid');
+  indicator.hidden = false;
+  clearTimeout(indicator._hideTimer);
+  indicator._hideTimer = setTimeout(() => { indicator.hidden = true; }, 4000);
+}
+
+async function runYamlAction(action) {
+  if (!state.rawview) return;
+  const text = state.rawview.getValue();
+  let jsyaml;
+  try {
+    jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
+  } catch (err) {
+    toast('Could not load js-yaml: ' + (err.message || err));
+    return;
+  }
+  if (action === 'format') {
+    try {
+      const parsed = jsyaml.load(text);
+      state.rawview.setValue(jsyaml.dump(parsed, { indent: 2 }));
+    } catch (err) {
+      toast('Cannot format: ' + (err.message || 'invalid YAML'));
+    }
+  } else if (action === 'validate') {
+    try {
+      jsyaml.load(text);
+      updateYamlValidation(true, null);
+    } catch (err) {
+      updateYamlValidation(false, (err.message || 'invalid YAML').slice(0, 80));
     }
   }
 }
@@ -657,6 +715,8 @@ export async function buildRawView() {
   }
   wireJsonTools();
   setJsonToolsVisible(state.type?.id === 'json' && !state.intake.isBinary);
+  wireYamlTools();
+  setYamlToolsVisible(state.type?.id === 'yaml' && !state.intake.isBinary);
   wireTableModeBtn();
   const isTabular = state.type?.id === 'csv' && !state.intake.isBinary;
   const tableModeBtn = document.getElementById('tableModeBtn');

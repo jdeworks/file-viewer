@@ -163,6 +163,34 @@ export async function run(ctx) {
   const yamlHasEditor = await page.$('#editor .monaco-editor');
   if (yamlHasEditor) pass('YAML has raw editor (editable text)'); else fail('YAML missing raw editor');
 
+  // ── YAML toolbar ── Format / Validate buttons appear for YAML files in raw view.
+  await page.click('#viewMode button[data-mode="raw"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
+  const yamlToolsHidden = await page.$eval('#yamlTools', (el) => el.hidden);
+  if (!yamlToolsHidden) pass('YAML toolbar visible in raw view for YAML files'); else fail('yaml toolbar hidden');
+  const yamlFormatBtn = await page.$('#yamlFormatBtn');
+  const yamlValidateBtn = await page.$('#yamlValidateBtn');
+  if (yamlFormatBtn && yamlValidateBtn) pass('YAML toolbar has Format and Validate buttons'); else fail('yaml toolbar buttons missing');
+  // Validate: Sample.yaml is valid → indicator shows ✓
+  await page.click('#yamlValidateBtn');
+  await page.waitForFunction(() => !document.getElementById('yamlValidIndicator')?.hidden, null, { timeout: 4000 });
+  const yamlValidText = await page.$eval('#yamlValidIndicator', (el) => el.textContent);
+  if (/✓/.test(yamlValidText)) pass('YAML validate shows ✓ for valid YAML'); else fail('yaml valid indicator: ' + yamlValidText);
+  // Format: round-trip through js-yaml should preserve structure
+  await page.click('#yamlFormatBtn');
+  await page.waitForFunction(() => window.__fv.state.rawview.getValue().length > 0, null, { timeout: 3000 });
+  const formattedYaml = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (formattedYaml.includes(':') && formattedYaml.includes('\n')) pass('YAML format produces valid YAML output'); else fail('yaml format result: ' + formattedYaml.slice(0, 80));
+  // Validate invalid YAML → indicator shows ✗
+  await page.evaluate(() => window.__fv.state.rawview.setValue('{bad: yaml: file:'));
+  await page.click('#yamlValidateBtn');
+  await page.waitForFunction(() => /✗/.test(document.getElementById('yamlValidIndicator')?.textContent || ''), null, { timeout: 4000 });
+  const yamlInvalidText = await page.$eval('#yamlValidIndicator', (el) => el.textContent);
+  if (/✗/.test(yamlInvalidText)) pass('YAML validate shows ✗ for invalid YAML'); else fail('yaml invalid indicator: ' + yamlInvalidText);
+  // JSON toolbar must remain hidden for YAML files
+  const jsonToolsHiddenForYamlRaw = await page.$eval('#jsonTools', (el) => el.hidden);
+  if (jsonToolsHiddenForYamlRaw) pass('JSON toolbar hidden while YAML toolbar is active'); else fail('json toolbar unexpectedly visible for yaml in raw view');
+
   // ── TOML ── hand-rolled parser, render as a collapsible tree (reuses JSON tree styling).
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Sample.toml');
