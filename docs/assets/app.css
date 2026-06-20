@@ -298,6 +298,12 @@ body {
 /* HTML Visual toggle button */
 #htmlVisualBtn { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
 #htmlVisualBtn.active { background: var(--accent, #0969da); color: #fff; border-radius: 4px; }
+/* JSON toolbar validation indicator */
+.json-valid-indicator { font-size: 12px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.json-valid { color: #1a7f37; background: #dafbe1; }
+.json-invalid { color: #cf222e; background: #ffebe9; }
+[data-theme="dark"] .json-valid { color: #3fb950; background: #1b2a1e; }
+[data-theme="dark"] .json-invalid { color: #ff7b72; background: #2d0000; }
 /* HTML WYSIWYG toolbar — same geometry as .md-tools-bar */
 .html-toolbar { position: absolute; top: 0; left: 0; right: 0; height: 34px; z-index: 6;
   display: flex; align-items: center; gap: 2px; padding: 2px 8px;

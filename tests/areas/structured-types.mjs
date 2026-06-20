@@ -27,6 +27,47 @@ export async function run(ctx) {
   if (/Root type\s*object/.test(jsonMeta) && /Objects\s*\d+/.test(jsonMeta) && /Arrays\s*\d+/.test(jsonMeta)) pass('JSON metadata includes structure counts'); else fail('json meta: ' + jsonMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
 
+  // ── JSON toolbar ── Format / Minify / Validate buttons appear for JSON files.
+  await page.click('#viewMode button[data-mode="raw"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
+  const jsonToolsHidden = await page.$eval('#jsonTools', (el) => el.hidden);
+  if (!jsonToolsHidden) pass('JSON toolbar visible in raw view for JSON files'); else fail('json toolbar hidden');
+  const jsonFormatBtn = await page.$('[data-json-action="format"]');
+  const jsonMinifyBtn = await page.$('[data-json-action="minify"]');
+  const jsonValidateBtn = await page.$('[data-json-action="validate"]');
+  if (jsonFormatBtn && jsonMinifyBtn && jsonValidateBtn) pass('JSON toolbar has Format, Minify, Validate buttons'); else fail('json toolbar buttons missing');
+  // Validate: Sample.json is valid → indicator shows ✓
+  await page.click('[data-json-action="validate"]');
+  await page.waitForFunction(() => !document.getElementById('jsonValidIndicator')?.hidden, null, { timeout: 4000 });
+  const validText = await page.$eval('#jsonValidIndicator', (el) => el.textContent);
+  if (/✓/.test(validText)) pass('JSON validate shows ✓ for valid JSON'); else fail('json valid indicator: ' + validText);
+  // Minify: content should become a single line
+  await page.click('[data-json-action="minify"]');
+  const minifiedValue = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (!minifiedValue.includes('\n') && minifiedValue.startsWith('{')) pass('JSON minify removes whitespace'); else fail('json minify result: ' + minifiedValue.slice(0, 80));
+  // Format: re-expand with 2-space indentation
+  await page.click('[data-json-action="format"]');
+  await page.waitForFunction(() => window.__fv.state.rawview.getValue().includes('\n'), null, { timeout: 3000 });
+  const formattedValue = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (formattedValue.includes('\n') && formattedValue.includes('  ')) pass('JSON format restores pretty-printed indentation'); else fail('json format result: ' + formattedValue.slice(0, 80));
+  // Validate invalid JSON: inject bad JSON → indicator shows ✗
+  await page.evaluate(() => window.__fv.state.rawview.setValue('{bad json}'));
+  await page.click('[data-json-action="validate"]');
+  await page.waitForFunction(() => /✗/.test(document.getElementById('jsonValidIndicator')?.textContent || ''), null, { timeout: 4000 });
+  const invalidText = await page.$eval('#jsonValidIndicator', (el) => el.textContent);
+  if (/✗/.test(invalidText)) pass('JSON validate shows ✗ for invalid JSON'); else fail('json invalid indicator: ' + invalidText);
+  // Verify toolbar is hidden for non-JSON files
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.yaml');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.click('#viewMode button[data-mode="raw"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
+  const jsonToolsHiddenForYaml = await page.$eval('#jsonTools', (el) => el.hidden);
+  if (jsonToolsHiddenForYaml) pass('JSON toolbar hidden for non-JSON files (YAML)'); else fail('json toolbar unexpectedly visible for yaml');
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Sample.json');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+
   await page.evaluate(() => window.__fv.openViewerFile('edge.jsonc', {
     text: '{\n  // File Examples JSON comments edge case\n  "name": "jsonc",\n  "items": [1, 2,],\n}\n',
   }));

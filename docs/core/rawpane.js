@@ -107,6 +107,77 @@ function wireMarkdownTools() {
   document.getElementById('wysiwygBtn')?.addEventListener('click', () => toggleWysiwyg());
 }
 
+// ── JSON toolbar ──────────────────────────────────────────────────────────────
+function setJsonToolsVisible(visible) {
+  const el = $('jsonTools');
+  if (!el) return;
+  el.hidden = !visible;
+  $('rawPane')?.classList.toggle('has-tools', visible);
+  if (!visible) {
+    const indicator = $('jsonValidIndicator');
+    if (indicator) indicator.hidden = true;
+  }
+}
+
+function wireJsonTools() {
+  const el = $('jsonTools');
+  if (!el || el.dataset.wired) return;
+  el.dataset.wired = '1';
+  el.addEventListener('click', (e) => {
+    const action = e.target.closest('[data-json-action]')?.dataset.jsonAction;
+    if (!action) return;
+    runJsonAction(action);
+  });
+}
+
+function updateJsonValidation(valid, errorMsg) {
+  const indicator = $('jsonValidIndicator');
+  if (!indicator) return;
+  indicator.textContent = valid ? '✓ Valid' : ('✗ ' + (errorMsg || 'Invalid JSON'));
+  indicator.className = 'json-valid-indicator ' + (valid ? 'json-valid' : 'json-invalid');
+  indicator.hidden = false;
+  clearTimeout(indicator._hideTimer);
+  indicator._hideTimer = setTimeout(() => { indicator.hidden = true; }, 4000);
+}
+
+function runJsonAction(action) {
+  if (!state.rawview) return;
+  const text = state.rawview.getValue();
+  if (action === 'format') {
+    // Try Monaco's built-in formatter first (honours per-language settings)
+    const formatted = state.rawview.format?.();
+    if (formatted && typeof formatted.then === 'function') {
+      formatted.catch(() => {
+        try {
+          state.rawview.setValue(JSON.stringify(JSON.parse(text), null, 2));
+        } catch (err) {
+          toast('Cannot format: ' + (err.message || 'invalid JSON'));
+        }
+      });
+      return;
+    }
+    // Fallback: manual pretty-print
+    try {
+      state.rawview.setValue(JSON.stringify(JSON.parse(text), null, 2));
+    } catch (err) {
+      toast('Cannot format: ' + (err.message || 'invalid JSON'));
+    }
+  } else if (action === 'minify') {
+    try {
+      state.rawview.setValue(JSON.stringify(JSON.parse(text)));
+    } catch (err) {
+      toast('Cannot minify: ' + (err.message || 'invalid JSON'));
+    }
+  } else if (action === 'validate') {
+    try {
+      JSON.parse(text);
+      updateJsonValidation(true, null);
+    } catch (err) {
+      updateJsonValidation(false, err.message);
+    }
+  }
+}
+
 let tablePicker = null;
 
 function closeTablePicker() {
@@ -571,6 +642,8 @@ export async function buildRawView() {
     state.rawview.addCommand?.('ctrl+b', () => runMarkdownAction('bold'));
     state.rawview.addCommand?.('ctrl+i', () => runMarkdownAction('italic'));
   }
+  wireJsonTools();
+  setJsonToolsVisible(state.type?.id === 'json' && !state.intake.isBinary);
   wireTableModeBtn();
   const isTabular = state.type?.id === 'csv' && !state.intake.isBinary;
   const tableModeBtn = document.getElementById('tableModeBtn');
