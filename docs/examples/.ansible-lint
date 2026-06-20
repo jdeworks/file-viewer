@@ -1,0 +1,29 @@
+---
+profile: moderate
+
+exclude_paths:
+  - .git/
+  - molecule/
+  - .tox/
+  - venv/
+
+skip_list:
+  - risky-shell-pipe
+  - yaml[truthy]
+  - no-changed-when
+  - galaxy[version-incorrect]
+
+warn_list:
+  - experimental
+  - role-name
+
+enable_list:
+  - no-log-password
+  - no-same-owner
+
+use_default_rules: true
+
+kinds:
+  - playbook: "playbooks/*.yml"
+  - tasks: "tasks/**/*.yml"
+  - vars: "vars/*.yml"

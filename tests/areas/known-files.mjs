@@ -4515,6 +4515,24 @@ export async function run(ctx) {
   if (!semaphoreText.includes('Semaphore')) fail('semaphore.yml: missing badge'); else pass('semaphore.yml: badge shown');
   if (!semaphoreText.includes('block') && !semaphoreText.includes('job') && !semaphoreText.includes('Install')) fail('semaphore.yml: no blocks shown'); else pass('semaphore.yml: blocks shown');
 
+  // ── .yamllint viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('.yamllint');
+  await page.waitForSelector('.yamllint-doc');
+  pass('.yamllint: renders');
+  const yamllintText = await page.$eval('.yamllint-doc', el => el.textContent);
+  if (!yamllintText.includes('yamllint') && !yamllintText.includes('YAML')) fail('.yamllint: missing badge'); else pass('.yamllint: badge shown');
+  if (!yamllintText.includes('rule') && !yamllintText.includes('line-length') && !yamllintText.includes('indent')) fail('.yamllint: no rules shown'); else pass('.yamllint: rules shown');
+
+  // ── vale.ini viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('vale.ini');
+  await page.waitForSelector('.valeini-doc');
+  pass('vale.ini: renders');
+  const valeText = await page.$eval('.valeini-doc', el => el.textContent);
+  if (!valeText.includes('Vale')) fail('vale.ini: missing badge'); else pass('vale.ini: badge shown');
+  if (!valeText.includes('Style') && !valeText.includes('BasedOn') && !valeText.includes('write-good')) fail('vale.ini: no styles shown'); else pass('vale.ini: styles shown');
+
   // ── .ansible-lint viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.ansible-lint');

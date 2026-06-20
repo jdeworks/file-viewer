@@ -4317,7 +4317,20 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "yamllint configuration for YAML style checking."
+    "description": "yamllint configuration for YAML style checking.",
+    "knownFile": "yamllint"
+  },
+  {
+    "label": ".yamllint",
+    "file": ".yamllint",
+    "mime": "application/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "yamllint",
+    "description": "yamllint config: extends default, line-length max 120, truthy allowed-values [true, false], document-start disabled."
   },
   {
     "label": ".coderabbit.yaml",
@@ -8565,5 +8578,17 @@
     "enhanced": true,
     "knownFile": "molecule",
     "description": "Molecule Ansible testing config: Docker driver, Ubuntu 22.04 and Debian 11 platforms, Ansible provisioner and verifier, 7-step test sequence."
+  },
+  {
+    "label": "vale.ini",
+    "file": "vale.ini",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "vale-ini",
+    "description": "Vale prose linter config: write-good and proselint packages, BasedOnStyles for .md/.rst/.txt globs, suggestion-level alerts."
   }
 ]

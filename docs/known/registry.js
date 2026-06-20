@@ -253,8 +253,9 @@ import nfpmConfig from '../types/text/yaml/known/nfpm-config/index.js';
 import heroku from '../types/text/yaml/known/heroku/index.js';
 import readthedocs from '../types/text/yaml/known/readthedocs/index.js';
 import citationCff from '../types/text/yaml/known/citation-cff/index.js';
-import yamllint from '../types/text/yaml/known/yamllint/index.js';
+import { plugin as yamllint } from '../types/text/yaml/known/yamllint/index.js';
 import coderabbit from '../types/text/yaml/known/coderabbit/index.js';
+import { plugin as valeIni } from '../types/text/known/vale-ini/index.js';
 import ionicConfig from '../types/text/json/known/ionic-config/index.js';
 import metroConfig from '../types/text/known/metro-config/index.js';
 import reactNativeConfig from '../types/text/known/react-native-config/index.js';
@@ -609,7 +610,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   astroConfig, svelteConfig, nuxtConfig, remixConfig, hugoConfig,
   airConfig, spectral, tiltfile, mesonBuild,
   goreleaser, golangciLint, bufConfig, mockeryConfig, koConfig, sqlcConfig, nfpmConfig, heroku,
-  readthedocs, citationCff, yamllint, coderabbit,
+  readthedocs, citationCff, yamllint, valeIni, coderabbit,
   ionicConfig, metroConfig, reactNativeConfig,
   dotnetGlobal, prismaSchema, nugetConfig,
   sentryProps, otelCollector, logback, log4j2, checkstyleXml, spotbugsConfig,
