@@ -57,6 +57,8 @@ function detect(intake) {
   const name = (intake.filename || '').toLowerCase().split('/').pop();
   if (/^\.env(\.|$)/.test(name) || name === '.editorconfig') return 0.9;
   if (hasExtension(intake, 'ini', 'env', 'cfg', 'conf', 'properties')) return 0.85;
+  // Well-known dotfile configs that use INI format but have no file extension.
+  if (['.pylintrc', '.pylint', '.flake8', '.coveragerc', '.isort.cfg'].includes(name)) return 0.85;
   // Weak sniff: several `key=value` / `key: value` lines and/or a [section] header.
   const t = intake.textSample || '';
   const kvLines = (t.match(/^[ \t]*[\w.-]+\s*[=:]\s*\S/gm) || []).length;

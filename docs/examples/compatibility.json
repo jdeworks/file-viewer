@@ -24626,6 +24626,23 @@
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
+    },
+    "har": {
+      "label": "HTTP Archive (HAR)",
+      "baseType": "json",
+      "support": "enhanced",
+      "sampleFiles": [
+        "sample.har"
+      ],
+      "previewDepth": "rich",
+      "metadataDepth": "none",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "none",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
     }
   }
 }

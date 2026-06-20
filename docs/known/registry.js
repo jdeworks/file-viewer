@@ -556,6 +556,7 @@ import dagsterConfig from '../types/text/yaml/known/dagster-config/index.js';
 import wandbConfig from '../types/text/ini/known/wandb-config/index.js';
 import mintlify from '../types/text/json/known/mintlify/index.js';
 import postmanCollection from '../types/text/json/known/postman-collection/index.js';
+import harKnown from '../types/text/json/known/har/index.js';
 import brunoWorkspace from '../types/text/json/known/bruno/index.js';
 import insomnia from '../types/text/yaml/known/insomnia/index.js';
 import openapiGenerator from '../types/text/yaml/known/openapi-generator/index.js';
@@ -853,7 +854,7 @@ export const KNOWN = [plistConfig, steamAcf, packageJson, cargoToml, tsconfig, d
   nixDaemonConf, nixConfig,
   mavenSettings, pgHba,
   dvcPipeline, hydraConfig, mlflowProject, meltanoConfig, dagsterConfig, wandbConfig,
-  mintlify, postmanCollection, brunoWorkspace, insomnia, openapiGenerator, graphqlSchema,
+  mintlify, postmanCollection, harKnown, brunoWorkspace, insomnia, openapiGenerator, graphqlSchema,
   systemdUnit, crontab,
   clusterConfig, certManager,
   iptablesRules, udevRules, grubConf, nftablesRules, ufwConf,
