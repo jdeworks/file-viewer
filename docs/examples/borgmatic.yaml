@@ -1,0 +1,42 @@
+# borgmatic configuration — Borg backup via borgmatic
+# https://torsion.org/borgmatic/
+
+source_directories:
+  - /home/alice
+  - /etc
+  - /var/lib/postgresql
+
+repositories:
+  - path: /mnt/backup/local-borg
+    label: local-disk
+  - path: ssh://backup@offsite.example.com/backups/alice
+    label: offsite-ssh
+
+archive_name_format: "{hostname}-{now:%Y-%m-%dT%H:%M:%S}"
+
+encryption_passphrase: "correct horse battery staple"
+
+retention:
+  keep_hourly: 24
+  keep_daily: 7
+  keep_weekly: 4
+  keep_monthly: 6
+  keep_yearly: 2
+  prefix: "{hostname}-"
+
+consistency:
+  checks:
+    - repository
+    - archives
+    - data
+  check_last: 3
+
+hooks:
+  before_backup:
+    - pg_dumpall --username=postgres > /var/lib/postgresql/all-databases.sql
+    - echo "Starting backup at $(date)"
+  after_backup:
+    - rm /var/lib/postgresql/all-databases.sql
+    - echo "Backup complete at $(date)"
+  on_error:
+    - echo "Backup failed at $(date)" | mail -s "Backup failed" admin@example.com

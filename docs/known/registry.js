@@ -639,6 +639,8 @@ import { plugin as frpcConfig } from '../types/text/toml/known/frpc-config/index
 import { plugin as frpsConfig } from '../types/text/toml/known/frps-config/index.js';
 import { plugin as pdnsConf } from '../types/text/known/pdns-conf/index.js';
 import { plugin as pdnsRecursorConf } from '../types/text/known/pdns-recursor-conf/index.js';
+import corosyncConf from '../types/text/known/corosync-conf/index.js';
+import nushellConfig from '../types/text/known/nushell-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson,
@@ -706,7 +708,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   jekyllConfig, juliaProject, juliaManifest, kongConfig, apisixConfig, envoyConfig, launchSettings, appSettings,
   nimble, packagesConfig, podspec, redisConf, redisSentinel, mongodConf, myCnf, postgresqlConf, pgbouncerIni, pgbackrestConf, patroniConfig, cassandraConfig, elasticsearchConfig, kibana, clickhouseConfig, shardYml, crystalShard,
   tauriConf, traefikConfig, unleashConfig, vaultHcl, nomadJob, consulConfig,
-  vectorToml, vectorConfig, keepalivedConf, wailsJson, webConfig, xcconfig,
+  vectorToml, vectorConfig, keepalivedConf, corosyncConf, wailsJson, webConfig, xcconfig,
   bitbucketPipelines, tektonPipeline, argoCdApp, fluxKustomization, fluxHelmRelease, dockerStack,
   semgrepConfig, codeclimateConfig, gitleaksConfig, trufflehogConfig, osvScanner,
   condaEnv, pipConf, nodeVersionFile, dockerBake,
@@ -718,7 +720,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   analysisOptions, podfileLock, xcodeScheme, easJson, dprintConfig,
   hostsFile, resolvConf, sshdConfig, sshClientConfig, sudoers, nfsExports, fstab, crypttab,
   sysctlConf, modprobeConf,
-  jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, starshipConfig, emacsConfig, tmuxConf, screenrc, i3Config, swayConfig, dunstrc, polybarConf, waybarConfig, nanorc,
+  jetbrainsWorkspace, neovimConfig, vimConfig, alacrittyConf, kittyConf, starshipConfig, emacsConfig, tmuxConf, nushellConfig, screenrc, i3Config, swayConfig, dunstrc, polybarConf, waybarConfig, nanorc,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,
   woodpeckerCi,
@@ -732,7 +734,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig,
   newrelicConfig, dynatraceConfig, elasticApmConfig, filebeatConfig, heartbeatConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
-  wireguardConf, openvpnConfig, opensslConf, krb5Conf, gpgConf,
+  wireguardConf, netbirdConfig, openvpnConfig, opensslConf, krb5Conf, gpgConf,
   giteaConf, stunnelConf,
   supervisordConf, logrotateConf, tlpConf,
   shellRc,

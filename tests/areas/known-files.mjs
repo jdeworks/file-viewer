@@ -5012,4 +5012,22 @@ export async function run(ctx) {
   if (/example\.com/.test(ejabberdText)) pass('ejabberd.yml: host shown'); else fail('ejabberd host: ' + ejabberdText.slice(0, 300));
   if (/5222|c2s/i.test(ejabberdText)) pass('ejabberd.yml: c2s listener shown'); else fail('ejabberd c2s: ' + ejabberdText.slice(0, 300));
   if (/\[configured\]/.test(ejabberdText)) pass('ejabberd.yml: SQL password masked'); else fail('ejabberd sql mask: ' + ejabberdText.slice(0, 300));
+
+  // ── borgmatic.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('borgmatic.yaml');
+  pass(await page.waitForSelector('#previewHost .borgmatic-doc', { timeout: 12000 }), 'borgmatic.yaml: badge shown');
+  const borgText = await page.$eval('#previewHost .borgmatic-doc', (el) => el.textContent);
+  if (/\/home\/alice/.test(borgText) || /source.dir/i.test(borgText)) pass('borgmatic.yaml: source directories shown'); else fail('borgmatic: source dirs not shown: ' + borgText.replace(/\s+/g, ' ').slice(0, 120));
+  if (/local-disk|offsite-ssh|repositories/i.test(borgText)) pass('borgmatic.yaml: repositories shown'); else fail('borgmatic: repos not shown: ' + borgText.replace(/\s+/g, ' ').slice(0, 120));
+  if (/\[configured\]/.test(borgText)) pass('borgmatic.yaml: encryption_passphrase masked'); else fail('borgmatic: passphrase not masked: ' + borgText.replace(/\s+/g, ' ').slice(0, 120));
+
+  // ── suricata.yaml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('suricata.yaml');
+  pass(await page.waitForSelector('#previewHost .suricata-doc', { timeout: 12000 }), 'suricata.yaml: badge shown');
+  const surText = await page.$eval('#previewHost .suricata-doc', (el) => el.textContent);
+  if (/HOME_NET/i.test(surText)) pass('suricata.yaml: HOME_NET variable shown'); else fail('suricata: HOME_NET not shown: ' + surText.replace(/\s+/g, ' ').slice(0, 120));
+  if (/eth0/.test(surText)) pass('suricata.yaml: capture interface shown'); else fail('suricata: interface not shown: ' + surText.replace(/\s+/g, ' ').slice(0, 120));
+  if (/rule.fil/i.test(surText) || /suricata\.rules/.test(surText)) pass('suricata.yaml: rule files shown'); else fail('suricata: rule files not shown: ' + surText.replace(/\s+/g, ' ').slice(0, 120));
 }

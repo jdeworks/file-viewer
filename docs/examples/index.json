@@ -8075,6 +8075,16 @@
     "knownFile": "keepalived-conf"
   },
   {
+    "file": "corosync.conf",
+    "label": "corosync.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": ["Config", "Networking"],
+    "enhanced": true,
+    "description": "Corosync cluster messaging layer configuration for high-availability clusters.",
+    "knownFile": "corosync-conf"
+  },
+  {
     "file": "cpanfile",
     "label": "cpanfile",
     "category": "Package",
@@ -9109,5 +9119,25 @@
     "enhanced": true,
     "description": "Suricata IDS/IPS configuration with network vars, interfaces, and output settings.",
     "knownFile": "suricata-config"
+  },
+  {
+    "file": "waybar-config.json",
+    "label": "waybar/config",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": ["Config", "Desktop"],
+    "enhanced": true,
+    "description": "Waybar status bar configuration with modules and display settings.",
+    "knownFile": "waybar-config"
+  },
+  {
+    "file": "netbird.json",
+    "label": "netbird.json",
+    "mime": "application/json",
+    "category": "Networking",
+    "categories": ["Networking", "Config"],
+    "enhanced": true,
+    "description": "NetBird WireGuard-based VPN client configuration.",
+    "knownFile": "netbird-config"
   }
 ]

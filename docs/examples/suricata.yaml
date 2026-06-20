@@ -1,0 +1,130 @@
+%YAML 1.1
+---
+# Suricata IDS/IPS configuration
+# https://suricata.io/documentation/
+
+vars:
+  address-groups:
+    HOME_NET: "[192.168.0.0/16,10.0.0.0/8,172.16.0.0/12]"
+    EXTERNAL_NET: "!$HOME_NET"
+    HTTP_SERVERS: "$HOME_NET"
+    SMTP_SERVERS: "$HOME_NET"
+    SQL_SERVERS: "$HOME_NET"
+    DNS_SERVERS: "$HOME_NET"
+    TELNET_SERVERS: "$HOME_NET"
+    AIM_SERVERS: "$EXTERNAL_NET"
+    DC_SERVERS: "$HOME_NET"
+    DNP3_SERVER: "$HOME_NET"
+    DNP3_CLIENT: "$HOME_NET"
+    MODBUS_CLIENT: "$HOME_NET"
+    MODBUS_SERVER: "$HOME_NET"
+    ENIP_CLIENT: "$HOME_NET"
+    ENIP_SERVER: "$HOME_NET"
+
+  port-groups:
+    HTTP_PORTS: "80"
+    SHELLCODE_PORTS: "!80"
+    ORACLE_PORTS: 1521
+    SSH_PORTS: 22
+    DNP3_PORTS: 20000
+    MODBUS_PORTS: 502
+    FILE_DATA_PORTS: "[$HTTP_PORTS,110,143]"
+    FTP_PORTS: 21
+    VXLAN_PORTS: 4789
+    TEREDO_PORTS: 3544
+
+default-log-dir: /var/log/suricata/
+
+stats:
+  enabled: yes
+  interval: 8
+
+outputs:
+  - fast:
+      enabled: no
+      filename: fast.log
+      append: yes
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      community-id: true
+      community-id-seed: 0
+      types:
+        - alert:
+            payload: yes
+            payload-buffer-size: 4kb
+            payload-printable: yes
+            packet: yes
+            http-body: yes
+            http-body-printable: yes
+            metadata: no
+            tagged-packets: yes
+        - http:
+            extended: yes
+        - dns:
+            version: 2
+        - tls:
+            extended: yes
+        - files:
+            force-magic: no
+        - smtp:
+        - ftp
+        - ssh
+        - stats:
+            totals: yes
+            threads: no
+            deltas: no
+        - flow
+  - unified2-alert:
+      enabled: no
+      filename: unified2.alert
+      limit: 32mb
+  - http-log:
+      enabled: no
+      filename: http.log
+      append: yes
+  - tls-log:
+      enabled: no
+      filename: tls.log
+      append: yes
+  - dns-log:
+      enabled: no
+      filename: dns.log
+      append: yes
+
+logging:
+  default-log-level: notice
+  outputs:
+    - console:
+        enabled: yes
+    - file:
+        enabled: yes
+        level: info
+        filename: /var/log/suricata/suricata.log
+    - syslog:
+        enabled: no
+        facility: local5
+        format: "[%i] <%d> -- "
+
+af-packet:
+  - interface: eth0
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+    use-mmap: yes
+    tpacket-v3: yes
+  - interface: default
+
+pcap:
+  - interface: eth0
+  - interface: default
+
+runmode: autofp
+
+rule-files:
+  - suricata.rules
+  - /etc/suricata/rules/emerging-threats.rules
+  - /etc/suricata/rules/local.rules
+
+default-rule-path: /var/lib/suricata/rules
