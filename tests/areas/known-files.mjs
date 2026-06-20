@@ -308,6 +308,17 @@ export async function run(ctx) {
   if (!eslText.includes('no-console')) fail('.eslintrc.json: rules not shown');
   else pass('.eslintrc.json: rules shown');
 
+  // ── Earthfile viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('Earthfile');
+  await page.waitForSelector('#previewHost .earthfile-doc', { timeout: 12000 });
+  pass('Earthfile: badge shown');
+  const efText = await page.$eval('#previewHost .earthfile-doc', el => el.textContent);
+  if (!efText.includes('build') && !efText.includes('test')) fail('Earthfile: targets not shown');
+  else pass('Earthfile: targets shown');
+  if (!efText.includes('docker')) fail('Earthfile: docker target not shown');
+  else pass('Earthfile: docker target shown');
+
   // ── jest.config.json viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('jest.config.json');

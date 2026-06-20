@@ -2,7 +2,7 @@ export default {
   id: 'earthfile',
   label: 'Earthfile (Earthly)',
   match: (intake) => {
-    const name = (intake.filename || '').split('/').pop();
+    const name = (intake.name || intake.filename || '').split('/').pop();
     return name === 'Earthfile';
   },
   loadRenderer: () => import('./renderer.js'),
