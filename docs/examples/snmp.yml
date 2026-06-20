@@ -1,0 +1,94 @@
+auths:
+  public_v2:
+    community: public
+    version: 2
+  snmpv3_auth:
+    version: 3
+    username: snmpv3user
+    security_level: authPriv
+    auth_protocol: SHA
+    auth_password: auth_secret_123
+    priv_protocol: AES
+    priv_password: priv_secret_456
+
+modules:
+  if_mib:
+    walk:
+      - 1.3.6.1.2.1.2
+      - 1.3.6.1.2.1.31.1.1
+    get:
+      - 1.3.6.1.2.1.1.3.0
+    metrics:
+      - name: ifIndex
+        oid: 1.3.6.1.2.1.2.2.1.1
+        type: gauge
+        indexes:
+          - labelname: ifIndex
+            type: gauge
+      - name: ifDescr
+        oid: 1.3.6.1.2.1.2.2.1.2
+        type: DisplayString
+        indexes:
+          - labelname: ifIndex
+            type: gauge
+      - name: ifOperStatus
+        oid: 1.3.6.1.2.1.2.2.1.8
+        type: gauge
+        indexes:
+          - labelname: ifIndex
+            type: gauge
+      - name: ifInOctets
+        oid: 1.3.6.1.2.1.2.2.1.10
+        type: counter
+        indexes:
+          - labelname: ifIndex
+            type: gauge
+      - name: ifOutOctets
+        oid: 1.3.6.1.2.1.2.2.1.16
+        type: counter
+        indexes:
+          - labelname: ifIndex
+            type: gauge
+      - name: ifHighSpeed
+        oid: 1.3.6.1.2.1.31.1.1.1.15
+        type: gauge
+        indexes:
+          - labelname: ifIndex
+            type: gauge
+    version: 2
+    auth: public_v2
+
+  cisco_wlc:
+    walk:
+      - 1.3.6.1.4.1.14179.2.1.1
+      - 1.3.6.1.4.1.14179.2.2.1
+    get:
+      - 1.3.6.1.2.1.1.1.0
+      - 1.3.6.1.2.1.1.3.0
+    metrics:
+      - name: bsnAPName
+        oid: 1.3.6.1.4.1.14179.2.2.1.1.3
+        type: DisplayString
+        indexes:
+          - labelname: bsnAPDot3MacAddress
+            type: PhysAddress48
+      - name: bsnAPNumOfClients
+        oid: 1.3.6.1.4.1.14179.2.2.1.1.38
+        type: gauge
+        indexes:
+          - labelname: bsnAPDot3MacAddress
+            type: PhysAddress48
+      - name: bsnAPOperationStatus
+        oid: 1.3.6.1.4.1.14179.2.2.1.1.6
+        type: gauge
+        indexes:
+          - labelname: bsnAPDot3MacAddress
+            type: PhysAddress48
+      - name: bsnClientRssi
+        oid: 1.3.6.1.4.1.14179.2.1.4.1.2
+        type: gauge
+        indexes:
+          - labelname: bsnClientMacAddress
+            type: PhysAddress48
+    version: 3
+    auth: snmpv3_auth

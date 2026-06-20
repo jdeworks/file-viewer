@@ -8738,5 +8738,15 @@
     "name": "storage.conf",
     "category": "Infrastructure",
     "knownFile": "storage-conf"
+  },
+  {
+    "name": "codegen.yml",
+    "category": "Tooling",
+    "knownFile": "graphql-codegen"
+  },
+  {
+    "name": "tspconfig.yaml",
+    "category": "Tooling",
+    "knownFile": "tspconfig"
   }
 ]

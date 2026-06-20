@@ -20062,7 +20062,9 @@
       "label": "Blackbox Exporter",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "blackbox.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20087,7 +20089,9 @@
       "label": "SNMP Exporter",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "snmp.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20136,6 +20140,56 @@
     "storage-conf": {
       "label": "Containers storage",
       "baseType": "toml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "graphql-codegen": {
+      "label": "GraphQL Code Generator",
+      "baseType": "yaml",
+      "support": "supported",
+      "sampleFiles": [],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "tspconfig": {
+      "label": "TypeSpec config",
+      "baseType": "yaml",
       "support": "supported",
       "sampleFiles": [],
       "extensions": [

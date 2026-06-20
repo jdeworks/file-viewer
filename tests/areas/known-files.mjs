@@ -4695,4 +4695,20 @@ export async function run(ctx) {
   const storageText = await page.$eval('#previewHost .storagecfg-doc', el => el.textContent);
   if (!storageText.includes('Podman') && !storageText.includes('Storage')) fail('storage.conf: missing badge'); else pass('storage.conf: badge shown');
   if (!storageText.includes('overlay') && !storageText.includes('driver')) fail('storage.conf: no driver shown'); else pass('storage.conf: driver shown');
+
+  // ── blackbox.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('blackbox.yml');
+  pass(await page.waitForSelector('#previewHost .blackbox-doc', { timeout: 12000 }), 'blackbox.yml: blackbox-doc shown');
+  const blackboxText = await page.$eval('#previewHost .blackbox-doc', el => el.textContent);
+  if (!blackboxText.includes('Blackbox')) fail('blackbox.yml: missing badge'); else pass('blackbox.yml: badge shown');
+  if (!blackboxText.includes('http_2xx') && !blackboxText.includes('http')) fail('blackbox.yml: no modules shown'); else pass('blackbox.yml: modules shown');
+
+  // ── snmp.yml viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('snmp.yml');
+  pass(await page.waitForSelector('#previewHost .snmpexp-doc', { timeout: 12000 }), 'snmp.yml: snmpexp-doc shown');
+  const snmpText = await page.$eval('#previewHost .snmpexp-doc', el => el.textContent);
+  if (!snmpText.includes('SNMP')) fail('snmp.yml: missing badge'); else pass('snmp.yml: badge shown');
+  if (!snmpText.includes('if_mib') && !snmpText.includes('module')) fail('snmp.yml: no modules shown'); else pass('snmp.yml: modules shown');
 }

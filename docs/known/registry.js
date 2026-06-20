@@ -103,6 +103,8 @@ import poetryLock from '../types/text/toml/known/poetry-lock/index.js';
 import goSum from '../types/text/known/go-sum/index.js';
 import vitest from '../types/text/json/known/vitest/index.js';
 import graphqlConfig from '../types/text/json/known/graphql-config/index.js';
+import graphqlCodegen from '../types/text/yaml/known/graphql-codegen/index.js';
+import tspconfigYaml from '../types/text/yaml/known/tspconfig/index.js';
 import apollo from '../types/text/json/known/apollo/index.js';
 import storybook from '../types/text/json/known/storybook/index.js';
 import drone from '../types/text/yaml/known/drone/index.js';
@@ -603,7 +605,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   jsconfigJson, denoJson, nvmrc, browserslistrc,
   preCommit, pyrightconfig, toxIni, pytestIni, tox, mypy,
   angularJson, capacitor, nycrc, devcontainer, knip, mocha, gitlabCi, pnpmWorkspace,
-  vitest, graphqlConfig, apollo, storybook,
+  vitest, graphqlConfig, graphqlCodegen, tspconfigYaml, apollo, storybook,
   drone, buildkite, skaffold, hadolint,
   helmChart, kustomize, ansiblePlaybook, pulumi, packer, ruff, uv, kubeHelmValues,
   firebase, expo, tailwind, postcss, husky, lintStaged, nestCli, swcrc,

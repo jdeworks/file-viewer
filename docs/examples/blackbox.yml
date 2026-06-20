@@ -1,0 +1,39 @@
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      method: GET
+      valid_status_codes: [200, 201, 204]
+      preferred_ip_protocol: ip4
+      tls_config:
+        insecure_skip_verify: false
+      headers:
+        User-Agent: "Prometheus Blackbox Exporter/0.25"
+
+  http_post_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      method: POST
+      valid_status_codes: [200, 201]
+      headers:
+        Content-Type: "application/json"
+      basic_auth:
+        username: probe_user
+        password: s3cret
+
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - expect: "^SSH-2.0-"
+      preferred_ip_protocol: ip4
+
+  icmp:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: ip4
+      payload_size: 64
