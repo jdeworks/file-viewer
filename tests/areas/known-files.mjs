@@ -6212,4 +6212,46 @@ export async function run(ctx) {
   if (/Reading|Sensor|LabSensor/i.test(dartText)) pass('sample.dart: classes listed'); else fail('dart classes: ' + dartText.slice(0, 300));
   if (/Status/i.test(dartText)) pass('sample.dart: enum listed'); else fail('dart enum: ' + dartText.slice(0, 300));
   if (/ReadingExtension/i.test(dartText)) pass('sample.dart: extension listed'); else fail('dart extension: ' + dartText.slice(0, 300));
+
+  // ── sample.groovy viewer (Groovy) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.groovy');
+  await page.waitForSelector('#previewHost .gr-doc', { timeout: 12000 });
+  pass('sample.groovy: renders');
+  const groovyText = await page.$eval('#previewHost .gr-doc', (e) => e.textContent);
+  if (/Groovy/i.test(groovyText)) pass('sample.groovy: Groovy badge shown'); else fail('groovy badge: ' + groovyText.slice(0, 200));
+  if (/com\.example\.demo/.test(groovyText)) pass('sample.groovy: package shown'); else fail('groovy package: ' + groovyText.slice(0, 300));
+  if (/MathUtils|Point|Circle|Shape/i.test(groovyText)) pass('sample.groovy: types listed'); else fail('groovy types: ' + groovyText.slice(0, 300));
+  if (/factorial|mean|area|perimeter/i.test(groovyText)) pass('sample.groovy: methods listed'); else fail('groovy methods: ' + groovyText.slice(0, 300));
+
+  // ── sample.cr viewer (Crystal) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.cr');
+  await page.waitForSelector('#previewHost .cr-doc', { timeout: 12000 });
+  pass('sample.cr: renders');
+  const crText = await page.$eval('#previewHost .cr-doc', (e) => e.textContent);
+  if (/Crystal/i.test(crText)) pass('sample.cr: Crystal badge shown'); else fail('crystal badge: ' + crText.slice(0, 200));
+  if (/json|http\/client/i.test(crText)) pass('sample.cr: requires listed'); else fail('crystal requires: ' + crText.slice(0, 300));
+  if (/Circle|Point|Shape|Color/i.test(crText)) pass('sample.cr: types listed'); else fail('crystal types: ' + crText.slice(0, 300));
+
+  // ── sample.jl viewer (Julia) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.jl');
+  await page.waitForSelector('#previewHost .jl-doc', { timeout: 12000 });
+  pass('sample.jl: renders');
+  const jlText = await page.$eval('#previewHost .jl-doc', (e) => e.textContent);
+  if (/Julia/i.test(jlText)) pass('sample.jl: Julia badge shown'); else fail('julia badge: ' + jlText.slice(0, 200));
+  if (/NumericalUtils/i.test(jlText)) pass('sample.jl: module name shown'); else fail('julia module: ' + jlText.slice(0, 300));
+  if (/distance|centroid|normalize/i.test(jlText)) pass('sample.jl: functions listed'); else fail('julia functions: ' + jlText.slice(0, 300));
+  if (/Point|BoundingBox/i.test(jlText)) pass('sample.jl: structs listed'); else fail('julia structs: ' + jlText.slice(0, 300));
+
+  // ── sample.R viewer (R) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.R');
+  await page.waitForSelector('#previewHost .r-doc', { timeout: 12000 });
+  pass('sample.R: renders');
+  const rText = await page.$eval('#previewHost .r-doc', (e) => e.textContent);
+  if (/R Script/i.test(rText)) pass('sample.R: R Script badge shown'); else fail('r badge: ' + rText.slice(0, 200));
+  if (/stats|utils|methods/i.test(rText)) pass('sample.R: libraries listed'); else fail('r libraries: ' + rText.slice(0, 300));
+  if (/summarize_vector|normalize|simple_lm|clip/i.test(rText)) pass('sample.R: functions listed'); else fail('r functions: ' + rText.slice(0, 300));
 }

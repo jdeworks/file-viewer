@@ -11747,5 +11747,57 @@
     "enhanced": true,
     "description": "Scala JVM application with case classes, pattern matching, traits, and functional collections.",
     "knownFile": "scala-lang"
+  },
+  {
+    "label": "sample.ml",
+    "file": "sample.ml",
+    "mime": "text/plain",
+    "category": "Functional",
+    "categories": [
+      "Functional",
+      "Programming"
+    ],
+    "enhanced": true,
+    "description": "OCaml module with algebraic data types, pattern matching, and functional patterns.",
+    "knownFile": "ocaml-lang"
+  },
+  {
+    "label": "sample.fs",
+    "file": "sample.fs",
+    "mime": "text/plain",
+    "category": "Functional",
+    "categories": [
+      "Functional",
+      "JVM"
+    ],
+    "enhanced": true,
+    "description": "F# .NET functional language with discriminated unions, records, and module definitions.",
+    "knownFile": "fsharp-lang"
+  },
+  {
+    "label": "sample.clj",
+    "file": "sample.clj",
+    "mime": "text/plain",
+    "category": "Functional",
+    "categories": [
+      "Functional",
+      "Lisp"
+    ],
+    "enhanced": true,
+    "description": "Clojure LISP dialect with ns declarations, defn functions, and persistent data structures.",
+    "knownFile": "clojure-lang"
+  },
+  {
+    "label": "sample.elm",
+    "file": "sample.elm",
+    "mime": "text/plain",
+    "category": "Functional",
+    "categories": [
+      "Functional",
+      "Frontend"
+    ],
+    "enhanced": true,
+    "description": "Elm TEA architecture: Model/Msg types, init/update/view functions, and Cmd usage.",
+    "knownFile": "elm-lang"
   }
 ]
