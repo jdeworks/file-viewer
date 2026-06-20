@@ -7402,5 +7402,31 @@
     "enhanced": true,
     "description": "AppArmor mandatory access control profile for nginx: capabilities, file rules, and network permissions.",
     "knownFile": "apparmor-profile"
+  },
+  {
+    "file": "sysctl.conf",
+    "label": "sysctl.conf (Linux kernel parameters)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "System"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Linux kernel parameter configuration: network tuning, memory management, and security hardening.",
+    "knownFile": "sysctl-conf"
+  },
+  {
+    "file": "blacklist.conf",
+    "label": "blacklist.conf (modprobe)",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "System"
+    ],
+    "mime": "text/plain",
+    "enhanced": true,
+    "description": "Kernel module blacklist configuration: prevents auto-loading of Bluetooth, USB storage, webcam, and legacy protocol modules.",
+    "knownFile": "modprobe-conf"
   }
 ]

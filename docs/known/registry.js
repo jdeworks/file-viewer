@@ -463,6 +463,8 @@ import postmanCollection from '../types/text/json/known/postman-collection/index
 import graphqlSchema from '../types/text/known/graphql-schema/index.js';
 import fstab from '../types/text/known/fstab/index.js';
 import crypttab from '../types/text/known/crypttab/index.js';
+import sysctlConf from '../types/text/known/sysctl-conf/index.js';
+import modprobeConf from '../types/text/known/modprobe-conf/index.js';
 import systemdUnit from '../types/text/known/systemd-unit/index.js';
 import crontab from '../types/text/known/crontab/index.js';
 import clusterConfig from '../types/text/yaml/known/cluster-config/index.js';
@@ -558,6 +560,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   samTemplate, cfnTemplate, cdkJson, awsSamConfig,
   analysisOptions, podfileLock, xcodeScheme, easJson,
   hostsFile, resolvConf, sshdConfig, sudoers, nfsExports, fstab, crypttab,
+  sysctlConf, modprobeConf,
   jetbrainsWorkspace, neovimConfig, vimConfig, emacsConfig,
   devboxJson, protoConfig, aquaConfig, pixiConfig,
   djangoSettings, springProfiles, railsCredentials, pumaConfig,

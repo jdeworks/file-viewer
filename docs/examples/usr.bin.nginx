@@ -1,0 +1,52 @@
+# AppArmor profile for nginx
+#include <tunables/global>
+
+profile /usr/sbin/nginx flags=(enforce) {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+  #include <abstractions/openssl>
+  #include <abstractions/ssl_certs>
+
+  capability net_bind_service,
+  capability setgid,
+  capability setuid,
+  capability dac_override,
+  capability dac_read_search,
+
+  network inet stream,
+  network inet6 stream,
+  network unix stream,
+
+  # Nginx binary and modules
+  /usr/sbin/nginx mr,
+  /usr/lib/nginx/modules/*.so mr,
+
+  # Configuration files
+  /etc/nginx/ r,
+  /etc/nginx/** r,
+  /etc/ssl/certs/ r,
+  /etc/ssl/certs/** r,
+
+  # Log files
+  /var/log/nginx/ r,
+  /var/log/nginx/*.log rw,
+
+  # Static web content
+  /var/www/ r,
+  /var/www/** r,
+
+  # PID and socket files
+  /run/nginx.pid rw,
+  /run/nginx/ rw,
+  /var/run/nginx/ rw,
+
+  # Temp files
+  /var/cache/nginx/ rw,
+  /var/cache/nginx/** rw,
+  /tmp/nginx/ rw,
+
+  # Deny sensitive files
+  deny /etc/shadow r,
+  deny /proc/*/mem rw,
+  deny /root/** rwklx,
+}

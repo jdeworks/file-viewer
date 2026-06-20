@@ -3363,4 +3363,36 @@ export async function run(ctx) {
   if (/OpenSSL/i.test(opensslText)) pass('openssl.cnf: OpenSSL badge shown'); else fail('openssl-conf badge: ' + opensslText.slice(0, 200));
   if (/distinguished_name|CA/i.test(opensslText)) pass('openssl.cnf: distinguished_name or CA info shown'); else fail('openssl-conf content: ' + opensslText.slice(0, 300));
 
+  // ── default.vcl (Varnish VCL) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('default.vcl (Varnish VCL)');
+  await page.waitForSelector('#previewHost .vclcfg-doc', { timeout: 12000 });
+  const vclText = await page.$eval('#previewHost .vclcfg-doc', (e) => e.textContent);
+  if (/Varnish/i.test(vclText)) pass('default.vcl: Varnish badge shown'); else fail('varnish-vcl badge: ' + vclText.slice(0, 200));
+  if (/backend|vcl_recv/i.test(vclText)) pass('default.vcl: backend or vcl_recv info shown'); else fail('varnish-vcl content: ' + vclText.slice(0, 300));
+
+  // ── usr.bin.nginx (AppArmor profile) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('usr.bin.nginx (AppArmor profile)');
+  await page.waitForSelector('#previewHost .apparmor-doc', { timeout: 12000 });
+  const apparmorText = await page.$eval('#previewHost .apparmor-doc', (e) => e.textContent);
+  if (/AppArmor/i.test(apparmorText)) pass('usr.bin.nginx: AppArmor badge shown'); else fail('apparmor-profile badge: ' + apparmorText.slice(0, 200));
+  if (/capability|enforce/i.test(apparmorText)) pass('usr.bin.nginx: capability or enforce info shown'); else fail('apparmor-profile content: ' + apparmorText.slice(0, 300));
+
+  // ── sysctl.conf viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sysctl.conf (Linux kernel parameters)');
+  await page.waitForSelector('#previewHost .sysctlcfg-doc', { timeout: 12000 });
+  const sysctlText = await page.$eval('#previewHost .sysctlcfg-doc', (e) => e.textContent);
+  if (/sysctl/i.test(sysctlText)) pass('sysctl.conf: sysctl badge shown'); else fail('sysctl-conf badge: ' + sysctlText.slice(0, 200));
+  if (/net|vm\.swappiness/i.test(sysctlText)) pass('sysctl.conf: net namespace or vm.swappiness shown'); else fail('sysctl-conf content: ' + sysctlText.slice(0, 300));
+
+  // ── blacklist.conf (modprobe) viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('blacklist.conf (modprobe)');
+  await page.waitForSelector('#previewHost .modprobecfg-doc', { timeout: 12000 });
+  const modprobeText = await page.$eval('#previewHost .modprobecfg-doc', (e) => e.textContent);
+  if (/modprobe/i.test(modprobeText)) pass('blacklist.conf: modprobe badge shown'); else fail('modprobe-conf badge: ' + modprobeText.slice(0, 200));
+  if (/blacklist/i.test(modprobeText)) pass('blacklist.conf: blacklist section shown'); else fail('modprobe-conf blacklist: ' + modprobeText.slice(0, 300));
+
 }
