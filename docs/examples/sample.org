@@ -1,0 +1,79 @@
+#+TITLE: Project Notes
+#+AUTHOR: Jane Developer
+#+DATE: 2026-06-20
+#+STARTUP: overview
+
+* Overview
+
+This document tracks the development status, tasks, and design notes
+for the widget framework project.
+
+** Goals
+
+- Ship v2.0 by end of quarter
+- Improve test coverage to 85%
+- Document all public APIs
+
+* Development Tasks
+
+** TODO Set up CI pipeline
+   :PROPERTIES:
+   :ASSIGNED: alice
+   :END:
+   Need to configure GitHub Actions with matrix builds for Python 3.10–3.12.
+
+** TODO Write migration guide for v1 → v2 users
+
+** DONE Refactor renderer module
+   CLOSED: [2026-06-15 Sun 14:30]
+   Extracted the core rendering logic into =widgets.core.renderer=.
+
+** DONE Add async support
+   CLOSED: [2026-06-10 Wed 09:00]
+
+** TODO Fix memory leak in event loop
+
+* Design Notes
+
+** Architecture
+
+The system follows a component tree model inspired by React. Each widget
+is an immutable value object; mutations produce new trees.
+
+#+BEGIN_SRC python
+from widgets import App, VBox, Button
+
+def on_click():
+    print("clicked!")
+
+app = App(
+    root=VBox([
+        Button("Click me", on_click=on_click),
+    ])
+)
+app.run()
+#+END_SRC
+
+** Configuration schema
+
+#+BEGIN_SRC json
+{
+  "theme": "light",
+  "scale": 1.0,
+  "plugins": []
+}
+#+END_SRC
+
+** Performance Benchmarks
+
+| Operation        | v1 (ms) | v2 (ms) | Delta |
+|------------------+---------+---------+-------|
+| Initial render   |      42 |      18 | -57%  |
+| Incremental diff |      12 |       4 | -67%  |
+| Event dispatch   |       3 |       2 | -33%  |
+
+* References
+
+- [[https://example.com/docs][Widget Library Docs]]
+- [[https://github.com/example/widget-lib][GitHub Repository]]
+- See also [[file:CHANGELOG.org][Changelog]]

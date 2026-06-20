@@ -25258,7 +25258,9 @@
       "label": "GLSL Shader",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.glsl"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25283,7 +25285,9 @@
       "label": "HLSL Shader",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.hlsl"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25308,7 +25312,9 @@
       "label": "reStructuredText",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.rst"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25333,7 +25339,9 @@
       "label": "Org-mode",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.org"
+      ],
       "extensions": [
         ".yml"
       ],
