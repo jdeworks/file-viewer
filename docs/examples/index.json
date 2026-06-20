@@ -2613,7 +2613,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Renovate dependency update bot configuration — extends presets, PR limits, package rules, and vulnerability alert settings.",
+    "description": "Renovate dependency update bot configuration \u2014 extends presets, PR limits, package rules, and vulnerability alert settings.",
     "knownFile": "renovate"
   },
   {
@@ -2725,7 +2725,10 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true,
+    "knownFile": "cliff",
+    "description": "git-cliff changelog config: conventional commits, 10 commit parsers, trim enabled, Jinja2 body template."
   },
   {
     "label": ".releaserc.json",
@@ -2778,7 +2781,7 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Codecov CI coverage configuration — coverage targets, flags with paths and carryforward, ignore patterns, and PR comment layout.",
+    "description": "Codecov CI coverage configuration \u2014 coverage targets, flags with paths and carryforward, ignore patterns, and PR comment layout.",
     "knownFile": "codecov"
   },
   {
@@ -2926,13 +2929,30 @@
     ]
   },
   {
-    "label": "tox.ini",
+    "label": "tox.ini (tox Config)",
     "file": "tox.ini",
     "mime": "text/plain",
     "category": "Config",
     "categories": [
-      "Config"
-    ]
+      "Config",
+      "Python"
+    ],
+    "enhanced": true,
+    "knownFile": "tox-ini",
+    "description": "tox config: 6 envs (py310/311/312, lint, type, docs), isolated build, [pytest] section with markers."
+  },
+  {
+    "label": "pytest.ini (pytest Config)",
+    "file": "pytest.ini",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Python"
+    ],
+    "enhanced": true,
+    "knownFile": "pytest-ini",
+    "description": "pytest config: testpaths, addopts with coverage (--cov-fail-under=80), 4 markers, warning filters."
   },
   {
     "label": "mypy config",
@@ -4252,7 +4272,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "GolangCI-Lint config: 10 linters enabled, 5-minute timeout, go1.21 target, cyclomatic complexity limit, and exclude rules."
+    "knownFile": "golangci-lint",
+    "description": "golangci-lint config: 12 linters enabled, 2 disabled, bugs+performance presets, 5m timeout, Go 1.21, 2 exclude rules."
   },
   {
     "label": "buf.yaml",

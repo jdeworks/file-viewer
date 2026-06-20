@@ -2,31 +2,36 @@ import { parseTOML } from '../../toml.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.clf-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
-.badge-clf{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#1a1a2e;color:#e2e8f0;vertical-align:middle;margin-right:8px;}
-.clf-title{font-size:18px;font-weight:700;margin:0 0 4px;}
-.clf-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 12px;}
-.clf-sec{margin:12px 0;}
-.clf-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px;}
-.clf-pills{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0;}
-.clf-pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 10px;border-radius:12px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);}
-.clf-pill.feat{background:#eff6ff;border-color:#bfdbfe;color:#1e40af;}
-.clf-pill.fix{background:#fef2f2;border-color:#fecaca;color:#991b1b;}
-.clf-pill.skip{background:var(--bg-2,#f6f8fa);color:var(--fg-2,#888);text-decoration:line-through;}
-.clf-table{width:100%;border-collapse:collapse;font-size:13px;}
-.clf-table th{text-align:left;color:var(--fg-2,#888);font-size:11px;text-transform:uppercase;padding:3px 8px 3px 0;border-bottom:2px solid var(--border,#e0e0e0);}
-.clf-table td{padding:4px 8px 4px 0;border-bottom:1px solid var(--border,#e0e0e0);}
-.clf-mono{font:12px/1.4 ui-monospace,monospace;}
-.clf-template{font:12px/1.5 ui-monospace,monospace;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);border-radius:6px;padding:6px 10px;white-space:pre-wrap;word-break:break-all;max-height:80px;overflow:hidden;color:var(--fg-2,#888);}
-.clf-flags{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0;}
-.clf-flag{font-size:12px;padding:2px 8px;border-radius:6px;border:1px solid var(--border,#e0e0e0);}
-.clf-flag.on{background:#f0fdf4;border-color:#bbf7d0;color:#166534;}
-.clf-flag.off{background:#fef2f2;border-color:#fecaca;color:#991b1b;}
+.clifftoml-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.badge-clifftoml{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#f0932b;color:#fff;vertical-align:middle;margin-right:8px;}
+.clifftoml-title{font-size:18px;font-weight:700;margin:0 0 2px;}
+.clifftoml-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
+.clifftoml-sec{margin:12px 0;}
+.clifftoml-sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px;}
+.clifftoml-pills{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0;}
+.clifftoml-pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 10px;border-radius:12px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);}
+.clifftoml-pill.on{background:#f0fdf4;border-color:#bbf7d0;color:#166534;}
+.clifftoml-pill.off{background:#fef2f2;border-color:#fecaca;color:#991b1b;}
+.clifftoml-pill.skip{background:var(--bg-2,#f6f8fa);color:var(--fg-2,#888);text-decoration:line-through;}
+.clifftoml-table{width:100%;border-collapse:collapse;font-size:13px;}
+.clifftoml-table th{text-align:left;color:var(--fg-2,#888);font-size:11px;text-transform:uppercase;padding:3px 8px 3px 0;border-bottom:2px solid var(--border,#e0e0e0);}
+.clifftoml-table td{padding:4px 8px 4px 0;border-bottom:1px solid var(--border,#e0e0e0);}
+.clifftoml-mono{font:12px/1.4 ui-monospace,monospace;}
+.clifftoml-template{font:12px/1.5 ui-monospace,monospace;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);border-radius:6px;padding:6px 10px;white-space:pre-wrap;word-break:break-all;max-height:80px;overflow:hidden;color:var(--fg-2,#888);}
+.clifftoml-kv{display:flex;gap:8px;align-items:baseline;margin:2px 0;}
+.clifftoml-kv-k{font-size:12px;color:var(--fg-2,#888);min-width:120px;}
+.clifftoml-kv-v{font-size:13px;font-family:ui-monospace,monospace;}
 `;
 
 export function render(intake) {
   let cfg = {};
-  try { cfg = parseTOML(intake.text || '') || {}; } catch { cfg = {}; }
+  try {
+    if (intake.parsed && typeof intake.parsed === 'object') {
+      cfg = intake.parsed;
+    } else {
+      cfg = parseTOML(intake.text || '') || {};
+    }
+  } catch { cfg = {}; }
 
   const changelog = cfg.changelog || {};
   const git = cfg.git || {};
@@ -34,39 +39,52 @@ export function render(intake) {
   const conventionalCommits = git.conventional_commits;
   const filterCommits = git.filter_commits;
   const filterUnconventional = git.filter_unconventional;
-
-  const host = document.createElement('div');
-  host.className = 'clf-doc';
-
-  const headerText = (changelog.header || '').slice(0, 100);
+  const tagPattern = git.tag_pattern || '';
+  const trim = changelog.trim;
+  const hasHeader = !!changelog.header;
+  const hasFooter = !!changelog.footer;
   const bodyText = (changelog.body || '').slice(0, 120);
 
-  const templateHtml = headerText || bodyText
-    ? `<div class="clf-sec"><h3>Templates</h3>${headerText ? `<div style="font-size:11px;color:var(--fg-2,#888);margin-bottom:3px">header</div><div class="clf-template">${esc(headerText)}</div>` : ''}${bodyText ? `<div style="font-size:11px;color:var(--fg-2,#888);margin:6px 0 3px">body (excerpt)</div><div class="clf-template">${esc(bodyText)}</div>` : ''}</div>`
-    : '';
+  const host = document.createElement('div');
+  host.className = 'clifftoml-doc';
 
-  const flag = (val, label) => val !== undefined
-    ? `<span class="clf-flag ${val ? 'on' : 'off'}">${label}: ${val ? 'yes' : 'no'}</span>` : '';
-  const flagsHtml = [
-    flag(conventionalCommits, 'conventional_commits'),
-    flag(filterCommits, 'filter_commits'),
-    flag(filterUnconventional, 'filter_unconventional'),
-  ].filter(Boolean).join('');
+  // Changelog settings card
+  const changelogChips = [];
+  if (trim !== undefined) changelogChips.push(`<span class="clifftoml-pill ${trim ? 'on' : 'off'}">trim: ${trim ? 'yes' : 'no'}</span>`);
+  if (hasHeader) changelogChips.push('<span class="clifftoml-pill on">has-header</span>');
+  if (hasFooter) changelogChips.push('<span class="clifftoml-pill on">has-footer</span>');
+  const changelogCard = changelogChips.length
+    ? `<div class="clifftoml-sec"><h3>Changelog Settings</h3><div class="clifftoml-pills">${changelogChips.join('')}</div></div>` : '';
 
+  // Git settings card
+  const gitChips = [];
+  if (conventionalCommits !== undefined) gitChips.push(`<span class="clifftoml-pill ${conventionalCommits ? 'on' : 'off'}">conventional_commits: ${conventionalCommits ? 'yes' : 'no'}</span>`);
+  if (filterUnconventional !== undefined) gitChips.push(`<span class="clifftoml-pill ${filterUnconventional ? 'on' : 'off'}">filter_unconventional: ${filterUnconventional ? 'yes' : 'no'}</span>`);
+  if (filterCommits !== undefined) gitChips.push(`<span class="clifftoml-pill ${filterCommits ? 'on' : 'off'}">filter_commits: ${filterCommits ? 'yes' : 'no'}</span>`);
+  const gitCard = gitChips.length || tagPattern
+    ? `<div class="clifftoml-sec"><h3>Git Settings</h3><div class="clifftoml-pills">${gitChips.join('')}</div>${tagPattern ? `<div class="clifftoml-kv" style="margin-top:6px"><span class="clifftoml-kv-k">tag_pattern</span><span class="clifftoml-kv-v clifftoml-mono">${esc(tagPattern)}</span></div>` : ''}</div>` : '';
+
+  // Commit parsers table
   const parsersHtml = commitParsers.length
-    ? `<div class="clf-sec"><h3>Commit parsers (${commitParsers.length})</h3><table class="clf-table"><thead><tr><th>Pattern</th><th>Group / Action</th></tr></thead><tbody>${commitParsers.slice(0, 10).map((p) => {
+    ? `<div class="clifftoml-sec"><h3>Commit Groups (${commitParsers.length})</h3><table class="clifftoml-table"><thead><tr><th>Pattern</th><th>Group / Action</th></tr></thead><tbody>${commitParsers.slice(0, 12).map((p) => {
         const pattern = p.message || p.footer || p.field || '—';
-        const action = p.skip ? '<em>skip</em>' : esc(p.group || '—');
-        return `<tr><td><span class="clf-mono">${esc(pattern)}</span></td><td>${action}</td></tr>`;
-      }).join('')}${commitParsers.length > 10 ? `<tr><td colspan="2" style="color:var(--fg-2,#888);font-size:12px">…and ${commitParsers.length - 10} more</td></tr>` : ''}</tbody></table></div>`
+        const isSkip = p.skip === true;
+        const action = isSkip ? '<span class="clifftoml-pill skip">skip</span>' : esc(p.group || '—');
+        return `<tr><td><span class="clifftoml-mono">${esc(pattern)}</span></td><td>${action}</td></tr>`;
+      }).join('')}${commitParsers.length > 12 ? `<tr><td colspan="2" style="color:var(--fg-2,#888);font-size:12px">…and ${commitParsers.length - 12} more</td></tr>` : ''}</tbody></table></div>`
     : '';
+
+  // Body template preview
+  const templateHtml = bodyText
+    ? `<div class="clifftoml-sec"><h3>Body Template</h3><div class="clifftoml-template">${esc(bodyText)}…</div></div>` : '';
 
   host.innerHTML = `<style>${CSS}</style>
-<div class="clf-title"><span class="badge-clf">git-cliff</span>Changelog config</div>
-<div class="clf-sub">${commitParsers.length} commit parser${commitParsers.length !== 1 ? 's' : ''}${conventionalCommits ? ' · conventional commits' : ''}</div>
-${flagsHtml ? `<div class="clf-sec"><h3>Settings</h3><div class="clf-flags">${flagsHtml}</div></div>` : ''}
-${templateHtml}
-${parsersHtml}`;
+<div class="clifftoml-title"><span class="badge-clifftoml">git-cliff</span>cliff.toml</div>
+<div class="clifftoml-sub">Changelog generator config${commitParsers.length ? ` · ${commitParsers.length} commit parser${commitParsers.length !== 1 ? 's' : ''}` : ''}${conventionalCommits ? ' · conventional commits' : ''}</div>
+${changelogCard}
+${gitCard}
+${parsersHtml}
+${templateHtml}`;
 
   return { parentNode: host };
 }

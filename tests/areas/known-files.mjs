@@ -537,11 +537,21 @@ export async function run(ctx) {
 
   // ── tox.ini viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
-  await openExample('tox.ini');
-  await page.waitForSelector('#previewHost .tox-doc', { timeout: 12000 });
-  const toxText = await page.$eval('#previewHost .tox-doc', (e) => e.textContent);
+  await openExample('tox.ini (tox Config)');
+  await page.waitForSelector('#previewHost .toxini-doc', { timeout: 12000 });
+  const toxText = await page.$eval('#previewHost .toxini-doc', (e) => e.textContent);
   if (/tox/i.test(toxText)) pass('tox.ini: badge shown'); else fail('tox badge: ' + toxText.slice(0, 200));
-  if (/py39|py3|lint|type/i.test(toxText)) pass('tox.ini: environments shown'); else fail('tox envs: ' + toxText.slice(0, 200));
+  if (/py310|py\{310/i.test(toxText)) pass('tox.ini: envlist shown'); else fail('tox.ini: envlist not shown: ' + toxText.slice(0, 200));
+  if (/lint/i.test(toxText)) pass('tox.ini: lint env shown'); else fail('tox.ini: lint env not shown: ' + toxText.slice(0, 200));
+
+  // ── pytest.ini viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('pytest.ini (pytest Config)');
+  await page.waitForSelector('#previewHost .pytestini-doc', { timeout: 12000 });
+  pass('pytest.ini: badge shown');
+  const pytestText = await page.$eval('#previewHost .pytestini-doc', (e) => e.textContent);
+  if (/tests/i.test(pytestText)) pass('pytest.ini: testpaths shown'); else fail('pytest.ini: testpaths not shown: ' + pytestText.slice(0, 200));
+  if (/slow/i.test(pytestText)) pass('pytest.ini: markers shown'); else fail('pytest.ini: markers not shown: ' + pytestText.slice(0, 200));
 
   // ── mypy.ini viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });

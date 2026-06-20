@@ -3,8 +3,8 @@ export default {
   label: 'GolangCI-Lint config',
   match: (intake, baseType) => {
     if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType?.id)) return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
-    return ['.golangci.yml', '.golangci.yaml', '.golangci.json', '.golangci.toml'].includes(name);
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    return ['.golangci.yml', '.golangci.yaml', 'golangci.yml', '.golangci.json', '.golangci.toml'].includes(name);
   },
   loadRenderer: () => import('./renderer.js'),
   about: {
