@@ -25582,7 +25582,9 @@
       "label": "Zig",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.zig"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25607,7 +25609,9 @@
       "label": "Elixir",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.ex"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25632,7 +25636,9 @@
       "label": "Pug / Jade",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.pug"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25657,7 +25663,9 @@
       "label": "EJS",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.ejs"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25682,7 +25690,9 @@
       "label": "XSLT Stylesheet",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.xsl"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25707,7 +25717,9 @@
       "label": "Svelte Component",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.svelte"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25732,7 +25744,9 @@
       "label": "Nunjucks Template",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.njk"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -25757,7 +25771,9 @@
       "label": "Haskell",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.hs"
+      ],
       "extensions": [
         ".yml"
       ],
