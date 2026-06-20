@@ -6844,7 +6844,8 @@
     "categories": [
       "Config",
       "Network"
-    ]
+    ],
+    "knownFile": "wireguard-conf"
   },
   {
     "label": ".bashrc",
@@ -6854,7 +6855,8 @@
     "categories": [
       "Config",
       "Shell"
-    ]
+    ],
+    "knownFile": "shell-rc"
   },
   {
     "label": "flake.nix",
@@ -6864,7 +6866,8 @@
     "categories": [
       "Config",
       "Nix"
-    ]
+    ],
+    "knownFile": "nix-config"
   },
   {
     "label": "hugo.toml",
@@ -6874,7 +6877,8 @@
     "categories": [
       "Config",
       "Hugo"
-    ]
+    ],
+    "knownFile": "hugo-config"
   },
   {
     "label": "DESCRIPTION",
@@ -6884,7 +6888,8 @@
     "categories": [
       "Config",
       "R"
-    ]
+    ],
+    "knownFile": "r-description"
   },
   {
     "label": ".Rprofile",
@@ -6894,6 +6899,29 @@
     "categories": [
       "Config",
       "R"
+    ],
+    "knownFile": "r-profile"
+  },
+  {
+    "label": "esbuild.config.mjs",
+    "file": "esbuild.config.mjs",
+    "mime": "text/javascript",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "JavaScript",
+      "Build"
+    ],
+    "knownFile": "esbuild-config"
+  },
+  {
+    "label": "client.ovpn",
+    "file": "client.ovpn",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
     ]
   }
 ]

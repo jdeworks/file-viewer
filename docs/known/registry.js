@@ -431,6 +431,7 @@ import truffleConfig from '../types/text/known/truffle-config/index.js';
 import foundryToml from '../types/text/toml/known/foundry-toml/index.js';
 import anchorToml from '../types/text/toml/known/anchor-toml/index.js';
 import wireguardConf from '../types/text/known/wireguard-conf/index.js';
+import openvpnConfig from '../types/text/known/openvpn-config/index.js';
 import shellRc from '../types/text/known/shell-rc/index.js';
 import nixConfig from '../types/text/known/nix-config/index.js';
 export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
@@ -523,7 +524,7 @@ export const KNOWN = [packageJson, cargoToml, tsconfig, dockerfile, gitignore, d
   keycloakRealm, autheliaConfig, oauth2ProxyConfig, authentikConfig,
   newrelicConfig, dynatraceConfig, elasticApmConfig, beatsConfig,
   hardhatConfig, truffleConfig, foundryToml, anchorToml,
-  wireguardConf,
+  wireguardConf, openvpnConfig,
   shellRc,
   nixConfig,
 ];

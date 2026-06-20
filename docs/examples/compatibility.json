@@ -15922,7 +15922,9 @@
       "label": "WireGuard VPN",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "wg0.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15947,7 +15949,9 @@
       "label": "Shell config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".bashrc"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15972,7 +15976,9 @@
       "label": "Nix config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "flake.nix"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -15997,7 +16003,9 @@
       "label": "Hugo config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "hugo.toml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16022,7 +16030,9 @@
       "label": "R DESCRIPTION",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "DESCRIPTION"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16047,7 +16057,9 @@
       "label": "R Profile",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".Rprofile"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -16070,6 +16082,33 @@
     },
     "esbuild-config": {
       "label": "esbuild config",
+      "baseType": "raw",
+      "support": "supported",
+      "sampleFiles": [
+        "esbuild.config.mjs"
+      ],
+      "extensions": [
+        ".yml"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "none",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": false
+    },
+    "openvpn-config": {
+      "label": "OpenVPN config",
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [],

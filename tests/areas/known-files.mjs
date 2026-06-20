@@ -2877,4 +2877,12 @@ export async function run(ctx) {
   if (/R Package/i.test(rdescText)) pass('DESCRIPTION: badge shown'); else fail('r-desc badge: ' + rdescText.slice(0, 200));
   if (/mypackage|Version/i.test(rdescText)) pass('DESCRIPTION: package info shown'); else fail('r-desc info: ' + rdescText.slice(0, 300));
   if (/dplyr|ggplot2|Imports/i.test(rdescText)) pass('DESCRIPTION: dependencies shown'); else fail('r-desc deps: ' + rdescText.slice(0, 300));
+
+  // ── esbuild-config viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('esbuild.config.mjs');
+  await page.waitForSelector('#previewHost .esb-doc', { timeout: 12000 });
+  const esbText = await page.$eval('#previewHost .esb-doc', (e) => e.textContent);
+  if (/esbuild/i.test(esbText)) pass('esbuild.config.mjs: badge shown'); else fail('esbuild badge: ' + esbText.slice(0, 200));
+  if (/entry|src\/index|outdir/i.test(esbText)) pass('esbuild.config.mjs: entry/output shown'); else fail('esbuild entry: ' + esbText.slice(0, 300));
 }
