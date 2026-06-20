@@ -85,6 +85,30 @@ export async function run(ctx) {
     window.__fv.state.sessionEdits.clear();
   });
 
+  // ── Markdown WYSIWYG toggle ──
+  // The WYSIWYG button is present and clicking it mounts EasyMDE in place of Monaco.
+  const wysiwygBtn = await page.$('#wysiwygBtn');
+  if (wysiwygBtn) pass('Markdown tools: WYSIWYG button present'); else fail('WYSIWYG button missing');
+  // Re-create a markdown file and click WYSIWYG
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  page.once('dialog', (d) => d.accept('notes.md'));
+  await page.click('#newFileBtn');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
+  await page.evaluate(() => window.__fv.state.rawview.setValue('# Hello WYSIWYG'));
+  await page.click('#wysiwygBtn');
+  await page.waitForSelector('.EasyMDEContainer', { timeout: 10000 });
+  const wysiwygActive = await page.evaluate(() => !document.querySelector('.EasyMDEContainer')?.hidden);
+  if (wysiwygActive) pass('WYSIWYG: EasyMDE mounts when toggle clicked'); else fail('EasyMDE not mounted');
+  // Toggling back should restore Monaco
+  await page.click('#wysiwygBtn');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
+  const monacoBack = await page.$('#editor .monaco-editor');
+  if (monacoBack) pass('WYSIWYG: toggling off restores Monaco editor'); else fail('Monaco not restored after WYSIWYG off');
+  await page.evaluate(() => {
+    window.__fv.state.downloadedSinceEdit = true;
+    window.__fv.state.sessionEdits.clear();
+  });
+
   // ── import easteregg unlock ── typing the magic line into a file opens the arcade. ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await page.evaluate(() => { try { localStorage.removeItem('fv:games:unlocked'); } catch {} });

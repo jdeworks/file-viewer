@@ -12,12 +12,14 @@ import { mapRawToPreview, syncScrollFromRaw } from './sync.js';
 import { applyLayout } from './layout.js';
 import { recordStage1RawEdit } from '../games/metagame/viewer-actions.js';
 import { markdownHeading, markdownLinkForPastedUrl, markdownTable, markdownWrap, markdownCodeBlock, markdownInlineCode, markdownBlockquote, markdownBulletList, markdownOrderedList, markdownStrikethrough, sortMarkdownTable, tableSortOptions } from '../types/markdown/edit-actions.js';
+import { mountWysiwyg, unmountWysiwyg, getWysiwygValue, isWysiwygActive, getWysiwygCodeMirror } from '../types/markdown/wysiwyg.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
 
 const DISCLAIMER_KEY = 'fv:edit-disclaimer';
 let markdownContextMenu = null;
+let wysiwygMode = false;
 
 // Show the in-memory edit banner (B). Wires the dismiss buttons once, idempotently.
 function setDisclaimerVisible(visible) {
@@ -63,6 +65,8 @@ function wireMarkdownTools() {
       closeTablePicker();
     }
   });
+  // WYSIWYG toggle button
+  document.getElementById('wysiwygBtn')?.addEventListener('click', () => toggleWysiwyg());
 }
 
 let tablePicker = null;
@@ -115,7 +119,12 @@ function showTablePicker(anchorEl) {
     if (!cell) return;
     const rows = Number(cell.dataset.r) + 1, cols = Number(cell.dataset.c) + 1;
     closeTablePicker();
-    state.rawview.replaceSelection(markdownTable(rows, cols), { source: 'markdown-table', selectInserted: true });
+    if (wysiwygMode && isWysiwygActive()) {
+      const cm = getWysiwygCodeMirror();
+      if (cm) { cm.replaceSelection(markdownTable(rows, cols)); cm.focus(); }
+    } else {
+      state.rawview.replaceSelection(markdownTable(rows, cols), { source: 'markdown-table', selectInserted: true });
+    }
   });
 
   const rect = anchorEl.getBoundingClientRect();
@@ -123,7 +132,44 @@ function showTablePicker(anchorEl) {
   picker.style.top = (rect.bottom + 4) + 'px';
 }
 
+function runMarkdownActionWysiwyg(action, btn) {
+  const cm = getWysiwygCodeMirror();
+  if (!cm) return;
+  const selected = cm.getSelection();
+  function wrap(before, after, placeholder) {
+    const text = selected || placeholder || '';
+    cm.replaceSelection(before + text + (after ?? before));
+  }
+  function wrapLines(prefix, placeholder) {
+    const text = selected || placeholder || '';
+    const lines = text.split('\n');
+    cm.replaceSelection(lines.map((l) => prefix + l).join('\n'));
+  }
+  if (action === 'bold') { wrap('**', '**', 'strong text'); }
+  else if (action === 'italic') { wrap('*', '*', 'emphasis'); }
+  else if (action === 'strikethrough') { wrap('~~', '~~', 'text'); }
+  else if (action === 'inline-code') { wrap('`', '`', 'code'); }
+  else if (action === 'code-block') { wrap('```\n', '\n```', selected || 'code'); }
+  else if (action === 'blockquote') { wrapLines('> ', 'quote'); }
+  else if (action === 'bullet-list') { wrapLines('- ', 'item'); }
+  else if (action === 'ordered-list') {
+    const text = selected || 'item';
+    const lines = text.split('\n');
+    cm.replaceSelection(lines.map((l, i) => `${i + 1}. ${l}`).join('\n'));
+  }
+  else if (action === 'heading') { wrap('# ', '', selected || 'Heading'); }
+  else if (action === 'table') {
+    if (tablePicker) { closeTablePicker(); return; }
+    showTablePicker(btn || document.getElementById('mdTableBtn'));
+  }
+  cm.focus();
+}
+
 function runMarkdownAction(action, btn) {
+  if (wysiwygMode && isWysiwygActive()) {
+    runMarkdownActionWysiwyg(action, btn);
+    return;
+  }
   if (!state.rawview || state.type?.id !== 'markdown') return;
   if (action === 'heading') {
     state.rawview.transformSelection((text) => markdownHeading(text, 1), { expandToLines: true, source: 'markdown-heading' });
@@ -193,7 +239,56 @@ function closeMarkdownContextMenu() {
   markdownContextMenu = null;
 }
 
+function updateWysiwygBtn() {
+  const btn = document.getElementById('wysiwygBtn');
+  if (!btn) return;
+  btn.classList.toggle('active', wysiwygMode);
+  btn.setAttribute('aria-pressed', String(wysiwygMode));
+  btn.title = wysiwygMode ? 'Switch to code editor' : 'Switch to visual editor (WYSIWYG)';
+}
+
+export async function toggleWysiwyg() {
+  if (state.type?.id !== 'markdown') return;
+
+  if (!wysiwygMode) {
+    // Switching TO WYSIWYG: capture current Monaco text, dispose Monaco, mount EasyMDE
+    if (!state.rawview) return;
+    const text = state.rawview.getValue();
+    state.rawview.dispose();
+    state.rawview = null;
+    wysiwygMode = true;
+    updateWysiwygBtn();
+    await mountWysiwyg(document.getElementById('editor'), text, async (value) => {
+      state.intake = { ...state.intake, text: value };
+      state.downloadedSinceEdit = false;
+      if (state.currentFolderPath) {
+        state.folderEdits.set(state.currentFolderPath, value);
+        state.folderExported = false;
+        state.treeApi?.setEdited?.(state.currentFolderPath, true);
+      } else if (state.sessionIntakes.has(state.intake?.filename)) {
+        state.sessionEdits.set(state.intake.filename, value);
+        state.treeApi?.setEdited?.(state.intake.filename, true);
+      }
+      if (state.type?.capabilities.preview) await renderPreview();
+    });
+  } else {
+    // Switching BACK to Monaco: capture EasyMDE text, unmount, rebuild rawview
+    const text = getWysiwygValue();
+    unmountWysiwyg();
+    wysiwygMode = false;
+    state.intake = { ...state.intake, text };
+    updateWysiwygBtn();
+    await buildRawView();
+  }
+}
+
 export async function buildRawView() {
+  // If WYSIWYG was active (e.g. file changed), tear it down first
+  if (wysiwygMode) {
+    unmountWysiwyg();
+    wysiwygMode = false;
+    updateWysiwygBtn();
+  }
   state.rawview?.dispose();
   // syntaxLanguage may be a function(intake) for types that pick the language per file (code).
   const sl = state.type.syntaxLanguage;
@@ -289,6 +384,8 @@ export async function onRawEdited(value) {
 // since the last edit. Used to guard against silently discarding progress.
 export function hasUnsavedWork() {
   if (state.rawview?.isDirty() && !state.downloadedSinceEdit) return true;
+  if (wysiwygMode && isWysiwygActive() && !state.downloadedSinceEdit &&
+      getWysiwygValue() !== (state.intake?.originalText ?? state.intake?.text ?? '')) return true;
   if (state.binaryEdit?.dirty && !state.downloadedSinceEdit) return true;
   if (state.sessionEdits.size > 0) return true;
   // Folder edits stashed but not yet exported also count — closing the tab would lose them.
@@ -340,7 +437,10 @@ export async function downloadCurrent() {
     blob = new Blob([bytes], { type: state.binaryEdit.mimeType || state.intake.mimeType || 'application/octet-stream' });
     state.binaryEdit.dirty = false;
   } else {
-    blob = new Blob([state.rawview ? state.rawview.getValue() : (state.intake.text || '')], { type: state.intake.mimeType || 'text/plain' });
+    const text = wysiwygMode && isWysiwygActive()
+      ? getWysiwygValue()
+      : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
+    blob = new Blob([text], { type: state.intake.mimeType || 'text/plain' });
   }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -348,7 +448,9 @@ export async function downloadCurrent() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   if (state.sessionEdits.has(state.intake.filename)) {
-    const text = state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename);
+    const text = wysiwygMode && isWysiwygActive()
+      ? getWysiwygValue()
+      : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
     state.sessionIntakes.set(state.intake.filename, { ...state.sessionIntakes.get(state.intake.filename), text });
     state.sessionEdits.delete(state.intake.filename);
     state.treeApi?.setEdited?.(state.intake.filename, false);

@@ -274,6 +274,23 @@ body {
   background: var(--bg); cursor: pointer; }
 .md-table-picker-cell.active { background: var(--accent, #0969da); border-color: var(--accent, #0969da); opacity: 0.7; }
 .md-table-picker-cell:hover { border-color: var(--accent, #0969da); }
+/* WYSIWYG toggle button */
+#wysiwygBtn { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+#wysiwygBtn.active { background: var(--accent, #0969da); color: #fff; border-radius: 4px; }
+/* EasyMDE container overrides to fit the app layout */
+.EasyMDEContainer { height: 100%; display: flex; flex-direction: column; }
+.EasyMDEContainer .CodeMirror {
+  flex: 1; height: calc(100vh - 120px);
+  font-family: ui-monospace, monospace;
+  font-size: 14px;
+  border: none;
+  border-radius: 0;
+}
+[data-theme="dark"] .EasyMDEContainer .CodeMirror {
+  background: #1e1e1e;
+  color: #e6e6e6;
+}
+[data-theme="dark"] .EasyMDEContainer .CodeMirror-cursor { border-left-color: #e6e6e6; }
 /* Context menu (table sort, right-click) */
 .md-context-menu { position: fixed; z-index: 10000; min-width: 180px; padding: 6px;
   border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2);
