@@ -333,17 +333,14 @@ export async function run(ctx) {
   const psTitle = await psf.$eval('.ps-table', (e) => e.textContent);
   if (/Hello PostScript/i.test(psTitle)) pass('PostScript title from DSC comments shown'); else fail('ps table: ' + psTitle.slice(0, 100));
 
-  // ── Steam ACF viewer ──
+  // ── Steam ACF viewer (known-file plugin) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Steam App Manifest (ACF)');
-  const acff = await frameOf('iframe.fv-preview-frame');
-  await acff.waitForSelector('.acf-preview', { timeout: 8000 });
-  const acfTypeId = await page.$eval('#typeSelect', (s) => s.value);
-  if (acfTypeId === 'acf') pass('sample.acf detected as Steam ACF type'); else fail('acf type: ' + acfTypeId);
-  const acfTitle = await acff.$eval('.acf-title', (e) => e.textContent);
-  if (/Spacewar/i.test(acfTitle)) pass('ACF game name shown'); else fail('acf title: ' + acfTitle);
-  const acfRows = await acff.$eval('.acf-table', (e) => e.textContent);
-  if (/480/.test(acfRows)) pass('ACF App ID shown in table'); else fail('acf table: ' + acfRows.slice(0, 100));
+  await page.waitForSelector('#previewHost .steam-doc', { timeout: 12000 });
+  const acfText = await page.$eval('#previewHost .steam-doc', (e) => e.textContent);
+  if (/ACF|Steam/i.test(acfText)) pass('sample.acf: ACF/Steam badge shown'); else fail('acf badge: ' + acfText.slice(0, 200));
+  if (/Spacewar/i.test(acfText)) pass('sample.acf: game name shown'); else fail('acf name: ' + acfText.slice(0, 300));
+  if (/480/.test(acfText)) pass('sample.acf: App ID shown'); else fail('acf appid: ' + acfText.slice(0, 300));
 
   // ── FITS astronomy image viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -475,4 +472,13 @@ export async function run(ctx) {
   const srText = await srf.$eval('body', (el) => el.textContent);
   if (/SARIF/i.test(srText)) pass('SARIF badge shown'); else fail('sarif badge: ' + srText.slice(0, 200));
   if (/error|warning/i.test(srText)) pass('SARIF findings shown'); else fail('sarif findings: ' + srText.slice(0, 200));
+
+  // ── secret.txt Easter egg — The Archivist lore file loads as plain text ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('secret.txt');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const secretf = await frameOf('iframe.fv-preview-frame');
+  await secretf.waitForSelector('.plain-doc .plain-text', { timeout: 8000 });
+  const secretText = await secretf.$eval('.plain-doc .plain-text', (e) => e.textContent);
+  if (/Archivist/i.test(secretText)) pass('secret.txt Easter egg loads as plain text with Archivist lore'); else fail('secret.txt text: ' + secretText.slice(0, 200));
 }

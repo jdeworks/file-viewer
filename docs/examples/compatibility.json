@@ -5653,33 +5653,6 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "turbo": {
-      "label": "Turborepo config",
-      "baseType": "json",
-      "support": "supported",
-      "sampleFiles": [
-        "turbo.json"
-      ],
-      "extensions": [
-        "turbo.json"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "rich",
-      "metadataDepth": "none",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
     "dependabot": {
       "label": "Dependabot config",
       "baseType": "yaml",
@@ -5940,35 +5913,6 @@
       "securityLimitations": [],
       "knownParserGaps": [
         "TOML parsed via base type; health checks and machine configs not shown"
-      ],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "cliff": {
-      "label": "git-cliff config",
-      "baseType": "toml",
-      "support": "supported",
-      "sampleFiles": [
-        "cliff.toml"
-      ],
-      "extensions": [
-        "cliff.toml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "rich",
-      "metadataDepth": "none",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [
-        "Tera template syntax not rendered; body/header shown as raw text excerpts"
       ],
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
@@ -6311,33 +6255,6 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "circleci": {
-      "label": "CircleCI config",
-      "baseType": "yaml",
-      "support": "supported",
-      "sampleFiles": [
-        "circleci.yml"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "structure-only",
-      "metadataDepth": "none",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
     "amplify": {
       "label": "AWS Amplify config",
       "baseType": "yaml",
@@ -6557,33 +6474,6 @@
       "support": "supported",
       "sampleFiles": [
         "tox.ini"
-      ],
-      "extensions": [
-        ".ini"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "structure-only",
-      "metadataDepth": "none",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "mypy": {
-      "label": "mypy.ini",
-      "baseType": "text",
-      "support": "supported",
-      "sampleFiles": [
-        "mypy.ini"
       ],
       "extensions": [
         ".ini"
@@ -7159,33 +7049,6 @@
       ],
       "extensions": [
         "packer.json"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "rich",
-      "metadataDepth": "none",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "none",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
-    "ruff": {
-      "label": "Ruff config",
-      "baseType": "toml",
-      "support": "supported",
-      "sampleFiles": [
-        "ruff.toml"
-      ],
-      "extensions": [
-        "ruff.toml"
       ],
       "capabilities": {
         "rawView": true,
@@ -19132,33 +18995,6 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "release-please-config": {
-      "label": "Release Please config",
-      "baseType": "json",
-      "support": "supported",
-      "sampleFiles": [
-        "release-please-config.json"
-      ],
-      "extensions": [
-        ".yml"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
     "mypy-ini": {
       "label": "mypy config",
       "baseType": "raw",
@@ -19758,7 +19594,9 @@
       "label": "Benthos / Redpanda Connect",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "benthos.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -19783,7 +19621,9 @@
       "label": "Test Kitchen",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".kitchen.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -19808,7 +19648,9 @@
       "label": "Shopify app",
       "baseType": "toml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "shopify.app.toml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -19833,7 +19675,9 @@
       "label": "Lighthouse CI",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".lighthouserc.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -19885,7 +19729,9 @@
       "label": "Garden.io config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "garden.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -19910,7 +19756,9 @@
       "label": "Stryker mutation testing",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "stryker.conf.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -19935,7 +19783,9 @@
       "label": "Apache Airflow config",
       "baseType": "ini",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "airflow.cfg"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20014,7 +19864,9 @@
       "label": "Buf code generation",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "buf.gen.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20039,7 +19891,9 @@
       "label": "HashiCorp Waypoint",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "waypoint.hcl"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20118,7 +19972,9 @@
       "label": "Container registries",
       "baseType": "toml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "registries.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20143,7 +19999,9 @@
       "label": "Containers storage",
       "baseType": "toml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "storage.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20168,7 +20026,10 @@
       "label": "GraphQL Code Generator",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "codegen.yml",
+        "graphql.config.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20193,7 +20054,10 @@
       "label": "TypeSpec config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "tspconfig.yaml",
+        "tsconfig.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20272,7 +20136,9 @@
       "label": "AsyncAPI",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "asyncapi.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20297,7 +20163,9 @@
       "label": "Telegraf",
       "baseType": "toml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "telegraf.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20322,7 +20190,9 @@
       "label": "Devfile",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "devfile.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20347,7 +20217,9 @@
       "label": "npm-check-updates config",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".ncurc.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20399,7 +20271,9 @@
       "label": "Apache Pulsar Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "standalone.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20424,7 +20298,9 @@
       "label": "InfluxDB",
       "baseType": "toml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "influxdb.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20449,7 +20325,9 @@
       "label": "NSQ config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "nsqd.cfg"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20474,7 +20352,9 @@
       "label": "Kibana",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "kibana.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20499,7 +20379,9 @@
       "label": "Mintlify docs",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "mint.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20524,7 +20406,9 @@
       "label": "Insomnia workspace",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "insomnia.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20549,7 +20433,9 @@
       "label": "Bruno workspace",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "bruno.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20574,7 +20460,9 @@
       "label": "Nix config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "nix.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20599,7 +20487,9 @@
       "label": "OpenAPI Generator config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "openapi-generator-config.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20678,7 +20568,9 @@
       "label": "Cloudflare Tunnel",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "cloudflared.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20703,7 +20595,9 @@
       "label": "dnsmasq",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "dnsmasq.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20755,7 +20649,9 @@
       "label": "Netplan",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "netplan.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -20780,7 +20676,9 @@
       "label": "syslog-ng",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "syslog-ng.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -21480,7 +21378,9 @@
       "label": "Gitolite config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "gitolite.conf"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -22882,7 +22782,9 @@
       "label": "Drone CI Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        ".drone.yml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -22907,7 +22809,9 @@
       "label": "SFTPGo Config",
       "baseType": "json",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sftpgo.json"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -23499,7 +23403,9 @@
       "label": "Joplin Server",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "joplin.env"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -23524,7 +23430,9 @@
       "label": "Speedtest Tracker",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "speedtest-tracker.env"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -23900,7 +23808,9 @@
       "label": "Homepage Dashboard Config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "homepage-services.yaml"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -24006,7 +23916,9 @@
       "label": "Hoarder / Karakeep Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "hoarder.env"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -24319,7 +24231,9 @@
       "label": "vsftpd Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "vsftpd.conf"
+      ],
       "extensions": [],
       "capabilities": {
         "rawView": true,
@@ -24342,7 +24256,9 @@
       "label": "ProFTPD Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "proftpd.conf"
+      ],
       "extensions": [],
       "capabilities": {
         "rawView": true,
@@ -24615,7 +24531,9 @@
       "label": "FRP Client Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "frpc.toml"
+      ],
       "extensions": [],
       "capabilities": {
         "rawView": true,
@@ -24638,7 +24556,9 @@
       "label": "FRP Server Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "frps.toml"
+      ],
       "extensions": [],
       "capabilities": {
         "rawView": true,
@@ -24661,7 +24581,9 @@
       "label": "PowerDNS Authoritative Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "pdns.conf"
+      ],
       "extensions": [],
       "capabilities": {
         "rawView": true,
@@ -24684,7 +24606,9 @@
       "label": "PowerDNS Recursor Config",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "recursor.conf"
+      ],
       "extensions": [],
       "capabilities": {
         "rawView": true,
