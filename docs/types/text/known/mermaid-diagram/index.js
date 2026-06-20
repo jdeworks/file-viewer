@@ -6,9 +6,16 @@ const MERMAID_KEYWORDS = [
 
 function hasMermaidContent(text) {
   if (!text) return false;
-  const firstLine = (text.match(/^[^\n]*\n?([^\n]+)/m) || [])[1] || text.split('\n')[0];
-  const cleaned = firstLine.replace(/^\s*(%%[^\n]*)?\s*/, '').trim().toLowerCase();
-  return MERMAID_KEYWORDS.some((kw) => cleaned.startsWith(kw.toLowerCase()));
+  // Check each of the first few lines for a Mermaid keyword (skip comment lines starting with %%)
+  const lines = text.split('\n').slice(0, 5);
+  for (const line of lines) {
+    const cleaned = line.replace(/^\s*%%[^\n]*/, '').trim().toLowerCase();
+    if (!cleaned) continue;
+    if (MERMAID_KEYWORDS.some((kw) => cleaned.startsWith(kw.toLowerCase()))) return true;
+    // Stop at first non-comment non-empty line
+    break;
+  }
+  return false;
 }
 
 export const plugin = {

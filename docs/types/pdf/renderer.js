@@ -10,6 +10,7 @@
 import { loadPdfjs } from './pdflib.js';
 import { createEditor } from './pdfedit.js';
 import { showPasswordPrompt } from '../../core/password-prompt.js';
+import { loadGlobal, vendor } from '../../core/script-loader.js';
 
 const MAX_PAGES = 50;
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -47,6 +48,7 @@ export async function render(intake, ctx) {
     + '<button class="pdf-merge" hidden title="Append another PDF">+ Merge PDF</button>'
     + '<button class="pdf-watermark" hidden title="Add a text watermark to all pages">Watermark</button>'
     + '<button class="pdf-extract" hidden title="Extract a range of pages to a new PDF">Extract pages</button>'
+    + '<button class="pdf-split" hidden title="Split PDF into multiple files by page ranges">Split PDF</button>'
     + '<button class="pdf-download" hidden>Download edited PDF</button></div>'
     + '<div class="pdf-changes" hidden></div>'
     + '<div class="pdf-watermark-form" hidden style="padding:4px 8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'
@@ -59,6 +61,16 @@ export async function render(intake, ctx) {
     + '<label style="font-size:0.85em">Pages <input class="pdf-ex-from" type="number" min="1" value="1" style="width:52px"> – <input class="pdf-ex-to" type="number" min="1" value="1" style="width:52px"></label>'
     + '<button class="pdf-ex-apply">Extract</button>'
     + '<button class="pdf-ex-cancel">Cancel</button>'
+    + '</div>'
+    + '<div class="pdf-split-form" hidden style="padding:4px 8px;display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;">'
+    + '<div style="display:flex;flex-direction:column;gap:4px;">'
+    + '<label style="font-size:0.85em">Page ranges (one per line, e.g. <code>1-3</code>)</label>'
+    + '<textarea class="pdf-split-ranges" rows="4" style="width:180px;font-family:monospace;font-size:0.85em;"></textarea>'
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;gap:4px;align-self:center;">'
+    + '<button class="pdf-split-apply">Split &amp; Download</button>'
+    + '<button class="pdf-split-cancel">Cancel</button>'
+    + '</div>'
     + '</div>'
     + '<input type="file" class="pdf-imginput" accept="image/*" hidden>'
     + '<input type="file" class="pdf-pdfinput" accept="application/pdf,.pdf" hidden>'
@@ -179,9 +191,11 @@ export async function render(intake, ctx) {
     host.querySelector('.pdf-merge').hidden = !editing;
     host.querySelector('.pdf-watermark').hidden = !editing;
     host.querySelector('.pdf-extract').hidden = !editing;
+    host.querySelector('.pdf-split').hidden = !editing;
     if (!editing) {
       host.querySelector('.pdf-watermark-form').hidden = true;
       host.querySelector('.pdf-extract-form').hidden = true;
+      host.querySelector('.pdf-split-form').hidden = true;
     }
     if (editing && !editor) {
       try { editor = await createEditor(intake.bytes); }
@@ -193,6 +207,7 @@ export async function render(intake, ctx) {
         host.querySelector('.pdf-merge').hidden = true;
         host.querySelector('.pdf-watermark').hidden = true;
         host.querySelector('.pdf-extract').hidden = true;
+        host.querySelector('.pdf-split').hidden = true;
         return;
       }
     }
@@ -236,6 +251,7 @@ export async function render(intake, ctx) {
     const form = host.querySelector('.pdf-watermark-form');
     form.hidden = !form.hidden;
     host.querySelector('.pdf-extract-form').hidden = true;
+    host.querySelector('.pdf-split-form').hidden = true;
   });
   host.querySelector('.pdf-wm-apply').addEventListener('click', async () => {
     if (!editor) return;
@@ -255,6 +271,7 @@ export async function render(intake, ctx) {
     const form = host.querySelector('.pdf-extract-form');
     form.hidden = !form.hidden;
     host.querySelector('.pdf-watermark-form').hidden = true;
+    host.querySelector('.pdf-split-form').hidden = true;
     if (!form.hidden && editor) {
       const total = editor.pageCount();
       host.querySelector('.pdf-ex-to').value = total;
@@ -281,6 +298,84 @@ export async function render(intake, ctx) {
   });
   host.querySelector('.pdf-ex-cancel').addEventListener('click', () => {
     host.querySelector('.pdf-extract-form').hidden = true;
+  });
+
+  // Split PDF: show inline form pre-filled with a suggested split, then split & download.
+  host.querySelector('.pdf-split').addEventListener('click', () => {
+    const form = host.querySelector('.pdf-split-form');
+    form.hidden = !form.hidden;
+    host.querySelector('.pdf-watermark-form').hidden = true;
+    host.querySelector('.pdf-extract-form').hidden = true;
+    if (!form.hidden && editor) {
+      const total = editor.pageCount();
+      const textarea = host.querySelector('.pdf-split-ranges');
+      // Suggest split: one page per line if ≤10 pages, else split at midpoint
+      if (total <= 10) {
+        textarea.value = Array.from({ length: total }, (_, i) => (i + 1) + '-' + (i + 1)).join('\n');
+      } else {
+        const mid = Math.floor(total / 2);
+        textarea.value = '1-' + mid + '\n' + (mid + 1) + '-' + total;
+      }
+    }
+  });
+
+  host.querySelector('.pdf-split-cancel').addEventListener('click', () => {
+    host.querySelector('.pdf-split-form').hidden = true;
+  });
+
+  host.querySelector('.pdf-split-apply').addEventListener('click', async () => {
+    if (!editor) return;
+    const textarea = host.querySelector('.pdf-split-ranges');
+    const lines = textarea.value.split('\n').map((l) => l.trim()).filter(Boolean);
+    const ranges = [];
+    for (const line of lines) {
+      const m = line.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+      if (!m) { infoEl.textContent = 'Invalid range: ' + esc(line) + ' — use format like 1-3'; return; }
+      const from1 = parseInt(m[1], 10), to1 = parseInt(m[2], 10);
+      if (from1 < 1 || to1 < from1) { infoEl.textContent = 'Invalid range: ' + esc(line); return; }
+      ranges.push({ from: from1 - 1, to: to1 - 1 });
+    }
+    if (!ranges.length) { infoEl.textContent = 'No ranges specified.'; return; }
+    let parts;
+    try {
+      parts = await editor.split(ranges);
+    } catch (err) { infoEl.textContent = 'Split failed: ' + esc(err.message); return; }
+    const baseName = (intake.filename || 'document').replace(/\.pdf$/i, '');
+    if (parts.length === 1) {
+      // Single range — direct download
+      const blob = new Blob([parts[0]], { type: 'application/pdf' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = baseName + '-part-1.pdf';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } else {
+      // Multiple ranges — try JSZip, fall back to sequential downloads
+      let didZip = false;
+      try {
+        const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
+        const zip = new JSZip();
+        parts.forEach((bytes, i) => { zip.file('part-' + (i + 1) + '.pdf', bytes); });
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(zipBlob);
+        a.download = baseName + '-split.zip';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        didZip = true;
+      } catch { /* fall through to sequential */ }
+      if (!didZip) {
+        for (let i = 0; i < parts.length; i++) {
+          const blob = new Blob([parts[i]], { type: 'application/pdf' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = baseName + '-part-' + (i + 1) + '.pdf';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000 * (i + 1));
+        }
+      }
+    }
+    host.querySelector('.pdf-split-form').hidden = true;
   });
 
   host.querySelector('.pdf-download').addEventListener('click', () => {

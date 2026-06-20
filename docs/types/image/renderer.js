@@ -87,6 +87,19 @@ export async function render(intake, ctx = {}) {
       + '<input class="imgv-bg-tol" type="range" min="0" max="80" value="20" title="Tolerance" hidden style="width:72px">'
       + '<button class="imgv-bg-ok" hidden title="Apply background removal (saves as PNG)">Apply</button>'
       + '<button class="imgv-bg-x" hidden title="Cancel background removal">✕</button>'
+      + '<span class="imgv-sep"></span>'
+      + '<button class="imgv-crop-btn" title="Crop image — drag a rectangle to select the region to keep">✂ Crop</button>'
+      + '<button class="imgv-crop-apply" hidden title="Apply the selected crop region">Apply Crop</button>'
+      + '<button class="imgv-crop-cancel" hidden title="Cancel crop">Cancel</button>'
+      + '<span class="imgv-sep"></span>'
+      + '<button class="imgv-resize-btn" title="Resize image to specific dimensions">⊡ Resize</button>'
+      + '<span class="imgv-resize-panel" hidden style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;">'
+      + '<label style="font-size:0.8em">W <input class="imgv-resize-w" type="number" min="1" max="16000" style="width:60px"> px</label>'
+      + '<label style="font-size:0.8em">H <input class="imgv-resize-h" type="number" min="1" max="16000" style="width:60px"> px</label>'
+      + '<label style="font-size:0.8em"><input class="imgv-resize-lock" type="checkbox" checked> Lock ratio</label>'
+      + '<button class="imgv-resize-apply">Apply Resize</button>'
+      + '<button class="imgv-resize-cancel">Cancel</button>'
+      + '</span>'
       + '<button class="imgv-text-reset" title="Reset all edits" hidden>Reset</button>' : '')
     + '</div>'
     + '<div class="imgv-stage"><img class="imgv-img" alt="' + esc(intake.filename) + '"><div class="imgv-note" hidden></div></div>'
@@ -117,6 +130,16 @@ export async function render(intake, ctx = {}) {
   const bgTol = canEdit ? host.querySelector('.imgv-bg-tol') : null;
   const bgOk = canEdit ? host.querySelector('.imgv-bg-ok') : null;
   const bgX = canEdit ? host.querySelector('.imgv-bg-x') : null;
+  const cropBtn = canEdit ? host.querySelector('.imgv-crop-btn') : null;
+  const cropApplyBtn = canEdit ? host.querySelector('.imgv-crop-apply') : null;
+  const cropCancelBtn = canEdit ? host.querySelector('.imgv-crop-cancel') : null;
+  const resizeBtn = canEdit ? host.querySelector('.imgv-resize-btn') : null;
+  const resizePanel = canEdit ? host.querySelector('.imgv-resize-panel') : null;
+  const resizeW = canEdit ? host.querySelector('.imgv-resize-w') : null;
+  const resizeH = canEdit ? host.querySelector('.imgv-resize-h') : null;
+  const resizeLock = canEdit ? host.querySelector('.imgv-resize-lock') : null;
+  const resizeApplyBtn = canEdit ? host.querySelector('.imgv-resize-apply') : null;
+  const resizeCancelBtn = canEdit ? host.querySelector('.imgv-resize-cancel') : null;
   const rotLBtn = canEdit ? host.querySelector('.imgv-rot-l') : null;
   const rotRBtn = canEdit ? host.querySelector('.imgv-rot-r') : null;
   const flipHBtn = canEdit ? host.querySelector('.imgv-flip-h') : null;
@@ -134,6 +157,9 @@ export async function render(intake, ctx = {}) {
   let bgPickMode = false, bgSrcData = null, bgSrcW = 0, bgSrcH = 0, bgPickX = -1, bgPickY = -1, bgPreviewUrl = null;
   const undoStack = [];
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null;
+  // Crop state
+  let cropMode = false, cropOverlay = null, cropSelBox = null;
+  let cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0, cropDragging = false, cropHasRegion = false;
 
   function getExportMime() { return (exportFmt?.value) || mime; }
 
@@ -505,6 +531,176 @@ export async function render(intake, ctx = {}) {
         ctx.onBinaryEdit?.(null);
       }
       if (undoBtn) undoBtn.hidden = undoStack.length === 0;
+    });
+  }
+
+  // Crop tool — drag a rectangle on the image to select a region, then apply to commit
+  function cropExitMode() {
+    cropMode = false;
+    cropHasRegion = false;
+    cropDragging = false;
+    if (cropOverlay) { cropOverlay.remove(); cropOverlay = null; cropSelBox = null; }
+    if (cropBtn) { cropBtn.classList.remove('active'); }
+    if (cropApplyBtn) cropApplyBtn.hidden = true;
+    if (cropCancelBtn) cropCancelBtn.hidden = true;
+  }
+
+  function cropEnterMode() {
+    cropMode = true;
+    cropHasRegion = false;
+    const stage = host.querySelector('.imgv-stage');
+    stage.style.position = 'relative';
+    cropOverlay = document.createElement('div');
+    cropOverlay.style.cssText = 'position:absolute;inset:0;cursor:crosshair;z-index:5;';
+    cropSelBox = document.createElement('div');
+    cropSelBox.style.cssText = 'position:absolute;border:2px dashed #0af;box-sizing:border-box;background:rgba(0,170,255,0.08);pointer-events:none;display:none;';
+    cropOverlay.appendChild(cropSelBox);
+    stage.appendChild(cropOverlay);
+    if (cropBtn) cropBtn.classList.add('active');
+    if (cropCancelBtn) cropCancelBtn.hidden = false;
+
+    cropOverlay.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      cropOverlay.setPointerCapture(e.pointerId);
+      const r = img.getBoundingClientRect();
+      cropStartX = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+      cropStartY = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+      cropEndX = cropStartX; cropEndY = cropStartY;
+      cropDragging = true; cropHasRegion = false;
+      cropSelBox.style.display = 'none';
+      if (cropApplyBtn) cropApplyBtn.hidden = true;
+    });
+
+    cropOverlay.addEventListener('pointermove', (e) => {
+      if (!cropDragging) return;
+      e.preventDefault();
+      const r = img.getBoundingClientRect();
+      cropEndX = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+      cropEndY = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+      // Update the selection box overlay using img bounding rect relative to stage
+      const stageR = host.querySelector('.imgv-stage').getBoundingClientRect();
+      const imgR = img.getBoundingClientRect();
+      const ox = imgR.left - stageR.left;
+      const oy = imgR.top - stageR.top;
+      const x1 = Math.min(cropStartX, cropEndX) * imgR.width + ox;
+      const y1 = Math.min(cropStartY, cropEndY) * imgR.height + oy;
+      const x2 = Math.max(cropStartX, cropEndX) * imgR.width + ox;
+      const y2 = Math.max(cropStartY, cropEndY) * imgR.height + oy;
+      cropSelBox.style.left = x1 + 'px'; cropSelBox.style.top = y1 + 'px';
+      cropSelBox.style.width = (x2 - x1) + 'px'; cropSelBox.style.height = (y2 - y1) + 'px';
+      cropSelBox.style.display = 'block';
+    });
+
+    cropOverlay.addEventListener('pointerup', (e) => {
+      if (!cropDragging) return;
+      cropDragging = false;
+      const r = img.getBoundingClientRect();
+      cropEndX = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+      cropEndY = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+      // Check minimum size (10×10 natural px)
+      const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
+      const selW = Math.abs(cropEndX - cropStartX) * nw;
+      const selH = Math.abs(cropEndY - cropStartY) * nh;
+      if (selW >= 10 && selH >= 10) {
+        cropHasRegion = true;
+        if (cropApplyBtn) cropApplyBtn.hidden = false;
+      }
+    });
+  }
+
+  async function applyCrop() {
+    if (!cropHasRegion) return;
+    const nw = img.naturalWidth, nh = img.naturalHeight;
+    const x1 = Math.round(Math.min(cropStartX, cropEndX) * nw);
+    const y1 = Math.round(Math.min(cropStartY, cropEndY) * nh);
+    const x2 = Math.round(Math.max(cropStartX, cropEndX) * nw);
+    const y2 = Math.round(Math.max(cropStartY, cropEndY) * nh);
+    const cw = Math.max(1, x2 - x1), ch = Math.max(1, y2 - y1);
+    const base = new Image(); base.decoding = 'async';
+    base.src = editedUrl || url;
+    await base.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = cw; canvas.height = ch;
+    const g = canvas.getContext('2d');
+    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, cw, ch); }
+    g.drawImage(base, -x1, -y1);
+    const targetMime = getExportMime();
+    pushUndo();
+    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
+    if (!editedBlob) return;
+    if (editedUrl) URL.revokeObjectURL(editedUrl);
+    editedUrl = URL.createObjectURL(editedBlob);
+    img.src = editedUrl;
+    if (editReset) editReset.hidden = false;
+    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
+    cropExitMode();
+  }
+
+  if (cropBtn) {
+    cropBtn.addEventListener('click', () => {
+      if (cropMode) { cropExitMode(); } else { cropEnterMode(); }
+    });
+    cropApplyBtn?.addEventListener('click', () => {
+      applyCrop().catch((e) => { if (cropApplyBtn) cropApplyBtn.title = e.message || String(e); });
+    });
+    cropCancelBtn?.addEventListener('click', cropExitMode);
+  }
+
+  // Resize tool — show a panel with width/height inputs, apply draws to a new canvas at that size
+  function resizePopulate() {
+    if (!resizeW || !resizeH) return;
+    resizeW.value = String(img.naturalWidth || '');
+    resizeH.value = String(img.naturalHeight || '');
+  }
+
+  if (resizeBtn) {
+    resizeBtn.addEventListener('click', () => {
+      if (!resizePanel) return;
+      const open = resizePanel.hidden === false;
+      resizePanel.hidden = open;
+      if (!open) resizePopulate();
+    });
+
+    resizeW?.addEventListener('input', () => {
+      if (!resizeLock?.checked) return;
+      const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
+      const w = parseInt(resizeW.value, 10);
+      if (w > 0 && resizeH) resizeH.value = String(Math.round(w * nh / nw));
+    });
+
+    resizeH?.addEventListener('input', () => {
+      if (!resizeLock?.checked) return;
+      const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
+      const h = parseInt(resizeH.value, 10);
+      if (h > 0 && resizeW) resizeW.value = String(Math.round(h * nw / nh));
+    });
+
+    resizeApplyBtn?.addEventListener('click', async () => {
+      const tw = parseInt(resizeW?.value, 10);
+      const th = parseInt(resizeH?.value, 10);
+      if (!tw || !th || tw < 1 || th < 1) return;
+      const base = new Image(); base.decoding = 'async';
+      base.src = editedUrl || url;
+      await base.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = tw; canvas.height = th;
+      const g = canvas.getContext('2d');
+      if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, tw, th); }
+      g.drawImage(base, 0, 0, tw, th);
+      const targetMime = getExportMime();
+      pushUndo();
+      editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
+      if (!editedBlob) return;
+      if (editedUrl) URL.revokeObjectURL(editedUrl);
+      editedUrl = URL.createObjectURL(editedBlob);
+      img.src = editedUrl;
+      if (editReset) editReset.hidden = false;
+      ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
+      if (resizePanel) resizePanel.hidden = true;
+    });
+
+    resizeCancelBtn?.addEventListener('click', () => {
+      if (resizePanel) resizePanel.hidden = true;
     });
   }
 

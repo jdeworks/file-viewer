@@ -104,6 +104,17 @@ export async function createEditor(origBytes) {
       return out.save();
     },
 
+    // Split: build one PDF per range (each range is {from, to}, 0-based inclusive).
+    // Returns an array of Uint8Array — one per range.
+    async split(ranges) {
+      const results = [];
+      for (const range of ranges) {
+        const bytes = await this.extractRange(range.from, range.to);
+        results.push(bytes);
+      }
+      return results;
+    },
+
     // Rebuild a fresh PDF from the items in order, applying rotations + embedding image pages.
     async build() {
       const out = await PDFLib.PDFDocument.create();

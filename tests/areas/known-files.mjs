@@ -6079,6 +6079,50 @@ export async function run(ctx) {
   if (/counter|mux/i.test(vlogText)) pass('sample.v: module names shown'); else fail('vlog modules: ' + vlogText.slice(0, 300));
   if (/module|Module/i.test(vlogText)) pass('sample.v: module count shown'); else fail('vlog module count: ' + vlogText.slice(0, 300));
 
+  // ── sample.zig viewer (Zig) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.zig');
+  await page.waitForSelector('#previewHost .zig-doc', { timeout: 12000 });
+  pass('sample.zig: renders');
+  const zigText = await page.$eval('#previewHost .zig-doc', (e) => e.textContent);
+  if (/Zig/i.test(zigText)) pass('sample.zig: Zig badge shown'); else fail('zig badge: ' + zigText.slice(0, 200));
+  if (/add|divide|fibonacci|main/i.test(zigText)) pass('sample.zig: public functions listed'); else fail('zig pub fns: ' + zigText.slice(0, 300));
+  if (/Point/i.test(zigText)) pass('sample.zig: struct shown'); else fail('zig structs: ' + zigText.slice(0, 300));
+  if (/test/i.test(zigText)) pass('sample.zig: test count shown'); else fail('zig tests: ' + zigText.slice(0, 300));
+
+  // ── sample.ex viewer (Elixir) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.ex');
+  await page.waitForSelector('#previewHost .ex-doc', { timeout: 12000 });
+  pass('sample.ex: renders');
+  const exText = await page.$eval('#previewHost .ex-doc', (e) => e.textContent);
+  if (/Elixir/i.test(exText)) pass('sample.ex: Elixir badge shown'); else fail('elixir badge: ' + exText.slice(0, 200));
+  if (/MyApp\.Calculator/i.test(exText)) pass('sample.ex: module name shown'); else fail('elixir module: ' + exText.slice(0, 300));
+  if (/add|subtract|multiply|divide|sum/i.test(exText)) pass('sample.ex: public functions listed'); else fail('elixir pub fns: ' + exText.slice(0, 300));
+  if (/use|alias|import/i.test(exText)) pass('sample.ex: dependencies shown'); else fail('elixir deps: ' + exText.slice(0, 300));
+
+  // ── sample.pug viewer (Pug Template) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.pug');
+  await page.waitForSelector('#previewHost .pug-doc', { timeout: 12000 });
+  pass('sample.pug: renders');
+  const pugText = await page.$eval('#previewHost .pug-doc', (e) => e.textContent);
+  if (/Pug/i.test(pugText)) pass('sample.pug: Pug badge shown'); else fail('pug badge: ' + pugText.slice(0, 200));
+  if (/mixin|card|icon/i.test(pugText)) pass('sample.pug: mixins listed'); else fail('pug mixins: ' + pugText.slice(0, 300));
+  if (/block|content|scripts/i.test(pugText)) pass('sample.pug: blocks shown'); else fail('pug blocks: ' + pugText.slice(0, 300));
+  if (/include|footer|scripts/i.test(pugText)) pass('sample.pug: includes shown'); else fail('pug includes: ' + pugText.slice(0, 300));
+
+  // ── sample.ejs viewer (EJS Template) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.ejs');
+  await page.waitForSelector('#previewHost .ejs-doc', { timeout: 12000 });
+  pass('sample.ejs: renders');
+  const ejsText = await page.$eval('#previewHost .ejs-doc', (e) => e.textContent);
+  if (/EJS/i.test(ejsText)) pass('sample.ejs: EJS badge shown'); else fail('ejs badge: ' + ejsText.slice(0, 200));
+  if (/output|raw|code/i.test(ejsText)) pass('sample.ejs: tag type counts shown'); else fail('ejs tag counts: ' + ejsText.slice(0, 300));
+  if (/include|sidebar|debug/i.test(ejsText)) pass('sample.ejs: includes listed'); else fail('ejs includes: ' + ejsText.slice(0, 300));
+  if (/title|user|siteName/i.test(ejsText)) pass('sample.ejs: variables listed'); else fail('ejs variables: ' + ejsText.slice(0, 300));
+
   // ── sample.xsl viewer (XSLT Stylesheet) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('sample.xsl');

@@ -1,0 +1,52 @@
+extends layout.pug
+
+block head
+  title= pageTitle
+  meta(name="description" content=description)
+
+block content
+  - const year = new Date().getFullYear()
+  - const items = ['Apple', 'Banana', 'Cherry']
+
+  header.site-header
+    h1 Welcome to #{siteName}
+    nav
+      a(href="/") Home
+      a(href="/about") About
+      a(href="/contact") Contact
+
+  main.container
+    section#hero
+      h2 Hello, #{user.name}!
+      p.lead Explore our catalog below.
+
+    section#products
+      h3 Featured Items
+      if items.length
+        ul.item-list
+          each item in items
+            li.item-entry= item
+      else
+        p No items available.
+
+    section#info
+      +card("Getting Started", "Learn how to use the platform.")
+      +card("Documentation", "Browse the full API reference.")
+
+  include partials/footer.pug
+  include partials/scripts.pug
+
+mixin card(title, body)
+  div.card
+    h4.card-title= title
+    p.card-body= body
+
+mixin icon(name, size)
+  span.icon(class="icon-#{name}" style="font-size: #{size}px")
+
+block scripts
+  script(src="/js/app.js")
+  script.
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Page loaded: #{pageTitle}');
+    });

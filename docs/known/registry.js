@@ -786,7 +786,11 @@ import xsltStylesheet from '../types/text/known/xslt-stylesheet/index.js';
 import svelteComponent from '../types/text/known/svelte-component/index.js';
 import nunjucks from '../types/text/known/nunjucks/index.js';
 import haskellLang from '../types/text/known/haskell-lang/index.js';
-export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
+import zigLang from '../types/text/known/zig-lang/index.js';
+import elixirLang from '../types/text/known/elixir-lang/index.js';
+import pugTemplate from '../types/text/known/pug-template/index.js';
+import ejsTemplate from '../types/text/known/ejs-template/index.js';
+export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks, haskellLang, zigLang, elixirLang, pugTemplate, ejsTemplate, plistConfig, steamAcf, securityTxt, humansTxt, jsonnet, cueLang, nixExpr, azureBicep, kdlDoc, mermaidDiagram, plantuml, regoPolicy, asciidoc, capnp, flatbuffers, dhallConfig, wgslShader, packageJson, cargoToml, tsconfig, dockerfile, gitignore, dockerCompose,
   requirementsTxt, goMod, composerJson, gemfile, codeowners, editorconfig, antBuild, mavenPom, pomXml,
   buildGradle, pipfile, openapi, githubActions, k8sRbac, k8sNetworkPolicy, k8sHpa, k8sIngress, k8sManifest, pubspec, pubspecLock, netlifyToml, vercelJson, sitemapXml,
   pyprojectToml, npmrc, renovate, prettierrc, turbo, dependabot,
