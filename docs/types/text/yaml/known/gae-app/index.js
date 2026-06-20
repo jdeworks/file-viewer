@@ -3,7 +3,7 @@ export default {
   label: 'Google App Engine',
   match: (intake, baseType) => {
     if (baseType?.id !== 'yaml') return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name !== 'app.yaml') return false;
     // Content-based guard: must look like a GAE config
     const text = intake.text || '';

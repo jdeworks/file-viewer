@@ -933,7 +933,8 @@
     ],
     "type": "code",
     "enhanced": true,
-    "description": "Makefile build, test, serve, and clean targets."
+    "description": "Makefile build, test, serve, and clean targets.",
+    "knownFile": "makefile"
   },
   {
     "label": "CMakeLists.txt",
@@ -3171,7 +3172,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Kustomize overlay with resources, strategic merge patches, and ConfigMap generators."
+    "description": "Kustomize overlay with resources, patches, image overrides, configMap/secret generators, and commonLabels.",
+    "knownFile": "kustomize"
   },
   {
     "label": "ansible-playbook.yml (Ansible)",
@@ -3666,7 +3668,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Google App Engine config: nodejs20 runtime, standard env, 2 handlers, automatic scaling."
+    "description": "Google App Engine config: nodejs20 runtime, standard env, service, automatic_scaling, masked env vars, skip_files.",
+    "knownFile": "gae-app"
   },
   {
     "label": "FUNDING.yml",

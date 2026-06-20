@@ -1,5 +1,6 @@
 runtime: nodejs20
 env: standard
+service: api
 
 instance_class: F2
 
@@ -9,17 +10,34 @@ automatic_scaling:
   min_pending_latency: 30ms
   max_pending_latency: automatic
   target_cpu_utilization: 0.65
+  max_instances: 10
 
 env_variables:
   NODE_ENV: production
+  LOG_LEVEL: info
+  DATABASE_URL: postgres://db.internal:5432/myapp
+  API_SECRET_KEY: do-not-log
+  AUTH_TOKEN: bearer-placeholder
+  STRIPE_API_KEY: sk_live_placeholder
 
 handlers:
   - url: /static
     static_dir: public
+    expiration: 1d
+
+  - url: /favicon.ico
+    static_files: public/favicon.ico
+    upload: public/favicon.ico
 
   - url: /.*
     script: auto
     secure: always
+
+skip_files:
+  - node_modules/
+  - .git/
+  - tests/
+  - ".*\\.test\\.js"
 
 network:
   session_affinity: true

@@ -796,10 +796,12 @@ export async function run(ctx) {
   // ── kustomization.yaml (Kustomize) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('kustomization.yaml (Kustomize)');
-  await page.waitForSelector('#previewHost .kust-doc', { timeout: 12000 });
-  const kustText = await page.$eval('#previewHost .kust-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .kustomize-doc', { timeout: 12000 });
+  pass('kustomization.yaml: renders');
+  const kustText = await page.$eval('#previewHost .kustomize-doc', (e) => e.textContent);
   if (/Kustomize/i.test(kustText)) pass('kustomization.yaml: Kustomize badge shown'); else fail('kustomize badge: ' + kustText.slice(0, 200));
-  if (/resources|patches|configMap|app-config/i.test(kustText)) pass('kustomization.yaml: overlay content shown'); else fail('kustomize content: ' + kustText.slice(0, 200));
+  if (/resources/i.test(kustText)) pass('kustomization.yaml: resources shown'); else fail('kustomize content: ' + kustText.slice(0, 200));
+  if (/commonLabels|common labels/i.test(kustText)) pass('kustomization.yaml: commonLabels shown'); else fail('kustomize commonLabels: ' + kustText.slice(0, 200));
 
   // ── ansible-playbook.yml (Ansible) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -928,10 +930,11 @@ export async function run(ctx) {
   // ── Makefile viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Makefile');
-  await page.waitForSelector('#previewHost .mkf-doc', { timeout: 12000 });
-  const mkfText = await page.$eval('#previewHost .mkf-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .makefile-doc', { timeout: 12000 });
+  pass('Makefile: renders');
+  const mkfText = await page.$eval('#previewHost .makefile-doc', (e) => e.textContent);
   if (/Make|Makefile/i.test(mkfText)) pass('Makefile: badge shown'); else fail('makefile badge: ' + mkfText.slice(0, 200));
-  if (/all|test|clean|serve/i.test(mkfText)) pass('Makefile: targets shown'); else fail('makefile targets: ' + mkfText.slice(0, 200));
+  if (/all|test|clean|serve|build/i.test(mkfText)) pass('Makefile: targets shown'); else fail('makefile targets: ' + mkfText.slice(0, 200));
 
   // ── Justfile viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -1576,11 +1579,13 @@ export async function run(ctx) {
   // ── app.yaml (Google App Engine) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('app.yaml');
-  await page.waitForSelector('#previewHost .gae-doc', { timeout: 12000 });
-  const gaeText = await page.$eval('#previewHost .gae-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .appyaml-doc', { timeout: 12000 });
+  pass('app.yaml: renders');
+  const gaeText = await page.$eval('#previewHost .appyaml-doc', (e) => e.textContent);
   if (/App Engine/i.test(gaeText)) pass('app.yaml: App Engine badge shown'); else fail('gae-app badge: ' + gaeText.slice(0, 200));
   if (/nodejs20|python311|java17|ruby/i.test(gaeText)) pass('app.yaml: runtime shown'); else fail('gae-app runtime: ' + gaeText.slice(0, 200));
   if (/standard|flex/i.test(gaeText)) pass('app.yaml: environment shown'); else fail('gae-app env: ' + gaeText.slice(0, 200));
+  if (/\[configured\]/i.test(gaeText)) pass('app.yaml: sensitive env vars masked'); else fail('gae-app masking: ' + gaeText.slice(0, 300));
 
   // ── cloudbuild.yaml (Google Cloud Build) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
@@ -2978,8 +2983,9 @@ export async function run(ctx) {
   // nuget-config viewer
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('nuget.config');
-  await page.waitForSelector('#previewHost .nu-doc', { timeout: 12000 });
-  const nugetText = await page.$eval('#previewHost .nu-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .nugetcfg-doc', { timeout: 12000 });
+  pass('nuget.config: renders');
+  const nugetText = await page.$eval('#previewHost .nugetcfg-doc', (e) => e.textContent);
   if (/NuGet/i.test(nugetText)) pass('nuget.config: NuGet badge shown'); else fail('nuget badge: ' + nugetText.slice(0, 200));
   if (/nuget\.org/i.test(nugetText)) pass('nuget.config: nuget.org source listed'); else fail('nuget source: ' + nugetText.slice(0, 300));
   if (/MyCompany Feed|dev\.azure\.com/i.test(nugetText)) pass('nuget.config: private feed source listed'); else fail('nuget private: ' + nugetText.slice(0, 300));

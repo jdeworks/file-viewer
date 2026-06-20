@@ -4,15 +4,23 @@ kind: Kustomization
 namespace: production
 
 namePrefix: prod-
+nameSuffix: -v2
 
 resources:
   - ../../base
   - extra-service.yaml
   - network-policy.yaml
+  - ../monitoring
 
 patchesStrategicMerge:
   - replica-count.yaml
   - resource-limits.yaml
+
+patches:
+  - path: ingress-patch.yaml
+    target:
+      kind: Ingress
+      name: webapp
 
 configMapGenerator:
   - name: app-config
@@ -23,7 +31,23 @@ configMapGenerator:
     files:
       - flags.properties
 
+secretGenerator:
+  - name: db-credentials
+    envs:
+      - .env.prod
+
 images:
   - name: my-webapp
     newTag: v1.5.0
     newName: registry.example.com/my-webapp
+  - name: sidecar-proxy
+    newTag: 1.18.3
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  environment: production
+  team: platform
+
+commonAnnotations:
+  app.kubernetes.io/version: "1.5.0"
+  contact: platform-team@example.com
