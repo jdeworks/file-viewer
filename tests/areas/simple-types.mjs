@@ -364,16 +364,15 @@ export async function run(ctx) {
   const kmlRows = await kmlf.$$eval('.kml-table tbody tr', (els) => els.length);
   if (kmlRows >= 4) pass('KML placemark table rows rendered'); else fail('kml rows: ' + kmlRows);
 
-  // ── ABC music notation viewer ──
+  // ── ABC music notation viewer (parentNode) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('Folk Tunes (ABC)');
-  const abcf = await frameOf('iframe.fv-preview-frame');
-  await abcf.waitForSelector('.abc-preview', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .abc-preview', { timeout: 8000 });
   const abcTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (abcTypeId === 'abc') pass('sample.abc detected as ABC type'); else fail('abc type: ' + abcTypeId);
-  const abcSubtitle = await abcf.$eval('.abc-subtitle', (e) => e.textContent);
+  const abcSubtitle = await page.$eval('#previewHost .abc-subtitle', (e) => e.textContent);
   if (/3 tune/i.test(abcSubtitle)) pass('ABC 3 tunes counted'); else fail('abc subtitle: ' + abcSubtitle);
-  const abcFirstTitle = await abcf.$eval('.abc-tune-title', (e) => e.textContent);
+  const abcFirstTitle = await page.$eval('#previewHost .abc-tune-title', (e) => e.textContent);
   if (/Scarborough/i.test(abcFirstTitle)) pass('ABC first tune title shown'); else fail('abc title: ' + abcFirstTitle);
 
   // ── HL7 health message viewer ──

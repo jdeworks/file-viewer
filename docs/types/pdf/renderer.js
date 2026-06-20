@@ -37,11 +37,17 @@ function imageFileToPngBytes(file) {
 }
 
 export async function render(intake, ctx) {
-  const scale = ctx?.settings?.pdfScale || 1.5;
+  let scale = ctx?.settings?.pdfScale || 1.5;
+  const ZOOM_STEP = 0.25, ZOOM_MIN = 0.5, ZOOM_MAX = 4;
   const host = document.createElement('div');
   host.className = 'pdf-doc';
   host.innerHTML =
     '<div class="pdf-bar"><span class="pdf-info"></span>'
+    + '<span class="pdf-zoom-ctl">'
+    + '<button class="pdf-zoom-out" title="Zoom out">−</button>'
+    + '<span class="pdf-zoom-pct">150%</span>'
+    + '<button class="pdf-zoom-in" title="Zoom in">+</button>'
+    + '</span>'
     + '<button class="pdf-spread" title="Two-page spread (book mode)">⊞ Spread</button>'
     + '<button class="pdf-edit" title="Edit pages">Edit</button>'
     + '<button class="pdf-addimg" hidden title="Add an image as a new page">+ Image page</button>'
@@ -220,6 +226,26 @@ export async function render(intake, ctx) {
     const on = host.classList.toggle('pdf-spread-on');
     e.currentTarget.classList.toggle('active', on);
   });
+
+  // Inline zoom controls — re-render pages at the new scale.
+  function updateZoomPct() {
+    host.querySelector('.pdf-zoom-pct').textContent = Math.round(scale * 100) + '%';
+    host.querySelector('.pdf-zoom-out').disabled = scale <= ZOOM_MIN;
+    host.querySelector('.pdf-zoom-in').disabled = scale >= ZOOM_MAX;
+  }
+  host.querySelector('.pdf-zoom-out').addEventListener('click', async () => {
+    if (scale <= ZOOM_MIN) return;
+    scale = Math.max(ZOOM_MIN, +(scale - ZOOM_STEP).toFixed(2));
+    updateZoomPct();
+    await renderPages(currentBytes);
+  });
+  host.querySelector('.pdf-zoom-in').addEventListener('click', async () => {
+    if (scale >= ZOOM_MAX) return;
+    scale = Math.min(ZOOM_MAX, +(scale + ZOOM_STEP).toFixed(2));
+    updateZoomPct();
+    await renderPages(currentBytes);
+  });
+  updateZoomPct();
 
   // Insert an image as a new page: pick any raster/SVG image, rasterize to PNG (pdf-lib embeds
   // PNG/JPEG only), append it as a page, then rebuild + re-render. All in-browser, no upload.

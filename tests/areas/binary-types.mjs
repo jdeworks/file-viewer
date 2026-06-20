@@ -492,17 +492,16 @@ export async function run(ctx) {
   if (/DEB|Debian/i.test(debText)) pass('DEB badge shown'); else fail('deb badge: ' + debText.slice(0, 300));
   if (/hello-world|Package|debian-binary/i.test(debText)) pass('DEB package info shown'); else fail('deb pkg: ' + debText.slice(0, 300));
 
-  // ── QIF Financial Data ────────────────────────────────────────────────────────
+  // ── QIF Financial Data (parentNode) ─────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('QIF financial data (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const qiff = await frameOf('iframe.fv-preview-frame');
-  await qiff.waitForSelector('.badge-qif', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .qif-preview', { timeout: 12000 });
   const qifTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (qifTypeId === 'qif') pass('.qif detected as qif type'); else fail('qif typeId: ' + qifTypeId);
-  const qifText = await qiff.$eval('body', (el) => el.textContent);
-  if (/QIF|Quicken/i.test(qifText)) pass('QIF badge shown'); else fail('qif badge: ' + qifText.slice(0, 300));
-  if (/transaction|Bank|Grocery/i.test(qifText)) pass('QIF transactions shown'); else fail('qif txns: ' + qifText.slice(0, 300));
+  const qifBadge = await page.$eval('#previewHost .qif-badge', (el) => el.textContent);
+  if (/QIF/i.test(qifBadge)) pass('QIF badge shown'); else fail('qif badge: ' + qifBadge);
+  const qifText = await page.$eval('#previewHost .qif-preview', (el) => el.textContent);
+  if (/transaction|Bank|Grocery|Quicken/i.test(qifText)) pass('QIF transactions shown'); else fail('qif txns: ' + qifText.slice(0, 300));
 
   // ── RPM Package ───────────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'networkidle' });

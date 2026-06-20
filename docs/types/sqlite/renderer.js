@@ -1,11 +1,14 @@
 // SQLite database browser — rendered in the parent pane (interactive: table list, data grid,
-// query panel with history, EXPLAIN QUERY PLAN, and CSV/JSON export).
-// The DB is loaded into WASM memory; nothing is written back to the file.
+// query panel with history, EXPLAIN QUERY PLAN, CSV/JSON export, and DB write-back).
+// The DB is loaded into WASM memory; DDL/DML queries mutate the in-memory copy. A
+// "Download modified DB" button appears after any write, letting users export the changed file.
 // Values come from the DB and are escaped before display.
 import { openDb, listTables, query } from './sqlitelib.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ROW_LIMIT = 200;
+const WRITE_RE = /^\s*(CREATE|INSERT|UPDATE|DELETE|ALTER|DROP|REPLACE|BEGIN|COMMIT|ROLLBACK|VACUUM)\b/i;
+const SCHEMA_RE = /^\s*(CREATE|ALTER|DROP)\b/i;
 const HISTORY_KEY = 'sq-query-history';
 const HISTORY_MAX = 50;
 
@@ -71,6 +74,7 @@ export async function render(intake, _ctx) {
     +   '<button class="sq-explain" title="Show EXPLAIN QUERY PLAN">Explain</button>'
     +   '<button class="sq-export-csv" title="Export result as CSV" hidden>CSV</button>'
     +   '<button class="sq-export-json" title="Export result as JSON" hidden>JSON</button>'
+    +   '<button class="sq-download-db" title="Download modified database file" hidden>⬇ Save DB</button>'
     + '</div>'
     + '<div class="sq-result"></div></div>';
 
@@ -80,8 +84,9 @@ export async function render(intake, _ctx) {
   const historyList = host.querySelector('#sq-history-list');
   const exportCsvBtn = host.querySelector('.sq-export-csv');
   const exportJsonBtn = host.querySelector('.sq-export-json');
+  const downloadDbBtn = host.querySelector('.sq-download-db');
 
-  let lastColumns = [], lastRows = [], lastLabel = '';
+  let lastColumns = [], lastRows = [], lastLabel = '', dbDirty = false;
 
   function refreshHistoryDatalist() {
     historyList.innerHTML = historyLoad().map(s => '<option value="' + esc(s) + '">').join('');
@@ -108,13 +113,18 @@ export async function render(intake, _ctx) {
     showExportButtons(columns.length > 0);
   }
 
-  for (const t of tables) {
-    const li = document.createElement('li');
-    li.className = 'sq-table';
-    li.innerHTML = '<span class="sq-tname">' + esc(t.name) + '</span>' + (t.count != null ? '<span class="sq-trows">' + t.count + '</span>' : '');
-    li.addEventListener('click', () => { for (const x of listEl.children) x.classList.toggle('active', x === li); showTable(t); });
-    listEl.appendChild(li);
+  function renderTableList(tlist) {
+    listEl.innerHTML = '';
+    for (const t of tlist) {
+      const li = document.createElement('li');
+      li.className = 'sq-table';
+      li.innerHTML = '<span class="sq-tname">' + esc(t.name) + '</span>' + (t.count != null ? '<span class="sq-trows">' + t.count + '</span>' : '');
+      li.addEventListener('click', () => { for (const x of listEl.children) x.classList.toggle('active', x === li); showTable(t); });
+      listEl.appendChild(li);
+    }
+    host.querySelector('.sq-count').textContent = tlist.length;
   }
+  renderTableList(tables);
 
   function showTable(t) {
     sqlInput.value = 'SELECT * FROM "' + t.name + '"';
@@ -131,9 +141,18 @@ export async function render(intake, _ctx) {
     historySave(sql);
     refreshHistoryDatalist();
     histIdx = -1;
+    const isWrite = WRITE_RE.test(sql);
+    const isSchema = SCHEMA_RE.test(sql);
     try {
       const { columns, rows } = query(db, sql);
-      setResult(columns, rows, rows.length + ' row' + (rows.length === 1 ? '' : 's') + ' returned');
+      if (isWrite) {
+        dbDirty = true;
+        downloadDbBtn.hidden = false;
+        if (isSchema) renderTableList(listTables(db));
+      }
+      const note = columns.length ? rows.length + ' row' + (rows.length === 1 ? '' : 's') + ' returned'
+        : (isWrite ? 'Query executed successfully.' : 'No rows returned.');
+      setResult(columns, rows, note);
     } catch (e) { resultEl.innerHTML = '<p class="sq-err">' + esc(e.message) + '</p>'; showExportButtons(false); }
   }
 
@@ -157,6 +176,14 @@ export async function render(intake, _ctx) {
   exportJsonBtn.addEventListener('click', () => {
     const base = (intake.filename || 'query').replace(/\.[^.]+$/, '');
     exportJson(lastColumns, lastRows, base + '.json');
+  });
+  downloadDbBtn.addEventListener('click', () => {
+    try {
+      const bytes = db.export();
+      const blob = new Blob([bytes], { type: 'application/x-sqlite3' });
+      const base = (intake.filename || 'database').replace(/\.[^.]+$/, '');
+      downloadBlob(blob, base + '_modified.db');
+    } catch (e) { resultEl.innerHTML = '<p class="sq-err">Export failed: ' + esc(e.message) + '</p>'; }
   });
 
   if (tables.length) { listEl.firstChild.classList.add('active'); showTable(tables[0]); }

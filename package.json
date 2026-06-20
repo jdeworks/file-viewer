@@ -5,6 +5,7 @@
   "devDependencies": {
     "@ffmpeg/core-st": "^0.11.1",
     "@ffmpeg/ffmpeg": "^0.11.6",
+    "abcjs": "^6.6.3",
     "ag-psd": "^30.1.1",
     "chart.js": "4.4.7",
     "dompurify": "3.2.4",
