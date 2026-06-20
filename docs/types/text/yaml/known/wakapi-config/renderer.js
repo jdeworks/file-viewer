@@ -2,7 +2,7 @@ import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.wakapi-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
+.wkapi-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
 .wakapi-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#2563eb;color:#fff;vertical-align:middle;margin-right:8px;}
 .wakapi-title{font-size:20px;font-weight:700;margin:0 0 2px;font-family:ui-monospace,monospace;}
 .wakapi-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 16px;}
@@ -99,7 +99,7 @@ ${kv('import_batch_size', app.import_batch_size)}
 </div></div>`;
 
   const host = document.createElement('div');
-  host.className = 'wakapi-doc';
+  host.className = 'wkapi-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
   <span class="wakapi-badge">Wakapi</span>

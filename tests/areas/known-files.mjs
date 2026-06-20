@@ -4464,9 +4464,9 @@ export async function run(ctx) {
   // ── .terraform.lock.hcl (Terraform provider lock file) viewer ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('.terraform.lock.hcl');
-  await page.waitForSelector('.tflockfile-doc');
+  await page.waitForSelector('.tfl-lock-doc');
   pass('.terraform.lock.hcl: renders');
-  const tflockText = await page.$eval('.tflockfile-doc', el => el.textContent);
+  const tflockText = await page.$eval('.tfl-lock-doc', el => el.textContent);
   if (!tflockText.includes('Terraform')) fail('.terraform.lock.hcl: missing badge'); else pass('.terraform.lock.hcl: badge shown');
   if (!tflockText.includes('aws') && !tflockText.includes('provider')) fail('.terraform.lock.hcl: no providers'); else pass('.terraform.lock.hcl: providers shown');
 
@@ -5689,7 +5689,7 @@ export async function run(ctx) {
   // ── archivebox.conf viewer (archivebox-config) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('archivebox.conf');
-  await page.waitForSelector('#previewHost .archivebox-doc', { timeout: 12000 });
+  await page.waitForSelector('#previewHost .abox-doc', { timeout: 12000 });
   pass('archivebox.conf: ArchiveBox badge shown');
 
   // ── memos.env viewer (memos-config) ──
@@ -5701,7 +5701,7 @@ export async function run(ctx) {
   // ── wakapi.yaml viewer (wakapi-config) ──
   await page.goto(origin, { waitUntil: 'networkidle' });
   await openExample('wakapi.yaml');
-  await page.waitForSelector('#previewHost .wakapi-doc', { timeout: 12000 });
+  await page.waitForSelector('#previewHost .wkapi-doc', { timeout: 12000 });
   pass('wakapi.yaml: Wakapi badge shown');
 
   // ── hoarder.env viewer (hoarder-config) ──
@@ -5738,4 +5738,21 @@ export async function run(ctx) {
   if (/Frigate/i.test(frigateText)) pass('frigate.yml: Frigate badge shown'); else fail('frigate-config badge: ' + frigateText.slice(0, 200));
   if (/front_door|backyard/i.test(frigateText)) pass('frigate.yml: camera name shown'); else fail('frigate-config cameras: ' + frigateText.slice(0, 300));
   if (/\d+\s*camera/i.test(frigateText)) pass('frigate.yml: camera count shown'); else fail('frigate-config camera count: ' + frigateText.slice(0, 300));
+
+  // ── sample.plist viewer (plist-config) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('sample.plist');
+  await page.waitForSelector('#previewHost .plist-doc', { timeout: 12000 });
+  const plistText = await page.$eval('#previewHost .plist-doc', (e) => e.textContent);
+  if (/plist/i.test(plistText)) pass('sample.plist: plist badge shown'); else fail('plist badge: ' + plistText.slice(0, 200));
+  if (/CFBundleIdentifier/i.test(plistText)) pass('sample.plist: CFBundleIdentifier key shown'); else fail('plist key: ' + plistText.slice(0, 300));
+
+  // ── appmanifest_570.acf viewer (steam-acf) ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('appmanifest_570.acf');
+  await page.waitForSelector('#previewHost .steam-doc', { timeout: 12000 });
+  const acfText = await page.$eval('#previewHost .steam-doc', (e) => e.textContent);
+  if (/acf/i.test(acfText)) pass('appmanifest_570.acf: acf badge shown'); else fail('acf badge: ' + acfText.slice(0, 200));
+  if (/Dota 2/i.test(acfText)) pass('appmanifest_570.acf: game name shown'); else fail('acf name: ' + acfText.slice(0, 300));
+  if (/Fully Installed/i.test(acfText)) pass('appmanifest_570.acf: Fully Installed state shown'); else fail('acf state: ' + acfText.slice(0, 300));
 }

@@ -2,28 +2,35 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>ApplicationIdentifier</key>
+	<key>CFBundleIdentifier</key>
 	<string>com.example.myapp</string>
 	<key>CFBundleVersion</key>
-	<string>42</string>
-	<key>BuildDate</key>
-	<date>2026-06-17T10:30:00Z</date>
-	<key>FeatureFlags</key>
-	<dict>
-		<key>darkMode</key>
-		<true/>
-		<key>betaFeatures</key>
-		<false/>
-		<key>maxConnections</key>
-		<integer>10</integer>
-	</dict>
-	<key>AllowedHosts</key>
+	<string>1.2.3</string>
+	<key>CFBundleDisplayName</key>
+	<string>My App</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.15</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>LSUIElement</key>
+	<false/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>RecentDocuments</key>
 	<array>
-		<string>localhost</string>
-		<string>api.example.com</string>
-		<string>cdn.example.com</string>
+		<string>/Users/example/Documents/file1.txt</string>
+		<string>/Users/example/Documents/file2.md</string>
 	</array>
-	<key>CompressionLevel</key>
-	<real>0.75</real>
+	<key>WindowBounds</key>
+	<dict>
+		<key>x</key>
+		<integer>100</integer>
+		<key>y</key>
+		<integer>200</integer>
+		<key>width</key>
+		<integer>1200</integer>
+		<key>height</key>
+		<integer>800</integer>
+	</dict>
 </dict>
 </plist>

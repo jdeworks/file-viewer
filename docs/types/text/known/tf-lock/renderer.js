@@ -1,7 +1,7 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
-.tflockfile-doc{padding:16px 18px;max-width:960px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
+.tfl-lock-doc{padding:16px 18px;max-width:960px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
 .badge-tfl-lock{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#5C4EE5;color:#fff;vertical-align:middle;margin-right:8px}
 .tflockfile-title{font-size:18px;font-weight:700;margin:0 0 4px}
 .tflockfile-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 16px}
@@ -69,7 +69,7 @@ export function render(intake) {
     : '<div style="color:var(--fg-2,#888);font-size:13px">No providers found</div>';
 
   const host = document.createElement('div');
-  host.className = 'tflockfile-doc';
+  host.className = 'tfl-lock-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="tflockfile-title"><span class="badge-tfl-lock">Terraform Lock</span>.terraform.lock.hcl</div>
 <div class="tflockfile-sub">${providers.length} provider${providers.length !== 1 ? 's' : ''} pinned</div>

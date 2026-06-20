@@ -1,0 +1,16 @@
+# Netplan network configuration — Ubuntu/Debian network configuration managed by systemd-networkd
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: true
+      dhcp6: false
+      nameservers:
+        addresses: [8.8.8.8, 8.8.4.4]
+  wifis:
+    wlan0:
+      dhcp4: true
+      access-points:
+        "HomeNetwork":
+          password: "supersecret"
