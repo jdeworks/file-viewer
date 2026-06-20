@@ -1,0 +1,41 @@
+# Syft SBOM generation configuration
+# https://github.com/anchore/syft
+
+output:
+  - spdx-json
+  - cyclonedx-json
+  - syft-json
+
+source:
+  name: my-web-app
+  image:
+    defaultPullSource: registry.example.com
+
+log:
+  level: warn
+
+catalogers:
+  default: all
+  enabled:
+    - python-package-cataloger
+    - javascript-package-cataloger
+    - go-module-binary-cataloger
+    - java-archive-cataloger
+    - dpkg-cataloger
+    - rpm-db-cataloger
+    - apkdb-cataloger
+  disabled:
+    - cargo-auditable-binary-cataloger
+
+file-metadata-cataloger:
+  enabled: true
+
+file-classification-cataloger:
+  enabled: false
+
+secret-cataloger:
+  enabled: true
+  additional-patterns: []
+  exclude-pattern-names:
+    - aws-access-key
+    - github-pat

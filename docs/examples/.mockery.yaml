@@ -1,0 +1,25 @@
+with-expecter: true
+mock-build-tags: "mockery"
+dir: "mocks"
+
+packages:
+  github.com/myorg/myapp/internal/service:
+    interfaces:
+      UserService:
+        config:
+          mockname: "MockUserService"
+      AuthService: {}
+      PaymentService:
+        config:
+          mockname: "MockPaymentService"
+  github.com/myorg/myapp/internal/repository:
+    interfaces:
+      UserRepository: {}
+      OrderRepository: {}
+      CacheRepository:
+        config:
+          mockname: "MockCacheRepository"
+  github.com/myorg/myapp/pkg/notifier:
+    interfaces:
+      EmailNotifier: {}
+      SlackNotifier: {}

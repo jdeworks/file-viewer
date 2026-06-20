@@ -1,0 +1,43 @@
+name: "myapp"
+arch: "amd64"
+platform: "linux"
+version: "1.2.3"
+maintainer: "Jane Developer <jane@example.com>"
+description: "MyApp is a high-performance HTTP API server written in Go."
+homepage: "https://github.com/myorg/myapp"
+license: "Apache-2.0"
+
+formats:
+  - deb
+  - rpm
+  - apk
+
+dependencies:
+  - libc6
+
+contents:
+  - src: ./bin/myapp
+    dst: /usr/bin/myapp
+    file_info:
+      mode: 0755
+  - src: ./configs/myapp.yaml
+    dst: /etc/myapp/myapp.yaml
+    type: config|noreplace
+  - src: ./systemd/myapp.service
+    dst: /lib/systemd/system/myapp.service
+  - dst: /var/log/myapp
+    type: dir
+    file_info:
+      mode: 0750
+
+scripts:
+  preinstall: scripts/preinstall.sh
+  postinstall: scripts/postinstall.sh
+  preremove: scripts/preremove.sh
+
+overrides:
+  deb:
+    recommends:
+      - curl
+    dependencies:
+      - libc6

@@ -1,0 +1,113 @@
+SPDXVersion: SPDX-2.3
+DataLicense: CC0-1.0
+
+##-------------------------
+## Document Information
+##-------------------------
+
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: my-web-app-sbom
+DocumentNamespace: https://example.com/sboms/my-web-app/1.2.3-2024-03-15
+
+##-------------------------
+## Creation Information
+##-------------------------
+
+Creator: Tool: syft-0.105.0
+Creator: Organization: Example Corp
+Created: 2024-03-15T10:30:00Z
+
+##-------------------------
+## Package: my-web-app
+##-------------------------
+
+PackageName: my-web-app
+SPDXID: SPDXRef-Package-my-web-app
+PackageVersion: 1.2.3
+PackageDownloadLocation: https://github.com/example/my-web-app/archive/v1.2.3.tar.gz
+FilesAnalyzed: true
+PackageChecksum: SHA256: a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: Copyright 2024 Example Corp
+
+##-------------------------
+## Package: express
+##-------------------------
+
+PackageName: express
+SPDXID: SPDXRef-Package-express
+PackageVersion: 4.18.2
+PackageDownloadLocation: https://registry.npmjs.org/express/-/express-4.18.2.tgz
+FilesAnalyzed: false
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/express@4.18.2
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: NOASSERTION
+
+##-------------------------
+## Package: lodash
+##-------------------------
+
+PackageName: lodash
+SPDXID: SPDXRef-Package-lodash
+PackageVersion: 4.17.21
+PackageDownloadLocation: https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz
+FilesAnalyzed: false
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/lodash@4.17.21
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: NOASSERTION
+
+##-------------------------
+## Package: axios
+##-------------------------
+
+PackageName: axios
+SPDXID: SPDXRef-Package-axios
+PackageVersion: 1.6.0
+PackageDownloadLocation: https://registry.npmjs.org/axios/-/axios-1.6.0.tgz
+FilesAnalyzed: false
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/axios@1.6.0
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: NOASSERTION
+
+##-------------------------
+## Package: react
+##-------------------------
+
+PackageName: react
+SPDXID: SPDXRef-Package-react
+PackageVersion: 18.2.0
+PackageDownloadLocation: https://registry.npmjs.org/react/-/react-18.2.0.tgz
+FilesAnalyzed: false
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/react@18.2.0
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: NOASSERTION
+
+##-------------------------
+## Package: zod
+##-------------------------
+
+PackageName: zod
+SPDXID: SPDXRef-Package-zod
+PackageVersion: 3.22.4
+PackageDownloadLocation: https://registry.npmjs.org/zod/-/zod-3.22.4.tgz
+FilesAnalyzed: false
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/zod@3.22.4
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: NOASSERTION
+
+##-------------------------
+## Relationships
+##-------------------------
+
+Relationship: SPDXRef-DOCUMENT DESCRIBES SPDXRef-Package-my-web-app
+Relationship: SPDXRef-Package-my-web-app DEPENDS_ON SPDXRef-Package-express
+Relationship: SPDXRef-Package-my-web-app DEPENDS_ON SPDXRef-Package-lodash
+Relationship: SPDXRef-Package-my-web-app DEPENDS_ON SPDXRef-Package-axios
+Relationship: SPDXRef-Package-my-web-app DEPENDS_ON SPDXRef-Package-react
+Relationship: SPDXRef-Package-my-web-app DEPENDS_ON SPDXRef-Package-zod

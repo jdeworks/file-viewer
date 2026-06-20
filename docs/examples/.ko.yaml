@@ -1,0 +1,19 @@
+defaultBaseImage: gcr.io/distroless/static-debian11:nonroot
+
+defaultPlatforms:
+  - linux/amd64
+  - linux/arm64
+
+defaultTags:
+  - latest
+  - "{{.Version}}"
+
+defaultSBOM: spdx
+
+defaultPush: true
+
+baseImageOverrides:
+  gcr.io/myproject/myapp:
+    gcr.io/distroless/base-debian11:nonroot
+  gcr.io/myproject/myapp-debug:
+    gcr.io/distroless/base-debian11:debug

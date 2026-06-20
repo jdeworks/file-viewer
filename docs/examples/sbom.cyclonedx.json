@@ -1,0 +1,108 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2024-03-15T10:30:00Z",
+    "tools": [
+      {
+        "vendor": "CycloneDX",
+        "name": "cdxgen",
+        "version": "9.10.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "bom-ref": "my-app@1.2.3",
+      "name": "my-web-app",
+      "version": "1.2.3"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "express@4.18.2",
+      "name": "express",
+      "version": "4.18.2",
+      "purl": "pkg:npm/express@4.18.2",
+      "licenses": [
+        { "license": { "id": "MIT" } }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "lodash@4.17.21",
+      "name": "lodash",
+      "version": "4.17.21",
+      "purl": "pkg:npm/lodash@4.17.21",
+      "licenses": [
+        { "license": { "id": "MIT" } }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "axios@1.6.0",
+      "name": "axios",
+      "version": "1.6.0",
+      "purl": "pkg:npm/axios@1.6.0",
+      "licenses": [
+        { "license": { "id": "MIT" } }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "react@18.2.0",
+      "name": "react",
+      "version": "18.2.0",
+      "purl": "pkg:npm/react@18.2.0",
+      "licenses": [
+        { "license": { "id": "MIT" } }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "zod@3.22.4",
+      "name": "zod",
+      "version": "3.22.4",
+      "purl": "pkg:npm/zod@3.22.4",
+      "licenses": [
+        { "license": { "id": "MIT" } }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "log4js@6.9.1",
+      "name": "log4js",
+      "version": "6.9.1",
+      "purl": "pkg:npm/log4js@6.9.1",
+      "licenses": [
+        { "license": { "id": "Apache-2.0" } }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pg@8.11.3",
+      "name": "pg",
+      "version": "8.11.3",
+      "purl": "pkg:npm/pg@8.11.3",
+      "licenses": [
+        { "license": { "id": "MIT" } }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln-1",
+      "id": "CVE-2024-12345",
+      "source": { "name": "NVD", "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-12345" },
+      "ratings": [
+        { "severity": "high", "score": 7.5, "method": "CVSSv3" }
+      ],
+      "description": "Prototype pollution vulnerability in lodash prior to 4.17.21.",
+      "affects": [
+        { "ref": "lodash@4.17.21" }
+      ]
+    }
+  ]
+}
