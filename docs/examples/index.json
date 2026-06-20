@@ -2721,7 +2721,10 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true,
+    "knownFile": "lefthook",
+    "description": "Lefthook git hooks config: pre-commit (lint, type-check, format, stylelint, parallel), commit-msg (commitlint), pre-push (tests, build, audit)."
   },
   {
     "label": "wrangler.toml",
@@ -2892,7 +2895,22 @@
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true,
+    "knownFile": "circleci-config",
+    "description": "CircleCI pipeline with orbs, jobs, and workflow configuration."
+  },
+  {
+    "label": "circleci-config.yml",
+    "file": "circleci-config.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "circleci-config",
+    "description": "CircleCI pipeline with node and AWS CLI orbs, 3 jobs, and CI/CD workflow."
   },
   {
     "label": "AWS Amplify config",
@@ -3312,7 +3330,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Helm chart values file with image, service, ingress, and resource configuration."
+    "description": "Helm chart values file with image, service, ingress, and resource configuration.",
+    "knownFile": "kube-helm-values"
   },
   {
     "label": "firebase.json",
@@ -3655,7 +3674,9 @@
     "categories": [
       "Config"
     ],
-    "enhanced": true
+    "enhanced": true,
+    "knownFile": "taskfile",
+    "description": "Taskfile v3 config: 8 tasks (build, test, lint, clean, docker-build, docker-push, deploy, default), 5 vars, dotenv, includes."
   },
   {
     "label": "mkdocs.yml",

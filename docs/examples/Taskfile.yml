@@ -5,6 +5,14 @@ dotenv: ['.env', '.env.local']
 vars:
   BINARY: myapp
   BUILD_DIR: ./dist
+  REGISTRY: ghcr.io/myorg
+  IMAGE_TAG: latest
+  GO_VERSION: '1.22'
+
+includes:
+  infra:
+    taskfile: ./infra/Taskfile.yml
+    optional: true
 
 tasks:
   default:
@@ -14,22 +22,44 @@ tasks:
       - task: test
 
   build:
-    desc: Compile the project
+    desc: Compile the project binary
     cmds:
       - go build -o {{.BUILD_DIR}}/{{.BINARY}} ./cmd/...
 
   test:
-    desc: Run all tests
+    desc: Run all unit and integration tests
     cmds:
-      - go test ./...
-
-  clean:
-    desc: Remove build artifacts
-    cmds:
-      - rm -rf {{.BUILD_DIR}}
+      - go test -race -cover ./...
 
   lint:
-    desc: Run linters
+    desc: Run linters (golangci-lint)
     deps: [build]
     cmds:
-      - golangci-lint run
+      - golangci-lint run ./...
+
+  clean:
+    desc: Remove build artifacts and cache
+    cmds:
+      - rm -rf {{.BUILD_DIR}}
+      - go clean -testcache
+
+  docker-build:
+    desc: Build Docker image and tag it
+    deps: [build]
+    cmds:
+      - docker build -t {{.REGISTRY}}/{{.BINARY}}:{{.IMAGE_TAG}} .
+      - docker tag {{.REGISTRY}}/{{.BINARY}}:{{.IMAGE_TAG}} {{.REGISTRY}}/{{.BINARY}}:latest
+
+  docker-push:
+    desc: Push Docker image to registry
+    deps: [docker-build]
+    cmds:
+      - docker push {{.REGISTRY}}/{{.BINARY}}:{{.IMAGE_TAG}}
+      - docker push {{.REGISTRY}}/{{.BINARY}}:latest
+
+  deploy:
+    desc: Deploy to production via kubectl
+    deps: [docker-push]
+    cmds:
+      - kubectl apply -f k8s/
+      - kubectl rollout status deployment/{{.BINARY}}

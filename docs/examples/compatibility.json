@@ -19406,7 +19406,10 @@
       "label": "CircleCI Config",
       "baseType": "yaml",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "circleci.yml",
+        "circleci-config.yml"
+      ],
       "extensions": [
         ".yml"
       ],

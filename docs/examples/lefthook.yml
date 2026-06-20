@@ -3,12 +3,15 @@ pre-commit:
   commands:
     lint:
       glob: "*.{js,ts,tsx}"
-      run: npx eslint {staged_files}
+      run: npx eslint --max-warnings=0 {staged_files}
     type-check:
       run: npx tsc --noEmit
     format:
       glob: "*.{js,ts,tsx,json,md}"
       run: npx prettier --check {staged_files}
+    stylelint:
+      glob: "*.{css,scss}"
+      run: npx stylelint {staged_files}
 
 commit-msg:
   commands:
@@ -21,3 +24,5 @@ pre-push:
       run: npm test -- --passWithNoTests
     build:
       run: npm run build
+    audit:
+      run: npm audit --audit-level=high
