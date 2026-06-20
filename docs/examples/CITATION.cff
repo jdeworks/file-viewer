@@ -1,28 +1,38 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
-title: "MyAwesomeTool"
-version: 2.1.0
+title: "MyResearchTool"
+version: 2.1.4
 doi: 10.5281/zenodo.1234567
-url: https://myawesometool.example.com
-repository-code: https://github.com/example/myawesometool
-date-released: 2024-03-15
+date-released: 2023-11-15
+url: "https://github.com/myorg/myresearchtool"
 license: MIT
+repository-code: "https://github.com/myorg/myresearchtool"
+abstract: "A tool for analyzing research data using machine learning techniques."
 keywords:
+  - research
+  - machine learning
   - data analysis
-  - scientific computing
-  - visualization
-  - python
-  - open-source
+  - Python
 authors:
-  - given-names: Alice
-    family-names: Researcher
-    email: alice@example.com
-    orcid: https://orcid.org/0000-0001-2345-6789
-    affiliation: University of Example
-  - given-names: Bob
-    name-particle: van
-    family-names: Developer
-    email: bob@example.org
-    orcid: https://orcid.org/0000-0002-9876-5432
-    affiliation: Institute of Open Source
+  - family-names: Smith
+    given-names: Jane
+    orcid: "https://orcid.org/0000-0001-2345-6789"
+    affiliation: "University of Example"
+    email: j.smith@example.edu
+  - family-names: Jones
+    given-names: Bob
+    orcid: "https://orcid.org/0000-0002-3456-7890"
+    affiliation: "Research Institute"
+preferred-citation:
+  type: article
+  title: "MyResearchTool: A Novel Approach"
+  journal: "Journal of Research"
+  year: 2023
+  volume: 42
+  issue: 3
+  pages: "123-145"
+  doi: 10.1234/journal.2023.001
+  authors:
+    - family-names: Smith
+      given-names: Jane

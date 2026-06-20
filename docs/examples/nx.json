@@ -39,6 +39,7 @@
       }
     }
   ],
+  "nxCloudAccessToken": "abc123xyz",
   "cacheDirectory": "node_modules/.cache/nx",
   "parallel": 3
 }

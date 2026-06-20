@@ -3,7 +3,7 @@ export default {
   label: 'Nx config',
   match: (intake, baseType) => {
     if (baseType.id !== 'json') return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return name === 'nx.json';
   },
   loadRenderer: () => import('./renderer.js'),

@@ -11,11 +11,11 @@ const CSS = `
 .nx-pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 10px;border-radius:12px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);font-family:ui-monospace,monospace;}
 .nx-plugin{font-size:12px;padding:3px 10px;border-radius:12px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-family:ui-monospace,monospace;}
 .nx-kv{font-size:12px;color:var(--fg-2,#888);}
+.nx-cloud-ok{background:#dcfce7;border-color:#86efac;color:#166534;}
 `;
 
 export function render(intake) {
-  let cfg;
-  try { cfg = JSON.parse(intake.text || '{}'); } catch { return { parentNode: Object.assign(document.createElement('div'), { textContent: 'Invalid Nx JSON.' }) }; }
+  const cfg = intake.parsed || {};
 
   const npmScope = cfg.npmScope || null;
   const defaultProject = cfg.defaultProject || null;
@@ -25,6 +25,7 @@ export function render(intake) {
   const cacheDir = cfg.cacheDirectory || null;
   const tasksRunnerOpts = cfg.tasksRunnerOptions;
   const defaultBase = cfg.affected?.defaultBase || cfg.defaultBase || null;
+  const hasCloudToken = Boolean(cfg.nxCloudAccessToken || cfg.nxCloudId);
 
   const host = document.createElement('div');
   host.className = 'nx-doc';
@@ -49,13 +50,18 @@ export function render(intake) {
     ? `<div class="nx-sec"><h3>Plugins (${plugins.length})</h3><div class="nx-pills">${plugins.map((p) => `<span class="nx-plugin">${esc(p)}</span>`).join('')}</div></div>`
     : '';
 
+  const cloudHtml = hasCloudToken
+    ? `<div class="nx-sec"><h3>Nx Cloud</h3><div class="nx-pills"><span class="nx-pill nx-cloud-ok">connected (token configured)</span></div></div>`
+    : '';
+
   host.innerHTML = `<style>${CSS}</style>
 <div class="nx-title"><span class="badge-nx">Nx</span>nx.json</div>
 <div class="nx-sub">${targetDefaults.length ? `${targetDefaults.length} target default${targetDefaults.length !== 1 ? 's' : ''}` : 'workspace config'}${plugins.length ? ` · ${plugins.length} plugin${plugins.length !== 1 ? 's' : ''}` : ''}</div>
 ${metaHtml}
 ${targetsHtml}
 ${inputsHtml}
-${pluginsHtml}`;
+${pluginsHtml}
+${cloudHtml}`;
 
   return { parentNode: host };
 }
