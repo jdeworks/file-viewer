@@ -7740,7 +7740,7 @@
       "Config",
       "Nix"
     ],
-    "knownFile": "nix-config"
+    "knownFile": "nix-flake"
   },
   {
     "label": "hugo.toml",
@@ -12343,5 +12343,125 @@
     "enhanced": true,
     "description": "Yacc/Bison parser grammar",
     "knownFile": "lex-yacc"
+  },
+  {
+    "label": "environment (/etc/environment)",
+    "file": "environment",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "System-wide environment variables in KEY=VALUE format",
+    "knownFile": "etc-environment"
+  },
+  {
+    "label": "known_hosts (SSH)",
+    "file": "known_hosts",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "SSH known hosts file with server fingerprints",
+    "knownFile": "ssh-known-hosts"
+  },
+  {
+    "label": "openrc-myapp (OpenRC)",
+    "file": "openrc-myapp",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "description": "OpenRC init script for a service",
+    "knownFile": "openrc-init"
+  },
+  {
+    "label": "sample.elv (Elvish)",
+    "file": "sample.elv",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Elvish shell script with functions and configuration",
+    "knownFile": "elvish-script"
+  },
+  {
+    "label": "sample.fish (Fish)",
+    "file": "sample.fish",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Fish shell script with functions and abbreviations",
+    "knownFile": "fish-script"
+  },
+  {
+    "label": "sample.zsh (Zsh)",
+    "file": "sample.zsh",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Zsh script with functions and arrays",
+    "knownFile": "zsh-script"
+  },
+  {
+    "label": "sample.gd (GDScript)",
+    "file": "sample.gd",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "GDScript for Godot game engine",
+    "knownFile": "gdscript-lang"
+  },
+  {
+    "label": "sample.ink (Ink)",
+    "file": "sample.ink",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Ink interactive narrative story",
+    "knownFile": "ink-script"
+  },
+  {
+    "label": "sample.fnl (Fennel)",
+    "file": "sample.fnl",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Fennel Lisp script compiling to Lua",
+    "knownFile": "fennel-lang"
+  },
+  {
+    "label": "sample.bal (Ballerina)",
+    "file": "sample.bal",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Ballerina cloud-native service",
+    "knownFile": "ballerina-lang"
   }
 ]

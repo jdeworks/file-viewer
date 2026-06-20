@@ -6633,4 +6633,44 @@ export async function run(ctx) {
   const balText = await page.$eval('#previewHost .bal-doc', (e) => e.textContent);
   if (/Ballerina/i.test(balText)) pass('ballerina-lang: badge shown'); else fail('ballerina-lang badge: ' + balText.slice(0, 200));
   if (/Imports|Services|Functions|Types/i.test(balText)) pass('ballerina-lang: structure shown'); else fail('ballerina-lang structure: ' + balText.slice(0, 300));
+
+  // ── nix-flake viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('flake.nix');
+  await page.waitForSelector('#previewHost .nf-doc', { timeout: 12000 });
+  pass('nix-flake: rendered');
+  const nfText = await page.$eval('#previewHost .nf-doc', (e) => e.textContent);
+  if (/Nix Flake/i.test(nfText)) pass('nix-flake: badge shown'); else fail('nix-flake badge: ' + nfText.slice(0, 200));
+  if (/nixpkgs|flake-utils|home-manager/i.test(nfText)) pass('nix-flake: inputs shown'); else fail('nix-flake inputs: ' + nfText.slice(0, 300));
+  if (/devShells|packages|apps|overlays|nixosModules/i.test(nfText)) pass('nix-flake: outputs shown'); else fail('nix-flake outputs: ' + nfText.slice(0, 300));
+
+  // ── openrc-init viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('openrc-myapp');
+  await page.waitForSelector('#previewHost .orc-doc', { timeout: 12000 });
+  pass('openrc-init: rendered');
+  const orcText = await page.$eval('#previewHost .orc-doc', (e) => e.textContent);
+  if (/OpenRC/i.test(orcText)) pass('openrc-init: badge shown'); else fail('openrc-init badge: ' + orcText.slice(0, 200));
+  if (/start|stop|depend/i.test(orcText)) pass('openrc-init: functions shown'); else fail('openrc-init functions: ' + orcText.slice(0, 300));
+  if (/net|logger|postgresql|redis/i.test(orcText)) pass('openrc-init: dependencies shown'); else fail('openrc-init deps: ' + orcText.slice(0, 300));
+
+  // ── ssh-known-hosts viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('known_hosts');
+  await page.waitForSelector('#previewHost .skh-doc', { timeout: 12000 });
+  pass('ssh-known-hosts: rendered');
+  const skhText = await page.$eval('#previewHost .skh-doc', (e) => e.textContent);
+  if (/SSH Known Hosts/i.test(skhText)) pass('ssh-known-hosts: badge shown'); else fail('ssh-known-hosts badge: ' + skhText.slice(0, 200));
+  if (/ed25519|ecdsa|rsa/i.test(skhText)) pass('ssh-known-hosts: key types shown'); else fail('ssh-known-hosts key types: ' + skhText.slice(0, 300));
+  if (/github\.com|192\.168/i.test(skhText)) pass('ssh-known-hosts: hostnames shown'); else fail('ssh-known-hosts hosts: ' + skhText.slice(0, 300));
+
+  // ── etc-environment viewer ──
+  await page.goto(origin, { waitUntil: 'networkidle' });
+  await openExample('environment');
+  await page.waitForSelector('#previewHost .etcenv-doc', { timeout: 12000 });
+  pass('etc-environment: rendered');
+  const etcenvText = await page.$eval('#previewHost .etcenv-doc', (e) => e.textContent);
+  if (/System Env/i.test(etcenvText)) pass('etc-environment: badge shown'); else fail('etc-environment badge: ' + etcenvText.slice(0, 200));
+  if (/LANG|LC_ALL|TZ|JAVA_HOME/i.test(etcenvText)) pass('etc-environment: variables shown'); else fail('etc-environment vars: ' + etcenvText.slice(0, 300));
+  if (/locale|java|timezone/i.test(etcenvText)) pass('etc-environment: categories shown'); else fail('etc-environment categories: ' + etcenvText.slice(0, 300));
 }

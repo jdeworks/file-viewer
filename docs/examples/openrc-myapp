@@ -1,0 +1,40 @@
+#!/sbin/openrc-run
+# OpenRC init script for myapp
+
+description="My Application Web Server"
+command="/opt/myapp/bin/myapp"
+command_args="--config /etc/myapp/config.toml --port 8080"
+command_user="myapp:myapp"
+pidfile="/run/myapp.pid"
+command_background=true
+
+depend() {
+    need net
+    need logger
+    use dns
+    after postgresql
+    after redis
+}
+
+start_pre() {
+    checkpath --directory --owner myapp:myapp --mode 0750 /var/log/myapp
+    checkpath --directory --owner myapp:myapp --mode 0750 /var/run/myapp
+}
+
+start() {
+    ebegin "Starting myapp"
+    start-stop-daemon --start \
+        --pidfile "$pidfile" \
+        --user myapp \
+        --exec "$command" \
+        -- $command_args
+    eend $?
+}
+
+stop() {
+    ebegin "Stopping myapp"
+    start-stop-daemon --stop \
+        --pidfile "$pidfile" \
+        --retry 10
+    eend $?
+}

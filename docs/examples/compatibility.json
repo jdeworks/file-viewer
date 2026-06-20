@@ -27202,7 +27202,9 @@
       "label": "Elvish Script",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.elv"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27227,7 +27229,9 @@
       "label": "Fish Script",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.fish"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27252,7 +27256,9 @@
       "label": "Zsh Script",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.zsh"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27304,7 +27310,9 @@
       "label": "/etc/environment",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "environment"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27329,7 +27337,9 @@
       "label": "SSH Known Hosts",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "known_hosts"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27354,7 +27364,9 @@
       "label": "Nix Flake",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "flake.nix"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27379,7 +27391,9 @@
       "label": "OpenRC Init Script",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "openrc-myapp"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27404,7 +27418,9 @@
       "label": "GDScript",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.gd"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27429,7 +27445,9 @@
       "label": "Ink Story",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.ink"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27454,7 +27472,9 @@
       "label": "Fennel Script",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.fnl"
+      ],
       "extensions": [
         ".yml"
       ],
@@ -27479,7 +27499,9 @@
       "label": "Ballerina",
       "baseType": "raw",
       "support": "supported",
-      "sampleFiles": [],
+      "sampleFiles": [
+        "sample.bal"
+      ],
       "extensions": [
         ".yml"
       ],

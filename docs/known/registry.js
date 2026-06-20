@@ -955,7 +955,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   giteaConf, stunnelConf,
   supervisordConf, logrotateConf, tlpConf,
   shellRc,
-  nixDaemonConf, nixConfig, nixFlake,
+  nixDaemonConf, nixFlake, nixConfig,
   mavenSettings, pgHba,
   dvcPipeline, hydraConfig, mlflowProject, meltanoConfig, dagsterConfig, wandbConfig,
   mintlify, postmanCollection, harKnown, avroSchema, brunoWorkspace, insomnia, openapiGenerator, graphqlSchema,

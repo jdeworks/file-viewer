@@ -1,0 +1,15 @@
+# /etc/environment — system-wide environment variables
+# Simple KEY=VALUE format, no shell expansion allowed
+
+LANG="en_US.UTF-8"
+LANGUAGE="en_US:en"
+LC_ALL="en_US.UTF-8"
+EDITOR="vim"
+VISUAL="vim"
+PAGER="less"
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+TZ="America/New_York"
+JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+GOPATH="/home/user/go"
+GOROOT="/usr/local/go"
+NODE_VERSION="20.0.0"
