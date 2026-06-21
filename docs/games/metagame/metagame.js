@@ -227,6 +227,9 @@ export function mount(host, { onExit } = {}) {
         const s = saveData.stageState[1];
         s.bits = { m: 1, e }; s.totalBits = { m: 1, e }; s.tabsUnlocked = true;
         s.milestones = [...new Set([...(s.milestones || []), 'score-unlock', 'sound-unlock'])];
+        s.helpersUnlocked = true;
+        // Own ≥1 of every Stage-1 tier so the boss "Confront" gate (allSubStagesOwned) is met.
+        s.owned = { 's1-mult': 5, 's1-box': 5, 's1-boost': 5, 's1-cluster': 5, 's1-array': 5, 's1-neural': 5, 's1-quantum': 5 };
         if (saveData.currentStage !== 1) saveData.currentStage = 1;
         persist(); render();
       } else if (kind === 'stage') {

@@ -13,11 +13,12 @@
 // state/save/checkMessages/bellLoad/bellAdd are optional in this WP (WP-S1-12 wires the full ctx);
 // the boss degrades gracefully (no-op bell/save) when they are absent.
 
+import { toDisplay, gte, sub, mulScalar } from './bignum.js';
+
 const FIGHT_MS = 20000;
 const SHADOW_WEIGHT = 1.10;
 const BURST_MS = 800;
-const RETRY_COOLDOWN_MS = 5000;
-const TICKET = { m: 1, e: 9 };   // 1B bits — re-paid on retry
+const DEFAULT_TICKET = { m: 1, e: 9 };   // fallback if the stage config has no bossTicket
 
 const TAUNTS = {
   // Shown in the LOBBY (before/after a fight) — intimidation, not the during-fight jabs.
@@ -166,6 +167,12 @@ export function mountDefragmenter(arena, opts = {}) {
   const bellAdd = typeof opts.bellAdd === 'function' ? opts.bellAdd : () => {};
   const actions = opts.actions || null;
 
+  // Fight costs the ticket; a retry costs half. Use the real stage ticket (now 1ba).
+  const ticket = (opts.stage && opts.stage.bossTicket) || DEFAULT_TICKET;
+  const halfTicket = mulScalar(ticket, 0.5);
+  const canPay = (price) => gte(state.bits || { m: 0, e: 0 }, price);
+  const pay = (price) => { state.bits = sub(state.bits, price); };
+
   injectStyle();
 
   let destroyed = false;
@@ -235,12 +242,20 @@ export function mountDefragmenter(arena, opts = {}) {
       + '<div class="mg-defrag-hint">💡 ' + esc(winHint()) + '</div>'
       + '<div class="mg-defrag-status">' + esc(extraStatus || '') + '</div>'
       + '<div class="mg-defrag-lobby-btns">'
-      + '<button class="mg-defrag-btn mg-defrag-fight" type="button">Fight</button>'
+      + '<button class="mg-defrag-btn mg-defrag-fight" type="button"' + (canPay(ticket) ? '' : ' disabled') + '>Fight — ' + esc(toDisplay(ticket)) + '</button>'
       + '<button class="mg-defrag-btn alt mg-defrag-retreat" type="button">Retreat</button>'
       + '</div></div>';
     const taunt = makeTauntDialog();
     taunt.startIdle();
-    on(arena.querySelector('.mg-defrag-fight'), 'click', () => { taunt.stopIdle(); startFight(); });
+    on(arena.querySelector('.mg-defrag-fight'), 'click', () => {
+      if (!canPay(ticket)) { renderLobby('insufficient bits — the ticket is ' + toDisplay(ticket) + '.'); return; }
+      pay(ticket);
+      state.bossEntered = true;
+      fireAchievement('ach-boss-enter');
+      save(state);
+      taunt.stopIdle();
+      startFight();
+    });
     on(arena.querySelector('.mg-defrag-retreat'), 'click', retreat);
   }
 
@@ -399,7 +414,7 @@ export function mountDefragmenter(arena, opts = {}) {
     const btns = document.createElement('div');
     btns.className = 'mg-defrag-lobby-btns';
     btns.innerHTML =
-      '<button class="mg-defrag-btn mg-defrag-retry" type="button">Try Again</button>'
+      '<button class="mg-defrag-btn mg-defrag-retry" type="button"' + (canPay(halfTicket) ? '' : ' disabled') + '>Try Again — ' + esc(toDisplay(halfTicket)) + '</button>'
       + '<button class="mg-defrag-btn alt mg-defrag-retreat" type="button">Retreat</button>';
     overlay.appendChild(btns);
     on(btns.querySelector('.mg-defrag-retreat'), 'click', retreat);
@@ -427,8 +442,10 @@ export function mountDefragmenter(arena, opts = {}) {
     arenaEl.appendChild(ov);
   }
 
-  // Retry is free + immediate — re-fighting shouldn't re-charge the (now astronomical) boss ticket.
+  // Retry costs HALF the ticket (cheaper than a fresh fight, but not free).
   function onRetry() {
+    if (!canPay(halfTicket)) { renderLobby('insufficient bits — a retry costs ' + toDisplay(halfTicket) + '.'); return; }
+    pay(halfTicket);
     state.bossEntered = true;
     fireAchievement('ach-boss-enter');
     save(state);
@@ -461,23 +478,4 @@ export function mountDefragmenter(arena, opts = {}) {
 
   renderLobby();
   return { destroy: cleanup };
-}
-
-// --- BigNum helpers (local, no import — bignum.js may not be loaded in this context) ---
-function bigGte(a, b) {
-  if (!a || a.m === 0) return !b || b.m === 0;
-  if (!b || b.m === 0) return true;
-  if (a.e !== b.e) return a.e > b.e;
-  return a.m >= b.m;
-}
-function bigSub(a, b) {
-  if (!b || b.m === 0) return a;
-  if (bigGte(b, a)) return { m: 0, e: 0 };
-  const diff = a.e - b.e;
-  if (diff > 48) return a;
-  let m = a.m - b.m / Math.pow(10, diff), e = a.e;
-  if (m === 0) return { m: 0, e: 0 };
-  while (m >= 1000) { m /= 1000; e += 3; }
-  while (m < 1 && e > 0) { m *= 1000; e -= 3; }
-  return { m, e };
 }
