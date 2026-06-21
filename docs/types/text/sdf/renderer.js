@@ -1,3 +1,10 @@
+// SDF / MDL Molfile viewer — parses V2000/V3000 connection tables + SD data fields, then offers an
+// opt-in interactive 3D/2D structure view. 3Dmol.js parses SDF/MOL natively (the first record is
+// shown). True 2D depiction (RDKit.js, ~8 MB WASM) was evaluated but is too heavy to vendor for a
+// nicety — deferred as a future enhancement; 3Dmol renders flat (z=0) molfiles acceptably.
+
+import { build3dPanel } from '../../../core/molview.js';
+
 const BOND_TYPE = { 1: 'single', 2: 'double', 3: 'triple', 4: 'aromatic' };
 const ELEMENT_MASS = {
   H: 1.008, C: 12.011, N: 14.007, O: 15.999, F: 18.998, P: 30.974,
@@ -192,14 +199,25 @@ export function render(intake) {
     parts.push(`<p class="viewer-note">${molecules.length - previewCount} more molecule(s) not shown.</p>`);
   }
 
-  return {
-    bodyHtml: `
+  const bodyHtml = `
       <style>
         .sdf-molecule { margin-bottom: 2rem; }
         .sdf-mol-title { margin: 0 0 0.5rem; font-size: 1rem; }
         .badge-sdf { background: #4caf50; color: #fff; }
       </style>
-      ${parts.join('\n')}`,
-    hadUnsafe: false,
-  };
+      ${parts.join('\n')}`;
+
+  // Pass the FIRST record's molblock (up through "M  END") to 3Dmol as a MOL block so a multi-
+  // record SDF doesn't confuse the viewer; the metadata list above still summarises every record.
+  const firstEnd = text.indexOf('M  END');
+  const molBlock = firstEnd !== -1 ? text.slice(0, firstEnd + 6) : text;
+  const m0 = molecules[0].mol;
+  const label = [m0.name && m0.name !== 'Molecule 1' ? m0.name : '', m0.atomCount + ' atoms', m0.bondCount + ' bonds']
+    .filter(Boolean).join(' · ');
+  const host = document.createElement('div');
+  host.className = 'mol-doc sdf-doc';
+  host.innerHTML = bodyHtml;
+  const panel = build3dPanel(molBlock, 'mol', { label, style: 'stick' });
+  host.appendChild(panel.el);
+  return { parentNode: host, revoke: panel.revoke, hadUnsafe: false };
 }

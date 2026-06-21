@@ -1,5 +1,8 @@
 // CIF (Crystallographic Information File) renderer — IUCr CIF 1.1 / mmCIF / CIF 2.0
-// Parses data blocks, key-value pairs, and loop_ tables heuristically.
+// Parses data blocks, key-value pairs, and loop_ tables heuristically, then offers an opt-in
+// interactive 3D structure view (3Dmol.js parses CIF crystal/mmCIF natively).
+
+import { build3dPanel } from '../../../core/molview.js';
 
 const CRYSTAL_KEYS = {
   '_cell_length_a': 'a (Å)',
@@ -152,8 +155,7 @@ export function render(intake) {
     parts.push(`<p class="viewer-note">${blocks.length - 3} more data block(s) not shown.</p>`);
   }
 
-  return {
-    bodyHtml: `
+  const bodyHtml = `
       <style>
         .badge-cif { background: #0097a7; color: #fff; }
         .cif-block { margin-bottom: 1.5rem; }
@@ -163,7 +165,19 @@ export function render(intake) {
         <span class="badge badge-cif">CIF</span>
         <span class="badge badge-cif" style="background:#00838f">${esc(formatLabel)}</span>
       </div>
-      ${parts.join('\n')}`,
-    hadUnsafe: false,
-  };
+      ${parts.join('\n')}`;
+
+  // Only offer 3D when atom-site coordinates are present (some CIFs are metadata-only).
+  const hasAtoms = /_atom_site[._]/.test(text);
+  const host = document.createElement('div');
+  host.className = 'mol-doc cif-doc';
+  host.innerHTML = bodyHtml;
+  let revoke = null;
+  if (hasAtoms) {
+    const label = blocks[0]?.name ? 'data_' + blocks[0].name : formatLabel;
+    const panel = build3dPanel(text, 'cif', { label });
+    host.appendChild(panel.el);
+    revoke = panel.revoke;
+  }
+  return { parentNode: host, revoke, hadUnsafe: false };
 }

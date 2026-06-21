@@ -1,4 +1,7 @@
-// PDB protein structure viewer — parses fixed-width PDB record format.
+// PDB protein structure viewer — parses fixed-width PDB record format, then offers an opt-in
+// interactive 3D structure view (3Dmol.js, lazy-loaded on click).
+
+import { build3dPanel } from '../../../core/molview.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -138,5 +141,13 @@ export function render(intake) {
   ${ligandRows ? `<h3 class="pdb-section">Ligands</h3><table class="pdb-ligands"><thead><tr><th>Name</th><th>Count</th></tr></thead><tbody>${ligandRows}</tbody></table>` : ''}
 </div>`;
 
-  return { bodyHtml };
+  // Render in the parent pane (mol-doc) so the opt-in 3D panel can mount a WebGL canvas.
+  const host = document.createElement('div');
+  host.className = 'mol-doc pdb-doc';
+  host.innerHTML = bodyHtml;
+  const label = [info.pdbId, info.totalAtoms ? info.totalAtoms.toLocaleString() + ' atoms' : '']
+    .filter(Boolean).join(' · ');
+  const panel = build3dPanel(text, 'pdb', { label });
+  host.appendChild(panel.el);
+  return { parentNode: host, revoke: panel.revoke };
 }

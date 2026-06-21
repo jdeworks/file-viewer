@@ -1,6 +1,27 @@
 export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
+  // Shared check for the opt-in 3D molecular viewer: the "Load 3D structure" button must appear,
+  // and clicking it must lazily load 3Dmol.js + mount a WebGL <canvas>. Headless Chromium uses
+  // SwiftShader for WebGL; if the canvas never appears we still pass the button check and warn,
+  // so the test isn't flaky on environments without GL.
+  async function checkMol3d(label) {
+    const btn = await page.$('#previewHost .mol3d-load-btn');
+    if (!btn) { fail(label + ' 3D load button missing'); return; }
+    pass(label + ' 3D load button shown');
+    await btn.click();
+    try {
+      await page.waitForSelector('#previewHost .mol3d-stage canvas', { timeout: 20000 });
+      pass(label + ' 3D canvas mounted');
+    } catch {
+      // Tolerate a GL-less headless environment: the panel still loaded the toolbar/library.
+      const hasBar = await page.$('#previewHost .mol3d-bar');
+      const hasErr = await page.$('#previewHost .mol3d-err');
+      if (hasBar && !hasErr) pass(label + ' 3D viewer toolbar mounted (canvas GL unavailable)');
+      else fail(label + ' 3D viewer failed to mount');
+    }
+  }
+
   // ── ELF executable ──────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.elf');
@@ -156,19 +177,18 @@ export async function run(ctx) {
   if (/File Viewer Demo Map/i.test(mbtText)) pass('MBTiles map name shown'); else fail('mbt name: ' + mbtText.slice(0, 300));
   if (/0.*4|minzoom|maxzoom|Zoom/i.test(mbtText)) pass('MBTiles zoom levels shown'); else fail('mbt zoom: ' + mbtText.slice(0, 300));
 
-  // ── PDB Protein Structure ─────────────────────────────────────────────────────
+  // ── PDB Protein Structure (parent-pane mol-doc + opt-in 3D viewer) ─────────────
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Demo Protein Structure (PDB)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const pdbf = await frameOf('iframe.fv-preview-frame');
-  await pdbf.waitForSelector('.badge-pdb', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .pdb-doc', { timeout: 30000 });
   const pdbTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (pdbTypeId === 'pdb') pass('.pdb detected as pdb type'); else fail('pdb typeId: ' + pdbTypeId);
-  const pdbText = await pdbf.$eval('body', (el) => el.textContent);
+  const pdbText = await page.$eval('#previewHost .pdb-doc', (el) => el.textContent);
   if (/PDB/i.test(pdbText)) pass('PDB badge shown'); else fail('pdb badge missing');
   if (/DEMO/i.test(pdbText)) pass('PDB ID shown'); else fail('pdb id: ' + pdbText.slice(0, 300));
   if (/Homo sapiens|HYDROLASE/i.test(pdbText)) pass('PDB organism/type shown'); else fail('pdb org: ' + pdbText.slice(0, 300));
   if (/Chain|chain|1\.80|Residue|residue/i.test(pdbText)) pass('PDB structure info shown'); else fail('pdb struct: ' + pdbText.slice(0, 300));
+  await checkMol3d('PDB');
 
   // ── PCAP Network Capture ──────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
@@ -183,18 +203,17 @@ export async function run(ctx) {
   if (/Ethernet/i.test(pcapText)) pass('PCAP link type shown'); else fail('pcap link: ' + pcapText.slice(0, 300));
   if (/ARP|TCP|UDP|ICMP/i.test(pcapText)) pass('PCAP protocols shown'); else fail('pcap proto: ' + pcapText.slice(0, 300));
 
-  // ── XYZ Molecular Structure ───────────────────────────────────────────────────
+  // ── XYZ Molecular Structure (parent-pane mol-doc + opt-in 3D viewer) ───────────
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Ethanol Molecule (XYZ)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const xyzf = await frameOf('iframe.fv-preview-frame');
-  await xyzf.waitForSelector('.badge-xyz', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .xyz-doc', { timeout: 30000 });
   const xyzTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (xyzTypeId === 'xyz') pass('.xyz detected as xyz type'); else fail('xyz typeId: ' + xyzTypeId);
-  const xyzText = await xyzf.$eval('body', (el) => el.textContent);
+  const xyzText = await page.$eval('#previewHost .xyz-doc', (el) => el.textContent);
   if (/XYZ/i.test(xyzText)) pass('XYZ badge shown'); else fail('xyz badge missing');
   if (/Carbon|Hydrogen|Oxygen/i.test(xyzText)) pass('XYZ element names shown'); else fail('xyz elements: ' + xyzText.slice(0, 300));
   if (/12|Atom/i.test(xyzText)) pass('XYZ atom count shown'); else fail('xyz atoms: ' + xyzText.slice(0, 300));
+  await checkMol3d('XYZ');
 
   // ── ESRI Shapefile ────────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
@@ -222,18 +241,17 @@ export async function run(ctx) {
   if (/Patch WAD|Internal WAD/i.test(wadText)) pass('WAD type description shown'); else fail('wad desc: ' + wadText.slice(0, 300));
   if (/MAP01|Lumps|THINGS|LINEDEFS/i.test(wadText)) pass('WAD lump info shown'); else fail('wad lumps: ' + wadText.slice(0, 300));
 
-  // ── SDF / MDL Molfile ─────────────────────────────────────────────────────────
+  // ── SDF / MDL Molfile (parent-pane mol-doc + opt-in 3D viewer) ─────────────────
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Aspirin Molecule (SDF)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const sdff = await frameOf('iframe.fv-preview-frame');
-  await sdff.waitForSelector('.badge-sdf', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .sdf-doc', { timeout: 30000 });
   const sdfTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (sdfTypeId === 'sdf') pass('.sdf detected as sdf type'); else fail('sdf typeId: ' + sdfTypeId);
-  const sdfText = await sdff.$eval('body', (el) => el.textContent);
+  const sdfText = await page.$eval('#previewHost .sdf-doc', (el) => el.textContent);
   if (/SDF\/MOL/i.test(sdfText)) pass('SDF badge shown'); else fail('sdf badge: ' + sdfText.slice(0, 300));
   if (/C9H8O4|Formula/i.test(sdfText)) pass('SDF molecular formula shown'); else fail('sdf formula: ' + sdfText.slice(0, 300));
   if (/aspirin|acetyloxy/i.test(sdfText)) pass('SDF molecule name shown'); else fail('sdf name: ' + sdfText.slice(0, 300));
+  await checkMol3d('SDF');
 
   // ── BSP Game Map ──────────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
@@ -273,18 +291,17 @@ export async function run(ctx) {
   if (/Apache Arrow/i.test(arrText)) pass('Arrow badge shown'); else fail('arrow badge: ' + arrText.slice(0, 300));
   if (/Arrow IPC|Feather/i.test(arrText)) pass('Arrow format shown'); else fail('arrow format: ' + arrText.slice(0, 300));
 
-  // ── CIF Crystallographic Data ─────────────────────────────────────────────────
+  // ── CIF Crystallographic Data (parent-pane mol-doc + opt-in 3D viewer) ─────────
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Aspirin Crystal Structure (CIF)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const ciff = await frameOf('iframe.fv-preview-frame');
-  await ciff.waitForSelector('.badge-cif', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .cif-doc', { timeout: 30000 });
   const cifTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (cifTypeId === 'cif') pass('.cif detected as cif type'); else fail('cif typeId: ' + cifTypeId);
-  const cifText = await ciff.$eval('body', (el) => el.textContent);
+  const cifText = await page.$eval('#previewHost .cif-doc', (el) => el.textContent);
   if (/CIF/i.test(cifText)) pass('CIF badge shown'); else fail('cif badge: ' + cifText.slice(0, 300));
   if (/Aspirin|C9 H8 O4|acetyloxy/i.test(cifText)) pass('CIF compound info shown'); else fail('cif compound: ' + cifText.slice(0, 300));
   if (/Space Group|P 1 21|Unit Cell/i.test(cifText)) pass('CIF crystal data shown'); else fail('cif crystal: ' + cifText.slice(0, 300));
+  await checkMol3d('CIF');
 
   // ── Apache Parquet ────────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });

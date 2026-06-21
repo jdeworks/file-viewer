@@ -1,4 +1,7 @@
-// XYZ molecular structure viewer — parses XYZ format (Xmol/MOPAC convention).
+// XYZ molecular structure viewer — parses XYZ format (Xmol/MOPAC convention), then offers an
+// opt-in interactive 3D structure view (3Dmol.js, lazy-loaded on click).
+
+import { build3dPanel } from '../../../core/molview.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -91,5 +94,14 @@ ${s.comment ? `<p class="xyz-comment">${esc(s.comment)}</p>` : ''}
   ${moreFrames}
 </div>`;
 
-  return { bodyHtml };
+  // Render in the parent pane so the opt-in 3D panel can mount. 3Dmol shows the first frame
+  // (the bundle parses the leading XYZ block); multi-frame animation is out of scope here.
+  const host = document.createElement('div');
+  host.className = 'mol-doc xyz-doc';
+  host.innerHTML = bodyHtml;
+  const first = structures[0];
+  const label = first.atoms.length + ' atoms' + (frames > 1 ? ' · frame 1 of ' + frames : '');
+  const panel = build3dPanel(text, 'xyz', { label, style: 'stick' });
+  host.appendChild(panel.el);
+  return { parentNode: host, revoke: panel.revoke };
 }
