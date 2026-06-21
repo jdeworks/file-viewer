@@ -187,6 +187,15 @@ body {
   transition: border-color .15s, background .15s;
 }
 .dropzone.drag-over { border-color: var(--accent); background: var(--bg-3); }
+/* Whole-page drop affordance: while a file is dragged anywhere over the empty/intake
+   screen, the page shows it accepts the drop (not just the middle dropzone). Added/removed
+   in intake.js; only active when the intake screen is shown (a file open opts out). */
+body.fv-dragging .dropzone { border-color: var(--accent); background: var(--bg-3); }
+body.fv-dragging .intake::after {
+  content: ''; position: fixed; inset: 0; z-index: 60; pointer-events: none;
+  border: 3px dashed var(--accent); border-radius: 12px; margin: 8px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
 .dz-icon { font-size: 44px; opacity: .5; }
 .dropzone h1 { font-size: 20px; margin: 12px 0 4px; }
 .muted { color: var(--fg-2); }

@@ -17,10 +17,64 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="File Viewer">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="assets/app.css">
-  <link rel="stylesheet" href="assets/companion.css">
-  <link rel="stylesheet" href="assets/examples.css">
-<link rel="stylesheet" href="assets/preview-chrome.css">
+  <!-- Critical CSS: the first-paint shell (reset, theme tokens, topbar, body layout, intake
+       screen + whole-page drop affordance) is inlined so the empty screen renders instantly
+       without a stylesheet round-trip. The full stylesheets below are then loaded
+       non-render-blocking. Kept in sync by hand with assets/app.css — these are the only
+       first-paint-critical selectors. -->
+  <style>
+    :root { --bg: #ffffff; --bg-2: #f4f5f7; --bg-3: #e9ebef; --fg: #1a1d21; --fg-2: #5b6470;
+      --border: #d8dce2; --accent: #2f6feb; --accent-fg: #fff; --danger: #d23b3b;
+      --topbar-h: 48px; --radius: 8px; color-scheme: light; }
+    [data-theme="dark"] { --bg: #1e1e1e; --bg-2: #252526; --bg-3: #2d2d30; --fg: #e6e6e6;
+      --fg-2: #9aa0a8; --border: #3a3a3d; --accent: #4c9aff; --accent-fg: #0b1220; color-scheme: dark; }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body { height: 100%; margin: 0; }
+    body { font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--fg); background: var(--bg); -webkit-text-size-adjust: 100%; }
+    #app { display: flex; flex-direction: column; height: 100dvh; }
+    .topbar { display: flex; align-items: center; gap: 8px; height: var(--topbar-h); padding: 0 10px;
+      border-bottom: 1px solid var(--border); background: var(--bg-2); padding-top: env(safe-area-inset-top); }
+    .brand { font-weight: 600; white-space: nowrap; opacity: .9; }
+    .spacer { flex: 1; }
+    .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+      border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--fg);
+      cursor: pointer; font-size: 16px; }
+    .icon-btn:hover { background: var(--bg-3); }
+    .body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+    .main-area { flex: 1; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+    .intake { flex: 1; display: grid; place-items: center; min-height: 0; overflow: auto; padding: 20px;
+      padding-left: max(20px, env(safe-area-inset-left, 20px)); padding-right: max(20px, env(safe-area-inset-right, 20px)); }
+    .dz-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .dropzone { width: min(640px, 100%); text-align: center; padding: 40px 24px;
+      border: 2px dashed var(--border); border-radius: 16px; background: var(--bg-2);
+      transition: border-color .15s, background .15s; }
+    .dropzone.drag-over { border-color: var(--accent); background: var(--bg-3); }
+    body.fv-dragging .dropzone { border-color: var(--accent); background: var(--bg-3); }
+    body.fv-dragging .intake::after { content: ''; position: fixed; inset: 0; z-index: 60;
+      pointer-events: none; border: 3px dashed var(--accent); border-radius: 12px; margin: 8px;
+      background: color-mix(in srgb, var(--accent) 8%, transparent); }
+    .dz-icon { font-size: 44px; opacity: .5; }
+    .dropzone h1 { font-size: 20px; margin: 12px 0 4px; }
+    .muted { color: var(--fg-2); }
+    .dz-actions { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 9px 16px;
+      border-radius: 8px; border: 1px solid var(--border); background: var(--bg-3); color: var(--fg); font-weight: 500; }
+    .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+  </style>
+  <!-- Full stylesheets, loaded non-render-blocking (media=print → swap to all on load). The
+       <noscript> fallback keeps them render-blocking when JS is off. Zero off-origin. -->
+  <link rel="stylesheet" href="assets/app.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="assets/companion.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="assets/examples.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="assets/preview-chrome.css" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="assets/app.css">
+    <link rel="stylesheet" href="assets/companion.css">
+    <link rel="stylesheet" href="assets/examples.css">
+    <link rel="stylesheet" href="assets/preview-chrome.css">
+  </noscript>
 </head>
 <body>
   <div id="app">
