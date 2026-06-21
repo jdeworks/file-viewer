@@ -18,15 +18,17 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Plain text preview | ✅ | Rendered as `<pre>` block; HTML-escaped |
+| Word wrap toggle | ✅ | Button in the preview flips between wrap (`pre-wrap`) and no-wrap (horizontal scroll) |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
-| Metadata | ✅ | Word count, character count |
+| Metadata | ✅ | Line count, word count, character count |
 | Screenshot | ✅ | Canvas snapshot of the preview panel |
 
 ### Edit
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Source editing | ✅ | Full Monaco editor |
+| Text utilities | ✅ | Sort A→Z / Z→A, Trim / Trim L / Trim R (whitespace, or whitespace + blank lines — remembered), Dedup, Base64 ↑/↓ — operate on the selection (or whole document) and are undoable (Ctrl+Z) |
 | Save (Companion) | ✅ | Write-back to local file |
 
 ### Export
@@ -59,15 +61,13 @@ Types that build on top of plain text and win when their detection passes:
 
 ## Known Limitations
 
-- No word-wrap toggle (long lines scroll horizontally in the preview `<pre>` block)
 - No line numbers in the preview mode (only in Monaco source view)
 - Word count is whitespace-split token count — not linguistic word counting
+- The preview word-wrap toggle is per-view (the sandboxed preview has no storage); the Monaco **source** view honours the persisted `wordWrap` setting
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Word wrap toggle | Med | Easy | CSS `white-space: pre-wrap` controlled by a settings toggle |
-| Line count in metadata | Med | Easy | Add `lines` field alongside `words`/`characters` |
 | Encoding detection | Low | Med | Surface UTF-8 vs Latin-1 vs UTF-16 in metadata |
 | Export as Markdown | Low | Easy | Wrap in ` ``` ` block for easy sharing |

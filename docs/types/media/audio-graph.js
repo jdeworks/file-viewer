@@ -63,6 +63,14 @@ export function getGraph(mediaEl) {
   const makeupGain = ctx.createGain();   // LUFS makeup + mixer gain live here
   makeupGain.gain.value = 1;
 
+  // P4 dynamics insert point. makeupGain → dynOut → (analyser + destination). The
+  // compressor / limiter nodes are inserted lazily BETWEEN makeupGain and dynOut
+  // only when the user enables them (CPU-lazy: no DynamicsCompressorNode allocated
+  // for the common "just play it" case). dynOut is a cheap unity gain that gives a
+  // stable splice point so we never touch source/destination on reconnect.
+  const dynOut = ctx.createGain();
+  dynOut.gain.value = 1;
+
   const preAnalyser = ctx.createAnalyser();   // dry / original
   preAnalyser.fftSize = 4096; preAnalyser.smoothingTimeConstant = 0.75;
   const postAnalyser = ctx.createAnalyser();  // wet / processed
@@ -74,8 +82,60 @@ export function getGraph(mediaEl) {
   eqNodes.reduce((prev, node) => { prev.connect(node); return node; }, hpf);
   eqNodes[eqNodes.length - 1].connect(lpf);
   lpf.connect(makeupGain);
-  makeupGain.connect(postAnalyser);         // measure the audible signal
-  makeupGain.connect(ctx.destination);      // and play it
+  makeupGain.connect(dynOut);               // default: no dynamics inserted
+  dynOut.connect(postAnalyser);             // measure the audible signal
+  dynOut.connect(ctx.destination);          // and play it
+
+  // ── P4: lazily-built live dynamics (compressor + limiter) ──────────────────
+  // The live gate is a light bake-only effect (a true zero-latency gate needs a
+  // gain follower that's costly per-sample); de-noise has no real-time WebAudio
+  // analog. Both are serialized in getSettings() and applied on export only.
+  let compNode = null;     // DynamicsCompressorNode for the compressor (live)
+  let limNode = null;      // DynamicsCompressorNode configured as a brickwall limiter
+  const comp = { enabled: false, threshold: -24, ratio: 4, attack: 0.003, release: 0.25, knee: 30, makeup: 0 };
+  const limiter = { enabled: false, ceiling: -1 };
+  const gate = { enabled: false, threshold: -50, ratio: 2, attack: 0.001, release: 0.1 };
+  const denoise = { enabled: false, strength: 12 };
+
+  // Re-splice makeupGain → [comp] → [limiter] → dynOut based on which live nodes
+  // are enabled. Called whenever a live dynamics enable/bypass toggles.
+  function rewireDynamics() {
+    try { makeupGain.disconnect(); } catch { /* ignore */ }
+    if (compNode) { try { compNode.disconnect(); } catch { /* ignore */ } }
+    if (limNode) { try { limNode.disconnect(); } catch { /* ignore */ } }
+    const chain = [];
+    if (comp.enabled) {
+      if (!compNode) compNode = ctx.createDynamicsCompressor();
+      applyCompParams();
+      chain.push(compNode);
+    }
+    if (limiter.enabled) {
+      if (!limNode) limNode = ctx.createDynamicsCompressor();
+      applyLimParams();
+      chain.push(limNode);
+    }
+    let prev = makeupGain;
+    for (const node of chain) { prev.connect(node); prev = node; }
+    prev.connect(dynOut);
+  }
+  function applyCompParams() {
+    if (!compNode) return;
+    compNode.threshold.value = clamp(comp.threshold, -100, 0);
+    compNode.ratio.value = clamp(comp.ratio, 1, 20);
+    compNode.attack.value = clamp(comp.attack, 0, 1);
+    compNode.release.value = clamp(comp.release, 0, 1);
+    compNode.knee.value = clamp(comp.knee, 0, 40);
+  }
+  function applyLimParams() {
+    if (!limNode) return;
+    // Brickwall: high ratio, fast attack, threshold at the ceiling.
+    limNode.threshold.value = clamp(limiter.ceiling, -60, 0);
+    limNode.ratio.value = 20;
+    limNode.attack.value = 0.001;
+    limNode.release.value = 0.05;
+    limNode.knee.value = 0;
+  }
+  function clamp(v, lo, hi) { const n = Number(v); return isFinite(n) ? Math.max(lo, Math.min(hi, n)) : lo; }
 
   const savedGains = new Array(9).fill(0);
   let savedHpf = 20;      // tracked cutoffs (BiquadFilter has no readable "set" history)
@@ -113,8 +173,27 @@ export function getGraph(mediaEl) {
         hpf: savedHpf,
         lpf: savedLpf,
         lufsTarget,
+        dynamics: {
+          comp: { ...comp },
+          limiter: { ...limiter },
+          gate: { ...gate },     // bake-only (applied on export)
+          denoise: { ...denoise }, // bake-only (applied on export)
+        },
       };
     },
+
+    // ── P4 dynamics API ──────────────────────────────────────────────────────
+    // Compressor + limiter are LIVE (WebAudio); gate + de-noise are bake-only and
+    // just store their params here so getSettings() can serialize them for ffmpeg.
+    getDynamics() {
+      return { comp: { ...comp }, limiter: { ...limiter }, gate: { ...gate }, denoise: { ...denoise } };
+    },
+    // patch is a partial { enabled?, ... } merged into the named section. Live
+    // sections (comp/limiter) re-splice the graph; bake-only ones just record.
+    setComp(patch) { Object.assign(comp, patch); if (compNode) applyCompParams(); rewireDynamics(); },
+    setLimiter(patch) { Object.assign(limiter, patch); if (limNode) applyLimParams(); rewireDynamics(); },
+    setGate(patch) { Object.assign(gate, patch); },
+    setDenoise(patch) { Object.assign(denoise, patch); },
     // The mixer gain (per-track volume, 0–2 etc). Multiplies with the LUFS makeup.
     getGainNode() { return makeupGain; },
     setUserGain(g) { userGain = g; applyGain(); },

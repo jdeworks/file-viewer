@@ -122,6 +122,13 @@ export async function createRawView(host, {
       const next = typeof result === 'string' ? { text: result } : (result || { text: selected });
       replaceRange(selection, next.text, { ...opts, ...next });
     },
+    // Replace the WHOLE document via an undoable edit (so Ctrl+Z reverts it). Unlike
+    // setValue(), this goes through executeEdits and stays on Monaco's undo stack.
+    transformAll(transform, opts = {}) {
+      const result = transform(modifiedModel.getValue());
+      const text = typeof result === 'string' ? result : (result?.text ?? modifiedModel.getValue());
+      replaceRange(modifiedModel.getFullModelRange(), text, { source: 'raw-textutil', ...opts });
+    },
     setSelection(startLine, startColumn, endLine, endColumn) {
       std.setSelection(new monaco.Range(startLine, startColumn, endLine, endColumn));
       std.focus();
