@@ -102,6 +102,7 @@ export function mount(host, { onExit } = {}) {
             <strong>${esc(registry.getStageMeta(saveData.currentStage)?.name || 'Stage')}</strong>
           </div>
           <div class="mg-v3-head-actions">
+            <button class="mg-dev-btn" type="button" data-action="dev" aria-label="Dev menu" title="Dev menu" hidden>🛠</button>
             <button class="mg-sfx-btn" type="button" data-action="sfx" aria-label="Toggle sound effects"></button>
             <div class="mg-v3-bell"></div>
             <button class="mg-back" type="button" data-action="exit">Back to arcade</button>
@@ -125,6 +126,9 @@ export function mount(host, { onExit } = {}) {
       paintSfx();
     });
     paintSfx();
+    const devBtn = host.querySelector('[data-action="dev"]');
+    if (saveData.global.devUnlocked) devBtn.hidden = false;
+    devBtn.addEventListener('click', () => toggleDevMenu());
     const nav = host.querySelector('.mg-v3-stages');
     nav.replaceChildren(...registry.listStages().filter((mod) => saveData.unlockedStages.includes(mod.stageMeta.id)).map((mod) => {
       const meta = mod.stageMeta;
@@ -186,11 +190,20 @@ export function mount(host, { onExit } = {}) {
         for (const rec of services.bell.listBellLog({ unseenOnly: true })) services.bell.markBellSeen(rec.id);
         refreshDot();
       }
-      // Easter egg: 5 rapid bell clicks open the dev/testing menu.
+      // Easter egg: 5 rapid bell clicks UNLOCK the dev menu — reveal its header button (🛠, next to
+      // SFX) and open it. Once unlocked the button persists (devUnlocked flag).
       const t = Date.now();
       bellClicks = bellClicks.filter((x) => t - x < 1500);
       bellClicks.push(t);
-      if (bellClicks.length >= 5) { bellClicks = []; panel.hidden = true; toggleDevMenu(); }
+      if (bellClicks.length >= 5) {
+        bellClicks = [];
+        panel.hidden = true;
+        saveData.global.devUnlocked = true;
+        persist();
+        const devBtn = host.querySelector('[data-action="dev"]');
+        if (devBtn) devBtn.hidden = false;
+        toggleDevMenu();
+      }
     });
     bellDotUnsub = services.bell.subscribeToBell(refreshDot);
     refreshDot();
