@@ -39,7 +39,6 @@ export async function run(ctx) {
     'deploy.ps1',
     'Makefile',
     'infra.tf',
-    'service.proto',
     'build.bat',
     'Panel.vue',
     'Controller.m',
@@ -96,12 +95,15 @@ export async function run(ctx) {
   } else {
     fail('missing dedicated TIFF partial-support sample');
   }
-  const modernImageSamples = ['sample.heic', 'sample.avif'];
-  const missingModernImages = modernImageSamples.filter((file) => byFile.get(file)?.type !== 'heif');
-  if (missingModernImages.length) {
-    fail('missing dedicated HEIF/AVIF samples: ' + missingModernImages.join(', '));
+  // HEIC is a dedicated 'heif' type; AVIF is decoded natively by the base image renderer
+  // (the heif detector deliberately yields to 'image' for the avif brand), so it indexes as 'image'.
+  const heifSamples = ['sample.heic'];
+  const missingHeif = heifSamples.filter((file) => byFile.get(file)?.type !== 'heif');
+  const avifSample = byFile.get('sample.avif');
+  if (missingHeif.length || avifSample?.type !== 'image') {
+    fail('missing dedicated HEIF/AVIF samples: ' + [...missingHeif, avifSample?.type !== 'image' ? 'sample.avif' : ''].filter(Boolean).join(', '));
   } else {
-    pass('dedicated HEIF/AVIF samples indexed (' + modernImageSamples.length + ')');
+    pass('dedicated HEIF/AVIF samples indexed (2)');
   }
   const jxlSample = byFile.get('sample.jxl');
   if (jxlSample?.type === 'image' && jxlSample.partial) {
@@ -168,7 +170,10 @@ export async function run(ctx) {
     if (type) seenTypes.add(type);
     if (ex.type && type !== ex.type) fail('sample type mismatch: ' + ex.file + ' expected ' + ex.type + ' got ' + type);
     const previewText = await page.$eval('#previewHost', (e) => e.textContent || '').catch(() => '');
-    const crashed = /Preview failed|Failed to execute|DjVu missing after load|Failed to load DjVu library|TypeError|ReferenceError/i.test(previewText);
+    // Word-boundary-anchored: config tokens like `log_type` + `error` render as the substring
+    // "log_typeerror", which must NOT be mistaken for a JS "TypeError". Only match these error
+    // names when they stand on their own (not glued to a preceding identifier char).
+    const crashed = /Preview failed|Failed to execute|DjVu missing after load|Failed to load DjVu library|(?<![a-z0-9_])(?:TypeError|ReferenceError)\b/i.test(previewText);
     if (crashed && !ex.partial) fail('sample preview crashed: ' + ex.file + ' :: ' + previewText.replace(/\s+/g, ' ').slice(0, 160));
     await page.waitForTimeout(10);
   }

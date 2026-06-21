@@ -1041,7 +1041,7 @@
       "Code",
       "Data"
     ],
-    "type": "code",
+    "type": "proto",
     "description": "Protocol Buffers messages and catalog service definition."
   },
   {
@@ -1331,7 +1331,7 @@
     "label": "Sample.avif",
     "file": "sample.avif",
     "mime": "image/avif",
-    "type": "heif",
+    "type": "image",
     "category": "Media",
     "categories": [
       "Image",

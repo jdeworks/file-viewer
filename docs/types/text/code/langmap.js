@@ -14,9 +14,18 @@ export const LANGS = {
   proto: 'protobuf', wgsl: 'wgsl', sol: 'solidity',
   lua: 'lua', r: 'r', pl: 'perl', dart: 'dart', ex: 'elixir', exs: 'elixir',
   clj: 'clojure', dockerfile: 'dockerfile', makefile: 'makefile',
+  // Build-system source files (no dedicated Monaco grammar → closest fit / plaintext).
+  cmake: 'plaintext', bazel: 'python', bzl: 'python', ninja: 'plaintext',
 };
-// Bare filenames (no extension) that map to a language.
-export const FILENAMES = { dockerfile: 'dockerfile', makefile: 'makefile' };
+// Bare filenames (no extension) that map to a language. Build files often have a
+// fixed name (or a name whose extension isn't a language ext), so map them by name.
+export const FILENAMES = {
+  dockerfile: 'dockerfile', makefile: 'makefile',
+  'cmakelists.txt': 'plaintext', cmakelists: 'plaintext',
+  'build.bazel': 'python', build: 'python', 'workspace.bazel': 'python', workspace: 'python',
+  'build.ninja': 'plaintext',
+  '.bazelrc': 'ini', bazelrc: 'ini',
+};
 
 export const LANGUAGE_LABELS = {
   javascript: 'JavaScript',
