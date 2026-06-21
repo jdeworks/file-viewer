@@ -54,6 +54,39 @@ export async function run(ctx) {
   await page.waitForFunction(() => !!window.monaco, null, { timeout: 12000 });
   pass('Monaco preloaded in the background during idle');
 
+  // Whole-page drop affordance: on the empty/intake screen, dragging a FILE over any part of the
+  // page lights up the whole page (body.fv-dragging). A tree-path drag (or no-file drag) must NOT.
+  {
+    const dragResult = await page.evaluate(() => {
+      const fire = (typeStr) => {
+        const dt = new DataTransfer();
+        // Mark which payload this drag carries by appending a matching type string.
+        try { dt.items.add(new File(['x'], 'x.txt', { type: 'text/plain' })); } catch {}
+        const ev = new DragEvent('dragover', { bubbles: true, cancelable: true });
+        // Override .types so the handler sees exactly the payload we want to test.
+        Object.defineProperty(ev, 'dataTransfer', { value: { types: typeStr, files: dt.files } });
+        window.dispatchEvent(ev);
+      };
+      // 1) A real file drag → affordance on.
+      fire(['Files']);
+      const fileDrag = document.body.classList.contains('fv-dragging');
+      // Leaving the window clears it.
+      const leave = new DragEvent('dragleave', { bubbles: true });
+      Object.defineProperty(leave, 'relatedTarget', { value: null });
+      window.dispatchEvent(leave);
+      const afterLeave = document.body.classList.contains('fv-dragging');
+      // 2) A tree-to-workspace drag → NO affordance.
+      fire(['text/x-fv-tree-path']);
+      const treeDrag = document.body.classList.contains('fv-dragging');
+      document.body.classList.remove('fv-dragging');
+      return { fileDrag, afterLeave, treeDrag };
+    });
+    if (dragResult.fileDrag && !dragResult.afterLeave) pass('whole-page drop affordance toggles on a file drag (and clears on leaving the window)');
+    else fail('whole-page drop affordance not toggled by file drag: ' + JSON.stringify(dragResult));
+    if (!dragResult.treeDrag) pass('whole-page drop affordance ignores tree-to-workspace drags');
+    else fail('whole-page drop affordance wrongly triggered by a tree-path drag');
+  }
+
   // Examples gallery is grouped by category (tidy intake catalogue).
   const exGroups = await page.$$eval('#examples .ex-folder-label', (els) => els.map((e) => e.textContent));
   if (exGroups.includes('Documents') && exGroups.includes('Office') && exGroups.length >= 5)

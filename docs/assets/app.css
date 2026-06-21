@@ -187,6 +187,15 @@ body {
   transition: border-color .15s, background .15s;
 }
 .dropzone.drag-over { border-color: var(--accent); background: var(--bg-3); }
+/* Whole-page drop affordance: while a file is dragged anywhere over the empty/intake
+   screen, the page shows it accepts the drop (not just the middle dropzone). Added/removed
+   in intake.js; only active when the intake screen is shown (a file open opts out). */
+body.fv-dragging .dropzone { border-color: var(--accent); background: var(--bg-3); }
+body.fv-dragging .intake::after {
+  content: ''; position: fixed; inset: 0; z-index: 60; pointer-events: none;
+  border: 3px dashed var(--accent); border-radius: 12px; margin: 8px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
 .dz-icon { font-size: 44px; opacity: .5; }
 .dropzone h1 { font-size: 20px; margin: 12px 0 4px; }
 .muted { color: var(--fg-2); }
@@ -604,9 +613,19 @@ body {
 /* Side-by-side: two files rendered next to each other in a full-screen overlay. */
 .sbs-overlay { position: fixed; inset: 0; z-index: 60; background: var(--bg); display: flex; flex-direction: column; }
 .sbs-head { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
-.sbs-title { flex: 1; font-weight: 600; font-size: 14px; }
+.sbs-title { font-weight: 600; font-size: 14px; white-space: nowrap; }
 .sbs-close { background: var(--bg); border: 1px solid var(--border); color: var(--fg); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
+/* Shared mode bar (Current/Raw/Preview/Diff) — one radio-style switch governing both panes. */
+.sbs-mode { flex: 1; display: flex; justify-content: center; gap: 4px; min-width: 0; }
+.sbs-mode-btn { background: var(--bg); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 6px; padding: 3px 12px; font-size: 12px; cursor: pointer; line-height: 1.4; }
+.sbs-mode-btn:hover:not(:disabled) { border-color: var(--accent, #2563eb); }
+.sbs-mode-btn.active { background: var(--accent, #2563eb); border-color: var(--accent, #2563eb); color: #fff; }
+.sbs-mode-btn:disabled { opacity: .45; cursor: not-allowed; }
 .sbs-body { flex: 1; display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
+/* Diff mode: one full-width Monaco diff replaces the two panes. */
+.sbs-diff { flex: 1; position: relative; min-height: 0; }
+.sbs-diff .editor-host, .sbs-diff > div { position: absolute; inset: 0; }
 .sbs-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--border); }
 .sbs-pane:last-child { border-right: 0; }
 .sbs-name { display: flex; align-items: center; gap: 8px; padding: 5px 12px; font-size: 12px; color: var(--fg-2);

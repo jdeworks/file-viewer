@@ -94,6 +94,12 @@ export function buildPane(paneEl, intake) {
   let previewText = null;    // text the preview was last rendered from
   let view = editable ? 'source' : 'preview';
   let toggleBtns = [];
+  // Non-editable panes can't show a Monaco source; the shared Raw mode reveals this note instead.
+  const sourceNote = document.createElement('p');
+  sourceNote.className = 'sbs-note';
+  sourceNote.textContent = 'No source view for this file type.';
+  sourceNote.style.display = 'none';
+  sourceHost.appendChild(sourceNote);
 
   async function ensureRawview() {
     if (rawview) return rawview;
@@ -125,7 +131,13 @@ export function buildPane(paneEl, intake) {
     const wantPreview = next === 'preview' || next === 'split';
     sourceHost.style.display = wantSource ? '' : 'none';
     previewHost.style.display = wantPreview ? '' : 'none';
-    if (wantSource) { await ensureRawview(); rawview.layout(); }
+    if (wantSource && editable) {
+      sourceNote.style.display = 'none';
+      await ensureRawview(); rawview.layout();
+    } else if (wantSource) {
+      // Non-editable pane forced to Source by the shared Raw mode: show the note, no Monaco.
+      sourceNote.style.display = '';
+    }
     if (wantPreview) await ensurePreview();
     if (next === 'split' && rawview) rawview.layout();   // relayout after the split flex sizes it
     syncToggle();
@@ -177,13 +189,23 @@ export function buildPane(paneEl, intake) {
     nameEl.insertAdjacentElement('afterend', tools);
   }
 
+  // Show/hide the per-pane Source/Preview/Split toggle. The shared mode bar HIDES it when it
+  // governs the view (Raw/Preview/Diff); Current mode SHOWS it so each pane drives itself.
+  function setToggleVisible(on) {
+    toggleBtns.forEach((b) => { b.style.display = on ? '' : 'none'; });
+  }
+
   // Initial render: editable -> Source (Monaco, lazy preview); else -> Preview.
   const ready = show(view);
 
   return {
     ready,
-    rawview: () => rawview,
+    intake,
     isEditable: () => editable,
+    rawview: () => rawview,
+    // Force this pane to a specific view ('source' | 'preview'); used by the shared mode bar.
+    setView: (v) => show(v),
+    setToggleVisible,
     destroy() {
       rawview?.dispose();
       rawview = null;

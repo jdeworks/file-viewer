@@ -171,11 +171,39 @@ export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolde
       }));
   }
 
+  // Whole-page drop affordance: when on the empty/intake screen, dragging a file over ANY part
+  // of the page lights up the whole page (not just the middle dropzone) so it's obvious the drop
+  // works anywhere. Guards: only while the intake screen is shown (a file open → don't take over
+  // the page), and only for actual file drags — a tree-to-workspace drag carries
+  // text/x-fv-tree-path (not Files), so the side-by-side / compare / tree drop targets are never
+  // disturbed.
+  const intakeScreen = document.getElementById('intake');
+  const isFileDrag = (e) => {
+    const types = e.dataTransfer?.types;
+    if (!types) return false;
+    if (types.includes('text/x-fv-tree-path')) return false;   // tree-to-workspace drag
+    return types.includes('Files');
+  };
+  const onEmptyScreen = () => intakeScreen && !intakeScreen.hidden;
+  const setDragging = (on) => document.body.classList.toggle('fv-dragging', on);
+
   // Global drop: accept a file/folder dropped anywhere, even after one is already open.
   // Tree-to-workspace drags are handled separately (in app.js) and must not be processed here.
-  window.addEventListener('dragover', (e) => { e.preventDefault(); });
+  window.addEventListener('dragenter', (e) => {
+    if (onEmptyScreen() && isFileDrag(e)) setDragging(true);
+  });
+  window.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (onEmptyScreen() && isFileDrag(e)) setDragging(true);
+  });
+  window.addEventListener('dragleave', (e) => {
+    // Only when the cursor leaves the window (relatedTarget null) — not when it crosses between
+    // child elements, which would fire a spurious dragleave and flicker the affordance off.
+    if (!e.relatedTarget) setDragging(false);
+  });
   window.addEventListener('drop', (e) => {
     e.preventDefault();
+    setDragging(false);
     if (e.dataTransfer?.types?.includes('text/x-fv-tree-path')) return;
     handleDrop(e);
   });

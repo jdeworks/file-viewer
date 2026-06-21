@@ -7,28 +7,21 @@ import { getType } from './registry-runtime.generated.js';
 import { pickType } from './detect.js';
 import { wireIntake, LARGE_FILE_BYTES } from './intake.js';
 import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
-import { findGitDir, isGitInternal, openRepo } from './git.js';
 import { matchKnown, matchAllKnown } from '../known/registry.generated.js';
-import { renderRepoView } from './repoview.js';
 import { createRawView } from './rawview.js';
 import { loadMonaco } from './monaco-loader.js';
-import { hexDump } from './hexdump.js';
 import { initOffline, offlineMissHtml, initOfflineBadge } from './offline.js';
 import * as persistence from './persistence.js';
 import { registerCodeMetrics } from '../types/text/code/codelens.js';
-import { exportFolderZip } from './folder-export.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
 import { getModel, monacoOptions, renderSettings, persistGlobalKey, readGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
 import { initGames } from '../games/launcher.js';
 import { loadExamples } from './examples.js';
-import { startSideBySide, openSideBySide } from './sidebyside.js';
 import { initLayout, layoutTopbar, toggleMoreMenu, closeMoreMenu, updateExportButton, closeExportMenu, toggleExportMenu, applyLayout, applyPreviewPaneWidth, initSplitDivider } from './layout.js';
-import { mapPreviewToRaw, mapRawToPreview, syncScrollFromRaw, syncScrollFromPreview } from './sync.js';
+import { mapPreviewToRaw, syncScrollFromPreview } from './sync.js';
 import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare, initCompareDropTarget } from './compare.js';
 import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent, exitWysiwygForFeature } from './rawpane.js';
-import { buildMetadata } from './meta-drawer.js';
-import { buildTypeHelp } from './type-help.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, showFolderLoading, hideFolderLoading } from './folder.js';
 import { clearArchiveTree, mountArchiveTree } from './archive-tree.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
@@ -332,9 +325,10 @@ function closeDrawers() {
 }
 
 // Type documentation opens as a centered modal dialog (not a side drawer).
-function openTypeHelp() {
+async function openTypeHelp() {
   const dialog = $('typeHelpDialog');
   if (!dialog) return;
+  const { buildTypeHelp } = await import('./type-help.js');
   buildTypeHelp(state.type?.id);
   if (!dialog.dataset.wired) {
     dialog.dataset.wired = '1';
@@ -442,11 +436,15 @@ function init() {
   $('themeBtn').addEventListener('click', () => applyTheme(!themeIsDark()));
   $('settingsBtn').addEventListener('click', () => openDrawer('settingsDrawer', openSettings));
   $('typeHelpBtn').addEventListener('click', () => openTypeHelp());
-  $('metaBtn').addEventListener('click', () => {
+  $('metaBtn').addEventListener('click', async () => {
     metaBtnClicks++;
     clearTimeout(_metaBtnTimer);
     _metaBtnTimer = setTimeout(() => { metaBtnClicks = 0; }, 2000);
-    if (metaBtnClicks <= 4) { openDrawer('metaDrawer', buildMetadata); return; }
+    if (metaBtnClicks <= 4) {
+      const { buildMetadata } = await import('./meta-drawer.js');
+      openDrawer('metaDrawer', buildMetadata);
+      return;
+    }
     if (metaBtnClicks <= 8) { toast(META_BTN_MSGS[metaBtnClicks - 5]); return; }
     metaBtnClicks = 0;
     clearTimeout(_metaBtnTimer);
@@ -462,8 +460,8 @@ function init() {
     else document.documentElement.requestFullscreen?.();
   });
   $('screenshotBtn').addEventListener('click', takeScreenshot);
-  $('sbsBtn').addEventListener('click', async () => { await exitWysiwygForFeature(); startSideBySide(); });
-  $('sbsInput').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; if (f) openSideBySide(f); });
+  $('sbsBtn').addEventListener('click', async () => { await exitWysiwygForFeature(); const { startSideBySide } = await import('./sidebyside.js'); startSideBySide(); });
+  $('sbsInput').addEventListener('change', async (e) => { const f = e.target.files && e.target.files[0]; if (f) { const { openSideBySide } = await import('./sidebyside.js'); openSideBySide(f); } });
   $('exportBtn').addEventListener('click', toggleExportMenu);
   $('enhanceChip').querySelector('.ec-toggle').addEventListener('click', toggleEnhance);
   $('moreBtn').addEventListener('click', toggleMoreMenu);
