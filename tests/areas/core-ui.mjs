@@ -40,6 +40,17 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'load' });
   pass('page loaded');
 
+  // Offline pill shows immediately in its resting state (derived from localStorage), not gated
+  // on a SW controller being present — previously it could stay hidden on first load / hard reload.
+  await page.waitForFunction(() => { const e = document.getElementById('offlineStatus'); return e && !e.hidden; }, null, { timeout: 8000 });
+  pass('offline pill shown on load (resting state, not gated on SW controller)');
+
+  // Anti-FOUC: an inline <head> script applies the saved/system theme before app.js loads, so
+  // there is no light→dark flash while the heavy modules download.
+  const hasThemeScript = await page.evaluate(() => [...document.head.querySelectorAll('script:not([src])')]
+    .some((s) => /fv:theme/.test(s.textContent) && /dataset\.theme|data-theme/.test(s.textContent)));
+  if (hasThemeScript) pass('inline anti-FOUC theme script present in <head>'); else fail('no inline theme script in head');
+
   // Favicon present + same-origin (no off-origin icon fetch).
   const iconHref = await page.$eval('link[rel="icon"]', (l) => l.getAttribute('href')).catch(() => null);
   if (iconHref) {

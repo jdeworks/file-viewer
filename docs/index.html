@@ -17,6 +17,18 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="File Viewer">
   <link rel="manifest" href="manifest.json">
+  <!-- Theme: apply the saved/system theme SYNCHRONOUSLY before first paint so there is no
+       light→dark flash while app.js (and its heavy imports) load. app.js re-applies the same
+       value on init, so this is purely an anti-FOUC head start. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('fv:theme');
+        var dark = t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      } catch (e) { /* keep the default light theme */ }
+    })();
+  </script>
   <!-- Critical CSS: the first-paint shell (reset, theme tokens, topbar, body layout, intake
        screen + whole-page drop affordance) is inlined so the empty screen renders instantly
        without a stylesheet round-trip. The full stylesheets below are then loaded
