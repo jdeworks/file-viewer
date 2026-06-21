@@ -15,8 +15,8 @@ import { applyLayout } from './layout.js';
 import { recordStage1RawEdit } from '../games/metagame/viewer-actions.js';
 import { markdownLinkForPastedUrl } from '../types/markdown/edit-actions.js';
 import { mountWysiwyg, unmountWysiwyg, getWysiwygValue, isWysiwygActive } from '../types/markdown/wysiwyg.js';
-import { HtmlWysiwygEditor } from '../types/html/wysiwyg-html.js';
-import { TableEditor } from '../types/text/csv/table-editor.js';
+import { toggleHtmlWysiwyg, teardownHtmlWysiwyg, getHtmlWysiwygValue,
+  setTableMode, wireTableModeBtn, teardownTableEditor, getTableEditorValue } from './rawpane-editors.js';
 import { setEnvFormMode, setIniFormMode, setTomlFormMode, setYamlFormMode,
   wireEnvFormBtn, wireIniFormBtn, wireTomlFormBtn, wireYamlFormBtn, getActiveFormValue } from './rawpane-forms.js';
 import { setJsonToolsVisible, wireJsonTools, setYamlToolsVisible, wireYamlTools,
@@ -29,8 +29,6 @@ let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
 
 let wysiwygMode = false;
-let htmlWysiwyg = null;
-let tableEditor = null;
 
 // Re-syncs the has-tools class on rawPane: true iff ANY type-specific toolbar is visible.
 // Called after each setXxxToolsVisible so that showing one toolbar and then hiding another
@@ -137,157 +135,12 @@ export async function toggleWysiwyg({ skipPersist = false } = {}) {
   }
 }
 
-function setHtmlToolbarVisible(visible) {
-  const el = document.getElementById('htmlToolbar');
-  if (!el) return;
-  el.hidden = !visible;
-  syncHasToolsClass();
-}
-
-function wireHtmlToolbar() {
-  const el = document.getElementById('htmlToolbar');
-  if (!el || el.dataset.wired) return;
-  el.dataset.wired = '1';
-  el.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-cmd]');
-    if (!btn || !htmlWysiwyg) return;
-    const cmd = btn.dataset.cmd;
-    const val = btn.dataset.val || undefined;
-    if (cmd === 'createLink') { htmlWysiwyg.execLink(); }
-    else { htmlWysiwyg.exec(cmd, val); }
-  });
-  document.getElementById('htmlLinkBtn')?.addEventListener('click', () => htmlWysiwyg?.execLink());
-}
-
-export async function toggleHtmlWysiwyg() {
-  if (state.type?.id !== 'html') return;
-
-  if (!htmlWysiwyg) {
-    // Enter visual mode: capture Monaco text, hide Monaco, mount contenteditable div
-    const text = state.rawview?.getValue?.() ?? (state.intake?.text || '');
-    state.rawview?.dispose?.();
-    state.rawview = null;
-    const editorEl = document.getElementById('editor');
-    if (editorEl) editorEl.style.display = 'none';
-    const editorParent = editorEl?.parentElement || document.getElementById('rawPane');
-    htmlWysiwyg = new HtmlWysiwygEditor(editorParent, text, async (newHtml) => {
-      state.intake = { ...state.intake, text: newHtml };
-      state.downloadedSinceEdit = false;
-      if (state.currentFolderPath) {
-        state.folderEdits.set(state.currentFolderPath, newHtml);
-        state.folderExported = false;
-        state.treeApi?.setEdited?.(state.currentFolderPath, true);
-      } else if (state.sessionIntakes.has(state.intake?.filename)) {
-        state.sessionEdits.set(state.intake.filename, newHtml);
-        state.treeApi?.setEdited?.(state.intake.filename, true);
-      }
-    });
-    htmlWysiwyg.mount();
-    wireHtmlToolbar();
-    setHtmlToolbarVisible(true);
-    const btn = document.getElementById('htmlVisualBtn');
-    if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true'); }
-  } else {
-    // Exit visual mode: capture value, unmount, restore Monaco
-    const html = htmlWysiwyg.getValue();
-    htmlWysiwyg.unmount();
-    htmlWysiwyg = null;
-    setHtmlToolbarVisible(false);
-    const btn = document.getElementById('htmlVisualBtn');
-    if (btn) { btn.classList.remove('active'); btn.setAttribute('aria-pressed', 'false'); }
-    const editorEl = document.getElementById('editor');
-    if (editorEl) editorEl.style.display = '';
-    state.intake = { ...state.intake, text: html };
-    await buildRawView();
-  }
-}
-
-export function setTableMode(on) {
-  const editorEl = document.getElementById('editor');
-  const btn = document.getElementById('tableModeBtn');
-  if (on) {
-    // Detect separator: prefer delimiter setting, fall back to filename extension
-    const settings = state.settingsModel?.values || {};
-    const delimSetting = settings.delimiter;
-    const DELIMS = { comma: ',', semicolon: ';', tab: '\t', pipe: '|' };
-    let sep;
-    if (delimSetting && delimSetting !== 'auto') {
-      sep = DELIMS[delimSetting] || ',';
-    } else {
-      sep = (state.intake?.filename || '').toLowerCase().endsWith('.tsv') ? '\t' : ',';
-    }
-    const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
-    // Freeze Monaco while table is active so its model stays consistent
-    state.rawview?.updateOptions?.({ readOnly: true });
-    // Mount table editor in a sibling div that overlays the editor
-    let host = document.getElementById('tableEditorHost');
-    if (!host) {
-      host = document.createElement('div');
-      host.id = 'tableEditorHost';
-      // Inherit editor-host positioning + all banner-offset overrides automatically
-      host.className = 'editor-host';
-      editorEl?.parentNode?.insertBefore(host, editorEl);
-    }
-    host.hidden = false;
-    if (editorEl) editorEl.style.display = 'none';
-    tableEditor = new TableEditor(host, text, sep, (newCsv) => {
-      state.intake = { ...state.intake, text: newCsv };
-      state.downloadedSinceEdit = false;
-    });
-  } else {
-    // Flush table editor value back to Monaco before hiding
-    if (tableEditor) {
-      const csv = tableEditor.getValue();
-      tableEditor.destroy();
-      tableEditor = null;
-      if (state.rawview) {
-        state.rawview.setValue(csv);
-        state.rawview.updateOptions?.({ readOnly: false });
-      }
-      state.intake = { ...state.intake, text: csv };
-    }
-    const host = document.getElementById('tableEditorHost');
-    if (host) host.hidden = true;
-    if (editorEl) editorEl.style.display = '';
-  }
-  if (btn) {
-    btn.classList.toggle('active', on);
-    btn.setAttribute('aria-pressed', String(on));
-  }
-}
-
-function wireTableModeBtn() {
-  const btn = document.getElementById('tableModeBtn');
-  if (!btn || btn.dataset.wired) return;
-  btn.dataset.wired = '1';
-  btn.addEventListener('click', () => {
-    const isOn = btn.classList.contains('active');
-    setTableMode(!isOn);
-  });
-}
-
 export async function buildRawView() {
   stopAutosave();
   hideWordCount();
-  // Tear down HTML WYSIWYG when rebuilding (e.g. file changed)
-  if (htmlWysiwyg) {
-    htmlWysiwyg.unmount();
-    htmlWysiwyg = null;
-    setHtmlToolbarVisible(false);
-    const btn = document.getElementById('htmlVisualBtn');
-    if (btn) { btn.classList.remove('active'); btn.setAttribute('aria-pressed', 'false'); }
-    const editorEl = document.getElementById('editor');
-    if (editorEl) editorEl.style.display = '';
-  }
-  // Tear down table editor when rebuilding (e.g. file changed)
-  if (tableEditor) {
-    tableEditor.destroy();
-    tableEditor = null;
-    const host = document.getElementById('tableEditorHost');
-    if (host) host.hidden = true;
-    const editorEl = document.getElementById('editor');
-    if (editorEl) editorEl.style.display = '';
-  }
+  // Tear down the alternate editor surfaces (HTML visual / CSV table) when rebuilding.
+  teardownHtmlWysiwyg();
+  teardownTableEditor();
   // Tear down env form editor when rebuilding (e.g. file changed)
   setEnvFormMode(false);
   // Tear down ini form editor when rebuilding (e.g. file changed)
@@ -485,12 +338,14 @@ export function hasUnsavedWork() {
   if (state.rawview?.isDirty() && !state.downloadedSinceEdit) return true;
   if (wysiwygMode && isWysiwygActive() && !state.downloadedSinceEdit &&
       getWysiwygValue() !== (state.intake?.originalText ?? state.intake?.text ?? '')) return true;
-  if (htmlWysiwyg && !state.downloadedSinceEdit &&
-      htmlWysiwyg.getValue() !== (state.intake?.originalText ?? '')) return true;
+  const htmlValue = getHtmlWysiwygValue();
+  if (htmlValue != null && !state.downloadedSinceEdit &&
+      htmlValue !== (state.intake?.originalText ?? '')) return true;
   if (state.binaryEdit?.dirty && !state.downloadedSinceEdit) return true;
   // Table editor: dirty when current CSV differs from the original load
-  if (tableEditor && !state.downloadedSinceEdit &&
-      tableEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
+  const tableValue = getTableEditorValue();
+  if (tableValue != null && !state.downloadedSinceEdit &&
+      tableValue !== (state.intake?.originalText ?? '')) return true;
   // env/ini/toml/yaml form editor: dirty when the active form's text differs from the original load
   const formValue = getActiveFormValue();
   if (formValue != null && !state.downloadedSinceEdit &&
@@ -545,10 +400,10 @@ export async function downloadCurrent() {
     blob = new Blob([bytes], { type: state.binaryEdit.mimeType || state.intake.mimeType || 'application/octet-stream' });
     state.binaryEdit.dirty = false;
   } else {
-    const formValue = getActiveFormValue();
-    const text = tableEditor ? tableEditor.getValue()
+    const tableValue = getTableEditorValue(), formValue = getActiveFormValue(), htmlValue = getHtmlWysiwygValue();
+    const text = tableValue != null ? tableValue
       : formValue != null ? formValue
-      : htmlWysiwyg ? htmlWysiwyg.getValue()
+      : htmlValue != null ? htmlValue
       : wysiwygMode && isWysiwygActive() ? getWysiwygValue()
       : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
     blob = new Blob([text], { type: state.intake.mimeType || 'text/plain' });
@@ -559,10 +414,10 @@ export async function downloadCurrent() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   if (state.sessionEdits.has(state.intake.filename)) {
-    const formValue = getActiveFormValue();
-    const text = tableEditor ? tableEditor.getValue()
+    const tableValue = getTableEditorValue(), formValue = getActiveFormValue(), htmlValue = getHtmlWysiwygValue();
+    const text = tableValue != null ? tableValue
       : formValue != null ? formValue
-      : htmlWysiwyg ? htmlWysiwyg.getValue()
+      : htmlValue != null ? htmlValue
       : wysiwygMode && isWysiwygActive() ? getWysiwygValue()
       : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
     state.sessionIntakes.set(state.intake.filename, { ...state.sessionIntakes.get(state.intake.filename), text });
