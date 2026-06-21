@@ -2,18 +2,26 @@ export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── JSON / Code / Image simple types (WP19) ──
+  // JSON now renders as a live parentNode (tree + query panel) in #previewHost, not an iframe.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.json');
-  const jframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const jf = await frameOf('iframe.fv-preview-frame');
-  await jf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
-  const jkeys = await jf.$$eval('.json-tree .j-key', (els) => els.length);
+  await page.waitForSelector('#previewHost .json-qp .json-tree .j-key', { timeout: 30000 });
+  const jf = page;   // tree is in the parent document now
+  const jkeys = await page.$$eval('#previewHost .json-tree .j-key', (els) => els.length);
   if (jkeys > 0) pass('JSON rendered as collapsible tree (' + jkeys + ' keys)'); else fail('no json keys');
-  const marker = await jf.$eval('.json-tree summary', (el) => getComputedStyle(el, '::before').content);
-  await jf.click('.json-tree summary');
-  const closedMarker = await jf.$eval('.json-tree summary', (el) => getComputedStyle(el, '::before').content);
-  await jf.click('.json-tree summary');
+  const marker = await page.$eval('#previewHost .json-tree summary', (el) => getComputedStyle(el, '::before').content);
+  await page.click('#previewHost .json-tree summary');
+  const closedMarker = await page.$eval('#previewHost .json-tree summary', (el) => getComputedStyle(el, '::before').content);
+  await page.click('#previewHost .json-tree summary');
   if (/▾/.test(marker) && /▸/.test(closedMarker) && !/25be|25b8/.test(marker + closedMarker)) pass('JSON disclosure marker renders as a glyph'); else fail('json marker content: ' + marker + ' / ' + closedMarker);
+  // Query panel: JSONPath highlights matching nodes.
+  const qpPresent = await page.$('#previewHost .json-qp .qp-panel .qp-input');
+  if (qpPresent) pass('JSON query panel rendered'); else fail('json query panel missing');
+  await page.fill('#previewHost .json-qp .qp-input', '$..name');
+  await page.click('#previewHost .json-qp .qp-btn');
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .json-tree .qp-match').length > 0, null, { timeout: 4000 }).catch(() => {});
+  const jMatches = await page.$$eval('#previewHost .json-tree .qp-match', (els) => els.length);
+  if (jMatches > 0) pass('JSON query panel highlights JSONPath matches (' + jMatches + ')'); else fail('json query no matches');
   const sortedKeys = await page.evaluate(async () => {
     const { render } = await import('./types/text/json/renderer.js');
     const rendered = await render(window.__fv.state.intake, { settings: { jsonSortKeys: 'A-Z' } });
@@ -66,15 +74,14 @@ export async function run(ctx) {
   if (jsonToolsHiddenForYaml) pass('JSON toolbar hidden for non-JSON files (YAML)'); else fail('json toolbar unexpectedly visible for yaml');
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.json');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  await page.waitForSelector('#previewHost .json-tree', { timeout: 30000 });
 
   await page.evaluate(() => window.__fv.openViewerFile('edge.jsonc', {
     text: '{\n  // File Examples JSON comments edge case\n  "name": "jsonc",\n  "items": [1, 2,],\n}\n',
   }));
-  await page.waitForSelector('iframe.fv-preview-frame[srcdoc*="json-warning"]', { timeout: 8000 });
-  const jsoncFrame = await frameOf('iframe.fv-preview-frame');
-  const jsoncWarning = await jsoncFrame.$eval('.json-warning', (e) => e.textContent);
-  const jsoncKeys = await jsoncFrame.$$eval('.json-tree .j-key', (els) => els.map((e) => e.textContent));
+  await page.waitForSelector('#previewHost .json-warning', { timeout: 8000 });
+  const jsoncWarning = await page.$eval('#previewHost .json-warning', (e) => e.textContent);
+  const jsoncKeys = await page.$$eval('#previewHost .json-tree .j-key', (els) => els.map((e) => e.textContent));
   if (/Parsed as JSONC/.test(jsoncWarning) && jsoncKeys.includes('name') && jsoncKeys.includes('items')) pass('JSONC-style comments/trailing commas render with recovery warning');
   else fail('jsonc warning=' + jsoncWarning + ' keys=' + jsoncKeys.join(','));
   await page.evaluate(async () => {
@@ -123,9 +130,7 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.json');
-  const jDiffFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const jDiffF = await frameOf('iframe.fv-preview-frame');
-  await jDiffF.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .json-tree .j-key', { timeout: 30000 });
 
   // Semantic JSON key-tree diff: edit working copy (add/remove/change a key + REORDER one)
   // then open Diff — reordering must NOT show as a change.
@@ -259,16 +264,23 @@ export async function run(ctx) {
   });
   if (tomlFormOff) pass('TOML form editor hides when toggled off'); else fail('tomlFormHost still visible after toggle off');
 
-  // ── XML ── element tree (reuses JSON tree styling) + structural diff. ──
+  // ── XML ── element tree (reuses JSON tree styling) + XPath query panel + structural diff. ──
+  // XML now renders as a live parentNode (tree + XPath panel) in #previewHost, not an iframe.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.xml');
-  const xmlframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const xmlf = await frameOf('iframe.fv-preview-frame');
-  await xmlf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .xml-qp .json-tree .j-key', { timeout: 30000 });
   const xType = await page.$eval('#typeSelect', (s) => s.value);
   if (xType === 'xml') pass('.xml detected as XML'); else fail('xml type: ' + xType);
-  const xTags = await xmlf.$$eval('.json-tree .j-key', (els) => els.map((e) => e.textContent));
+  const xTags = await page.$$eval('#previewHost .json-tree .j-key', (els) => els.map((e) => e.textContent));
   if (xTags.some((t) => /<catalog>/.test(t)) && xTags.some((t) => /<book>/.test(t))) pass('XML rendered as element tree (' + xTags.length + ' nodes)'); else fail('xml tags: ' + xTags.slice(0, 6).join(','));
+  // XPath query panel highlights matching elements.
+  const xqp = await page.$('#previewHost .xml-qp .qp-panel .qp-input');
+  if (xqp) pass('XML XPath query panel rendered'); else fail('xml query panel missing');
+  await page.fill('#previewHost .xml-qp .qp-input', '//book');
+  await page.click('#previewHost .xml-qp .qp-btn');
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .json-tree .qp-match').length > 0, null, { timeout: 4000 }).catch(() => {});
+  const xMatches = await page.$$eval('#previewHost .json-tree .qp-match', (els) => els.length);
+  if (xMatches > 0) pass('XML XPath query highlights //book elements (' + xMatches + ')'); else fail('xml xpath no matches');
   // Structural diff: change one element's text → flagged; reindenting ignored.
   await page.waitForFunction(() => !!window.__fv?.state?.rawview, null, { timeout: 8000 });
   const xmlOrig = await page.evaluate(() => window.__fv.state.rawview.originalValue());
@@ -321,7 +333,31 @@ export async function run(ctx) {
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const iniMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Comments\s*\d+/.test(iniMeta) && /Duplicate keys\s*0/.test(iniMeta)) pass('INI metadata includes comments and duplicate-key count'); else fail('ini meta: ' + iniMeta.replace(/\s+/g, ' ').slice(0, 160));
+  if (/Sections\s*\d+/.test(iniMeta)) pass('INI metadata includes section count'); else fail('ini meta missing sections: ' + iniMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
+
+  // ── INI form editor ── Form button in raw view swaps Monaco for the editable section/pair form.
+  await page.click('#viewMode button[data-mode="raw"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
+  const iniFormBtnVisible = await page.$eval('#iniFormBtn', (el) => !el.hidden);
+  if (iniFormBtnVisible) pass('INI toolbar shows Form button for .ini file'); else fail('iniFormBtn hidden');
+  await page.click('#iniFormBtn');
+  await page.waitForFunction(() => {
+    const host = document.getElementById('iniFormHost');
+    return host && !host.hidden && host.querySelector('.ini-form');
+  }, null, { timeout: 5000 });
+  const iniFormSecs = await page.$$eval('#iniFormHost .ini-section', (els) => els.length);
+  const iniFormRows = await page.$$eval('#iniFormHost .ini-row .ini-key', (els) => els.length);
+  if (iniFormSecs >= 1 && iniFormRows >= 1) pass('INI form editor renders editable sections + key rows (' + iniFormSecs + ' secs, ' + iniFormRows + ' keys)'); else fail('ini form secs=' + iniFormSecs + ' rows=' + iniFormRows);
+  // Edit a key value through the form → it flushes back to Monaco on toggle-off.
+  await page.fill('#iniFormHost .ini-row .ini-val', 'EDITED_BY_SMOKE');
+  await page.click('#iniFormBtn');
+  await page.waitForFunction(() => {
+    const host = document.getElementById('iniFormHost');
+    return !host || host.hidden;
+  }, null, { timeout: 4000 });
+  const iniEditedText = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (/EDITED_BY_SMOKE/.test(iniEditedText)) pass('INI form edit flushes back into the editable text'); else fail('ini form edit not flushed: ' + iniEditedText.slice(0, 120));
 
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.env (environment variables)');

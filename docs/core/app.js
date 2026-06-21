@@ -199,7 +199,10 @@ async function renderPreview() {
   if (rendered.parentNode) {
     clearPreview();
     $('previewHost').appendChild(rendered.parentNode);
-    state.lastBodyHtml = null;   // not screenshot-able via the sanitized-body path
+    // Live-node previews aren't screenshot-able via the sanitized-body path UNLESS the renderer
+    // also supplies a static bodyHtml (e.g. structured trees that add a live query panel but keep
+    // a screenshot-able HTML tree).
+    state.lastBodyHtml = rendered.bodyHtml || null;
     state.previewCleanup = rendered.revoke || null;
     state.preview = { iframe: null, highlight() {}, scrollTo() {}, destroy() { $('previewHost').innerHTML = ''; } };
     updateExportButton();

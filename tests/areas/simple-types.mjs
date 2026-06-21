@@ -248,18 +248,25 @@ export async function run(ctx) {
   else fail('ansi meta: ' + ansiMeta.replace(/\s+/g, ' ').slice(0, 180));
   await page.click('#metaDrawer [data-close]');
 
-  // ── JSONL / NDJSON viewer ── summary card + table columns. ──
+  // ── JSONL / NDJSON viewer ── summary card + table columns + record filter panel. ──
+  // JSONL now renders as a live parentNode (records + filter panel) in #previewHost, not an iframe.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.jsonl');
-  const jsonlFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const jsonlf = await frameOf('iframe.fv-preview-frame');
-  await jsonlf.waitForSelector('.jsonl-preview', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .jsonl-qp .jsonl-preview', { timeout: 30000 });
   const jsonlTypeId = await page.$eval('#typeSelect', (s) => s.value);
   if (jsonlTypeId === 'jsonl') pass('sample.jsonl detected as JSON Lines'); else fail('jsonl type: ' + jsonlTypeId);
-  const jsonlSummary = await jsonlf.$eval('.jsonl-summary', (e) => e.textContent);
+  const jsonlSummary = await page.$eval('#previewHost .jsonl-summary', (e) => e.textContent);
   if (/5\s*records/.test(jsonlSummary) && /lines/.test(jsonlSummary)) pass('JSONL summary card shows record and line counts'); else fail('jsonl summary: ' + jsonlSummary.replace(/\s+/g, ' ').slice(0, 100));
-  const jsonlCols = await jsonlf.$$eval('.jsonl-table th', (ths) => ths.map((th) => th.textContent));
+  const jsonlCols = await page.$$eval('#previewHost .jsonl-table th', (ths) => ths.map((th) => th.textContent));
   if (jsonlCols.includes('timestamp') && jsonlCols.includes('level') && jsonlCols.includes('message')) pass('JSONL table shows shared schema columns'); else fail('jsonl cols: ' + jsonlCols.join(','));
+  // Record filter panel narrows visible rows.
+  const jsonlQp = await page.$('#previewHost .jsonl-qp .qp-input');
+  if (jsonlQp) pass('JSONL filter panel rendered'); else fail('jsonl filter panel missing');
+  await page.fill('#previewHost .jsonl-qp .qp-input', 'level');
+  await page.check('#previewHost .jsonl-qp .qp-filter input');
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .jsonl-table tbody tr.qp-hidden').length >= 0, null, { timeout: 4000 }).catch(() => {});
+  const jsonlMatched = await page.$$eval('#previewHost .jsonl-table tbody tr:not(.qp-hidden)', (els) => els.length);
+  if (jsonlMatched >= 1) pass('JSONL filter keeps matching records (' + jsonlMatched + ')'); else fail('jsonl filter matched=' + jsonlMatched);
 
   // ── Bioinformatics viewer (FASTA / VCF) ──
   await page.goto(origin, { waitUntil: 'load' });

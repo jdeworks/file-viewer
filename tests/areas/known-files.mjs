@@ -19,9 +19,8 @@ export async function run(ctx) {
   if (/Package\s*demo-package/.test(pkgMeta) && /Dependencies\s*4/.test(pkgMeta)) pass('package.json metadata includes package and dependency counts'); else fail('package meta: ' + pkgMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
   await page.click('#enhanceChip .ec-toggle');
-  await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 8000 });
-  const pjFrame = await frameOf('#previewHost iframe.fv-preview-frame');
-  await pjFrame.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+  // Reverting to base JSON now renders a live parentNode (tree + query panel), not an iframe.
+  await page.waitForSelector('#previewHost .json-tree .j-key', { timeout: 8000 });
   pass('revert chip switches to the plain JSON tree view');
 
   // ── More known-files (Layer 3): Cargo.toml, tsconfig.json, Dockerfile, docker-compose, .gitignore ──

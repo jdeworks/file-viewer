@@ -2,7 +2,11 @@
 // Renders typed inputs for each value: checkbox for booleans, number for integers/floats,
 // text/textarea for strings, comma-separated text for scalar arrays, read-only for complex values.
 // Sections collapse/expand on header click. Structure (keys) is fixed; only values are editable.
+// Field/section rendering + value classification are shared via core/form-fields.js.
 import { parseTOML } from './toml.js';
+import { renderSection, isPlainObject, isArrayOfObjects } from '../../../core/form-fields.js';
+
+const FIELD_OPTS = { sep: '=', dateObjects: true };
 
 // ── Serialization ─────────────────────────────────────────────────────────────
 
@@ -67,19 +71,7 @@ function serializeToml(data, leadingComment) {
   return parts.join('\n');
 }
 
-// ── Classification helpers ────────────────────────────────────────────────────
-
-function isPlainObject(v) {
-  return v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date);
-}
-
-function isArrayOfObjects(v) {
-  return Array.isArray(v) && v.length > 0 && v.every((item) => isPlainObject(item));
-}
-
-function isScalarArray(v) {
-  return Array.isArray(v) && v.every((item) => !isPlainObject(item) && !Array.isArray(item));
-}
+// ── Classification ────────────────────────────────────────────────────────────
 
 // Classify the parsed TOML root into globals, sections, and array-of-tables
 function classify(parsed) {
@@ -98,143 +90,6 @@ function classify(parsed) {
   }
 
   return { globals, sections, aot };
-}
-
-// ── Field rendering ───────────────────────────────────────────────────────────
-
-function renderField(container, key, value, onChange) {
-  const row = document.createElement('div');
-  row.className = 'ini-row toml-row';
-
-  const keyEl = document.createElement('span');
-  keyEl.className = 'ini-key toml-key';
-  keyEl.textContent = key;
-
-  const eq = document.createElement('span');
-  eq.className = 'ini-eq';
-  eq.textContent = '=';
-
-  let input;
-
-  if (typeof value === 'boolean') {
-    // Checkbox for booleans
-    const label = document.createElement('label');
-    label.className = 'toml-bool-label';
-    input = document.createElement('input');
-    input.type = 'checkbox';
-    input.checked = value;
-    input.className = 'toml-bool';
-    input.addEventListener('change', () => onChange(key, input.checked));
-    label.append(input);
-    row.append(keyEl, eq, label);
-  } else if (typeof value === 'number') {
-    input = document.createElement('input');
-    input.type = 'number';
-    input.step = Number.isInteger(value) ? '1' : 'any';
-    input.value = String(value);
-    input.className = 'ini-val toml-num';
-    input.spellcheck = false;
-    input.addEventListener('input', () => {
-      const n = input.step === '1' ? parseInt(input.value, 10) : parseFloat(input.value);
-      if (!isNaN(n)) onChange(key, n);
-    });
-    row.append(keyEl, eq, input);
-  } else if (typeof value === 'string') {
-    if (value.includes('\n')) {
-      // Textarea for multi-line strings
-      input = document.createElement('textarea');
-      input.className = 'ini-val toml-textarea';
-      input.value = value;
-      input.rows = Math.min(6, value.split('\n').length + 1);
-      input.spellcheck = false;
-      input.addEventListener('input', () => onChange(key, input.value));
-      row.classList.add('toml-row-multiline');
-      row.append(keyEl, eq, input);
-    } else {
-      input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'ini-val toml-str';
-      input.value = value;
-      input.spellcheck = false;
-      input.addEventListener('input', () => onChange(key, input.value));
-      row.append(keyEl, eq, input);
-    }
-  } else if (isScalarArray(value)) {
-    // Comma-separated text input
-    input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'ini-val toml-arr';
-    input.value = value.map((v) => (typeof v === 'string' ? v : String(v))).join(', ');
-    input.spellcheck = false;
-    const note = document.createElement('span');
-    note.className = 'toml-arr-note';
-    note.textContent = '(comma-separated)';
-    input.addEventListener('input', () => {
-      const items = input.value.split(',').map((s) => s.trim()).filter((s) => s !== '');
-      // Attempt to coerce back to original element type
-      const coerced = items.map((s) => {
-        if (s === 'true') return true;
-        if (s === 'false') return false;
-        const n = Number(s);
-        return isNaN(n) ? s : n;
-      });
-      onChange(key, coerced);
-    });
-    row.append(keyEl, eq, input, note);
-  } else if (value instanceof Date) {
-    // Show date as a readable string; read-only since TOML datetimes are complex
-    const code = document.createElement('code');
-    code.className = 'toml-readonly';
-    code.textContent = value.toISOString();
-    const badge = document.createElement('span');
-    badge.className = 'toml-readonly-badge';
-    badge.textContent = 'read-only (datetime)';
-    row.append(keyEl, eq, code, badge);
-  } else {
-    // Complex / unknown: display as code, read-only
-    const code = document.createElement('code');
-    code.className = 'toml-readonly';
-    try { code.textContent = JSON.stringify(value); } catch { code.textContent = String(value); }
-    const badge = document.createElement('span');
-    badge.className = 'toml-readonly-badge';
-    badge.textContent = 'read-only';
-    row.append(keyEl, eq, code, badge);
-  }
-
-  container.append(row);
-}
-
-// ── Section rendering ─────────────────────────────────────────────────────────
-
-function renderSection(body, title, pairs, collapsed, onToggle, onFieldChange) {
-  const group = document.createElement('div');
-  group.className = 'ini-section toml-section' + (collapsed ? ' ini-collapsed' : '');
-
-  const header = document.createElement('div');
-  header.className = 'ini-section-header';
-  header.title = 'Click to collapse/expand';
-
-  const arrow = document.createElement('span');
-  arrow.className = 'ini-arrow';
-  arrow.textContent = collapsed ? '▶' : '▼';
-
-  const titleEl = document.createElement('span');
-  titleEl.className = 'ini-section-title';
-  titleEl.textContent = title;
-
-  header.append(arrow, titleEl);
-  header.addEventListener('click', () => onToggle());
-  group.append(header);
-
-  const pairList = document.createElement('div');
-  pairList.className = 'ini-pairs';
-  if (!collapsed) {
-    for (const [k, v] of Object.entries(pairs)) {
-      renderField(pairList, k, v, onFieldChange);
-    }
-  }
-  group.append(pairList);
-  body.append(group);
 }
 
 // ── TomlFormEditor class ──────────────────────────────────────────────────────
@@ -301,6 +156,7 @@ export class TomlFormEditor {
         collapsed,
         () => { this._collapsed[colKey] = !collapsed; this._render(); },
         (k, v) => { this._data.__globals__[k] = v; },
+        FIELD_OPTS,
       );
     }
 
@@ -316,6 +172,7 @@ export class TomlFormEditor {
         collapsed,
         () => { this._collapsed[colKey] = !collapsed; this._render(); },
         (k, v) => { this._data.__sections__[name][k] = v; },
+        FIELD_OPTS,
       );
     }
 
@@ -332,6 +189,7 @@ export class TomlFormEditor {
           collapsed,
           () => { this._collapsed[colKey] = !collapsed; this._render(); },
           (k, v) => { this._data.__aot__[name][idx][k] = v; },
+          FIELD_OPTS,
         );
       });
     }

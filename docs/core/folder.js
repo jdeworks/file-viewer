@@ -10,7 +10,7 @@ import { buildTree, renderTree } from './filetree.js';
 import { intakeFromFile, intakeFromText } from './intake.js';
 import { exportFolderZip } from './folder-export.js';
 import { downloadBlob } from './exports.js';
-import { repackZip } from '../types/zip/ziplib.js';
+import { repackZipWithDeletions } from './repack.js';
 import { recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
 
 // Injected core-flow callbacks (set once by app.js init()).
@@ -266,15 +266,16 @@ async function repackArchive() {
   if (!state.archiveIntake) { toast('Cannot repack: original archive not available.'); return; }
   const textEdits = state.folderEdits || new Map();
   const binaryEdits = state.binaryEdits || new Map();
-  if (textEdits.size === 0 && binaryEdits.size === 0) { toast('No edits to export yet.'); return; }
+  const deletions = state.archiveDeletes || new Set();
+  if (textEdits.size === 0 && binaryEdits.size === 0 && deletions.size === 0) { toast('No edits or deletions to export yet.'); return; }
   try {
     toast('Repacking archive…', 1500);
-    const blob = await repackZip(state.archiveIntake, textEdits, binaryEdits);
+    const blob = await repackZipWithDeletions(state.archiveIntake, { textEdits, binaryEdits, deletions });
     const base = ($('ftRoot').textContent || 'archive').replace(/[^\w.-]+/g, '_');
     downloadBlob(blob, 'edited-' + base);
     state.folderExported = true;
-    const n = textEdits.size + binaryEdits.size;
-    toast('Archive saved with ' + n + ' edit' + (n === 1 ? '' : 's') + '.');
+    const n = textEdits.size + binaryEdits.size + deletions.size;
+    toast('Archive saved with ' + n + ' change' + (n === 1 ? '' : 's') + '.');
   } catch (e) {
     toast('Could not repack archive: ' + e.message);
   }

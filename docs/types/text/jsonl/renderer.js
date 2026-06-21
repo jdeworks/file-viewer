@@ -1,3 +1,8 @@
+// JSONL preview: one record per line → a uniform table (schema-detected) or JSON blocks.
+// The live preview carries an optional property/JSONPath filter panel (core/query-panel.js)
+// that highlights/filters matching records; a static bodyHtml is also returned for screenshots.
+import { createQueryPanel, jsonPathQuery } from '../../../core/query-panel.js';
+
 const MAX_ROWS = 500;
 const SCHEMA_THRESHOLD = 0.5;
 
@@ -56,21 +61,20 @@ export async function render(intake, _ctx) {
 
   let bodyHtml;
   if (schema && schema.length > 0) {
-    // Table view
+    // Table view — each row carries data-qp-rec = its record index for filtering.
     const cols = schema.slice(0, 20);
     const thead = '<tr>' + cols.map((k) => '<th>' + esc(k) + '</th>').join('') + '</tr>';
-    const tbody = shown.map((r) => {
+    const tbody = shown.map((r, i) => {
       if (!r || typeof r !== 'object' || Array.isArray(r)) {
-        return '<tr><td colspan="' + cols.length + '">' + esc(JSON.stringify(r)) + '</td></tr>';
+        return '<tr data-qp-rec="' + i + '"><td colspan="' + cols.length + '">' + esc(JSON.stringify(r)) + '</td></tr>';
       }
-      return '<tr>' + cols.map((k) => '<td>' + cellVal(r[k]) + '</td>').join('') + '</tr>';
+      return '<tr data-qp-rec="' + i + '">' + cols.map((k) => '<td>' + cellVal(r[k]) + '</td>').join('') + '</tr>';
     }).join('');
     bodyHtml = '<table class="jsonl-table"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table>'
       + (truncated ? '<p class="jsonl-note">Showing first ' + MAX_ROWS + ' of ' + records.length + ' records.</p>' : '');
   } else if (records.length > 0) {
-    // Fallback: formatted JSON blocks
-    bodyHtml = shown.map((r) =>
-      '<pre class="jsonl-block">' + esc(JSON.stringify(r, null, 2)) + '</pre>'
+    bodyHtml = shown.map((r, i) =>
+      '<pre class="jsonl-block" data-qp-rec="' + i + '">' + esc(JSON.stringify(r, null, 2)) + '</pre>'
     ).join('')
       + (truncated ? '<p class="jsonl-note">Showing first ' + MAX_ROWS + ' of ' + records.length + ' records.</p>' : '');
   } else {
@@ -84,8 +88,41 @@ export async function render(intake, _ctx) {
     + (schema ? '<span class="jsonl-stat"><strong>' + schema.length + '</strong> shared keys</span>' : '')
     + '</div>';
 
-  return {
-    hadUnsafe: false,
-    bodyHtml: '<div class="jsonl-preview">' + summary + errHtml + bodyHtml + '</div>',
-  };
+  const previewHtml = '<div class="jsonl-preview">' + summary + errHtml + bodyHtml + '</div>';
+
+  // Live preview: records + property/JSONPath filter panel. Filter a record if ANY of its
+  // shown JSONPath results contains the (case-insensitive) query value, or the path matches.
+  const host = document.createElement('div');
+  host.className = 'qp-preview jsonl-qp';
+  host.innerHTML = previewHtml;
+  const recRoot = host.querySelector('.jsonl-preview');
+  const panel = createQueryPanel({
+    placeholder: "Filter records… e.g. status  or  $.user.id  or  error",
+    hint: 'Match records by JSONPath ($.a.b, $..key) or a bare key/substring',
+    root: recRoot,
+    filterUnit: '[data-qp-rec]',
+    evaluate(query) {
+      const q = query.trim();
+      const set = new Set();
+      const usesPath = /[.$[\]]/.test(q);
+      shown.forEach((rec, i) => {
+        let hit = false;
+        if (usesPath) {
+          try { hit = jsonPathQuery(rec, q).length > 0; } catch { hit = false; }
+        } else {
+          // Bare token: match a key name OR a substring of any stringified value.
+          const lc = q.toLowerCase();
+          hit = JSON.stringify(rec).toLowerCase().includes(lc);
+        }
+        if (hit) {
+          const row = recRoot.querySelector('[data-qp-rec="' + i + '"]');
+          if (row) set.add(row);
+        }
+      });
+      return set;
+    },
+  });
+  host.prepend(panel.el);
+
+  return { parentNode: host, bodyHtml: previewHtml, hadUnsafe: false };
 }

@@ -90,6 +90,30 @@ export async function run(ctx) {
   ]);
   if (/^edited-/.test(repackDl.suggestedFilename())) pass('archive repacked and downloaded (' + repackDl.suggestedFilename() + ')'); else fail('repack filename: ' + repackDl.suggestedFilename());
 
+  // ── Archive per-file delete → repack ── checklist marks an entry; repack drops it. ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.zip');
+  await page.waitForSelector('#fileTree:not([hidden]) #ftBody .ft-file', { timeout: 8000 });
+  const delPanel = await page.$('.arc-del-panel .arc-del-toggle');
+  if (delPanel) pass('archive delete panel shown for zip'); else fail('archive delete panel missing');
+  await page.click('.arc-del-panel .arc-del-toggle');
+  await page.waitForSelector('.arc-del-list .arc-del-cb', { timeout: 4000 });
+  await page.check('.arc-del-list .arc-del-cb[data-path="README.txt"]');
+  const markedCount = await page.evaluate(() => window.__fv.state.archiveDeletes.size);
+  if (markedCount === 1) pass('archive entry marked for deletion'); else fail('archiveDeletes size: ' + markedCount);
+  const [delDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 12000 }),
+    page.click('#ftExportBtn'),
+  ]);
+  if (/^edited-/.test(delDl.suggestedFilename())) pass('archive repacked with deletion downloaded (' + delDl.suggestedFilename() + ')'); else fail('delete repack filename: ' + delDl.suggestedFilename());
+  // Verify the deleted entry is gone: its filename no longer appears in the repacked zip bytes.
+  const delGone = await delDl.path().then(async (p) => {
+    const { readFile } = await import('node:fs/promises');
+    const buf = await readFile(p);
+    return !buf.includes(Buffer.from('README.txt'));
+  }).catch(() => null);
+  if (delGone === true) pass('repacked zip omits the deleted entry'); else fail('deleted entry still present in repacked zip');
+
   // ── 7z archive ── with enableArchiveWasm off, shows the opt-in hint panel.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.7z');

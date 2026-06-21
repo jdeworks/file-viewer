@@ -76,11 +76,64 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
   }
 
   state.archiveOpenNode = openArchiveNode;
+  state.archiveDeletes = new Set();
   state.treeApi = renderTree($('ftBody'), buildTree(entries), {
     onOpen: openArchiveNode,
     onMove: null,
   });
+  if (archiveIntake) mountDeletePanel(entries);
   setTree(true);
+}
+
+// Per-entry delete checklist for archive repack. Lives in the sidebar below the tree; checked
+// entries are dropped when the archive is repacked + downloaded (#ftExportBtn). Additive — the
+// original archive download is never removed.
+function mountDeletePanel(entries) {
+  const host = $('ftBody');
+  if (!host) return;
+  document.querySelector('.arc-del-panel')?.remove();   // drop any stale panel from a prior archive
+  const panel = document.createElement('div');
+  panel.className = 'arc-del-panel';
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'arc-del-toggle';
+  toggle.textContent = '🗑 Delete entries…';
+  toggle.setAttribute('aria-expanded', 'false');
+
+  const list = document.createElement('div');
+  list.className = 'arc-del-list';
+  list.hidden = true;
+
+  for (const entry of entries) {
+    const row = document.createElement('label');
+    row.className = 'arc-del-row';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'arc-del-cb';
+    cb.dataset.path = entry.path;
+    cb.addEventListener('change', () => {
+      if (cb.checked) state.archiveDeletes.add(entry.path);
+      else state.archiveDeletes.delete(entry.path);
+      state.folderExported = false;   // a deletion is unsaved work until exported
+      row.classList.toggle('arc-del-marked', cb.checked);
+      const n = state.archiveDeletes.size;
+      toggle.textContent = n ? `🗑 ${n} marked for deletion` : '🗑 Delete entries…';
+    });
+    const name = document.createElement('span');
+    name.className = 'arc-del-name';
+    name.textContent = entry.path;
+    row.append(cb, name);
+    list.append(row);
+  }
+
+  toggle.addEventListener('click', () => {
+    list.hidden = !list.hidden;
+    toggle.setAttribute('aria-expanded', String(!list.hidden));
+  });
+
+  panel.append(toggle, list);
+  host.parentNode?.insertBefore(panel, host.nextSibling);
 }
 
 export function clearArchiveTree() {
@@ -91,5 +144,7 @@ export function clearArchiveTree() {
   state.archiveOpenNode = null;
   state.archiveIntake = null;
   state.binaryEdits = null;
+  state.archiveDeletes = null;
+  document.querySelector('.arc-del-panel')?.remove();
   setTree(false);
 }
