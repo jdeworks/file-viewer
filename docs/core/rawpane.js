@@ -24,6 +24,7 @@ import { setJsonToolsVisible, wireJsonTools, setYamlToolsVisible, wireYamlTools,
   setTextUtilsVisible, wireTextUtils } from './rawpane-toolbars.js';
 import { runMarkdownAction, closeTablePicker, onMarkdownContextMenu } from './rawpane-markdown.js';
 import { showEditDisclaimer, showAutosaveBanner, updateWordCount, hideWordCount } from './rawpane-banners.js';
+import { applyEditorMode } from './editor-mode.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
@@ -81,6 +82,10 @@ function wireMarkdownTools() {
 }
 
 function updateWysiwygBtn() {
+  // The WYSIWYG editor already shows the rendered+editable document, so it runs full-width with
+  // the preview pane hidden (applyLayout reads state.wysiwygActive to force raw mode). Without this
+  // the preview pane renders the same markdown next to the editor — a confusing duplicate.
+  state.wysiwygActive = wysiwygMode;
   const btn = document.getElementById('wysiwygBtn');
   if (!btn) return;
   btn.classList.toggle('active', wysiwygMode);
@@ -110,13 +115,15 @@ export async function toggleWysiwyg({ skipPersist = false } = {}) {
         state.sessionEdits.set(state.intake.filename, value);
         state.treeApi?.setEdited?.(state.intake.filename, true);
       }
-      if (state.type?.capabilities.preview) await renderPreview();
+      // Preview pane is hidden while WYSIWYG is full-screen, so don't re-render it per keystroke;
+      // buildRawView() re-renders it when the user switches back to the code editor.
       updateWordCount(value, 'markdown');
     });
     if (!skipPersist && state.settingsModel) {
       state.settingsModel.values.markdownEditor = 'wysiwyg';
       persistTypeKey('markdown', 'markdownEditor', 'wysiwyg');
     }
+    applyLayout();   // go full-width: hide the now-redundant preview pane
   } else {
     // Switching BACK to Monaco: capture EasyMDE text, unmount, rebuild rawview.
     const text = getWysiwygValue();
@@ -191,6 +198,9 @@ export async function buildRawView() {
       : undefined,
   });
   if (!state.intake.isBinary) state.rawview.addCommand?.('ctrl+s', downloadCurrent);
+  // Editor mode for Monaco-backed code types (code/dockerfile/dxf/gcode): explicitly editable
+  // Monaco + Ctrl+S download. Additive — read view + Download button are untouched.
+  applyEditorMode(state.rawview, state.type, { isBinary: state.intake.isBinary, onSave: downloadCurrent });
   wireMarkdownTools();
   setMarkdownToolsVisible(state.type?.id === 'markdown' && !state.intake.isBinary);
   if (state.type?.id === 'markdown' && !state.intake.isBinary) {

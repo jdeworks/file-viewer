@@ -72,14 +72,18 @@ export function applyLayout() {
   const both = caps.rawView && hasPreview;
   // Forced view for single-surface types: preview-only -> preview, raw-only -> raw.
   const forced = hasPreview && !caps.rawView ? 'preview' : 'raw';
+  // The markdown WYSIWYG editor is the rendered+editable document, so it runs full-width with the
+  // preview hidden — force 'raw' and hide the view-mode switcher regardless of the saved mode.
+  const wysiwyg = !!state.wysiwygActive;
   const panes = $('panes');
   if (isMobile()) {
     panes.removeAttribute('data-mode');
-    panes.setAttribute('data-tab', both ? state.tab : forced);
+    panes.setAttribute('data-tab', wysiwyg ? 'raw' : (both ? state.tab : forced));
   } else {
     panes.removeAttribute('data-tab');
-    panes.setAttribute('data-mode', both ? state.mode : forced);
+    panes.setAttribute('data-mode', wysiwyg ? 'raw' : (both ? state.mode : forced));
   }
+  const vm = $('viewMode'); if (vm) vm.hidden = wysiwyg || !both || isMobile();
   document.querySelectorAll('#viewMode button').forEach((b) => b.classList.toggle('active', b.dataset.mode === state.mode));
   document.querySelectorAll('#tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.mode === state.tab));
   applyPreviewPaneWidth();
@@ -92,7 +96,7 @@ const MIN_EDITOR_PX = 380, DIVIDER_PX = 6;
 export function applyPreviewPaneWidth() {
   const caps = state.type?.capabilities;
   const both = caps && caps.rawView && caps.preview;
-  const splitActive = both && !isMobile() && state.mode === 'split';
+  const splitActive = both && !isMobile() && state.mode === 'split' && !state.wysiwygActive;
   $('splitDivider').hidden = !splitActive;
   const previewPane = $('previewPane'), rawPane = $('rawPane');
   if (!splitActive) { previewPane.style.flex = ''; rawPane.style.flex = ''; return; }

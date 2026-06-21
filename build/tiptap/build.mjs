@@ -18,7 +18,8 @@ const outfile = resolve(repoRoot, 'docs/vendor/tiptap/tiptap.esm.js');
 // Pin the versions actually installed so the bundle header documents them.
 const pkgLock = JSON.parse(readFileSync(resolve(here, 'package-lock.json'), 'utf8'));
 const v = (name) => pkgLock.packages?.[`node_modules/${name}`]?.version ?? '?';
-const versions = ['@tiptap/core', '@tiptap/starter-kit', '@tiptap/extension-table', '@tiptap/markdown', '@tiptap/pm']
+const versions = ['@tiptap/core', '@tiptap/starter-kit', '@tiptap/extension-table',
+  '@tiptap/extension-task-list', '@tiptap/extension-task-item', '@tiptap/markdown', '@tiptap/pm']
   .map((n) => `//   ${n}@${v(n)}`).join('\n');
 
 const banner = `// VENDORED — DO NOT EDIT BY HAND.

@@ -11,3 +11,8 @@ export { Editor } from '@tiptap/core';
 export { default as StarterKit } from '@tiptap/starter-kit';
 export { TableKit } from '@tiptap/extension-table';
 export { Markdown } from '@tiptap/markdown';
+// GFM task lists (`- [ ]` / `- [x]`): omitted by StarterKit. TaskList is the
+// list container, TaskItem the checkable item; the Markdown extension recognizes
+// the taskList/taskItem node names and round-trips them as GFM checkboxes.
+export { TaskList } from '@tiptap/extension-task-list';
+export { TaskItem } from '@tiptap/extension-task-item';

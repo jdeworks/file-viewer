@@ -35,7 +35,7 @@ function injectCssOnce() {
 export async function mountWysiwyg(container, text, onChange) {
   unmountWysiwyg();
   injectCssOnce();
-  const { Editor, StarterKit, TableKit, Markdown } = await loadTiptap();
+  const { Editor, StarterKit, TableKit, TaskList, TaskItem, Markdown } = await loadTiptap();
   container.innerHTML = '';
   const host = document.createElement('div');
   host.className = 'tiptap-host';
@@ -46,6 +46,11 @@ export async function mountWysiwyg(container, text, onChange) {
     extensions: [
       StarterKit.configure({ link: { openOnClick: false } }),
       TableKit.configure({ table: { resizable: true } }),
+      // GFM task lists: TaskList container + checkable TaskItem (nested allowed).
+      // The Markdown extension recognizes the taskList/taskItem nodes and
+      // round-trips them as `- [ ]` / `- [x]`.
+      TaskList,
+      TaskItem.configure({ nested: true }),
       Markdown,
     ],
     autofocus: true,
@@ -108,6 +113,7 @@ export function runWysiwygCommand(action) {
     case 'blockquote': c.toggleBlockquote().run(); return true;
     case 'bullet-list': c.toggleBulletList().run(); return true;
     case 'ordered-list': c.toggleOrderedList().run(); return true;
+    case 'task-list': c.toggleTaskList().run(); return true;
     case 'heading': c.toggleHeading({ level: 1 }).run(); return true;
     default: return false;
   }

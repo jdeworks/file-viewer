@@ -13,6 +13,35 @@ import { isWysiwygActive, runWysiwygCommand, insertWysiwygMarkdown } from '../ty
 let tablePicker = null;
 let markdownContextMenu = null;
 
+// Inject the GFM task-list (checkbox) toolbar button into #markdownTools. The
+// button markup lives here (not index.html) because the toolbar is owned by app
+// agents; the delegated [data-md-action] handler in rawpane.js routes it like
+// the other list buttons. Idempotent: runs once when the container exists.
+function ensureTaskListButton() {
+  const bar = document.getElementById('markdownTools');
+  if (!bar || bar.querySelector('[data-md-action="task-list"]')) return;
+  const ordered = bar.querySelector('[data-md-action="ordered-list"]');
+  if (!ordered) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'md-btn';
+  btn.dataset.mdAction = 'task-list';
+  btn.title = 'Task list (checkboxes)';
+  btn.textContent = '☑'; // ☑ ballot box with check
+  ordered.insertAdjacentElement('afterend', btn);
+}
+ensureTaskListButton();
+if (typeof document !== 'undefined' && document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', ensureTaskListButton, { once: true });
+}
+
+// Source-mode (Monaco) helper: prefix non-empty lines with a GFM checkbox.
+function markdownTaskList(text) {
+  return String(text || '').split('\n')
+    .map((line) => (line.trim() ? '- [ ] ' + line : line))
+    .join('\n');
+}
+
 export function closeTablePicker() {
   if (tablePicker) { tablePicker.remove(); tablePicker = null; }
 }
@@ -109,6 +138,8 @@ export function runMarkdownAction(action, btn) {
     state.rawview.transformSelection((text) => markdownBulletList(text), { expandToLines: true, source: 'markdown-bullet-list' });
   } else if (action === 'ordered-list') {
     state.rawview.transformSelection((text) => markdownOrderedList(text), { expandToLines: true, source: 'markdown-ordered-list' });
+  } else if (action === 'task-list') {
+    state.rawview.transformSelection((text) => markdownTaskList(text), { expandToLines: true, source: 'markdown-task-list' });
   } else if (action === 'table') {
     if (tablePicker) { closeTablePicker(); return; }
     showTablePicker(btn || $('mdTableBtn'));

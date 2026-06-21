@@ -120,6 +120,31 @@ export async function run(ctx) {
     && /\[link\]\(https:\/\/example\.com\)/.test(roundTripped);
   if (rtOk) pass('WYSIWYG: markdown round-trips through TipTap');
   else fail('WYSIWYG round-trip lost fidelity: ' + JSON.stringify(roundTripped));
+
+  // ── GFM task lists (checkboxes) ── parse → checkable TaskItems → serialize ──
+  const taskMd = '# Tasks\n\n- [ ] task\n- [x] done';
+  await page.evaluate((md) => window.__fv.state.rawview.setValue(md), taskMd);
+  await page.evaluate(() => document.getElementById('wysiwygBtn').click());
+  await page.waitForSelector('#editor .tiptap-host .ProseMirror', { state: 'attached', timeout: 15000 });
+  // GFM `- [ ]`/`- [x]` must mount as a taskList with checkbox <input>s, one checked.
+  const taskMounted = await page.evaluate(() => {
+    const list = document.querySelector('#editor .tiptap-host ul[data-type="taskList"]');
+    if (!list) return false;
+    const items = list.querySelectorAll('li[data-type="taskItem"], li[data-checked]');
+    const boxes = list.querySelectorAll('input[type="checkbox"]');
+    const checked = list.querySelectorAll('li[data-checked="true"]').length;
+    return items.length >= 2 && boxes.length >= 2 && checked === 1;
+  });
+  if (taskMounted) pass('WYSIWYG: GFM task list mounts as checkable TaskItems (1 checked)');
+  else fail('WYSIWYG: task list did not mount as checkable items');
+  // Serialize back: must emit `- [ ]` and `- [x]` GFM checkboxes.
+  await page.evaluate(() => document.getElementById('wysiwygBtn').click());
+  await page.waitForSelector('#editor .monaco-editor', { state: 'attached', timeout: 15000 });
+  const taskRt = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  const taskRtOk = /- \[ \] task/.test(taskRt) && /- \[x\] done/.test(taskRt);
+  if (taskRtOk) pass('WYSIWYG: task list round-trips to `- [ ]`/`- [x]` markdown');
+  else fail('WYSIWYG: task list round-trip lost GFM checkboxes: ' + JSON.stringify(taskRt));
+
   await page.evaluate(() => {
     window.__fv.state.downloadedSinceEdit = true;
     window.__fv.state.sessionEdits.clear();
@@ -459,4 +484,23 @@ export async function run(ctx) {
   pass('side-by-side: both files rendered independently');
   await page.click('.sbs-close');
   if (!(await page.$('.sbs-overlay'))) pass('side-by-side closes'); else fail('sbs did not close');
+
+  // ── Editor mode for Monaco code types (gcode): editable Monaco + Ctrl+S download ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('sample.gcode');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 20000 });
+  const gcodeEditable = await page.evaluate(() => {
+    const rv = window.__fv.state.rawview; const before = rv.getValue();
+    rv.setValue(before + '\n; editor-mode test'); const after = rv.getValue();
+    rv.setValue(before); return after !== before;
+  });
+  if (gcodeEditable) pass('editor mode: gcode Monaco is editable (readOnly off)'); else fail('gcode editor not editable');
+  // Ctrl+S triggers a download with the filename preserved (the editor-mode save binding).
+  await page.evaluate(() => { const rv = window.__fv.state.rawview; rv.setValue(rv.getValue() + '\n; saved'); });
+  await page.waitForTimeout(300);
+  const [gcodeDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.evaluate(() => window.__fv.downloadCurrent()),
+  ]);
+  if (/\.gcode$/.test(gcodeDl.suggestedFilename())) pass('editor mode: gcode Ctrl+S/download preserves filename (' + gcodeDl.suggestedFilename() + ')'); else fail('gcode download name: ' + gcodeDl.suggestedFilename());
 }

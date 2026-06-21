@@ -162,6 +162,38 @@ export function getTypeInfo(type, known = null, intake = null) {
   };
 }
 
+// Per-type editing surfaces not captured by the generic capability flags.
+const EDIT_SURFACES = {
+  markdown: 'Visual WYSIWYG editor (TipTap) with a formatting toolbar',
+  html: 'Visual WYSIWYG HTML editor',
+  csv: 'Spreadsheet-style table editor (edit cells in a grid)',
+  env: 'Form editor — add / edit / remove variables',
+  ini: 'Form editor — sections and key/value pairs',
+  toml: 'Form editor — tables and typed values',
+  yaml: 'Form editor — edit fields in a tree',
+  office: 'Cell / rich-text editing with download-on-save',
+  sqlite: 'Run SQL, edit rows, and download the modified database',
+};
+
+// "What you can do here" — a runtime, capability-driven feature list for the About modal.
+// Derived from the type's declared capabilities + a few known editing surfaces, so it stays
+// honest and automatically reflects features as they ship (e.g. a type gaining loadExports).
+export function getTypeFeatures(type, known) {
+  if (!type) return [];
+  const caps = type.capabilities || {};
+  const feats = [];
+  if (caps.preview) feats.push(['Rendered preview', 'See the file rendered, not just as raw text.']);
+  if (caps.rawView) feats.push(['Source editor', 'Edit the raw text (Monaco); save with Download / Ctrl+S.']);
+  if (EDIT_SURFACES[type.id]) feats.push(['Visual editing', EDIT_SURFACES[type.id]]);
+  if (type.loadExports) feats.push(['Export / convert', 'Download the content in other formats.']);
+  if (caps.diff) feats.push(['Compare', 'Diff two versions side by side.']);
+  if (caps.screenshot) feats.push(['Screenshot', 'Export the rendered view as a PNG image.']);
+  if (caps.magicSelector) feats.push(['Region select', 'Select or extract regions interactively.']);
+  if (known && (known.label || known.id)) feats.push(['Enhanced view', `Recognized as ${known.label || known.id} — a tailored summary view.`]);
+  feats.push(['Download original', 'The original file can always be downloaded unchanged.']);
+  return feats;
+}
+
 export function sampleDescription(example, info) {
   const label = example.label || example.file || 'Sample file';
   const typeName = info?.name || 'file';

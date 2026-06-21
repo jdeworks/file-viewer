@@ -1,9 +1,11 @@
 export function extractMetadata(intake) {
   const text = intake.text || '';
   const lines = text.split(/\r?\n/);
+  const lineCount = lines.length;
   let printTime = null, filamentMm = null, layerCount = 0, layerHeight = null;
   let slicer = null, nozzleTemp = null, bedTemp = null;
   let xMax = 0, yMax = 0, zMax = 0;
+  let units = null; // G20 = inch, G21 = mm
 
   for (const line of lines) {
     const t = line.trim();
@@ -20,6 +22,7 @@ export function extractMetadata(intake) {
       }
     }
     const u = t.toUpperCase();
+    if (!units) { if (/^G20\b/.test(u)) units = 'inch'; else if (/^G21\b/.test(u)) units = 'mm'; }
     if (!nozzleTemp) { const m = u.match(/^M1(?:04|09)\s+S(\d+)/); if (m) nozzleTemp = parseInt(m[1]); }
     if (!bedTemp) { const m = u.match(/^M1(?:40|90)\s+S(\d+)/); if (m) bedTemp = parseInt(m[1]); }
     if (/^G[01]\s/i.test(u)) {
@@ -29,6 +32,6 @@ export function extractMetadata(intake) {
     }
   }
 
-  return { layerCount: layerCount || null, printTime, filamentMm, slicerName: slicer, nozzleTemp, bedTemp,
+  return { layerCount: layerCount || null, lineCount, units, printTime, filamentMm, slicerName: slicer, nozzleTemp, bedTemp,
     estimatedWidth: xMax || null, estimatedDepth: yMax || null, estimatedHeight: zMax || null };
 }

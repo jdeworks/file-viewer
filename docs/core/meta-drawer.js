@@ -1,7 +1,7 @@
 // Metadata drawer: a small table of the active file's facts (name/type/size/mime/modified) plus any
 // per-type extracted metadata (EXIF, ID3, PDF info, …). Extracted from app.js; reads shared state.
 import { state, $, escapeHtml, formatBytes } from './state.js';
-import { getTypeInfo } from './type-info.js';
+import { getTypeInfo, getTypeFeatures } from './type-info.js';
 import { genericMetadata } from './generic-metadata.js';
 import { META_SECTIONS } from './metadata-helpers.js';
 
@@ -144,6 +144,30 @@ function showTypeInfoModal(info, known) {
     linksRow.appendChild(exLink);
   }
   bodyEl.appendChild(linksRow);
+
+  // "What you can do here" — available features for this type/file (capability-driven).
+  const feats = getTypeFeatures(state.type, known);
+  if (feats.length) {
+    const featSection = document.createElement('div');
+    featSection.className = 'type-info-features';
+    featSection.style.marginTop = '14px';
+    const featHead = document.createElement('h3');
+    featHead.textContent = 'What you can do here';
+    featSection.appendChild(featHead);
+    const ul = document.createElement('ul');
+    ul.className = 'type-info-feature-list';
+    ul.style.cssText = 'margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.55;';
+    for (const [label, detail] of feats) {
+      const li = document.createElement('li');
+      li.style.marginBottom = '3px';
+      const strong = document.createElement('strong');
+      strong.textContent = label;
+      li.append(strong, document.createTextNode(' — ' + detail));
+      ul.appendChild(li);
+    }
+    featSection.appendChild(ul);
+    bodyEl.appendChild(featSection);
+  }
 
   // Plugin details
   if (known && known.about) {

@@ -4,7 +4,7 @@ export async function run(ctx) {
   // ── JSON ↔ YAML conversion exports (loadExports) ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.json');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  await page.waitForSelector('#previewHost .json-tree', { timeout: 30000 });
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
   const jsonExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
@@ -54,4 +54,18 @@ export async function run(ctx) {
     page.click('#exportMenu .export-item:has-text("Download as JSON")'),
   ]);
   if (/\.json$/.test(tjDl.suggestedFilename())) pass('TOML → JSON download (' + tjDl.suggestedFilename() + ')'); else fail('toml→json: ' + tjDl.suggestedFilename());
+
+  // ── OFX → CSV transaction export (loadExports) ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('sample.ofx');
+  await page.waitForSelector('#previewHost .ofx-preview', { timeout: 8000 });
+  await page.click('#exportBtn');
+  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
+  const ofxExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
+  if (ofxExports.some((t) => /CSV/i.test(t))) pass('OFX export menu offers CSV'); else fail('ofx exports: ' + ofxExports.join(','));
+  const [ofxDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#exportMenu .export-item:has-text("CSV")'),
+  ]);
+  if (/\.csv$/.test(ofxDl.suggestedFilename())) pass('OFX → CSV download (' + ofxDl.suggestedFilename() + ')'); else fail('ofx→csv: ' + ofxDl.suggestedFilename());
 }
