@@ -552,6 +552,40 @@ export async function run(ctx) {
     return { inlineShown: !!inline && !inline.hidden, inlineText: inline?.textContent || '', barHidden: !bar || bar.hidden };
   });
   if (countLayout.inlineShown && /chars/.test(countLayout.inlineText) && countLayout.barHidden) pass('text utils: line/char count shown inline on the toolbar row (no separate bar)'); else fail('count layout: ' + JSON.stringify(countLayout));
+
+  // ── Trim variants (trim / ltrim / rtrim) + whitespace-vs-lines mode (remembered) ──
+  // Default mode = whitespace only: Trim R strips trailing whitespace but keeps blank lines.
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:textutil:trimMode', 'ws'); } catch {}
+    const rv = window.__fv.state.rawview; rv.setValue('a  \n\nb  '); rv.setSelection(1, 1, 1, 1);
+  });
+  await page.evaluate(() => document.querySelector('#textUtils [data-textutil="rtrim"]').click());
+  const rtrimmed = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (rtrimmed === 'a\n\nb') pass('text utils: Trim R strips trailing whitespace, keeps blank lines'); else fail('rtrim: ' + JSON.stringify(rtrimmed));
+  // Trim L strips leading whitespace per line.
+  await page.evaluate(() => { const rv = window.__fv.state.rawview; rv.setValue('  a\n   b'); rv.setSelection(1, 1, 1, 1); });
+  await page.evaluate(() => document.querySelector('#textUtils [data-textutil="ltrim"]').click());
+  const ltrimmed = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (ltrimmed === 'a\nb') pass('text utils: Trim L strips leading whitespace'); else fail('ltrim: ' + JSON.stringify(ltrimmed));
+  // Mode = whitespace + blank lines: Trim also drops blank lines.
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:textutil:trimMode', 'ws+lines'); } catch {}
+    const rv = window.__fv.state.rawview; rv.setValue('a  \n   \nb'); rv.setSelection(1, 1, 1, 1);
+  });
+  await page.evaluate(() => document.querySelector('#textUtils [data-textutil="trim"]').click());
+  const trimDropped = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (trimDropped === 'a\nb') pass('text utils: Trim in "whitespace + lines" mode drops blank lines'); else fail('trim+lines: ' + JSON.stringify(trimDropped));
+  // The mode split-button opens a dropdown; picking an option persists to localStorage + updates the label.
+  await page.evaluate(() => { try { localStorage.setItem('fv:textutil:trimMode', 'ws'); } catch {} });
+  await page.click('#trimModeBtn');
+  await page.waitForSelector('.tu-mode-menu', { timeout: 4000 });
+  await page.click('.tu-mode-item:has-text("blank lines")');
+  const modePersist = await page.evaluate(() => ({
+    ls: (() => { try { return localStorage.getItem('fv:textutil:trimMode'); } catch { return null; } })(),
+    label: document.getElementById('trimModeBtn')?.textContent || '',
+  }));
+  if (modePersist.ls === 'ws+lines' && /lines/i.test(modePersist.label)) pass('text utils: trim-mode split button persists choice (localStorage) + updates label'); else fail('trim mode persist: ' + JSON.stringify(modePersist));
+
   await page.evaluate(() => { window.__fv.state.downloadedSinceEdit = true; window.__fv.state.sessionEdits.clear(); });
 
   // ── Type documentation opens as a centered modal dialog (not a side drawer) ──

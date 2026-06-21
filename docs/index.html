@@ -210,7 +210,11 @@
             <button class="md-btn" data-textutil="sortAsc" title="Sort lines A → Z">Sort ↑</button>
             <button class="md-btn" data-textutil="sortDesc" title="Sort lines Z → A">Sort ↓</button>
             <span class="md-sep"></span>
-            <button class="md-btn" data-textutil="trim" title="Remove trailing whitespace from each line">Trim</button>
+            <button class="md-btn" data-textutil="trim" title="Trim whitespace from both ends of each line">Trim</button>
+            <button class="md-btn" data-textutil="ltrim" title="Trim leading whitespace from each line">Trim L</button>
+            <button class="md-btn" data-textutil="rtrim" title="Trim trailing whitespace from each line">Trim R</button>
+            <button class="md-btn tu-mode-btn" id="trimModeBtn" type="button" aria-haspopup="menu" title="Whether trimming also drops blank lines (remembered)">Whitespace ▾</button>
+            <span class="md-sep"></span>
             <button class="md-btn" data-textutil="dedup" title="Remove duplicate lines (keeps first occurrence)">Dedup</button>
             <span class="md-sep"></span>
             <button class="md-btn" data-textutil="b64encode" title="Encode selection (or full text) as Base64">B64 ↑</button>

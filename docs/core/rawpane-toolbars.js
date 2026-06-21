@@ -258,22 +258,90 @@ export function wireTextUtils() {
   if (!el || el.dataset.wired) return;
   el.dataset.wired = '1';
   el.addEventListener('click', (e) => {
+    // The trim-mode split button opens its own dropdown, not a text-util action.
+    if (e.target.closest('#trimModeBtn')) { toggleTrimModeMenu($('trimModeBtn')); return; }
     const btn = e.target.closest('[data-textutil]');
     if (!btn) return;
     applyTextUtil(btn.dataset.textutil);
   });
+  updateTrimModeLabel();
 }
+
+// ── Trim mode (whitespace-only vs. also drop blank lines), remembered in localStorage ──
+const TRIM_MODE_KEY = 'fv:textutil:trimMode';
+function getTrimMode() {
+  try { return localStorage.getItem(TRIM_MODE_KEY) === 'ws+lines' ? 'ws+lines' : 'ws'; }
+  catch { return 'ws'; }
+}
+function setTrimMode(mode) {
+  try { localStorage.setItem(TRIM_MODE_KEY, mode); } catch { /* ignore */ }
+  updateTrimModeLabel();
+}
+function updateTrimModeLabel() {
+  const btn = $('trimModeBtn');
+  if (!btn) return;
+  const mode = getTrimMode();
+  btn.textContent = (mode === 'ws+lines' ? 'Whitespace + lines' : 'Whitespace') + ' ▾';
+  btn.dataset.mode = mode;
+}
+
+let _trimMenu = null;
+function closeTrimMenu() {
+  if (_trimMenu) { _trimMenu.remove(); _trimMenu = null; }
+  document.removeEventListener('mousedown', onTrimMenuOutside, true);
+}
+function onTrimMenuOutside(e) {
+  if (_trimMenu && !_trimMenu.contains(e.target) && e.target.id !== 'trimModeBtn') closeTrimMenu();
+}
+function toggleTrimModeMenu(btn) {
+  if (!btn) return;
+  if (_trimMenu) { closeTrimMenu(); return; }
+  const menu = document.createElement('div');
+  menu.className = 'tu-mode-menu';
+  for (const [mode, label] of [['ws', 'Trim whitespace'], ['ws+lines', 'Trim whitespace + blank lines']]) {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'tu-mode-item' + (getTrimMode() === mode ? ' active' : '');
+    item.textContent = label;
+    item.addEventListener('click', () => { setTrimMode(mode); closeTrimMenu(); });
+    menu.appendChild(item);
+  }
+  document.body.appendChild(menu);
+  const r = btn.getBoundingClientRect();
+  menu.style.left = Math.round(r.left) + 'px';
+  menu.style.top = Math.round(r.bottom + 2) + 'px';
+  _trimMenu = menu;
+  setTimeout(() => document.addEventListener('mousedown', onTrimMenuOutside, true), 0);
+}
+
+// Per-line trim by direction. In 'ws+lines' mode, blank lines are dropped after trimming.
+const TRIM_DIR = {
+  trim: (s) => s.trim(),
+  ltrim: (s) => s.replace(/^\s+/, ''),
+  rtrim: (s) => s.replace(/\s+$/, ''),
+};
 
 // Whole-line transforms: each takes an array of lines and returns the transformed array.
 const LINE_TRANSFORMS = {
   sortAsc: (lines) => [...lines].sort((a, b) => a.localeCompare(b)),
   sortDesc: (lines) => [...lines].sort((a, b) => b.localeCompare(a)),
-  trim: (lines) => lines.map((l) => l.trimEnd()),
   dedup: (lines) => {
     const seen = new Set();
     return lines.filter((l) => (seen.has(l) ? false : (seen.add(l), true)));
   },
 };
+
+// Resolve an action to a lines→lines transform (sort/dedup static; trim variants read the mode).
+function lineTransformFor(action) {
+  if (LINE_TRANSFORMS[action]) return LINE_TRANSFORMS[action];
+  const dir = TRIM_DIR[action];
+  if (!dir) return null;
+  const dropBlank = getTrimMode() === 'ws+lines';
+  return (lines) => {
+    const out = lines.map(dir);
+    return dropBlank ? out.filter((l) => l.trim() !== '') : out;
+  };
+}
 
 function applyTextUtil(action) {
   if (!state.rawview) return;
@@ -282,7 +350,7 @@ function applyTextUtil(action) {
 
   // Line-based utilities: operate on the SELECTION when one exists (expanded to whole
   // lines), else the whole document — both via undoable Monaco edits so Ctrl+Z works.
-  const lineFn = LINE_TRANSFORMS[action];
+  const lineFn = lineTransformFor(action);
   if (lineFn) {
     const fn = (t) => lineFn(t.split('\n')).join('\n');
     const range = state.rawview.selectionRange?.();
