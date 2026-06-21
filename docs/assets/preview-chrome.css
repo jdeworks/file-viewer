@@ -158,6 +158,11 @@
 .imgv-bar button.active { border-color: var(--accent); color: var(--accent); }
 /* In ASCII mode the studio takes over — hide every toolbar item except the ASCII toggle. */
 .imgv-bar.imgv-ascii-on > *:not(.imgv-ascii-btn) { display: none !important; }
+/* Editing tools live in a collapsible group behind the 🛠 toggle (collapsed by
+   default on phones so the toolbar isn't a wall of buttons). */
+.imgv-edit-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.imgv-bar.imgv-tools-collapsed .imgv-edit-tools { display: none; }
+.imgv-bar.imgv-ascii-on .imgv-tools-btn { display: none !important; }
 .imgv-zoom { margin-left: auto; font-size: 12px; color: var(--fg-2); font-variant-numeric: tabular-nums; }
 .imgv-stage { position: relative; flex: 1; min-height: 0; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 12px; }
 .imgv-img { display: block; max-width: 100%; max-height: 100%; object-fit: contain;

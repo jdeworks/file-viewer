@@ -217,6 +217,12 @@ export async function run(ctx) {
   await page.waitForFunction(() => !!window.__fv.state.binaryEdit, null, { timeout: 5000 }).catch(() => {});
   const afterRedo = await page.evaluate(() => !!window.__fv.state.binaryEdit);
   if (afterRedo) pass('image redo re-applies edit'); else fail('redo did not re-apply edit');
+  // Toolbar declutter: the 🛠 toggle collapses the editing-tools group.
+  const toolsVisInit = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display !== 'none');
+  await page.click('#previewHost .imgv-tools-btn');
+  const toolsHidden = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display === 'none');
+  await page.click('#previewHost .imgv-tools-btn');   // restore for later steps
+  if (toolsVisInit && toolsHidden) pass('image editing tools collapse behind the 🛠 toggle'); else fail('tools toggle: ' + JSON.stringify({ toolsVisInit, toolsHidden }));
   await page.evaluate(() => window.__fv.downloadCurrent());
   const cleanAfterDownload = await page.evaluate(() => !window.__fv.hasUnsavedWork());
   if (cleanAfterDownload) pass('edited image download clears unsaved state'); else fail('edited image stayed dirty after download');

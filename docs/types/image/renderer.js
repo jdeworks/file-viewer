@@ -36,7 +36,9 @@ export async function render(intake, ctx = {}) {
     + '<span class="imgv-zoom"></span>'
     + '<span class="imgv-sep"></span>'
     + '<button class="imgv-ascii-btn" title="Open the ASCII art studio">ASCII</button>'
-    + (canEdit ? '<span class="imgv-sep"></span>'
+    + (canEdit ? '<button class="imgv-tools-btn" title="Show / hide editing tools">🛠 Edit</button>'
+      + '<span class="imgv-edit-tools">'
+      + '<span class="imgv-sep"></span>'
       + '<input class="imgv-text-input" type="text" placeholder="Text overlay" aria-label="Image text">'
       + '<input class="imgv-text-size" type="number" min="8" max="240" value="32" title="Font size">'
       + '<select class="imgv-text-font" title="Font family">'
@@ -102,7 +104,8 @@ export async function render(intake, ctx = {}) {
       + '<button class="imgv-resize-cancel">Cancel</button>'
       + '</span>'
       + '<button class="imgv-text-reset" title="Reset all edits" hidden>Reset</button>'
-      + '<span class="imgv-dirty-indicator" hidden style="color:var(--accent,#f59e0b);font-size:0.75em;align-self:center;">● Modified</span>' : '')
+      + '<span class="imgv-dirty-indicator" hidden style="color:var(--accent,#f59e0b);font-size:0.75em;align-self:center;">● Modified</span>'
+      + '</span>' : '')
     + '</div>'
     + '<div class="imgv-stage"><img class="imgv-img" draggable="false" alt="' + esc(intake.filename) + '"><div class="imgv-note" hidden></div></div>'
     + '<div class="imgv-ascii-out" hidden></div>';
@@ -215,10 +218,19 @@ export async function render(intake, ctx = {}) {
   // the same transform so brush coordinates stay aligned.
   let panX = 0, panY = 0;
   function applyPan() {
-    const t = (panX || panY) ? `translate(${panX}px, ${panY}px)` : '';
+    // Always keep a 3D transform so the <img> stays on a stable compositing layer.
+    // Some mobile WebViews don't repaint a transformed <img> when only its src
+    // changes (e.g. after a fill) unless the layer is stable + nudged — see
+    // nudgeRepaint() below. translate3d also GPU-accelerates the pan.
+    const t = `translate3d(${panX}px, ${panY}px, 0)`;
     img.style.transform = t;
     if (drawOverlay) drawOverlay.style.transform = t;
   }
+  // Force a recomposite after an edit swaps img.src (mobile stale-paint guard).
+  function nudgeRepaint() {
+    requestAnimationFrame(() => { void img.offsetWidth; img.style.transform = `translate3d(${panX}px, ${panY}px, 0.001px)`; requestAnimationFrame(applyPan); });
+  }
+  img.addEventListener('load', nudgeRepaint);
   function apply() {
     host.querySelector('.imgv-fit').classList.toggle('active', fit);
     if (fit || !natural) { img.style.width = ''; img.style.maxWidth = ''; img.style.maxHeight = ''; zoomLabel.textContent = 'fit'; }
@@ -338,6 +350,21 @@ export async function render(intake, ctx = {}) {
   }
 
   asciiBtn.addEventListener('click', toggleAscii);
+
+  // Editing toolbar is a lot of buttons; on phones collapse it behind a 🛠 toggle
+  // (like the top bar's overflow) so it doesn't clutter. Expanded by default on
+  // wide screens. The button classes are unchanged, so all wiring still resolves.
+  const toolsBtn = canEdit ? host.querySelector('.imgv-tools-btn') : null;
+  if (toolsBtn) {
+    const bar = host.querySelector('.imgv-bar');
+    const collapsed = window.matchMedia('(max-width: 720px)').matches;
+    bar.classList.toggle('imgv-tools-collapsed', collapsed);
+    toolsBtn.classList.toggle('active', !collapsed);
+    toolsBtn.addEventListener('click', () => {
+      const open = !bar.classList.toggle('imgv-tools-collapsed');
+      toolsBtn.classList.toggle('active', open);
+    });
+  }
 
   async function commitText(nx, ny) {
     const text = (editInput?.value || '').trim();
