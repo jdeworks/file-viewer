@@ -35,6 +35,14 @@ and regenerate.
   - `scripts/gen-settings-defaults.mjs` → `docs/core/settings-defaults.generated.json`.
   - `scripts/gen-asset-manifest.mjs` → `docs/asset-manifest.json` (the SW precache list).
   - `scripts/gen-example-compatibility.mjs` → `docs/compatibility.json`.
+- **NOT yet bundled (KNOWN GAP, 2026-06-21):** `docs/known/registry.js` (enhanced/known-file
+  detection) statically imports **~889** per-plugin `index.js` files — so on first page load the
+  browser fetches ~889 small modules (way over the ≤100 budget; mitigated only by the SW cache on
+  repeat visits). The core type registry solved this with `gen-registry-runtime.mjs`; the known
+  registry needs the SAME treatment — a generator that inlines the 889 `match()` detectors into a
+  bundled `known/registry-detect.generated.*.js`, keeping each plugin modular in source but
+  shipping one bundle. This is the highest-impact bundling task. Do NOT "split" known/registry.js
+  into more source files without bundling — that makes the page-load worse.
 - **Lazy-loaded on demand (dynamic `import()`):** each type's `renderer.js` and each known-file
   plugin's `renderer.js`. A renderer is fetched only when a matching file is actually opened
   (`loadRenderer: () => import('./renderer.js')`). Heavy vendored libs (Monaco, ffmpeg.wasm,
