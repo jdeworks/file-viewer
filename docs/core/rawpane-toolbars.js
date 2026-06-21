@@ -287,7 +287,8 @@ function applyTextUtil(action) {
     const fn = (t) => lineFn(t.split('\n')).join('\n');
     const range = state.rawview.selectionRange?.();
     if (range && !range.isEmpty?.()) {
-      state.rawview.transformSelection(fn, { expandToLines: true });
+      // Keep the (line-expanded) selection highlighted over the transformed block.
+      state.rawview.transformSelection(fn, { expandToLines: true, selectInserted: true });
     } else {
       state.rawview.transformAll(fn);
     }

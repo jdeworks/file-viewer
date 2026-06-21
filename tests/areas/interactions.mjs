@@ -539,6 +539,19 @@ export async function run(ctx) {
   await page.evaluate(() => document.querySelector('#textUtils [data-textutil="sortAsc"]').click());
   const sortedSel = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (sortedSel === 'apple\nbanana\ncherry\ndate') pass('text utils: sort with a selection sorts only the selected lines'); else fail('selection sort: ' + JSON.stringify(sortedSel));
+  // The selection stays highlighted over the sorted block (not collapsed to a caret).
+  const selAfter = await page.evaluate(() => {
+    const r = window.__fv.state.rawview.selectionRange();
+    return { empty: r.isEmpty(), text: window.__fv.state.rawview.selectionText() };
+  });
+  if (!selAfter.empty && selAfter.text === 'apple\nbanana') pass('text utils: selection stays highlighted over the sorted lines'); else fail('selection after sort: ' + JSON.stringify(selAfter));
+  // The line/char count renders INLINE on the text-utils row; the standalone bar stays hidden.
+  const countLayout = await page.evaluate(() => {
+    const inline = document.getElementById('textUtilsCount');
+    const bar = document.getElementById('wordCountBar');
+    return { inlineShown: !!inline && !inline.hidden, inlineText: inline?.textContent || '', barHidden: !bar || bar.hidden };
+  });
+  if (countLayout.inlineShown && /chars/.test(countLayout.inlineText) && countLayout.barHidden) pass('text utils: line/char count shown inline on the toolbar row (no separate bar)'); else fail('count layout: ' + JSON.stringify(countLayout));
   await page.evaluate(() => { window.__fv.state.downloadedSinceEdit = true; window.__fv.state.sessionEdits.clear(); });
 
   // ── Type documentation opens as a centered modal dialog (not a side drawer) ──
