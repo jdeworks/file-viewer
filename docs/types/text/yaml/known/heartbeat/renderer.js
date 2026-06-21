@@ -1,4 +1,5 @@
 import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
+import { expandDotted } from '../dotted-keys.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -88,13 +89,13 @@ export async function render(intake) {
     const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
     cfg = (jsyaml.loadAll(intake.text || '') || [])[0] || {};
   } catch { cfg = intake.parsed || {}; }
+  cfg = expandDotted(cfg);
 
   const filename = (intake.name || intake.filename || 'heartbeat.yml').split('/').pop();
 
   // Monitors — support both nested heartbeat.monitors and flat monitors
-  const monitors = Array.isArray(cfg['heartbeat.monitors']) ? cfg['heartbeat.monitors']
-    : (Array.isArray(cfg.heartbeat?.monitors) ? cfg.heartbeat.monitors
-    : (Array.isArray(cfg.monitors) ? cfg.monitors : []));
+  const monitors = Array.isArray(cfg.heartbeat?.monitors) ? cfg.heartbeat.monitors
+    : (Array.isArray(cfg.monitors) ? cfg.monitors : []);
 
   const monitorsHtml = monitors.length ? `
 <div class="hb-sec"><h3>Monitors (${monitors.length})</h3>
@@ -102,7 +103,7 @@ ${monitors.map((m, i) => renderMonitor(m, i)).join('')}
 </div>` : '';
 
   // Scheduler
-  const scheduler = cfg['heartbeat.scheduler'] || cfg.heartbeat?.scheduler || cfg.scheduler;
+  const scheduler = cfg.heartbeat?.scheduler || cfg.scheduler;
   const schedulerHtml = scheduler ? `
 <div class="hb-sec"><h3>Scheduler</h3><div class="hb-card">
 ${kv('limit', scheduler.limit != null ? String(scheduler.limit) : '')}

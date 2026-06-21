@@ -4,6 +4,8 @@ export const plugin = {
   tags: ['neomutt', 'mutt', 'email', 'mail-client', 'config'],
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    // Defer plain (neo)muttrc to the dedicated muttrc plugin.
+    if (name === '.muttrc' || name === 'muttrc') return false;
     if (name === '.neomuttrc' || name === 'neomuttrc') return true;
     const text = intake.text || '';
     // NeoMutt-specific: requires at least 2 of these neomutt-specific keywords

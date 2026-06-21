@@ -7,6 +7,8 @@ export const plugin = {
     if (name.endsWith('.groovy') || name.endsWith('.gvy') || name.endsWith('.gy') || name.endsWith('.gsh')) return true;
     // Rego policy files share import/package keywords but are not Groovy
     if (name.endsWith('.rego')) return false;
+    // CUE files share package/import keywords but are not Groovy
+    if (name.endsWith('.cue')) return false;
     const text = intake.text || '';
     const hits = [
       /^def\s+/m.test(text),

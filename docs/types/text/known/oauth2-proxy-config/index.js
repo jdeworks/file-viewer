@@ -3,6 +3,8 @@ export default {
   label: 'OAuth2 Proxy config',
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    // Defer to the dedicated rclone.conf plugin.
+    if (name === 'rclone.conf') return false;
     if (name === 'oauth2-proxy.cfg') return true;
     const text = intake.text || '';
     return (text.includes('client_id =') || text.includes('client_id=')) &&

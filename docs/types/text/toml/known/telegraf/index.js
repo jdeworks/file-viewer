@@ -3,7 +3,7 @@ export const plugin = {
   label: 'Telegraf',
   tags: ['metrics', 'monitoring', 'influxdb', 'telegraf'],
   match(intake, baseType) {
-    if (baseType?.id !== 'toml') return false;
+    if (baseType?.id !== 'toml' && baseType?.id !== 'ini') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === 'telegraf.conf' || n === 'telegraf.toml';
   },

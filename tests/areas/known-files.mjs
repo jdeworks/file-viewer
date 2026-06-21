@@ -2556,7 +2556,7 @@ export async function run(ctx) {
   await openExample('.syft.yaml (Syft config)');
   await page.waitForSelector('#previewHost .syft-doc', { timeout: 12000 });
   const syftText = await page.$eval('#previewHost .syft-doc', (e) => e.textContent);
-  if (/Syft/i.test(syftText)) pass('.syft.yaml: Syft badge shown'); else fail('syft badge: ' + syftText.slice(0, 200));
+  if (/Syft/i.test(syftText)) pass('.syft.yaml: Syft badge shown'); else fail('syft badge: ' + syftText.slice(0, 200));
   if (/spdx-json|cyclonedx-json/i.test(syftText)) pass('.syft.yaml: output formats shown'); else fail('syft outputs: ' + syftText.slice(0, 300));
   if (/javascript-package-cataloger|python-package-cataloger/i.test(syftText)) pass('.syft.yaml: catalogers shown'); else fail('syft catalogers: ' + syftText.slice(0, 300));
   if (/enabled|disabled/i.test(syftText)) pass('.syft.yaml: enabled/disabled state shown'); else fail('syft enabled: ' + syftText.slice(0, 300));
@@ -2790,8 +2790,8 @@ export async function run(ctx) {
   if (/myrealm/i.test(keycloakText)) pass('keycloak-realm.json: realm name shown'); else fail('keycloak realm name: ' + keycloakText.slice(0, 300));
   if (/app-frontend|app-backend|admin-cli/i.test(keycloakText)) pass('keycloak-realm.json: clients shown'); else fail('keycloak clients: ' + keycloakText.slice(0, 300));
   if (!/EXAMPLE_SECRET_DO_NOT_USE/i.test(keycloakText)) pass('keycloak-realm.json: client secret masked'); else fail('keycloak secret not masked');
-  if (/admin|user|readonly/i.test(kcText)) pass('keycloak-realm.json: realm roles shown'); else fail('keycloak roles: ' + kcText.slice(0, 300));
-  if (/github/i.test(kcText)) pass('keycloak-realm.json: identity provider shown'); else fail('keycloak idp: ' + kcText.slice(0, 300));
+  if (/admin|user|readonly/i.test(keycloakText)) pass('keycloak-realm.json: realm roles shown'); else fail('keycloak roles: ' + keycloakText.slice(0, 300));
+  if (/github/i.test(keycloakText)) pass('keycloak-realm.json: identity provider shown'); else fail('keycloak idp: ' + keycloakText.slice(0, 300));
 
   // ── Authelia Config viewer ──
   await openExample('authelia-config.yml (Authelia)');
@@ -2889,8 +2889,8 @@ export async function run(ctx) {
 
   // ── nix-config viewer ──
   await openExample('flake.nix');
-  await page.waitForSelector('#previewHost .nix-doc', { timeout: 12000 });
-  const nixText = await page.$eval('#previewHost .nix-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .nf-doc', { timeout: 12000 });
+  const nixText = await page.$eval('#previewHost .nf-doc', (e) => e.textContent);
   if (/Nix/i.test(nixText)) pass('flake.nix: badge shown'); else fail('nix badge: ' + nixText.slice(0, 200));
   if (/description|dev shell|input/i.test(nixText)) pass('flake.nix: content shown'); else fail('nix content: ' + nixText.slice(0, 300));
 
@@ -3000,13 +3000,16 @@ export async function run(ctx) {
   if (/DATABASE_URL/i.test(envexText)) pass('.env.example: variables shown'); else fail('env-example vars: ' + envexText.slice(0, 200));
 
   // ── ssh_config viewer ──
+  // ssh_config is detected as the base `ssh-config` type (the dedicated `.sc-root` renderer), which
+  // shadows the older `ssh-client-config` known plugin (`.ssh-doc`) — its match() defers whenever the
+  // base type wins, so `.ssh-doc` never renders for this filename. Assert the renderer that runs.
   await openExample('ssh_config (SSH Client Config)');
-  await page.waitForSelector('#previewHost .ssh-doc', { timeout: 12000 });
-  const sshcfgText = await page.$eval('#previewHost .ssh-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .sc-root', { timeout: 12000 });
+  const sshcfgText = await page.$eval('#previewHost .sc-root', (e) => e.textContent);
   if (/SSH/i.test(sshcfgText)) pass('ssh_config: badge shown'); else fail('ssh_config badge: ' + sshcfgText.slice(0, 200));
   if (/github\.com/i.test(sshcfgText)) pass('ssh_config: github.com host shown'); else fail('ssh_config host: ' + sshcfgText.slice(0, 300));
   if (/prod-web|prod-db|IdentityFile/i.test(sshcfgText)) pass('ssh_config: host settings shown'); else fail('ssh_config settings: ' + sshcfgText.slice(0, 300));
-  const sshCopyBtn = await page.$('#previewHost .ssh-doc .ssh-copy-btn');
+  const sshCopyBtn = await page.$('#previewHost .sc-root .sc-copy-btn');
   if (sshCopyBtn) pass('ssh_config: copy button present'); else fail('ssh_config: copy button missing');
 
   // ── sshd_config viewer ──
@@ -3266,8 +3269,8 @@ export async function run(ctx) {
 
   // ── vector.toml (Vector Config) viewer ──
   await openExample('vector.toml (Vector)');
-  await page.waitForSelector('#previewHost .vectorcfg-doc', { timeout: 12000 });
-  const vecText = await page.$eval('#previewHost .vectorcfg-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .vec-doc', { timeout: 12000 });
+  const vecText = await page.$eval('#previewHost .vec-doc', (e) => e.textContent);
   if (/Vector/i.test(vecText)) pass('vector.toml: Vector badge shown'); else fail('vector-config badge: ' + vecText.slice(0, 200));
   if (/source|sink/i.test(vecText)) pass('vector.toml: sources/sinks shown'); else fail('vector-config sources: ' + vecText.slice(0, 300));
 
@@ -3280,8 +3283,8 @@ export async function run(ctx) {
 
   // ── netdata.conf viewer ──
   await openExample('netdata.conf (Netdata)');
-  await page.waitForSelector('#previewHost .netdatacfg-doc', { timeout: 12000 });
-  const netdataText = await page.$eval('#previewHost .netdatacfg-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .netdata-doc', { timeout: 12000 });
+  const netdataText = await page.$eval('#previewHost .netdata-doc', (e) => e.textContent);
   if (/Netdata/i.test(netdataText)) pass('netdata.conf: Netdata badge shown'); else fail('netdata-conf badge: ' + netdataText.slice(0, 200));
   if (/global|plugins/i.test(netdataText)) pass('netdata.conf: global or plugins section shown'); else fail('netdata-conf sections: ' + netdataText.slice(0, 300));
 
@@ -3559,16 +3562,16 @@ export async function run(ctx) {
 
   // ── shard.yml (Crystal Shard) viewer ──
   await openExample('shard.yml');
-  await page.waitForSelector('#previewHost .crystalshard-doc', { timeout: 12000 });
-  const shardText = await page.$eval('#previewHost .crystalshard-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .shard-doc', { timeout: 12000 });
+  const shardText = await page.$eval('#previewHost .shard-doc', (e) => e.textContent);
   if (/Crystal/i.test(shardText)) pass('shard.yml: Crystal badge shown'); else fail('crystal-shard badge: ' + shardText.slice(0, 200));
   if (/my_crystal_app|0\.3\.1/i.test(shardText)) pass('shard.yml: package name or version shown'); else fail('crystal-shard name/version: ' + shardText.slice(0, 300));
   if (/kemal|jennifer|pg/i.test(shardText)) pass('shard.yml: dependencies shown'); else fail('crystal-shard deps: ' + shardText.slice(0, 300));
 
   // ── build.zig.zon (Zig Package Manifest) viewer ──
   await openExample('build.zig.zon');
-  await page.waitForSelector('#previewHost .zigzon-doc', { timeout: 12000 });
-  const zigzonText = await page.$eval('#previewHost .zigzon-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .zon-doc', { timeout: 12000 });
+  const zigzonText = await page.$eval('#previewHost .zon-doc', (e) => e.textContent);
   if (/Zig/i.test(zigzonText)) pass('build.zig.zon: Zig badge shown'); else fail('zig-zon badge: ' + zigzonText.slice(0, 200));
   if (/my_zig_project|0\.2\.0/i.test(zigzonText)) pass('build.zig.zon: package name or version shown'); else fail('zig-zon name/version: ' + zigzonText.slice(0, 300));
 
@@ -3842,9 +3845,9 @@ export async function run(ctx) {
 
   // ── .pre-commit-config.yaml enhanced viewer ──
   await openExample('.pre-commit-config.yaml');
-  await page.waitForSelector('#previewHost .precommit-doc', { timeout: 12000 });
+  await page.waitForSelector('#previewHost .prc-doc', { timeout: 12000 });
   pass('.pre-commit-config.yaml: badge shown');
-  const precommitText = await page.$eval('#previewHost .precommit-doc', el => el.textContent);
+  const precommitText = await page.$eval('#previewHost .prc-doc', el => el.textContent);
   if (!precommitText.includes('pre-commit-hooks')) fail('.pre-commit-config.yaml: repos not shown');
   else pass('.pre-commit-config.yaml: repo shown');
   if (!precommitText.includes('black')) fail('.pre-commit-config.yaml: hook not shown');
@@ -4669,7 +4672,7 @@ export async function run(ctx) {
 
   // ── vaultwarden.env viewer ──
   await openExample('vaultwarden.env');
-  pass(await page.waitForSelector('#previewHost .vw-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
+  pass(await page.waitForSelector('#previewHost .vwarden-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
 
   // ── ntfy-server.yml viewer ──
   await openExample('ntfy-server.yml');
@@ -4795,7 +4798,7 @@ export async function run(ctx) {
 
   // ── vaultwarden.env viewer (vaultwarden-config) ──
   await openExample('vaultwarden.env');
-  pass(await page.waitForSelector('#previewHost .vw-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
+  pass(await page.waitForSelector('#previewHost .vwarden-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
 
   // ── keycloak.conf viewer (keycloak-config) ──
   await openExample('keycloak.conf');
@@ -5057,8 +5060,8 @@ export async function run(ctx) {
 
   // ── claude_desktop_config.json viewer (mcp-config) ──
   await openExample('claude_desktop_config.json');
-  await page.waitForSelector('#previewHost .mcp-doc', { timeout: 12000 });
-  const mcpText = await page.$eval('#previewHost .mcp-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .mc-root', { timeout: 12000 });
+  const mcpText = await page.$eval('#previewHost .mc-root', (e) => e.textContent);
   if (/MCP/i.test(mcpText)) pass('claude_desktop_config.json: MCP badge shown'); else fail('mcp-config badge: ' + mcpText.slice(0, 200));
   if (/server.*configured|configured/i.test(mcpText)) pass('claude_desktop_config.json: count text visible'); else fail('mcp-config count: ' + mcpText.slice(0, 300));
   if (/filesystem|brave-search|github/i.test(mcpText)) pass('claude_desktop_config.json: server names shown'); else fail('mcp-config servers: ' + mcpText.slice(0, 300));

@@ -7,6 +7,10 @@ export default {
   match: (intake, baseType) => {
     if (baseType.id !== 'yaml' && baseType.id !== 'docker-compose') return false;
     const text = intake.textSample || intake.text || '';
+    // Defer to the specialized cert-manager viewer for its resources (it renders issuer/ACME
+    // details this generic manifest view can't). matchKnown() is first-match-wins in registry
+    // order, and k8s-manifest precedes cert-manager — so bow out explicitly here.
+    if (text.includes('cert-manager.io/')) return false;
     // Must have apiVersion: + kind: + metadata: at root level
     if (!/^apiVersion\s*:/m.test(text)) return false;
     if (!/^kind\s*:/m.test(text)) return false;

@@ -4,6 +4,8 @@ export default {
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (n === 'justfile' || n === '.justfile') return true;
+    // Defer to the dedicated exim4.conf plugin (its recipe-like `:` lines false-match).
+    if (n === 'exim4.conf') return false;
     // Exclude YAML files — they have their own plugins (Taskfile, etc.)
     if (n.endsWith('.yml') || n.endsWith('.yaml')) return false;
     const text = intake.textSample || intake.text || '';

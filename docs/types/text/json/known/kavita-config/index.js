@@ -3,13 +3,13 @@ export default {
   label: 'Kavita Config',
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    if (n === 'kavita-config.json') return true;
+    if (n === 'kavita-config.json' || n === 'kavita-appsettings.json') return true;
     if (n === 'appsettings.json') {
+      const parsed = intake.parsed ?? (() => { try { return JSON.parse(intake.text || '{}'); } catch { return {}; } })();
       return (
-        intake.parsed &&
-        intake.parsed.TokenKey !== undefined &&
-        intake.parsed.Port !== undefined &&
-        intake.parsed.LoggingLevel !== undefined
+        parsed.TokenKey !== undefined &&
+        parsed.Port !== undefined &&
+        parsed.LoggingLevel !== undefined
       );
     }
     return false;

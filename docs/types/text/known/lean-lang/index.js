@@ -5,6 +5,8 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').toLowerCase();
     if (name.endsWith('.lean')) return true;
+    // Defer Nushell scripts to the dedicated plugin (config.nu / *.nu are not Lean).
+    if (name.endsWith('.nu')) return false;
     const text = intake.text || '';
     const hits = [/\btheorem\s+/.test(text), /\blemma\s+/.test(text), /\bimport\s+/.test(text), /\bnamespace\s+/.test(text), /\bopen\s+/.test(text), /\bdef\s+/.test(text), /#check\b/.test(text)].filter(Boolean).length;
     return hits >= 3;

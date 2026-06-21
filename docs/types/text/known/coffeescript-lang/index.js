@@ -9,6 +9,8 @@ export const plugin = {
     // languages (e.g. PHP's `$obj->method()` — would false-match rector.php). Only apply it to
     // files WITHOUT a recognized non-CoffeeScript source extension.
     if (/\.(php|rb|py|rs|go|ts|tsx|jsx|mjs|cjs|java|cs|cpp|cc|hpp|swift|kt|scala|pl|lua|r|sql|sh|ps1)$/i.test(name)) return false;
+    // CoffeeScript is never a .conf file — defer to dedicated config plugins (e.g. .scalafmt.conf).
+    if (name.endsWith('.conf')) return false;
     const text = intake.text || '';
     const hits = [
       /->/.test(text),

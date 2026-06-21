@@ -5,6 +5,9 @@ export default {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     const text = intake.textSample || intake.text || '';
     if (n === 'corefile') return true;
+    // Defer named.conf-family files to the dedicated BIND plugin — they also use
+    // `forward`/`cache` keywords with `{` blocks but are not CoreDNS Corefiles.
+    if (n === 'named.conf' || n.startsWith('named.conf.')) return false;
     // CoreDNS zone blocks: ".:53 {" or "cluster.local:53 {"
     if (text.includes('forward') && (text.includes('cache') || text.includes('health')) && text.includes('{')) return true;
     return false;

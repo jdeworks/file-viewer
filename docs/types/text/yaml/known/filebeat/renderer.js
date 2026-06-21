@@ -1,4 +1,5 @@
 import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
+import { expandDotted } from '../dotted-keys.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -56,11 +57,12 @@ export async function render(intake) {
     const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
     cfg = (jsyaml.loadAll(intake.text || '') || [])[0] || {};
   } catch { cfg = intake.parsed || {}; }
+  cfg = expandDotted(cfg);
 
   const filename = (intake.name || intake.filename || 'filebeat.yml').split('/').pop();
 
-  // Inputs — support both `filebeat.inputs` and flat `inputs`
-  const rawInputs = Array.isArray(cfg['filebeat.inputs']) ? cfg['filebeat.inputs']
+  // Inputs — support both nested `filebeat.inputs` and flat `inputs`
+  const rawInputs = Array.isArray(cfg.filebeat?.inputs) ? cfg.filebeat.inputs
     : (Array.isArray(cfg.inputs) ? cfg.inputs : []);
 
   const inputsHtml = rawInputs.length ? `
@@ -87,8 +89,8 @@ ${pathsHtml}${encoding}${multiline}
 </div>` : '';
 
   // Modules
-  const cfgModules = cfg['filebeat.config']?.modules;
-  const inlineModules = Array.isArray(cfg['filebeat.modules']) ? cfg['filebeat.modules']
+  const cfgModules = cfg.filebeat?.config?.modules;
+  const inlineModules = Array.isArray(cfg.filebeat?.modules) ? cfg.filebeat.modules
     : (Array.isArray(cfg.modules) ? cfg.modules : []);
   let modulesHtml = '';
   if (cfgModules || inlineModules.length) {

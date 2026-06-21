@@ -3,25 +3,19 @@ export default {
   label: 'Homepage Dashboard Config',
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    // services.yaml or bookmarks.yaml: array of groups where each group maps key -> array
-    if (n === 'services.yaml' || n === 'bookmarks.yaml') {
-      const parsed = intake.parsed;
-      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object') {
-        const firstVal = Object.values(parsed[0])[0];
-        return Array.isArray(firstVal);
-      }
-      return false;
+    const text = intake.text || '';
+    // services.yaml or bookmarks.yaml (incl. homepage-services.yaml): top-level YAML
+    // sequence of named groups, e.g. lines like "- Group Name:"
+    if (n.endsWith('services.yaml') || n.endsWith('bookmarks.yaml')) {
+      return /^-\s+\S.*:\s*$/m.test(text);
     }
-    // widgets.yaml: array of widget objects
-    if (n === 'widgets.yaml') {
-      const parsed = intake.parsed;
-      return Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object';
+    // widgets.yaml: top-level YAML sequence of widget objects
+    if (n.endsWith('widgets.yaml')) {
+      return /^-\s+\S+:/m.test(text);
     }
-    // settings.yaml: object with title AND background keys (Homepage settings)
-    if (n === 'settings.yaml') {
-      const parsed = intake.parsed;
-      return parsed != null && typeof parsed === 'object' && !Array.isArray(parsed) &&
-        parsed.title !== undefined && parsed.background !== undefined;
+    // settings.yaml: top-level mapping with title AND background keys
+    if (n.endsWith('settings.yaml')) {
+      return /^title:/m.test(text) && /^background:/m.test(text);
     }
     return false;
   },

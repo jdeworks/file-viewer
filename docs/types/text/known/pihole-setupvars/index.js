@@ -3,10 +3,11 @@ export default {
   label: 'Pi-hole Config',
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop();
+    const nl = n.toLowerCase();
     // pihole-FTL.conf: match by filename only
-    if (n === 'pihole-FTL.conf') return true;
-    // setupVars.conf: require Pi-hole-specific content
-    if (n === 'setupVars.conf') {
+    if (nl === 'pihole-ftl.conf') return true;
+    // setupVars.conf (incl. pihole-setupVars.conf): require Pi-hole-specific content
+    if (nl.endsWith('setupvars.conf')) {
       const text = intake.text || '';
       return text.includes('PIHOLE_INTERFACE=') || text.includes('PIHOLE_DNS_1=');
     }

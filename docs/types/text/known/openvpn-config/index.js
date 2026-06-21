@@ -3,6 +3,9 @@ export default {
   label: 'OpenVPN config',
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    // Defer to dedicated plugins for these configs (their `remote`/`client` text
+    // false-matches OpenVPN's heuristic, but they are not OpenVPN configs).
+    if (n === 'stunnel.conf' || n === 'rclone.conf') return false;
     if (n.endsWith('.ovpn')) return true;
     // .conf files that look like OpenVPN
     if (n.endsWith('.conf')) {

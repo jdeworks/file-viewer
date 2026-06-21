@@ -5,7 +5,7 @@ export default {
     if (baseType?.id !== 'json') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (n !== 'config.json' && n !== 'uptime-kuma.json') return false;
-    const parsed = intake.parsed || {};
+    const parsed = intake.parsed ?? (() => { try { return JSON.parse(intake.text || '{}'); } catch { return {}; } })();
     // Uptime Kuma-specific fields
     return 'disableAuth' in parsed || 'trustProxy' in parsed || ('port' in parsed && 'demoMode' in parsed);
   },

@@ -4,6 +4,8 @@ export default {
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     const text = intake.textSample || intake.text || '';
+    // Defer to dedicated plugins for these specific configs (share blacklist/options-like syntax).
+    if (n === 'named.conf' || n === 'ranger.conf' || n === 'wsl.conf') return false;
     if (n === 'modprobe.conf' || n === 'modules.conf') return true;
     if (n.endsWith('.conf') && text.match(/^(blacklist|options|alias|install|remove)\s+\S/m)) return true;
     if (text.includes('blacklist ') && (text.includes('options ') || text.includes('alias '))) return true;

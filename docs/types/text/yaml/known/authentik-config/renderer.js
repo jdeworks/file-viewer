@@ -40,11 +40,19 @@ function modelShortName(model) {
   return model ? model.replace(/^[^.]+\./, '') : model;
 }
 
+// authentik blueprints use custom YAML tags (!KeyOf, !Find, !Context, !Env, !Format, !Condition…)
+// that js-yaml's default schema rejects with "unknown tag", which would blank the entire view.
+// This is a read-only structural view, so strip the tag token (keeping its scalar/sequence value)
+// before parsing — e.g. `!KeyOf flow-login` → ` flow-login`, `!Find [a, b]` → ` [a, b]`.
+function stripCustomTags(text) {
+  return String(text || '').replace(/!\w+(?=\s)/g, '');
+}
+
 export async function render(intake) {
   let cfg = {};
   try {
     const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
-    cfg = (jsyaml.loadAll(intake.text || '') || [])[0] || {};
+    cfg = (jsyaml.loadAll(stripCustomTags(intake.text || '')) || [])[0] || {};
   } catch { cfg = {}; }
 
   const version = cfg.version;

@@ -3,6 +3,8 @@ export default {
   label: 'Caddyfile',
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    // Defer to the dedicated CoreDNS plugin — Corefile shares `name { }` block syntax.
+    if (n === 'corefile') return false;
     if (n === 'caddyfile') return true;
     const text = intake.textSample || intake.text || '';
     // Caddyfile: site addresses on their own line followed by { block }
