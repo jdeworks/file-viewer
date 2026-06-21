@@ -189,7 +189,7 @@
 .mg-hex-cell:hover { border-color: var(--accent); }
 
 /* ── Stage 1 — pixel-reveal onboarding (top) + tabbed idle clicker (below). ── */
-.mg-s1 { width: min(460px, 100%); gap: 10px; -webkit-tap-highlight-color: transparent; }
+.mg-s1 { width: min(460px, 100%); gap: 10px; -webkit-tap-highlight-color: transparent; position: relative; }
 .games-stage:has(.mg-s1) { min-height: 60vh; }
 /* The reveal "top" is the absolute-positioning context for the tap area + Compute button. */
 .mg-s1-top { position: relative; height: 220px; }
@@ -231,8 +231,11 @@
   border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
 .mg-s1-help-btn:hover { border-color: var(--accent); color: var(--fg); }
 .mg-s1-help-btn[hidden] { display: none; }
-.mg-s1-help { display: flex; flex-direction: column; gap: 6px; background: var(--bg-2);
-  border: 1px solid var(--accent); border-radius: 10px; padding: 12px; }
+/* Help is an overlay (out of flow): floats above the Bits content instead of pushing it down. */
+.mg-s1-help { position: absolute; top: 48px; left: 0; right: 0; z-index: 25;
+  display: flex; flex-direction: column; gap: 6px; background: var(--bg-2);
+  border: 1px solid var(--accent); border-radius: 10px; padding: 12px;
+  box-shadow: 0 10px 32px rgba(0,0,0,.45); max-height: 70vh; overflow-y: auto; }
 .mg-s1-help[hidden] { display: none; }
 .mg-s1-help-title { font-weight: 700; color: var(--fg); }
 .mg-s1-help-row { display: flex; flex-direction: column; gap: 1px; font-size: 12px; }
@@ -418,6 +421,16 @@
   cursor: pointer; font-size: 11px; }
 .mg-dbg-jump:hover { border-color: var(--accent); color: var(--accent); }
 .mg-dbg-reset:hover { border-color: #e03131; color: #e03131; }
+
+/* Dev/testing menu (5 rapid bell clicks). */
+.mg-dev { background: var(--bg-2); border: 1px solid var(--accent); border-radius: 10px; padding: 12px; margin-top: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.35); }
+.mg-dev-title { font-weight: 700; color: var(--fg); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.mg-dev-x { background: transparent; border: 0; color: var(--fg-2); cursor: pointer; font-size: 15px; line-height: 1; }
+.mg-dev-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; font-size: 12px; color: var(--fg-2); }
+.mg-dev-row button { background: var(--bg-3, var(--bg)); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 6px; padding: 4px 9px; cursor: pointer; font-size: 12px; }
+.mg-dev-row button:hover { border-color: var(--accent); color: var(--accent); }
 
 /* Defragmenter v3 shell and Stage 2 vertical slice. */
 .mg-v3 { width: min(760px, 100%); }

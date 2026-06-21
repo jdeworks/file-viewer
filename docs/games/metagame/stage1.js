@@ -133,7 +133,9 @@ export function renderStage1(ctx) {
       state.helpersUnlocked = true;
       save(state);
     }
-    const scoreOn = bigToNum(state.totalBits) >= 400;
+    // Once unlocked the score stays visible — the 'score-unlock' milestone persists across a prestige
+    // reset (which zeroes totalBits), so gate on it rather than the live total.
+    const scoreOn = (state.milestones || []).includes('score-unlock') || bigToNum(state.totalBits) >= 400;
     setHidden(hudEl, !scoreOn);
     if (scoreOn) setText(scoreValEl, toDisplay(fromNumber(Math.floor(bigToNum(state.bits)))));
     setHidden(helpBtn, !state.helpersUnlocked);
