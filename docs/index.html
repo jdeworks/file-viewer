@@ -255,11 +255,14 @@
       <div class="drawer-body" id="metaBody"></div>
     </aside>
 
-    <!-- Type help drawer -->
-    <aside id="typeHelpDrawer" class="drawer" hidden aria-label="Type documentation">
-      <div class="drawer-head"><h2 id="typeHelpTitle">Type docs</h2><button class="icon-btn" data-close aria-label="Close">✕</button></div>
-      <div class="drawer-body" id="typeHelpBody"></div>
-    </aside>
+    <!-- Type help modal -->
+    <dialog id="typeHelpDialog" class="type-info-dialog th-dialog" aria-label="Type documentation">
+      <div class="type-info-dialog-header">
+        <h2 id="typeHelpTitle">Type docs</h2>
+        <button type="button" class="type-info-dialog-close" data-close aria-label="Close">✕</button>
+      </div>
+      <div id="typeHelpBody" class="th-dialog-body"></div>
+    </dialog>
 
     <div id="offlineStatus" class="offline-status" hidden></div>
     <!-- iOS-only opt-in: shown when audio is open on an iPhone/iPad (not Android/desktop). -->

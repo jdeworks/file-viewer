@@ -555,6 +555,9 @@ body {
   text-decoration: none; color: var(--accent, #2563eb); font-size: 13px;
 }
 .type-info-dialog-links a:hover { background: var(--hover-bg, #f5f5f5); }
+/* Type-documentation modal: wider than the About card and scrollable (readme docs are long). */
+.th-dialog { max-width: min(760px, 94vw); }
+.th-dialog-body { max-height: 78vh; overflow: auto; }
 .type-info-used-for { margin-top: 12px; }
 .type-info-used-for h3 { font-size: 13px; font-weight: 600; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-muted, #888); }
 .type-info-used-card {

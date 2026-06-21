@@ -264,21 +264,37 @@ export function wireTextUtils() {
   });
 }
 
+// Whole-line transforms: each takes an array of lines and returns the transformed array.
+const LINE_TRANSFORMS = {
+  sortAsc: (lines) => [...lines].sort((a, b) => a.localeCompare(b)),
+  sortDesc: (lines) => [...lines].sort((a, b) => b.localeCompare(a)),
+  trim: (lines) => lines.map((l) => l.trimEnd()),
+  dedup: (lines) => {
+    const seen = new Set();
+    return lines.filter((l) => (seen.has(l) ? false : (seen.add(l), true)));
+  },
+};
+
 function applyTextUtil(action) {
   if (!state.rawview) return;
   const text = state.rawview.getValue();
   let result;
 
-  if (action === 'sortAsc') {
-    result = text.split('\n').sort((a, b) => a.localeCompare(b)).join('\n');
-  } else if (action === 'sortDesc') {
-    result = text.split('\n').sort((a, b) => b.localeCompare(a)).join('\n');
-  } else if (action === 'trim') {
-    result = text.split('\n').map((l) => l.trimEnd()).join('\n');
-  } else if (action === 'dedup') {
-    const seen = new Set();
-    result = text.split('\n').filter((l) => { if (seen.has(l)) return false; seen.add(l); return true; }).join('\n');
-  } else if (action === 'b64encode') {
+  // Line-based utilities: operate on the SELECTION when one exists (expanded to whole
+  // lines), else the whole document — both via undoable Monaco edits so Ctrl+Z works.
+  const lineFn = LINE_TRANSFORMS[action];
+  if (lineFn) {
+    const fn = (t) => lineFn(t.split('\n')).join('\n');
+    const range = state.rawview.selectionRange?.();
+    if (range && !range.isEmpty?.()) {
+      state.rawview.transformSelection(fn, { expandToLines: true });
+    } else {
+      state.rawview.transformAll(fn);
+    }
+    return;
+  }
+
+  if (action === 'b64encode') {
     const sel = state.rawview.selectionText?.();
     const target = (sel && sel.trim()) ? sel : text;
     try {
@@ -303,6 +319,7 @@ function applyTextUtil(action) {
   }
 
   if (result !== undefined && result !== text) {
-    state.rawview.setValue(result);
+    // Undoable whole-document replace (preserves Ctrl+Z), not setValue().
+    state.rawview.transformAll(() => result);
   }
 }

@@ -503,4 +503,57 @@ export async function run(ctx) {
     page.evaluate(() => window.__fv.downloadCurrent()),
   ]);
   if (/\.gcode$/.test(gcodeDl.suggestedFilename())) pass('editor mode: gcode Ctrl+S/download preserves filename (' + gcodeDl.suggestedFilename() + ')'); else fail('gcode download name: ' + gcodeDl.suggestedFilename());
+
+  // ── Text utilities: selection-aware line sort + undoable edits (Ctrl+Z) ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.txt');
+  await page.click('#viewMode button[data-mode="split"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
+  await page.waitForFunction(() => !!window.__fv?.state?.rawview, null, { timeout: 8000 });
+  // Plain text has no always-on format toolbar → the text-utilities bar is shown.
+  const tuShown = await page.$eval('#textUtils', (e) => !e.hidden);
+  if (tuShown) pass('text utils: utilities bar shown for plain text'); else fail('text utils bar hidden for plain text');
+
+  // Sort with NOTHING selected → whole document; and the edit must be undoable (Ctrl+Z).
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    rv.setValue('banana\napple\ncherry');
+    rv.setSelection(1, 1, 1, 1);   // collapsed caret = no selection
+  });
+  await page.evaluate(() => document.querySelector('#textUtils [data-textutil="sortAsc"]').click());
+  const sortedAll = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (sortedAll === 'apple\nbanana\ncherry') pass('text utils: sort with no selection sorts the whole document'); else fail('whole-doc sort: ' + JSON.stringify(sortedAll));
+  // Undo reverts the sort — executeEdits stays on Monaco's undo stack (setValue would have wiped it).
+  await page.evaluate(() => window.__fv.state.rawview.focus());
+  await page.keyboard.press('Control+z');
+  await page.waitForTimeout(150);
+  const undone = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (undone === 'banana\napple\ncherry') pass('text utils: Ctrl+Z undoes a sort (raw-editor undo preserved)'); else fail('undo after sort: ' + JSON.stringify(undone));
+
+  // Sort WITH a selection → only the selected lines are reordered.
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    rv.setValue('banana\napple\ncherry\ndate');
+    rv.setSelection(1, 1, 2, 6);   // covers lines 1–2 ("banana","apple") only
+  });
+  await page.evaluate(() => document.querySelector('#textUtils [data-textutil="sortAsc"]').click());
+  const sortedSel = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (sortedSel === 'apple\nbanana\ncherry\ndate') pass('text utils: sort with a selection sorts only the selected lines'); else fail('selection sort: ' + JSON.stringify(sortedSel));
+  await page.evaluate(() => { window.__fv.state.downloadedSinceEdit = true; window.__fv.state.sessionEdits.clear(); });
+
+  // ── Type documentation opens as a centered modal dialog (not a side drawer) ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Welcome.md');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 20000 });
+  await page.waitForSelector('#typeHelpBtn:not([hidden])', { timeout: 8000 });
+  await page.click('#typeHelpBtn');
+  await page.waitForFunction(() => document.getElementById('typeHelpDialog')?.open, null, { timeout: 6000 });
+  const helpModal = await page.evaluate(() => {
+    const d = document.getElementById('typeHelpDialog');
+    return { isDialog: d?.tagName === 'DIALOG', open: !!d?.open, modal: !!d?.matches?.(':modal') };
+  });
+  if (helpModal.isDialog && helpModal.open && helpModal.modal) pass('type help: opens as a centered modal <dialog> (not a drawer)'); else fail('type help modal: ' + JSON.stringify(helpModal));
+  await page.click('#typeHelpDialog [data-close]');
+  await page.waitForFunction(() => !document.getElementById('typeHelpDialog')?.open, null, { timeout: 4000 });
+  pass('type help: close button dismisses the modal');
 }

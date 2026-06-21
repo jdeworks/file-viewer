@@ -325,7 +325,21 @@ function openDrawer(id, build) {
   $(id).hidden = false; $('scrim').hidden = false;
 }
 function closeDrawers() {
-  $('settingsDrawer').hidden = true; $('metaDrawer').hidden = true; $('typeHelpDrawer').hidden = true; $('scrim').hidden = true;
+  $('settingsDrawer').hidden = true; $('metaDrawer').hidden = true; $('scrim').hidden = true;
+}
+
+// Type documentation opens as a centered modal dialog (not a side drawer).
+function openTypeHelp() {
+  const dialog = $('typeHelpDialog');
+  if (!dialog) return;
+  buildTypeHelp(state.type?.id);
+  if (!dialog.dataset.wired) {
+    dialog.dataset.wired = '1';
+    dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+    // Close on backdrop click (clicks that land on the <dialog> element itself).
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+  }
+  if (!dialog.open) dialog.showModal();
 }
 
 /* ─────────────────────────── metaBtn Easter egg ─────────────────────────── */
@@ -424,7 +438,7 @@ function init() {
   });
   $('themeBtn').addEventListener('click', () => applyTheme(!themeIsDark()));
   $('settingsBtn').addEventListener('click', () => openDrawer('settingsDrawer', openSettings));
-  $('typeHelpBtn').addEventListener('click', () => openDrawer('typeHelpDrawer', () => buildTypeHelp(state.type?.id)));
+  $('typeHelpBtn').addEventListener('click', () => openTypeHelp());
   $('metaBtn').addEventListener('click', () => {
     metaBtnClicks++;
     clearTimeout(_metaBtnTimer);
