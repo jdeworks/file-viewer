@@ -155,3 +155,55 @@ export function describeDynamics(dyn) {
   if (dyn.denoise && dyn.denoise.enabled) bits.push('de-noise');
   return bits.join(', ');
 }
+
+// ── P8c/P8e: ACX silence-cut + room-tone + one-click compliant export args ─────
+//
+// silenceremove trims dead air. We trim the leading silence (start_periods=1) and,
+// via the area/all-passing form, also clamp long internal gaps. opts:
+//   { thresholdDb?:−50, minSilenceSec?:0.4 }. PURE.
+export function silenceRemoveFilter(opts = {}) {
+  const thDb = isFinite(Number(opts.thresholdDb)) ? round(Number(opts.thresholdDb)) : -50;
+  const dur = isFinite(Number(opts.minSilenceSec)) ? round(Math.max(0.05, Number(opts.minSilenceSec))) : 0.4;
+  // Trim leading + trailing dead air; stop_periods=-1 with detection clamps trailing.
+  return 'silenceremove=start_periods=1:start_duration=' + dur
+    + ':start_threshold=' + thDb + 'dB'
+    + ':stop_periods=-1:stop_duration=' + dur + ':stop_threshold=' + thDb + 'dB';
+}
+
+// Head/tail room-tone pad via apad + adelay. ACX wants 0.5–1 s head / 1–5 s tail of
+// quiet room tone. We synthesize it as silence padding (a true room-tone slice would
+// need a second input); apad extends the tail, adelay shifts the head. opts:
+//   { headSec?:0.75, tailSec?:2 }. Returns '' when both are 0.
+export function roomTonePadFilter(opts = {}) {
+  const head = Math.max(0, Number(opts.headSec ?? 0.75));
+  const tail = Math.max(0, Number(opts.tailSec ?? 2));
+  const parts = [];
+  if (head > 0) parts.push('adelay=' + Math.round(head * 1000) + ':all=1');
+  if (tail > 0) parts.push('apad=pad_dur=' + round(tail));
+  return parts.join(',');
+}
+
+// Full ACX `-af` chain: loudnorm (−20 LUFS / −3 dBTP) → silence-cut → room-tone pad.
+// opts: { lufs?:−20, truePeak?:−3, silence?:{...}, pad?:{...} }. PURE.
+export function buildAcxFilterChain(opts = {}) {
+  const lufs = isFinite(Number(opts.lufs)) ? round(Number(opts.lufs)) : -20;
+  const tp = isFinite(Number(opts.truePeak)) ? round(Number(opts.truePeak)) : -3;
+  const out = ['loudnorm=I=' + lufs + ':TP=' + tp + ':LRA=11'];
+  if (opts.silence !== false) out.push(silenceRemoveFilter(opts.silence || {}));
+  const pad = roomTonePadFilter(opts.pad || {});
+  if (pad) out.push(pad);
+  return out.join(',');
+}
+
+// Full ffmpeg arg list for the one-click ACX export (P8e). PURE — produces exactly
+// `-ac 1 -ar 44100 -c:a libmp3lame -b:a 192k` + the ACX -af chain. inputName/outputName
+// are MEMFS paths the caller writes/reads.
+export function buildAcxExportArgs(inputName, outputName, opts = {}) {
+  return [
+    '-i', inputName, '-vn',
+    '-af', buildAcxFilterChain(opts),
+    '-ac', '1', '-ar', '44100',
+    '-c:a', 'libmp3lame', '-b:a', '192k',
+    outputName,
+  ];
+}

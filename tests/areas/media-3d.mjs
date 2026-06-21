@@ -594,6 +594,77 @@ export async function run(ctx) {
   // Restore the Podcast preset so the rest of the area sees a stable state.
   await page.selectOption('#previewHost .media-export-preset', 'podcast-mp3');
 
+  // ── P8: Audiobook QC (ACX) — pass/fail report card + one-click ACX export ─────
+  // The QC toggle sits in the audio panel stack (after the mixer). CPU-lazy: no
+  // decode / ffmpeg until a button is clicked.
+  const qcToggle = await page.evaluateHandle(() =>
+    [...document.querySelectorAll('#previewHost .media-wv-toggle')].find((b) => /Audiobook QC/.test(b.textContent)) || null);
+  const qcToggleExists = await qcToggle.evaluate((e) => !!e);
+  if (qcToggleExists) {
+    pass('P8: Audiobook QC (ACX) toggle button present');
+    const preQc = await page.$('#previewHost .media-qc-run');
+    if (!preQc) pass('P8: QC panel CPU-lazy (no decode/ffmpeg until opened)'); else fail('QC panel mounted before open');
+    await qcToggle.asElement().click();
+    await page.waitForSelector('#previewHost .media-qc-run', { timeout: 6000 });
+    // Run QC → decode the sample WAV + render the per-metric card.
+    await page.click('#previewHost .media-qc-run');
+    await page.waitForSelector('#previewHost .media-qc-table .media-qc-row', { timeout: 15000 });
+    const qcMetrics = await page.$$eval('#previewHost .media-qc-row', (els) => els.map((e) => e.dataset.metric));
+    if (['rms', 'peak', 'noise', 'sr', 'ch', 'head', 'tail'].every((k) => qcMetrics.includes(k)))
+      pass('P8b: QC card shows all 7 ACX metric rows (RMS/peak/noise/sr/ch/head/tail)');
+    else fail('qc metrics: ' + qcMetrics.join(','));
+    const qcVerdict = await page.$('#previewHost .media-qc-verdict');
+    if (qcVerdict) pass('P8b: QC card shows an overall pass/fail verdict'); else fail('qc verdict missing');
+    // The "Export for ACX" one-click button mounts alongside.
+    const acxBtn = await page.$('#previewHost .media-qc-export');
+    const acxBtnText = acxBtn ? await acxBtn.evaluate((e) => e.textContent) : '';
+    if (/Export for ACX/i.test(acxBtnText)) pass('P8e: "Export for ACX" one-click button mounts'); else fail('acx export btn: ' + acxBtnText);
+    await qcToggle.asElement().click();
+    await page.waitForSelector('#previewHost .media-qc-toggle-panel[hidden]', { state: 'attached', timeout: 3000 });
+    pass('P8: QC panel collapses');
+  } else fail('Audiobook QC toggle not found');
+
+  // ── P8a: PURE BS.1770 integrated LUFS on a synthesized buffer (no ffmpeg/decode) ──
+  // A 1 kHz sine targeted to −23 dB RMS should read ≈ −23 LUFS (K-weighting is near-flat
+  // at 1 kHz; tolerance ±1 LU). Also verify the noise-floor/RMS math.
+  const lufs = await page.evaluate(async () => {
+    const { integratedLufs } = await import('./types/media/loudness.js');
+    const { integratedRms, samplePeak, noiseFloor, edgeSilence } = await import('./types/media/qc.js');
+    const fs = 48000, n = fs * 4;
+    const amp = Math.pow(10, (-23 + 3.0103) / 20);   // 1 kHz sine at −23 dB RMS
+    const sine = new Float32Array(n);
+    for (let i = 0; i < n; i++) sine[i] = amp * Math.sin(2 * Math.PI * 1000 * i / fs);
+    // Buffer with a 1 s leading silence then a 0.3-amp tone → known head silence + floor.
+    const gapped = new Float32Array(n);
+    for (let i = 0; i < n; i++) gapped[i] = i < fs ? 0 : 0.3 * Math.sin(2 * Math.PI * 440 * i / fs);
+    const nf = noiseFloor(gapped, fs);
+    const es = edgeSilence(gapped, fs);
+    return {
+      lufs: integratedLufs([sine], fs),
+      rms: integratedRms(sine), peak: samplePeak(sine),
+      floorDb: nf.db, head: es.head,
+    };
+  });
+  if (Math.abs(lufs.lufs - (-23)) <= 1) pass('P8a: BS.1770 LUFS on −23 dB sine ≈ −23 LUFS (' + lufs.lufs.toFixed(2) + ', ±1 LU)'); else fail('lufs: ' + lufs.lufs);
+  if (Math.abs(lufs.rms - (-23)) < 0.1 && Math.abs(lufs.peak - (-20)) < 0.2) pass('P8b: RMS/peak math correct on synthesized sine'); else fail('rms/peak: ' + JSON.stringify(lufs));
+  if (lufs.floorDb === -Infinity || lufs.floorDb < -100) pass('P8b: noise floor finds the silent window (−∞ for true silence)'); else fail('noise floor: ' + lufs.floorDb);
+  if (Math.abs(lufs.head - 1) < 0.05) pass('P8b: edge-silence detects the 1 s leading gap'); else fail('head silence: ' + lufs.head);
+
+  // ── P8c/P8e: PURE ACX arg builder → mono/44.1k/192k + loudnorm + silenceremove ──
+  const acxArgs = await page.evaluate(async () => {
+    const { buildAcxExportArgs, buildAcxFilterChain, silenceRemoveFilter } = await import('./types/media/transcoder.js');
+    return {
+      args: buildAcxExportArgs('input.mp3', 'out.mp3').join(' '),
+      chain: buildAcxFilterChain(),
+      silence: silenceRemoveFilter(),
+    };
+  });
+  if (/-ac 1/.test(acxArgs.args) && /-ar 44100/.test(acxArgs.args) && /-c:a libmp3lame -b:a 192k/.test(acxArgs.args))
+    pass('P8e: ACX arg builder forces mono / 44.1 kHz / MP3 192 k'); else fail('acx args: ' + acxArgs.args);
+  if (/loudnorm=I=-20:TP=-3:LRA=11/.test(acxArgs.chain) && /silenceremove=/.test(acxArgs.chain) && /apad=pad_dur=/.test(acxArgs.chain))
+    pass('P8c/P8e: ACX -af chain = loudnorm −20/−3 + silenceremove + room-tone pad'); else fail('acx chain: ' + acxArgs.chain);
+  if (/start_threshold=-50dB/.test(acxArgs.silence)) pass('P8c: silenceremove trims dead air (−50 dB threshold)'); else fail('silence: ' + acxArgs.silence);
+
   // Verify the ffmpeg `-af` chain the export will run, via the PURE builder (no ffmpeg load).
   const chain = await page.evaluate(async () => {
     const { buildAudioFilterChain } = await import('./types/media/transcoder.js');

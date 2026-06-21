@@ -14,8 +14,11 @@ import { loadGlobal, vendor } from '../../core/script-loader.js';
 // PURE filter-string builders live in audio-filters.js (extracted to keep this
 // file under the LOC cap after P4 dynamics). Re-exported so existing importers
 // (studio-export.js, tests) keep importing them from transcoder.js unchanged.
-import { buildAudioFilterChain, audioEncodeArgs } from './audio-filters.js';
+import { buildAudioFilterChain, audioEncodeArgs, buildAcxExportArgs } from './audio-filters.js';
 export { buildAudioFilterChain, audioEncodeArgs } from './audio-filters.js';
+// P8c/P8e — PURE ACX arg builders (silence-cut, room-tone pad, one-click compliant
+// export). Re-exported so the export panel + tests import them from here unchanged.
+export { buildAcxFilterChain, buildAcxExportArgs, silenceRemoveFilter, roomTonePadFilter } from './audio-filters.js';
 // P6 — PURE timeline transition arg builders (xfade / acrossfade / mux music). Kept in
 // video-filters.js so they stay unit-testable and this file stays under the LOC cap.
 import { buildXfadeArgs, buildAcrossfadeArgs, buildMuxMusicArgs } from './video-filters.js';
@@ -265,6 +268,19 @@ export async function runOperation(ff, opId, params, intake) {
         if (params.sampleRate) args.push('-ar', String(params.sampleRate));
         if (params.channels) args.push('-ac', String(params.channels));
         args.push(...enc.args, outputName);
+        break;
+      }
+
+      // ── P8c/P8e: one-click ACX-compliant export. loudnorm −20 LUFS / −3 dBTP +
+      // silenceremove (dead-air trim) + head/tail room-tone pad, forced to mono /
+      // 44.1 kHz / MP3 192 k CBR. params: { lufs, truePeak, silence, pad }. The arg
+      // list is built PURE (audio-filters.js) so it's unit-tested without ffmpeg. ──
+      case 'acxExport': {
+        outputName = 'out.mp3'; outBase = base + '_ACX';
+        args = buildAcxExportArgs(inputName, outputName, {
+          lufs: params.lufs, truePeak: params.truePeak,
+          silence: params.silence, pad: params.pad,
+        });
         break;
       }
 

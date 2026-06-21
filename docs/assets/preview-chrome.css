@@ -266,6 +266,24 @@
   overflow: auto; }
 .preview-host .media-ed-warn { font-size: 11px; color: #b08800; margin: 2px 0 0;
   padding: 5px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; }
+/* P8 — Audiobook QC (ACX) report card */
+.preview-host .media-qc-card { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.preview-host .media-qc-verdict { font-size: 12px; font-weight: 700; padding: 5px 8px;
+  border-radius: 5px; border: 1px solid var(--border); }
+.preview-host .media-qc-verdict.media-qc-pass { color: #1a7f37; background: rgba(26,127,55,.08); }
+.preview-host .media-qc-verdict.media-qc-warn { color: #9a6700; background: rgba(154,103,0,.08); }
+.preview-host .media-qc-verdict.media-qc-fail { color: #d73a49; background: rgba(215,58,73,.08); }
+.preview-host .media-qc-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.preview-host .media-qc-row td { padding: 3px 6px; border-bottom: 1px solid var(--border); }
+.preview-host .media-qc-dot { width: 14px; text-align: center; font-size: 11px; }
+.preview-host .media-qc-dot-pass { color: #1a7f37; }
+.preview-host .media-qc-dot-warn { color: #9a6700; }
+.preview-host .media-qc-dot-fail { color: #d73a49; }
+.preview-host .media-qc-metric { color: var(--fg); }
+.preview-host .media-qc-value { color: var(--fg-2); text-align: right; font-variant-numeric: tabular-nums; }
+.preview-host .media-qc-fix td { font-size: 11px; color: var(--fg-2); opacity: .85;
+  padding: 0 6px 5px 20px; border-bottom: 1px solid var(--border); }
+.preview-host .media-qc-export { font-weight: 600; }
 /* Phase 3 — secondary drop zone */
 .preview-host .media-ed-secondary-area { display: flex; flex-direction: column; gap: 6px; }
 .preview-host .media-ed-secondary-label { font-size: 11px; font-weight: 600; color: var(--fg);

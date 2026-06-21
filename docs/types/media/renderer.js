@@ -298,6 +298,14 @@ export async function render(intake, ctx = {}) {
     });
     wv.wrap.append(dyn.wrap); panels.push(dyn);
 
+    // ── P8: Audiobook QC (ACX) — read-only pass/fail card + one-click ACX export.
+    // CPU-lazy: nothing decodes / loads ffmpeg until Run QC / Export for ACX is clicked.
+    const qc = makeTogglePanel({
+      label: 'Audiobook QC (ACX)', panelClass: 'media-qc-toggle-panel',
+      mount: async (panel) => (await import('./qc-ui.js')).mountAcxQcPanel(panel, intake, el),
+    });
+    wv.wrap.append(qc.wrap); panels.push(qc);
+
     // ── Multi-track mixer ("swim lanes") — decode + transport only on first open.
     const mx = makeTogglePanel({
       label: 'Multi-track mixer', panelClass: 'media-mx-panel',
