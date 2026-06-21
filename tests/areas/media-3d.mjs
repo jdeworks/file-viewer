@@ -287,6 +287,16 @@ export async function run(ctx) {
     if (spCanvas) pass('audio spectrum: spectrum canvas mounted'); else fail('sp canvas missing');
     if (spSliders.length === 9) pass('audio spectrum: 9-band EQ sliders'); else fail('sp sliders: ' + spSliders.length);
     if (spPreset) pass('audio spectrum: preset selector present'); else fail('sp preset missing');
+    // Overlaid dual spectrum: legend names both the Original and Processed curves.
+    const spLegend = await page.$$eval('#previewHost .sp-legend .sp-leg', (els) => els.map((e) => e.textContent));
+    if (spLegend.some((t) => /Original/.test(t)) && spLegend.some((t) => /Processed/.test(t)))
+      pass('audio spectrum: overlaid original-vs-processed legend present');
+    else fail('sp legend: ' + spLegend.join(','));
+    // LUFS normalization: a target selector offers the streaming/broadcast presets.
+    const normOpts = await page.$$eval('#previewHost .sp-lufs-row select option', (els) => els.map((e) => e.textContent));
+    if (normOpts.some((t) => /-14/.test(t)) && normOpts.some((t) => /-23/.test(t)) && normOpts.includes('Off'))
+      pass('audio spectrum: LUFS normalize targets present (-14 … -23, Off)');
+    else fail('lufs normalize opts: ' + normOpts.join(','));
     // Close the panel
     await spBtn.click();
     await page.waitForSelector('#previewHost .media-sp-panel[hidden]', { state: 'attached', timeout: 3000 });
@@ -359,4 +369,27 @@ export async function run(ctx) {
   if (txPanel) pass('transcoding panel present for AVI'); else fail('no transcoding panel for AVI');
   const txText = txPanel ? await page.$eval('#previewHost .media-tx-panel .media-tx-msg', (e) => e.textContent) : '';
   if (/Advanced/i.test(txText)) pass('transcoding hint points to Advanced settings'); else fail('transcoding msg: ' + txText.slice(0, 80));
+
+  // ── Video studio ── the video branch builds the extended filter panel + an audio
+  // mixer (the movie's audio routed through the shared EQ/spectrum graph). These are
+  // built regardless of native playability, so they're present even for the AVI.
+  const vidFilterSliders = await page.$$eval(
+    '#previewHost .media-filter-panel .media-filter-row input[type="range"]',
+    (els) => els.map((e) => e.dataset.filter),
+  );
+  if (['brightness', 'contrast', 'saturate', 'hue', 'blur', 'grayscale', 'invert'].every((f) => vidFilterSliders.includes(f)))
+    pass('video studio: extended CSS filters present (incl. hue/blur/grayscale/invert)');
+  else fail('video filters: ' + vidFilterSliders.join(','));
+  // Audio mixer toggle: opens a Spectrum & EQ panel routed through the video's audio.
+  const mixerBtn = await page.$('#previewHost .media-vid-mixer .media-wv-toggle');
+  if (mixerBtn) {
+    const mixerText = await mixerBtn.evaluate((e) => e.textContent);
+    if (/mixer/i.test(mixerText)) pass('video studio: audio mixer toggle present'); else fail('mixer btn: ' + mixerText);
+    await mixerBtn.click();
+    await page.waitForSelector('#previewHost .media-vid-mixer .media-sp-panel:not([hidden])', { timeout: 5000 });
+    const mixerSliders = await page.$$('#previewHost .media-vid-mixer .sp-eq-slider');
+    const mixerLegend = await page.$('#previewHost .media-vid-mixer .sp-legend');
+    if (mixerSliders.length === 9) pass('video studio: audio mixer mounts the 9-band EQ on the movie audio'); else fail('mixer sliders: ' + mixerSliders.length);
+    if (mixerLegend) pass('video studio: audio mixer shows the overlaid-spectrum legend'); else fail('mixer legend missing');
+  } else fail('video studio: audio mixer toggle not found');
 }

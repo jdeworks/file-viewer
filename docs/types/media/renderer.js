@@ -98,69 +98,14 @@ export async function render(intake, ctx = {}) {
   sleepNote.className = 'media-sleep-note';
   tools.append(sleepWrap, sleepNote);
 
-  // ── Video-only controls ──
+  // ── Video studio (filters + audio mixer) ──
+  // Lazy-loaded so the audio-only path never pays for it. The mixer routes the
+  // <video>'s audio through the shared WebAudio EQ/analyser graph (audio-graph.js).
+  let videoStudio = null;
   if (info.kind === 'video') {
-    const videoControls = document.createElement('div');
-    videoControls.className = 'media-video-controls';
-
-    // Seek ±10s buttons
-    const seekBack = btn('⏪ 10s', 'Seek back 10 seconds');
-    seekBack.addEventListener('click', () => { el.currentTime = Math.max(0, el.currentTime - 10); });
-    const seekFwd = btn('⏩ 10s', 'Seek forward 10 seconds');
-    seekFwd.addEventListener('click', () => { el.currentTime = Math.min(el.duration || 0, el.currentTime + 10); });
-
-    // Fullscreen button
-    const fsBtn = btn('⛶ Full', 'Enter fullscreen');
-    fsBtn.addEventListener('click', () => { (el.closest('.media-doc') || el).requestFullscreen?.(); });
-
-    // Filter controls
-    const filterDetails = document.createElement('details');
-    filterDetails.className = 'media-filter-panel';
-    const filterSummary = document.createElement('summary');
-    filterSummary.textContent = 'Filters';
-    filterDetails.appendChild(filterSummary);
-
-    let brVal = 1.0, conVal = 1.0, satVal = 1.0;
-    function applyFilters() {
-      el.style.filter = 'brightness(' + brVal + ') contrast(' + conVal + ') saturate(' + satVal + ')';
-    }
-
-    const filterSliders = [
-      { label: 'Brightness', min: '0.5', max: '2.0', step: '0.05', def: 1.0, get: () => brVal, set: (v) => { brVal = v; } },
-      { label: 'Contrast',   min: '0.5', max: '2.0', step: '0.05', def: 1.0, get: () => conVal, set: (v) => { conVal = v; } },
-      { label: 'Color',      min: '0',   max: '2.0', step: '0.05', def: 1.0, get: () => satVal, set: (v) => { satVal = v; } },
-    ];
-    const sliderEls = [];
-    for (const s of filterSliders) {
-      const row = document.createElement('div');
-      row.className = 'media-filter-row';
-      const lbl = document.createElement('label');
-      lbl.textContent = s.label;
-      const slider = document.createElement('input');
-      slider.type = 'range';
-      slider.min = s.min;
-      slider.max = s.max;
-      slider.step = s.step;
-      slider.value = String(s.def);
-      slider.addEventListener('input', () => { s.set(parseFloat(slider.value)); applyFilters(); });
-      sliderEls.push({ slider, def: s.def, set: s.set });
-      row.append(lbl, slider);
-      filterDetails.appendChild(row);
-    }
-    const resetBtn = document.createElement('button');
-    resetBtn.type = 'button';
-    resetBtn.className = 'media-track-btn';
-    resetBtn.textContent = 'Reset';
-    resetBtn.title = 'Reset filters to default';
-    resetBtn.addEventListener('click', () => {
-      brVal = 1.0; conVal = 1.0; satVal = 1.0;
-      for (const { slider, def } of sliderEls) slider.value = String(def);
-      el.style.filter = '';
-    });
-    filterDetails.appendChild(resetBtn);
-
-    videoControls.append(seekBack, seekFwd, fsBtn, filterDetails);
-    tools.appendChild(videoControls);
+    const { buildVideoStudio } = await import('./video-studio.js');
+    videoStudio = buildVideoStudio(el);
+    tools.appendChild(videoStudio.controls);
   }
 
   // ── FFmpeg status pill ──
@@ -347,6 +292,7 @@ export async function render(intake, ctx = {}) {
 
   if (info.kind === 'audio') host.append(name, el, waveformWrap, tools);
   else host.append(el, name, tools);
+  if (videoStudio) host.append(videoStudio.mixer);
   host.append(hintPanel);
   if (editorPanel) host.append(editorPanel);
   if (trackListEl) host.append(trackListEl);
@@ -442,6 +388,7 @@ export async function render(intake, ctx = {}) {
       if (editorRevoke) editorRevoke();
       if (wvController) { wvController.destroy(); wvController = null; }
       if (spController) { spController.destroy(); spController = null; }
+      if (videoStudio) { videoStudio.destroy(); videoStudio = null; }
     },
   };
 }

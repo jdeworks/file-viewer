@@ -1,7 +1,8 @@
 // Audio waveform renderer + Web Audio gain helper.
+import { getGraph } from './audio-graph.js';
 // Module-level AudioContext singleton (created lazily, reused across renders).
 let _ac = null;
-const _elNodes = new WeakMap(); // audio element → { source, gainNode }
+const _gainProxies = new WeakMap(); // audio element → { gain: { value } } proxy
 
 function getAC() {
   if (!_ac || _ac.state === 'closed') {
@@ -10,20 +11,18 @@ function getAC() {
   return _ac;
 }
 
-// Connect el through a GainNode → AudioContext.destination. Idempotent: safe to call
-// repeatedly on the same element (createMediaElementSource can only be called once per el).
+// Connect el through the shared media graph's mixer gain. createMediaElementSource
+// can only be called ONCE per element, so the mixer gain must live in the same graph
+// as the Spectrum & EQ panel (audio-graph.js owns the single source). This returns a
+// small proxy whose `.gain.value` setter drives that graph's mixer gain — keeping the
+// old `connectGain(el).gain.value = x` call sites working without a second source.
 export function connectGain(el) {
-  if (_elNodes.has(el)) return _elNodes.get(el).gainNode;
-  const ac = getAC();
-  if (!ac) return null;
-  try {
-    const source = ac.createMediaElementSource(el);
-    const gainNode = ac.createGain();
-    source.connect(gainNode);
-    gainNode.connect(ac.destination);
-    _elNodes.set(el, { source, gainNode });
-    return gainNode;
-  } catch { return null; }
+  if (_gainProxies.has(el)) return _gainProxies.get(el);
+  const graph = getGraph(el);
+  if (!graph) return null;
+  const proxy = { gain: { get value() { return graph.getUserGain(); }, set value(v) { graph.setUserGain(v); } } };
+  _gainProxies.set(el, proxy);
+  return proxy;
 }
 
 async function drawWaveform(canvas, file, { ownContext = false } = {}) {
