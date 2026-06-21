@@ -637,27 +637,31 @@ export async function render(intake, ctx = {}) {
     img.style.filter = '';
   });
 
-  // Compare — split view of the original vs the current (edited) image.
+  // Compare — original vs current (edited): split / overlay / diff. The view is a
+  // self-contained lazy module so this renderer stays thin. Original always uses
+  // the pristine `url`; current uses the latest edit.
   const compareBtn = canEdit ? host.querySelector('.imgv-compare') : null;
-  let compareEl = null;
+  let compareView = null;
   function exitCompare() {
-    if (!compareEl) return;
-    compareEl.remove(); compareEl = null;
+    if (!compareView) return;
+    compareView.destroy(); compareView = null;
     img.style.display = '';
     if (drawOverlay) drawOverlay.style.display = '';
+    host.querySelector('.imgv-bar').classList.remove('imgv-compare-on');
     compareBtn?.classList.remove('active');
+    apply();   // restore layout/pan so the image is interactive again
   }
-  compareBtn?.addEventListener('click', () => {
-    if (compareEl) { exitCompare(); return; }
+  compareBtn?.addEventListener('click', async () => {
+    if (compareView) { exitCompare(); return; }
     const stage = host.querySelector('.imgv-stage');
     img.style.display = 'none';
     if (drawOverlay) drawOverlay.style.display = 'none';
-    compareEl = document.createElement('div');
-    compareEl.className = 'imgv-compare-view';
-    compareEl.innerHTML = '<figure><figcaption>Original</figcaption><img src="' + url + '"></figure>'
-      + '<figure><figcaption>Current</figcaption><img src="' + (editedUrl || url) + '"></figure>';
-    stage.appendChild(compareEl);
+    // Hide the edit toolbar while comparing — those tools don't apply here; the
+    // compare overlay has its own Close button.
+    host.querySelector('.imgv-bar').classList.add('imgv-compare-on');
     compareBtn.classList.add('active');
+    const { mountCompare } = await import('./compare-view.js');
+    compareView = mountCompare(stage, { originalUrl: url, currentUrl: editedUrl || url, onClose: exitCompare });
   });
 
   // Pencil / eraser drawing tools
@@ -1189,5 +1193,5 @@ export async function render(intake, ctx = {}) {
     });
   }
 
-  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
 }

@@ -235,6 +235,23 @@ export async function run(ctx) {
   await page.evaluate(() => window.__fv.downloadCurrent());
   const cleanAfterDownload = await page.evaluate(() => !window.__fv.hasUnsavedWork());
   if (cleanAfterDownload) pass('edited image download clears unsaved state'); else fail('edited image stayed dirty after download');
+  // ── Compare overlay: split / overlay (opacity) / diff (highlight) modes ──
+  await page.click('#previewHost .imgv-compare');
+  await page.waitForSelector('#previewHost .imgv-compare-view .imgv-cmp-mode', { timeout: 8000 });
+  const editToolsHiddenInCompare = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display === 'none');
+  await page.click('#previewHost .imgv-cmp-mode[data-mode="overlay"]');
+  const overlaySliders = await page.$$eval('#previewHost .imgv-cmp-op-o, #previewHost .imgv-cmp-op-c', (els) => els.length);
+  await page.click('#previewHost .imgv-cmp-mode[data-mode="diff"]');
+  await page.waitForSelector('#previewHost .imgv-cmp-stack canvas, #previewHost .imgv-cmp-note', { timeout: 8000 });
+  const diffControls = await page.$$eval('#previewHost .imgv-cmp-d-color, #previewHost .imgv-cmp-d-op, #previewHost .imgv-cmp-d-min, #previewHost .imgv-cmp-d-spread, #previewHost .imgv-cmp-d-outline', (els) => els.length);
+  if (editToolsHiddenInCompare && overlaySliders === 2 && diffControls === 5) pass('compare: overlay opacity + diff-highlight controls; edit tools hidden'); else fail('compare modes: ' + JSON.stringify({ editToolsHiddenInCompare, overlaySliders, diffControls }));
+  await page.click('#previewHost .imgv-cmp-close');
+  const cmpRestored = await page.evaluate(() => ({
+    gone: !document.querySelector('#previewHost .imgv-compare-view'),
+    imgShown: getComputedStyle(document.querySelector('#previewHost .imgv-img')).display !== 'none',
+    toolsShown: getComputedStyle(document.querySelector('#previewHost .imgv-edit-tools')).display !== 'none',
+  }));
+  if (cmpRestored.gone && cmpRestored.imgShown && cmpRestored.toolsShown) pass('compare closes + restores image interaction'); else fail('compare close: ' + JSON.stringify(cmpRestored));
   // Image export (loadExports hook): menu offers PNG/JPEG/WebP, and a conversion actually downloads.
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
