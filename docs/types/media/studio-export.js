@@ -104,12 +104,26 @@ export function buildExportPanel(intake, mediaEl, kind) {
   actionRow.append(runBtn, cancelBtn);
   panel.appendChild(actionRow);
 
-  // Cross-clip transition stub (crossfade / xfade need the multi-track timeline = P5/P6).
+  // Cross-clip transitions are now WIRED (P6 video timeline / P5 audio mixer). This line is
+  // no longer a "coming" stub — it points the user at the panel that does the cross-clip work.
+  // (For video: dissolve/xfade + mux-music live in the Video timeline; for audio: the
+  // multi-track mixer crossfades clips on its lanes.)
   const stub = document.createElement('p');
-  stub.className = 'media-ed-warn media-export-stub';
-  stub.textContent = kind === 'video'
-    ? 'Dissolve / crossfade (xfade) between two clips needs the multi-track timeline — coming.'
-    : 'Crossfade (acrossfade) between two clips needs the multi-track timeline — coming.';
+  stub.className = 'media-export-stub media-ed-note';
+  if (kind === 'video') {
+    stub.append(document.createTextNode('Dissolve / crossfade (xfade) between two clips lives in the '));
+    const lnk = document.createElement('button');
+    lnk.type = 'button'; lnk.className = 'media-tl-open'; lnk.textContent = 'Video timeline';
+    lnk.addEventListener('click', () => {
+      const wrap = panel.closest('.media-doc')?.querySelector('.media-tl-panel');
+      const toggle = wrap?.previousElementSibling;
+      if (toggle && wrap?.hidden) toggle.click();
+      wrap?.scrollIntoView({ behavior: 'smooth' });
+    });
+    stub.append(lnk, document.createTextNode(' (below) — drop a second clip there to bake it.'));
+  } else {
+    stub.textContent = 'Crossfade (acrossfade) between two clips lives in the Multi-track mixer — add a second lane there to crossfade.';
+  }
   panel.appendChild(stub);
 
   // ── Progress + result ──

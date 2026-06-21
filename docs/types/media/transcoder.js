@@ -16,6 +16,9 @@ import { loadGlobal, vendor } from '../../core/script-loader.js';
 // (studio-export.js, tests) keep importing them from transcoder.js unchanged.
 import { buildAudioFilterChain, audioEncodeArgs } from './audio-filters.js';
 export { buildAudioFilterChain, audioEncodeArgs } from './audio-filters.js';
+// P6 — PURE timeline transition arg builders (xfade / acrossfade / mux music). Kept in
+// video-filters.js so they stay unit-testable and this file stays under the LOC cap.
+import { buildXfadeArgs, buildAcrossfadeArgs, buildMuxMusicArgs } from './video-filters.js';
 
 let ffmpegInstance = null;
 const CORE_JS = vendor('ffmpeg/ffmpeg-core.js');
@@ -378,6 +381,48 @@ export async function runOperation(ff, opId, params, intake) {
         const arResult = ff.FS('readFile', outputName);
         const arBlob = new Blob([arResult.buffer], { type: 'video/mp4' });
         return { url: URL.createObjectURL(arBlob), filename: outBase + '.mp4', bytes: arResult.byteLength };
+      }
+
+      // ── P6: timeline transitions (multi-file). A second clip / music bed is written
+      // to MEMFS, then a PURE arg builder (video-filters.js) produces the ffmpeg args.
+      // xfade/acrossfade need both inputs decodable; mismatched video → friendly error. ──
+      case 'xfade':
+      case 'acrossfade':
+      case 'muxmusic': {
+        if (!params.secondary) throw new Error('No second clip / music file provided.');
+        const sec = params.secondary;
+        const secExt = (sec.name.includes('.') ? sec.name.split('.').pop() : 'mp4').toLowerCase();
+        const secName = 'secondary.' + secExt;
+        ff.FS('writeFile', secName, new Uint8Array(await sec.arrayBuffer()));
+        let tlArgs, tlOut, tlMime, tlBase;
+        if (opId === 'xfade') {
+          tlOut = 'out.mp4'; tlMime = 'video/mp4'; tlBase = base + '_xfade';
+          tlArgs = buildXfadeArgs(inputName, secName, tlOut,
+            { durationA: params.durationA, transition: params.transition, duration: params.duration });
+        } else if (opId === 'acrossfade') {
+          tlOut = 'out.m4a'; tlMime = 'audio/mp4'; tlBase = base + '_crossfade';
+          tlArgs = buildAcrossfadeArgs(inputName, secName, tlOut, { duration: params.duration });
+        } else {
+          tlOut = 'out.mp4'; tlMime = 'video/mp4'; tlBase = base + '_music';
+          tlArgs = buildMuxMusicArgs(inputName, secName, tlOut, { musicGain: params.musicGain });
+        }
+        try {
+          await ff.run(...tlArgs);
+        } catch (err) {
+          const why = opId === 'xfade'
+            ? 'Both clips must share resolution, frame-rate and pixel format for an xfade dissolve. Downscale them to the same size first.'
+            : (opId === 'acrossfade'
+              ? 'Both clips need a decodable audio track to crossfade.'
+              : 'The music bed could not be mixed under the video audio.');
+          throw new Error(why + '\n\n' + (err.message || String(err)));
+        } finally {
+          try { ff.FS('unlink', secName); } catch { /* ignore */ }
+        }
+        const tlResult = ff.FS('readFile', tlOut);
+        const tlExt = tlOut.split('.').pop();
+        try { ff.FS('unlink', tlOut); } catch { /* ignore */ }
+        return { url: URL.createObjectURL(new Blob([tlResult.buffer], { type: tlMime })),
+          filename: tlBase + '.' + tlExt, bytes: tlResult.byteLength };
       }
 
       default:

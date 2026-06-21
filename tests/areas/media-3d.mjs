@@ -504,9 +504,10 @@ export async function run(ctx) {
   const fadeInPresent = await page.$('#previewHost .media-ed-fade-in');
   const fadeOutPresent = await page.$('#previewHost .media-ed-fade-out');
   if (fadeInPresent && fadeOutPresent) pass('P3: audio fade-in / fade-out controls present'); else fail('fade controls: in=' + !!fadeInPresent + ' out=' + !!fadeOutPresent);
-  // Crossfade stub: the panel must say cross-clip needs the timeline (it is NOT built).
+  // P6 WIRED: the audio cross-clip line now points at the (built) Multi-track mixer
+  // rather than the old "needs timeline — coming" stub.
   const stubText = await page.$eval('#previewHost .media-export-stub', (e) => e.textContent).catch(() => '');
-  if (/Crossfade.*timeline/i.test(stubText)) pass('P3: crossfade stubbed as "needs timeline"'); else fail('crossfade stub: ' + stubText.slice(0, 80));
+  if (/Crossfade.*mixer/i.test(stubText)) pass('P6: audio crossfade points to the multi-track mixer (wired)'); else fail('crossfade stub: ' + stubText.slice(0, 80));
   // The live-EQ summary updates with the fade duration (proves settings are read live).
   await page.fill('#previewHost .media-ed-fade-in', '2');
   await page.evaluate(() => document.querySelector('#previewHost .media-ed-fade-in').dispatchEvent(new Event('input', { bubbles: true })));
@@ -598,6 +599,68 @@ export async function run(ctx) {
   if (/Export & Fades \(video\)/i.test(vidExportHeader)) pass('P3: video export panel offers fade-to-black'); else fail('video export header: ' + vidExportHeader);
   const vidFadeIn = await page.$('#previewHost .media-export-panel .media-ed-fade-in');
   if (vidFadeIn) pass('P3: video fade-to/from-black duration controls present'); else fail('video fade controls missing');
+
+  // ── P6: Video timeline (2-lane) + transitions + visual trim ───────────────────
+  // Built for video when ffmpeg is enabled; CPU-lazy (no timeline DOM until opened).
+  const tlToggle = await page.evaluateHandle(() =>
+    [...document.querySelectorAll('#previewHost .media-wv-toggle')].find((b) => /Video timeline/.test(b.textContent)) || null);
+  const tlToggleExists = await tlToggle.evaluate((e) => !!e);
+  if (tlToggleExists) {
+    pass('P6: video timeline toggle button present');
+    const preTl = await page.$('#previewHost .tl-wrap');
+    if (!preTl) pass('P6: video timeline CPU-lazy (no DOM until opened)'); else fail('timeline mounted before open');
+    await tlToggle.asElement().click();
+    await page.waitForSelector('#previewHost .tl-wrap', { timeout: 12000 });
+    // 2 lanes: video lane (clip A) + second/music lane.
+    const lanes = await page.$$eval('#previewHost .tl-lane', (els) => els.length);
+    if (lanes === 2) pass('P6: timeline mounts 2 lanes (video + second/music)'); else fail('timeline lanes: ' + lanes);
+    // Thumbnail strip with a load-on-demand button + trim handles (in/out).
+    const tlBits = await page.evaluate(() => ({
+      strip: !!document.querySelector('#previewHost .tl-strip'),
+      thumbBtn: !!document.querySelector('#previewHost .tl-thumb-btn'),
+      handleIn: !!document.querySelector('#previewHost .tl-handle-in'),
+      handleOut: !!document.querySelector('#previewHost .tl-handle-out'),
+      drop: !!document.querySelector('#previewHost .tl-lane--b .media-ed-drop-zone'),
+    }));
+    if (tlBits.strip && tlBits.thumbBtn) pass('P6: thumbnail strip + on-demand thumbnail button present'); else fail('thumb strip: ' + JSON.stringify(tlBits));
+    if (tlBits.handleIn && tlBits.handleOut) pass('P6: visual trim handles (in/out) present'); else fail('trim handles: ' + JSON.stringify(tlBits));
+    if (tlBits.drop) pass('P6: second-clip / music drop zone present'); else fail('timeline drop zone missing');
+    // Transition controls: dissolve/xfade selector + length + the four action buttons.
+    const transOpts = await page.$$eval('#previewHost .tl-trans-sel option', (els) => els.map((e) => e.value));
+    if (transOpts.includes('fade') && transOpts.includes('fadeblack') && transOpts.includes('wipeleft')) pass('P6: transition selector offers fade/fadeblack/wipe'); else fail('transition opts: ' + transOpts.join(','));
+    const acts = await page.evaluate(() => ({
+      fade: !!document.querySelector('#previewHost .tl-act-fade'),
+      xfade: !!document.querySelector('#previewHost .tl-act-xfade'),
+      across: !!document.querySelector('#previewHost .tl-act-across'),
+      mux: !!document.querySelector('#previewHost .tl-act-mux'),
+    }));
+    if (acts.fade && acts.xfade && acts.across && acts.mux) pass('P6: fade/xfade/acrossfade/mux action buttons present'); else fail('timeline actions: ' + JSON.stringify(acts));
+    // Cross-clip actions disabled until a second clip is dropped.
+    const xfadeDisabled = await page.$eval('#previewHost .tl-act-xfade', (e) => e.disabled);
+    if (xfadeDisabled) pass('P6: dissolve disabled until a 2nd clip is added'); else fail('xfade not gated on 2nd clip');
+    // Close → torn down.
+    await tlToggle.asElement().click();
+    await page.waitForSelector('#previewHost .tl-wrap', { state: 'detached', timeout: 4000 });
+    pass('P6: video timeline panel collapses + tears down');
+  } else fail('P6 video timeline toggle not found');
+
+  // PURE arg-builder unit checks (no ffmpeg load): xfade offset math + acrossfade/mux args.
+  const tlArgs = await page.evaluate(async () => {
+    const m = await import('./types/media/video-filters.js');
+    return {
+      offset: m.xfadeOffset(10, 1),                         // durA−d = 9
+      xfade: m.buildXfadeArgs('input.mp4', 'secondary.mp4', 'out.mp4', { durationA: 10, transition: 'fade', duration: 1 }).join(' '),
+      across: m.buildAcrossfadeArgs('input.mp3', 'secondary.mp3', 'out.m4a', { duration: 2 }).join(' '),
+      mux: m.buildMuxMusicArgs('input.mp4', 'secondary.mp3', 'out.mp4', { musicGain: 0.35 }).join(' '),
+      badTrans: m.normalizeTransition('nonsense'),
+    };
+  });
+  if (tlArgs.offset === 9) pass('P6: xfadeOffset(10,1) = 9 (durationA − transition)'); else fail('xfade offset: ' + tlArgs.offset);
+  if (/xfade=transition=fade:duration=1:offset=9/.test(tlArgs.xfade) && /\[0:a\]\[1:a\]acrossfade=d=1\[a\]/.test(tlArgs.xfade) && /libx264/.test(tlArgs.xfade)) pass('P6: xfade args build dissolve + aligned audio acrossfade'); else fail('xfade args: ' + tlArgs.xfade);
+  if (/\[0:a\]\[1:a\]acrossfade=d=2\[a\]/.test(tlArgs.across)) pass('P6: acrossfade args build d=2 audio crossfade'); else fail('acrossfade args: ' + tlArgs.across);
+  if (/volume=0\.35/.test(tlArgs.mux) && /amix=inputs=2:duration=first/.test(tlArgs.mux) && /-c:v copy/.test(tlArgs.mux)) pass('P6: mux-music args duck the bed + amix under the video audio'); else fail('mux args: ' + tlArgs.mux);
+  if (tlArgs.badTrans === 'fade') pass('P6: unknown transition normalizes to fade'); else fail('bad transition: ' + tlArgs.badTrans);
+
   // Reset settings so we don't leak ffmpeg-on into later areas sharing the page.
   await page.evaluate(() => localStorage.removeItem('fv:settings:global'));
 }

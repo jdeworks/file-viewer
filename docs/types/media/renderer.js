@@ -254,6 +254,39 @@ export async function render(intake, ctx = {}) {
   let spController = null;
   let dynController = null;
   let mxController = null;
+  let tlController = null;
+  let timelineWrap = null;
+
+  // ── P6: Video timeline (2-lane) + transitions + visual trim ──
+  // Video-only, opt-in (ffmpeg). CPU-lazy: mounts on first toggle; no ffmpeg/thumbnail
+  // work until a transition / "Thumbnails" runs. Closing the panel tears it down.
+  if (info.kind === 'video' && enableFfmpeg) {
+    const tlWrap = document.createElement('div');
+    tlWrap.className = 'media-wv-wrap';
+    const tlToggle = document.createElement('button');
+    tlToggle.type = 'button';
+    tlToggle.className = 'media-wv-toggle';
+    tlToggle.textContent = '▶ Video timeline';
+    const tlPanel = document.createElement('div');
+    tlPanel.className = 'media-tl-panel';
+    tlPanel.hidden = true;
+    tlWrap.append(tlToggle, tlPanel);
+    timelineWrap = tlWrap;
+    tlToggle.addEventListener('click', async () => {
+      tlPanel.hidden = !tlPanel.hidden;
+      tlToggle.textContent = tlPanel.hidden ? '▶ Video timeline' : '▼ Video timeline';
+      if (tlPanel.hidden) { tlController?.destroy(); tlController = null; return; }
+      if (!tlController) {
+        const { mountTimeline } = await import('./timeline.js');
+        tlController = mountTimeline(tlPanel, intake, el, (newUrl) => {
+          if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
+          transcodedUrl = newUrl; el.src = newUrl; el.load();
+          el.play().catch(() => { /* autoplay blocked */ });
+        });
+      }
+    });
+  }
+
   if (info.kind === 'audio') {
     const wvWrap = document.createElement('div');
     wvWrap.className = 'media-wv-wrap';
@@ -351,6 +384,7 @@ export async function render(intake, ctx = {}) {
   if (info.kind === 'audio') host.append(name, el, waveformWrap, tools);
   else host.append(el, name, tools);
   if (videoStudio) host.append(videoStudio.mixer);
+  if (timelineWrap) host.append(timelineWrap);
   host.append(hintPanel);
   if (editorPanel) host.append(editorPanel);
   if (exportPanel) host.append(exportPanel);
@@ -450,6 +484,7 @@ export async function render(intake, ctx = {}) {
       if (spController) { spController.destroy(); spController = null; }
       if (dynController) { dynController.destroy(); dynController = null; }
       if (mxController) { mxController.destroy(); mxController = null; }
+      if (tlController) { tlController.destroy(); tlController = null; }
       if (videoStudio) { videoStudio.destroy(); videoStudio = null; }
     },
   };
