@@ -156,8 +156,9 @@
 .imgv-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); flex-wrap: wrap; }
 .imgv-bar button { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
 .imgv-bar button.active { border-color: var(--accent); color: var(--accent); }
-/* In ASCII mode the studio takes over — hide every toolbar item except the ASCII toggle. */
-.imgv-bar.imgv-ascii-on > *:not(.imgv-ascii-btn) { display: none !important; }
+/* In ASCII mode the studio takes over completely — hide the whole image bar; the
+   studio's own toolbar has the 🖼 Image back-button (same row as its settings). */
+.imgv-bar.imgv-ascii-on { display: none !important; }
 /* Editing tools live in a collapsible group behind the 🛠 toggle (collapsed by
    default on phones so the toolbar isn't a wall of buttons). */
 .imgv-edit-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }

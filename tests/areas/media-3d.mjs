@@ -195,6 +195,11 @@ export async function run(ctx) {
   const zoomLabel = await page.$eval('#previewHost .imgv-zoom', (e) => e.textContent);
   const widthSet = await page.$eval('#previewHost .imgv-img', (e) => e.style.width);
   if (/%/.test(zoomLabel) && /px$/.test(widthSet)) pass('image zoom sets a real pixel width (' + zoomLabel + ')'); else fail('image zoom: label=' + zoomLabel + ' width=' + widthSet);
+  // Ctrl + '=' zooms in (keyboard shortcut).
+  const wPreKey = await page.$eval('#previewHost .imgv-img', (e) => parseFloat(e.style.width) || 0);
+  await page.keyboard.down('Control'); await page.keyboard.press('='); await page.keyboard.up('Control');
+  const wPostKey = await page.$eval('#previewHost .imgv-img', (e) => parseFloat(e.style.width) || 0);
+  if (wPostKey > wPreKey) pass('Ctrl+= zooms in (keyboard)'); else fail('ctrl-zoom key: ' + wPreKey + ' -> ' + wPostKey);
   await page.fill('#previewHost .imgv-text-input', 'Sample label');
   await page.click('#previewHost .imgv-text-apply');
   // "Add text" enters placement mode; must click "Commit text" to actually rasterize and set dirty
@@ -273,6 +278,12 @@ export async function run(ctx) {
   }, null, { timeout: 15000 });
   const ctlCount = await page.$$eval('#previewHost .asx-panel .asx-ctl-input', (els) => els.length);
   if (ctlCount > 15) pass('ASCII studio mounts with full control panel (' + ctlCount + ' controls)'); else fail('ascii controls: ' + ctlCount);
+  // In ASCII mode the image bar is fully hidden; the studio bar carries the 🖼 Image back-button.
+  const asciiNav = await page.evaluate(() => ({
+    imgBarHidden: getComputedStyle(document.querySelector('#previewHost .imgv-bar')).display === 'none',
+    backInStudio: !!document.querySelector('#previewHost .asx-bar .asx-back'),
+  }));
+  if (asciiNav.imgBarHidden && asciiNav.backInStudio) pass('ASCII mode hides image bar; Image back-button in studio toolbar'); else fail('ascii nav: ' + JSON.stringify(asciiNav));
   // Settings layout: open groups use a responsive grid (aligned columns), not a flat stack.
   // Settings use a row layout: label and its control sit on the SAME row (the
   // .asx-ctl is a 2-col grid), not stacked label-above-control.
@@ -289,6 +300,12 @@ export async function run(ctx) {
   await page.click('#previewHost .asx-settings-btn');   // restore
   const panelBack = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display !== 'none');
   if (panelVisInit && panelHidden && panelBack) pass('ASCII settings drawer toggles open/closed'); else fail('settings toggle: ' + JSON.stringify({ panelVisInit, panelHidden, panelBack }));
+  // Frame padding visibly pads the <pre> preview (was a no-op before — only the canvas honoured it).
+  const padBefore = await page.$eval('#previewHost .asx-out', (el) => parseFloat(getComputedStyle(el).paddingLeft));
+  await page.evaluate(() => { const i = document.querySelector('#previewHost .asx-panel input[data-key="transparentFrame"]'); i.value = 40; i.dispatchEvent(new Event('input', { bubbles: true })); });
+  const padAfter = await page.$eval('#previewHost .asx-out', (el) => parseFloat(getComputedStyle(el).paddingLeft));
+  if (padAfter > padBefore + 20) pass('frame padding pads the ASCII preview'); else fail('frame padding: ' + padBefore + ' -> ' + padAfter);
+  await page.evaluate(() => { const i = document.querySelector('#previewHost .asx-panel input[data-key="transparentFrame"]'); i.value = 0; i.dispatchEvent(new Event('input', { bubbles: true })); });
   // Switching gradient re-converts; output stays non-empty.
   await page.selectOption('#previewHost .asx-panel select[data-key="gradientName"]', 'blocks');
   await page.waitForFunction(() => document.querySelector('#previewHost .asx-out').textContent.trim().length > 0, null, { timeout: 8000 });

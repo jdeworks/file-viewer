@@ -44,7 +44,7 @@ const GROUPS = [
     { key: 'glyphColorMode', label: 'Glyph colour', kind: 'select', options: ['colored', 'white', 'grayscale'], dirty: ['render'] },
     { key: 'backgroundColor', label: 'Background', kind: 'color', dirty: ['render'] },
     { key: 'transparentBackground', label: 'Transparent BG', kind: 'checkbox', dirty: ['render'] },
-    { key: 'transparentFrame', label: 'Frame padding', kind: 'range', min: 0, max: 100, step: 1, dirty: ['render'] },
+    { key: 'transparentFrame', label: 'Frame padding', kind: 'range', min: 0, max: 100, step: 1, display: true },
   ]],
 ];
 

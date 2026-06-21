@@ -264,6 +264,7 @@ export async function render(intake, ctx = {}) {
     window.removeEventListener('mouseup', onPanUp);
   };
   stageEl.addEventListener('mousedown', (e) => {
+    if (e.button === 0 && (e.ctrlKey || e.metaKey)) { e.preventDefault(); startCtrlZoom(e); return; }
     const leftPan = e.button === 0 && !editModeActive();
     const midPan = e.button === 1;
     if (!leftPan && !midPan) return;
@@ -273,23 +274,45 @@ export async function render(intake, ctx = {}) {
     window.addEventListener('mousemove', onPanMove);
     window.addEventListener('mouseup', onPanUp);
   });
-  // Wheel zoom works even mid-edit (never conflicts with the brush). Anchors the
-  // image point under the cursor by adjusting the pan offset.
-  stageEl.addEventListener('wheel', (e) => {
-    e.preventDefault();
+  // Zoom by `factor`, keeping the image point under (clientX,clientY) fixed. The
+  // anchor defaults to the stage centre (used by the +/- keys). Shared by wheel,
+  // Ctrl+drag and the keyboard shortcuts.
+  function zoomAt(factor, clientX, clientY) {
     const r = stageEl.getBoundingClientRect();
     const prev = fit ? (img.offsetWidth / (natural || img.offsetWidth)) : zoom;
     fit = false;
-    const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
     zoom = Math.max(0.1, Math.min(16, prev * factor));
     const k = zoom / prev;
-    // keep the cursor's image point fixed: pan' = pan + rel*(1-k), rel measured
-    // from the (flex-centred) image centre to the cursor.
-    const relX = (e.clientX - r.left) - (r.width / 2 + panX);
-    const relY = (e.clientY - r.top) - (r.height / 2 + panY);
+    const cx = clientX == null ? r.left + r.width / 2 : clientX;
+    const cy = clientY == null ? r.top + r.height / 2 : clientY;
+    const relX = (cx - r.left) - (r.width / 2 + panX);
+    const relY = (cy - r.top) - (r.height / 2 + panY);
     panX += relX * (1 - k); panY += relY * (1 - k);
     apply();
+  }
+  // Wheel zoom works even mid-edit (never conflicts with the brush).
+  stageEl.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY);
   }, { passive: false });
+  // Ctrl/Cmd + drag = scrubby zoom: drag up to zoom in, down to zoom out, anchored
+  // at the press point.
+  function startCtrlZoom(e) {
+    const ax = e.clientX, ay = e.clientY; let lastY = e.clientY;
+    stageEl.style.cursor = 'ns-resize';
+    const move = (ev) => { const dy = lastY - ev.clientY; lastY = ev.clientY; if (dy) zoomAt(Math.exp(dy * 0.006), ax, ay); };
+    const up = () => { stageEl.style.cursor = ''; window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+    window.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
+  }
+  // Ctrl/Cmd with +/- (or =) zooms toward the stage centre.
+  function onZoomKey(e) {
+    if (asciiMode || !host.isConnected || !(e.ctrlKey || e.metaKey)) return;
+    const t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomAt(1.25); }
+    else if (e.key === '-' || e.key === '_') { e.preventDefault(); zoomAt(1 / 1.25); }
+  }
+  document.addEventListener('keydown', onZoomKey);
 
   img.addEventListener('error', () => {
     const ext = (intake.filename || '').split('.').pop()?.toLowerCase();
@@ -329,6 +352,7 @@ export async function render(intake, ctx = {}) {
           asciiStudio = mountAsciiStudio(asciiOut, {
             bytes: curBytes, mime: curMime, filename: intake.filename,
             onActivate: () => recordStage3AsciiActivation({ file: intake.filename }),
+            onBack: toggleAscii,   // 🖼 Image button in the studio toolbar returns here
           });
           asciiBtn.disabled = false;
         } else {
@@ -1193,5 +1217,5 @@ export async function render(intake, ctx = {}) {
     });
   }
 
-  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
 }

@@ -47,6 +47,7 @@ export function mountAsciiStudio(host, opts = {}) {
   host.classList.add('asx-root');
   host.innerHTML = `
     <div class="asx-bar">
+      ${opts.onBack ? BTN('asx-back', '🖼 Image', 'Back to the image') : ''}
       ${BTN('asx-settings-btn', '⚙ Settings', 'Show / hide the settings panel')}
       ${BTN('asx-cam', '📷 Camera', 'Live webcam → ASCII (experimental)')}
       <select class="asx-perf" title="Performance preset"><option value="">Quality preset…</option>
@@ -93,7 +94,11 @@ export function mountAsciiStudio(host, opts = {}) {
     const sd = engine.options.spaceDensity || 1;
     const r = engine.result;
     if (!r) return;
-    const avail = Math.max(40, pre.clientWidth - 24); // minus padding
+    // Frame padding shows as a coloured border around the art (matches the PNG/HTML
+    // export's transparentFrame); also keep it out of the fit-width calculation.
+    const pad = 8 + (engine.options.transparentFrame || 0);
+    pre.style.padding = pad + 'px';
+    const avail = Math.max(40, pre.clientWidth - pad * 2);
     // monospace advance ≈ 0.6em; include letter-spacing so the fit stays exact.
     const fs = (avail / (r.columns * 0.6 * sd)) * (engine.options.zoom || 1);
     pre.style.setProperty('--ascii-font-size', Math.max(2, fs).toFixed(2) + 'px');
@@ -138,6 +143,7 @@ export function mountAsciiStudio(host, opts = {}) {
 
   // Settings panel is a toggleable drawer — open when there's room, collapsed when
   // narrow (where it overlays the stage instead of pushing it; see studio.css).
+  if (opts.onBack) q('.asx-back')?.addEventListener('click', opts.onBack);
   const settingsBtn = q('.asx-settings-btn');
   function setSettingsOpen(open) {
     host.classList.toggle('asx-settings-open', open);
