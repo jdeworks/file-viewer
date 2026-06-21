@@ -465,7 +465,7 @@ export async function run(ctx) {
     } else fail('split drag missing raw/divider boxes after iframe drag');
   } else fail('split drag missing preview/divider boxes');
 
-  // ── Side-by-side: view two files (incl. non-text) next to each other ──
+  // ── Side-by-side: each pane is a full, independent editor (source/preview toggle + download) ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md');
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 15000 });
@@ -474,18 +474,43 @@ export async function run(ctx) {
   await page.setInputFiles('#sbsInput', new URL('../../docs/examples/sample.csv', import.meta.url).pathname);
   await page.waitForSelector('.sbs-overlay', { timeout: 8000 });
   const sbsPanes = await page.$$eval('.sbs-pane', (els) => els.length);
-  const sbsNames = await page.$$eval('.sbs-name', (els) => els.map((e) => e.textContent));
+  const sbsNames = await page.$$eval('.sbs-fname', (els) => els.map((e) => e.textContent));
   if (sbsPanes === 2 && sbsNames.some((n) => /welcome\.md/i.test(n)) && sbsNames.some((n) => /sample\.csv/i.test(n))) pass('side-by-side: two named panes (current + picked)'); else fail('sbs panes=' + sbsPanes + ' names=' + sbsNames.join(','));
-  // Each pane renders via renderFileInto: bodyHtml types (Welcome.md) get an iframe,
-  // parentNode types (sample.csv) get a direct element child — so assert both hosts
-  // rendered SOME content rather than counting iframes (CSV has none).
+  // Both panes are editable text types → both default to a Monaco source editor.
   await page.waitForFunction(() => {
-    const hosts = document.querySelectorAll('.sbs-host');
-    return hosts.length === 2 && [...hosts].every((h) => h.childElementCount > 0);
+    const panes = document.querySelectorAll('.sbs-pane');
+    return panes.length === 2 && [...panes].every((p) => p.querySelector('.sbs-source .monaco-editor'));
+  }, null, { timeout: 20000 });
+  pass('side-by-side: both panes mount an independent Monaco source editor');
+  // (a) An editable pane exposes a Monaco controller you can type into; getValue() reflects it.
+  const sbsEdit = await page.evaluate(() => {
+    const panes = document.querySelector('.sbs-overlay').__sbsPanes;
+    const rv0 = panes[0].rawview(); const rv1 = panes[1].rawview();
+    const before0 = rv0.getValue();
+    rv0.setValue(before0 + '\nedited pane 0');
+    // Independence: editing pane 0 must NOT change pane 1.
+    const pane1Unchanged = rv1.getValue().indexOf('edited pane 0') === -1;
+    return { reflects: rv0.getValue().indexOf('edited pane 0') !== -1, pane1Unchanged };
+  });
+  if (sbsEdit.reflects) pass('side-by-side: editable pane Monaco accepts edits (getValue reflects)'); else fail('sbs pane edit not reflected');
+  if (sbsEdit.pane1Unchanged) pass('side-by-side: panes are independent (editing one leaves the other untouched)'); else fail('sbs panes coupled');
+  // (b) The Source/Preview toggle switches views (pane 0 → Preview re-renders from the edited text).
+  await page.click('.sbs-pane:first-child .sbs-toggle[data-sbs-view="preview"]');
+  await page.waitForFunction(() => {
+    const host = document.querySelector('.sbs-pane:first-child .sbs-host');
+    const src = host.querySelector('.sbs-source'), prev = host.querySelector('.sbs-preview');
+    return src && prev && src.style.display === 'none' && prev.style.display !== 'none' && prev.childElementCount > 0;
   }, null, { timeout: 12000 });
-  pass('side-by-side: both files rendered independently');
+  pass('side-by-side: Source/Preview toggle switches the pane view');
+  // (c) Per-pane Download yields a download with the right filename.
+  const [sbsDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('.sbs-pane:nth-child(2) .sbs-dl'),
+  ]);
+  if (/sample\.csv$/.test(sbsDl.suggestedFilename())) pass('side-by-side: per-pane Download preserves filename (' + sbsDl.suggestedFilename() + ')'); else fail('sbs download name: ' + sbsDl.suggestedFilename());
+  // (d) Closing disposes both panes and removes the overlay.
   await page.click('.sbs-close');
-  if (!(await page.$('.sbs-overlay'))) pass('side-by-side closes'); else fail('sbs did not close');
+  if (!(await page.$('.sbs-overlay'))) pass('side-by-side closes (panes disposed, overlay removed)'); else fail('sbs did not close');
 
   // ── Editor mode for Monaco code types (gcode): editable Monaco + Ctrl+S download ──
   await page.goto(origin, { waitUntil: 'load' });
