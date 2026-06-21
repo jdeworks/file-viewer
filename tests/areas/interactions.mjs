@@ -29,9 +29,11 @@ export async function run(ctx) {
     rv.setValue('Title');
     rv.setSelection(1, 1, 1, 1);
   });
-  await page.click('#markdownTools [data-md-action="heading"]');
+  await page.evaluate(() => document.querySelector('#markdownTools [data-md-action="heading"]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })));
+  await page.waitForSelector('.md-heading-menu', { timeout: 4000 });
+  await page.click('.md-heading-item[data-level="1"]');
   const mdHeading = await page.evaluate(() => window.__fv.state.rawview.getValue());
-  if (mdHeading === '# Title') pass('Markdown tools: heading action formats current line'); else fail('heading result: ' + mdHeading);
+  if (mdHeading === '# Title') pass('Markdown tools: heading action formats current line (H1 from picker)'); else fail('heading result: ' + mdHeading);
   await page.evaluate(() => {
     const rv = window.__fv.state.rawview;
     rv.setValue('bold italic');
@@ -603,4 +605,46 @@ export async function run(ctx) {
   await page.click('#typeHelpDialog [data-close]');
   await page.waitForFunction(() => !document.getElementById('typeHelpDialog')?.open, null, { timeout: 4000 });
   pass('type help: close button dismisses the modal');
+
+  // ── Markdown heading levels + WYSIWYG compare/side-by-side handoff ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Welcome.md');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 20000 });
+  // Make sure we're in Monaco (not auto-restored WYSIWYG) for the source-path heading test.
+  if (await page.evaluate(() => !!window.__fv.state.wysiwygActive)) {
+    await page.evaluate(() => document.getElementById('wysiwygBtn').click());
+    await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
+  }
+  // The "H" button opens a level picker; choosing Heading 3 applies ### in the source.
+  await page.evaluate(() => { const rv = window.__fv.state.rawview; rv.setValue('Section title'); rv.setSelection(1, 1, 1, 1); });
+  await page.evaluate(() => document.querySelector('#markdownTools [data-md-action="heading"]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })));
+  await page.waitForSelector('.md-heading-menu', { timeout: 4000 });
+  await page.click('.md-heading-item[data-level="3"]');
+  const h3src = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (h3src === '### Section title') pass('markdown heading menu: applies H3 in the source editor'); else fail('heading H3 source: ' + JSON.stringify(h3src));
+
+  // In WYSIWYG the same picker toggles a real heading node (H2), and the line-based text utils hide.
+  await page.evaluate(() => window.__fv.state.rawview.setValue('Visual heading'));
+  await page.evaluate(() => document.getElementById('wysiwygBtn').click());
+  await page.waitForSelector('#editor .tiptap-host .ProseMirror', { timeout: 15000 });
+  await page.click('#editor .tiptap-host .ProseMirror');
+  await page.evaluate(() => document.querySelector('#markdownTools [data-md-action="heading"]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })));
+  await page.waitForSelector('.md-heading-menu', { timeout: 4000 });
+  await page.click('.md-heading-item[data-level="2"]');
+  const h2wys = await page.evaluate(() => !!document.querySelector('#editor .tiptap-host .ProseMirror h2'));
+  if (h2wys) pass('markdown heading menu: applies H2 in the WYSIWYG editor'); else fail('WYSIWYG H2 not applied');
+  const tuHidden = await page.evaluate(() => !!document.getElementById('textUtils')?.hidden);
+  if (tuHidden) pass('WYSIWYG: line-based text utils (sort/trim/dedup) hidden'); else fail('textUtils visible in WYSIWYG');
+
+  // Compare button while WYSIWYG is active → exits to the Monaco raw editor + shows the flashing compare bar.
+  await page.evaluate(() => document.getElementById('compareBtn').click());
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
+  await page.waitForFunction(() => !document.getElementById('compareBar').hidden, null, { timeout: 8000 });
+  const afterCompare = await page.evaluate(() => ({
+    wys: !!window.__fv.state.wysiwygActive,
+    flash: document.getElementById('compareBar').classList.contains('flash'),
+  }));
+  if (!afterCompare.wys && afterCompare.flash) pass('compare in WYSIWYG: switches back to raw view + flashes the drop target'); else fail('compare-from-wysiwyg: ' + JSON.stringify(afterCompare));
+  await page.click('#compareBar .compare-stop');
+  await page.evaluate(() => { window.__fv.state.downloadedSinceEdit = true; window.__fv.state.sessionEdits.clear(); });
 }

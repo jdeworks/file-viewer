@@ -84,6 +84,11 @@ function showCompareTarget() {
   const bar = $('compareBar');
   bar.querySelector('.compare-label').textContent = 'Drop a sidebar file here to compare, or choose a file.';
   bar.hidden = false;
+  // Flash the bar so the (easy-to-miss) drop target draws the eye. Outline + background only —
+  // no border, so the surrounding layout never shifts. Reflow restarts the animation each time.
+  bar.classList.remove('flash');
+  void bar.offsetWidth;
+  bar.classList.add('flash');
   state.mode = 'raw';
   syncRawModeButtons();
   applyLayout();

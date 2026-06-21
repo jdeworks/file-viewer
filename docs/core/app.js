@@ -26,7 +26,7 @@ import { startSideBySide, openSideBySide } from './sidebyside.js';
 import { initLayout, layoutTopbar, toggleMoreMenu, closeMoreMenu, updateExportButton, closeExportMenu, toggleExportMenu, applyLayout, applyPreviewPaneWidth, initSplitDivider } from './layout.js';
 import { mapPreviewToRaw, mapRawToPreview, syncScrollFromRaw, syncScrollFromPreview } from './sync.js';
 import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare, initCompareDropTarget } from './compare.js';
-import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent } from './rawpane.js';
+import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent, exitWysiwygForFeature } from './rawpane.js';
 import { buildMetadata } from './meta-drawer.js';
 import { buildTypeHelp } from './type-help.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, showFolderLoading, hideFolderLoading } from './folder.js';
@@ -459,7 +459,7 @@ function init() {
     else document.documentElement.requestFullscreen?.();
   });
   $('screenshotBtn').addEventListener('click', takeScreenshot);
-  $('sbsBtn').addEventListener('click', startSideBySide);
+  $('sbsBtn').addEventListener('click', async () => { await exitWysiwygForFeature(); startSideBySide(); });
   $('sbsInput').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; if (f) openSideBySide(f); });
   $('exportBtn').addEventListener('click', toggleExportMenu);
   $('enhanceChip').querySelector('.ec-toggle').addEventListener('click', toggleEnhance);
@@ -477,7 +477,7 @@ function init() {
     b.addEventListener('click', () => { state.tab = b.dataset.mode; applyLayout(); }));
   document.querySelectorAll('#rawMode button:not(#compareBtn)').forEach((b) =>
     b.addEventListener('click', () => setRawMode(b.dataset.raw)));
-  $('compareBtn').addEventListener('click', startCompare);
+  $('compareBtn').addEventListener('click', async () => { await exitWysiwygForFeature(); startCompare(); });
   $('compareInput').addEventListener('change', onComparePicked); initCompareDropTarget();
   $('compareBar').querySelector('.compare-stop').addEventListener('click', stopCompare);
   $('downloadBtn').addEventListener('click', downloadCurrent);
