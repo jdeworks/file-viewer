@@ -1,16 +1,11 @@
-// Excel/ODS preview: SheetJS -> rows per sheet -> shared tabular renderer (multi-sheet).
-import { readWorkbook } from './xlsxlib.js';
-import { renderTables } from '../../../core/tabular.js';
+// Excel/ODS preview + inline editor. SheetJS parses the workbook (in the parent, trusted) and we
+// render every sheet as an EDITABLE grid in the parent pane (parentNode mode), with a per-cell
+// delta buffer and a "Download edited .xlsx" that writes the modified workbook via SheetJS —
+// untouched sheets are preserved. .xls/.ods open editable too (SheetJS reads them; export is xlsx).
+import { mountXlsxEditor } from './editor.js';
 
-export async function render(intake, ctx) {
-  const settings = ctx?.settings || {};
-  const { XLSX, wb } = await readWorkbook(intake);
-  const sheets = wb.SheetNames.map((name) => ({
-    name,
-    rows: XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: '' }),
-  }));
-  return {
-    bodyHtml: renderTables({ sheets, firstRowHeader: settings.firstRowHeader !== false }),
-    hadUnsafe: false,
-  };
+export async function render(intake, _ctx) {
+  const host = document.createElement('div');
+  await mountXlsxEditor(intake, host);
+  return { parentNode: host };
 }

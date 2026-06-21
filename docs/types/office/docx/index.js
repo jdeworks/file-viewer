@@ -9,7 +9,7 @@ export default {
     preview: true,
     diff: false,
     magicSelector: false,
-    screenshot: true,
+    screenshot: false,   // editor in the parent pane — not a static sanitized body
   },
   syntaxLanguage: null,
   loadRenderer: () => import('./renderer.js'),

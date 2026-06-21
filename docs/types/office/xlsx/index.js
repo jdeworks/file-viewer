@@ -9,17 +9,14 @@ export default {
     preview: true,
     diff: false,
     magicSelector: false,
-    screenshot: true,
+    screenshot: false,   // editable grid in the parent pane — not a static sanitized body
   },
   syntaxLanguage: null,
   loadRenderer: () => import('./renderer.js'),
   loadMetadata: () => import('./metadata.js'),
-  loadExports: () => import('./exports.js'),   // Export menu: CSV / JSON
+  loadExports: () => import('./exports.js'),   // Export menu: CSV / JSON / all-sheets
   settingsUrl: new URL('./settings.default.json', import.meta.url),
   settings: {
-    schema: [
-      { key: 'firstRowHeader', label: 'First row is header', category: 'viewer-common', type: 'bool', default: true },
-    ],
     presets: [
       { id: 'default', label: 'Default', url: new URL('./settings.default.json', import.meta.url) },
     ],

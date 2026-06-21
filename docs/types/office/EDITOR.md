@@ -6,20 +6,47 @@
 
 | Format | Renderer | Library | Write support |
 |--------|----------|---------|---------------|
-| DOCX | mammoth.js → sanitized HTML → sandboxed iframe | mammoth (vendored) | none |
-| XLSX | SheetJS → rows → shared tabular renderer (multi-sheet tabs) | SheetJS xlsx.full.min (vendored) | none (SheetJS can write) |
-| PPTX | pptx-preview renders each slide to canvas → PNG dataURL (cap 50 slides) | pptxviewjs + Chart.js + JSZip (vendored) | none |
+| DOCX | mammoth.js → sanitized HTML → **editable parent pane** (read-only view + TipTap "Edit" toggle) | mammoth + TipTap + DOMPurify (vendored) | **EDIT → .docx export** (HTML-faithful, `docx/editor.js` → `core/docx-export.js`) |
+| XLSX | SheetJS → **editable grid in the parent pane** (per-sheet tabs, contentEditable cells, delta buffer) | SheetJS xlsx.full.min (vendored) | **EDIT → .xlsx write-back** (`xlsx/editor.js`, `XLSX.write`; untouched sheets preserved) |
+| PPTX | pptx-preview renders each slide to canvas → PNG dataURL (cap 50 slides) | pptxviewjs + Chart.js + JSZip (vendored) | none (deferred — no faithful slide-layout writer) |
 | ODF (.odt/.odp) | JSZip → content.xml → custom XML walker (headings, lists, tables, images, ODP slides) → sanitized HTML; pictures inlined as data: URLs | JSZip + DOMPurify (vendored) | none |
 | iWork (.pages/.numbers/.keynote) | JSZip thumbnail (multi-path fallback) + Snappy/IWA protobuf text extraction (scans Document.iwa + up to 3 more IWA files, dedup-filtered, word count); Thumbnail / Text-content tab UI | JSZip + SnappyJS (vendored) | none (proprietary) |
 
-All renderers are read-only, return `{ bodyHtml }` or `{ parentNode }`, run in the
-parent (trusted), and display in a sandboxed iframe or the parent DOM. Security
-model: zero off-origin at runtime; all vendor libs pre-bundled.
+DOCX/XLSX now render in the parent pane (`{ parentNode }`) as interactive editors;
+PPTX/ODF/iWork remain read-only (iframe or parent DOM). All libs run in the parent
+(trusted, parse-only). Security model: zero off-origin at runtime; all vendor libs
+pre-bundled.
 
-**Shipped beyond the table:** XLSX exposes an Export menu (`loadExports`) that downloads
-the first sheet as CSV or JSON, plus "all sheets as JSON" for multi-sheet workbooks
-(`xlsx/exports.js`). XLSX has a `firstRowHeader` viewer setting. DOCX and XLSX expose a
-`screenshot` capability.
+**XLSX edit→write flow:** `xlsx/editor.js` renders each sheet as a `contentEditable`
+grid; edits accumulate in a per-sheet delta `Map("r,c" → value)` (no re-serialize per
+keystroke). "Download edited .xlsx" coerces edited strings (number/bool/text), patches
+the cells back onto the originally-parsed worksheet objects, and `XLSX.write`s a fresh
+.xlsx — sheets the user never touched are carried through unchanged. Cap: 2000×200
+editable cells/sheet (larger sheets are shown truncated, with a note).
+
+**DOCX edit→export flow:** mammoth → sanitized HTML (read-only view); an "Edit" toggle
+mounts TipTap (ProseMirror) over that HTML. "Download .docx" serializes the edited HTML
+via `core/docx-export.js` (minimal-OOXML writer, JSZip — no heavy writer lib).
+**Fidelity:** this is an HTML-faithful round-trip, NOT byte-level. mammoth drops page
+geometry/fonts/footnotes/comments/complex numbering on the way in; the exporter re-emits
+text, headings (bold+sized runs), bold/italic, list items (bulleted) and table *text*
+as fresh OOXML. Real Word tables/styles are not reconstructed. A note in the UI states
+this. The same writer also backs the generic "Download as Word".
+
+**Metadata:** DOCX (already rich: title/author/created/modified/word+char count/app);
+XLSX gains per-sheet size (rows×cols), defined names (named ranges), and application;
+PPTX surfaces slide count + author. All read from docProps/core.xml + app.xml (or
+SheetJS `wb.Props`/`wb.Workbook.Names`).
+
+**Shipped beyond the table:** XLSX still exposes an Export menu (`loadExports`) for CSV /
+JSON / all-sheets-JSON (`xlsx/exports.js`). DOCX/XLSX dropped the `screenshot` capability
+(parent-pane editors are not static sanitized bodies — same as the PDF editor).
+
+**Deferred — PPTX editing:** out of scope. Faithful PPTX write-back needs slide-layout /
+shape-geometry reconstruction (placeholders, masters, theme), which neither pptxviewjs nor
+any lightweight vendored writer provides; an HTML→PPTX path would lose all layout. Not worth
+shipping a low-fidelity result. iWork is proprietary (read-only by design). ODF write-back
+(re-zip mutated content.xml) is tractable but lower-value than DOCX/XLSX — left for later.
 
 ---
 

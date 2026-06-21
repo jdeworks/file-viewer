@@ -109,46 +109,91 @@ export async function run(ctx) {
   ]);
   if (/\.json$/.test(csvDownload.suggestedFilename())) pass('CSV exported to JSON (' + csvDownload.suggestedFilename() + ')'); else fail('CSV download name: ' + csvDownload.suggestedFilename());
 
-  // ── Excel module (WP19) ── multi-sheet workbook via SheetJS on the tabular renderer.
+  // ── Excel module ── multi-sheet workbook via SheetJS, now an EDITABLE grid in the parent pane.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.xlsx');
-  const xframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
-  const xf = await frameOf('iframe.fv-preview-frame');
-  await xf.waitForSelector('.sheet table', { timeout: 12000 });
-  const sheetTitles = await xf.$$eval('.sheet-title', (els) => els.map((e) => e.textContent));
-  if (sheetTitles.join(',') === 'People,Totals') pass('Excel: both sheets rendered'); else fail('sheet titles: ' + sheetTitles.join(','));
-  const xTables = await xf.$$eval('.sheet table', (els) => els.length);
-  if (xTables === 2) pass('Excel: one table per sheet'); else fail('Excel tables: ' + xTables);
-  // Multi-sheet tab switcher (CSS-only): a tab per sheet; only the active panel is visible, and
-  // clicking the 2nd tab reveals the 2nd sheet (no script — pure :checked CSS).
-  const sheetTabs = await xf.$$eval('.sheet-tabbar .sheet-tab', (els) => els.map((e) => e.textContent));
-  const panel0Visible = await xf.$eval('#tb-p0', (e) => getComputedStyle(e).display !== 'none');
-  const panel1Hidden = await xf.$eval('#tb-p1', (e) => getComputedStyle(e).display === 'none');
-  if (sheetTabs.join(',') === 'People,Totals' && panel0Visible && panel1Hidden) pass('Excel: multi-sheet tab switcher (only active sheet shown)'); else fail('sheet tabs=' + sheetTabs.join(',') + ' p0vis=' + panel0Visible + ' p1hid=' + panel1Hidden);
-  await xf.click('.sheet-tabbar .sheet-tab:nth-of-type(2)');
-  const panel1NowVisible = await xf.$eval('#tb-p1', (e) => getComputedStyle(e).display !== 'none');
-  if (panel1NowVisible) pass('Excel: clicking a tab switches sheets (CSS-only, no script)'); else fail('tab switch did not reveal sheet 2');
-  // Excel export (loadExports hook): menu offers CSV / JSON (+ all-sheets for multi-sheet); CSV fires.
-  await page.click('#exportBtn');
-  await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
-  const xlsxExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
-  if (['Download first sheet as CSV', 'Download first sheet as JSON', 'Download all sheets as JSON'].every((l) => xlsxExports.includes(l))) pass('Excel export menu offers CSV/JSON/all-sheets'); else fail('Excel exports: ' + xlsxExports.join(','));
-  const [xlsxDownload] = await Promise.all([
-    page.waitForEvent('download', { timeout: 8000 }),
-    page.click('#exportMenu .export-item:has-text("Download first sheet as CSV")'),
+  await page.waitForSelector('#previewHost .xe-table', { timeout: 15000 });
+  const xeTabs = await page.$$eval('#previewHost .xe-tab', (els) => els.map((e) => e.textContent));
+  if (xeTabs.join(',') === 'People,Totals') pass('Excel: both sheets shown as editable tabs'); else fail('xe tabs: ' + xeTabs.join(','));
+  const xeTables = await page.$$eval('#previewHost .xe-table', (els) => els.length);
+  if (xeTables === 2) pass('Excel: one editable table per sheet'); else fail('xe tables: ' + xeTables);
+  // Cells are contentEditable.
+  const cellEditable = await page.$eval('#previewHost .xe-table tbody .xe-cell', (e) => e.isContentEditable);
+  if (cellEditable) pass('Excel: cells are editable'); else fail('xe cells not editable');
+  // Download starts disabled (no edits yet).
+  const dlDisabled0 = await page.$eval('#previewHost .xe-download', (e) => e.disabled);
+  if (dlDisabled0) pass('Excel: download disabled before any edit'); else fail('xe download enabled with no edits');
+  // Edit a cell → it becomes dirty, the status updates, and download enables.
+  await page.$eval('#previewHost .xe-table tbody .xe-cell', (e) => {
+    e.focus(); e.textContent = 'EDITED_CELL';
+    e.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.waitForFunction(() => !document.querySelector('#previewHost .xe-download')?.disabled, null, { timeout: 5000 });
+  const xeInfo = await page.$eval('#previewHost .xe-info', (e) => e.textContent);
+  const xeDirty = await page.$$eval('#previewHost .xe-cell.xe-dirty', (els) => els.length);
+  if (/1 cell edited/.test(xeInfo) && xeDirty === 1) pass('Excel: edit tracked (delta buffer, cell marked dirty)'); else fail('xe edit: info=' + xeInfo + ' dirty=' + xeDirty);
+  // Download the edited workbook → a real .xlsx blob; re-parse it in-page to confirm the edit + sheets.
+  const [xlsxDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 12000 }),
+    page.click('#previewHost .xe-download'),
   ]);
-  if (/\.csv$/.test(xlsxDownload.suggestedFilename())) pass('Excel exported to CSV (' + xlsxDownload.suggestedFilename() + ')'); else fail('Excel download name: ' + xlsxDownload.suggestedFilename());
+  if (/-edited\.xlsx$/.test(xlsxDl.suggestedFilename())) pass('Excel: edited workbook downloaded (' + xlsxDl.suggestedFilename() + ')'); else fail('xe download name: ' + xlsxDl.suggestedFilename());
+  // Verify round-trip: read the downloaded bytes back through SheetJS in the page.
+  const dlPath = await xlsxDl.path();
+  const fs = await import('node:fs');
+  const b64 = fs.readFileSync(dlPath).toString('base64');
+  const rt = await page.evaluate(async (b64) => {
+    const XLSX = window.XLSX;   // already loaded by the editor (UMD global)
+    if (!XLSX) return { error: 'XLSX global missing' };
+    const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const wb = XLSX.read(bytes, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    return { sheets: wb.SheetNames, hasEdit: JSON.stringify(ws).includes('EDITED_CELL') };
+  }, b64);
+  if (rt.sheets.join(',') === 'People,Totals' && rt.hasEdit) pass('Excel: edited .xlsx round-trips (both sheets preserved, edit present)'); else fail('xe round-trip: ' + JSON.stringify(rt));
+  // Metadata: sheet count/names + per-sheet size + author surfaced.
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const xMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Sheets\s*2/.test(xMeta) && /Sheet names\s*People, Totals/.test(xMeta)) pass('Excel metadata: sheet count + names'); else fail('xlsx meta: ' + xMeta.replace(/\s+/g, ' ').slice(0, 200));
+  await page.click('#metaDrawer [data-close]');
 
-  // ── Word module (WP19) ── mammoth -> sanitized HTML in the iframe.
+  // ── Word module ── mammoth → sanitized HTML, now an editor in the parent pane (Edit + export).
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.docx');
-  const dframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
-  const df = await frameOf('iframe.fv-preview-frame');
-  await df.waitForSelector('.docx-body h1', { timeout: 12000 });
-  const dh1 = await df.$eval('.docx-body h1', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .dx-doc .docx-body h1', { timeout: 15000 });
+  const dh1 = await page.$eval('#previewHost .dx-view h1', (e) => e.textContent);
   if (/Hello, File Viewer/.test(dh1)) pass('Word: docx converted to HTML (h1)'); else fail('docx h1: ' + dh1);
-  const strong = await df.$$eval('.docx-body strong, .docx-body b', (els) => els.length);
+  const strong = await page.$$eval('#previewHost .dx-view strong, #previewHost .dx-view b', (els) => els.length);
   if (strong > 0) pass('Word: formatting preserved (bold)'); else fail('no bold run in docx');
+  // Edit toggle mounts TipTap (ProseMirror) over the HTML.
+  await page.click('#previewHost .dx-edit');
+  await page.waitForSelector('#previewHost .dx-edit-host .ProseMirror', { timeout: 12000 });
+  const editing = await page.$eval('#previewHost .dx-edit', (e) => e.classList.contains('active'));
+  const pmText = await page.$eval('#previewHost .ProseMirror', (e) => e.textContent);
+  if (editing && /Hello, File Viewer/.test(pmText)) pass('Word: Edit toggle mounts TipTap with the document content'); else fail('docx edit: editing=' + editing + ' text=' + pmText.slice(0, 60));
+  // Type into the editor, then export → a real .docx download.
+  await page.$eval('#previewHost .ProseMirror', (e) => e.focus());
+  await page.keyboard.type(' [edited]');
+  const [docxDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 15000 }),
+    page.click('#previewHost .dx-download'),
+  ]);
+  if (/-edited\.docx$/.test(docxDl.suggestedFilename())) pass('Word: edited .docx downloaded (' + docxDl.suggestedFilename() + ')'); else fail('docx download name: ' + docxDl.suggestedFilename());
+  // The .docx is a valid ZIP whose document.xml carries the edited text.
+  const dpath = await docxDl.path();
+  const fs2 = await import('node:fs');
+  const dbuf = fs2.readFileSync(dpath);
+  const validZip = dbuf[0] === 0x50 && dbuf[1] === 0x4b;   // "PK"
+  const hasEdit = dbuf.toString('latin1').includes('[edited]') || dbuf.toString('utf8').includes('[edited]');
+  if (validZip && hasEdit) pass('Word: exported .docx is a valid ZIP containing the edit'); else fail('docx export: zip=' + validZip + ' edit=' + hasEdit);
+  // Word metadata: author + word count surfaced.
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const wMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Words\s*\d+/.test(wMeta)) pass('Word metadata: word count present'); else fail('docx meta: ' + wMeta.replace(/\s+/g, ' ').slice(0, 200));
+  await page.click('#metaDrawer [data-close]');
 
   // ── OpenDocument text (.odt) ── unzip content.xml → sanitized reading HTML in the iframe. ──
   await page.goto(origin, { waitUntil: 'load' });

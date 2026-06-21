@@ -837,3 +837,39 @@ html[data-theme="dark"] .qp-preview .json-warning { color: #ffd166; background: 
 .mol3d-stage canvas { display: block; }
 .mol3d-err { color: var(--danger, #c00); font-size: 13px; padding: 8px 0; }
 
+
+/* XLSX inline grid editor (parent pane). */
+.preview-host .xe-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
+.xe-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); flex-wrap: wrap; }
+.xe-info { font-size: 12px; color: var(--fg-2); }
+.xe-info.xe-modified { color: var(--accent); font-weight: 600; }
+.xe-tabs { display: flex; gap: 4px; flex: 1; overflow-x: auto; }
+.xe-tab { font-size: 12px; padding: 3px 10px; border-radius: 6px 6px 0 0; border: 1px solid var(--border); background: var(--bg); color: var(--fg-2); cursor: pointer; white-space: nowrap; }
+.xe-tab.active { color: var(--accent); border-color: var(--accent); }
+.xe-download { font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid transparent; background: var(--accent); color: var(--accent-fg); cursor: pointer; }
+.xe-download:disabled { opacity: 0.4; cursor: default; background: var(--bg); color: var(--fg-2); border-color: var(--border); }
+.xe-grid { flex: 1; overflow: auto; }
+.xe-panel { padding: 0; }
+.xe-table { border-collapse: collapse; font-size: 13px; font-family: ui-monospace, monospace; }
+.xe-table th { background: var(--bg-2); color: var(--fg-2); font-weight: 600; position: sticky; text-align: center; padding: 3px 6px; border: 1px solid var(--border); }
+.xe-table thead th { top: 0; z-index: 2; }
+.xe-rowhdr { left: 0; z-index: 1; }
+.xe-corner { left: 0; top: 0; z-index: 3; }
+.xe-cell { border: 1px solid var(--border); padding: 3px 6px; color: var(--fg); min-width: 72px; max-width: 320px; overflow: hidden; white-space: pre; }
+.xe-cell:focus { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--bg-2); }
+.xe-cell.xe-dirty { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+
+/* DOCX rich-text editor (parent pane). */
+.preview-host .dx-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
+.dx-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
+.dx-info { font-size: 12px; color: var(--fg-2); margin-right: auto; }
+.dx-bar button { font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
+.dx-bar .dx-edit.active { border-color: var(--accent); color: var(--accent); }
+.dx-bar .dx-download { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+.dx-bar .dx-download:disabled { opacity: 0.5; cursor: default; }
+.dx-note { padding: 6px 12px; font-size: 12px; color: var(--fg-2); background: var(--bg-2); border-bottom: 1px solid var(--border); }
+.dx-doc .dx-view, .dx-doc .dx-edit-host { flex: 1; overflow: auto; padding: 20px; max-width: 820px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+.dx-doc .ProseMirror { outline: none; min-height: 100%; }
+.dx-doc .dx-edit-host table, .dx-doc .dx-view table { border-collapse: collapse; }
+.dx-doc .dx-edit-host td, .dx-doc .dx-edit-host th, .dx-doc .dx-view td, .dx-doc .dx-view th { border: 1px solid var(--border); padding: 4px 8px; }
+
