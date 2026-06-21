@@ -64,9 +64,12 @@ export function maxAffordable(bits, t, owned) {
   let maxN = Math.floor(Math.log(arg) / Math.log(r));
   if (!isFinite(maxN) || maxN < 0) maxN = 0;
 
-  // Binary-search correction for floating-point precision.
-  while (maxN > 0 && !gte(bits, totalCost(t, owned, maxN))) maxN--;
-  while (gte(bits, totalCost(t, owned, maxN + 1))) maxN++;
+  // Float-precision correction around the closed-form estimate. BOUNDED: at high progression
+  // totalCost can saturate/overflow (huge owned+bits) so gte() stays true forever — an unbounded
+  // loop here froze the whole tab on shop render. The closed form is already near-exact, so the
+  // correction is only ever ±a few; a 1000 cap can never limit a legitimate purchase.
+  for (let i = 0; i < 1000 && maxN > 0 && !gte(bits, totalCost(t, owned, maxN)); i++) maxN--;
+  for (let i = 0; i < 1000 && gte(bits, totalCost(t, owned, maxN + 1)); i++) maxN++;
 
   return Math.max(0, maxN);
 }
