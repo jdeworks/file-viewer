@@ -5,7 +5,7 @@ export const plugin = {
   match(intake, baseType) {
     if (baseType && baseType.id !== 'json') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    if (n !== 'app.json') return false;
+    if (n !== 'app.json' && n !== 'heroku-app.json') return false;
     // Distinguish from Expo: Heroku app.json has a top-level "name" without "expo" key
     try {
       const parsed = intake.parsed ?? JSON.parse(intake.text || '{}');

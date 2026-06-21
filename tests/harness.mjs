@@ -54,7 +54,10 @@ export async function createHarness() {
 
   // --no-sandbox: required on WSL2/Linux where unprivileged user namespaces may be
   // restricted; without it Chromium's zygote process can crash mid-run on long suites.
-  const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] });
+  // --expose-gc lets the periodic-reload path force a GC so renderer memory doesn't accumulate
+  // across hundreds of opens (large areas like known-files re-parse Monaco's 13 MB bundle each
+  // reload; without an explicit GC the renderer can OOM-crash mid-run on constrained hosts).
+  const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--js-flags=--expose-gc'] });
   const ctx = await browser.newContext({ viewport: { width: 1100, height: 800 } });
   const page = await ctx.newPage();
   // Raise the default and navigation timeouts (30s) to 60s so that networkidle
@@ -108,6 +111,14 @@ export async function createHarness() {
     const hasFv = await p.evaluate(() => typeof window.__fv !== 'undefined').catch(() => false);
     const needReload = !hasFv || (openCount > 0 && openCount % RELOAD_EVERY === 0);
     if (needReload) {
+      // Free accumulated renderer memory BEFORE reloading (so peak stays bounded over a long run):
+      // dispose any retained Monaco models/editors, revoke tracked blob URLs, then force a GC.
+      // This bounds memory without adding reloads (reloads are the CPU sink we keep at 1/50).
+      await p.evaluate(() => {
+        try { window.monaco?.editor?.getModels?.().forEach((m) => m.dispose()); } catch { /* no monaco yet */ }
+        try { (window.__fvBlobUrls || []).forEach((u) => URL.revokeObjectURL(u)); } catch { /* none */ }
+        try { window.gc?.(); } catch { /* gc not exposed */ }
+      }).catch(() => { /* page may be mid-teardown */ });
       await p.goto(origin, { waitUntil: 'load' });
       await p.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
     } else {

@@ -130,6 +130,14 @@ function highlightDhall(text) {
       if (/[a-zA-Z_λ\\]/.test(chars[i])) {
         let j = i;
         while (j < chars.length && /[\w/]/.test(chars[j])) j++;
+        // Lambda symbols (\ or λ) match the branch but can't extend (they aren't \w), so j===i
+        // here. Emit the single char and advance — otherwise i never moves and the line tokenizer
+        // spins forever, freezing the page on any Dhall file with a lambda.
+        if (j === i) {
+          out += '<span class="dhall-kw">' + esc(chars[i]) + '</span>';
+          i++;
+          continue;
+        }
         const word = chars.slice(i, j);
         if (KEYWORDS.has(word)) {
           out += '<span class="dhall-kw">' + esc(word) + '</span>';
