@@ -185,7 +185,9 @@ export async function run(ctx) {
   else pass('sample catalog made zero off-origin requests');
 
   // Quality badges: sourced and partial examples display visual indicators
+  await page.evaluate(() => { try { sessionStorage.clear(); } catch {} });
   await page.goto(origin, { waitUntil: 'load' });
+  await page.waitForSelector('.ex-folder-card', { timeout: 10000 }).catch(() => {});
   const sourcedBadgeOk = await page.evaluate(async () => {
     // Open a category that contains sourced examples (Image category has sample.png)
     const cards = Array.from(document.querySelectorAll('.ex-folder-card'));
@@ -206,6 +208,7 @@ export async function run(ctx) {
 
   await page.evaluate(() => { try { sessionStorage.clear(); } catch {} });
   await page.goto(origin, { waitUntil: 'load' });
+  await page.waitForSelector('.ex-showall-btn', { timeout: 10000 }).catch(() => {});
   const partialBadgeOk = await page.evaluate(async () => {
     // Show all files and look for any .ex-badge-partial badge (djvu or lrf are partial)
     const showAll = document.querySelector('.ex-showall-btn');
@@ -227,4 +230,91 @@ export async function run(ctx) {
   });
   if (partialBadgeOk.ok) pass('partial badge visible on partial-support samples in examples gallery');
   else fail('partial badge missing: ' + partialBadgeOk.reason);
+
+  // Gallery layout: filter bar above groups, known-files section + show-all at
+  // bottom, and known/enhanced files only inside the known-files section.
+  await page.evaluate(() => { try { sessionStorage.clear(); } catch {} });
+  await page.goto(origin, { waitUntil: 'load' });
+  await page.waitForSelector('.ex-known-section', { timeout: 10000 }).catch(() => {});
+  const layout = await page.evaluate(async () => {
+    const host = document.getElementById('examples');
+    if (!host) return { ok: false, reason: 'examples host not found' };
+    // Absolute document position helper (works regardless of nesting depth).
+    const all = Array.from(host.querySelectorAll('*'));
+    const pos = (el) => (el ? all.indexOf(el) : -1);
+
+    const tools = host.querySelector('.ex-tools');
+    const firstSuper = host.querySelector('.ex-super-section');
+    const firstFolderCard = host.querySelector('.ex-folder-card');
+    const knownSection = host.querySelector('.ex-known-section');
+    const showAll = host.querySelector('.ex-showall-btn');
+    const lastSuper = [...host.querySelectorAll('.ex-super-section')].pop();
+
+    if (!tools) return { ok: false, reason: 'filter bar (.ex-tools) not rendered' };
+    if (!firstSuper || !firstFolderCard) return { ok: false, reason: 'no file-type groups rendered' };
+    if (!knownSection) return { ok: false, reason: 'known-files section not rendered' };
+    if (!showAll) return { ok: false, reason: 'show-all button not rendered' };
+
+    const searchAbove = pos(tools) < pos(firstSuper) && pos(tools) < pos(firstFolderCard);
+    const knownAfterGroups = pos(knownSection) > pos(lastSuper);
+    const showAllAtBottom = pos(showAll) > pos(knownSection) && pos(showAll) > pos(lastSuper);
+
+    // No known/enhanced file (real-world Config/Code filename, not sample.*) may
+    // appear as a normal category file button. Probe a few canonical ones.
+    const probes = ['package.json', 'dockerfile', 'requirements.txt', 'cargo.toml', 'go.mod'];
+    const categoryFileBtns = Array.from(host.querySelectorAll('.ex-folder-grid .ex-file-btn, .ex-super-section .ex-file-btn'));
+    const leaked = [];
+    for (const name of probes) {
+      const found = categoryFileBtns.find((b) => (b.dataset.search || '').includes(name));
+      if (found) leaked.push(name);
+    }
+    // And confirm at least one of those known files IS present in the known section.
+    const knownBtns = Array.from(knownSection.querySelectorAll('.ex-known-btn'));
+    const knownNames = knownBtns.map((b) => (b.textContent || '').toLowerCase());
+    const presentInKnown = probes.some((name) => knownNames.some((kn) => kn.includes(name)));
+
+    return { ok: true, searchAbove, knownAfterGroups, showAllAtBottom, leaked, presentInKnown, knownCount: knownBtns.length };
+  });
+
+  if (!layout.ok) {
+    fail('examples gallery layout probe failed: ' + layout.reason);
+  } else {
+    if (layout.searchAbove) pass('search + filter chips appear above the file-type groups');
+    else fail('search/filter bar is NOT above the file-type groups');
+
+    if (layout.knownAfterGroups) pass('known-files section sits after the last file-type group');
+    else fail('known-files section is not after the file-type groups');
+
+    if (layout.showAllAtBottom) pass('show-all button is at the bottom (after known-files section)');
+    else fail('show-all button is not at the bottom');
+
+    if (!layout.leaked.length) pass('known/enhanced files excluded from category groups');
+    else fail('known/enhanced files leaked into category groups: ' + layout.leaked.join(', '));
+
+    if (layout.presentInKnown && layout.knownCount > 0) pass('known/enhanced files present in dedicated known-files section (' + layout.knownCount + ')');
+    else fail('known/enhanced files missing from known-files section (count ' + layout.knownCount + ')');
+  }
+
+  // Search still filters across the visible gallery.
+  const searchWorks = await page.evaluate(async () => {
+    const host = document.getElementById('examples');
+    const search = host.querySelector('.ex-search');
+    if (!search) return { ok: false, reason: 'search input not found' };
+    const visibleCards = () => Array.from(host.querySelectorAll('.ex-folder-card')).filter((c) => !c.hidden).length;
+    const before = visibleCards();
+    search.value = 'zzznomatchzzz';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 50));
+    const afterNoMatch = visibleCards();
+    search.value = '';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 50));
+    const afterClear = visibleCards();
+    return { ok: true, before, afterNoMatch, afterClear };
+  });
+  if (searchWorks.ok && searchWorks.before > 0 && searchWorks.afterNoMatch === 0 && searchWorks.afterClear === searchWorks.before) {
+    pass('gallery search filter still narrows and restores the visible cards');
+  } else {
+    fail('gallery search filter behavior broken: ' + JSON.stringify(searchWorks));
+  }
 }
