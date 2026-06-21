@@ -192,15 +192,18 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
 
   function paintStats() {
     const statsEl = panelsEl.querySelector('.mg-s1-stats');
-    if (!statsEl) return;
-    const rate = netRate(state, cfg);
-    // Floor bits for display so fractional passive accumulation doesn't show (e.g. "3.5" → "3").
-    const bitsDisplay = toDisplay(fromNumber(Math.floor(bigToNum(state.bits))));
-    setHtml(statsEl,
-      '<span class="mg-s1-stat">Bits: <strong>' + bitsDisplay + '</strong></span>'
-      + '<span class="mg-s1-stat">Total: <strong>' + toDisplay(state.totalBits) + '</strong></span>'
-      + '<span class="mg-s1-stat' + (rate < 0 ? ' mg-s1-neg' : '') + '">Rate: <strong>'
-      + (rate < 0 ? '-' : '') + toDisplay(fromNumber(Math.abs(rate))) + '/s</strong></span>');
+    // Only compute the (expensive) net rate + rebuild the stats string when the panel is actually
+    // shown — it's hidden by default, so this skips netRate() work every tick.
+    if (statsEl && !statsEl.hidden) {
+      const rate = netRate(state, cfg);
+      // Floor bits for display so fractional passive accumulation doesn't show (e.g. "3.5" → "3").
+      const bitsDisplay = toDisplay(fromNumber(Math.floor(bigToNum(state.bits))));
+      setHtml(statsEl,
+        '<span class="mg-s1-stat">Bits: <strong>' + bitsDisplay + '</strong></span>'
+        + '<span class="mg-s1-stat">Total: <strong>' + toDisplay(state.totalBits) + '</strong></span>'
+        + '<span class="mg-s1-stat' + (rate < 0 ? ' mg-s1-neg' : '') + '">Rate: <strong>'
+        + (rate < 0 ? '-' : '') + toDisplay(fromNumber(Math.abs(rate))) + '/s</strong></span>');
+    }
     // Boss button: only when not yet beaten and the boss ticket is affordable.
     const bossBtn = panelsEl.querySelector('.mg-s1-boss');
     if (bossBtn) setHidden(bossBtn, (hooks.isBeaten && hooks.isBeaten()) || !(hooks.canFightBoss && hooks.canFightBoss()));

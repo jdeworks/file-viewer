@@ -271,7 +271,10 @@ export function renderStage1(ctx) {
     checkMessages('bit-earn', state, bs, bell);
     checkAchievements(state, cfg, bs);
     reveal();
-    if (state.tabsUnlocked && activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
+    // A tap only changes the bit count — refresh affordability + the score HUD. Timed fill-bars and
+    // stats don't change on a tap, so the 100ms tick keeps those current instead of repainting them
+    // on every tap. Keeps fast tapping cheap (less layout/paint per click).
+    if (state.tabsUnlocked && activeTab === 'bits') paintShop();
     checkTabUnlock();
     updateHud();
   }
