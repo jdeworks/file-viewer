@@ -132,6 +132,9 @@ export function timedPayout(state, cfg, tierId) {
   const t = cfg.tiers.find(x => x.id === tierId);
   if (!t || t.type !== 'timed') return ZERO;
 
+  // Builder tiers assemble units of the tier below instead of paying bits (see timedProduction).
+  if (t.produces) return ZERO;
+
   const ownedCount = owned[tierId] || 0;
   if (ownedCount === 0) return ZERO;
 
@@ -153,30 +156,50 @@ export function timedPayout(state, cfg, tierId) {
   return mulScalar(fromNumber(baseOutput), neuralMult * boostMult * pull * ach);
 }
 
+// Units a BUILDER tier assembles on one completion (§ builder chain).
+// Returns { targetId, amount } or null. amount = perOwned × owned[builder] — i.e. one unit of
+// the tier below per builder owned (a single Signal Booster builds 1 Bit Box/cycle, ten build 10).
+export function timedProduction(state, cfg, tierId) {
+  const t = (cfg.tiers || []).find(x => x.id === tierId);
+  if (!t || !t.produces) return null;
+  const ownedCount = (state.owned || {})[tierId] || 0;
+  if (ownedCount === 0) return null;
+  const amount = (t.produces.perOwned || 1) * ownedCount;
+  return { targetId: t.produces.targetId, amount };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 6. Manager formulas (§6.2)
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Hire cost for a manager at the given current level (0 = not hired). Buying L→L+1
-// costs hireCost(mgr, L) = 10 × baseCost_of_managedTier × 1.15^level. Returns BigNum.
+// costs hireCost(mgr, L) = 10 × baseCost_of_managedTier × HIRE_LEVEL_MULT^level. Returns BigNum.
+// HIRE_LEVEL_MULT is a gentle 1.10 (was 1.15) so leveling up doesn't gate too hard.
+export const HIRE_LEVEL_MULT = 1.10;
 export function managerHireCost(mgr, level, cfg) {
   const managedTier = cfg.tiers.find(t => t.id === mgr.manages);
   if (!managedTier) return ZERO;
   const base10 = mulScalar(managedTier.base, 10);   // 10 × base cost of managed tier
-  return mulScalar(base10, Math.pow(1.15, level));
+  return mulScalar(base10, Math.pow(HIRE_LEVEL_MULT, level));
 }
 
-// Running cost per second for one manager (plain number, bits/sec).
-//   runningCost = 0.5 × hirePriceAtCurrentLevel × managerLevel^0.8
-// where hirePriceAtCurrentLevel = price paid for the current level = hireCost(mgr, level−1).
-// A level-0 (un-hired) manager costs 0.
+// Running cost per second for a manager AT a given level (plain number, bits/sec). Pure — used both
+// for the live cost and for previewing the next level on the hire/level-up button.
+//   runCost(level) = RUN_COST_COEFF × hirePrice paid to reach that level = hireCost(mgr, level−1).
+// So ongoing cost tracks the hire price linearly (no super-linear level^0.8 spike): a manager that
+// cost 5000 to hire runs at 500/s; leveling to a 5500 hire runs at 550/s. A level-0 manager costs 0.
+// RUN_COST_COEFF tuned so the first Box Operator (hire 5000) runs at 500/s.
+export const RUN_COST_COEFF = 0.1;
+export function managerRunCostAtLevel(mgr, level, cfg) {
+  if (!mgr || level <= 0) return 0;
+  return RUN_COST_COEFF * toNumber(managerHireCost(mgr, level - 1, cfg));
+}
 export function managerRunCost(managerId, state, cfg) {
   const mgrState = (state.managers || {})[managerId];
   if (!mgrState || mgrState.level <= 0) return 0;
   const mgr = (cfg.managers || []).find(m => m.id === managerId);
   if (!mgr) return 0;
-  const hirePriceAtLevel = toNumber(managerHireCost(mgr, mgrState.level - 1, cfg));
-  return 0.5 * hirePriceAtLevel * Math.pow(mgrState.level, 0.8);
+  return managerRunCostAtLevel(mgr, mgrState.level, cfg);
 }
 
 // Total manager cost per second over all hired, non-paused managers (plain number).

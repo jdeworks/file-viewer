@@ -206,6 +206,35 @@
 .mg-s1-cell { background: var(--bg-3, #161b22); }
 .mg-s1-cell.mg-s1-on { background: transparent; pointer-events: none; }   /* revealed → click-through */
 
+/* Button hygiene: never select label text on tap (mobile double-tap), kill the tap-flash,
+   and render focus as an outline (paints over content, never reflows the layout). */
+.mg-s1 button, .mg-bell-btn, .mg-sfx-btn {
+  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.mg-s1 button:focus-visible, .mg-bell-btn:focus-visible, .mg-sfx-btn:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px; }
+/* Timed builder buttons (Bit Box / Signal Booster …) keep one line so a growing payout
+   label never wraps and bumps the layout. */
+.mg-s1-timed-btn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Score HUD + help — appears progressively (score at 400 total, help at 1000 banked). */
+.mg-s1-hud { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 6px 10px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; }
+.mg-s1-hud[hidden] { display: none; }
+.mg-s1-score { font-size: 14px; color: var(--fg-2); }
+.mg-s1-score-val { color: var(--accent); font: 700 16px ui-monospace, monospace;
+  font-variant-numeric: tabular-nums; }
+.mg-s1-help-btn { background: var(--bg-3, var(--bg-2)); border: 1px solid var(--border); color: var(--fg-2);
+  border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+.mg-s1-help-btn:hover { border-color: var(--accent); color: var(--fg); }
+.mg-s1-help-btn[hidden] { display: none; }
+.mg-s1-help { display: flex; flex-direction: column; gap: 6px; background: var(--bg-2);
+  border: 1px solid var(--accent); border-radius: 10px; padding: 12px; }
+.mg-s1-help[hidden] { display: none; }
+.mg-s1-help-title { font-weight: 700; color: var(--fg); }
+.mg-s1-help-row { display: flex; flex-direction: column; gap: 1px; font-size: 12px; }
+.mg-s1-help-row strong { color: var(--accent); }
+.mg-s1-help-row span { color: var(--fg-2); }
+
 /* Phase 1: full-screen pixel reveal — hide tabs/panels, let top fill height. */
 .mg-s1-phase1 { display: flex; flex-direction: column; gap: 0; }
 .mg-s1-phase1 .mg-s1-tabs,
@@ -222,10 +251,14 @@
 .mg-s1-tab:hover { color: var(--fg); }
 .mg-s1-tab-on { color: var(--fg); border-bottom-color: var(--accent); font-weight: 600; }
 .mg-s1-panels { display: flex; flex-direction: column; }
-.mg-s1-panel { display: flex; flex-direction: column; gap: 12px; }
+.mg-s1-panel { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+/* Compute is pinned above a scroll region so the Bits tab can't sprawl as more tiers unlock. */
+.mg-s1-earn { flex: none; }
+.mg-s1-scroll { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 50vh;
+  padding-right: 3px; }
 
 /* Shop rows (extend .mg-buy). Buy-count selectors + a wide buy button. */
-.mg-s1-shoprow { opacity: 1; }
+.mg-s1-shoprow { opacity: 1; cursor: default; }
 .mg-s1-shoprow[hidden] { display: none; }
 .mg-s1-buyrow { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
 .mg-s1-counts { display: flex; gap: 3px; flex-wrap: wrap; justify-content: flex-end; }
@@ -235,21 +268,17 @@
   font: 700 13px ui-monospace, monospace; white-space: nowrap; }
 .mg-s1-buybtn.mg-buy-locked { opacity: .45; border-color: var(--border); color: var(--fg-2); cursor: not-allowed; }
 
-/* Timed buttons */
-.mg-s1-timers { display: flex; flex-direction: column; gap: 8px; }
-.mg-s1-timed[hidden] { display: none; }
-.mg-s1-timed-btn { width: 100%; background: var(--bg-2); border: 1px solid var(--accent); color: var(--fg);
-  border-radius: 10px; padding: 12px; cursor: pointer; font-size: 14px; font-weight: 600; }
-.mg-s1-timed-btn:hover { background: color-mix(in srgb, var(--accent) 12%, var(--bg-2)); }
-.mg-s1-timed-bar { position: relative; height: 36px; border: 1px solid var(--border); border-radius: 10px;
-  overflow: hidden; background: var(--bg-3); }
-.mg-s1-timed-bar[hidden] { display: none; }
-.mg-s1-timed-fill { position: absolute; inset: 0; width: 0; background: color-mix(in srgb, #2f81f7 45%, transparent);
-  transition: width .1s linear; }
-.mg-s1-timed-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font: 700 13px ui-monospace, monospace; }
+/* Timed rows: the row IS the run button; cycle progress fills the row background, and the reward
+   label sits inline after the owned count (▸ +N idle · "amount · Xs" while filling). */
+.mg-s1-timedrow { position: relative; overflow: hidden; }
+.mg-s1-timedrow.mg-s1-runnable { cursor: pointer; }
+.mg-s1-timedrow.mg-s1-runnable:hover { border-color: var(--accent); }
+.mg-s1-rowfill { position: absolute; top: 0; left: 0; bottom: 0; width: 0; pointer-events: none;
+  background: color-mix(in srgb, #2f81f7 20%, transparent); transition: width .1s linear; }
+.mg-s1-timedrow > :not(.mg-s1-rowfill) { position: relative; z-index: 1; }
+.mg-s1-rowreward { font: 700 12px ui-monospace, monospace; color: var(--accent); white-space: nowrap; }
 .mg-s1-flash { animation: mg-s1-flash .25s ease; }
-@keyframes mg-s1-flash { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 0 2px var(--accent); } }
+@keyframes mg-s1-flash { 0%, 100% { box-shadow: none; } 50% { box-shadow: inset 0 0 0 2px var(--accent); } }
 
 /* Statistics */
 .mg-s1-stats { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 13px; color: var(--fg-2); }
@@ -262,8 +291,19 @@
 .mg-s1-ach { display: flex; gap: 10px; align-items: center; background: var(--bg-2); border: 1px solid var(--border);
   border-radius: 10px; padding: 8px 12px; }
 .mg-s1-ach-icon { font-size: 20px; }
-.mg-s1-ach-text { display: flex; flex-direction: column; }
+.mg-s1-ach-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .mg-s1-ach-desc { color: var(--fg-2); font-size: 12px; }
+.mg-s1-ach-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 4px 2px 8px; font-size: 13px; color: var(--fg); }
+.mg-s1-ach-count { font-weight: 700; }
+.mg-s1-ach-mult { color: var(--accent); font: 700 14px ui-monospace, monospace; }
+.mg-s1-ach-mult small { color: var(--fg-2); font-weight: 400; font-size: 11px; font-family: inherit; }
+.mg-s1-ach-chip { margin-left: auto; align-self: center; font: 700 11px ui-monospace, monospace;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: 6px; padding: 2px 6px; white-space: nowrap; }
+.mg-s1-ach-locked { opacity: .5; }
+.mg-s1-ach-locked .mg-s1-ach-chip { color: var(--fg-2); background: var(--bg-3, var(--bg-2)); }
+.mg-s1-ach-secret { font-weight: 400; font-size: 11px; color: var(--fg-2); }
 
 .mg-s1-boss { align-self: center; }
 
@@ -287,7 +327,9 @@
 .mg-mgr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .mg-mgr-hire, .mg-mgr-lvl { flex: 1; background: color-mix(in srgb, var(--accent) 18%, transparent);
   border: 1px solid var(--accent); color: var(--fg); border-radius: 8px; padding: 7px 10px; cursor: pointer;
-  font: 700 13px ui-monospace, monospace; white-space: nowrap; }
+  font: 700 13px ui-monospace, monospace; white-space: nowrap; display: flex; flex-direction: column; gap: 1px; align-items: center; }
+.mg-mgr-ongoing { font: 400 10px ui-monospace, monospace; color: var(--fg-2); }
+.mg-mgr-hire.mg-buy-locked .mg-mgr-ongoing, .mg-mgr-lvl.mg-buy-locked .mg-mgr-ongoing { color: var(--fg-2); }
 .mg-mgr-hire.mg-buy-locked, .mg-mgr-lvl.mg-buy-locked { opacity: .45; border-color: var(--border);
   color: var(--fg-2); cursor: not-allowed; }
 .mg-mgr-fire { background: transparent; border: 1px solid #f85149; color: #f85149; border-radius: 8px;
@@ -352,6 +394,10 @@
 .mg-v3 { width: min(760px, 100%); }
 .mg-v3-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .mg-v3-head-actions { display: flex; align-items: center; gap: 8px; }
+.mg-sfx-btn { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 8px; padding: 5px 9px; cursor: pointer; font-size: 15px; line-height: 1; }
+.mg-sfx-btn:hover { border-color: var(--accent); }
+.mg-sfx-btn.mg-sfx-off { opacity: .55; }
 .mg-v3-stages { display: flex; gap: 6px; flex-wrap: wrap; }
 .mg-v3-stage { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; cursor: pointer; font-size: 12px; }
 .mg-v3-stage:disabled { opacity: .45; cursor: not-allowed; }

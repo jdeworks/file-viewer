@@ -8,50 +8,30 @@
 // reveal. The tabs below host the real BigNum economy (shop / timed / stats / achievements).
 
 import { clickTick } from './sounds.js';
-import { ACHIEVEMENTS1 } from './achievements1.js';
+import { renderAchievementsPanel as renderS1AchPanel } from './s1achpanel.js';
+import { createShopController } from './s1shop.js';
 import {
   netRate, passiveRate, managerCostPerSec, clickPower as economyClickPower,
-  timedPayout, totalCost, maxAffordable, buyTier,
+  timedPayout, timedProduction, totalCost,
 } from './s1economy.js';
 import { fromNumber, add, sub, mulScalar, gte, toDisplay } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements, checkMilestones } from './s1achievements.js';
 import { createManagersController } from './s1managers.js';
 import { renderResetPanel as renderS1ResetPanel } from './s1reset.js';
+import { setText, setHidden, setHtml, bigToNum } from './s1dom.js';
 
 const GRID_COLS = 20, GRID_ROWS = 5, GRID_CELLS = GRID_COLS * GRID_ROWS;   // 20×5 = 100
 
-// ── BigNum helper for gate metrics (local, avoids circular imports) ──────────
-// Handles both legacy plain numbers and BigNum {m,e} objects gracefully.
-function bigToNum(bn) {
-  if (bn === null || bn === undefined) return 0;
-  if (typeof bn === 'number') return bn;   // legacy plain number
-  if (!bn.m) return 0;
-  return Math.min(bn.m * Math.pow(10, bn.e || 0), Number.MAX_VALUE);
-}
-
 /* ─────────────────────────────────────────────────────────────────────────────
-   Stage 1 render: pixel-reveal top section + a tabbed idle clicker below it.
-   ctx: { host, state, save, stage, clickPower, buyTier, onExit, attachChrome, onBoss }
-     attachChrome(host) re-attaches the back/fullscreen/debug header + bell after innerHTML wipe.
+   Stage 1 render: pixel-reveal top section + a tabbed idle clicker below it. The "Bits" tab
+   (shop + timed builders + stats) is owned by s1shop.js; this file orchestrates the reveal,
+   tabs, tick loop, score/help HUD, and economy plumbing.
    ───────────────────────────────────────────────────────────────────────────── */
-
-// Buy-count selector options for the shop.
-const BUY_COUNTS = [1, 10, 100, 1000, 'max'];
-
-// Visibility predicates for each tier in the shop (stagger gating — independent of affordability).
-const TIER_VISIBLE = {
-  's1-mult':    (s) => s.tabsUnlocked,
-  's1-box':     (s) => (s.owned['s1-mult'] || 0) >= 1,
-  's1-boost':   (s) => gte(s.bits, { m: 500, e: 0 }) || (s.owned['s1-box'] || 0) >= 1,
-  's1-cluster': (s) => (s.owned['s1-boost'] || 0) >= 1,
-  's1-array':   (s) => (s.owned['s1-cluster'] || 0) >= 1,
-  's1-neural':  (s) => gte(s.totalBits, { m: 1, e: 6 }),
-  's1-quantum': (s) => (s.owned['s1-neural'] || 0) >= 3,
-};
 
 export function renderStage1(ctx) {
   const { host, state, save, stage, onExit, attachChrome, bell } = ctx;
+  const sfxOn = () => (typeof ctx.sfxEnabled === 'function' ? ctx.sfxEnabled() : true);
   const cfg = stage();   // Stage 1 config from stages.js
 
   // ── State normalization on mount (legacy plain numbers → BigNum until WP-S1-12 lands) ──
@@ -99,6 +79,11 @@ export function renderStage1(ctx) {
 
   host.innerHTML =
     '<div class="mg-wrap mg-s1">'
+    + '<div class="mg-s1-hud" hidden>'
+    + '  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span>'
+    + '  <button class="mg-s1-help-btn" type="button" hidden aria-expanded="false">❓ Help</button>'
+    + '</div>'
+    + '<div class="mg-s1-help" hidden></div>'
     + '<div class="mg-s1-top">'
     + '  <div class="mg-s1-tap" aria-label="tap to compute"></div>'
     + '  <div class="mg-s1-stage">'
@@ -116,6 +101,44 @@ export function renderStage1(ctx) {
   const grid = $('.mg-s1-grid');
   const tabsEl = $('.mg-s1-tabs');
   const panelsEl = $('.mg-s1-panels');
+  const hudEl = $('.mg-s1-hud');
+  const scoreValEl = $('.mg-s1-score-val');
+  const helpBtn = $('.mg-s1-help-btn');
+  const helpEl = $('.mg-s1-help');
+
+  // ── Score HUD + helper buttons (progressive disclosure) ──────────────────────
+  // Score counter appears at 400 total bits collected; the help affordance appears once the
+  // player has banked 1000 bits at once (sticky), so the explanations arrive when they're useful.
+  const HELP_SECTIONS = [
+    ['👆 Tap', 'Tap the top area to compute bits. The ✖ Multiplier adds +1 bit per tap each level.'],
+    ['🧰 Bit Box', 'Tap it to run a timed cycle that pays out bits. Your main income.'],
+    ['📡 Signal Booster', 'Each cycle BUILDS Bit Boxes for you (and boosts their payout). It makes machines, not bits.'],
+    ['🧊 Core Cluster', 'Each cycle BUILDS Signal Boosters — a machine that builds the machine that builds boxes.'],
+    ['🛠 Managers', 'Hire one to auto-run a builder for a per-second bit cost. Watch the net rate stays positive.'],
+    ['🌀 Reset', 'Once you can fight the boss you may reset for a permanent ×pull multiplier on everything.'],
+  ];
+  function renderHelp() {
+    setHtml(helpEl, '<div class="mg-s1-help-title">How the Foundry works</div>'
+      + HELP_SECTIONS.map(([h, b]) =>
+        '<div class="mg-s1-help-row"><strong>' + escapeHtml(h) + '</strong><span>' + escapeHtml(b) + '</span></div>').join(''));
+  }
+  helpBtn.addEventListener('click', () => {
+    const open = helpEl.hidden;
+    if (open) renderHelp();
+    setHidden(helpEl, !open);
+    helpBtn.setAttribute('aria-expanded', String(open));
+  });
+  function updateHud() {
+    if (!state.helpersUnlocked && bigToNum(state.bits) >= 1000) {
+      state.helpersUnlocked = true;
+      save(state);
+    }
+    const scoreOn = bigToNum(state.totalBits) >= 400;
+    setHidden(hudEl, !scoreOn);
+    if (scoreOn) setText(scoreValEl, toDisplay(fromNumber(Math.floor(bigToNum(state.bits)))));
+    setHidden(helpBtn, !state.helpersUnlocked);
+    if (!state.helpersUnlocked) setHidden(helpEl, true);
+  }
 
   // ── Pixel-reveal grid (column-major fill order) ────────────────────────────
   const cells = [];
@@ -161,187 +184,36 @@ export function renderStage1(ctx) {
     }));
   }
 
-  // ── Bits tab: shop + timed buttons + statistics ────────────────────────────
-  function shopRowHtml(t) {
-    const owned = state.owned[t.id] || 0;
-    const visible = (TIER_VISIBLE[t.id] || (() => true))(state);
-    const desc = t.desc || t.name;
-    const counts = BUY_COUNTS.map((n) =>
-      '<button class="mg-mult-b mg-s1-buyn" type="button" data-id="' + t.id + '" data-n="' + n + '">'
-      + (n === 'max' ? 'MAX' : '×' + n) + '</button>').join('');
-    return '<div class="mg-buy mg-s1-shoprow" data-id="' + t.id + '"' + (visible ? '' : ' hidden') + '>'
-      + '<span class="mg-buy-name">' + escapeHtml(t.icon + ' ' + t.name) + ' <span class="mg-owned">×' + owned + '</span></span>'
-      + '<span class="mg-buy-blurb">' + escapeHtml(desc) + '</span>'
-      + '<span class="mg-s1-buyrow"><span class="mg-s1-counts">' + counts + '</span>'
-      + '<button class="mg-buy-cost mg-s1-buybtn" type="button" data-id="' + t.id + '"></button></span>'
-      + '</div>';
+  // ── Bits tab (shop + timed builders + stats) — owned by s1shop.js ──
+  const shop = createShopController({
+    panelsEl, state, cfg, tiers, save, bell,
+    hooks: {
+      onEarn: addBits,
+      onAfterBuy: afterBuy,
+      onBoss: () => ctx.onBoss && ctx.onBoss(),
+      canFightBoss,
+      isBeaten: () => beaten,
+    },
+  });
+  const renderBitsPanel = () => shop.renderPanel();
+  const paintShop = () => shop.paintShop();
+  const paintTimed = () => shop.paintTimed();
+  const paintStats = () => shop.paintStats();
+
+  // After a buy: reveal newly-unlocked rows/tabs by repainting in place rather than rebuilding the
+  // panel's innerHTML — keeps the Bits-tab scroll position put. (Full renderAll is only needed for
+  // the one-time phase-1 → phase-2 transition.)
+  function afterBuy() {
+    if (!state.tabsUnlocked) { renderAll(); return; }
+    renderTabs();
+    if (activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
+    else renderPanel();
+    updateHud();
   }
 
-  function timedBtnHtml(t) {
-    return '<div class="mg-s1-timed" data-id="' + t.id + '" hidden>'
-      + '<button class="mg-s1-timed-btn" type="button" data-id="' + t.id + '"></button>'
-      + '<div class="mg-s1-timed-bar" hidden><div class="mg-s1-timed-fill"></div><span class="mg-s1-timed-label"></span></div>'
-      + '</div>';
-  }
-
-  function renderBitsPanel() {
-    panelsEl.innerHTML =
-      '<div class="mg-s1-panel" data-panel="bits">'
-      + '<button class="mg-compute mg-s1-earn" type="button">Compute bits</button>'
-      + '<div class="mg-shop">' + tiers.map(shopRowHtml).join('') + '</div>'
-      + '<div class="mg-s1-timers">' + timedTiers.map(timedBtnHtml).join('') + '</div>'
-      + '<div class="mg-s1-stats" hidden></div>'
-      + '<button class="mg-faceboss mg-s1-boss" type="button" hidden>⚔ Confront ' + (cfg.bossName || 'the boss') + '</button>'
-      + '</div>';
-
-    const earnBtn = panelsEl.querySelector('.mg-s1-earn');
-    if (earnBtn) earnBtn.addEventListener('click', addBits);
-    // Buy-count selectors (per-row remembered active count; default ×1).
-    panelsEl.querySelectorAll('.mg-s1-buyn').forEach((b) => b.addEventListener('click', () => {
-      const n = b.dataset.n === 'max' ? 'max' : Number(b.dataset.n);
-      buyCounts[b.dataset.id] = n;
-      state.buyMult = n;   // persist globally so it survives reload
-      save(state);
-      paintShop();
-    }));
-    // Buy buttons.
-    panelsEl.querySelectorAll('.mg-s1-buybtn').forEach((b) => b.addEventListener('click', () => doBuy(b.dataset.id)));
-    // Timed buttons.
-    panelsEl.querySelectorAll('.mg-s1-timed-btn').forEach((b) => b.addEventListener('click', () => startTimed(b.dataset.id)));
-    // Boss button.
-    const bossBtn = panelsEl.querySelector('.mg-s1-boss');
-    if (bossBtn) bossBtn.addEventListener('click', (e) => { e.stopPropagation(); ctx.onBoss && ctx.onBoss(); });
-
-    paintShop();
-    paintTimed();
-    paintStats();
-  }
-
-  // Selected buy count per tier — persisted as a single global state.buyMult.
-  // Initialize all tiers from the saved value so the selection survives reloads.
-  const buyCounts = {};
-  tiers.forEach((t) => { buyCounts[t.id] = state.buyMult ?? 1; });
-  const countFor = (id) => buyCounts[id] ?? 1;
-
-  function effectiveN(t) {
-    const sel = countFor(t.id);
-    if (sel === 'max') return maxAffordable(state.bits, t, state.owned[t.id] || 0);
-    return sel;
-  }
-
-  function doBuy(id) {
-    const t = tiers.find((x) => x.id === id);
-    if (!t) return;
-    const n = effectiveN(t);
-    if (!n || n <= 0) return;
-    const got = buyTier(state, cfg, id, n, save);
-    if (got > 0) {
-      const bs = bellLoad();
-      checkMessages('buy', state, bs, bell);
-      checkMessages('bit-lose', state, bs, bell);
-      checkAchievements(state, cfg, bs);
-      renderAll();
-    }
-  }
-
-  function startTimed(id) {
-    const t = timedTiers.find((x) => x.id === id);
-    if (!t || (state.owned[id] || 0) < 1) return;
-    const ts = state.timedStates[id];
-    if (ts && ts.active) {
-      // Already running — flash the bar.
-      const barWrap = panelsEl.querySelector('.mg-s1-timed[data-id="' + id + '"] .mg-s1-timed-bar');
-      if (barWrap) { barWrap.classList.remove('mg-s1-flash'); void barWrap.offsetWidth; barWrap.classList.add('mg-s1-flash'); }
-      return;
-    }
-    state.timedStates[id] = { active: true, startedAt: Date.now(), duration_ms: t.duration_ms };
-    paintTimed();
-  }
-
-  function paintShop() {
-    tiers.forEach((t) => {
-      const row = panelsEl.querySelector('.mg-s1-shoprow[data-id="' + t.id + '"]');
-      if (!row) return;
-      const visible = (TIER_VISIBLE[t.id] || (() => true))(state);
-      row.hidden = !visible;
-      if (!visible) return;
-      const owned = state.owned[t.id] || 0;
-      row.querySelector('.mg-owned').textContent = '×' + owned;
-      // Highlight the active count selector.
-      const sel = countFor(t.id);
-      row.querySelectorAll('.mg-s1-buyn').forEach((b) => {
-        const v = b.dataset.n === 'max' ? 'max' : Number(b.dataset.n);
-        b.classList.toggle('mg-mult-on', String(v) === String(sel));
-      });
-      const n = effectiveN(t);
-      const cost = totalCost(t, owned, n || 0);
-      const buyBtn = row.querySelector('.mg-s1-buybtn');
-      const label = sel === 'max' ? 'MAX' : '×' + n;
-      buyBtn.textContent = 'Buy ' + label + ' — ' + toDisplay(cost);
-      const affordable = (n > 0) && gte(state.bits, cost);
-      buyBtn.classList.toggle('mg-buy-locked', !affordable);
-      buyBtn.disabled = !affordable;
-    });
-  }
-
-  function paintTimed() {
-    timedTiers.forEach((t) => {
-      const wrap = panelsEl.querySelector('.mg-s1-timed[data-id="' + t.id + '"]');
-      if (!wrap) return;
-      const owned = state.owned[t.id] || 0;
-      wrap.hidden = owned < 1;
-      if (owned < 1) return;
-      const ts = state.timedStates[t.id];
-      const btn = wrap.querySelector('.mg-s1-timed-btn');
-      const bar = wrap.querySelector('.mg-s1-timed-bar');
-      if (ts && ts.active) {
-        btn.hidden = true;
-        bar.hidden = false;
-        const elapsed = Date.now() - ts.startedAt;
-        const dur = ts.duration_ms || t.duration_ms;
-        const frac = Math.max(0, Math.min(1, elapsed / dur));
-        bar.querySelector('.mg-s1-timed-fill').style.width = (frac * 100) + '%';
-        bar.querySelector('.mg-s1-timed-label').textContent = Math.max(0, (dur - elapsed) / 1000).toFixed(1) + 's';
-      } else {
-        btn.hidden = false;
-        bar.hidden = true;
-        btn.textContent = '▶ ' + t.icon + ' ' + t.name + ' → +' + toDisplay(timedPayout(state, cfg, t.id));
-      }
-    });
-  }
-
-  function paintStats() {
-    const statsEl = panelsEl.querySelector('.mg-s1-stats');
-    if (!statsEl) return;
-    const rate = netRate(state, cfg);
-    // Floor bits for display so fractional passive accumulation doesn't show (e.g. "3.5" → "3").
-    const bitsDisplay = toDisplay(fromNumber(Math.floor(bigToNum(state.bits))));
-    statsEl.innerHTML =
-      '<span class="mg-s1-stat">Bits: <strong>' + bitsDisplay + '</strong></span>'
-      + '<span class="mg-s1-stat">Total: <strong>' + toDisplay(state.totalBits) + '</strong></span>'
-      + '<span class="mg-s1-stat' + (rate < 0 ? ' mg-s1-neg' : '') + '">Rate: <strong>'
-      + (rate < 0 ? '-' : '') + toDisplay(fromNumber(Math.abs(rate))) + '/s</strong></span>';
-    // Boss button: only when not yet beaten and the boss ticket is affordable.
-    const bossBtn = panelsEl.querySelector('.mg-s1-boss');
-    if (bossBtn) bossBtn.hidden = beaten || !canFightBoss();
-  }
-
-  // ── Achievements tab ───────────────────────────────────────────────────────
+  // ── Achievements tab (rendered by s1achpanel.js — locked + unlocked, with multipliers) ──
   function renderAchievementsPanel() {
-    const unlocked = state.achievements || [];
-    let body;
-    if (!unlocked.length) {
-      body = '<div class="mg-s1-ach-empty">no achievements yet</div>';
-    } else {
-      body = '<div class="mg-s1-ach-list">' + unlocked.map((id) => {
-        const a = ACHIEVEMENTS1.find((x) => x.id === id);
-        if (!a) return '';
-        return '<div class="mg-s1-ach"><span class="mg-s1-ach-icon">' + escapeHtml(a.icon || '🏆') + '</span>'
-          + '<span class="mg-s1-ach-text"><strong>' + escapeHtml(a.name) + '</strong>'
-          + '<span class="mg-s1-ach-desc">' + escapeHtml(a.bell || '') + '</span></span></div>';
-      }).join('') + '</div>';
-    }
-    panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="achievements">' + body + '</div>';
+    renderS1AchPanel({ panelsEl, state });
   }
 
   const managersController = createManagersController({ panelsEl, state, cfg, tiers, save, paintStats });
@@ -368,6 +240,7 @@ export function renderStage1(ctx) {
     }
     renderTabs();
     renderPanel();
+    updateHud();
     if (!state.tabsUnlocked) reveal();
   }
 
@@ -394,12 +267,13 @@ export function renderStage1(ctx) {
       soundOn = (state.milestones || []).includes('sound-unlock');
       animOn  = (state.milestones || []).includes('anim-unlock');
     }
-    if (soundOn) clickTick();
+    if (soundOn && sfxOn()) clickTick();
     checkMessages('bit-earn', state, bs, bell);
     checkAchievements(state, cfg, bs);
     reveal();
     if (state.tabsUnlocked && activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
     checkTabUnlock();
+    updateHud();
   }
 
   // ── Compute button purchase: buys one Multiplier using the same escalating shop price. ──
@@ -454,26 +328,44 @@ export function renderStage1(ctx) {
     const rate = netRate(state, cfg);
     if (rate < 0) { if (!state._netNegSince) state._netNegSince = Date.now(); }
     else state._netNegSince = 0;
-    // 3. Timed completions.
+    // 3. Timed completions. Builder tiers assemble units of the tier below; others pay bits.
     let timedDone = false;
+    let builtUnits = false;
     for (const t of timedTiers) {
       const ts = state.timedStates[t.id];
       if (!ts || !ts.active) continue;
       if (Date.now() - ts.startedAt >= (ts.duration_ms || t.duration_ms)) {
-        const payout = timedPayout(state, cfg, t.id);
-        state.bits = add(state.bits, payout);
-        state.totalBits = add(state.totalBits, payout);
+        if (t.produces) {
+          const prod = timedProduction(state, cfg, t.id);
+          if (prod && prod.amount > 0) {
+            state.owned[prod.targetId] = (state.owned[prod.targetId] || 0) + prod.amount;
+            builtUnits = true;
+          }
+        } else {
+          const payout = timedPayout(state, cfg, t.id);
+          state.bits = add(state.bits, payout);
+          state.totalBits = add(state.totalBits, payout);
+        }
         ts.active = false;
         timedDone = true;
       }
     }
     if (timedDone) checkMessages('bit-earn', state, bellLoad(), bell);
+    // A built unit bumps owned counts (shop labels/payouts) and can unlock a tier row or tab.
+    // The rows already exist in the DOM, so paintShop/paintTimed reveal them; renderTabs catches a
+    // freshly-unlocked tab. No full panel rebuild → running timer bars don't flicker.
+    if (builtUnits && state.tabsUnlocked) {
+      renderTabs();
+      if (activeTab === 'bits') { paintShop(); paintTimed(); }
+    }
     // 3b. Manager auto-fire + shutdown rule (§5.6/§6.3).
     managersController.runAutoFire();
     // 4. Reveal (phase 1 only; reveal() no-ops when tabsUnlocked).
     reveal();
     // 4b. Tab unlock check (passive rate could push bits to 250 without a tap).
     checkTabUnlock();
+    // 4c. Score HUD / helper unlock + live bit count (guarded, so a steady state writes nothing).
+    updateHud();
     // 5. Partial re-render of the live tab (phase 2 only — tabs are hidden in phase 1).
     if (state.tabsUnlocked) {
       if (activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }

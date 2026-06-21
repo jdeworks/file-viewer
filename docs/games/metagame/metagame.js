@@ -102,6 +102,7 @@ export function mount(host, { onExit } = {}) {
             <strong>${esc(registry.getStageMeta(saveData.currentStage)?.name || 'Stage')}</strong>
           </div>
           <div class="mg-v3-head-actions">
+            <button class="mg-sfx-btn" type="button" data-action="sfx" aria-label="Toggle sound effects"></button>
             <div class="mg-v3-bell"></div>
             <button class="mg-back" type="button" data-action="exit">Back to arcade</button>
           </div>
@@ -111,6 +112,19 @@ export function mount(host, { onExit } = {}) {
         <div class="mg-v3-debug" hidden></div>
       </div>`;
     host.querySelector('[data-action="exit"]').addEventListener('click', () => onExit?.());
+    const sfxBtn = host.querySelector('[data-action="sfx"]');
+    const paintSfx = () => {
+      const on = !saveData.global.sfxOff;
+      sfxBtn.textContent = on ? '🔊' : '🔇';
+      sfxBtn.classList.toggle('mg-sfx-off', !on);
+      sfxBtn.setAttribute('aria-pressed', String(on));
+    };
+    sfxBtn.addEventListener('click', () => {
+      saveData.global.sfxOff = !saveData.global.sfxOff;
+      persist();
+      paintSfx();
+    });
+    paintSfx();
     const nav = host.querySelector('.mg-v3-stages');
     nav.replaceChildren(...registry.listStages().filter((mod) => saveData.unlockedStages.includes(mod.stageMeta.id)).map((mod) => {
       const meta = mod.stageMeta;
@@ -142,6 +156,7 @@ export function mount(host, { onExit } = {}) {
       achievements,
       bell: services.bell,
       bts: services.bts,
+      sfxEnabled: () => !saveData.global.sfxOff,
       orchestrator: { save: saveData, selectStage },
       viewer,
       onExit,
@@ -149,19 +164,30 @@ export function mount(host, { onExit } = {}) {
     });
   }
 
+  let bellDotUnsub = null;
   function mountBell(target) {
+    if (bellDotUnsub) { bellDotUnsub(); bellDotUnsub = null; }
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'mg-bell-btn';
-    button.textContent = 'Bell';
+    button.setAttribute('aria-label', 'Notifications');
+    button.innerHTML = '🔔<span class="mg-bell-dot" hidden></span>';
+    const dot = button.querySelector('.mg-bell-dot');
     const panel = document.createElement('div');
     panel.className = 'mg-bell-panel';
     panel.hidden = true;
     target.replaceChildren(button, panel);
+    const refreshDot = () => { dot.hidden = services.bell.listBellLog({ unseenOnly: true }).length === 0; };
     button.addEventListener('click', () => {
       panel.hidden = !panel.hidden;
-      panel.innerHTML = services.bell.listBellLog().slice(-8).reverse().map((line) => `<div class="mg-bell-msg">${esc(line.text)}</div>`).join('') || '<div class="mg-bell-empty">nothing here</div>';
+      if (!panel.hidden) {
+        panel.innerHTML = services.bell.listBellLog().slice(-8).reverse().map((line) => `<div class="mg-bell-msg">${esc(line.text)}</div>`).join('') || '<div class="mg-bell-empty">nothing here</div>';
+        for (const rec of services.bell.listBellLog({ unseenOnly: true })) services.bell.markBellSeen(rec.id);
+        refreshDot();
+      }
     });
+    bellDotUnsub = services.bell.subscribeToBell(refreshDot);
+    refreshDot();
   }
 
   render();
@@ -169,6 +195,7 @@ export function mount(host, { onExit } = {}) {
   return {
     destroy() {
       mounted?.destroy?.();
+      if (bellDotUnsub) { bellDotUnsub(); bellDotUnsub = null; }
       services.destroy();
       persist();
       host.innerHTML = '';

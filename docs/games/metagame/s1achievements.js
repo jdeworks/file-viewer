@@ -11,6 +11,7 @@ function bigToNum(bn) {
 }
 
 const MILESTONES = [
+  { id: 'score-unlock',  threshold: 400,   msg: 'a counter flickers on — you can see your bits now' },
   { id: 'sound-unlock',  threshold: 1000,  msg: 'I can hear something' },
   { id: 'anim-unlock',   threshold: 10000, msg: 'something changed'    },
 ];

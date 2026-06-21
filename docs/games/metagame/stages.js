@@ -227,6 +227,7 @@ export const STAGES = [
       // 1. Multiplier — +1 clickPower per level; intro button buys this directly.
       {
         id: 's1-mult', name: 'Multiplier', icon: '✖', type: 'click_mult',
+        desc: '+1 bit / tap',
         base: { m: 100, e: 0 }, mult: 1.12, amount: 1,
         unlock: (state) => _gte(state.totalBits, { m: 1, e: 0 }),
         bell: 'bell-mult', grid: 'g1',
@@ -234,28 +235,36 @@ export const STAGES = [
       // 2. Bit Box — timed; 100 bits/cycle per owned; unlocks at bits ≥ 500
       {
         id: 's1-box', name: 'Bit Box', icon: '🧰', type: 'timed',
+        desc: 'timed bit batch',
         base: { m: 500, e: 0 }, mult: 1.10, baseAmount: 100, duration_ms: 4000,
         unlock: (state) => _gte(state.bits, { m: 500, e: 0 }),
         bell: 'bell-box', grid: 'g2',
       },
-      // 3. Signal Booster — timed; boosts Bit Box +10%/level; unlocks at owned[s1-box] ≥ 1
+      // 3. Signal Booster — timed BUILDER; each cycle assembles Bit Boxes (owned[s1-box] += owned
+      //    boosters) and still boosts Bit Box payout +10%/level. Unlocks at owned[s1-box] ≥ 1.
       {
         id: 's1-boost', name: 'Signal Booster', icon: '📡', type: 'timed',
+        desc: 'builds 🧰 Bit Boxes',
         base: { m: 2.5, e: 3 }, mult: 1.10, baseAmount: 75, duration_ms: 5000,
         boost: { targetId: 's1-box', perLevelPct: 0.10 },
+        produces: { targetId: 's1-box', perOwned: 1 },
         unlock: (state) => (state.owned['s1-box'] || 0) >= 1,
         bell: 'bell-boost', grid: 'g3',
       },
-      // 4. Core Cluster — timed; 500 bits/cycle per owned; unlocks at owned[s1-boost] ≥ 1
+      // 4. Core Cluster — timed BUILDER; each cycle assembles Signal Boosters (owned[s1-boost] +=
+      //    owned clusters). Unlocks at owned[s1-boost] ≥ 1.
       {
         id: 's1-cluster', name: 'Core Cluster', icon: '🧊', type: 'timed',
+        desc: 'builds 📡 Boosters',
         base: { m: 12, e: 3 }, mult: 1.08, baseAmount: 500, duration_ms: 8000,
+        produces: { targetId: 's1-boost', perOwned: 1 },
         unlock: (state) => (state.owned['s1-boost'] || 0) >= 1,
         bell: 'bell-cluster', grid: 'g4',
       },
       // 5. Processing Array — passive; 0.5 bits/sec per owned; unlocks at owned[s1-cluster] ≥ 1
       {
         id: 's1-array', name: 'Processing Array', icon: '🛰', type: 'passive',
+        desc: 'auto bits / sec',
         base: { m: 60, e: 3 }, mult: 1.07, rate: 0.5,
         unlock: (state) => (state.owned['s1-cluster'] || 0) >= 1,
         bell: 'bell-array', grid: 'g5',
@@ -264,6 +273,7 @@ export const STAGES = [
       //    unlocks at totalBits ≥ 1 000 000
       {
         id: 's1-neural', name: 'Neural Net', icon: '🧠', type: 'click_mult',
+        desc: 'boosts all timers',
         globalMult: { perLevel: 0.25, targets: 'timed' },
         base: { m: 500, e: 3 }, mult: 1.06, amount: 0,
         unlock: (state) => _gte(state.totalBits, { m: 1, e: 6 }),
@@ -273,6 +283,7 @@ export const STAGES = [
       //    unlocks at owned[s1-neural] ≥ 3
       {
         id: 's1-quantum', name: 'Quantum Tap', icon: '⚛', type: 'click_mult',
+        desc: 'multiplies tap power',
         base: { m: 5, e: 6 }, mult: 1.05, amount: 0, quantumMult: true,
         unlock: (state) => (state.owned['s1-neural'] || 0) >= 3,
         bell: 'bell-quantum', grid: 'g7',

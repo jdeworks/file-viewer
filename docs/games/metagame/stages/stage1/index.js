@@ -45,6 +45,7 @@ export function mountStage(ctx = {}) {
       state,
       save,
       bell: ctx.bell,
+      sfxEnabled: ctx.sfxEnabled,
       stage: () => stageConfig,
       onExit: ctx.onExit,
       onBoss: () => {
