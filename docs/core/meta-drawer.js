@@ -316,6 +316,10 @@ function displayTypeLabel() {
 
 export async function buildMetadata() {
   const body = $('metaBody');
+  // Clear synchronously up-front: the extractor rows below are awaited, so leaving the
+  // previous file's rows in place would briefly show stale metadata (and lets a fast
+  // reader observe the wrong file's data). Empty now → repopulated after extraction.
+  body.innerHTML = '';
   const i = state.intake;
   const basics = [
     ['Name', i.filename],
@@ -333,7 +337,6 @@ export async function buildMetadata() {
   if (state.known && !state.forceBase && state.known.loadMetadata) {
     try { await appendExtractedRows(rows, state.known.loadMetadata, i); } catch {}
   }
-  body.innerHTML = '';
   appendTypeInfo(body, basics);
   const unique = dedupeMetadataRows(rows);
   appendSection(body, META_SECTIONS.type, rowsForSection(unique, META_SECTIONS.type), true);

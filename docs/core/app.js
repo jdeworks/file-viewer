@@ -70,6 +70,7 @@ async function loadIntake(intake) {
   state.binaryEdit = null;
   state.currentFolderPath = null;      // single-file load by default; openTreeFile re-sets it
   state.intake = intake;
+  metaBtnClicks = 0; clearTimeout(_metaBtnTimer);  // opening a file ends any meta-button click streak (resets the easter-egg counter)
   setCompanionLinked(null);            // clear any prior linked path on new file open
   // When loading a single top-level file (not a folder-tree navigation), reset the folder root
   // so save doesn't accidentally compute paths against a stale folder.
@@ -153,6 +154,10 @@ async function renderPreview() {
   // toggled "show the plain view".
   const useKnown = state.known && !state.forceBase;
   if (!useKnown && !type.loadRenderer) return clearPreview();
+  // Clear the prior file's preview synchronously, before awaiting the (async) renderer load +
+  // render. Otherwise the previous file's DOM lingers in #previewHost during the await, briefly
+  // showing stale content — and letting a fast reader observe the wrong file's preview.
+  clearPreview();
   let rendered;
   try {
     const mod = useKnown ? await state.known.loadRenderer() : await type.loadRenderer();

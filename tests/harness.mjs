@@ -90,10 +90,38 @@ export async function createHarness() {
     if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u);
   });
 
+  // Self-healing example opener. Opening a file routes through the app's loadIntake, which
+  // re-renders the whole viewer — so a per-example page.goto reload is NOT needed for isolation
+  // (that reload re-parses Monaco's 13 MB bundle and is the suite's main CPU sink). Instead:
+  //   • first call (or any blank page) navigates once to boot the app;
+  //   • later calls reuse the loaded page but close transient overlays (drawers, side-by-side,
+  //     games) so prior-test UI state can't bleed into the next open;
+  //   • every RELOAD_EVERY opens we DO take a fresh reload to flush accumulated resources
+  //     (disposed-but-retained Monaco models/workers, blob URLs, detached iframes). Without
+  //     this, after a few hundred opens in one page renders slow to a crawl and 12s
+  //     waitForSelector waits start timing out. ~16 reloads over 800 opens vs 800 — still a
+  //     ~98% cut, while staying well below the degradation point (~380 opens).
+  const RELOAD_EVERY = 50;
+  let openCount = 0;
   const openExample = async (label, pg) => {
     const p = pg || page;
-    // Wait until window.__fv is set (app may still be initialising after networkidle)
-    await p.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
+    const hasFv = await p.evaluate(() => typeof window.__fv !== 'undefined').catch(() => false);
+    const needReload = !hasFv || (openCount > 0 && openCount % RELOAD_EVERY === 0);
+    if (needReload) {
+      await p.goto(origin, { waitUntil: 'load' });
+      await p.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
+    } else {
+      await p.evaluate(() => {
+        for (const id of ['settingsDrawer', 'metaDrawer', 'typeHelpDrawer', 'scrim']) {
+          const el = document.getElementById(id); if (el) el.hidden = true;
+        }
+        document.querySelector('.sbs-overlay')?.remove();
+        const g = document.querySelector('.games-overlay'); if (g) g.hidden = true;
+        document.querySelector('.md-context-menu')?.remove();
+        document.querySelector('.md-table-picker')?.remove();
+      });
+    }
+    openCount++;
     return p.evaluate((l) => window.__fv.openExampleByLabel(l), label);
   };
 

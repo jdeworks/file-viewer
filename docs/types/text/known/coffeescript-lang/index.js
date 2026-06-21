@@ -5,6 +5,10 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').toLowerCase();
     if (name.endsWith('.coffee') || name.endsWith('.litcoffee') || name.endsWith('.coffee.md')) return true;
+    // The content heuristic below keys off `->`/`=>`/`class`/`require`, which appear in many other
+    // languages (e.g. PHP's `$obj->method()` — would false-match rector.php). Only apply it to
+    // files WITHOUT a recognized non-CoffeeScript source extension.
+    if (/\.(php|rb|py|rs|go|ts|tsx|jsx|mjs|cjs|java|cs|cpp|cc|hpp|swift|kt|scala|pl|lua|r|sql|sh|ps1)$/i.test(name)) return false;
     const text = intake.text || '';
     const hits = [
       /->/.test(text),
