@@ -141,6 +141,12 @@ async function activateType(type, knownOverride = null) {
 
   if (canRaw) await buildRawView();
   else { state.rawview?.dispose(); state.rawview = null; $('editor').innerHTML = ''; }
+  // Clear the prior file's preview synchronously before the (async) render of this new file, so
+  // the previous file's DOM can't linger in #previewHost during the await (stale-content flash /
+  // a fast reader seeing the wrong file). Done here on the new-file path only — NOT in
+  // renderPreview(), which also runs for same-file re-renders (e.g. theme toggle) where clearing
+  // would cause an empty-pane flash.
+  clearPreview();
   if (canPreview) await renderPreview(); else clearPreview();
   applyLayout();
   if (isMobile()) layoutTopbar();   // re-sync ⋯ visibility now that button hidden-states are set
@@ -154,10 +160,6 @@ async function renderPreview() {
   // toggled "show the plain view".
   const useKnown = state.known && !state.forceBase;
   if (!useKnown && !type.loadRenderer) return clearPreview();
-  // Clear the prior file's preview synchronously, before awaiting the (async) renderer load +
-  // render. Otherwise the previous file's DOM lingers in #previewHost during the await, briefly
-  // showing stale content — and letting a fast reader observe the wrong file's preview.
-  clearPreview();
   let rendered;
   try {
     const mod = useKnown ? await state.known.loadRenderer() : await type.loadRenderer();

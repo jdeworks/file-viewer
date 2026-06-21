@@ -17,10 +17,8 @@ import { markdownHeading, markdownLinkForPastedUrl, markdownTable, markdownWrap,
 import { mountWysiwyg, unmountWysiwyg, getWysiwygValue, isWysiwygActive, getWysiwygCodeMirror } from '../types/markdown/wysiwyg.js';
 import { HtmlWysiwygEditor } from '../types/html/wysiwyg-html.js';
 import { TableEditor } from '../types/text/csv/table-editor.js';
-import { EnvFormEditor } from '../types/text/env/form-editor.js';
-import { IniFormEditor } from '../types/text/ini/form-editor.js';
-import { TomlFormEditor } from '../types/text/toml/form-editor.js';
-import { YamlFormEditor } from '../types/text/yaml/form-editor.js';
+import { setEnvFormMode, setIniFormMode, setTomlFormMode, setYamlFormMode,
+  wireEnvFormBtn, wireIniFormBtn, wireTomlFormBtn, wireYamlFormBtn, getActiveFormValue } from './rawpane-forms.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
@@ -30,10 +28,6 @@ let markdownContextMenu = null;
 let wysiwygMode = false;
 let htmlWysiwyg = null;
 let tableEditor = null;
-let envFormEditor = null;
-let iniFormEditor = null;
-let tomlFormEditor = null;
-let yamlFormEditor = null;
 
 // Show the in-memory edit banner (B). Wires the dismiss buttons once, idempotently.
 function setDisclaimerVisible(visible) {
@@ -797,210 +791,6 @@ function wireTableModeBtn() {
   });
 }
 
-export function setEnvFormMode(on) {
-  const editorEl = document.getElementById('editor');
-  const btn = document.getElementById('envFormBtn');
-  if (on) {
-    const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
-    // Freeze Monaco while form is active
-    state.rawview?.updateOptions?.({ readOnly: true });
-    let host = document.getElementById('envFormHost');
-    if (!host) {
-      host = document.createElement('div');
-      host.id = 'envFormHost';
-      host.className = 'editor-host';
-      editorEl?.parentNode?.insertBefore(host, editorEl);
-    }
-    host.hidden = false;
-    if (editorEl) editorEl.style.display = 'none';
-    envFormEditor = new EnvFormEditor(host, text, (newText) => {
-      state.intake = { ...state.intake, text: newText };
-      state.downloadedSinceEdit = false;
-    });
-  } else {
-    // Flush form value back to Monaco before hiding
-    if (envFormEditor) {
-      const text = envFormEditor.getValue();
-      envFormEditor.destroy();
-      envFormEditor = null;
-      if (state.rawview) {
-        state.rawview.setValue(text);
-        state.rawview.updateOptions?.({ readOnly: false });
-      }
-      state.intake = { ...state.intake, text };
-    }
-    const host = document.getElementById('envFormHost');
-    if (host) host.hidden = true;
-    if (editorEl) editorEl.style.display = '';
-  }
-  if (btn) {
-    btn.classList.toggle('active', on);
-    btn.setAttribute('aria-pressed', String(on));
-  }
-}
-
-function wireEnvFormBtn() {
-  const btn = document.getElementById('envFormBtn');
-  if (!btn || btn.dataset.wired) return;
-  btn.dataset.wired = '1';
-  btn.addEventListener('click', () => {
-    const isOn = btn.classList.contains('active');
-    setEnvFormMode(!isOn);
-  });
-}
-
-export function setIniFormMode(on) {
-  const editorEl = document.getElementById('editor');
-  const btn = document.getElementById('iniFormBtn');
-  if (on) {
-    const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
-    // Freeze Monaco while form is active
-    state.rawview?.updateOptions?.({ readOnly: true });
-    let host = document.getElementById('iniFormHost');
-    if (!host) {
-      host = document.createElement('div');
-      host.id = 'iniFormHost';
-      host.className = 'editor-host';
-      editorEl?.parentNode?.insertBefore(host, editorEl);
-    }
-    host.hidden = false;
-    if (editorEl) editorEl.style.display = 'none';
-    iniFormEditor = new IniFormEditor(host, text, (newText) => {
-      state.intake = { ...state.intake, text: newText };
-      state.downloadedSinceEdit = false;
-    });
-  } else {
-    // Flush form value back to Monaco before hiding
-    if (iniFormEditor) {
-      const text = iniFormEditor.getValue();
-      iniFormEditor.destroy();
-      iniFormEditor = null;
-      if (state.rawview) {
-        state.rawview.setValue(text);
-        state.rawview.updateOptions?.({ readOnly: false });
-      }
-      state.intake = { ...state.intake, text };
-    }
-    const host = document.getElementById('iniFormHost');
-    if (host) host.hidden = true;
-    if (editorEl) editorEl.style.display = '';
-  }
-  if (btn) {
-    btn.classList.toggle('active', on);
-    btn.setAttribute('aria-pressed', String(on));
-  }
-}
-
-function wireIniFormBtn() {
-  const btn = document.getElementById('iniFormBtn');
-  if (!btn || btn.dataset.wired) return;
-  btn.dataset.wired = '1';
-  btn.addEventListener('click', () => {
-    const isOn = btn.classList.contains('active');
-    setIniFormMode(!isOn);
-  });
-}
-
-export function setTomlFormMode(on) {
-  const editorEl = document.getElementById('editor');
-  const btn = document.getElementById('tomlFormBtn');
-  if (on) {
-    const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
-    // Freeze Monaco while form is active
-    state.rawview?.updateOptions?.({ readOnly: true });
-    let host = document.getElementById('tomlFormHost');
-    if (!host) {
-      host = document.createElement('div');
-      host.id = 'tomlFormHost';
-      host.className = 'editor-host';
-      editorEl?.parentNode?.insertBefore(host, editorEl);
-    }
-    host.hidden = false;
-    if (editorEl) editorEl.style.display = 'none';
-    tomlFormEditor = new TomlFormEditor(host);
-    tomlFormEditor.setValue(text);
-  } else {
-    // Flush form value back to Monaco before hiding
-    if (tomlFormEditor) {
-      const text = tomlFormEditor.getValue();
-      tomlFormEditor.destroy();
-      tomlFormEditor = null;
-      if (state.rawview) {
-        state.rawview.setValue(text);
-        state.rawview.updateOptions?.({ readOnly: false });
-      }
-      state.intake = { ...state.intake, text };
-    }
-    const host = document.getElementById('tomlFormHost');
-    if (host) host.hidden = true;
-    if (editorEl) editorEl.style.display = '';
-  }
-  if (btn) {
-    btn.classList.toggle('active', on);
-    btn.setAttribute('aria-pressed', String(on));
-  }
-}
-
-function wireTomlFormBtn() {
-  const btn = document.getElementById('tomlFormBtn');
-  if (!btn || btn.dataset.wired) return;
-  btn.dataset.wired = '1';
-  btn.addEventListener('click', () => {
-    const isOn = btn.classList.contains('active');
-    setTomlFormMode(!isOn);
-  });
-}
-
-export function setYamlFormMode(on) {
-  const editorEl = document.getElementById('editor');
-  const btn = document.getElementById('yamlFormBtn');
-  if (on) {
-    const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
-    // Freeze Monaco while form is active
-    state.rawview?.updateOptions?.({ readOnly: true });
-    let host = document.getElementById('yamlFormHost');
-    if (!host) {
-      host = document.createElement('div');
-      host.id = 'yamlFormHost';
-      host.className = 'editor-host';
-      editorEl?.parentNode?.insertBefore(host, editorEl);
-    }
-    host.hidden = false;
-    if (editorEl) editorEl.style.display = 'none';
-    yamlFormEditor = new YamlFormEditor(host);
-    yamlFormEditor.setValue(text);
-  } else {
-    // Flush form value back to Monaco before hiding
-    if (yamlFormEditor) {
-      const text = yamlFormEditor.getValue();
-      yamlFormEditor.destroy();
-      yamlFormEditor = null;
-      if (state.rawview) {
-        state.rawview.setValue(text);
-        state.rawview.updateOptions?.({ readOnly: false });
-      }
-      state.intake = { ...state.intake, text };
-    }
-    const host = document.getElementById('yamlFormHost');
-    if (host) host.hidden = true;
-    if (editorEl) editorEl.style.display = '';
-  }
-  if (btn) {
-    btn.classList.toggle('active', on);
-    btn.setAttribute('aria-pressed', String(on));
-  }
-}
-
-function wireYamlFormBtn() {
-  const btn = document.getElementById('yamlFormBtn');
-  if (!btn || btn.dataset.wired) return;
-  btn.dataset.wired = '1';
-  btn.addEventListener('click', () => {
-    const isOn = btn.classList.contains('active');
-    setYamlFormMode(!isOn);
-  });
-}
-
 function updateWordCount(text, typeId) {
   const bar = document.getElementById('wordCountBar');
   if (!bar) return;
@@ -1257,18 +1047,10 @@ export function hasUnsavedWork() {
   // Table editor: dirty when current CSV differs from the original load
   if (tableEditor && !state.downloadedSinceEdit &&
       tableEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
-  // Env form editor: dirty when current text differs from the original load
-  if (envFormEditor && !state.downloadedSinceEdit &&
-      envFormEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
-  // INI form editor: dirty when current text differs from the original load
-  if (iniFormEditor && !state.downloadedSinceEdit &&
-      iniFormEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
-  // TOML form editor: dirty when current text differs from the original load
-  if (tomlFormEditor && !state.downloadedSinceEdit &&
-      tomlFormEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
-  // YAML form editor: dirty when current text differs from the original load
-  if (yamlFormEditor && !state.downloadedSinceEdit &&
-      yamlFormEditor.getValue() !== (state.intake?.originalText ?? '')) return true;
+  // env/ini/toml/yaml form editor: dirty when the active form's text differs from the original load
+  const formValue = getActiveFormValue();
+  if (formValue != null && !state.downloadedSinceEdit &&
+      formValue !== (state.intake?.originalText ?? '')) return true;
   if (state.sessionEdits.size > 0) return true;
   // Folder edits stashed but not yet exported also count — closing the tab would lose them.
   return state.folderEdits.size > 0 && !state.folderExported;
@@ -1319,21 +1101,12 @@ export async function downloadCurrent() {
     blob = new Blob([bytes], { type: state.binaryEdit.mimeType || state.intake.mimeType || 'application/octet-stream' });
     state.binaryEdit.dirty = false;
   } else {
-    const text = tableEditor
-      ? tableEditor.getValue()
-      : envFormEditor
-        ? envFormEditor.getValue()
-        : iniFormEditor
-          ? iniFormEditor.getValue()
-          : tomlFormEditor
-            ? tomlFormEditor.getValue()
-            : yamlFormEditor
-              ? yamlFormEditor.getValue()
-              : htmlWysiwyg
-                ? htmlWysiwyg.getValue()
-                : wysiwygMode && isWysiwygActive()
-                  ? getWysiwygValue()
-                  : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
+    const formValue = getActiveFormValue();
+    const text = tableEditor ? tableEditor.getValue()
+      : formValue != null ? formValue
+      : htmlWysiwyg ? htmlWysiwyg.getValue()
+      : wysiwygMode && isWysiwygActive() ? getWysiwygValue()
+      : (state.rawview ? state.rawview.getValue() : (state.intake.text || ''));
     blob = new Blob([text], { type: state.intake.mimeType || 'text/plain' });
   }
   const a = document.createElement('a');
@@ -1342,21 +1115,12 @@ export async function downloadCurrent() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   if (state.sessionEdits.has(state.intake.filename)) {
-    const text = tableEditor
-      ? tableEditor.getValue()
-      : envFormEditor
-        ? envFormEditor.getValue()
-        : iniFormEditor
-          ? iniFormEditor.getValue()
-          : tomlFormEditor
-            ? tomlFormEditor.getValue()
-            : yamlFormEditor
-              ? yamlFormEditor.getValue()
-              : htmlWysiwyg
-                ? htmlWysiwyg.getValue()
-                : wysiwygMode && isWysiwygActive()
-                  ? getWysiwygValue()
-                  : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
+    const formValue = getActiveFormValue();
+    const text = tableEditor ? tableEditor.getValue()
+      : formValue != null ? formValue
+      : htmlWysiwyg ? htmlWysiwyg.getValue()
+      : wysiwygMode && isWysiwygActive() ? getWysiwygValue()
+      : (state.rawview ? state.rawview.getValue() : state.sessionEdits.get(state.intake.filename));
     state.sessionIntakes.set(state.intake.filename, { ...state.sessionIntakes.get(state.intake.filename), text });
     state.sessionEdits.delete(state.intake.filename);
     state.treeApi?.setEdited?.(state.intake.filename, false);
