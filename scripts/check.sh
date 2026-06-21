@@ -25,6 +25,13 @@ if ! git diff --quiet -- docs/core/registry-runtime.generated.js docs/core/regis
   exit 1
 fi
 
+echo "→ regenerating bundled known-file registry (must be committed fresh)…"
+node scripts/gen-known-runtime.mjs >/dev/null
+if ! git diff --quiet -- docs/known/registry.generated.js; then
+  echo "  known/registry.generated.js changed — stage it (known plugins changed since last regen)."
+  exit 1
+fi
+
 echo "→ running compatibility matrix generator…"
 node scripts/gen-example-compatibility.mjs
 

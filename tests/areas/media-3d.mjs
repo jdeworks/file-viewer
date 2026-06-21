@@ -302,6 +302,56 @@ export async function run(ctx) {
     await page.waitForSelector('#previewHost .media-sp-panel[hidden]', { state: 'attached', timeout: 3000 });
     pass('audio spectrum: panel collapses');
   } else fail('spectrum & EQ toggle button not found');
+
+  // ── P5 Multi-track mixer ("swim lanes") ── opt-in panel; decode-lazy; OfflineAudioContext mixdown → WAV.
+  const mxBtn = await page.$('#previewHost .media-mx-panel');
+  // The mixer toggle is the LAST .media-wv-toggle (waveform, spectrum, mixer order).
+  const mxToggle = (await page.$$('#previewHost .media-wv-toggle')).slice(-1)[0];
+  if (mxToggle) {
+    const mxText = await mxToggle.evaluate((e) => e.textContent);
+    if (/Multi-track mixer/.test(mxText)) pass('audio mixer: toggle button present (collapsed)'); else fail('mixer btn text: ' + mxText);
+    // CPU-lazy: panel hidden + no mixer DOM until opened.
+    const preOpen = await page.$('#previewHost .mx-wrap');
+    if (!preOpen) pass('audio mixer: CPU-lazy (no transport/decode until opened)'); else fail('mixer mounted before open');
+    await mxToggle.click();
+    await page.waitForSelector('#previewHost .mx-wrap', { timeout: 12000 });
+    // Lane 1 seeds from the loaded clip (decoded). Wait for it to appear.
+    await page.waitForSelector('#previewHost .mx-lane', { timeout: 12000 });
+    const lane1Count = await page.$$eval('#previewHost .mx-lane', (els) => els.length);
+    if (lane1Count >= 1) pass('audio mixer: opens with the loaded clip as lane 1'); else fail('mixer lanes after open: ' + lane1Count);
+    // Transport + master controls present.
+    const hasTransport = await page.$('#previewHost .mx-play') && await page.$('#previewHost .mx-master-slider');
+    if (hasTransport) pass('audio mixer: transport (play/stop) + master gain present'); else fail('mixer transport controls missing');
+    // Per-lane: gain + mute + solo + fade handles.
+    const laneCtrls = await page.evaluate(() => ({
+      gain: !!document.querySelector('#previewHost .mx-lane-gain'),
+      mute: !!document.querySelector('#previewHost .mx-mute'),
+      solo: !!document.querySelector('#previewHost .mx-solo'),
+      fadeIn: !!document.querySelector('#previewHost .mx-fade-in'),
+      fadeOut: !!document.querySelector('#previewHost .mx-fade-out'),
+    }));
+    if (laneCtrls.gain && laneCtrls.mute && laneCtrls.solo && laneCtrls.fadeIn && laneCtrls.fadeOut)
+      pass('audio mixer: per-lane gain/mute/solo + fade handles present');
+    else fail('mixer lane controls: ' + JSON.stringify(laneCtrls));
+    // Add a generator lane → a second lane appears (≥2 clips).
+    await page.click('#previewHost .mx-add-btn');   // first add button = +440 Hz tone
+    await page.waitForFunction(() => document.querySelectorAll('#previewHost .mx-lane').length >= 2, null, { timeout: 6000 });
+    const lane2Count = await page.$$eval('#previewHost .mx-lane', (els) => els.length);
+    if (lane2Count >= 2) pass('audio mixer: a second lane can be added (generator tone)'); else fail('mixer lanes after add: ' + lane2Count);
+    // Mixdown → WAV produces a downloadable file (OfflineAudioContext render → WAV worker/header).
+    const mixBtn = await page.$('#previewHost .mx-mix-btn');   // first mix button = Mixdown → WAV
+    const [wavDownload] = await Promise.all([
+      page.waitForEvent('download', { timeout: 30000 }),
+      mixBtn.click(),
+    ]);
+    const wavName = wavDownload.suggestedFilename();
+    if (/\.wav$/.test(wavName)) pass('audio mixer: mixdown → WAV downloaded (' + wavName + ')'); else fail('mixer WAV download name: ' + wavName);
+    // Close the panel → mixer torn down.
+    await mxToggle.click();
+    await page.waitForSelector('#previewHost .mx-wrap', { state: 'detached', timeout: 4000 });
+    pass('audio mixer: panel collapses + tears down transport');
+  } else fail('mixer panel not found');
+
   // Folder playlist: load a 2-track folder via the seam → prev/next + position + shuffle appear.
   await page.evaluate(async () => {
     const r = await fetch('examples/sample.wav');
@@ -392,4 +442,94 @@ export async function run(ctx) {
     if (mixerSliders.length === 9) pass('video studio: audio mixer mounts the 9-band EQ on the movie audio'); else fail('mixer sliders: ' + mixerSliders.length);
     if (mixerLegend) pass('video studio: audio mixer shows the overlaid-spectrum legend'); else fail('mixer legend missing');
   } else fail('video studio: audio mixer toggle not found');
+
+  // ── P1/P3: Export processed audio + baked fades (ffmpeg ON) ──────────────────
+  // Enable ffmpeg via the global settings bag so the renderer builds the export panel.
+  // (We do NOT actually run ffmpeg.wasm here — that's a 23 MB heavy load; we assert the
+  // UI is present + wired, and verify the ffmpeg filter chain via the pure builder.)
+  await page.goto(origin, { waitUntil: 'load' });
+  await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
+  await page.evaluate(() => {
+    localStorage.setItem('fv:settings:global', JSON.stringify({ version: 1, values: { enableFfmpeg: true } }));
+  });
+  await page.goto(origin, { waitUntil: 'load' });
+  await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
+  await page.evaluate(() => window.__fv.openExampleByLabel('Sample.wav'));
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+
+  const exportPanel = await page.$('#previewHost .media-export-panel');
+  if (exportPanel) pass('P1: export panel present when ffmpeg enabled'); else fail('export panel missing with ffmpeg on');
+  const exportHeader = exportPanel ? await page.$eval('#previewHost .media-export-panel .media-ed-header', (e) => e.textContent) : '';
+  if (/Export processed audio/i.test(exportHeader)) pass('P1: "Export processed audio" header present'); else fail('export header: ' + exportHeader);
+  const exportRunText = exportPanel ? await page.$eval('#previewHost .media-export-run', (e) => e.textContent) : '';
+  if (/Export processed audio/i.test(exportRunText)) pass('P1: export button labelled'); else fail('export run btn: ' + exportRunText);
+  const exportFmts = await page.$$eval('#previewHost .media-export-fmt option', (els) => els.map((e) => e.value));
+  if (['source', 'mp3', 'wav', 'm4a', 'ogg'].every((f) => exportFmts.includes(f))) pass('P1: export format options (source/mp3/wav/m4a/ogg)'); else fail('export fmts: ' + exportFmts.join(','));
+  const fadeInPresent = await page.$('#previewHost .media-ed-fade-in');
+  const fadeOutPresent = await page.$('#previewHost .media-ed-fade-out');
+  if (fadeInPresent && fadeOutPresent) pass('P3: audio fade-in / fade-out controls present'); else fail('fade controls: in=' + !!fadeInPresent + ' out=' + !!fadeOutPresent);
+  // Crossfade stub: the panel must say cross-clip needs the timeline (it is NOT built).
+  const stubText = await page.$eval('#previewHost .media-export-stub', (e) => e.textContent).catch(() => '');
+  if (/Crossfade.*timeline/i.test(stubText)) pass('P3: crossfade stubbed as "needs timeline"'); else fail('crossfade stub: ' + stubText.slice(0, 80));
+  // The live-EQ summary updates with the fade duration (proves settings are read live).
+  await page.fill('#previewHost .media-ed-fade-in', '2');
+  await page.evaluate(() => document.querySelector('#previewHost .media-ed-fade-in').dispatchEvent(new Event('input', { bubbles: true })));
+  const summaryText = await page.$eval('#previewHost .media-export-summary', (e) => e.textContent).catch(() => '');
+  if (/fade-in 2/.test(summaryText)) pass('P1: live export summary reflects fade-in setting'); else fail('export summary: ' + summaryText.slice(0, 100));
+
+  // ── P2: export presets + advanced overrides ────────────────────────────────
+  // The flat format picker is now a preset <select> (Podcast / ACX / Custom …).
+  const presetSel = await page.$('#previewHost .media-export-preset');
+  if (presetSel) pass('P2: export preset selector present'); else fail('export preset selector missing');
+  const presetOpts = await page.$$eval('#previewHost .media-export-preset option', (els) => els.map((e) => e.value));
+  if (['custom', 'podcast-mp3', 'acx-mp3'].every((v) => presetOpts.includes(v))) pass('P2: presets include Podcast + Audiobook(ACX) + Custom'); else fail('preset opts: ' + presetOpts.join(','));
+  // Advanced overrides hidden until "Custom"; default preset is Podcast.
+  const advHiddenDefault = await page.$eval('#previewHost .media-export-adv', (e) => e.hidden).catch(() => null);
+  if (advHiddenDefault === true) pass('P2: advanced overrides hidden under a concrete preset'); else fail('adv hidden default: ' + advHiddenDefault);
+  // Switch to Audiobook (ACX): summary must reflect mono / 192k CBR / −20 LUFS.
+  await page.selectOption('#previewHost .media-export-preset', 'acx-mp3');
+  const acxSummary = await page.$eval('#previewHost .media-export-summary', (e) => e.textContent).catch(() => '');
+  if (/mono/i.test(acxSummary) && /192k CBR/.test(acxSummary) && /-20 LUFS/.test(acxSummary)) pass('P2: ACX preset summary shows mono, 192k CBR, normalize -20 LUFS'); else fail('acx summary: ' + acxSummary.slice(0, 140));
+  // Switching to Custom reveals the override fields (container/bitrate/sr/channels/loudness).
+  await page.selectOption('#previewHost .media-export-preset', 'custom');
+  const advShown = await page.$eval('#previewHost .media-export-adv', (e) => e.hidden).catch(() => null);
+  const hasContainer = await page.$('#previewHost .media-export-container');
+  const hasBitrate = await page.$('#previewHost .media-export-bitrate');
+  const hasLufs = await page.$('#previewHost .media-export-lufs');
+  if (advShown === false && hasContainer && hasBitrate && hasLufs) pass('P2: Custom reveals container/bitrate/loudness overrides'); else fail('custom adv: shown=' + advShown + ' c=' + !!hasContainer + ' b=' + !!hasBitrate + ' l=' + !!hasLufs);
+  // Verify the PURE preset/codec layer (no ffmpeg load): ACX → mono CBR mp3 args.
+  const presetParams = await page.evaluate(async () => {
+    const { presetById, resolveExportParams, audioEncodeArgs: enc } = {
+      ...(await import('./types/media/export-presets.js')),
+      audioEncodeArgs: (await import('./types/media/transcoder.js')).audioEncodeArgs,
+    };
+    const p = resolveExportParams(presetById('acx-mp3'), {}, 'mp3');
+    const e = enc(p.container, { bitrate: p.bitrate, cbr: p.cbr });
+    return { channels: p.channels, sampleRate: p.sampleRate, lufs: p.lufsTarget, encArgs: e.args.join(' ') };
+  });
+  if (presetParams.channels === 1 && presetParams.sampleRate === 44100 && presetParams.lufs === -20 && /libmp3lame -b:a 192k/.test(presetParams.encArgs)) pass('P2: ACX resolves to mono/44.1k/-20 LUFS + CBR 192k mp3 args'); else fail('acx params: ' + JSON.stringify(presetParams));
+  // Restore the Podcast preset so the rest of the area sees a stable state.
+  await page.selectOption('#previewHost .media-export-preset', 'podcast-mp3');
+
+  // Verify the ffmpeg `-af` chain the export will run, via the PURE builder (no ffmpeg load).
+  const chain = await page.evaluate(async () => {
+    const { buildAudioFilterChain } = await import('./types/media/transcoder.js');
+    const freqs = [60, 120, 250, 500, 1000, 2000, 4000, 8000, 12000];
+    return buildAudioFilterChain(
+      { freqs, gains: [0, 3, 0, 0, -2, 0, 0, 0, 0], hpf: 80, lpf: 16000, lufsTarget: -16 },
+      { fadeIn: 2, fadeOut: 3, duration: 60 },
+    );
+  });
+  const chainOk = /^highpass=f=80,equalizer=f=120:width_type=o:width=1:g=3,.*equalizer=f=1000.*g=-2,lowpass=f=16000,afade=t=in:st=0:d=2,afade=t=out:st=57:d=3,loudnorm=I=-16:TP=-1\.5:LRA=11$/.test(chain);
+  if (chainOk) pass('P1: ffmpeg -af chain correct order (HPF→bands→LPF→fades→loudnorm)'); else fail('af chain: ' + chain);
+
+  // ── P3: video fade — the export panel on a video reads "video" and renders fade-to-black.
+  await page.evaluate(() => window.__fv.openExampleByLabel('Sample.avi'));
+  await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
+  const vidExportHeader = await page.$eval('#previewHost .media-export-panel .media-ed-header', (e) => e.textContent).catch(() => '');
+  if (/Export & Fades \(video\)/i.test(vidExportHeader)) pass('P3: video export panel offers fade-to-black'); else fail('video export header: ' + vidExportHeader);
+  const vidFadeIn = await page.$('#previewHost .media-export-panel .media-ed-fade-in');
+  if (vidFadeIn) pass('P3: video fade-to/from-black duration controls present'); else fail('video fade controls missing');
+  // Reset settings so we don't leak ffmpeg-on into later areas sharing the page.
+  await page.evaluate(() => localStorage.removeItem('fv:settings:global'));
 }

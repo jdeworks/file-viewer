@@ -3,7 +3,7 @@
 // imports shared state + primitives from state.js (no circular dep back into app.js).
 import { state, $, toast, themeIsDark, escapeHtml } from './state.js';
 import { pickType } from './detect.js';
-import { matchKnown } from '../known/registry.js';
+import { matchKnown } from '../known/registry.generated.js';
 import { mountPreview } from './iframe.js';
 import { previewStyle } from './settings-schema.js';
 import { intakeFromFile } from './intake.js';

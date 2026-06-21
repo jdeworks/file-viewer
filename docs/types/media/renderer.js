@@ -227,6 +227,8 @@ export async function render(intake, ctx = {}) {
   // Full editor panel (Phase 2) — always built when ffmpeg is enabled.
   let editorPanel = null;
   let editorRevoke = null;
+  let exportPanel = null;       // P1/P3 export + fades panel
+  let exportRevoke = null;
   let transcodedUrl = null;  // revoked on cleanup
 
   if (enableFfmpeg) {
@@ -240,10 +242,17 @@ export async function render(intake, ctx = {}) {
     });
     editorPanel = editor.el;
     editorRevoke = editor.revoke;
+
+    // P1 (export processed/EQ'd audio) + P3 (baked fades). Reads the live EQ graph.
+    const { buildExportPanel } = await import('./studio-export.js');
+    const exp = buildExportPanel(intake, el, info.kind);
+    exportPanel = exp.el;
+    exportRevoke = exp.revoke;
   }
 
   let waveformWrap = null;
   let spController = null;
+  let mxController = null;
   if (info.kind === 'audio') {
     const wvWrap = document.createElement('div');
     wvWrap.className = 'media-wv-wrap';
@@ -288,6 +297,30 @@ export async function render(intake, ctx = {}) {
       }
     });
     wvWrap.append(spWrap);
+
+    // ── Multi-track mixer ("swim lanes") ──────────────────────────────────
+    // On-demand, opt-in. Decodes audio + builds the WebAudio transport ONLY
+    // when first opened (CPU-lazy). Plain playback above stays untouched.
+    const mxWrap = document.createElement('div');
+    mxWrap.className = 'media-wv-wrap';
+    const mxToggle = document.createElement('button');
+    mxToggle.type = 'button';
+    mxToggle.className = 'media-wv-toggle';
+    mxToggle.textContent = '▶ Multi-track mixer';
+    const mxPanel = document.createElement('div');
+    mxPanel.className = 'media-mx-panel';
+    mxPanel.hidden = true;
+    mxWrap.append(mxToggle, mxPanel);
+    mxToggle.addEventListener('click', async () => {
+      mxPanel.hidden = !mxPanel.hidden;
+      mxToggle.textContent = mxPanel.hidden ? '▶ Multi-track mixer' : '▼ Multi-track mixer';
+      if (mxPanel.hidden) { mxController?.destroy(); mxController = null; return; }
+      if (!mxController) {
+        const { mountMixer } = await import('./mixer-ui.js');
+        mxController = mountMixer(mxPanel, intake);
+      }
+    });
+    wvWrap.append(mxWrap);
   }
 
   if (info.kind === 'audio') host.append(name, el, waveformWrap, tools);
@@ -295,6 +328,7 @@ export async function render(intake, ctx = {}) {
   if (videoStudio) host.append(videoStudio.mixer);
   host.append(hintPanel);
   if (editorPanel) host.append(editorPanel);
+  if (exportPanel) host.append(exportPanel);
   if (trackListEl) host.append(trackListEl);
 
   // ── Resume position ──
@@ -386,8 +420,10 @@ export async function render(intake, ctx = {}) {
       URL.revokeObjectURL(url);
       if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
       if (editorRevoke) editorRevoke();
+      if (exportRevoke) exportRevoke();
       if (wvController) { wvController.destroy(); wvController = null; }
       if (spController) { spController.destroy(); spController = null; }
+      if (mxController) { mxController.destroy(); mxController = null; }
       if (videoStudio) { videoStudio.destroy(); videoStudio = null; }
     },
   };
