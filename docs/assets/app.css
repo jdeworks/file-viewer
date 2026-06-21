@@ -187,6 +187,15 @@ body {
   transition: border-color .15s, background .15s;
 }
 .dropzone.drag-over { border-color: var(--accent); background: var(--bg-3); }
+/* Whole-page drop affordance: while a file is dragged anywhere over the empty/intake
+   screen, the page shows it accepts the drop (not just the middle dropzone). Added/removed
+   in intake.js; only active when the intake screen is shown (a file open opts out). */
+body.fv-dragging .dropzone { border-color: var(--accent); background: var(--bg-3); }
+body.fv-dragging .intake::after {
+  content: ''; position: fixed; inset: 0; z-index: 60; pointer-events: none;
+  border: 3px dashed var(--accent); border-radius: 12px; margin: 8px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
 .dz-icon { font-size: 44px; opacity: .5; }
 .dropzone h1 { font-size: 20px; margin: 12px 0 4px; }
 .muted { color: var(--fg-2); }
@@ -234,6 +243,13 @@ body {
   border-bottom: 1px solid var(--border); font-size: 12px; }
 .compare-bar[hidden] { display: none; }
 .compare-bar.drag-over { outline: 2px solid var(--accent); outline-offset: -2px; background: color-mix(in srgb, var(--accent) 14%, var(--bg-2)); }
+/* Attention flash when the compare drop target appears (outline + bg only — no border, no layout shift). */
+@keyframes compareBarFlash {
+  0%, 100% { background: var(--bg-2); outline-color: transparent; }
+  25%, 60% { background: color-mix(in srgb, var(--accent) 22%, var(--bg-2)); outline-color: var(--accent); }
+}
+.compare-bar.flash { outline: 2px solid transparent; outline-offset: -2px; animation: compareBarFlash 1.05s ease-in-out 2; }
+.reduce-motion .compare-bar.flash { animation: none; }
 .compare-label { flex: 1; min-width: 0; color: var(--fg-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .compare-pick, .compare-stop { background: var(--bg); border: 1px solid var(--border); color: var(--fg);
   border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 12px; white-space: nowrap; }
@@ -334,6 +350,18 @@ body {
   background: transparent; border-radius: 6px; cursor: pointer; font: inherit; font-size: 13px; color: var(--fg, #24292f); }
 .tu-mode-item:hover { background: var(--bg-3, #e8eaed); }
 .tu-mode-item.active { font-weight: 600; color: var(--accent, #0969da); }
+/* Heading-level picker opened from the markdown toolbar "H" button. */
+.md-heading-menu { position: fixed; z-index: 10001; background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: 0 10px 28px rgba(0,0,0,.28); padding: 4px; min-width: 160px; }
+.md-heading-item { display: block; width: 100%; text-align: left; padding: 5px 10px; border: none;
+  background: transparent; border-radius: 6px; cursor: pointer; font-family: inherit; color: var(--fg, #24292f); line-height: 1.3; }
+.md-heading-item:hover { background: var(--bg-3, #e8eaed); }
+.md-heading-1 { font-size: 19px; font-weight: 700; }
+.md-heading-2 { font-size: 17px; font-weight: 700; }
+.md-heading-3 { font-size: 15px; font-weight: 600; }
+.md-heading-4 { font-size: 14px; font-weight: 600; }
+.md-heading-5, .md-heading-6 { font-size: 13px; font-weight: 600; }
+.md-heading-normal { font-size: 13px; color: var(--fg-2, #888); border-top: 1px solid var(--border, #e0e0e0); margin-top: 2px; padding-top: 7px; }
 /* Table grid picker */
 .md-table-picker { position: fixed; z-index: 10001; padding: 8px; border: 1px solid var(--border);
   border-radius: 8px; background: var(--bg-2); box-shadow: 0 10px 28px rgba(0,0,0,.28); }
@@ -585,16 +613,46 @@ body {
 /* Side-by-side: two files rendered next to each other in a full-screen overlay. */
 .sbs-overlay { position: fixed; inset: 0; z-index: 60; background: var(--bg); display: flex; flex-direction: column; }
 .sbs-head { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
-.sbs-title { flex: 1; font-weight: 600; font-size: 14px; }
+.sbs-title { font-weight: 600; font-size: 14px; white-space: nowrap; }
 .sbs-close { background: var(--bg); border: 1px solid var(--border); color: var(--fg); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
+/* Shared mode bar (Current/Raw/Preview/Diff) — one radio-style switch governing both panes. */
+.sbs-mode { flex: 1; display: flex; justify-content: center; gap: 4px; min-width: 0; }
+.sbs-mode-btn { background: var(--bg); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 6px; padding: 3px 12px; font-size: 12px; cursor: pointer; line-height: 1.4; }
+.sbs-mode-btn:hover:not(:disabled) { border-color: var(--accent, #2563eb); }
+.sbs-mode-btn.active { background: var(--accent, #2563eb); border-color: var(--accent, #2563eb); color: #fff; }
+.sbs-mode-btn:disabled { opacity: .45; cursor: not-allowed; }
 .sbs-body { flex: 1; display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
+/* Diff mode: one full-width Monaco diff replaces the two panes. */
+.sbs-diff { flex: 1; position: relative; min-height: 0; }
+.sbs-diff .editor-host, .sbs-diff > div { position: absolute; inset: 0; }
 .sbs-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--border); }
 .sbs-pane:last-child { border-right: 0; }
-.sbs-name { padding: 6px 12px; font-size: 12px; color: var(--fg-2); border-bottom: 1px solid var(--border);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--bg-2); }
-.sbs-host { flex: 1; position: relative; overflow: auto; min-height: 0; background: var(--bg); }
-.sbs-host > iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.sbs-name { display: flex; align-items: center; gap: 8px; padding: 5px 12px; font-size: 12px; color: var(--fg-2);
+  border-bottom: 1px solid var(--border); background: var(--bg-2); }
+.sbs-fname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sbs-ctrls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.sbs-toggle, .sbs-dl { background: var(--bg); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 6px; padding: 2px 8px; font-size: 11px; cursor: pointer; line-height: 1.4; }
+.sbs-toggle.active { background: var(--accent, #2563eb); border-color: var(--accent, #2563eb); color: #fff; }
+.sbs-host { flex: 1; position: relative; overflow: hidden; min-height: 0; background: var(--bg); }
+.sbs-source, .sbs-preview { position: absolute; inset: 0; overflow: auto; }
+.sbs-source { overflow: hidden; }
+.sbs-host iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .sbs-note { padding: 16px; color: var(--fg-2); font-size: 13px; }
+/* Per-pane formatting toolbar (markdown actions or text utilities), bound to the pane's own editor. */
+.sbs-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 4px 12px;
+  border-bottom: 1px solid var(--border); background: var(--bg-2); }
+.sbs-tool { background: var(--bg); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 6px; padding: 2px 7px; font-size: 11px; cursor: pointer; line-height: 1.4; }
+.sbs-tool:hover { border-color: var(--accent, #2563eb); }
+.sbs-tool-mode { font-weight: 600; }
+/* In-pane Split view: Monaco source + live preview share the pane 50/50. */
+.sbs-host.sbs-split { display: flex; }
+.sbs-host.sbs-split .sbs-source, .sbs-host.sbs-split .sbs-preview {
+  position: relative; inset: auto; flex: 1 1 0; min-width: 0; height: 100%; }
+.sbs-host.sbs-split .sbs-source { border-right: 1px solid var(--border); }
+.sbs-host.sbs-split .sbs-preview iframe { position: absolute; inset: 0; }
 @media (max-width: 760px) { .sbs-body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } .sbs-pane { border-right: 0; border-bottom: 1px solid var(--border); } }
 /* Cache-download modal: pick offline bundles with sizes. */
 .cache-modal-backdrop { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.5);

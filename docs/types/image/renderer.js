@@ -33,17 +33,7 @@ export async function render(intake, ctx = {}) {
     + '<button class="imgv-up" title="Zoom in">+</button>'
     + '<span class="imgv-zoom"></span>'
     + '<span class="imgv-sep"></span>'
-    + '<button class="imgv-ascii-btn" title="Toggle ASCII art view">ASCII</button>'
-    + '<select class="imgv-ascii-cols" title="Width (columns)" hidden>'
-    + '<option value="40">40 cols</option><option value="80" selected>80 cols</option><option value="160">160 cols</option>'
-    + '</select>'
-    + '<select class="imgv-ascii-color" title="Color mode" hidden>'
-    + '<option value="mono" selected>Mono</option><option value="ansi">Color</option>'
-    + '</select>'
-    + '<select class="imgv-ascii-charset" title="Character set" hidden>'
-    + '<option value="blocks" selected>Blocks</option><option value="classic">Classic</option><option value="braille">Braille</option>'
-    + '</select>'
-    + '<button class="imgv-ascii-copy" title="Copy ASCII text" hidden>Copy</button>'
+    + '<button class="imgv-ascii-btn" title="Open the ASCII art studio">ASCII</button>'
     + (canEdit ? '<span class="imgv-sep"></span>'
       + '<input class="imgv-text-input" type="text" placeholder="Text overlay" aria-label="Image text">'
       + '<input class="imgv-text-size" type="number" min="8" max="240" value="32" title="Font size">'
@@ -59,11 +49,14 @@ export async function render(intake, ctx = {}) {
       + '<span class="imgv-sep"></span>'
       + '<button class="imgv-pencil" title="Pencil / brush draw mode">Pencil</button>'
       + '<button class="imgv-eraser" title="Eraser mode">Eraser</button>'
-      + '<input class="imgv-draw-color" type="color" value="#ff0000" title="Brush color">'
+      + '<button class="imgv-fill" title="Fill tool — click a region to flood-fill it with the brush color">🪣 Fill</button>'
+      + '<input class="imgv-draw-color" type="color" value="#ff0000" title="Brush / fill color">'
       + '<select class="imgv-draw-size" title="Brush size">'
       + '<option value="3">3px</option><option value="8" selected>8px</option>'
       + '<option value="20">20px</option><option value="40">40px</option>'
       + '</select>'
+      + '<label class="imgv-fill-opt" hidden style="font-size:0.8em;display:inline-flex;align-items:center;gap:3px;">Tol <input class="imgv-fill-tol" type="range" min="0" max="255" value="0" style="width:70px"><span class="imgv-fill-tolv">0</span></label>'
+      + '<label class="imgv-fill-opt" hidden style="font-size:0.8em;display:inline-flex;align-items:center;gap:3px;" title="Stop the fill at detected edges"><input class="imgv-fill-edge" type="checkbox"> Edge match</label>'
       + '<button class="imgv-undo" title="Undo last stroke" hidden>↩</button>'
       + '<span class="imgv-sep"></span>'
       + '<button class="imgv-rot-l" title="Rotate 90° counter-clockwise">↺ 90°</button>'
@@ -71,11 +64,14 @@ export async function render(intake, ctx = {}) {
       + '<button class="imgv-flip-h" title="Flip horizontally">↔ Flip H</button>'
       + '<button class="imgv-flip-v" title="Flip vertically">↕ Flip V</button>'
       + '<span class="imgv-sep"></span>'
+      + '<button class="imgv-compare" title="Compare original vs current (split view)">⇄ Compare</button>'
+      + '<span class="imgv-sep"></span>'
       + '<button class="imgv-filters-btn" title="Show brightness/contrast/saturation controls">⚙ Filters</button>'
       + '<span class="imgv-filters-panel" hidden style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;">'
       + '<label style="font-size:0.8em">Brightness <input class="imgv-f-brightness" type="range" min="0" max="200" value="100" style="width:70px"></label>'
       + '<label style="font-size:0.8em">Contrast <input class="imgv-f-contrast" type="range" min="0" max="200" value="100" style="width:70px"></label>'
       + '<label style="font-size:0.8em">Saturation <input class="imgv-f-saturation" type="range" min="0" max="200" value="100" style="width:70px"></label>'
+      + '<label style="font-size:0.8em">Hue <input class="imgv-f-hue" type="range" min="0" max="360" value="0" style="width:70px"></label>'
       + '<button class="imgv-f-apply">Apply Filters</button>'
       + '<button class="imgv-f-reset">Reset</button>'
       + '</span>'
@@ -112,10 +108,6 @@ export async function render(intake, ctx = {}) {
   const note = host.querySelector('.imgv-note');
   const zoomLabel = host.querySelector('.imgv-zoom');
   const asciiBtn = host.querySelector('.imgv-ascii-btn');
-  const asciiCols = host.querySelector('.imgv-ascii-cols');
-  const asciiColor = host.querySelector('.imgv-ascii-color');
-  const asciiCharset = host.querySelector('.imgv-ascii-charset');
-  const asciiCopy = host.querySelector('.imgv-ascii-copy');
   const asciiOut = host.querySelector('.imgv-ascii-out');
   const editInput = host.querySelector('.imgv-text-input');
   const editSize = host.querySelector('.imgv-text-size');
@@ -124,6 +116,11 @@ export async function render(intake, ctx = {}) {
   const editReset = host.querySelector('.imgv-text-reset');
   const pencilBtn = canEdit ? host.querySelector('.imgv-pencil') : null;
   const eraserBtn = canEdit ? host.querySelector('.imgv-eraser') : null;
+  const fillBtn = canEdit ? host.querySelector('.imgv-fill') : null;
+  const fillTol = canEdit ? host.querySelector('.imgv-fill-tol') : null;
+  const fillTolV = canEdit ? host.querySelector('.imgv-fill-tolv') : null;
+  const fillEdge = canEdit ? host.querySelector('.imgv-fill-edge') : null;
+  const fillOpts = canEdit ? host.querySelectorAll('.imgv-fill-opt') : [];
   const drawColorPicker = canEdit ? host.querySelector('.imgv-draw-color') : null;
   const drawSizePicker = canEdit ? host.querySelector('.imgv-draw-size') : null;
   const undoBtn = canEdit ? host.querySelector('.imgv-undo') : null;
@@ -152,15 +149,16 @@ export async function render(intake, ctx = {}) {
   const fBrightness = canEdit ? host.querySelector('.imgv-f-brightness') : null;
   const fContrast = canEdit ? host.querySelector('.imgv-f-contrast') : null;
   const fSaturation = canEdit ? host.querySelector('.imgv-f-saturation') : null;
+  const fHue = canEdit ? host.querySelector('.imgv-f-hue') : null;
   const fApplyBtn = canEdit ? host.querySelector('.imgv-f-apply') : null;
   const fResetBtn = canEdit ? host.querySelector('.imgv-f-reset') : null;
-  let natural = 0, fit = true, zoom = 1, asciiMode = false, asciiText = '';
+  let natural = 0, fit = true, zoom = 1, asciiMode = false;
   let editedUrl = null, editedBlob = null;
   let drawMode = null, isEraserStroke = false;
   let textPlaceMode = false, textPlaceX = 0.5, textPlaceY = 0.5;
   let bgPickMode = false, bgSrcData = null, bgSrcW = 0, bgSrcH = 0, bgPickX = -1, bgPickY = -1, bgPreviewUrl = null;
   const undoStack = [];
-  let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null;
+  let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
   // Crop state
   let cropMode = false, cropOverlay = null, cropSelBox = null;
   let cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0, cropDragging = false, cropHasRegion = false;
@@ -176,15 +174,72 @@ export async function render(intake, ctx = {}) {
     host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden');
   }
 
+  // Pan offset (px), applied as a transform so the WHOLE canvas can be dragged
+  // freely — even when the image is smaller than the stage. The draw overlay gets
+  // the same transform so brush coordinates stay aligned.
+  let panX = 0, panY = 0;
+  function applyPan() {
+    const t = (panX || panY) ? `translate(${panX}px, ${panY}px)` : '';
+    img.style.transform = t;
+    if (drawOverlay) drawOverlay.style.transform = t;
+  }
   function apply() {
     host.querySelector('.imgv-fit').classList.toggle('active', fit);
     if (fit || !natural) { img.style.width = ''; img.style.maxWidth = ''; img.style.maxHeight = ''; zoomLabel.textContent = 'fit'; }
     else { img.style.maxWidth = 'none'; img.style.maxHeight = 'none'; img.style.width = Math.round(natural * zoom) + 'px'; zoomLabel.textContent = Math.round(zoom * 100) + '%'; }
+    if (typeof syncOverlay === 'function') syncOverlay();
+    applyPan();
   }
-  host.querySelector('.imgv-fit').addEventListener('click', () => { fit = true; apply(); });
-  host.querySelector('.imgv-100').addEventListener('click', () => { fit = false; zoom = 1; apply(); });
+  function resetView() { panX = 0; panY = 0; }
+  host.querySelector('.imgv-fit').addEventListener('click', () => { fit = true; resetView(); apply(); });
+  host.querySelector('.imgv-100').addEventListener('click', () => { fit = false; zoom = 1; resetView(); apply(); });
   host.querySelector('.imgv-up').addEventListener('click', () => { fit = false; zoom = Math.min(16, zoom * 1.25); apply(); });
   host.querySelector('.imgv-dn').addEventListener('click', () => { fit = false; zoom = Math.max(0.1, zoom / 1.25); apply(); });
+
+  // ── Pan & wheel-zoom ── click-drag moves the whole canvas; wheel zooms toward
+  // the cursor. Left-drag pans only when no edit mode owns the pointer; middle
+  // drag pans even mid-draw (reposition while doing detail work).
+  const stageEl = host.querySelector('.imgv-stage');
+  stageEl.style.overflow = 'hidden';
+  const editModeActive = () => drawMode || cropMode || bgPickMode || textPlaceMode;
+  let dragLastX = 0, dragLastY = 0;
+  const onPanMove = (e) => {
+    panX += e.clientX - dragLastX; panY += e.clientY - dragLastY;
+    dragLastX = e.clientX; dragLastY = e.clientY;
+    applyPan();
+  };
+  const onPanUp = () => {
+    stageEl.style.cursor = '';
+    window.removeEventListener('mousemove', onPanMove);
+    window.removeEventListener('mouseup', onPanUp);
+  };
+  stageEl.addEventListener('mousedown', (e) => {
+    const leftPan = e.button === 0 && !editModeActive();
+    const midPan = e.button === 1;
+    if (!leftPan && !midPan) return;
+    dragLastX = e.clientX; dragLastY = e.clientY;
+    stageEl.style.cursor = 'grabbing';
+    e.preventDefault();
+    window.addEventListener('mousemove', onPanMove);
+    window.addEventListener('mouseup', onPanUp);
+  });
+  // Wheel zoom works even mid-edit (never conflicts with the brush). Anchors the
+  // image point under the cursor by adjusting the pan offset.
+  stageEl.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const r = stageEl.getBoundingClientRect();
+    const prev = fit ? (img.offsetWidth / (natural || img.offsetWidth)) : zoom;
+    fit = false;
+    const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    zoom = Math.max(0.1, Math.min(16, prev * factor));
+    const k = zoom / prev;
+    // keep the cursor's image point fixed: pan' = pan + rel*(1-k), rel measured
+    // from the (flex-centred) image centre to the cursor.
+    const relX = (e.clientX - r.left) - (r.width / 2 + panX);
+    const relY = (e.clientY - r.top) - (r.height / 2 + panY);
+    panX += relX * (1 - k); panY += relY * (1 - k);
+    apply();
+  }, { passive: false });
 
   img.addEventListener('error', () => {
     const ext = (intake.filename || '').split('.').pop()?.toLowerCase();
@@ -198,50 +253,45 @@ export async function render(intake, ctx = {}) {
   apply();
   dimensions(url).then((d) => { if (d) { natural = d.w; apply(); } });
 
-  // ASCII controls — lazy import to not block initial render
-  async function renderAscii() {
-    asciiBtn.textContent = 'Loading…';
-    asciiBtn.disabled = true;
-    try {
-      const { imageToAscii } = await import('./ascii-converter.js');
-      const cols = parseInt(asciiCols.value, 10) || 80;
-      const colorMode = asciiColor.value || 'mono';
-      const charset = asciiCharset.value || 'blocks';
-      const result = await imageToAscii(intake.bytes, mime, { cols, colorMode, charset });
-      asciiText = result.lines.map((l) => (result.isHtml ? l.replace(/<[^>]+>/g, '') : l)).join('\n');
-      if (result.isHtml) {
-        asciiOut.innerHTML = '<pre class="imgv-ascii-pre">' + result.lines.join('\n') + '</pre>';
-      } else {
-        asciiOut.textContent = '';
-        const pre = document.createElement('pre');
-        pre.className = 'imgv-ascii-pre';
-        pre.textContent = result.lines.join('\n');
-        asciiOut.appendChild(pre);
-      }
-    } catch (e) {
-      asciiOut.textContent = 'ASCII conversion failed: ' + (e.message || e);
-    }
-    asciiBtn.textContent = 'Image';
-    asciiBtn.disabled = false;
-  }
-
-  function toggleAscii() {
+  // ASCII art — the button toggles the self-contained ASCII Studio, lazy-mounted
+  // into the ASCII pane. All conversion UI + logic lives under ./ascii/ so this
+  // renderer stays thin.
+  let asciiStudio = null;
+  async function toggleAscii() {
     asciiMode = !asciiMode;
     asciiBtn.textContent = asciiMode ? 'Image' : 'ASCII';
     asciiBtn.classList.toggle('active', asciiMode);
+    // In ASCII mode the studio owns everything; hide the image-editor toolbar
+    // (only the ASCII toggle stays, as "back to image").
+    host.querySelector('.imgv-bar').classList.toggle('imgv-ascii-on', asciiMode);
     host.querySelector('.imgv-stage').hidden = asciiMode;
     asciiOut.hidden = !asciiMode;
-    [asciiCols, asciiColor, asciiCharset, asciiCopy].forEach((el) => { el.hidden = !asciiMode; });
     if (asciiMode) {
-      renderAscii();
-      // Metagame hook
-      recordStage3AsciiActivation({ file: intake.filename });
-
-      // Screensaver
-      import('./ascii-screensaver.js').then(({ installScreensaver }) => {
-        if (!host._ss) {
-          host._ss = installScreensaver(host, () => asciiMode);
+      // Feed the CURRENT image — including any edits (crop, rotate, BG removal,
+      // filters…) — not the untouched original. editedBlob holds the latest edit.
+      const curBytes = editedBlob ? new Uint8Array(await editedBlob.arrayBuffer()) : intake.bytes;
+      const curMime = editedBlob ? (editedBlob.type || mime) : mime;
+      try {
+        if (!asciiStudio) {
+          asciiBtn.disabled = true;
+          asciiOut.style.padding = '0';
+          const { mountAsciiStudio } = await import('./ascii/studio.js');
+          asciiStudio = mountAsciiStudio(asciiOut, {
+            bytes: curBytes, mime: curMime, filename: intake.filename,
+            onActivate: () => recordStage3AsciiActivation({ file: intake.filename }),
+          });
+          asciiBtn.disabled = false;
+        } else {
+          asciiStudio.setImage({ bytes: curBytes, mime: curMime });
+          recordStage3AsciiActivation({ file: intake.filename });
         }
+      } catch (e) {
+        asciiOut.textContent = 'ASCII studio failed to load: ' + (e.message || e);
+        asciiBtn.disabled = false;
+      }
+      // 30s-idle boot-screen easter egg (unchanged).
+      import('./ascii-screensaver.js').then(({ installScreensaver }) => {
+        if (!host._ss) host._ss = installScreensaver(host, () => asciiMode);
         host._ss.start();
       });
     } else {
@@ -250,15 +300,6 @@ export async function render(intake, ctx = {}) {
   }
 
   asciiBtn.addEventListener('click', toggleAscii);
-
-  const rerender = () => { if (asciiMode) renderAscii(); };
-  asciiCols.addEventListener('change', rerender);
-  asciiColor.addEventListener('change', rerender);
-  asciiCharset.addEventListener('change', rerender);
-
-  asciiCopy.addEventListener('click', () => {
-    if (asciiText) navigator.clipboard?.writeText(asciiText);
-  });
 
   async function commitText(nx, ny) {
     const text = (editInput?.value || '').trim();
@@ -290,7 +331,7 @@ export async function render(intake, ctx = {}) {
     pushUndo();
     editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     if (!editedBlob) return;
-    if (editedUrl) URL.revokeObjectURL(editedUrl);
+    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
     editedUrl = URL.createObjectURL(editedBlob);
     img.src = editedUrl;
     editReset.hidden = false;
@@ -441,22 +482,26 @@ export async function render(intake, ctx = {}) {
     pushUndo();
     editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     if (!editedBlob) return;
-    if (editedUrl) URL.revokeObjectURL(editedUrl);
+    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
     editedUrl = URL.createObjectURL(editedBlob);
     img.src = editedUrl;
+    // The edited image has new dimensions (rotate swaps W/H) — keep zoom correct.
+    natural = canvas.width;
+    apply();
     editReset.hidden = false;
     ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
   }
 
-  // Rotate left (CCW 90°): new canvas is h×w, pivot at center, rotate -90°
+  // Rotate left (CCW 90°): new canvas is h×w, pivot at center, rotate -90°, then
+  // draw centered (offset by HALF THE SOURCE dims, not the rotated dims).
   rotLBtn?.addEventListener('click', () => applyTransform(
-    (g, sw, sh, cw, ch) => { g.translate(cw / 2, ch / 2); g.rotate(-Math.PI / 2); g.translate(-sh / 2, -sw / 2); },
+    (g, sw, sh, cw, ch) => { g.translate(cw / 2, ch / 2); g.rotate(-Math.PI / 2); g.translate(-sw / 2, -sh / 2); },
     (sw, sh) => sh, (sw, sh) => sw,
   ));
 
   // Rotate right (CW 90°): new canvas is h×w, pivot at center, rotate +90°
   rotRBtn?.addEventListener('click', () => applyTransform(
-    (g, sw, sh, cw, ch) => { g.translate(cw / 2, ch / 2); g.rotate(Math.PI / 2); g.translate(-sh / 2, -sw / 2); },
+    (g, sw, sh, cw, ch) => { g.translate(cw / 2, ch / 2); g.rotate(Math.PI / 2); g.translate(-sw / 2, -sh / 2); },
     (sw, sh) => sh, (sw, sh) => sw,
   ));
 
@@ -478,18 +523,18 @@ export async function render(intake, ctx = {}) {
   });
 
   // Live filter preview — apply as CSS filter on img while sliding
-  function updateFilterPreview() {
-    img.style.filter = `brightness(${fBrightness.value}%) contrast(${fContrast.value}%) saturate(${fSaturation.value}%)`;
+  function filterString() {
+    return `brightness(${fBrightness.value}%) contrast(${fContrast.value}%) saturate(${fSaturation.value}%) hue-rotate(${fHue?.value || 0}deg)`;
   }
+  function updateFilterPreview() { img.style.filter = filterString(); }
   fBrightness?.addEventListener('input', updateFilterPreview);
   fContrast?.addEventListener('input', updateFilterPreview);
   fSaturation?.addEventListener('input', updateFilterPreview);
+  fHue?.addEventListener('input', updateFilterPreview);
 
   // Apply filters — bake current CSS filter into the canvas, then clear the live preview
   fApplyBtn?.addEventListener('click', async () => {
-    const brightness = fBrightness?.value || '100';
-    const contrast = fContrast?.value || '100';
-    const saturation = fSaturation?.value || '100';
+    const filter = filterString();
     img.style.filter = ''; // clear live preview before baking
     const base = new Image();
     base.decoding = 'async';
@@ -500,14 +545,14 @@ export async function render(intake, ctx = {}) {
     canvas.height = base.naturalHeight;
     const g = canvas.getContext('2d');
     if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
-    g.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+    g.filter = filter;
     g.drawImage(base, 0, 0);
     g.filter = 'none';
     const targetMime = getExportMime();
     pushUndo();
     editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     if (!editedBlob) return;
-    if (editedUrl) URL.revokeObjectURL(editedUrl);
+    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
     editedUrl = URL.createObjectURL(editedBlob);
     img.src = editedUrl;
     editReset.hidden = false;
@@ -519,39 +564,101 @@ export async function render(intake, ctx = {}) {
     if (fBrightness) fBrightness.value = '100';
     if (fContrast) fContrast.value = '100';
     if (fSaturation) fSaturation.value = '100';
+    if (fHue) fHue.value = '0';
     img.style.filter = '';
   });
 
+  // Compare — split view of the original vs the current (edited) image.
+  const compareBtn = canEdit ? host.querySelector('.imgv-compare') : null;
+  let compareEl = null;
+  function exitCompare() {
+    if (!compareEl) return;
+    compareEl.remove(); compareEl = null;
+    img.style.display = '';
+    if (drawOverlay) drawOverlay.style.display = '';
+    compareBtn?.classList.remove('active');
+  }
+  compareBtn?.addEventListener('click', () => {
+    if (compareEl) { exitCompare(); return; }
+    const stage = host.querySelector('.imgv-stage');
+    img.style.display = 'none';
+    if (drawOverlay) drawOverlay.style.display = 'none';
+    compareEl = document.createElement('div');
+    compareEl.className = 'imgv-compare-view';
+    compareEl.innerHTML = '<figure><figcaption>Original</figcaption><img src="' + url + '"></figure>'
+      + '<figure><figcaption>Current</figcaption><img src="' + (editedUrl || url) + '"></figure>';
+    stage.appendChild(compareEl);
+    compareBtn.classList.add('active');
+  });
+
   // Pencil / eraser drawing tools
+  // Position the overlay canvas to exactly cover the displayed <img> box (NOT
+  // the whole stage), so brush coordinates map 1:1 to image pixels regardless of
+  // fit/zoom/scroll letterboxing.
+  function syncOverlay() {
+    if (!drawOverlay) return;
+    drawOverlay.style.left = img.offsetLeft + 'px';
+    drawOverlay.style.top = img.offsetTop + 'px';
+    drawOverlay.style.width = img.offsetWidth + 'px';
+    drawOverlay.style.height = img.offsetHeight + 'px';
+  }
+
   function buildOverlay() {
     const stage = host.querySelector('.imgv-stage');
     stage.style.position = 'relative';
     drawOverlay = document.createElement('canvas');
-    drawOverlay.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;touch-action:none;z-index:2;';
+    drawOverlay.style.cssText = 'position:absolute;pointer-events:none;touch-action:none;z-index:2;';
     stage.appendChild(drawOverlay);
     drawOCtx = drawOverlay.getContext('2d');
+    // Brush hover preview — a circle that tracks the cursor so you see the brush
+    // position + size before painting.
+    brushCursor = document.createElement('div');
+    brushCursor.className = 'imgv-brush-cursor';
+    brushCursor.style.cssText = 'position:absolute;border:1px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.6);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:3;display:none;mix-blend-mode:difference;';
+    stage.appendChild(brushCursor);
     img.addEventListener('load', () => {
       if (drawOverlay && !isEraserStroke) { drawOverlay.width = img.naturalWidth || 1; drawOverlay.height = img.naturalHeight || 1; }
+      syncOverlay(); applyPan();
     });
     if (img.naturalWidth) { drawOverlay.width = img.naturalWidth; drawOverlay.height = img.naturalHeight; }
+    syncOverlay(); applyPan(); // adopt the current pan so the draw area sits on the image
     drawOverlay.addEventListener('mousedown', onPDown);
     drawOverlay.addEventListener('mousemove', onPMove);
     drawOverlay.addEventListener('mouseup', onPUp);
-    drawOverlay.addEventListener('mouseleave', () => { if (isPointerDown) { isPointerDown = false; commitDraw(); } });
+    drawOverlay.addEventListener('mouseleave', () => { hideBrushCursor(); if (isPointerDown) { isPointerDown = false; commitDraw(); } });
     drawOverlay.addEventListener('touchstart', onPDown, { passive: false });
     drawOverlay.addEventListener('touchmove', onPMove, { passive: false });
     drawOverlay.addEventListener('touchend', onPUp);
   }
 
+  // Move/size the brush hover circle (screen px = the brush-size value, which is
+  // constant on screen regardless of zoom). Only shown for pencil/eraser.
+  function moveBrushCursor(e) {
+    if (!brushCursor || (drawMode !== 'pencil' && drawMode !== 'eraser')) { hideBrushCursor(); return; }
+    const stageR = host.querySelector('.imgv-stage').getBoundingClientRect();
+    const d = parseInt(drawSizePicker?.value || '8', 10);
+    brushCursor.style.width = d + 'px';
+    brushCursor.style.height = d + 'px';
+    brushCursor.style.left = (e.clientX - stageR.left) + 'px';
+    brushCursor.style.top = (e.clientY - stageR.top) + 'px';
+    brushCursor.style.display = 'block';
+  }
+  function hideBrushCursor() { if (brushCursor) brushCursor.style.display = 'none'; }
+
   function setDrawMode(mode) {
     drawMode = drawMode === mode ? null : mode;
     pencilBtn?.classList.toggle('active', drawMode === 'pencil');
     eraserBtn?.classList.toggle('active', drawMode === 'eraser');
+    fillBtn?.classList.toggle('active', drawMode === 'fill');
+    fillOpts.forEach((el) => { el.hidden = drawMode !== 'fill'; });
     if (!drawOverlay && drawMode) buildOverlay();
     if (drawOverlay) {
       drawOverlay.style.pointerEvents = drawMode ? 'auto' : 'none';
-      drawOverlay.style.cursor = drawMode === 'eraser' ? 'cell' : drawMode === 'pencil' ? 'crosshair' : '';
+      drawOverlay.style.cursor = drawMode === 'eraser' ? 'cell'
+        : drawMode === 'fill' ? 'crosshair'
+        : drawMode === 'pencil' ? 'none' : ''; // pencil hidden — the hover circle is the cursor
     }
+    if (drawMode !== 'pencil' && drawMode !== 'eraser') hideBrushCursor();
     img.style.pointerEvents = drawMode ? 'none' : '';
   }
 
@@ -580,16 +687,16 @@ export async function render(intake, ctx = {}) {
   async function onPDown(e) {
     if (!drawMode || !drawOverlay) return;
     e.preventDefault();
+    if (drawMode === 'fill') { await doFill(e); return; }
     isPointerDown = true;
     isEraserStroke = drawMode === 'eraser';
     pushUndo();
     if (isEraserStroke) {
-      // preload overlay with committed image so destination-out punches real pixels
-      const base = new Image(); base.decoding = 'async'; base.src = editedUrl || url;
-      await base.decode();
-      drawOverlay.width = base.naturalWidth; drawOverlay.height = base.naturalHeight;
+      // preload overlay from the already-loaded <img> (no extra fetch) so
+      // destination-out punches real pixels.
+      drawOverlay.width = img.naturalWidth; drawOverlay.height = img.naturalHeight;
       if (mime === 'image/jpeg') { drawOCtx.fillStyle = '#fff'; drawOCtx.fillRect(0, 0, drawOverlay.width, drawOverlay.height); }
-      drawOCtx.drawImage(base, 0, 0);
+      drawOCtx.drawImage(img, 0, 0);
     } else if (!drawOverlay.width || !img.naturalWidth) {
       drawOverlay.width = img.naturalWidth || 1; drawOverlay.height = img.naturalHeight || 1;
     }
@@ -604,6 +711,7 @@ export async function render(intake, ctx = {}) {
   }
 
   function onPMove(e) {
+    moveBrushCursor(e);
     if (!isPointerDown || !drawOCtx) return;
     e.preventDefault();
     const pt = ptToCanvas(e);
@@ -613,6 +721,62 @@ export async function render(intake, ctx = {}) {
     lastPt = pt;
   }
 
+  // Flood-fill bucket. Tolerance (0–255) sets how close a pixel's colour must be
+  // to be filled; default 0 = exact match. With "edge match" on, pixels are
+  // compared to their NEIGHBOUR (local gradient) instead of the seed, so a fill
+  // flows across smooth shading but stops at sharp edges.
+  function hexToRgba(hex) {
+    const h = (hex || '#ff0000').replace('#', '');
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 255];
+  }
+  function floodFill(data, w, h, x0, y0, fill, tol, edge) {
+    if (x0 < 0 || y0 < 0 || x0 >= w || y0 >= h) return 0;
+    const src = Uint8ClampedArray.from(data);
+    const at = (x, y) => (y * w + x) << 2;
+    const seed = at(x0, y0);
+    const sr = src[seed], sg = src[seed + 1], sb = src[seed + 2];
+    const close = (i, r, g, b) => Math.max(Math.abs(src[i] - r), Math.abs(src[i + 1] - g), Math.abs(src[i + 2] - b)) <= tol;
+    const seen = new Uint8Array(w * h);
+    const st = [x0 | 0, y0 | 0]; seen[y0 * w + x0] = 1;
+    let cnt = 0;
+    while (st.length) {
+      const y = st.pop(), x = st.pop();
+      const i = at(x, y);
+      data[i] = fill[0]; data[i + 1] = fill[1]; data[i + 2] = fill[2]; data[i + 3] = fill[3];
+      cnt++;
+      const nb = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
+      for (let k = 0; k < 4; k++) {
+        const nx = nb[k][0], ny = nb[k][1];
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        const p = ny * w + nx; if (seen[p]) continue;
+        const ok = edge ? close(p << 2, src[i], src[i + 1], src[i + 2]) : close(p << 2, sr, sg, sb);
+        if (ok) { seen[p] = 1; st.push(nx, ny); }
+      }
+    }
+    return cnt;
+  }
+  async function doFill(e) {
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
+    g.drawImage(img, 0, 0);
+    const id = g.getImageData(0, 0, c.width, c.height);
+    const pt = ptToCanvas(e);
+    const filled = floodFill(id.data, c.width, c.height, Math.round(pt.x), Math.round(pt.y),
+      hexToRgba(drawColorPicker?.value), parseInt(fillTol?.value || '0', 10), !!fillEdge?.checked);
+    if (!filled) return;
+    g.putImageData(id, 0, 0);
+    const targetMime = getExportMime();
+    pushUndo();
+    const blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
+    if (!blob) return;
+    editedBlob = blob; editedUrl = URL.createObjectURL(blob);
+    img.src = editedUrl;
+    if (editReset) editReset.hidden = false;
+    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await blob.arrayBuffer()) });
+  }
+
   async function commitDraw() {
     if (!drawOverlay || !drawOverlay.width) return;
     const targetMime = getExportMime();
@@ -620,17 +784,17 @@ export async function render(intake, ctx = {}) {
     if (isEraserStroke) {
       blob = await new Promise((r) => drawOverlay.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     } else {
-      const base = new Image(); base.decoding = 'async'; base.src = editedUrl || url;
-      await base.decode();
-      const c = document.createElement('canvas'); c.width = base.naturalWidth; c.height = base.naturalHeight;
+      // Composite from the already-loaded <img> (the current committed image) —
+      // NOT a fresh fetch of editedUrl. Avoids a second blob-URL request per stroke.
+      const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
       const g = c.getContext('2d');
       if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
-      g.drawImage(base, 0, 0); g.drawImage(drawOverlay, 0, 0);
+      g.drawImage(img, 0, 0); g.drawImage(drawOverlay, 0, 0);
       blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     }
     drawOCtx.clearRect(0, 0, drawOverlay.width, drawOverlay.height);
     if (!blob) return;
-    if (editedUrl) URL.revokeObjectURL(editedUrl);
+    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
     editedBlob = blob; editedUrl = URL.createObjectURL(blob);
     img.src = editedUrl;
     if (editReset) editReset.hidden = false;
@@ -642,6 +806,8 @@ export async function render(intake, ctx = {}) {
   if (pencilBtn) {
     pencilBtn.addEventListener('click', () => setDrawMode('pencil'));
     eraserBtn.addEventListener('click', () => setDrawMode('eraser'));
+    fillBtn?.addEventListener('click', () => setDrawMode('fill'));
+    fillTol?.addEventListener('input', () => { if (fillTolV) fillTolV.textContent = fillTol.value; });
     undoBtn?.addEventListener('click', async () => {
       const prev = undoStack.pop();
       if (!prev) return;
@@ -753,7 +919,7 @@ export async function render(intake, ctx = {}) {
     pushUndo();
     editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     if (!editedBlob) return;
-    if (editedUrl) URL.revokeObjectURL(editedUrl);
+    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
     editedUrl = URL.createObjectURL(editedBlob);
     img.src = editedUrl;
     if (editReset) editReset.hidden = false;
@@ -816,7 +982,7 @@ export async function render(intake, ctx = {}) {
       pushUndo();
       editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
       if (!editedBlob) return;
-      if (editedUrl) URL.revokeObjectURL(editedUrl);
+      // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
       editedUrl = URL.createObjectURL(editedBlob);
       img.src = editedUrl;
       if (editReset) editReset.hidden = false;
@@ -920,7 +1086,7 @@ export async function render(intake, ctx = {}) {
       c.toBlob((blob) => {
         if (!blob) return;
         pushUndo();
-        if (editedUrl) URL.revokeObjectURL(editedUrl);
+        // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
         editedBlob = blob; editedUrl = URL.createObjectURL(blob);
         img.src = editedUrl;
         if (editReset) editReset.hidden = false;

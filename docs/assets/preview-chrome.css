@@ -156,10 +156,19 @@
 .imgv-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); flex-wrap: wrap; }
 .imgv-bar button { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
 .imgv-bar button.active { border-color: var(--accent); color: var(--accent); }
+/* In ASCII mode the studio takes over — hide every toolbar item except the ASCII toggle. */
+.imgv-bar.imgv-ascii-on > *:not(.imgv-ascii-btn) { display: none !important; }
 .imgv-zoom { margin-left: auto; font-size: 12px; color: var(--fg-2); font-variant-numeric: tabular-nums; }
-.imgv-stage { flex: 1; min-height: 0; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 12px; }
-.imgv-img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+.imgv-stage { position: relative; flex: 1; min-height: 0; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 12px; }
+.imgv-img { display: block; max-width: 100%; max-height: 100%; object-fit: contain;
+  /* Light outline + soft shadow so the image edges are visible against the dark stage. */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .12), 0 6px 28px rgba(0, 0, 0, .55); }
 .imgv-note { max-width: 560px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); color: var(--fg-2); line-height: 1.5; text-align: center; }
+/* Compare split view (original vs current edited). */
+.imgv-compare-view { position: absolute; inset: 0; display: flex; gap: 10px; padding: 12px; }
+.imgv-compare-view figure { flex: 1; min-width: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; }
+.imgv-compare-view figcaption { font: 11px ui-monospace, monospace; color: var(--fg-2); text-transform: uppercase; letter-spacing: .05em; }
+.imgv-compare-view img { max-width: 100%; max-height: calc(100% - 22px); object-fit: contain; box-shadow: 0 0 0 1px rgba(255,255,255,.12), 0 6px 28px rgba(0,0,0,.55); }
 .imgv-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
 .imgv-bar select { font-size: 12px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
 .imgv-text-input { width: min(180px, 34vw); font-size: 12px; padding: 4px 7px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); }

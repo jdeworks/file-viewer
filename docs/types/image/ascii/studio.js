@@ -1,0 +1,204 @@
+// ASCII Studio — the self-contained UI mounted by the image viewer's ASCII
+// button (and reused by the standalone tool page). Drives a shared engine and
+// wires exports. Heavy work lives in the engine + core; this file builds DOM
+// and binds. Layout: a big ASCII result that auto-fits its width (so changing
+// the column count changes detail, not size), peekable original/processed
+// previews behind eye toggles, and a collapsible control panel.
+
+import { createAsciiEngine } from './engine.js';
+import { buildControls } from './studio-controls.js';
+import { PERFORMANCE_PRESETS, defaultOptions } from './state.js';
+import { downloadText, downloadHtml, downloadPng, copyText, copyHtml } from './render.js';
+
+let styleInjected = false;
+function injectStyle() {
+  if (styleInjected) return;
+  styleInjected = true;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = new URL('./studio.css', import.meta.url).href;
+  document.head.appendChild(link);
+}
+
+async function decode(bytes, mime) {
+  const blob = new Blob([bytes], { type: mime || 'image/png' });
+  try { return await createImageBitmap(blob); } catch { /* fall through */ }
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = new Image();
+    img.src = url;
+    if (img.decode) await img.decode(); else await new Promise((r, j) => { img.onload = r; img.onerror = j; });
+    return img;
+  } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
+}
+
+const BTN = (cls, label, title) => `<button class="asx-btn ${cls}" title="${title}">${label}</button>`;
+const EYE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+
+/**
+ * Mount the studio into `host`.
+ * @param {HTMLElement} host
+ * @param {object} opts { bytes, mime, filename, source?, onActivate? }
+ * @returns {{ destroy(): void, engine: object, setImage(): void }}
+ */
+export function mountAsciiStudio(host, opts = {}) {
+  injectStyle();
+  const baseName = (opts.filename || 'image').replace(/\.[^.]+$/, '') + '-ascii';
+  host.classList.add('asx-root');
+  host.innerHTML = `
+    <div class="asx-bar">
+      ${BTN('asx-cam', '📷 Camera', 'Live webcam → ASCII (experimental)')}
+      <select class="asx-perf" title="Performance preset"><option value="">Quality preset…</option>
+        <option value="fast">Fast</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select>
+      ${BTN('asx-copy', 'Copy text', 'Copy plain ASCII')}
+      ${BTN('asx-copy-html', 'Copy HTML', 'Copy coloured HTML')}
+      ${BTN('asx-dl-txt', '↓ TXT', 'Download .txt')}
+      ${BTN('asx-dl-html', '↓ HTML', 'Download standalone .html')}
+      ${BTN('asx-dl-png', '↓ PNG', 'Download .png')}
+      ${BTN('asx-rot-l', '↺', 'Rotate 90° left')}
+      ${BTN('asx-rot-r', '↻', 'Rotate 90° right')}
+      ${BTN('asx-flip-h', '↔', 'Flip horizontal')}
+      ${BTN('asx-flip-v', '↕', 'Flip vertical')}
+      ${BTN('asx-reset-filters', 'Reset filters', 'Reset image filters')}
+      ${BTN('asx-reset-all', 'Reset all', 'Reset every setting')}
+    </div>
+    <div class="asx-body">
+      <div class="asx-stage">
+        <div class="asx-eyes">
+          <button class="asx-eye asx-eye-orig" title="Show original">${EYE}</button>
+          <button class="asx-eye asx-eye-proc" title="Show processed">${EYE}</button>
+        </div>
+        <pre class="asx-out"></pre>
+        <figure class="asx-peek" hidden><figcaption></figcaption><canvas></canvas></figure>
+      </div>
+      <div class="asx-panel"></div>
+    </div>
+    <div class="asx-cam-host" hidden></div>`;
+
+  const q = (s) => host.querySelector(s);
+  const pre = q('.asx-out');
+  const stage = q('.asx-stage');
+  const panel = q('.asx-panel');
+  const peek = q('.asx-peek');
+  const peekCanvas = peek.querySelector('canvas');
+  const peekCaption = peek.querySelector('figcaption');
+
+  const engine = createAsciiEngine();
+  engine.onResult(() => { engine.renderToPre(pre); applyDisplay(); if (activeEye) paintPeek(); });
+
+  // ── fit-to-width + display zoom ── more columns = more detail at the SAME
+  // on-screen size; zoom magnifies; space density adds CSS letter-spacing.
+  function applyDisplay() {
+    const sd = engine.options.spaceDensity || 1;
+    const r = engine.result;
+    if (!r) return;
+    const avail = Math.max(40, pre.clientWidth - 24); // minus padding
+    // monospace advance ≈ 0.6em; include letter-spacing so the fit stays exact.
+    const fs = (avail / (r.columns * 0.6 * sd)) * (engine.options.zoom || 1);
+    pre.style.setProperty('--ascii-font-size', Math.max(2, fs).toFixed(2) + 'px');
+    pre.style.letterSpacing = sd !== 1 ? ((sd - 1) * 0.6).toFixed(3) + 'em' : '';
+  }
+  const ro = new ResizeObserver(() => applyDisplay());
+  ro.observe(stage);
+
+  // ── peekable original / processed previews (eye toggles) ──
+  let activeEye = null; // 'orig' | 'proc' | null
+  function paintPeek() {
+    const src = activeEye === 'proc' ? engine.processedCanvas : engine.sourceCanvas;
+    if (!src.width) return;
+    const maxW = 260, scale = Math.min(1, maxW / src.width);
+    peekCanvas.width = Math.round(src.width * scale);
+    peekCanvas.height = Math.round(src.height * scale);
+    peekCanvas.getContext('2d').drawImage(src, 0, 0, peekCanvas.width, peekCanvas.height);
+    peekCaption.textContent = activeEye === 'proc' ? 'Processed' : 'Original';
+  }
+  function toggleEye(which) {
+    activeEye = activeEye === which ? null : which;
+    q('.asx-eye-orig').classList.toggle('active', activeEye === 'orig');
+    q('.asx-eye-proc').classList.toggle('active', activeEye === 'proc');
+    peek.hidden = !activeEye;
+    if (activeEye) paintPeek();
+  }
+  q('.asx-eye-orig').addEventListener('click', () => toggleEye('orig'));
+  q('.asx-eye-proc').addEventListener('click', () => toggleEye('proc'));
+
+  const controls = buildControls(panel, engine.options, (key, value, dirty, displayOnly) => {
+    engine.options[key] = value;
+    // Background colour has no effect when the BG is transparent — disable it.
+    if (key === 'transparentBackground' && controls?.inputs.backgroundColor) {
+      controls.inputs.backgroundColor.disabled = !!value;
+    }
+    if (displayOnly) { applyDisplay(); return; }
+    engine.markDirty(...dirty);
+    engine.scheduleUpdate();
+  });
+  controls.inputs.backgroundColor.disabled = !!engine.options.transparentBackground;
+
+  // ── toolbar wiring ──
+  q('.asx-perf').addEventListener('change', (e) => {
+    const preset = PERFORMANCE_PRESETS[e.target.value];
+    if (!preset) return;
+    Object.entries(preset).forEach(([k, v]) => controls.setValue(k, v));
+  });
+  q('.asx-copy').addEventListener('click', () => engine.result && copyText(engine.result.text));
+  q('.asx-copy-html').addEventListener('click', () => engine.result && copyHtml(pre.innerHTML));
+  q('.asx-dl-txt').addEventListener('click', () => engine.result && downloadText(baseName + '.txt', engine.result.text));
+  q('.asx-dl-html').addEventListener('click', () => engine.result && downloadHtml(baseName + '.html', engine.result, engine.options));
+  q('.asx-dl-png').addEventListener('click', () => {
+    if (!engine.result) return;
+    const c = document.createElement('canvas');
+    engine.renderToCanvas(c);
+    downloadPng(baseName + '.png', c);
+  });
+  // Geometric transforms — re-draw the source then reconvert (works on image + video).
+  q('.asx-rot-l').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 270) % 360; engine.regrab(); });
+  q('.asx-rot-r').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 90) % 360; engine.regrab(); });
+  q('.asx-flip-h').addEventListener('click', () => { engine.options.flipH = !engine.options.flipH; engine.regrab(); });
+  q('.asx-flip-v').addEventListener('click', () => { engine.options.flipV = !engine.options.flipV; engine.regrab(); });
+  q('.asx-reset-filters').addEventListener('click', () => resetKeys(FILTER_KEYS));
+  q('.asx-reset-all').addEventListener('click', () => resetKeys(Object.keys(engine.options)));
+  function resetKeys(keys) {
+    const defs = defaultOptions();
+    keys.forEach((k) => { if (k in defs) controls.setValue(k, defs[k]); });
+  }
+
+  // ── webcam easter egg ── the 📷 button swaps in the live-camera consumer.
+  const camHost = q('.asx-cam-host');
+  const body = q('.asx-body');
+  let webcam = null;
+  q('.asx-cam').addEventListener('click', async () => {
+    if (webcam) {
+      webcam.destroy(); webcam = null;
+      camHost.hidden = true; body.hidden = false;
+      q('.asx-cam').textContent = '📷 Camera';
+      return;
+    }
+    body.hidden = true; camHost.hidden = false;
+    q('.asx-cam').textContent = '🖼 Back to image';
+    const { mountAsciiWebcam } = await import('./webcam.js');
+    // Inherit the current image-mode settings as the camera's starting point.
+    webcam = mountAsciiWebcam(camHost, { initialOptions: { ...engine.options } });
+  });
+
+  // Set (or replace) the source image and convert.
+  async function setImage({ bytes, mime, source } = {}) {
+    let src = source;
+    if (!src && bytes) src = await decode(bytes, mime);
+    if (!src) { pre.textContent = 'No image to convert.'; return; }
+    engine.setSource(src);
+    engine.update();
+    if (activeEye) paintPeek();
+    opts.onActivate?.();
+  }
+  if (opts.source || opts.bytes) setImage(opts);
+
+  return {
+    engine,
+    setImage,
+    destroy() { ro.disconnect(); webcam?.destroy(); host.classList.remove('asx-root'); host.innerHTML = ''; },
+  };
+}
+
+// FILTER_KEYS — what "Reset filters" restores (the image-processing knobs only).
+const FILTER_KEYS = ['brightness', 'contrast', 'saturation', 'hue', 'grayscale', 'sepia',
+  'invertColors', 'thresholdEnabled', 'threshold', 'sharpness', 'edgeDetection'];

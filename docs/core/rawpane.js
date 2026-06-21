@@ -124,6 +124,7 @@ export async function toggleWysiwyg({ skipPersist = false } = {}) {
       persistTypeKey('markdown', 'markdownEditor', 'wysiwyg');
     }
     applyLayout();   // go full-width: hide the now-redundant preview pane
+    setTextUtilsVisible(false);   // line-based utils (sort/trim/dedup/base64) don't apply to the rich editor
   } else {
     // Switching BACK to Monaco: capture EasyMDE text, unmount, rebuild rawview.
     const text = getWysiwygValue();
@@ -140,6 +141,16 @@ export async function toggleWysiwyg({ skipPersist = false } = {}) {
     }
     await buildRawView();
   }
+}
+
+// Compare / side-by-side need the Monaco raw editor. If the WYSIWYG editor is active,
+// switch back to it first (this persists the 'monaco' choice so buildRawView doesn't
+// immediately re-enter WYSIWYG). Returns true if it switched. Awaitable so callers can
+// run the feature once the rawview exists again.
+export async function exitWysiwygForFeature() {
+  if (!wysiwygMode) return false;
+  await toggleWysiwyg();
+  return true;
 }
 
 export async function buildRawView() {

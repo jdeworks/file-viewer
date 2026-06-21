@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ASCII Studio — image &amp; webcam → ASCII art</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>ASCII Studio</h1>
+    <nav>
+      <button id="tab-image" class="tab active">Image</button>
+      <button id="tab-webcam" class="tab">Webcam</button>
+    </nav>
+  </header>
+
+  <main id="image-view">
+    <div id="drop" class="drop">
+      <input id="file" type="file" accept="image/*" hidden>
+      <p>Drop an image here, or <button id="pick" class="link">choose a file</button>. <button id="sample" class="link">Use a sample</button>.</p>
+    </div>
+    <div id="studio" class="studio-host"></div>
+  </main>
+
+  <main id="webcam-view" hidden>
+    <p class="hint">Grant camera access to convert your webcam to ASCII, frame by frame. Nothing leaves your device.</p>
+    <div id="webcam" class="webcam-host"></div>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
