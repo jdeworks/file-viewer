@@ -2,6 +2,9 @@ const subscribers = new Set();
 let saveProvider = null;
 let persistProvider = null;
 
+// The bell log is a rolling notification feed; cap it so it can never grow without bound.
+const MAX_BELL_LOG = 80;
+
 function nowMs() {
   return Date.now();
 }
@@ -39,6 +42,11 @@ export function pushBellMessage(id, { stage = null, text = '', tone = 'info', de
     createdAt: nowMs(),
   };
   bell.log.push(record);
+  // Hard cap: the bell log is a rolling feed, not a permanent ledger. Without this a caller that
+  // re-shows a message (e.g. `once: false`) on a repeatable game event grows the log — and the
+  // whole save is re-serialised to localStorage on every push — without bound, eventually
+  // starving the tab. Keep only the most recent entries.
+  if (bell.log.length > MAX_BELL_LOG) bell.log.splice(0, bell.log.length - MAX_BELL_LOG);
   persistCurrentSave(save);
   for (const listener of subscribers) listener(record);
   return record;
