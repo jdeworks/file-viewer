@@ -232,6 +232,9 @@ export async function run(ctx) {
   }, null, { timeout: 15000 });
   const ctlCount = await page.$$eval('#previewHost .asx-panel .asx-ctl-input', (els) => els.length);
   if (ctlCount > 15) pass('ASCII studio mounts with full control panel (' + ctlCount + ' controls)'); else fail('ascii controls: ' + ctlCount);
+  // Settings layout: open groups use a responsive grid (aligned columns), not a flat stack.
+  const groupDisplay = await page.$eval('#previewHost .asx-panel .asx-group[open]', (el) => getComputedStyle(el).display);
+  if (groupDisplay === 'grid') pass('ASCII settings groups use a flex grid layout'); else fail('settings group display: ' + groupDisplay);
   // Switching gradient re-converts; output stays non-empty.
   await page.selectOption('#previewHost .asx-panel select[data-key="gradientName"]', 'blocks');
   await page.waitForFunction(() => document.querySelector('#previewHost .asx-out').textContent.trim().length > 0, null, { timeout: 8000 });

@@ -30,16 +30,21 @@
 .asx-peek figcaption { font: 10px ui-monospace, monospace; color: #9ab; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
 .asx-peek canvas { display: block; max-width: 260px; border-radius: 3px; image-rendering: auto; background: #000; }
 
-/* Control panel — collapsible <details> groups so uncommon knobs stay tucked away. */
-.asx-panel { width: 300px; flex: none; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+/* Control panel — collapsible <details> groups so uncommon knobs stay tucked away.
+   The panel flexes with the available pane width (no longer a fixed 300px strip). */
+.asx-panel { width: clamp(280px, 38%, 460px); flex: none; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
 .asx-group { border: 1px solid #2a2a2a; border-radius: 6px; padding: 0 10px; }
-.asx-group[open] { padding-bottom: 9px; }
+/* An open group lays its controls out as a responsive flex grid — one column when
+   narrow, two when the panel has room — so labels + sliders align in tidy columns. */
+.asx-group[open] { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 2px 16px; padding-bottom: 10px; align-items: start; }
+.asx-group > summary { grid-column: 1 / -1; }
 .asx-group summary { font: 11px ui-monospace, monospace; color: #9ab; text-transform: uppercase; letter-spacing: .06em;
   cursor: pointer; padding: 8px 0; list-style: none; user-select: none; }
 .asx-group summary::-webkit-details-marker { display: none; }
 .asx-group summary::before { content: '▸ '; color: #667; }
 .asx-group[open] summary::before { content: '▾ '; }
-.asx-ctl { display: flex; flex-direction: column; gap: 2px; margin: 7px 0; font-size: 12px; }
+.asx-ctl { display: flex; flex-direction: column; gap: 2px; margin: 5px 0; font-size: 12px; min-width: 0; }
 .asx-ctl-name { color: #cfcfcf; }
 .asx-ctl-row { display: flex; align-items: center; gap: 7px; }
 .asx-ctl-input { flex: 1; min-width: 0; }
