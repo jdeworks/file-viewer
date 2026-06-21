@@ -4,7 +4,7 @@
 // module doesn't import app.js back.
 import { state, $, toast, themeIsDark, debounce } from './state.js';
 import { loadGlobal, vendor } from './script-loader.js';
-import { startAutosave, stopAutosave, saveNow, clearAutosave, getAutosave } from './autosave.js';
+import { startAutosave, stopAutosave, clearAutosave, getAutosave } from './autosave.js';
 import { createRawView } from './rawview.js';
 import { hexDump } from './hexdump.js';
 import { monacoOptions, persistTypeKey } from './settings.js';
@@ -23,67 +23,14 @@ import { setJsonToolsVisible, wireJsonTools, setYamlToolsVisible, wireYamlTools,
   setXmlToolsVisible, wireXmlTools, setTomlToolsVisible, wireTomlTools,
   setTextUtilsVisible, wireTextUtils } from './rawpane-toolbars.js';
 import { runMarkdownAction, closeTablePicker, onMarkdownContextMenu } from './rawpane-markdown.js';
+import { showEditDisclaimer, showAutosaveBanner, updateWordCount, hideWordCount } from './rawpane-banners.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
 
-const DISCLAIMER_KEY = 'fv:edit-disclaimer';
 let wysiwygMode = false;
 let htmlWysiwyg = null;
 let tableEditor = null;
-
-// Show the in-memory edit banner (B). Wires the dismiss buttons once, idempotently.
-function setDisclaimerVisible(visible) {
-  const el = $('editDisclaimer');
-  if (!el) return;
-  el.hidden = !visible;
-  $('rawPane')?.classList.toggle('has-disclaimer', visible);
-}
-
-function showEditDisclaimer() {
-  if (localStorage.getItem(DISCLAIMER_KEY) === 'never') return;
-  const el = $('editDisclaimer');
-  if (!el) return;
-  setDisclaimerVisible(true);
-  if (el.dataset.wired) return;
-  el.dataset.wired = '1';
-  el.querySelector('.edit-disclaimer-close').addEventListener('click', () => setDisclaimerVisible(false));
-  el.querySelector('.edit-disclaimer-never').addEventListener('click', () => {
-    try { localStorage.setItem(DISCLAIMER_KEY, 'never'); } catch { /* private mode */ }
-    setDisclaimerVisible(false);
-  });
-}
-
-function formatAgo(ts) {
-  const diff = Date.now() - ts;
-  if (diff < 60000) return 'just now';
-  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
-  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
-  return Math.floor(diff / 86400000) + 'd ago';
-}
-
-function showAutosaveBanner(saved) {
-  const el = $('autosaveBanner');
-  if (!el) return;
-  el.querySelector('.autosave-age').textContent = `Autosave from ${formatAgo(saved.ts)} found.`;
-  el.hidden = false;
-  $('rawPane')?.classList.add('has-autosave');
-
-  if (!el.dataset.wired) {
-    el.dataset.wired = '1';
-    el.querySelector('.autosave-restore').addEventListener('click', () => {
-      state.rawview?.setValue?.(saved.text);
-      state.intake = { ...state.intake, text: saved.text };
-      el.hidden = true;
-      $('rawPane')?.classList.remove('has-autosave');
-    });
-    el.querySelector('.autosave-dismiss').addEventListener('click', () => {
-      el.hidden = true;
-      $('rawPane')?.classList.remove('has-autosave');
-      clearAutosave(state.intake?.filename || state.intake?.name);
-    });
-  }
-}
 
 // Re-syncs the has-tools class on rawPane: true iff ANY type-specific toolbar is visible.
 // Called after each setXxxToolsVisible so that showing one toolbar and then hiding another
@@ -317,37 +264,6 @@ function wireTableModeBtn() {
     const isOn = btn.classList.contains('active');
     setTableMode(!isOn);
   });
-}
-
-function updateWordCount(text, typeId) {
-  const bar = document.getElementById('wordCountBar');
-  if (!bar) return;
-  if (!text || state.intake?.isBinary) {
-    bar.hidden = true;
-    document.getElementById('rawPane')?.classList.remove('has-wordcount');
-    return;
-  }
-  const lines = text.split('\n').length;
-  const chars = text.length;
-  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-  let label;
-  if (typeId === 'markdown') {
-    const readMins = Math.ceil(words / 200);
-    label = `${words.toLocaleString()} words · ${chars.toLocaleString()} chars · ~${readMins} min read`;
-  } else if (typeId === 'text') {
-    label = `${lines.toLocaleString()} lines · ${words.toLocaleString()} words · ${chars.toLocaleString()} chars`;
-  } else {
-    label = `${lines.toLocaleString()} lines · ${chars.toLocaleString()} chars`;
-  }
-  bar.textContent = label;
-  bar.hidden = false;
-  document.getElementById('rawPane')?.classList.add('has-wordcount');
-}
-
-function hideWordCount() {
-  const bar = document.getElementById('wordCountBar');
-  if (bar) bar.hidden = true;
-  document.getElementById('rawPane')?.classList.remove('has-wordcount');
 }
 
 export async function buildRawView() {
