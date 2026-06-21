@@ -244,6 +244,13 @@ export async function run(ctx) {
   // Settings layout: open groups use a responsive grid (aligned columns), not a flat stack.
   const groupDisplay = await page.$eval('#previewHost .asx-panel .asx-group[open]', (el) => getComputedStyle(el).display);
   if (groupDisplay === 'grid') pass('ASCII settings groups use a flex grid layout'); else fail('settings group display: ' + groupDisplay);
+  // Settings is a toggleable drawer — the ⚙ button hides/shows the panel.
+  const panelVisInit = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display !== 'none');
+  await page.click('#previewHost .asx-settings-btn');
+  const panelHidden = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display === 'none');
+  await page.click('#previewHost .asx-settings-btn');   // restore
+  const panelBack = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display !== 'none');
+  if (panelVisInit && panelHidden && panelBack) pass('ASCII settings drawer toggles open/closed'); else fail('settings toggle: ' + JSON.stringify({ panelVisInit, panelHidden, panelBack }));
   // Switching gradient re-converts; output stays non-empty.
   await page.selectOption('#previewHost .asx-panel select[data-key="gradientName"]', 'blocks');
   await page.waitForFunction(() => document.querySelector('#previewHost .asx-out').textContent.trim().length > 0, null, { timeout: 8000 });

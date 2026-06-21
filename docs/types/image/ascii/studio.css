@@ -9,7 +9,7 @@
    own toolbar); only the 📷/back toggle remains. */
 .asx-bar.asx-cam-on > *:not(.asx-cam) { display: none; }
 
-.asx-body { flex: 1; min-height: 0; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
+.asx-body { position: relative; flex: 1; min-height: 0; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 
 /* ASCII result stage — fills the space; the art auto-fits its width. */
 .asx-stage { position: relative; flex: 1; min-width: 0; min-height: 0; overflow: auto;
@@ -33,13 +33,15 @@
 .asx-peek figcaption { font: 10px ui-monospace, monospace; color: #9ab; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
 .asx-peek canvas { display: block; max-width: 260px; border-radius: 3px; image-rendering: auto; background: #000; }
 
-/* Control panel — collapsible <details> groups so uncommon knobs stay tucked away.
-   The panel flexes with the available pane width (no longer a fixed 300px strip). */
-.asx-panel { width: clamp(280px, 38%, 460px); flex: none; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+/* Control panel — a toggleable drawer (the ⚙ button flips .asx-settings-open on the
+   root). Hidden by default; shown as a side column on wide screens. */
+.asx-panel { width: clamp(300px, 40%, 520px); flex: none; display: none; flex-direction: column; gap: 8px; overflow: auto; }
+.asx-root.asx-settings-open .asx-panel { display: flex; }
 .asx-group { border: 1px solid #2a2a2a; border-radius: 6px; padding: 0 10px; }
-/* An open group lays its controls out as a responsive flex grid — one column when
-   narrow, two when the panel has room — so labels + sliders align in tidy columns. */
-.asx-group[open] { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+/* An open group lays its controls out as a responsive flex grid — it fills the
+   panel width with as many ~150px columns as fit, so controls aren't a tall
+   single-column stack and labels + sliders align in tidy columns. */
+.asx-group[open] { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 2px 16px; padding-bottom: 10px; align-items: start; }
 .asx-group > summary { grid-column: 1 / -1; }
 .asx-group summary { font: 11px ui-monospace, monospace; color: #9ab; text-transform: uppercase; letter-spacing: .06em;
@@ -92,6 +94,11 @@
 .asx-cam .cam-gear.active { color: #6ab0ff; border-color: #3a5a8a; }
 
 @media (max-width: 720px) {
-  .asx-body { flex-direction: column; overflow: auto; }
-  .asx-panel { width: 100%; }
+  /* On phones the panel overlays the stage from the right (a drawer) instead of
+     pushing it — so the ASCII converter stays usable while settings are open. */
+  .asx-root.asx-settings-open .asx-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 92%); z-index: 6;
+    padding: 12px; background: rgba(13,13,13,.98); border-left: 1px solid #2a2a2a;
+    box-shadow: -8px 0 24px rgba(0,0,0,.6);
+  }
 }

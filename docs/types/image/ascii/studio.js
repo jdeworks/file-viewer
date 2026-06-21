@@ -47,6 +47,7 @@ export function mountAsciiStudio(host, opts = {}) {
   host.classList.add('asx-root');
   host.innerHTML = `
     <div class="asx-bar">
+      ${BTN('asx-settings-btn', '⚙ Settings', 'Show / hide the settings panel')}
       ${BTN('asx-cam', '📷 Camera', 'Live webcam → ASCII (experimental)')}
       <select class="asx-perf" title="Performance preset"><option value="">Quality preset…</option>
         <option value="fast">Fast</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select>
@@ -121,6 +122,19 @@ export function mountAsciiStudio(host, opts = {}) {
   }
   q('.asx-eye-orig').addEventListener('click', () => toggleEye('orig'));
   q('.asx-eye-proc').addEventListener('click', () => toggleEye('proc'));
+
+  // Settings panel is a toggleable drawer — open by default on wide screens, closed
+  // on phones (where it would otherwise cover the whole converter). On mobile it
+  // overlays the stage instead of pushing it (see studio.css).
+  const settingsBtn = q('.asx-settings-btn');
+  const startOpen = !window.matchMedia('(max-width: 720px)').matches;
+  host.classList.toggle('asx-settings-open', startOpen);
+  settingsBtn.classList.toggle('active', startOpen);
+  settingsBtn.addEventListener('click', () => {
+    const open = host.classList.toggle('asx-settings-open');
+    settingsBtn.classList.toggle('active', open);
+    applyDisplay();
+  });
 
   const controls = buildControls(panel, engine.options, (key, value, dirty, displayOnly) => {
     engine.options[key] = value;
