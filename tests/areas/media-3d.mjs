@@ -254,6 +254,13 @@ export async function run(ctx) {
   // Sleep timer control present (long-form listening).
   const sleepOpts = await page.$$eval('#previewHost .media-sleep select option', (els) => els.map((e) => e.textContent));
   if (sleepOpts.includes('Off') && sleepOpts.includes('30 min')) pass('audio: sleep timer control present (Off … 60 min)'); else fail('sleep options: ' + sleepOpts.join(','));
+  // P7: speed presets (0.5–2×) — present on audio, and clicking sets playbackRate live.
+  const audioSpeeds = await page.$$eval('#previewHost .media-extras .media-speed-btn', (els) => els.map((e) => e.dataset.rate));
+  if (['0.5', '1', '1.5', '2'].every((r) => audioSpeeds.includes(r))) pass('P7 audio: speed presets (0.5×…2×) present'); else fail('audio speeds: ' + audioSpeeds.join(','));
+  await page.click('#previewHost .media-extras .media-speed-btn[data-rate="1.5"]');
+  const rate15 = await page.$eval('#previewHost audio.media-view', (e) => e.playbackRate);
+  if (Math.abs(rate15 - 1.5) < 0.001) pass('P7 audio: speed preset sets playbackRate (1.5×)'); else fail('playbackRate after 1.5×: ' + rate15);
+  await page.click('#previewHost .media-extras .media-speed-btn[data-rate="1"]');   // restore
   const waveformCollapsed = await page.$eval('#previewHost .media-wv-panel', (e) => e.hidden);
   const waveformBtn = await page.$eval('#previewHost .media-wv-toggle', (e) => e.textContent);
   if (waveformCollapsed && /Show waveform/.test(waveformBtn)) pass('audio waveform: collapsed by default'); else fail('waveform collapsed=' + waveformCollapsed + ' btn=' + waveformBtn);
@@ -478,6 +485,45 @@ export async function run(ctx) {
     if (mixerSliders.length === 9) pass('video studio: audio mixer mounts the 9-band EQ on the movie audio'); else fail('mixer sliders: ' + mixerSliders.length);
     if (mixerLegend) pass('video studio: audio mixer shows the overlaid-spectrum legend'); else fail('mixer legend missing');
   } else fail('video studio: audio mixer toggle not found');
+
+  // ── P7 Tier-1 video quick wins ── speed presets + frame-step + (gated) PiP + subtitle drop.
+  const vidSpeeds = await page.$$eval('#previewHost .media-extras .media-speed-btn', (els) => els.map((e) => e.dataset.rate));
+  if (['0.5', '1', '2'].every((r) => vidSpeeds.includes(r))) pass('P7 video: speed presets present'); else fail('video speeds: ' + vidSpeeds.join(','));
+  const frameBtns = await page.evaluate(() => ({
+    back: !!document.querySelector('#previewHost .media-frame-back'),
+    fwd: !!document.querySelector('#previewHost .media-frame-fwd'),
+  }));
+  if (frameBtns.back && frameBtns.fwd) pass('P7 video: ±1 frame-step buttons present'); else fail('frame-step buttons: ' + JSON.stringify(frameBtns));
+  // PiP button only when the browser advertises support — assert it tracks the feature flag.
+  const pipState = await page.evaluate(() => ({
+    enabled: !!document.pictureInPictureEnabled,
+    btn: !!document.querySelector('#previewHost .media-pip-btn'),
+  }));
+  if (pipState.btn === pipState.enabled) pass('P7 video: PiP button feature-gated (present iff supported)'); else fail('pip gate mismatch: ' + JSON.stringify(pipState));
+  // Subtitle sidecar loader mounts; loading an SRT through it adds timed overlay cues.
+  const subLoader = await page.$('#previewHost .media-sub-loader');
+  if (subLoader) pass('P7 video: subtitle (.srt/.vtt) drop/browse control mounts'); else fail('subtitle loader missing');
+  const srt = '1\n00:00:00,000 --> 00:00:02,000\nHello world\n\n2\n00:00:02,500 --> 00:00:04,000\nSecond line';
+  const subLoaded = await page.evaluate(async (text) => {
+    const file = new File([text], 'cap.srt', { type: 'application/x-subrip' });
+    const input = document.querySelector('#previewHost .media-sub-loader input[type=file]');
+    const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 100));
+    return document.querySelector('#previewHost .media-sub-note')?.textContent || '';
+  }, srt);
+  if (/2 cues/.test(subLoaded)) pass('P7 video: SRT sidecar parses to 2 cues + mounts overlay'); else fail('subtitle load note: ' + subLoaded);
+
+  // PURE SRT/VTT parser unit check (no DOM) — 2-cue SRT → correct timings + text.
+  const parsed = await page.evaluate(async () => {
+    const { parseSubtitles, parseTimestamp } = await import('./types/media/subtitles.js');
+    const cues = parseSubtitles('1\n00:00:01,000 --> 00:00:03,500\nLine A\n\n2\n00:00:04,000 --> 00:00:06,000\nLine B\nwith wrap');
+    return { n: cues.length, c0: cues[0], c1: cues[1], ts: parseTimestamp('00:01:02.250') };
+  });
+  if (parsed.n === 2 && parsed.c0.start === 1 && parsed.c0.end === 3.5 && parsed.c0.text === 'Line A'
+    && parsed.c1.start === 4 && parsed.c1.text === 'Line B\nwith wrap' && parsed.ts === 62.25)
+    pass('P7: SRT parser yields correct cue timings + text (pure)');
+  else fail('srt parse: ' + JSON.stringify(parsed));
 
   // ── P1/P3: Export processed audio + baked fades (ffmpeg ON) ──────────────────
   // Enable ffmpeg via the global settings bag so the renderer builds the export panel.
