@@ -8,7 +8,7 @@ import { pickType } from './detect.js';
 import { wireIntake, LARGE_FILE_BYTES } from './intake.js';
 import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
 import { findGitDir, isGitInternal, openRepo } from './git.js';
-import { matchKnown, matchAllKnown } from '../known/registry.js';
+import { matchKnown, matchAllKnown } from '../known/registry.generated.js';
 import { renderRepoView } from './repoview.js';
 import { createRawView } from './rawview.js';
 import { loadMonaco } from './monaco-loader.js';
