@@ -1,0 +1,48 @@
+// Tiny seedable PRNG for deterministic dungeon generation.
+//
+// A run stores only a string seed + floor number in the save; re-deriving the RNG from
+// `${seed}:${floor}` regenerates the EXACT same floor on reload — no need to serialise the
+// whole grid. xmur3 hashes the string to a 32-bit state; mulberry32 turns that into a fast,
+// well-distributed stream of floats. Both are public-domain one-liners (no deps, offline-safe).
+
+function xmur3(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i += 1) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return () => {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    h ^= h >>> 16;
+    return h >>> 0;
+  };
+}
+
+function mulberry32(a) {
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Build an RNG bundle from a string seed: float(), int range [lo,hi], pick(array), chance(p).
+export function makeRng(seed) {
+  const next = mulberry32(xmur3(String(seed))());
+  const float = () => next();
+  const int = (lo, hi) => lo + Math.floor(next() * (hi - lo + 1));
+  const pick = (arr) => arr[Math.floor(next() * arr.length)];
+  const chance = (p) => next() < p;
+  const shuffle = (arr) => {
+    const out = arr.slice();
+    for (let i = out.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(next() * (i + 1));
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  };
+  return { float, int, pick, chance, shuffle };
+}

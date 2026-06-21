@@ -66,6 +66,21 @@ export async function createHarness() {
   page.setDefaultNavigationTimeout(60000);
   page.setDefaultTimeout(60000);
 
+  // Boot-safety: the app now initializes asynchronously — boot.js paints the shell instantly,
+  // then background-imports app.js which sets window.__fv. The 'load' event fires BEFORE __fv
+  // exists, so a test that does page.goto(origin) and immediately calls window.__fv would race
+  // and hang to timeout. Wrap goto so navigating to the app origin best-effort waits for __fv —
+  // every area is boot-safe without per-test edits. (Fresh contexts spun up by individual tests,
+  // e.g. the cold-boot test, are NOT wrapped and keep their own waits.)
+  const _goto = page.goto.bind(page);
+  page.goto = async (url, opts) => {
+    const res = await _goto(url, opts);
+    if (typeof url === 'string' && url.startsWith(origin)) {
+      await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 15000 }).catch(() => {});
+    }
+    return res;
+  };
+
   // Robust contentFrame(): an iframe element can exist before its content document has committed,
   // so handle.contentFrame() transiently returns null → "Cannot read properties of null". Poll
   // briefly until the frame is ready. Used everywhere instead of a bare .contentFrame().

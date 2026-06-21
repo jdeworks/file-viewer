@@ -66,6 +66,12 @@ export function initOffline(statusEl) {
   statusEl.addEventListener('click', onActivate);
   statusEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate(); } });
 
+  // Show the pill immediately in its derived resting state. Previously it only appeared once the
+  // SW replied with a cache-status message — but `send` no-ops when there's no controller yet
+  // (first load / after a deploy / hard reload), so the pill could stay hidden ("disappears").
+  // rest() reads localStorage and works without the SW; the SW message just refines it later.
+  rest();
+
   navigator.serviceWorker.register('sw.js').then(async () => {
     await navigator.serviceWorker.ready;
     // Do NOT auto-precache. Just ask for status to pick the resting state.

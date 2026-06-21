@@ -422,9 +422,11 @@
 .mg-dbg-jump:hover { border-color: var(--accent); color: var(--accent); }
 .mg-dbg-reset:hover { border-color: #e03131; color: #e03131; }
 
-/* Dev/testing menu (5 rapid bell clicks). */
-.mg-dev { background: var(--bg-2); border: 1px solid var(--accent); border-radius: 10px; padding: 12px; margin-top: 10px;
-  box-shadow: 0 8px 28px rgba(0,0,0,.35); }
+/* Dev/testing menu — absolute overlay (toggled by the 🛠 header button), never shifts the layout. */
+.mg-v3-debug { position: absolute; top: 50px; right: 8px; z-index: 60; width: min(340px, 92%); }
+.mg-v3-debug[hidden] { display: none; }
+.mg-dev { background: var(--bg-2); border: 1px solid var(--accent); border-radius: 10px; padding: 12px;
+  box-shadow: 0 10px 32px rgba(0,0,0,.5); }
 .mg-dev-title { font-weight: 700; color: var(--fg); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .mg-dev-x { background: transparent; border: 0; color: var(--fg-2); cursor: pointer; font-size: 15px; line-height: 1; }
 .mg-dev-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; font-size: 12px; color: var(--fg-2); }
@@ -433,15 +435,16 @@
 .mg-dev-row button:hover { border-color: var(--accent); color: var(--accent); }
 
 /* Defragmenter v3 shell and Stage 2 vertical slice. */
-.mg-v3 { width: min(760px, 100%); }
+.mg-v3 { width: min(760px, 100%); position: relative; }
 .mg-v3-head { display: flex; align-items: center; justify-content: space-between; gap: 12px 10px; flex-wrap: wrap;
   position: relative; z-index: 50; }   /* keep the header (and the bell dropdown) above the stage content */
 .mg-v3-head > div:first-child { min-width: 0; }   /* let the stage title shrink instead of pushing actions off-screen */
 .mg-v3-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.mg-sfx-btn { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
+.mg-sfx-btn, .mg-dev-btn { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
   border-radius: 8px; padding: 5px 9px; cursor: pointer; font-size: 15px; line-height: 1; }
-.mg-sfx-btn:hover { border-color: var(--accent); }
+.mg-sfx-btn:hover, .mg-dev-btn:hover { border-color: var(--accent); }
 .mg-sfx-btn.mg-sfx-off { opacity: .55; }
+.mg-dev-btn[hidden] { display: none; }
 .mg-v3-stages { display: flex; gap: 6px; flex-wrap: wrap; }
 .mg-v3-stage { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; cursor: pointer; font-size: 12px; }
 .mg-v3-stage:disabled { opacity: .45; cursor: not-allowed; }

@@ -119,6 +119,16 @@ export function entriesFromFileList(fileList) {
   return [...fileList].map((file) => ({ file, path: file.webkitRelativePath || file.name }));
 }
 
+// Walk dropped FileSystemEntry roots into a flat [{ file, path }] list. The roots must be captured
+// SYNCHRONOUSLY in the drop handler (the DataTransfer items list is cleared after the event), but
+// the entry references themselves stay valid for this async walk — so boot.js can grab them on a
+// cold drop and replay the whole tree once the app is ready. Shared with wireIntake's drop handler.
+export async function walkEntries(roots, onProgress) {
+  const out = [];
+  for (const r of roots) await walkEntry(r, '', out, onProgress);
+  return out;
+}
+
 // Wire intake: single file (picker/drop/paste) -> onIntake; folder (dir picker/drop) -> onFolder.
 export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolder, onError, onFolderStatus }) {
   const handleFile = async (file) => {
@@ -152,7 +162,8 @@ export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolde
         lastUpdate = count;
         onFolderStatus?.('Scanning dropped folder…', { detail: count.toLocaleString() + ' files' });
       };
-      for (const r of roots) await walkEntry(r, '', out, onProgress);
+      const walked = await walkEntries(roots, onProgress);
+      out.push(...walked);
       if (out.length) return onFolder(out);
       onFolderStatus?.(null);
     }

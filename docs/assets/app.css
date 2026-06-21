@@ -917,3 +917,12 @@ body.fv-dragging .intake::after {
 .arc-del-cb { flex-shrink: 0; cursor: pointer; }
 .arc-del-name { font-family: ui-monospace, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg, #24292f); }
 .arc-del-marked .arc-del-name { text-decoration: line-through; color: var(--fg-2, #888); }
+
+/* ── Cold-open boot spinner ── shown by boot.js when a file is opened before the heavy app
+   finishes loading. Mirrored in index.html's critical CSS so it can paint before app.css swaps in. */
+.boot-spinner { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; background: var(--bg); color: var(--fg-2); font-size: 14px; }
+.boot-spinner-ring { width: 34px; height: 34px; border-radius: 50%;
+  border: 3px solid var(--bg-3); border-top-color: var(--accent); animation: boot-spin .8s linear infinite; }
+@keyframes boot-spin { to { transform: rotate(360deg); } }
+.reduce-motion .boot-spinner-ring { animation: none; }

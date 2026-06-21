@@ -12,8 +12,12 @@ export const ZERO = Object.freeze({ m: 0, e: 0 });
 export function norm(a) {
   if (a.m === 0) return ZERO;
   let { m, e } = a;
-  while (m >= BASE) { m /= BASE; e += LOG_BASE; }
-  while (m < 1 && e > 0) { m *= BASE; e -= LOG_BASE; }
+  if (!isFinite(m)) return ZERO;   // a NaN/Infinity mantissa would spin the loop below forever
+  // Guarded: any FINITE m normalizes in well under 400 steps (10^1200). The cap is purely a
+  // freeze backstop against a corrupt/overflowed value — it never trips for real game numbers.
+  let g = 0;
+  while (m >= BASE && g++ < 400) { m /= BASE; e += LOG_BASE; }
+  while (m < 1 && e > 0 && g++ < 800) { m *= BASE; e -= LOG_BASE; }
   // Floats can leave m slightly < 1 at e === 0; that's a small real number, keep as-is.
   return { m, e };
 }

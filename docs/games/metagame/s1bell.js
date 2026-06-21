@@ -107,8 +107,13 @@ export function checkMessages(eventType, state, bs, v3Bell = null) {
     if (msg.trigger !== eventType && msg.trigger !== 'any') continue;
     if (msg.maxCount !== undefined && (bs.fired[msg.id] || 0) >= msg.maxCount) continue;
     if (!msg.condition(state)) continue;
+    // The local bell merges repeats (count++), but the v3 header bell has one record per push —
+    // so only forward a message to it the FIRST time it fires. Without this, repeatable messages
+    // (no maxCount, e.g. on every buy/loss/prestige) would push a new v3 record every time and
+    // grow save.bell.log without bound.
+    const firstFire = (bs.fired[msg.id] || 0) === 0;
     bellAdd(msg.id, msg.text, bs);
-    v3Bell?.showBell?.(`stage1.${msg.id}`, msg.text, { stage: 1, once: false });
+    if (firstFire) v3Bell?.showBell?.(`stage1.${msg.id}`, msg.text, { stage: 1 });
     bs.fired[msg.id] = (bs.fired[msg.id] || 0) + 1;
     if (msg.removeAfterFire) {
       bs.removed = bs.removed || [];

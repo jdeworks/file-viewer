@@ -178,6 +178,7 @@ export function mountDefragmenter(arena, opts = {}) {
   let destroyed = false;
   const timers = new Set();
   const listeners = [];
+  let lobbyTaunt = null; // current lobby idle-taunt cycler; stopped before each re-render
   const setT = (fn, ms) => { const id = setTimeout(() => { timers.delete(id); if (!destroyed) fn(); }, ms); timers.add(id); return id; };
   const setI = (fn, ms) => { const id = setInterval(() => { if (!destroyed) fn(); }, ms); timers.add(id); return id; };
   const on = (target, ev, fn) => { target.addEventListener(ev, fn); listeners.push([target, ev, fn]); };
@@ -232,6 +233,11 @@ export function mountDefragmenter(arena, opts = {}) {
 
   // ── LOBBY ────────────────────────────────────────────────────────────────────────────────
   function renderLobby(extraStatus) {
+    // Stop the previous lobby idle cycler — renderLobby is called repeatedly (insufficient bits,
+    // returning from a loss, retries) and each makeTauntDialog().startIdle() schedules a
+    // self-perpetuating setTimeout chain. Without stopping the old one they accumulate (a timer
+    // leak that keeps poking detached DOM forever).
+    if (lobbyTaunt) lobbyTaunt.stopIdle();
     arena.innerHTML =
       '<div class="mg-defrag-arena mg-fade-in">'
       + '<div class="mg-defrag-header">THE DEFRAGMENTER</div>'
@@ -245,15 +251,15 @@ export function mountDefragmenter(arena, opts = {}) {
       + '<button class="mg-defrag-btn mg-defrag-fight" type="button"' + (canPay(ticket) ? '' : ' disabled') + '>Fight — ' + esc(toDisplay(ticket)) + '</button>'
       + '<button class="mg-defrag-btn alt mg-defrag-retreat" type="button">Retreat</button>'
       + '</div></div>';
-    const taunt = makeTauntDialog();
-    taunt.startIdle();
+    lobbyTaunt = makeTauntDialog();
+    lobbyTaunt.startIdle();
     on(arena.querySelector('.mg-defrag-fight'), 'click', () => {
       if (!canPay(ticket)) { renderLobby('insufficient bits — the ticket is ' + toDisplay(ticket) + '.'); return; }
       pay(ticket);
       state.bossEntered = true;
       fireAchievement('ach-boss-enter');
       save(state);
-      taunt.stopIdle();
+      lobbyTaunt.stopIdle();
       startFight();
     });
     on(arena.querySelector('.mg-defrag-retreat'), 'click', retreat);

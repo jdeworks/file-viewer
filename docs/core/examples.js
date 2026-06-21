@@ -7,6 +7,7 @@ import { $ } from './state.js';
 import { intakeFromFile } from './intake.js';
 import { REGISTRY } from './registry-runtime.generated.js';
 import { getTypeInfo, sampleDescription } from './type-info.js';
+import { KNOWN_GROUP_ORDER, knownFileGroup, isKnownExample as isKnownExampleFor } from './examples-known.js';
 
 const EXAMPLE_CATEGORY_ORDER = ['Documents', 'Ebook', 'Data', 'Office', 'Config', 'Code', 'Image', 'Media', '3D', 'Archive & Binary', 'Secrets', 'Binary', 'Emulator', 'Text', 'Other', 'Metagame'];
 
@@ -47,53 +48,6 @@ const ENHANCED_FILES = new Set([
 ]);
 const PARTIAL_FILES = new Set(['sample.djvu', 'sample.lrf']);
 
-const KNOWN_GROUP_ORDER = [
-  'Text / Shell', 'JSON', 'YAML', 'TOML', 'INI/Config', 'Docker',
-  'XML', 'Build', 'Terraform', 'JavaScript', 'TypeScript', 'React/JSX', 'CSS',
-  'Python', 'Go', 'Rust', 'JVM', 'C/C++', 'C#', 'Ruby', 'PHP', 'Swift', 'Dart',
-  'Elixir', 'Clojure', 'Perl', 'R', 'Lua', 'Shell', 'PowerShell',
-  'Protobuf', 'GraphQL', 'SQL', 'Apple Config',
-];
-
-function knownFileGroup(fname) {
-  const ext = fname.includes('.') ? fname.split('.').pop().toLowerCase() : '';
-  const base = fname.toLowerCase();
-  if (ext === 'json' || ext === 'jsonc') return 'JSON';
-  if (ext === 'yaml' || ext === 'yml') return 'YAML';
-  if (ext === 'toml') return 'TOML';
-  if (base === 'dockerfile' || base.startsWith('dockerfile.') || ext === 'dockerignore') return 'Docker';
-  if (ext === 'xml') return 'XML';
-  if (ext === 'gradle' || ext === 'bazel' || ext === 'ninja' || base === 'cmakelists.txt' || base === 'makefile' || base === 'build.bazel' || base === 'build.xml' || base === 'build.ninja') return 'Build';
-  if (ext === 'tf' || ext === 'tfvars' || ext === 'hcl') return 'Terraform';
-  if (ext === 'proto') return 'Protobuf';
-  if (ext === 'graphql' || ext === 'gql') return 'GraphQL';
-  if (ext === 'sql') return 'SQL';
-  if (ext === 'css' || ext === 'scss' || ext === 'less') return 'CSS';
-  if (ext === 'js' || ext === 'mjs' || ext === 'cjs') return 'JavaScript';
-  if (ext === 'ts') return 'TypeScript';
-  if (ext === 'tsx' || ext === 'jsx') return 'React/JSX';
-  if (ext === 'py') return 'Python';
-  if (ext === 'go') return 'Go';
-  if (ext === 'rs') return 'Rust';
-  if (ext === 'java' || ext === 'kt' || ext === 'scala') return 'JVM';
-  if (ext === 'c' || ext === 'cpp' || ext === 'h') return 'C/C++';
-  if (ext === 'cs') return 'C#';
-  if (ext === 'rb') return 'Ruby';
-  if (ext === 'php') return 'PHP';
-  if (ext === 'swift') return 'Swift';
-  if (ext === 'dart') return 'Dart';
-  if (ext === 'r') return 'R';
-  if (ext === 'lua') return 'Lua';
-  if (ext === 'ex' || ext === 'exs') return 'Elixir';
-  if (ext === 'clj') return 'Clojure';
-  if (ext === 'pl') return 'Perl';
-  if (ext === 'sh' || ext === 'bash' || ext === 'zsh') return 'Shell';
-  if (ext === 'ps1') return 'PowerShell';
-  if (ext === 'ini' || ext === 'cfg' || ext === 'conf') return 'INI/Config';
-  if (ext === 'plist' || ext === 'strings') return 'Apple Config';
-  return 'Text / Shell';
-}
-
 function isGamesUnlocked() {
   try { return localStorage.getItem(GAMES_KEY) === '1'; } catch { return false; }
 }
@@ -128,6 +82,12 @@ function categoriesFor(ex) {
   const raw = ex.categories || ex.groups || ex.category || 'Other';
   const list = Array.isArray(raw) ? raw : [raw];
   return [...new Set(list.filter(Boolean))];
+}
+
+// Known/enhanced files (real-world Config/Code filenames) appear ONLY in the
+// dedicated known-files section — never duplicated into the type categories.
+function isKnownExample(ex) {
+  return isKnownExampleFor(ex, categoriesFor);
 }
 
 function readFilters() {
@@ -263,8 +223,11 @@ function renderGallery(host, list, onPick) {
   const unlocked = isGamesUnlocked();
   const visible = unlocked ? list : list.filter((ex) => !categoriesFor(ex).includes('Metagame'));
 
+  // Known/enhanced files are excluded from the type-category groups; they live
+  // only in the dedicated known-files section at the bottom.
   const groups = new Map();
   for (const ex of visible) {
+    if (isKnownExample(ex)) continue;
     for (const cat of categoriesFor(ex)) {
       if (!groups.has(cat)) groups.set(cat, []);
       groups.get(cat).push(ex);
@@ -332,11 +295,7 @@ function renderGallery(host, list, onPick) {
   }
 
   function renderKnownFiles() {
-    const knownExamples = visible.filter((ex) => {
-      const fname = (ex.file || '').split('/').pop();
-      const cats = categoriesFor(ex);
-      return cats.some((c) => c === 'Config' || c === 'Code') && !fname.startsWith('sample.');
-    });
+    const knownExamples = visible.filter(isKnownExample);
     if (knownExamples.length === 0) return null;
 
     const groupMap = new Map();
@@ -485,6 +444,10 @@ function renderGallery(host, list, onPick) {
   function showGrid() {
     host.textContent = '';
 
+    // (a) search + quick-filter chips — above the file-type groups.
+    host.appendChild(renderFilterBar(host));
+
+    // (b) file-type category groups, grouped by super-category.
     // Group categories by super-category
     const superGroups = new Map(); // superCat -> [cat, ...]
     for (const cat of cats) {
@@ -545,15 +508,18 @@ function renderGallery(host, list, onPick) {
       host.appendChild(section);
     }
 
+    applyFilter(host);
+
+    // (c) known-files section, then (d) the "show all files" button — bottom.
+    const knownSection = renderKnownFiles();
+    if (knownSection) host.appendChild(knownSection);
+
     const showall = document.createElement('button');
     showall.className = 'ex-showall-btn';
     showall.textContent = 'Show all files';
     showall.onclick = () => showAll();
     host.appendChild(showall);
-    host.appendChild(renderFilterBar(host));
-    applyFilter(host);
-    const knownSection = renderKnownFiles();
-    if (knownSection) host.appendChild(knownSection);
+
     appendExternalExamplesLink(host);
   }
 

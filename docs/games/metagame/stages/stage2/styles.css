@@ -30,6 +30,15 @@
   padding-bottom: 8px;
 }
 
+.s2-objective {
+  color: #ffd186;
+  font-size: 0.92em;
+}
+
+.s2-screen {
+  position: relative;
+}
+
 .s2-grid {
   background: #070605;
   border: 1px solid var(--s2-border);
@@ -40,6 +49,56 @@
   overflow: auto;
   padding: 10px;
   white-space: pre;
+}
+
+/* Per-tile colours so walls, foes and loot read at a glance. */
+.s2-c-wall { color: #6f4d20; }
+.s2-c-floor { color: #34281a; }
+.s2-c-player { color: #79f0ff; font-weight: 700; }
+.s2-c-foe { color: #ff5a4a; font-weight: 700; }
+.s2-c-foe2 { color: #ff2bd0; font-weight: 700; }
+.s2-c-item { color: #ffd54a; }
+.s2-c-glyph { color: #d78bff; }
+.s2-c-exit { color: #7fe07f; font-weight: 700; }
+
+.s2-legend {
+  color: var(--s2-dim);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.85em;
+  gap: 4px 12px;
+}
+
+.s2-legend span { font-weight: 700; }
+
+/* Damage flash — a screen of red ASCII noise that blinks for a split second on a hit. */
+.s2-flash {
+  color: #ff2a1a;
+  font-weight: 700;
+  inset: 0;
+  letter-spacing: 2px;
+  line-height: 1.1;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  text-align: center;
+  text-shadow: 0 0 6px #ff0000;
+  white-space: pre;
+}
+
+.s2-flash-on {
+  animation: s2-flash-pulse 0.24s ease-out;
+}
+
+@keyframes s2-flash-pulse {
+  0% { opacity: 0; }
+  25% { opacity: 0.95; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .s2-flash-on { animation-duration: 0.12s; }
 }
 
 .s2-boss-panel {
@@ -80,6 +139,161 @@
 .s2-controls button:focus-visible {
   border-color: #ffc46f;
   outline: 1px solid #ffc46f;
+}
+
+/* On-screen d-pad for touch (keyboard arrows/WASD also work). */
+.s2-dpad {
+  display: grid;
+  gap: 3px;
+  grid-template-areas: ". up ." "left down right";
+  grid-template-columns: repeat(3, 38px);
+}
+
+.s2-dpad button {
+  background: #21180d;
+  border: 1px solid var(--s2-border);
+  color: var(--s2-fg);
+  cursor: pointer;
+  font: inherit;
+  min-height: 38px;
+  padding: 4px;
+  user-select: none;
+}
+
+.s2-dpad button:hover,
+.s2-dpad button:focus-visible {
+  border-color: #ffc46f;
+  outline: 1px solid #ffc46f;
+}
+
+.s2-dpad [data-move="up"] { grid-area: up; }
+.s2-dpad [data-move="left"] { grid-area: left; }
+.s2-dpad [data-move="down"] { grid-area: down; }
+.s2-dpad [data-move="right"] { grid-area: right; }
+
+/* Glyph shop — an overlay panel above the dungeon screen. */
+.s2-shop {
+  background: #140f0a;
+  border: 1px solid #ffc46f;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  left: 50%;
+  max-width: 94%;
+  padding: 12px 14px;
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  width: 380px;
+  z-index: 30;
+}
+
+.s2-shop-head {
+  align-items: center;
+  border-bottom: 1px solid var(--s2-border);
+  display: flex;
+  font-weight: 700;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.s2-shop-bank { font-weight: 400; }
+
+.s2-shop-x {
+  background: none;
+  border: 1px solid var(--s2-border);
+  color: var(--s2-fg);
+  cursor: pointer;
+  margin-left: auto;
+  padding: 2px 8px;
+}
+
+.s2-shop-note {
+  color: var(--s2-dim);
+  font-size: 0.82em;
+  margin: 8px 0;
+}
+
+.s2-shop-row {
+  align-items: center;
+  border-top: 1px solid #2a2014;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.s2-shop-lv { color: var(--s2-dim); font-weight: 400; }
+.s2-shop-desc { color: #f5bf66; font-size: 0.82em; }
+
+.s2-shop-row button {
+  background: #21180d;
+  border: 1px solid var(--s2-border);
+  color: var(--s2-fg);
+  cursor: pointer;
+  font: inherit;
+  min-height: 32px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.s2-shop-row button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.s2-shop-row button:not(:disabled):hover {
+  border-color: #ffc46f;
+  outline: 1px solid #ffc46f;
+}
+
+/* How-to-play overlay (shares the shop's placement). */
+.s2-help {
+  background: #140f0a;
+  border: 1px solid #ffc46f;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  left: 50%;
+  max-height: 90%;
+  max-width: 94%;
+  overflow: auto;
+  padding: 12px 14px;
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  width: 400px;
+  z-index: 30;
+}
+
+.s2-help-head {
+  align-items: center;
+  border-bottom: 1px solid var(--s2-border);
+  display: flex;
+  font-weight: 700;
+  justify-content: space-between;
+  padding-bottom: 8px;
+}
+
+.s2-help-x {
+  background: none;
+  border: 1px solid var(--s2-border);
+  color: var(--s2-fg);
+  cursor: pointer;
+  padding: 2px 8px;
+}
+
+.s2-help-list {
+  display: grid;
+  gap: 2px 10px;
+  grid-template-columns: max-content 1fr;
+  margin: 10px 0 0;
+}
+
+.s2-help-list dt {
+  color: #ffd186;
+  font-weight: 700;
+}
+
+.s2-help-list dd {
+  color: #f5bf66;
+  margin: 0 0 6px;
 }
 
 @media (max-width: 760px) {
