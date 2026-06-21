@@ -394,11 +394,15 @@ export async function run(ctx) {
     await octx.close();
   }
 
-  // ── Two-file Compare ("Compare with…") ── pick a 2nd file → diff current ↔ other ──
+  // ── Two-file Compare ("Compare with…") ── REPURPOSED: compare button shows the drop-target
+  //    picker; dropping/picking a file 2 opens the SIDE-BY-SIDE overlay at Current (NOT diff);
+  //    the comparison itself is the overlay's Diff mode (one Monaco diff inside the overlay).
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md');
   await openExample('Sample.csv');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
+  // Forget any remembered overlay mode so the overlay opens at the default (Current), not diff.
+  await page.evaluate(() => { try { localStorage.removeItem('fv:sbs:mode'); } catch {} });
   const compareBtnShown = await page.$eval('#compareBtn', (e) => !e.closest('[hidden]'));
   if (compareBtnShown) pass('compare button available for an editable type'); else fail('compare button hidden for csv');
   await page.click('#compareBtn');
@@ -406,33 +410,46 @@ export async function run(ctx) {
   const targetLabel = await page.$eval('#compareBar .compare-label', (e) => e.textContent);
   if (/Drop a sidebar file/.test(targetLabel) && /choose a file/i.test(targetLabel)) pass('two-file compare: opens in-app drop target before picker');
   else fail('compare target label: ' + targetLabel);
-  const sidebarDropCompared = await page.evaluate(() => {
+  // Drop a sidebar file on the target → opens the side-by-side overlay (file 2 = welcome.md).
+  await page.evaluate(() => {
     const bar = document.getElementById('compareBar');
     const data = new DataTransfer();
     data.setData('text/x-fv-tree-path', 'welcome.md');
     bar.dispatchEvent(new DragEvent('dragover', { dataTransfer: data, bubbles: true, cancelable: true }));
     bar.dispatchEvent(new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true }));
-    return true;
   });
-  if (sidebarDropCompared) pass('two-file compare: sidebar file can be dropped on target');
-  await page.waitForFunction(() => /welcome\.md/i.test(document.querySelector('#compareBar .compare-label')?.textContent || ''), null, { timeout: 8000 });
-  await page.waitForSelector('#editor .monaco-diff-editor', { timeout: 10000 });
-  pass('two-file compare: sidebar drop starts Monaco diff');
-  await page.click('#compareBar .compare-stop');
+  await page.waitForSelector('.sbs-overlay', { timeout: 10000 });
+  pass('two-file compare: sidebar drop opens the side-by-side overlay (picker hands off)');
+  // The picker chrome hides once a file is chosen; the overlay opens at Current (NOT diff).
   await page.waitForFunction(() => document.getElementById('compareBar').hidden, null, { timeout: 4000 });
-  await page.click('#compareBtn');
-  // Feed the comparison file through the fallback input (Playwright sets files directly — no dialog).
-  await page.setInputFiles('#compareInput', new URL('../../docs/examples/welcome.md', import.meta.url).pathname);
-  await page.waitForFunction(() => /Comparing current.*welcome\.md/i.test(document.querySelector('#compareBar .compare-label')?.textContent || ''), null, { timeout: 8000 });
-  const compLabel = await page.$eval('#compareBar .compare-label', (e) => e.textContent);
-  if (/Comparing current/.test(compLabel) && /welcome\.md/i.test(compLabel)) pass('two-file compare: bar names the compared file'); else fail('compare label: ' + compLabel);
-  await page.waitForSelector('#editor .monaco-diff-editor', { timeout: 10000 });
-  pass('two-file compare: Monaco diff editor shown (current ↔ other)');
+  const droppedNames = await page.$$eval('.sbs-overlay .sbs-fname', (els) => els.map((e) => e.textContent));
+  const overlayMode0 = await page.evaluate(() => document.querySelector('.sbs-overlay').__sbsMode.current());
+  const noDiffYet = await page.$('.sbs-overlay .monaco-diff-editor');
+  if (overlayMode0 === 'current' && !noDiffYet && droppedNames.some((n) => /welcome\.md/i.test(n)) && droppedNames.some((n) => /sample\.csv/i.test(n)))
+    pass('two-file compare: overlay opens at Current with both files (not diff)');
+  else fail('compare overlay open state: mode=' + overlayMode0 + ' diff=' + !!noDiffYet + ' names=' + droppedNames.join(','));
+  // Click the Diff mode → ONE Monaco diff editor inside the overlay (current ↔ other).
+  await page.click('.sbs-overlay .sbs-mode-btn[data-sbs-mode="diff"]');
+  await page.waitForSelector('.sbs-overlay .monaco-diff-editor', { timeout: 12000 });
+  const diffCount = await page.$$eval('.sbs-overlay .monaco-diff-editor', (els) => els.length);
+  const panesHiddenInDiff = await page.$eval('.sbs-overlay .sbs-body', (e) => getComputedStyle(e).display === 'none');
+  if (diffCount === 1 && panesHiddenInDiff) pass('two-file compare: Diff mode shows exactly one Monaco diff and hides the panes'); else fail('diff mode: count=' + diffCount + ' panesHidden=' + panesHiddenInDiff);
+  // Diff mode must not corrupt the MAIN editor's edit-tracking (overlay is self-contained).
   const falseDirty = await page.evaluate(() => window.__fv.hasUnsavedWork());
-  if (!falseDirty) pass('two-file compare: edit-tracking untouched (no false unsaved-work)'); else fail('compare created false unsaved work');
-  await page.click('#compareBar .compare-stop');
-  await page.waitForFunction(() => document.getElementById('compareBar').hidden, null, { timeout: 4000 });
-  pass('two-file compare: "Stop comparing" exits');
+  if (!falseDirty) pass('two-file compare: main edit-tracking untouched (overlay is self-contained)'); else fail('compare created false unsaved work');
+  await page.click('.sbs-overlay .sbs-close');
+  await page.waitForFunction(() => !document.querySelector('.sbs-overlay'), null, { timeout: 4000 });
+  pass('two-file compare: closing the overlay exits the comparison');
+  // The fallback file input also hands off to the overlay (no in-place diff anymore).
+  await page.evaluate(() => { try { localStorage.removeItem('fv:sbs:mode'); } catch {} });
+  await page.click('#compareBtn');
+  await page.waitForFunction(() => !document.getElementById('compareBar').hidden, null, { timeout: 8000 });
+  await page.setInputFiles('#compareInput', new URL('../../docs/examples/welcome.md', import.meta.url).pathname);
+  await page.waitForSelector('.sbs-overlay', { timeout: 10000 });
+  const pickNames = await page.$$eval('.sbs-overlay .sbs-fname', (els) => els.map((e) => e.textContent));
+  if (pickNames.some((n) => /welcome\.md/i.test(n))) pass('two-file compare: file-input pick also opens the overlay'); else fail('compare pick names: ' + pickNames.join(','));
+  await page.click('.sbs-overlay .sbs-close');
+  await page.waitForFunction(() => !document.querySelector('.sbs-overlay'), null, { timeout: 4000 });
 
   // ── Split divider: drag must keep working across preview iframes and Monaco surfaces ──
   await page.goto(origin, { waitUntil: 'load' });
@@ -471,11 +488,23 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 15000 });
   const sbsShown = await page.$eval('#sbsBtn', (e) => !e.hidden);
   if (sbsShown) pass('side-by-side button shown for a previewable file'); else fail('sbs button hidden');
+  // Forget any remembered mode so the overlay opens at Current (the per-pane toggle tests below
+  // require Current mode, where each pane drives its own view).
+  await page.evaluate(() => { try { localStorage.removeItem('fv:sbs:mode'); } catch {} });
   await page.setInputFiles('#sbsInput', new URL('../../docs/examples/sample.csv', import.meta.url).pathname);
   await page.waitForSelector('.sbs-overlay', { timeout: 8000 });
   const sbsPanes = await page.$$eval('.sbs-pane', (els) => els.length);
   const sbsNames = await page.$$eval('.sbs-fname', (els) => els.map((e) => e.textContent));
   if (sbsPanes === 2 && sbsNames.some((n) => /welcome\.md/i.test(n)) && sbsNames.some((n) => /sample\.csv/i.test(n))) pass('side-by-side: two named panes (current + picked)'); else fail('sbs panes=' + sbsPanes + ' names=' + sbsNames.join(','));
+  // Shared mode bar: Current · Raw · Preview · Diff, opening at Current.
+  const modeBtns = await page.$$eval('.sbs-overlay .sbs-mode-btn', (els) => els.map((e) => e.dataset.sbsMode));
+  const modeStart = await page.evaluate(() => document.querySelector('.sbs-overlay').__sbsMode.current());
+  if (['current', 'raw', 'preview', 'diff'].every((m) => modeBtns.includes(m)) && modeStart === 'current')
+    pass('side-by-side: shared mode bar has Current/Raw/Preview/Diff and opens at Current');
+  else fail('sbs mode bar: btns=' + modeBtns.join(',') + ' start=' + modeStart);
+  // In Current mode each pane shows its own Source/Preview/Split toggle.
+  const togglesShownCurrent = await page.$eval('.sbs-pane:first-child .sbs-toggle[data-sbs-view="source"]', (e) => getComputedStyle(e).display !== 'none');
+  if (togglesShownCurrent) pass('side-by-side: Current mode shows the per-pane view toggle'); else fail('per-pane toggle hidden in Current');
   // Both panes are editable text types → both default to a Monaco source editor.
   await page.waitForFunction(() => {
     const panes = document.querySelectorAll('.sbs-pane');
@@ -548,9 +577,56 @@ export async function run(ctx) {
     page.click('.sbs-pane:nth-child(2) .sbs-dl'),
   ]);
   if (/sample\.csv$/.test(sbsDl.suggestedFilename())) pass('side-by-side: per-pane Download preserves filename (' + sbsDl.suggestedFilename() + ')'); else fail('sbs download name: ' + sbsDl.suggestedFilename());
+
+  // ── Shared mode bar: Raw / Preview / Diff govern BOTH panes ──
+  // (mode-a) Raw forces both panes to their Monaco source; per-pane toggle hidden; two SEPARATE
+  //          editors (no diff editor) → panes scroll independently.
+  await page.click('.sbs-overlay .sbs-mode-btn[data-sbs-mode="raw"]');
+  await page.waitForFunction(() => {
+    const panes = document.querySelectorAll('.sbs-pane');
+    return panes.length === 2 && [...panes].every((p) => {
+      const src = p.querySelector('.sbs-source'), prev = p.querySelector('.sbs-preview');
+      return src.style.display !== 'none' && prev.style.display === 'none' && src.querySelector('.monaco-editor');
+    });
+  }, null, { timeout: 12000 });
+  const rawTwoEditors = await page.$$eval('.sbs-pane .sbs-source .monaco-editor', (els) => els.length);
+  const rawNoDiff = await page.$('.sbs-overlay .monaco-diff-editor');
+  const rawToggleHidden = await page.$eval('.sbs-pane:first-child .sbs-toggle[data-sbs-view="source"]', (e) => getComputedStyle(e).display === 'none');
+  if (rawTwoEditors === 2 && !rawNoDiff && rawToggleHidden) pass('side-by-side: Raw mode forces both panes to source (two independent editors, no diff, per-pane toggle hidden)'); else fail('raw mode: editors=' + rawTwoEditors + ' diff=' + !!rawNoDiff + ' toggleHidden=' + rawToggleHidden);
+  // (mode-b) Preview forces both panes to their rendered preview.
+  await page.click('.sbs-overlay .sbs-mode-btn[data-sbs-mode="preview"]');
+  await page.waitForFunction(() => {
+    const panes = document.querySelectorAll('.sbs-pane');
+    return panes.length === 2 && [...panes].every((p) => {
+      const src = p.querySelector('.sbs-source'), prev = p.querySelector('.sbs-preview');
+      return src.style.display === 'none' && prev.style.display !== 'none' && prev.childElementCount > 0;
+    });
+  }, null, { timeout: 15000 });
+  pass('side-by-side: Preview mode forces both panes to their rendered preview');
+  // (mode-c) Diff replaces the two panes with ONE Monaco diff; the panes are hidden.
+  await page.click('.sbs-overlay .sbs-mode-btn[data-sbs-mode="diff"]');
+  await page.waitForSelector('.sbs-overlay .monaco-diff-editor', { timeout: 12000 });
+  const diffOne = await page.$$eval('.sbs-overlay .monaco-diff-editor', (els) => els.length);
+  const bodyHidden = await page.$eval('.sbs-overlay .sbs-body', (e) => getComputedStyle(e).display === 'none');
+  if (diffOne === 1 && bodyHidden) pass('side-by-side: Diff mode shows exactly one Monaco diff and hides the two panes'); else fail('diff mode: count=' + diffOne + ' bodyHidden=' + bodyHidden);
+  // fv:sbs:mode persists the last user choice.
+  const modePersisted = await page.evaluate(() => { try { return localStorage.getItem('fv:sbs:mode'); } catch { return null; } });
+  if (modePersisted === 'diff') pass('side-by-side: fv:sbs:mode persists the chosen mode'); else fail('fv:sbs:mode persist: ' + modePersisted);
+  // (mode-d) Diff → Current rebuilds the two panes (and disposes the diff editor).
+  await page.click('.sbs-overlay .sbs-mode-btn[data-sbs-mode="current"]');
+  await page.waitForFunction(() => {
+    const panes = document.querySelectorAll('.sbs-pane');
+    const body = document.querySelector('.sbs-overlay .sbs-body');
+    return panes.length === 2 && getComputedStyle(body).display !== 'none'
+      && [...panes].every((p) => p.querySelector('.sbs-host')) && !document.querySelector('.sbs-overlay .monaco-diff-editor');
+  }, null, { timeout: 12000 });
+  pass('side-by-side: switching Diff → Current rebuilds the two panes (diff disposed)');
+
   // (d) Closing disposes both panes and removes the overlay.
   await page.click('.sbs-close');
   if (!(await page.$('.sbs-overlay'))) pass('side-by-side closes (panes disposed, overlay removed)'); else fail('sbs did not close');
+  // Clean up the persisted mode so it doesn't leak into later runs.
+  await page.evaluate(() => { try { localStorage.removeItem('fv:sbs:mode'); } catch {} });
 
   // ── Editor mode for Monaco code types (gcode): editable Monaco + Ctrl+S download ──
   await page.goto(origin, { waitUntil: 'load' });
