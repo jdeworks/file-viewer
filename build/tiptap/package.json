@@ -1,0 +1,15 @@
+{
+  "name": "tiptap-bundle-build",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Build-only workspace to produce docs/vendor/tiptap/tiptap.esm.js. Not shipped.",
+  "type": "module",
+  "dependencies": {
+    "@tiptap/core": "^3.27.1",
+    "@tiptap/extension-table": "^3.27.1",
+    "@tiptap/markdown": "^3.27.1",
+    "@tiptap/pm": "^3.27.1",
+    "@tiptap/starter-kit": "^3.27.1",
+    "esbuild": "^0.28.1"
+  }
+}

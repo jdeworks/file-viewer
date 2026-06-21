@@ -6,11 +6,22 @@ renderer.js uses markdown-it (html:true, linkify, typographer) with source-map i
 (`data-fv-src` attributes for magic-selector support) and DOMPurify sanitization. Output is wrapped
 in `<article class="markdown-body">` and returned as `bodyHtml` for the sandboxed iframe.
 
-wysiwyg.js mounts EasyMDE (CodeMirror 5 core) with side-by-side preview enabled by default.
-Our own toolbar (wired in the shell) calls `wysiwygWrap` / `getWysiwygCodeMirror` for actions.
-edit-actions.js provides pure text-manipulation functions: heading, bold/italic/code/blockquote/
-lists/strikethrough/table insert, table sort (numeric-aware), and URL-paste-to-link conversion.
-The `markdownEditor` setting controls whether the file opens in Monaco or EasyMDE by default.
+wysiwyg.js mounts **TipTap v3** (ProseMirror engine, MIT) as a true rich-text WYSIWYG with a
+faithful markdown round-trip: the source markdown is parsed into a ProseMirror document
+(`setContent(text, { contentType: 'markdown' })`), edited visually, and serialized back to
+CommonMark on every change (`editor.getMarkdown()`). The bundle is vendored at build time into
+`docs/vendor/tiptap/tiptap.esm.js` (zero runtime CDN); rebuild with
+`cd build/tiptap && npm install && node build.mjs`. Extensions: StarterKit (paragraph, heading,
+bold, italic, strike, code, codeBlock, blockquote, bullet/ordered lists, link, hr, hard-break) +
+TableKit (GFM tables) + the `@tiptap/markdown` parse/serialize extension.
+
+Our own toolbar (wired in the shell, `core/rawpane-markdown.js`) dispatches **native TipTap
+commands** in WYSIWYG mode (`runWysiwygCommand(action)` → `toggleBold/Italic/Strike/Code/
+CodeBlock/Blockquote/BulletList/OrderedList/Heading`) and inserts generated markdown for tables
+(`insertWysiwygMarkdown(md)`). In Monaco mode the same toolbar uses the pure text helpers in
+edit-actions.js: heading, bold/italic/code/blockquote/lists/strikethrough/table insert, table
+sort (numeric-aware), and URL-paste-to-link conversion. The `markdownEditor` setting controls
+whether the file opens in Monaco or the TipTap WYSIWYG by default.
 
 ## Viewer enhancements (no write-back needed)
 
@@ -52,10 +63,9 @@ The `markdownEditor` setting controls whether the file opens in Monaco or EasyMD
 - **Slash commands** — Type `/` at the start of a line in EasyMDE to pop an autocomplete menu of
   block inserts (heading, code block, table, blockquote, mermaid, etc.); select with arrows/Enter.
   Implemented as a CodeMirror hint addon. — M
-- **Upgrade EasyMDE → Milkdown** — Milkdown is a Markdown-first ProseMirror editor with a richer
-  plugin model, native table editing, Slash commands, and active maintenance. Migration is a
-  wholesale swap of wysiwyg.js; edit-actions.js pure functions remain usable. ~200 KB. — L —
-  Milkdown (MIT)
+- **Slash commands / bubble menu (TipTap)** — Now that the WYSIWYG is ProseMirror-based, add a
+  TipTap slash-command and selection bubble-menu extension for block inserts and inline formatting
+  without the toolbar. — M — TipTap extensions (already vendored engine)
 - **Task-list checkbox editing** — In EasyMDE (CodeMirror), toggle `[ ]` ↔ `[x]` on the source
   line corresponding to a clicked checkbox in the preview pane (via EasyMDE's preview click
   passthrough). — S
@@ -73,8 +83,9 @@ The `markdownEditor` setting controls whether the file opens in Monaco or EasyMD
 
 ## Shared toolbar / modular note
 
-The toolbar lives in the shell and dispatches to wysiwyg.js (`wysiwygWrap`, `getWysiwygCodeMirror`)
-and edit-actions.js. Keep this split: edit-actions.js stays pure (no DOM, no editor coupling) so
-it's fully testable and reusable if Milkdown replaces EasyMDE. The Mermaid and KaTeX enhancements
+The toolbar lives in the shell and dispatches to wysiwyg.js (`runWysiwygCommand`,
+`insertWysiwygMarkdown`) in WYSIWYG mode and edit-actions.js in Monaco mode. Keep this split:
+edit-actions.js stays pure (no DOM, no editor coupling) so it's fully testable and reusable. The
+Mermaid and KaTeX enhancements
 should be lazy-loaded and run as a post-render pass in renderer.js before returning `bodyHtml`;
 they must not bloat the initial load.

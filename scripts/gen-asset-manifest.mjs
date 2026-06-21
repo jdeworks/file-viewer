@@ -51,7 +51,7 @@ const BUNDLE_GROUPS = {
   'vendor:jszip': 'File viewers', 'vendor:papaparse': 'File viewers', 'vendor:pdf-lib': 'File viewers',
   'vendor:pptxviewjs': 'File viewers', 'vendor:mammoth': 'File viewers', 'vendor:html2canvas': 'File viewers',
   'vendor:ag-psd': 'File viewers',
-  'vendor:monaco': 'Editor',
+  'vendor:monaco': 'Editor', 'vendor:tiptap': 'Editor', 'vendor:easymde': 'Editor',
   'vendor:chartjs': 'Data & charts', 'vendor:xlsx': 'Data & charts', 'vendor:sql.js': 'Data & charts',
   'vendor:pdfjs': 'Documents',
   'vendor:libarchive': 'Archives',

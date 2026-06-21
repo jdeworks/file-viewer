@@ -1,73 +1,120 @@
-import { loadGlobal, vendor } from '../../core/script-loader.js';
+// Markdown WYSIWYG editor — TipTap v3 (ProseMirror) over a faithful markdown
+// round-trip (parse markdown → editable rich doc → serialize back to CommonMark).
+// Replaces the old EasyMDE/CodeMirror integration. The bundle is vendored
+// (build-time, zero runtime CDN) at docs/vendor/tiptap/tiptap.esm.js — rebuild
+// with: cd build/tiptap && npm install && node build.mjs
+//
+// Public contract consumed by core/rawpane.js + core/rawpane-markdown.js:
+//   mountWysiwyg(container, text, onChange) -> Promise<Editor>
+//   unmountWysiwyg()
+//   getWysiwygValue() -> string        (markdown)
+//   isWysiwygActive() -> boolean
+//   wysiwygWrap(before, after, placeholder)   (legacy toolbar helper)
+//   runWysiwygCommand(action)          (TipTap-native toolbar actions)
+//   insertWysiwygMarkdown(md)          (insert raw markdown, e.g. a table)
+//   focusWysiwyg()
+import { vendor } from '../../core/script-loader.js';
 
-let easyMDE = null;
-let _textarea = null;
+let editor = null;
+let _tiptap = null;
+
+async function loadTiptap() {
+  if (!_tiptap) _tiptap = await import(vendor('tiptap/tiptap.esm.js'));
+  return _tiptap;
+}
+
+function injectCssOnce() {
+  if (document.getElementById('tiptap-css')) return;
+  const link = document.createElement('link');
+  link.id = 'tiptap-css';
+  link.rel = 'stylesheet';
+  link.href = vendor('tiptap/tiptap.css');
+  document.head.appendChild(link);
+}
 
 export async function mountWysiwyg(container, text, onChange) {
-  // Destroy any previous instance
   unmountWysiwyg();
-  // EasyMDE needs a textarea
-  _textarea = document.createElement('textarea');
-  _textarea.value = text;
+  injectCssOnce();
+  const { Editor, StarterKit, TableKit, Markdown } = await loadTiptap();
   container.innerHTML = '';
-  container.appendChild(_textarea);
-  // Inject EasyMDE CSS before mounting (avoids flash of unstyled content)
-  if (!document.getElementById('easymde-css')) {
-    const link = document.createElement('link');
-    link.id = 'easymde-css';
-    link.rel = 'stylesheet';
-    link.href = vendor('easymde/easymde.min.css');
-    document.head.appendChild(link);
-  }
-  const EasyMDE = await loadGlobal(vendor('easymde/easymde.min.js'), 'EasyMDE');
-  easyMDE = new EasyMDE({
-    element: _textarea,
-    initialValue: text,
+  const host = document.createElement('div');
+  host.className = 'tiptap-host';
+  container.appendChild(host);
+
+  editor = new Editor({
+    element: host,
+    extensions: [
+      StarterKit.configure({ link: { openOnClick: false } }),
+      TableKit.configure({ table: { resizable: true } }),
+      Markdown,
+    ],
     autofocus: true,
-    spellChecker: false,
-    toolbar: false,           // we use our own toolbar
-    status: false,
-    minHeight: '300px',
-    sideBySideFullscreen: false,  // keep inside editor container so app toolbar stays accessible
-    renderingConfig: { singleLineBreaks: false },
+    onUpdate: () => onChange?.(getWysiwygValue()),
   });
-  easyMDE.codemirror.on('change', () => {
-    onChange?.(easyMDE.value());
-  });
-  // Enter side-by-side preview so the user immediately sees rendered Markdown.
-  easyMDE.toggleSideBySide();
-  return easyMDE;
+  // Feed the source markdown through the markdown parser (parse → PM doc).
+  editor.commands.setContent(text ?? '', { contentType: 'markdown' });
+  return editor;
 }
 
 export function unmountWysiwyg() {
-  if (easyMDE) {
-    try { easyMDE.toTextArea(); } catch {}
-    easyMDE = null;
+  if (editor) {
+    try { editor.destroy(); } catch {}
+    editor = null;
   }
-  _textarea = null;
 }
 
 export function getWysiwygValue() {
-  return easyMDE?.value() ?? '';
+  if (!editor) return '';
+  try { return editor.getMarkdown(); } catch { return ''; }
 }
 
 export function isWysiwygActive() {
-  return easyMDE !== null;
+  return editor !== null;
+}
+
+export function focusWysiwyg() {
+  editor?.commands.focus();
 }
 
 /**
- * Apply a markdown action (bold, italic, etc.) via EasyMDE's CodeMirror instance.
- * Wraps the current selection with the given prefix/suffix markers.
+ * Legacy wrap helper kept for API compatibility. With TipTap we toggle the
+ * corresponding mark rather than inserting literal markers, falling back to a
+ * literal insert for anything unmapped.
  */
 export function wysiwygWrap(before, after, placeholder) {
-  if (!easyMDE) return;
-  const cm = easyMDE.codemirror;
-  const selected = cm.getSelection();
-  const text = selected || placeholder || '';
-  cm.replaceSelection(before + text + (after ?? before));
+  if (!editor) return;
+  const map = { '**': 'bold', '*': 'italic', '~~': 'strike', '`': 'code' };
+  const action = map[before];
+  if (action) { runWysiwygCommand(action); return; }
+  const sel = editor.state.selection;
+  const text = editor.state.doc.textBetween(sel.from, sel.to) || placeholder || '';
+  editor.chain().focus().insertContent(before + text + (after ?? before)).run();
 }
 
-/** Expose the underlying CodeMirror instance for fine-grained action integration. */
-export function getWysiwygCodeMirror() {
-  return easyMDE?.codemirror ?? null;
+/**
+ * Run a markdown toolbar action as a native TipTap command. `action` matches the
+ * data-action strings dispatched by core/rawpane-markdown.js. Returns true if
+ * the action was handled here (table is handled by the caller's picker).
+ */
+export function runWysiwygCommand(action) {
+  if (!editor) return false;
+  const c = editor.chain().focus();
+  switch (action) {
+    case 'bold': c.toggleBold().run(); return true;
+    case 'italic': c.toggleItalic().run(); return true;
+    case 'strikethrough': c.toggleStrike().run(); return true;
+    case 'inline-code': c.toggleCode().run(); return true;
+    case 'code-block': c.toggleCodeBlock().run(); return true;
+    case 'blockquote': c.toggleBlockquote().run(); return true;
+    case 'bullet-list': c.toggleBulletList().run(); return true;
+    case 'ordered-list': c.toggleOrderedList().run(); return true;
+    case 'heading': c.toggleHeading({ level: 1 }).run(); return true;
+    default: return false;
+  }
+}
+
+/** Insert a markdown fragment (e.g. a generated table) at the cursor. */
+export function insertWysiwygMarkdown(md) {
+  if (!editor) return;
+  editor.chain().focus().insertContent(md, { contentType: 'markdown' }).run();
 }

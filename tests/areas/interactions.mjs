@@ -87,7 +87,7 @@ export async function run(ctx) {
   });
 
   // ── Markdown WYSIWYG toggle ──
-  // The WYSIWYG button is present and clicking it mounts EasyMDE in place of Monaco.
+  // The WYSIWYG button is present and clicking it mounts the TipTap editor in place of Monaco.
   const wysiwygBtn = await page.$('#wysiwygBtn');
   if (wysiwygBtn) pass('Markdown tools: WYSIWYG button present'); else fail('WYSIWYG button missing');
   // Re-create a markdown file and click WYSIWYG
@@ -96,19 +96,30 @@ export async function run(ctx) {
   page.once('dialog', (d) => d.accept('notes.md'));
   await page.click('#newFileBtn');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
-  await page.evaluate(() => window.__fv.state.rawview.setValue('# Hello WYSIWYG'));
+  // A rich source exercising the round-trip: heading, emphasis, list, code, link.
+  const srcMd = '# Hello WYSIWYG\n\nThis is **bold** and *italic*.\n\n- one\n- two\n\n[link](https://example.com)';
+  await page.evaluate((md) => window.__fv.state.rawview.setValue(md), srcMd);
   // #textUtils can shadow #wysiwygBtn in headless; use JS click to bypass pointer-event interception.
   await page.evaluate(() => document.getElementById('wysiwygBtn').click());
-  // Wait for attached (not 'visible' — the EasyMDE side-by-side container can report
-  // zero-size transiently under suite load; the assertion below verifies it's really shown).
-  await page.waitForSelector('.EasyMDEContainer', { state: 'attached', timeout: 15000 });
-  const wysiwygActive = await page.evaluate(() => !document.querySelector('.EasyMDEContainer')?.hidden);
-  if (wysiwygActive) pass('WYSIWYG: EasyMDE mounts when toggle clicked'); else fail('EasyMDE not mounted');
-  // Toggling back should restore Monaco (JS click — same overlap-immunity as above)
+  // TipTap renders a contenteditable .ProseMirror inside the .tiptap-host container.
+  await page.waitForSelector('#editor .tiptap-host .ProseMirror', { state: 'attached', timeout: 15000 });
+  const wysiwygActive = await page.evaluate(() => !!document.querySelector('#editor .tiptap-host .ProseMirror'));
+  if (wysiwygActive) pass('WYSIWYG: TipTap mounts when toggle clicked'); else fail('TipTap not mounted');
+  // The parsed rich doc must render the heading as an <h1> (markdown → model).
+  const headingRendered = await page.evaluate(() =>
+    document.querySelector('#editor .tiptap-host .ProseMirror h1')?.textContent?.includes('Hello WYSIWYG'));
+  if (headingRendered) pass('WYSIWYG: markdown parsed to rich doc (h1)'); else fail('TipTap did not parse markdown heading');
+  // Toggling back should restore Monaco AND faithfully serialize back to markdown.
   await page.evaluate(() => document.getElementById('wysiwygBtn').click());
   await page.waitForSelector('#editor .monaco-editor', { state: 'attached', timeout: 15000 });
   const monacoBack = await page.$('#editor .monaco-editor');
   if (monacoBack) pass('WYSIWYG: toggling off restores Monaco editor'); else fail('Monaco not restored after WYSIWYG off');
+  const roundTripped = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  const rtOk = /# Hello WYSIWYG/.test(roundTripped) && /\*\*bold\*\*/.test(roundTripped)
+    && /\*italic\*/.test(roundTripped) && /- one/.test(roundTripped)
+    && /\[link\]\(https:\/\/example\.com\)/.test(roundTripped);
+  if (rtOk) pass('WYSIWYG: markdown round-trips through TipTap');
+  else fail('WYSIWYG round-trip lost fidelity: ' + JSON.stringify(roundTripped));
   await page.evaluate(() => {
     window.__fv.state.downloadedSinceEdit = true;
     window.__fv.state.sessionEdits.clear();
