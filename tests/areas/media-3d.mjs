@@ -248,8 +248,14 @@ export async function run(ctx) {
   const ctlCount = await page.$$eval('#previewHost .asx-panel .asx-ctl-input', (els) => els.length);
   if (ctlCount > 15) pass('ASCII studio mounts with full control panel (' + ctlCount + ' controls)'); else fail('ascii controls: ' + ctlCount);
   // Settings layout: open groups use a responsive grid (aligned columns), not a flat stack.
-  const groupDisplay = await page.$eval('#previewHost .asx-panel .asx-group[open]', (el) => getComputedStyle(el).display);
-  if (groupDisplay === 'grid') pass('ASCII settings groups use a flex grid layout'); else fail('settings group display: ' + groupDisplay);
+  // Settings use a row layout: label and its control sit on the SAME row (the
+  // .asx-ctl is a 2-col grid), not stacked label-above-control.
+  const ctlRow = await page.$eval('#previewHost .asx-panel .asx-ctl', (el) => {
+    const name = el.querySelector('.asx-ctl-name').getBoundingClientRect();
+    const row = el.querySelector('.asx-ctl-row').getBoundingClientRect();
+    return { display: getComputedStyle(el).display, sameRow: Math.abs(name.top - row.top) < 14, sideBySide: row.left > name.left + 20 };
+  });
+  if (ctlRow.display === 'grid' && ctlRow.sameRow && ctlRow.sideBySide) pass('ASCII settings use an aligned row layout (label | control)'); else fail('settings row layout: ' + JSON.stringify(ctlRow));
   // Settings is a toggleable drawer — the ⚙ button hides/shows the panel.
   const panelVisInit = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display !== 'none');
   await page.click('#previewHost .asx-settings-btn');
@@ -267,13 +273,19 @@ export async function run(ctx) {
   // the image-studio toolbar's buttons hide so they don't drive the wrong engine.
   await page.click('#previewHost .asx-cam');
   await page.waitForSelector('#previewHost .asx-cam-host .cam-out', { timeout: 8000 });
-  const camUi = await page.evaluate(() => ({
-    transforms: document.querySelectorAll('#previewHost .asx-cam-host .cam-rot-l, .cam-rot-r, .cam-flip-h, .cam-flip-v').length,
-    barScoped: document.querySelector('#previewHost .asx-bar').classList.contains('asx-cam-on'),
-    imageRotHidden: getComputedStyle(document.querySelector('#previewHost .asx-bar .asx-rot-l')).display === 'none',
-    backVisible: getComputedStyle(document.querySelector('#previewHost .asx-bar .asx-cam')).display !== 'none',
-  }));
+  const camUi = await page.evaluate(() => {
+    const sb = document.querySelector('#previewHost .cam-start');
+    return {
+      transforms: document.querySelectorAll('#previewHost .asx-cam-host .cam-rot-l, .cam-rot-r, .cam-flip-h, .cam-flip-v').length,
+      barScoped: document.querySelector('#previewHost .asx-bar').classList.contains('asx-cam-on'),
+      imageRotHidden: getComputedStyle(document.querySelector('#previewHost .asx-bar .asx-rot-l')).display === 'none',
+      backVisible: getComputedStyle(document.querySelector('#previewHost .asx-bar .asx-cam')).display !== 'none',
+      startFlash: sb.classList.contains('cam-flash'),
+      startPlay: /▶/.test(sb.textContent),
+    };
+  });
   if (camUi.transforms === 4 && camUi.barScoped && camUi.imageRotHidden && camUi.backVisible) pass('camera mode: own flip/rotate toolbar + image buttons hidden'); else fail('camera ui: ' + JSON.stringify(camUi));
+  if (camUi.startFlash && camUi.startPlay) pass('camera Start button flashes + shows ▶ until started'); else fail('start button: ' + JSON.stringify({ startFlash: camUi.startFlash, startPlay: camUi.startPlay }));
   await page.click('#previewHost .asx-cam');   // back to image
   await page.waitForSelector('#previewHost .asx-out', { timeout: 5000 });
 

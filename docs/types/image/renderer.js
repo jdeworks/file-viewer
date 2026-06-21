@@ -346,6 +346,7 @@ export async function render(intake, ctx = {}) {
       });
     } else {
       host._ss?.stop();
+      asciiStudio?.stopCamera?.();   // leaving ASCII view → release the webcam
     }
   }
 
@@ -1169,5 +1170,5 @@ export async function render(intake, ctx = {}) {
     });
   }
 
-  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
 }

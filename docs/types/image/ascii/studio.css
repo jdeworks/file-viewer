@@ -38,20 +38,19 @@
 .asx-panel { width: clamp(300px, 40%, 520px); flex: none; display: none; flex-direction: column; gap: 8px; overflow: auto; }
 .asx-root.asx-settings-open .asx-panel { display: flex; }
 .asx-group { border: 1px solid #2a2a2a; border-radius: 6px; padding: 0 10px; }
-/* An open group lays its controls out as a responsive flex grid — it fills the
-   panel width with as many ~150px columns as fit, so controls aren't a tall
-   single-column stack and labels + sliders align in tidy columns. */
-.asx-group[open] { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 2px 16px; padding-bottom: 10px; align-items: start; }
-.asx-group > summary { grid-column: 1 / -1; }
+.asx-group[open] { padding-bottom: 10px; }
 .asx-group summary { font: 11px ui-monospace, monospace; color: #9ab; text-transform: uppercase; letter-spacing: .06em;
   cursor: pointer; padding: 8px 0; list-style: none; user-select: none; }
 .asx-group summary::-webkit-details-marker { display: none; }
 .asx-group summary::before { content: '▸ '; color: #667; }
 .asx-group[open] summary::before { content: '▾ '; }
-.asx-ctl { display: flex; flex-direction: column; gap: 2px; margin: 5px 0; font-size: 12px; min-width: 0; }
+/* Each control is a single ROW: label on the left, the control (slider + value +
+   reset) on the right. Labels share a column so everything lines up. Same in the
+   image-studio panel and the camera settings overlay (same .asx-ctl class). */
+.asx-ctl { display: grid; grid-template-columns: minmax(84px, 42%) 1fr; align-items: center;
+  gap: 2px 10px; margin: 6px 0; font-size: 12px; min-width: 0; }
 .asx-ctl-name { color: #cfcfcf; }
-.asx-ctl-row { display: flex; align-items: center; gap: 7px; }
+.asx-ctl-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .asx-ctl-input { flex: 1; min-width: 0; }
 .asx-ctl-input[type="checkbox"], .asx-ctl-input[type="color"] { flex: 0 0 auto; }
 .asx-ctl-input[type="color"] { width: 36px; height: 24px; padding: 0; }
@@ -69,6 +68,11 @@
 .asx-cam .cam-stats { color: #8f8; font: 12px ui-monospace, monospace; margin-left: auto; }
 .asx-cam .cam-audio-lbl { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #cfcfcf; }
 .asx-cam .cam-rec.active { color: #ff5555; border-color: #aa3333; }
+/* Pulse the Start button until the camera is started, so it's obvious the feed
+   needs a tap to begin (camera can't auto-start — it needs a user gesture). */
+@keyframes asx-cam-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(106,176,255,.55); } 50% { box-shadow: 0 0 0 5px rgba(106,176,255,0); } }
+.asx-cam .cam-flash { animation: asx-cam-pulse 1.2s ease-out infinite; border-color: #3a5a8a; color: #6ab0ff; }
+@media (prefers-reduced-motion: reduce) { .asx-cam .cam-flash { animation: none; } }
 .asx-cam-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex;
   align-items: center; justify-content: center; padding: 12px; background: #000; }
 /* width/height are set by applyFit() so the feed fills the stage (contain); the

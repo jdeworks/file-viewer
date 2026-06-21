@@ -173,7 +173,15 @@ export function mountAsciiStudio(host, opts = {}) {
   q('.asx-reset-all').addEventListener('click', () => resetKeys(Object.keys(engine.options)));
   function resetKeys(keys) {
     const defs = defaultOptions();
-    keys.forEach((k) => { if (k in defs) controls.setValue(k, defs[k]); });
+    let transformReset = false;
+    keys.forEach((k) => {
+      if (!(k in defs)) return;
+      // rotate/flip live on the toolbar, not in the control panel, so setValue
+      // can't reach them — reset directly + regrab (Reset all must undo a rotate).
+      if (k === 'rotate' || k === 'flipH' || k === 'flipV') { engine.options[k] = defs[k]; transformReset = true; }
+      else controls.setValue(k, defs[k]);
+    });
+    if (transformReset) engine.regrab();
   }
 
   // ── webcam easter egg ── the 📷 button swaps in the live-camera consumer.
@@ -181,14 +189,15 @@ export function mountAsciiStudio(host, opts = {}) {
   const body = q('.asx-body');
   const bar = q('.asx-bar');
   let webcam = null;
+  function closeCamera() {
+    if (!webcam) return;
+    webcam.destroy(); webcam = null;   // stops the MediaStream tracks
+    camHost.hidden = true; body.hidden = false;
+    bar.classList.remove('asx-cam-on');
+    q('.asx-cam').textContent = '📷 Camera';
+  }
   q('.asx-cam').addEventListener('click', async () => {
-    if (webcam) {
-      webcam.destroy(); webcam = null;
-      camHost.hidden = true; body.hidden = false;
-      bar.classList.remove('asx-cam-on');
-      q('.asx-cam').textContent = '📷 Camera';
-      return;
-    }
+    if (webcam) { closeCamera(); return; }
     body.hidden = true; camHost.hidden = false;
     // Camera has its OWN toolbar (incl. its own transforms/exports that act on the
     // live frame) — hide the image-studio toolbar buttons so they don't clutter or
@@ -224,6 +233,7 @@ export function mountAsciiStudio(host, opts = {}) {
     engine,
     setImage,
     isCameraActive: () => !!webcam,
+    stopCamera: closeCamera,
     destroy() { ro.disconnect(); webcam?.destroy(); host.classList.remove('asx-root'); host.innerHTML = ''; },
   };
 }

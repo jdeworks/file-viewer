@@ -22,7 +22,7 @@ export function mountAsciiWebcam(host, opts = {}) {
   host.innerHTML = `
     <div class="asx-cam">
       <div class="asx-bar">
-        ${BTN('cam-start', 'Start camera', 'Start the webcam')}
+        ${BTN('cam-start cam-flash', '▶ Start camera', 'Start the webcam')}
         ${BTN('cam-pause', '⏸ Pause', 'Freeze the current frame')}
         ${BTN('cam-rec', '● Record', 'Record the raw webcam to a video (max 2 min)')}
         <label class="cam-audio-lbl" title="Include microphone audio in the recording"><input type="checkbox" class="cam-audio"> Audio</label>
@@ -77,6 +77,10 @@ export function mountAsciiWebcam(host, opts = {}) {
     const scale = Math.min(aw / cw, ah / ch) * z;
     out.style.width = Math.max(1, Math.round(cw * scale)) + 'px';
     out.style.height = Math.max(1, Math.round(ch * scale)) + 'px';
+    // When the glyph canvas is bigger than its display box (high column counts),
+    // nearest-neighbour downscaling drops whole glyph rows → black lines. Smooth
+    // when shrinking; keep crisp pixels only when scaling up.
+    out.style.imageRendering = scale < 1 ? 'auto' : 'pixelated';
   }
 
   function renderOnce() {
@@ -128,14 +132,14 @@ export function mountAsciiWebcam(host, opts = {}) {
     await video.play();
     engine.setSource(video);
     running = true; paused = false;
-    q('.cam-start').textContent = '⏹ Stop';
+    const sb = q('.cam-start'); sb.textContent = '⏹ Stop'; sb.classList.remove('cam-flash');
     if (video.requestVideoFrameCallback) loopRVFC(); else requestAnimationFrame(loopRAF);
   }
   function stop() {
     running = false; paused = false;
     if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
     video.srcObject = null;
-    q('.cam-start').textContent = 'Start camera';
+    q('.cam-start').textContent = '▶ Start camera';
     q('.cam-pause').textContent = '⏸ Pause';
   }
 
@@ -233,7 +237,12 @@ export function mountAsciiWebcam(host, opts = {}) {
   });
   q('.cam-reset').addEventListener('click', () => {
     const defs = defaultOptions();
-    Object.keys(engine.options).forEach((k) => { if (k in defs) controls.setValue(k, defs[k]); });
+    Object.keys(engine.options).forEach((k) => {
+      // rotate/flip aren't in the control panel (toolbar buttons) — reset directly.
+      if (k === 'rotate' || k === 'flipH' || k === 'flipV') engine.options[k] = defs[k];
+      else if (k in defs) controls.setValue(k, defs[k]);
+    });
+    if (engine.grabFrame()) { engine.markDirty('processedImage'); renderOnce(); }
   });
 
   return { engine, start, stop, isRunning: () => running,
