@@ -1,7 +1,7 @@
 # Editor Roadmap — QIF (Quicken Interchange Format)
 
 ## Current state
-Viewer parses QIF account type header (`!Type:`), splits records on `^`, and surfaces date, payee, amount, memo, cleared flag, category, and cheque number. Shows an account summary card (income total, expense total, date range) and a transaction table limited to 20 rows with an overflow notice. Category tallies are computed but not yet displayed visually.
+Viewer parses QIF account type header (`!Type:`), splits records on `^`, and surfaces date, payee, amount, memo, cleared flag, category, and cheque number. Shows an account summary card (income total, expense total, date range) and a full transaction table (date / payee / amount / category — all rows, no cap). An **Export CSV** button is wired into the transactions section header; clicking it downloads a RFC-4180-escaped CSV (date, payee, amount, category, memo) named from the source file. Category tallies are not displayed visually.
 
 ## Viewer enhancements (no write-back needed)
 - Running balance chart — line chart (Chart.js, pre-bundled) of cumulative balance over time; QIF amounts use comma-formatted strings so parse with `.replace(/,/g,'')` — S
@@ -16,7 +16,7 @@ Viewer parses QIF account type header (`!Type:`), splits records on `^`, and sur
 - Edit payee and memo — inline text inputs per row; regenerate QIF on save using the existing record structure — M — no lib
 - Categorize transactions — dropdown or text field on each row for the `L` field; serialize back to QIF — M — no lib
 - Export as OFX — convert QIF records to OFX 1.x SGML (reuse the OFX type's `parseOfx` for reference structure); download as `.ofx` — L — no lib, custom serializer
-- Export as CSV — flat export of all fields (date, payee, amount, memo, category, cleared, number) as RFC 4180 CSV — S — no lib
+- ✅ SHIPPED — Export as CSV — flat export of all fields (date, payee, amount, memo, category, cleared, number) as RFC 4180 CSV — S — no lib *(shipped; current export covers date/payee/amount/category/memo — cleared & number not yet included)*
 - Add new transaction — form at the bottom of the table; appends a new `^`-terminated record block — M
 
 ## Full write-back editing (companion required)

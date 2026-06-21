@@ -4,8 +4,8 @@
 
 - Read-only table preview via PapaParse + shared `core/tabular.js` renderer (renderer.js); delimiter auto-detection (comma/semicolon/tab/pipe) with settings override; first-row-header toggle
 - Chart.js quick chart (renderer.js): auto-detects numeric columns, renders a line chart (filled if single series); Table / Chart tab bar; up to 100 rows; 8 series cap
-- Table editor (table-editor.js, ~6 KB): RFC-4180 quoted field parser, contenteditable cells, Tab/Enter navigation, +Row/+Col toolbar, right-click row/column delete, `getValue()` → CSV text, save → blob download
-- Exports: not yet a dedicated exports.js (raw download through core)
+- Table editor (table-editor.js, ~6 KB): RFC-4180 quoted field parser, contenteditable cells, Tab/Enter navigation, +Row/+Col toolbar, right-click row/column delete, `getValue()` → CSV text, save → blob download. Renderer toolbar has an "Export CSV" button that downloads the current (edited) table state
+- Exports: dedicated `exports.js` (loadExports hook) ships **Download as JSON** (dependency-free) and **Download as Excel (.xlsx)** (vendored SheetJS `xlsx.full.min.js`, lazy-loaded on use)
 
 ## Viewer enhancements (no write-back needed)
 
@@ -19,7 +19,7 @@
 ## In-browser editing (download-on-save)
 
 - **Spreadsheet editor** — the existing TableEditor is functional; enhancements: freeze header row on scroll, resize column widths by dragging the header border, fill-down (Ctrl+D), undo/redo via a small command stack — M
-- **Export to XLSX** — "Download as XLSX" button using SheetJS (`xlsx` npm package, pre-bundle `xlsx.mini.min.js`); converts the 2-D array from TableEditor.getValue() via `XLSX.utils.aoa_to_sheet` → `XLSX.writeFile` — M — lib: `SheetJS/xlsx` (~700 KB minified; lazy-load)
+- ✅ SHIPPED — **Export to XLSX** — "Download as XLSX" button using SheetJS (`xlsx` npm package, pre-bundle `xlsx.mini.min.js`); converts the 2-D array from TableEditor.getValue() via `XLSX.utils.aoa_to_sheet` → `XLSX.writeFile` — M — lib: `SheetJS/xlsx` (~700 KB minified; lazy-load). Implemented in `exports.js` (alongside JSON export); uses vendored `xlsx.full.min.js`, lazy-loaded on click
 - **Find & replace** — Ctrl+H opens a modal; replaces cell values matching a string or regex across all cells; previews matches before commit — M
 - **Paste from clipboard** — detect TSV or CSV clipboard content on Ctrl+V and insert rows/columns at the active cell rather than replacing the entire cell text — M
 - **Column reorder** — drag column headers to reorder; rearranges both header and all data rows in the backing array — M

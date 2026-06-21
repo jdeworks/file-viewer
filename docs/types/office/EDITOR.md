@@ -8,13 +8,18 @@
 |--------|----------|---------|---------------|
 | DOCX | mammoth.js → sanitized HTML → sandboxed iframe | mammoth (vendored) | none |
 | XLSX | SheetJS → rows → shared tabular renderer (multi-sheet tabs) | SheetJS xlsx.full.min (vendored) | none (SheetJS can write) |
-| PPTX | pptx-preview renders each slide to canvas → PNG dataURL | pptx-preview (vendored) | none |
-| ODF (.odt/.odp) | JSZip → content.xml → custom XML walker → sanitized HTML | JSZip + DOMPurify (vendored) | none |
-| iWork (.pages/.numbers/.keynote) | JSZip thumbnail + Snappy/IWA protobuf text extraction | JSZip + SnappyJS (vendored) | none (proprietary) |
+| PPTX | pptx-preview renders each slide to canvas → PNG dataURL (cap 50 slides) | pptxviewjs + Chart.js + JSZip (vendored) | none |
+| ODF (.odt/.odp) | JSZip → content.xml → custom XML walker (headings, lists, tables, images, ODP slides) → sanitized HTML; pictures inlined as data: URLs | JSZip + DOMPurify (vendored) | none |
+| iWork (.pages/.numbers/.keynote) | JSZip thumbnail (multi-path fallback) + Snappy/IWA protobuf text extraction (scans Document.iwa + up to 3 more IWA files, dedup-filtered, word count); Thumbnail / Text-content tab UI | JSZip + SnappyJS (vendored) | none (proprietary) |
 
 All renderers are read-only, return `{ bodyHtml }` or `{ parentNode }`, run in the
 parent (trusted), and display in a sandboxed iframe or the parent DOM. Security
 model: zero off-origin at runtime; all vendor libs pre-bundled.
+
+**Shipped beyond the table:** XLSX exposes an Export menu (`loadExports`) that downloads
+the first sheet as CSV or JSON, plus "all sheets as JSON" for multi-sheet workbooks
+(`xlsx/exports.js`). XLSX has a `firstRowHeader` viewer setting. DOCX and XLSX expose a
+`screenshot` capability.
 
 ---
 
@@ -129,8 +134,9 @@ Key properties of this pattern:
   delta tracks `renameSheet`, `addSheet`, `deleteSheet` — S
 - **Basic cell formatting** — Bold, font size, fill color via SheetJS cell style
   object (`s.font`, `s.fill`); toolbar with color picker — M
-- **CSV / XLSX export choice** — Export button offers XLSX (SheetJS) or CSV
-  (plain text) — S
+- ✅ SHIPPED (partial) — **CSV / XLSX export choice** — Export button offers XLSX (SheetJS) or CSV
+  (plain text) — S. *CSV and JSON export are live via `xlsx/exports.js` (`loadExports`); XLSX
+  write-back is not yet wired (would need accumulated cell patches → `XLSX.writeFile`).*
 
 ### Full write-back editing (companion required)
 
@@ -225,15 +231,19 @@ editing is not feasible. Scope is limited to improved extraction and PDF export.
 
 ### Viewer enhancements (no write-back needed)
 
-- **Improved text extraction** — Extend the current IWA protobuf walker to scan
+- ✅ SHIPPED (partial) — **Improved text extraction** — Extend the current IWA protobuf walker to scan
   all IWA files in the archive (not just the first 4); deduplicate across
-  field IDs to reduce noise — M
+  field IDs to reduce noise — M. *The renderer already scans `Document.iwa` plus up to 3 more IWA
+  files and dedup-filters the strings (drops UUIDs/identifiers); the remaining work is scanning
+  ALL IWA files, not just the first four, and reporting a word count (word count is already shown).*
 - **Table detection** — Heuristically identify repeated-field-number runs in the
   protobuf and render them as an HTML table — L
 - **Numbers cell extraction** — .numbers archives contain per-sheet IWA files; walk
   each and reconstruct a row/column grid from numeric fields — L
-- **Better thumbnail fallback** — Try `QuickLook/Thumbnail.png`, then any `.jpg`/`.png`
-  at the archive root before showing "no thumbnail" — S
+- ✅ SHIPPED (partial) — **Better thumbnail fallback** — Try `QuickLook/Thumbnail.png`, then any `.jpg`/`.png`
+  at the archive root before showing "no thumbnail" — S. *Renderer already tries `preview.jpg`,
+  `preview-web.jpg`, `QuickLook/Thumbnail.jpg`, `preview.png` (case-insensitive) before the
+  "no thumbnail" message; only the "any image at archive root" final fallback is unshipped.*
 
 ### In-browser editing (download-on-save)
 

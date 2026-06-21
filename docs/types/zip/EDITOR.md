@@ -1,10 +1,10 @@
 # Editor Roadmap — ZIP Archive
 
 ## Current state
-Rich ZIP viewer: reads the central directory (no full decompression), shows name, uncompressed size, compressed size, date, and compression ratio. Entries are clickable — JSZip extracts individual files and routes them through type detection (`openEntry` + `intakeFromBytes`). Handles password-protected ZIPs gracefully (password prompt UI, honest "JSZip cannot decrypt" message, lock icons per entry). Partially encrypted ZIPs show a mixed banner. Exposes `archiveTree` for the parent to build a tree view.
+Rich ZIP viewer: reads the central directory (no full decompression), shows name, uncompressed size, compressed size, date, and compression ratio. Entries are clickable — JSZip extracts individual files and routes them through type detection (`openEntry` + `intakeFromBytes`). Handles password-protected ZIPs gracefully (password prompt UI, honest "JSZip cannot decrypt" message, lock icons per entry). Partially encrypted ZIPs show a mixed banner. Exposes `archiveTree` for the parent to build a tree view. Export (exports.js): "Export file listing as CSV" downloads a CSV of every entry (name, size, compressed size, date modified, comment).
 
 ## Viewer enhancements (no write-back needed)
-- **Recursive folder tree view** — render the flat entry list as a collapsible folder tree (parse path separators). Currently the listing is flat; a tree would match user expectation for nested ZIPs. — M
+- **Recursive folder tree view** — render the flat entry list as a collapsible folder tree (parse path separators). The renderer's own table listing is still flat, but the renderer already exposes `archiveTree` (entries with name/size/dir/encrypted) so the **parent app builds a folder tree from that data**; remaining work is an in-renderer tree fallback for when the parent host is absent. — M
 - **File search / filter** — text input above the table; filters the rendered rows by filename substring in real time. — S
 - **Size treemap** — proportional rectangle treemap of uncompressed entry sizes (d3-hierarchy or hand-rolled). Useful for inspecting large ZIPs. — M — d3-hierarchy
 - **Sort by column** — click Name / Size / Packed / Date column headers to sort. — S

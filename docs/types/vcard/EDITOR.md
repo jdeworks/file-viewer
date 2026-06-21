@@ -2,11 +2,11 @@
 
 ## Current state
 
-Renderer parses RFC 6350 / 3.0 / 2.1 via `vcardlib.js` (pure client-side): line unfolding, param parsing (including 2.1 flag-style TYPE), QUOTED-PRINTABLE decode, and contact extraction. Displays one card per contact: FN, ORG/title, emails (mailto: links), phones (tel: links), addresses (text), URLs, birthday, note. Photo presence is detected (`hasPhoto: true`) but not rendered. Multi-card `.vcf` files show all cards stacked. No QR code, no map embed, no editing.
+Renderer (parentNode mode) parses RFC 6350 / 3.0 / 2.1 via `vcardlib.js` (pure client-side): line unfolding, param parsing (including 2.1 flag-style TYPE), QUOTED-PRINTABLE decode, and contact extraction. Displays one card per contact: FN, ORG/title, emails (mailto: links), phones (tel: links), addresses (text), URLs, birthday, note. **Per-card QR code** — each card has a "QR" toggle button that lazily loads the vendored `qrcodejs/qrcode.js` and renders a 160×160 QR encoding a minimal vCard 3.0 block (scan to import the contact). Photo presence is detected (`hasPhoto: true`) but not rendered. Multi-card `.vcf` files show all cards stacked. No map embed, no editing.
 
 ## Viewer enhancements (no write-back needed)
 
-- **QR code of vCard data** — For each card, render a QR code encoding the full vCard text block (BEGIN:VCARD … END:VCARD). Use **qrcode.js** (`davidshimjs/qrcodejs`, MIT, ~20 KB, no dependency). Place below the card with a toggle button. Scan on phone to import contact. — S — lib: qrcode.js (pre-bundle to `docs/vendor/qrcode.min.js`)
+- ✅ SHIPPED — **QR code of vCard data** — For each card, render a QR code encoding the full vCard text block (BEGIN:VCARD … END:VCARD). Use **qrcode.js** (`davidshimjs/qrcodejs`, MIT, ~20 KB, no dependency). Place below the card with a toggle button. Scan on phone to import contact. — S — lib: qrcode.js (pre-bundle to `docs/vendor/qrcode.min.js`). *Implemented via the vendored `qrcodejs/qrcode.js` (lazy-loaded on first button click); encodes a minimal vCard 3.0 block rather than the verbatim source bytes.*
 
 - **Static OpenStreetMap embed** — If a card has at least one ADR, construct a static map tile URL pointing at `tile.openstreetmap.org` using the address string geocoded client-side via the **Nominatim** API (`https://nominatim.openstreetmap.org/search?q=…&format=json`). Render the nearest tile as an `<img>`. Note: Nominatim is an off-origin request; only enable behind a user-triggered "Show map" button so the zero-off-origin-at-rest policy is respected for passive render. — M — lib: none; plain `fetch` to Nominatim + OSM tile URL construction
 
@@ -36,4 +36,4 @@ Renderer parses RFC 6350 / 3.0 / 2.1 via `vcardlib.js` (pure client-side): line 
 
 ## Shared toolbar / modular note
 
-qrcode.js must be pre-bundled to `docs/vendor/qrcode.min.js` (consistent with zero-off-origin-at-runtime). The RFC 6350 serialiser (`vcf-write.js`) is a prerequisite for all in-browser editing features — build and test it against round-trip fixtures first. Nominatim geocoding is inherently off-origin; gate it strictly behind an explicit user gesture and document the privacy implication (address string leaves the browser). The batch list view and inline editing are independent tracks that can be built in parallel.
+qrcode.js is already vendored (at `docs/vendor/qrcodejs/qrcode.js`) and lazy-loaded by the QR button (consistent with zero-off-origin-at-runtime). The RFC 6350 serialiser (`vcf-write.js`) is a prerequisite for all in-browser editing features — build and test it against round-trip fixtures first. Nominatim geocoding is inherently off-origin; gate it strictly behind an explicit user gesture and document the privacy implication (address string leaves the browser). The batch list view and inline editing are independent tracks that can be built in parallel.

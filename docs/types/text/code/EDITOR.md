@@ -2,14 +2,14 @@
 
 ## Current state
 
-Read-only Monaco Editor view is already wired via `syntaxLanguage()` in `index.js` — Monaco 0.52.2 is vendored at `docs/vendor/monaco/`. The `capabilities.diff = true` flag enables the built-in Monaco diff view. Metadata panel extracts LOC, complexity, TODO markers, imports, and largest/most-complex functions via `metrics.js`.
+Read-only Monaco Editor view is already wired via `syntaxLanguage()` in `index.js` — Monaco 0.52.2 is vendored at `docs/vendor/monaco/`. The `capabilities.diff = true` flag enables the built-in Monaco diff view. Metadata panel extracts LOC, complexity, TODO markers, imports, and largest/most-complex functions via `metrics.js`. A Monaco **CodeLens provider** (`codelens.js`, registered idempotently from `core/app.js` when Monaco warms up) shows `ƒ name · N LOC · complexity M` above each function for the supported code languages. **Minimap** and **sticky scroll** are user-toggleable Monaco options (settings-schema.js `monaco-extended` category, both default off).
 
 ## Viewer enhancements (no write-back needed)
 
-- **Minimap + sticky scroll** — enable Monaco `minimap.enabled` and `stickyScroll.enabled` options in the editor mount so large files get a birds-eye scrollbar and scope breadcrumbs — S
+- ✅ SHIPPED — **Minimap + sticky scroll** — enable Monaco `minimap.enabled` and `stickyScroll.enabled` options in the editor mount so large files get a birds-eye scrollbar and scope breadcrumbs — S (exposed as user-toggleable `monaco-extended` settings; both default off)
 - **Symbol outline panel** — use Monaco's built-in `DocumentSymbolProvider` (already available for JS/TS/Python via language workers) to render a collapsible outline sidebar: classes → methods → functions — M
 - **Go-to-definition stub** — wire Monaco's peek-definition action; for file-local symbols resolve within the single file; show "external — not available offline" for imports — M
-- **Codelens badges** — `codelens.js` already exists; surface complexity score and LOC above each function using Monaco's `CodeLensProvider` API — M
+- ✅ SHIPPED — **Codelens badges** — `codelens.js` already exists; surface complexity score and LOC above each function using Monaco's `CodeLensProvider` API — M (`registerCodeMetrics()` registers the provider from `core/app.js`; renders `ƒ name · N LOC · complexity M` per function)
 - **Inline TODO highlighting** — register a Monaco `DocumentHighlightProvider` that marks `TODO`/`FIXME`/`XXX` and lists them in a gutter widget — S
 - **Heatmap gutter** — colour the gutter by cyclomatic complexity per function (green → red) using Monaco's line-decoration API — M
 

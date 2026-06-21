@@ -4,8 +4,8 @@
 
 - Parser (renderer.js `parseIni`): tolerant of `=` and `:` separators, `#` and `;` comments, quoted values; produces `[{ name, pairs: [{key, value}] }]` — nameless section for pre-header keys; `[section]` headers group subsequent pairs
 - Viewer renders via template system (`section.html` / `row.html` + `core/template.js`): section header + key-value table rows, HTML-escaped via `{{slot}}`
-- Form editor (form-editor.js): IniFormEditor class with collapsible sections, editable key and value text inputs, add/delete row per section, add new section, reorder sections, serialize back to `key = value` format; save → blob download
-- No exports.js; raw download through core
+- Form editor class exists (form-editor.js): IniFormEditor with collapsible sections, editable key and value text inputs, add/delete row per section, add/delete section, inline section rename, serialize back to `key = value` format. NOTE: this class is present but NOT yet wired into renderer.js — the renderer ships read-only tables only; the form editor is not surfaced. (It does NOT support reorder-sections-by-drag, despite an older roadmap note.)
+- ✅ SHIPPED — Export to JSON: `exports.js` (`loadExports` in index.js) converts `[{ name, pairs }]` to a nested JSON object (global keys under `global`, sections as objects) and downloads. TOML export is NOT shipped.
 
 ## Viewer enhancements (no write-back needed)
 
@@ -21,7 +21,7 @@
 - **Comment preservation** — current serialize (serializeIni) strips all `#`/`;` comments; add a comment field per key (stored as `{ key, value, comment }`) and serialize as `key = value  # comment` — M
 - **Add / remove sections** — the form editor already supports this; surface more prominently in the toolbar as "+ Section" button — S
 - **Reorder sections by drag** — drag section headers to reorder; serialize in the new order — M
-- **Export to JSON** — convert `[{ name, pairs }]` to a nested JSON object (`{ sectionName: { key: value } }`) and download — S
+- ✅ SHIPPED — **Export to JSON** — convert `[{ name, pairs }]` to a nested JSON object (`{ sectionName: { key: value } }`) and download — S (in exports.js; uses `global` for the nameless section)
 - **Export to TOML** — same mapping but serialize as TOML `[section]` blocks — S (hand-rolled serializer, no lib needed)
 - **Merge / diff two INI files** — drag a second file onto a diff panel; show added/removed/changed keys per section — M
 

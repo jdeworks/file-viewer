@@ -2,13 +2,14 @@
 
 ## Current state
 
-Five distinct sub-formats under `docs/types/ebook/`:
+Five viewable sub-formats under `docs/types/ebook/`, plus an LRF stub (six dirs total):
 
 **EPUB** — JSZip unpacks the container; epublib.js parses OPF/NCX/XHTML spine. One chapter at a
 time in `parentNode` mode (sandboxed iframe cannot reach blob: URLs). DOMPurify sanitization;
 resource refs rewritten to in-book blob: URLs so zero off-origin requests. Sidebar TOC, prev/next,
 reading prefs (font, size, theme, 1/2-column) persisted globally in localStorage. Per-file chapter
-+ scroll position persisted via core/persistence.js.
++ scroll position persisted via core/persistence.js. Arrow-key chapter navigation (←/→) on the
+content pane.
 
 **MOBI / AZW** — mobilib.js parses PalmDoc/MOBI container; `<img recindex="N">` rewritten to
 inline data: URLs. DOMPurify + bodyHtml iframe path. Toolbar for size, font, theme, line,
@@ -18,11 +19,16 @@ margin. DRM and HUFF/CDIC compression show a clear error. Read-only.
 DOMPurify + bodyHtml iframe. CSS-radio-button toolbar (no JS needed for basic prefs). Read-only.
 
 **DJVU** — djvu.js (RussCoder/djvujs) renders pages via canvas through a Blob-URL worker. Page
-navigation, zoom, lazy rendering. Read-only.
+navigation (prev/next + arrow/up-down keyboard), zoom select (50–200%), per-page on-demand render,
+**OCR "Text layer" toggle** (`getPage(n).getText()` → copyable `<pre>` pane). Page indicator
+"Page N / M". Read-only.
 
 **Comic / CBZ / CBR / CB7** — comiclib.js: CBZ via JSZip (always), CBR/CB7 via libarchive.wasm
-(opt-in `enableArchiveWasm`). Pages natural-sorted; displayed as lazy-loaded images. Spread mode
-toggle. Blob URLs revoked on teardown. Read-only.
+(opt-in `enableArchiveWasm`). Pages natural-sorted; displayed as lazy-loaded images in a vertical
+scroll with a total page count. Spread mode toggle. Blob URLs revoked on teardown. Read-only.
+
+**LRF (Sony BBeB)** — recognized but NOT rendered: shows a friendly "convert to EPUB/FB2/MOBI"
+note (proprietary compressed object stream needs a hand-rolled parser). Stub only.
 
 ## Viewer enhancements (no write-back needed)
 
@@ -48,8 +54,8 @@ toggle. Blob URLs revoked on teardown. Read-only.
   image above the first chapter. — S
 - **Two-column reading improvement** — Currently a CSS toggle (`epub-twocol`). Add a wide-screen
   auto-enable option that kicks in above a configurable viewport width (saved in prefs). — S
-- **Keyboard shortcuts** — Already have arrow-key chapter navigation; add Page Down / Page Up for
-  scrolling, `t` to toggle TOC, `f` to toggle font. — S
+- **Keyboard shortcuts** — Arrow-key chapter navigation already SHIPPED (←/→ on `.epub-content`).
+  Still to add: Page Down / Page Up for scrolling, `t` to toggle TOC, `f` to toggle font. — S
 
 ### Comic / CBZ
 - **Page counter + direct jump** — Show "Page N of M" in the info bar; add a number input or
@@ -61,8 +67,9 @@ toggle. Blob URLs revoked on teardown. Read-only.
   automatically render them full-width even in spread mode. — S
 
 ### DJVU
-- **OCR text layer** — djvu.js exposes `getText()` per page; display as a copyable overlay panel
-  alongside the canvas render. — M — djvu.js (already loaded)
+- ✅ SHIPPED — **OCR text layer** — djvu.js exposes `getText()` per page; display as a copyable overlay panel
+  alongside the canvas render. — M — djvu.js (already loaded)  *(Implemented: "Text layer" toolbar
+  button toggles a `.djvu-text-pane` showing `getPage(n).getText()`.)*
 - **Export current page as PNG** — `canvas.toBlob()` → download. — S
 
 ### MOBI / FB2

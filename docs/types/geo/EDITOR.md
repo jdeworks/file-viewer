@@ -14,6 +14,8 @@ Two distinct render paths live in `docs/types/geo/renderer.js`, both fully offli
 
 Both renderers return `{ bodyHtml, hadUnsafe: false }`.
 
+**Export (shipped)** — `exports.js` (wired via `loadExports` in `index.js`) offers a one-click format-conversion download: from a GPX file → "Download as GeoJSON"; from a GeoJSON file → "Download as GPX". Conversion is geometry-only (lossy on properties), reusing the shared `{points,lines,polygons}` model and `core/exports.js` `downloadBlob`.
+
 ---
 
 ## Viewer enhancements (no write-back needed)
@@ -52,9 +54,9 @@ Both renderers return `{ bodyHtml, hadUnsafe: false }`.
 
 - **Export as KML** — serialize the in-memory FeatureCollection to a KML document: wrap each feature in `<Placemark>`, map geometry types to their KML equivalents, write coordinates in `lon,lat,0` format; download as `.kml` — M
 
-- **Export as GeoJSON** — always available; serialize the current in-memory FeatureCollection (including any drawn or edited features) to pretty-printed GeoJSON and trigger a blob download — S
+- ✅ SHIPPED (geometry-only) — **Export as GeoJSON** — `exports.js` already serializes a GPX file's geometry to a downloadable GeoJSON FeatureCollection. Still to do: include in-browser-drawn/edited features and feature properties once editing lands.
 
-- **GPX export** — serialize GPX tracks and waypoints back to a `<gpx>` XML document; useful after editing waypoint names or trimming a track — M
+- ✅ SHIPPED (geometry-only) — **GPX export** — `exports.js` already serializes a GeoJSON file's geometry back to a `<gpx>` XML document (tracks + waypoints). Still to do: preserve waypoint names / track timestamps when round-tripping.
 
 - **WGS84 ↔ UTM coordinate toggle** — add a toolbar toggle that re-labels bounding box and tooltip coordinates between decimal degrees and UTM easting/northing; conversion is pure math, no library needed for a single zone — M
 

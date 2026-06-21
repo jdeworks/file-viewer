@@ -2,7 +2,7 @@
 
 ## Current state
 
-Structured viewer: parses `FROM` (multi-stage with `AS` aliases), `EXPOSE`, `ENV`, `LABEL`, `RUN` (first 8), and `USER`; detects `root` user and emits a security warning. Shows overview stats, stage list, env vars, labels, and run commands. Returns `{ bodyHtml }`. Monaco has a built-in `dockerfile` language grammar but is not yet wired.
+Structured viewer: parses `FROM` (multi-stage with `AS` aliases), `EXPOSE`, `ENV`, `LABEL`, `RUN` (first 8), and `USER`; detects `root` user and emits a security warning. Shows overview stats, stage list, env vars, labels, and run commands. Returns `{ bodyHtml }`. Monaco's built-in `dockerfile` grammar **is** wired (`syntaxLanguage: 'dockerfile'`), and the type opens in `preferredMode: 'split'` so the Monaco source view and the structured panel show side-by-side.
 
 ## Viewer enhancements (no write-back needed)
 
@@ -14,7 +14,7 @@ Structured viewer: parses `FROM` (multi-stage with `AS` aliases), `EXPOSE`, `ENV
 
 ## In-browser editing (download-on-save)
 
-- **Monaco editor mode** — mount Monaco with `language: 'dockerfile'` (built-in grammar, no extra setup); Ctrl+S triggers Blob download; live re-parse drives the structured panel in a split view — S (Monaco already vendored)
+- **Monaco editor mode** — mount Monaco with `language: 'dockerfile'` (built-in grammar, no extra setup); Ctrl+S triggers Blob download; live re-parse drives the structured panel in a split view — S (Monaco already vendored). *Partial: the Monaco `dockerfile` grammar is already mounted in a split view (`syntaxLanguage: 'dockerfile'` + `preferredMode: 'split'`); the read-only→editable + Ctrl+S download portion is still TODO.*
 - **Inline lint decorations** — wire the hadolint-subset rules as Monaco `IMarkerData` decorations so squiggles appear on the offending lines — M
 - **Snippet library** — Monaco `CompletionItemProvider` offering common Dockerfile patterns: multi-stage build template, `HEALTHCHECK`, `ARG`/`ENV` pairs, non-root user setup, `apt-get install` best-practice block — M
 - **Stage rename refactor** — toolbar action: rename an `AS` alias and automatically update all `COPY --from=` references in the file — M

@@ -8,7 +8,7 @@ Structured viewer in `parentNode` mode: custom line-by-line YAML parser (no exte
 - **kubectl command palette** — a small panel of one-click copy commands: `kubectl config use-context <name>`, `kubectl config get-clusters`, `kubectl config view --minify`, `kubectl cluster-info`. — S
 - **Redact credentials** — `client-certificate-data`, `client-key-data`, and `token` fields in the Users section are long base64 blobs; show a truncated redacted badge (e.g. `[cert: 2048 bytes]`) with a reveal button rather than the raw data. — M
 - **Server URL reachability indicator** — for each cluster server URL, attempt a `fetch` with a short timeout (within the zero-off-origin constraint this only works for same-origin or localhost servers); show a green/red dot. Only enable when the URL is localhost/127.0.0.1. — S
-- **Namespace column in Contexts table** — already parsed but verify it is displayed; if not, add a Namespace column with `—` for unset entries. — S
+- ✅ SHIPPED — **Namespace column in Contexts table** — the Contexts table (kubeconfig-tables.js) renders a Namespace column; unset entries show `default`. — S
 - **Merge kubeconfig** — accept a second `.kubeconfig` file via drop or file picker; merge clusters/contexts/users lists (dedup by name) and show a preview diff before download. — L
 
 ## In-browser editing (download-on-save)

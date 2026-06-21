@@ -3,6 +3,8 @@
 ## Current state
 Full-featured viewer: parses both SGML (OFX 1.x) and XML (OFX 2.x/QFX) modes. Shows account info card, ledger balance with date, and a paginated transaction table (date / type / amount / memo, capped at 200 rows, colour-coded positive/negative). Account numbers are masked to last 4 digits.
 
+A CSV export module (`exports.js`, `getExports` → "Export transactions as CSV", columns Date/Type/Amount/Name/Memo/FITID) is WRITTEN but NOT wired: `index.js` does not declare `loadExports`, so the export is unreachable from the UI. Wiring it (add `loadExports: () => import('./exports.js')` to index.js) would ship the "Export categorized CSV" item below with one line.
+
 ## Viewer enhancements (no write-back needed)
 - Running balance chart — draw a line chart with Chart.js (CDN-free, pre-bundle `chart.umd.min.js`) computing a cumulative running balance from oldest to newest transaction — S
 - Category pie chart — tally debit/credit transaction types (DEBIT, CREDIT, POS, ATM, etc.) and render a doughnut chart alongside the balance chart — S
