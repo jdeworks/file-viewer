@@ -47,6 +47,11 @@ whether the file opens in Monaco or the TipTap WYSIWYG by default.
 
 ## In-browser editing (download-on-save)
 
+> NOTE (2026-06-21): the WYSIWYG editor is now **TipTap v3 (ProseMirror)** — EasyMDE/CodeMirror has
+> been removed. The feature ideas below are still valid, but any "EasyMDE"/"CodeMirror addon"
+> implementation hints are superseded: implement these as TipTap extensions / ProseMirror plugins
+> (or against Monaco for the source-mode path) instead.
+
 - **Table editor UI** — When the cursor is inside a Markdown table (detected via CodeMirror token),
   open a spreadsheet-style grid overlay (editable cells); on dismiss, serialize back to pipe-table
   syntax via the existing `markdownTable` / `formatRow` helpers. — M — custom grid widget

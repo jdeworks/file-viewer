@@ -15,7 +15,7 @@ Structured YAML viewer: minimal YAML parser extracts `services` with `image`, `b
 
 ## In-browser editing (download-on-save)
 
-- **Monaco YAML editor mode** — mount Monaco with `language: 'yaml'`; Ctrl+S triggers Blob download; live re-parse drives the service graph in a split pane — S (Monaco already vendored; js-yaml already vendored for parsing)
+- ✅ SHIPPED — **Monaco YAML editor mode** — already wired via `index.js` (`syntaxLanguage: 'yaml'`, `preferredMode: 'split'`): the type opens in Monaco's YAML mode in a split pane with live re-parse + Blob-download save. (JSON Schema validation below is the remaining enhancement.)
 - **JSON Schema validation** — wire the Docker Compose JSON Schema (download once, vendor as a small JSON file) to Monaco's `yaml` language service for inline validation squiggles on unknown keys and wrong types — M
 - **Service scaffold snippets** — `CompletionItemProvider` for common service patterns: PostgreSQL, Redis, Nginx reverse proxy, Node app with hot-reload — M
 - **Depends-on cycle detector** — on each edit, run a DFS cycle check over `depends_on` edges; highlight cyclic services with Monaco error markers — M

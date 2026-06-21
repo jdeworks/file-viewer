@@ -2,13 +2,17 @@
 
 ## Current state
 
-Read-only browser backed by sql.js (SQLite compiled to WebAssembly). Features:
+Browser backed by sql.js (SQLite compiled to WebAssembly). Features:
 - Table list sidebar with row counts (via `sqlitelib.js` `listTables`)
 - Data grid: `SELECT * FROM table LIMIT 200` with NULL/BLOB display
 - Free-form SQL query panel (single-line input, Enter or Run button)
 - Header parsing (`parseHeader`) exposes page size, encoding, version, schema format
+- **Query history** — last 50 queries persisted (`localStorage` `sq-query-history`), recalled via a datalist on the input
+- **EXPLAIN QUERY PLAN** — "Explain" button runs the plan and shows index hit/scan detail
+- **CSV / JSON export** — export the current result set (all rows) via Blob download
+- **Write-back** — CREATE/INSERT/UPDATE/DELETE/ALTER/DROP… execute against the in-memory DB; a "⬇ Save DB" button appears after any write to download the modified `.sqlite` file
 
-No write-back, no query history, no export, no schema editor.
+No on-disk write-back yet (companion required); no visual schema/ER editor yet.
 
 ---
 
@@ -16,13 +20,13 @@ No write-back, no query history, no export, no schema editor.
 
 - **ER diagram** — Parse `sqlite_master` for `REFERENCES` clauses (or PRAGMA foreign_key_list per table) and render a force-directed graph of table nodes and FK edges. Clicking a node selects the table; clicking an edge highlights both sides. Lib: **vis-network.js** (self-contained, ~1 MB pre-bundled) or **d3-force** (lighter, already candidate for other types). Toggle button in the sidebar header. — **M**
 
-- **Query history** — Persist the last 50 SQL strings keyed by `localStorage['sq:history:' + filename]`. Show a dropdown below the input (arrow-up/down to navigate, click to recall). Clear button. Zero deps. — **S**
+- ✅ SHIPPED — **Query history** — Persist the last 50 SQL strings keyed by `localStorage['sq:history:' + filename]`. Show a dropdown below the input (arrow-up/down to navigate, click to recall). Clear button. Zero deps. — **S**
 
-- **EXPLAIN QUERY PLAN** — Button next to Run that prepends `EXPLAIN QUERY PLAN` to the current SQL, runs it via `db.exec`, and renders the result in a secondary panel with the `detail` column highlighted for index hit/scan indicators. No deps. — **S**
+- ✅ SHIPPED — **EXPLAIN QUERY PLAN** — Button next to Run that prepends `EXPLAIN QUERY PLAN` to the current SQL, runs it via `db.exec`, and renders the result in a secondary panel with the `detail` column highlighted for index hit/scan indicators. No deps. — **S**
 
-- **Export table as CSV** — "Export CSV" button in the table row; streams all rows (no 200-row limit) through a `query(db, 'SELECT * FROM ...')` call, encodes as RFC 4180 CSV via a Blob URL download. No deps. — **S**
+- ✅ SHIPPED — **Export table as CSV** — "Export CSV" button in the table row; streams all rows (no 200-row limit) through a `query(db, 'SELECT * FROM ...')` call, encodes as RFC 4180 CSV via a Blob URL download. No deps. — **S**
 
-- **Export table as JSON** — Same path as CSV; serialises rows as `[{col: val, ...}]`. BLOB columns become `"<N bytes>"` strings. No deps. — **S**
+- ✅ SHIPPED — **Export table as JSON** — Same path as CSV; serialises rows as `[{col: val, ...}]`. BLOB columns become `"<N bytes>"` strings. No deps. — **S**
 
 - **Export table as Excel** — Builds a workbook from the current table's columns and all rows using **SheetJS** (`xlsx.full.min.js`; pre-bundle under `docs/vendor/sheetjs/`). Download as `.xlsx`. — **M**
 
