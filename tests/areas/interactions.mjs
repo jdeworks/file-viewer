@@ -502,6 +502,46 @@ export async function run(ctx) {
     return src && prev && src.style.display === 'none' && prev.style.display !== 'none' && prev.childElementCount > 0;
   }, null, { timeout: 12000 });
   pass('side-by-side: Source/Preview toggle switches the pane view');
+  // (b2) Per-pane markdown toolbar: Bold acts ONLY on that pane (pane 0 = welcome.md), leaving
+  //      the sibling text/csv pane untouched. Switch pane 0 back to Source first.
+  await page.click('.sbs-pane:first-child .sbs-toggle[data-sbs-view="source"]');
+  await page.waitForFunction(() => {
+    const p = document.querySelector('.sbs-overlay').__sbsPanes;
+    return p[0].rawview() && document.querySelector('.sbs-pane:first-child .sbs-source .monaco-editor');
+  }, null, { timeout: 12000 });
+  await page.evaluate(() => {
+    const panes = document.querySelector('.sbs-overlay').__sbsPanes;
+    const rv0 = panes[0].rawview();
+    window.__sbsBefore1 = panes[1].rawview().getValue();
+    rv0.setValue('hello world');
+    rv0.setSelection(1, 1, 1, 6);           // select "hello"
+    document.querySelector('.sbs-pane:first-child .sbs-tools [data-md-action="Bold"]').click();
+  });
+  const sbsMd = await page.evaluate(() => {
+    const panes = document.querySelector('.sbs-overlay').__sbsPanes;
+    return { pane0: panes[0].rawview().getValue(), pane1Same: panes[1].rawview().getValue() === window.__sbsBefore1 };
+  });
+  if (/\*\*hello\*\*/.test(sbsMd.pane0)) pass('side-by-side: markdown pane Bold wraps the selection (**hello**)'); else fail('sbs md bold: ' + JSON.stringify(sbsMd.pane0));
+  if (sbsMd.pane1Same) pass('side-by-side: pane toolbar acts only on its own pane (sibling untouched)'); else fail('sbs md bold leaked to sibling');
+  // (b3) Per-pane text-utils toolbar: Sort ↑ reorders the csv pane's lines (pane 1).
+  await page.evaluate(() => {
+    const rv1 = document.querySelector('.sbs-overlay').__sbsPanes[1].rawview();
+    rv1.setValue('banana\napple\ncherry');
+    rv1.setSelection(1, 1, 1, 1);           // no selection → whole document
+    document.querySelector('.sbs-pane:nth-child(2) .sbs-tools [data-textutil="sortAsc"]').click();
+  });
+  const sbsSort = await page.evaluate(() => document.querySelector('.sbs-overlay').__sbsPanes[1].rawview().getValue());
+  if (sbsSort === 'apple\nbanana\ncherry') pass('side-by-side: text-utils pane Sort ↑ reorders that pane\'s lines'); else fail('sbs sort: ' + JSON.stringify(sbsSort));
+  // (b4) In-pane Split view shows BOTH a Monaco editor AND a live preview within one pane.
+  await page.click('.sbs-pane:first-child .sbs-toggle[data-sbs-view="split"]');
+  await page.waitForFunction(() => {
+    const host = document.querySelector('.sbs-pane:first-child .sbs-host');
+    if (!host.classList.contains('sbs-split')) return false;
+    const src = host.querySelector('.sbs-source'), prev = host.querySelector('.sbs-preview');
+    return src && prev && src.style.display !== 'none' && prev.style.display !== 'none'
+      && src.querySelector('.monaco-editor') && prev.childElementCount > 0;
+  }, null, { timeout: 12000 });
+  pass('side-by-side: Split view shows Monaco source + live preview together in one pane');
   // (c) Per-pane Download yields a download with the right filename.
   const [sbsDl] = await Promise.all([
     page.waitForEvent('download', { timeout: 8000 }),

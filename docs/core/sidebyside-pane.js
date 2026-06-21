@@ -13,6 +13,7 @@ import { matchKnown } from '../known/registry.generated.js';
 import { mountPreview } from './iframe.js';
 import { previewStyle } from './settings-schema.js';
 import { createRawView } from './rawview.js';
+import { buildPaneToolbar } from './sidebyside-toolbar.js';
 
 // Render an intake's preview into an arbitrary host (standalone — does not touch global state).
 // Returns a controller with destroy() that tears down whatever it mounted.
@@ -119,16 +120,14 @@ export function buildPane(paneEl, intake) {
 
   async function show(next) {
     view = next;
-    if (next === 'source') {
-      previewHost.style.display = 'none';
-      sourceHost.style.display = '';
-      await ensureRawview();
-      rawview.layout();
-    } else {
-      sourceHost.style.display = 'none';
-      previewHost.style.display = '';
-      await ensurePreview();
-    }
+    host.classList.toggle('sbs-split', next === 'split');
+    const wantSource = next === 'source' || next === 'split';
+    const wantPreview = next === 'preview' || next === 'split';
+    sourceHost.style.display = wantSource ? '' : 'none';
+    previewHost.style.display = wantPreview ? '' : 'none';
+    if (wantSource) { await ensureRawview(); rawview.layout(); }
+    if (wantPreview) await ensurePreview();
+    if (next === 'split' && rawview) rawview.layout();   // relayout after the split flex sizes it
     syncToggle();
   }
 
@@ -141,11 +140,11 @@ export function buildPane(paneEl, intake) {
   }
 
   if (editable) {
-    ['source', 'preview'].forEach((v) => {
+    [['source', 'Source'], ['preview', 'Preview'], ['split', 'Split']].forEach(([v, label]) => {
       const btn = document.createElement('button');
       btn.className = 'sbs-toggle';
       btn.dataset.sbsView = v;
-      btn.textContent = v === 'source' ? 'Source' : 'Preview';
+      btn.textContent = label;
       btn.addEventListener('click', () => show(v));
       controls.appendChild(btn);
       toggleBtns.push(btn);
@@ -167,6 +166,16 @@ export function buildPane(paneEl, intake) {
     }
   });
   controls.appendChild(dlBtn);
+
+  // Editable panes get a per-pane formatting toolbar bound to THIS pane's rawview (markdown
+  // helpers for markdown, text-utilities for other text/code). Inserted between the header row
+  // and the body so it reads as a sub-toolbar of the pane.
+  if (editable) {
+    const tools = document.createElement('div');
+    tools.className = 'sbs-tools';
+    buildPaneToolbar(tools, type.id, ensureRawview);
+    nameEl.insertAdjacentElement('afterend', tools);
+  }
 
   // Initial render: editable -> Source (Monaco, lazy preview); else -> Preview.
   const ready = show(view);

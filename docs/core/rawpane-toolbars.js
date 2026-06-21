@@ -5,6 +5,7 @@
 import { state, $, toast } from './state.js';
 import { loadGlobal, vendor } from './script-loader.js';
 import { syncHasToolsClass } from './rawpane.js';
+import { getTrimMode, setTrimMode, lineTransformFor, b64encode, b64decode } from './text-utils.js';
 
 // ── JSON toolbar ──────────────────────────────────────────────────────────────
 export function setJsonToolsVisible(visible) {
@@ -267,14 +268,11 @@ export function wireTextUtils() {
   updateTrimModeLabel();
 }
 
-// ── Trim mode (whitespace-only vs. also drop blank lines), remembered in localStorage ──
-const TRIM_MODE_KEY = 'fv:textutil:trimMode';
-function getTrimMode() {
-  try { return localStorage.getItem(TRIM_MODE_KEY) === 'ws+lines' ? 'ws+lines' : 'ws'; }
-  catch { return 'ws'; }
-}
-function setTrimMode(mode) {
-  try { localStorage.setItem(TRIM_MODE_KEY, mode); } catch { /* ignore */ }
+// ── Trim mode (whitespace-only vs. also drop blank lines) ──
+// Storage + transform logic live in text-utils.js (shared with the side-by-side pane toolbar);
+// this module owns only the split-button label + dropdown UI around them.
+function applyTrimMode(mode) {
+  setTrimMode(mode);
   updateTrimModeLabel();
 }
 function updateTrimModeLabel() {
@@ -303,7 +301,7 @@ function toggleTrimModeMenu(btn) {
     item.type = 'button';
     item.className = 'tu-mode-item' + (getTrimMode() === mode ? ' active' : '');
     item.textContent = label;
-    item.addEventListener('click', () => { setTrimMode(mode); closeTrimMenu(); });
+    item.addEventListener('click', () => { applyTrimMode(mode); closeTrimMenu(); });
     menu.appendChild(item);
   }
   document.body.appendChild(menu);
@@ -312,35 +310,6 @@ function toggleTrimModeMenu(btn) {
   menu.style.top = Math.round(r.bottom + 2) + 'px';
   _trimMenu = menu;
   setTimeout(() => document.addEventListener('mousedown', onTrimMenuOutside, true), 0);
-}
-
-// Per-line trim by direction. In 'ws+lines' mode, blank lines are dropped after trimming.
-const TRIM_DIR = {
-  trim: (s) => s.trim(),
-  ltrim: (s) => s.replace(/^\s+/, ''),
-  rtrim: (s) => s.replace(/\s+$/, ''),
-};
-
-// Whole-line transforms: each takes an array of lines and returns the transformed array.
-const LINE_TRANSFORMS = {
-  sortAsc: (lines) => [...lines].sort((a, b) => a.localeCompare(b)),
-  sortDesc: (lines) => [...lines].sort((a, b) => b.localeCompare(a)),
-  dedup: (lines) => {
-    const seen = new Set();
-    return lines.filter((l) => (seen.has(l) ? false : (seen.add(l), true)));
-  },
-};
-
-// Resolve an action to a lines→lines transform (sort/dedup static; trim variants read the mode).
-function lineTransformFor(action) {
-  if (LINE_TRANSFORMS[action]) return LINE_TRANSFORMS[action];
-  const dir = TRIM_DIR[action];
-  if (!dir) return null;
-  const dropBlank = getTrimMode() === 'ws+lines';
-  return (lines) => {
-    const out = lines.map(dir);
-    return dropBlank ? out.filter((l) => l.trim() !== '') : out;
-  };
 }
 
 function applyTextUtil(action) {
@@ -367,7 +336,7 @@ function applyTextUtil(action) {
     const sel = state.rawview.selectionText?.();
     const target = (sel && sel.trim()) ? sel : text;
     try {
-      const encoded = btoa(unescape(encodeURIComponent(target)));
+      const encoded = b64encode(target);
       if (sel && sel.trim()) {
         state.rawview.replaceSelection(encoded);
         return;
@@ -378,7 +347,7 @@ function applyTextUtil(action) {
     const sel = state.rawview.selectionText?.();
     const target = ((sel && sel.trim()) ? sel : text).trim();
     try {
-      const decoded = decodeURIComponent(escape(atob(target)));
+      const decoded = b64decode(target);
       if (sel && sel.trim()) {
         state.rawview.replaceSelection(decoded);
         return;

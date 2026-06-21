@@ -621,6 +621,19 @@ body {
 .sbs-source { overflow: hidden; }
 .sbs-host iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .sbs-note { padding: 16px; color: var(--fg-2); font-size: 13px; }
+/* Per-pane formatting toolbar (markdown actions or text utilities), bound to the pane's own editor. */
+.sbs-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 4px 12px;
+  border-bottom: 1px solid var(--border); background: var(--bg-2); }
+.sbs-tool { background: var(--bg); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 6px; padding: 2px 7px; font-size: 11px; cursor: pointer; line-height: 1.4; }
+.sbs-tool:hover { border-color: var(--accent, #2563eb); }
+.sbs-tool-mode { font-weight: 600; }
+/* In-pane Split view: Monaco source + live preview share the pane 50/50. */
+.sbs-host.sbs-split { display: flex; }
+.sbs-host.sbs-split .sbs-source, .sbs-host.sbs-split .sbs-preview {
+  position: relative; inset: auto; flex: 1 1 0; min-width: 0; height: 100%; }
+.sbs-host.sbs-split .sbs-source { border-right: 1px solid var(--border); }
+.sbs-host.sbs-split .sbs-preview iframe { position: absolute; inset: 0; }
 @media (max-width: 760px) { .sbs-body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } .sbs-pane { border-right: 0; border-bottom: 1px solid var(--border); } }
 /* Cache-download modal: pick offline bundles with sizes. */
 .cache-modal-backdrop { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.5);
