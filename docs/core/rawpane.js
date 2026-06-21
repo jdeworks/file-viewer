@@ -20,7 +20,8 @@ import { TableEditor } from '../types/text/csv/table-editor.js';
 import { setEnvFormMode, setIniFormMode, setTomlFormMode, setYamlFormMode,
   wireEnvFormBtn, wireIniFormBtn, wireTomlFormBtn, wireYamlFormBtn, getActiveFormValue } from './rawpane-forms.js';
 import { setJsonToolsVisible, wireJsonTools, setYamlToolsVisible, wireYamlTools,
-  setXmlToolsVisible, wireXmlTools, setTomlToolsVisible, wireTomlTools } from './rawpane-toolbars.js';
+  setXmlToolsVisible, wireXmlTools, setTomlToolsVisible, wireTomlTools,
+  setTextUtilsVisible, wireTextUtils } from './rawpane-toolbars.js';
 
 let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
@@ -132,68 +133,6 @@ function wireMarkdownTools() {
   });
   // WYSIWYG toggle button
   document.getElementById('wysiwygBtn')?.addEventListener('click', () => toggleWysiwyg());
-}
-
-// ── Text utilities toolbar ────────────────────────────────────────────────────
-function setTextUtilsVisible(visible) {
-  const el = $('textUtils');
-  if (!el) return;
-  el.hidden = !visible;
-  $('rawPane')?.classList.toggle('has-textutils', visible);
-}
-
-function wireTextUtils() {
-  const el = $('textUtils');
-  if (!el || el.dataset.wired) return;
-  el.dataset.wired = '1';
-  el.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-textutil]');
-    if (!btn) return;
-    applyTextUtil(btn.dataset.textutil);
-  });
-}
-
-function applyTextUtil(action) {
-  if (!state.rawview) return;
-  const text = state.rawview.getValue();
-  let result;
-
-  if (action === 'sortAsc') {
-    result = text.split('\n').sort((a, b) => a.localeCompare(b)).join('\n');
-  } else if (action === 'sortDesc') {
-    result = text.split('\n').sort((a, b) => b.localeCompare(a)).join('\n');
-  } else if (action === 'trim') {
-    result = text.split('\n').map((l) => l.trimEnd()).join('\n');
-  } else if (action === 'dedup') {
-    const seen = new Set();
-    result = text.split('\n').filter((l) => { if (seen.has(l)) return false; seen.add(l); return true; }).join('\n');
-  } else if (action === 'b64encode') {
-    const sel = state.rawview.selectionText?.();
-    const target = (sel && sel.trim()) ? sel : text;
-    try {
-      const encoded = btoa(unescape(encodeURIComponent(target)));
-      if (sel && sel.trim()) {
-        state.rawview.replaceSelection(encoded);
-        return;
-      }
-      result = encoded;
-    } catch (e) { toast('Base64 encode failed: ' + e.message); return; }
-  } else if (action === 'b64decode') {
-    const sel = state.rawview.selectionText?.();
-    const target = ((sel && sel.trim()) ? sel : text).trim();
-    try {
-      const decoded = decodeURIComponent(escape(atob(target)));
-      if (sel && sel.trim()) {
-        state.rawview.replaceSelection(decoded);
-        return;
-      }
-      result = decoded;
-    } catch (e) { toast('Not valid Base64'); return; }
-  }
-
-  if (result !== undefined && result !== text) {
-    state.rawview.setValue(result);
-  }
 }
 
 let tablePicker = null;

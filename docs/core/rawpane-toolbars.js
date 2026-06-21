@@ -242,3 +242,67 @@ function updateTomlValidation(valid, message) {
   clearTimeout(indicator._hideTimer);
   indicator._hideTimer = setTimeout(() => { indicator.hidden = true; }, 4000);
 }
+
+// ── Text utilities toolbar ────────────────────────────────────────────────────
+// Independent of the format toolbars above: uses its own has-textutils class, not
+// syncHasToolsClass (it can co-exist as a second row with a type-specific toolbar).
+export function setTextUtilsVisible(visible) {
+  const el = $('textUtils');
+  if (!el) return;
+  el.hidden = !visible;
+  $('rawPane')?.classList.toggle('has-textutils', visible);
+}
+
+export function wireTextUtils() {
+  const el = $('textUtils');
+  if (!el || el.dataset.wired) return;
+  el.dataset.wired = '1';
+  el.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-textutil]');
+    if (!btn) return;
+    applyTextUtil(btn.dataset.textutil);
+  });
+}
+
+function applyTextUtil(action) {
+  if (!state.rawview) return;
+  const text = state.rawview.getValue();
+  let result;
+
+  if (action === 'sortAsc') {
+    result = text.split('\n').sort((a, b) => a.localeCompare(b)).join('\n');
+  } else if (action === 'sortDesc') {
+    result = text.split('\n').sort((a, b) => b.localeCompare(a)).join('\n');
+  } else if (action === 'trim') {
+    result = text.split('\n').map((l) => l.trimEnd()).join('\n');
+  } else if (action === 'dedup') {
+    const seen = new Set();
+    result = text.split('\n').filter((l) => { if (seen.has(l)) return false; seen.add(l); return true; }).join('\n');
+  } else if (action === 'b64encode') {
+    const sel = state.rawview.selectionText?.();
+    const target = (sel && sel.trim()) ? sel : text;
+    try {
+      const encoded = btoa(unescape(encodeURIComponent(target)));
+      if (sel && sel.trim()) {
+        state.rawview.replaceSelection(encoded);
+        return;
+      }
+      result = encoded;
+    } catch (e) { toast('Base64 encode failed: ' + e.message); return; }
+  } else if (action === 'b64decode') {
+    const sel = state.rawview.selectionText?.();
+    const target = ((sel && sel.trim()) ? sel : text).trim();
+    try {
+      const decoded = decodeURIComponent(escape(atob(target)));
+      if (sel && sel.trim()) {
+        state.rawview.replaceSelection(decoded);
+        return;
+      }
+      result = decoded;
+    } catch (e) { toast('Not valid Base64'); return; }
+  }
+
+  if (result !== undefined && result !== text) {
+    state.rawview.setValue(result);
+  }
+}
