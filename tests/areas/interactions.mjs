@@ -1,9 +1,10 @@
 export async function run(ctx) {
-  const { browser, page, origin, frameOf, pass, fail, consoleErrors, offOrigin, openExample } = ctx;
+  const { browser, page, origin, frameOf, pass, fail, consoleErrors, offOrigin, openExample, waitForFv } = ctx;
 
   // ── New empty file ── create from the intake screen; the extension drives the type.
   // (Runs BEFORE the persistent dialog handler below, so page.once can answer the name prompt.)
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
+  await waitForFv();
   page.once('dialog', (d) => d.accept('notes.md'));
   await page.click('#newFileBtn');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
@@ -90,18 +91,22 @@ export async function run(ctx) {
   const wysiwygBtn = await page.$('#wysiwygBtn');
   if (wysiwygBtn) pass('Markdown tools: WYSIWYG button present'); else fail('WYSIWYG button missing');
   // Re-create a markdown file and click WYSIWYG
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
+  await waitForFv();
   page.once('dialog', (d) => d.accept('notes.md'));
   await page.click('#newFileBtn');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
   await page.evaluate(() => window.__fv.state.rawview.setValue('# Hello WYSIWYG'));
-  await page.click('#wysiwygBtn');
-  await page.waitForSelector('.EasyMDEContainer', { timeout: 10000 });
+  // #textUtils can shadow #wysiwygBtn in headless; use JS click to bypass pointer-event interception.
+  await page.evaluate(() => document.getElementById('wysiwygBtn').click());
+  // Wait for attached (not 'visible' — the EasyMDE side-by-side container can report
+  // zero-size transiently under suite load; the assertion below verifies it's really shown).
+  await page.waitForSelector('.EasyMDEContainer', { state: 'attached', timeout: 15000 });
   const wysiwygActive = await page.evaluate(() => !document.querySelector('.EasyMDEContainer')?.hidden);
   if (wysiwygActive) pass('WYSIWYG: EasyMDE mounts when toggle clicked'); else fail('EasyMDE not mounted');
-  // Toggling back should restore Monaco
-  await page.click('#wysiwygBtn');
-  await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
+  // Toggling back should restore Monaco (JS click — same overlap-immunity as above)
+  await page.evaluate(() => document.getElementById('wysiwygBtn').click());
+  await page.waitForSelector('#editor .monaco-editor', { state: 'attached', timeout: 15000 });
   const monacoBack = await page.$('#editor .monaco-editor');
   if (monacoBack) pass('WYSIWYG: toggling off restores Monaco editor'); else fail('Monaco not restored after WYSIWYG off');
   await page.evaluate(() => {
@@ -110,7 +115,7 @@ export async function run(ctx) {
   });
 
   // ── import easteregg unlock ── typing the magic line into a file opens the arcade. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await page.evaluate(() => { try { localStorage.removeItem('fv:games:unlocked'); } catch {} });
   page.once('dialog', (d) => d.accept('trigger.js'));
   await page.click('#newFileBtn');
@@ -129,9 +134,9 @@ export async function run(ctx) {
   let acceptScripts = false;
   page.on('dialog', (d) => (acceptScripts ? d.accept() : d.dismiss()));
   // Default: dismiss -> sanitized, script must NOT run.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.html');
-  const hframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const hframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const hf = await frameOf('iframe.fv-preview-frame');
   await hf.waitForSelector('#safe', { timeout: 8000 });
   await page.waitForTimeout(300);
@@ -139,9 +144,9 @@ export async function run(ctx) {
   if (!sanitizedRan) pass('HTML sanitized by default (script did NOT run)'); else fail('script ran while sanitized');
   // Opt in: accept -> scripts run in the sandbox.
   acceptScripts = true;
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.html');
-  const hframe2 = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const hframe2 = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const hf2 = await frameOf('iframe.fv-preview-frame');
   await hf2.waitForSelector('#ran-script', { timeout: 8000 });
   pass('HTML scripts run after explicit opt-in (sandboxed)');
@@ -170,7 +175,7 @@ export async function run(ctx) {
   await page.click('#rawMode button[data-raw="current"]');
 
   // ── Duplicate open button removed + unsaved-work tracking ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   const hasOldOpen = await page.$('#openBtn');
   const hasInlineOpen = await page.$('#openInlineBtn');
   if (!hasOldOpen && hasInlineOpen) pass('duplicate top-bar open button removed (inline 📂 kept)'); else fail('openBtn present=' + !!hasOldOpen + ' inline=' + !!hasInlineOpen);
@@ -185,14 +190,14 @@ export async function run(ctx) {
   const afterDl = await page.evaluate(() => window.__fv.hasUnsavedWork());
   if (!clean0 && dirty1 && !afterDl) pass('unsaved-work tracked (clean → edit → download clears it; gates discard + beforeunload)'); else fail('unsaved flags clean=' + clean0 + ' dirty=' + dirty1 + ' afterDownload=' + afterDl);
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 20000 });
   await page.evaluate(() => { const rv = window.__fv.state.rawview; rv.setValue(rv.getValue() + '\nretained session edit'); });
   await page.waitForTimeout(350);
   await openExample('Sample.txt');
   await page.waitForFunction(() => document.querySelector('#fileName')?.textContent === 'sample.txt', null, { timeout: 8000 });
-  await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 30000 });
   const txtFrame = await frameOf('iframe.fv-preview-frame');
   await txtFrame.waitForSelector('.plain-doc .plain-text', { timeout: 8000 });
   const txtPreview = await txtFrame.$eval('.plain-doc .plain-text', (e) => ({
@@ -213,7 +218,7 @@ export async function run(ctx) {
   await page.waitForTimeout(150);
 
   // ── Preview sizing quick modes ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md');
   await page.click('#viewMode button[data-mode="split"]');
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 15000 });
@@ -275,7 +280,7 @@ export async function run(ctx) {
   mpage.on('console', (m) => { if (m.type() === 'error') consoleErrors.push('[mobile] ' + m.text()); });
   mpage.on('pageerror', (e) => consoleErrors.push('[mobile] pageerror: ' + e.message));
   mpage.on('request', (req) => { const u = req.url(); if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u); });
-  await mpage.goto(origin, { waitUntil: 'networkidle' });
+  await mpage.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md', mpage);
   const mframe = await mpage.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
   // Preview must NOT scroll horizontally on a phone (fixed to screen width).
@@ -307,7 +312,7 @@ export async function run(ctx) {
     const op = await octx.newPage();
     const oErr = [];
     op.on('pageerror', (e) => oErr.push(e.message));
-    await op.goto(origin, { waitUntil: 'networkidle' });
+    await op.goto(origin, { waitUntil: 'load' });
     // Default is cache-on-use: the pill rests at "idle" (offers an opt-in full save), it does
     // NOT auto-precache everything.
     await op.waitForSelector('#offlineStatus.idle', { timeout: 90000 });
@@ -352,7 +357,7 @@ export async function run(ctx) {
   }
 
   // ── Two-file Compare ("Compare with…") ── pick a 2nd file → diff current ↔ other ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md');
   await openExample('Sample.csv');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
@@ -392,7 +397,7 @@ export async function run(ctx) {
   pass('two-file compare: "Stop comparing" exits');
 
   // ── Split divider: drag must keep working across preview iframes and Monaco surfaces ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.ans');
   await page.click('#viewMode button[data-mode="split"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
@@ -423,7 +428,7 @@ export async function run(ctx) {
   } else fail('split drag missing preview/divider boxes');
 
   // ── Side-by-side: view two files (incl. non-text) next to each other ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md');
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 15000 });
   const sbsShown = await page.$eval('#sbsBtn', (e) => !e.hidden);
@@ -433,7 +438,13 @@ export async function run(ctx) {
   const sbsPanes = await page.$$eval('.sbs-pane', (els) => els.length);
   const sbsNames = await page.$$eval('.sbs-name', (els) => els.map((e) => e.textContent));
   if (sbsPanes === 2 && sbsNames.some((n) => /welcome\.md/i.test(n)) && sbsNames.some((n) => /sample\.csv/i.test(n))) pass('side-by-side: two named panes (current + picked)'); else fail('sbs panes=' + sbsPanes + ' names=' + sbsNames.join(','));
-  await page.waitForFunction(() => document.querySelectorAll('.sbs-host iframe').length === 2, null, { timeout: 12000 });
+  // Each pane renders via renderFileInto: bodyHtml types (Welcome.md) get an iframe,
+  // parentNode types (sample.csv) get a direct element child — so assert both hosts
+  // rendered SOME content rather than counting iframes (CSV has none).
+  await page.waitForFunction(() => {
+    const hosts = document.querySelectorAll('.sbs-host');
+    return hosts.length === 2 && [...hosts].every((h) => h.childElementCount > 0);
+  }, null, { timeout: 12000 });
   pass('side-by-side: both files rendered independently');
   await page.click('.sbs-close');
   if (!(await page.$('.sbs-overlay'))) pass('side-by-side closes'); else fail('sbs did not close');

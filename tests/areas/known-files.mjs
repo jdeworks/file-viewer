@@ -2,7 +2,7 @@ export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── Known-file enhancement (Layer 3): package.json -> npm links + revert chip ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('package.json');
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   pass('package.json gets the enhanced view (rendered in the parent pane)');
@@ -26,19 +26,19 @@ export async function run(ctx) {
   pass('revert chip switches to the plain JSON tree view');
 
   // ── More known-files (Layer 3): Cargo.toml, tsconfig.json, Dockerfile, docker-compose, .gitignore ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Cargo.toml');
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const crateHrefs = await page.$$eval('#previewHost .pj-deps a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
   if (crateHrefs.some((h) => /crates\.io\/crates\/serde/.test(h))) pass('Cargo.toml: dependencies link to crates.io'); else fail('crate links: ' + crateHrefs.join(','));
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('tsconfig.json');
   await page.waitForSelector('#previewHost .ts-table', { timeout: 12000 });
   const tsDocs = await page.$$eval('#previewHost .ts-table .ts-doc', (els) => els.map((e) => e.textContent).join(' '));
   if (/strict type-checking/i.test(tsDocs)) pass('tsconfig.json: compiler options annotated'); else fail('tsconfig docs: ' + tsDocs.slice(0, 80));
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Dockerfile');
   await page.waitForSelector('#previewHost .kf-list', { timeout: 12000 });
   const dfBadges = await page.$$eval('#previewHost .kf-badge', (els) => els.map((e) => e.textContent));
@@ -49,7 +49,7 @@ export async function run(ctx) {
   if (/Instructions\s*\d+/.test(dfMeta) && /Build stages\s*2/.test(dfMeta)) pass('Dockerfile metadata comes from known-file extractor'); else fail('dockerfile meta: ' + dfMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('docker-compose.yml');
   await page.waitForSelector('#previewHost .kf-svc', { timeout: 12000 });
   const svcNames = await page.$$eval('#previewHost .kf-svc h3', (els) => els.map((e) => e.textContent));
@@ -68,7 +68,7 @@ export async function run(ctx) {
   else fail('compose meta: ' + composeMeta.replace(/\s+/g, ' ').slice(0, 180));
   await page.click('#metaDrawer [data-close]');
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.gitignore');
   await page.waitForSelector('#previewHost .kf-pat', { timeout: 12000 });
   const giPats = await page.$$eval('#previewHost .kf-pat code', (els) => els.map((e) => e.textContent));
@@ -76,7 +76,7 @@ export async function run(ctx) {
   if (giPats.includes('node_modules/') && giTags.includes('un-ignore')) pass('.gitignore: patterns annotated (directory, un-ignore, …)'); else fail('gitignore pats=' + giPats.join(',') + ' tags=' + giTags.join(','));
 
   // ── More known-files (Layer 3): dependency manifests → ecosystem links ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('requirements.txt');
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const reqHrefs = await page.$$eval('#previewHost a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
@@ -91,20 +91,20 @@ export async function run(ctx) {
   else fail('requirements meta: ' + reqMeta.replace(/\s+/g, ' ').slice(0, 220));
   await page.click('#metaDrawer [data-close]');
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('go.mod');
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const goHrefs = await page.$$eval('#previewHost a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
   const goIndirect = await page.$$eval('#previewHost .kf-tag', (els) => els.map((e) => e.textContent));
   if (goHrefs.some((h) => /pkg\.go\.dev\/github\.com\/gin-gonic\/gin/.test(h)) && goIndirect.includes('indirect')) pass('go.mod: modules link to pkg.go.dev (+ indirect tagged)'); else fail('go links: ' + goHrefs.join(',') + ' tags=' + goIndirect.join(','));
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('composer.json');
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const composerHrefs = await page.$$eval('#previewHost a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
   if (composerHrefs.some((h) => /packagist\.org\/packages\/guzzlehttp\/guzzle/.test(h))) pass('composer.json: dependencies link to Packagist'); else fail('packagist links: ' + composerHrefs.join(','));
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Gemfile');
   await page.waitForSelector('#previewHost .gemfile-doc', { timeout: 12000 });
   pass('Gemfile: badge shown');
@@ -115,7 +115,7 @@ export async function run(ctx) {
   else pass('Gemfile: groups shown');
 
   // ── More known-files (Layer 3): CODEOWNERS, .editorconfig, pom.xml ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('CODEOWNERS');
   await page.waitForSelector('#previewHost .codeowners-doc', { timeout: 12000 });
   pass('CODEOWNERS: badge shown');
@@ -125,21 +125,21 @@ export async function run(ctx) {
   if (!coText.includes('frontend')) fail('CODEOWNERS: sections not shown');
   else pass('CODEOWNERS: sections shown');
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.editorconfig');
   await page.waitForSelector('#previewHost .editorconfig-doc', { timeout: 12000 });
   const ecGlobs = await page.$$eval('#previewHost .ec-section-head code', (els) => els.map((e) => e.textContent));
   const ecRoot = await page.$eval('#previewHost .editorconfig-doc', (el) => el.textContent);
   if (ecGlobs.some((g) => /\*\.py/.test(g)) && /root/i.test(ecRoot)) pass('.editorconfig: sections per glob (+ root flag)'); else fail('editorconfig globs=' + ecGlobs.join(',') + ' root=' + /root/i.test(ecRoot));
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pom.xml (Maven POM)');
   await page.waitForSelector('#previewHost .mvn-doc', { timeout: 12000 });
   const pomHrefs = await page.$$eval('#previewHost a.mvn-link', (els) => els.map((a) => a.getAttribute('href')));
   const pomScopes = await page.$$eval('#previewHost .mvn-scope', (els) => els.map((e) => e.textContent));
   if (pomHrefs.some((h) => /mvnrepository\.com\/artifact\/com\.google\.guava\/guava/.test(h)) && pomScopes.includes('test')) pass('pom.xml: dependencies link to mvnrepository (+ scope tagged)'); else fail('pom links=' + pomHrefs.join(',') + ' scopes=' + pomScopes.join(','));
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('build.gradle');
   await page.waitForSelector('#previewHost .buildgradle-doc', { timeout: 12000 });
   pass('build.gradle: renders');
@@ -149,14 +149,14 @@ export async function run(ctx) {
   const gradleHrefs = await page.$$eval('#previewHost .buildgradle-doc a.bgr-link', (els) => els.map((a) => a.getAttribute('href')));
   if (gradleHrefs.some((h) => /mvnrepository\.com\/artifact\/com\.google\.guava\/guava/.test(h))) pass('build.gradle: deps link to mvnrepository'); else fail('gradle links=' + gradleHrefs.join(','));
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Pipfile');
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const pipHrefs = await page.$$eval('#previewHost a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
   const pipTags = await page.$$eval('#previewHost .pj-tag', (els) => els.map((e) => e.textContent));
   if (pipHrefs.some((h) => /pypi\.org\/project\/flask/i.test(h)) && pipTags.some((t) => /Python 3\.12/.test(t))) pass('Pipfile: packages link to PyPI (+ Python version)'); else fail('pip links=' + pipHrefs.join(',') + ' tags=' + pipTags.join(','));
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('openapi.yaml');
   await page.waitForSelector('#previewHost .oa-list', { timeout: 12000 });
   const oaTitle = await page.$eval('#previewHost .pj-title', (e) => e.textContent);
@@ -170,7 +170,7 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
 
   // ── GitHub Actions workflow viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('GitHub Actions CI workflow (demo)');
   await page.waitForSelector('#previewHost .gha-doc, #previewHost [class*="gha"]', { timeout: 12000 });
   const ghaText = await page.$eval('#previewHost', (e) => e.textContent);
@@ -179,7 +179,7 @@ export async function run(ctx) {
   if (/test|lint|build/i.test(ghaText)) pass('GitHub Actions: jobs shown'); else fail('gha jobs: ' + ghaText.slice(0, 200));
 
   // ── Kubernetes manifest viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Kubernetes Deployment manifest (demo)');
   await page.waitForSelector('#previewHost .k8s-doc, #previewHost [class*="k8s"]', { timeout: 12000 });
   const k8sText = await page.$eval('#previewHost', (e) => e.textContent);
@@ -188,7 +188,7 @@ export async function run(ctx) {
   if (/web-app|production/i.test(k8sText)) pass('Kubernetes: name/namespace shown'); else fail('k8s meta: ' + k8sText.slice(0, 200));
 
   // ── Kubernetes RBAC viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('k8s-role.yaml');
   await page.waitForSelector('#previewHost .rbac-doc', { timeout: 12000 });
   const rbacText = await page.$eval('#previewHost .rbac-doc', (e) => e.textContent);
@@ -199,7 +199,7 @@ export async function run(ctx) {
   if (/get|list|watch/i.test(rbacText)) pass('k8s-rbac: verbs shown'); else fail('k8s-rbac verbs: ' + rbacText.slice(0, 300));
 
   // ── Kubernetes NetworkPolicy viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('k8s-network-policy.yaml');
   await page.waitForSelector('#previewHost .np-doc', { timeout: 12000 });
   const npText = await page.$eval('#previewHost .np-doc', (e) => e.textContent);
@@ -209,7 +209,7 @@ export async function run(ctx) {
   if (/api-server|backend/i.test(npText)) pass('k8s-network-policy: pod selector shown'); else fail('k8s-network-policy selector: ' + npText.slice(0, 300));
 
   // ── Kubernetes HPA viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('k8s-hpa.yaml (HPA)');
   await page.waitForSelector('#previewHost .hpa-doc', { timeout: 12000 });
   const hpaText = await page.$eval('#previewHost .hpa-doc', (e) => e.textContent);
@@ -220,7 +220,7 @@ export async function run(ctx) {
   if (/cpu|memory/i.test(hpaText)) pass('k8s-hpa: metrics shown'); else fail('k8s-hpa metrics: ' + hpaText.slice(0, 300));
 
   // ── Kubernetes Ingress viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('k8s-ingress.yaml');
   await page.waitForSelector('#previewHost .ing-doc', { timeout: 12000 });
   const ingText = await page.$eval('#previewHost .ing-doc', (e) => e.textContent);
@@ -231,7 +231,7 @@ export async function run(ctx) {
   if (/frontend-svc|api-svc/i.test(ingText)) pass('k8s-ingress: backend services shown'); else fail('k8s-ingress services: ' + ingText.slice(0, 300));
 
   // ── Flutter pubspec viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Flutter pubspec.yaml (demo)');
   await page.waitForSelector('#previewHost .pubspec-doc, #previewHost [class*="pubspec"]', { timeout: 12000 });
   const psText = await page.$eval('#previewHost', (e) => e.textContent);
@@ -239,7 +239,7 @@ export async function run(ctx) {
   if (/my.flutter.app|1\.2\.0/i.test(psText)) pass('pubspec: name/version shown'); else fail('pubspec name: ' + psText.slice(0, 200));
 
   // ── pubspec.yaml known-file plugin ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pubspec.yaml');
   await page.waitForSelector('.pubspec-doc', { timeout: 12000 });
   pass('pubspec.yaml: renders');
@@ -248,7 +248,7 @@ export async function run(ctx) {
   if (!pubspecText.includes('flutter') && !pubspecText.includes('provider')) fail('pubspec.yaml: no deps shown'); else pass('pubspec.yaml: deps shown');
 
   // ── pubspec.lock known-file plugin ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pubspec.lock (demo)');
   await page.waitForSelector('.pubspeclock-doc', { timeout: 12000 });
   pass('pubspec.lock: renders');
@@ -257,7 +257,7 @@ export async function run(ctx) {
   if (!lockText.includes('package') && !lockText.includes('flutter')) fail('pubspec.lock: no packages shown'); else pass('pubspec.lock: packages shown');
 
   // ── Netlify config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Netlify config (netlify.toml demo)');
   await page.waitForSelector('.netlifytoml-doc', { timeout: 12000 });
   pass('netlify.toml: renders');
@@ -267,7 +267,7 @@ export async function run(ctx) {
   if (/npm run build|dist/i.test(ntlText)) pass('netlify.toml: build command shown'); else fail('netlify build: ' + ntlText.slice(0, 200));
 
   // ── Vercel config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Vercel config (vercel.json demo)');
   await page.waitForSelector('.verceljson-doc', { timeout: 12000 });
   pass('vercel.json: renders');
@@ -276,7 +276,7 @@ export async function run(ctx) {
   if (/nextjs|Next\.js/i.test(vclText)) pass('vercel.json: framework shown'); else fail('vercel framework: ' + vclText.slice(0, 200));
 
   // ── pyproject.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pyproject.toml');
   await page.waitForSelector('#previewHost .pyproject-doc', { timeout: 12000 });
   pass('pyproject.toml: renders');
@@ -287,7 +287,7 @@ export async function run(ctx) {
   if (!ppyText.includes('name') && !ppyText.includes('version')) fail('pyproject.toml: no project info'); else pass('pyproject.toml: project info shown');
 
   // ── .npmrc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.npmrc');
   await page.waitForSelector('#previewHost .npmrc-doc', { timeout: 12000 });
   const npmrcText = await page.$eval('#previewHost .npmrc-doc', (e) => e.textContent);
@@ -296,7 +296,7 @@ export async function run(ctx) {
   if (!/secrettoken|publictoken|exampletoken|NexusToken/i.test(npmrcText)) pass('.npmrc: auth tokens masked as [configured]'); else fail('npmrc tokens not redacted: ' + npmrcText.slice(0, 300));
 
   // ── renovate.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('renovate.json');
   await page.waitForSelector('#previewHost .renovate-doc', { timeout: 12000 });
   const rnvText = await page.$eval('#previewHost .renovate-doc', (e) => e.textContent);
@@ -305,7 +305,7 @@ export async function run(ctx) {
   if (rnvText.includes('devDependencies')) pass('renovate.json: package rules shown'); else fail('renovate.json: package rules not shown: ' + rnvText.slice(0, 200));
 
   // ── .prettierrc.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.prettierrc.json');
   await page.waitForSelector('#previewHost .prettier-doc', { timeout: 12000 });
   pass('.prettierrc.json: badge shown');
@@ -316,7 +316,7 @@ export async function run(ctx) {
   else pass('.prettierrc.json: trailing comma shown');
 
   // ── turbo.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('turbo.json');
   await page.waitForSelector('#previewHost .turbojson-doc', { timeout: 12000 });
   pass('turbo.json: renders');
@@ -325,14 +325,14 @@ export async function run(ctx) {
   if (!turboText.includes('build') && !turboText.includes('pipeline')) fail('turbo.json: no pipeline shown'); else pass('turbo.json: pipeline shown');
 
   // ── dependabot.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dependabot.yml');
   await page.waitForSelector('#previewHost .dbt-doc', { timeout: 12000 });
   const dbtText = await page.$eval('#previewHost .dbt-doc', (e) => e.textContent);
   if (/Dependabot/i.test(dbtText)) pass('dependabot.yml: badge shown'); else fail('dependabot badge: ' + dbtText.slice(0, 200));
 
   // ── .eslintrc.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.eslintrc.json');
   await page.waitForSelector('#previewHost .eslint-doc', { timeout: 12000 });
   pass('.eslintrc.json: badge shown');
@@ -343,7 +343,7 @@ export async function run(ctx) {
   else pass('.eslintrc.json: rules shown');
 
   // ── Earthfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Earthfile');
   await page.waitForSelector('#previewHost .earthfile-doc', { timeout: 12000 });
   pass('Earthfile: badge shown');
@@ -354,7 +354,7 @@ export async function run(ctx) {
   else pass('Earthfile: docker target shown');
 
   // ── jest.config.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('jest.config.json');
   await page.waitForSelector('#previewHost .jest-doc', { timeout: 12000 });
   const jestText = await page.$eval('#previewHost .jest-doc', (e) => e.textContent);
@@ -362,7 +362,7 @@ export async function run(ctx) {
   if (/jsdom|coverage/i.test(jestText)) pass('jest.config.json: env and coverage shown'); else fail('jest content: ' + jestText.slice(0, 200));
 
   // ── .stylelintrc.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.stylelintrc.json');
   await page.waitForSelector('#previewHost .stylelint-doc', { timeout: 12000 });
   pass('.stylelintrc.json: badge shown');
@@ -373,7 +373,7 @@ export async function run(ctx) {
   else pass('.stylelintrc.json: SCSS plugin shown');
 
   // ── babel.config.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('babel.config.json');
   await page.waitForSelector('#previewHost .babelcfg-doc', { timeout: 12000 });
   const bblText = await page.$eval('#previewHost .babelcfg-doc', (e) => e.textContent);
@@ -381,7 +381,7 @@ export async function run(ctx) {
   if (/@babel\/preset-env|@babel\/preset-react/i.test(bblText)) pass('babel.config.json: presets shown'); else fail('babel presets: ' + bblText.slice(0, 200));
 
   // ── .commitlintrc.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.commitlintrc.json');
   await page.waitForSelector('#previewHost .cml-doc', { timeout: 12000 });
   const cmlText = await page.$eval('#previewHost .cml-doc', (e) => e.textContent);
@@ -389,7 +389,7 @@ export async function run(ctx) {
   if (/type-enum|header-max-length/i.test(cmlText)) pass('.commitlintrc.json: rules shown'); else fail('commitlint rules: ' + cmlText.slice(0, 200));
 
   // ── lefthook.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('lefthook.yml');
   await page.waitForSelector('#previewHost .lfh-doc', { timeout: 12000 });
   const lfhText = await page.$eval('#previewHost .lfh-doc', (e) => e.textContent);
@@ -397,7 +397,7 @@ export async function run(ctx) {
   if (/pre-commit|commit-msg|pre-push/i.test(lfhText)) pass('lefthook.yml: hook stages shown'); else fail('lefthook hooks: ' + lfhText.slice(0, 200));
 
   // ── wrangler.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('wrangler.toml');
   await page.waitForSelector('#previewHost .wgl-doc', { timeout: 12000 });
   const wglText = await page.$eval('#previewHost .wgl-doc', (e) => e.textContent);
@@ -405,7 +405,7 @@ export async function run(ctx) {
   if (/my-worker|MY_KV|example\.com/i.test(wglText)) pass('wrangler.toml: content shown'); else fail('wrangler content: ' + wglText.slice(0, 200));
 
   // ── fly.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('fly.toml');
   await page.waitForSelector('.flytoml-doc', { timeout: 12000 });
   pass('fly.toml: renders');
@@ -414,7 +414,7 @@ export async function run(ctx) {
   if (/my-api-service|iad|region/i.test(flyText)) pass('fly.toml: app info shown'); else fail('fly content: ' + flyText.slice(0, 200));
 
   // ── cliff.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cliff.toml');
   await page.waitForSelector('#previewHost .clifftoml-doc', { timeout: 12000 });
   const clfText = await page.$eval('#previewHost .clifftoml-doc', (e) => e.textContent);
@@ -423,7 +423,7 @@ export async function run(ctx) {
   if (/conventional/i.test(clfText)) pass('cliff.toml: git settings shown'); else fail('cliff git settings: ' + clfText.slice(0, 200));
 
   // ── .releaserc.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.releaserc.json');
   await page.waitForSelector('#previewHost .rls-doc', { timeout: 12000 });
   const rlsText = await page.$eval('#previewHost .rls-doc', (e) => e.textContent);
@@ -431,7 +431,7 @@ export async function run(ctx) {
   if (/commit-analyzer|npm|github/i.test(rlsText)) pass('.releaserc.json: plugins shown'); else fail('releaserc plugins: ' + rlsText.slice(0, 200));
 
   // ── lerna.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('lerna.json');
   await page.waitForSelector('.lernajson-doc', { timeout: 12000 });
   pass('lerna.json: renders');
@@ -440,7 +440,7 @@ export async function run(ctx) {
   if (!lernaText.includes('version') && !lernaText.includes('package')) fail('lerna.json: no config shown'); else pass('lerna.json: config shown');
 
   // ── nx.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nx.json');
   await page.waitForSelector('.nxjson-doc', { timeout: 12000 });
   pass('nx.json: renders');
@@ -450,7 +450,7 @@ export async function run(ctx) {
   if (nxText.includes('abc123xyz')) fail('nx.json: cloud token leaked'); else pass('nx.json: cloud token masked');
 
   // ── biome.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('biome.json');
   await page.waitForSelector('#previewHost .biome-doc', { timeout: 12000 });
   const bmoText = await page.$eval('#previewHost .biome-doc', (e) => e.textContent);
@@ -459,7 +459,7 @@ export async function run(ctx) {
   if (/single|quoteStyle/.test(bmoText)) pass('biome.json: JS settings shown'); else fail('biome.json: JS settings not shown: ' + bmoText.slice(0, 200));
 
   // ── codecov.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('codecov.yml');
   await page.waitForSelector('#previewHost .codecov-doc', { timeout: 12000 });
   const ccvText = await page.$eval('#previewHost .codecov-doc', (e) => e.textContent);
@@ -468,7 +468,7 @@ export async function run(ctx) {
   if (ccvText.includes('frontend')) pass('codecov.yml: flags shown'); else fail('codecov.yml: flags not shown: ' + ccvText.slice(0, 200));
 
   // ── serverless.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('serverless.yml');
   await page.waitForSelector('#previewHost .sls-doc', { timeout: 12000 });
   const slsText = await page.$eval('#previewHost .sls-doc', (e) => e.textContent);
@@ -476,7 +476,7 @@ export async function run(ctx) {
   if (/api|worker|scheduler/i.test(slsText)) pass('serverless.yml: functions shown'); else fail('serverless functions: ' + slsText.slice(0, 200));
 
   // ── azure-pipelines.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('azure-pipelines.yml');
   await page.waitForSelector('#previewHost .azp-doc', { timeout: 12000 });
   const azpText = await page.$eval('#previewHost .azp-doc', (e) => e.textContent);
@@ -484,7 +484,7 @@ export async function run(ctx) {
   if (/Build|Test|ubuntu/i.test(azpText)) pass('azure-pipelines.yml: stages and pool shown'); else fail('azure content: ' + azpText.slice(0, 200));
 
   // ── vscode-settings.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vscode-settings.json');
   await page.waitForSelector('#previewHost .vsc-settings-doc', { timeout: 12000 });
   const vscText = await page.$eval('#previewHost .vsc-settings-doc', (e) => e.textContent);
@@ -492,7 +492,7 @@ export async function run(ctx) {
   if (/formatOnSave|tabSize|fontSize/i.test(vscText)) pass('vscode-settings.json: settings shown'); else fail('vscode settings: ' + vscText.slice(0, 200));
 
   // ── vscode-extensions.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vscode-extensions.json');
   await page.waitForSelector('#previewHost .vsc-ext-doc', { timeout: 12000 });
   const vscExtText = await page.$eval('#previewHost .vsc-ext-doc', (e) => e.textContent);
@@ -500,7 +500,7 @@ export async function run(ctx) {
   if (/prettier|eslint|gitlens/i.test(vscExtText)) pass('vscode-extensions.json: extensions shown'); else fail('vscode-ext content: ' + vscExtText.slice(0, 200));
 
   // ── vscode-launch.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vscode-launch.json');
   await page.waitForSelector('#previewHost .vsc-launch-doc', { timeout: 12000 });
   const vscLaunchText = await page.$eval('#previewHost .vsc-launch-doc', (e) => e.textContent);
@@ -508,7 +508,7 @@ export async function run(ctx) {
   if (/Debug Node|Chrome|node/i.test(vscLaunchText)) pass('vscode-launch.json: configs shown'); else fail('vscode-launch content: ' + vscLaunchText.slice(0, 200));
 
   // ── vscode-tasks.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vscode-tasks.json');
   await page.waitForSelector('#previewHost .vsc-tasks-doc', { timeout: 12000 });
   const vscTasksText = await page.$eval('#previewHost .vsc-tasks-doc', (e) => e.textContent);
@@ -516,7 +516,7 @@ export async function run(ctx) {
   if (/build|test|lint/i.test(vscTasksText)) pass('vscode-tasks.json: tasks shown'); else fail('vscode-tasks content: ' + vscTasksText.slice(0, 200));
 
   // ── travis.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Travis CI config');
   await page.waitForSelector('#previewHost .trv-doc', { timeout: 12000 });
   const trvText = await page.$eval('#previewHost .trv-doc', (e) => e.textContent);
@@ -524,7 +524,7 @@ export async function run(ctx) {
   if (/node_js|node|python|ruby/i.test(trvText)) pass('travis.yml: language shown'); else fail('travis language: ' + trvText.slice(0, 200));
 
   // ── circleci.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('CircleCI config');
   await page.waitForSelector('#previewHost .circleciconfig-doc', { timeout: 12000 });
   pass('circleci.yml: renders');
@@ -533,7 +533,7 @@ export async function run(ctx) {
   if (/build|test|deploy|job/i.test(cciText)) pass('circleci.yml: jobs shown'); else fail('circleci jobs: ' + cciText.slice(0, 200));
 
   // ── amplify.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('AWS Amplify config');
   await page.waitForSelector('#previewHost .amp-doc', { timeout: 12000 });
   const ampText = await page.$eval('#previewHost .amp-doc', (e) => e.textContent);
@@ -541,7 +541,7 @@ export async function run(ctx) {
   if (/preBuild|build|npm/i.test(ampText)) pass('amplify.yml: build phases shown'); else fail('amplify phases: ' + ampText.slice(0, 200));
 
   // ── buildspec.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('AWS CodeBuild buildspec');
   await page.waitForSelector('#previewHost .cod-doc', { timeout: 12000 });
   const codText = await page.$eval('#previewHost .cod-doc', (e) => e.textContent);
@@ -549,7 +549,7 @@ export async function run(ctx) {
   if (/install|build|npm/i.test(codText)) pass('buildspec.yml: phases shown'); else fail('codebuild phases: ' + codText.slice(0, 200));
 
   // ── jsconfig.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('jsconfig.json');
   await page.waitForSelector('#previewHost .jsc-doc', { timeout: 12000 });
   const jscText = await page.$eval('#previewHost .jsc-doc', (e) => e.textContent);
@@ -557,7 +557,7 @@ export async function run(ctx) {
   if (/ES2020|target|checkJs/i.test(jscText)) pass('jsconfig.json: options shown'); else fail('jsconfig options: ' + jscText.slice(0, 200));
 
   // ── deno.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Deno config');
   await page.waitForSelector('#previewHost .den-doc', { timeout: 12000 });
   const denText = await page.$eval('#previewHost .den-doc', (e) => e.textContent);
@@ -565,7 +565,7 @@ export async function run(ctx) {
   if (/imports|tasks|hono|std/i.test(denText)) pass('deno.json: imports or tasks shown'); else fail('deno content: ' + denText.slice(0, 200));
 
   // ── .nvmrc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.nvmrc');
   await page.waitForSelector('#previewHost .nvm-doc', { timeout: 12000 });
   const nvmText = await page.$eval('#previewHost .nvm-doc', (e) => e.textContent);
@@ -573,7 +573,7 @@ export async function run(ctx) {
   if (/v20|20\.11|lts/i.test(nvmText)) pass('nvmrc: version shown'); else fail('nvmrc version: ' + nvmText.slice(0, 200));
 
   // ── .browserslistrc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.browserslistrc');
   await page.waitForSelector('#previewHost .brl-doc', { timeout: 12000 });
   const brlText = await page.$eval('#previewHost .brl-doc', (e) => e.textContent);
@@ -581,7 +581,7 @@ export async function run(ctx) {
   if (/last|Firefox|chrome/i.test(brlText)) pass('browserslistrc: queries shown'); else fail('browserslist queries: ' + brlText.slice(0, 200));
 
   // ── pre-commit-config.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pre-commit config');
   await page.waitForSelector('#previewHost .prc-doc', { timeout: 12000 });
   const prcText = await page.$eval('#previewHost .prc-doc', (e) => e.textContent);
@@ -589,7 +589,7 @@ export async function run(ctx) {
   if (/trailing|yaml|json|repo/i.test(prcText)) pass('pre-commit-config.yaml: hooks shown'); else fail('pre-commit hooks: ' + prcText.slice(0, 200));
 
   // ── pyrightconfig.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Pyright config');
   await page.waitForSelector('#previewHost .pyr-doc', { timeout: 12000 });
   const pyrText = await page.$eval('#previewHost .pyr-doc', (e) => e.textContent);
@@ -597,7 +597,7 @@ export async function run(ctx) {
   if (/standard|3\.11|typeCheck/i.test(pyrText)) pass('pyrightconfig.json: config shown'); else fail('pyright config: ' + pyrText.slice(0, 200));
 
   // ── tox.ini viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('tox.ini (tox Config)');
   await page.waitForSelector('#previewHost .toxini-doc', { timeout: 12000 });
   const toxText = await page.$eval('#previewHost .toxini-doc', (e) => e.textContent);
@@ -606,7 +606,7 @@ export async function run(ctx) {
   if (/lint/i.test(toxText)) pass('tox.ini: lint env shown'); else fail('tox.ini: lint env not shown: ' + toxText.slice(0, 200));
 
   // ── pytest.ini viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pytest.ini (pytest Config)');
   await page.waitForSelector('#previewHost .pytestini-doc', { timeout: 12000 });
   pass('pytest.ini: badge shown');
@@ -615,7 +615,7 @@ export async function run(ctx) {
   if (/slow|Markers|integration|flaky/i.test(pytestText)) pass('pytest.ini: markers shown'); else fail('pytest.ini: markers not shown: ' + pytestText.slice(0, 200));
 
   // ── mypy.ini viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mypy config');
   await page.waitForSelector('#previewHost .mypyini-doc', { timeout: 12000 });
   pass('mypy.ini: badge shown');
@@ -624,7 +624,7 @@ export async function run(ctx) {
   if (!mypText.includes('pytest') && !mypText.includes('requests')) fail('mypy.ini: module overrides not shown'); else pass('mypy.ini: module overrides shown');
 
   // ── angular.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Angular workspace');
   await page.waitForSelector('#previewHost .ngw-doc', { timeout: 12000 });
   const ngwText = await page.$eval('#previewHost .ngw-doc', (e) => e.textContent);
@@ -632,7 +632,7 @@ export async function run(ctx) {
   if (/my-app|project|build|serve/i.test(ngwText)) pass('angular.json: projects shown'); else fail('angular projects: ' + ngwText.slice(0, 200));
 
   // ── capacitor.config.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('capacitor.config.json');
   await page.waitForSelector('#previewHost .cap-doc', { timeout: 12000 });
   const capText = await page.$eval('#previewHost .cap-doc', (e) => e.textContent);
@@ -640,7 +640,7 @@ export async function run(ctx) {
   if (/com\.example|SplashScreen|StatusBar/i.test(capText)) pass('capacitor.config.json: config shown'); else fail('capacitor config: ' + capText.slice(0, 200));
 
   // ── .nycrc.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.nycrc.json');
   await page.waitForSelector('#previewHost .nyc-doc', { timeout: 12000 });
   const nycText = await page.$eval('#previewHost .nyc-doc', (e) => e.textContent);
@@ -648,7 +648,7 @@ export async function run(ctx) {
   if (/80|90|branches|lines/i.test(nycText)) pass('.nycrc.json: thresholds shown'); else fail('nyc thresholds: ' + nycText.slice(0, 200));
 
   // ── devcontainer.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('devcontainer.json');
   await page.waitForSelector('#previewHost .devcontainer-doc', { timeout: 12000 });
   const dvcText = await page.$eval('#previewHost .devcontainer-doc', (e) => e.textContent);
@@ -657,7 +657,7 @@ export async function run(ctx) {
   if (/3000/.test(dvcText)) pass('devcontainer.json: ports shown'); else fail('devcontainer ports: ' + dvcText.slice(0, 200));
 
   // ── knip.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('knip.json');
   await page.waitForSelector('#previewHost .knp-doc', { timeout: 12000 });
   const knpText = await page.$eval('#previewHost .knp-doc', (e) => e.textContent);
@@ -665,7 +665,7 @@ export async function run(ctx) {
   if (/typescript|eslint|jest|src/i.test(knpText)) pass('knip.json: content shown'); else fail('knip content: ' + knpText.slice(0, 200));
 
   // ── .mocharc.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.mocharc.json');
   await page.waitForSelector('#previewHost .moc-doc', { timeout: 12000 });
   const mocText = await page.$eval('#previewHost .moc-doc', (e) => e.textContent);
@@ -673,7 +673,7 @@ export async function run(ctx) {
   if (/spec|timeout|reporter|bdd/i.test(mocText)) pass('.mocharc.json: config shown'); else fail('mocha config: ' + mocText.slice(0, 200));
 
   // ── .gitlab-ci.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.gitlab-ci.yml');
   await page.waitForSelector('#previewHost .glb-doc', { timeout: 12000 });
   const glbText = await page.$eval('#previewHost .glb-doc', (e) => e.textContent);
@@ -681,7 +681,7 @@ export async function run(ctx) {
   if (/install|lint|test|build|deploy/i.test(glbText)) pass('.gitlab-ci.yml: stages/jobs shown'); else fail('gitlab-ci jobs: ' + glbText.slice(0, 200));
 
   // ── pnpm-workspace.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pnpm-workspace.yaml');
   await page.waitForSelector('#previewHost .pnpmws-doc', { timeout: 12000 });
   const pnwText = await page.$eval('#previewHost .pnpmws-doc', (e) => e.textContent);
@@ -689,7 +689,7 @@ export async function run(ctx) {
   if (/packages|apps|catalog|react/i.test(pnwText)) pass('pnpm-workspace.yaml: workspaces shown'); else fail('pnpm-workspace content: ' + pnwText.slice(0, 200));
 
   // ── vitest.config.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vitest.config.json');
   await page.waitForSelector('#previewHost .vt-doc', { timeout: 12000 });
   const vtText = await page.$eval('#previewHost .vt-doc', (e) => e.textContent);
@@ -697,7 +697,7 @@ export async function run(ctx) {
   if (/jsdom|environment|coverage|reporters/i.test(vtText)) pass('vitest.config.json: config shown'); else fail('vitest config: ' + vtText.slice(0, 200));
 
   // ── graphql.config.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('graphql.config.json');
   await page.waitForSelector('#previewHost .gql-doc', { timeout: 12000 });
   const gqlText = await page.$eval('#previewHost .gql-doc', (e) => e.textContent);
@@ -705,7 +705,7 @@ export async function run(ctx) {
   if (/schema|documents|extensions|codegen/i.test(gqlText)) pass('graphql.config.json: config shown'); else fail('graphql config: ' + gqlText.slice(0, 200));
 
   // ── apollo.config.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('apollo.config.json');
   await page.waitForSelector('#previewHost .apl-doc', { timeout: 12000 });
   const aplText = await page.$eval('#previewHost .apl-doc', (e) => e.textContent);
@@ -713,7 +713,7 @@ export async function run(ctx) {
   if (/client|service|my-app|endpoint/i.test(aplText)) pass('apollo.config.json: client and service shown'); else fail('apollo config: ' + aplText.slice(0, 200));
 
   // ── storybook.main.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('storybook.main.json (.storybook/main.json)');
   await page.waitForSelector('#previewHost .sb-doc', { timeout: 12000 });
   const sbText = await page.$eval('#previewHost .sb-doc', (e) => e.textContent);
@@ -721,7 +721,7 @@ export async function run(ctx) {
   if (/addon|stories|framework|react-vite/i.test(sbText)) pass('storybook.main.json: addons and framework shown'); else fail('storybook config: ' + sbText.slice(0, 200));
 
   // ── .drone.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.drone.yml');
   await page.waitForSelector('#previewHost .drn-doc', { timeout: 12000 });
   const drnText = await page.$eval('#previewHost .drn-doc', (e) => e.textContent);
@@ -729,7 +729,7 @@ export async function run(ctx) {
   if (/pipeline|steps|install|test|build/i.test(drnText)) pass('.drone.yml: steps shown'); else fail('drone steps: ' + drnText.slice(0, 200));
 
   // ── buildkite.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('buildkite.yml');
   await page.waitForSelector('#previewHost .bk-doc', { timeout: 12000 });
   const bkText = await page.$eval('#previewHost .bk-doc', (e) => e.textContent);
@@ -737,7 +737,7 @@ export async function run(ctx) {
   if (/Build|test|Deploy|step/i.test(bkText)) pass('buildkite.yml: steps shown'); else fail('buildkite steps: ' + bkText.slice(0, 200));
 
   // ── skaffold.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('skaffold.yaml');
   await page.waitForSelector('#previewHost .skaffold-doc', { timeout: 12000 });
   const skfText = await page.$eval('#previewHost .skaffold-doc', (e) => e.textContent);
@@ -745,7 +745,7 @@ export async function run(ctx) {
   if (/artifact|deploy|kubectl|profile/i.test(skfText)) pass('skaffold.yaml: build and deploy shown'); else fail('skaffold config: ' + skfText.slice(0, 200));
 
   // ── .hadolint.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.hadolint.yaml');
   await page.waitForSelector('.hadolint-doc', { timeout: 12000 });
   pass('.hadolint.yaml: renders');
@@ -754,7 +754,7 @@ export async function run(ctx) {
   if (/DL|registry|rule/i.test(hdlText)) pass('.hadolint.yaml: config shown'); else fail('.hadolint.yaml: no config shown: ' + hdlText.slice(0, 200));
 
   // ── trivy.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('trivy.yaml');
   await page.waitForSelector('.trivyyaml-doc', { timeout: 12000 });
   pass('trivy.yaml: renders');
@@ -763,7 +763,7 @@ export async function run(ctx) {
   if (/scanner|severity|vuln/i.test(trivyText)) pass('trivy.yaml: scan config shown'); else fail('trivy.yaml: no scan config: ' + trivyText.slice(0, 200));
 
   // ── firebase.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('firebase.json');
   await page.waitForSelector('#previewHost .fbs-doc', { timeout: 12000 });
   const fbsText = await page.$eval('#previewHost .fbs-doc', (e) => e.textContent);
@@ -771,7 +771,7 @@ export async function run(ctx) {
   if (/dist|hosting|functions|emulators/i.test(fbsText)) pass('firebase.json: config sections shown'); else fail('firebase config: ' + fbsText.slice(0, 200));
 
   // ── app.json (Expo) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('app.json (Expo)');
   await page.waitForSelector('#previewHost .exp-doc', { timeout: 12000 });
   const expText = await page.$eval('#previewHost .exp-doc', (e) => e.textContent);
@@ -779,7 +779,7 @@ export async function run(ctx) {
   if (/MyAwesomeApp|51\.0\.0|ios|android/i.test(expText)) pass('app.json (Expo): app config shown'); else fail('expo config: ' + expText.slice(0, 200));
 
   // ── tailwind.config.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('tailwind.config.json');
   await page.waitForSelector('#previewHost .twl-doc', { timeout: 12000 });
   const twlText = await page.$eval('#previewHost .twl-doc', (e) => e.textContent);
@@ -787,7 +787,7 @@ export async function run(ctx) {
   if (/content|theme|plugins|class/i.test(twlText)) pass('tailwind.config.json: config shown'); else fail('tailwind config: ' + twlText.slice(0, 200));
 
   // ── postcss.config.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('postcss.config.json');
   await page.waitForSelector('#previewHost .pcs-doc', { timeout: 12000 });
   const pcsText = await page.$eval('#previewHost .pcs-doc', (e) => e.textContent);
@@ -795,7 +795,7 @@ export async function run(ctx) {
   if (/tailwindcss|autoprefixer|cssnano/i.test(pcsText)) pass('postcss.config.json: plugins shown'); else fail('postcss plugins: ' + pcsText.slice(0, 200));
 
   // ── .huskyrc.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.huskyrc.json');
   await page.waitForSelector('#previewHost .hsk-doc', { timeout: 12000 });
   const hskText = await page.$eval('#previewHost .hsk-doc', (e) => e.textContent);
@@ -803,7 +803,7 @@ export async function run(ctx) {
   if (/pre-commit|commit-msg|lint-staged/i.test(hskText)) pass('.huskyrc.json: hooks shown'); else fail('husky hooks: ' + hskText.slice(0, 200));
 
   // ── .lintstagedrc.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.lintstagedrc.json');
   await page.waitForSelector('#previewHost .lst-doc', { timeout: 12000 });
   const lstText = await page.$eval('#previewHost .lst-doc', (e) => e.textContent);
@@ -811,7 +811,7 @@ export async function run(ctx) {
   if (/eslint|prettier|stylelint/i.test(lstText)) pass('.lintstagedrc.json: glob rules shown'); else fail('lint-staged rules: ' + lstText.slice(0, 200));
 
   // ── nest-cli.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nest-cli.json');
   await page.waitForSelector('#previewHost .nst-doc', { timeout: 12000 });
   const nstText = await page.$eval('#previewHost .nst-doc', (e) => e.textContent);
@@ -819,7 +819,7 @@ export async function run(ctx) {
   if (/monorepo|api|auth|library/i.test(nstText)) pass('nest-cli.json: projects shown'); else fail('nest-cli projects: ' + nstText.slice(0, 200));
 
   // ── .swcrc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.swcrc');
   await page.waitForSelector('#previewHost .swc-doc', { timeout: 12000 });
   const swcText = await page.$eval('#previewHost .swc-doc', (e) => e.textContent);
@@ -827,7 +827,7 @@ export async function run(ctx) {
   if (/typescript|es2020|es6|source maps/i.test(swcText)) pass('.swcrc: compiler config shown'); else fail('swcrc config: ' + swcText.slice(0, 200));
 
   // ── Chart.yaml (Helm chart) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Chart.yaml (Helm chart)');
   await page.waitForSelector('#previewHost .helmchart-doc', { timeout: 12000 });
   pass('Chart.yaml: renders');
@@ -837,7 +837,7 @@ export async function run(ctx) {
   if (/my-app|postgresql|redis/i.test(hcText)) pass('Chart.yaml: chart name and dependencies shown'); else fail('helm-chart content: ' + hcText.slice(0, 200));
 
   // ── kustomization.yaml (Kustomize) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('kustomization.yaml (Kustomize)');
   await page.waitForSelector('#previewHost .kustomize-doc', { timeout: 12000 });
   pass('kustomization.yaml: renders');
@@ -847,7 +847,7 @@ export async function run(ctx) {
   if (/commonLabels|common labels/i.test(kustText)) pass('kustomization.yaml: commonLabels shown'); else fail('kustomize commonLabels: ' + kustText.slice(0, 200));
 
   // ── ansible-playbook.yml (Ansible) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('ansible-playbook.yml (Ansible)');
   await page.waitForSelector('#previewHost .ans-doc', { timeout: 12000 });
   const ansText = await page.$eval('#previewHost .ans-doc', (e) => e.textContent);
@@ -855,7 +855,7 @@ export async function run(ctx) {
   if (/webservers|databases|nginx|postgresql/i.test(ansText)) pass('ansible-playbook.yml: plays and tasks shown'); else fail('ansible content: ' + ansText.slice(0, 200));
 
   // ── Pulumi.yaml (Pulumi project) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Pulumi.yaml (Pulumi project)');
   await page.waitForSelector('#previewHost .pul-doc', { timeout: 12000 });
   const pulText = await page.$eval('#previewHost .pul-doc', (e) => e.textContent);
@@ -863,7 +863,7 @@ export async function run(ctx) {
   if (/nodejs|cloud-infra|region/i.test(pulText)) pass('Pulumi.yaml: runtime and config shown'); else fail('pulumi content: ' + pulText.slice(0, 200));
 
   // ── packer.json (HashiCorp Packer) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('packer.json (HashiCorp Packer)');
   await page.waitForSelector('#previewHost .pkr-doc', { timeout: 12000 });
   const pkrText = await page.$eval('#previewHost .pkr-doc', (e) => e.textContent);
@@ -871,7 +871,7 @@ export async function run(ctx) {
   if (/amazon-ebs|shell|builders/i.test(pkrText)) pass('packer.json: builders and provisioners shown'); else fail('packer content: ' + pkrText.slice(0, 200));
 
   // ── ruff.toml (Ruff linter) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('ruff.toml (Ruff linter)');
   await page.waitForSelector('#previewHost .rufftoml-doc', { timeout: 12000 });
   pass('ruff.toml: badge shown');
@@ -880,7 +880,7 @@ export async function run(ctx) {
   if (!rufText.includes('120')) fail('ruff.toml: line length not shown'); else pass('ruff.toml: line length shown');
 
   // ── uv.toml (uv package manager) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('uv.toml (uv package manager)');
   await page.waitForSelector('#previewHost .uv-doc', { timeout: 12000 });
   const uvText = await page.$eval('#previewHost .uv-doc', (e) => e.textContent);
@@ -888,7 +888,7 @@ export async function run(ctx) {
   if (/3\.12|python|hardlink/i.test(uvText)) pass('uv.toml: Python version and settings shown'); else fail('uv content: ' + uvText.slice(0, 200));
 
   // ── values.yaml (Helm values) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('values.yaml (Helm values)');
   await page.waitForSelector('#previewHost .helmvalues-doc', { timeout: 12000 });
   pass('values.yaml: renders');
@@ -897,7 +897,7 @@ export async function run(ctx) {
   if (/image|service/i.test(hvText)) pass('values.yaml: values info shown'); else fail('helm-values content: ' + hvText.slice(0, 200));
 
   // ── package-lock.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('package-lock.json');
   await page.waitForSelector('#previewHost .plk-doc', { timeout: 12000 });
   const plkText = await page.$eval('#previewHost .plk-doc', (e) => e.textContent);
@@ -905,7 +905,7 @@ export async function run(ctx) {
   if (/lockfileVersion|v3|Total|packages/i.test(plkText)) pass('package-lock.json: stats shown'); else fail('package-lock stats: ' + plkText.slice(0, 200));
 
   // ── composer.lock viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('composer.lock');
   await page.waitForSelector('#previewHost .cpl-doc', { timeout: 12000 });
   const cplText = await page.$eval('#previewHost .cpl-doc', (e) => e.textContent);
@@ -913,7 +913,7 @@ export async function run(ctx) {
   if (/guzzlehttp|symfony|phpunit|package/i.test(cplText)) pass('composer.lock: packages shown'); else fail('composer-lock packages: ' + cplText.slice(0, 200));
 
   // ── pnpm-lock.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pnpm-lock.yaml');
   await page.waitForSelector('#previewHost .pkl-doc', { timeout: 12000 });
   const pklText = await page.$eval('#previewHost .pkl-doc', (e) => e.textContent);
@@ -921,7 +921,7 @@ export async function run(ctx) {
   if (/lockfileVersion|9|Packages|react/i.test(pklText)) pass('pnpm-lock.yaml: stats shown'); else fail('pnpm-lock stats: ' + pklText.slice(0, 200));
 
   // ── Cargo.lock viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Cargo.lock');
   await page.waitForSelector('#previewHost .clk-doc', { timeout: 12000 });
   const clkText = await page.$eval('#previewHost .clk-doc', (e) => e.textContent);
@@ -929,7 +929,7 @@ export async function run(ctx) {
   if (/serde|crate|Workspace/i.test(clkText)) pass('Cargo.lock: crates shown'); else fail('cargo-lock crates: ' + clkText.slice(0, 200));
 
   // ── poetry.lock viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('poetry.lock');
   await page.waitForSelector('#previewHost .plo-doc', { timeout: 12000 });
   const ploText = await page.$eval('#previewHost .plo-doc', (e) => e.textContent);
@@ -937,7 +937,7 @@ export async function run(ctx) {
   if (/flask|requests|certifi|package/i.test(ploText)) pass('poetry.lock: packages shown'); else fail('poetry-lock packages: ' + ploText.slice(0, 200));
 
   // ── Julia Project.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Project.toml');
   await page.waitForSelector('#previewHost .julia-doc', { timeout: 12000 });
   const jpText = await page.$eval('#previewHost .julia-doc', (e) => e.textContent);
@@ -946,7 +946,7 @@ export async function run(ctx) {
   if (/DataFrames|HTTP|Dependencies/i.test(jpText)) pass('Project.toml: dependencies shown'); else fail('julia-project deps: ' + jpText.slice(0, 300));
 
   // ── Julia Manifest.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Manifest.toml');
   await page.waitForSelector('#previewHost .julia-mani-doc', { timeout: 12000 });
   const jmText = await page.$eval('#previewHost .julia-mani-doc', (e) => e.textContent);
@@ -956,7 +956,7 @@ export async function run(ctx) {
   if (/do not edit manually/i.test(jmText)) pass('Manifest.toml: lockfile warning shown'); else fail('julia-manifest lockfile note: ' + jmText.slice(0, 200));
 
   // ── go.sum viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('go.sum');
   await page.waitForSelector('#previewHost .gsm-doc', { timeout: 12000 });
   const gsmText = await page.$eval('#previewHost .gsm-doc', (e) => e.textContent);
@@ -964,7 +964,7 @@ export async function run(ctx) {
   if (/gin-gonic|module|Entries|Modules/i.test(gsmText)) pass('go.sum: module list shown'); else fail('go-sum modules: ' + gsmText.slice(0, 200));
 
   // ── go.work viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('go.work');
   await page.waitForSelector('#previewHost .gw-doc', { timeout: 12000 });
   const gwText = await page.$eval('#previewHost .gw-doc', (e) => e.textContent);
@@ -972,7 +972,7 @@ export async function run(ctx) {
   if (/\.\/core|\.\/api|1\.22\.0/i.test(gwText)) pass('go.work: modules or version shown'); else fail('go-work modules: ' + gwText.slice(0, 300));
 
   // ── Makefile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Makefile');
   await page.waitForSelector('#previewHost .makefile-doc', { timeout: 12000 });
   pass('Makefile: renders');
@@ -981,7 +981,7 @@ export async function run(ctx) {
   if (/all|test|clean|serve|build/i.test(mkfText)) pass('Makefile: targets shown'); else fail('makefile targets: ' + mkfText.slice(0, 200));
 
   // ── Justfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Justfile');
   await page.waitForSelector('#previewHost .jst-doc', { timeout: 12000 });
   const jstText = await page.$eval('#previewHost .jst-doc', (e) => e.textContent);
@@ -989,7 +989,7 @@ export async function run(ctx) {
   if (/build|test|fmt|release/i.test(jstText)) pass('Justfile: recipes shown'); else fail('justfile recipes: ' + jstText.slice(0, 200));
 
   // ── Procfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Procfile');
   await page.waitForSelector('#previewHost .pfl-doc', { timeout: 12000 });
   const pflText = await page.$eval('#previewHost .pfl-doc', (e) => e.textContent);
@@ -997,7 +997,7 @@ export async function run(ctx) {
   if (/web|worker|scheduler/i.test(pflText)) pass('Procfile: process types shown'); else fail('procfile procs: ' + pflText.slice(0, 200));
 
   // ── rust-toolchain.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('rust-toolchain.toml');
   await page.waitForSelector('#previewHost .rusttoolchain-doc', { timeout: 12000 });
   pass('rust-toolchain.toml: badge shown');
@@ -1008,7 +1008,7 @@ export async function run(ctx) {
   else pass('rust-toolchain.toml: components shown');
 
   // ── .envrc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.envrc');
   await page.waitForSelector('#previewHost .erc-doc', { timeout: 12000 });
   const ercText = await page.$eval('#previewHost .erc-doc', (e) => e.textContent);
@@ -1017,7 +1017,7 @@ export async function run(ctx) {
   if (!/do-not-commit/i.test(ercText)) pass('.envrc: sensitive values redacted'); else fail('envrc not redacting secrets');
 
   // ── mise.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mise.toml');
   await page.waitForSelector('#previewHost .mise-doc', { timeout: 12000 });
   const mseText = await page.$eval('#previewHost .mise-doc', (e) => e.textContent);
@@ -1025,7 +1025,7 @@ export async function run(ctx) {
   if (/node|python|ruby/i.test(mseText)) pass('mise.toml: tools shown'); else fail('mise tools: ' + mseText.slice(0, 200));
 
   // ── .tool-versions viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.tool-versions');
   await page.waitForSelector('.toolversions-doc', { timeout: 12000 });
   pass('.tool-versions: renders');
@@ -1034,7 +1034,7 @@ export async function run(ctx) {
   if (/node|python|ruby/i.test(tvrText)) pass('.tool-versions: tools shown'); else fail('tool-versions tools: ' + tvrText.slice(0, 200));
 
   // ── .gitattributes viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.gitattributes');
   await page.waitForSelector('#previewHost .gitattr-doc', { timeout: 12000 });
   pass('.gitattributes: badge shown');
@@ -1045,7 +1045,7 @@ export async function run(ctx) {
   else pass('.gitattributes: LFS shown');
 
   // ── .mailmap viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.mailmap');
   await page.waitForSelector('#previewHost .mm-doc', { timeout: 12000 });
   const mmText = await page.$eval('#previewHost .mm-doc', (e) => e.textContent);
@@ -1054,7 +1054,7 @@ export async function run(ctx) {
   if (mmNames.length > 0) pass('.mailmap: canonical names shown'); else fail('mailmap names: ' + mmText.slice(0, 200));
 
   // ── .npmignore viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.npmignore');
   await page.waitForSelector('#previewHost .nig-doc', { timeout: 12000 });
   const nigText = await page.$eval('#previewHost .nig-doc', (e) => e.textContent);
@@ -1063,7 +1063,7 @@ export async function run(ctx) {
   if (nigPats.some((p) => /node_modules|test|dist/.test(p))) pass('.npmignore: patterns shown'); else fail('npmignore patterns: ' + nigPats.join(','));
 
   // ── .dockerignore viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.dockerignore');
   await page.waitForSelector('#previewHost .dig-doc', { timeout: 12000 });
   const digText = await page.$eval('#previewHost .dig-doc', (e) => e.textContent);
@@ -1088,7 +1088,7 @@ export async function run(ctx) {
   if (!dockerignoreText.includes('.git') && !dockerignoreText.includes('node_modules') && !dockerignoreText.includes('pattern')) fail('.dockerignore: no patterns shown'); else pass('.dockerignore: patterns shown');
 
   // ── AppVeyor CI viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('appveyor.yml');
   await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
   const avyChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
@@ -1099,7 +1099,7 @@ export async function run(ctx) {
   if (/Visual Studio|Build Script|build step/i.test(avyText)) pass('appveyor.yml: build info shown'); else fail('appveyor build info: ' + avyText.slice(0, 200));
 
   // ── RuboCop viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.rubocop.yml');
   await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
   const rbcChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
@@ -1110,7 +1110,7 @@ export async function run(ctx) {
   if (/Ruby|3\.[12]|TargetRuby/i.test(rbcText)) pass('.rubocop.yml: ruby version shown'); else fail('rubocop ruby version: ' + rbcText.slice(0, 200));
 
   // ── RuboCop TODO viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.rubocop_todo.yml');
   await page.waitForSelector('.rubocoptodo-doc', { timeout: 12000 });
   pass('.rubocop_todo.yml: renders');
@@ -1119,7 +1119,7 @@ export async function run(ctx) {
   if (!rubocoptodoText.includes('cop') && !rubocoptodoText.includes('Style') && !rubocoptodoText.includes('Metrics')) fail('.rubocop_todo.yml: no cops shown'); else pass('.rubocop_todo.yml: cops shown');
 
   // ── Taskfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Taskfile.yml');
   await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
   const tkfChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
@@ -1130,7 +1130,7 @@ export async function run(ctx) {
   if (/build|test|clean/i.test(tkfText)) pass('Taskfile.yml: tasks shown'); else fail('taskfile tasks: ' + tkfText.slice(0, 200));
 
   // ── MkDocs viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mkdocs.yml');
   await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
   const mdkChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
@@ -1141,7 +1141,7 @@ export async function run(ctx) {
   if (/My Project Docs|material|Getting Started/i.test(mdkText)) pass('mkdocs.yml: site info shown'); else fail('mkdocs site info: ' + mdkText.slice(0, 200));
 
   // ── Gemfile.lock viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Gemfile.lock');
   await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
   const gflChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
@@ -1151,7 +1151,7 @@ export async function run(ctx) {
   if (/GEM|BUNDLED|Gemfile|rails/i.test(gflText)) pass('Gemfile.lock: content shown'); else fail('gemfile-lock content: ' + gflText.slice(0, 200));
 
   // ── SonarQube config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sonar-project.properties');
   await page.waitForSelector('#previewHost .sonarprops-doc', { timeout: 12000 });
   const snrText = await page.$eval('#previewHost .sonarprops-doc', (e) => e.textContent);
@@ -1160,7 +1160,7 @@ export async function run(ctx) {
   if (snrText.includes('squ_abc123xyz456def789')) fail('sonar-project.properties: token leaked'); else pass('sonar-project.properties: token masked');
 
   // ── Hatch config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('hatch.toml');
   await page.waitForSelector('#enhanceChip:not([hidden])', { timeout: 12000 });
   const htcChipText = await page.$eval('#enhanceChip', (e) => e.textContent);
@@ -1170,7 +1170,7 @@ export async function run(ctx) {
   if (/Hatch|build|env/i.test(htcText)) pass('hatch.toml: content shown'); else fail('hatch content: ' + htcText.slice(0, 200));
 
   // ── rush.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('rush.json');
   await page.waitForSelector('#previewHost .rsh-doc', { timeout: 12000 });
   const rshText = await page.$eval('#previewHost .rsh-doc', (e) => e.textContent);
@@ -1178,7 +1178,7 @@ export async function run(ctx) {
   if (/5\.109|rushVersion|@acme/i.test(rshText)) pass('rush.json: version and projects shown'); else fail('rush content: ' + rshText.slice(0, 200));
 
   // ── .markdownlint.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.markdownlint.json');
   await page.waitForSelector('#previewHost .mdlint-doc', { timeout: 12000 });
   const mdlText = await page.$eval('#previewHost .mdlint-doc', (e) => e.textContent);
@@ -1187,7 +1187,7 @@ export async function run(ctx) {
   if (/120/.test(mdlText)) pass('.markdownlint.json: line length shown'); else fail('markdownlint line length: ' + mdlText.slice(0, 200));
 
   // ── .clang-format viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.clang-format');
   await page.waitForSelector('#previewHost .clangformat-doc', { timeout: 12000 });
   pass('.clang-format: renders');
@@ -1196,7 +1196,7 @@ export async function run(ctx) {
   if (/Google|style|Indent/i.test(clangFmtText)) pass('.clang-format: style shown'); else fail('.clang-format: no style info');
 
   // ── .clang-tidy viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.clang-tidy');
   await page.waitForSelector('#previewHost .clangtidy-doc', { timeout: 12000 });
   pass('.clang-tidy: renders');
@@ -1205,7 +1205,7 @@ export async function run(ctx) {
   if (/modernize|check/i.test(clangtidyText)) pass('.clang-tidy: checks shown'); else fail('.clang-tidy: no checks shown');
 
   // ── moon.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('moon.yml');
   await page.waitForSelector('#previewHost .moonyml-doc', { timeout: 12000 });
   pass('moon.yml: renders');
@@ -1214,7 +1214,7 @@ export async function run(ctx) {
   if (!moonText.includes('task') && !moonText.includes('build')) fail('moon.yml: no tasks shown'); else pass('moon.yml: tasks shown');
 
   // ── crowdin.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('crowdin.yml (Crowdin config)');
   await page.waitForSelector('#previewHost .cwd-doc', { timeout: 12000 });
   const cwdText = await page.$eval('#previewHost .cwd-doc', (e) => e.textContent);
@@ -1222,7 +1222,7 @@ export async function run(ctx) {
   if (/source|translation|mapping/i.test(cwdText)) pass('crowdin.yml: file mappings shown'); else fail('crowdin content: ' + cwdText.slice(0, 200));
 
   // ── Matchfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Matchfile (Fastlane Match)');
   await page.waitForSelector('#previewHost .mf-doc', { timeout: 12000 });
   const mfText = await page.$eval('#previewHost .mf-doc', (e) => e.textContent);
@@ -1230,7 +1230,7 @@ export async function run(ctx) {
   if (/git|storage|com\.example|development/i.test(mfText)) pass('Matchfile: certificate config shown'); else fail('matchfile content: ' + mfText.slice(0, 200));
 
   // ── Appfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Appfile');
   await page.waitForSelector('#previewHost .af-doc', { timeout: 12000 });
   const afText = await page.$eval('#previewHost .af-doc', (e) => e.textContent);
@@ -1238,7 +1238,7 @@ export async function run(ctx) {
   if (/com\.example|apple_id|team/i.test(afText)) pass('Appfile: app config shown'); else fail('appfile content: ' + afText.slice(0, 200));
 
   // ── .ruby-version viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.ruby-version');
   await page.waitForSelector('#previewHost .rv-doc', { timeout: 12000 });
   const rvText = await page.$eval('#previewHost .rv-doc', (e) => e.textContent);
@@ -1246,7 +1246,7 @@ export async function run(ctx) {
   if (/rbenv|rvm|asdf/i.test(rvText)) pass('.ruby-version: install commands shown'); else fail('ruby-version content: ' + rvText.slice(0, 200));
 
   // ── .python-version viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.python-version');
   await page.waitForSelector('#previewHost .pv-doc', { timeout: 12000 });
   const pvText = await page.$eval('#previewHost .pv-doc', (e) => e.textContent);
@@ -1254,7 +1254,7 @@ export async function run(ctx) {
   if (/pyenv|asdf|3\.\d/i.test(pvText)) pass('.python-version: version and install commands shown'); else fail('python-version content: ' + pvText.slice(0, 200));
 
   // ── Supabase config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('supabase/config.toml');
   await page.waitForSelector('#previewHost .sbc-doc', { timeout: 12000 });
   const sbcText = await page.$eval('#previewHost .sbc-doc', (e) => e.textContent);
@@ -1262,7 +1262,7 @@ export async function run(ctx) {
   if (/my-supabase-project|54321|54322/i.test(sbcText)) pass('supabase config.toml: settings shown'); else fail('supabase content: ' + sbcText.slice(0, 200));
 
   // ── Netlify _redirects viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('_redirects');
   await page.waitForSelector('#previewHost .rdx-doc', { timeout: 12000 });
   const rdxText = await page.$eval('#previewHost .rdx-doc', (e) => e.textContent);
@@ -1270,7 +1270,7 @@ export async function run(ctx) {
   if (/301|\/old-blog|\/api/i.test(rdxText)) pass('_redirects: rules shown'); else fail('redirects content: ' + rdxText.slice(0, 200));
 
   // ── CMakeLists.txt viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('CMakeLists.txt');
   await page.waitForSelector('#previewHost .cmake-doc', { timeout: 12000 });
   const cmakeText = await page.$eval('#previewHost .cmake-doc', (e) => e.textContent);
@@ -1278,7 +1278,7 @@ export async function run(ctx) {
   if (/myapp|mylib|OpenSSL|MyApp/i.test(cmakeText)) pass('CMakeLists.txt: targets or deps shown'); else fail('cmake targets: ' + cmakeText.slice(0, 200));
 
   // ── Jenkinsfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Jenkinsfile');
   await page.waitForSelector('#previewHost .jenkinsfile-doc', { timeout: 12000 });
   pass('Jenkinsfile: renders');
@@ -1287,7 +1287,7 @@ export async function run(ctx) {
   if (/stage|Stage/i.test(jkfText)) pass('Jenkinsfile: stages shown'); else fail('jenkins stages: ' + jkfText.slice(0, 200));
 
   // ── Vagrantfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Vagrantfile');
   await page.waitForSelector('#previewHost .vagrantfile-doc', { timeout: 12000 });
   const vgfText = await page.$eval('#previewHost .vagrantfile-doc', (e) => e.textContent);
@@ -1295,7 +1295,7 @@ export async function run(ctx) {
   if (/ubuntu\/jammy64/i.test(vgfText)) pass('Vagrantfile: box shown'); else fail('vagrantfile box: ' + vgfText.slice(0, 200));
 
   // ── BUILD.bazel viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('BUILD.bazel');
   await page.waitForSelector('#previewHost .bzl-doc', { timeout: 12000 });
   const bzlText = await page.$eval('#previewHost .bzl-doc', (e) => e.textContent);
@@ -1303,7 +1303,7 @@ export async function run(ctx) {
   if (/server|lib|py_binary|py_library|py_test/i.test(bzlText)) pass('BUILD.bazel: targets shown'); else fail('bazel targets: ' + bzlText.slice(0, 200));
 
   // ── .bazelrc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.bazelrc');
   await page.waitForSelector('#previewHost .brc-doc', { timeout: 12000 });
   const brcText = await page.$eval('#previewHost .brc-doc', (e) => e.textContent);
@@ -1311,7 +1311,7 @@ export async function run(ctx) {
   if (/build|test|common|remote/i.test(brcText)) pass('.bazelrc: option groups shown'); else fail('bazelrc groups: ' + brcText.slice(0, 200));
 
   // ── build.ninja viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('build.ninja');
   await page.waitForSelector('#previewHost .nj-doc', { timeout: 12000 });
   const njText = await page.$eval('#previewHost .nj-doc', (e) => e.textContent);
@@ -1319,7 +1319,7 @@ export async function run(ctx) {
   if (/cc_compile|cc_link|myapp|build\./i.test(njText)) pass('build.ninja: rules or targets shown'); else fail('ninja targets: ' + njText.slice(0, 200));
 
   // ── .gitconfig viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.gitconfig');
   await page.waitForSelector('#previewHost .gcf-doc', { timeout: 12000 });
   const gcfText = await page.$eval('#previewHost .gcf-doc', (e) => e.textContent);
@@ -1328,7 +1328,7 @@ export async function run(ctx) {
   if (/jane@example\.com|Jane Developer/i.test(gcfText)) pass('.gitconfig: user identity shown'); else fail('gitconfig user: ' + gcfText.slice(0, 200));
 
   // ── playwright.config.ts viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('playwright.config.ts');
   await page.waitForSelector('#previewHost .pw-doc', { timeout: 12000 });
   const pwText = await page.$eval('#previewHost .pw-doc', (e) => e.textContent);
@@ -1338,7 +1338,7 @@ export async function run(ctx) {
   if (/web server/i.test(pwText)) pass('playwright.config.ts: web server indicator shown'); else fail('playwright webserver: ' + pwText.slice(0, 200));
 
   // ── cypress.config.js viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cypress.config.js');
   await page.waitForSelector('#previewHost .cy-doc', { timeout: 12000 });
   const cyText = await page.$eval('#previewHost .cy-doc', (e) => e.textContent);
@@ -1348,7 +1348,7 @@ export async function run(ctx) {
   if (/env var/i.test(cyText)) pass('cypress.config.js: env var count shown'); else fail('cypress env: ' + cyText.slice(0, 200));
 
   // ── wdio.conf.js viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('wdio.conf.js');
   await page.waitForSelector('#previewHost .wdio-doc', { timeout: 12000 });
   const wdioText = await page.$eval('#previewHost .wdio-doc', (e) => e.textContent);
@@ -1358,7 +1358,7 @@ export async function run(ctx) {
   if (/mocha/i.test(wdioText)) pass('wdio.conf.js: framework shown'); else fail('wdio framework: ' + wdioText.slice(0, 200));
 
   // ── k6.config.js viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('k6.config.js');
   await page.waitForSelector('#previewHost .k6-doc', { timeout: 12000 });
   const k6Text = await page.$eval('#previewHost .k6-doc', (e) => e.textContent);
@@ -1368,7 +1368,7 @@ export async function run(ctx) {
   if (/threshold|http_req/i.test(k6Text)) pass('k6.config.js: thresholds shown'); else fail('k6 thresholds: ' + k6Text.slice(0, 200));
 
   // ── .goreleaser.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.goreleaser.yaml');
   await page.waitForSelector('#previewHost .grl-doc', { timeout: 12000 });
   const grlText = await page.$eval('#previewHost .grl-doc', (e) => e.textContent);
@@ -1378,7 +1378,7 @@ export async function run(ctx) {
   if (/tar\.gz|zip/i.test(grlText)) pass('.goreleaser.yaml: archive formats shown'); else fail('goreleaser archives: ' + grlText.slice(0, 200));
 
   // ── .golangci.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.golangci.yml');
   await page.waitForSelector('#previewHost .golangci-doc', { timeout: 12000 });
   const gclText = await page.$eval('#previewHost .golangci-doc', (e) => e.textContent);
@@ -1387,7 +1387,7 @@ export async function run(ctx) {
   if (/5m/i.test(gclText)) pass('.golangci.yml: timeout shown'); else fail('golangci timeout: ' + gclText.slice(0, 200));
 
   // ── buf.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('buf.yaml');
   await page.waitForSelector('#previewHost .buf-doc', { timeout: 12000 });
   const bufText = await page.$eval('#previewHost .buf-doc', (e) => e.textContent);
@@ -1396,7 +1396,7 @@ export async function run(ctx) {
   if (/googleapis|grpc-gateway/i.test(bufText)) pass('buf.yaml: dependencies shown'); else fail('buf deps: ' + bufText.slice(0, 200));
 
   // ── .mockery.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.mockery.yaml (mockery)');
   await page.waitForSelector('#previewHost .mky-doc', { timeout: 12000 });
   const mkyText = await page.$eval('#previewHost .mky-doc', (e) => e.textContent);
@@ -1406,7 +1406,7 @@ export async function run(ctx) {
   if (/with-expecter|expecter/i.test(mkyText)) pass('.mockery.yaml: with-expecter setting shown'); else fail('mockery expecter: ' + mkyText.slice(0, 300));
 
   // ── .ko.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.ko.yaml (ko container build)');
   await page.waitForSelector('#previewHost .ko-doc', { timeout: 12000 });
   const koText = await page.$eval('#previewHost .ko-doc', (e) => e.textContent);
@@ -1416,7 +1416,7 @@ export async function run(ctx) {
   if (/spdx|sbom/i.test(koText)) pass('.ko.yaml: SBOM setting shown'); else fail('ko sbom: ' + koText.slice(0, 300));
 
   // ── sqlc.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sqlc.yaml (sqlc)');
   await page.waitForSelector('#previewHost .sqlc-doc', { timeout: 12000 });
   const sqlcText = await page.$eval('#previewHost .sqlc-doc', (e) => e.textContent);
@@ -1426,7 +1426,7 @@ export async function run(ctx) {
   if (/internal\/db|analytics/i.test(sqlcText)) pass('sqlc.yaml: output dirs shown'); else fail('sqlc output: ' + sqlcText.slice(0, 300));
 
   // ── nfpm.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nfpm.yaml (nfpm)');
   await page.waitForSelector('#previewHost .nfpm-doc', { timeout: 12000 });
   const nfpmText = await page.$eval('#previewHost .nfpm-doc', (e) => e.textContent);
@@ -1436,7 +1436,7 @@ export async function run(ctx) {
   if (/preinstall|postinstall/i.test(nfpmText)) pass('nfpm.yaml: install scripts shown'); else fail('nfpm scripts: ' + nfpmText.slice(0, 300));
 
   // ── heroku.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('heroku.yml');
   await page.waitForSelector('#previewHost .hku-doc', { timeout: 12000 });
   const hkuText = await page.$eval('#previewHost .hku-doc', (e) => e.textContent);
@@ -1445,7 +1445,7 @@ export async function run(ctx) {
   if (/web|worker|scheduler/i.test(hkuText)) pass('heroku.yml: process types shown'); else fail('heroku processes: ' + hkuText.slice(0, 200));
 
   // ── .readthedocs.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.readthedocs.yaml');
   await page.waitForSelector('#previewHost .rtd-doc', { timeout: 12000 });
   const rtdText = await page.$eval('#previewHost .rtd-doc', (e) => e.textContent);
@@ -1454,7 +1454,7 @@ export async function run(ctx) {
   if (/Sphinx|MkDocs|pdf|epub/i.test(rtdText)) pass('.readthedocs.yaml: doc tool or formats shown'); else fail('readthedocs formats: ' + rtdText.slice(0, 200));
 
   // ── CITATION.cff viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('CITATION.cff');
   await page.waitForSelector('#previewHost .cff-doc', { timeout: 12000 });
   const cffText = await page.$eval('#previewHost .cff-doc', (e) => e.textContent);
@@ -1464,7 +1464,7 @@ export async function run(ctx) {
   if (/10\.5281/i.test(cffText)) pass('CITATION.cff: DOI shown'); else fail('citation DOI: ' + cffText.slice(0, 200));
 
   // ── .yamllint.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.yamllint.yml');
   await page.waitForSelector('#previewHost .yamllint-doc', { timeout: 12000 });
   const ymlText = await page.$eval('#previewHost .yamllint-doc', (e) => e.textContent);
@@ -1473,7 +1473,7 @@ export async function run(ctx) {
   if (/120|line-length|indentation/i.test(ymlText)) pass('.yamllint.yml: key rules shown'); else fail('yamllint rules: ' + ymlText.slice(0, 200));
 
   // ── .coderabbit.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.coderabbit.yaml');
   await page.waitForSelector('#previewHost .crb-doc', { timeout: 12000 });
   const crbText = await page.$eval('#previewHost .crb-doc', (e) => e.textContent);
@@ -1482,7 +1482,7 @@ export async function run(ctx) {
   if (/ruff|eslint|path/i.test(crbText)) pass('.coderabbit.yaml: tools or filters shown'); else fail('coderabbit tools: ' + crbText.slice(0, 200));
 
   // ── vcpkg.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vcpkg.json');
   await page.waitForSelector('#previewHost .vcpkg-doc', { timeout: 12000 });
   const vcpkgText = await page.$eval('#previewHost .vcpkg-doc', (e) => e.textContent);
@@ -1492,7 +1492,7 @@ export async function run(ctx) {
   if (/networking|testing/i.test(vcpkgText)) pass('vcpkg.json: features shown'); else fail('vcpkg features: ' + vcpkgText.slice(0, 300));
 
   // ── CMakePresets.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('CMakePresets.json');
   await page.waitForSelector('#previewHost .cmp-doc', { timeout: 12000 });
   const cmpText = await page.$eval('#previewHost .cmp-doc', (e) => e.textContent);
@@ -1502,7 +1502,7 @@ export async function run(ctx) {
   if (/configure|build|test|workflow/i.test(cmpText)) pass('CMakePresets.json: summary tags shown'); else fail('cmake-presets tags: ' + cmpText.slice(0, 200));
 
   // ── conanfile.txt viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('conanfile.txt');
   await page.waitForSelector('#previewHost .conanfile-doc', { timeout: 12000 });
   const conanText = await page.$eval('#previewHost .conanfile-doc', (e) => e.textContent);
@@ -1511,7 +1511,7 @@ export async function run(ctx) {
   if (/CMakeDeps|CMakeToolchain/i.test(conanText)) pass('conanfile.txt: generators shown'); else fail('conan generators: ' + conanText.slice(0, 200));
 
   // ── prometheus.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('prometheus.yml');
   await page.waitForSelector('#previewHost .prom-doc', { timeout: 12000 });
   const promText = await page.$eval('#previewHost .prom-doc', (e) => e.textContent);
@@ -1522,7 +1522,7 @@ export async function run(ctx) {
   if (promText.includes('secret123')) fail('prometheus.yml: password leaked'); else pass('prometheus.yml: password masked');
 
   // ── traefik.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('traefik.yml');
   await page.waitForSelector('#previewHost .traefik-doc', { timeout: 12000 });
   pass('traefik.yml: badge shown');
@@ -1533,7 +1533,7 @@ export async function run(ctx) {
   else pass('traefik.yml: providers shown');
 
   // ── alertmanager.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('alertmanager.yml');
   await page.waitForSelector('#previewHost .alertmgr-doc', { timeout: 12000 });
   const amText = await page.$eval('#previewHost .alertmgr-doc', (e) => e.textContent);
@@ -1544,7 +1544,7 @@ export async function run(ctx) {
   if (amText.includes('secret-password') || amText.includes('secret-pagerduty-key')) fail('alertmanager.yml: secrets leaked'); else pass('alertmanager.yml: secrets masked');
 
   // ── datadog.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('datadog.yaml');
   await page.waitForSelector('#previewHost .dd-doc', { timeout: 12000 });
   const ddText = await page.$eval('#previewHost .dd-doc', (e) => e.textContent);
@@ -1554,7 +1554,7 @@ export async function run(ctx) {
   if (/Log collection|APM/i.test(ddText)) pass('datadog.yaml: feature flags shown'); else fail('datadog features: ' + ddText.slice(0, 200));
 
   // ── ionic.config.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('ionic.config.json');
   await page.waitForSelector('#previewHost .ion-doc', { timeout: 12000 });
   const ionicText = await page.$eval('#previewHost .ion-doc', (e) => e.textContent);
@@ -1565,7 +1565,7 @@ export async function run(ctx) {
   if (/ionic.?react/i.test(ionicText)) pass('ionic.config.json: project type shown'); else fail('ionic type: ' + ionicText.slice(0, 200));
 
   // ── metro.config.js viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('metro.config.js');
   await page.waitForSelector('#previewHost .metro-doc', { timeout: 12000 });
   const metroText = await page.$eval('#previewHost .metro-doc', (e) => e.textContent);
@@ -1575,7 +1575,7 @@ export async function run(ctx) {
   if (/svg|ts|tsx/i.test(metroText)) pass('metro.config.js: source extensions shown'); else fail('metro extensions: ' + metroText.slice(0, 300));
 
   // ── react-native.config.js viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('react-native.config.js');
   await page.waitForSelector('#previewHost .rnc-doc', { timeout: 12000 });
   const rncText = await page.$eval('#previewHost .rnc-doc', (e) => e.textContent);
@@ -1585,7 +1585,7 @@ export async function run(ctx) {
   if (/fonts|images|assets/i.test(rncText)) pass('react-native.config.js: assets shown'); else fail('rnc assets: ' + rncText.slice(0, 200));
 
   // ── stack.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('stack.yaml');
   await page.waitForSelector('#previewHost .stk-doc', { timeout: 12000 });
   const stkText = await page.$eval('#previewHost .stk-doc', (e) => e.textContent);
@@ -1595,7 +1595,7 @@ export async function run(ctx) {
   if (/amazonka|async-pool/i.test(stkText)) pass('stack.yaml: extra deps shown'); else fail('stack extra-deps: ' + stkText.slice(0, 300));
 
   // ── example.cabal viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('example.cabal');
   await page.waitForSelector('#previewHost .cabal-doc', { timeout: 12000 });
   const cabalText = await page.$eval('#previewHost .cabal-doc', (e) => e.textContent);
@@ -1606,7 +1606,7 @@ export async function run(ctx) {
   if (/aeson|mtl|containers/i.test(cabalText)) pass('example.cabal: build dependencies shown'); else fail('cabal deps: ' + cabalText.slice(0, 300));
 
   // ── Package.resolved viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Package.resolved');
   await page.waitForSelector('#previewHost .pkgr-doc', { timeout: 12000 });
   const pkgrText = await page.$eval('#previewHost .pkgr-doc', (e) => e.textContent);
@@ -1615,7 +1615,7 @@ export async function run(ctx) {
   if (/5\.8\.1|1\.3\.0/i.test(pkgrText)) pass('Package.resolved: package versions shown'); else fail('package-resolved versions: ' + pkgrText.slice(0, 300));
 
   // ── rebar.config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('rebar.config');
   await page.waitForSelector('#previewHost .rebar-doc', { timeout: 12000 });
   const rebarText = await page.$eval('#previewHost .rebar-doc', (e) => e.textContent);
@@ -1626,7 +1626,7 @@ export async function run(ctx) {
   if (/dialyzer/i.test(rebarText)) pass('rebar.config: dialyzer shown'); else fail('rebar dialyzer: ' + rebarText.slice(0, 200));
 
   // ── project.clj (Leiningen) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('project.clj');
   await page.waitForSelector('#previewHost .lein-doc', { timeout: 12000 });
   const leinText = await page.$eval('#previewHost .lein-doc', (e) => e.textContent);
@@ -1638,7 +1638,7 @@ export async function run(ctx) {
   if (/dev|test|uberjar/i.test(leinText)) pass('project.clj: profiles shown'); else fail('lein profiles: ' + leinText.slice(0, 300));
 
   // ── deps.edn (Clojure CLI) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('deps.edn');
   await page.waitForSelector('#previewHost .deps-doc', { timeout: 12000 });
   const depsText = await page.$eval('#previewHost .deps-doc', (e) => e.textContent);
@@ -1648,7 +1648,7 @@ export async function run(ctx) {
   if (/dev|test|build|lint/i.test(depsText)) pass('deps.edn: aliases shown'); else fail('deps aliases: ' + depsText.slice(0, 300));
 
   // ── shadow-cljs.edn viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('shadow-cljs.edn');
   await page.waitForSelector('#previewHost .sc-doc', { timeout: 12000 });
   const scText = await page.$eval('#previewHost .sc-doc', (e) => e.textContent);
@@ -1659,7 +1659,7 @@ export async function run(ctx) {
   if (/3000/i.test(scText)) pass('shadow-cljs.edn: dev HTTP port shown'); else fail('shadow-cljs port: ' + scText.slice(0, 200));
 
   // ── app.yaml (Google App Engine) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('app.yaml');
   await page.waitForSelector('#previewHost .appyaml-doc', { timeout: 12000 });
   pass('app.yaml: renders');
@@ -1670,7 +1670,7 @@ export async function run(ctx) {
   if (/\[configured\]/i.test(gaeText)) pass('app.yaml: sensitive env vars masked'); else fail('gae-app masking: ' + gaeText.slice(0, 300));
 
   // ── cloudbuild.yaml (Google Cloud Build) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cloudbuild.yaml');
   await page.waitForSelector('#previewHost .gcb-doc', { timeout: 12000 });
   const gcbText = await page.$eval('#previewHost .gcb-doc', (e) => e.textContent);
@@ -1679,7 +1679,7 @@ export async function run(ctx) {
   if (/1200s|machineType|E2_HIGHCPU/i.test(gcbText)) pass('cloudbuild.yaml: timeout and machine type shown'); else fail('cloudbuild options: ' + gcbText.slice(0, 300));
 
   // ── google-services.json (Firebase) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('google-services.json');
   await page.waitForSelector('#previewHost .gs-doc', { timeout: 12000 });
   const gsText = await page.$eval('#previewHost .gs-doc', (e) => e.textContent);
@@ -1688,7 +1688,7 @@ export async function run(ctx) {
   if (/com\.example\.myapp|package_name|app client/i.test(gsText)) pass('google-services.json: app client shown'); else fail('google-services client: ' + gsText.slice(0, 300));
 
   // ── catalog-info.yaml (Backstage) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('catalog-info.yaml');
   await page.waitForSelector('#previewHost .cat-doc', { timeout: 12000 });
   const catText = await page.$eval('#previewHost .cat-doc', (e) => e.textContent);
@@ -1698,7 +1698,7 @@ export async function run(ctx) {
   if (/production|experimental|deprecated/i.test(catText)) pass('catalog-info.yaml: lifecycle shown'); else fail('catalog-info lifecycle: ' + catText.slice(0, 200));
 
   // ── docusaurus.config.js viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('docusaurus.config.js');
   await page.waitForSelector('#previewHost .dcs-doc', { timeout: 12000 });
   const dcsText = await page.$eval('#previewHost .dcs-doc', (e) => e.textContent);
@@ -1708,7 +1708,7 @@ export async function run(ctx) {
   if (/Docs|Blog|API|Changelog/i.test(dcsText)) pass('docusaurus.config.js: navbar items shown'); else fail('docusaurus nav: ' + dcsText.slice(0, 300));
 
   // ── vitepress.config.ts viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vitepress.config.ts');
   await page.waitForSelector('#previewHost .vp-doc', { timeout: 12000 });
   const vpText = await page.$eval('#previewHost .vp-doc', (e) => e.textContent);
@@ -1718,7 +1718,7 @@ export async function run(ctx) {
   if (/Introduction|Writing|Customization/i.test(vpText)) pass('vitepress.config.ts: sidebar sections shown'); else fail('vitepress sidebar: ' + vpText.slice(0, 300));
 
   // ── conf.py (Sphinx) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('conf.py');
   await page.waitForSelector('#previewHost .sphinx-doc', { timeout: 12000 });
   const sphinxText = await page.$eval('#previewHost .sphinx-doc', (e) => e.textContent);
@@ -1729,7 +1729,7 @@ export async function run(ctx) {
   if (/autodoc|napoleon|viewcode/i.test(sphinxText)) pass('conf.py: extensions shown'); else fail('sphinx extensions: ' + sphinxText.slice(0, 300));
 
   // ── Doxyfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Doxyfile');
   await page.waitForSelector('.doxyfile-doc', { timeout: 12000 });
   pass('doxyfile: renders');
@@ -1742,7 +1742,7 @@ export async function run(ctx) {
   if (/src|include|examples/i.test(doxyText)) pass('Doxyfile: input directories shown'); else fail('doxygen input: ' + doxyText.slice(0, 300));
 
   // ── .cursorrules viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.cursorrules');
   await page.waitForSelector('#previewHost .cr-doc', { timeout: 12000 });
   const crText = await page.$eval('#previewHost .cr-doc', (e) => e.textContent);
@@ -1751,7 +1751,7 @@ export async function run(ctx) {
   if (/TypeScript|Framework|Code Style/i.test(crText)) pass('.cursorrules: content sections shown'); else fail('.cursorrules content: ' + crText.slice(0, 300));
 
   // ── CLAUDE.md viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('CLAUDE.md');
   await page.waitForSelector('#previewHost .cm-doc', { timeout: 12000 });
   const cmText = await page.$eval('#previewHost .cm-doc', (e) => e.textContent);
@@ -1760,7 +1760,7 @@ export async function run(ctx) {
   if (/monorepo|Next\.js|Fastify|TypeScript/i.test(cmText)) pass('CLAUDE.md: project content shown'); else fail('CLAUDE.md content: ' + cmText.slice(0, 300));
 
   // ── copilot-instructions.md viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('copilot-instructions.md');
   await page.waitForSelector('#previewHost .ci-doc', { timeout: 12000 });
   const ciText = await page.$eval('#previewHost .ci-doc', (e) => e.textContent);
@@ -1769,7 +1769,7 @@ export async function run(ctx) {
   if (/TypeScript|React|Naming|Error/i.test(ciText)) pass('copilot-instructions.md: content sections shown'); else fail('copilot-instructions content: ' + ciText.slice(0, 300));
 
   // ── aider.conf.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('aider.conf.yml');
   await page.waitForSelector('#previewHost .adr-doc', { timeout: 12000 });
   const adrText = await page.$eval('#previewHost .adr-doc', (e) => e.textContent);
@@ -1779,7 +1779,7 @@ export async function run(ctx) {
   if (/auto.commit|Auto.commit/i.test(adrText)) pass('aider.conf.yml: auto-commits setting shown'); else fail('aider.conf.yml auto-commits: ' + adrText.slice(0, 300));
 
   // ── tauri.conf.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('tauri.conf.json (Tauri)');
   await page.waitForSelector('#previewHost .tauri-doc', { timeout: 12000 });
   const tauriText = await page.$eval('#previewHost .tauri-doc', (e) => e.textContent);
@@ -1791,7 +1791,7 @@ export async function run(ctx) {
   if (/main|splash|My Tauri App|Loading/i.test(tauriText)) pass('tauri.conf.json: windows listed'); else fail('tauri windows: ' + tauriText.slice(0, 300));
 
   // ── electron-builder.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('electron-builder.yml');
   await page.waitForSelector('#previewHost .eb-doc', { timeout: 12000 });
   const ebText = await page.$eval('#previewHost .eb-doc', (e) => e.textContent);
@@ -1801,7 +1801,7 @@ export async function run(ctx) {
   if (/linux|win|mac/i.test(ebText)) pass('electron-builder.yml: platform targets shown'); else fail('electron-builder platforms: ' + ebText.slice(0, 300));
 
   // ── forge.config.js viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('forge.config.js (Electron Forge)');
   await page.waitForSelector('#previewHost .fg-doc', { timeout: 12000 });
   const fgText = await page.$eval('#previewHost .fg-doc', (e) => e.textContent);
@@ -1811,7 +1811,7 @@ export async function run(ctx) {
   if (/plugin|publisher/i.test(fgText)) pass('forge.config.js: plugins or publishers shown'); else fail('forge plugins: ' + fgText.slice(0, 300));
 
   // ── wails.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('wails.json (Wails)');
   await page.waitForSelector('#previewHost .wails-doc', { timeout: 12000 });
   const wailsText = await page.$eval('#previewHost .wails-doc', (e) => e.textContent);
@@ -1822,7 +1822,7 @@ export async function run(ctx) {
   if (/desktop/i.test(wailsText)) pass('wails.json: outputType shown'); else fail('wails outputType: ' + wailsText.slice(0, 200));
 
   // ── web.config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('web.config (IIS/ASP.NET)');
   await page.waitForSelector('#previewHost .wc-doc', { timeout: 12000 });
   const wcText = await page.$eval('#previewHost .wc-doc', (e) => e.textContent);
@@ -1834,7 +1834,7 @@ export async function run(ctx) {
   if (/••••/.test(wcMasked)) pass('web.config: secrets masked'); else fail('web.config masking: ' + wcMasked);
 
   // ── app.config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('app.config (.NET)');
   await page.waitForSelector('#previewHost .ac-doc', { timeout: 12000 });
   const acText = await page.$eval('#previewHost .ac-doc', (e) => e.textContent);
@@ -1846,7 +1846,7 @@ export async function run(ctx) {
   if (/••••/.test(acMasked)) pass('app.config: secrets masked'); else fail('app.config masking: ' + acMasked);
 
   // ── packages.config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('packages.config (NuGet)');
   await page.waitForSelector('#previewHost .pc-doc', { timeout: 12000 });
   const pcText = await page.$eval('#previewHost .pc-doc', (e) => e.textContent);
@@ -1856,7 +1856,7 @@ export async function run(ctx) {
   if (/13\.0\.3|net48/i.test(pcText)) pass('packages.config: version and target framework shown'); else fail('packages.config version/tf: ' + pcText.slice(0, 200));
 
   // ── launchSettings.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('launchSettings.json (ASP.NET)');
   await page.waitForSelector('#previewHost .ls-doc', { timeout: 12000 });
   const lsText = await page.$eval('#previewHost .ls-doc', (e) => e.textContent);
@@ -1867,7 +1867,7 @@ export async function run(ctx) {
   if (/ASPNETCORE_ENVIRONMENT|Development/i.test(lsText)) pass('launchSettings.json: environment variables shown'); else fail('launchSettings env: ' + lsText.slice(0, 300));
 
   // ── appsettings.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('appsettings.json (ASP.NET)');
   await page.waitForSelector('#previewHost .appsettings-doc', { timeout: 12000 });
   pass('appsettings.json: badge shown');
@@ -1877,7 +1877,7 @@ export async function run(ctx) {
   if (/Information|Warning/i.test(asText)) pass('appsettings.json: log levels shown'); else fail('appsettings.json: log levels not shown: ' + asText.slice(0, 200));
 
   // ── terragrunt.hcl viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('terragrunt.hcl (Terragrunt)');
   await page.waitForSelector('#previewHost .tgr-doc', { timeout: 12000 });
   const tgrText = await page.$eval('#previewHost .tgr-doc', (e) => e.textContent);
@@ -1886,7 +1886,7 @@ export async function run(ctx) {
   if (/vpc|database/i.test(tgrText)) pass('terragrunt.hcl: dependencies shown'); else fail('terragrunt deps: ' + tgrText.slice(0, 200));
 
   // ── .tflint.hcl viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.tflint.hcl (TFLint)');
   await page.waitForSelector('#previewHost .tfl-doc', { timeout: 12000 });
   const tflText = await page.$eval('#previewHost .tfl-doc', (e) => e.textContent);
@@ -1895,7 +1895,7 @@ export async function run(ctx) {
   if (/enabled|disabled/i.test(tflText)) pass('.tflint.hcl: rule states shown'); else fail('tflint rules: ' + tflText.slice(0, 300));
 
   // ── .terraform.lock.hcl viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.terraform.lock.hcl');
   await page.waitForSelector('#previewHost .tfl-lock-doc', { timeout: 12000 });
   const tflLockText = await page.$eval('#previewHost .tfl-lock-doc', (e) => e.textContent);
@@ -1904,7 +1904,7 @@ export async function run(ctx) {
   if (/hash/i.test(tflLockText)) pass('.terraform.lock.hcl: hash count shown'); else fail('tf-lock hashes: ' + tflLockText.slice(0, 300));
 
   // ── versions.tf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('versions.tf (Terraform)');
   await page.waitForSelector('#previewHost .vtf-doc', { timeout: 12000 });
   const vtfText = await page.$eval('#previewHost .vtf-doc', (e) => e.textContent);
@@ -1913,7 +1913,7 @@ export async function run(ctx) {
   if (/hashicorp\/aws|kubernetes/i.test(vtfText)) pass('versions.tf: providers shown'); else fail('versions-tf providers: ' + vtfText.slice(0, 300));
 
   // ── mongod.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mongod.conf');
   await page.waitForSelector('#previewHost .mg-doc', { timeout: 12000 });
   const mgText = await page.$eval('#previewHost .mg-doc', (e) => e.textContent);
@@ -1923,7 +1923,7 @@ export async function run(ctx) {
   if (/••••/.test(mgText)) pass('mongod.conf: keyFile value masked'); else fail('mongod masking: ' + mgText.slice(0, 300));
 
   // ── my.cnf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('my.cnf (MySQL)');
   await page.waitForSelector('#previewHost .my-doc', { timeout: 12000 });
   const myText = await page.$eval('#previewHost .my-doc', (e) => e.textContent);
@@ -1933,7 +1933,7 @@ export async function run(ctx) {
   if (/utf8mb4|default-character-set/i.test(myText)) pass('my.cnf: character set shown'); else fail('my.cnf charset: ' + myText.slice(0, 300));
 
   // ── postgresql.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('postgresql.conf');
   await page.waitForSelector('#previewHost .pg-doc', { timeout: 12000 });
   const pgText = await page.$eval('#previewHost .pg-doc', (e) => e.textContent);
@@ -1943,7 +1943,7 @@ export async function run(ctx) {
   if (/replica|wal_level/i.test(pgText)) pass('postgresql.conf: WAL section shown'); else fail('postgresql wal: ' + pgText.slice(0, 300));
 
   // ── pgbouncer.ini viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pgbouncer.ini');
   await page.waitForSelector('#previewHost .pb-doc', { timeout: 12000 });
   const pbText = await page.$eval('#previewHost .pb-doc', (e) => e.textContent);
@@ -1953,7 +1953,7 @@ export async function run(ctx) {
   if (/••••/.test(pbText)) pass('pgbouncer.ini: password in connection string masked'); else fail('pgbouncer masking: ' + pbText.slice(0, 300));
 
   // ── pgbackrest.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pgbackrest.conf');
   await page.waitForSelector('#previewHost .pgbr-doc', { timeout: 12000 });
   const pgbrText = await page.$eval('#previewHost .pgbr-doc', (e) => e.textContent);
@@ -1963,7 +1963,7 @@ export async function run(ctx) {
   if (/\[configured\]/.test(pgbrText)) pass('pgbackrest.conf: credentials redacted'); else fail('pgbackrest masking: ' + pgbrText.slice(0, 300));
 
   // ── patroni.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('patroni.yml');
   await page.waitForSelector('#previewHost .patroni-doc', { timeout: 12000 });
   const patroniText = await page.$eval('#previewHost .patroni-doc', (e) => e.textContent);
@@ -1972,7 +1972,7 @@ export async function run(ctx) {
   if (/etcd|ETCD/i.test(patroniText)) pass('patroni.yml: DCS type shown'); else fail('patroni dcs: ' + patroniText.slice(0, 300));
 
   // ── .pylintrc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.pylintrc');
   await page.waitForSelector('#previewHost .pl-doc', { timeout: 12000 });
   const plText = await page.$eval('#previewHost .pl-doc', (e) => e.textContent);
@@ -1982,7 +1982,7 @@ export async function run(ctx) {
   if (/jobs/i.test(plText)) pass('.pylintrc: jobs shown'); else fail('pylintrc jobs: ' + plText.slice(0, 300));
 
   // ── .flake8 viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.flake8');
   await page.waitForSelector('#previewHost .f8-doc', { timeout: 12000 });
   const f8Text = await page.$eval('#previewHost .f8-doc', (e) => e.textContent);
@@ -1992,7 +1992,7 @@ export async function run(ctx) {
   if (/venv|migrations|__pycache__/i.test(f8Text)) pass('.flake8: excluded paths shown'); else fail('flake8 excluded: ' + f8Text.slice(0, 300));
 
   // ── setup.cfg viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('setup.cfg');
   await page.waitForSelector('#previewHost .setupcfg-doc', { timeout: 12000 });
   pass('setup.cfg: renders');
@@ -2006,7 +2006,7 @@ export async function run(ctx) {
   if (!setupCfgText.includes('name') && !setupCfgText.includes('version')) fail('setup.cfg: no project info'); else pass('setup.cfg: project info shown');
 
   // ── .bandit viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.bandit');
   await page.waitForSelector('#previewHost .bd-doc', { timeout: 12000 });
   const bdText = await page.$eval('#previewHost .bd-doc', (e) => e.textContent);
@@ -2016,7 +2016,7 @@ export async function run(ctx) {
   if (/MEDIUM|severity/i.test(bdText)) pass('.bandit: severity filter shown'); else fail('bandit severity: ' + bdText.slice(0, 300));
 
   // ── .semgrep.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.semgrep.yml');
   await page.waitForSelector('#previewHost .sgr-doc', { timeout: 12000 });
   const sgrText = await page.$eval('#previewHost .sgr-doc', (e) => e.textContent);
@@ -2025,7 +2025,7 @@ export async function run(ctx) {
   if (/hardcoded-password|sql-injection|ERROR|WARNING/i.test(sgrText)) pass('.semgrep.yml: rule ids and severity shown'); else fail('semgrep rule content: ' + sgrText.slice(0, 300));
 
   // ── .gitleaks.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.gitleaks.toml');
   await page.waitForSelector('#previewHost .gl-doc', { timeout: 12000 });
   const glText = await page.$eval('#previewHost .gl-doc', (e) => e.textContent);
@@ -2035,7 +2035,7 @@ export async function run(ctx) {
   if (/allowlist/i.test(glText)) pass('.gitleaks.toml: allowlists shown'); else fail('gitleaks allowlists: ' + glText.slice(0, 300));
 
   // ── .trufflehog.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.trufflehog.yaml');
   await page.waitForSelector('#previewHost .tfh-doc', { timeout: 12000 });
   const tfhText = await page.$eval('#previewHost .tfh-doc', (e) => e.textContent);
@@ -2044,7 +2044,7 @@ export async function run(ctx) {
   if (/exclude/i.test(tfhText)) pass('.trufflehog.yaml: exclude paths shown'); else fail('trufflehog paths: ' + tfhText.slice(0, 300));
 
   // ── osv-scanner.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('osv-scanner.toml');
   await page.waitForSelector('#previewHost .osv-doc', { timeout: 12000 });
   const osvText = await page.$eval('#previewHost .osv-doc', (e) => e.textContent);
@@ -2054,7 +2054,7 @@ export async function run(ctx) {
   if (/1\.21\.0/i.test(osvText)) pass('osv-scanner.toml: GoVersionOverride shown'); else fail('osv-scanner go version: ' + osvText.slice(0, 300));
 
   // ── opencost.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('opencost.yaml');
   await page.waitForSelector('#previewHost .oc-doc', { timeout: 12000 });
   const ocText = await page.$eval('#previewHost .oc-doc', (e) => e.textContent);
@@ -2063,7 +2063,7 @@ export async function run(ctx) {
   if (/prometheus/i.test(ocText)) pass('opencost.yaml: prometheus host shown'); else fail('opencost prometheus: ' + ocText.slice(0, 300));
 
   // ── crossplane-config.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('crossplane-config.yaml (Crossplane)');
   await page.waitForSelector('#previewHost .xp-doc', { timeout: 12000 });
   const xpText = await page.$eval('#previewHost .xp-doc', (e) => e.textContent);
@@ -2072,7 +2072,7 @@ export async function run(ctx) {
   if (/provider-aws/i.test(xpText)) pass('crossplane-config.yaml: name shown'); else fail('crossplane name: ' + xpText.slice(0, 200));
 
   // ── keda-scaledobject.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('keda-scaledobject.yaml (KEDA)');
   await page.waitForSelector('#previewHost .kd-doc', { timeout: 12000 });
   const kdText = await page.$eval('#previewHost .kd-doc', (e) => e.textContent);
@@ -2082,7 +2082,7 @@ export async function run(ctx) {
   if (/rabbitmq|cpu/i.test(kdText)) pass('keda-scaledobject.yaml: triggers shown'); else fail('keda triggers: ' + kdText.slice(0, 300));
 
   // ── velero-schedule.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('velero-schedule.yaml (Velero)');
   await page.waitForSelector('#previewHost .vl-doc', { timeout: 12000 });
   const vlText = await page.$eval('#previewHost .vl-doc', (e) => e.textContent);
@@ -2092,7 +2092,7 @@ export async function run(ctx) {
   if (/0 2 \* \* \*/i.test(vlText)) pass('velero-schedule.yaml: cron schedule shown'); else fail('velero schedule: ' + vlText.slice(0, 300));
 
   // ── .codeclimate.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.codeclimate.yml');
   await page.waitForSelector('#previewHost .codeclimate-doc', { timeout: 12000 });
   const ccText = await page.$eval('#previewHost .codeclimate-doc', (e) => e.textContent);
@@ -2101,7 +2101,7 @@ export async function run(ctx) {
   if (/eslint|duplication|fixme/i.test(ccText)) pass('.codeclimate.yml: engine names shown'); else fail('codeclimate engine names: ' + ccText.slice(0, 300));
   if (/exclude/i.test(ccText)) pass('.codeclimate.yml: exclude patterns shown'); else fail('codeclimate excludes: ' + ccText.slice(0, 300));
   // ── conda environment.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('environment.yml (Conda)');
   await page.waitForSelector('#previewHost .conda-doc', { timeout: 12000 });
   const condaText = await page.$eval('#previewHost .conda-doc', (e) => e.textContent);
@@ -2113,7 +2113,7 @@ export async function run(ctx) {
   if (/pip/i.test(condaText)) pass('environment.yml: pip packages section shown'); else fail('conda-env pip: ' + condaText.slice(0, 300));
 
   // ── pip.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pip.conf');
   await page.waitForSelector('#previewHost .pipcfg-doc', { timeout: 12000 });
   const pipConfText = await page.$eval('#previewHost .pipcfg-doc', (e) => e.textContent);
@@ -2122,7 +2122,7 @@ export async function run(ctx) {
   if (/pypi\.company\.internal|timeout/i.test(pipConfText)) pass('pip.conf: trusted-host or timeout shown'); else fail('pip-conf trusted/timeout: ' + pipConfText.slice(0, 200));
 
   // ── .node-version viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.node-version');
   await page.waitForSelector('#previewHost .nv-doc', { timeout: 12000 });
   const nvText = await page.$eval('#previewHost .nv-doc', (e) => e.textContent);
@@ -2131,7 +2131,7 @@ export async function run(ctx) {
   if (/fnm|volta|nvm/i.test(nvText)) pass('.node-version: install commands shown'); else fail('node-version-file commands: ' + nvText.slice(0, 300));
 
   // ── docker-bake.hcl viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('docker-bake.hcl');
   await page.waitForSelector('#previewHost .bk-doc', { timeout: 12000 });
   const dockerBakeText = await page.$eval('#previewHost .bk-doc', (e) => e.textContent);
@@ -2141,7 +2141,7 @@ export async function run(ctx) {
   if (/registry\.example\.com/i.test(dockerBakeText)) pass('docker-bake.hcl: tags shown'); else fail('docker-bake tags: ' + dockerBakeText.slice(0, 300));
 
   // ── cloudformation.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cloudformation.yaml (CloudFormation)');
   await page.waitForSelector('#previewHost .cfn-doc', { timeout: 12000 });
   const cfnText = await page.$eval('#previewHost .cfn-doc', (e) => e.textContent);
@@ -2151,7 +2151,7 @@ export async function run(ctx) {
   if (/BucketName|TableName|FunctionArn|ApiEndpoint/i.test(cfnText)) pass('cloudformation.yaml: outputs shown'); else fail('cfn outputs: ' + cfnText.slice(0, 300));
 
   // ── sam-template.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sam-template.yaml (AWS SAM)');
   await page.waitForSelector('#previewHost .sam-doc', { timeout: 12000 });
   const samText = await page.$eval('#previewHost .sam-doc', (e) => e.textContent);
@@ -2161,7 +2161,7 @@ export async function run(ctx) {
   if (/Environment|LogRetentionDays/i.test(samText)) pass('sam-template.yaml: parameters shown'); else fail('sam params: ' + samText.slice(0, 300));
 
   // ── cdk.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cdk.json (AWS CDK)');
   await page.waitForSelector('#previewHost .cdk-doc', { timeout: 12000 });
   const cdkText = await page.$eval('#previewHost .cdk-doc', (e) => e.textContent);
@@ -2171,7 +2171,7 @@ export async function run(ctx) {
   if (/@aws-cdk\/aws-lambda|my-app:region/i.test(cdkText)) pass('cdk.json: context keys shown'); else fail('cdk context keys: ' + cdkText.slice(0, 300));
 
   // ── samconfig.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('samconfig.toml (SAM Config)');
   await page.waitForSelector('#previewHost .smc-doc', { timeout: 12000 });
   const smcText = await page.$eval('#previewHost .smc-doc', (e) => e.textContent);
@@ -2181,7 +2181,7 @@ export async function run(ctx) {
   if (/region|us-east-1|eu-west-1/i.test(smcText)) pass('samconfig.toml: regions shown'); else fail('smc regions: ' + smcText.slice(0, 300));
 
   // ── analysis_options.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('analysis_options.yaml (Dart Analyzer)');
   await page.waitForSelector('#previewHost .ao-doc', { timeout: 12000 });
   const aoText = await page.$eval('#previewHost .ao-doc', (e) => e.textContent);
@@ -2191,7 +2191,7 @@ export async function run(ctx) {
   if (/flutter_lints/i.test(aoText)) pass('analysis_options.yaml: include shown'); else fail('ao include: ' + aoText.slice(0, 300));
 
   // ── Podfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Podfile');
   await page.waitForSelector('#previewHost .podfile-doc', { timeout: 12000 });
   pass('Podfile: renders');
@@ -2203,7 +2203,7 @@ export async function run(ctx) {
   if (/target/i.test(podfileText)) pass('Podfile: targets shown'); else fail('Podfile: targets: ' + podfileText.slice(0, 300));
 
   // ── Podfile.lock viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Podfile.lock (CocoaPods)');
   await page.waitForSelector('#previewHost .podfilelock-doc', { timeout: 12000 });
   pass('Podfile.lock: renders');
@@ -2215,7 +2215,7 @@ export async function run(ctx) {
   if (/checksum/i.test(podfileLockText)) pass('Podfile.lock: checksums section shown'); else fail('pfl checksums: ' + podfileLockText.slice(0, 300));
 
   // ── MyApp.xcscheme viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('MyApp.xcscheme (Xcode Scheme)');
   await page.waitForSelector('#previewHost .xs-doc', { timeout: 12000 });
   const xsText = await page.$eval('#previewHost .xs-doc', (e) => e.textContent);
@@ -2225,7 +2225,7 @@ export async function run(ctx) {
   if (/test targets/i.test(xsText)) pass('MyApp.xcscheme: test targets section shown'); else fail('xs test targets: ' + xsText.slice(0, 300));
 
   // ── eas.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('eas.json (Expo EAS)');
   await page.waitForSelector('#previewHost .eas-doc', { timeout: 12000 });
   const easText = await page.$eval('#previewHost .eas-doc', (e) => e.textContent);
@@ -2235,7 +2235,7 @@ export async function run(ctx) {
   if (/submit/i.test(easText)) pass('eas.json: submit profiles section shown'); else fail('eas submit: ' + easText.slice(0, 300));
 
   // ── .rspec viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.rspec');
   await page.waitForSelector('#previewHost .rsc-doc', { timeout: 12000 });
   const rscText = await page.$eval('#previewHost .rsc-doc', (e) => e.textContent);
@@ -2244,7 +2244,7 @@ export async function run(ctx) {
   if (/spec_helper|require/i.test(rscText)) pass('.rspec: require entry shown'); else fail('rspec require: ' + rscText.slice(0, 300));
 
   // ── .bundler-audit.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.bundler-audit.yml');
   await page.waitForSelector('#previewHost .bac-doc', { timeout: 12000 });
   const bacText = await page.$eval('#previewHost .bac-doc', (e) => e.textContent);
@@ -2253,7 +2253,7 @@ export async function run(ctx) {
   if (/ignore|CVE/i.test(bacText)) pass('.bundler-audit.yml: ignore section shown'); else fail('bundler-audit ignore: ' + bacText.slice(0, 300));
 
   // ── .standard.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.standard.yml');
   await page.waitForSelector('#previewHost .srb-doc', { timeout: 12000 });
   const srbText = await page.$eval('#previewHost .srb-doc', (e) => e.textContent);
@@ -2262,7 +2262,7 @@ export async function run(ctx) {
   if (/standard-rails|standard-performance|extend/i.test(srbText)) pass('.standard.yml: extends shown'); else fail('standardrb extends: ' + srbText.slice(0, 300));
 
   // ── sorbet.config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sorbet.config');
   await page.waitForSelector('#previewHost .sbt-doc', { timeout: 12000 });
   const sbtText = await page.$eval('#previewHost .sbt-doc', (e) => e.textContent);
@@ -2271,7 +2271,7 @@ export async function run(ctx) {
   if (/requires-ancestor|ruby3-keyword|experimental/i.test(sbtText)) pass('sorbet.config: experimental features shown'); else fail('sorbet experimental: ' + sbtText.slice(0, 300));
 
   // ── dbt_project.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dbt_project.yml');
   await page.waitForSelector('#previewHost .dbt-doc', { timeout: 12000 });
   const dbtProjectText = await page.$eval('#previewHost .dbt-doc', (e) => e.textContent);
@@ -2282,7 +2282,7 @@ export async function run(ctx) {
   if (/start_date|payment_method|environment/i.test(dbtProjectText)) pass('dbt_project.yml: vars shown'); else fail('dbt vars: ' + dbtProjectText.slice(0, 300));
 
   // ── liquibase.properties viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('liquibase.properties');
   await page.waitForSelector('#previewHost .lq-doc', { timeout: 12000 });
   const lqText = await page.$eval('#previewHost .lq-doc', (e) => e.textContent);
@@ -2293,7 +2293,7 @@ export async function run(ctx) {
   if (/changelog-master|changelog/i.test(lqText)) pass('liquibase.properties: changeLogFile shown'); else fail('lq changelog: ' + lqText.slice(0, 300));
 
   // ── sqitch.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sqitch.conf');
   await page.waitForSelector('#previewHost .sq-doc', { timeout: 12000 });
   const sqText = await page.$eval('#previewHost .sq-doc', (e) => e.textContent);
@@ -2303,7 +2303,7 @@ export async function run(ctx) {
   if (/\*{3}/i.test(sqText)) pass('sqitch.conf: credentials masked in URIs'); else fail('sq credential masking: ' + sqText.slice(0, 300));
 
   // ── atlas.hcl viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('atlas.hcl');
   await page.waitForSelector('#previewHost .at-doc', { timeout: 12000 });
   const atText = await page.$eval('#previewHost .at-doc', (e) => e.textContent);
@@ -2313,7 +2313,7 @@ export async function run(ctx) {
   if (/\*{3}/i.test(atText)) pass('atlas.hcl: credentials masked in URLs'); else fail('at credential masking: ' + atText.slice(0, 300));
 
   // ── prometheus-rules.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('prometheus-rules.yaml');
   await page.waitForSelector('#previewHost .pr-doc', { timeout: 12000 });
   const prText = await page.$eval('#previewHost .pr-doc', (e) => e.textContent);
@@ -2323,7 +2323,7 @@ export async function run(ctx) {
   if (/recording/i.test(prText)) pass('prometheus-rules.yaml: recording rule shown'); else fail('prometheus-rules recording: ' + prText.slice(0, 200));
 
   // ── grafana-dashboard.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('grafana-dashboard.json');
   await page.waitForSelector('#previewHost .gd-doc', { timeout: 12000 });
   const gdText = await page.$eval('#previewHost .gd-doc', (e) => e.textContent);
@@ -2333,7 +2333,7 @@ export async function run(ctx) {
   if (/panel|stat|timeseries/i.test(gdText)) pass('grafana-dashboard.json: panels shown'); else fail('grafana-dashboard panels: ' + gdText.slice(0, 200));
 
   // ── jaeger-config.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('jaeger-config.yaml');
   await page.waitForSelector('#previewHost .jg-doc', { timeout: 12000 });
   const jgText = await page.$eval('#previewHost .jg-doc', (e) => e.textContent);
@@ -2342,7 +2342,7 @@ export async function run(ctx) {
   if (/elasticsearch/i.test(jgText)) pass('jaeger-config.yaml: storage type shown'); else fail('jaeger storage: ' + jgText.slice(0, 200));
 
   // ── tempo.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('tempo.yaml');
   await page.waitForSelector('#previewHost .tempo-doc', { timeout: 12000 });
   const tempoText = await page.$eval('#previewHost .tempo-doc', (e) => e.textContent);
@@ -2353,7 +2353,7 @@ export async function run(ctx) {
   if (/configured\]/i.test(tempoText)) pass('tempo.yaml: credentials redacted'); else fail('tempo redact: ' + tempoText.slice(0, 300));
 
   // ── mimir.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mimir.yaml');
   await page.waitForSelector('#previewHost .mimir-doc', { timeout: 12000 });
   const mimirText = await page.$eval('#previewHost .mimir-doc', (e) => e.textContent);
@@ -2364,7 +2364,7 @@ export async function run(ctx) {
   if (/configured\]/i.test(mimirText)) pass('mimir.yaml: credentials redacted'); else fail('mimir redact: ' + mimirText.slice(0, 300));
 
   // ── cortex.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cortex.yaml');
   pass(await page.waitForSelector('#previewHost .cortex-doc', { timeout: 12000 }), 'cortex.yaml: cortex-doc shown');
   const cortexText = await page.$eval('#previewHost .cortex-doc', (e) => e.textContent);
@@ -2374,7 +2374,7 @@ export async function run(ctx) {
   if (/configured\]/i.test(cortexText)) pass('cortex.yaml: credentials redacted'); else fail('cortex redact: ' + cortexText.slice(0, 300));
 
   // ── config.alloy viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('config.alloy');
   pass(await page.waitForSelector('#previewHost .grfalloy-doc', { timeout: 12000 }), 'config.alloy: grfalloy-doc shown');
   const alloyText = await page.$eval('#previewHost .grfalloy-doc', (e) => e.textContent);
@@ -2383,7 +2383,7 @@ export async function run(ctx) {
   if (/\d+\s*component/i.test(alloyText)) pass('config.alloy: total component count shown'); else fail('alloy count: ' + alloyText.slice(0, 200));
 
   // ── opentelemetry-k8s.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('opentelemetry-k8s.yaml (OTel Operator)');
   await page.waitForSelector('#previewHost .otk-doc', { timeout: 12000 });
   const otkText = await page.$eval('#previewHost .otk-doc', (e) => e.textContent);
@@ -2393,7 +2393,7 @@ export async function run(ctx) {
   if (/Instrumentation|my-instrumentation/i.test(otkText)) pass('opentelemetry-k8s.yaml: instrumentation shown'); else fail('otk instrumentation: ' + otkText.slice(0, 300));
 
   // ── aws-credentials viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('aws-credentials (AWS)');
   await page.waitForSelector('#previewHost .awsc-doc', { timeout: 12000 });
   const awscText = await page.$eval('#previewHost .awsc-doc', (e) => e.textContent);
@@ -2404,7 +2404,7 @@ export async function run(ctx) {
   if (/handle with care/i.test(awscText)) pass('aws-credentials: security warning shown'); else fail('aws-credentials warning: ' + awscText.slice(0, 300));
 
   // ── aws-config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('aws-config (AWS)');
   await page.waitForSelector('#previewHost .awscfg-doc', { timeout: 12000 });
   const awscfgText = await page.$eval('#previewHost .awscfg-doc', (e) => e.textContent);
@@ -2414,7 +2414,7 @@ export async function run(ctx) {
   if (/role_arn|mfa_serial/i.test(awscfgText)) pass('aws-config: role/mfa fields shown'); else fail('aws-config fields: ' + awscfgText.slice(0, 300));
 
   // ── kubeconfig.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('kubeconfig.yaml');
   await page.waitForSelector('#previewHost .kube-doc', { timeout: 12000 });
   const kcText = await page.$eval('#previewHost .kube-doc', (e) => e.textContent);
@@ -2426,7 +2426,7 @@ export async function run(ctx) {
   if (/Copy kubectl context/i.test(kcText)) pass('kubeconfig.yaml: copy command button present'); else fail('kubeconfig copy-btn: ' + kcText.slice(0, 300));
 
   // ── gcp-service-account.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('gcp-service-account.json (GCP)');
   await page.waitForSelector('#previewHost .gcp-doc', { timeout: 12000 });
   const gcpText = await page.$eval('#previewHost .gcp-doc', (e) => e.textContent);
@@ -2437,7 +2437,7 @@ export async function run(ctx) {
   if (/never commit/i.test(gcpText)) pass('gcp-service-account.json: security warning shown'); else fail('gcp-sa warning: ' + gcpText.slice(0, 300));
 
   // ── apisix.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('apisix.yaml');
   await page.waitForSelector('#previewHost .ax-doc', { timeout: 12000 });
   const axText = await page.$eval('#previewHost .ax-doc', (e) => e.textContent);
@@ -2448,7 +2448,7 @@ export async function run(ctx) {
   if (/2379|\/apisix/i.test(axText)) pass('apisix.yaml: etcd config shown'); else fail('apisix etcd: ' + axText.slice(0, 300));
 
   // ── envoy.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('envoy.yaml');
   await page.waitForSelector('#previewHost .ev-doc', { timeout: 12000 });
   const evText = await page.$eval('#previewHost .ev-doc', (e) => e.textContent);
@@ -2459,7 +2459,7 @@ export async function run(ctx) {
   if (/api_service|web_service/i.test(evText)) pass('envoy.yaml: clusters shown'); else fail('envoy clusters: ' + evText.slice(0, 300));
 
   // ── httpd.conf (Apache) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('httpd.conf (Apache HTTP Server)');
   await page.waitForSelector('#previewHost .apachecfg-doc', { timeout: 12000 });
   const apacheText = await page.$eval('#previewHost .apachecfg-doc', (e) => e.textContent);
@@ -2468,7 +2468,7 @@ export async function run(ctx) {
   if (/SSL|DocumentRoot/i.test(apacheText)) pass('httpd.conf: SSL or DocumentRoot shown'); else fail('apache ssl/docroot: ' + apacheText.slice(0, 300));
 
   // ── haproxy.cfg viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('haproxy.cfg');
   await page.waitForSelector('#previewHost .hpcfg-doc', { timeout: 12000 });
   const haText = await page.$eval('#previewHost .hpcfg-doc', (e) => e.textContent);
@@ -2479,7 +2479,7 @@ export async function run(ctx) {
   if (/roundrobin|leastconn/i.test(haText)) pass('haproxy.cfg: balance algorithms shown'); else fail('haproxy balance: ' + haText.slice(0, 300));
 
   // ── squid.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('squid.conf');
   await page.waitForSelector('#previewHost .sqd-doc', { timeout: 12000 });
   const sqdText = await page.$eval('#previewHost .sqd-doc', (e) => e.textContent);
@@ -2490,7 +2490,7 @@ export async function run(ctx) {
   if (/8\.8\.8\.8|1\.1\.1\.1/i.test(sqdText)) pass('squid.conf: DNS nameservers shown'); else fail('squid dns: ' + sqdText.slice(0, 300));
 
   // ── workspace.xml (JetBrains Workspace) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('workspace.xml (JetBrains)');
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const jbwText = await page.$eval('#previewHost .pj-doc', (e) => e.textContent);
@@ -2501,7 +2501,7 @@ export async function run(ctx) {
   if (/VCS Mappings/i.test(jbwText)) pass('workspace.xml: VCS Mappings section shown'); else fail('jbw vcs: ' + jbwText.slice(0, 400));
 
   // ── init.lua (Neovim Config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('init.lua (Neovim)');
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const nvcText = await page.$eval('#previewHost .pj-doc', (e) => e.textContent);
@@ -2512,7 +2512,7 @@ export async function run(ctx) {
   if (/tokyonight/i.test(nvcText)) pass('init.lua: colorscheme detected'); else fail('nvc colorscheme: ' + nvcText.slice(0, 400));
 
   // ── .vimrc (Vim Config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.vimrc (Vim)');
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const vcText = await page.$eval('#previewHost .pj-doc', (e) => e.textContent);
@@ -2523,7 +2523,7 @@ export async function run(ctx) {
   if (/Key Mappings/i.test(vcText)) pass('.vimrc: Key Mappings section shown'); else fail('vc keymaps: ' + vcText.slice(0, 400));
 
   // ── init.el (Emacs Config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('init.el (Emacs)');
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const ecText = await page.$eval('#previewHost .pj-doc', (e) => e.textContent);
@@ -2534,7 +2534,7 @@ export async function run(ctx) {
   if (/Custom Variables/i.test(ecText)) pass('init.el: Custom Variables section shown'); else fail('ec custom vars: ' + ecText.slice(0, 400));
 
   // ── devbox.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('devbox.json');
   await page.waitForSelector('#previewHost .dvx-doc', { timeout: 12000 });
   const dvxText = await page.$eval('#previewHost .dvx-doc', (e) => e.textContent);
@@ -2545,7 +2545,7 @@ export async function run(ctx) {
   if (/dev|test|lint/i.test(dvxText)) pass('devbox.json: scripts shown'); else fail('dvx scripts: ' + dvxText.slice(0, 400));
 
   // ── .prototools viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.prototools');
   await page.waitForSelector('#previewHost .ptc-doc', { timeout: 12000 });
   const ptcText = await page.$eval('#previewHost .ptc-doc', (e) => e.textContent);
@@ -2555,7 +2555,7 @@ export async function run(ctx) {
   if (/0\.38\.0/i.test(ptcText)) pass('.prototools: proto CLI version highlighted'); else fail('ptc proto ver: ' + ptcText.slice(0, 400));
 
   // ── aqua.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('aqua.yaml');
   await page.waitForSelector('#previewHost .aqua-doc', { timeout: 12000 });
   const aqcText = await page.$eval('#previewHost .aqua-doc', (e) => e.textContent);
@@ -2565,7 +2565,7 @@ export async function run(ctx) {
   if (/v2\.45\.0|jq-1\.7\.1|v9\.0\.0/i.test(aqcText)) pass('aqua.yaml: package versions shown as pills'); else fail('aqc versions: ' + aqcText.slice(0, 400));
 
   // ── pixi.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pixi.toml');
   await page.waitForSelector('#previewHost .pxi-doc', { timeout: 12000 });
   const pxiText = await page.$eval('#previewHost .pxi-doc', (e) => e.textContent);
@@ -2577,7 +2577,7 @@ export async function run(ctx) {
   if (/train|evaluate|notebook/i.test(pxiText)) pass('pixi.toml: tasks shown in table'); else fail('pxi tasks: ' + pxiText.slice(0, 400));
 
   // ── .woodpecker.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.woodpecker.yml (Woodpecker CI)');
   await page.waitForSelector('#previewHost .wpc-doc', { timeout: 12000 });
   const wpcText = await page.$eval('#previewHost .wpc-doc', (e) => e.textContent);
@@ -2587,7 +2587,7 @@ export async function run(ctx) {
   if (/secret|when|clone|matrix/i.test(wpcText)) pass('.woodpecker.yml: pipeline metadata shown'); else fail('woodpecker metadata: ' + wpcText.slice(0, 200));
 
   // ── woodpecker.yml (non-hidden) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('woodpecker.yml (Woodpecker CI)');
   await page.waitForSelector('#previewHost .wpc-doc', { timeout: 12000 });
   const wpcYmlText = await page.$eval('#previewHost .wpc-doc', (e) => e.textContent);
@@ -2596,7 +2596,7 @@ export async function run(ctx) {
   if (/postgres|service/i.test(wpcYmlText)) pass('woodpecker.yml: services shown'); else fail('woodpecker.yml services: ' + wpcYmlText.slice(0, 300));
 
   // ── harness-pipeline.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Harness Pipeline');
   await page.waitForSelector('#previewHost .hrn-doc', { timeout: 12000 });
   const hrnText = await page.$eval('#previewHost .hrn-doc', (e) => e.textContent);
@@ -2606,7 +2606,7 @@ export async function run(ctx) {
   if (/step|variable|tag/i.test(hrnText)) pass('harness-pipeline.yaml: stage details shown'); else fail('harness details: ' + hrnText.slice(0, 200));
 
   // ── codefresh.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Codefresh config');
   await page.waitForSelector('#previewHost .cfd-doc', { timeout: 12000 });
   const cfdText = await page.$eval('#previewHost .cfd-doc', (e) => e.textContent);
@@ -2617,7 +2617,7 @@ export async function run(ctx) {
 
 
   // ── rego-policy viewer (rego-policy plugin intercepts all .rego files before opa-policy) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('policy.rego');
   await page.waitForSelector('#previewHost .rego-doc', { timeout: 12000 });
   const opaText = await page.$eval('#previewHost .rego-doc', (e) => e.textContent);
@@ -2628,7 +2628,7 @@ export async function run(ctx) {
   if (/rego\.v1|data\.roles/i.test(opaText)) pass('policy.rego: imports shown'); else fail('rego imports: ' + opaText.slice(0, 300));
 
   // ── falco-rules viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('falco_rules.yaml');
   await page.waitForSelector('#previewHost .falco-doc', { timeout: 12000 });
   const falcoText = await page.$eval('#previewHost .falco-doc', (e) => e.textContent);
@@ -2639,7 +2639,7 @@ export async function run(ctx) {
   if (/spawned_process|bin_dir/i.test(falcoText)) pass('falco_rules.yaml: macro names shown'); else fail('falco macros: ' + falcoText.slice(0, 300));
 
   // ── falco-config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('falco.yaml');
   await page.waitForSelector('#previewHost .falco-doc', { timeout: 12000 });
   const falcoCfgText = await page.$eval('#previewHost .falco-doc', (e) => e.textContent);
@@ -2649,7 +2649,7 @@ export async function run(ctx) {
   if (/stdout_output|Outputs/i.test(falcoCfgText)) pass('falco.yaml: outputs shown'); else fail('falco-config outputs: ' + falcoCfgText.slice(0, 300));
 
   // ── kyverno-policy viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('kyverno-policy.yaml');
   await page.waitForSelector('#previewHost .kyv-doc', { timeout: 12000 });
   const kyvText = await page.$eval('#previewHost .kyv-doc', (e) => e.textContent);
@@ -2660,7 +2660,7 @@ export async function run(ctx) {
   if (/Pod/i.test(kyvText)) pass('kyverno-policy.yaml: matched kinds shown'); else fail('kyverno kinds: ' + kyvText.slice(0, 300));
 
   // ── gatekeeper-config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('gatekeeper-constraint.yaml');
   await page.waitForSelector('#previewHost .gkpr-doc', { timeout: 12000 });
   const gkText = await page.$eval('#previewHost .gkpr-doc', (e) => e.textContent);
@@ -2670,17 +2670,17 @@ export async function run(ctx) {
   if (/Namespace/i.test(gkText)) pass('gatekeeper-constraint.yaml: match kinds shown'); else fail('gatekeeper kinds: ' + gkText.slice(0, 300));
   if (/team|labels/i.test(gkText)) pass('gatekeeper-constraint.yaml: parameters shown'); else fail('gatekeeper params: ' + gkText.slice(0, 300));
 
-  // ── .actrc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  // ── .actrc viewer (actrc plugin intercepts before act-config) ──
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('act config (.actrc)');
-  await page.waitForSelector('#previewHost .act-doc', { timeout: 12000 });
-  const actText = await page.$eval('#previewHost .act-doc', (e) => e.textContent);
+  await page.waitForSelector('#previewHost .actrc-doc', { timeout: 12000 });
+  const actText = await page.$eval('#previewHost .actrc-doc', (e) => e.textContent);
   if (/\bact\b/i.test(actText)) pass('.actrc: act badge shown'); else fail('act badge: ' + actText.slice(0, 200));
   if (/ubuntu|platform|runner/i.test(actText)) pass('.actrc: platform mappings shown'); else fail('act platforms: ' + actText.slice(0, 200));
   if (/env|secret/i.test(actText)) pass('.actrc: env/secrets shown'); else fail('act env/secrets: ' + actText.slice(0, 200));
   if (/ghcr\.io|catthehacker|docker/i.test(actText)) pass('.actrc: docker image shown'); else fail('act docker image: ' + actText.slice(0, 200));
   // ── clickhouse config.xml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('config.xml (ClickHouse)');
   await page.waitForSelector('#previewHost .ch-doc', { timeout: 12000 });
   const chText = await page.$eval('#previewHost .ch-doc', (e) => e.textContent);
@@ -2691,7 +2691,7 @@ export async function run(ctx) {
   if (/clickhouse-server|default/i.test(chText)) pass('config.xml: storage/database shown'); else fail('clickhouse storage: ' + chText.slice(0, 300));
 
   // ── cassandra.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cassandra.yaml');
   await page.waitForSelector('#previewHost .cass-doc', { timeout: 12000 });
   const cassText = await page.$eval('#previewHost .cass-doc', (e) => e.textContent);
@@ -2702,7 +2702,7 @@ export async function run(ctx) {
   if (/PasswordAuthenticator|GossipingPropertyFileSnitch/i.test(cassText)) pass('cassandra.yaml: auth/snitch settings shown'); else fail('cassandra auth: ' + cassText.slice(0, 300));
 
   // ── elasticsearch.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('elasticsearch.yml');
   await page.waitForSelector('#previewHost .es-doc', { timeout: 12000 });
   const esText = await page.$eval('#previewHost .es-doc', (e) => e.textContent);
@@ -2713,7 +2713,7 @@ export async function run(ctx) {
   if (/••••••••|sensitive|keystore|truststore/i.test(esText)) pass('elasticsearch.yml: X-Pack sensitive keys masked'); else fail('elasticsearch security masking: ' + esText.slice(0, 300));
 
   // ── sentinel.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sentinel.conf (Redis Sentinel)');
   await page.waitForSelector('#previewHost .rds-doc', { timeout: 12000 });
   const rdsText = await page.$eval('#previewHost .rds-doc', (e) => e.textContent);
@@ -2723,7 +2723,7 @@ export async function run(ctx) {
   if (/••••••••|sensitive/i.test(rdsText)) pass('sentinel.conf: passwords are masked'); else fail('sentinel masking: ' + rdsText.slice(0, 300));
   if (/30000|180000/i.test(rdsText)) pass('sentinel.conf: down-after/failover-timeout shown'); else fail('sentinel timeouts: ' + rdsText.slice(0, 300));
   // ── django-settings viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('settings.py (Django)');
   await page.waitForSelector('#previewHost .dj-doc', { timeout: 12000 });
   const djText = await page.$eval('#previewHost .dj-doc', (e) => e.textContent);
@@ -2735,7 +2735,7 @@ export async function run(ctx) {
   if (/example\.com|10\.0\.0\.1/i.test(djText)) pass('settings.py: ALLOWED_HOSTS shown'); else fail('dj hosts: ' + djText.slice(0, 300));
 
   // ── spring-profiles viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('application-production.yml (Spring Boot)');
   await page.waitForSelector('#previewHost .sp-doc', { timeout: 12000 });
   const spText = await page.$eval('#previewHost .sp-doc', (e) => e.textContent);
@@ -2748,7 +2748,7 @@ export async function run(ctx) {
   if (/com\.example\.payment|WARN|INFO/i.test(spText)) pass('application-production.yml: logging levels shown'); else fail('sp logging: ' + spText.slice(0, 300));
 
   // ── rails-credentials viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('credentials.yml (Rails)');
   await page.waitForSelector('#previewHost .rc-doc', { timeout: 12000 });
   const rcText = await page.$eval('#previewHost .rc-doc', (e) => e.textContent);
@@ -2758,7 +2758,7 @@ export async function run(ctx) {
   if (/never commit|sensitive/i.test(rcText)) pass('credentials.yml: security warning shown'); else fail('rc warning: ' + rcText.slice(0, 300));
 
   // ── puma-config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('puma.rb (Puma)');
   await page.waitForSelector('#previewHost .pu-doc', { timeout: 12000 });
   const puText = await page.$eval('#previewHost .pu-doc', (e) => e.textContent);
@@ -2771,7 +2771,7 @@ export async function run(ctx) {
 
 
   // ── nomad-job viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('example.nomad (Nomad Job)');
   await page.waitForSelector('#previewHost .nj-doc', { timeout: 12000 });
   const nomadText = await page.$eval('#previewHost .nj-doc', (e) => e.textContent);
@@ -2782,7 +2782,7 @@ export async function run(ctx) {
   if (/api|worker/i.test(nomadText)) pass('example.nomad: task groups shown'); else fail('nomad groups: ' + nomadText.slice(0, 300));
 
   // ── docker-stack viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('docker-stack.yml (Docker Stack)');
   await page.waitForSelector('#previewHost .ds-doc', { timeout: 12000 });
   const dsText = await page.$eval('#previewHost .ds-doc', (e) => e.textContent);
@@ -2793,7 +2793,7 @@ export async function run(ctx) {
   if (/db_password|api_key|secret/i.test(dsText)) pass('docker-stack.yml: secrets shown'); else fail('docker-stack secrets: ' + dsText.slice(0, 300));
 
   // ── podman-quadlet viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('myapp.container (Podman Quadlet)');
   await page.waitForSelector('#previewHost .pq-doc', { timeout: 12000 });
   const pqText = await page.$eval('#previewHost .pq-doc', (e) => e.textContent);
@@ -2804,7 +2804,7 @@ export async function run(ctx) {
   if (/\/data|volume/i.test(pqText)) pass('myapp.container: volume shown'); else fail('podman-quadlet volume: ' + pqText.slice(0, 300));
 
   // ── flux-kustomization viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('flux-kustomization.yaml (Flux Kustomization)');
   await page.waitForSelector('#previewHost .fkust-doc', { timeout: 12000 });
   const fkText = await page.$eval('#previewHost .fkust-doc', (e) => e.textContent);
@@ -2815,7 +2815,7 @@ export async function run(ctx) {
   if (/infrastructure|dependsOn/i.test(fkText)) pass('flux-kustomization.yaml: dependsOn shown'); else fail('flux-kust deps: ' + fkText.slice(0, 300));
 
   // ── CycloneDX SBOM viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sbom.cyclonedx.json (CycloneDX SBOM)');
   await page.waitForSelector('#previewHost .cdx-doc', { timeout: 12000 });
   const cdxText = await page.$eval('#previewHost .cdx-doc', (e) => e.textContent);
@@ -2826,7 +2826,7 @@ export async function run(ctx) {
   if (/cdxgen/i.test(cdxText)) pass('sbom.cyclonedx.json: tool name shown'); else fail('cyclonedx tools: ' + cdxText.slice(0, 300));
 
   // ── SPDX SBOM viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sbom.spdx (SPDX SBOM)');
   await page.waitForSelector('#previewHost .spdx-doc', { timeout: 12000 });
   const spdxText = await page.$eval('#previewHost .spdx-doc', (e) => e.textContent);
@@ -2837,7 +2837,7 @@ export async function run(ctx) {
   if (/MIT/i.test(spdxText)) pass('sbom.spdx: license info shown'); else fail('spdx license: ' + spdxText.slice(0, 300));
 
   // ── SLSA Provenance viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('provenance.json (SLSA Provenance)');
   await page.waitForSelector('#previewHost .slsa-doc', { timeout: 12000 });
   const slsaText = await page.$eval('#previewHost .slsa-doc', (e) => e.textContent);
@@ -2848,7 +2848,7 @@ export async function run(ctx) {
   if (/express|lodash|react/i.test(slsaText)) pass('provenance.json: materials shown'); else fail('slsa materials: ' + slsaText.slice(0, 300));
 
   // ── Syft config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.syft.yaml (Syft config)');
   await page.waitForSelector('#previewHost .syft-doc', { timeout: 12000 });
   const syftText = await page.$eval('#previewHost .syft-doc', (e) => e.textContent);
@@ -2859,7 +2859,7 @@ export async function run(ctx) {
   if (/aws-access-key|github-pat/i.test(syftText)) pass('.syft.yaml: secret exclusions shown'); else fail('syft secrets: ' + syftText.slice(0, 300));
 
   // ── ProGuard Rules viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('proguard-rules.pro (ProGuard Rules)');
   await page.waitForSelector('#previewHost .pg-doc', { timeout: 12000 });
   const proguardText = await page.$eval('#previewHost .pg-doc', (e) => e.textContent);
@@ -2871,7 +2871,7 @@ export async function run(ctx) {
   pass('proguard-rules.pro: Android green badge rendered');
 
   // ── Android Strings viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('strings.xml (Android Strings)');
   await page.waitForSelector('#previewHost .as-doc', { timeout: 12000 });
   const androidStringsText = await page.$eval('#previewHost .as-doc', (e) => e.textContent);
@@ -2884,7 +2884,7 @@ export async function run(ctx) {
   if (asSearch) pass('strings.xml: search input rendered'); else fail('android-strings search input missing');
 
   // ── DVC Pipeline viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dvc.yaml (DVC Pipeline)');
   await page.waitForSelector('#previewHost .dvc-doc', { timeout: 12000 });
   const dvPipelineText = await page.$eval('#previewHost .dvc-doc', (e) => e.textContent);
@@ -2894,7 +2894,7 @@ export async function run(ctx) {
   if (/Dependencies|Outputs|Parameters/i.test(dvPipelineText)) pass('dvc.yaml: stage dep/out/param lists shown'); else fail('dvc lists: ' + dvPipelineText.slice(0, 300));
 
   // ── MLflow Project viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('MLproject (MLflow Project)');
   await page.waitForSelector('#previewHost .mlf-doc', { timeout: 12000 });
   const mlfText = await page.$eval('#previewHost .mlf-doc', (e) => e.textContent);
@@ -2904,7 +2904,7 @@ export async function run(ctx) {
   if (/alpha|l1_ratio|max_iter/i.test(mlfText)) pass('MLproject: parameters shown'); else fail('mlflow params: ' + mlfText.slice(0, 300));
 
   // ── Hydra Config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('hydra-config.yaml (Hydra Config)');
   await page.waitForSelector('#previewHost .hyd-doc', { timeout: 12000 });
   const hydText = await page.$eval('#previewHost .hyd-doc', (e) => e.textContent);
@@ -2914,7 +2914,7 @@ export async function run(ctx) {
   if (/max_epochs|batch_size|num_workers/i.test(hydText)) pass('hydra-config.yaml: config values shown'); else fail('hydra values: ' + hydText.slice(0, 300));
 
   // ── W&B Config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('wandb-settings (W&B Config)');
   await page.waitForSelector('#previewHost .wb-doc', { timeout: 12000 });
   const wbText = await page.$eval('#previewHost .wb-doc', (e) => e.textContent);
@@ -2924,7 +2924,7 @@ export async function run(ctx) {
   if (/online/i.test(wbText)) pass('wandb-settings: mode shown'); else fail('wandb mode: ' + wbText.slice(0, 300));
 
   // ── New Relic Agent config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('newrelic.yml (New Relic Agent)');
   await page.waitForSelector('#previewHost .nr-doc', { timeout: 12000 });
   const nrText = await page.$eval('#previewHost .nr-doc', (e) => e.textContent);
@@ -2935,7 +2935,7 @@ export async function run(ctx) {
   if (/development|production|test/i.test(nrText)) pass('newrelic.yml: environments shown'); else fail('newrelic environments: ' + nrText.slice(0, 300));
 
   // ── Dynatrace OneAgent config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dtconfig.yaml (Dynatrace OneAgent)');
   await page.waitForSelector('#previewHost .dt-doc', { timeout: 12000 });
   const dtText = await page.$eval('#previewHost .dt-doc', (e) => e.textContent);
@@ -2945,7 +2945,7 @@ export async function run(ctx) {
   if (/us-east-1|network.zone/i.test(dtText)) pass('dtconfig.yaml: network zones shown'); else fail('dynatrace network zones: ' + dtText.slice(0, 300));
 
   // ── Elastic APM agent config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('elastic-apm-agent.properties (Elastic APM Agent)');
   await page.waitForSelector('#previewHost .apm-doc', { timeout: 12000 });
   const apmText = await page.$eval('#previewHost .apm-doc', (e) => e.textContent);
@@ -2956,7 +2956,7 @@ export async function run(ctx) {
   if (/0\.25|25%|sample/i.test(apmText)) pass('elastic-apm-agent.properties: sample rate shown'); else fail('elastic-apm sampling: ' + apmText.slice(0, 300));
 
   // ── Filebeat config viewer (specialized plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('filebeat.yml (Filebeat)');
   pass(await page.waitForSelector('#previewHost .filebeat-doc', { timeout: 12000 }), 'filebeat.yml: filebeat-doc shown');
   const fbText = await page.$eval('#previewHost .filebeat-doc', (e) => e.textContent);
@@ -2966,7 +2966,7 @@ export async function run(ctx) {
   if (/\[configured\]/i.test(fbText)) pass('filebeat.yml: credentials masked'); else fail('filebeat credential masking: ' + fbText.slice(0, 300));
 
   // ── Heartbeat config viewer (specialized plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('heartbeat.yml (Heartbeat)');
   pass(await page.waitForSelector('#previewHost .heartbeat-doc', { timeout: 12000 }), 'heartbeat.yml: heartbeat-doc shown');
   const hbText = await page.$eval('#previewHost .heartbeat-doc', (e) => e.textContent);
@@ -2977,7 +2977,7 @@ export async function run(ctx) {
   if (/\[configured\]/i.test(hbText)) pass('heartbeat.yml: credentials masked'); else fail('heartbeat credential masking: ' + hbText.slice(0, 300));
 
   // ── Hardhat config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('hardhat.config.js (Hardhat)');
   await page.waitForSelector('#previewHost .hh-doc', { timeout: 12000 });
   const hhText = await page.$eval('#previewHost .hh-doc', (e) => e.textContent);
@@ -2987,7 +2987,7 @@ export async function run(ctx) {
   if (/configured/i.test(hhText)) pass('hardhat.config.js: Etherscan configured shown'); else fail('hardhat etherscan: ' + hhText.slice(0, 300));
 
   // ── Truffle config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('truffle-config.js (Truffle)');
   await page.waitForSelector('#previewHost .truf-doc', { timeout: 12000 });
   const trufText = await page.$eval('#previewHost .truf-doc', (e) => e.textContent);
@@ -2997,7 +2997,7 @@ export async function run(ctx) {
   if (/build\/contracts|build.contracts/i.test(trufText)) pass('truffle-config.js: build directory shown'); else fail('truffle build dir: ' + trufText.slice(0, 300));
 
   // ── Foundry TOML viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('foundry.toml (Foundry)');
   await page.waitForSelector('#previewHost .fndry-doc', { timeout: 12000 });
   const fndryText = await page.$eval('#previewHost .fndry-doc', (e) => e.textContent);
@@ -3008,7 +3008,7 @@ export async function run(ctx) {
   if (/URL.*hidden|URLs hidden/i.test(fndryText)) pass('foundry.toml: RPC URLs hidden message shown'); else fail('foundry rpc masking: ' + fndryText.slice(0, 400));
 
   // ── Anchor TOML viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Anchor.toml (Anchor)');
   await page.waitForSelector('#previewHost .anc-doc', { timeout: 12000 });
   const ancText = await page.$eval('#previewHost .anc-doc', (e) => e.textContent);
@@ -3018,7 +3018,7 @@ export async function run(ctx) {
   if (/~\/.config\/solana\/id\.json/i.test(ancText)) pass('Anchor.toml: wallet path shown'); else fail('anchor wallet: ' + ancText.slice(0, 300));
 
   // ── Maven POM viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pom.xml (Maven POM)');
   await page.waitForSelector('#previewHost .mvn-doc', { timeout: 12000 });
   const mvnText = await page.$eval('#previewHost .mvn-doc', (e) => e.textContent);
@@ -3028,7 +3028,7 @@ export async function run(ctx) {
   if (/test/i.test(mvnText)) pass('pom.xml: test scope shown'); else fail('maven-pom scope: ' + mvnText.slice(0, 300));
 
   // ── Gradle Version Catalog viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('libs.versions.toml (Gradle Version Catalog)');
   await page.waitForSelector('#previewHost .gvc-doc', { timeout: 12000 });
   const gvcText = await page.$eval('#previewHost .gvc-doc', (e) => e.textContent);
@@ -3039,7 +3039,7 @@ export async function run(ctx) {
   if (/kotlin-jvm|spring-boot/i.test(gvcText)) pass('libs.versions.toml: plugin aliases shown'); else fail('gradle-version-catalog plugins: ' + gvcText.slice(0, 300));
 
   // ── Checkstyle viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('checkstyle.xml (Checkstyle)');
   await page.waitForSelector('#previewHost .cs-doc', { timeout: 12000 });
   const csText = await page.$eval('#previewHost .cs-doc', (e) => e.textContent);
@@ -3049,7 +3049,7 @@ export async function run(ctx) {
   if (/ConstantName|MethodName|JavadocMethod/i.test(csText)) pass('checkstyle.xml: check module names shown'); else fail('checkstyle modules: ' + csText.slice(0, 300));
 
   // ── SpotBugs viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('spotbugs-exclude.xml (SpotBugs)');
   await page.waitForSelector('#previewHost .spb-doc', { timeout: 12000 });
   const spbText = await page.$eval('#previewHost .spb-doc', (e) => e.textContent);
@@ -3059,7 +3059,7 @@ export async function run(ctx) {
   if (/Exclude|match rule/i.test(spbText)) pass('spotbugs-exclude.xml: filter type and match count shown'); else fail('spotbugs filter type: ' + spbText.slice(0, 300));
 
   // ── php-ini viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('php.ini');
   await page.waitForSelector('#previewHost .php-doc', { timeout: 12000 });
   const phpIniText = await page.$eval('#previewHost .php-doc', (e) => e.textContent);
@@ -3070,7 +3070,7 @@ export async function run(ctx) {
   if (/session\.save_handler|opcache/i.test(phpIniText)) pass('php.ini: session/opcache sections shown'); else fail('php-ini session: ' + phpIniText.slice(0, 300));
 
   // ── psalm-config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('psalm.xml');
   await page.waitForSelector('#previewHost .ps-doc', { timeout: 12000 });
   const psalmText = await page.$eval('#previewHost .ps-doc', (e) => e.textContent);
@@ -3081,7 +3081,7 @@ export async function run(ctx) {
   if (/MissingReturnType|PropertyNotSetInConstructor/i.test(psalmText)) pass('psalm.xml: issue handlers shown'); else fail('psalm issues: ' + psalmText.slice(0, 300));
 
   // ── phpunit-config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('phpunit.xml.dist (PHPUnit Config)');
   await page.waitForSelector('#previewHost .puc-doc', { timeout: 12000 });
   const pucText = await page.$eval('#previewHost .puc-doc', (e) => e.textContent);
@@ -3091,7 +3091,7 @@ export async function run(ctx) {
   if (/coverage|src/i.test(pucText)) pass('phpunit.xml.dist: coverage paths shown'); else fail('phpunit-config coverage: ' + pucText.slice(0, 300));
 
   // ── rector-config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('rector.php (Rector Config)');
   await page.waitForSelector('#previewHost .rect-doc', { timeout: 12000 });
   const rectorText = await page.$eval('#previewHost .rect-doc', (e) => e.textContent);
@@ -3102,7 +3102,7 @@ export async function run(ctx) {
   if (/dead.*code|20/i.test(rectorText)) pass('rector.php: dead code level shown'); else fail('rector deadCode: ' + rectorText.slice(0, 300));
 
   // ── Keycloak Realm viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('keycloak-realm.json (Keycloak Realm)');
   await page.waitForSelector('#previewHost .kc-doc', { timeout: 12000 });
   const keycloakText = await page.$eval('#previewHost .kc-doc', (e) => e.textContent);
@@ -3114,7 +3114,7 @@ export async function run(ctx) {
   if (/github/i.test(kcText)) pass('keycloak-realm.json: identity provider shown'); else fail('keycloak idp: ' + kcText.slice(0, 300));
 
   // ── Authelia Config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('authelia-config.yml (Authelia)');
   await page.waitForSelector('#previewHost .au-doc', { timeout: 12000 });
   const auText = await page.$eval('#previewHost .au-doc', (e) => e.textContent);
@@ -3125,7 +3125,7 @@ export async function run(ctx) {
   if (!/EXAMPLE_PASSWORD_DO_NOT_USE|EXAMPLE_OIDC_SECRET/i.test(auText)) pass('authelia-config.yml: secrets masked'); else fail('authelia secrets not masked');
 
   // ── OAuth2 Proxy Config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('oauth2-proxy.cfg (OAuth2 Proxy)');
   await page.waitForSelector('#previewHost .op2-doc', { timeout: 12000 });
   const op2Text = await page.$eval('#previewHost .op2-doc', (e) => e.textContent);
@@ -3136,7 +3136,7 @@ export async function run(ctx) {
   if (!/EXAMPLE_SECRET_DO_NOT_USE|EXAMPLE_COOKIE_SECRET/i.test(op2Text)) pass('oauth2-proxy.cfg: secrets masked'); else fail('oauth2-proxy secrets not masked');
 
   // ── Authentik Blueprint viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('authentik-blueprint.yaml (Authentik)');
   await page.waitForSelector('#previewHost .atk-doc', { timeout: 12000 });
   const atkText = await page.$eval('#previewHost .atk-doc', (e) => e.textContent);
@@ -3149,7 +3149,7 @@ export async function run(ctx) {
   // ── .NET / MSBuild known-file viewers ──
 
   // csproj viewer
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('app.csproj');
   await page.waitForSelector('#previewHost .cs-doc', { timeout: 12000 });
   const csprojText = await page.$eval('#previewHost .cs-doc', (e) => e.textContent);
@@ -3160,7 +3160,7 @@ export async function run(ctx) {
   if (/MyApp\.Core|MyApp\.Infrastructure/i.test(csprojText)) pass('app.csproj: project references listed'); else fail('csproj projrefs: ' + csprojText.slice(0, 300));
 
   // nuget-config viewer
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nuget.config');
   await page.waitForSelector('#previewHost .nugetcfg-doc', { timeout: 12000 });
   pass('nuget.config: renders');
@@ -3171,7 +3171,7 @@ export async function run(ctx) {
   if (/clears inherited sources|globalPackagesFolder/i.test(nugetText)) pass('nuget.config: config options or clear flag shown'); else fail('nuget opts: ' + nugetText.slice(0, 300));
 
   // Directory.Build.props viewer
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Directory.Build.props');
   await page.waitForSelector('#previewHost .db-doc', { timeout: 12000 });
   const dbPropsText = await page.$eval('#previewHost .db-doc', (e) => e.textContent);
@@ -3181,7 +3181,7 @@ export async function run(ctx) {
   if (/Microsoft\.SourceLink/i.test(dbPropsText)) pass('Directory.Build.props: package reference shown'); else fail('db pkgref: ' + dbPropsText.slice(0, 300));
 
   // msbuild-props viewer (Common.props)
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Common.props (MSBuild)');
   await page.waitForSelector('#previewHost .mb-doc', { timeout: 12000 });
   const mbPropsText = await page.$eval('#previewHost .mb-doc', (e) => e.textContent);
@@ -3192,7 +3192,7 @@ export async function run(ctx) {
   if (/Custom\.targets/i.test(mbPropsText)) pass('Common.props: import element shown'); else fail('mb imports: ' + mbPropsText.slice(0, 300));
 
   // ── wireguard-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('wg0.conf');
   await page.waitForSelector('#previewHost .wg-doc', { timeout: 12000 });
   const wgText = await page.$eval('#previewHost .wg-doc', (e) => e.textContent);
@@ -3201,7 +3201,7 @@ export async function run(ctx) {
   if (/Peer|AllowedIPs/i.test(wgText)) pass('wg0.conf: peers shown'); else fail('wireguard peers: ' + wgText.slice(0, 300));
 
   // ── openvpn-config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('client.ovpn');
   await page.waitForSelector('#previewHost .ovpn-doc', { timeout: 12000 });
   const ovpnText = await page.$eval('#previewHost .ovpn-doc', (e) => e.textContent);
@@ -3210,7 +3210,7 @@ export async function run(ctx) {
   if (/embedded|private key/i.test(ovpnText)) pass('client.ovpn: embedded keys noted'); else fail('openvpn keys: ' + ovpnText.slice(0, 300));
 
   // ── shell-rc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.bashrc');
   await page.waitForSelector('#previewHost .shrc-doc', { timeout: 12000 });
   const shrcText = await page.$eval('#previewHost .shrc-doc', (e) => e.textContent);
@@ -3218,7 +3218,7 @@ export async function run(ctx) {
   if (/alias/i.test(shrcText)) pass('.bashrc: aliases shown'); else fail('shell-rc aliases: ' + shrcText.slice(0, 300));
 
   // ── nix-config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('flake.nix');
   await page.waitForSelector('#previewHost .nix-doc', { timeout: 12000 });
   const nixText = await page.$eval('#previewHost .nix-doc', (e) => e.textContent);
@@ -3226,7 +3226,7 @@ export async function run(ctx) {
   if (/description|dev shell|input/i.test(nixText)) pass('flake.nix: content shown'); else fail('nix content: ' + nixText.slice(0, 300));
 
   // ── hugo-config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('hugo.toml');
   await page.waitForSelector('#previewHost .hugo-doc', { timeout: 12000 });
   const hugoText = await page.$eval('#previewHost .hugo-doc', (e) => e.textContent);
@@ -3235,7 +3235,7 @@ export async function run(ctx) {
   if (/example\.com|baseURL/i.test(hugoText)) pass('hugo.toml: baseURL shown'); else fail('hugo url: ' + hugoText.slice(0, 300));
 
   // ── R DESCRIPTION viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('DESCRIPTION');
   await page.waitForSelector('#previewHost .rdesc-doc', { timeout: 12000 });
   const rdescText = await page.$eval('#previewHost .rdesc-doc', (e) => e.textContent);
@@ -3244,7 +3244,7 @@ export async function run(ctx) {
   if (/dplyr|ggplot2|Imports/i.test(rdescText)) pass('DESCRIPTION: dependencies shown'); else fail('r-desc deps: ' + rdescText.slice(0, 300));
 
   // ── esbuild-config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('esbuild.config.mjs');
   await page.waitForSelector('#previewHost .esb-doc', { timeout: 12000 });
   const esbText = await page.$eval('#previewHost .esb-doc', (e) => e.textContent);
@@ -3252,7 +3252,7 @@ export async function run(ctx) {
   if (/entry|src\/index|outdir/i.test(esbText)) pass('esbuild.config.mjs: entry/output shown'); else fail('esbuild entry: ' + esbText.slice(0, 300));
 
   // ── maven-settings viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('settings.xml (Maven)');
   await page.waitForSelector('#previewHost .mvns-doc', { timeout: 12000 });
   const mvnsText = await page.$eval('#previewHost .mvns-doc', (e) => e.textContent);
@@ -3260,7 +3260,7 @@ export async function run(ctx) {
   if (/configured|password/i.test(mvnsText)) pass('settings.xml: credentials redacted'); else fail('maven-settings creds: ' + mvnsText.slice(0, 300));
 
   // ── pg_hba.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pg_hba.conf');
   await page.waitForSelector('#previewHost .pghba-doc', { timeout: 12000 });
   const pghbaText = await page.$eval('#previewHost .pghba-doc', (e) => e.textContent);
@@ -3268,7 +3268,7 @@ export async function run(ctx) {
   if (/scram-sha-256|peer|md5/i.test(pghbaText)) pass('pg_hba.conf: auth methods shown'); else fail('pghba methods: ' + pghbaText.slice(0, 300));
 
   // ── Caddyfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Caddyfile');
   await page.waitForSelector('#previewHost .cdf-doc', { timeout: 12000 });
   const cdfText = await page.$eval('#previewHost .cdf-doc', (e) => e.textContent);
@@ -3277,7 +3277,7 @@ export async function run(ctx) {
   if (/reverse_proxy|file_server|encode/i.test(cdfText)) pass('Caddyfile: directives shown'); else fail('caddyfile directives: ' + cdfText.slice(0, 300));
 
   // ── nginx.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nginx.conf');
   await page.waitForSelector('#previewHost .ngx-doc', { timeout: 12000 });
   const ngxText = await page.$eval('#previewHost .ngx-doc', (e) => e.textContent);
@@ -3286,7 +3286,7 @@ export async function run(ctx) {
   if (/example\.com/i.test(ngxText)) pass('nginx.conf: server_name shown'); else fail('nginx server_name: ' + ngxText.slice(0, 300));
 
   // ── ansible.cfg viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('ansible.cfg (Ansible Config)');
   await page.waitForSelector('#previewHost .ansiblecfg-doc', { timeout: 12000 });
   const anscfgText = await page.$eval('#previewHost .ansiblecfg-doc', (e) => e.textContent);
@@ -3295,7 +3295,7 @@ export async function run(ctx) {
   if (/forks/i.test(anscfgText)) pass('ansible.cfg: forks shown'); else fail('ansible-cfg forks: ' + anscfgText.slice(0, 300));
 
   // ── makepkg.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('makepkg.conf (makepkg Config)');
   await page.waitForSelector('#previewHost .makepkgcfg-doc', { timeout: 12000 });
   const makepkgText = await page.$eval('#previewHost .makepkgcfg-doc', (e) => e.textContent);
@@ -3304,7 +3304,7 @@ export async function run(ctx) {
   if (/MAKEFLAGS|CFLAGS/i.test(makepkgText)) pass('makepkg.conf: compiler flags shown'); else fail('makepkg-conf flags: ' + makepkgText.slice(0, 300));
 
   // ── inventory (Ansible Inventory) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('inventory (Ansible Inventory)');
   await page.waitForSelector('#previewHost .ansinv-doc', { timeout: 12000 });
   const ansinvText = await page.$eval('#previewHost .ansinv-doc', (e) => e.textContent);
@@ -3312,7 +3312,7 @@ export async function run(ctx) {
   if (/webservers/i.test(ansinvText)) pass('inventory: groups shown'); else fail('ansible-hosts groups: ' + ansinvText.slice(0, 200));
 
   // ── supervisord.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('supervisord.conf');
   await page.waitForSelector('#previewHost .supd-doc', { timeout: 12000 });
   const supdText = await page.$eval('#previewHost .supd-doc', (e) => e.textContent);
@@ -3320,7 +3320,7 @@ export async function run(ctx) {
   if (/webapp/i.test(supdText)) pass('supervisord.conf: program shown'); else fail('supervisord program: ' + supdText.slice(0, 300));
 
   // ── logrotate.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('logrotate.conf (Log Rotation)');
   await page.waitForSelector('#previewHost .logrot-doc', { timeout: 12000 });
   const logrotText = await page.$eval('#previewHost .logrot-doc', (e) => e.textContent);
@@ -3328,7 +3328,7 @@ export async function run(ctx) {
   if (/nginx/i.test(logrotText)) pass('logrotate.conf: log target shown'); else fail('logrotate target: ' + logrotText.slice(0, 300));
 
   // ── tlp.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('tlp.conf (TLP Power)');
   await page.waitForSelector('#previewHost .tlpcfg-doc', { timeout: 12000 });
   const tlpText = await page.$eval('#previewHost .tlpcfg-doc', (e) => e.textContent);
@@ -3337,7 +3337,7 @@ export async function run(ctx) {
   if (/40%|80%/i.test(tlpText)) pass('tlp.conf: battery charge threshold shown'); else fail('tlp-conf battery threshold: ' + tlpText.slice(0, 300));
 
   // ── .env.example viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.env.example (Env Template)');
   await page.waitForSelector('#previewHost .envex-doc', { timeout: 12000 });
   const envexText = await page.$eval('#previewHost .envex-doc', (e) => e.textContent);
@@ -3345,7 +3345,7 @@ export async function run(ctx) {
   if (/DATABASE_URL/i.test(envexText)) pass('.env.example: variables shown'); else fail('env-example vars: ' + envexText.slice(0, 200));
 
   // ── ssh_config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('ssh_config (SSH Client Config)');
   await page.waitForSelector('#previewHost .ssh-doc', { timeout: 12000 });
   const sshcfgText = await page.$eval('#previewHost .ssh-doc', (e) => e.textContent);
@@ -3356,7 +3356,7 @@ export async function run(ctx) {
   if (sshCopyBtn) pass('ssh_config: copy button present'); else fail('ssh_config: copy button missing');
 
   // ── sshd_config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sshd_config');
   await page.waitForSelector('#previewHost .sshdcfg-doc', { timeout: 12000 });
   const sshdcfgText = await page.$eval('#previewHost .sshdcfg-doc', (e) => e.textContent);
@@ -3365,7 +3365,7 @@ export async function run(ctx) {
   if (/PasswordAuthentication/i.test(sshdcfgText)) pass('sshd_config: PasswordAuthentication shown'); else fail('sshd_config passwd-auth: ' + sshdcfgText.slice(0, 300));
 
   // ── Postman Collection viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('api.postman_collection.json (Postman)');
   await page.waitForSelector('#previewHost .postman-doc', { timeout: 12000 });
   const postmanText = await page.$eval('#previewHost .postman-doc', (e) => e.textContent);
@@ -3374,7 +3374,7 @@ export async function run(ctx) {
   if (/Auth|Users|Health/i.test(postmanText)) pass('api.postman_collection.json: folders/items shown'); else fail('postman structure: ' + postmanText.slice(0, 300));
 
   // ── GraphQL Schema viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('schema.graphql (GraphQL Schema)');
   await page.waitForSelector('#previewHost .gql-doc', { timeout: 12000 });
   const gqlSchemaText = await page.$eval('#previewHost .gql-doc', (e) => e.textContent);
@@ -3383,7 +3383,7 @@ export async function run(ctx) {
   if (/Mutation|User|Post/i.test(gqlSchemaText)) pass('schema.graphql: types/mutations shown'); else fail('graphql types: ' + gqlSchemaText.slice(0, 300));
 
   // ── hosts-file viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('hosts');
   await page.waitForSelector('#previewHost .hostsf-doc', { timeout: 12000 });
   const hostsfText = await page.$eval('#previewHost .hostsf-doc', (e) => e.textContent);
@@ -3391,7 +3391,7 @@ export async function run(ctx) {
   if (/localhost/i.test(hostsfText)) pass('hosts: localhost entry shown'); else fail('hosts localhost: ' + hostsfText.slice(0, 300));
 
   // ── resolv-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('resolv.conf');
   await page.waitForSelector('#previewHost .resolvconf-doc', { timeout: 12000 });
   const resolvText = await page.$eval('#previewHost .resolvconf-doc', (e) => e.textContent);
@@ -3399,7 +3399,7 @@ export async function run(ctx) {
   if (/Cloudflare/i.test(resolvText)) pass('resolv.conf: Cloudflare nameserver shown'); else fail('resolv.conf cloudflare: ' + resolvText.slice(0, 300));
 
   // ── fstab viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('fstab (Linux Filesystem Table)');
   await page.waitForSelector('#previewHost .fstab-doc', { timeout: 12000 });
   const fstabText = await page.$eval('#previewHost .fstab-doc', (e) => e.textContent);
@@ -3407,7 +3407,7 @@ export async function run(ctx) {
   if (/ext4/i.test(fstabText)) pass('fstab: ext4 fs type shown'); else fail('fstab ext4: ' + fstabText.slice(0, 300));
 
   // ── crypttab viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('crypttab (Linux Encrypted Devices)');
   await page.waitForSelector('#previewHost .crytab-doc', { timeout: 12000 });
   const crytabText = await page.$eval('#previewHost .crytab-doc', (e) => e.textContent);
@@ -3415,7 +3415,7 @@ export async function run(ctx) {
   if (/luks/i.test(crytabText)) pass('crypttab: luks option shown'); else fail('crypttab luks: ' + crytabText.slice(0, 300));
 
   // ── systemd unit viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('myapp.service (systemd Service)');
   await page.waitForSelector('#previewHost .sysd-doc', { timeout: 12000 });
   const sysdText = await page.$eval('#previewHost .sysd-doc', (e) => e.textContent);
@@ -3424,7 +3424,7 @@ export async function run(ctx) {
   if (/My Application Service/i.test(sysdText)) pass('myapp.service: description shown'); else fail('systemd description: ' + sysdText.slice(0, 300));
 
   // ── crontab viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('crontab (Cron Schedule)');
   await page.waitForSelector('#previewHost .crntab-doc', { timeout: 12000 });
   const crntabText = await page.$eval('#previewHost .crntab-doc', (e) => e.textContent);
@@ -3433,7 +3433,7 @@ export async function run(ctx) {
   if (/daily|every|weekly|reboot/i.test(crntabText)) pass('crontab: human schedule descriptions shown'); else fail('crontab schedule: ' + crntabText.slice(0, 300));
 
   // ── cert-manager viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cert-manager.yaml (cert-manager)');
   await page.waitForSelector('#previewHost .certmgr-doc', { timeout: 12000 });
   const certmgrText = await page.$eval('#previewHost .certmgr-doc', (e) => e.textContent);
@@ -3442,7 +3442,7 @@ export async function run(ctx) {
   if (/letsencrypt/i.test(certmgrText)) pass('cert-manager: letsencrypt issuer shown'); else fail('cert-manager letsencrypt: ' + certmgrText.slice(0, 300));
 
   // ── iptables rules viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('iptables.rules (Firewall Rules)');
   await page.waitForSelector('#previewHost .iptr-doc', { timeout: 12000 });
   const iptablesText = await page.$eval('#previewHost .iptr-doc', (e) => e.textContent);
@@ -3450,7 +3450,7 @@ export async function run(ctx) {
   if (/INPUT|filter/i.test(iptablesText)) pass('iptables.rules: chain or table shown'); else fail('iptables chain/table: ' + iptablesText.slice(0, 300));
 
   // ── UFW config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('ufw.conf (UFW Firewall)');
   await page.waitForSelector('#previewHost .ufwcfg-doc', { timeout: 12000 });
   const ufwText = await page.$eval('#previewHost .ufwcfg-doc', (e) => e.textContent);
@@ -3458,7 +3458,7 @@ export async function run(ctx) {
   if (/DEFAULT/i.test(ufwText)) pass('ufw.conf: default policies shown'); else fail('ufw policies: ' + ufwText.slice(0, 300));
 
   // ── VictoriaMetrics config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('victoria-metrics.yml (VictoriaMetrics)');
   await page.waitForSelector('#previewHost .vmcfg-doc', { timeout: 12000 });
   const vmcfgText = await page.$eval('#previewHost .vmcfg-doc', (e) => e.textContent);
@@ -3466,7 +3466,7 @@ export async function run(ctx) {
   if (/scrape/i.test(vmcfgText)) pass('victoria-metrics.yml: scrape jobs shown'); else fail('vmcfg scrape: ' + vmcfgText.slice(0, 300));
 
   // ── Thanos config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('thanos-bucket.yml (Thanos)');
   await page.waitForSelector('#previewHost .thanoscfg-doc', { timeout: 12000 });
   const thanosText = await page.$eval('#previewHost .thanoscfg-doc', (e) => e.textContent);
@@ -3475,7 +3475,7 @@ export async function run(ctx) {
   if (/bucket/i.test(thanosText)) pass('thanos-bucket.yml: bucket shown'); else fail('thanoscfg bucket: ' + thanosText.slice(0, 300));
 
   // ── Thanos config viewer (thanos.yaml) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('thanos.yaml');
   await page.waitForSelector('#previewHost .thanoscfg-doc', { timeout: 12000 });
   const thanosYamlText = await page.$eval('#previewHost .thanoscfg-doc', (e) => e.textContent);
@@ -3483,7 +3483,7 @@ export async function run(ctx) {
   if (/S3/i.test(thanosYamlText)) pass('thanos.yaml: S3 storage type shown'); else fail('thanos.yaml type: ' + thanosYamlText.slice(0, 300));
 
   // ── Loki config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('loki-config.yaml');
   await page.waitForSelector('#previewHost .loki-doc', { timeout: 12000 });
   const lokiText = await page.$eval('#previewHost .loki-doc', (e) => e.textContent);
@@ -3491,7 +3491,7 @@ export async function run(ctx) {
   if (/schema|storage/i.test(lokiText)) pass('loki-config.yaml: schema or storage section shown'); else fail('loki content: ' + lokiText.slice(0, 300));
 
   // ── fail2ban jail.local viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('jail.local (Fail2ban)');
   await page.waitForSelector('#previewHost .f2b-doc', { timeout: 12000 });
   const f2bText = await page.$eval('#previewHost .f2b-doc', (e) => e.textContent);
@@ -3499,7 +3499,7 @@ export async function run(ctx) {
   if (/sshd|bantime/i.test(f2bText)) pass('jail.local: sshd jail or bantime shown'); else fail('fail2ban content: ' + f2bText.slice(0, 300));
 
   // ── smb.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('smb.conf (Samba)');
   await page.waitForSelector('#previewHost .smbcfg-doc', { timeout: 12000 });
   const smbText = await page.$eval('#previewHost .smbcfg-doc', (e) => e.textContent);
@@ -3507,7 +3507,7 @@ export async function run(ctx) {
   if (/data|workgroup/i.test(smbText)) pass('smb.conf: data share or workgroup shown'); else fail('samba content: ' + smbText.slice(0, 300));
 
   // ── Corefile (CoreDNS) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Corefile (CoreDNS)');
   await page.waitForSelector('#previewHost .coredns-doc', { timeout: 12000 });
   const corefileText = await page.$eval('#previewHost .coredns-doc', (e) => e.textContent);
@@ -3515,7 +3515,7 @@ export async function run(ctx) {
   if (/kubernetes|forward/i.test(corefileText)) pass('Corefile: kubernetes or forward plugin shown'); else fail('corefile content: ' + corefileText.slice(0, 300));
 
   // ── containerd.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('containerd.toml (containerd)');
   await page.waitForSelector('#previewHost .ctrd-doc', { timeout: 12000 });
   const ctrdText = await page.$eval('#previewHost .ctrd-doc', (e) => e.textContent);
@@ -3523,7 +3523,7 @@ export async function run(ctx) {
   if (/sandbox_image|overlayfs/i.test(ctrdText)) pass('containerd.toml: sandbox_image or overlayfs shown'); else fail('containerd content: ' + ctrdText.slice(0, 300));
 
   // ── postfix main.cf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('main.cf (Postfix Mail Server)');
   await page.waitForSelector('#previewHost .postfix-doc', { timeout: 12000 });
   const postfixText = await page.$eval('#previewHost .postfix-doc', (e) => e.textContent);
@@ -3531,7 +3531,7 @@ export async function run(ctx) {
   if (/myhostname|mail\.example\.com/i.test(postfixText)) pass('main.cf: myhostname or hostname shown'); else fail('postfix hostname: ' + postfixText.slice(0, 300));
 
   // ── chrony.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('chrony.conf (NTP)');
   await page.waitForSelector('#previewHost .chronycfg-doc', { timeout: 12000 });
   const chronyText = await page.$eval('#previewHost .chronycfg-doc', (e) => e.textContent);
@@ -3539,7 +3539,7 @@ export async function run(ctx) {
   if (/pool|google/i.test(chronyText)) pass('chrony.conf: pool or google NTP shown'); else fail('chrony sources: ' + chronyText.slice(0, 300));
 
   // ── gradle-wrapper.properties viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('gradle-wrapper.properties');
   await page.waitForSelector('#previewHost .gw-doc', { timeout: 12000 });
   const gradleWrapperText = await page.$eval('#previewHost .gw-doc', (e) => e.textContent);
@@ -3548,7 +3548,7 @@ export async function run(ctx) {
   if (/bin|services\.gradle\.org/i.test(gradleWrapperText)) pass('gradle-wrapper.properties: distribution info shown'); else fail('gradle-wrapper dist: ' + gradleWrapperText.slice(0, 300));
 
   // ── gradle.properties viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('gradle.properties');
   await page.waitForSelector('#previewHost .gp-doc', { timeout: 12000 });
   const gpText = await page.$eval('#previewHost .gp-doc', (e) => e.textContent);
@@ -3557,7 +3557,7 @@ export async function run(ctx) {
   if (/Kotlin|kotlin/i.test(gpText)) pass('gradle.properties: Kotlin version shown'); else fail('gradle-props kotlin: ' + gpText.slice(0, 300));
 
   // ── settings.gradle viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('settings.gradle');
   await page.waitForSelector('#previewHost .sg-doc', { timeout: 12000 });
   pass('settings.gradle: renders');
@@ -3568,7 +3568,7 @@ export async function run(ctx) {
   if (/app|feature|core/i.test(sgText)) pass('settings.gradle: subprojects shown'); else fail('settings-gradle subprojects: ' + sgText.slice(0, 300));
 
   // ── build.sbt viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('build.sbt');
   await page.waitForSelector('#previewHost .sbt-doc', { timeout: 12000 });
   const buildSbtText = await page.$eval('#previewHost .sbt-doc', (e) => e.textContent);
@@ -3577,7 +3577,7 @@ export async function run(ctx) {
   if (/cats-core|cats-effect|fs2/i.test(buildSbtText)) pass('build.sbt: dependencies shown'); else fail('build-sbt deps: ' + buildSbtText.slice(0, 300));
 
   // ── build.xml (Apache Ant) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('build.xml (Apache Ant)');
   await page.waitForSelector('#previewHost .antbuild-doc', { timeout: 12000 });
   const antText = await page.$eval('#previewHost .antbuild-doc', (e) => e.textContent);
@@ -3586,7 +3586,7 @@ export async function run(ctx) {
   if (/compile|package|clean/i.test(antText)) pass('build.xml: targets shown'); else fail('ant-build targets: ' + antText.slice(0, 300));
 
   // ── sudoers viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sudoers');
   await page.waitForSelector('#previewHost .sudoers-doc', { timeout: 12000 });
   const sudoText = await page.$eval('#previewHost .sudoers-doc', (e) => e.textContent);
@@ -3594,7 +3594,7 @@ export async function run(ctx) {
   if (/NOPASSWD|%sudo/i.test(sudoText)) pass('sudoers: access rules shown (NOPASSWD or %sudo)'); else fail('sudoers rules: ' + sudoText.slice(0, 300));
 
   // ── NFS exports viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('exports');
   await page.waitForSelector('#previewHost .nfsexp-doc', { timeout: 12000 });
   const nfsText = await page.$eval('#previewHost .nfsexp-doc', (e) => e.textContent);
@@ -3602,7 +3602,7 @@ export async function run(ctx) {
   if (/rw|sync/i.test(nfsText)) pass('exports: export options shown'); else fail('nfs-exports options: ' + nfsText.slice(0, 300));
 
   // ── rsyslog.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('rsyslog.conf');
   await page.waitForSelector('#previewHost .rsyslog-doc', { timeout: 12000 });
   const rsyslogText = await page.$eval('#previewHost .rsyslog-doc', (e) => e.textContent);
@@ -3610,7 +3610,7 @@ export async function run(ctx) {
   if (/auth|syslog/i.test(rsyslogText)) pass('rsyslog.conf: log routing shown'); else fail('rsyslog routing: ' + rsyslogText.slice(0, 300));
 
   // ── lighttpd.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('lighttpd.conf');
   await page.waitForSelector('#previewHost .lighty-doc', { timeout: 12000 });
   const lightyText = await page.$eval('#previewHost .lighty-doc', (e) => e.textContent);
@@ -3618,7 +3618,7 @@ export async function run(ctx) {
   if (/document-root|modules/i.test(lightyText)) pass('lighttpd.conf: document-root or modules shown'); else fail('lighttpd content: ' + lightyText.slice(0, 300));
 
   // ── named.conf (BIND DNS) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('named.conf (BIND DNS)');
   await page.waitForSelector('#previewHost .namedcfg-doc', { timeout: 12000 });
   const namedText = await page.$eval('#previewHost .namedcfg-doc', (e) => e.textContent);
@@ -3627,7 +3627,7 @@ export async function run(ctx) {
   if (/master|primary/i.test(namedText)) pass('named.conf: zone types shown'); else fail('named-conf zone types: ' + namedText.slice(0, 300));
 
   // ── unbound.conf (Unbound DNS) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('unbound.conf (Unbound DNS)');
   await page.waitForSelector('#previewHost .unboundcfg-doc', { timeout: 12000 });
   const unboundText = await page.$eval('#previewHost .unboundcfg-doc', (e) => e.textContent);
@@ -3636,7 +3636,7 @@ export async function run(ctx) {
   if (/access.control|allow|refuse/i.test(unboundText)) pass('unbound.conf: access control shown'); else fail('unbound-conf acl: ' + unboundText.slice(0, 300));
 
   // ── dhcpd.conf (ISC DHCP Server) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dhcpd.conf (ISC DHCP Server)');
   await page.waitForSelector('#previewHost .dhcpd-doc', { timeout: 12000 });
   const dhcpdText = await page.$eval('#previewHost .dhcpd-doc', (e) => e.textContent);
@@ -3645,7 +3645,7 @@ export async function run(ctx) {
   if (/server01|printer/i.test(dhcpdText)) pass('dhcpd.conf: host reservations shown'); else fail('dhcpd-conf hosts: ' + dhcpdText.slice(0, 300));
 
   // ── vector.toml (Vector Config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vector.toml (Vector)');
   await page.waitForSelector('#previewHost .vectorcfg-doc', { timeout: 12000 });
   const vecText = await page.$eval('#previewHost .vectorcfg-doc', (e) => e.textContent);
@@ -3653,7 +3653,7 @@ export async function run(ctx) {
   if (/source|sink/i.test(vecText)) pass('vector.toml: sources/sinks shown'); else fail('vector-config sources: ' + vecText.slice(0, 300));
 
   // ── keepalived.conf (Keepalived) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('keepalived.conf (Keepalived VRRP)');
   await page.waitForSelector('#previewHost .kalivd-doc', { timeout: 12000 });
   const kaText = await page.$eval('#previewHost .kalivd-doc', (e) => e.textContent);
@@ -3661,7 +3661,7 @@ export async function run(ctx) {
   if (/MASTER|vrrp/i.test(kaText)) pass('keepalived.conf: VRRP instance state shown'); else fail('keepalived-conf vrrp: ' + kaText.slice(0, 300));
 
   // ── netdata.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('netdata.conf (Netdata)');
   await page.waitForSelector('#previewHost .netdatacfg-doc', { timeout: 12000 });
   const netdataText = await page.$eval('#previewHost .netdatacfg-doc', (e) => e.textContent);
@@ -3669,7 +3669,7 @@ export async function run(ctx) {
   if (/global|plugins/i.test(netdataText)) pass('netdata.conf: global or plugins section shown'); else fail('netdata-conf sections: ' + netdataText.slice(0, 300));
 
   // ── .yarnrc.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.yarnrc.yml (Yarn)');
   await page.waitForSelector('#previewHost .yarnrc-doc', { timeout: 12000 });
   const yarnText = await page.$eval('#previewHost .yarnrc-doc', (e) => e.textContent);
@@ -3677,7 +3677,7 @@ export async function run(ctx) {
   if (/nodeLinker|Berry/i.test(yarnText)) pass('.yarnrc.yml: nodeLinker or Berry shown'); else fail('yarnrc content: ' + yarnText.slice(0, 300));
 
   // ── cpanfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cpanfile');
   await page.waitForSelector('#previewHost .cpanfile-doc', { timeout: 12000 });
   const cpanfileText = await page.$eval('#previewHost .cpanfile-doc', (e) => e.textContent);
@@ -3685,7 +3685,7 @@ export async function run(ctx) {
   if (/Moose|requires/i.test(cpanfileText)) pass('cpanfile: required dependencies shown'); else fail('cpanfile deps: ' + cpanfileText.slice(0, 300));
 
   // ── openssl.cnf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('openssl.cnf');
   await page.waitForSelector('#previewHost .opensslcfg-doc', { timeout: 12000 });
   const opensslText = await page.$eval('#previewHost .opensslcfg-doc', (e) => e.textContent);
@@ -3693,7 +3693,7 @@ export async function run(ctx) {
   if (/distinguished_name|CA/i.test(opensslText)) pass('openssl.cnf: distinguished_name or CA info shown'); else fail('openssl-conf content: ' + opensslText.slice(0, 300));
 
   // ── default.vcl (Varnish VCL) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('default.vcl (Varnish VCL)');
   await page.waitForSelector('#previewHost .vclcfg-doc', { timeout: 12000 });
   const varnishVclText = await page.$eval('#previewHost .vclcfg-doc', (e) => e.textContent);
@@ -3701,7 +3701,7 @@ export async function run(ctx) {
   if (/backend|vcl_recv/i.test(varnishVclText)) pass('default.vcl: backend or vcl_recv info shown'); else fail('varnish-vcl content: ' + varnishVclText.slice(0, 300));
 
   // ── usr.bin.nginx (AppArmor profile) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('usr.bin.nginx (AppArmor profile)');
   await page.waitForSelector('#previewHost .apparmor-doc', { timeout: 12000 });
   const apparmorText = await page.$eval('#previewHost .apparmor-doc', (e) => e.textContent);
@@ -3709,7 +3709,7 @@ export async function run(ctx) {
   if (/capability|enforce/i.test(apparmorText)) pass('usr.bin.nginx: capability or enforce info shown'); else fail('apparmor-profile content: ' + apparmorText.slice(0, 300));
 
   // ── sysctl.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sysctl.conf (Linux kernel parameters)');
   await page.waitForSelector('#previewHost .sysctlcfg-doc', { timeout: 12000 });
   const sysctlText = await page.$eval('#previewHost .sysctlcfg-doc', (e) => e.textContent);
@@ -3717,7 +3717,7 @@ export async function run(ctx) {
   if (/net|vm\.swappiness/i.test(sysctlText)) pass('sysctl.conf: net namespace or vm.swappiness shown'); else fail('sysctl-conf content: ' + sysctlText.slice(0, 300));
 
   // ── blacklist.conf (modprobe) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('blacklist.conf (modprobe)');
   await page.waitForSelector('#previewHost .modprobecfg-doc', { timeout: 12000 });
   const modprobeText = await page.$eval('#previewHost .modprobecfg-doc', (e) => e.textContent);
@@ -3725,7 +3725,7 @@ export async function run(ctx) {
   if (/blacklist/i.test(modprobeText)) pass('blacklist.conf: blacklist section shown'); else fail('modprobe-conf blacklist: ' + modprobeText.slice(0, 300));
 
   // ── dovecot.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dovecot.conf (Dovecot IMAP/POP3)');
   await page.waitForSelector('#previewHost .dovecotcfg-doc', { timeout: 12000 });
   const dovecotText = await page.$eval('#previewHost .dovecotcfg-doc', (e) => e.textContent);
@@ -3733,7 +3733,7 @@ export async function run(ctx) {
   if (/imap|protocols/i.test(dovecotText)) pass('dovecot.conf: protocols or imap shown'); else fail('dovecot-conf protocols: ' + dovecotText.slice(0, 300));
 
   // ── exim4.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('exim4.conf (Exim MTA)');
   await page.waitForSelector('#previewHost .eximcfg-doc', { timeout: 12000 });
   const eximText = await page.$eval('#previewHost .eximcfg-doc', (e) => e.textContent);
@@ -3741,7 +3741,7 @@ export async function run(ctx) {
   if (/router|transport/i.test(eximText)) pass('exim4.conf: routers or transports shown'); else fail('exim-conf routers: ' + eximText.slice(0, 300));
 
   // ── sys.config (Erlang/OTP) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sys.config');
   await page.waitForSelector('#previewHost .erlsyscfg-doc', { timeout: 12000 });
   const erlSysCfgText = await page.$eval('#previewHost .erlsyscfg-doc', (e) => e.textContent);
@@ -3749,7 +3749,7 @@ export async function run(ctx) {
   if (/kernel|myapp/i.test(erlSysCfgText)) pass('sys.config: application names shown (kernel or myapp)'); else fail('erlang-sys-config apps: ' + erlSysCfgText.slice(0, 300));
 
   // ── vm.args (Erlang VM) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vm.args');
   await page.waitForSelector('#previewHost .erlvmargs-doc', { timeout: 12000 });
   const erlVmArgsText = await page.$eval('#previewHost .erlvmargs-doc', (e) => e.textContent);
@@ -3757,7 +3757,7 @@ export async function run(ctx) {
   if (/node|scheduler/i.test(erlVmArgsText)) pass('vm.args: node identity or scheduler section shown'); else fail('erlang-vm-args content: ' + erlVmArgsText.slice(0, 300));
 
   // ── krb5.conf (Kerberos) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('krb5.conf (Kerberos)');
   await page.waitForSelector('#previewHost .krb5cfg-doc', { timeout: 12000 });
   const krb5Text = await page.$eval('#previewHost .krb5cfg-doc', (e) => e.textContent);
@@ -3765,7 +3765,7 @@ export async function run(ctx) {
   if (/EXAMPLE\.COM|realm/i.test(krb5Text)) pass('krb5.conf: realm information shown'); else fail('krb5-conf realm: ' + krb5Text.slice(0, 300));
 
   // ── gpg.conf (GnuPG) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('gpg.conf (GnuPG)');
   await page.waitForSelector('#previewHost .gpgcfg-doc', { timeout: 12000 });
   const gpgText = await page.$eval('#previewHost .gpgcfg-doc', (e) => e.textContent);
@@ -3773,7 +3773,7 @@ export async function run(ctx) {
   if (/keyserver|cipher/i.test(gpgText)) pass('gpg.conf: keyserver or cipher information shown'); else fail('gpg-conf content: ' + gpgText.slice(0, 300));
 
   // ── grub (/etc/default/grub) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('grub (/etc/default/grub)');
   await page.waitForSelector('#previewHost .grubcfg-doc', { timeout: 12000 });
   const grubText = await page.$eval('#previewHost .grubcfg-doc', (e) => e.textContent);
@@ -3781,7 +3781,7 @@ export async function run(ctx) {
   if (/CMDLINE|timeout/i.test(grubText)) pass('grub: cmdline parameters or timeout shown'); else fail('grub-conf content: ' + grubText.slice(0, 300));
 
   // ── nftables.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nftables.conf (nftables Firewall Rules)');
   await page.waitForSelector('#previewHost .nftcfg-doc', { timeout: 12000 });
   const nftText = await page.$eval('#previewHost .nftcfg-doc', (e) => e.textContent);
@@ -3789,7 +3789,7 @@ export async function run(ctx) {
   if (/chain|filter/i.test(nftText)) pass('nftables.conf: chain or filter information shown'); else fail('nftables-rules content: ' + nftText.slice(0, 300));
 
   // ── i3.config (i3 WM) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('i3.config (i3 WM)');
   await page.waitForSelector('#previewHost .i3cfg-doc', { timeout: 12000 });
   const i3Text = await page.$eval('#previewHost .i3cfg-doc', (e) => e.textContent);
@@ -3798,7 +3798,7 @@ export async function run(ctx) {
   if (/bindsym|keybinding/i.test(i3Text)) pass('i3.config: keybindings section shown'); else fail('i3-config bindings: ' + i3Text.slice(0, 300));
 
   // ── sway (Sway WM) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sway (Sway WM)');
   await page.waitForSelector('#previewHost .swaycfg-doc', { timeout: 12000 });
   const swayText = await page.$eval('#previewHost .swaycfg-doc', (e) => e.textContent);
@@ -3807,7 +3807,7 @@ export async function run(ctx) {
   if (/input|keyboard|touchpad/i.test(swayText)) pass('sway: input configuration shown'); else fail('sway-config inputs: ' + swayText.slice(0, 300));
 
   // ── app.ini (Gitea/Forgejo) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('app.ini (Gitea/Forgejo)');
   await page.waitForSelector('#previewHost .giteacfg-doc', { timeout: 12000 });
   const giteaText = await page.$eval('#previewHost .giteacfg-doc', (e) => e.textContent);
@@ -3815,7 +3815,7 @@ export async function run(ctx) {
   if (/server|database|ROOT_URL/i.test(giteaText)) pass('app.ini: server or database information shown'); else fail('gitea-conf content: ' + giteaText.slice(0, 300));
 
   // ── stunnel.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('stunnel.conf (SSL tunnel)');
   await page.waitForSelector('#previewHost .stunnelcfg-doc', { timeout: 12000 });
   const stunnelText = await page.$eval('#previewHost .stunnelcfg-doc', (e) => e.textContent);
@@ -3823,7 +3823,7 @@ export async function run(ctx) {
   if (/client|accept/i.test(stunnelText)) pass('stunnel.conf: client mode or accept address shown'); else fail('stunnel-conf content: ' + stunnelText.slice(0, 300));
 
   // ── hyprland.conf (Hyprland Wayland compositor) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('hyprland.conf (Hyprland Wayland compositor)');
   await page.waitForSelector('#previewHost .hyprlcfg-doc', { timeout: 12000 });
   const hyprlText = await page.$eval('#previewHost .hyprlcfg-doc', (e) => e.textContent);
@@ -3831,7 +3831,7 @@ export async function run(ctx) {
   if (/monitor|mainMod/i.test(hyprlText)) pass('hyprland.conf: monitor or mainMod information shown'); else fail('hyprland-conf content: ' + hyprlText.slice(0, 300));
 
   // ── lxc.config (LXC container) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('lxc.config (LXC container)');
   await page.waitForSelector('#previewHost .lxccfg-doc', { timeout: 12000 });
   const lxcText = await page.$eval('#previewHost .lxccfg-doc', (e) => e.textContent);
@@ -3839,7 +3839,7 @@ export async function run(ctx) {
   if (/network|rootfs/i.test(lxcText)) pass('lxc.config: network or rootfs information shown'); else fail('lxc-config content: ' + lxcText.slice(0, 300));
 
   // ── .tmux.conf (tmux) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.tmux.conf');
   await page.waitForSelector('#previewHost .tmuxcfg-doc', { timeout: 12000 });
   const tmuxText = await page.$eval('#previewHost .tmuxcfg-doc', (e) => e.textContent);
@@ -3847,7 +3847,7 @@ export async function run(ctx) {
   if (/prefix|C-a/i.test(tmuxText)) pass('.tmux.conf: prefix key shown'); else fail('tmux-conf prefix: ' + tmuxText.slice(0, 300));
 
   // ── .screenrc (GNU Screen) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.screenrc');
   await page.waitForSelector('#previewHost .screenrc-doc', { timeout: 12000 });
   const screenText = await page.$eval('#previewHost .screenrc-doc', (e) => e.textContent);
@@ -3855,7 +3855,7 @@ export async function run(ctx) {
   if (/scrollback|hardstatus/i.test(screenText)) pass('.screenrc: scrollback or hardstatus shown'); else fail('screenrc content: ' + screenText.slice(0, 300));
 
   // ── Alacritty config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('alacritty.toml');
   await page.waitForSelector('#previewHost .alacritty-doc', { timeout: 12000 });
   const alacrittyText = await page.$eval('#previewHost .alacritty-doc', (e) => e.textContent);
@@ -3863,7 +3863,7 @@ export async function run(ctx) {
   if (/font|opacity/i.test(alacrittyText)) pass('alacritty.toml: font or opacity shown'); else fail('alacritty-conf content: ' + alacrittyText.slice(0, 300));
 
   // ── kitty config viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('kitty.conf');
   await page.waitForSelector('#previewHost .kitty-doc', { timeout: 12000 });
   const kittyText = await page.$eval('#previewHost .kitty-doc', (e) => e.textContent);
@@ -3871,7 +3871,7 @@ export async function run(ctx) {
   if (/font_family|scrollback/i.test(kittyText)) pass('kitty.conf: font_family or scrollback shown'); else fail('kitty-conf content: ' + kittyText.slice(0, 300));
 
   // ── dunstrc (dunst notification daemon) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dunstrc (dunst notification daemon)');
   await page.waitForSelector('#previewHost .dunstrc-doc', { timeout: 12000 });
   const dunstText = await page.$eval('#previewHost .dunstrc-doc', (e) => e.textContent);
@@ -3879,7 +3879,7 @@ export async function run(ctx) {
   if (/urgency|timeout/i.test(dunstText)) pass('dunstrc: urgency levels or timeout shown'); else fail('dunstrc urgency: ' + dunstText.slice(0, 300));
 
   // ── polybar.ini (Polybar status bar) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('polybar.ini (Polybar status bar)');
   await page.waitForSelector('#previewHost .polybarcfg-doc', { timeout: 12000 });
   const polybarText = await page.$eval('#previewHost .polybarcfg-doc', (e) => e.textContent);
@@ -3887,7 +3887,7 @@ export async function run(ctx) {
   if (/modules|bar/i.test(polybarText)) pass('polybar.ini: modules or bar configuration shown'); else fail('polybar-conf content: ' + polybarText.slice(0, 300));
 
   // ── .muttrc (NeoMutt/Mutt email client config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.muttrc');
   await page.waitForSelector('#previewHost .muttrc-doc', { timeout: 12000 });
   const muttText = await page.$eval('#previewHost .muttrc-doc', (e) => e.textContent);
@@ -3897,7 +3897,7 @@ export async function run(ctx) {
   if (/configured|binding|color/i.test(muttText)) pass('.muttrc: bindings or color rules shown'); else fail('muttrc content: ' + muttText.slice(0, 300));
 
   // ── foot.ini (foot Wayland terminal emulator config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('foot.ini');
   await page.waitForSelector('#previewHost .footcfg-doc', { timeout: 12000 });
   const footText = await page.$eval('#previewHost .footcfg-doc', (e) => e.textContent);
@@ -3906,7 +3906,7 @@ export async function run(ctx) {
   if (/opacity|alpha|95/i.test(footText)) pass('foot.ini: opacity shown'); else fail('foot-config opacity: ' + footText.slice(0, 300));
 
   // ── config.rasi (Rofi window switcher/launcher config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('config.rasi (Rofi)');
   await page.waitForSelector('#previewHost .roficfg-doc', { timeout: 12000 });
   const rofiText = await page.$eval('#previewHost .roficfg-doc', (e) => e.textContent);
@@ -3915,7 +3915,7 @@ export async function run(ctx) {
   if (/fuzzy|JetBrains/i.test(rofiText)) pass('config.rasi: matching or font shown'); else fail('rofi-config settings: ' + rofiText.slice(0, 300));
 
   // ── mako (mako Wayland notification daemon config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mako (mako notification daemon)');
   await page.waitForSelector('#previewHost .makocfg-doc', { timeout: 12000 });
   const makoText = await page.$eval('#previewHost .makocfg-doc', (e) => e.textContent);
@@ -3925,7 +3925,7 @@ export async function run(ctx) {
   if (/urgency|do-not-disturb|Spotify/i.test(makoText)) pass('mako: criteria sections shown'); else fail('mako-conf criteria: ' + makoText.slice(0, 300));
 
   // ── daemon.conf (PulseAudio daemon config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('daemon.conf');
   await page.waitForSelector('#previewHost .pulsecfg-doc', { timeout: 12000 });
   const pulseText = await page.$eval('#previewHost .pulsecfg-doc', (e) => e.textContent);
@@ -3935,7 +3935,7 @@ export async function run(ctx) {
   if (/realtime|speex/i.test(pulseText)) pass('daemon.conf: realtime or resample settings shown'); else fail('pulseaudio-conf system: ' + pulseText.slice(0, 300));
 
   // ── pipewire.conf (PipeWire audio/video server config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pipewire.conf');
   await page.waitForSelector('#previewHost .pwcfg-doc', { timeout: 12000 });
   const pipewireText = await page.$eval('#previewHost .pwcfg-doc', (e) => e.textContent);
@@ -3945,7 +3945,7 @@ export async function run(ctx) {
   if (/protocol|rt|session/i.test(pipewireText)) pass('pipewire.conf: modules grouped and listed'); else fail('pipewire-conf modules: ' + pipewireText.slice(0, 300));
 
   // ── .wezterm.lua (WezTerm terminal emulator config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.wezterm.lua');
   await page.waitForSelector('#previewHost .weztermcfg-doc', { timeout: 12000 });
   const weztermText = await page.$eval('#previewHost .weztermcfg-doc', (e) => e.textContent);
@@ -3953,7 +3953,7 @@ export async function run(ctx) {
   if (/JetBrains Mono|Catppuccin/i.test(weztermText)) pass('.wezterm.lua: font or color scheme shown'); else fail('wezterm-conf font/color: ' + weztermText.slice(0, 300));
 
   // ── aria2.conf (aria2 download manager config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('aria2.conf');
   await page.waitForSelector('#previewHost .aria2cfg-doc', { timeout: 12000 });
   const aria2Text = await page.$eval('#previewHost .aria2cfg-doc', (e) => e.textContent);
@@ -3962,7 +3962,7 @@ export async function run(ctx) {
   if (/\[configured\]/.test(aria2Text) && !/mysecrettoken/.test(aria2Text)) pass('aria2.conf: RPC secret is masked'); else fail('aria2-conf rpc-secret not masked: ' + aria2Text.slice(0, 400));
 
   // ── picom.conf (picom X11 compositor) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('picom.conf');
   await page.waitForSelector('#previewHost .picomcfg-doc', { timeout: 12000 });
   const picomText = await page.$eval('#previewHost .picomcfg-doc', (e) => e.textContent);
@@ -3970,7 +3970,7 @@ export async function run(ctx) {
   if (/glx|backend|shadow/i.test(picomText)) pass('picom.conf: backend or shadow information shown'); else fail('picom-conf content: ' + picomText.slice(0, 300));
 
   // ── mpd.conf (Music Player Daemon) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mpd.conf');
   await page.waitForSelector('#previewHost .mpdcfg-doc', { timeout: 12000 });
   const mpdText = await page.$eval('#previewHost .mpdcfg-doc', (e) => e.textContent);
@@ -3978,7 +3978,7 @@ export async function run(ctx) {
   if (/Music|audio|pipewire/i.test(mpdText)) pass('mpd.conf: music directory or audio outputs shown'); else fail('mpd-conf content: ' + mpdText.slice(0, 300));
 
   // ── shard.yml (Crystal Shard) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('shard.yml');
   await page.waitForSelector('#previewHost .crystalshard-doc', { timeout: 12000 });
   const shardText = await page.$eval('#previewHost .crystalshard-doc', (e) => e.textContent);
@@ -3987,7 +3987,7 @@ export async function run(ctx) {
   if (/kemal|jennifer|pg/i.test(shardText)) pass('shard.yml: dependencies shown'); else fail('crystal-shard deps: ' + shardText.slice(0, 300));
 
   // ── build.zig.zon (Zig Package Manifest) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('build.zig.zon');
   await page.waitForSelector('#previewHost .zigzon-doc', { timeout: 12000 });
   const zigzonText = await page.$eval('#previewHost .zigzon-doc', (e) => e.textContent);
@@ -3995,7 +3995,7 @@ export async function run(ctx) {
   if (/my_zig_project|0\.2\.0/i.test(zigzonText)) pass('build.zig.zon: package name or version shown'); else fail('zig-zon name/version: ' + zigzonText.slice(0, 300));
 
   // ── dune-project (Dune build system) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dune-project');
   await page.waitForSelector('#previewHost .dunebuild-doc', { timeout: 12000 });
   const duneText = await page.$eval('#previewHost .dunebuild-doc', (e) => e.textContent);
@@ -4004,7 +4004,7 @@ export async function run(ctx) {
   if (/package/i.test(duneText)) pass('dune-project: package count shown'); else fail('dune-build packages: ' + duneText.slice(0, 300));
 
   // ── .scalafmt.conf (scalafmt Scala formatter) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.scalafmt.conf');
   await page.waitForSelector('#previewHost .scalafmt-doc', { timeout: 12000 });
   const scalafmtText = await page.$eval('#previewHost .scalafmt-doc', (e) => e.textContent);
@@ -4013,7 +4013,7 @@ export async function run(ctx) {
   if (/rewrite|SortImports|scala/i.test(scalafmtText)) pass('.scalafmt.conf: rewrite rules or dialect shown'); else fail('scalafmt-conf rewrite: ' + scalafmtText.slice(0, 300));
 
   // ── .scalafix.conf (scalafix Scala linter/rewriter) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.scalafix.conf');
   await page.waitForSelector('.scalafix-doc', { timeout: 12000 });
   pass('.scalafix.conf: renders');
@@ -4022,7 +4022,7 @@ export async function run(ctx) {
   if (/rule|RemoveUnused|OrganizeImports/i.test(scalafixText)) pass('.scalafix.conf: rules shown'); else fail('.scalafix.conf: no rules shown: ' + scalafixText.slice(0, 300));
 
   // ── bspwmrc (bspwm tiling window manager config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('bspwmrc');
   await page.waitForSelector('#previewHost .bspwmrc-doc', { timeout: 12000 });
   const bspwmText = await page.$eval('#previewHost .bspwmrc-doc', (e) => e.textContent);
@@ -4032,7 +4032,7 @@ export async function run(ctx) {
   if (/#45475a|#89b4fa|#cba6f7/i.test(bspwmText)) pass('bspwmrc: border colors shown'); else fail('bspwmrc colors: ' + bspwmText.slice(0, 300));
 
   // ── sxhkdrc (sxhkd hotkey daemon config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sxhkdrc');
   await page.waitForSelector('#previewHost .sxhkdrc-doc', { timeout: 12000 });
   const sxhkdText = await page.$eval('#previewHost .sxhkdrc-doc', (e) => e.textContent);
@@ -4042,7 +4042,7 @@ export async function run(ctx) {
   if (/alacritty|rofi|bspc/i.test(sxhkdText)) pass('sxhkdrc: commands listed'); else fail('sxhkdrc commands: ' + sxhkdText.slice(0, 300));
 
   // ── mpv.conf (mpv media player config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mpv.conf');
   await page.waitForSelector('#previewHost .mpvcfg-doc', { timeout: 12000 });
   const mpvText = await page.$eval('#previewHost .mpvcfg-doc', (e) => e.textContent);
@@ -4051,7 +4051,7 @@ export async function run(ctx) {
   if (/auto-safe|hwdec/i.test(mpvText)) pass('mpv.conf: hwdec shown'); else fail('mpv-conf hwdec: ' + mpvText.slice(0, 300));
 
   // ── yt-dlp.conf (yt-dlp downloader config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('yt-dlp.conf');
   await page.waitForSelector('#previewHost .ytdlpcfg-doc', { timeout: 12000 });
   const ytdlpText = await page.$eval('#previewHost .ytdlpcfg-doc', (e) => e.textContent);
@@ -4060,7 +4060,7 @@ export async function run(ctx) {
   if (/output|Downloads/i.test(ytdlpText)) pass('yt-dlp.conf: output path shown'); else fail('ytdlp-conf output: ' + ytdlpText.slice(0, 300));
 
   // ── ncmpcpp.conf (ncmpcpp MPD music player client config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('ncmpcpp.conf');
   await page.waitForSelector('#previewHost .ncmpcpp-doc', { timeout: 12000 });
   const ncmpcppText = await page.$eval('#previewHost .ncmpcpp-doc', (e) => e.textContent);
@@ -4069,7 +4069,7 @@ export async function run(ctx) {
   if (/spectrum|visualizer/i.test(ncmpcppText)) pass('ncmpcpp.conf: visualizer type shown'); else fail('ncmpcpp-conf visualizer: ' + ncmpcppText.slice(0, 300));
 
   // ── newsboat.conf (newsboat RSS/Atom feed reader config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('newsboat.conf');
   await page.waitForSelector('#previewHost .newsboat-doc', { timeout: 12000 });
   const newsboatText = await page.$eval('#previewHost .newsboat-doc', (e) => e.textContent);
@@ -4078,7 +4078,7 @@ export async function run(ctx) {
   if (/xdg-open|browser/i.test(newsboatText)) pass('newsboat.conf: browser command shown'); else fail('newsboat-conf browser: ' + newsboatText.slice(0, 300));
 
   // ── .Xresources (X11 resource database) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.Xresources');
   await page.waitForSelector('#previewHost .xrdb-doc', { timeout: 12000 });
   const xresText = await page.$eval('#previewHost .xrdb-doc', (e) => e.textContent);
@@ -4087,7 +4087,7 @@ export async function run(ctx) {
   if (/#1e1e2e|#cdd6f4|color0|color/i.test(xresText)) pass('.Xresources: color palette shown'); else fail('xresources colors: ' + xresText.slice(0, 300));
 
   // ── xorg.conf (Xorg X server config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('xorg.conf');
   await page.waitForSelector('#previewHost .xorgcfg-doc', { timeout: 12000 });
   const xorgText = await page.$eval('#previewHost .xorgcfg-doc', (e) => e.textContent);
@@ -4096,7 +4096,7 @@ export async function run(ctx) {
   if (/Screen|Device|Monitor|ServerLayout/i.test(xorgText)) pass('xorg.conf: section names shown'); else fail('xorg-conf sections: ' + xorgText.slice(0, 300));
 
   // ── rclone.conf (rclone cloud storage config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('rclone.conf');
   await page.waitForSelector('#previewHost .rclonecfg-doc', { timeout: 12000 });
   const rcloneText = await page.$eval('#previewHost .rclonecfg-doc', (e) => e.textContent);
@@ -4107,7 +4107,7 @@ export async function run(ctx) {
   if (/configured/i.test(rcloneText)) pass('rclone.conf: [configured] placeholder shown for secrets'); else fail('rclone-conf redact placeholder: ' + rcloneText.slice(0, 300));
 
   // ── resticprofile.toml (resticprofile backup config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('resticprofile.toml');
   await page.waitForSelector('#previewHost .resticcfg-doc', { timeout: 12000 });
   const resticText = await page.$eval('#previewHost .resticcfg-doc', (e) => e.textContent);
@@ -4117,7 +4117,7 @@ export async function run(ctx) {
   if (!/AKIAIOSFODNN7EXAMPLE|wJalrXUtnFEMI/.test(resticText)) pass('resticprofile.toml: AWS credentials are redacted'); else fail('restic-config credentials not redacted: ' + resticText.slice(0, 400));
 
   // ── .taskrc (Taskwarrior config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.taskrc');
   await page.waitForSelector('#previewHost .taskrccfg-doc', { timeout: 12000 });
   const taskrcText = await page.$eval('#previewHost .taskrccfg-doc', (e) => e.textContent);
@@ -4127,7 +4127,7 @@ export async function run(ctx) {
   if (!/\[configured\].*(?:org|user|uuid|password)/i.test(taskrcText) && /configured/i.test(taskrcText)) pass('.taskrc: taskd.credentials shown as [configured]'); else if (/configured/i.test(taskrcText)) pass('.taskrc: taskd.credentials masked'); else fail('taskrc credentials not masked: ' + taskrcText.slice(0, 400));
 
   // ── .curlrc (curl defaults config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.curlrc');
   await page.waitForSelector('#previewHost .curlrc-doc', { timeout: 12000 });
   pass('.curlrc: renders');
@@ -4138,7 +4138,7 @@ export async function run(ctx) {
   if (!curlrcText.includes('secretpass')) pass('.curlrc: credentials masked'); else fail('.curlrc: credential leaked!');
 
   // ── .inputrc (GNU readline config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.inputrc');
   await page.waitForSelector('#previewHost .inputrc-doc', { timeout: 12000 });
   const inputrcText = await page.$eval('#previewHost .inputrc-doc', (e) => e.textContent);
@@ -4147,7 +4147,7 @@ export async function run(ctx) {
   if (/completion.ignore.case|completion/i.test(inputrcText)) pass('.inputrc: completion settings shown'); else fail('inputrc completion: ' + inputrcText.slice(0, 300));
 
   // ── .wgetrc (wget config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.wgetrc');
   await page.waitForSelector('#previewHost .wgetrc-doc', { timeout: 12000 });
   pass('.wgetrc: renders');
@@ -4158,7 +4158,7 @@ export async function run(ctx) {
   if (!wgetrcText.includes('secretpass')) pass('.wgetrc: credentials masked'); else fail('.wgetrc: credential leaked!');
 
   // ── helix.toml (Helix editor config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('helix.toml');
   await page.waitForSelector('#previewHost .helixcfg-doc', { timeout: 12000 });
   const helixText = await page.$eval('#previewHost .helixcfg-doc', (e) => e.textContent);
@@ -4167,7 +4167,7 @@ export async function run(ctx) {
   if (/relative|line.number/i.test(helixText)) pass('helix.toml: line-number setting shown'); else fail('helix-config line-number: ' + helixText.slice(0, 300));
 
   // ── lfrc (lf file manager config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('lfrc');
   await page.waitForSelector('#previewHost .lfrc-doc', { timeout: 12000 });
   const lfrcText = await page.$eval('#previewHost .lfrc-doc', (e) => e.textContent);
@@ -4176,7 +4176,7 @@ export async function run(ctx) {
   if (/binding|map|key/i.test(lfrcText)) pass('lfrc: key mappings section shown'); else fail('lfrc mappings: ' + lfrcText.slice(0, 300));
 
   // ── ranger.conf (Ranger terminal file manager config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('ranger.conf');
   await page.waitForSelector('#previewHost .rangercfg-doc', { timeout: 12000 });
   const rangerText = await page.$eval('#previewHost .rangercfg-doc', (e) => e.textContent);
@@ -4185,7 +4185,7 @@ export async function run(ctx) {
   if (/preview.images|preview_images/i.test(rangerText)) pass('ranger.conf: preview_images chip shown'); else fail('ranger-conf preview_images: ' + rangerText.slice(0, 300));
 
   // ── zathurarc (Zathura PDF viewer config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('zathurarc');
   await page.waitForSelector('#previewHost .zathura-doc', { timeout: 12000 });
   const zathuraText = await page.$eval('#previewHost .zathura-doc', (e) => e.textContent);
@@ -4194,7 +4194,7 @@ export async function run(ctx) {
   if (/recolor/i.test(zathuraText)) pass('zathurarc: recolor mode shown'); else fail('zathurarc recolor: ' + zathuraText.slice(0, 300));
 
   // ── wsl.conf (WSL2 per-distribution config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('wsl.conf');
   await page.waitForSelector('#previewHost .wslcfg-doc', { timeout: 12000 });
   const wslText = await page.$eval('#previewHost .wslcfg-doc', (e) => e.textContent);
@@ -4203,7 +4203,7 @@ export async function run(ctx) {
   if (/systemd/i.test(wslText)) pass('wsl.conf: systemd chip shown'); else fail('wsl-conf systemd: ' + wslText.slice(0, 300));
 
   // ── loader.conf (systemd-boot config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('loader.conf');
   await page.waitForSelector('#previewHost .sdbcfg-doc', { timeout: 12000 });
   const loaderText = await page.$eval('#previewHost .sdbcfg-doc', (e) => e.textContent);
@@ -4212,7 +4212,7 @@ export async function run(ctx) {
   if (/timeout|3/i.test(loaderText)) pass('loader.conf: timeout shown'); else fail('loader-conf timeout: ' + loaderText.slice(0, 300));
 
   // ── cmus.rc (cmus terminal music player config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cmus.rc');
   await page.waitForSelector('#previewHost .cmuscfg-doc', { timeout: 12000 });
   const cmusText = await page.$eval('#previewHost .cmuscfg-doc', (e) => e.textContent);
@@ -4221,7 +4221,7 @@ export async function run(ctx) {
   if (/zenburn|colorscheme/i.test(cmusText)) pass('cmus.rc: colorscheme shown'); else fail('cmus colorscheme: ' + cmusText.slice(0, 300));
 
   // ── pacman.conf (Arch Linux pacman config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pacman.conf');
   await page.waitForSelector('#previewHost .pacmancfg-doc', { timeout: 12000 });
   const pacmanText = await page.$eval('#previewHost .pacmancfg-doc', (e) => e.textContent);
@@ -4231,7 +4231,7 @@ export async function run(ctx) {
   if (/chaotic-aur|multilib|extra|core/i.test(pacmanText)) pass('pacman.conf: repository names shown'); else fail('pacman repo names: ' + pacmanText.slice(0, 300));
 
   // ── Brewfile (Homebrew bundle manifest) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Brewfile');
   await page.waitForSelector('.brewfile-doc', { timeout: 12000 });
   pass('Brewfile: renders');
@@ -4243,7 +4243,7 @@ export async function run(ctx) {
   if (/cask/i.test(brewText)) pass('Brewfile: casks section shown'); else fail('Brewfile casks: ' + brewText.slice(0, 300));
 
   // ── dnf.conf (DNF package manager config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dnf.conf');
   await page.waitForSelector('#previewHost .dnfcfg-doc', { timeout: 12000 });
   const dnfText = await page.$eval('#previewHost .dnfcfg-doc', (e) => e.textContent);
@@ -4252,7 +4252,7 @@ export async function run(ctx) {
   if (/parallel|max_parallel_downloads/i.test(dnfText)) pass('dnf.conf: parallel downloads shown'); else fail('dnf-conf parallel: ' + dnfText.slice(0, 300));
 
   // ── .gdbinit (GDB debugger init) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.gdbinit');
   await page.waitForSelector('#previewHost .gdbinit-doc', { timeout: 12000 });
   const gdbText = await page.$eval('#previewHost .gdbinit-doc', (e) => e.textContent);
@@ -4261,7 +4261,7 @@ export async function run(ctx) {
   if (/GEF|hook-stop|plist/i.test(gdbText)) pass('.gdbinit: extensions or custom commands shown'); else fail('gdbinit extensions: ' + gdbText.slice(0, 300));
 
   // ── gradle.properties enhanced viewer (JVM heap + Android + performance) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('gradle.properties');
   await page.waitForSelector('#previewHost .gp-doc', { timeout: 12000 });
   const gpEnhText = await page.$eval('#previewHost .gp-doc', (e) => e.textContent);
@@ -4270,7 +4270,7 @@ export async function run(ctx) {
   if (/configuration.cache|parallel|caching/i.test(gpEnhText)) pass('gradle.properties: performance settings shown'); else fail('gradle-props perf: ' + gpEnhText.slice(0, 300));
 
   // ── haproxy.cfg (HAProxy config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('haproxy.cfg');
   await page.waitForSelector('#previewHost .haproxy-doc', { timeout: 12000 });
   pass('haproxy.cfg: badge shown');
@@ -4283,7 +4283,7 @@ export async function run(ctx) {
   else pass('haproxy.cfg: stats password masked');
 
   // ── 50-usb.rules (udev rules) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('50-usb.rules');
   await page.waitForSelector('#previewHost .udev-doc', { timeout: 12000 });
   pass('50-usb.rules: badge shown');
@@ -4294,7 +4294,7 @@ export async function run(ctx) {
   else pass('50-usb.rules: plugdev group shown');
 
   // ── .pre-commit-config.yaml enhanced viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.pre-commit-config.yaml');
   await page.waitForSelector('#previewHost .precommit-doc', { timeout: 12000 });
   pass('.pre-commit-config.yaml: badge shown');
@@ -4305,7 +4305,7 @@ export async function run(ctx) {
   else pass('.pre-commit-config.yaml: hook shown');
 
   // ── conky.conf enhanced viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('conky.conf');
   await page.waitForSelector('#previewHost .conky-doc', { timeout: 12000 });
   pass('conky.conf: badge shown');
@@ -4316,7 +4316,7 @@ export async function run(ctx) {
   else pass('conky.conf: update interval shown');
 
   // ── mypackage.opam (OCaml opam package descriptor) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mypackage.opam');
   await page.waitForSelector('#previewHost .opam-doc', { timeout: 12000 });
   pass('mypackage.opam: badge shown');
@@ -4329,7 +4329,7 @@ export async function run(ctx) {
   if (/Jane Smith|maintainer/i.test(opamText)) pass('mypackage.opam: maintainer shown'); else fail('opam maintainer: ' + opamText.slice(0, 300));
 
   // ── deny.toml (cargo-deny) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('deny.toml');
   await page.waitForSelector('#previewHost .cargodeny-doc', { timeout: 12000 });
   pass('deny.toml: badge shown');
@@ -4340,7 +4340,7 @@ export async function run(ctx) {
   else pass('deny.toml: advisories shown');
 
   // ── release-please-config.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('release-please-config.json');
   await page.waitForSelector('#previewHost .relpls-doc', { timeout: 12000 });
   pass('release-please-config.json: badge shown');
@@ -4351,7 +4351,7 @@ export async function run(ctx) {
   else pass('release-please-config.json: packages shown');
 
   // ── .nanorc (GNU nano editor config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.nanorc');
   await page.waitForSelector('#previewHost .nanorc-doc', { timeout: 12000 });
   pass('.nanorc: badge shown');
@@ -4362,7 +4362,7 @@ export async function run(ctx) {
   else pass('.nanorc: syntax includes shown');
 
   // ── global.json (.NET SDK pinning) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('global.json');
   await page.waitForSelector('#previewHost .globaljson-doc', { timeout: 12000 });
   pass('global.json: badge shown');
@@ -4373,7 +4373,7 @@ export async function run(ctx) {
   else pass('global.json: rollForward shown');
 
   // ── rustfmt.toml (Rust formatter config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('rustfmt.toml (rustfmt)');
   await page.waitForSelector('#previewHost .rustfmt-doc', { timeout: 12000 });
   pass('rustfmt.toml: badge shown');
@@ -4384,7 +4384,7 @@ export async function run(ctx) {
   else pass('rustfmt.toml: edition shown');
 
   // ── clippy.toml (Clippy linter config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('clippy.toml (Clippy)');
   await page.waitForSelector('#previewHost .clippy-doc', { timeout: 12000 });
   pass('clippy.toml: badge shown');
@@ -4395,7 +4395,7 @@ export async function run(ctx) {
   else pass('clippy.toml: thresholds shown');
 
   // ── grafana.ini viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('grafana.ini');
   await page.waitForSelector('#previewHost .grafanaini-doc', { timeout: 12000 });
   pass('grafana.ini: badge shown');
@@ -4406,7 +4406,7 @@ export async function run(ctx) {
   if (!grafText.includes('github')) fail('grafana.ini: auth providers not shown'); else pass('grafana.ini: auth providers shown');
 
   // ── mix.exs (Elixir Mix build file) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mix.exs');
   await page.waitForSelector('#previewHost .mixexs-doc', { timeout: 12000 });
   pass('mix.exs: badge shown');
@@ -4417,7 +4417,7 @@ export async function run(ctx) {
   else pass('mix.exs: app name shown');
 
   // ── railway.json (Railway.app deploy config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('railway.json');
   await page.waitForSelector('#previewHost .railwayjson-doc', { timeout: 12000 });
   pass('railway.json: renders');
@@ -4427,7 +4427,7 @@ export async function run(ctx) {
   if (railwayText.includes('supersecret123') || railwayText.includes('tok_abc123') || railwayText.includes('s3cr3t')) fail('railway.json: secrets leaked'); else pass('railway.json: secrets masked');
 
   // ── render.yaml (Render.com infrastructure-as-code) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('render.yaml');
   await page.waitForSelector('#previewHost .renderyaml-doc', { timeout: 12000 });
   pass('render.yaml: renders');
@@ -4436,7 +4436,7 @@ export async function run(ctx) {
   if (!renderText.includes('web-app') && !renderText.includes('web')) fail('render.yaml: services not shown'); else pass('render.yaml: services shown');
 
   // ── .htaccess (Apache per-directory config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.htaccess');
   await page.waitForSelector('#previewHost .htaccess-doc', { timeout: 12000 });
   pass('.htaccess: renders');
@@ -4445,7 +4445,7 @@ export async function run(ctx) {
   if (!htaccessText.includes('Rewrite') && !htaccessText.includes('redirect')) fail('.htaccess: no rules shown'); else pass('.htaccess: rewrite rules shown');
 
   // ── .htpasswd (Apache auth credential file) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.htpasswd');
   await page.waitForSelector('#previewHost .htpasswd-doc', { timeout: 12000 });
   pass('.htpasswd: renders');
@@ -4462,7 +4462,7 @@ export async function run(ctx) {
   if (!berksText.includes('cookbook')) fail('Berksfile: no cookbooks'); else pass('Berksfile: cookbooks shown');
 
   // ── .terraform.lock.hcl (Terraform provider lock file) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.terraform.lock.hcl');
   await page.waitForSelector('.tfl-lock-doc');
   pass('.terraform.lock.hcl: renders');
@@ -4471,7 +4471,7 @@ export async function run(ctx) {
   if (!tflockText.includes('aws') && !tflockText.includes('provider')) fail('.terraform.lock.hcl: no providers'); else pass('.terraform.lock.hcl: providers shown');
 
   // ── atlantis.yaml (Atlantis Terraform PR automation) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('atlantis.yaml');
   await page.waitForSelector('.atlantisyaml-doc');
   pass('atlantis.yaml: renders');
@@ -4480,7 +4480,7 @@ export async function run(ctx) {
   if (!atlantisText.includes('project') && !atlantisText.includes('workflow')) fail('atlantis.yaml: no projects'); else pass('atlantis.yaml: projects shown');
 
   // ── spacelift-config.yml (Spacelift IaC CI/CD) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('spacelift-config.yml');
   await page.waitForSelector('#previewHost .spaceliftcfg-doc', { timeout: 12000 });
   pass('spacelift-config.yml: renders');
@@ -4489,7 +4489,7 @@ export async function run(ctx) {
   if (!spaceliftText.includes('production') && !spaceliftText.includes('staging')) fail('spacelift-config.yml: no stacks shown'); else pass('spacelift-config.yml: stacks shown');
 
   // ── Caddyfile viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Caddyfile');
   await page.waitForSelector('.caddyfile-doc');
   pass('Caddyfile: renders');
@@ -4498,7 +4498,7 @@ export async function run(ctx) {
   if (!caddyText.includes('reverse_proxy') && !caddyText.includes('file_server') && !caddyText.includes('site')) fail('Caddyfile: no site info'); else pass('Caddyfile: site info shown');
 
   // ── supervisord.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('supervisord.conf');
   await page.waitForSelector('.supervisordcfg-doc');
   pass('supervisord.conf: renders');
@@ -4507,7 +4507,7 @@ export async function run(ctx) {
   if (!supervisordText.includes('program') && !supervisordText.includes('command')) fail('supervisord.conf: no programs shown'); else pass('supervisord.conf: programs shown');
 
   // ── nginx.conf viewer (nginxconf-doc class) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nginx.conf');
   await page.waitForSelector('.nginxconf-doc');
   pass('nginx.conf: renders');
@@ -4516,7 +4516,7 @@ export async function run(ctx) {
   if (!nginxText.includes('server') && !nginxText.includes('listen')) fail('nginx.conf: no server info'); else pass('nginx.conf: server info shown');
 
   // ── haproxy.cfg viewer (haproxycfg-doc class) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('haproxy.cfg');
   await page.waitForSelector('.haproxycfg-doc');
   pass('haproxy.cfg: renders');
@@ -4525,7 +4525,7 @@ export async function run(ctx) {
   if (!haproxyText.includes('frontend') && !haproxyText.includes('backend')) fail('haproxy.cfg: no proxy config'); else pass('haproxy.cfg: proxy config shown');
 
   // ── .babelrc (Babel transpiler JSON config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.babelrc');
   await page.waitForSelector('.babelrc-doc');
   pass('.babelrc: renders');
@@ -4534,7 +4534,7 @@ export async function run(ctx) {
   if (!babelrcText.includes('preset') && !babelrcText.includes('plugin')) fail('.babelrc: no config shown'); else pass('.babelrc: config shown');
 
   // ── jest.config.js (Jest plain-text JS config) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('jest.config.js');
   await page.waitForSelector('.jestconfig-doc');
   pass('jest.config.js: renders');
@@ -4543,7 +4543,7 @@ export async function run(ctx) {
   if (!jestJsText.includes('testEnvironment') && !jestJsText.includes('transform') && !jestJsText.includes('coverage')) fail('jest.config.js: no config shown'); else pass('jest.config.js: config shown');
 
   // ── .env.example (env template) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.env.example (Env Template)');
   await page.waitForSelector('.envex-doc');
   pass('.env.example: renders');
@@ -4552,7 +4552,7 @@ export async function run(ctx) {
   if (!envExText.includes('DATABASE') && !envExText.includes('KEY')) fail('.env.example: no vars shown'); else pass('.env.example: variables shown');
 
   // ── .envrc (direnv) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.envrc');
   await page.waitForSelector('.erc-doc');
   pass('.envrc: renders');
@@ -4561,7 +4561,7 @@ export async function run(ctx) {
   if (!envrcText.includes('layout') && !envrcText.includes('PATH') && !envrcText.includes('node')) fail('.envrc: no config shown'); else pass('.envrc: config shown');
 
   // ── .gcloudignore viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.gcloudignore');
   await page.waitForSelector('.gcloudignore-doc');
   pass('.gcloudignore: renders');
@@ -4569,7 +4569,7 @@ export async function run(ctx) {
   if (!gcloudignoreText.includes('gcloud') && !gcloudignoreText.includes('Google')) fail('.gcloudignore: missing badge'); else pass('.gcloudignore: badge shown');
 
   // ── app.json (Heroku) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('heroku-app.json');
   await page.waitForSelector('.appjson-doc');
   pass('app.json: renders');
@@ -4578,7 +4578,7 @@ export async function run(ctx) {
   if (!appjsonText.includes('buildpack') && !appjsonText.includes('addon') && !appjsonText.includes('formation')) fail('app.json: no config shown'); else pass('app.json: config shown');
 
   // ── cliff.toml upgraded viewer (plugin id: cliff-toml) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cliff.toml');
   await page.waitForSelector('.clifftoml-doc');
   pass('cliff.toml: renders');
@@ -4587,7 +4587,7 @@ export async function run(ctx) {
   if (!cliffText.includes('conventional') && !cliffText.includes('commit')) fail('cliff.toml: no git config shown'); else pass('cliff.toml: git config shown');
 
   // ── release-please-config.json upgraded viewer (plugin id: release-please) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('release-please-config.json');
   await page.waitForSelector('.relpls-doc');
   pass('release-please-config.json: renders');
@@ -4596,7 +4596,7 @@ export async function run(ctx) {
   if (!rpText.includes('package') && !rpText.includes('release-type')) fail('release-please-config.json: no config shown'); else pass('release-please-config.json: config shown');
 
   // ── .eslintignore viewer (plugin id: eslintignore) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.eslintignore');
   await page.waitForSelector('.eslintignore-doc');
   pass('.eslintignore: renders');
@@ -4605,7 +4605,7 @@ export async function run(ctx) {
   if (!eslintignoreText.includes('node_modules') && !eslintignoreText.includes('dist') && !eslintignoreText.includes('pattern')) fail('.eslintignore: no patterns'); else pass('.eslintignore: patterns shown');
 
   // ── .prettierignore viewer (plugin id: prettierignore) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.prettierignore');
   await page.waitForSelector('.prettierignore-doc');
   pass('.prettierignore: renders');
@@ -4614,7 +4614,7 @@ export async function run(ctx) {
   if (!prettierignoreText.includes('node_modules') && !prettierignoreText.includes('dist') && !prettierignoreText.includes('pattern')) fail('.prettierignore: no patterns'); else pass('.prettierignore: patterns shown');
 
   // ── .codeclimate.yml upgraded viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.codeclimate.yml');
   await page.waitForSelector('.codeclimate-doc');
   pass('.codeclimate.yml: renders');
@@ -4623,7 +4623,7 @@ export async function run(ctx) {
   if (!codeclimateText.includes('plugin') && !codeclimateText.includes('rubocop') && !codeclimateText.includes('eslint')) fail('.codeclimate.yml: no plugins shown'); else pass('.codeclimate.yml: plugins shown');
 
   // ── semaphore.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('semaphore.yml');
   await page.waitForSelector('.semaphorecfg-doc');
   pass('semaphore.yml: renders');
@@ -4632,7 +4632,7 @@ export async function run(ctx) {
   if (!semaphoreText.includes('block') && !semaphoreText.includes('job') && !semaphoreText.includes('Install')) fail('semaphore.yml: no blocks shown'); else pass('semaphore.yml: blocks shown');
 
   // ── .yamllint viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.yamllint');
   await page.waitForSelector('.yamllint-doc');
   pass('.yamllint: renders');
@@ -4641,7 +4641,7 @@ export async function run(ctx) {
   if (!yamllintText.includes('rule') && !yamllintText.includes('line-length') && !yamllintText.includes('indent')) fail('.yamllint: no rules shown'); else pass('.yamllint: rules shown');
 
   // ── vale.ini viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vale.ini');
   await page.waitForSelector('.valeini-doc');
   pass('vale.ini: renders');
@@ -4650,7 +4650,7 @@ export async function run(ctx) {
   if (!valeText.includes('Style') && !valeText.includes('BasedOn') && !valeText.includes('write-good')) fail('vale.ini: no styles shown'); else pass('vale.ini: styles shown');
 
   // ── .ansible-lint viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.ansible-lint');
   await page.waitForSelector('.ansiblelint-doc', { timeout: 12000 });
   pass('.ansible-lint: renders');
@@ -4659,7 +4659,7 @@ export async function run(ctx) {
   if (!ansiblelintText.includes('skip') && !ansiblelintText.includes('profile') && !ansiblelintText.includes('rule')) fail('.ansible-lint: no config shown'); else pass('.ansible-lint: config shown');
 
   // ── molecule.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('molecule.yml');
   await page.waitForSelector('.moleculeyml-doc', { timeout: 12000 });
   pass('molecule.yml: renders');
@@ -4668,7 +4668,7 @@ export async function run(ctx) {
   if (!moleculeText.includes('driver') && !moleculeText.includes('platform') && !moleculeText.includes('ubuntu')) fail('molecule.yml: no platforms shown'); else pass('molecule.yml: platforms shown');
 
   // ── dprint.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dprint.json');
   await page.waitForSelector('#previewHost .dprint-doc', { timeout: 12000 });
   pass('dprint.json: dprint-doc shown');
@@ -4677,7 +4677,7 @@ export async function run(ctx) {
   if (!dprintText.includes('typescript') && !dprintText.includes('json') && !dprintText.includes('Plugin')) fail('dprint.json: plugins section missing'); else pass('dprint.json: plugins section shown');
 
   // ── helmfile.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('helmfile.yaml');
   await page.waitForSelector('#previewHost .helmfile-doc', { timeout: 12000 });
   pass('helmfile.yaml: renders');
@@ -4687,7 +4687,7 @@ export async function run(ctx) {
   if (!helmfileText.includes('bitnami') && !helmfileText.includes('stable') && !helmfileText.includes('repo')) fail('helmfile.yaml: no repos shown'); else pass('helmfile.yaml: repos shown');
 
   // ── .release-it.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.release-it.yml');
   await page.waitForSelector('#previewHost .releaseit-doc', { timeout: 12000 });
   pass('.release-it.yml: renders');
@@ -4697,7 +4697,7 @@ export async function run(ctx) {
   if (!releaseItText.includes('GitHub') && !releaseItText.includes('github')) fail('.release-it.yml: no GitHub section shown'); else pass('.release-it.yml: GitHub section shown');
 
   // ── benthos.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('benthos.yaml');
   pass(await page.waitForSelector('#previewHost .benthos-doc', { timeout: 12000 }), 'benthos.yaml: benthos-doc shown');
   const benthosText = await page.$eval('#previewHost .benthos-doc', el => el.textContent);
@@ -4707,7 +4707,7 @@ export async function run(ctx) {
   if (!benthosText.includes('bloblang') && !benthosText.includes('processor')) fail('benthos.yaml: no processors shown'); else pass('benthos.yaml: processors shown');
 
   // ── .kitchen.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.kitchen.yml');
   pass(await page.waitForSelector('#previewHost .testkitchen-doc', { timeout: 12000 }), '.kitchen.yml: testkitchen-doc shown');
   const kitchenText = await page.$eval('#previewHost .testkitchen-doc', el => el.textContent);
@@ -4717,7 +4717,7 @@ export async function run(ctx) {
   if (!kitchenText.includes('default') && !kitchenText.includes('suite')) fail('.kitchen.yml: no suites shown'); else pass('.kitchen.yml: suites shown');
 
   // ── shopify.app.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('shopify.app.toml');
   pass(await page.waitForSelector('#previewHost .shopifyapp-doc', { timeout: 12000 }), 'shopify.app.toml: shopifyapp-doc shown');
   const shopifyText = await page.$eval('#previewHost .shopifyapp-doc', el => el.textContent);
@@ -4725,7 +4725,7 @@ export async function run(ctx) {
   if (!shopifyText.includes('scope') && !shopifyText.includes('products') && !shopifyText.includes('orders')) fail('shopify.app.toml: no scopes shown'); else pass('shopify.app.toml: scopes shown');
 
   // ── .lighthouserc.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.lighthouserc.json');
   pass(await page.waitForSelector('#previewHost .lhci-doc', { timeout: 12000 }), '.lighthouserc.json: lhci-doc shown');
   const lhciText = await page.$eval('#previewHost .lhci-doc', el => el.textContent);
@@ -4733,7 +4733,7 @@ export async function run(ctx) {
   if (!lhciText.includes('lighthouse:recommended') && !lhciText.includes('assert') && !lhciText.includes('performance')) fail('.lighthouserc.json: no assertions shown'); else pass('.lighthouserc.json: assertions shown');
 
   // ── harbor.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('harbor.yml');
   pass(await page.waitForSelector('#previewHost .harbor-doc', { timeout: 12000 }), 'harbor.yml: harbor-doc shown');
   const harborText = await page.$eval('#previewHost .harbor-doc', el => el.textContent);
@@ -4741,7 +4741,7 @@ export async function run(ctx) {
   if (!harborText.includes('registry.example.com') && !harborText.includes('hostname')) fail('harbor.yml: no hostname shown'); else pass('harbor.yml: hostname shown');
 
   // ── garden.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('garden.yml');
   pass(await page.waitForSelector('#previewHost .gardenio-doc', { timeout: 12000 }), 'garden.yml: gardenio-doc shown');
   const gardenText = await page.$eval('#previewHost .gardenio-doc', el => el.textContent);
@@ -4749,7 +4749,7 @@ export async function run(ctx) {
   if (!gardenText.includes('Project') && !gardenText.includes('kind')) fail('garden.yml: no kind shown'); else pass('garden.yml: kind shown');
 
   // ── stryker.conf.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('stryker.conf.json');
   pass(await page.waitForSelector('#previewHost .stryker-doc', { timeout: 12000 }), 'stryker.conf.json: stryker-doc shown');
   const strykerText = await page.$eval('#previewHost .stryker-doc', el => el.textContent);
@@ -4757,7 +4757,7 @@ export async function run(ctx) {
   if (!strykerText.includes('jest') && !strykerText.includes('runner')) fail('stryker.conf.json: no test runner shown'); else pass('stryker.conf.json: test runner shown');
 
   // ── airflow.cfg viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('airflow.cfg');
   pass(await page.waitForSelector('#previewHost .airflowcfg-doc', { timeout: 12000 }), 'airflow.cfg: airflowcfg-doc shown');
   const airflowText = await page.$eval('#previewHost .airflowcfg-doc', el => el.textContent);
@@ -4765,17 +4765,17 @@ export async function run(ctx) {
   if (!airflowText.includes('executor') && !airflowText.includes('CeleryExecutor')) fail('airflow.cfg: no executor shown'); else pass('airflow.cfg: executor shown');
 
   // ── waypoint.hcl viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('waypoint.hcl');
   pass(await page.waitForSelector('#previewHost .waypoint-doc', { timeout: 12000 }), 'waypoint.hcl: waypoint-doc shown');
 
   // ── buf.gen.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('buf.gen.yaml');
   pass(await page.waitForSelector('#previewHost .bufgen-doc', { timeout: 12000 }), 'buf.gen.yaml: bufgen-doc shown');
 
   // ── registries.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('registries.conf');
   pass(await page.waitForSelector('#previewHost .registriescfg-doc', { timeout: 12000 }), 'registries.conf: registriescfg-doc shown');
   const registriesText = await page.$eval('#previewHost .registriescfg-doc', el => el.textContent);
@@ -4783,7 +4783,7 @@ export async function run(ctx) {
   if (!registriesText.includes('docker.io') && !registriesText.includes('quay.io')) fail('registries.conf: no registry entries shown'); else pass('registries.conf: registry entries shown');
 
   // ── storage.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('storage.conf');
   pass(await page.waitForSelector('#previewHost .storagecfg-doc', { timeout: 12000 }), 'storage.conf: storagecfg-doc shown');
   const storageText = await page.$eval('#previewHost .storagecfg-doc', el => el.textContent);
@@ -4791,7 +4791,7 @@ export async function run(ctx) {
   if (!storageText.includes('overlay') && !storageText.includes('driver')) fail('storage.conf: no driver shown'); else pass('storage.conf: driver shown');
 
   // ── blackbox.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('blackbox.yml');
   pass(await page.waitForSelector('#previewHost .blackbox-doc', { timeout: 12000 }), 'blackbox.yml: blackbox-doc shown');
   const blackboxText = await page.$eval('#previewHost .blackbox-doc', el => el.textContent);
@@ -4799,7 +4799,7 @@ export async function run(ctx) {
   if (!blackboxText.includes('http_2xx') && !blackboxText.includes('http')) fail('blackbox.yml: no modules shown'); else pass('blackbox.yml: modules shown');
 
   // ── snmp.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('snmp.yml');
   pass(await page.waitForSelector('#previewHost .snmpexp-doc', { timeout: 12000 }), 'snmp.yml: snmpexp-doc shown');
   const snmpText = await page.$eval('#previewHost .snmpexp-doc', el => el.textContent);
@@ -4807,37 +4807,37 @@ export async function run(ctx) {
   if (!snmpText.includes('if_mib') && !snmpText.includes('module')) fail('snmp.yml: no modules shown'); else pass('snmp.yml: modules shown');
 
   // ── codegen.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('codegen.yml');
   pass(await page.waitForSelector('#previewHost .gqlcodegen-doc', { timeout: 12000 }), 'codegen.yml: gqlcodegen-doc shown');
 
   // ── tspconfig.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('tspconfig.yaml');
   pass(await page.waitForSelector('#previewHost .tspconfig-doc', { timeout: 12000 }), 'tspconfig.yaml: tspconfig-doc shown');
 
   // ── asyncapi.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('asyncapi.yml');
   pass(await page.waitForSelector('#previewHost .asyncapi-doc', { timeout: 12000 }), 'asyncapi.yml: asyncapi-doc shown');
 
   // ── telegraf.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('telegraf.conf');
   pass(await page.waitForSelector('#previewHost .telegraf-doc', { timeout: 12000 }), 'telegraf.conf: telegraf-doc shown');
 
   // ── devfile.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('devfile.yaml');
   pass(await page.waitForSelector('#previewHost .devfile-doc', { timeout: 12000 }), 'devfile.yaml: devfile-doc shown');
 
   // ── .ncurc.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.ncurc.json');
   pass(await page.waitForSelector('#previewHost .ncurc-doc', { timeout: 12000 }), '.ncurc.json: ncurc-doc shown');
 
   // ── influxdb.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('influxdb.conf');
   pass(await page.waitForSelector('#previewHost .influxdb-doc', { timeout: 12000 }), 'influxdb.conf: influxdb-doc shown');
   const influxText = await page.$eval('#previewHost .influxdb-doc', el => el.textContent);
@@ -4845,7 +4845,7 @@ export async function run(ctx) {
   if (!influxText.includes(':8086') && !influxText.includes('bind-address')) fail('influxdb.conf: no HTTP address shown'); else pass('influxdb.conf: HTTP address shown');
 
   // ── nsqd.cfg viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nsqd.cfg');
   pass(await page.waitForSelector('#previewHost .nsqconf-doc', { timeout: 12000 }), 'nsqd.cfg: nsqconf-doc shown');
   const nsqText = await page.$eval('#previewHost .nsqconf-doc', el => el.textContent);
@@ -4853,121 +4853,121 @@ export async function run(ctx) {
   if (!nsqText.includes('4150') && !nsqText.includes('tcp-address')) fail('nsqd.cfg: no TCP address shown'); else pass('nsqd.cfg: TCP address shown');
 
   // ── .actrc viewer (act GitHub Actions runner config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.actrc');
   pass(await page.waitForSelector('#previewHost .actrc-doc', { timeout: 12000 }), '.actrc: actrc-doc shown');
 
   // ── standalone.conf viewer (Apache Pulsar broker config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('standalone.conf');
   pass(await page.waitForSelector('#previewHost .pulsarconf-doc', { timeout: 12000 }), 'standalone.conf: pulsarconf-doc shown');
 
   // ── .grype.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.grype.yaml');
   pass(await page.waitForSelector('#previewHost .grype-doc', { timeout: 12000 }), '.grype.yaml: grype-doc shown');
 
   // ── tetragon.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('tetragon.yaml');
   pass(await page.waitForSelector('#previewHost .tetragon-doc', { timeout: 12000 }), 'tetragon.yaml: tetragon-doc shown');
 
   // ── mint.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mint.json');
   pass(await page.waitForSelector('#previewHost .mintlify-doc', { timeout: 12000 }), 'mint.json: mintlify-doc shown');
 
   // ── insomnia.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('insomnia.yaml');
   pass(await page.waitForSelector('#previewHost .insomnia-doc', { timeout: 12000 }), 'insomnia.yaml: insomnia-doc shown');
 
   // ── kibana.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('kibana.yml');
   pass(await page.waitForSelector('#previewHost .kibana-doc', { timeout: 12000 }), 'kibana.yml: kibana-doc shown');
 
   // ── bruno.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('bruno.json');
   pass(await page.waitForSelector('#previewHost .brunows-doc', { timeout: 12000 }), 'bruno.json: brunows-doc shown');
 
   // ── nix.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nix.conf');
   pass(await page.waitForSelector('#previewHost .nixcfg-doc', { timeout: 12000 }), 'nix.conf: nixcfg-doc shown');
 
   // ── openapi-generator-config.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('openapi-generator-config.yaml');
   pass(await page.waitForSelector('#previewHost .openapigen-doc', { timeout: 12000 }), 'openapi-generator-config.yaml: openapigen-doc shown');
 
   // ── cloudflared.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cloudflared.yml');
   pass(await page.waitForSelector('#previewHost .cfd-doc', { timeout: 12000 }), 'cloudflared.yml: cfd-doc shown');
 
   // ── dnsmasq.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dnsmasq.conf');
   pass(await page.waitForSelector('#previewHost .dnsmasq-doc', { timeout: 12000 }), 'dnsmasq.conf: dnsmasq-doc shown');
 
   // ── 01-netcfg.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('01-netcfg.yaml');
   pass(await page.waitForSelector('#previewHost .netplan-doc', { timeout: 12000 }), '01-netcfg.yaml: netplan-doc shown');
 
   // ── syslog-ng.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('syslog-ng.conf');
   pass(await page.waitForSelector('#previewHost .syslogng-doc', { timeout: 12000 }), 'syslog-ng.conf: syslogng-doc shown');
 
   // ── frpc.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('frpc.toml');
   pass(await page.waitForSelector('#previewHost .frpc-doc', { timeout: 12000 }), 'frpc.toml: FRP client badge shown');
 
   // ── frps.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('frps.toml');
   pass(await page.waitForSelector('#previewHost .frps-doc', { timeout: 12000 }), 'frps.toml: FRP server badge shown');
 
   // ── vsftpd.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vsftpd.conf');
   pass(await page.waitForSelector('#previewHost .vsf-doc', { timeout: 12000 }), 'vsftpd.conf: vsftpd badge shown');
 
   // ── proftpd.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('proftpd.conf');
   pass(await page.waitForSelector('#previewHost .prf-doc', { timeout: 12000 }), 'proftpd.conf: ProFTPD badge shown');
 
   // ── pdns.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pdns.conf');
   pass(await page.waitForSelector('#previewHost .pdns-doc', { timeout: 12000 }), 'pdns.conf: PowerDNS badge shown');
 
   // ── recursor.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('recursor.conf');
   pass(await page.waitForSelector('#previewHost .rec-doc', { timeout: 12000 }), 'recursor.conf: PowerDNS Recursor badge shown');
 
   // ── starship.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('starship.toml');
   pass(await page.waitForSelector('#previewHost .starship-doc', { timeout: 12000 }), 'starship.toml: badge shown');
   const starshipText = await page.$eval('#previewHost .starship-doc', (el) => el.textContent);
   if (/Modules/.test(starshipText) && /character/.test(starshipText)) pass('starship.toml: modules section with character module shown'); else fail('starship.toml modules: ' + starshipText.slice(0, 200));
 
   // ── mosquitto.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mosquitto.conf');
   pass(await page.waitForSelector('#previewHost .mosquitto-doc', { timeout: 12000 }), 'mosquitto.conf: badge shown');
   const mosquittoText = await page.$eval('#previewHost .mosquitto-doc', (el) => el.textContent);
   if (/1883/.test(mosquittoText) && /false/.test(mosquittoText)) pass('mosquitto.conf: listener port 1883 and allow_anonymous false shown'); else fail('mosquitto.conf listeners: ' + mosquittoText.slice(0, 200));
 
   // ── kamal.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('kamal.yml');
   pass(await page.waitForSelector('#previewHost .kamal-doc', { timeout: 12000 }), 'kamal.yml: kamal-doc shown');
   const kamalText = await page.$eval('#previewHost .kamal-doc', (e) => e.textContent);
@@ -4976,7 +4976,7 @@ export async function run(ctx) {
   if (/accessories|redis|postgres/i.test(kamalText)) pass('kamal.yml: accessories listed'); else fail('kamal accessories: ' + kamalText.slice(0, 200));
 
   // ── prefect.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('prefect.yaml');
   pass(await page.waitForSelector('#previewHost .prefect-doc', { timeout: 12000 }), 'prefect.yaml: prefect-doc shown');
   const prefectText = await page.$eval('#previewHost .prefect-doc', (e) => e.textContent);
@@ -4985,7 +4985,7 @@ export async function run(ctx) {
   if (/cron/i.test(prefectText)) pass('prefect.yaml: schedules shown'); else fail('prefect schedules: ' + prefectText.slice(0, 200));
 
   // ── meltano.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('meltano.yml');
   pass(await page.waitForSelector('#previewHost .meltano-doc', { timeout: 12000 }), 'meltano.yml: badge shown');
   const meltanoText = await page.$eval('#previewHost .meltano-doc', (e) => e.textContent);
@@ -4995,7 +4995,7 @@ export async function run(ctx) {
   if (/daily-github-to-postgres|hourly-postgres-sync/i.test(meltanoText)) pass('meltano.yml: schedules shown'); else fail('meltano schedules: ' + meltanoText.slice(0, 300));
 
   // ── dagster.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dagster.yaml');
   pass(await page.waitForSelector('#previewHost .dagster-doc', { timeout: 12000 }), 'dagster.yaml: badge shown');
   const dagsterText = await page.$eval('#previewHost .dagster-doc', (e) => e.textContent);
@@ -5005,7 +5005,7 @@ export async function run(ctx) {
   if (/4 code location/i.test(dagsterText)) pass('dagster.yaml: location count shown'); else fail('dagster count: ' + dagsterText.slice(0, 300));
 
   // ── zabbix_agentd.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('zabbix_agentd.conf');
   pass(await page.waitForSelector('#previewHost .zabbix-doc', { timeout: 12000 }), 'zabbix_agentd.conf: badge shown');
   const zabbixText = await page.$eval('#previewHost .zabbix-doc', (el) => el.textContent);
@@ -5016,7 +5016,7 @@ export async function run(ctx) {
   if (/5 user parameter/.test(zabbixText)) pass('zabbix_agentd.conf: UserParameter count shown'); else fail('zabbix userparams: ' + zabbixText.slice(0, 300));
 
   // ── ejabberd.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('ejabberd.yml');
   pass(await page.waitForSelector('#previewHost .ejabberd-doc', { timeout: 12000 }), 'ejabberd.yml: badge shown');
   const ejabberdText = await page.$eval('#previewHost .ejabberd-doc', (el) => el.textContent);
@@ -5026,7 +5026,7 @@ export async function run(ctx) {
   if (/\[configured\]/.test(ejabberdText)) pass('ejabberd.yml: SQL password masked'); else fail('ejabberd sql mask: ' + ejabberdText.slice(0, 300));
 
   // ── borgmatic.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('borgmatic.yaml');
   pass(await page.waitForSelector('#previewHost .borgmatic-doc', { timeout: 12000 }), 'borgmatic.yaml: badge shown');
   const borgText = await page.$eval('#previewHost .borgmatic-doc', (el) => el.textContent);
@@ -5035,7 +5035,7 @@ export async function run(ctx) {
   if (/\[configured\]/.test(borgText)) pass('borgmatic.yaml: encryption_passphrase masked'); else fail('borgmatic: passphrase not masked: ' + borgText.replace(/\s+/g, ' ').slice(0, 120));
 
   // ── suricata.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('suricata.yaml');
   pass(await page.waitForSelector('#previewHost .suricata-doc', { timeout: 12000 }), 'suricata.yaml: badge shown');
   const surText = await page.$eval('#previewHost .suricata-doc', (el) => el.textContent);
@@ -5044,7 +5044,7 @@ export async function run(ctx) {
   if (/rule.fil/i.test(surText) || /suricata\.rules/.test(surText)) pass('suricata.yaml: rule files shown'); else fail('suricata: rule files not shown: ' + surText.replace(/\s+/g, ' ').slice(0, 120));
 
   // ── waybar-config.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('waybar-config.json');
   pass(await page.waitForSelector('#previewHost .waybar-doc', { timeout: 12000 }), 'waybar-config.json: waybar-doc shown');
   const waybarText = await page.$eval('#previewHost .waybar-doc', (el) => el.textContent);
@@ -5053,7 +5053,7 @@ export async function run(ctx) {
   if (/modules-left|modules-center|modules-right|left|center|right/i.test(waybarText)) pass('waybar-config.json: layout sections shown'); else fail('waybar layout: ' + waybarText.slice(0, 300));
 
   // ── netbird.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('netbird.json');
   pass(await page.waitForSelector('#previewHost .netbird-doc', { timeout: 12000 }), 'netbird.json: netbird-doc shown');
   const netbirdText = await page.$eval('#previewHost .netbird-doc', (el) => el.textContent);
@@ -5062,7 +5062,7 @@ export async function run(ctx) {
   if (/\[configured\]/.test(netbirdText)) pass('netbird.json: private key masked as [configured]'); else fail('netbird key mask: ' + netbirdText.slice(0, 300));
 
   // ── tailscale-acl.hujson viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('tailscale-acl.hujson');
   pass(await page.waitForSelector('#previewHost .tailscale-acl-doc', { timeout: 12000 }), 'tailscale-acl.hujson: badge shown');
   const tsAclText = await page.$eval('#previewHost .tailscale-acl-doc', (el) => el.textContent);
@@ -5072,7 +5072,7 @@ export async function run(ctx) {
   if (/accept rules present/i.test(tsAclText)) pass('tailscale-acl.hujson: accept-rules-present status shown'); else fail('tailscale accept status: ' + tsAclText.slice(0, 300));
 
   // ── headscale-config.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('headscale-config.yaml (Headscale)');
   pass(await page.waitForSelector('#previewHost .hscale-doc', { timeout: 12000 }), 'headscale-config.yaml: badge shown');
   const hscaleText = await page.$eval('#previewHost .hscale-doc', (el) => el.textContent);
@@ -5083,12 +5083,12 @@ export async function run(ctx) {
   if (/private\.key|noise_private/.test(hscaleText)) pass('headscale-config.yaml: private key paths shown'); else fail('headscale key paths: ' + hscaleText.slice(0, 300));
 
   // ── headscale.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Headscale Config');
   pass(await page.waitForSelector('#previewHost .hscale-doc', { timeout: 12000 }), 'headscale.yaml: Headscale badge shown');
 
   // ── pihole-setupVars.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('setupVars.conf (Pi-hole)');
   pass(await page.waitForSelector('#previewHost .pihole-doc', { timeout: 12000 }), 'pihole-setupVars.conf: badge shown');
   const piholeText = await page.$eval('#previewHost .pihole-doc', (el) => el.textContent);
@@ -5098,7 +5098,7 @@ export async function run(ctx) {
   if (/\[configured\]/.test(piholeText)) pass('pihole-setupVars.conf: WEBPASSWORD masked'); else fail('pihole webpassword: ' + piholeText.slice(0, 300));
 
   // ── corosync.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('corosync.conf');
   pass(await page.waitForSelector('#previewHost .corosync-doc', { timeout: 12000 }), 'corosync.conf: badge shown');
   const corosyncText = await page.$eval('#previewHost .corosync-doc', (el) => el.textContent);
@@ -5107,7 +5107,7 @@ export async function run(ctx) {
   if (/quorum/i.test(corosyncText)) pass('corosync.conf: quorum section shown'); else fail('corosync.conf: missing quorum section');
 
   // ── config.nu viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('config.nu');
   pass(await page.waitForSelector('#previewHost .nushell-doc', { timeout: 12000 }), 'config.nu: badge shown');
   const nuText = await page.$eval('#previewHost .nushell-doc', (el) => el.textContent);
@@ -5116,7 +5116,7 @@ export async function run(ctx) {
   if (/alias/i.test(nuText)) pass('config.nu: aliases section shown'); else fail('config.nu: missing aliases section');
 
   // ── graylog.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('graylog.conf');
   pass(await page.waitForSelector('#previewHost .graylog-doc', { timeout: 12000 }), 'graylog.conf: badge shown');
   const graylogText = await page.$eval('#previewHost .graylog-doc', (el) => el.textContent);
@@ -5126,7 +5126,7 @@ export async function run(ctx) {
   if (/\[configured\]/.test(graylogText)) pass('graylog.conf: secrets masked'); else fail('graylog secrets: ' + graylogText.slice(0, 300));
 
   // ── odoo.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('odoo.conf');
   pass(await page.waitForSelector('#previewHost .odoo-doc', { timeout: 12000 }), 'odoo.conf: badge shown');
   const odooText = await page.$eval('#previewHost .odoo-doc', (el) => el.textContent);
@@ -5136,7 +5136,7 @@ export async function run(ctx) {
   if (/\[configured\]/.test(odooText)) pass('odoo.conf: secrets masked'); else fail('odoo secrets: ' + odooText.slice(0, 300));
 
   // ── miniflux.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('miniflux.conf');
   pass(await page.waitForSelector('#previewHost .mflux-doc', { timeout: 12000 }), 'miniflux.conf: badge shown');
   const mfluxText = await page.$eval('#previewHost .mflux-doc', (el) => el.textContent);
@@ -5145,7 +5145,7 @@ export async function run(ctx) {
   if (/\[configured\]/.test(mfluxText)) pass('miniflux.conf: secrets masked'); else fail('miniflux secrets: ' + mfluxText.slice(0, 300));
 
   // ── config.production.json (Ghost) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('config.production.json (Ghost)');
   pass(await page.waitForSelector('#previewHost .ghost-doc', { timeout: 12000 }), 'config.production.json: Ghost badge shown');
   const ghostText = await page.$eval('#previewHost .ghost-doc', (el) => el.textContent);
@@ -5154,7 +5154,7 @@ export async function run(ctx) {
   if (/\[configured\]/.test(ghostText)) pass('config.production.json: secrets masked'); else fail('ghost secrets: ' + ghostText.slice(0, 300));
 
   // ── gotosocial-config.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('gotosocial-config.yaml');
   pass(await page.waitForSelector('#previewHost .gts-doc', { timeout: 12000 }), 'gotosocial-config.yaml: GoToSocial badge shown');
   const gtsText = await page.$eval('#previewHost .gts-doc', (el) => el.textContent);
@@ -5163,7 +5163,7 @@ export async function run(ctx) {
   if (/\[configured\]/.test(gtsText)) pass('gotosocial-config.yaml: secrets masked'); else fail('gotosocial secrets: ' + gtsText.slice(0, 300));
 
   // ── searxng-settings.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('searxng-settings.yml');
   pass(await page.waitForSelector('#previewHost .sxng-doc', { timeout: 12000 }), 'searxng-settings.yml: SearXNG badge shown');
   const sxngText = await page.$eval('#previewHost .sxng-doc', (el) => el.textContent);
@@ -5172,17 +5172,17 @@ export async function run(ctx) {
   if (/\[configured\]/.test(sxngText)) pass('searxng-settings.yml: secrets masked'); else fail('searxng secrets: ' + sxngText.slice(0, 300));
 
   // ── crowdsec-config.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('crowdsec-config.yaml (CrowdSec Config)');
   pass(await page.waitForSelector('#previewHost .csec-doc', { timeout: 12000 }), 'crowdsec-config.yaml: CrowdSec badge shown');
 
   // ── acquis.yaml (CrowdSec acquis) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('acquis.yaml (CrowdSec Acquis)');
   pass(await page.waitForSelector('#previewHost .caquis-doc', { timeout: 12000 }), 'acquis.yaml: CrowdSec acquis badge shown');
 
   // ── homer.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('homer.yml');
   pass(await page.waitForSelector('#previewHost .homer-doc', { timeout: 12000 }), 'homer.yml: Homer badge shown');
   const homerText = await page.$eval('#previewHost .homer-doc', (el) => el.textContent);
@@ -5191,7 +5191,7 @@ export async function run(ctx) {
   if (/Monitoring|Infrastructure/.test(homerText)) pass('homer.yml: service groups shown'); else fail('homer services: ' + homerText.slice(0, 300));
 
   // ── uptime-kuma.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('uptime-kuma.json');
   pass(await page.waitForSelector('#previewHost .ukuma-doc', { timeout: 12000 }), 'uptime-kuma.json: Uptime Kuma badge shown');
   const ukumaText = await page.$eval('#previewHost .ukuma-doc', (el) => el.textContent);
@@ -5200,72 +5200,72 @@ export async function run(ctx) {
   if (/0\.0\.0\.0/.test(ukumaText)) pass('uptime-kuma.json: hostname shown'); else fail('ukuma hostname: ' + ukumaText.slice(0, 300));
 
   // ── photoprism-options.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('photoprism-options.yml');
   pass(await page.waitForSelector('#previewHost .pprism-doc', { timeout: 12000 }), 'photoprism-options.yml: PhotoPrism badge shown');
 
   // ── paperless.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('paperless.conf');
   pass(await page.waitForSelector('#previewHost .plngx-doc', { timeout: 12000 }), 'paperless.conf: Paperless-ngx badge shown');
 
   // ── mealie.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mealie.env');
   pass(await page.waitForSelector('#previewHost .mealie-doc', { timeout: 12000 }), 'mealie.env: Mealie badge shown');
 
   // ── immich.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('immich.env');
   pass(await page.waitForSelector('#previewHost .immich-doc', { timeout: 12000 }), 'immich.env: Immich badge shown');
 
   // ── minio.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('minio.env');
   pass(await page.waitForSelector('#previewHost .minio-doc', { timeout: 12000 }), 'minio.env: MinIO badge shown');
 
   // ── bookstack.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('bookstack.env');
   pass(await page.waitForSelector('#previewHost .bstack-doc', { timeout: 12000 }), 'bookstack.env: BookStack badge shown');
 
   // ── mattermost-config.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mattermost-config.json');
   pass(await page.waitForSelector('#previewHost .mm-doc', { timeout: 12000 }), 'mattermost-config.json: Mattermost badge shown');
 
   // ── netbox-configuration.py viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('netbox-configuration.py');
   pass(await page.waitForSelector('#previewHost .nbox-doc', { timeout: 12000 }), 'netbox-configuration.py: NetBox badge shown');
 
   // ── vaultwarden.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vaultwarden.env');
   pass(await page.waitForSelector('#previewHost .vw-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
 
   // ── ntfy-server.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('ntfy-server.yml');
   pass(await page.waitForSelector('#previewHost .ntfy-doc', { timeout: 12000 }), 'ntfy-server.yml: ntfy badge shown');
 
   // ── wakapi.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('wakapi.yml');
   pass(await page.waitForSelector('#previewHost .wkapi-doc', { timeout: 12000 }), 'wakapi.yml: Wakapi badge shown');
 
   // ── outline.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('outline.env');
   pass(await page.waitForSelector('#previewHost .outline-doc', { timeout: 12000 }), 'outline.env: Outline badge shown');
 
   // ── linkding.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('linkding.env');
   pass(await page.waitForSelector('#previewHost .ldng-doc', { timeout: 12000 }), 'linkding.env: Linkding badge shown');
 
   // ── plausible.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('plausible.env');
   pass(await page.waitForSelector('#previewHost .plsbl-doc', { timeout: 12000 }), 'plausible.env: Plausible badge shown');
   const plausibleText = await page.$eval('#previewHost .plsbl-doc', (el) => el.textContent);
@@ -5274,444 +5274,444 @@ export async function run(ctx) {
   if (/invite_only/.test(plausibleText)) pass('plausible.env: invite_only registration chip shown'); else fail('plausible invite_only: ' + plausibleText.slice(0, 300));
 
   // ── umami.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('umami.env');
   pass(await page.waitForSelector('#previewHost .umami-doc', { timeout: 12000 }), 'umami.env: Umami badge shown');
 
   // ── stirling-pdf-settings.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('stirling-pdf-settings.yml');
   await page.waitForSelector('#previewHost .spdf-doc', { timeout: 12000 });
   pass('stirling-pdf-settings.yml: Stirling-PDF badge shown');
 
   // ── authentik.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Authentik Config');
   await page.waitForSelector('#previewHost .authentik-doc', { timeout: 12000 });
   pass('authentik.env: Authentik badge shown');
 
   // ── monica.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('monica.env');
   pass(await page.waitForSelector('#previewHost .monica-doc', { timeout: 12000 }), 'monica.env: Monica CRM badge shown');
 
   // ── n8n.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('n8n.env');
   pass(await page.waitForSelector('#previewHost .n8n-doc', { timeout: 12000 }), 'n8n.env: n8n badge shown');
 
   // ── nocodb.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nocodb.env');
   pass(await page.waitForSelector('#previewHost .noco-doc', { timeout: 12000 }), 'nocodb.env: NocoDB badge shown');
 
   // ── plane.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('plane.env');
   pass(await page.waitForSelector('#previewHost .plane-doc', { timeout: 12000 }), 'plane.env: Plane badge shown');
 
   // ── infisical.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('infisical.env');
   pass(await page.waitForSelector('#previewHost .infsc-doc', { timeout: 12000 }), 'infisical.env: Infisical badge shown');
 
   // ── vikunja.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vikunja.yml');
   pass(await page.waitForSelector('#previewHost .vkunja-doc', { timeout: 12000 }), 'vikunja.yml: Vikunja badge shown');
 
   // ── appsmith.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('appsmith.env');
   pass(await page.waitForSelector('#previewHost .appsm-doc', { timeout: 12000 }), 'appsmith.env: Appsmith badge shown');
 
   // ── hoppscotch.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('hoppscotch.env');
   pass(await page.waitForSelector('#previewHost .hopp-doc', { timeout: 12000 }), 'hoppscotch.env: Hoppscotch badge shown');
 
   // ── twenty.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('twenty.env');
   pass(await page.waitForSelector('#previewHost .twenty-doc', { timeout: 12000 }), 'twenty.env: Twenty CRM badge shown');
 
   // ── glitchtip.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('glitchtip.env');
   pass(await page.waitForSelector('#previewHost .gtip-doc', { timeout: 12000 }), 'glitchtip.env: GlitchTip badge shown');
 
   // ── ArchiveBox.conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('ArchiveBox.conf');
   pass(await page.waitForSelector('#previewHost .abox-doc', { timeout: 12000 }), 'ArchiveBox.conf: ArchiveBox badge shown');
 
   // ── dex.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dex.yaml');
   pass(await page.waitForSelector('#previewHost .dex-doc', { timeout: 12000 }), 'dex.yaml: Dex OIDC badge shown');
 
   // ── lldap_config.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('lldap_config.toml');
   pass(await page.waitForSelector('#previewHost .lldap-doc', { timeout: 12000 }), 'lldap_config.toml: LLDAP badge shown');
 
   // ── listmonk-config.toml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('listmonk-config.toml');
   pass(await page.waitForSelector('#previewHost .lmonk-doc', { timeout: 12000 }), 'listmonk-config.toml: Listmonk badge shown');
 
   // ── windmill.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('windmill.env');
   pass(await page.waitForSelector('#previewHost .wmill-doc', { timeout: 12000 }), 'windmill.env: Windmill badge shown');
 
   // ── komga.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('komga.yml');
   pass(await page.waitForSelector('#previewHost .komga-doc', { timeout: 12000 }), 'komga.yml: Komga badge shown');
 
   // ── coder.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('coder.env');
   pass(await page.waitForSelector('#previewHost .coder-doc', { timeout: 12000 }), 'coder.env: Coder badge shown');
 
   // ── cal-com.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cal-com.env');
   pass(await page.waitForSelector('#previewHost .calcom-doc', { timeout: 12000 }), 'cal-com.env: Cal.com badge shown');
 
   // ── rallly.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('rallly.env');
   pass(await page.waitForSelector('#previewHost .rallly-doc', { timeout: 12000 }), 'rallly.env: Rallly badge shown');
 
   // ── woodpecker-agent.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('woodpecker-agent.env');
   pass(await page.waitForSelector('#previewHost .wpcagent-doc', { timeout: 12000 }), 'woodpecker-agent.env: Woodpecker CI badge shown');
 
   // ── act_runner.yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('act_runner.yaml');
   pass(await page.waitForSelector('#previewHost .actrunner-doc', { timeout: 12000 }), 'act_runner.yaml: Act Runner badge shown');
 
   // ── vaultwarden.env viewer (vaultwarden-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('vaultwarden.env');
   pass(await page.waitForSelector('#previewHost .vw-doc', { timeout: 12000 }), 'vaultwarden.env: Vaultwarden badge shown');
 
   // ── keycloak.conf viewer (keycloak-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('keycloak.conf');
   pass(await page.waitForSelector('#previewHost .kc-doc', { timeout: 12000 }), 'keycloak.conf: Keycloak badge shown');
 
   // ── filebrowser.json viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('filebrowser.json');
   pass(await page.waitForSelector('#previewHost .fbrowser-doc', { timeout: 12000 }), 'filebrowser.json: File Browser badge shown');
 
   // ── bookstack.env viewer (bookstack-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('bookstack.env');
   await page.waitForSelector('#previewHost .bstack-doc', { timeout: 12000 });
   pass('bookstack.env: BookStack badge shown');
 
   // ── harbor.yml viewer (harbor-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('harbor.yml');
   await page.waitForSelector('#previewHost .harbor-doc', { timeout: 12000 });
   pass('harbor.yml: Harbor badge shown');
 
   // ── drone.env viewer (drone-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('drone.env');
   await page.waitForSelector('#previewHost .droneci-doc', { timeout: 12000 });
   pass('drone.env: Drone CI badge shown');
 
   // ── sftpgo.json viewer (sftpgo-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sftpgo.json');
   await page.waitForSelector('#previewHost .sftpgo-doc', { timeout: 12000 });
   pass('sftpgo.json: SFTPGo badge shown');
 
   // ── invidious-config.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('invidious-config.yml');
   await page.waitForSelector('#previewHost .invidious-doc', { timeout: 12000 });
   pass('invidious-config.yml: Invidious badge shown');
 
   // ── sonar.properties viewer (sonarqube-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sonar.properties');
   await page.waitForSelector('#previewHost .sonarqube-doc', { timeout: 12000 });
   pass('sonar.properties: SonarQube badge shown');
 
   // ── concourse.env viewer (concourse-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('concourse.env');
   await page.waitForSelector('#previewHost .concourse-doc', { timeout: 12000 });
   pass('concourse.env: Concourse CI badge shown');
 
   // ── invoiceninja.env viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('invoiceninja.env');
   await page.waitForSelector('#previewHost .invninja-doc', { timeout: 12000 });
   pass('invoiceninja.env: Invoice Ninja badge shown');
 
   // ── conduit.toml viewer (conduit-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('conduit.toml');
   await page.waitForSelector('#previewHost .conduit-doc', { timeout: 12000 });
   pass('conduit.toml: Conduit badge shown');
 
   // ── zitadel.yaml viewer (zitadel-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('zitadel.yaml');
   await page.waitForSelector('#previewHost .zitadel-doc', { timeout: 12000 });
   pass('zitadel.yaml: ZITADEL badge shown');
 
   // ── influxdb.yml viewer (influxdb-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('influxdb.yml');
   await page.waitForSelector('#previewHost .influxdb-doc', { timeout: 12000 });
   pass('influxdb.yml: InfluxDB badge shown');
 
   // ── dendrite.yaml viewer (dendrite-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dendrite.yaml');
   await page.waitForSelector('#previewHost .dendrite-doc', { timeout: 12000 });
   pass('dendrite.yaml: Dendrite badge shown');
 
   // ── watchtower.env viewer (watchtower-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('watchtower.env');
   await page.waitForSelector('#previewHost .wtower-doc', { timeout: 12000 });
   pass('watchtower.env: Watchtower badge shown');
 
   // ── diun.yaml viewer (diun-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('diun.yaml');
   await page.waitForSelector('#previewHost .diun-doc', { timeout: 12000 });
   pass('diun.yaml: Diun badge shown');
 
   // ── changedetection.env viewer (changedetection-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('changedetection.env');
   await page.waitForSelector('#previewHost .chgdet-doc', { timeout: 12000 });
   pass('changedetection.env: changedetection.io badge shown');
 
   // ── semaphore-config.json viewer (semaphore-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('semaphore-config.json');
   await page.waitForSelector('#previewHost .semaphore-doc', { timeout: 12000 });
   pass('semaphore-config.json: Semaphore badge shown');
 
   // ── actual-config.json viewer (actual-budget-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('actual-config.json');
   await page.waitForSelector('#previewHost .actualbudget-doc', { timeout: 12000 });
   pass('actual-config.json: Actual Budget badge shown');
 
   // ── wallos.env viewer (wallos-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('wallos.env');
   await page.waitForSelector('#previewHost .wallos-doc', { timeout: 12000 });
   pass('wallos.env: Wallos badge shown');
 
   // ── grist.env viewer (grist-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('grist.env');
   await page.waitForSelector('#previewHost .grist-doc', { timeout: 12000 });
   pass('grist.env: Grist badge shown');
 
   // ── open-webui.env viewer (open-webui-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('open-webui.env');
   await page.waitForSelector('#previewHost .openwebui-doc', { timeout: 12000 });
   pass('open-webui.env: Open WebUI badge shown');
 
   // ── maybe.env viewer (maybe-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('maybe.env');
   await page.waitForSelector('#previewHost .maybe-doc', { timeout: 12000 });
   pass('maybe.env: Maybe badge shown');
 
   // ── netdata.conf viewer (netdata-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('netdata.conf');
   await page.waitForSelector('#previewHost .netdata-doc', { timeout: 12000 });
   pass('netdata.conf: Netdata badge shown');
 
   // ── pocket-id.env viewer (pocket-id-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pocket-id.env');
   await page.waitForSelector('#previewHost .pocketid-doc', { timeout: 12000 });
   pass('pocket-id.env: Pocket ID badge shown');
 
   // ── nzbget.conf viewer (nzbget-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nzbget.conf');
   await page.waitForSelector('#previewHost .nzbget-doc', { timeout: 12000 });
   pass('nzbget.conf: NZBGet badge shown');
 
   // ── sabnzbd.ini viewer (sabnzbd-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sabnzbd.ini');
   await page.waitForSelector('#previewHost .sabnzbd-doc', { timeout: 12000 });
   pass('sabnzbd.ini: SABnzbd badge shown');
 
   // ── joplin.env viewer (joplin-server-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('joplin.env');
   await page.waitForSelector('#previewHost .joplin-doc', { timeout: 12000 });
   pass('joplin.env: Joplin Server badge shown');
 
   // ── speedtest-tracker.env viewer (speedtest-tracker-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('speedtest-tracker.env');
   await page.waitForSelector('#previewHost .speedtest-doc', { timeout: 12000 });
   pass('speedtest-tracker.env: Speedtest Tracker badge shown');
 
   // ── netdata.conf viewer (netdata-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('netdata.conf');
   await page.waitForSelector('#previewHost .netdata-doc', { timeout: 12000 });
   pass('netdata.conf: Netdata badge shown');
 
   // ── pocket-id.env viewer (pocket-id-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('pocket-id.env');
   await page.waitForSelector('#previewHost .pocketid-doc', { timeout: 12000 });
   pass('pocket-id.env: Pocket ID badge shown');
 
   // ── dozzle.yaml viewer (dozzle-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dozzle.yaml');
   await page.waitForSelector('#previewHost .dozzle-doc', { timeout: 12000 });
   pass('dozzle.yaml: Dozzle badge shown');
 
   // ── forgejo.ini viewer (forgejo-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('forgejo.ini');
   await page.waitForSelector('#previewHost .forgejo-doc', { timeout: 12000 });
   pass('forgejo.ini: Forgejo badge shown');
 
   // ── glances.conf viewer (glances-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('glances.conf');
   await page.waitForSelector('#previewHost .glances-doc', { timeout: 12000 });
   pass('glances.conf: Glances badge shown');
 
   // ── homarr.yaml viewer (homarr-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('homarr.yaml');
   await page.waitForSelector('#previewHost .homarr-doc', { timeout: 12000 });
   pass('homarr.yaml: Homarr badge shown');
 
   // ── kavita-appsettings.json viewer (kavita-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('kavita-appsettings.json');
   await page.waitForSelector('#previewHost .kavita-doc', { timeout: 12000 });
   pass('kavita-appsettings.json: Kavita badge shown');
 
   // ── komga.yml viewer (komga-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('komga.yml');
   await page.waitForSelector('#previewHost .komga-doc', { timeout: 12000 });
   pass('komga.yml: Komga badge shown');
 
   // ── tandoor.env viewer (tandoor-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('tandoor.env');
   await page.waitForSelector('#previewHost .tandoor-doc', { timeout: 12000 });
   pass('tandoor.env: Tandoor badge shown');
 
   // ── audiobookshelf.env viewer (audiobookshelf-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('audiobookshelf.env');
   await page.waitForSelector('#previewHost .abs-doc', { timeout: 12000 });
   pass('audiobookshelf.env: Audiobookshelf badge shown');
 
   // ── dashy.yml viewer (dashy-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dashy.yml');
   await page.waitForSelector('#previewHost .dashy-doc', { timeout: 12000 });
   pass('dashy.yml: Dashy badge shown');
 
   // ── jellyseerr-settings.json viewer (jellyseerr-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('jellyseerr-settings.json');
   await page.waitForSelector('#previewHost .jellyseerr-doc', { timeout: 12000 });
   pass('jellyseerr-settings.json: Jellyseerr badge shown');
 
   // ── bazarr.yaml viewer (bazarr-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('bazarr.yaml');
   await page.waitForSelector('#previewHost .bazarr-doc', { timeout: 12000 });
   pass('bazarr.yaml: Bazarr badge shown');
 
   // ── scrutiny.yaml viewer (scrutiny-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('scrutiny.yaml');
   await page.waitForSelector('#previewHost .scrutiny-doc', { timeout: 12000 });
   pass('scrutiny.yaml: Scrutiny badge shown');
 
   // ── overseerr-settings.json viewer (overseerr-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('overseerr-settings.json');
   await page.waitForSelector('#previewHost .overseerr-doc', { timeout: 12000 });
   pass('overseerr-settings.json: Overseerr badge shown');
 
   // ── freshrss.env viewer (freshrss-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('freshrss.env');
   await page.waitForSelector('#previewHost .freshrss-doc', { timeout: 12000 });
   pass('freshrss.env: FreshRSS badge shown');
 
   // ── homepage-services.yaml viewer (homepage-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('homepage-services.yaml');
   await page.waitForSelector('#previewHost .homepage-doc', { timeout: 12000 });
   pass('homepage-services.yaml: Homepage badge shown');
 
   // ── wallabag.env viewer (wallabag-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('wallabag.env');
   await page.waitForSelector('#previewHost .wallabag-doc', { timeout: 12000 });
   pass('wallabag.env: Wallabag badge shown');
 
   // ── linkwarden.env viewer (linkwarden-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('linkwarden.env');
   await page.waitForSelector('#previewHost .linkwarden-doc', { timeout: 12000 });
   pass('linkwarden.env: Linkwarden badge shown');
 
   // ── archivebox.conf viewer (archivebox-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('archivebox.conf');
   await page.waitForSelector('#previewHost .abox-doc', { timeout: 12000 });
   pass('archivebox.conf: ArchiveBox badge shown');
 
   // ── memos.env viewer (memos-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('memos.env');
   await page.waitForSelector('#previewHost .memos-doc', { timeout: 12000 });
   pass('memos.env: Memos badge shown');
 
   // ── wakapi.yaml viewer (wakapi-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('wakapi.yaml');
   await page.waitForSelector('#previewHost .wkapi-doc', { timeout: 12000 });
   pass('wakapi.yaml: Wakapi badge shown');
 
   // ── hoarder.env viewer (hoarder-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('hoarder.env');
   await page.waitForSelector('#previewHost .hoarder-doc', { timeout: 12000 });
   pass('hoarder.env: Hoarder badge shown');
 
   // ── claude_desktop_config.json viewer (mcp-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('claude_desktop_config.json');
   await page.waitForSelector('#previewHost .mcp-doc', { timeout: 12000 });
   const mcpText = await page.$eval('#previewHost .mcp-doc', (e) => e.textContent);
@@ -5720,7 +5720,7 @@ export async function run(ctx) {
   if (/filesystem|brave-search|github/i.test(mcpText)) pass('claude_desktop_config.json: server names shown'); else fail('mcp-config servers: ' + mcpText.slice(0, 300));
 
   // ── example.rdp viewer (rdp-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('example.rdp');
   await page.waitForSelector('#previewHost .rdp-doc', { timeout: 12000 });
   const rdpText = await page.$eval('#previewHost .rdp-doc', (e) => e.textContent);
@@ -5731,7 +5731,7 @@ export async function run(ctx) {
   if (/NLA/i.test(rdpText)) pass('example.rdp: NLA auth chip shown'); else fail('rdp-config nla: ' + rdpText.slice(0, 300));
 
   // ── frigate.yml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('frigate.yml');
   await page.waitForSelector('#previewHost .frigate-doc', { timeout: 12000 });
   const frigateText = await page.$eval('#previewHost .frigate-doc', (e) => e.textContent);
@@ -5740,7 +5740,7 @@ export async function run(ctx) {
   if (/\d+\s*camera/i.test(frigateText)) pass('frigate.yml: camera count shown'); else fail('frigate-config camera count: ' + frigateText.slice(0, 300));
 
   // ── sample.plist viewer (plist-config) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.plist');
   await page.waitForSelector('#previewHost .plist-doc', { timeout: 12000 });
   const plistText = await page.$eval('#previewHost .plist-doc', (e) => e.textContent);
@@ -5748,7 +5748,7 @@ export async function run(ctx) {
   if (/CFBundleIdentifier/i.test(plistText)) pass('sample.plist: CFBundleIdentifier key shown'); else fail('plist key: ' + plistText.slice(0, 300));
 
   // ── appmanifest_570.acf viewer (steam-acf) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('appmanifest_570.acf');
   await page.waitForSelector('#previewHost .steam-doc', { timeout: 12000 });
   const acfText = await page.$eval('#previewHost .steam-doc', (e) => e.textContent);
@@ -5757,7 +5757,7 @@ export async function run(ctx) {
   if (/Fully Installed/i.test(acfText)) pass('appmanifest_570.acf: Fully Installed state shown'); else fail('acf state: ' + acfText.slice(0, 300));
 
   // ── robots.txt viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('robots.txt');
   await page.waitForSelector('#previewHost .rbots-doc', { timeout: 12000 });
   pass('robots.txt: renders');
@@ -5766,7 +5766,7 @@ export async function run(ctx) {
   if (/User-agent/i.test(robotsText) || /Googlebot/i.test(robotsText)) pass('robots.txt: User-agent groups shown'); else fail('robots.txt groups: ' + robotsText.slice(0, 300));
 
   // ── sitemap.xml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sitemap.xml');
   await page.waitForSelector('#previewHost .sitemap-doc', { timeout: 12000 });
   pass('sitemap.xml: renders');
@@ -5775,7 +5775,7 @@ export async function run(ctx) {
   if (/example\.com/i.test(sitemapText) || /URL/i.test(sitemapText)) pass('sitemap.xml: URL table shown'); else fail('sitemap.xml URLs: ' + sitemapText.slice(0, 300));
 
   // ── sample.avsc (Avro schema) viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.avsc');
   await page.waitForSelector('#previewHost .avro-doc', { timeout: 12000 });
   pass('sample.avsc: renders');
@@ -5784,7 +5784,7 @@ export async function run(ctx) {
   if (/User/i.test(avroText) && /field/i.test(avroText)) pass('sample.avsc: schema fields shown'); else fail('avro fields: ' + avroText.slice(0, 300));
 
   // ── security.txt viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('security.txt');
   await page.waitForSelector('#previewHost .sec-doc', { timeout: 12000 });
   pass('security.txt: renders');
@@ -5795,7 +5795,7 @@ export async function run(ctx) {
   if (secLinks.some((h) => /example\.com/.test(h))) pass('security.txt: contact/policy URLs are clickable links'); else fail('security.txt links: ' + secLinks.join(','));
 
   // ── humans.txt viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('humans.txt');
   await page.waitForSelector('#previewHost .hum-doc', { timeout: 12000 });
   pass('humans.txt: renders');
@@ -5805,7 +5805,7 @@ export async function run(ctx) {
   if (/Alice|Bob|Designer/i.test(humText)) pass('humans.txt: team members shown'); else fail('humans.txt members: ' + humText.slice(0, 300));
 
   // ── sample.jsonnet viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.jsonnet');
   await page.waitForSelector('#previewHost .jnet-doc', { timeout: 12000 });
   pass('sample.jsonnet: renders');
@@ -5815,7 +5815,7 @@ export async function run(ctx) {
   if (/makeService/i.test(jnetText)) pass('sample.jsonnet: function signature shown'); else fail('jsonnet fn: ' + jnetText.slice(0, 300));
 
   // ── sample.cue viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.cue');
   await page.waitForSelector('#previewHost .cue-doc', { timeout: 12000 });
   pass('sample.cue: renders');
@@ -5825,7 +5825,7 @@ export async function run(ctx) {
   if (/#Service|#Config|Definitions/i.test(cueText)) pass('sample.cue: definitions shown'); else fail('cue defs: ' + cueText.slice(0, 300));
 
   // ── sample.tf viewer (Terraform HCL) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.tf');
   await page.waitForSelector('#previewHost .tf-doc', { timeout: 12000 });
   pass('sample.tf: renders');
@@ -5836,7 +5836,7 @@ export async function run(ctx) {
   if (/output|Outputs/i.test(tfText)) pass('sample.tf: outputs section shown'); else fail('tf outputs: ' + tfText.slice(0, 300));
 
   // ── sample.nix viewer (Nix expression) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.nix');
   await page.waitForSelector('#previewHost .nix-doc', { timeout: 12000 });
   pass('sample.nix: renders');
@@ -5846,7 +5846,7 @@ export async function run(ctx) {
   if (/pythonEnv|nodeVersion|shellHook/i.test(nixExprText)) pass('sample.nix: top-level attributes shown'); else fail('nix attrs: ' + nixExprText.slice(0, 300));
 
   // ── sample.bicep viewer (Azure Bicep) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.bicep');
   await page.waitForSelector('#previewHost .bicep-doc', { timeout: 12000 });
   pass('sample.bicep: renders');
@@ -5857,7 +5857,7 @@ export async function run(ctx) {
   if (/resourceGroup/i.test(bicepText)) pass('sample.bicep: targetScope shown'); else fail('bicep scope: ' + bicepText.slice(0, 300));
 
   // ── sample.kdl viewer (KDL document) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.kdl');
   await page.waitForSelector('#previewHost .kdl-doc', { timeout: 12000 });
   pass('sample.kdl: renders');
@@ -5867,7 +5867,7 @@ export async function run(ctx) {
   if (/Top-level nodes|node/i.test(kdlText)) pass('sample.kdl: node count shown'); else fail('kdl count: ' + kdlText.slice(0, 300));
 
   // ── sample.mmd viewer (Mermaid Diagram) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.mmd');
   await page.waitForSelector('#previewHost .mmd-doc', { timeout: 12000 });
   pass('sample.mmd: renders');
@@ -5877,7 +5877,7 @@ export async function run(ctx) {
   if (/mermaid\.live|Mermaid\.js/i.test(mmdText)) pass('sample.mmd: render note shown'); else fail('mermaid note: ' + mmdText.slice(0, 300));
 
   // ── sample.puml viewer (PlantUML) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.puml');
   await page.waitForSelector('#previewHost .puml-doc', { timeout: 12000 });
   pass('sample.puml: renders');
@@ -5886,7 +5886,7 @@ export async function run(ctx) {
   if (/Sequence|sequence|Authentication/i.test(pumlText)) pass('sample.puml: diagram type or title shown'); else fail('plantuml type: ' + pumlText.slice(0, 300));
 
   // ── sample.rego viewer (Rego Policy) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.rego');
   await page.waitForSelector('#previewHost .rego-doc', { timeout: 12000 });
   pass('sample.rego: renders');
@@ -5896,7 +5896,7 @@ export async function run(ctx) {
   if (/allow|deny/i.test(regoText)) pass('sample.rego: rules shown'); else fail('rego rules: ' + regoText.slice(0, 300));
 
   // ── sample.adoc viewer (AsciiDoc) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.adoc');
   await page.waitForSelector('#previewHost .adoc-doc', { timeout: 12000 });
   pass('sample.adoc: renders');
@@ -5907,7 +5907,7 @@ export async function run(ctx) {
   if (/Installation|Usage|Introduction/i.test(adocText)) pass('sample.adoc: section headings shown'); else fail('asciidoc sections: ' + adocText.slice(0, 300));
 
   // ── sample.capnp viewer (Cap'n Proto) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.capnp');
   await page.waitForSelector('#previewHost .capnp-doc', { timeout: 12000 });
   pass('sample.capnp: renders');
@@ -5918,7 +5918,7 @@ export async function run(ctx) {
   if (/UserService|Interface/i.test(capnpText)) pass('sample.capnp: interface listed'); else fail('capnp interfaces: ' + capnpText.slice(0, 300));
 
   // ── sample.fbs viewer (FlatBuffers) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.fbs');
   await page.waitForSelector('#previewHost .flatbuf-doc', { timeout: 12000 });
   pass('sample.fbs: renders');
@@ -5929,7 +5929,7 @@ export async function run(ctx) {
   if (/Monster/.test(flatbufText) && /root_type/i.test(flatbufText)) pass('sample.fbs: root_type shown'); else fail('fbs root_type: ' + flatbufText.slice(0, 300));
 
   // ── sample.dhall viewer (Dhall) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.dhall');
   await page.waitForSelector('#previewHost .dhall-doc', { timeout: 12000 });
   pass('sample.dhall: renders');
@@ -5939,7 +5939,7 @@ export async function run(ctx) {
   if (/remote import|prelude\.dhall-lang/i.test(dhallText)) pass('sample.dhall: remote import shown'); else fail('dhall import: ' + dhallText.slice(0, 300));
 
   // ── sample.wgsl viewer (WGSL Shader) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.wgsl');
   await page.waitForSelector('#previewHost .wgsl-doc', { timeout: 12000 });
   pass('sample.wgsl: renders');
@@ -5950,7 +5950,7 @@ export async function run(ctx) {
   if (/group 0|group 1/i.test(wgslText)) pass('sample.wgsl: binding groups shown'); else fail('wgsl bindings: ' + wgslText.slice(0, 300));
 
   // ── sample.glsl viewer (GLSL Shader) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.glsl');
   await page.waitForSelector('#previewHost .glsl-doc', { timeout: 12000 });
   pass('sample.glsl: renders');
@@ -5961,7 +5961,7 @@ export async function run(ctx) {
   if (/330/i.test(glslText)) pass('sample.glsl: GLSL version shown'); else fail('glsl version: ' + glslText.slice(0, 300));
 
   // ── sample.hlsl viewer (HLSL Shader) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.hlsl');
   await page.waitForSelector('#previewHost .hlsl-doc', { timeout: 12000 });
   pass('sample.hlsl: renders');
@@ -5972,7 +5972,7 @@ export async function run(ctx) {
   if (/albedoMap|Texture2D/i.test(hlslText)) pass('sample.hlsl: textures/samplers shown'); else fail('hlsl textures: ' + hlslText.slice(0, 300));
 
   // ── sample.rst viewer (reStructuredText) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.rst');
   await page.waitForSelector('#previewHost .rst-doc', { timeout: 12000 });
   pass('sample.rst: renders');
@@ -5983,7 +5983,7 @@ export async function run(ctx) {
   if (/note|code-block|warning/i.test(rstText)) pass('sample.rst: directives listed'); else fail('rst directives: ' + rstText.slice(0, 300));
 
   // ── sample.org viewer (Org-mode) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.org');
   await page.waitForSelector('#previewHost .org-doc', { timeout: 12000 });
   pass('sample.org: renders');
@@ -5995,7 +5995,7 @@ export async function run(ctx) {
   if (/python|json/i.test(orgText)) pass('sample.org: code block languages shown'); else fail('org code langs: ' + orgText.slice(0, 300));
 
   // ── sample.liquid viewer (Liquid Template) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.liquid');
   await page.waitForSelector('#previewHost .liq-doc', { timeout: 12000 });
   pass('sample.liquid: renders');
@@ -6006,7 +6006,7 @@ export async function run(ctx) {
   if (/render|include|section/i.test(liqText)) pass('sample.liquid: includes/renders shown'); else fail('liquid includes: ' + liqText.slice(0, 300));
 
   // ── sample.hbs viewer (Handlebars Template) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.hbs');
   await page.waitForSelector('#previewHost .hbs-doc', { timeout: 12000 });
   pass('sample.hbs: renders');
@@ -6017,7 +6017,7 @@ export async function run(ctx) {
   if (/partial|partials/i.test(hbsText)) pass('sample.hbs: partials shown'); else fail('hbs partials: ' + hbsText.slice(0, 300));
 
   // ── sample.j2 viewer (Jinja2 Template) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.j2');
   await page.waitForSelector('#previewHost .j2-doc', { timeout: 12000 });
   pass('sample.j2: renders');
@@ -6028,7 +6028,7 @@ export async function run(ctx) {
   if (/upper|lower|default|replace/i.test(j2Text)) pass('sample.j2: filters listed'); else fail('j2 filters: ' + j2Text.slice(0, 300));
 
   // ── sample.mustache viewer (Mustache Template) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.mustache');
   await page.waitForSelector('#previewHost .mst-doc', { timeout: 12000 });
   pass('sample.mustache: renders');
@@ -6039,7 +6039,7 @@ export async function run(ctx) {
   if (/title|headline|description/i.test(mstText)) pass('sample.mustache: variables listed'); else fail('mustache variables: ' + mstText.slice(0, 300));
 
   // ── sample.sparql viewer (SPARQL Query) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.sparql');
   await page.waitForSelector('#previewHost .sparql-doc', { timeout: 12000 });
   pass('sample.sparql: renders');
@@ -6050,7 +6050,7 @@ export async function run(ctx) {
   if (/title|author|year/i.test(sparqlText)) pass('sample.sparql: projected variables shown'); else fail('sparql vars: ' + sparqlText.slice(0, 300));
 
   // ── sample.ttl viewer (Turtle RDF) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.ttl');
   await page.waitForSelector('#previewHost .ttl-doc', { timeout: 12000 });
   pass('sample.ttl: renders');
@@ -6060,7 +6060,7 @@ export async function run(ctx) {
   if (/rdf|owl|rdfs/i.test(ttlText)) pass('sample.ttl: namespace URIs shown'); else fail('ttl namespaces: ' + ttlText.slice(0, 300));
 
   // ── sample.dot viewer (Graphviz DOT) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.dot');
   await page.waitForSelector('#previewHost .dot-doc', { timeout: 12000 });
   pass('sample.dot: renders');
@@ -6070,7 +6070,7 @@ export async function run(ctx) {
   if (/node|edge/i.test(dotText)) pass('sample.dot: node/edge counts shown'); else fail('dot counts: ' + dotText.slice(0, 300));
 
   // ── sample.v viewer (Verilog) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.v');
   await page.waitForSelector('#previewHost .vlog-doc', { timeout: 12000 });
   pass('sample.v: renders');
@@ -6080,7 +6080,7 @@ export async function run(ctx) {
   if (/module|Module/i.test(vlogText)) pass('sample.v: module count shown'); else fail('vlog module count: ' + vlogText.slice(0, 300));
 
   // ── sample.zig viewer (Zig) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.zig');
   await page.waitForSelector('#previewHost .zig-doc', { timeout: 12000 });
   pass('sample.zig: renders');
@@ -6091,7 +6091,7 @@ export async function run(ctx) {
   if (/test/i.test(zigText)) pass('sample.zig: test count shown'); else fail('zig tests: ' + zigText.slice(0, 300));
 
   // ── sample.ex viewer (Elixir) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.ex');
   await page.waitForSelector('#previewHost .ex-doc', { timeout: 12000 });
   pass('sample.ex: renders');
@@ -6102,7 +6102,7 @@ export async function run(ctx) {
   if (/use|alias|import/i.test(exText)) pass('sample.ex: dependencies shown'); else fail('elixir deps: ' + exText.slice(0, 300));
 
   // ── sample.pug viewer (Pug Template) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.pug');
   await page.waitForSelector('#previewHost .pug-doc', { timeout: 12000 });
   pass('sample.pug: renders');
@@ -6113,7 +6113,7 @@ export async function run(ctx) {
   if (/include|footer|scripts/i.test(pugText)) pass('sample.pug: includes shown'); else fail('pug includes: ' + pugText.slice(0, 300));
 
   // ── sample.ejs viewer (EJS Template) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.ejs');
   await page.waitForSelector('#previewHost .ejs-doc', { timeout: 12000 });
   pass('sample.ejs: renders');
@@ -6124,7 +6124,7 @@ export async function run(ctx) {
   if (/title|user|siteName/i.test(ejsText)) pass('sample.ejs: variables listed'); else fail('ejs variables: ' + ejsText.slice(0, 300));
 
   // ── sample.xsl viewer (XSLT Stylesheet) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.xsl');
   await page.waitForSelector('#previewHost .xsl-doc', { timeout: 12000 });
   pass('sample.xsl: renders');
@@ -6136,7 +6136,7 @@ export async function run(ctx) {
   if (/lang|showDetails/i.test(xslText)) pass('sample.xsl: params listed'); else fail('xsl params: ' + xslText.slice(0, 300));
 
   // ── sample.svelte viewer (Svelte Component) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.svelte');
   await page.waitForSelector('#previewHost .svelte-doc', { timeout: 12000 });
   pass('sample.svelte: renders');
@@ -6147,7 +6147,7 @@ export async function run(ctx) {
   if (/Counter|Modal/i.test(svelteText)) pass('sample.svelte: component imports listed'); else fail('svelte imports: ' + svelteText.slice(0, 300));
 
   // ── sample.njk viewer (Nunjucks Template) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.njk');
   await page.waitForSelector('#previewHost .njk-doc', { timeout: 12000 });
   pass('sample.njk: renders');
@@ -6158,7 +6158,7 @@ export async function run(ctx) {
   if (/pagination/i.test(njkText)) pass('sample.njk: macros listed'); else fail('njk macros: ' + njkText.slice(0, 300));
 
   // ── sample.hs viewer (Haskell) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.hs');
   await page.waitForSelector('#previewHost .hs-doc', { timeout: 12000 });
   pass('sample.hs: renders');
@@ -6169,7 +6169,7 @@ export async function run(ctx) {
   if (/insert|search|depth|fromList/i.test(hsText)) pass('sample.hs: functions listed'); else fail('hs functions: ' + hsText.slice(0, 300));
 
   // ── sample.kt viewer (Kotlin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.kt');
   await page.waitForSelector('#previewHost .kt-doc', { timeout: 12000 });
   pass('sample.kt: renders');
@@ -6180,7 +6180,7 @@ export async function run(ctx) {
   if (/distanceBetween|fetchPoints|main/i.test(ktText)) pass('sample.kt: functions listed'); else fail('kt functions: ' + ktText.slice(0, 300));
 
   // ── sample.scala viewer (Scala) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.scala');
   await page.waitForSelector('#previewHost .sc-doc', { timeout: 12000 });
   pass('sample.scala: renders');
@@ -6191,7 +6191,7 @@ export async function run(ctx) {
   if (/distanceBetween|circleArea/i.test(scalaText)) pass('sample.scala: defs listed'); else fail('scala defs: ' + scalaText.slice(0, 300));
 
   // ── sample.nim viewer (Nim) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.nim');
   await page.waitForSelector('#previewHost .nim-doc', { timeout: 12000 });
   pass('sample.nim: renders');
@@ -6202,7 +6202,7 @@ export async function run(ctx) {
   if (/Point|Color/i.test(nimText)) pass('sample.nim: types listed'); else fail('nim types: ' + nimText.slice(0, 300));
 
   // ── sample.dart viewer (Dart) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.dart');
   await page.waitForSelector('#previewHost .dart-doc', { timeout: 12000 });
   pass('sample.dart: renders');
@@ -6214,7 +6214,7 @@ export async function run(ctx) {
   if (/ReadingExtension/i.test(dartText)) pass('sample.dart: extension listed'); else fail('dart extension: ' + dartText.slice(0, 300));
 
   // ── sample.groovy viewer (Groovy) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.groovy');
   await page.waitForSelector('#previewHost .gr-doc', { timeout: 12000 });
   pass('sample.groovy: renders');
@@ -6225,7 +6225,7 @@ export async function run(ctx) {
   if (/factorial|mean|area|perimeter/i.test(groovyText)) pass('sample.groovy: methods listed'); else fail('groovy methods: ' + groovyText.slice(0, 300));
 
   // ── sample.cr viewer (Crystal) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.cr');
   await page.waitForSelector('#previewHost .crl-doc', { timeout: 12000 });
   pass('sample.cr: renders');
@@ -6235,7 +6235,7 @@ export async function run(ctx) {
   if (/Circle|Point|Shape|Color/i.test(crystalText)) pass('sample.cr: types listed'); else fail('crystal types: ' + crystalText.slice(0, 300));
 
   // ── sample.jl viewer (Julia) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.jl');
   await page.waitForSelector('#previewHost .jl-doc', { timeout: 12000 });
   pass('sample.jl: renders');
@@ -6246,7 +6246,7 @@ export async function run(ctx) {
   if (/Point|BoundingBox/i.test(jlText)) pass('sample.jl: structs listed'); else fail('julia structs: ' + jlText.slice(0, 300));
 
   // ── sample.R viewer (R) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.R');
   await page.waitForSelector('#previewHost .r-doc', { timeout: 12000 });
   pass('sample.R: renders');
@@ -6256,7 +6256,7 @@ export async function run(ctx) {
   if (/summarize_vector|normalize|simple_lm|clip/i.test(rText)) pass('sample.R: functions listed'); else fail('r functions: ' + rText.slice(0, 300));
 
   // ── sample.lua viewer (Lua) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.lua');
   await page.waitForSelector('#previewHost .lua-doc', { timeout: 12000 });
   pass('sample.lua: renders');
@@ -6267,7 +6267,7 @@ export async function run(ctx) {
   if (/greet|deepCopy/i.test(luaText)) pass('sample.lua: functions listed'); else fail('lua functions: ' + luaText.slice(0, 300));
 
   // ── sample.purs viewer (PureScript) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.purs');
   await page.waitForSelector('#previewHost .purs-doc', { timeout: 12000 });
   pass('sample.purs: renders');
@@ -6278,7 +6278,7 @@ export async function run(ctx) {
   if (/Renderable|HasArea/i.test(pursText)) pass('sample.purs: classes listed'); else fail('purs classes: ' + pursText.slice(0, 300));
 
   // ── sample.swift viewer (Swift) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.swift');
   await page.waitForSelector('#previewHost .swift-doc', { timeout: 12000 });
   pass('sample.swift: renders');
@@ -6289,7 +6289,7 @@ export async function run(ctx) {
   if (/Coordinate|TransportMode/i.test(swiftText)) pass('sample.swift: extensions listed'); else fail('swift extensions: ' + swiftText.slice(0, 300));
 
   // ── sample.erl viewer (Erlang) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.erl');
   await page.waitForSelector('#previewHost .erl-doc', { timeout: 12000 });
   pass('sample.erl: renders');
@@ -6300,7 +6300,7 @@ export async function run(ctx) {
   if (/start_link|stop|add|lookup/i.test(erlText)) pass('sample.erl: exports listed'); else fail('erl exports: ' + erlText.slice(0, 300));
 
   // ── nginx.conf viewer (nginx-conf plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nginx.conf');
   await page.waitForSelector('#previewHost .nginxconf-doc', { timeout: 12000 });
   pass('nginx-conf: renders');
@@ -6309,7 +6309,7 @@ export async function run(ctx) {
   if (/server|listen/i.test(ngxCfgText)) pass('nginx-conf: server info shown'); else fail('nginx-conf server info: ' + ngxCfgText.slice(0, 300));
 
   // ── sample.htaccess viewer (apache-conf plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.htaccess');
   await page.waitForSelector('#previewHost .apachecfg-doc', { timeout: 12000 });
   pass('apache-conf: sample.htaccess renders');
@@ -6317,7 +6317,7 @@ export async function run(ctx) {
   if (/apache/i.test(apacheCfgText)) pass('apache-conf: badge shown'); else fail('apache-conf badge: ' + apacheCfgText.slice(0, 200));
 
   // ── haproxy.cfg viewer (haproxy-cfg plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('haproxy.cfg');
   await page.waitForSelector('#previewHost .hpcfg-doc', { timeout: 12000 });
   pass('haproxy-cfg: renders');
@@ -6326,7 +6326,7 @@ export async function run(ctx) {
   if (/frontend|backend/i.test(hpcfgText)) pass('haproxy-cfg: sections shown'); else fail('haproxy-cfg sections: ' + hpcfgText.slice(0, 300));
 
   // ── traefik.toml viewer (traefik-conf plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('traefik.toml');
   await page.waitForSelector('#previewHost .trkcfg-doc', { timeout: 12000 });
   pass('traefik-conf: traefik.toml renders');
@@ -6336,55 +6336,55 @@ export async function run(ctx) {
   if (/docker|file/i.test(trkCfgText)) pass('traefik-conf: providers shown'); else fail('traefik-conf providers: ' + trkCfgText.slice(0, 300));
 
   // ── sample.tcl viewer (tcl-lang plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.tcl');
   await page.waitForSelector('#previewHost .tcl-doc', { timeout: 12000 });
   pass('tcl-lang: sample.tcl renders');
 
   // ── sample.scm viewer (scheme-lang plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.scm');
   await page.waitForSelector('#previewHost .scm-doc', { timeout: 12000 });
   pass('scheme-lang: sample.scm renders');
 
   // ── sample.rkt viewer (racket-lang plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.rkt');
   await page.waitForSelector('#previewHost .rkt-doc', { timeout: 12000 });
   pass('racket-lang: sample.rkt renders');
 
   // ── sample.f90 viewer (fortran-lang plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.f90');
   await page.waitForSelector('#previewHost .f90-doc', { timeout: 12000 });
   pass('fortran-lang: sample.f90 renders');
 
   // ── sample.rb viewer (ruby-lang plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.rb');
   await page.waitForSelector('#previewHost .rb-doc', { timeout: 12000 });
   pass('ruby-lang: rendered');
 
   // ── sample.pm viewer (perl-lang plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.pm');
   await page.waitForSelector('#previewHost .pm-doc', { timeout: 12000 });
   pass('perl-lang: rendered');
 
   // ── sample.php viewer (php-lang plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.php');
   await page.waitForSelector('#previewHost .php-doc', { timeout: 12000 });
   pass('php-lang: rendered');
 
   // ── sample.ps1 viewer (powershell-lang plugin) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.ps1');
   await page.waitForSelector('#previewHost .ps1-doc', { timeout: 12000 });
   pass('powershell-lang: rendered');
 
   // ── solidity-lang: Solidity smart contract viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.sol');
   await page.waitForSelector('#previewHost .sol-doc', { timeout: 12000 });
   pass('solidity-lang: rendered');
@@ -6394,7 +6394,7 @@ export async function run(ctx) {
   if (/contract|interface|library/i.test(solText)) pass('solidity-lang: definitions listed'); else fail('solidity-lang defs: ' + solText.slice(0, 300));
 
   // ── vhdl-lang: VHDL hardware description viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.vhd');
   await page.waitForSelector('#previewHost .vhd-doc', { timeout: 12000 });
   pass('vhdl-lang: rendered');
@@ -6403,7 +6403,7 @@ export async function run(ctx) {
   if (/entity|architecture/i.test(vhdText)) pass('vhdl-lang: entity or architecture shown'); else fail('vhdl-lang entity: ' + vhdText.slice(0, 300));
 
   // ── arduino-sketch: Arduino sketch viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.ino');
   await page.waitForSelector('#previewHost .ino-doc', { timeout: 12000 });
   pass('arduino-sketch: rendered');
@@ -6412,7 +6412,7 @@ export async function run(ctx) {
   if (/include|library/i.test(inoText)) pass('arduino-sketch: includes shown'); else fail('arduino-sketch includes: ' + inoText.slice(0, 300));
 
   // ── cobol-lang: COBOL program viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.cob');
   await page.waitForSelector('#previewHost .cob-doc', { timeout: 12000 });
   pass('cobol-lang: rendered');
@@ -6421,55 +6421,55 @@ export async function run(ctx) {
   if (/DIVISION|division/i.test(cobText)) pass('cobol-lang: divisions listed'); else fail('cobol-lang divisions: ' + cobText.slice(0, 300));
 
   // ── gleam-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.gleam');
   await page.waitForSelector('#previewHost .gleam-doc', { timeout: 12000 });
   pass('gleam-lang: rendered');
 
   // ── odin-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.odin');
   await page.waitForSelector('#previewHost .odin-doc', { timeout: 12000 });
   pass('odin-lang: rendered');
 
   // ── haxe-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.hx');
   await page.waitForSelector('#previewHost .haxe-doc', { timeout: 12000 });
   pass('haxe-lang: rendered');
 
   // ── ada-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.ads');
   await page.waitForSelector('#previewHost .ada-doc', { timeout: 12000 });
   pass('ada-lang: rendered');
 
   // ── prolog-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.pro');
   await page.waitForSelector('#previewHost .pro-doc', { timeout: 12000 });
   pass('prolog-lang: rendered');
 
   // ── asm-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.asm');
   await page.waitForSelector('#previewHost .asm-doc', { timeout: 12000 });
   pass('asm-lang: rendered');
 
   // ── objc-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.m');
   await page.waitForSelector('#previewHost .objc-doc', { timeout: 12000 });
   pass('objc-lang: rendered');
 
   // ── d-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.d');
   await page.waitForSelector('#previewHost .d-doc', { timeout: 12000 });
   pass('d-lang: rendered');
 
   // ── bind-zone: DNS zone file viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.zone (DNS Zone File)');
   await page.waitForSelector('#previewHost .zone-doc', { timeout: 12000 });
   pass('bind-zone: rendered');
@@ -6479,55 +6479,55 @@ export async function run(ctx) {
   if (/NS|MX|SPF|TXT/i.test(zoneText)) pass('bind-zone: record types shown'); else fail('bind-zone records: ' + zoneText.slice(0, 300));
 
   // ── coffeescript-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.coffee');
   await page.waitForSelector('#previewHost .coffee-doc', { timeout: 12000 });
   pass('coffeescript-lang: rendered');
 
   // ── livescript-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.ls');
   await page.waitForSelector('#previewHost .ls-doc', { timeout: 12000 });
   pass('livescript-lang: rendered');
 
   // ── rescript-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.res');
   await page.waitForSelector('#previewHost .res-doc', { timeout: 12000 });
   pass('rescript-lang: rendered');
 
   // ── reason-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.re');
   await page.waitForSelector('#previewHost .re-doc', { timeout: 12000 });
   pass('reason-lang: rendered');
 
   // ── pony-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.pony');
   await page.waitForSelector('#previewHost .pony-doc', { timeout: 12000 });
   pass('pony-lang: rendered');
 
   // ── wren-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.wren');
   await page.waitForSelector('#previewHost .wren-doc', { timeout: 12000 });
   pass('wren-lang: rendered');
 
   // ── mojo-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.mojo');
   await page.waitForSelector('#previewHost .mojo-doc', { timeout: 12000 });
   pass('mojo-lang: rendered');
 
   // ── janet-lang: rendered ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.janet');
   await page.waitForSelector('#previewHost .janet-doc', { timeout: 12000 });
   pass('janet-lang: rendered');
 
   // ── awk-script viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.awk');
   await page.waitForSelector('#previewHost .awk-doc', { timeout: 12000 });
   pass('awk-script: rendered');
@@ -6536,7 +6536,7 @@ export async function run(ctx) {
   if (/BEGIN|END|Rules|Functions/i.test(awkText)) pass('awk-script: structure shown'); else fail('awk-script structure: ' + awkText.slice(0, 300));
 
   // ── sed-script viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.sed');
   await page.waitForSelector('#previewHost .sed-doc', { timeout: 12000 });
   pass('sed-script: rendered');
@@ -6545,7 +6545,7 @@ export async function run(ctx) {
   if (/Substitution|Command|delete|branch/i.test(sedText)) pass('sed-script: commands shown'); else fail('sed-script commands: ' + sedText.slice(0, 300));
 
   // ── m4-macro viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('configure.ac');
   await page.waitForSelector('#previewHost .m4-doc', { timeout: 12000 });
   pass('m4-macro: rendered');
@@ -6554,7 +6554,7 @@ export async function run(ctx) {
   if (/myproject|AC_/i.test(m4Text)) pass('m4-macro: project or macros shown'); else fail('m4-macro project: ' + m4Text.slice(0, 300));
 
   // ── lex-yacc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.y');
   await page.waitForSelector('#previewHost .ly-doc', { timeout: 12000 });
   pass('lex-yacc: rendered');
@@ -6563,7 +6563,7 @@ export async function run(ctx) {
   if (/token|Token|grammar|rule/i.test(lyText)) pass('lex-yacc: tokens or rules shown'); else fail('lex-yacc tokens: ' + lyText.slice(0, 300));
 
   // ── elvish-script viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.elv');
   await page.waitForSelector('#previewHost .elv-doc', { timeout: 12000 });
   pass('elvish-script: rendered');
@@ -6572,7 +6572,7 @@ export async function run(ctx) {
   if (/Functions|Modules|use|fn/i.test(elvText)) pass('elvish-script: structure shown'); else fail('elvish-script structure: ' + elvText.slice(0, 300));
 
   // ── fish-script viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.fish');
   await page.waitForSelector('#previewHost .fish-doc', { timeout: 12000 });
   pass('fish-script: rendered');
@@ -6581,7 +6581,7 @@ export async function run(ctx) {
   if (/Functions|Aliases|Abbrevs|function/i.test(fishText)) pass('fish-script: structure shown'); else fail('fish-script structure: ' + fishText.slice(0, 300));
 
   // ── zsh-script viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.zsh');
   await page.waitForSelector('#previewHost .zsh-doc', { timeout: 12000 });
   pass('zsh-script: rendered');
@@ -6590,7 +6590,7 @@ export async function run(ctx) {
   if (/Functions|Autoloads|Bindings|Completions/i.test(zshText)) pass('zsh-script: structure shown'); else fail('zsh-script structure: ' + zshText.slice(0, 300));
 
   // ── nushell-script viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.nu');
   await page.waitForSelector('#previewHost .nu-doc', { timeout: 12000 });
   pass('nushell-script: rendered');
@@ -6599,7 +6599,7 @@ export async function run(ctx) {
   if (/Commands|Exported|def|export/i.test(nuScriptText)) pass('nushell-script: structure shown'); else fail('nushell-script structure: ' + nuScriptText.slice(0, 300));
 
   // ── gdscript-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.gd');
   await page.waitForSelector('#previewHost .gd-doc', { timeout: 12000 });
   pass('gdscript-lang: rendered');
@@ -6608,7 +6608,7 @@ export async function run(ctx) {
   if (/Extends|Functions|Signals|Exports/i.test(gdscriptText)) pass('gdscript-lang: structure shown'); else fail('gdscript-lang structure: ' + gdscriptText.slice(0, 300));
 
   // ── ink-script viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.ink');
   await page.waitForSelector('#previewHost .ink-doc', { timeout: 12000 });
   pass('ink-script: rendered');
@@ -6617,7 +6617,7 @@ export async function run(ctx) {
   if (/Knots|Variables|Choices|Diverts/i.test(inkText)) pass('ink-script: structure shown'); else fail('ink-script structure: ' + inkText.slice(0, 300));
 
   // ── fennel-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.fnl');
   await page.waitForSelector('#previewHost .fnl-doc', { timeout: 12000 });
   pass('fennel-lang: rendered');
@@ -6626,7 +6626,7 @@ export async function run(ctx) {
   if (/Requires|Functions|Locals|Macros/i.test(fnlText)) pass('fennel-lang: structure shown'); else fail('fennel-lang structure: ' + fnlText.slice(0, 300));
 
   // ── ballerina-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.bal');
   await page.waitForSelector('#previewHost .bal-doc', { timeout: 12000 });
   pass('ballerina-lang: rendered');
@@ -6635,7 +6635,7 @@ export async function run(ctx) {
   if (/Imports|Services|Functions|Types/i.test(balText)) pass('ballerina-lang: structure shown'); else fail('ballerina-lang structure: ' + balText.slice(0, 300));
 
   // ── nix-flake viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('flake.nix');
   await page.waitForSelector('#previewHost .nf-doc', { timeout: 12000 });
   pass('nix-flake: rendered');
@@ -6645,7 +6645,7 @@ export async function run(ctx) {
   if (/devShells|packages|apps|overlays|nixosModules/i.test(nfText)) pass('nix-flake: outputs shown'); else fail('nix-flake outputs: ' + nfText.slice(0, 300));
 
   // ── openrc-init viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('openrc-myapp');
   await page.waitForSelector('#previewHost .orc-doc', { timeout: 12000 });
   pass('openrc-init: rendered');
@@ -6655,7 +6655,7 @@ export async function run(ctx) {
   if (/net|logger|postgresql|redis/i.test(orcText)) pass('openrc-init: dependencies shown'); else fail('openrc-init deps: ' + orcText.slice(0, 300));
 
   // ── ssh-known-hosts viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('known_hosts');
   await page.waitForSelector('#previewHost .skh-doc', { timeout: 12000 });
   pass('ssh-known-hosts: rendered');
@@ -6665,7 +6665,7 @@ export async function run(ctx) {
   if (/github\.com|192\.168/i.test(skhText)) pass('ssh-known-hosts: hostnames shown'); else fail('ssh-known-hosts hosts: ' + skhText.slice(0, 300));
 
   // ── etc-environment viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('environment');
   await page.waitForSelector('#previewHost .etcenv-doc', { timeout: 12000 });
   pass('etc-environment: rendered');
@@ -6675,7 +6675,7 @@ export async function run(ctx) {
   if (/locale|java|timezone/i.test(etcenvText)) pass('etc-environment: categories shown'); else fail('etc-environment categories: ' + etcenvText.slice(0, 300));
 
   // ── typst-doc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.typ');
   await page.waitForSelector('#previewHost .typ-doc', { timeout: 12000 });
   pass('typst-doc: rendered');
@@ -6685,7 +6685,7 @@ export async function run(ctx) {
   if (/introduction|conclusion|mathematical/i.test(typText)) pass('typst-doc: headings shown'); else fail('typst-doc headings: ' + typText.slice(0, 300));
 
   // ── textile-markup viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.textile');
   await page.waitForSelector('#previewHost .textile-doc', { timeout: 12000 });
   pass('textile-markup: rendered');
@@ -6695,7 +6695,7 @@ export async function run(ctx) {
   if (/Getting Started|Text Formatting|Links/i.test(textileText)) pass('textile-markup: heading outline shown'); else fail('textile-markup outline: ' + textileText.slice(0, 300));
 
   // ── mediawiki-markup viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.mediawiki');
   await page.waitForSelector('#previewHost .mw-doc', { timeout: 12000 });
   pass('mediawiki-markup: rendered');
@@ -6705,7 +6705,7 @@ export async function run(ctx) {
   if (/Introduction|Headings|References/i.test(mwText)) pass('mediawiki-markup: sections shown'); else fail('mediawiki-markup sections: ' + mwText.slice(0, 300));
 
   // ── bbcode-text viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.bbcode');
   await page.waitForSelector('#previewHost .bbc-doc', { timeout: 12000 });
   pass('bbcode-text: rendered');
@@ -6715,7 +6715,7 @@ export async function run(ctx) {
   if (/url|img|quote|code/i.test(bbcText)) pass('bbcode-text: tag inventory shown'); else fail('bbcode-text tags: ' + bbcText.slice(0, 300));
 
   // ── vala-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.vala');
   await page.waitForSelector('#previewHost .vla-doc', { timeout: 12000 });
   pass('vala-lang: rendered');
@@ -6726,7 +6726,7 @@ export async function run(ctx) {
   if (/main/i.test(valaText)) pass('vala-lang: main() presence noted'); else fail('vala-lang main: ' + valaText.slice(0, 300));
 
   // ── idris-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.idr');
   await page.waitForSelector('#previewHost .idr-doc', { timeout: 12000 });
   pass('idris-lang: rendered');
@@ -6737,7 +6737,7 @@ export async function run(ctx) {
   if (/total|partial/i.test(idrisText)) pass('idris-lang: totality annotations shown'); else fail('idris-lang totality: ' + idrisText.slice(0, 300));
 
   // ── sml-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.sml');
   await page.waitForSelector('#previewHost .sml-doc', { timeout: 12000 });
   pass('sml-lang: rendered');
@@ -6747,7 +6747,7 @@ export async function run(ctx) {
   if (/val|fun/i.test(smlText)) pass('sml-lang: binding counts shown'); else fail('sml-lang bindings: ' + smlText.slice(0, 300));
 
   // ── tex-doc viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.tex');
   await page.waitForSelector('#previewHost .tex-doc', { timeout: 12000 });
   pass('tex-doc: rendered');
@@ -6758,7 +6758,7 @@ export async function run(ctx) {
   if (/Introduction|Mathematics|Conclusion/i.test(texText)) pass('tex-doc: section titles shown'); else fail('tex-doc sections: ' + texText.slice(0, 300));
 
   // ── forth-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.fth');
   await page.waitForSelector('#previewHost .fth-doc', { timeout: 12000 });
   pass('forth-lang: rendered');
@@ -6767,7 +6767,7 @@ export async function run(ctx) {
   if (/word|variable|constant|stack/i.test(fthText)) pass('forth-lang: stats shown'); else fail('forth-lang stats: ' + fthText.slice(0, 300));
 
   // ── lean-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.lean');
   await page.waitForSelector('#previewHost .ln-doc', { timeout: 12000 });
   pass('lean-lang: rendered');
@@ -6776,7 +6776,7 @@ export async function run(ctx) {
   if (/theorem|lemma|def|import|namespace/i.test(lnText)) pass('lean-lang: stats shown'); else fail('lean-lang stats: ' + lnText.slice(0, 300));
 
   // ── agda-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.agda');
   await page.waitForSelector('#previewHost .agda-doc', { timeout: 12000 });
   pass('agda-lang: rendered');
@@ -6785,7 +6785,7 @@ export async function run(ctx) {
   if (/data|record|import|module/i.test(agdaText)) pass('agda-lang: stats shown'); else fail('agda-lang stats: ' + agdaText.slice(0, 300));
 
   // ── chapel-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.chpl');
   await page.waitForSelector('#previewHost .chpl-doc', { timeout: 12000 });
   pass('chapel-lang: rendered');
@@ -6794,7 +6794,7 @@ export async function run(ctx) {
   if (/proc|config|coforall|forall|module/i.test(chplText)) pass('chapel-lang: stats shown'); else fail('chapel-lang stats: ' + chplText.slice(0, 300));
 
   // ── koka-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.koka');
   await page.waitForSelector('#previewHost .kka-doc', { timeout: 12000 });
   pass('koka-lang: rendered');
@@ -6803,7 +6803,7 @@ export async function run(ctx) {
   if (/effect|fun|handler|module/i.test(kkaText)) pass('koka-lang: stats shown'); else fail('koka-lang stats: ' + kkaText.slice(0, 300));
 
   // ── carbon-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.carbon');
   await page.waitForSelector('#previewHost .cbn-doc', { timeout: 12000 });
   pass('carbon-lang: rendered');
@@ -6812,7 +6812,7 @@ export async function run(ctx) {
   if (/fn|class|interface|impl|package/i.test(cbnText)) pass('carbon-lang: stats shown'); else fail('carbon-lang stats: ' + cbnText.slice(0, 300));
 
   // ── grain-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.gr');
   await page.waitForSelector('#previewHost .grn-doc', { timeout: 12000 });
   pass('grain-lang: rendered');
@@ -6821,7 +6821,7 @@ export async function run(ctx) {
   if (/import|export|record|enum|module/i.test(grnText)) pass('grain-lang: stats shown'); else fail('grain-lang stats: ' + grnText.slice(0, 300));
 
   // ── factor-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.factor');
   await page.waitForSelector('#previewHost .fctr-doc', { timeout: 12000 });
   pass('factor-lang: rendered');
@@ -6830,217 +6830,217 @@ export async function run(ctx) {
   if (/word|USING|TUPLE|SYMBOL|vocabulary/i.test(fctrText)) pass('factor-lang: stats shown'); else fail('factor-lang stats: ' + fctrText.slice(0, 300));
 
   // ── apt-sources viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sources.list');
   await page.waitForSelector('#previewHost .apts-doc', { timeout: 12000 });
   pass('apt-sources: rendered');
 
   // ── pkgbuild viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('PKGBUILD');
   await page.waitForSelector('#previewHost .pkgb-doc', { timeout: 12000 });
   pass('pkgbuild: rendered');
 
   // ── limits-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('limits.conf');
   await page.waitForSelector('#previewHost .lim-doc', { timeout: 12000 });
   pass('limits-conf: rendered');
 
   // ── audit-rules viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('audit.rules');
   await page.waitForSelector('#previewHost .audr-doc', { timeout: 12000 });
   pass('audit-rules: rendered');
 
   // ── common-lisp viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.lisp');
   await page.waitForSelector('#previewHost .cl-doc', { timeout: 12000 });
   pass('common-lisp: rendered');
 
   // ── emacs-lisp viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.el');
   await page.waitForSelector('#previewHost .el-doc', { timeout: 12000 });
   pass('emacs-lisp: rendered');
 
   // ── squirrel-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.nut');
   await page.waitForSelector('#previewHost .nut-doc', { timeout: 12000 });
   pass('squirrel-lang: rendered');
 
   // ── red-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.red');
   await page.waitForSelector('#previewHost .red-doc', { timeout: 12000 });
   pass('red-lang: rendered');
 
   // ── journald-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('journald.conf');
   await page.waitForSelector('#previewHost .jnld-doc', { timeout: 12000 });
   pass('journald-conf: rendered');
 
   // ── tmpfiles-d viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.tmpfiles');
   await page.waitForSelector('#previewHost .tmf-doc', { timeout: 12000 });
   pass('tmpfiles-d: rendered');
 
   // ── nsswitch-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('nsswitch.conf');
   await page.waitForSelector('#previewHost .nsswitch-doc', { timeout: 12000 });
   pass('nsswitch-conf: rendered');
 
   // ── mkinitcpio-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('mkinitcpio.conf');
   await page.waitForSelector('#previewHost .mki-doc', { timeout: 12000 });
   pass('mkinitcpio-conf: rendered');
 
   // ── wpa-supplicant-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('wpa_supplicant.conf');
   await page.waitForSelector('#previewHost .wpas-doc', { timeout: 12000 });
   pass('wpa-supplicant-conf: rendered');
 
   // ── sssd-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sssd.conf');
   await page.waitForSelector('#previewHost .sssd-doc', { timeout: 12000 });
   pass('sssd-conf: rendered');
 
   // ── pascal-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.pas');
   await page.waitForSelector('#previewHost .pas-doc', { timeout: 12000 });
   pass('pascal-lang: rendered');
 
   // ── eiffel-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.e');
   await page.waitForSelector('#previewHost .efl-doc', { timeout: 12000 });
   pass('eiffel-lang: rendered');
 
   // ── avahi-daemon-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('avahi-daemon.conf');
   await page.waitForSelector('#previewHost .avhi-doc', { timeout: 12000 });
   pass('avahi-daemon-conf: rendered');
 
   // ── neomutt-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.neomuttrc');
   await page.waitForSelector('#previewHost .nmu-doc', { timeout: 12000 });
   pass('neomutt-conf: rendered');
 
   // ── msmtp-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('.msmtprc');
   await page.waitForSelector('#previewHost .msmtp-doc', { timeout: 12000 });
   pass('msmtp-conf: rendered');
 
   // ── openldap-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('slapd.conf');
   await page.waitForSelector('#previewHost .ldap-doc', { timeout: 12000 });
   pass('openldap-conf: rendered');
 
   // ── gnuplot-script viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.gnuplot');
   await page.waitForSelector('#previewHost .gnuplot-doc', { timeout: 12000 });
   pass('gnuplot-script: rendered');
 
   // ── wolfram-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.wl');
   await page.waitForSelector('#previewHost .wlang-doc', { timeout: 12000 });
   pass('wolfram-lang: rendered');
 
   // ── stata-do viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.do');
   await page.waitForSelector('#previewHost .stata-doc', { timeout: 12000 });
   pass('stata-do: rendered');
 
   // ── tla-plus viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.tla');
   await page.waitForSelector('#previewHost .tla-doc', { timeout: 12000 });
   pass('tla-plus: rendered');
 
   // ── rpm-spec viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.spec');
   await page.waitForSelector('#previewHost .rpmspec-doc', { timeout: 12000 });
   pass('rpm-spec: rendered');
 
   // ── debian-control viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('control');
   await page.waitForSelector('#previewHost .debctrl-doc', { timeout: 12000 });
   pass('debian-control: rendered');
 
   // ── cups-conf viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('cupsd.conf');
   await page.waitForSelector('#previewHost .cups-doc', { timeout: 12000 });
   pass('cups-conf: rendered');
 
   // ── dafny viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.dfy');
   await page.waitForSelector('#previewHost .dfy-doc', { timeout: 12000 });
   pass('dafny: rendered');
 
   // ── xdg-desktop-entry viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.desktop');
   await page.waitForSelector('#previewHost .de-doc', { timeout: 12000 });
   pass('xdg-desktop-entry: rendered');
 
   // ── isabelle-thy viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.thy');
   await page.waitForSelector('#previewHost .isa-doc', { timeout: 12000 });
   pass('isabelle-thy: rendered');
 
   // ── alloy-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample-alloy.als');
   await page.waitForSelector('#previewHost .als-doc', { timeout: 12000 });
   pass('alloy-lang: rendered');
 
   // ── coq-lang viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.coq');
   await page.waitForSelector('#previewHost .coq-doc', { timeout: 12000 });
   pass('coq-lang: rendered');
 
   // ── flatpak-manifest viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('org.example.App.yaml');
   await page.waitForSelector('#previewHost .fpm-doc', { timeout: 12000 });
   pass('flatpak-manifest: rendered');
 
   // ── snapcraft-yaml viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('snapcraft.yaml');
   await page.waitForSelector('#previewHost .snap-doc', { timeout: 12000 });
   pass('snapcraft-yaml: rendered');
 
   // ── smtlib viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.smt2');
   await page.waitForSelector('#previewHost .smt-doc', { timeout: 12000 });
   pass('smtlib: rendered');
 
   // ── promela viewer ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.pml');
   await page.waitForSelector('#previewHost .pml-doc', { timeout: 12000 });
   pass('promela: rendered');

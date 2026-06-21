@@ -2,9 +2,9 @@ export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── Calendar (.ics) ── parse iCalendar, render events chronologically.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.ics');
-  const icframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const icframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const icf = await frameOf('iframe.fv-preview-frame');
   await icf.waitForSelector('.ics-event', { timeout: 8000 });
   const icsType2 = await page.$eval('#typeSelect', (s) => s.value);
@@ -20,7 +20,7 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
 
   // ── Archive (.zip) ── list entries from the central directory (no extraction).
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.zip');
   const zframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const zf = await frameOf('iframe.fv-preview-frame');
@@ -50,10 +50,9 @@ export async function run(ctx) {
   const zipTreeStillOpen = await page.$eval('#fileTree', (e) => !e.hidden);
   const zipTreeActive = await page.$eval('#ftBody .ft-row.active', (e) => e.getAttribute('data-path')).catch(() => '');
   if (zipTreeStillOpen && zipTreeActive === 'data/rows.csv') pass('archive sidebar remains active after opening entry'); else fail('archive sidebar active=' + zipTreeActive + ' open=' + zipTreeStillOpen);
-  const innerFrameEl = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const innerFrame = await frameOf('iframe.fv-preview-frame');
-  await innerFrame.waitForSelector('table', { timeout: 10000 });
-  const innerHasTable = await innerFrame.$$eval('table tbody tr', (els) => els.length);
+  // CSV uses parentNode (no iframe) — table is directly in #previewHost .csv-doc
+  await page.waitForSelector('#previewHost .csv-doc .csv-panel .te-table', { timeout: 12000 });
+  const innerHasTable = await page.$$eval('#previewHost .csv-doc .csv-panel .te-table tbody tr', (els) => els.length);
   if (innerHasTable > 0) pass('zip entry rendered through its real renderer (CSV table, ' + innerHasTable + ' rows)'); else fail('inner CSV rows: ' + innerHasTable);
   const ctxOpened = await page.evaluate(async () => {
     const { folderContext } = await import('./core/folder.js');
@@ -67,7 +66,7 @@ export async function run(ctx) {
   if (ctxOpened) pass('archive folderContext opens sibling entries through archive tree'); else fail('archive folderContext sibling open failed');
 
   // ── Password-protected zip ── JSZip refuses it; we still list via our own central-dir parse + 🔒. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Locked.zip');
   const lzframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const lzf = await frameOf('iframe.fv-preview-frame');
@@ -79,7 +78,7 @@ export async function run(ctx) {
   if (lockBadge === 1 && /password-protected/.test(lockBanner)) pass('password-protected entry flagged (lock badge + banner)'); else fail('lock badge=' + lockBadge + ' banner=' + lockBanner.slice(0, 50));
 
   // ── Archive repack ── edit a zip entry in memory, download the modified archive ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.zip');
   await page.waitForSelector('#fileTree:not([hidden]) #ftBody .ft-file', { timeout: 8000 });
   const repackExportShown = await page.$eval('#ftExportBtn', (e) => !e.hidden);
@@ -92,7 +91,7 @@ export async function run(ctx) {
   if (/^edited-/.test(repackDl.suggestedFilename())) pass('archive repacked and downloaded (' + repackDl.suggestedFilename() + ')'); else fail('repack filename: ' + repackDl.suggestedFilename());
 
   // ── 7z archive ── with enableArchiveWasm off, shows the opt-in hint panel.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.7z');
   const szframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const szf = await frameOf('iframe.fv-preview-frame');
@@ -103,7 +102,7 @@ export async function run(ctx) {
   if (szHint) pass('7z shows opt-in hint when enableArchiveWasm is off'); else fail('no hint for 7z without WASM enabled');
 
   // ── Comic book (.cbz) ── zip of images → page reader (parent pane, blob image URLs, natural sort).
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.cbz');
   await page.waitForSelector('#previewHost .comic-doc .comic-page', { timeout: 15000 });
   const cbzType = await page.$eval('#typeSelect', (s) => s.value);
@@ -121,7 +120,7 @@ export async function run(ctx) {
 
   // ── Email (.eml) ── parentNode: header card (encoded subject decoded), sandboxed HTML body,
   //    attachment list. Uses nested srcdoc iframe — no outer fv-preview-frame.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.eml');
   await page.waitForSelector('#previewHost .eml-head', { timeout: 12000 });
   const emlType2 = await page.$eval('#typeSelect', (s) => s.value);
@@ -141,7 +140,7 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
 
   // ── Outlook .msg ── CFB-backed email preview; regression for Uint8Array/TextDecoder handling.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.msg');
   await page.waitForSelector('#previewHost .msg-badge', { timeout: 15000 });
   const msgType = await page.$eval('#typeSelect', (s) => s.value);
@@ -151,9 +150,9 @@ export async function run(ctx) {
   if (/Outlook Email/.test(msgText) && !msgCrashed) pass('MSG preview opens without TextDecoder crash'); else fail('msg preview: ' + msgText.replace(/\s+/g, ' ').slice(0, 180));
 
   // ── Mailbox (.mbox) ── split into messages, inbox list (reuses the eml MIME parser). ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.mbox');
-  const mbframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const mbframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const mbf = await frameOf('iframe.fv-preview-frame');
   await mbf.waitForSelector('.mbox-msg', { timeout: 8000 });
   const mboxTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -168,7 +167,7 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
 
   // ── Jupyter Notebook (.ipynb) ── markdown + code cells + saved outputs, sanitized.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.ipynb');
   const nframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const nf = await frameOf('iframe.fv-preview-frame');
@@ -191,7 +190,7 @@ export async function run(ctx) {
   if (/Saved outputs\s*\d+/.test(nbMeta) && /Executed code cells\s*\d+/.test(nbMeta)) pass('notebook metadata includes execution and output counts'); else fail('notebook meta: ' + nbMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('example.js');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
   const codeType = await page.$eval('#typeSelect', (s) => s.value);
@@ -220,10 +219,8 @@ export async function run(ctx) {
   if (/C source code/.test(cLabels.selected) && cLabels.display === 'C source code') pass('C sample UI shows C, not generic Code or C++');
   else fail('C code labels: ' + JSON.stringify(cLabels));
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('example.svg');
-  const sframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
-  const sf = await frameOf('iframe.fv-preview-frame');
-  await sf.waitForSelector('.img-doc svg', { timeout: 8000 });
-  pass('SVG sanitized and rendered inline');
+  await page.waitForSelector('.svg-editor', { timeout: 12000 });
+  pass('SVG dual-pane editor mounted');
 }

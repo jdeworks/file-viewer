@@ -651,17 +651,20 @@ export async function toggleWysiwyg({ skipPersist = false } = {}) {
       persistTypeKey('markdown', 'markdownEditor', 'wysiwyg');
     }
   } else {
-    // Switching BACK to Monaco: capture EasyMDE text, unmount, rebuild rawview
+    // Switching BACK to Monaco: capture EasyMDE text, unmount, rebuild rawview.
     const text = getWysiwygValue();
     unmountWysiwyg();
     wysiwygMode = false;
     state.intake = { ...state.intake, text };
     updateWysiwygBtn();
-    await buildRawView();
+    // Persist 'monaco' BEFORE buildRawView: buildRawView's auto-activate step reads
+    // settingsModel.markdownEditor and would immediately re-enter WYSIWYG (disposing the
+    // just-built Monaco) if it still read 'wysiwyg'. Order matters here.
     if (!skipPersist && state.settingsModel) {
       state.settingsModel.values.markdownEditor = 'monaco';
       persistTypeKey('markdown', 'markdownEditor', 'monaco');
     }
+    await buildRawView();
   }
 }
 

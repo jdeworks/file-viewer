@@ -8,7 +8,6 @@ import * as diff from './areas/diff.mjs';
 import * as tabularOffice from './areas/tabular-office.mjs';
 import * as structuredTypes from './areas/structured-types.mjs';
 import * as simpleTypes from './areas/simple-types.mjs';
-import * as knownFiles from './areas/known-files.mjs';
 import * as exports from './areas/exports.mjs';
 import * as emailArchives from './areas/email-archives.mjs';
 import * as media3d from './areas/media-3d.mjs';
@@ -27,7 +26,6 @@ try {
   await tabularOffice.run(ctx);
   await structuredTypes.run(ctx);
   await simpleTypes.run(ctx);
-  await knownFiles.run(ctx);
   await exports.run(ctx);
   await emailArchives.run(ctx);
   await media3d.run(ctx);

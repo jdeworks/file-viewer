@@ -3,7 +3,7 @@ export async function run(ctx) {
 
   // ── Tree-drag → dual view: dragging a tree file onto the workspace enters dual-view ──
   // Load a folder (two files), then simulate dragging one tree file onto the workspace.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
 
   // Drop a two-file synthetic folder: welcome.md + sample.csv (via the welcome.md example
   // then use the folder-drop path via __fv.loadFolder).

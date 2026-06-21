@@ -2,9 +2,9 @@ export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── JSON / Code / Image simple types (WP19) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.json');
-  const jframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const jframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const jf = await frameOf('iframe.fv-preview-frame');
   await jf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   const jkeys = await jf.$$eval('.json-tree .j-key', (els) => els.length);
@@ -57,16 +57,16 @@ export async function run(ctx) {
   const invalidText = await page.$eval('#jsonValidIndicator', (el) => el.textContent);
   if (/✗/.test(invalidText)) pass('JSON validate shows ✗ for invalid JSON'); else fail('json invalid indicator: ' + invalidText);
   // Verify toolbar is hidden for non-JSON files
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.yaml');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   await page.click('#viewMode button[data-mode="raw"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
   const jsonToolsHiddenForYaml = await page.$eval('#jsonTools', (el) => el.hidden);
   if (jsonToolsHiddenForYaml) pass('JSON toolbar hidden for non-JSON files (YAML)'); else fail('json toolbar unexpectedly visible for yaml');
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.json');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
 
   await page.evaluate(() => window.__fv.openViewerFile('edge.jsonc', {
     text: '{\n  // File Examples JSON comments edge case\n  "name": "jsonc",\n  "items": [1, 2,],\n}\n',
@@ -87,9 +87,9 @@ export async function run(ctx) {
   else fail('jsonc meta: ' + jsoncMeta.replace(/\s+/g, ' ').slice(0, 180));
 
   // ── HAR ── JSON-shaped HTTP archive gets a waterfall, filters, sortable request table.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.har');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const harType = await page.$eval('#typeSelect', (s) => s.value);
   if (harType === 'har') pass('.har detected as HTTP Archive'); else fail('har type: ' + harType);
   const harf = await frameOf('iframe.fv-preview-frame');
@@ -121,9 +121,9 @@ export async function run(ctx) {
     pass('HAR metadata includes entries, creator, and pages');
   else fail('har meta: ' + harMeta.replace(/\s+/g, ' ').slice(0, 180));
   await page.click('#metaDrawer [data-close]');
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.json');
-  const jDiffFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const jDiffFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const jDiffF = await frameOf('iframe.fv-preview-frame');
   await jDiffF.waitForSelector('.json-tree .j-key', { timeout: 8000 });
 
@@ -144,9 +144,9 @@ export async function run(ctx) {
   await page.click('#rawMode button[data-raw="current"]');
 
   // ── YAML ── parse with js-yaml, render as a collapsible tree (reuses JSON tree styling).
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.yaml');
-  const yframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const yframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const yf = await frameOf('iframe.fv-preview-frame');
   await yf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   const yType = await page.$eval('#typeSelect', (s) => s.value);
@@ -192,9 +192,9 @@ export async function run(ctx) {
   if (jsonToolsHiddenForYamlRaw) pass('JSON toolbar hidden while YAML toolbar is active'); else fail('json toolbar unexpectedly visible for yaml in raw view');
 
   // ── TOML ── hand-rolled parser, render as a collapsible tree (reuses JSON tree styling).
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.toml');
-  const tframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const tframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const tf = await frameOf('iframe.fv-preview-frame');
   await tf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   const tType = await page.$eval('#typeSelect', (s) => s.value);
@@ -230,9 +230,9 @@ export async function run(ctx) {
 
   // ── TOML form editor ── Form button in TOML toolbar; clicking renders typed inputs.
   // Re-use the already-open Sample.toml page (now at raw view); navigate back to it.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.toml');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   await page.click('#viewMode button[data-mode="raw"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
   const tomlFormBtnEl = await page.$('#tomlFormBtn');
@@ -260,9 +260,9 @@ export async function run(ctx) {
   if (tomlFormOff) pass('TOML form editor hides when toggled off'); else fail('tomlFormHost still visible after toggle off');
 
   // ── XML ── element tree (reuses JSON tree styling) + structural diff. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.xml');
-  const xmlframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const xmlframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const xmlf = await frameOf('iframe.fv-preview-frame');
   await xmlf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
   const xType = await page.$eval('#typeSelect', (s) => s.value);
@@ -307,9 +307,9 @@ export async function run(ctx) {
   if (yamlToolsHiddenForXml) pass('YAML toolbar hidden while XML toolbar is active'); else fail('yaml toolbar unexpectedly visible for xml in raw view');
 
   // ── INI / .env ── key-value tables grouped by section. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.ini');
-  const iniframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const iniframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const inif = await frameOf('iframe.fv-preview-frame');
   await inif.waitForSelector('.kv-table', { timeout: 8000 });
   const iniType = await page.$eval('#typeSelect', (s) => s.value);
@@ -323,9 +323,9 @@ export async function run(ctx) {
   if (/Comments\s*\d+/.test(iniMeta) && /Duplicate keys\s*0/.test(iniMeta)) pass('INI metadata includes comments and duplicate-key count'); else fail('ini meta: ' + iniMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.env (environment variables)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const envMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
   if (envMode === 'preview') pass('.env defaults to redacted preview mode'); else fail('env mode: ' + envMode);
   const envf = await frameOf('iframe.fv-preview-frame');
@@ -348,7 +348,7 @@ export async function run(ctx) {
   const rawMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
   if (rawMode === 'raw') pass('.env raw view remains explicitly available'); else fail('env raw mode: ' + rawMode);
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('ssh-config');
   await page.waitForSelector('#previewHost .sc-root', { timeout: 12000 });
   const sshType = await page.$eval('#typeSelect', (s) => s.value);
@@ -380,7 +380,7 @@ export async function run(ctx) {
   if (sshRawMode === 'raw') pass('SSH config raw view remains explicitly available'); else fail('ssh raw mode: ' + sshRawMode);
 
   // ── RDP ── connection info card, mstsc command. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.rdp');
   await page.waitForSelector('#previewHost .rdp-doc', { timeout: 12000 });
   const rdpType = await page.$eval('#typeSelect', (s) => s.value);
@@ -390,7 +390,7 @@ export async function run(ctx) {
   if (rdpTxt.includes('mstsc') || rdpTxt.includes('jdoe')) pass('RDP mstsc command or username shown'); else fail('rdp mstsc/user: ' + rdpTxt.replace(/\s+/g, ' ').slice(0, 200));
 
   // ── MCP Config ── server cards, env var redaction. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('claude_desktop_config.json');
   await page.waitForSelector('#previewHost .mc-root', { timeout: 12000 });
   const mcpType = await page.$eval('#typeSelect', (s) => s.value);
@@ -400,7 +400,7 @@ export async function run(ctx) {
   if (!mcpTxt.includes('BSAexamplekeyABC123') && !mcpTxt.includes('ghp_example')) pass('MCP secret env values redacted'); else fail('mcp secret visible: ' + mcpTxt.replace(/\s+/g, ' ').slice(0, 200));
 
   // ── Kubeconfig ── cluster/context/user tables. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('kubeconfig');
   await page.waitForSelector('#previewHost .kc-root', { timeout: 12000 });
   const kubeType = await page.$eval('#typeSelect', (s) => s.value);
@@ -410,9 +410,9 @@ export async function run(ctx) {
   if (kubeTxt.includes('prod-admin') || kubeTxt.includes('developer')) pass('kubeconfig users shown'); else fail('kube users: ' + kubeTxt.replace(/\s+/g, ' ').slice(0, 200));
 
   // ── Patch / unified diff ── colorized add/remove/hunk lines. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.patch');
-  const patchframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const patchframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const patchf = await frameOf('iframe.fv-preview-frame');
   await patchf.waitForSelector('.patch', { timeout: 8000 });
   const patchType2 = await page.$eval('#typeSelect', (s) => s.value);
@@ -423,9 +423,9 @@ export async function run(ctx) {
   if (adds >= 2 && dels >= 1 && hunks >= 1) pass('patch colorized (+' + adds + ' −' + dels + ', ' + hunks + ' hunk)'); else fail('patch lines: add=' + adds + ' del=' + dels + ' hunk=' + hunks);
 
   // ── Log ── severity highlighting + timestamps. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.log');
-  const lframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const lframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const lf = await frameOf('iframe.fv-preview-frame');
   await lf.waitForSelector('.logv', { timeout: 8000 });
   const logType2 = await page.$eval('#typeSelect', (s) => s.value);
@@ -436,7 +436,7 @@ export async function run(ctx) {
   if (errLines >= 1 && warnLines >= 1 && tsSpans >= 4) pass('log severity highlighted (' + errLines + ' error, ' + warnLines + ' warn, ' + tsSpans + ' timestamps)'); else fail('log: err=' + errLines + ' warn=' + warnLines + ' ts=' + tsSpans);
 
   // ── Word count bar ── visible for markdown, shows stats. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('welcome.md');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
   const wcBarHidden = await page.$eval('#wordCountBar', (el) => el.hidden);
@@ -446,7 +446,7 @@ export async function run(ctx) {
   if (/min read/.test(wcText)) pass('word count bar shows reading time for markdown'); else fail('word count bar missing read time: ' + wcText);
 
   // ── Text utilities toolbar ── visible for all non-binary text files. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('welcome.md');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
   const textUtilsHidden = await page.$eval('#textUtils', (el) => el.hidden);

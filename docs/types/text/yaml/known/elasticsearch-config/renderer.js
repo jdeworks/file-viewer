@@ -111,6 +111,12 @@ export async function render(intake) {
     }
   }
   walkForSecrets(xpackSection, 'xpack.security');
+  // Also scan flat dotted top-level keys (e.g. "xpack.security.transport.ssl.keystore.path: ...")
+  for (const k of Object.keys(doc)) {
+    if (k.startsWith('xpack.') && SECRET_PATTERN.test(k) && !maskedXpackKeys.includes(k)) {
+      maskedXpackKeys.push(k);
+    }
+  }
 
   const subParts = [];
   if (clusterName) subParts.push(clusterName);

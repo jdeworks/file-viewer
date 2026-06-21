@@ -2,9 +2,9 @@ export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── JSON ↔ YAML conversion exports (loadExports) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.json');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
   const jsonExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
@@ -15,9 +15,9 @@ export async function run(ctx) {
   ]);
   if (/\.yaml$/.test(yamlDownload.suggestedFilename())) pass('JSON → YAML conversion download (' + yamlDownload.suggestedFilename() + ')'); else fail('json→yaml name: ' + yamlDownload.suggestedFilename());
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.yaml');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
   const yamlExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
@@ -29,9 +29,9 @@ export async function run(ctx) {
   if (/\.json$/.test(jsonDownload.suggestedFilename())) pass('YAML → JSON conversion download (' + jsonDownload.suggestedFilename() + ')'); else fail('yaml→json name: ' + jsonDownload.suggestedFilename());
 
   // ── Subtitle SRT → VTT + TOML → JSON conversions (loadExports) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.srt');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
   const srtExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
@@ -42,9 +42,9 @@ export async function run(ctx) {
   ]);
   if (/\.vtt$/.test(vttDl.suggestedFilename())) pass('subtitle SRT → VTT download (' + vttDl.suggestedFilename() + ')'); else fail('srt→vtt: ' + vttDl.suggestedFilename());
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.toml');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
   const tomlExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));

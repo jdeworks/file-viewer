@@ -1,8 +1,7 @@
 export default {
   id: 'podman-quadlet',
   label: 'Podman Quadlet',
-  match(intake, baseType) {
-    if (baseType?.id !== 'ini') return false;
+  match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (!n.endsWith('.container') && !n.endsWith('.pod') && !n.endsWith('.kube') && !n.endsWith('.network')) return false;
     const text = intake.text || '';

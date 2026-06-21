@@ -1,7 +1,7 @@
 import zlib from 'node:zlib';
 
 export async function run(ctx) {
-  const { page, origin, pass, fail } = ctx;
+  const { page, origin, pass, fail, waitForFv } = ctx;
 
   // ── Git repository browser (in-browser .git reader) ──
   {
@@ -20,7 +20,8 @@ export async function run(ctx) {
     const blobBody = '# Repo\n';
     const blobStore = Buffer.concat([Buffer.from('blob ' + Buffer.byteLength(blobBody) + '\0'), Buffer.from(blobBody)]);
     const blobObj = Array.from(zlib.deflateSync(blobStore));
-    await page.goto(origin, { waitUntil: 'networkidle' });
+    await page.goto(origin, { waitUntil: 'load' });
+    await waitForFv();
     await page.evaluate(({ sha, treeSha, blobSha, obj, treeObj, blobObj }) => {
       const enc = (s) => new TextEncoder().encode(s);
       const mk = (name, bytes) => ({ file: new File([bytes], name.split('/').pop(), { type: '' }), path: name });
@@ -73,7 +74,8 @@ export async function run(ctx) {
     for (let i = 0; i < 256; i++) fanout.writeUInt32BE(i >= 0xcc ? 1 : 0, i * 4);
     const idxBuf = Buffer.concat([Buffer.from([0xff, 0x74, 0x4f, 0x63]), u32(2), fanout, Buffer.alloc(20, 0xcc), u32(0), u32(12), Buffer.alloc(20), Buffer.alloc(20)]);
     const packArr = Array.from(packBuf), idxArr = Array.from(idxBuf);
-    await page.goto(origin, { waitUntil: 'networkidle' });
+    await page.goto(origin, { waitUntil: 'load' });
+    await waitForFv();
     await page.evaluate(({ sha, packArr, idxArr }) => {
       const enc = (s) => new TextEncoder().encode(s);
       const mk = (name, bytes) => ({ file: new File([bytes], name.split('/').pop(), { type: '' }), path: name });
@@ -116,7 +118,8 @@ export async function run(ctx) {
     const idxBuf = Buffer.concat([Buffer.from([0xff, 0x74, 0x4f, 0x63]), u32(2), fanout, Buffer.alloc(20, 0xdd), u32(0), u32(deltaOffset), Buffer.alloc(20), Buffer.alloc(20)]);
     const packArr = Array.from(packBuf), idxArr = Array.from(idxBuf), sha = 'd'.repeat(40);
 
-    await page.goto(origin, { waitUntil: 'networkidle' });
+    await page.goto(origin, { waitUntil: 'load' });
+    await waitForFv();
     await page.evaluate(({ sha, packArr, idxArr }) => {
       const enc = (s) => new TextEncoder().encode(s);
       const mk = (name, bytes) => ({ file: new File([bytes], name.split('/').pop(), { type: '' }), path: name });
@@ -147,7 +150,8 @@ export async function run(ctx) {
     const rootObj = makeCommitObj(rootContent);
     const headObj = makeCommitObj(headContent);
 
-    await page.goto(origin, { waitUntil: 'networkidle' });
+    await page.goto(origin, { waitUntil: 'load' });
+    await waitForFv();
     await page.evaluate(({ sha1, sha2, headObj, rootObj }) => {
       const enc = (s) => new TextEncoder().encode(s);
       const mk = (name, bytes) => ({ file: new File([bytes], name.split('/').pop(), { type: '' }), path: name });

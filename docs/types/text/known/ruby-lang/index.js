@@ -4,7 +4,7 @@ export const plugin = {
   tags: ['ruby', 'scripting', 'oop', 'rb'],
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    const RESERVED = ['gemfile', 'rakefile', 'guardfile', 'berksfile', 'podfile', 'fastfile', 'snapfile', 'matchfile', 'appfile'];
+    const RESERVED = ['gemfile', 'rakefile', 'guardfile', 'berksfile', 'podfile', 'fastfile', 'snapfile', 'matchfile', 'appfile', 'puma.rb'];
     if (RESERVED.includes(name)) return null;
     if (!name.endsWith('.rb')) return false;
     return true;

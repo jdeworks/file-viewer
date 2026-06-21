@@ -5,6 +5,9 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (!name.endsWith('.php') && !name.endsWith('.phtml') && !name.endsWith('.php5') && !name.endsWith('.php8')) return false;
+    // Yield to more-specific config plugins that come later in the KNOWN array.
+    // rector.php / config.php → rector-config
+    if (name === 'rector.php' || name === 'config.php') return null;
     // Content guard: must have PHP opening tag
     const sample = (intake.text || '').slice(0, 500);
     if (!sample.includes('<?php') && !sample.includes('<?')) return null;

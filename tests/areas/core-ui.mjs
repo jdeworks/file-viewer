@@ -37,7 +37,7 @@ export async function run(ctx) {
   else fail('ffmpeg bundle missing or not heavy: ' + JSON.stringify(ffmpeg));
 }
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   pass('page loaded');
 
   // Favicon present + same-origin (no off-origin icon fetch).

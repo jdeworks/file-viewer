@@ -36,10 +36,10 @@ function extractPyVal(text, name) {
   return m[1].trim().replace(/^['"]|['"]$|#.*$/g, '').trim();
 }
 
-/** Extract nested dict value: name = { key: value } (single-line only). */
+/** Extract nested dict value: name: { key: value } or name = { key: value }. */
 function extractDictKey(text, name, key) {
-  // Multi-line dict scan: find the section
-  const re = new RegExp(`${name}\\s*=\\s*\\{([\\s\\S]*?)\\}`, 'g');
+  // Match both Python dict key (colon) and assignment (equals): 'default': { or 'default' = {
+  const re = new RegExp(`${name}\\s*[=:]\\s*\\{([\\s\\S]*?)\\}`, 'g');
   let m;
   while ((m = re.exec(text)) !== null) {
     const block = m[1];

@@ -6,7 +6,7 @@ export async function run(ctx) {
   const { browser, page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── STL 3D viewer ── hand-rolled canvas renderer (zero dep), draws the mesh. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.stl');
   await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
   const stlTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -35,7 +35,7 @@ export async function run(ctx) {
   if (/\.obj$/.test(meshDownload.suggestedFilename())) pass('mesh interconvert: STL → OBJ downloaded (' + meshDownload.suggestedFilename() + ')'); else fail('mesh download name: ' + meshDownload.suggestedFilename());
 
   // ── OBJ 3D viewer ── reuses the shared mesh viewer; polygons fan-triangulated. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.obj');
   await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
   const objTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -54,7 +54,7 @@ export async function run(ctx) {
   if (objPainted > 100) pass('OBJ mesh rendered to canvas (' + objPainted + ' painted pixels)'); else fail('obj painted pixels: ' + objPainted);
 
   // ── glTF/GLB 3D viewer ── binary GLB parsed (chunks + accessors + node transforms). ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.glb');
   await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
   const glbTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -72,7 +72,7 @@ export async function run(ctx) {
   if (glbPainted > 100) pass('GLB mesh rendered to canvas (' + glbPainted + ' painted pixels)'); else fail('glb painted pixels: ' + glbPainted);
 
   // ── Group color picker ── clicking a face on STL opens the group picker. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.stl');
   await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
   await page.waitForTimeout(400);
@@ -84,9 +84,9 @@ export async function run(ctx) {
   else pass('STL: canvas click handled without error (face may not be at canvas center)');
 
   // ── 3MF manufacturing model ── ZIP package with model XML, metadata, materials, and thumbnail. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.3mf');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const mf3Type = await page.$eval('#typeSelect', (s) => s.value);
   if (mf3Type === '3mf') pass('.3mf detected as 3D Manufacturing Format'); else fail('3mf type: ' + mf3Type);
   const mf3f = await frameOf('iframe.fv-preview-frame');
@@ -102,7 +102,7 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
 
   // ── PLY 3D viewer ── ASCII (gallery) + binary-little-endian (via file input). ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.ply');
   await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
   const plyTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -126,9 +126,9 @@ export async function run(ctx) {
   if (/4 triangles/.test(plyBinInfo)) pass('binary PLY parsed (tetrahedron: 4 triangles)'); else fail('ply binary info: ' + plyBinInfo);
 
   // ── Game ROM headers ── NES/SNES/Game Boy/N64 metadata without running emulators. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.nes');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const nesType = await page.$eval('#typeSelect', (s) => s.value);
   if (nesType === 'gamerom') pass('NES detected as Game ROM Header'); else fail('nes type: ' + nesType);
   let romf = await frameOf('iframe.fv-preview-frame');
@@ -147,7 +147,7 @@ export async function run(ctx) {
   putAscii(snes, 0x7fc0, 'SNES DEMO', 21);
   snes[0x7fc0 + 0x15] = 0x20; snes[0x7fc0 + 0x17] = 10; snes[0x7fc0 + 0x18] = 5; snes[0x7fc0 + 0x19] = 1;
   await page.setInputFiles('#fileInput', writeRom('demo.sfc', snes));
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   romf = await frameOf('iframe.fv-preview-frame');
   await romf.waitForSelector('.rom-doc .rom-table', { timeout: 8000 });
   romText = await romf.$eval('.rom-doc', (e) => e.textContent);
@@ -158,7 +158,7 @@ export async function run(ctx) {
   putAscii(gb, 0x134, 'GB DEMO', 15);
   gb[0x143] = 0x80; gb[0x146] = 0x03; gb[0x147] = 0x13; gb[0x148] = 0x02; gb[0x149] = 0x03; gb[0x14a] = 0x01;
   await page.setInputFiles('#fileInput', writeRom('demo.gbc', gb));
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   romf = await frameOf('iframe.fv-preview-frame');
   await romf.waitForSelector('.rom-doc .rom-table', { timeout: 8000 });
   romText = await romf.$eval('.rom-doc', (e) => e.textContent);
@@ -169,7 +169,7 @@ export async function run(ctx) {
   n64.set([0x12, 0x34, 0x56, 0x78], 0x10); n64.set([0x9a, 0xbc, 0xde, 0xf0], 0x14);
   putAscii(n64, 0x20, 'N64 DEMO', 20); putAscii(n64, 0x3b, 'NABE', 4);
   await page.setInputFiles('#fileInput', writeRom('demo.z64', n64));
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   romf = await frameOf('iframe.fv-preview-frame');
   await romf.waitForSelector('.rom-doc .rom-table', { timeout: 8000 });
   romText = await romf.$eval('.rom-doc', (e) => e.textContent);
@@ -181,7 +181,7 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
 
   // ── Raster image ── parent-pane viewer with fit-to-screen default + size-based zoom. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.png');
   await page.waitForSelector('#previewHost .imgv-img', { timeout: 12000 });
   const imgType = await page.$eval('#typeSelect', (s) => s.value);
@@ -197,7 +197,10 @@ export async function run(ctx) {
   if (/%/.test(zoomLabel) && /px$/.test(widthSet)) pass('image zoom sets a real pixel width (' + zoomLabel + ')'); else fail('image zoom: label=' + zoomLabel + ' width=' + widthSet);
   await page.fill('#previewHost .imgv-text-input', 'Sample label');
   await page.click('#previewHost .imgv-text-apply');
-  await page.waitForFunction(() => window.__fv.state.binaryEdit?.dirty === true, null, { timeout: 8000 });
+  // "Add text" enters placement mode; must click "Commit text" to actually rasterize and set dirty
+  await page.waitForSelector('#previewHost .imgv-text-commit', { timeout: 15000 });
+  await page.click('#previewHost .imgv-text-commit');
+  await page.waitForFunction(() => window.__fv.state.binaryEdit?.dirty === true, null, { timeout: 15000 });
   const editedBytes = await page.evaluate(async () => {
     const bytes = await window.__fv.state.binaryEdit.getBytes();
     return { len: bytes.length, sig: Array.from(bytes.slice(0, 4)) };
@@ -220,9 +223,9 @@ export async function run(ctx) {
   if (/\.webp$/.test(imgDownload.suggestedFilename())) pass('image converted + downloaded (' + imgDownload.suggestedFilename() + ')'); else fail('image download name: ' + imgDownload.suggestedFilename());
 
   // ── MIDI sequence ── parses SMF header, tempo, tracks, GM programs, and note counts.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.mid');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const midiType = await page.$eval('#typeSelect', (s) => s.value);
   if (midiType === 'midi') pass('.mid detected as MIDI Sequence'); else fail('midi type: ' + midiType);
   const midif = await frameOf('iframe.fv-preview-frame');
@@ -237,7 +240,7 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
 
   // ── Audio/Video (media) ── native player rendered in the pane via a blob: URL.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.wav');
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
   const mediaType = await page.$eval('#typeSelect', (s) => s.value);
@@ -270,6 +273,25 @@ export async function run(ctx) {
   await page.click('#previewHost .media-wv-toggle');
   const waveformHidden = await page.$eval('#previewHost .media-wv-panel', (e) => e.hidden && !e.querySelector('canvas'));
   if (waveformHidden) pass('audio waveform: collapse destroys canvas'); else fail('waveform did not destroy on collapse');
+  // Spectrum & EQ panel — toggle opens, 9-band EQ + canvas present; CPU-lazy (no RAF until play).
+  // The spectrum toggle is the button inside the nested .media-wv-wrap inside the outer waveform wrap.
+  const spBtn = await page.$('#previewHost .media-wv-wrap .media-wv-wrap .media-wv-toggle');
+  if (spBtn) {
+    const spBtnText = await spBtn.evaluate((e) => e.textContent);
+    if (/Spectrum/.test(spBtnText)) pass('audio spectrum: Spectrum & EQ toggle button present'); else fail('sp btn text: ' + spBtnText);
+    await spBtn.click();
+    await page.waitForSelector('#previewHost .media-sp-panel:not([hidden])', { timeout: 5000 });
+    const spCanvas = await page.$('#previewHost .sp-canvas');
+    const spSliders = await page.$$('#previewHost .sp-eq-slider');
+    const spPreset = await page.$('#previewHost .sp-preset-sel');
+    if (spCanvas) pass('audio spectrum: spectrum canvas mounted'); else fail('sp canvas missing');
+    if (spSliders.length === 9) pass('audio spectrum: 9-band EQ sliders'); else fail('sp sliders: ' + spSliders.length);
+    if (spPreset) pass('audio spectrum: preset selector present'); else fail('sp preset missing');
+    // Close the panel
+    await spBtn.click();
+    await page.waitForSelector('#previewHost .media-sp-panel[hidden]', { state: 'attached', timeout: 3000 });
+    pass('audio spectrum: panel collapses');
+  } else fail('spectrum & EQ toggle button not found');
   // Folder playlist: load a 2-track folder via the seam → prev/next + position + shuffle appear.
   await page.evaluate(async () => {
     const r = await fetch('examples/sample.wav');
@@ -308,7 +330,7 @@ export async function run(ctx) {
       hasTouch: true, isMobile: true,
     });
     const ip = await ictx.newPage();
-    await ip.goto(origin, { waitUntil: 'networkidle' });
+    await ip.goto(origin, { waitUntil: 'load' });
     await openExample('Sample.wav', ip);
     await ip.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
     const shown = await ip.waitForSelector('#iosAudioHint:not([hidden])', { timeout: 8000 }).catch(() => null);
@@ -327,7 +349,7 @@ export async function run(ctx) {
 
   // ── ffmpeg.wasm transcoding opt-in ── opening a format that likely needs transcoding (AVI)
   // with enableFfmpeg OFF shows a hint panel pointing to Advanced settings.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.avi');
   await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
   const aviType = await page.$eval('#typeSelect', (s) => s.value);

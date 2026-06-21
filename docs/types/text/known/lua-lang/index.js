@@ -6,6 +6,8 @@ export const plugin = {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (!name.endsWith('.lua')) return false;
     // Defer init.lua to neovim-config plugin when it contains Neovim-specific APIs
+    // Defer .wezterm.lua / wezterm.lua to wezterm-conf plugin (comes later in KNOWN)
+    if (name === '.wezterm.lua' || name === 'wezterm.lua') return null;
     const text = intake.text || '';
     if (name === 'init.lua' && (text.includes('vim.opt') || text.includes('vim.keymap') || text.includes('vim.g.mapleader'))) return false;
     const hits = [

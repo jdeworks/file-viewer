@@ -52,9 +52,16 @@ export async function createHarness() {
   const port = server.address().port;
   const origin = `http://localhost:${port}`;
 
-  const browser = await chromium.launch();
+  // --no-sandbox: required on WSL2/Linux where unprivileged user namespaces may be
+  // restricted; without it Chromium's zygote process can crash mid-run on long suites.
+  const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] });
   const ctx = await browser.newContext({ viewport: { width: 1100, height: 800 } });
   const page = await ctx.newPage();
+  // Raise the default and navigation timeouts (30s) to 60s so that networkidle
+  // waits on pages loading large vendor libs (abcjs 492 KB, sql.js WASM, etc.)
+  // don't intermittently time out on slow/loaded WSL2 hosts.
+  page.setDefaultNavigationTimeout(60000);
+  page.setDefaultTimeout(60000);
 
   // Robust contentFrame(): an iframe element can exist before its content document has committed,
   // so handle.contentFrame() transiently returns null → "Cannot read properties of null". Poll
@@ -90,7 +97,11 @@ export async function createHarness() {
     return p.evaluate((l) => window.__fv.openExampleByLabel(l), label);
   };
 
-  return { browser, server, page, origin, ROOT, frameOf, pass, fail, consoleErrors, offOrigin, openExample };
+  // Wait for window.__fv to be available — needed after page.goto(waitUntil:'load') before
+  // calling window.__fv directly in page.evaluate (app init is async, 'load' fires too early).
+  const waitForFv = (pg) => (pg || page).waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
+
+  return { browser, server, page, origin, ROOT, frameOf, pass, fail, consoleErrors, offOrigin, openExample, waitForFv };
 }
 
 export async function finish(ctx) {

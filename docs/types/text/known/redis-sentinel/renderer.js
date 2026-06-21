@@ -38,8 +38,9 @@ function parseSentinelConf(text) {
     if (directive === 'sentinel') {
       const subCmd = (args[0] || '').toLowerCase();
       if (subCmd === 'monitor') {
-        // sentinel monitor <name> <host> <port> <quorum>
-        const [, name, host, port, quorum] = parts;
+        // sentinel monitor <master-name> <host> <port> <quorum>
+        // parts = ['sentinel','monitor','<name>','<host>','<port>','<quorum>'] — skip two
+        const [, , name, host, port, quorum] = parts;
         if (name) monitors[name] = { host, port, quorum };
       } else if (['down-after-milliseconds', 'failover-timeout', 'parallel-syncs',
         'auth-pass', 'auth-user', 'requirepass',

@@ -298,6 +298,7 @@ export async function render(intake, ctx = {}) {
   }
 
   let waveformWrap = null;
+  let spController = null;
   if (info.kind === 'audio') {
     const wvWrap = document.createElement('div');
     wvWrap.className = 'media-wv-wrap';
@@ -320,6 +321,28 @@ export async function render(intake, ctx = {}) {
         wvController = await mountWaveform(wvPanel, file);
       }
     });
+
+    // ── Spectrum & EQ panel ───────────────────────────────────────────────
+    const spWrap = document.createElement('div');
+    spWrap.className = 'media-wv-wrap';
+    const spToggle = document.createElement('button');
+    spToggle.type = 'button';
+    spToggle.className = 'media-wv-toggle';
+    spToggle.textContent = '▶ Spectrum & EQ';
+    const spPanel = document.createElement('div');
+    spPanel.className = 'media-sp-panel';
+    spPanel.hidden = true;
+    spWrap.append(spToggle, spPanel);
+    spToggle.addEventListener('click', async () => {
+      spPanel.hidden = !spPanel.hidden;
+      spToggle.textContent = spPanel.hidden ? '▶ Spectrum & EQ' : '▼ Spectrum & EQ';
+      if (spPanel.hidden) { spController?.destroy(); spController = null; return; }
+      if (!spController) {
+        const { mountSpectrumPanel } = await import('./spectrum.js');
+        spController = mountSpectrumPanel(spPanel, el);
+      }
+    });
+    wvWrap.append(spWrap);
   }
 
   if (info.kind === 'audio') host.append(name, el, waveformWrap, tools);
@@ -418,6 +441,7 @@ export async function render(intake, ctx = {}) {
       if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
       if (editorRevoke) editorRevoke();
       if (wvController) { wvController.destroy(); wvController = null; }
+      if (spController) { spController.destroy(); spController = null; }
     },
   };
 }

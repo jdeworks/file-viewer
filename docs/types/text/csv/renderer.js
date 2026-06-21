@@ -1,6 +1,8 @@
-// CSV preview: PapaParse -> rows -> shared tabular renderer.
+// CSV/TSV viewer + inline table editor. Rendered in parentNode mode so the TableEditor
+// (contenteditable cells, Tab/Enter nav, add/delete rows+columns) works without iframe
+// postMessage. Chart.js is lazy-loaded only when the Chart tab is shown.
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
-import { renderTables } from '../../../core/tabular.js';
+import { TableEditor } from './table-editor.js';
 
 const DELIMS = { auto: '', comma: ',', semicolon: ';', tab: '\t', pipe: '|' };
 
@@ -13,40 +15,119 @@ export async function parseCsv(intake, settings = {}) {
   return { rows: res.data, delimiter: res.meta?.delimiter || ',' };
 }
 
-function chartHtml(rows, hasHeader) {
-  const maxRows = 100;
-  const header = hasHeader ? rows[0] : rows[0].map((_, i) => 'col' + (i + 1));
-  const data = (hasHeader ? rows.slice(1) : rows).slice(0, maxRows);
-  const numericCols = header.map((_, ci) => data.every((r) => r[ci] !== '' && !isNaN(Number(r[ci])))).map((ok, i) => ok ? i : -1).filter((i) => i >= 0);
-  if (!numericCols.length) return '';
-  const labelCol = numericCols[0] === 0 ? -1 : 0;
-  const labels = labelCol >= 0 ? data.map((r) => String(r[labelCol]).slice(0, 30)) : data.map((_, i) => String(i + 1));
-  const colours = ['#4e9af1','#e05c6b','#4db889','#f5a623','#9b59b6','#1abc9c','#e67e22','#2980b9'];
-  const datasets = numericCols.slice(0, 8).map((ci, k) => ({
-    label: String(header[ci]),
-    data: data.map((r) => Number(r[ci]) || 0),
-    borderColor: colours[k % colours.length],
-    backgroundColor: colours[k % colours.length] + '33',
-    tension: 0.3,
-    fill: numericCols.length === 1,
-  }));
-  const cfg = JSON.stringify({ type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } } });
-  return `<div id="csv-chart-wrap" style="height:320px;padding:12px;box-sizing:border-box"><canvas id="csv-chart"></canvas></div>`
-    + `<script src="/vendor/chartjs/chart.umd.js"><\/script>`
-    + `<script>new Chart(document.getElementById('csv-chart'),${cfg})<\/script>`;
+function csvEsc(v) {
+  const s = String(v ?? '');
+  return (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r'))
+    ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function rowsToCsv(rows, sep) {
+  return rows.map((r) => r.map((c) => {
+    const s = String(c ?? '');
+    return (s.includes(sep) || s.includes('"') || s.includes('\n') || s.includes('\r'))
+      ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(sep)).join('\r\n');
 }
 
 export async function render(intake, ctx) {
   const settings = ctx?.settings || {};
   const hasHeader = settings.csvHeader !== false;
-  const { rows } = await parseCsv(intake, settings);
-  const tableHtml = renderTables({ sheets: [{ name: '', rows }], firstRowHeader: hasHeader });
-  const chart = rows.length > 1 ? chartHtml(rows, hasHeader) : '';
-  const tabBar = chart ? '<div style="display:flex;gap:0;margin-bottom:-1px;font:13px/1 system-ui">'
-    + '<button onclick="this.parentNode.nextSibling.style.display=\'\';this.parentNode.nextSibling.nextSibling.style.display=\'none\';this.style.fontWeight=\'bold\';this.nextSibling.style.fontWeight=\'\'" style="padding:4px 12px;border:1px solid #ccc;border-bottom:none;background:#fff;cursor:pointer;font-weight:bold">Table</button>'
-    + '<button onclick="this.previousSibling.style.fontWeight=\'\';this.style.fontWeight=\'bold\';this.parentNode.nextSibling.style.display=\'none\';this.parentNode.nextSibling.nextSibling.style.display=\'\'" style="padding:4px 12px;border:1px solid #ccc;border-bottom:none;background:#fff;cursor:pointer">Chart</button>'
-    + '</div>' : '';
-  const tableWrap = chart ? '<div>' + tableHtml + '</div>' : tableHtml;
-  const chartWrap = chart ? '<div style="display:none">' + chart + '</div>' : '';
-  return { bodyHtml: tabBar + tableWrap + chartWrap, hadUnsafe: false };
+  const { rows, delimiter } = await parseCsv(intake, settings);
+
+  const sep = delimiter || ',';
+  const numRows = rows.length;
+  const numCols = rows[0]?.length || 0;
+  const base = (intake.filename || 'data').replace(/\.[^.]+$/, '');
+
+  const host = document.createElement('div');
+  host.className = 'csv-doc';
+
+  // Header bar
+  const info = document.createElement('div');
+  info.className = 'csv-info';
+  info.innerHTML =
+    '<span class="csv-stat">' + numRows + ' row' + (numRows === 1 ? '' : 's') + '</span>'
+    + '<span class="csv-stat">' + numCols + ' col' + (numCols === 1 ? '' : 's') + '</span>'
+    + '<span class="csv-sep">sep: ' + (sep === '\t' ? 'tab' : sep) + '</span>';
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'csv-toolbar';
+  const tableTab = document.createElement('button');
+  tableTab.className = 'csv-tab active'; tableTab.textContent = 'Table'; tableTab.type = 'button';
+  const chartTab = document.createElement('button');
+  chartTab.className = 'csv-tab'; chartTab.textContent = 'Chart'; chartTab.type = 'button';
+  const exportBtn = document.createElement('button');
+  exportBtn.className = 'csv-export'; exportBtn.textContent = 'Export CSV'; exportBtn.type = 'button';
+  toolbar.append(tableTab, chartTab, exportBtn);
+
+  // Panels
+  const tablePanel = document.createElement('div');
+  tablePanel.className = 'csv-panel';
+  const chartPanel = document.createElement('div');
+  chartPanel.className = 'csv-panel'; chartPanel.hidden = true;
+  chartPanel.innerHTML = '<canvas class="csv-chart-canvas"></canvas>';
+
+  host.append(info, toolbar, tablePanel, chartPanel);
+
+  // Mount table editor
+  let tableEditor = null;
+  let currentRows = rows.map((r) => [...r]);
+  tableEditor = new TableEditor(tablePanel, rowsToCsv(currentRows, sep), sep, (newCsv) => {
+    // Keep internal copy in sync so export works
+    currentRows = newCsv.split('\n').map((line) => line.split(sep).map((c) => c.replace(/^"|"$/g, '')));
+  });
+
+  // Tab switching
+  let chartLoaded = false;
+  tableTab.addEventListener('click', () => {
+    tablePanel.hidden = false; chartPanel.hidden = true;
+    tableTab.classList.add('active'); chartTab.classList.remove('active');
+  });
+  chartTab.addEventListener('click', async () => {
+    chartPanel.hidden = false; tablePanel.hidden = true;
+    chartTab.classList.add('active'); tableTab.classList.remove('active');
+    if (chartLoaded) return;
+    chartLoaded = true;
+    const numericCols = hasHeader
+      ? rows[0].map((_, ci) => rows.slice(1).every((r) => r[ci] !== '' && !isNaN(Number(r[ci]))) ? ci : -1).filter((i) => i >= 0)
+      : rows[0].map((_, ci) => rows.every((r) => r[ci] !== '' && !isNaN(Number(r[ci]))) ? ci : -1).filter((i) => i >= 0);
+    if (!numericCols.length) {
+      chartPanel.innerHTML = '<p class="csv-empty">No numeric columns detected for charting.</p>';
+      return;
+    }
+    try {
+      const Chart = await loadGlobal(vendor('chartjs/chart.umd.js'), 'Chart');
+      const header = hasHeader ? rows[0] : rows[0].map((_, i) => 'col' + (i + 1));
+      const data = hasHeader ? rows.slice(1) : rows;
+      const labelCol = numericCols[0] === 0 ? -1 : 0;
+      const labels = labelCol >= 0 ? data.map((r) => String(r[labelCol]).slice(0, 30)) : data.map((_, i) => String(i + 1));
+      const colours = ['#4e9af1', '#e05c6b', '#4db889', '#f5a623', '#9b59b6', '#1abc9c', '#e67e22', '#2980b9'];
+      const datasets = numericCols.slice(0, 8).map((ci, k) => ({
+        label: String(header[ci]),
+        data: data.map((r) => Number(r[ci]) || 0),
+        borderColor: colours[k % colours.length],
+        backgroundColor: colours[k % colours.length] + '33',
+        tension: 0.3, fill: numericCols.length === 1,
+      }));
+      const canvas = chartPanel.querySelector('.csv-chart-canvas');
+      new Chart(canvas, {
+        type: 'line',
+        data: { labels, datasets },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } },
+      });
+    } catch { chartPanel.innerHTML = '<p class="csv-empty">Chart unavailable.</p>'; }
+  });
+
+  // Export: get current state from TableEditor if available, else original rows
+  exportBtn.addEventListener('click', () => {
+    const csv = tableEditor ? tableEditor.getValue() : rowsToCsv(currentRows, sep);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = base + '_export.csv';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
+  return { parentNode: host };
 }

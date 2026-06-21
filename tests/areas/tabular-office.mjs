@@ -3,7 +3,7 @@ export async function run(ctx) {
 
   // ── PDF module (WP17) ── fresh load so the examples gallery is reachable. Renders in the
   // parent pane now (interactive lite editor), not the iframe.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.pdf');
   await page.waitForSelector('#previewHost img.pdf-page', { timeout: 20000 });
   pass('PDF rendered to image pages');
@@ -11,7 +11,7 @@ export async function run(ctx) {
   if (!hasEditor) pass('PDF is preview-only (no raw editor)'); else fail('raw editor present for PDF');
 
   // ── PDF lite editor ── rotate/delete pages with pdf-lib, then download the edited PDF. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample (3 pages).pdf');
   await page.waitForFunction(() => document.querySelectorAll('#previewHost img.pdf-page').length === 3, null, { timeout: 20000 });
   pass('PDF: multi-page document rendered (3 pages)');
@@ -79,15 +79,15 @@ export async function run(ctx) {
   else fail('PDF metadata rows: ' + meta.join(', '));
   await page.click('#metaDrawer [data-close]');
 
-  // ── CSV module + shared tabular renderer (WP19) ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  // ── CSV module + inline table editor (parentNode) ──
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.csv');
-  const cframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
-  const cf = await frameOf('iframe.fv-preview-frame');
-  await cf.waitForSelector('table', { timeout: 10000 });
-  const headers = await cf.$$eval('thead th', (els) => els.map((e) => e.textContent));
+  await page.waitForSelector('#previewHost .te-table', { timeout: 15000 });
+  // Header row = first tbody row (all cells have .te-header); skip the .te-idx gutter cell
+  const headers = await page.$$eval('#previewHost .te-table tbody tr:first-child .te-header', (els) => els.map((e) => e.textContent));
   if (headers.join(',') === 'name,role,city,commits') pass('CSV rendered as table with header row'); else fail('CSV headers: ' + headers.join(','));
-  const rowCount = await cf.$$eval('tbody tr', (els) => els.length);
+  // Body rows = all tbody rows after the first (header) row
+  const rowCount = await page.$$eval('#previewHost .te-table tbody tr', (els) => els.length - 1);
   if (rowCount === 5) pass('CSV body rows (' + rowCount + ')'); else fail('CSV rows: ' + rowCount);
   // CSV is editable text -> raw editor + diff available.
   const csvHasEditor = await page.$('#editor .monaco-editor');
@@ -110,7 +110,7 @@ export async function run(ctx) {
   if (/\.json$/.test(csvDownload.suggestedFilename())) pass('CSV exported to JSON (' + csvDownload.suggestedFilename() + ')'); else fail('CSV download name: ' + csvDownload.suggestedFilename());
 
   // ── Excel module (WP19) ── multi-sheet workbook via SheetJS on the tabular renderer.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.xlsx');
   const xframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const xf = await frameOf('iframe.fv-preview-frame');
@@ -140,7 +140,7 @@ export async function run(ctx) {
   if (/\.csv$/.test(xlsxDownload.suggestedFilename())) pass('Excel exported to CSV (' + xlsxDownload.suggestedFilename() + ')'); else fail('Excel download name: ' + xlsxDownload.suggestedFilename());
 
   // ── Word module (WP19) ── mammoth -> sanitized HTML in the iframe.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.docx');
   const dframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const df = await frameOf('iframe.fv-preview-frame');
@@ -151,7 +151,7 @@ export async function run(ctx) {
   if (strong > 0) pass('Word: formatting preserved (bold)'); else fail('no bold run in docx');
 
   // ── OpenDocument text (.odt) ── unzip content.xml → sanitized reading HTML in the iframe. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.odt');
   const odtframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const odtf = await frameOf('iframe.fv-preview-frame');
@@ -164,7 +164,7 @@ export async function run(ctx) {
   if (odtItems.some((t) => /First item/.test(t)) && odtItems.length === 2) pass('ODT list rendered (' + odtItems.length + ' items)'); else fail('odt list: ' + odtItems.join(','));
 
   // ── PowerPoint module (WP19) ── pptxviewjs renders slides to images in the iframe.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.pptx');
   const ppframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 25000 });
   const ppf = await frameOf('iframe.fv-preview-frame');

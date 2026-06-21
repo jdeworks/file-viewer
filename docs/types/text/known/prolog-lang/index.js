@@ -8,6 +8,9 @@ export const plugin = {
     const text = intake.text || '';
 
     // .pro and .P are Prolog-specific extensions — no content guard needed
+    // Exception: proguard-rules.pro and consumer-rules.pro are Android ProGuard config files
+    const basename = lower.split('/').pop();
+    if (basename === 'proguard-rules.pro' || basename === 'consumer-rules.pro' || basename === 'proguard-rules.txt') return false;
     if (lower.endsWith('.pro')) return true;
     if (name.endsWith('.P')) return true;
 

@@ -1,7 +1,7 @@
 export async function run(ctx) {
   const { browser, page, origin, pass, fail, consoleErrors, offOrigin } = ctx;
 
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await page.evaluate(() => {
     try {
       localStorage.removeItem('fv:games:unlocked');

@@ -1,10 +1,10 @@
 import zlib from 'node:zlib';
 
 export async function run(ctx) {
-  const { browser, page, origin, frameOf, pass, fail, openExample } = ctx;
+  const { browser, page, origin, frameOf, pass, fail, openExample, waitForFv } = ctx;
 
   // ── SQLite browser ── sql.js (WASM, same-origin) table list + grid + query. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.sqlite');
   await page.waitForSelector('#previewHost .sq-grid', { timeout: 25000 });
   const sqType = await page.$eval('#typeSelect', (s) => s.value);
@@ -19,7 +19,7 @@ export async function run(ctx) {
   if (/Aphex Twin/.test(sqQueryText) && /Bonobo/.test(sqQueryText) && !/Tycho/.test(sqQueryText)) pass('SQLite query executes (filtered result)'); else fail('sqlite query: ' + sqQueryText.replace(/\s+/g, ' ').slice(0, 80));
 
   // ── Clip Studio Paint (.clip) ── SQLite-backed structure view with partial-support banner.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.clip');
   await page.waitForSelector('#previewHost .clip-doc', { timeout: 25000 });
   const clipType = await page.$eval('#typeSelect', (s) => s.value);
@@ -38,7 +38,7 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
 
   // ── FictionBook (.fb2) ── XML ebook → sanitized reading HTML with inline data: images. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.fb2');
   const fb2frame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
   const fb2f = await frameOf('iframe.fv-preview-frame');
@@ -69,7 +69,7 @@ export async function run(ctx) {
 
   // ── MOBI / Kindle (.mobi) ── PalmDB parse + PalmDOC text → sanitized HTML, inline data: images. ──
   // Now rendered in parentNode mode with external sticky toolbar (no sandboxed iframe).
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.mobi');
   await page.waitForSelector('#previewHost .mobi-toolbar', { timeout: 12000 });
   const mobiType = await page.$eval('#typeSelect', (s) => s.value);
@@ -104,9 +104,9 @@ export async function run(ctx) {
   else fail('mobi reader controls: ' + JSON.stringify({ before: mobiSize0, after: mobiPrefs }));
 
   // ── Sony LRF ── recognized (BBeB), shown with a clear note instead of a raw hex dump. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.lrf');
-  const lrfframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const lrfframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const lrff = await frameOf('iframe.fv-preview-frame');
   await lrff.waitForSelector('.comic-note', { timeout: 8000 });
   const lrfType = await page.$eval('#typeSelect', (s) => s.value);
@@ -114,7 +114,7 @@ export async function run(ctx) {
   if (lrfType === 'lrf' && /Sony/.test(lrfNote)) pass('.lrf recognized as Sony LRF with a friendly note'); else fail('lrf: type=' + lrfType + ' note=' + lrfNote.slice(0, 40));
 
   // ── DjVu ── either renders through the decoder or shows the intentional partial-support message.
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.djvu');
   await page.waitForSelector('#previewHost .djvu-viewer', { timeout: 15000 });
   const djvuType = await page.$eval('#typeSelect', (s) => s.value);
@@ -126,7 +126,7 @@ export async function run(ctx) {
   else fail('djvu: type=' + djvuType + ' canvas=' + djvuCanvas + ' text=' + djvuText.replace(/\s+/g, ' ').slice(0, 180));
 
   // ── EPUB e-book (hand-rolled reader) ── unzip + spine + TOC, rendered in the pane. ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.epub');
   await page.waitForSelector('#previewHost .epub-doc', { timeout: 15000 });
   const epubType = await page.$eval('#typeSelect', (s) => s.value);
@@ -168,14 +168,14 @@ export async function run(ctx) {
     return t && t !== prev;
   }, beforeNext, { timeout: 8000 });
   pass('EPUB next-chapter navigation works');
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.epub');
   await page.waitForSelector('#previewHost .epub-content', { timeout: 15000 });
   const resumed = await page.$eval('#previewHost .epub-content', (e) => e.textContent || '').catch(() => '');
   if (resumed && resumed !== beforeNext) pass('EPUB resumes at the last-read chapter on reopen (persistence)'); else fail('epub did not resume at next spine item');
 
   await page.setViewportSize({ width: 390, height: 740 });
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.epub');
   await page.waitForSelector('#previewHost .epub-doc', { timeout: 15000 });
   const mobileClosed = await page.$eval('#previewHost .epub-doc', (doc) => {
@@ -208,7 +208,7 @@ export async function run(ctx) {
   await page.setViewportSize({ width: 1100, height: 800 });
 
   // ── Binary file → hex dump in the read-only editor ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.bin');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
   const hexVal = await page.evaluate(() => window.__fv.state.rawview.getValue());
@@ -216,7 +216,8 @@ export async function run(ctx) {
   if (/\|.*Hello.*\|/.test(hexVal)) pass('hex dump shows ASCII column (printable bytes)'); else fail('no ASCII column in hex dump');
 
   // ── Folder tree sidebar ──
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
+  await waitForFv();
   await page.evaluate(() => {
     const mk = (name, body) => ({ file: new File([body], name.split('/').pop(), { type: '' }), path: name });
     const entries = [

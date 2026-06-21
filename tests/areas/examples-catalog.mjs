@@ -2,7 +2,7 @@ import { REGISTRY } from '../../docs/core/registry.js';
 
 export async function run(ctx) {
   const { page, origin, pass, fail } = ctx;
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   const examples = await page.evaluate(async () => {
     const res = await fetch('examples/index.json');
     return res.ok ? res.json() : [];
@@ -185,7 +185,7 @@ export async function run(ctx) {
   else pass('sample catalog made zero off-origin requests');
 
   // Quality badges: sourced and partial examples display visual indicators
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   const sourcedBadgeOk = await page.evaluate(async () => {
     // Open a category that contains sourced examples (Image category has sample.png)
     const cards = Array.from(document.querySelectorAll('.ex-folder-card'));
@@ -205,7 +205,7 @@ export async function run(ctx) {
   else fail('sourced badge missing: ' + sourcedBadgeOk.reason);
 
   await page.evaluate(() => { try { sessionStorage.clear(); } catch {} });
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   const partialBadgeOk = await page.evaluate(async () => {
     // Show all files and look for any .ex-badge-partial badge (djvu or lrf are partial)
     const showAll = document.querySelector('.ex-showall-btn');

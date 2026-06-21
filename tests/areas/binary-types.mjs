@@ -2,9 +2,9 @@ export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
   // ── ELF executable ──────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.elf');
-  const elfFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const elfFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const elff = await frameOf('iframe.fv-preview-frame');
   await elff.waitForSelector('.exe-preview', { timeout: 8000 });
   const elfTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -17,9 +17,9 @@ export async function run(ctx) {
   if (/64-bit/i.test(elfText)) pass('ELF 64-bit width shown'); else fail('elf rows (bit): ' + elfText.slice(0, 200));
 
   // ── Telegram chat export ─────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample-telegram.json');
-  const chatFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  const chatFrame = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const chatf = await frameOf('iframe.fv-preview-frame');
   await chatf.waitForSelector('.chat-preview', { timeout: 8000 });
   const chatTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -30,9 +30,9 @@ export async function run(ctx) {
   if (chatStats.includes('8')) pass('Telegram message count 8 shown'); else fail('chat stats: ' + chatStats.join(','));
 
   // ── Guitar Pro ───────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.gp5');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const gpf = await frameOf('iframe.fv-preview-frame');
   await gpf.waitForSelector('.gp-preview', { timeout: 8000 });
   const gpTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -42,9 +42,9 @@ export async function run(ctx) {
   if (/File Viewer Demo Tab/i.test(gpText)) pass('GP5 title parsed correctly'); else fail('gp title: ' + gpText.slice(0, 200));
 
   // ── APK ───────────────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.apk');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const apkf = await frameOf('iframe.fv-preview-frame');
   await apkf.waitForSelector('.apk-preview', { timeout: 12000 });
   const apkTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -54,9 +54,9 @@ export async function run(ctx) {
   if (/arm64-v8a|x86_64/i.test(apkText)) pass('APK native ABI shown'); else fail('apk abi: ' + apkText.slice(0, 200));
 
   // ── ISO 9660 ─────────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.iso');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const isof = await frameOf('iframe.fv-preview-frame');
   await isof.waitForSelector('.iso-preview', { timeout: 8000 });
   const isoTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -66,9 +66,9 @@ export async function run(ctx) {
   if (/FILE VIEWER PROJECT/i.test(isoText)) pass('ISO publisher shown'); else fail('iso publisher: ' + isoText.slice(0, 200));
 
   // ── Windows Minidump ─────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Windows Minidump (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const dmpf = await frameOf('iframe.fv-preview-frame');
   await dmpf.waitForSelector('.badge-mdmp', { timeout: 8000 });
   const dmpTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -79,9 +79,9 @@ export async function run(ctx) {
   if (/x64|AMD64/i.test(dmpText)) pass('DMP architecture x64 shown'); else fail('dmp arch: ' + dmpText.slice(0, 300));
 
   // ── DXF AutoCAD ──────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('AutoCAD DXF Drawing (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const dxff = await frameOf('iframe.fv-preview-frame');
   await dxff.waitForSelector('.badge-dxf', { timeout: 8000 });
   const dxfTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -92,9 +92,9 @@ export async function run(ctx) {
   if (/Walls|Dimensions/i.test(dxfText)) pass('DXF layer names shown'); else fail('dxf layers: ' + dxfText.slice(0, 300));
 
   // ── Minecraft World (.mcworld) ────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Minecraft World (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const mcf = await frameOf('iframe.fv-preview-frame');
   await mcf.waitForSelector('.badge-mc', { timeout: 12000 });
   const mcTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -105,9 +105,9 @@ export async function run(ctx) {
   if (/level\.dat|levelname\.txt/i.test(mcText)) pass('MC key files listed'); else fail('mc files: ' + mcText.slice(0, 300));
 
   // ── DICOM Medical Image ───────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('DICOM Medical Image (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const dcmf = await frameOf('iframe.fv-preview-frame');
   await dcmf.waitForSelector('.badge-dcm', { timeout: 8000 });
   const dcmTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -118,9 +118,9 @@ export async function run(ctx) {
   if (/512|Demo Hospital/i.test(dcmText)) pass('DICOM image info shown'); else fail('dcm info: ' + dcmText.slice(0, 300));
 
   // ── NetCDF Scientific Data ────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('NetCDF Climate Dataset (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const ncf = await frameOf('iframe.fv-preview-frame');
   await ncf.waitForSelector('.badge-nc', { timeout: 8000 });
   const ncTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -131,9 +131,9 @@ export async function run(ctx) {
   if (/CF-1\.8|Demo Climate/i.test(ncText)) pass('NetCDF global attributes shown'); else fail('nc attrs: ' + ncText.slice(0, 300));
 
   // ── KMZ Compressed Map ────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('World Cities (KMZ)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const kmzf = await frameOf('iframe.fv-preview-frame');
   await kmzf.waitForSelector('.badge-kmz', { timeout: 8000 });
   const kmzTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -144,9 +144,9 @@ export async function run(ctx) {
   if (/File Viewer Demo KMZ/i.test(kmzText)) pass('KMZ document name shown'); else fail('kmz name: ' + kmzText.slice(0, 300));
 
   // ── MBTiles Map Tileset ───────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('File Viewer Demo Map (MBTiles)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const mbtf = await frameOf('iframe.fv-preview-frame');
   await mbtf.waitForSelector('.badge-mbt', { timeout: 12000 });
   const mbtTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -157,9 +157,9 @@ export async function run(ctx) {
   if (/0.*4|minzoom|maxzoom|Zoom/i.test(mbtText)) pass('MBTiles zoom levels shown'); else fail('mbt zoom: ' + mbtText.slice(0, 300));
 
   // ── PDB Protein Structure ─────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Demo Protein Structure (PDB)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const pdbf = await frameOf('iframe.fv-preview-frame');
   await pdbf.waitForSelector('.badge-pdb', { timeout: 8000 });
   const pdbTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -171,9 +171,9 @@ export async function run(ctx) {
   if (/Chain|chain|1\.80|Residue|residue/i.test(pdbText)) pass('PDB structure info shown'); else fail('pdb struct: ' + pdbText.slice(0, 300));
 
   // ── PCAP Network Capture ──────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Network Capture Demo (PCAP)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const pcapf = await frameOf('iframe.fv-preview-frame');
   await pcapf.waitForSelector('.badge-pcap', { timeout: 8000 });
   const pcapTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -184,9 +184,9 @@ export async function run(ctx) {
   if (/ARP|TCP|UDP|ICMP/i.test(pcapText)) pass('PCAP protocols shown'); else fail('pcap proto: ' + pcapText.slice(0, 300));
 
   // ── XYZ Molecular Structure ───────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Ethanol Molecule (XYZ)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const xyzf = await frameOf('iframe.fv-preview-frame');
   await xyzf.waitForSelector('.badge-xyz', { timeout: 8000 });
   const xyzTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -197,9 +197,9 @@ export async function run(ctx) {
   if (/12|Atom/i.test(xyzText)) pass('XYZ atom count shown'); else fail('xyz atoms: ' + xyzText.slice(0, 300));
 
   // ── ESRI Shapefile ────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('NYC Borough Boundary (Shapefile)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const shpf = await frameOf('iframe.fv-preview-frame');
   await shpf.waitForSelector('.badge-shp', { timeout: 8000 });
   const shpTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -210,9 +210,9 @@ export async function run(ctx) {
   if (/40\.|74\./i.test(shpText)) pass('Shapefile bounding box shown'); else fail('shp bbox: ' + shpText.slice(0, 300));
 
   // ── Doom WAD Archive ──────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Doom Patch WAD (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const wadf = await frameOf('iframe.fv-preview-frame');
   await wadf.waitForSelector('.badge-wad', { timeout: 8000 });
   const wadTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -223,9 +223,9 @@ export async function run(ctx) {
   if (/MAP01|Lumps|THINGS|LINEDEFS/i.test(wadText)) pass('WAD lump info shown'); else fail('wad lumps: ' + wadText.slice(0, 300));
 
   // ── SDF / MDL Molfile ─────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Aspirin Molecule (SDF)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const sdff = await frameOf('iframe.fv-preview-frame');
   await sdff.waitForSelector('.badge-sdf', { timeout: 8000 });
   const sdfTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -236,9 +236,9 @@ export async function run(ctx) {
   if (/aspirin|acetyloxy/i.test(sdfText)) pass('SDF molecule name shown'); else fail('sdf name: ' + sdfText.slice(0, 300));
 
   // ── BSP Game Map ──────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Quake BSP Game Map (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const bspf = await frameOf('iframe.fv-preview-frame');
   await bspf.waitForSelector('.badge-bsp', { timeout: 8000 });
   const bspTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -249,9 +249,9 @@ export async function run(ctx) {
   if (/File Viewer Demo|monster_soldier|info_player/i.test(bspText)) pass('BSP entity info shown'); else fail('bsp entities: ' + bspText.slice(0, 300));
 
   // ── CBOR Binary Data ──────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('CBOR API Response (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const cborf = await frameOf('iframe.fv-preview-frame');
   await cborf.waitForSelector('.badge-cbor', { timeout: 8000 });
   const cborTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -262,9 +262,9 @@ export async function run(ctx) {
   if (/310 bytes|Top-level/i.test(cborText)) pass('CBOR metadata shown'); else fail('cbor meta: ' + cborText.slice(0, 300));
 
   // ── Apache Arrow IPC File ─────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Apache Arrow IPC File (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const arrf = await frameOf('iframe.fv-preview-frame');
   await arrf.waitForSelector('.badge-arrow', { timeout: 8000 });
   const arrTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -274,9 +274,9 @@ export async function run(ctx) {
   if (/Arrow IPC|Feather/i.test(arrText)) pass('Arrow format shown'); else fail('arrow format: ' + arrText.slice(0, 300));
 
   // ── CIF Crystallographic Data ─────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Aspirin Crystal Structure (CIF)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const ciff = await frameOf('iframe.fv-preview-frame');
   await ciff.waitForSelector('.badge-cif', { timeout: 8000 });
   const cifTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -287,9 +287,9 @@ export async function run(ctx) {
   if (/Space Group|P 1 21|Unit Cell/i.test(cifText)) pass('CIF crystal data shown'); else fail('cif crystal: ' + cifText.slice(0, 300));
 
   // ── Apache Parquet ────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Apache Parquet Dataset (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const parqf = await frameOf('iframe.fv-preview-frame');
   await parqf.waitForSelector('.badge-parquet', { timeout: 8000 });
   const parqTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -300,9 +300,9 @@ export async function run(ctx) {
   if (/name|salary|department/i.test(parqText)) pass('Parquet field names shown'); else fail('parquet fields: ' + parqText.slice(0, 300));
 
   // ── Apache Avro ───────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Avro Employee Schema (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const avrof = await frameOf('iframe.fv-preview-frame');
   await avrof.waitForSelector('.badge-avro', { timeout: 8000 });
   const avroTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -313,9 +313,9 @@ export async function run(ctx) {
   if (/salary|department|hire_date/i.test(avroText)) pass('Avro schema fields shown'); else fail('avro fields: ' + avroText.slice(0, 300));
 
   // ── MessagePack ───────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('MessagePack data (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const msgpf = await frameOf('iframe.fv-preview-frame');
   await msgpf.waitForSelector('.badge-msgpack', { timeout: 8000 });
   const msgpTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -325,9 +325,9 @@ export async function run(ctx) {
   if (/status|version|user|scores/i.test(msgpText)) pass('MessagePack keys rendered'); else fail('msgpack keys: ' + msgpText.slice(0, 300));
 
   // ── BSON (Binary JSON) ───────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('BSON document (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const bsonf = await frameOf('iframe.fv-preview-frame');
   await bsonf.waitForSelector('.badge-bson', { timeout: 8000 });
   const bsonTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -337,9 +337,9 @@ export async function run(ctx) {
   if (/name|Alice|role/i.test(bsonText)) pass('BSON fields rendered'); else fail('bson fields: ' + bsonText.slice(0, 300));
 
   // ── dBase DBF ─────────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('dBase DBF database (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const dbff = await frameOf('iframe.fv-preview-frame');
   await dbff.waitForSelector('.badge-dbf', { timeout: 8000 });
   const dbfTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -349,9 +349,9 @@ export async function run(ctx) {
   if (/NAME|CITY|Alice/i.test(dbfText)) pass('DBF fields and records shown'); else fail('dbf fields: ' + dbfText.slice(0, 300));
 
   // ── MATLAB MAT-file ───────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('MATLAB MAT-file (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const matf = await frameOf('iframe.fv-preview-frame');
   await matf.waitForSelector('.badge-mat', { timeout: 8000 });
   const matTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -361,9 +361,9 @@ export async function run(ctx) {
   if (/pi_vals|counts|greeting/i.test(matText)) pass('MAT variables shown'); else fail('mat vars: ' + matText.slice(0, 300));
 
   // ── FBX 3D Animation ──────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('FBX 3D animation (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const fbxf = await frameOf('iframe.fv-preview-frame');
   await fbxf.waitForSelector('.badge-fbx', { timeout: 8000 });
   const fbxTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -373,9 +373,9 @@ export async function run(ctx) {
   if (/7400|7\.4|FBXHeader/i.test(fbxText)) pass('FBX version and nodes shown'); else fail('fbx nodes: ' + fbxText.slice(0, 300));
 
   // ── Blender 3D Scene ──────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Blender 3D scene (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const blendf = await frameOf('iframe.fv-preview-frame');
   await blendf.waitForSelector('.badge-blend', { timeout: 8000 });
   const blendTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -385,9 +385,9 @@ export async function run(ctx) {
   if (/4\.2|420|version/i.test(blendText)) pass('Blender version shown'); else fail('blend version: ' + blendText.slice(0, 300));
 
   // ── STEP CAD Exchange ─────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('STEP CAD Exchange file (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const stepf = await frameOf('iframe.fv-preview-frame');
   await stepf.waitForSelector('.badge-step', { timeout: 8000 });
   const stepTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -397,9 +397,9 @@ export async function run(ctx) {
   if (/AP214|schema/i.test(stepText)) pass('STEP schema shown'); else fail('step schema: ' + stepText.slice(0, 300));
 
   // ── AutoCAD DWG ───────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('AutoCAD DWG drawing (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const dwgf = await frameOf('iframe.fv-preview-frame');
   await dwgf.waitForSelector('.badge-dwg', { timeout: 8000 });
   const dwgTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -409,9 +409,9 @@ export async function run(ctx) {
   if (/AC1015|2000/i.test(dwgText)) pass('DWG version info shown'); else fail('dwg version: ' + dwgText.slice(0, 300));
 
   // ── OpenEXR ───────────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('OpenEXR HDR image (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const exrf = await frameOf('iframe.fv-preview-frame');
   await exrf.waitForSelector('.badge-exr', { timeout: 8000 });
   const exrTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -421,9 +421,9 @@ export async function run(ctx) {
   if (/compression|window|scanline/i.test(exrText)) pass('EXR header attributes shown'); else fail('exr attrs: ' + exrText.slice(0, 300));
 
   // ── HDF5 Scientific Data ─────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('HDF5 Scientific Dataset (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const hdf5f = await frameOf('iframe.fv-preview-frame');
   await hdf5f.waitForSelector('.badge-hdf5', { timeout: 8000 });
   const hdf5TypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -433,9 +433,9 @@ export async function run(ctx) {
   if (/Superblock/i.test(hdf5Text)) pass('HDF5 superblock info shown'); else fail('hdf5 superblock: ' + hdf5Text.slice(0, 300));
 
   // ── NIfTI Neuroimaging ────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('NIfTI neuroimaging (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const niftif = await frameOf('iframe.fv-preview-frame');
   await niftif.waitForSelector('.badge-nifti', { timeout: 8000 });
   const niftiTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -445,9 +445,9 @@ export async function run(ctx) {
   if (/3D|64.*64|dimensions/i.test(niftiText)) pass('NIfTI dimension info shown'); else fail('nifti dims: ' + niftiText.slice(0, 300));
 
   // ── Python Bytecode (.pyc) ────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Python bytecode (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const pycf = await frameOf('iframe.fv-preview-frame');
   await pycf.waitForSelector('.badge-pyc', { timeout: 8000 });
   const pycTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -457,9 +457,9 @@ export async function run(ctx) {
   if (/3\.11|3495/i.test(pycText)) pass('Python version shown'); else fail('pyc version: ' + pycText.slice(0, 300));
 
   // ── LMMS Music Project ────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('LMMS music project (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const lmmsf = await frameOf('iframe.fv-preview-frame');
   await lmmsf.waitForSelector('.badge-lmms', { timeout: 8000 });
   const lmmsTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -469,9 +469,9 @@ export async function run(ctx) {
   if (/128|BPM|Demo Beat/i.test(lmmsText)) pass('LMMS BPM or name shown'); else fail('lmms bpm: ' + lmmsText.slice(0, 300));
 
   // ── Fusion 360 Design (.f3d) ──────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Fusion 360 design (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const f3df = await frameOf('iframe.fv-preview-frame');
   await f3df.waitForSelector('.badge-f3d', { timeout: 8000 });
   const f3dTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -481,9 +481,9 @@ export async function run(ctx) {
   if (/Sample Widget|manifest|archive/i.test(f3dText)) pass('F3D contents shown'); else fail('f3d contents: ' + f3dText.slice(0, 300));
 
   // ── Debian Package (.deb) ─────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Debian package (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const debf = await frameOf('iframe.fv-preview-frame');
   await debf.waitForSelector('.badge-deb', { timeout: 8000 });
   const debTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -493,7 +493,7 @@ export async function run(ctx) {
   if (/hello-world|Package|debian-binary/i.test(debText)) pass('DEB package info shown'); else fail('deb pkg: ' + debText.slice(0, 300));
 
   // ── QIF Financial Data (parentNode) ─────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('QIF financial data (demo)');
   await page.waitForSelector('#previewHost .qif-preview', { timeout: 12000 });
   const qifTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -504,9 +504,9 @@ export async function run(ctx) {
   if (/transaction|Bank|Grocery|Quicken/i.test(qifText)) pass('QIF transactions shown'); else fail('qif txns: ' + qifText.slice(0, 300));
 
   // ── RPM Package ───────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('RPM package (demo)');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const rpmf = await frameOf('iframe.fv-preview-frame');
   await rpmf.waitForSelector('.badge-rpm', { timeout: 8000 });
   const rpmTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -516,7 +516,7 @@ export async function run(ctx) {
   if (/hello-world|Binary|x86_64/i.test(rpmText)) pass('RPM package info shown'); else fail('rpm pkg: ' + rpmText.slice(0, 300));
 
   // ── NuGet Package ─────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('NuGet package (demo)');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 14000 });
   const nupkgf = await frameOf('iframe.fv-preview-frame');
@@ -528,7 +528,7 @@ export async function run(ctx) {
   if (/DemoLibrary|Newtonsoft|package/i.test(nupkgText)) pass('NuGet package info shown'); else fail('nupkg pkg: ' + nupkgText.slice(0, 300));
 
   // ── VSIX Extension ────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('VS Extension (demo)');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 14000 });
   const vsixf = await frameOf('iframe.fv-preview-frame');
@@ -539,7 +539,7 @@ export async function run(ctx) {
   if (/VS Extension|Extension/i.test(vsixText)) pass('VSIX badge shown'); else fail('vsix badge: ' + vsixText.slice(0, 300));
 
   // ── Python Wheel ──────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Python Wheel (demo)');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 14000 });
   const whlf = await frameOf('iframe.fv-preview-frame');
@@ -551,7 +551,7 @@ export async function run(ctx) {
   if (/demo.package|requests|package/i.test(whlText)) pass('Wheel package info shown'); else fail('whl pkg: ' + whlText.slice(0, 300));
 
   // ── iOS IPA ───────────────────────────────────────────────────────────────────
-  await page.goto(origin, { waitUntil: 'networkidle' });
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('iOS App (IPA demo)');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 14000 });
   const ipaf = await frameOf('iframe.fv-preview-frame');

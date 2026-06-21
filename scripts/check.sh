@@ -47,7 +47,10 @@ node tests/type-info.test.mjs
 node tests/metadata-normalize.test.mjs
 node tests/metadata-owned.test.mjs
 
-echo "→ smoke test (headless Chromium, zero off-origin)…"
+echo "→ smoke test: core areas (headless Chromium, zero off-origin)…"
 node tests/smoke.mjs
+
+echo "→ smoke test: known-file viewers (fresh browser process, avoids WSL2 OOM)…"
+node tests/smoke-known.mjs
 
 echo "✓ all checks passed"
