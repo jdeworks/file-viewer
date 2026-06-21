@@ -371,7 +371,9 @@ export function renderStage1(ctx) {
       if (activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
       else if (activeTab === 'managers') managersController.paint();
     }
-    checkAchievements(state, cfg, bellLoad());
+    // A newly-unlocked achievement may reveal the Achievements tab — refresh the tab bar so it
+    // appears immediately (returns true only on the rare unlock tick).
+    if (checkAchievements(state, cfg, bellLoad()) && state.tabsUnlocked) renderTabs();
     // 6. Periodic save.
     if (++tickAcc >= 10) { tickAcc = 0; save(state); }
   }

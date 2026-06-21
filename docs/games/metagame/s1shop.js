@@ -80,11 +80,9 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
     panelsEl.innerHTML =
       '<div class="mg-s1-panel" data-panel="bits">'
       + '<button class="mg-compute mg-s1-earn" type="button">Compute bits</button>'
-      + '<div class="mg-s1-scroll">'
       + '<div class="mg-shop">' + tiers.map(shopRowHtml).join('') + '</div>'
       + '<div class="mg-s1-stats" hidden></div>'
       + '<button class="mg-faceboss mg-s1-boss" type="button" hidden>⚔ Confront ' + (cfg.bossName || 'the boss') + '</button>'
-      + '</div>'
       + '</div>';
 
     const earnBtn = panelsEl.querySelector('.mg-s1-earn');
