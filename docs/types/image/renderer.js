@@ -97,9 +97,11 @@ export async function render(intake, ctx = {}) {
       + '<span class="imgv-sep"></span>'
       + '<button class="imgv-resize-btn" title="Resize image to specific dimensions">⊡ Resize</button>'
       + '<span class="imgv-resize-panel" hidden style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;">'
-      + '<label style="font-size:0.8em">W <input class="imgv-resize-w" type="number" min="1" max="16000" style="width:60px"> px</label>'
-      + '<label style="font-size:0.8em">H <input class="imgv-resize-h" type="number" min="1" max="16000" style="width:60px"> px</label>'
+      + '<select class="imgv-resize-unit" title="Resize units" style="font-size:0.8em"><option value="px">px</option><option value="pct">%</option></select>'
+      + '<label style="font-size:0.8em">W <input class="imgv-resize-w" type="number" min="1" max="16000" style="width:60px"></label>'
+      + '<label style="font-size:0.8em">H <input class="imgv-resize-h" type="number" min="1" max="16000" style="width:60px"></label>'
       + '<label style="font-size:0.8em"><input class="imgv-resize-lock" type="checkbox" checked> Lock ratio</label>'
+      + '<label style="font-size:0.8em">Resample <select class="imgv-resize-resample"><option value="high">Smooth</option><option value="medium">Medium</option><option value="pixelated">Pixelated</option></select></label>'
       + '<button class="imgv-resize-apply">Apply Resize</button>'
       + '<button class="imgv-resize-cancel">Cancel</button>'
       + '</span>'
@@ -1006,10 +1008,19 @@ export async function render(intake, ctx = {}) {
   }
 
   // Resize tool — show a panel with width/height inputs, apply draws to a new canvas at that size
+  const resizeUnit = canEdit ? host.querySelector('.imgv-resize-unit') : null;
+  const resizeResample = canEdit ? host.querySelector('.imgv-resize-resample') : null;
+  const pctMode = () => resizeUnit?.value === 'pct';
   function resizePopulate() {
     if (!resizeW || !resizeH) return;
-    resizeW.value = String(img.naturalWidth || '');
-    resizeH.value = String(img.naturalHeight || '');
+    if (pctMode()) { resizeW.value = '100'; resizeH.value = '100'; }
+    else { resizeW.value = String(img.naturalWidth || ''); resizeH.value = String(img.naturalHeight || ''); }
+  }
+  // Resolve the W/H inputs to absolute target pixels (percent is of the natural size).
+  function resizeTargetPx() {
+    const w = parseFloat(resizeW?.value), h = parseFloat(resizeH?.value);
+    if (pctMode()) return { tw: Math.round((img.naturalWidth || 0) * w / 100), th: Math.round((img.naturalHeight || 0) * h / 100) };
+    return { tw: Math.round(w), th: Math.round(h) };
   }
 
   if (resizeBtn) {
@@ -1019,9 +1030,12 @@ export async function render(intake, ctx = {}) {
       resizePanel.hidden = open;
       if (!open) resizePopulate();
     });
+    resizeUnit?.addEventListener('change', resizePopulate);
 
     resizeW?.addEventListener('input', () => {
       if (!resizeLock?.checked) return;
+      // In % mode aspect is preserved by matching percentages; in px mode by ratio.
+      if (pctMode()) { if (resizeH) resizeH.value = resizeW.value; return; }
       const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
       const w = parseInt(resizeW.value, 10);
       if (w > 0 && resizeH) resizeH.value = String(Math.round(w * nh / nw));
@@ -1029,14 +1043,14 @@ export async function render(intake, ctx = {}) {
 
     resizeH?.addEventListener('input', () => {
       if (!resizeLock?.checked) return;
+      if (pctMode()) { if (resizeW) resizeW.value = resizeH.value; return; }
       const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
       const h = parseInt(resizeH.value, 10);
       if (h > 0 && resizeW) resizeW.value = String(Math.round(h * nw / nh));
     });
 
     resizeApplyBtn?.addEventListener('click', async () => {
-      const tw = parseInt(resizeW?.value, 10);
-      const th = parseInt(resizeH?.value, 10);
+      const { tw, th } = resizeTargetPx();
       if (!tw || !th || tw < 1 || th < 1) return;
       const base = new Image(); base.decoding = 'async';
       base.src = editedUrl || url;
@@ -1044,6 +1058,11 @@ export async function render(intake, ctx = {}) {
       const canvas = document.createElement('canvas');
       canvas.width = tw; canvas.height = th;
       const g = canvas.getContext('2d');
+      // Resampling: pixelated = nearest-neighbour (crisp pixel art / hard downscale);
+      // smooth = bilinear-ish at the chosen quality.
+      const rs = resizeResample?.value || 'high';
+      g.imageSmoothingEnabled = rs !== 'pixelated';
+      if (g.imageSmoothingEnabled) g.imageSmoothingQuality = rs === 'medium' ? 'medium' : 'high';
       if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, tw, th); }
       g.drawImage(base, 0, 0, tw, th);
       const targetMime = getExportMime();

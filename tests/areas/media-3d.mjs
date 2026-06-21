@@ -223,6 +223,15 @@ export async function run(ctx) {
   const toolsHidden = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display === 'none');
   await page.click('#previewHost .imgv-tools-btn');   // restore for later steps
   if (toolsVisInit && toolsHidden) pass('image editing tools collapse behind the 🛠 toggle'); else fail('tools toggle: ' + JSON.stringify({ toolsVisInit, toolsHidden }));
+  // Resize in PERCENT: 50% should halve the natural width.
+  const wBefore = await page.$eval('#previewHost .imgv-img', (el) => el.naturalWidth);
+  await page.click('#previewHost .imgv-resize-btn');
+  await page.selectOption('#previewHost .imgv-resize-unit', 'pct');
+  await page.fill('#previewHost .imgv-resize-w', '50');
+  await page.click('#previewHost .imgv-resize-apply');
+  await page.waitForFunction((w) => document.querySelector('#previewHost .imgv-img').naturalWidth > 0 && document.querySelector('#previewHost .imgv-img').naturalWidth < w, wBefore, { timeout: 8000 }).catch(() => {});
+  const wAfter = await page.$eval('#previewHost .imgv-img', (el) => el.naturalWidth);
+  if (Math.abs(wAfter - Math.round(wBefore / 2)) <= 1) pass('resize percent (50%) halves the image width'); else fail('resize %: ' + wBefore + ' -> ' + wAfter);
   await page.evaluate(() => window.__fv.downloadCurrent());
   const cleanAfterDownload = await page.evaluate(() => !window.__fv.hasUnsavedWork());
   if (cleanAfterDownload) pass('edited image download clears unsaved state'); else fail('edited image stayed dirty after download');
