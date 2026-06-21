@@ -14,7 +14,7 @@
 // handlers capture input only until then; once ready, the real intake wiring in app.js owns
 // everything and boot's handlers no-op.
 
-import { intakeFromFile, intakeFromText, entriesFromFileList } from './intake.js';
+import { intakeFromFile, intakeFromText, entriesFromFileList, walkEntries } from './intake.js';
 
 // ── Early-open queue ────────────────────────────────────────────────────────
 // A file/folder/paste captured before app.js finished loading. At most one is held (the latest);
@@ -70,6 +70,12 @@ async function forwardEarly() {
     if (req.kind === 'file') await appBridge.openIntake(await intakeFromFile(req.payload));
     else if (req.kind === 'text') await appBridge.openIntake(intakeFromText(req.payload, 'pasted'));
     else if (req.kind === 'folder') await appBridge.openFolder(req.payload);
+    else if (req.kind === 'drop-entries') {
+      // Walk the whole dropped directory tree (captured synchronously at drop time), then open
+      // it as a folder — same as a normal folder drop, just deferred behind the cold-boot spinner.
+      const out = await walkEntries(req.payload);
+      if (out.length) await appBridge.openFolder(out);
+    }
   } catch (err) {
     appBridge.onError?.(err);
   } finally {
@@ -142,10 +148,11 @@ function wireEarlyIntake() {
     e.preventDefault();
     setDragging(false);
     if (e.dataTransfer?.types?.includes('text/x-fv-tree-path')) return;
-    // A dropped DIRECTORY needs the async Entries-API walk that intake.js owns and the items list
-    // is consumed after this event, so it can't be replayed later. Pre-ready folder drops are rare;
-    // we open the first file if one is present, else just surface the spinner + load the app so the
-    // user can re-drop. Picker-based folder open is fully captured above.
+    // Capture FileSystemEntry roots SYNCHRONOUSLY (the items list is cleared after the event, but
+    // the entry refs stay valid for the async walk we run once the app is ready). A dropped folder
+    // is captured whole and replayed via walkEntries → openFolder; a single file opens as a file.
+    const roots = [...(e.dataTransfer?.items || [])].map((i) => i.webkitGetAsEntry?.()).filter(Boolean);
+    if (roots.some((r) => r.isDirectory)) { capture({ kind: 'drop-entries', payload: roots }); return; }
     const file = e.dataTransfer?.files?.[0];
     if (file) capture({ kind: 'file', payload: file });
     else { showBootSpinner(); ensureApp(); }
