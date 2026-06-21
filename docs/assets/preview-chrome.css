@@ -275,6 +275,24 @@
   overflow: auto; }
 .preview-host .media-ed-warn { font-size: 11px; color: #b08800; margin: 2px 0 0;
   padding: 5px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; }
+/* P8 — Audiobook QC (ACX) report card */
+.preview-host .media-qc-card { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.preview-host .media-qc-verdict { font-size: 12px; font-weight: 700; padding: 5px 8px;
+  border-radius: 5px; border: 1px solid var(--border); }
+.preview-host .media-qc-verdict.media-qc-pass { color: #1a7f37; background: rgba(26,127,55,.08); }
+.preview-host .media-qc-verdict.media-qc-warn { color: #9a6700; background: rgba(154,103,0,.08); }
+.preview-host .media-qc-verdict.media-qc-fail { color: #d73a49; background: rgba(215,58,73,.08); }
+.preview-host .media-qc-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.preview-host .media-qc-row td { padding: 3px 6px; border-bottom: 1px solid var(--border); }
+.preview-host .media-qc-dot { width: 14px; text-align: center; font-size: 11px; }
+.preview-host .media-qc-dot-pass { color: #1a7f37; }
+.preview-host .media-qc-dot-warn { color: #9a6700; }
+.preview-host .media-qc-dot-fail { color: #d73a49; }
+.preview-host .media-qc-metric { color: var(--fg); }
+.preview-host .media-qc-value { color: var(--fg-2); text-align: right; font-variant-numeric: tabular-nums; }
+.preview-host .media-qc-fix td { font-size: 11px; color: var(--fg-2); opacity: .85;
+  padding: 0 6px 5px 20px; border-bottom: 1px solid var(--border); }
+.preview-host .media-qc-export { font-weight: 600; }
 /* Phase 3 — secondary drop zone */
 .preview-host .media-ed-secondary-area { display: flex; flex-direction: column; gap: 6px; }
 .preview-host .media-ed-secondary-label { font-size: 11px; font-weight: 600; color: var(--fg);
@@ -365,6 +383,42 @@
 .preview-host .mx-export-msg { font-size: 12px; color: var(--fg-2); }
 .preview-host .mx-export-result { font-size: 12px; }
 
+/* ── P6 — Video timeline (2-lane) + transitions + visual trim ── */
+.preview-host .media-tl-panel { margin-top: 6px; }
+.preview-host .tl-wrap { display: flex; flex-direction: column; gap: 12px;
+  padding: 12px 14px; border: 1px solid var(--accent); border-radius: 10px;
+  background: var(--bg-2); font-size: 13px; color: var(--fg-2); }
+.preview-host .tl-lane { display: flex; flex-direction: column; gap: 6px; }
+.preview-host .tl-lane-name { font-size: 11px; font-weight: 600; color: var(--fg);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preview-host .tl-strip { position: relative; height: 56px; border-radius: 6px;
+  background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+.preview-host .tl-thumbs { display: flex; align-items: center; gap: 8px; height: 100%;
+  padding: 0 8px; }
+.preview-host .tl-thumb-hint { font-size: 11px; color: var(--fg-2); opacity: .75; }
+.preview-host .tl-thumb-btn { padding: 3px 9px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--bg-3); color: var(--fg); cursor: pointer; font-size: 11px; }
+.preview-host .tl-thumb-img { display: block; height: 100%; width: auto; object-fit: cover; }
+.preview-host .tl-handle { position: absolute; top: 0; width: 10px; height: 56px;
+  cursor: ew-resize; touch-action: none; z-index: 2; background: var(--accent); opacity: .55; }
+.preview-host .tl-handle-in { left: 0; border-radius: 6px 0 0 6px; }
+.preview-host .tl-handle-out { right: 0; border-radius: 0 6px 6px 0; }
+.preview-host .tl-trim-label { font-size: 11px; color: var(--fg-2);
+  font-variant-numeric: tabular-nums; }
+.preview-host .tl-ctrls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  font-size: 12px; }
+.preview-host .tl-dur-input { width: 60px; padding: 2px 6px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg); }
+.preview-host .tl-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.preview-host .tl-act { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--accent);
+  background: var(--accent); color: var(--accent-fg); cursor: pointer; font-size: 12px; font-weight: 600; }
+.preview-host .tl-act-fade { background: var(--bg-3); color: var(--fg); border-color: var(--border); }
+.preview-host .tl-act:disabled { opacity: .5; cursor: default; }
+.preview-host .tl-status { font-size: 12px; color: var(--fg-2); min-height: 14px; }
+.preview-host .tl-result { font-size: 12px; }
+.preview-host .media-tl-open { background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--accent); text-decoration: underline; font: inherit; }
+
 /* ── Video controls (seek, fullscreen, filters) ── */
 .preview-host .media-video-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .preview-host .media-filter-panel { font-size: 12px; color: var(--fg-2); }
@@ -383,6 +437,43 @@
   cursor: pointer; white-space: nowrap; }
 .preview-host .media-ffmpeg-pill--on { color: #22863a; border-color: #22863a; }
 .preview-host .media-ffmpeg-pill--on:hover { background: rgba(34,134,58,.08); }
+
+/* ── P7 Tier-1 playback quick wins (speed presets, PiP/frame-step, subtitles, cover art, chapters) ── */
+.preview-host .media-extras { display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-top: 6px; font-size: 12px; }
+.preview-host .media-speed-row,
+.preview-host .media-video-extras { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.preview-host .media-speed-btn { font-size: 11px; padding: 2px 7px; border-radius: 5px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg-2); font-variant-numeric: tabular-nums; }
+.preview-host .media-speed-btn.active { color: var(--accent); border-color: var(--accent); }
+.preview-host .media-speed-btn:hover { background: var(--bg-2); }
+.preview-host .media-sub-loader { display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  padding: 3px 8px; border-radius: 6px; border: 1px dashed var(--border); color: var(--fg-2); }
+.preview-host .media-sub-loader.drag { border-color: var(--accent); border-style: solid; }
+.preview-host .media-sub-loader input[type=file] { max-width: 160px; font-size: 11px; }
+.preview-host .media-sub-note { color: var(--accent); font-variant-numeric: tabular-nums; }
+/* Subtitle overlay sits over the video; media-doc is the positioning context. */
+.preview-host .media-video { position: relative; }
+.preview-host .media-sub-overlay { position: absolute; left: 0; right: 0; bottom: 12%;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none;
+  text-align: center; padding: 0 8%; z-index: 5; }
+.preview-host .media-sub-overlay[hidden] { display: none; }
+.preview-host .media-sub-line { background: rgba(0,0,0,.72); color: #fff; padding: 1px 8px;
+  border-radius: 4px; font-size: clamp(13px, 2.4vw, 20px); line-height: 1.35;
+  text-shadow: 0 1px 2px rgba(0,0,0,.9); }
+/* Cover art thumbnail above the track name (audio). */
+.preview-host .media-cover-art { display: block; margin: 0 auto 8px; max-width: 200px; max-height: 200px;
+  border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.3); object-fit: contain; }
+/* Chapter list — clickable seek rows. */
+.preview-host .media-chapters { display: flex; flex-direction: column; gap: 2px;
+  max-width: min(420px, 100%); margin: 0 auto; }
+.preview-host .media-chapters-head { font-size: 12px; color: var(--fg-2); margin: 4px 0 2px; }
+.preview-host .media-chapter { display: flex; align-items: center; gap: 10px; text-align: left;
+  padding: 4px 8px; border-radius: 6px; border: 1px solid transparent; background: var(--bg-2);
+  color: var(--fg); cursor: pointer; font-size: 12px; }
+.preview-host .media-chapter:hover { border-color: var(--accent); }
+.preview-host .media-chapter-time { color: var(--accent); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.preview-host .media-chapter-label { flex: 1; word-break: break-word; }
 
 /* EPUB reader (hand-rolled): sidebar TOC + paged chapter content, rendered in the parent
    pane (blob: images need a real origin). Sanitized before it reaches the DOM. */
@@ -857,6 +948,21 @@
 .sp-leg-eq { color: #4a9eff; }
 /* Video studio audio-mixer wrapper sits below the player. */
 .media-vid-mixer { margin-top: 8px; }
+
+/* ── Dynamics panel (dynamics.js): compressor / limiter / gate / de-noise ── */
+.media-dyn-panel { padding: 0; background: var(--bg); }
+.dyn-wrap { display: flex; flex-direction: column; }
+.dyn-note, .dyn-hint { padding: 8px 10px; font-size: 11px; color: var(--fg-2); }
+.dyn-sec { border-top: 1px solid var(--border); }
+.dyn-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg-2); }
+.dyn-enable { cursor: pointer; accent-color: var(--accent); }
+.dyn-title { font-size: 12px; font-variant: small-caps; color: var(--fg); }
+.dyn-badge { font-size: 9px; padding: 1px 6px; border-radius: 8px; background: var(--bg-3); color: var(--fg-2); text-transform: uppercase; letter-spacing: .4px; }
+.dyn-body { padding: 4px 10px 8px; display: flex; flex-direction: column; gap: 3px; }
+.dyn-ctrl { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.dyn-ctrl-lbl { color: var(--fg-2); min-width: 64px; }
+.dyn-slider { flex: 1; min-width: 80px; accent-color: var(--accent); }
+.dyn-val { font-family: ui-monospace, monospace; font-size: 11px; color: var(--fg); min-width: 56px; text-align: right; }
 
 /* ── Query/filter panel + parent-rendered JSON/XML tree (qp-preview) ─────────── */
 /* json/xml/jsonl render their tree in #previewHost directly (parentNode) so the live

@@ -1,11 +1,17 @@
 // Web Audio click tick — singleton AudioContext for low latency
 let ctx;
+let lastTick = 0;
 function getCtx() {
   return ctx ||= new (window.AudioContext || window.webkitAudioContext)();
 }
 
 export function clickTick() {
   try {
+    // Throttle: cap at ~25 ticks/sec so rapid tapping can't spawn an unbounded pile of oscillator
+    // nodes (a slow audio-graph leak that degrades a long session).
+    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    if (now - lastTick < 40) return;
+    lastTick = now;
     const c = getCtx();
     if (c.state === 'suspended') c.resume();
     const osc = c.createOscillator();

@@ -101,7 +101,7 @@ export function wysiwygWrap(before, after, placeholder) {
  * data-action strings dispatched by core/rawpane-markdown.js. Returns true if
  * the action was handled here (table is handled by the caller's picker).
  */
-export function runWysiwygCommand(action) {
+export function runWysiwygCommand(action, opts = {}) {
   if (!editor) return false;
   const c = editor.chain().focus();
   switch (action) {
@@ -114,7 +114,8 @@ export function runWysiwygCommand(action) {
     case 'bullet-list': c.toggleBulletList().run(); return true;
     case 'ordered-list': c.toggleOrderedList().run(); return true;
     case 'task-list': c.toggleTaskList().run(); return true;
-    case 'heading': c.toggleHeading({ level: 1 }).run(); return true;
+    case 'heading': c.toggleHeading({ level: Math.min(6, Math.max(1, opts.level || 1)) }).run(); return true;
+    case 'paragraph': c.setParagraph().run(); return true;
     default: return false;
   }
 }

@@ -30,10 +30,11 @@
 | Feature | Status | Details |
 |---------|--------|---------|
 | Monaco editor | ✅ | Full keyboard editing with Markdown syntax highlighting |
-| Heading insert | ✅ | Tools menu: H1–H3 at current cursor |
-| Bold/italic | ✅ | Wrap selection with `**`/`_` |
+| WYSIWYG editor | ✅ | TipTap visual editor (toggle in the toolbar); round-trips to CommonMark. Compare / Side-by-side switch back to the code editor automatically |
+| Heading levels | ✅ | Toolbar **H** opens a picker — H1–H6 or Normal text — applied in both the Monaco and WYSIWYG editors |
+| Bold/italic/strike | ✅ | Toggle on the selection (native marks in WYSIWYG) |
 | Link from clipboard | ✅ | Paste URL over selection → `[text](url)` |
-| Table insert | ✅ | Prompt for rows/cols → insert GFM table |
+| Table insert | ✅ | Size-grid picker → insert GFM table |
 | Table sort | ✅ | Right-click column header → sort by that column |
 | Save (Companion) | ✅ | Write-back to local file via Companion server |
 

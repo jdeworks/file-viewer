@@ -5,6 +5,7 @@
 import { state, $, toast } from './state.js';
 import { loadGlobal, vendor } from './script-loader.js';
 import { syncHasToolsClass } from './rawpane.js';
+import { getTrimMode, setTrimMode, lineTransformFor, b64encode, b64decode } from './text-utils.js';
 
 // ── JSON toolbar ──────────────────────────────────────────────────────────────
 export function setJsonToolsVisible(visible) {
@@ -258,10 +259,57 @@ export function wireTextUtils() {
   if (!el || el.dataset.wired) return;
   el.dataset.wired = '1';
   el.addEventListener('click', (e) => {
+    // The trim-mode split button opens its own dropdown, not a text-util action.
+    if (e.target.closest('#trimModeBtn')) { toggleTrimModeMenu($('trimModeBtn')); return; }
     const btn = e.target.closest('[data-textutil]');
     if (!btn) return;
     applyTextUtil(btn.dataset.textutil);
   });
+  updateTrimModeLabel();
+}
+
+// ── Trim mode (whitespace-only vs. also drop blank lines) ──
+// Storage + transform logic live in text-utils.js (shared with the side-by-side pane toolbar);
+// this module owns only the split-button label + dropdown UI around them.
+function applyTrimMode(mode) {
+  setTrimMode(mode);
+  updateTrimModeLabel();
+}
+function updateTrimModeLabel() {
+  const btn = $('trimModeBtn');
+  if (!btn) return;
+  const mode = getTrimMode();
+  btn.textContent = (mode === 'ws+lines' ? 'Whitespace + lines' : 'Whitespace') + ' ▾';
+  btn.dataset.mode = mode;
+}
+
+let _trimMenu = null;
+function closeTrimMenu() {
+  if (_trimMenu) { _trimMenu.remove(); _trimMenu = null; }
+  document.removeEventListener('mousedown', onTrimMenuOutside, true);
+}
+function onTrimMenuOutside(e) {
+  if (_trimMenu && !_trimMenu.contains(e.target) && e.target.id !== 'trimModeBtn') closeTrimMenu();
+}
+function toggleTrimModeMenu(btn) {
+  if (!btn) return;
+  if (_trimMenu) { closeTrimMenu(); return; }
+  const menu = document.createElement('div');
+  menu.className = 'tu-mode-menu';
+  for (const [mode, label] of [['ws', 'Trim whitespace'], ['ws+lines', 'Trim whitespace + blank lines']]) {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'tu-mode-item' + (getTrimMode() === mode ? ' active' : '');
+    item.textContent = label;
+    item.addEventListener('click', () => { applyTrimMode(mode); closeTrimMenu(); });
+    menu.appendChild(item);
+  }
+  document.body.appendChild(menu);
+  const r = btn.getBoundingClientRect();
+  menu.style.left = Math.round(r.left) + 'px';
+  menu.style.top = Math.round(r.bottom + 2) + 'px';
+  _trimMenu = menu;
+  setTimeout(() => document.addEventListener('mousedown', onTrimMenuOutside, true), 0);
 }
 
 function applyTextUtil(action) {
@@ -269,20 +317,26 @@ function applyTextUtil(action) {
   const text = state.rawview.getValue();
   let result;
 
-  if (action === 'sortAsc') {
-    result = text.split('\n').sort((a, b) => a.localeCompare(b)).join('\n');
-  } else if (action === 'sortDesc') {
-    result = text.split('\n').sort((a, b) => b.localeCompare(a)).join('\n');
-  } else if (action === 'trim') {
-    result = text.split('\n').map((l) => l.trimEnd()).join('\n');
-  } else if (action === 'dedup') {
-    const seen = new Set();
-    result = text.split('\n').filter((l) => { if (seen.has(l)) return false; seen.add(l); return true; }).join('\n');
-  } else if (action === 'b64encode') {
+  // Line-based utilities: operate on the SELECTION when one exists (expanded to whole
+  // lines), else the whole document — both via undoable Monaco edits so Ctrl+Z works.
+  const lineFn = lineTransformFor(action);
+  if (lineFn) {
+    const fn = (t) => lineFn(t.split('\n')).join('\n');
+    const range = state.rawview.selectionRange?.();
+    if (range && !range.isEmpty?.()) {
+      // Keep the (line-expanded) selection highlighted over the transformed block.
+      state.rawview.transformSelection(fn, { expandToLines: true, selectInserted: true });
+    } else {
+      state.rawview.transformAll(fn);
+    }
+    return;
+  }
+
+  if (action === 'b64encode') {
     const sel = state.rawview.selectionText?.();
     const target = (sel && sel.trim()) ? sel : text;
     try {
-      const encoded = btoa(unescape(encodeURIComponent(target)));
+      const encoded = b64encode(target);
       if (sel && sel.trim()) {
         state.rawview.replaceSelection(encoded);
         return;
@@ -293,7 +347,7 @@ function applyTextUtil(action) {
     const sel = state.rawview.selectionText?.();
     const target = ((sel && sel.trim()) ? sel : text).trim();
     try {
-      const decoded = decodeURIComponent(escape(atob(target)));
+      const decoded = b64decode(target);
       if (sel && sel.trim()) {
         state.rawview.replaceSelection(decoded);
         return;
@@ -303,6 +357,7 @@ function applyTextUtil(action) {
   }
 
   if (result !== undefined && result !== text) {
-    state.rawview.setValue(result);
+    // Undoable whole-document replace (preserves Ctrl+Z), not setValue().
+    state.rawview.transformAll(() => result);
   }
 }

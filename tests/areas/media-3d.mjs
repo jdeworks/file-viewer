@@ -269,6 +269,13 @@ export async function run(ctx) {
   // Sleep timer control present (long-form listening).
   const sleepOpts = await page.$$eval('#previewHost .media-sleep select option', (els) => els.map((e) => e.textContent));
   if (sleepOpts.includes('Off') && sleepOpts.includes('30 min')) pass('audio: sleep timer control present (Off … 60 min)'); else fail('sleep options: ' + sleepOpts.join(','));
+  // P7: speed presets (0.5–2×) — present on audio, and clicking sets playbackRate live.
+  const audioSpeeds = await page.$$eval('#previewHost .media-extras .media-speed-btn', (els) => els.map((e) => e.dataset.rate));
+  if (['0.5', '1', '1.5', '2'].every((r) => audioSpeeds.includes(r))) pass('P7 audio: speed presets (0.5×…2×) present'); else fail('audio speeds: ' + audioSpeeds.join(','));
+  await page.click('#previewHost .media-extras .media-speed-btn[data-rate="1.5"]');
+  const rate15 = await page.$eval('#previewHost audio.media-view', (e) => e.playbackRate);
+  if (Math.abs(rate15 - 1.5) < 0.001) pass('P7 audio: speed preset sets playbackRate (1.5×)'); else fail('playbackRate after 1.5×: ' + rate15);
+  await page.click('#previewHost .media-extras .media-speed-btn[data-rate="1"]');   // restore
   const waveformCollapsed = await page.$eval('#previewHost .media-wv-panel', (e) => e.hidden);
   const waveformBtn = await page.$eval('#previewHost .media-wv-toggle', (e) => e.textContent);
   if (waveformCollapsed && /Show waveform/.test(waveformBtn)) pass('audio waveform: collapsed by default'); else fail('waveform collapsed=' + waveformCollapsed + ' btn=' + waveformBtn);
@@ -317,6 +324,42 @@ export async function run(ctx) {
     await page.waitForSelector('#previewHost .media-sp-panel[hidden]', { state: 'attached', timeout: 3000 });
     pass('audio spectrum: panel collapses');
   } else fail('spectrum & EQ toggle button not found');
+
+  // ── P4 Dynamics panel ── compressor/limiter (live) + gate/de-noise (bake-only).
+  // The Dynamics toggle sits between Spectrum and Mixer; CPU-lazy (no panel DOM until opened).
+  const dynToggleHandle = await page.evaluateHandle(() =>
+    [...document.querySelectorAll('#previewHost .media-wv-toggle')].find((b) => /Dynamics/.test(b.textContent)) || null);
+  const dynToggleExists = await dynToggleHandle.evaluate((e) => !!e);
+  if (dynToggleExists) {
+    pass('audio dynamics: Dynamics toggle button present');
+    const preDyn = await page.$('#previewHost .dyn-wrap');
+    if (!preDyn) pass('audio dynamics: CPU-lazy (no panel DOM until opened)'); else fail('dynamics mounted before open');
+    await dynToggleHandle.asElement().click();
+    await page.waitForSelector('#previewHost .media-dyn-panel:not([hidden]) .dyn-wrap', { timeout: 5000 });
+    // Four effect sections: compressor + limiter (live), gate + de-noise (on export).
+    const dynSecs = await page.$$eval('#previewHost .dyn-sec .dyn-title', (els) => els.map((e) => e.textContent));
+    if (dynSecs.some((t) => /Compressor/.test(t)) && dynSecs.some((t) => /Limiter/.test(t))
+      && dynSecs.some((t) => /gate/i.test(t)) && dynSecs.some((t) => /De-noise/.test(t)))
+      pass('audio dynamics: compressor + limiter + gate + de-noise sections present');
+    else fail('dyn sections: ' + dynSecs.join(','));
+    const dynEnables = await page.$$('#previewHost .dyn-enable');
+    const dynSliders = await page.$$('#previewHost .dyn-slider');
+    if (dynEnables.length === 4) pass('audio dynamics: each section has an enable/bypass toggle'); else fail('dyn enables: ' + dynEnables.length);
+    if (dynSliders.length >= 4) pass('audio dynamics: parameter sliders mounted (' + dynSliders.length + ')'); else fail('dyn sliders: ' + dynSliders.length);
+    // Bake-only sections (gate + de-noise) are labelled "on export".
+    const dynBadges = await page.$$eval('#previewHost .dyn-badge', (els) => els.map((e) => e.textContent));
+    if (dynBadges.filter((t) => /on export/i.test(t)).length === 2) pass('audio dynamics: gate + de-noise labelled "on export"'); else fail('dyn badges: ' + dynBadges.join(','));
+    // Enabling the live compressor must not throw (lazily allocates the node).
+    await page.evaluate(() => {
+      const cb = document.querySelector('#previewHost .dyn-sec .dyn-enable');
+      cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    pass('audio dynamics: enabling live compressor handled without error');
+    // Close the panel → torn down.
+    await dynToggleHandle.asElement().click();
+    await page.waitForSelector('#previewHost .media-dyn-panel[hidden]', { state: 'attached', timeout: 3000 });
+    pass('audio dynamics: panel collapses');
+  } else fail('dynamics toggle button not found');
 
   // ── P5 Multi-track mixer ("swim lanes") ── opt-in panel; decode-lazy; OfflineAudioContext mixdown → WAV.
   const mxBtn = await page.$('#previewHost .media-mx-panel');
@@ -458,6 +501,45 @@ export async function run(ctx) {
     if (mixerLegend) pass('video studio: audio mixer shows the overlaid-spectrum legend'); else fail('mixer legend missing');
   } else fail('video studio: audio mixer toggle not found');
 
+  // ── P7 Tier-1 video quick wins ── speed presets + frame-step + (gated) PiP + subtitle drop.
+  const vidSpeeds = await page.$$eval('#previewHost .media-extras .media-speed-btn', (els) => els.map((e) => e.dataset.rate));
+  if (['0.5', '1', '2'].every((r) => vidSpeeds.includes(r))) pass('P7 video: speed presets present'); else fail('video speeds: ' + vidSpeeds.join(','));
+  const frameBtns = await page.evaluate(() => ({
+    back: !!document.querySelector('#previewHost .media-frame-back'),
+    fwd: !!document.querySelector('#previewHost .media-frame-fwd'),
+  }));
+  if (frameBtns.back && frameBtns.fwd) pass('P7 video: ±1 frame-step buttons present'); else fail('frame-step buttons: ' + JSON.stringify(frameBtns));
+  // PiP button only when the browser advertises support — assert it tracks the feature flag.
+  const pipState = await page.evaluate(() => ({
+    enabled: !!document.pictureInPictureEnabled,
+    btn: !!document.querySelector('#previewHost .media-pip-btn'),
+  }));
+  if (pipState.btn === pipState.enabled) pass('P7 video: PiP button feature-gated (present iff supported)'); else fail('pip gate mismatch: ' + JSON.stringify(pipState));
+  // Subtitle sidecar loader mounts; loading an SRT through it adds timed overlay cues.
+  const subLoader = await page.$('#previewHost .media-sub-loader');
+  if (subLoader) pass('P7 video: subtitle (.srt/.vtt) drop/browse control mounts'); else fail('subtitle loader missing');
+  const srt = '1\n00:00:00,000 --> 00:00:02,000\nHello world\n\n2\n00:00:02,500 --> 00:00:04,000\nSecond line';
+  const subLoaded = await page.evaluate(async (text) => {
+    const file = new File([text], 'cap.srt', { type: 'application/x-subrip' });
+    const input = document.querySelector('#previewHost .media-sub-loader input[type=file]');
+    const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 100));
+    return document.querySelector('#previewHost .media-sub-note')?.textContent || '';
+  }, srt);
+  if (/2 cues/.test(subLoaded)) pass('P7 video: SRT sidecar parses to 2 cues + mounts overlay'); else fail('subtitle load note: ' + subLoaded);
+
+  // PURE SRT/VTT parser unit check (no DOM) — 2-cue SRT → correct timings + text.
+  const parsed = await page.evaluate(async () => {
+    const { parseSubtitles, parseTimestamp } = await import('./types/media/subtitles.js');
+    const cues = parseSubtitles('1\n00:00:01,000 --> 00:00:03,500\nLine A\n\n2\n00:00:04,000 --> 00:00:06,000\nLine B\nwith wrap');
+    return { n: cues.length, c0: cues[0], c1: cues[1], ts: parseTimestamp('00:01:02.250') };
+  });
+  if (parsed.n === 2 && parsed.c0.start === 1 && parsed.c0.end === 3.5 && parsed.c0.text === 'Line A'
+    && parsed.c1.start === 4 && parsed.c1.text === 'Line B\nwith wrap' && parsed.ts === 62.25)
+    pass('P7: SRT parser yields correct cue timings + text (pure)');
+  else fail('srt parse: ' + JSON.stringify(parsed));
+
   // ── P1/P3: Export processed audio + baked fades (ffmpeg ON) ──────────────────
   // Enable ffmpeg via the global settings bag so the renderer builds the export panel.
   // (We do NOT actually run ffmpeg.wasm here — that's a 23 MB heavy load; we assert the
@@ -483,9 +565,10 @@ export async function run(ctx) {
   const fadeInPresent = await page.$('#previewHost .media-ed-fade-in');
   const fadeOutPresent = await page.$('#previewHost .media-ed-fade-out');
   if (fadeInPresent && fadeOutPresent) pass('P3: audio fade-in / fade-out controls present'); else fail('fade controls: in=' + !!fadeInPresent + ' out=' + !!fadeOutPresent);
-  // Crossfade stub: the panel must say cross-clip needs the timeline (it is NOT built).
+  // P6 WIRED: the audio cross-clip line now points at the (built) Multi-track mixer
+  // rather than the old "needs timeline — coming" stub.
   const stubText = await page.$eval('#previewHost .media-export-stub', (e) => e.textContent).catch(() => '');
-  if (/Crossfade.*timeline/i.test(stubText)) pass('P3: crossfade stubbed as "needs timeline"'); else fail('crossfade stub: ' + stubText.slice(0, 80));
+  if (/Crossfade.*mixer/i.test(stubText)) pass('P6: audio crossfade points to the multi-track mixer (wired)'); else fail('crossfade stub: ' + stubText.slice(0, 80));
   // The live-EQ summary updates with the fade duration (proves settings are read live).
   await page.fill('#previewHost .media-ed-fade-in', '2');
   await page.evaluate(() => document.querySelector('#previewHost .media-ed-fade-in').dispatchEvent(new Event('input', { bubbles: true })));
@@ -526,6 +609,77 @@ export async function run(ctx) {
   // Restore the Podcast preset so the rest of the area sees a stable state.
   await page.selectOption('#previewHost .media-export-preset', 'podcast-mp3');
 
+  // ── P8: Audiobook QC (ACX) — pass/fail report card + one-click ACX export ─────
+  // The QC toggle sits in the audio panel stack (after the mixer). CPU-lazy: no
+  // decode / ffmpeg until a button is clicked.
+  const qcToggle = await page.evaluateHandle(() =>
+    [...document.querySelectorAll('#previewHost .media-wv-toggle')].find((b) => /Audiobook QC/.test(b.textContent)) || null);
+  const qcToggleExists = await qcToggle.evaluate((e) => !!e);
+  if (qcToggleExists) {
+    pass('P8: Audiobook QC (ACX) toggle button present');
+    const preQc = await page.$('#previewHost .media-qc-run');
+    if (!preQc) pass('P8: QC panel CPU-lazy (no decode/ffmpeg until opened)'); else fail('QC panel mounted before open');
+    await qcToggle.asElement().click();
+    await page.waitForSelector('#previewHost .media-qc-run', { timeout: 6000 });
+    // Run QC → decode the sample WAV + render the per-metric card.
+    await page.click('#previewHost .media-qc-run');
+    await page.waitForSelector('#previewHost .media-qc-table .media-qc-row', { timeout: 15000 });
+    const qcMetrics = await page.$$eval('#previewHost .media-qc-row', (els) => els.map((e) => e.dataset.metric));
+    if (['rms', 'peak', 'noise', 'sr', 'ch', 'head', 'tail'].every((k) => qcMetrics.includes(k)))
+      pass('P8b: QC card shows all 7 ACX metric rows (RMS/peak/noise/sr/ch/head/tail)');
+    else fail('qc metrics: ' + qcMetrics.join(','));
+    const qcVerdict = await page.$('#previewHost .media-qc-verdict');
+    if (qcVerdict) pass('P8b: QC card shows an overall pass/fail verdict'); else fail('qc verdict missing');
+    // The "Export for ACX" one-click button mounts alongside.
+    const acxBtn = await page.$('#previewHost .media-qc-export');
+    const acxBtnText = acxBtn ? await acxBtn.evaluate((e) => e.textContent) : '';
+    if (/Export for ACX/i.test(acxBtnText)) pass('P8e: "Export for ACX" one-click button mounts'); else fail('acx export btn: ' + acxBtnText);
+    await qcToggle.asElement().click();
+    await page.waitForSelector('#previewHost .media-qc-toggle-panel[hidden]', { state: 'attached', timeout: 3000 });
+    pass('P8: QC panel collapses');
+  } else fail('Audiobook QC toggle not found');
+
+  // ── P8a: PURE BS.1770 integrated LUFS on a synthesized buffer (no ffmpeg/decode) ──
+  // A 1 kHz sine targeted to −23 dB RMS should read ≈ −23 LUFS (K-weighting is near-flat
+  // at 1 kHz; tolerance ±1 LU). Also verify the noise-floor/RMS math.
+  const lufs = await page.evaluate(async () => {
+    const { integratedLufs } = await import('./types/media/loudness.js');
+    const { integratedRms, samplePeak, noiseFloor, edgeSilence } = await import('./types/media/qc.js');
+    const fs = 48000, n = fs * 4;
+    const amp = Math.pow(10, (-23 + 3.0103) / 20);   // 1 kHz sine at −23 dB RMS
+    const sine = new Float32Array(n);
+    for (let i = 0; i < n; i++) sine[i] = amp * Math.sin(2 * Math.PI * 1000 * i / fs);
+    // Buffer with a 1 s leading silence then a 0.3-amp tone → known head silence + floor.
+    const gapped = new Float32Array(n);
+    for (let i = 0; i < n; i++) gapped[i] = i < fs ? 0 : 0.3 * Math.sin(2 * Math.PI * 440 * i / fs);
+    const nf = noiseFloor(gapped, fs);
+    const es = edgeSilence(gapped, fs);
+    return {
+      lufs: integratedLufs([sine], fs),
+      rms: integratedRms(sine), peak: samplePeak(sine),
+      floorDb: nf.db, head: es.head,
+    };
+  });
+  if (Math.abs(lufs.lufs - (-23)) <= 1) pass('P8a: BS.1770 LUFS on −23 dB sine ≈ −23 LUFS (' + lufs.lufs.toFixed(2) + ', ±1 LU)'); else fail('lufs: ' + lufs.lufs);
+  if (Math.abs(lufs.rms - (-23)) < 0.1 && Math.abs(lufs.peak - (-20)) < 0.2) pass('P8b: RMS/peak math correct on synthesized sine'); else fail('rms/peak: ' + JSON.stringify(lufs));
+  if (lufs.floorDb === -Infinity || lufs.floorDb < -100) pass('P8b: noise floor finds the silent window (−∞ for true silence)'); else fail('noise floor: ' + lufs.floorDb);
+  if (Math.abs(lufs.head - 1) < 0.05) pass('P8b: edge-silence detects the 1 s leading gap'); else fail('head silence: ' + lufs.head);
+
+  // ── P8c/P8e: PURE ACX arg builder → mono/44.1k/192k + loudnorm + silenceremove ──
+  const acxArgs = await page.evaluate(async () => {
+    const { buildAcxExportArgs, buildAcxFilterChain, silenceRemoveFilter } = await import('./types/media/transcoder.js');
+    return {
+      args: buildAcxExportArgs('input.mp3', 'out.mp3').join(' '),
+      chain: buildAcxFilterChain(),
+      silence: silenceRemoveFilter(),
+    };
+  });
+  if (/-ac 1/.test(acxArgs.args) && /-ar 44100/.test(acxArgs.args) && /-c:a libmp3lame -b:a 192k/.test(acxArgs.args))
+    pass('P8e: ACX arg builder forces mono / 44.1 kHz / MP3 192 k'); else fail('acx args: ' + acxArgs.args);
+  if (/loudnorm=I=-20:TP=-3:LRA=11/.test(acxArgs.chain) && /silenceremove=/.test(acxArgs.chain) && /apad=pad_dur=/.test(acxArgs.chain))
+    pass('P8c/P8e: ACX -af chain = loudnorm −20/−3 + silenceremove + room-tone pad'); else fail('acx chain: ' + acxArgs.chain);
+  if (/start_threshold=-50dB/.test(acxArgs.silence)) pass('P8c: silenceremove trims dead air (−50 dB threshold)'); else fail('silence: ' + acxArgs.silence);
+
   // Verify the ffmpeg `-af` chain the export will run, via the PURE builder (no ffmpeg load).
   const chain = await page.evaluate(async () => {
     const { buildAudioFilterChain } = await import('./types/media/transcoder.js');
@@ -538,6 +692,38 @@ export async function run(ctx) {
   const chainOk = /^highpass=f=80,equalizer=f=120:width_type=o:width=1:g=3,.*equalizer=f=1000.*g=-2,lowpass=f=16000,afade=t=in:st=0:d=2,afade=t=out:st=57:d=3,loudnorm=I=-16:TP=-1\.5:LRA=11$/.test(chain);
   if (chainOk) pass('P1: ffmpeg -af chain correct order (HPF→bands→LPF→fades→loudnorm)'); else fail('af chain: ' + chain);
 
+  // ── P4: dynamics filter ordering ── afftdn → agate → acompressor → eq → alimiter.
+  // PURE builder again (no ffmpeg). Dynamics fields are OPTIONAL, so the chain above
+  // (without `dynamics`) stays byte-identical; with them, the mastering order holds.
+  const dynChain = await page.evaluate(async () => {
+    const { buildAudioFilterChain } = await import('./types/media/transcoder.js');
+    const freqs = [60, 120, 250, 500, 1000, 2000, 4000, 8000, 12000];
+    return buildAudioFilterChain({
+      freqs, gains: [0, 0, 0, 0, 2, 0, 0, 0, 0], hpf: 80, lpf: 16000,
+      dynamics: {
+        denoise: { enabled: true, strength: 12 },
+        gate: { enabled: true, threshold: -50, ratio: 2 },
+        comp: { enabled: true, threshold: -24, ratio: 4, makeup: 6 },
+        limiter: { enabled: true, ceiling: -1 },
+      },
+    }, {});
+  });
+  const idx = (s) => dynChain.indexOf(s);
+  const dynOrderOk = idx('afftdn') >= 0 && idx('agate') > idx('afftdn')
+    && idx('acompressor') > idx('agate') && idx('equalizer') > idx('acompressor')
+    && idx('lowpass') > idx('equalizer') && idx('alimiter') > idx('lowpass')
+    && idx('highpass') === 0;
+  if (dynOrderOk) pass('P4: dynamics chain order (HPF→afftdn→agate→acompressor→EQ→LPF→alimiter)'); else fail('dyn chain: ' + dynChain);
+  // Compressor threshold dB→linear (−24 dB ≈ 0.06) and a denoise strength land in the args.
+  if (/acompressor=threshold=0\.06:ratio=4/.test(dynChain) && /afftdn=nr=12/.test(dynChain) && /agate=/.test(dynChain) && /alimiter=limit=/.test(dynChain))
+    pass('P4: dynamics emit acompressor/afftdn/agate/alimiter with params'); else fail('dyn params: ' + dynChain);
+  // No `dynamics` → output is byte-identical to the pre-P4 chain (existing assertion above stays green).
+  const noDyn = await page.evaluate(async () => {
+    const { buildAudioFilterChain } = await import('./types/media/transcoder.js');
+    return buildAudioFilterChain({ freqs: [60], gains: [0], hpf: 80 }, {});
+  });
+  if (noDyn === 'highpass=f=80') pass('P4: chain without dynamics stays byte-identical (no regression)'); else fail('no-dyn chain: ' + noDyn);
+
   // ── P3: video fade — the export panel on a video reads "video" and renders fade-to-black.
   await page.evaluate(() => window.__fv.openExampleByLabel('Sample.avi'));
   await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
@@ -545,6 +731,68 @@ export async function run(ctx) {
   if (/Export & Fades \(video\)/i.test(vidExportHeader)) pass('P3: video export panel offers fade-to-black'); else fail('video export header: ' + vidExportHeader);
   const vidFadeIn = await page.$('#previewHost .media-export-panel .media-ed-fade-in');
   if (vidFadeIn) pass('P3: video fade-to/from-black duration controls present'); else fail('video fade controls missing');
+
+  // ── P6: Video timeline (2-lane) + transitions + visual trim ───────────────────
+  // Built for video when ffmpeg is enabled; CPU-lazy (no timeline DOM until opened).
+  const tlToggle = await page.evaluateHandle(() =>
+    [...document.querySelectorAll('#previewHost .media-wv-toggle')].find((b) => /Video timeline/.test(b.textContent)) || null);
+  const tlToggleExists = await tlToggle.evaluate((e) => !!e);
+  if (tlToggleExists) {
+    pass('P6: video timeline toggle button present');
+    const preTl = await page.$('#previewHost .tl-wrap');
+    if (!preTl) pass('P6: video timeline CPU-lazy (no DOM until opened)'); else fail('timeline mounted before open');
+    await tlToggle.asElement().click();
+    await page.waitForSelector('#previewHost .tl-wrap', { timeout: 12000 });
+    // 2 lanes: video lane (clip A) + second/music lane.
+    const lanes = await page.$$eval('#previewHost .tl-lane', (els) => els.length);
+    if (lanes === 2) pass('P6: timeline mounts 2 lanes (video + second/music)'); else fail('timeline lanes: ' + lanes);
+    // Thumbnail strip with a load-on-demand button + trim handles (in/out).
+    const tlBits = await page.evaluate(() => ({
+      strip: !!document.querySelector('#previewHost .tl-strip'),
+      thumbBtn: !!document.querySelector('#previewHost .tl-thumb-btn'),
+      handleIn: !!document.querySelector('#previewHost .tl-handle-in'),
+      handleOut: !!document.querySelector('#previewHost .tl-handle-out'),
+      drop: !!document.querySelector('#previewHost .tl-lane--b .media-ed-drop-zone'),
+    }));
+    if (tlBits.strip && tlBits.thumbBtn) pass('P6: thumbnail strip + on-demand thumbnail button present'); else fail('thumb strip: ' + JSON.stringify(tlBits));
+    if (tlBits.handleIn && tlBits.handleOut) pass('P6: visual trim handles (in/out) present'); else fail('trim handles: ' + JSON.stringify(tlBits));
+    if (tlBits.drop) pass('P6: second-clip / music drop zone present'); else fail('timeline drop zone missing');
+    // Transition controls: dissolve/xfade selector + length + the four action buttons.
+    const transOpts = await page.$$eval('#previewHost .tl-trans-sel option', (els) => els.map((e) => e.value));
+    if (transOpts.includes('fade') && transOpts.includes('fadeblack') && transOpts.includes('wipeleft')) pass('P6: transition selector offers fade/fadeblack/wipe'); else fail('transition opts: ' + transOpts.join(','));
+    const acts = await page.evaluate(() => ({
+      fade: !!document.querySelector('#previewHost .tl-act-fade'),
+      xfade: !!document.querySelector('#previewHost .tl-act-xfade'),
+      across: !!document.querySelector('#previewHost .tl-act-across'),
+      mux: !!document.querySelector('#previewHost .tl-act-mux'),
+    }));
+    if (acts.fade && acts.xfade && acts.across && acts.mux) pass('P6: fade/xfade/acrossfade/mux action buttons present'); else fail('timeline actions: ' + JSON.stringify(acts));
+    // Cross-clip actions disabled until a second clip is dropped.
+    const xfadeDisabled = await page.$eval('#previewHost .tl-act-xfade', (e) => e.disabled);
+    if (xfadeDisabled) pass('P6: dissolve disabled until a 2nd clip is added'); else fail('xfade not gated on 2nd clip');
+    // Close → torn down.
+    await tlToggle.asElement().click();
+    await page.waitForSelector('#previewHost .tl-wrap', { state: 'detached', timeout: 4000 });
+    pass('P6: video timeline panel collapses + tears down');
+  } else fail('P6 video timeline toggle not found');
+
+  // PURE arg-builder unit checks (no ffmpeg load): xfade offset math + acrossfade/mux args.
+  const tlArgs = await page.evaluate(async () => {
+    const m = await import('./types/media/video-filters.js');
+    return {
+      offset: m.xfadeOffset(10, 1),                         // durA−d = 9
+      xfade: m.buildXfadeArgs('input.mp4', 'secondary.mp4', 'out.mp4', { durationA: 10, transition: 'fade', duration: 1 }).join(' '),
+      across: m.buildAcrossfadeArgs('input.mp3', 'secondary.mp3', 'out.m4a', { duration: 2 }).join(' '),
+      mux: m.buildMuxMusicArgs('input.mp4', 'secondary.mp3', 'out.mp4', { musicGain: 0.35 }).join(' '),
+      badTrans: m.normalizeTransition('nonsense'),
+    };
+  });
+  if (tlArgs.offset === 9) pass('P6: xfadeOffset(10,1) = 9 (durationA − transition)'); else fail('xfade offset: ' + tlArgs.offset);
+  if (/xfade=transition=fade:duration=1:offset=9/.test(tlArgs.xfade) && /\[0:a\]\[1:a\]acrossfade=d=1\[a\]/.test(tlArgs.xfade) && /libx264/.test(tlArgs.xfade)) pass('P6: xfade args build dissolve + aligned audio acrossfade'); else fail('xfade args: ' + tlArgs.xfade);
+  if (/\[0:a\]\[1:a\]acrossfade=d=2\[a\]/.test(tlArgs.across)) pass('P6: acrossfade args build d=2 audio crossfade'); else fail('acrossfade args: ' + tlArgs.across);
+  if (/volume=0\.35/.test(tlArgs.mux) && /amix=inputs=2:duration=first/.test(tlArgs.mux) && /-c:v copy/.test(tlArgs.mux)) pass('P6: mux-music args duck the bed + amix under the video audio'); else fail('mux args: ' + tlArgs.mux);
+  if (tlArgs.badTrans === 'fade') pass('P6: unknown transition normalizes to fade'); else fail('bad transition: ' + tlArgs.badTrans);
+
   // Reset settings so we don't leak ffmpeg-on into later areas sharing the page.
   await page.evaluate(() => localStorage.removeItem('fv:settings:global'));
 }

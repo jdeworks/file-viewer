@@ -13,19 +13,36 @@
 // state/save/checkMessages/bellLoad/bellAdd are optional in this WP (WP-S1-12 wires the full ctx);
 // the boss degrades gracefully (no-op bell/save) when they are absent.
 
+import { toDisplay, gte, sub, mulScalar } from './bignum.js';
+
 const FIGHT_MS = 20000;
 const SHADOW_WEIGHT = 1.10;
 const BURST_MS = 800;
-const RETRY_COOLDOWN_MS = 5000;
-const TICKET = { m: 1, e: 9 };   // 1B bits — re-paid on retry
+const DEFAULT_TICKET = { m: 1, e: 9 };   // fallback if the stage config has no bossTicket
 
 const TAUNTS = {
+  // Shown in the LOBBY (before/after a fight) — intimidation, not the during-fight jabs.
+  lobby: [
+    'scattered bits. how careless. shall we begin?',
+    'I have all the time in the world. and all of your bits.',
+    'I am The Defragmenter. fragmentation is… temporary.',
+    'press Fight whenever you\'re ready to lose.',
+  ],
+  // Shown only DURING the fight.
   general: [
     'you call that clicking?',
     'beep boop. I win again.',
     'your bits are mine now.',
     "I've been defragging longer than you've existed.",
     "don't worry, I'll put your bits in order. my order.",
+  ],
+  // The win-mechanic hint, escalating with losses (shown in the lobby). The boss cheats; you can't
+  // out-tap it — you disable the cheat by editing Overwriter.frag (CHEAT=true → false) in the viewer.
+  hint: [
+    'I never lose a fair fight. lucky for me — I don\'t fight fair.',          // 0 losses
+    'you can\'t out-tap a cheater. the fix isn\'t anywhere in this window.',   // 1
+    'nothing in the examples folder could possibly help you. nothing. don\'t look.',  // 2
+    'and if some file decided how I cheat… you\'d never think to open it. Overwriter.frag, I mean. don\'t.',  // 3+
   ],
   burstCheat: [
     'look at this box I found! 📦',
@@ -98,6 +115,8 @@ function injectStyle() {
   background:var(--bg-2); transition:box-shadow .15s, border-color .15s; }
 .mg-defrag-header { font:700 22px/1.1 ui-monospace, monospace; letter-spacing:2px; color:#e0742f; margin-bottom:10px; }
 .mg-defrag-intro { font-size:13px; color:var(--fg-2); margin-bottom:12px; }
+.mg-defrag-hint { font-size:12px; color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent);
+  border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius:8px; padding:7px 10px; margin:8px 0; }
 .mg-defrag-taunt-wrap { min-height:64px; margin:8px 0; }
 .boss-taunt { display:flex; align-items:flex-start; gap:8px; justify-content:center; text-align:left; }
 .boss-taunt-avatar { font-size:26px; line-height:1; flex:0 0 auto; animation:mg-defrag-gear 4s linear infinite; }
@@ -148,6 +167,12 @@ export function mountDefragmenter(arena, opts = {}) {
   const bellAdd = typeof opts.bellAdd === 'function' ? opts.bellAdd : () => {};
   const actions = opts.actions || null;
 
+  // Fight costs the ticket; a retry costs half. Use the real stage ticket (now 1ba).
+  const ticket = (opts.stage && opts.stage.bossTicket) || DEFAULT_TICKET;
+  const halfTicket = mulScalar(ticket, 0.5);
+  const canPay = (price) => gte(state.bits || { m: 0, e: 0 }, price);
+  const pay = (price) => { state.bits = sub(state.bits, price); };
+
   injectStyle();
 
   let destroyed = false;
@@ -185,11 +210,10 @@ export function mountDefragmenter(arena, opts = {}) {
   }
 
   // ── Taunt dialog component (lobby idle cycler + arena event-driven) ─────────────────────────
-  function lobbyPool() {
-    const losses = state.bossLossCount || 0;
-    const gated = TAUNTS.lossGated.filter((g) => losses >= g.atLosses).map((g) => g.text);
-    return TAUNTS.general.concat(gated);
-  }
+  // Lobby idle cycler shows only lobby intimidation lines — the during-fight jabs ("you call that
+  // clicking?") stay in the fight. The win-mechanic hint is shown separately (winHint).
+  function lobbyPool() { return TAUNTS.lobby; }
+  function winHint() { return TAUNTS.hint[Math.min(state.bossLossCount || 0, TAUNTS.hint.length - 1)]; }
   function makeTauntDialog() {
     const bubble = arena.querySelector('.boss-taunt-bubble');
     let idleId = null;
@@ -215,14 +239,23 @@ export function mountDefragmenter(arena, opts = {}) {
       + '<div class="mg-defrag-taunt-wrap"><div class="boss-taunt">'
       + '<span class="boss-taunt-avatar">⚙️</span>'
       + '<div class="boss-taunt-bubble"></div></div></div>'
+      + '<div class="mg-defrag-hint">💡 ' + esc(winHint()) + '</div>'
       + '<div class="mg-defrag-status">' + esc(extraStatus || '') + '</div>'
       + '<div class="mg-defrag-lobby-btns">'
-      + '<button class="mg-defrag-btn mg-defrag-fight" type="button">Fight</button>'
+      + '<button class="mg-defrag-btn mg-defrag-fight" type="button"' + (canPay(ticket) ? '' : ' disabled') + '>Fight — ' + esc(toDisplay(ticket)) + '</button>'
       + '<button class="mg-defrag-btn alt mg-defrag-retreat" type="button">Retreat</button>'
       + '</div></div>';
     const taunt = makeTauntDialog();
     taunt.startIdle();
-    on(arena.querySelector('.mg-defrag-fight'), 'click', () => { taunt.stopIdle(); startFight(); });
+    on(arena.querySelector('.mg-defrag-fight'), 'click', () => {
+      if (!canPay(ticket)) { renderLobby('insufficient bits — the ticket is ' + toDisplay(ticket) + '.'); return; }
+      pay(ticket);
+      state.bossEntered = true;
+      fireAchievement('ach-boss-enter');
+      save(state);
+      taunt.stopIdle();
+      startFight();
+    });
     on(arena.querySelector('.mg-defrag-retreat'), 'click', retreat);
   }
 
@@ -372,35 +405,20 @@ export function mountDefragmenter(arena, opts = {}) {
     checkMessages('boss-loss', state, bellLoad());   // fires bell-boss-hint-* at 5/10/15 (§7.3)
     if (cheatActive) fireAchievement('ach-boss-lose');
     if (bubble) bubble.textContent = pick(TAUNTS.loss);
-    if (statusEl) statusEl.textContent = 'The Defragmenter wins. It defragged 1B of your bits.';
+    if (statusEl) statusEl.textContent = 'The Defragmenter wins — your bits scatter, but stay yours. Try again.';
 
     showResultOverlay('YOU LOSE', 'lose', userScore, bossScore, null, null);
-    // Retry (after 5 s cooldown) + Retreat.
+    // Retry is free + immediate (no cooldown) + Retreat.
     const overlay = arena.querySelector('.mg-defrag-overlay');
     if (!overlay) return;
     const btns = document.createElement('div');
     btns.className = 'mg-defrag-lobby-btns';
     btns.innerHTML =
-      '<button class="mg-defrag-btn mg-defrag-retry" type="button" disabled>Try Again (5s)</button>'
+      '<button class="mg-defrag-btn mg-defrag-retry" type="button"' + (canPay(halfTicket) ? '' : ' disabled') + '>Try Again — ' + esc(toDisplay(halfTicket)) + '</button>'
       + '<button class="mg-defrag-btn alt mg-defrag-retreat" type="button">Retreat</button>';
     overlay.appendChild(btns);
-    const retryBtn = btns.querySelector('.mg-defrag-retry');
     on(btns.querySelector('.mg-defrag-retreat'), 'click', retreat);
-    let left = RETRY_COOLDOWN_MS;
-    const cd = setI(() => {
-      left -= 250;
-      if (left <= 0) {
-        clearInterval(cd); timers.delete(cd);
-        retryBtn.disabled = false;
-        retryBtn.textContent = 'Try Again';
-      } else {
-        retryBtn.textContent = 'Try Again (' + Math.ceil(left / 1000) + 's)';
-      }
-    }, 250);
-    on(retryBtn, 'click', () => {
-      if (retryBtn.disabled) return;
-      onRetry();
-    });
+    on(btns.querySelector('.mg-defrag-retry'), 'click', onRetry);
   }
 
   function showResultOverlay(title, cls, userScore, bossScore, onContinue, cta) {
@@ -424,17 +442,10 @@ export function mountDefragmenter(arena, opts = {}) {
     arenaEl.appendChild(ov);
   }
 
-  // Retry: re-pay the ticket if affordable, else show insufficient-bits status in the lobby.
+  // Retry costs HALF the ticket (cheaper than a fresh fight, but not free).
   function onRetry() {
-    // BigNum-aware affordability + deduction without importing bignum.js (kept dep-free here).
-    const bits = state.bits;
-    if (bits && typeof bits === 'object' && 'm' in bits) {
-      if (!bigGte(bits, TICKET)) { renderLobby('insufficient bits — you need 1B to fight again.'); return; }
-      state.bits = bigSub(bits, TICKET);
-    } else if (typeof bits === 'number') {
-      if (bits < 1e9) { renderLobby('insufficient bits — you need 1B to fight again.'); return; }
-      state.bits = bits - 1e9;
-    }
+    if (!canPay(halfTicket)) { renderLobby('insufficient bits — a retry costs ' + toDisplay(halfTicket) + '.'); return; }
+    pay(halfTicket);
     state.bossEntered = true;
     fireAchievement('ach-boss-enter');
     save(state);
@@ -467,23 +478,4 @@ export function mountDefragmenter(arena, opts = {}) {
 
   renderLobby();
   return { destroy: cleanup };
-}
-
-// --- BigNum helpers (local, no import — bignum.js may not be loaded in this context) ---
-function bigGte(a, b) {
-  if (!a || a.m === 0) return !b || b.m === 0;
-  if (!b || b.m === 0) return true;
-  if (a.e !== b.e) return a.e > b.e;
-  return a.m >= b.m;
-}
-function bigSub(a, b) {
-  if (!b || b.m === 0) return a;
-  if (bigGte(b, a)) return { m: 0, e: 0 };
-  const diff = a.e - b.e;
-  if (diff > 48) return a;
-  let m = a.m - b.m / Math.pow(10, diff), e = a.e;
-  if (m === 0) return { m: 0, e: 0 };
-  while (m >= 1000) { m /= 1000; e += 3; }
-  while (m < 1 && e > 0) { m *= 1000; e -= 3; }
-  return { m, e };
 }

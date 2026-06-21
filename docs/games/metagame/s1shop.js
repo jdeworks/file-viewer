@@ -45,6 +45,9 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
     return sel;
   }
 
+  // Compact number display ("6", "1.23k", "4.00b"…) — used for counts that can grow large.
+  const fmtN = (n) => toDisplay(fromNumber(n));
+
   // Reward one cycle pays: builders show the units they assemble; the rest, bits. Updates as the
   // owned count of the machine (or its boosters) changes — recomputed on every paint.
   function rewardLabel(t) {
@@ -52,7 +55,7 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       const prod = timedProduction(state, cfg, t.id);
       const target = tiers.find((x) => x.id === t.produces.targetId);
       const tName = target ? (target.icon + ' ' + target.name) : t.produces.targetId;
-      return '+' + (prod ? prod.amount : (t.produces.perOwned || 1)) + ' ' + tName;
+      return '+' + fmtN(prod ? prod.amount : (t.produces.perOwned || 1)) + ' ' + tName;
     }
     return '+' + toDisplay(timedPayout(state, cfg, t.id)) + ' bits';
   }
@@ -82,8 +85,10 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
     return '<div class="mg-buy mg-s1-shoprow' + (timed ? ' mg-s1-timedrow' : '') + '" data-id="' + t.id + '"'
       + (visible ? '' : ' hidden') + '>'
       + (timed ? '<div class="mg-s1-rowfill" aria-hidden="true"></div>' : '')
-      + '<span class="mg-buy-name">' + escapeHtml(t.icon + ' ' + t.name) + ' <span class="mg-owned">×' + owned + '</span>'
-      + (timed ? ' <span class="mg-s1-rowreward"></span>' : '') + '</span>'
+      + '<span class="mg-buy-name">' + escapeHtml(t.icon + ' ' + t.name) + ' <span class="mg-owned">×' + fmtN(owned) + '</span></span>'
+      // Reward on its OWN line (timed rows) so the row is always 3 lines — its length changing while
+      // running (e.g. "+780 bits · 2.1s") never adds a line and shifts the layout.
+      + (timed ? '<span class="mg-s1-rowreward"></span>' : '')
       + '<span class="mg-buy-blurb">' + escapeHtml(desc) + '</span>'
       + '<span class="mg-s1-buyrow"><span class="mg-s1-counts">' + counts + '</span>'
       + '<button class="mg-buy-cost mg-s1-buybtn" type="button" data-id="' + t.id + '"></button></span>'
@@ -96,7 +101,8 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       + '<button class="mg-compute mg-s1-earn" type="button">Compute bits</button>'
       + '<div class="mg-shop">' + tiers.map(shopRowHtml).join('') + '</div>'
       + '<div class="mg-s1-stats" hidden></div>'
-      + '<button class="mg-faceboss mg-s1-boss" type="button" hidden>⚔ Confront ' + (cfg.bossName || 'the boss') + '</button>'
+      + '<button class="mg-faceboss mg-s1-boss" type="button" hidden>⚔ Confront ' + (cfg.bossName || 'the boss')
+      + (cfg.bossTicket ? ' — ' + toDisplay(cfg.bossTicket) : '') + '</button>'
       + '</div>';
 
     const earnBtn = panelsEl.querySelector('.mg-s1-earn');
@@ -161,19 +167,21 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       setHidden(row, !visible);
       if (!visible) return;
       const owned = state.owned[t.id] || 0;
-      setText(row.querySelector('.mg-owned'), '×' + owned);
+      setText(row.querySelector('.mg-owned'), '×' + fmtN(owned));
       // Highlight the active count selector (classList.toggle is idempotent).
       const sel = countFor(t.id);
       row.querySelectorAll('.mg-s1-buyn').forEach((b) => {
         const v = b.dataset.n === 'max' ? 'max' : Number(b.dataset.n);
         b.classList.toggle('mg-mult-on', String(v) === String(sel));
       });
-      const n = effectiveN(t);
-      const cost = totalCost(t, owned, n || 0);
+      // For MAX, show the price of 1 when you can't afford even one (so the cost is always visible).
+      const maxN = sel === 'max' ? maxAffordable(state.bits, t, owned) : null;
+      const displayN = sel === 'max' ? Math.max(1, maxN) : sel;
+      const cost = totalCost(t, owned, displayN);
       const buyBtn = row.querySelector('.mg-s1-buybtn');
-      const label = sel === 'max' ? 'MAX' : '×' + n;
+      const label = sel === 'max' ? 'MAX' : '×' + displayN;
       setText(buyBtn, 'Buy ' + label + ' — ' + toDisplay(cost));
-      const affordable = (n > 0) && gte(state.bits, cost);
+      const affordable = sel === 'max' ? (maxN >= 1) : gte(state.bits, cost);
       buyBtn.classList.toggle('mg-buy-locked', !affordable);
       setDisabled(buyBtn, !affordable);
     });
@@ -189,7 +197,9 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       if (!fill || !reward) return;
       const owned = state.owned[t.id] || 0;
       row.classList.toggle('mg-s1-runnable', owned >= 1);
-      if (owned < 1) { if (fill.style.width !== '0%') fill.style.width = '0%'; setText(reward, ''); return; }
+      // Fill via transform: scaleX (compositor-only) instead of width (which relayouts every frame).
+      const setFill = (frac) => { const v = 'scaleX(' + frac + ')'; if (fill.style.transform !== v) fill.style.transform = v; };
+      if (owned < 1) { setFill(0); setText(reward, ''); return; }
       const ts = state.timedStates[t.id];
       if (ts && ts.active) {
         const elapsed = Date.now() - ts.startedAt;
@@ -197,17 +207,16 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
         if (dur < 500) {
           // Too fast for a meaningful progress bar — show a full, shimmering bar + the steady rate.
           fill.classList.add('mg-s1-rowfill-fast');
-          if (fill.style.width !== '100%') fill.style.width = '100%';
+          setFill(1);
           setText(reward, rateLabel(t, dur));
         } else {
           fill.classList.remove('mg-s1-rowfill-fast');
-          const w = (Math.max(0, Math.min(1, elapsed / dur)) * 100) + '%';
-          if (fill.style.width !== w) fill.style.width = w;
+          setFill(Math.max(0, Math.min(1, elapsed / dur)));
           setText(reward, rewardLabel(t) + ' · ' + Math.max(0, (dur - elapsed) / 1000).toFixed(1) + 's');
         }
       } else {
         fill.classList.remove('mg-s1-rowfill-fast');
-        if (fill.style.width !== '0%') fill.style.width = '0%';
+        setFill(0);
         setText(reward, '▸ ' + rewardLabel(t));
       }
     });

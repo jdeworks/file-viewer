@@ -102,6 +102,48 @@ function showTablePicker(anchorEl) {
   picker.style.top = (rect.bottom + 4) + 'px';
 }
 
+// ── Heading level menu (H1–H6 + Normal text) ──────────────────────────────────
+// The single "H" toolbar button opens this picker so the user can choose a level,
+// not just H1. Applies via TipTap (WYSIWYG) or the markdown source (Monaco).
+let headingMenu = null;
+function closeHeadingMenu() { headingMenu?.remove(); headingMenu = null; document.removeEventListener('mousedown', onHeadingOutside, true); }
+function onHeadingOutside(e) {
+  if (headingMenu && !headingMenu.contains(e.target) && !e.target.closest?.('[data-md-action="heading"]')) closeHeadingMenu();
+}
+function applyHeadingLevel(level) {
+  if (isWysiwygActive()) {
+    runWysiwygCommand(level === 0 ? 'paragraph' : 'heading', { level });
+    return;
+  }
+  if (!state.rawview || state.type?.id !== 'markdown') return;
+  if (level === 0) {
+    state.rawview.transformSelection((text) => text.replace(/^(\s*)#{1,6}\s+/gm, '$1'), { expandToLines: true, source: 'markdown-heading' });
+  } else {
+    state.rawview.transformSelection((text) => markdownHeading(text, level), { expandToLines: true, source: 'markdown-heading' });
+  }
+}
+function showHeadingMenu(anchorEl) {
+  closeHeadingMenu();
+  const menu = document.createElement('div');
+  menu.className = 'md-heading-menu';
+  menu.setAttribute('role', 'menu');
+  for (const [label, level] of [['Heading 1', 1], ['Heading 2', 2], ['Heading 3', 3], ['Heading 4', 4], ['Heading 5', 5], ['Heading 6', 6], ['Normal text', 0]]) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'md-heading-item' + (level === 0 ? ' md-heading-normal' : ' md-heading-' + level);
+    b.dataset.level = String(level);
+    b.textContent = label;
+    b.addEventListener('click', () => { applyHeadingLevel(level); closeHeadingMenu(); });
+    menu.append(b);
+  }
+  document.body.append(menu);
+  const r = (anchorEl || document.querySelector('[data-md-action="heading"]') || document.body).getBoundingClientRect();
+  menu.style.left = Math.min(r.left, window.innerWidth - 180) + 'px';
+  menu.style.top = (r.bottom + 4) + 'px';
+  headingMenu = menu;
+  setTimeout(() => document.addEventListener('mousedown', onHeadingOutside, true), 0);
+}
+
 // In WYSIWYG mode the toolbar dispatches native TipTap commands (toggle mark /
 // node) instead of poking literal markdown markers. The table action still uses
 // the size-picker, which inserts a generated markdown table at the cursor.
@@ -115,14 +157,18 @@ function runMarkdownActionWysiwyg(action, btn) {
 }
 
 export function runMarkdownAction(action, btn) {
+  // Heading opens a level picker (both editors); the picker applies the chosen level.
+  if (action === 'heading') {
+    if (headingMenu) { closeHeadingMenu(); return; }
+    showHeadingMenu(btn);
+    return;
+  }
   if (isWysiwygActive()) {
     runMarkdownActionWysiwyg(action, btn);
     return;
   }
   if (!state.rawview || state.type?.id !== 'markdown') return;
-  if (action === 'heading') {
-    state.rawview.transformSelection((text) => markdownHeading(text, 1), { expandToLines: true, source: 'markdown-heading' });
-  } else if (action === 'bold') {
+  if (action === 'bold') {
     state.rawview.transformSelection((text) => markdownWrap(text, '**', 'strong text'), { source: 'markdown-bold' });
   } else if (action === 'italic') {
     state.rawview.transformSelection((text) => markdownWrap(text, '*', 'emphasis'), { source: 'markdown-italic' });

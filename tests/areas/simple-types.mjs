@@ -542,4 +542,23 @@ export async function run(ctx) {
   // The toolbar with Copy SVG button and dimensions badge should be present
   const svgToolbar = await page.$('.svg-toolbar');
   if (svgToolbar) pass('SVG toolbar present'); else fail('SVG toolbar not found');
+
+  // ── Plain text: line count in metadata + preview word-wrap toggle ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.txt');
+  await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 30000 });
+  // Metadata now reports Lines alongside Words/Characters.
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const txtMeta = await page.$eval('#metaBody', (e) => e.textContent.replace(/\s+/g, ' '));
+  if (/Lines\s*\d/.test(txtMeta) && /Words\s*\d/.test(txtMeta) && /Characters\s*\d/.test(txtMeta)) pass('plain text metadata includes line count'); else fail('text meta: ' + txtMeta.slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
+  // Preview word-wrap toggle: button present, defaults to wrap, click switches the <pre> to no-wrap.
+  const txtFrame = await frameOf('iframe.fv-preview-frame');
+  await txtFrame.waitForSelector('.plain-doc .plain-wrap-btn', { timeout: 8000 });
+  const wrapBefore = await txtFrame.$eval('.plain-text', (e) => getComputedStyle(e).whiteSpace);
+  await txtFrame.click('.plain-wrap-btn');
+  await txtFrame.waitForSelector('.plain-text.nowrap', { timeout: 4000 });
+  const wrapAfter = await txtFrame.$eval('.plain-text', (e) => getComputedStyle(e).whiteSpace);
+  if (wrapBefore === 'pre-wrap' && wrapAfter === 'pre') pass('plain text preview: word-wrap toggle switches pre-wrap ↔ pre'); else fail('wrap toggle: before=' + wrapBefore + ' after=' + wrapAfter);
 }

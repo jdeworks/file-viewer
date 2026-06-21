@@ -79,6 +79,18 @@ export function updateWordCount(text, typeId) {
   } else {
     label = `${lines.toLocaleString()} lines · ${chars.toLocaleString()} chars`;
   }
+  // When the text-utilities bar is showing, render the count INLINE on that same row
+  // (right-aligned) instead of as a separate stacked bar — keeps a row of vertical space.
+  const tuBar = document.getElementById('textUtils');
+  const inlineCount = document.getElementById('textUtilsCount');
+  if (tuBar && !tuBar.hidden && inlineCount) {
+    inlineCount.textContent = label;
+    inlineCount.hidden = false;
+    bar.hidden = true;
+    document.getElementById('rawPane')?.classList.remove('has-wordcount');
+    return;
+  }
+  if (inlineCount) inlineCount.hidden = true;
   bar.textContent = label;
   bar.hidden = false;
   document.getElementById('rawPane')?.classList.add('has-wordcount');
@@ -87,5 +99,7 @@ export function updateWordCount(text, typeId) {
 export function hideWordCount() {
   const bar = document.getElementById('wordCountBar');
   if (bar) bar.hidden = true;
+  const inlineCount = document.getElementById('textUtilsCount');
+  if (inlineCount) inlineCount.hidden = true;
   document.getElementById('rawPane')?.classList.remove('has-wordcount');
 }

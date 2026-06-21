@@ -26,7 +26,7 @@ import { startSideBySide, openSideBySide } from './sidebyside.js';
 import { initLayout, layoutTopbar, toggleMoreMenu, closeMoreMenu, updateExportButton, closeExportMenu, toggleExportMenu, applyLayout, applyPreviewPaneWidth, initSplitDivider } from './layout.js';
 import { mapPreviewToRaw, mapRawToPreview, syncScrollFromRaw, syncScrollFromPreview } from './sync.js';
 import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare, initCompareDropTarget } from './compare.js';
-import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent } from './rawpane.js';
+import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard, setRawMode, syncRawModeButtons, takeScreenshot, downloadCurrent, exitWysiwygForFeature } from './rawpane.js';
 import { buildMetadata } from './meta-drawer.js';
 import { buildTypeHelp } from './type-help.js';
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, showFolderLoading, hideFolderLoading } from './folder.js';
@@ -328,7 +328,21 @@ function openDrawer(id, build) {
   $(id).hidden = false; $('scrim').hidden = false;
 }
 function closeDrawers() {
-  $('settingsDrawer').hidden = true; $('metaDrawer').hidden = true; $('typeHelpDrawer').hidden = true; $('scrim').hidden = true;
+  $('settingsDrawer').hidden = true; $('metaDrawer').hidden = true; $('scrim').hidden = true;
+}
+
+// Type documentation opens as a centered modal dialog (not a side drawer).
+function openTypeHelp() {
+  const dialog = $('typeHelpDialog');
+  if (!dialog) return;
+  buildTypeHelp(state.type?.id);
+  if (!dialog.dataset.wired) {
+    dialog.dataset.wired = '1';
+    dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+    // Close on backdrop click (clicks that land on the <dialog> element itself).
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+  }
+  if (!dialog.open) dialog.showModal();
 }
 
 /* ─────────────────────────── metaBtn Easter egg ─────────────────────────── */
@@ -427,7 +441,7 @@ function init() {
   });
   $('themeBtn').addEventListener('click', () => applyTheme(!themeIsDark()));
   $('settingsBtn').addEventListener('click', () => openDrawer('settingsDrawer', openSettings));
-  $('typeHelpBtn').addEventListener('click', () => openDrawer('typeHelpDrawer', () => buildTypeHelp(state.type?.id)));
+  $('typeHelpBtn').addEventListener('click', () => openTypeHelp());
   $('metaBtn').addEventListener('click', () => {
     metaBtnClicks++;
     clearTimeout(_metaBtnTimer);
@@ -448,7 +462,7 @@ function init() {
     else document.documentElement.requestFullscreen?.();
   });
   $('screenshotBtn').addEventListener('click', takeScreenshot);
-  $('sbsBtn').addEventListener('click', startSideBySide);
+  $('sbsBtn').addEventListener('click', async () => { await exitWysiwygForFeature(); startSideBySide(); });
   $('sbsInput').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; if (f) openSideBySide(f); });
   $('exportBtn').addEventListener('click', toggleExportMenu);
   $('enhanceChip').querySelector('.ec-toggle').addEventListener('click', toggleEnhance);
@@ -466,7 +480,7 @@ function init() {
     b.addEventListener('click', () => { state.tab = b.dataset.mode; applyLayout(); }));
   document.querySelectorAll('#rawMode button:not(#compareBtn)').forEach((b) =>
     b.addEventListener('click', () => setRawMode(b.dataset.raw)));
-  $('compareBtn').addEventListener('click', startCompare);
+  $('compareBtn').addEventListener('click', async () => { await exitWysiwygForFeature(); startCompare(); });
   $('compareInput').addEventListener('change', onComparePicked); initCompareDropTarget();
   $('compareBar').querySelector('.compare-stop').addEventListener('click', stopCompare);
   $('downloadBtn').addEventListener('click', downloadCurrent);

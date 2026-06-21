@@ -165,6 +165,7 @@ export function mount(host, { onExit } = {}) {
   }
 
   let bellDotUnsub = null;
+  let bellClicks = [];
   function mountBell(target) {
     if (bellDotUnsub) { bellDotUnsub(); bellDotUnsub = null; }
     const button = document.createElement('button');
@@ -185,9 +186,63 @@ export function mount(host, { onExit } = {}) {
         for (const rec of services.bell.listBellLog({ unseenOnly: true })) services.bell.markBellSeen(rec.id);
         refreshDot();
       }
+      // Easter egg: 5 rapid bell clicks open the dev/testing menu.
+      const t = Date.now();
+      bellClicks = bellClicks.filter((x) => t - x < 1500);
+      bellClicks.push(t);
+      if (bellClicks.length >= 5) { bellClicks = []; panel.hidden = true; toggleDevMenu(); }
     });
     bellDotUnsub = services.bell.subscribeToBell(refreshDot);
     refreshDot();
+  }
+
+  // ── Dev/testing menu (unlocked by 5 rapid bell clicks) ──────────────────────────────────────
+  function toggleDevMenu() {
+    const box = host.querySelector('.mg-v3-debug');
+    if (!box) return;
+    if (!box.hidden) { box.hidden = true; box.innerHTML = ''; return; }
+    const stageBtns = registry.listStages().map((mod) => {
+      const id = mod.stageMeta.id;
+      return `<button type="button" data-dev="stage" data-n="${id}">${id}</button>`;
+    }).join('');
+    box.innerHTML = `
+      <div class="mg-dev">
+        <div class="mg-dev-title">🛠 Dev menu <button type="button" data-dev="close" class="mg-dev-x">✕</button></div>
+        <div class="mg-dev-row"><span>Stage 1 bits:</span>
+          <button type="button" data-dev="bits" data-e="6">1M</button>
+          <button type="button" data-dev="bits" data-e="9">1B</button>
+          <button type="button" data-dev="bits" data-e="12">1T</button>
+          <button type="button" data-dev="bits" data-e="93">1ba</button></div>
+        <div class="mg-dev-row"><span>Jump to stage:</span>${stageBtns}</div>
+        <div class="mg-dev-row">
+          <button type="button" data-dev="unlock-all">Unlock all stages</button>
+          <button type="button" data-dev="reset">Reset save</button></div>
+      </div>`;
+    box.hidden = false;
+    box.querySelectorAll('[data-dev]').forEach((b) => b.addEventListener('click', () => {
+      const kind = b.dataset.dev;
+      if (kind === 'close') { box.hidden = true; box.innerHTML = ''; return; }
+      if (kind === 'bits') {
+        const e = Number(b.dataset.e);
+        const s = saveData.stageState[1];
+        s.bits = { m: 1, e }; s.totalBits = { m: 1, e }; s.tabsUnlocked = true;
+        s.milestones = [...new Set([...(s.milestones || []), 'score-unlock', 'sound-unlock'])];
+        s.helpersUnlocked = true;
+        // Own ≥1 of every Stage-1 tier so the boss "Confront" gate (allSubStagesOwned) is met.
+        s.owned = { 's1-mult': 5, 's1-box': 5, 's1-boost': 5, 's1-cluster': 5, 's1-array': 5, 's1-neural': 5, 's1-quantum': 5 };
+        if (saveData.currentStage !== 1) saveData.currentStage = 1;
+        persist(); render();
+      } else if (kind === 'stage') {
+        const n = Number(b.dataset.n);
+        for (let i = 1; i <= n; i++) if (!saveData.unlockedStages.includes(i)) saveData.unlockedStages.push(i);
+        selectStage(n);
+      } else if (kind === 'unlock-all') {
+        for (let i = 1; i <= 10; i++) if (!saveData.unlockedStages.includes(i)) saveData.unlockedStages.push(i);
+        persist(); render();
+      } else if (kind === 'reset') {
+        saveData = resetSave(); ensureStageStates(saveData); render();
+      }
+    }));
   }
 
   render();

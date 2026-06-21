@@ -29,9 +29,11 @@ export async function run(ctx) {
     rv.setValue('Title');
     rv.setSelection(1, 1, 1, 1);
   });
-  await page.click('#markdownTools [data-md-action="heading"]');
+  await page.evaluate(() => document.querySelector('#markdownTools [data-md-action="heading"]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })));
+  await page.waitForSelector('.md-heading-menu', { timeout: 4000 });
+  await page.click('.md-heading-item[data-level="1"]');
   const mdHeading = await page.evaluate(() => window.__fv.state.rawview.getValue());
-  if (mdHeading === '# Title') pass('Markdown tools: heading action formats current line'); else fail('heading result: ' + mdHeading);
+  if (mdHeading === '# Title') pass('Markdown tools: heading action formats current line (H1 from picker)'); else fail('heading result: ' + mdHeading);
   await page.evaluate(() => {
     const rv = window.__fv.state.rawview;
     rv.setValue('bold italic');
@@ -463,7 +465,7 @@ export async function run(ctx) {
     } else fail('split drag missing raw/divider boxes after iframe drag');
   } else fail('split drag missing preview/divider boxes');
 
-  // ── Side-by-side: view two files (incl. non-text) next to each other ──
+  // ── Side-by-side: each pane is a full, independent editor (source/preview toggle + download) ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md');
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 15000 });
@@ -472,18 +474,83 @@ export async function run(ctx) {
   await page.setInputFiles('#sbsInput', new URL('../../docs/examples/sample.csv', import.meta.url).pathname);
   await page.waitForSelector('.sbs-overlay', { timeout: 8000 });
   const sbsPanes = await page.$$eval('.sbs-pane', (els) => els.length);
-  const sbsNames = await page.$$eval('.sbs-name', (els) => els.map((e) => e.textContent));
+  const sbsNames = await page.$$eval('.sbs-fname', (els) => els.map((e) => e.textContent));
   if (sbsPanes === 2 && sbsNames.some((n) => /welcome\.md/i.test(n)) && sbsNames.some((n) => /sample\.csv/i.test(n))) pass('side-by-side: two named panes (current + picked)'); else fail('sbs panes=' + sbsPanes + ' names=' + sbsNames.join(','));
-  // Each pane renders via renderFileInto: bodyHtml types (Welcome.md) get an iframe,
-  // parentNode types (sample.csv) get a direct element child — so assert both hosts
-  // rendered SOME content rather than counting iframes (CSV has none).
+  // Both panes are editable text types → both default to a Monaco source editor.
   await page.waitForFunction(() => {
-    const hosts = document.querySelectorAll('.sbs-host');
-    return hosts.length === 2 && [...hosts].every((h) => h.childElementCount > 0);
+    const panes = document.querySelectorAll('.sbs-pane');
+    return panes.length === 2 && [...panes].every((p) => p.querySelector('.sbs-source .monaco-editor'));
+  }, null, { timeout: 20000 });
+  pass('side-by-side: both panes mount an independent Monaco source editor');
+  // (a) An editable pane exposes a Monaco controller you can type into; getValue() reflects it.
+  const sbsEdit = await page.evaluate(() => {
+    const panes = document.querySelector('.sbs-overlay').__sbsPanes;
+    const rv0 = panes[0].rawview(); const rv1 = panes[1].rawview();
+    const before0 = rv0.getValue();
+    rv0.setValue(before0 + '\nedited pane 0');
+    // Independence: editing pane 0 must NOT change pane 1.
+    const pane1Unchanged = rv1.getValue().indexOf('edited pane 0') === -1;
+    return { reflects: rv0.getValue().indexOf('edited pane 0') !== -1, pane1Unchanged };
+  });
+  if (sbsEdit.reflects) pass('side-by-side: editable pane Monaco accepts edits (getValue reflects)'); else fail('sbs pane edit not reflected');
+  if (sbsEdit.pane1Unchanged) pass('side-by-side: panes are independent (editing one leaves the other untouched)'); else fail('sbs panes coupled');
+  // (b) The Source/Preview toggle switches views (pane 0 → Preview re-renders from the edited text).
+  await page.click('.sbs-pane:first-child .sbs-toggle[data-sbs-view="preview"]');
+  await page.waitForFunction(() => {
+    const host = document.querySelector('.sbs-pane:first-child .sbs-host');
+    const src = host.querySelector('.sbs-source'), prev = host.querySelector('.sbs-preview');
+    return src && prev && src.style.display === 'none' && prev.style.display !== 'none' && prev.childElementCount > 0;
   }, null, { timeout: 12000 });
-  pass('side-by-side: both files rendered independently');
+  pass('side-by-side: Source/Preview toggle switches the pane view');
+  // (b2) Per-pane markdown toolbar: Bold acts ONLY on that pane (pane 0 = welcome.md), leaving
+  //      the sibling text/csv pane untouched. Switch pane 0 back to Source first.
+  await page.click('.sbs-pane:first-child .sbs-toggle[data-sbs-view="source"]');
+  await page.waitForFunction(() => {
+    const p = document.querySelector('.sbs-overlay').__sbsPanes;
+    return p[0].rawview() && document.querySelector('.sbs-pane:first-child .sbs-source .monaco-editor');
+  }, null, { timeout: 12000 });
+  await page.evaluate(() => {
+    const panes = document.querySelector('.sbs-overlay').__sbsPanes;
+    const rv0 = panes[0].rawview();
+    window.__sbsBefore1 = panes[1].rawview().getValue();
+    rv0.setValue('hello world');
+    rv0.setSelection(1, 1, 1, 6);           // select "hello"
+    document.querySelector('.sbs-pane:first-child .sbs-tools [data-md-action="Bold"]').click();
+  });
+  const sbsMd = await page.evaluate(() => {
+    const panes = document.querySelector('.sbs-overlay').__sbsPanes;
+    return { pane0: panes[0].rawview().getValue(), pane1Same: panes[1].rawview().getValue() === window.__sbsBefore1 };
+  });
+  if (/\*\*hello\*\*/.test(sbsMd.pane0)) pass('side-by-side: markdown pane Bold wraps the selection (**hello**)'); else fail('sbs md bold: ' + JSON.stringify(sbsMd.pane0));
+  if (sbsMd.pane1Same) pass('side-by-side: pane toolbar acts only on its own pane (sibling untouched)'); else fail('sbs md bold leaked to sibling');
+  // (b3) Per-pane text-utils toolbar: Sort ↑ reorders the csv pane's lines (pane 1).
+  await page.evaluate(() => {
+    const rv1 = document.querySelector('.sbs-overlay').__sbsPanes[1].rawview();
+    rv1.setValue('banana\napple\ncherry');
+    rv1.setSelection(1, 1, 1, 1);           // no selection → whole document
+    document.querySelector('.sbs-pane:nth-child(2) .sbs-tools [data-textutil="sortAsc"]').click();
+  });
+  const sbsSort = await page.evaluate(() => document.querySelector('.sbs-overlay').__sbsPanes[1].rawview().getValue());
+  if (sbsSort === 'apple\nbanana\ncherry') pass('side-by-side: text-utils pane Sort ↑ reorders that pane\'s lines'); else fail('sbs sort: ' + JSON.stringify(sbsSort));
+  // (b4) In-pane Split view shows BOTH a Monaco editor AND a live preview within one pane.
+  await page.click('.sbs-pane:first-child .sbs-toggle[data-sbs-view="split"]');
+  await page.waitForFunction(() => {
+    const host = document.querySelector('.sbs-pane:first-child .sbs-host');
+    if (!host.classList.contains('sbs-split')) return false;
+    const src = host.querySelector('.sbs-source'), prev = host.querySelector('.sbs-preview');
+    return src && prev && src.style.display !== 'none' && prev.style.display !== 'none'
+      && src.querySelector('.monaco-editor') && prev.childElementCount > 0;
+  }, null, { timeout: 12000 });
+  pass('side-by-side: Split view shows Monaco source + live preview together in one pane');
+  // (c) Per-pane Download yields a download with the right filename.
+  const [sbsDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('.sbs-pane:nth-child(2) .sbs-dl'),
+  ]);
+  if (/sample\.csv$/.test(sbsDl.suggestedFilename())) pass('side-by-side: per-pane Download preserves filename (' + sbsDl.suggestedFilename() + ')'); else fail('sbs download name: ' + sbsDl.suggestedFilename());
+  // (d) Closing disposes both panes and removes the overlay.
   await page.click('.sbs-close');
-  if (!(await page.$('.sbs-overlay'))) pass('side-by-side closes'); else fail('sbs did not close');
+  if (!(await page.$('.sbs-overlay'))) pass('side-by-side closes (panes disposed, overlay removed)'); else fail('sbs did not close');
 
   // ── Editor mode for Monaco code types (gcode): editable Monaco + Ctrl+S download ──
   await page.goto(origin, { waitUntil: 'load' });
@@ -503,4 +570,146 @@ export async function run(ctx) {
     page.evaluate(() => window.__fv.downloadCurrent()),
   ]);
   if (/\.gcode$/.test(gcodeDl.suggestedFilename())) pass('editor mode: gcode Ctrl+S/download preserves filename (' + gcodeDl.suggestedFilename() + ')'); else fail('gcode download name: ' + gcodeDl.suggestedFilename());
+
+  // ── Text utilities: selection-aware line sort + undoable edits (Ctrl+Z) ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.txt');
+  await page.click('#viewMode button[data-mode="split"]');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
+  await page.waitForFunction(() => !!window.__fv?.state?.rawview, null, { timeout: 8000 });
+  // Plain text has no always-on format toolbar → the text-utilities bar is shown.
+  const tuShown = await page.$eval('#textUtils', (e) => !e.hidden);
+  if (tuShown) pass('text utils: utilities bar shown for plain text'); else fail('text utils bar hidden for plain text');
+
+  // Sort with NOTHING selected → whole document; and the edit must be undoable (Ctrl+Z).
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    rv.setValue('banana\napple\ncherry');
+    rv.setSelection(1, 1, 1, 1);   // collapsed caret = no selection
+  });
+  await page.evaluate(() => document.querySelector('#textUtils [data-textutil="sortAsc"]').click());
+  const sortedAll = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (sortedAll === 'apple\nbanana\ncherry') pass('text utils: sort with no selection sorts the whole document'); else fail('whole-doc sort: ' + JSON.stringify(sortedAll));
+  // Undo reverts the sort — executeEdits stays on Monaco's undo stack (setValue would have wiped it).
+  await page.evaluate(() => window.__fv.state.rawview.focus());
+  await page.keyboard.press('Control+z');
+  await page.waitForTimeout(150);
+  const undone = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (undone === 'banana\napple\ncherry') pass('text utils: Ctrl+Z undoes a sort (raw-editor undo preserved)'); else fail('undo after sort: ' + JSON.stringify(undone));
+
+  // Sort WITH a selection → only the selected lines are reordered.
+  await page.evaluate(() => {
+    const rv = window.__fv.state.rawview;
+    rv.setValue('banana\napple\ncherry\ndate');
+    rv.setSelection(1, 1, 2, 6);   // covers lines 1–2 ("banana","apple") only
+  });
+  await page.evaluate(() => document.querySelector('#textUtils [data-textutil="sortAsc"]').click());
+  const sortedSel = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (sortedSel === 'apple\nbanana\ncherry\ndate') pass('text utils: sort with a selection sorts only the selected lines'); else fail('selection sort: ' + JSON.stringify(sortedSel));
+  // The selection stays highlighted over the sorted block (not collapsed to a caret).
+  const selAfter = await page.evaluate(() => {
+    const r = window.__fv.state.rawview.selectionRange();
+    return { empty: r.isEmpty(), text: window.__fv.state.rawview.selectionText() };
+  });
+  if (!selAfter.empty && selAfter.text === 'apple\nbanana') pass('text utils: selection stays highlighted over the sorted lines'); else fail('selection after sort: ' + JSON.stringify(selAfter));
+  // The line/char count renders INLINE on the text-utils row; the standalone bar stays hidden.
+  const countLayout = await page.evaluate(() => {
+    const inline = document.getElementById('textUtilsCount');
+    const bar = document.getElementById('wordCountBar');
+    return { inlineShown: !!inline && !inline.hidden, inlineText: inline?.textContent || '', barHidden: !bar || bar.hidden };
+  });
+  if (countLayout.inlineShown && /chars/.test(countLayout.inlineText) && countLayout.barHidden) pass('text utils: line/char count shown inline on the toolbar row (no separate bar)'); else fail('count layout: ' + JSON.stringify(countLayout));
+
+  // ── Trim variants (trim / ltrim / rtrim) + whitespace-vs-lines mode (remembered) ──
+  // Default mode = whitespace only: Trim R strips trailing whitespace but keeps blank lines.
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:textutil:trimMode', 'ws'); } catch {}
+    const rv = window.__fv.state.rawview; rv.setValue('a  \n\nb  '); rv.setSelection(1, 1, 1, 1);
+  });
+  await page.evaluate(() => document.querySelector('#textUtils [data-textutil="rtrim"]').click());
+  const rtrimmed = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (rtrimmed === 'a\n\nb') pass('text utils: Trim R strips trailing whitespace, keeps blank lines'); else fail('rtrim: ' + JSON.stringify(rtrimmed));
+  // Trim L strips leading whitespace per line.
+  await page.evaluate(() => { const rv = window.__fv.state.rawview; rv.setValue('  a\n   b'); rv.setSelection(1, 1, 1, 1); });
+  await page.evaluate(() => document.querySelector('#textUtils [data-textutil="ltrim"]').click());
+  const ltrimmed = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (ltrimmed === 'a\nb') pass('text utils: Trim L strips leading whitespace'); else fail('ltrim: ' + JSON.stringify(ltrimmed));
+  // Mode = whitespace + blank lines: Trim also drops blank lines.
+  await page.evaluate(() => {
+    try { localStorage.setItem('fv:textutil:trimMode', 'ws+lines'); } catch {}
+    const rv = window.__fv.state.rawview; rv.setValue('a  \n   \nb'); rv.setSelection(1, 1, 1, 1);
+  });
+  await page.evaluate(() => document.querySelector('#textUtils [data-textutil="trim"]').click());
+  const trimDropped = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (trimDropped === 'a\nb') pass('text utils: Trim in "whitespace + lines" mode drops blank lines'); else fail('trim+lines: ' + JSON.stringify(trimDropped));
+  // The mode split-button opens a dropdown; picking an option persists to localStorage + updates the label.
+  await page.evaluate(() => { try { localStorage.setItem('fv:textutil:trimMode', 'ws'); } catch {} });
+  await page.click('#trimModeBtn');
+  await page.waitForSelector('.tu-mode-menu', { timeout: 4000 });
+  await page.click('.tu-mode-item:has-text("blank lines")');
+  const modePersist = await page.evaluate(() => ({
+    ls: (() => { try { return localStorage.getItem('fv:textutil:trimMode'); } catch { return null; } })(),
+    label: document.getElementById('trimModeBtn')?.textContent || '',
+  }));
+  if (modePersist.ls === 'ws+lines' && /lines/i.test(modePersist.label)) pass('text utils: trim-mode split button persists choice (localStorage) + updates label'); else fail('trim mode persist: ' + JSON.stringify(modePersist));
+
+  await page.evaluate(() => { window.__fv.state.downloadedSinceEdit = true; window.__fv.state.sessionEdits.clear(); });
+
+  // ── Type documentation opens as a centered modal dialog (not a side drawer) ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Welcome.md');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 20000 });
+  await page.waitForSelector('#typeHelpBtn:not([hidden])', { timeout: 8000 });
+  await page.click('#typeHelpBtn');
+  await page.waitForFunction(() => document.getElementById('typeHelpDialog')?.open, null, { timeout: 6000 });
+  const helpModal = await page.evaluate(() => {
+    const d = document.getElementById('typeHelpDialog');
+    return { isDialog: d?.tagName === 'DIALOG', open: !!d?.open, modal: !!d?.matches?.(':modal') };
+  });
+  if (helpModal.isDialog && helpModal.open && helpModal.modal) pass('type help: opens as a centered modal <dialog> (not a drawer)'); else fail('type help modal: ' + JSON.stringify(helpModal));
+  await page.click('#typeHelpDialog [data-close]');
+  await page.waitForFunction(() => !document.getElementById('typeHelpDialog')?.open, null, { timeout: 4000 });
+  pass('type help: close button dismisses the modal');
+
+  // ── Markdown heading levels + WYSIWYG compare/side-by-side handoff ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Welcome.md');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 20000 });
+  // Make sure we're in Monaco (not auto-restored WYSIWYG) for the source-path heading test.
+  if (await page.evaluate(() => !!window.__fv.state.wysiwygActive)) {
+    await page.evaluate(() => document.getElementById('wysiwygBtn').click());
+    await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
+  }
+  // The "H" button opens a level picker; choosing Heading 3 applies ### in the source.
+  await page.evaluate(() => { const rv = window.__fv.state.rawview; rv.setValue('Section title'); rv.setSelection(1, 1, 1, 1); });
+  await page.evaluate(() => document.querySelector('#markdownTools [data-md-action="heading"]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })));
+  await page.waitForSelector('.md-heading-menu', { timeout: 4000 });
+  await page.click('.md-heading-item[data-level="3"]');
+  const h3src = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (h3src === '### Section title') pass('markdown heading menu: applies H3 in the source editor'); else fail('heading H3 source: ' + JSON.stringify(h3src));
+
+  // In WYSIWYG the same picker toggles a real heading node (H2), and the line-based text utils hide.
+  await page.evaluate(() => window.__fv.state.rawview.setValue('Visual heading'));
+  await page.evaluate(() => document.getElementById('wysiwygBtn').click());
+  await page.waitForSelector('#editor .tiptap-host .ProseMirror', { timeout: 15000 });
+  await page.click('#editor .tiptap-host .ProseMirror');
+  await page.evaluate(() => document.querySelector('#markdownTools [data-md-action="heading"]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })));
+  await page.waitForSelector('.md-heading-menu', { timeout: 4000 });
+  await page.click('.md-heading-item[data-level="2"]');
+  const h2wys = await page.evaluate(() => !!document.querySelector('#editor .tiptap-host .ProseMirror h2'));
+  if (h2wys) pass('markdown heading menu: applies H2 in the WYSIWYG editor'); else fail('WYSIWYG H2 not applied');
+  const tuHidden = await page.evaluate(() => !!document.getElementById('textUtils')?.hidden);
+  if (tuHidden) pass('WYSIWYG: line-based text utils (sort/trim/dedup) hidden'); else fail('textUtils visible in WYSIWYG');
+
+  // Compare button while WYSIWYG is active → exits to the Monaco raw editor + shows the flashing compare bar.
+  await page.evaluate(() => document.getElementById('compareBtn').click());
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 15000 });
+  await page.waitForFunction(() => !document.getElementById('compareBar').hidden, null, { timeout: 8000 });
+  const afterCompare = await page.evaluate(() => ({
+    wys: !!window.__fv.state.wysiwygActive,
+    flash: document.getElementById('compareBar').classList.contains('flash'),
+  }));
+  if (!afterCompare.wys && afterCompare.flash) pass('compare in WYSIWYG: switches back to raw view + flashes the drop target'); else fail('compare-from-wysiwyg: ' + JSON.stringify(afterCompare));
+  await page.click('#compareBar .compare-stop');
+  await page.evaluate(() => { window.__fv.state.downloadedSinceEdit = true; window.__fv.state.sessionEdits.clear(); });
 }

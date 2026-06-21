@@ -14,6 +14,9 @@ import { showIosAudioHint, hideIosAudioHint } from '../../core/ios-audio.js';
 import { parseId3 } from './id3.js';
 import { likelyNeedsTranscode, transcode } from './transcoder.js';
 import { recordStage5MediaPlayback } from '../../games/metagame/viewer-actions.js';
+import { makeTogglePanel } from './panel-toggle.js';
+import { buildSpeedPresets, buildVideoExtras, attachShortcuts, buildCoverArt, buildChapterList } from './playback-extras.js';
+import { mountSubtitles, buildSubtitleLoader } from './subtitles.js';
 
 // Lazily import editor.js (and its transcoder.js dep) only when ffmpeg is enabled.
 // This prevents a stale SW-cached transcoder.js from breaking the entire preview.
@@ -64,7 +67,6 @@ export async function render(intake, ctx = {}) {
     host.innerHTML = '<p class="media-note">Unsupported media file.</p>';
     return { parentNode: host };
   }
-  let wvController = null;
   const url = blobUrl(intake, info.mime);
   const el = document.createElement(info.kind === 'video' ? 'video' : 'audio');
   el.className = 'media-view';
@@ -251,81 +253,97 @@ export async function render(intake, ctx = {}) {
   }
 
   let waveformWrap = null;
-  let spController = null;
-  let mxController = null;
-  if (info.kind === 'audio') {
-    const wvWrap = document.createElement('div');
-    wvWrap.className = 'media-wv-wrap';
-    const wvToggle = document.createElement('button');
-    wvToggle.type = 'button';
-    wvToggle.className = 'media-wv-toggle';
-    wvToggle.textContent = '▶ Show waveform';
-    const wvPanel = document.createElement('div');
-    wvPanel.className = 'media-wv-panel';
-    wvPanel.hidden = true;
-    wvWrap.append(wvToggle, wvPanel);
-    waveformWrap = wvWrap;
-    wvToggle.addEventListener('click', async () => {
-      wvPanel.hidden = !wvPanel.hidden;
-      wvToggle.textContent = wvPanel.hidden ? '▶ Show waveform' : '▼ Hide waveform';
-      if (wvPanel.hidden) { wvController?.destroy(); wvController = null; return; }
-      if (!wvPanel.hidden && !wvController) {
-        const { mountWaveform } = await import('./waveform.js');
-        const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
-        wvController = await mountWaveform(wvPanel, file);
-      }
-    });
+  let timelineWrap = null;
+  const panels = [];      // toggle-panel controllers to tear down on revoke
 
-    // ── Spectrum & EQ panel ───────────────────────────────────────────────
-    const spWrap = document.createElement('div');
-    spWrap.className = 'media-wv-wrap';
-    const spToggle = document.createElement('button');
-    spToggle.type = 'button';
-    spToggle.className = 'media-wv-toggle';
-    spToggle.textContent = '▶ Spectrum & EQ';
-    const spPanel = document.createElement('div');
-    spPanel.className = 'media-sp-panel';
-    spPanel.hidden = true;
-    spWrap.append(spToggle, spPanel);
-    spToggle.addEventListener('click', async () => {
-      spPanel.hidden = !spPanel.hidden;
-      spToggle.textContent = spPanel.hidden ? '▶ Spectrum & EQ' : '▼ Spectrum & EQ';
-      if (spPanel.hidden) { spController?.destroy(); spController = null; return; }
-      if (!spController) {
-        const { mountSpectrumPanel } = await import('./spectrum.js');
-        spController = mountSpectrumPanel(spPanel, el);
-      }
+  // ── P6: Video timeline (2-lane) + transitions + visual trim ──
+  // Video-only, opt-in (ffmpeg). CPU-lazy: mounts on first toggle; no ffmpeg/thumbnail
+  // work until a transition / "Thumbnails" runs. Closing the panel tears it down.
+  if (info.kind === 'video' && enableFfmpeg) {
+    const tp = makeTogglePanel({
+      label: 'Video timeline', panelClass: 'media-tl-panel',
+      mount: async (panel) => {
+        const { mountTimeline } = await import('./timeline.js');
+        return mountTimeline(panel, intake, el, (newUrl) => {
+          if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
+          transcodedUrl = newUrl; el.src = newUrl; el.load();
+          el.play().catch(() => { /* autoplay blocked */ });
+        });
+      },
     });
-    wvWrap.append(spWrap);
-
-    // ── Multi-track mixer ("swim lanes") ──────────────────────────────────
-    // On-demand, opt-in. Decodes audio + builds the WebAudio transport ONLY
-    // when first opened (CPU-lazy). Plain playback above stays untouched.
-    const mxWrap = document.createElement('div');
-    mxWrap.className = 'media-wv-wrap';
-    const mxToggle = document.createElement('button');
-    mxToggle.type = 'button';
-    mxToggle.className = 'media-wv-toggle';
-    mxToggle.textContent = '▶ Multi-track mixer';
-    const mxPanel = document.createElement('div');
-    mxPanel.className = 'media-mx-panel';
-    mxPanel.hidden = true;
-    mxWrap.append(mxToggle, mxPanel);
-    mxToggle.addEventListener('click', async () => {
-      mxPanel.hidden = !mxPanel.hidden;
-      mxToggle.textContent = mxPanel.hidden ? '▶ Multi-track mixer' : '▼ Multi-track mixer';
-      if (mxPanel.hidden) { mxController?.destroy(); mxController = null; return; }
-      if (!mxController) {
-        const { mountMixer } = await import('./mixer-ui.js');
-        mxController = mountMixer(mxPanel, intake);
-      }
-    });
-    wvWrap.append(mxWrap);
+    timelineWrap = tp.wrap; panels.push(tp);
   }
 
-  if (info.kind === 'audio') host.append(name, el, waveformWrap, tools);
-  else host.append(el, name, tools);
+  if (info.kind === 'audio') {
+    const wv = makeTogglePanel({
+      label: 'Show waveform', panelClass: 'media-wv-panel',
+      mount: async (panel) => {
+        const { mountWaveform } = await import('./waveform.js');
+        const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
+        return mountWaveform(panel, file);
+      },
+    });
+    waveformWrap = wv.wrap; panels.push(wv);
+
+    const sp = makeTogglePanel({
+      label: 'Spectrum & EQ', panelClass: 'media-sp-panel',
+      mount: async (panel) => (await import('./spectrum.js')).mountSpectrumPanel(panel, el),
+    });
+    wv.wrap.append(sp.wrap); panels.push(sp);
+
+    // ── P4: Dynamics — compressor + limiter live; gate + de-noise baked on export.
+    const dyn = makeTogglePanel({
+      label: 'Dynamics', panelClass: 'media-dyn-panel',
+      mount: async (panel) => (await import('./dynamics.js')).mountDynamicsPanel(panel, el),
+    });
+    wv.wrap.append(dyn.wrap); panels.push(dyn);
+
+    // ── P8: Audiobook QC (ACX) — read-only pass/fail card + one-click ACX export.
+    // CPU-lazy: nothing decodes / loads ffmpeg until Run QC / Export for ACX is clicked.
+    const qc = makeTogglePanel({
+      label: 'Audiobook QC (ACX)', panelClass: 'media-qc-toggle-panel',
+      mount: async (panel) => (await import('./qc-ui.js')).mountAcxQcPanel(panel, intake, el),
+    });
+    wv.wrap.append(qc.wrap); panels.push(qc);
+
+    // ── Multi-track mixer ("swim lanes") — decode + transport only on first open.
+    const mx = makeTogglePanel({
+      label: 'Multi-track mixer', panelClass: 'media-mx-panel',
+      mount: async (panel) => (await import('./mixer-ui.js')).mountMixer(panel, intake),
+    });
+    wv.wrap.append(mx.wrap); panels.push(mx);
+  }
+
+  // ── P7: Tier-1 playback quick wins (no lib, live only) ──
+  // Speed presets (both); PiP + frame-step (video); cover art + chapter list from ID3.
+  const extras = document.createElement('div');
+  extras.className = 'media-extras';
+  extras.appendChild(buildSpeedPresets(el));
+  let subCtl = null, coverRevoke = null;
+  if (info.kind === 'video') {
+    extras.appendChild(buildVideoExtras(el));
+    subCtl = mountSubtitles(host, el);
+    extras.appendChild(buildSubtitleLoader(subCtl));
+  }
+  // Keyboard shortcuts scoped to the (focusable) host; removed on teardown.
+  host.tabIndex = 0;
+  const detachKeys = attachShortcuts(host, el, { kind: info.kind });
+  // One-time ID3 read (audio) → cover art + chapters. CPU-cheap head-slice parse.
+  let chapterList = null;
+  if (info.kind === 'audio' && intake.file && typeof intake.file.slice === 'function') {
+    try {
+      const head = new Uint8Array(await intake.file.slice(0, 512 * 1024).arrayBuffer());
+      const tags = parseId3(head);
+      if (tags?.cover) { const c = buildCoverArt(tags.cover); if (c) { name.before(c.el); coverRevoke = c.revoke; } }
+      if (tags?.chapters) chapterList = buildChapterList(tags.chapters, el);
+    } catch { /* tag-less / unreadable — skip */ }
+  }
+
+  if (info.kind === 'audio') host.append(name, el, waveformWrap, tools, extras);
+  else host.append(el, name, tools, extras);
+  if (chapterList) host.append(chapterList);
   if (videoStudio) host.append(videoStudio.mixer);
+  if (timelineWrap) host.append(timelineWrap);
   host.append(hintPanel);
   if (editorPanel) host.append(editorPanel);
   if (exportPanel) host.append(exportPanel);
@@ -421,9 +439,10 @@ export async function render(intake, ctx = {}) {
       if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
       if (editorRevoke) editorRevoke();
       if (exportRevoke) exportRevoke();
-      if (wvController) { wvController.destroy(); wvController = null; }
-      if (spController) { spController.destroy(); spController = null; }
-      if (mxController) { mxController.destroy(); mxController = null; }
+      for (const p of panels) p.destroy();
+      if (subCtl) { subCtl.destroy(); subCtl = null; }
+      if (coverRevoke) { coverRevoke(); coverRevoke = null; }
+      detachKeys();
       if (videoStudio) { videoStudio.destroy(); videoStudio = null; }
     },
   };

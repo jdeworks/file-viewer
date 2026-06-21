@@ -189,7 +189,7 @@
 .mg-hex-cell:hover { border-color: var(--accent); }
 
 /* ── Stage 1 — pixel-reveal onboarding (top) + tabbed idle clicker (below). ── */
-.mg-s1 { width: min(460px, 100%); gap: 10px; -webkit-tap-highlight-color: transparent; }
+.mg-s1 { width: min(460px, 100%); gap: 10px; -webkit-tap-highlight-color: transparent; position: relative; }
 .games-stage:has(.mg-s1) { min-height: 60vh; }
 /* The reveal "top" is the absolute-positioning context for the tap area + Compute button. */
 .mg-s1-top { position: relative; height: 220px; }
@@ -231,8 +231,11 @@
   border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
 .mg-s1-help-btn:hover { border-color: var(--accent); color: var(--fg); }
 .mg-s1-help-btn[hidden] { display: none; }
-.mg-s1-help { display: flex; flex-direction: column; gap: 6px; background: var(--bg-2);
-  border: 1px solid var(--accent); border-radius: 10px; padding: 12px; }
+/* Help is an overlay (out of flow): floats above the Bits content instead of pushing it down. */
+.mg-s1-help { position: absolute; top: 48px; left: 0; right: 0; z-index: 25;
+  display: flex; flex-direction: column; gap: 6px; background: var(--bg-2);
+  border: 1px solid var(--accent); border-radius: 10px; padding: 12px;
+  box-shadow: 0 10px 32px rgba(0,0,0,.45); max-height: 70vh; overflow-y: auto; }
 .mg-s1-help[hidden] { display: none; }
 .mg-s1-help-title { font-weight: 700; color: var(--fg); }
 .mg-s1-help-row { display: flex; flex-direction: column; gap: 1px; font-size: 12px; }
@@ -268,6 +271,7 @@
 .mg-s1-shoprow { opacity: 1; cursor: default; }
 .mg-s1-shoprow[hidden] { display: none; }
 .mg-s1-buyrow { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.mg-s1-timedrow .mg-s1-buyrow { grid-row: 1 / span 3; }   /* timed rows have a 3rd (reward) line */
 .mg-s1-counts { display: flex; gap: 3px; flex-wrap: wrap; justify-content: flex-end; }
 .mg-s1-counts .mg-mult-b { padding: 2px 6px; font-size: 11px; }
 .mg-s1-buybtn { grid-column: auto; grid-row: auto; background: color-mix(in srgb, var(--accent) 18%, transparent);
@@ -278,7 +282,7 @@
    gets clipped). Stack the row so the buy controls take the full width. */
 @media (max-width: 480px) {
   .mg-s1-shoprow { grid-template-columns: 1fr; }
-  .mg-s1-buyrow { grid-column: 1; grid-row: auto; flex-direction: row; flex-wrap: wrap;
+  .mg-s1-shoprow .mg-s1-buyrow { grid-column: 1; grid-row: auto; flex-direction: row; flex-wrap: wrap;
     align-items: center; justify-content: space-between; }
   .mg-s1-counts { justify-content: flex-start; }
   .mg-s1-buybtn { flex: 1; min-width: 130px; text-align: center; }
@@ -289,8 +293,9 @@
 .mg-s1-timedrow { position: relative; overflow: hidden; }
 .mg-s1-timedrow.mg-s1-runnable { cursor: pointer; }
 .mg-s1-timedrow.mg-s1-runnable:hover { border-color: var(--accent); }
-.mg-s1-rowfill { position: absolute; top: 0; left: 0; bottom: 0; width: 0; pointer-events: none;
-  background: color-mix(in srgb, #2f81f7 20%, transparent); transition: width .1s linear; }
+.mg-s1-rowfill { position: absolute; top: 0; left: 0; bottom: 0; width: 100%; pointer-events: none;
+  transform: scaleX(0); transform-origin: left center; will-change: transform;
+  background: color-mix(in srgb, #2f81f7 20%, transparent); transition: transform .1s linear; }
 /* Manager-sped cycle (<0.5s): full bar with moving stripes instead of a flickering progress fill. */
 .mg-s1-rowfill.mg-s1-rowfill-fast { transition: none;
   background: repeating-linear-gradient(45deg,
@@ -299,7 +304,9 @@
   background-size: 28px 28px; animation: mg-s1-fast 0.6s linear infinite; }
 @keyframes mg-s1-fast { from { background-position: 0 0; } to { background-position: 28px 0; } }
 .mg-s1-timedrow > :not(.mg-s1-rowfill) { position: relative; z-index: 1; }
-.mg-s1-rowreward { font: 700 12px ui-monospace, monospace; color: var(--accent); white-space: nowrap; }
+.mg-s1-rowreward { grid-column: 1; display: block; font: 700 12px ui-monospace, monospace;
+  color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  min-height: 1.3em; line-height: 1.3; }   /* own line, height reserved even when empty → constant row size */
 .mg-s1-flash { animation: mg-s1-flash .25s ease; }
 @keyframes mg-s1-flash { 0%, 100% { box-shadow: none; } 50% { box-shadow: inset 0 0 0 2px var(--accent); } }
 
@@ -414,6 +421,16 @@
   cursor: pointer; font-size: 11px; }
 .mg-dbg-jump:hover { border-color: var(--accent); color: var(--accent); }
 .mg-dbg-reset:hover { border-color: #e03131; color: #e03131; }
+
+/* Dev/testing menu (5 rapid bell clicks). */
+.mg-dev { background: var(--bg-2); border: 1px solid var(--accent); border-radius: 10px; padding: 12px; margin-top: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.35); }
+.mg-dev-title { font-weight: 700; color: var(--fg); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.mg-dev-x { background: transparent; border: 0; color: var(--fg-2); cursor: pointer; font-size: 15px; line-height: 1; }
+.mg-dev-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; font-size: 12px; color: var(--fg-2); }
+.mg-dev-row button { background: var(--bg-3, var(--bg)); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 6px; padding: 4px 9px; cursor: pointer; font-size: 12px; }
+.mg-dev-row button:hover { border-color: var(--accent); color: var(--accent); }
 
 /* Defragmenter v3 shell and Stage 2 vertical slice. */
 .mg-v3 { width: min(760px, 100%); }
