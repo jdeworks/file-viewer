@@ -5397,7 +5397,7 @@
   },
   {
     "label": "CLAUDE.md",
-    "file": "CLAUDE.md",
+    "file": "claude.md",
     "mime": "text/markdown",
     "category": "Config",
     "categories": [

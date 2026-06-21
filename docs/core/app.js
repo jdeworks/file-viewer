@@ -28,7 +28,7 @@ import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './
 import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, renderCompanionSettings, detectCompanionOnStartup } from './companion-ui.js';
 import { initSessionTree, updateSessionTree, createNewFile, onTreeFileDrop, flushSessionEdit } from './session-tree.js';
 import { populateTypeSelect } from './type-select.js';
-import { initViewerOpen, openExampleFile, openViewerFile, searchViewerFile } from './viewer-open.js';
+import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -535,7 +535,7 @@ function init() {
   // Test seam (no data leaves the page; purely in-memory handles for the smoke suite).
   window.__fv = {
     state, setRawMode, downloadCurrent, loadFolder, hasUnsavedWork, openRepoView,
-    openViewerFile, openFile: openViewerFile, openExampleFile, openExampleByLabel, searchViewerFile,
+    openViewerFile, openFile: openViewerFile, openExampleFile, openExampleByLabel, openBlobFile, searchViewerFile,
     persistence, games,
     screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };

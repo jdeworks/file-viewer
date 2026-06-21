@@ -7,9 +7,11 @@ import { isSvg, mimeFor, dimensions } from './imglib.js';
 import { recordStage3AsciiActivation } from '../../games/metagame/viewer-actions.js';
 
 const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-// BMP and GIF: createImageBitmap decodes both natively; the editor pipeline
-// always exports as PNG/JPEG/WebP, so the source format doesn't matter.
-const EDITABLE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/bmp', 'image/gif']);
+// Every raster format the browser can decode into a <canvas> is editable — the
+// editor pipeline re-encodes via canvas.toBlob (PNG/JPEG/WebP/AVIF, falling back
+// to PNG for non-encodable sources like BMP/GIF), so the source format doesn't
+// matter as long as it decodes. AVIF belongs here for parity with PNG/JPEG/WebP.
+const EDITABLE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/avif', 'image/bmp', 'image/gif']);
 
 export async function render(intake, ctx = {}) {
   if (isSvg(intake)) {
@@ -34,7 +36,9 @@ export async function render(intake, ctx = {}) {
     + '<span class="imgv-zoom"></span>'
     + '<span class="imgv-sep"></span>'
     + '<button class="imgv-ascii-btn" title="Open the ASCII art studio">ASCII</button>'
-    + (canEdit ? '<span class="imgv-sep"></span>'
+    + (canEdit ? '<button class="imgv-tools-btn" title="Show / hide editing tools">🛠 Edit</button>'
+      + '<span class="imgv-edit-tools">'
+      + '<span class="imgv-sep"></span>'
       + '<input class="imgv-text-input" type="text" placeholder="Text overlay" aria-label="Image text">'
       + '<input class="imgv-text-size" type="number" min="8" max="240" value="32" title="Font size">'
       + '<select class="imgv-text-font" title="Font family">'
@@ -57,7 +61,8 @@ export async function render(intake, ctx = {}) {
       + '</select>'
       + '<label class="imgv-fill-opt" hidden style="font-size:0.8em;display:inline-flex;align-items:center;gap:3px;">Tol <input class="imgv-fill-tol" type="range" min="0" max="255" value="0" style="width:70px"><span class="imgv-fill-tolv">0</span></label>'
       + '<label class="imgv-fill-opt" hidden style="font-size:0.8em;display:inline-flex;align-items:center;gap:3px;" title="Stop the fill at detected edges"><input class="imgv-fill-edge" type="checkbox"> Edge match</label>'
-      + '<button class="imgv-undo" title="Undo last stroke" hidden>↩</button>'
+      + '<button class="imgv-undo" title="Undo (Ctrl+Z)" hidden>↩</button>'
+      + '<button class="imgv-redo" title="Redo (Ctrl+Y)" hidden>↪</button>'
       + '<span class="imgv-sep"></span>'
       + '<button class="imgv-rot-l" title="Rotate 90° counter-clockwise">↺ 90°</button>'
       + '<button class="imgv-rot-r" title="Rotate 90° clockwise">↻ 90°</button>'
@@ -99,7 +104,8 @@ export async function render(intake, ctx = {}) {
       + '<button class="imgv-resize-cancel">Cancel</button>'
       + '</span>'
       + '<button class="imgv-text-reset" title="Reset all edits" hidden>Reset</button>'
-      + '<span class="imgv-dirty-indicator" hidden style="color:var(--accent,#f59e0b);font-size:0.75em;align-self:center;">● Modified</span>' : '')
+      + '<span class="imgv-dirty-indicator" hidden style="color:var(--accent,#f59e0b);font-size:0.75em;align-self:center;">● Modified</span>'
+      + '</span>' : '')
     + '</div>'
     + '<div class="imgv-stage"><img class="imgv-img" draggable="false" alt="' + esc(intake.filename) + '"><div class="imgv-note" hidden></div></div>'
     + '<div class="imgv-ascii-out" hidden></div>';
@@ -124,6 +130,7 @@ export async function render(intake, ctx = {}) {
   const drawColorPicker = canEdit ? host.querySelector('.imgv-draw-color') : null;
   const drawSizePicker = canEdit ? host.querySelector('.imgv-draw-size') : null;
   const undoBtn = canEdit ? host.querySelector('.imgv-undo') : null;
+  const redoBtn = canEdit ? host.querySelector('.imgv-redo') : null;
   const exportFmt = canEdit ? host.querySelector('.imgv-export-fmt') : null;
   const editFont = canEdit ? host.querySelector('.imgv-text-font') : null;
   const bgBtn = canEdit ? host.querySelector('.imgv-bg-btn') : null;
@@ -158,6 +165,7 @@ export async function render(intake, ctx = {}) {
   let textPlaceMode = false, textPlaceX = 0.5, textPlaceY = 0.5;
   let bgPickMode = false, bgSrcData = null, bgSrcW = 0, bgSrcH = 0, bgPickX = -1, bgPickY = -1, bgPreviewUrl = null;
   const undoStack = [];
+  const redoStack = [];
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
   // Crop state
   let cropMode = false, cropOverlay = null, cropSelBox = null;
@@ -170,8 +178,39 @@ export async function render(intake, ctx = {}) {
 
   function pushUndo() {
     undoStack.push({ blob: editedBlob || null, url: editedUrl || null });
+    // A fresh edit forks history — discard any redo branch (and its blob URLs).
+    redoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
+    redoStack.length = 0;
     if (undoBtn) undoBtn.hidden = false;
+    if (redoBtn) redoBtn.hidden = true;
     host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden');
+  }
+
+  // Apply a saved {blob,url} edit state to the canvas + binary-edit hook.
+  function applyEditState(state) {
+    editedBlob = state.blob; editedUrl = state.url;
+    if (editedUrl) {
+      img.src = editedUrl;
+      ctx.onBinaryEdit?.({ dirty: true, mimeType: getExportMime(), getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
+    } else {
+      img.src = url;
+      if (editReset) editReset.hidden = true;
+      ctx.onBinaryEdit?.(null);
+    }
+    if (undoBtn) undoBtn.hidden = undoStack.length === 0;
+    if (redoBtn) redoBtn.hidden = redoStack.length === 0;
+  }
+  function doUndo() {
+    const prev = undoStack.pop();
+    if (!prev) return;
+    redoStack.push({ blob: editedBlob || null, url: editedUrl || null });
+    applyEditState(prev);
+  }
+  function doRedo() {
+    const next = redoStack.pop();
+    if (!next) return;
+    undoStack.push({ blob: editedBlob || null, url: editedUrl || null });
+    applyEditState(next);
   }
 
   // Pan offset (px), applied as a transform so the WHOLE canvas can be dragged
@@ -179,10 +218,19 @@ export async function render(intake, ctx = {}) {
   // the same transform so brush coordinates stay aligned.
   let panX = 0, panY = 0;
   function applyPan() {
-    const t = (panX || panY) ? `translate(${panX}px, ${panY}px)` : '';
+    // Always keep a 3D transform so the <img> stays on a stable compositing layer.
+    // Some mobile WebViews don't repaint a transformed <img> when only its src
+    // changes (e.g. after a fill) unless the layer is stable + nudged — see
+    // nudgeRepaint() below. translate3d also GPU-accelerates the pan.
+    const t = `translate3d(${panX}px, ${panY}px, 0)`;
     img.style.transform = t;
     if (drawOverlay) drawOverlay.style.transform = t;
   }
+  // Force a recomposite after an edit swaps img.src (mobile stale-paint guard).
+  function nudgeRepaint() {
+    requestAnimationFrame(() => { void img.offsetWidth; img.style.transform = `translate3d(${panX}px, ${panY}px, 0.001px)`; requestAnimationFrame(applyPan); });
+  }
+  img.addEventListener('load', nudgeRepaint);
   function apply() {
     host.querySelector('.imgv-fit').classList.toggle('active', fit);
     if (fit || !natural) { img.style.width = ''; img.style.maxWidth = ''; img.style.maxHeight = ''; zoomLabel.textContent = 'fit'; }
@@ -291,15 +339,33 @@ export async function render(intake, ctx = {}) {
       }
       // 30s-idle boot-screen easter egg (unchanged).
       import('./ascii-screensaver.js').then(({ installScreensaver }) => {
-        if (!host._ss) host._ss = installScreensaver(host, () => asciiMode);
+        // Don't let the idle screensaver overlay the live camera (the feed has no
+        // pointer/key activity to reset the idle timer, so it would always fire).
+        if (!host._ss) host._ss = installScreensaver(host, () => asciiMode && !asciiStudio?.isCameraActive?.());
         host._ss.start();
       });
     } else {
       host._ss?.stop();
+      asciiStudio?.stopCamera?.();   // leaving ASCII view → release the webcam
     }
   }
 
   asciiBtn.addEventListener('click', toggleAscii);
+
+  // Editing toolbar is a lot of buttons; on phones collapse it behind a 🛠 toggle
+  // (like the top bar's overflow) so it doesn't clutter. Expanded by default on
+  // wide screens. The button classes are unchanged, so all wiring still resolves.
+  const toolsBtn = canEdit ? host.querySelector('.imgv-tools-btn') : null;
+  if (toolsBtn) {
+    const bar = host.querySelector('.imgv-bar');
+    const collapsed = window.matchMedia('(max-width: 720px)').matches;
+    bar.classList.toggle('imgv-tools-collapsed', collapsed);
+    toolsBtn.classList.toggle('active', !collapsed);
+    toolsBtn.addEventListener('click', () => {
+      const open = !bar.classList.toggle('imgv-tools-collapsed');
+      toolsBtn.classList.toggle('active', open);
+    });
+  }
 
   async function commitText(nx, ny) {
     const text = (editInput?.value || '').trim();
@@ -450,9 +516,10 @@ export async function render(intake, ctx = {}) {
   });
   editReset?.addEventListener('click', () => {
     exitTextPlaceMode();
-    undoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
-    undoStack.length = 0;
+    [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
+    undoStack.length = 0; redoStack.length = 0;
     if (undoBtn) undoBtn.hidden = true;
+    if (redoBtn) redoBtn.hidden = true;
     if (editedUrl) URL.revokeObjectURL(editedUrl);
     editedUrl = null;
     editedBlob = null;
@@ -808,22 +875,23 @@ export async function render(intake, ctx = {}) {
     eraserBtn.addEventListener('click', () => setDrawMode('eraser'));
     fillBtn?.addEventListener('click', () => setDrawMode('fill'));
     fillTol?.addEventListener('input', () => { if (fillTolV) fillTolV.textContent = fillTol.value; });
-    undoBtn?.addEventListener('click', async () => {
-      const prev = undoStack.pop();
-      if (!prev) return;
-      if (editedUrl && editedUrl !== prev.url) URL.revokeObjectURL(editedUrl);
-      editedBlob = prev.blob; editedUrl = prev.url;
-      if (editedUrl) {
-        img.src = editedUrl;
-        ctx.onBinaryEdit?.({ dirty: true, mimeType: getExportMime(), getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
-      } else {
-        img.src = url;
-        if (editReset) editReset.hidden = true;
-        ctx.onBinaryEdit?.(null);
-      }
-      if (undoBtn) undoBtn.hidden = undoStack.length === 0;
-    });
+    undoBtn?.addEventListener('click', doUndo);
+    redoBtn?.addEventListener('click', doRedo);
   }
+
+  // Ctrl/Cmd+Z = undo, Ctrl+Y or Ctrl/Cmd+Shift+Z = redo — only while this image
+  // view is connected, not in ASCII mode, and not typing in a field.
+  function onEditKey(e) {
+    if (!canEdit || asciiMode || !host.isConnected) return;
+    const t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    const mod = e.ctrlKey || e.metaKey;
+    if (!mod) return;
+    const k = e.key.toLowerCase();
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); doUndo(); }
+    else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); doRedo(); }
+  }
+  document.addEventListener('keydown', onEditKey);
 
   // Crop tool — drag a rectangle on the image to select a region, then apply to commit
   function cropExitMode() {
@@ -1102,5 +1170,5 @@ export async function render(intake, ctx = {}) {
     });
   }
 
-  return { parentNode: host, revoke: () => { URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); undoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
 }

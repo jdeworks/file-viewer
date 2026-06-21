@@ -47,6 +47,7 @@ export function mountAsciiStudio(host, opts = {}) {
   host.classList.add('asx-root');
   host.innerHTML = `
     <div class="asx-bar">
+      ${BTN('asx-settings-btn', '⚙ Settings', 'Show / hide the settings panel')}
       ${BTN('asx-cam', '📷 Camera', 'Live webcam → ASCII (experimental)')}
       <select class="asx-perf" title="Performance preset"><option value="">Quality preset…</option>
         <option value="fast">Fast</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select>
@@ -122,6 +123,19 @@ export function mountAsciiStudio(host, opts = {}) {
   q('.asx-eye-orig').addEventListener('click', () => toggleEye('orig'));
   q('.asx-eye-proc').addEventListener('click', () => toggleEye('proc'));
 
+  // Settings panel is a toggleable drawer — open by default on wide screens, closed
+  // on phones (where it would otherwise cover the whole converter). On mobile it
+  // overlays the stage instead of pushing it (see studio.css).
+  const settingsBtn = q('.asx-settings-btn');
+  const startOpen = !window.matchMedia('(max-width: 720px)').matches;
+  host.classList.toggle('asx-settings-open', startOpen);
+  settingsBtn.classList.toggle('active', startOpen);
+  settingsBtn.addEventListener('click', () => {
+    const open = host.classList.toggle('asx-settings-open');
+    settingsBtn.classList.toggle('active', open);
+    applyDisplay();
+  });
+
   const controls = buildControls(panel, engine.options, (key, value, dirty, displayOnly) => {
     engine.options[key] = value;
     // Background colour has no effect when the BG is transparent — disable it.
@@ -159,25 +173,48 @@ export function mountAsciiStudio(host, opts = {}) {
   q('.asx-reset-all').addEventListener('click', () => resetKeys(Object.keys(engine.options)));
   function resetKeys(keys) {
     const defs = defaultOptions();
-    keys.forEach((k) => { if (k in defs) controls.setValue(k, defs[k]); });
+    let transformReset = false;
+    keys.forEach((k) => {
+      if (!(k in defs)) return;
+      // rotate/flip live on the toolbar, not in the control panel, so setValue
+      // can't reach them — reset directly + regrab (Reset all must undo a rotate).
+      if (k === 'rotate' || k === 'flipH' || k === 'flipV') { engine.options[k] = defs[k]; transformReset = true; }
+      else controls.setValue(k, defs[k]);
+    });
+    if (transformReset) engine.regrab();
   }
 
   // ── webcam easter egg ── the 📷 button swaps in the live-camera consumer.
   const camHost = q('.asx-cam-host');
   const body = q('.asx-body');
+  const bar = q('.asx-bar');
   let webcam = null;
+  function closeCamera() {
+    if (!webcam) return;
+    webcam.destroy(); webcam = null;   // stops the MediaStream tracks
+    camHost.hidden = true; body.hidden = false;
+    bar.classList.remove('asx-cam-on');
+    q('.asx-cam').textContent = '📷 Camera';
+  }
   q('.asx-cam').addEventListener('click', async () => {
-    if (webcam) {
-      webcam.destroy(); webcam = null;
-      camHost.hidden = true; body.hidden = false;
-      q('.asx-cam').textContent = '📷 Camera';
-      return;
-    }
+    if (webcam) { closeCamera(); return; }
     body.hidden = true; camHost.hidden = false;
+    // Camera has its OWN toolbar (incl. its own transforms/exports that act on the
+    // live frame) — hide the image-studio toolbar buttons so they don't clutter or
+    // drive the wrong (image) engine. The 📷/back toggle stays visible.
+    bar.classList.add('asx-cam-on');
     q('.asx-cam').textContent = '🖼 Back to image';
     const { mountAsciiWebcam } = await import('./webcam.js');
     // Inherit the current image-mode settings as the camera's starting point.
-    webcam = mountAsciiWebcam(camHost, { initialOptions: { ...engine.options } });
+    // A finished recording opens DIRECTLY in the media/video studio (no download
+    // round-trip) when the app's Blob-intake seam is available; if not (e.g. the
+    // standalone tool page), webcam.js falls back to downloading the .webm.
+    webcam = mountAsciiWebcam(camHost, {
+      initialOptions: { ...engine.options },
+      onRecorded: window.__fv?.openBlobFile
+        ? (blob) => window.__fv.openBlobFile(blob, 'webcam-recording.webm', { mime: blob.type })
+        : undefined,
+    });
   });
 
   // Set (or replace) the source image and convert.
@@ -195,6 +232,8 @@ export function mountAsciiStudio(host, opts = {}) {
   return {
     engine,
     setImage,
+    isCameraActive: () => !!webcam,
+    stopCamera: closeCamera,
     destroy() { ro.disconnect(); webcam?.destroy(); host.classList.remove('asx-root'); host.innerHTML = ''; },
   };
 }

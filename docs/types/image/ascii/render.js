@@ -60,8 +60,12 @@ export function renderAsciiToCanvas(result, canvas, o) {
   const charW = (ctx.measureText('M').width || fontSize * 0.6) * Math.max(1, Math.round(o.spaceDensity));
   const lineH = Math.round(fontSize * 1.0);
   const frame = o.transparentFrame || 0;
-  canvas.width = Math.max(1, Math.ceil(result.columns * charW + frame * 2));
-  canvas.height = Math.max(1, Math.ceil(result.rows * lineH + frame * 2));
+  const w = Math.max(1, Math.ceil(result.columns * charW + frame * 2));
+  const h = Math.max(1, Math.ceil(result.rows * lineH + frame * 2));
+  // Only resize when the dimensions actually change — reassigning canvas.width
+  // every webcam frame reallocates the backing store (a steady per-frame cost).
+  if (canvas.width !== w) canvas.width = w;
+  if (canvas.height !== h) canvas.height = h;
 
   if (o.transparentBackground) ctx.clearRect(0, 0, canvas.width, canvas.height);
   else { ctx.fillStyle = o.backgroundColor || '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); }

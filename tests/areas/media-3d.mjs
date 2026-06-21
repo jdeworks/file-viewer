@@ -208,6 +208,21 @@ export async function run(ctx) {
   if (editedBytes.len > 1000 && editedBytes.sig.join(',') === '137,80,78,71') pass('image text edit produces dirty PNG bytes'); else fail('image edit bytes: ' + JSON.stringify(editedBytes));
   const hasDirtyImage = await page.evaluate(() => window.__fv.hasUnsavedWork());
   if (hasDirtyImage) pass('edited image counts as unsaved work'); else fail('edited image did not count as unsaved');
+  // Undo reverts the edit (back to clean), redo re-applies it (dirty again).
+  await page.click('#previewHost .imgv-undo');
+  await page.waitForFunction(() => !window.__fv.state.binaryEdit, null, { timeout: 5000 }).catch(() => {});
+  const afterUndo = await page.evaluate(() => ({ dirty: !!window.__fv.state.binaryEdit, redoShown: !document.querySelector('#previewHost .imgv-redo').hidden }));
+  if (!afterUndo.dirty && afterUndo.redoShown) pass('image undo reverts edit + reveals redo'); else fail('after undo: ' + JSON.stringify(afterUndo));
+  await page.click('#previewHost .imgv-redo');
+  await page.waitForFunction(() => !!window.__fv.state.binaryEdit, null, { timeout: 5000 }).catch(() => {});
+  const afterRedo = await page.evaluate(() => !!window.__fv.state.binaryEdit);
+  if (afterRedo) pass('image redo re-applies edit'); else fail('redo did not re-apply edit');
+  // Toolbar declutter: the 🛠 toggle collapses the editing-tools group.
+  const toolsVisInit = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display !== 'none');
+  await page.click('#previewHost .imgv-tools-btn');
+  const toolsHidden = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display === 'none');
+  await page.click('#previewHost .imgv-tools-btn');   // restore for later steps
+  if (toolsVisInit && toolsHidden) pass('image editing tools collapse behind the 🛠 toggle'); else fail('tools toggle: ' + JSON.stringify({ toolsVisInit, toolsHidden }));
   await page.evaluate(() => window.__fv.downloadCurrent());
   const cleanAfterDownload = await page.evaluate(() => !window.__fv.hasUnsavedWork());
   if (cleanAfterDownload) pass('edited image download clears unsaved state'); else fail('edited image stayed dirty after download');
@@ -232,10 +247,70 @@ export async function run(ctx) {
   }, null, { timeout: 15000 });
   const ctlCount = await page.$$eval('#previewHost .asx-panel .asx-ctl-input', (els) => els.length);
   if (ctlCount > 15) pass('ASCII studio mounts with full control panel (' + ctlCount + ' controls)'); else fail('ascii controls: ' + ctlCount);
+  // Settings layout: open groups use a responsive grid (aligned columns), not a flat stack.
+  // Settings use a row layout: label and its control sit on the SAME row (the
+  // .asx-ctl is a 2-col grid), not stacked label-above-control.
+  const ctlRow = await page.$eval('#previewHost .asx-panel .asx-ctl', (el) => {
+    const name = el.querySelector('.asx-ctl-name').getBoundingClientRect();
+    const row = el.querySelector('.asx-ctl-row').getBoundingClientRect();
+    return { display: getComputedStyle(el).display, sameRow: Math.abs(name.top - row.top) < 14, sideBySide: row.left > name.left + 20 };
+  });
+  if (ctlRow.display === 'grid' && ctlRow.sameRow && ctlRow.sideBySide) pass('ASCII settings use an aligned row layout (label | control)'); else fail('settings row layout: ' + JSON.stringify(ctlRow));
+  // Settings is a toggleable drawer — the ⚙ button hides/shows the panel.
+  const panelVisInit = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display !== 'none');
+  await page.click('#previewHost .asx-settings-btn');
+  const panelHidden = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display === 'none');
+  await page.click('#previewHost .asx-settings-btn');   // restore
+  const panelBack = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display !== 'none');
+  if (panelVisInit && panelHidden && panelBack) pass('ASCII settings drawer toggles open/closed'); else fail('settings toggle: ' + JSON.stringify({ panelVisInit, panelHidden, panelBack }));
   // Switching gradient re-converts; output stays non-empty.
   await page.selectOption('#previewHost .asx-panel select[data-key="gradientName"]', 'blocks');
   await page.waitForFunction(() => document.querySelector('#previewHost .asx-out').textContent.trim().length > 0, null, { timeout: 8000 });
   pass('ASCII studio gradient change re-converts');
+
+  // ── Camera mode UI ── the 📷 button mounts the webcam consumer (no getUserMedia
+  // until "Start camera"). It has its OWN toolbar incl. working flip/rotate, and
+  // the image-studio toolbar's buttons hide so they don't drive the wrong engine.
+  await page.click('#previewHost .asx-cam');
+  await page.waitForSelector('#previewHost .asx-cam-host .cam-out', { timeout: 8000 });
+  const camUi = await page.evaluate(() => {
+    const sb = document.querySelector('#previewHost .cam-start');
+    return {
+      transforms: document.querySelectorAll('#previewHost .asx-cam-host .cam-rot-l, .cam-rot-r, .cam-flip-h, .cam-flip-v').length,
+      barScoped: document.querySelector('#previewHost .asx-bar').classList.contains('asx-cam-on'),
+      imageRotHidden: getComputedStyle(document.querySelector('#previewHost .asx-bar .asx-rot-l')).display === 'none',
+      backVisible: getComputedStyle(document.querySelector('#previewHost .asx-bar .asx-cam')).display !== 'none',
+      startFlash: sb.classList.contains('cam-flash'),
+      startPlay: /▶/.test(sb.textContent),
+    };
+  });
+  if (camUi.transforms === 4 && camUi.barScoped && camUi.imageRotHidden && camUi.backVisible) pass('camera mode: own flip/rotate toolbar + image buttons hidden'); else fail('camera ui: ' + JSON.stringify(camUi));
+  if (camUi.startFlash && camUi.startPlay) pass('camera Start button flashes + shows ▶ until started'); else fail('start button: ' + JSON.stringify({ startFlash: camUi.startFlash, startPlay: camUi.startPlay }));
+  await page.click('#previewHost .asx-cam');   // back to image
+  await page.waitForSelector('#previewHost .asx-out', { timeout: 5000 });
+
+  // ── AVIF parity ── AVIF must expose the SAME editor toolbar as PNG/JPEG/WebP
+  // (canEdit), not just fit/zoom + ASCII. Regression guard for EDITABLE_MIME.
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.avif');
+  await page.waitForSelector('#previewHost .imgv-img', { timeout: 12000 });
+  const avifType = await page.$eval('#typeSelect', (s) => s.value);
+  const avifEdits = await page.$$eval(
+    '#previewHost .imgv-pencil, #previewHost .imgv-fill, #previewHost .imgv-crop-btn, #previewHost .imgv-f-hue, #previewHost .imgv-bg-btn',
+    (els) => els.length,
+  );
+  if (avifType === 'image' && avifEdits === 5) pass('AVIF gets the full editor toolbar (parity with PNG)'); else fail('avif parity: type=' + avifType + ' editControls=' + avifEdits);
+
+  // ── Blob-intake seam ── window.__fv.openBlobFile opens an in-memory Blob via
+  // the same intake→detect→render path a file uses (this is how a webcam
+  // recording opens directly in the studio instead of round-tripping a download).
+  const blobOpen = await page.evaluate(async () => {
+    if (typeof window.__fv.openBlobFile !== 'function') return { fn: false };
+    const bytes = new Uint8Array(await (await fetch('examples/sample.webp')).arrayBuffer());
+    const ok = await window.__fv.openBlobFile(new Blob([bytes], { type: 'image/webp' }), 'from-blob.webp', { mime: 'image/webp' });
+    return { fn: true, ok, filename: window.__fv.state.intake?.filename, type: window.__fv.state.type?.id };
+  });
+  if (blobOpen.fn && blobOpen.ok && blobOpen.filename === 'from-blob.webp' && blobOpen.type === 'image') pass('openBlobFile opens an in-memory Blob through the full intake path'); else fail('openBlobFile: ' + JSON.stringify(blobOpen));
 
   // ── MIDI sequence ── parses SMF header, tempo, tracks, GM programs, and note counts.
   await page.goto(origin, { waitUntil: 'load' });
