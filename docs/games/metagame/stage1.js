@@ -172,9 +172,16 @@ export function renderStage1(ctx) {
   }
 
   // ── Tab framework ──────────────────────────────────────────────────────────
+  // Dirty-checked: the tab bar is only rebuilt when the set of visible tabs or the active tab
+  // changes. Without this it was recreated on every builder completion (i.e. ~every tick once
+  // managers auto-fire), churning the DOM + listeners and breaking devtools inspection.
+  let tabsSig = null;
   function renderTabs() {
-    tabsEl.innerHTML = Object.keys(TAB_LABELS)
-      .filter((id) => tabVisible[id]())
+    const visible = Object.keys(TAB_LABELS).filter((id) => tabVisible[id]());
+    const sig = visible.join(',') + '|' + activeTab;
+    if (sig === tabsSig) return;
+    tabsSig = sig;
+    tabsEl.innerHTML = visible
       .map((id) => '<button class="mg-s1-tab' + (id === activeTab ? ' mg-s1-tab-on' : '') + '" type="button" role="tab" data-tab="' + id + '">' + TAB_LABELS[id] + '</button>')
       .join('');
     tabsEl.querySelectorAll('.mg-s1-tab').forEach((b) => b.addEventListener('click', () => {

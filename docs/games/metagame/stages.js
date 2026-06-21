@@ -265,7 +265,7 @@ export const STAGES = [
       {
         id: 's1-array', name: 'Processing Array', icon: '🛰', type: 'passive',
         desc: 'auto bits / sec',
-        base: { m: 4, e: 6 }, mult: 1.12, rate: 0.5,
+        base: { m: 50, e: 6 }, mult: 1.20, rate: 0.5,
         unlock: (state) => (state.owned['s1-cluster'] || 0) >= 3,
         bell: 'bell-array', grid: 'g5',
       },
@@ -275,7 +275,7 @@ export const STAGES = [
         id: 's1-neural', name: 'Neural Net', icon: '🧠', type: 'click_mult',
         desc: 'boosts all timers',
         globalMult: { perLevel: 0.25, targets: 'timed' },
-        base: { m: 60, e: 6 }, mult: 1.10, amount: 0,
+        base: { m: 5, e: 9 }, mult: 1.20, amount: 0,
         unlock: (state) => _gte(state.totalBits, { m: 5, e: 7 }),
         bell: 'bell-neural', grid: 'g6',
       },
@@ -284,7 +284,7 @@ export const STAGES = [
       {
         id: 's1-quantum', name: 'Quantum Tap', icon: '⚛', type: 'click_mult',
         desc: 'multiplies tap power',
-        base: { m: 500, e: 6 }, mult: 1.10, amount: 0, quantumMult: true,
+        base: { m: 500, e: 9 }, mult: 1.22, amount: 0, quantumMult: true,
         unlock: (state) => (state.owned['s1-neural'] || 0) >= 3,
         bell: 'bell-quantum', grid: 'g7',
       },
@@ -301,7 +301,7 @@ export const STAGES = [
 
     // ── Boss ticket (§10.2) ──────────────────────────────────────────────────────────────────
     // canFightBoss = allSubStagesOwned AND gte(bits, bossTicket). Checked in orchestrator (WP-S1-12).
-    bossTicket: { m: 1, e: 9 },   // 1 000 000 000 bits
+    bossTicket: { m: 1, e: 12 },   // 1 trillion bits — endgame goal past the (now pricier) Quantum Tap
 
     // ── Intro / boss dialog ──────────────────────────────────────────────────────────────────
     intro: [

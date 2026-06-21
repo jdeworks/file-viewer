@@ -45,6 +45,9 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
     return sel;
   }
 
+  // Compact number display ("6", "1.23k", "4.00b"…) — used for counts that can grow large.
+  const fmtN = (n) => toDisplay(fromNumber(n));
+
   // Reward one cycle pays: builders show the units they assemble; the rest, bits. Updates as the
   // owned count of the machine (or its boosters) changes — recomputed on every paint.
   function rewardLabel(t) {
@@ -52,7 +55,7 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       const prod = timedProduction(state, cfg, t.id);
       const target = tiers.find((x) => x.id === t.produces.targetId);
       const tName = target ? (target.icon + ' ' + target.name) : t.produces.targetId;
-      return '+' + (prod ? prod.amount : (t.produces.perOwned || 1)) + ' ' + tName;
+      return '+' + fmtN(prod ? prod.amount : (t.produces.perOwned || 1)) + ' ' + tName;
     }
     return '+' + toDisplay(timedPayout(state, cfg, t.id)) + ' bits';
   }
@@ -82,7 +85,7 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
     return '<div class="mg-buy mg-s1-shoprow' + (timed ? ' mg-s1-timedrow' : '') + '" data-id="' + t.id + '"'
       + (visible ? '' : ' hidden') + '>'
       + (timed ? '<div class="mg-s1-rowfill" aria-hidden="true"></div>' : '')
-      + '<span class="mg-buy-name">' + escapeHtml(t.icon + ' ' + t.name) + ' <span class="mg-owned">×' + owned + '</span></span>'
+      + '<span class="mg-buy-name">' + escapeHtml(t.icon + ' ' + t.name) + ' <span class="mg-owned">×' + fmtN(owned) + '</span></span>'
       // Reward on its OWN line (timed rows) so the row is always 3 lines — its length changing while
       // running (e.g. "+780 bits · 2.1s") never adds a line and shifts the layout.
       + (timed ? '<span class="mg-s1-rowreward"></span>' : '')
@@ -163,7 +166,7 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       setHidden(row, !visible);
       if (!visible) return;
       const owned = state.owned[t.id] || 0;
-      setText(row.querySelector('.mg-owned'), '×' + owned);
+      setText(row.querySelector('.mg-owned'), '×' + fmtN(owned));
       // Highlight the active count selector (classList.toggle is idempotent).
       const sel = countFor(t.id);
       row.querySelectorAll('.mg-s1-buyn').forEach((b) => {
