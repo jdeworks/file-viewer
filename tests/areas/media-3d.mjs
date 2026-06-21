@@ -237,6 +237,18 @@ export async function run(ctx) {
   await page.waitForFunction(() => document.querySelector('#previewHost .asx-out').textContent.trim().length > 0, null, { timeout: 8000 });
   pass('ASCII studio gradient change re-converts');
 
+  // ── AVIF parity ── AVIF must expose the SAME editor toolbar as PNG/JPEG/WebP
+  // (canEdit), not just fit/zoom + ASCII. Regression guard for EDITABLE_MIME.
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.avif');
+  await page.waitForSelector('#previewHost .imgv-img', { timeout: 12000 });
+  const avifType = await page.$eval('#typeSelect', (s) => s.value);
+  const avifEdits = await page.$$eval(
+    '#previewHost .imgv-pencil, #previewHost .imgv-fill, #previewHost .imgv-crop-btn, #previewHost .imgv-f-hue, #previewHost .imgv-bg-btn',
+    (els) => els.length,
+  );
+  if (avifType === 'image' && avifEdits === 5) pass('AVIF gets the full editor toolbar (parity with PNG)'); else fail('avif parity: type=' + avifType + ' editControls=' + avifEdits);
+
   // ── MIDI sequence ── parses SMF header, tempo, tracks, GM programs, and note counts.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.mid');

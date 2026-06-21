@@ -7,9 +7,11 @@ import { isSvg, mimeFor, dimensions } from './imglib.js';
 import { recordStage3AsciiActivation } from '../../games/metagame/viewer-actions.js';
 
 const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-// BMP and GIF: createImageBitmap decodes both natively; the editor pipeline
-// always exports as PNG/JPEG/WebP, so the source format doesn't matter.
-const EDITABLE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/bmp', 'image/gif']);
+// Every raster format the browser can decode into a <canvas> is editable — the
+// editor pipeline re-encodes via canvas.toBlob (PNG/JPEG/WebP/AVIF, falling back
+// to PNG for non-encodable sources like BMP/GIF), so the source format doesn't
+// matter as long as it decodes. AVIF belongs here for parity with PNG/JPEG/WebP.
+const EDITABLE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/avif', 'image/bmp', 'image/gif']);
 
 export async function render(intake, ctx = {}) {
   if (isSvg(intake)) {
