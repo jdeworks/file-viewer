@@ -5,8 +5,10 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.idr') || name.endsWith('.idr2')) return true;
-    // .agda files are Agda, .chpl files are Chapel, .gr files are Grain — don't poach them
-    if (name.endsWith('.agda') || name.endsWith('.chpl') || name.endsWith('.gr') || name.endsWith('.lean')) return false;
+    // The content heuristic (module + import/data/Type) appears in many functional languages
+    // (Julia, etc.). Only content-match files with no/unknown extension.
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
+    if (ext && ext !== 'idr' && ext !== 'idr2') return false;
     const text = intake.text || '';
     return /^module\s+\w/m.test(text) && (/^import\s+/m.test(text) || /^data\s+/m.test(text) || /:\s*Type\b/.test(text) || /\btotal\b/.test(text) || /\bpartial\b/.test(text));
   },

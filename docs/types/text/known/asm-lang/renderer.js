@@ -186,9 +186,9 @@ function highlightAsm(text, flavor) {
         i = j;
         continue;
       }
-      // Directives starting with .
+      // Directives starting with . (consume the leading dot so j always advances)
       if (line[i] === '.') {
-        let j = i;
+        let j = i + 1;
         while (j < line.length && /[\w]/.test(line[j])) j++;
         out += '<span class="asm-dir">' + esc(line.slice(i, j)) + '</span>';
         i = j;
@@ -207,9 +207,9 @@ function highlightAsm(text, flavor) {
         i = j;
         continue;
       }
-      // Numbers
+      // Numbers (incl. AT&T immediates like $0x10 — consume the leading $ so j always advances)
       if (/[0-9]/.test(line[i]) || (line[i] === '$' && /[0-9]/.test(line[i + 1] || ''))) {
-        let j = i;
+        let j = line[i] === '$' ? i + 1 : i;
         while (j < line.length && /[0-9a-fA-FxXbBoOhH_]/.test(line[j])) j++;
         out += '<span class="asm-num">' + esc(line.slice(i, j)) + '</span>';
         i = j;

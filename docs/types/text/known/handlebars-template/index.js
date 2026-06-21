@@ -3,8 +3,12 @@ export const plugin = {
   label: 'Handlebars Template',
   tags: ['handlebars', 'hbs', 'mustache', 'template', 'javascript'],
   match(intake) {
-    const name = (intake.name || intake.filename || '').toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.hbs') || name.endsWith('.handlebars') || name.endsWith('.mustache.hbs')) return true;
+    // The content heuristic ({{#if}} etc.) also matches .mustache/.njk and other template files
+    // that have dedicated plugins. Only content-match files with no/unknown extension.
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
+    if (ext && ext !== 'hbs' && ext !== 'handlebars') return false;
     const text = intake.text || '';
     // Content-based: require at least one Handlebars block helper or partial
     return /\{\{#(?:if|each|with|unless|>)/.test(text) || /\{\{>\s*\w/.test(text);

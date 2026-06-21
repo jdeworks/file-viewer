@@ -1,3 +1,5 @@
+const PASCAL_EXTS = new Set(['pas', 'pp', 'dpr', 'dpk']);
+
 export const plugin = {
   id: 'pascal-lang',
   label: 'Pascal',
@@ -5,6 +7,10 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (/\.(pas|pp|dpr|dpk)$/.test(name)) return true;
+    // The content heuristic (program/unit/begin/end. keywords) appears in other languages
+    // (Fortran, Ada). Only content-match files with no/unknown extension (a bare extension guard).
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
+    if (ext && !PASCAL_EXTS.has(ext)) return false;
     const text = intake.text || '';
     const kws = ['program ', 'unit ', 'interface', 'implementation', 'procedure ', 'function ', 'begin', 'end.'];
     const matched = kws.filter((k) => text.toLowerCase().includes(k.toLowerCase()));

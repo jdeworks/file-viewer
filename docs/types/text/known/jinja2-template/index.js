@@ -3,10 +3,12 @@ export const plugin = {
   label: 'Jinja2 Template',
   tags: ['jinja2', 'jinja', 'ansible', 'python', 'template'],
   match(intake) {
-    const name = (intake.name || intake.filename || '').toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.j2') || name.endsWith('.jinja') || name.endsWith('.jinja2')) return true;
-    // TOML files may embed Jinja2/template-like syntax in string values (e.g. cliff.toml body templates)
-    if (name.endsWith('.toml')) return false;
+    // The content heuristic ({{ }}/{% %}/{# #}) also matches .njk (Nunjucks) and other template
+    // files with dedicated plugins. Only content-match files with no/unknown extension.
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
+    if (ext && ext !== 'j2' && ext !== 'jinja' && ext !== 'jinja2') return false;
     // Content-based: needs at least 2 different tag types to avoid false positives
     const text = intake.text || '';
     const hasOutput = /\{\{\s/.test(text);

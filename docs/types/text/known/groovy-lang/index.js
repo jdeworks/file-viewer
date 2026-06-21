@@ -1,14 +1,16 @@
+const GROOVY_EXTS = new Set(['groovy', 'gvy', 'gy', 'gsh', 'gradle']);
+
 export const plugin = {
   id: 'groovy-lang',
   label: 'Groovy',
   tags: ['groovy', 'gvy', 'gy', 'gsh', 'jvm', 'scripting'],
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    if (name.endsWith('.groovy') || name.endsWith('.gvy') || name.endsWith('.gy') || name.endsWith('.gsh')) return true;
-    // Rego policy files share import/package keywords but are not Groovy
-    if (name.endsWith('.rego')) return false;
-    // CUE files share package/import keywords but are not Groovy
-    if (name.endsWith('.cue')) return false;
+    if (name.endsWith('.groovy') || name.endsWith('.gvy') || name.endsWith('.gy') || name.endsWith('.gsh') || name.endsWith('.gradle')) return true;
+    // The content heuristic keys off def/class/import/package, which appear in many other
+    // languages. Only content-match files with no/unknown extension (a bare extension guard).
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
+    if (ext && !GROOVY_EXTS.has(ext)) return false;
     const text = intake.text || '';
     const hits = [
       /^def\s+/m.test(text),

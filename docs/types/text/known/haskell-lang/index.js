@@ -3,8 +3,12 @@ export const plugin = {
   label: 'Haskell',
   tags: ['haskell', 'hs', 'lhs', 'functional', 'ml'],
   match(intake) {
-    const name = (intake.name || intake.filename || '').toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.hs') || name.endsWith('.lhs')) return true;
+    // The content heuristic (module/import/data/type) appears in many functional languages
+    // (Julia, PureScript, etc.). Only content-match files with no/unknown extension.
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
+    if (ext && ext !== 'hs' && ext !== 'lhs') return false;
     const text = intake.text || '';
     // Boost: multiple Haskell-specific keywords give high confidence
     const hits = [/\bmodule\s+[A-Z]/.test(text), /\bimport\s+(qualified\s+)?[A-Z]/.test(text), /\bdata\s+[A-Z]/.test(text), /\btype\s+[A-Z]/.test(text), /\bnewtype\s+[A-Z]/.test(text), /\bclass\s+[A-Z]/.test(text), /\binstance\s+/.test(text)].filter(Boolean).length;

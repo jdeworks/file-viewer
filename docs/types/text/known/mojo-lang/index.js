@@ -3,8 +3,12 @@ export const plugin = {
   label: 'Mojo',
   tags: ['mojo', 'python', 'ai', 'ml', 'systems'],
   match(intake) {
-    const name = (intake.name || intake.filename || '').toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.mojo') || name.endsWith('.🔥')) return true;
+    // The content heuristic (fn/struct/from import) appears in other languages (WGSL, Rust, etc.).
+    // Only content-match files with no/unknown extension (a bare extension guard).
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
+    if (ext && ext !== 'mojo' && ext !== '🔥') return null;
     const text = intake.text || '';
     const head = text.slice(0, 2000);
     if (!head.includes('fn ') && !head.includes('struct ') && !head.includes('from ')) return null;

@@ -3,8 +3,12 @@ export const plugin = {
   label: 'OCaml',
   tags: ['ocaml', 'ml', 'mli', 'functional', 'ml-family'],
   match(intake) {
-    const name = (intake.name || intake.filename || '').toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.ml') || name.endsWith('.mli')) return true;
+    // The content heuristic (let/module/type/match) appears in many languages (Racket, etc.).
+    // Only content-match files with no/unknown extension.
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
+    if (ext && ext !== 'ml' && ext !== 'mli') return false;
     const text = intake.text || '';
     const hits = [
       /\blet\s+/.test(text),

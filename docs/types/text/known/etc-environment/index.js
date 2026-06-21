@@ -18,8 +18,9 @@ export default {
     // Bare filename "environment" with pure KEY=VALUE content (no shell syntax)
     if (n === 'environment') {
       const text = intake.textSample || intake.text || '';
-      // Must have KEY=VALUE lines and NOT use shell expansions ($VAR, `cmd`) or export
-      if (/^[A-Z_][A-Z_0-9]*=/.test(text) && !text.includes('export ') && !text.includes('$(') && !/\$[A-Z_]/.test(text)) return true;
+      // Must have a KEY=VALUE line (on any line, comments/blanks may precede it) and NOT use
+      // shell expansions ($VAR, `cmd`) or export
+      if (/^[A-Z_][A-Z_0-9]*=/m.test(text) && !text.includes('export ') && !text.includes('$(') && !/\$[A-Z_]/.test(text)) return true;
     }
     return false;
   },

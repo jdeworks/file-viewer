@@ -5,9 +5,12 @@ export const plugin = {
   label: 'GLSL Shader',
   tags: ['glsl', 'opengl', 'shader', 'graphics', 'gpu'],
   match(intake) {
-    const name = (intake.name || intake.filename || '').toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     const dot = name.lastIndexOf('.');
     if (dot !== -1 && GLSL_EXTS.has(name.slice(dot))) return true;
+    // The content heuristic (void main + GL builtins) appears in C-family languages (D, Dart,
+    // etc.). Only content-match files with no/unknown extension (a bare extension guard).
+    if (dot !== -1) return false;
     const text = intake.text || '';
     if (/void\s+main\s*\(\s*\)/.test(text)) {
       if (/gl_Position|gl_FragColor|gl_FragDepth|uniform\s|attribute\s|varying\s|\bin\s+\w|\bout\s+\w|texture\s*\(|sampler2D|samplerCube/.test(text)) return true;

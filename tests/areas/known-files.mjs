@@ -5945,7 +5945,7 @@ export async function run(ctx) {
   if (/Introduction|Headings|References/i.test(mwText)) pass('mediawiki-markup: sections shown'); else fail('mediawiki-markup sections: ' + mwText.slice(0, 300));
 
   // ── bbcode-text viewer ──
-  await openExample('sample.bbcode');
+  await openExample('sample.bbc');
   await page.waitForSelector('#previewHost .bbc-doc', { timeout: 12000 });
   pass('bbcode-text: rendered');
   const bbcText = await page.$eval('#previewHost .bbc-doc', (e) => e.textContent);

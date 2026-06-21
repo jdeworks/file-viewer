@@ -1,16 +1,17 @@
+const COFFEE_EXTS = new Set(['coffee', 'litcoffee']);
+
 export const plugin = {
   id: 'coffeescript-lang',
   label: 'CoffeeScript',
   tags: ['coffeescript', 'coffee', 'javascript', 'literate'],
   match(intake) {
-    const name = (intake.name || intake.filename || '').toLowerCase();
+    const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.coffee') || name.endsWith('.litcoffee') || name.endsWith('.coffee.md')) return true;
     // The content heuristic below keys off `->`/`=>`/`class`/`require`, which appear in many other
-    // languages (e.g. PHP's `$obj->method()` — would false-match rector.php). Only apply it to
-    // files WITHOUT a recognized non-CoffeeScript source extension.
-    if (/\.(php|rb|py|rs|go|ts|tsx|jsx|mjs|cjs|java|cs|cpp|cc|hpp|swift|kt|scala|pl|lua|r|sql|sh|ps1)$/i.test(name)) return false;
-    // CoffeeScript is never a .conf file — defer to dedicated config plugins (e.g. .scalafmt.conf).
-    if (name.endsWith('.conf')) return false;
+    // languages. Only apply it to files WITHOUT a recognized FOREIGN source/markup extension —
+    // i.e. only content-match files with no/unknown extension (a bare extension guard).
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
+    if (ext && !COFFEE_EXTS.has(ext)) return false;
     const text = intake.text || '';
     const hits = [
       /->/.test(text),
