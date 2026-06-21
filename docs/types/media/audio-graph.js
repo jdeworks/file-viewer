@@ -78,6 +78,9 @@ export function getGraph(mediaEl) {
   makeupGain.connect(ctx.destination);      // and play it
 
   const savedGains = new Array(9).fill(0);
+  let savedHpf = 20;      // tracked cutoffs (BiquadFilter has no readable "set" history)
+  let savedLpf = 20000;
+  let lufsTarget = null;  // current LUFS normalization target (dB) or null — set by the EQ panel
   let userGain = 1;       // mixer (per-track volume) component
   let makeup = 1;         // LUFS-normalization component
   function applyGain() { makeupGain.gain.value = userGain * makeup; }
@@ -94,8 +97,24 @@ export function getGraph(mediaEl) {
     setBandGain(i, g) { if (i >= 0 && i < eqNodes.length) { savedGains[i] = g; eqNodes[i].gain.value = g; } },
     setAllGains(gains) { gains.forEach((g, i) => { savedGains[i] = g; if (eqNodes[i]) eqNodes[i].gain.value = g; }); },
     getGains() { return [...savedGains]; },
-    setHpf(f) { hpf.frequency.value = Math.max(20, Math.min(500, f)); },
-    setLpf(f) { lpf.frequency.value = Math.max(5000, Math.min(20000, f)); },
+    setHpf(f) { savedHpf = Math.max(20, Math.min(500, f)); hpf.frequency.value = savedHpf; },
+    setLpf(f) { savedLpf = Math.max(5000, Math.min(20000, f)); lpf.frequency.value = savedLpf; },
+    getHpf() { return savedHpf; },
+    getLpf() { return savedLpf; },
+    // LUFS normalization target (dB) the EQ panel is converging the live makeup to.
+    // Stored here (not just in the panel) so the offline export can read it.
+    setLufsTarget(t) { lufsTarget = (t === null || t === undefined) ? null : t; },
+    getLufsTarget() { return lufsTarget; },
+    // Snapshot of the full processing chain for the offline (ffmpeg) bake.
+    getSettings() {
+      return {
+        freqs: [...EQ_FREQS],
+        gains: [...savedGains],
+        hpf: savedHpf,
+        lpf: savedLpf,
+        lufsTarget,
+      };
+    },
     // The mixer gain (per-track volume, 0–2 etc). Multiplies with the LUFS makeup.
     getGainNode() { return makeupGain; },
     setUserGain(g) { userGain = g; applyGain(); },

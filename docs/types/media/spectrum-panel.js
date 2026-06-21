@@ -64,6 +64,7 @@ export function mountSpectrumPanel(container, mediaEl) {
   normSel.addEventListener('change', () => {
     const t = LUFS_TARGETS.find(x => x.id === normSel.value);
     lufsTarget = t ? t.target : null;
+    graph.setLufsTarget(lufsTarget);   // mirror into the graph so the offline export can read it
     if (lufsTarget === null) { graph.setMakeupGain(1); lufsEwma = null; }
   });
   const normGainVal = document.createElement('span');
@@ -205,6 +206,8 @@ export function mountSpectrumPanel(container, mediaEl) {
       mediaEl.removeEventListener('pause', stop);
       mediaEl.removeEventListener('ended', stop);
       // Reset makeup so a later open doesn't inherit a stale normalization gain.
+      // (The LUFS target is intentionally LEFT in the graph so the export panel can
+      // still read the user's chosen normalization after they close the EQ panel.)
       graph.setMakeupGain(1);
       wrap.remove();
     },

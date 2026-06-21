@@ -227,6 +227,8 @@ export async function render(intake, ctx = {}) {
   // Full editor panel (Phase 2) — always built when ffmpeg is enabled.
   let editorPanel = null;
   let editorRevoke = null;
+  let exportPanel = null;       // P1/P3 export + fades panel
+  let exportRevoke = null;
   let transcodedUrl = null;  // revoked on cleanup
 
   if (enableFfmpeg) {
@@ -240,6 +242,12 @@ export async function render(intake, ctx = {}) {
     });
     editorPanel = editor.el;
     editorRevoke = editor.revoke;
+
+    // P1 (export processed/EQ'd audio) + P3 (baked fades). Reads the live EQ graph.
+    const { buildExportPanel } = await import('./studio-export.js');
+    const exp = buildExportPanel(intake, el, info.kind);
+    exportPanel = exp.el;
+    exportRevoke = exp.revoke;
   }
 
   let waveformWrap = null;
@@ -295,6 +303,7 @@ export async function render(intake, ctx = {}) {
   if (videoStudio) host.append(videoStudio.mixer);
   host.append(hintPanel);
   if (editorPanel) host.append(editorPanel);
+  if (exportPanel) host.append(exportPanel);
   if (trackListEl) host.append(trackListEl);
 
   // ── Resume position ──
@@ -386,6 +395,7 @@ export async function render(intake, ctx = {}) {
       URL.revokeObjectURL(url);
       if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
       if (editorRevoke) editorRevoke();
+      if (exportRevoke) exportRevoke();
       if (wvController) { wvController.destroy(); wvController = null; }
       if (spController) { spController.destroy(); spController = null; }
       if (videoStudio) { videoStudio.destroy(); videoStudio = null; }

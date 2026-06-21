@@ -392,4 +392,60 @@ export async function run(ctx) {
     if (mixerSliders.length === 9) pass('video studio: audio mixer mounts the 9-band EQ on the movie audio'); else fail('mixer sliders: ' + mixerSliders.length);
     if (mixerLegend) pass('video studio: audio mixer shows the overlaid-spectrum legend'); else fail('mixer legend missing');
   } else fail('video studio: audio mixer toggle not found');
+
+  // ── P1/P3: Export processed audio + baked fades (ffmpeg ON) ──────────────────
+  // Enable ffmpeg via the global settings bag so the renderer builds the export panel.
+  // (We do NOT actually run ffmpeg.wasm here — that's a 23 MB heavy load; we assert the
+  // UI is present + wired, and verify the ffmpeg filter chain via the pure builder.)
+  await page.goto(origin, { waitUntil: 'load' });
+  await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
+  await page.evaluate(() => {
+    localStorage.setItem('fv:settings:global', JSON.stringify({ version: 1, values: { enableFfmpeg: true } }));
+  });
+  await page.goto(origin, { waitUntil: 'load' });
+  await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
+  await page.evaluate(() => window.__fv.openExampleByLabel('Sample.wav'));
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+
+  const exportPanel = await page.$('#previewHost .media-export-panel');
+  if (exportPanel) pass('P1: export panel present when ffmpeg enabled'); else fail('export panel missing with ffmpeg on');
+  const exportHeader = exportPanel ? await page.$eval('#previewHost .media-export-panel .media-ed-header', (e) => e.textContent) : '';
+  if (/Export processed audio/i.test(exportHeader)) pass('P1: "Export processed audio" header present'); else fail('export header: ' + exportHeader);
+  const exportRunText = exportPanel ? await page.$eval('#previewHost .media-export-run', (e) => e.textContent) : '';
+  if (/Export processed audio/i.test(exportRunText)) pass('P1: export button labelled'); else fail('export run btn: ' + exportRunText);
+  const exportFmts = await page.$$eval('#previewHost .media-export-fmt option', (els) => els.map((e) => e.value));
+  if (['source', 'mp3', 'wav', 'm4a', 'ogg'].every((f) => exportFmts.includes(f))) pass('P1: export format options (source/mp3/wav/m4a/ogg)'); else fail('export fmts: ' + exportFmts.join(','));
+  const fadeInPresent = await page.$('#previewHost .media-ed-fade-in');
+  const fadeOutPresent = await page.$('#previewHost .media-ed-fade-out');
+  if (fadeInPresent && fadeOutPresent) pass('P3: audio fade-in / fade-out controls present'); else fail('fade controls: in=' + !!fadeInPresent + ' out=' + !!fadeOutPresent);
+  // Crossfade stub: the panel must say cross-clip needs the timeline (it is NOT built).
+  const stubText = await page.$eval('#previewHost .media-export-stub', (e) => e.textContent).catch(() => '');
+  if (/Crossfade.*timeline/i.test(stubText)) pass('P3: crossfade stubbed as "needs timeline"'); else fail('crossfade stub: ' + stubText.slice(0, 80));
+  // The live-EQ summary updates with the fade duration (proves settings are read live).
+  await page.fill('#previewHost .media-ed-fade-in', '2');
+  await page.evaluate(() => document.querySelector('#previewHost .media-ed-fade-in').dispatchEvent(new Event('input', { bubbles: true })));
+  const summaryText = await page.$eval('#previewHost .media-export-summary', (e) => e.textContent).catch(() => '');
+  if (/fade-in 2/.test(summaryText)) pass('P1: live export summary reflects fade-in setting'); else fail('export summary: ' + summaryText.slice(0, 100));
+
+  // Verify the ffmpeg `-af` chain the export will run, via the PURE builder (no ffmpeg load).
+  const chain = await page.evaluate(async () => {
+    const { buildAudioFilterChain } = await import('./types/media/transcoder.js');
+    const freqs = [60, 120, 250, 500, 1000, 2000, 4000, 8000, 12000];
+    return buildAudioFilterChain(
+      { freqs, gains: [0, 3, 0, 0, -2, 0, 0, 0, 0], hpf: 80, lpf: 16000, lufsTarget: -16 },
+      { fadeIn: 2, fadeOut: 3, duration: 60 },
+    );
+  });
+  const chainOk = /^highpass=f=80,equalizer=f=120:width_type=o:width=1:g=3,.*equalizer=f=1000.*g=-2,lowpass=f=16000,afade=t=in:st=0:d=2,afade=t=out:st=57:d=3,loudnorm=I=-16:TP=-1\.5:LRA=11$/.test(chain);
+  if (chainOk) pass('P1: ffmpeg -af chain correct order (HPF→bands→LPF→fades→loudnorm)'); else fail('af chain: ' + chain);
+
+  // ── P3: video fade — the export panel on a video reads "video" and renders fade-to-black.
+  await page.evaluate(() => window.__fv.openExampleByLabel('Sample.avi'));
+  await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
+  const vidExportHeader = await page.$eval('#previewHost .media-export-panel .media-ed-header', (e) => e.textContent).catch(() => '');
+  if (/Export & Fades \(video\)/i.test(vidExportHeader)) pass('P3: video export panel offers fade-to-black'); else fail('video export header: ' + vidExportHeader);
+  const vidFadeIn = await page.$('#previewHost .media-export-panel .media-ed-fade-in');
+  if (vidFadeIn) pass('P3: video fade-to/from-black duration controls present'); else fail('video fade controls missing');
+  // Reset settings so we don't leak ffmpeg-on into later areas sharing the page.
+  await page.evaluate(() => localStorage.removeItem('fv:settings:global'));
 }

@@ -96,8 +96,71 @@ async function readIntake(intake) {
     : new Uint8Array(intake.bytes.buffer || intake.bytes);
 }
 
+// ── P1/P3: serialize the live studio graph into an ffmpeg `-af` filter chain ──
+//
+// Pure (no ffmpeg, no DOM) so it can be unit-tested directly. Builds the audio
+// filter list in the canonical order the roadmap specifies:
+//   highpass → EQ bands (equalizer) → lowpass → fade-in → fade-out → loudnorm
+//
+// settings: { freqs:number[], gains:number[](dB), hpf:number, lpf:number, lufsTarget:number|null }
+//           (the shape returned by audio-graph.js getSettings()). Any field may be absent.
+// fades:    { fadeIn:number, fadeOut:number, duration:number } — seconds. duration is the
+//           clip length (needed to place the out-fade); 0/undefined skips the out-fade.
+//
+// Conventions:
+//   • A band is "active" only when |gain| ≥ 0.1 dB (skips the 9 flat bands → shorter chain).
+//   • HPF emitted only when cutoff > 20 Hz; LPF only when cutoff < 20000 Hz (defaults = no-op).
+//   • equalizer width is in octaves (width_type=o), width=1 (≈ the live BiquadFilter Q≈1.2).
+//   • loudnorm is single-pass here (see bakeAudio for the two-pass note).
+export function buildAudioFilterChain(settings = {}, fades = {}) {
+  const out = [];
+  const round = (n) => Math.round(n * 100) / 100;
+
+  const hpf = Number(settings.hpf);
+  if (isFinite(hpf) && hpf > 20) out.push('highpass=f=' + Math.round(hpf));
+
+  const gains = Array.isArray(settings.gains) ? settings.gains : [];
+  const freqs = Array.isArray(settings.freqs) ? settings.freqs : [];
+  gains.forEach((g, i) => {
+    const gain = Number(g);
+    const freq = Number(freqs[i]);
+    if (!isFinite(gain) || !isFinite(freq) || Math.abs(gain) < 0.1) return;
+    out.push('equalizer=f=' + Math.round(freq) + ':width_type=o:width=1:g=' + round(gain));
+  });
+
+  const lpf = Number(settings.lpf);
+  if (isFinite(lpf) && lpf < 20000) out.push('lowpass=f=' + Math.round(lpf));
+
+  const fadeIn = Number(fades.fadeIn);
+  if (isFinite(fadeIn) && fadeIn > 0) out.push('afade=t=in:st=0:d=' + round(fadeIn));
+
+  const fadeOut = Number(fades.fadeOut);
+  const dur = Number(fades.duration);
+  if (isFinite(fadeOut) && fadeOut > 0 && isFinite(dur) && dur > fadeOut) {
+    out.push('afade=t=out:st=' + round(dur - fadeOut) + ':d=' + round(fadeOut));
+  }
+
+  const lufs = settings.lufsTarget;
+  if (lufs !== null && lufs !== undefined && isFinite(Number(lufs))) {
+    out.push('loudnorm=I=' + round(Number(lufs)) + ':TP=-1.5:LRA=11');
+  }
+
+  return out.join(',');
+}
+
+// Codec args for the chosen export container. Keyed by output extension.
+function audioEncodeArgs(format) {
+  switch (format) {
+    case 'wav': return { ext: 'wav', mime: 'audio/wav',  args: ['-c:a', 'pcm_s16le'] };
+    case 'm4a': return { ext: 'm4a', mime: 'audio/mp4',  args: ['-c:a', 'aac', '-b:a', '192k'] };
+    case 'ogg': return { ext: 'ogg', mime: 'audio/ogg',  args: ['-c:a', 'libvorbis', '-q:a', '5'] };
+    case 'mp3':
+    default:    return { ext: 'mp3', mime: 'audio/mpeg', args: ['-c:a', 'libmp3lame', '-q:a', '2'] };
+  }
+}
+
 const MIME = {
-  mp4: 'video/mp4', mp3: 'audio/mpeg', ogg: 'audio/ogg',
+  mp4: 'video/mp4', mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4',
   png: 'image/png', webm: 'video/webm', gif: 'image/gif', webp: 'image/webp',
 };
 
@@ -227,6 +290,39 @@ export async function runOperation(ff, opId, params, intake) {
       case 'rmeta': {
         outputName = 'out.mp4'; outBase = base + '_clean';
         args = ['-i', inputName, '-map_metadata', '-1', '-c:v', 'copy', '-c:a', 'copy', outputName];
+        break;
+      }
+
+      // ── P1/P3: bake the live EQ/HPF/LPF/normalize + audio fades into a new audio file ──
+      // params: { settings, fades, format } — settings/fades from buildAudioFilterChain().
+      // Two-pass loudnorm is impractical in single-threaded ffmpeg.wasm (it needs a JSON
+      // round-trip parsed from stderr, which the wrapper doesn't expose), so we use the
+      // single-pass dynamic normalizer — accurate enough for export and far cheaper in-browser.
+      case 'bakeAudio': {
+        const chain = buildAudioFilterChain(params.settings || {}, params.fades || {});
+        const enc = audioEncodeArgs(params.format);
+        outputName = 'out.' + enc.ext; outBase = base + '_processed';
+        args = ['-i', inputName, '-vn'];
+        if (chain) args.push('-af', chain);
+        args.push(...enc.args, outputName);
+        break;
+      }
+
+      // ── P3: video fade to/from black (single clip). params: { fadeIn, fadeOut, duration } ──
+      case 'videofade': {
+        const vf = [];
+        const fi = Number(params.fadeIn);
+        if (isFinite(fi) && fi > 0) vf.push('fade=t=in:st=0:d=' + (Math.round(fi * 100) / 100));
+        const fo = Number(params.fadeOut);
+        const vdur = Number(params.duration);
+        if (isFinite(fo) && fo > 0 && isFinite(vdur) && vdur > fo) {
+          vf.push('fade=t=out:st=' + (Math.round((vdur - fo) * 100) / 100) + ':d=' + (Math.round(fo * 100) / 100));
+        }
+        if (!vf.length) throw new Error('Set a fade-in and/or fade-out duration first.');
+        outputName = 'out.mp4'; outBase = base + '_fade';
+        // Re-encode video (fade is destructive); keep audio as-is.
+        args = ['-i', inputName, '-vf', vf.join(','),
+          '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', '-c:a', 'copy', outputName];
         break;
       }
 
