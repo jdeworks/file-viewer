@@ -307,16 +307,21 @@ function renderGallery(host, list, onPick) {
         badge.textContent = info.editable ? '✏' : '👁';
         b.appendChild(badge);
       }
+      // "Sourced" (✓) and "partial support" (⚠) are independent — a real-world
+      // sample can still be only partially supported (e.g. JPEG XL: detected +
+      // downloadable, but browsers can't decode it for preview). Show both so a
+      // sourced ✓ isn't mistaken for "fully works".
       if (ex.source && ex.license) {
         const qb = document.createElement('span');
         qb.className = 'ex-badge ex-badge-sourced';
         qb.title = 'Real-world sourced sample' + (ex.license ? ' (' + ex.license + ')' : '');
         qb.textContent = '✓';
         b.appendChild(qb);
-      } else if (info.partial) {
+      }
+      if (info.partial) {
         const qb = document.createElement('span');
         qb.className = 'ex-badge ex-badge-partial';
-        qb.title = 'Partial support — may not render fully';
+        qb.title = 'Partial support — may not preview (e.g. JPEG XL: download to view in a JXL-capable app)';
         qb.textContent = '⚠';
         b.appendChild(qb);
       }

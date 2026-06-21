@@ -227,4 +227,17 @@ export async function run(ctx) {
   });
   if (partialBadgeOk.ok) pass('partial badge visible on partial-support samples in examples gallery');
   else fail('partial badge missing: ' + partialBadgeOk.reason);
+
+  // JPEG XL is BOTH sourced and partial — it must show the ⚠ partial badge, not
+  // only the ✓ sourced one (which read as "fully supported").
+  const jxlBadgesOk = await page.evaluate(async () => {
+    const showAll = document.querySelector('.ex-showall-btn');
+    if (showAll) { showAll.click(); await new Promise((r) => setTimeout(r, 200)); }
+    const btns = Array.from(document.querySelectorAll('.ex-file-btn'));
+    const jxlBtn = btns.find((b) => (b.dataset.search || '').includes('sample.jxl'));
+    if (!jxlBtn) return { ok: false, reason: 'sample.jxl button not found' };
+    return { ok: !!jxlBtn.querySelector('.ex-badge-partial'), sourced: !!jxlBtn.querySelector('.ex-badge-sourced') };
+  });
+  if (jxlBadgesOk.ok && jxlBadgesOk.sourced) pass('JPEG XL shows both sourced ✓ and partial ⚠ badges');
+  else fail('jxl badges: ' + JSON.stringify(jxlBadgesOk));
 }
