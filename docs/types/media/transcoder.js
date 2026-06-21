@@ -11,6 +11,11 @@
 //   runOperation(ff, opId, params, intake)  → { url, filename, bytes }  (Phase 2 editor)
 
 import { loadGlobal, vendor } from '../../core/script-loader.js';
+// PURE filter-string builders live in audio-filters.js (extracted to keep this
+// file under the LOC cap after P4 dynamics). Re-exported so existing importers
+// (studio-export.js, tests) keep importing them from transcoder.js unchanged.
+import { buildAudioFilterChain, audioEncodeArgs } from './audio-filters.js';
+export { buildAudioFilterChain, audioEncodeArgs } from './audio-filters.js';
 
 let ffmpegInstance = null;
 const CORE_JS = vendor('ffmpeg/ffmpeg-core.js');
@@ -96,84 +101,9 @@ async function readIntake(intake) {
     : new Uint8Array(intake.bytes.buffer || intake.bytes);
 }
 
-// ── P1/P3: serialize the live studio graph into an ffmpeg `-af` filter chain ──
-//
-// Pure (no ffmpeg, no DOM) so it can be unit-tested directly. Builds the audio
-// filter list in the canonical order the roadmap specifies:
-//   highpass → EQ bands (equalizer) → lowpass → fade-in → fade-out → loudnorm
-//
-// settings: { freqs:number[], gains:number[](dB), hpf:number, lpf:number, lufsTarget:number|null }
-//           (the shape returned by audio-graph.js getSettings()). Any field may be absent.
-// fades:    { fadeIn:number, fadeOut:number, duration:number } — seconds. duration is the
-//           clip length (needed to place the out-fade); 0/undefined skips the out-fade.
-//
-// Conventions:
-//   • A band is "active" only when |gain| ≥ 0.1 dB (skips the 9 flat bands → shorter chain).
-//   • HPF emitted only when cutoff > 20 Hz; LPF only when cutoff < 20000 Hz (defaults = no-op).
-//   • equalizer width is in octaves (width_type=o), width=1 (≈ the live BiquadFilter Q≈1.2).
-//   • loudnorm is single-pass here (see bakeAudio for the two-pass note).
-export function buildAudioFilterChain(settings = {}, fades = {}) {
-  const out = [];
-  const round = (n) => Math.round(n * 100) / 100;
-
-  const hpf = Number(settings.hpf);
-  if (isFinite(hpf) && hpf > 20) out.push('highpass=f=' + Math.round(hpf));
-
-  const gains = Array.isArray(settings.gains) ? settings.gains : [];
-  const freqs = Array.isArray(settings.freqs) ? settings.freqs : [];
-  gains.forEach((g, i) => {
-    const gain = Number(g);
-    const freq = Number(freqs[i]);
-    if (!isFinite(gain) || !isFinite(freq) || Math.abs(gain) < 0.1) return;
-    out.push('equalizer=f=' + Math.round(freq) + ':width_type=o:width=1:g=' + round(gain));
-  });
-
-  const lpf = Number(settings.lpf);
-  if (isFinite(lpf) && lpf < 20000) out.push('lowpass=f=' + Math.round(lpf));
-
-  const fadeIn = Number(fades.fadeIn);
-  if (isFinite(fadeIn) && fadeIn > 0) out.push('afade=t=in:st=0:d=' + round(fadeIn));
-
-  const fadeOut = Number(fades.fadeOut);
-  const dur = Number(fades.duration);
-  if (isFinite(fadeOut) && fadeOut > 0 && isFinite(dur) && dur > fadeOut) {
-    out.push('afade=t=out:st=' + round(dur - fadeOut) + ':d=' + round(fadeOut));
-  }
-
-  const lufs = settings.lufsTarget;
-  if (lufs !== null && lufs !== undefined && isFinite(Number(lufs))) {
-    const tp = isFinite(Number(settings.truePeak)) ? round(Number(settings.truePeak)) : -1.5;
-    out.push('loudnorm=I=' + round(Number(lufs)) + ':TP=' + tp + ':LRA=11');
-  }
-
-  return out.join(',');
-}
-
-// Codec args for the chosen export container. Keyed by output extension.
-// opts: { bitrate?:string ('192k'), cbr?:boolean } — when a bitrate is given the lossy
-// codecs encode CBR/ABR at that rate; otherwise they fall back to their VBR quality.
-// PURE (no DOM, no ffmpeg) so it stays unit-testable.
-export function audioEncodeArgs(format, opts = {}) {
-  const bitrate = opts.bitrate || null;
-  switch (format) {
-    case 'wav':  return { ext: 'wav',  mime: 'audio/wav',  args: ['-c:a', 'pcm_s16le'] };
-    case 'flac': return { ext: 'flac', mime: 'audio/flac', args: ['-c:a', 'flac'] };
-    case 'm4a':  return { ext: 'm4a',  mime: 'audio/mp4',
-      args: ['-c:a', 'aac', '-b:a', bitrate || '192k'] };
-    case 'ogg':  return { ext: 'ogg',  mime: 'audio/ogg',
-      args: bitrate ? ['-c:a', 'libvorbis', '-b:a', bitrate] : ['-c:a', 'libvorbis', '-q:a', '5'] };
-    case 'opus': return { ext: 'opus', mime: 'audio/ogg',
-      args: ['-c:a', 'libopus', '-b:a', bitrate || '128k'] };
-    case 'mp3':
-    default: {
-      // CBR via -b:a; otherwise VBR via -q:a 2 (~190 kbps). ACX wants CBR.
-      const args = opts.cbr && bitrate
-        ? ['-c:a', 'libmp3lame', '-b:a', bitrate]
-        : (bitrate ? ['-c:a', 'libmp3lame', '-b:a', bitrate] : ['-c:a', 'libmp3lame', '-q:a', '2']);
-      return { ext: 'mp3', mime: 'audio/mpeg', args };
-    }
-  }
-}
+// NOTE: buildAudioFilterChain + audioEncodeArgs now live in audio-filters.js
+// (imported + re-exported at the top of this file) so this module stays under the
+// LOC cap after the P4 dynamics filters (acompressor/alimiter/agate/afftdn) landed.
 
 const MIME = {
   mp4: 'video/mp4', mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4',

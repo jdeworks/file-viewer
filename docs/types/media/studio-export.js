@@ -15,6 +15,7 @@
 
 import { getGraph } from './audio-graph.js';
 import { loadFfmpeg, runOperation, buildAudioFilterChain } from './transcoder.js';
+import { describeDynamics } from './audio-filters.js';
 import {
   EXPORT_PRESETS, presetById, resolveExportParams, describeParams, buildAdvancedOverrides,
 } from './export-presets.js';
@@ -151,6 +152,8 @@ export function buildExportPanel(intake, mediaEl, kind) {
     if (active) bits.push(active + ' EQ band' + (active === 1 ? '' : 's'));
     if (s.hpf > 20) bits.push('HPF ' + Math.round(s.hpf) + 'Hz');
     if (s.lpf < 20000) bits.push('LPF ' + Math.round(s.lpf) + 'Hz');
+    const dyn = describeDynamics(s.dynamics);
+    if (dyn) bits.push(dyn);
     if (fades.fadeIn > 0) bits.push('fade-in ' + fades.fadeIn + 's');
     if (fades.fadeOut > 0) bits.push('fade-out ' + fades.fadeOut + 's');
     const label = preset.id === 'custom' ? 'Custom' : preset.label.split(' (')[0];

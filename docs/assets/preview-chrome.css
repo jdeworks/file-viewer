@@ -849,6 +849,21 @@
 /* Video studio audio-mixer wrapper sits below the player. */
 .media-vid-mixer { margin-top: 8px; }
 
+/* ── Dynamics panel (dynamics.js): compressor / limiter / gate / de-noise ── */
+.media-dyn-panel { padding: 0; background: var(--bg); }
+.dyn-wrap { display: flex; flex-direction: column; }
+.dyn-note, .dyn-hint { padding: 8px 10px; font-size: 11px; color: var(--fg-2); }
+.dyn-sec { border-top: 1px solid var(--border); }
+.dyn-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg-2); }
+.dyn-enable { cursor: pointer; accent-color: var(--accent); }
+.dyn-title { font-size: 12px; font-variant: small-caps; color: var(--fg); }
+.dyn-badge { font-size: 9px; padding: 1px 6px; border-radius: 8px; background: var(--bg-3); color: var(--fg-2); text-transform: uppercase; letter-spacing: .4px; }
+.dyn-body { padding: 4px 10px 8px; display: flex; flex-direction: column; gap: 3px; }
+.dyn-ctrl { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.dyn-ctrl-lbl { color: var(--fg-2); min-width: 64px; }
+.dyn-slider { flex: 1; min-width: 80px; accent-color: var(--accent); }
+.dyn-val { font-family: ui-monospace, monospace; font-size: 11px; color: var(--fg); min-width: 56px; text-align: right; }
+
 /* ── Query/filter panel + parent-rendered JSON/XML tree (qp-preview) ─────────── */
 /* json/xml/jsonl render their tree in #previewHost directly (parentNode) so the live
    query panel can highlight/filter nodes. The tree styles below mirror preview.css

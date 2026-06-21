@@ -252,6 +252,7 @@ export async function render(intake, ctx = {}) {
 
   let waveformWrap = null;
   let spController = null;
+  let dynController = null;
   let mxController = null;
   if (info.kind === 'audio') {
     const wvWrap = document.createElement('div');
@@ -297,6 +298,30 @@ export async function render(intake, ctx = {}) {
       }
     });
     wvWrap.append(spWrap);
+
+    // ── P4: Dynamics panel (compressor / limiter / gate / de-noise) ───────
+    // Compressor + limiter preview live (DynamicsCompressorNode, allocated lazily
+    // only when enabled); gate + de-noise are baked on export. Mounting is cheap.
+    const dynWrap = document.createElement('div');
+    dynWrap.className = 'media-wv-wrap';
+    const dynToggle = document.createElement('button');
+    dynToggle.type = 'button';
+    dynToggle.className = 'media-wv-toggle';
+    dynToggle.textContent = '▶ Dynamics';
+    const dynPanel = document.createElement('div');
+    dynPanel.className = 'media-dyn-panel';
+    dynPanel.hidden = true;
+    dynWrap.append(dynToggle, dynPanel);
+    dynToggle.addEventListener('click', async () => {
+      dynPanel.hidden = !dynPanel.hidden;
+      dynToggle.textContent = dynPanel.hidden ? '▶ Dynamics' : '▼ Dynamics';
+      if (dynPanel.hidden) { dynController?.destroy(); dynController = null; return; }
+      if (!dynController) {
+        const { mountDynamicsPanel } = await import('./dynamics.js');
+        dynController = mountDynamicsPanel(dynPanel, el);
+      }
+    });
+    wvWrap.append(dynWrap);
 
     // ── Multi-track mixer ("swim lanes") ──────────────────────────────────
     // On-demand, opt-in. Decodes audio + builds the WebAudio transport ONLY
@@ -423,6 +448,7 @@ export async function render(intake, ctx = {}) {
       if (exportRevoke) exportRevoke();
       if (wvController) { wvController.destroy(); wvController = null; }
       if (spController) { spController.destroy(); spController = null; }
+      if (dynController) { dynController.destroy(); dynController = null; }
       if (mxController) { mxController.destroy(); mxController = null; }
       if (videoStudio) { videoStudio.destroy(); videoStudio = null; }
     },

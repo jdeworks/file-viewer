@@ -303,6 +303,42 @@ export async function run(ctx) {
     pass('audio spectrum: panel collapses');
   } else fail('spectrum & EQ toggle button not found');
 
+  // ── P4 Dynamics panel ── compressor/limiter (live) + gate/de-noise (bake-only).
+  // The Dynamics toggle sits between Spectrum and Mixer; CPU-lazy (no panel DOM until opened).
+  const dynToggleHandle = await page.evaluateHandle(() =>
+    [...document.querySelectorAll('#previewHost .media-wv-toggle')].find((b) => /Dynamics/.test(b.textContent)) || null);
+  const dynToggleExists = await dynToggleHandle.evaluate((e) => !!e);
+  if (dynToggleExists) {
+    pass('audio dynamics: Dynamics toggle button present');
+    const preDyn = await page.$('#previewHost .dyn-wrap');
+    if (!preDyn) pass('audio dynamics: CPU-lazy (no panel DOM until opened)'); else fail('dynamics mounted before open');
+    await dynToggleHandle.asElement().click();
+    await page.waitForSelector('#previewHost .media-dyn-panel:not([hidden]) .dyn-wrap', { timeout: 5000 });
+    // Four effect sections: compressor + limiter (live), gate + de-noise (on export).
+    const dynSecs = await page.$$eval('#previewHost .dyn-sec .dyn-title', (els) => els.map((e) => e.textContent));
+    if (dynSecs.some((t) => /Compressor/.test(t)) && dynSecs.some((t) => /Limiter/.test(t))
+      && dynSecs.some((t) => /gate/i.test(t)) && dynSecs.some((t) => /De-noise/.test(t)))
+      pass('audio dynamics: compressor + limiter + gate + de-noise sections present');
+    else fail('dyn sections: ' + dynSecs.join(','));
+    const dynEnables = await page.$$('#previewHost .dyn-enable');
+    const dynSliders = await page.$$('#previewHost .dyn-slider');
+    if (dynEnables.length === 4) pass('audio dynamics: each section has an enable/bypass toggle'); else fail('dyn enables: ' + dynEnables.length);
+    if (dynSliders.length >= 4) pass('audio dynamics: parameter sliders mounted (' + dynSliders.length + ')'); else fail('dyn sliders: ' + dynSliders.length);
+    // Bake-only sections (gate + de-noise) are labelled "on export".
+    const dynBadges = await page.$$eval('#previewHost .dyn-badge', (els) => els.map((e) => e.textContent));
+    if (dynBadges.filter((t) => /on export/i.test(t)).length === 2) pass('audio dynamics: gate + de-noise labelled "on export"'); else fail('dyn badges: ' + dynBadges.join(','));
+    // Enabling the live compressor must not throw (lazily allocates the node).
+    await page.evaluate(() => {
+      const cb = document.querySelector('#previewHost .dyn-sec .dyn-enable');
+      cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    pass('audio dynamics: enabling live compressor handled without error');
+    // Close the panel → torn down.
+    await dynToggleHandle.asElement().click();
+    await page.waitForSelector('#previewHost .media-dyn-panel[hidden]', { state: 'attached', timeout: 3000 });
+    pass('audio dynamics: panel collapses');
+  } else fail('dynamics toggle button not found');
+
   // ── P5 Multi-track mixer ("swim lanes") ── opt-in panel; decode-lazy; OfflineAudioContext mixdown → WAV.
   const mxBtn = await page.$('#previewHost .media-mx-panel');
   // The mixer toggle is the LAST .media-wv-toggle (waveform, spectrum, mixer order).
@@ -522,6 +558,38 @@ export async function run(ctx) {
   });
   const chainOk = /^highpass=f=80,equalizer=f=120:width_type=o:width=1:g=3,.*equalizer=f=1000.*g=-2,lowpass=f=16000,afade=t=in:st=0:d=2,afade=t=out:st=57:d=3,loudnorm=I=-16:TP=-1\.5:LRA=11$/.test(chain);
   if (chainOk) pass('P1: ffmpeg -af chain correct order (HPF→bands→LPF→fades→loudnorm)'); else fail('af chain: ' + chain);
+
+  // ── P4: dynamics filter ordering ── afftdn → agate → acompressor → eq → alimiter.
+  // PURE builder again (no ffmpeg). Dynamics fields are OPTIONAL, so the chain above
+  // (without `dynamics`) stays byte-identical; with them, the mastering order holds.
+  const dynChain = await page.evaluate(async () => {
+    const { buildAudioFilterChain } = await import('./types/media/transcoder.js');
+    const freqs = [60, 120, 250, 500, 1000, 2000, 4000, 8000, 12000];
+    return buildAudioFilterChain({
+      freqs, gains: [0, 0, 0, 0, 2, 0, 0, 0, 0], hpf: 80, lpf: 16000,
+      dynamics: {
+        denoise: { enabled: true, strength: 12 },
+        gate: { enabled: true, threshold: -50, ratio: 2 },
+        comp: { enabled: true, threshold: -24, ratio: 4, makeup: 6 },
+        limiter: { enabled: true, ceiling: -1 },
+      },
+    }, {});
+  });
+  const idx = (s) => dynChain.indexOf(s);
+  const dynOrderOk = idx('afftdn') >= 0 && idx('agate') > idx('afftdn')
+    && idx('acompressor') > idx('agate') && idx('equalizer') > idx('acompressor')
+    && idx('lowpass') > idx('equalizer') && idx('alimiter') > idx('lowpass')
+    && idx('highpass') === 0;
+  if (dynOrderOk) pass('P4: dynamics chain order (HPF→afftdn→agate→acompressor→EQ→LPF→alimiter)'); else fail('dyn chain: ' + dynChain);
+  // Compressor threshold dB→linear (−24 dB ≈ 0.06) and a denoise strength land in the args.
+  if (/acompressor=threshold=0\.06:ratio=4/.test(dynChain) && /afftdn=nr=12/.test(dynChain) && /agate=/.test(dynChain) && /alimiter=limit=/.test(dynChain))
+    pass('P4: dynamics emit acompressor/afftdn/agate/alimiter with params'); else fail('dyn params: ' + dynChain);
+  // No `dynamics` → output is byte-identical to the pre-P4 chain (existing assertion above stays green).
+  const noDyn = await page.evaluate(async () => {
+    const { buildAudioFilterChain } = await import('./types/media/transcoder.js');
+    return buildAudioFilterChain({ freqs: [60], gains: [0], hpf: 80 }, {});
+  });
+  if (noDyn === 'highpass=f=80') pass('P4: chain without dynamics stays byte-identical (no regression)'); else fail('no-dyn chain: ' + noDyn);
 
   // ── P3: video fade — the export panel on a video reads "video" and renders fade-to-black.
   await page.evaluate(() => window.__fv.openExampleByLabel('Sample.avi'));
