@@ -252,6 +252,7 @@ export async function render(intake, ctx = {}) {
 
   let waveformWrap = null;
   let spController = null;
+  let mxController = null;
   if (info.kind === 'audio') {
     const wvWrap = document.createElement('div');
     wvWrap.className = 'media-wv-wrap';
@@ -296,6 +297,30 @@ export async function render(intake, ctx = {}) {
       }
     });
     wvWrap.append(spWrap);
+
+    // ── Multi-track mixer ("swim lanes") ──────────────────────────────────
+    // On-demand, opt-in. Decodes audio + builds the WebAudio transport ONLY
+    // when first opened (CPU-lazy). Plain playback above stays untouched.
+    const mxWrap = document.createElement('div');
+    mxWrap.className = 'media-wv-wrap';
+    const mxToggle = document.createElement('button');
+    mxToggle.type = 'button';
+    mxToggle.className = 'media-wv-toggle';
+    mxToggle.textContent = '▶ Multi-track mixer';
+    const mxPanel = document.createElement('div');
+    mxPanel.className = 'media-mx-panel';
+    mxPanel.hidden = true;
+    mxWrap.append(mxToggle, mxPanel);
+    mxToggle.addEventListener('click', async () => {
+      mxPanel.hidden = !mxPanel.hidden;
+      mxToggle.textContent = mxPanel.hidden ? '▶ Multi-track mixer' : '▼ Multi-track mixer';
+      if (mxPanel.hidden) { mxController?.destroy(); mxController = null; return; }
+      if (!mxController) {
+        const { mountMixer } = await import('./mixer-ui.js');
+        mxController = mountMixer(mxPanel, intake);
+      }
+    });
+    wvWrap.append(mxWrap);
   }
 
   if (info.kind === 'audio') host.append(name, el, waveformWrap, tools);
@@ -398,6 +423,7 @@ export async function render(intake, ctx = {}) {
       if (exportRevoke) exportRevoke();
       if (wvController) { wvController.destroy(); wvController = null; }
       if (spController) { spController.destroy(); spController = null; }
+      if (mxController) { mxController.destroy(); mxController = null; }
       if (videoStudio) { videoStudio.destroy(); videoStudio = null; }
     },
   };

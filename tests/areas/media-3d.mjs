@@ -302,6 +302,56 @@ export async function run(ctx) {
     await page.waitForSelector('#previewHost .media-sp-panel[hidden]', { state: 'attached', timeout: 3000 });
     pass('audio spectrum: panel collapses');
   } else fail('spectrum & EQ toggle button not found');
+
+  // ── P5 Multi-track mixer ("swim lanes") ── opt-in panel; decode-lazy; OfflineAudioContext mixdown → WAV.
+  const mxBtn = await page.$('#previewHost .media-mx-panel');
+  // The mixer toggle is the LAST .media-wv-toggle (waveform, spectrum, mixer order).
+  const mxToggle = (await page.$$('#previewHost .media-wv-toggle')).slice(-1)[0];
+  if (mxToggle) {
+    const mxText = await mxToggle.evaluate((e) => e.textContent);
+    if (/Multi-track mixer/.test(mxText)) pass('audio mixer: toggle button present (collapsed)'); else fail('mixer btn text: ' + mxText);
+    // CPU-lazy: panel hidden + no mixer DOM until opened.
+    const preOpen = await page.$('#previewHost .mx-wrap');
+    if (!preOpen) pass('audio mixer: CPU-lazy (no transport/decode until opened)'); else fail('mixer mounted before open');
+    await mxToggle.click();
+    await page.waitForSelector('#previewHost .mx-wrap', { timeout: 12000 });
+    // Lane 1 seeds from the loaded clip (decoded). Wait for it to appear.
+    await page.waitForSelector('#previewHost .mx-lane', { timeout: 12000 });
+    const lane1Count = await page.$$eval('#previewHost .mx-lane', (els) => els.length);
+    if (lane1Count >= 1) pass('audio mixer: opens with the loaded clip as lane 1'); else fail('mixer lanes after open: ' + lane1Count);
+    // Transport + master controls present.
+    const hasTransport = await page.$('#previewHost .mx-play') && await page.$('#previewHost .mx-master-slider');
+    if (hasTransport) pass('audio mixer: transport (play/stop) + master gain present'); else fail('mixer transport controls missing');
+    // Per-lane: gain + mute + solo + fade handles.
+    const laneCtrls = await page.evaluate(() => ({
+      gain: !!document.querySelector('#previewHost .mx-lane-gain'),
+      mute: !!document.querySelector('#previewHost .mx-mute'),
+      solo: !!document.querySelector('#previewHost .mx-solo'),
+      fadeIn: !!document.querySelector('#previewHost .mx-fade-in'),
+      fadeOut: !!document.querySelector('#previewHost .mx-fade-out'),
+    }));
+    if (laneCtrls.gain && laneCtrls.mute && laneCtrls.solo && laneCtrls.fadeIn && laneCtrls.fadeOut)
+      pass('audio mixer: per-lane gain/mute/solo + fade handles present');
+    else fail('mixer lane controls: ' + JSON.stringify(laneCtrls));
+    // Add a generator lane → a second lane appears (≥2 clips).
+    await page.click('#previewHost .mx-add-btn');   // first add button = +440 Hz tone
+    await page.waitForFunction(() => document.querySelectorAll('#previewHost .mx-lane').length >= 2, null, { timeout: 6000 });
+    const lane2Count = await page.$$eval('#previewHost .mx-lane', (els) => els.length);
+    if (lane2Count >= 2) pass('audio mixer: a second lane can be added (generator tone)'); else fail('mixer lanes after add: ' + lane2Count);
+    // Mixdown → WAV produces a downloadable file (OfflineAudioContext render → WAV worker/header).
+    const mixBtn = await page.$('#previewHost .mx-mix-btn');   // first mix button = Mixdown → WAV
+    const [wavDownload] = await Promise.all([
+      page.waitForEvent('download', { timeout: 30000 }),
+      mixBtn.click(),
+    ]);
+    const wavName = wavDownload.suggestedFilename();
+    if (/\.wav$/.test(wavName)) pass('audio mixer: mixdown → WAV downloaded (' + wavName + ')'); else fail('mixer WAV download name: ' + wavName);
+    // Close the panel → mixer torn down.
+    await mxToggle.click();
+    await page.waitForSelector('#previewHost .mx-wrap', { state: 'detached', timeout: 4000 });
+    pass('audio mixer: panel collapses + tears down transport');
+  } else fail('mixer panel not found');
+
   // Folder playlist: load a 2-track folder via the seam → prev/next + position + shuffle appear.
   await page.evaluate(async () => {
     const r = await fetch('examples/sample.wav');
