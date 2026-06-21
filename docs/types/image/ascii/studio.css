@@ -5,6 +5,9 @@
 .asx-btn { font-size: 12px; padding: 4px 9px; border-radius: 6px; border: 1px solid #3a3a3a; background: #1b1b1b; color: #ddd; cursor: pointer; }
 .asx-btn:hover { background: #262626; }
 .asx-perf { font-size: 12px; padding: 4px 6px; border-radius: 6px; border: 1px solid #3a3a3a; background: #1b1b1b; color: #ddd; }
+/* In camera mode the studio toolbar's image buttons are hidden (the camera has its
+   own toolbar); only the 📷/back toggle remains. */
+.asx-bar.asx-cam-on > *:not(.asx-cam) { display: none; }
 
 .asx-body { flex: 1; min-height: 0; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 
@@ -64,9 +67,11 @@
 .asx-cam .cam-stats { color: #8f8; font: 12px ui-monospace, monospace; margin-left: auto; }
 .asx-cam .cam-audio-lbl { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #cfcfcf; }
 .asx-cam .cam-rec.active { color: #ff5555; border-color: #aa3333; }
-.asx-cam-stage { position: relative; flex: 1; min-height: 0; overflow: auto; display: flex;
-  align-items: flex-start; justify-content: center; padding: 12px; background: #000; }
-.cam-out { max-width: 100%; image-rendering: pixelated; background: #000; border-radius: 4px; }
+.asx-cam-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex;
+  align-items: center; justify-content: center; padding: 12px; background: #000; }
+/* width/height are set by applyFit() so the feed fills the stage (contain); the
+   column count changes detail, not the on-screen size. */
+.cam-out { image-rendering: pixelated; background: #000; border-radius: 4px; }
 .cam-out:fullscreen { max-width: none; width: 100vw; height: 100vh; object-fit: contain; background: #000; }
 
 /* original feed, revealed top-right by the eye toggle */

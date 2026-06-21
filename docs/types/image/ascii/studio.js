@@ -165,15 +165,21 @@ export function mountAsciiStudio(host, opts = {}) {
   // ── webcam easter egg ── the 📷 button swaps in the live-camera consumer.
   const camHost = q('.asx-cam-host');
   const body = q('.asx-body');
+  const bar = q('.asx-bar');
   let webcam = null;
   q('.asx-cam').addEventListener('click', async () => {
     if (webcam) {
       webcam.destroy(); webcam = null;
       camHost.hidden = true; body.hidden = false;
+      bar.classList.remove('asx-cam-on');
       q('.asx-cam').textContent = '📷 Camera';
       return;
     }
     body.hidden = true; camHost.hidden = false;
+    // Camera has its OWN toolbar (incl. its own transforms/exports that act on the
+    // live frame) — hide the image-studio toolbar buttons so they don't clutter or
+    // drive the wrong (image) engine. The 📷/back toggle stays visible.
+    bar.classList.add('asx-cam-on');
     q('.asx-cam').textContent = '🖼 Back to image';
     const { mountAsciiWebcam } = await import('./webcam.js');
     // Inherit the current image-mode settings as the camera's starting point.
@@ -203,6 +209,7 @@ export function mountAsciiStudio(host, opts = {}) {
   return {
     engine,
     setImage,
+    isCameraActive: () => !!webcam,
     destroy() { ro.disconnect(); webcam?.destroy(); host.classList.remove('asx-root'); host.innerHTML = ''; },
   };
 }

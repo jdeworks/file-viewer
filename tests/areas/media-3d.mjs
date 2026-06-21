@@ -240,6 +240,21 @@ export async function run(ctx) {
   await page.waitForFunction(() => document.querySelector('#previewHost .asx-out').textContent.trim().length > 0, null, { timeout: 8000 });
   pass('ASCII studio gradient change re-converts');
 
+  // ── Camera mode UI ── the 📷 button mounts the webcam consumer (no getUserMedia
+  // until "Start camera"). It has its OWN toolbar incl. working flip/rotate, and
+  // the image-studio toolbar's buttons hide so they don't drive the wrong engine.
+  await page.click('#previewHost .asx-cam');
+  await page.waitForSelector('#previewHost .asx-cam-host .cam-out', { timeout: 8000 });
+  const camUi = await page.evaluate(() => ({
+    transforms: document.querySelectorAll('#previewHost .asx-cam-host .cam-rot-l, .cam-rot-r, .cam-flip-h, .cam-flip-v').length,
+    barScoped: document.querySelector('#previewHost .asx-bar').classList.contains('asx-cam-on'),
+    imageRotHidden: getComputedStyle(document.querySelector('#previewHost .asx-bar .asx-rot-l')).display === 'none',
+    backVisible: getComputedStyle(document.querySelector('#previewHost .asx-bar .asx-cam')).display !== 'none',
+  }));
+  if (camUi.transforms === 4 && camUi.barScoped && camUi.imageRotHidden && camUi.backVisible) pass('camera mode: own flip/rotate toolbar + image buttons hidden'); else fail('camera ui: ' + JSON.stringify(camUi));
+  await page.click('#previewHost .asx-cam');   // back to image
+  await page.waitForSelector('#previewHost .asx-out', { timeout: 5000 });
+
   // ── AVIF parity ── AVIF must expose the SAME editor toolbar as PNG/JPEG/WebP
   // (canEdit), not just fit/zoom + ASCII. Regression guard for EDITABLE_MIME.
   await page.goto(origin, { waitUntil: 'load' });

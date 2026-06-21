@@ -293,7 +293,9 @@ export async function render(intake, ctx = {}) {
       }
       // 30s-idle boot-screen easter egg (unchanged).
       import('./ascii-screensaver.js').then(({ installScreensaver }) => {
-        if (!host._ss) host._ss = installScreensaver(host, () => asciiMode);
+        // Don't let the idle screensaver overlay the live camera (the feed has no
+        // pointer/key activity to reset the idle timer, so it would always fire).
+        if (!host._ss) host._ss = installScreensaver(host, () => asciiMode && !asciiStudio?.isCameraActive?.());
         host._ss.start();
       });
     } else {

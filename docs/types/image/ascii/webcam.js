@@ -27,6 +27,10 @@ export function mountAsciiWebcam(host, opts = {}) {
         ${BTN('cam-rec', '● Record', 'Record the raw webcam to a video (max 2 min)')}
         <label class="cam-audio-lbl" title="Include microphone audio in the recording"><input type="checkbox" class="cam-audio"> Audio</label>
         ${BTN('cam-full', '⛶ Fullscreen', 'Fullscreen the ASCII result')}
+        ${BTN('cam-rot-l', '↺', 'Rotate 90° left')}
+        ${BTN('cam-rot-r', '↻', 'Rotate 90° right')}
+        ${BTN('cam-flip-h', '↔', 'Flip horizontal')}
+        ${BTN('cam-flip-v', '↕', 'Flip vertical')}
         ${BTN('cam-gear', '⚙ Settings', 'Show all settings')}
         <select class="asx-perf cam-perf" title="Performance preset"><option value="">Preset…</option>
           <option value="fast">Fast</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select>
@@ -48,6 +52,7 @@ export function mountAsciiWebcam(host, opts = {}) {
   const q = (s) => host.querySelector(s);
   const video = q('.cam-video');
   const out = q('.cam-out');
+  const stage = q('.asx-cam-stage');
   const stats = q('.cam-stats');
   const peek = q('.cam-orig-peek');
   const peekCanvas = peek.querySelector('canvas');
@@ -59,16 +64,32 @@ export function mountAsciiWebcam(host, opts = {}) {
   const targetFps = opts.targetFps || 20;
   const minInterval = 1000 / targetFps;
 
-  function applyZoom() {
+  // Fit the ASCII canvas to the available stage (contain), then apply zoom — so
+  // the feed always fills the space and the column count changes DETAIL, not the
+  // on-screen size (mirrors the image studio's fit-to-width behaviour).
+  function applyFit() {
+    // In fullscreen the :fullscreen CSS rule owns sizing — leave inline size clear.
+    if (document.fullscreenElement === out) { out.style.width = ''; out.style.height = ''; return; }
+    const cw = out.width, ch = out.height;
+    const aw = stage.clientWidth - 24, ah = stage.clientHeight - 24;
+    if (!cw || !ch || aw <= 0 || ah <= 0) return;
     const z = engine.options.zoom || 1;
-    out.style.transform = z !== 1 ? `scale(${z})` : '';
-    out.style.transformOrigin = 'top left';
+    const scale = Math.min(aw / cw, ah / ch) * z;
+    out.style.width = Math.max(1, Math.round(cw * scale)) + 'px';
+    out.style.height = Math.max(1, Math.round(ch * scale)) + 'px';
   }
 
   function renderOnce() {
     engine.update();
     engine.renderToCanvas(out);
+    applyFit();
     if (eyeOn) paintOrig();
+  }
+  // Re-draw the source then reconvert after a transform (rotate/flip). Works
+  // whether the loop is running or paused. Drives the WEBCAM's own engine.
+  function transform(mutate) {
+    mutate();
+    if (engine.grabFrame()) { engine.markDirty('processedImage'); renderOnce(); }
   }
   function paintOrig() {
     const src = engine.sourceCanvas;
@@ -79,11 +100,13 @@ export function mountAsciiWebcam(host, opts = {}) {
     peekCanvas.getContext('2d').drawImage(src, 0, 0, peekCanvas.width, peekCanvas.height);
   }
 
+  let lastCW = 0, lastCH = 0;
   function renderFrame() {
     const t0 = now();
     engine.grabFrame();
     engine.update();
     engine.renderToCanvas(out);
+    if (out.width !== lastCW || out.height !== lastCH) { lastCW = out.width; lastCH = out.height; applyFit(); }
     if (eyeOn) paintOrig();
     const ms = now() - t0;
     frames++;
@@ -120,12 +143,14 @@ export function mountAsciiWebcam(host, opts = {}) {
   const controls = buildControls(settings, engine.options, (key, value, dirty, displayOnly) => {
     engine.options[key] = value;
     if (key === 'transparentBackground' && controls?.inputs.backgroundColor) controls.inputs.backgroundColor.disabled = !!value;
-    if (displayOnly) { if (key === 'zoom') applyZoom(); else if (!running || paused) renderOnce(); return; }
+    if (displayOnly) { if (key === 'zoom') applyFit(); else if (!running || paused) renderOnce(); return; }
     engine.markDirty(...dirty);
     if (!running || paused) renderOnce();
   });
   controls.inputs.backgroundColor.disabled = !!engine.options.transparentBackground;
-  applyZoom();
+  // Keep the feed fitted to the stage as it resizes (responsive / fullscreen).
+  const ro = new ResizeObserver(() => applyFit());
+  ro.observe(stage);
 
   // ── recording (raw webcam → .webm, for the video studio) ──
   // Capped at 2 min to bound memory (MediaRecorder buffers encoded chunks ~2.5
@@ -174,9 +199,16 @@ export function mountAsciiWebcam(host, opts = {}) {
     q('.cam-pause').textContent = paused ? '▶ Resume' : '⏸ Pause';
   });
   q('.cam-full').addEventListener('click', () => {
-    const el = out;
-    if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen?.();
+    if (document.fullscreenElement) document.exitFullscreen(); else out.requestFullscreen?.();
   });
+  out.addEventListener('fullscreenchange', applyFit);
+  document.addEventListener('fullscreenchange', applyFit);
+  // Geometric transforms drive the WEBCAM's own engine (these were previously only
+  // wired to the image-studio engine, so they appeared to do nothing on camera).
+  q('.cam-rot-l').addEventListener('click', () => transform(() => { engine.options.rotate = ((engine.options.rotate || 0) + 270) % 360; }));
+  q('.cam-rot-r').addEventListener('click', () => transform(() => { engine.options.rotate = ((engine.options.rotate || 0) + 90) % 360; }));
+  q('.cam-flip-h').addEventListener('click', () => transform(() => { engine.options.flipH = !engine.options.flipH; }));
+  q('.cam-flip-v').addEventListener('click', () => transform(() => { engine.options.flipV = !engine.options.flipV; }));
   q('.cam-gear').addEventListener('click', () => {
     settings.hidden = !settings.hidden;
     q('.cam-gear').classList.toggle('active', !settings.hidden);
@@ -204,5 +236,6 @@ export function mountAsciiWebcam(host, opts = {}) {
     Object.keys(engine.options).forEach((k) => { if (k in defs) controls.setValue(k, defs[k]); });
   });
 
-  return { engine, start, stop, destroy() { stopRec(); stop(); host.innerHTML = ''; } };
+  return { engine, start, stop, isRunning: () => running,
+    destroy() { stopRec(); stop(); ro.disconnect(); document.removeEventListener('fullscreenchange', applyFit); host.innerHTML = ''; } };
 }
