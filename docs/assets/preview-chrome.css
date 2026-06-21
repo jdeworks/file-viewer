@@ -166,6 +166,10 @@
 .imgv-zoom { margin-left: auto; font-size: 12px; color: var(--fg-2); font-variant-numeric: tabular-nums; }
 .imgv-stage { position: relative; flex: 1; min-height: 0; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 12px; }
 .imgv-img { display: block; max-width: 100%; max-height: 100%; object-fit: contain;
+  /* Don't let the flex stage shrink the image back to container width — otherwise
+     zooming past fit does nothing (the explicit width gets shrunk away). max-width
+     still caps it in fit mode; overflow:hidden + pan handle the zoomed overflow. */
+  flex-shrink: 0;
   /* Light outline + soft shadow so the image edges are visible against the dark stage. */
   box-shadow: 0 0 0 1px rgba(255, 255, 255, .12), 0 6px 28px rgba(0, 0, 0, .55); }
 .imgv-note { max-width: 560px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); color: var(--fg-2); line-height: 1.5; text-align: center; }

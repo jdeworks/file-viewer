@@ -99,8 +99,21 @@ export function mountAsciiStudio(host, opts = {}) {
     pre.style.setProperty('--ascii-font-size', Math.max(2, fs).toFixed(2) + 'px');
     pre.style.letterSpacing = sd !== 1 ? ((sd - 1) * 0.6).toFixed(3) + 'em' : '';
   }
-  const ro = new ResizeObserver(() => applyDisplay());
-  ro.observe(stage);
+  // Collapse decisions are based on the STUDIO's own width, not the viewport —
+  // the file-viewer preview pane can be narrow while the window is wide, so a
+  // viewport media query would miss it. ResizeObserver on the host is the
+  // container-query stand-in.
+  const NARROW_PX = 620;
+  let isNarrow = null;
+  function checkWidth() {
+    const narrow = host.clientWidth > 0 && host.clientWidth < NARROW_PX;
+    if (narrow === isNarrow) return;
+    isNarrow = narrow;
+    host.classList.toggle('asx-narrow', narrow);
+    setSettingsOpen(!narrow);   // collapse when narrow, expand when there's room
+  }
+  const ro = new ResizeObserver(() => { applyDisplay(); checkWidth(); });
+  ro.observe(host);
 
   // ── peekable original / processed previews (eye toggles) ──
   let activeEye = null; // 'orig' | 'proc' | null
@@ -123,18 +136,16 @@ export function mountAsciiStudio(host, opts = {}) {
   q('.asx-eye-orig').addEventListener('click', () => toggleEye('orig'));
   q('.asx-eye-proc').addEventListener('click', () => toggleEye('proc'));
 
-  // Settings panel is a toggleable drawer — open by default on wide screens, closed
-  // on phones (where it would otherwise cover the whole converter). On mobile it
-  // overlays the stage instead of pushing it (see studio.css).
+  // Settings panel is a toggleable drawer — open when there's room, collapsed when
+  // narrow (where it overlays the stage instead of pushing it; see studio.css).
   const settingsBtn = q('.asx-settings-btn');
-  const startOpen = !window.matchMedia('(max-width: 720px)').matches;
-  host.classList.toggle('asx-settings-open', startOpen);
-  settingsBtn.classList.toggle('active', startOpen);
-  settingsBtn.addEventListener('click', () => {
-    const open = host.classList.toggle('asx-settings-open');
+  function setSettingsOpen(open) {
+    host.classList.toggle('asx-settings-open', open);
     settingsBtn.classList.toggle('active', open);
     applyDisplay();
-  });
+  }
+  settingsBtn.addEventListener('click', () => setSettingsOpen(!host.classList.contains('asx-settings-open')));
+  checkWidth();   // set initial open/narrow state from the actual studio width
 
   const controls = buildControls(panel, engine.options, (key, value, dirty, displayOnly) => {
     engine.options[key] = value;
