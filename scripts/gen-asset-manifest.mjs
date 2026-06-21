@@ -50,7 +50,7 @@ const BUNDLE_GROUPS = {
   'vendor:dompurify': 'File viewers', 'vendor:js-yaml': 'File viewers', 'vendor:markdown-it': 'File viewers',
   'vendor:jszip': 'File viewers', 'vendor:papaparse': 'File viewers', 'vendor:pdf-lib': 'File viewers',
   'vendor:pptxviewjs': 'File viewers', 'vendor:mammoth': 'File viewers', 'vendor:html2canvas': 'File viewers',
-  'vendor:ag-psd': 'File viewers',
+  'vendor:ag-psd': 'File viewers', 'vendor:jxl': 'File viewers',
   'vendor:monaco': 'Editor', 'vendor:tiptap': 'Editor', 'vendor:easymde': 'Editor',
   'vendor:chartjs': 'Data & charts', 'vendor:xlsx': 'Data & charts', 'vendor:sql.js': 'Data & charts',
   'vendor:pdfjs': 'Documents',
@@ -72,8 +72,11 @@ for (const f of kept) {
   g.files.push(f.path); g.size += f.size;
 }
 const HEAVY_BYTES = 1.5 * 1024 * 1024;   // bundles over this are large optional downloads
+// Bundles always treated as heavy/opt-in regardless of size (lazy-loaded only when
+// the feature is used, so they should NOT be precached by default).
+const FORCE_HEAVY = new Set(['vendor:jxl']);
 const bundles = [...groups.values()]
-  .map((g) => ({ ...g, group: groupFor(g.id), heavy: g.size > HEAVY_BYTES }))
+  .map((g) => ({ ...g, group: groupFor(g.id), heavy: g.size > HEAVY_BYTES || FORCE_HEAVY.has(g.id) }))
   .sort((a, b) => (a.id === 'core' ? -1 : b.id === 'core' ? 1 : a.label.localeCompare(b.label)));
 
 // Version = hash of path+size pairs, so any change to the asset set bumps it.

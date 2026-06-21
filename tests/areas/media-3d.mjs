@@ -344,6 +344,19 @@ export async function run(ctx) {
   );
   if (avifType === 'image' && avifEdits === 5) pass('AVIF gets the full editor toolbar (parity with PNG)'); else fail('avif parity: type=' + avifType + ' editControls=' + avifEdits);
 
+  // ── JPEG XL ── browsers can't decode JXL; the renderer decodes it via a lazy
+  // wasm decoder into a canvas. The decoded image shows (note clears, img visible
+  // with real dimensions).
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.jxl');
+  await page.waitForSelector('#previewHost .imgv-img', { timeout: 12000 });
+  const jxlOk = await page.waitForFunction(() => {
+    const img = document.querySelector('#previewHost .imgv-img');
+    const note = document.querySelector('#previewHost .imgv-note');
+    return img && !img.hidden && img.naturalWidth > 0 && (!note || note.hidden);
+  }, null, { timeout: 30000 }).then(() => true).catch(() => false);
+  if (jxlOk) pass('JPEG XL decoded in-browser (lazy wasm) and rendered'); else fail('jxl did not decode/render');
+
   // ── Blob-intake seam ── window.__fv.openBlobFile opens an in-memory Blob via
   // the same intake→detect→render path a file uses (this is how a webcam
   // recording opens directly in the studio instead of round-tripping a download).

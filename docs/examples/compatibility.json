@@ -1127,11 +1127,9 @@
         "sourced": 7,
         "total": 11
       },
-      "partialSamples": [
-        "sample.jxl"
-      ],
+      "partialSamples": [],
       "realWorldQuality": "sourced-or-derived",
-      "notes": "Editing (pencil, eraser, text overlay with font/size/color, undo) available for PNG, JPEG, WebP. Export to PNG/JPEG/WebP. BMP, GIF, JXL preview-only. SVG rendered in sandboxed iframe (DOMPurify) — no pixel editing.",
+      "notes": "Editing (pencil, eraser, text overlay with font/size/color, undo) available for PNG, JPEG, WebP, AVIF. Export to PNG/JPEG/WebP/AVIF. BMP, GIF preview-only. JPEG XL decoded in-browser via a lazily-loaded wasm decoder (opt-in offline). SVG rendered in sandboxed iframe (DOMPurify) — no pixel editing.",
       "fileExamplesSlug": null,
       "previewDepth": "rich",
       "metadataDepth": "basic",

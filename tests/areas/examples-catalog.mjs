@@ -104,10 +104,11 @@ export async function run(ctx) {
     pass('dedicated HEIF/AVIF samples indexed (' + modernImageSamples.length + ')');
   }
   const jxlSample = byFile.get('sample.jxl');
-  if (jxlSample?.type === 'image' && jxlSample.partial) {
-    pass('dedicated JPEG XL partial-support sample indexed');
+  // JXL now decodes in-browser (lazy wasm), so it's a normal image sample (not partial).
+  if (jxlSample?.type === 'image' && !jxlSample.partial) {
+    pass('JPEG XL sample indexed as a decodable image');
   } else {
-    fail('missing dedicated JPEG XL partial-support sample');
+    fail('JPEG XL sample state: ' + JSON.stringify(jxlSample));
   }
   const mediaFormatSamples = ['sample.wav', 'sample.mp3', 'sample.ogg', 'sample.mp4', 'sample.webm', 'sample.mov', 'sample.mkv', 'sample.flac', 'sample.m4a', 'sample.aac'];
   const missingMediaFormats = mediaFormatSamples.filter((file) => byFile.get(file)?.type !== 'media');
@@ -228,16 +229,15 @@ export async function run(ctx) {
   if (partialBadgeOk.ok) pass('partial badge visible on partial-support samples in examples gallery');
   else fail('partial badge missing: ' + partialBadgeOk.reason);
 
-  // JPEG XL is BOTH sourced and partial — it must show the ⚠ partial badge, not
-  // only the ✓ sourced one (which read as "fully supported").
+  // JPEG XL now decodes in-browser, so it's sourced (✓) and NOT partial (no ⚠).
   const jxlBadgesOk = await page.evaluate(async () => {
     const showAll = document.querySelector('.ex-showall-btn');
     if (showAll) { showAll.click(); await new Promise((r) => setTimeout(r, 200)); }
     const btns = Array.from(document.querySelectorAll('.ex-file-btn'));
     const jxlBtn = btns.find((b) => (b.dataset.search || '').includes('sample.jxl'));
     if (!jxlBtn) return { ok: false, reason: 'sample.jxl button not found' };
-    return { ok: !!jxlBtn.querySelector('.ex-badge-partial'), sourced: !!jxlBtn.querySelector('.ex-badge-sourced') };
+    return { ok: !jxlBtn.querySelector('.ex-badge-partial'), sourced: !!jxlBtn.querySelector('.ex-badge-sourced') };
   });
-  if (jxlBadgesOk.ok && jxlBadgesOk.sourced) pass('JPEG XL shows both sourced ✓ and partial ⚠ badges');
+  if (jxlBadgesOk.ok && jxlBadgesOk.sourced) pass('JPEG XL shows sourced ✓ and no partial ⚠ (decodes now)');
   else fail('jxl badges: ' + JSON.stringify(jxlBadgesOk));
 }

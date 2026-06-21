@@ -163,6 +163,7 @@ export async function render(intake, ctx = {}) {
   const fResetBtn = canEdit ? host.querySelector('.imgv-f-reset') : null;
   let natural = 0, fit = true, zoom = 1, asciiMode = false;
   let editedUrl = null, editedBlob = null;
+  let jxlPngBytes = null;   // decoded PNG bytes for JXL (display + ASCII source)
   let drawMode = null, isEraserStroke = false;
   let textPlaceMode = false, textPlaceX = 0.5, textPlaceY = 0.5;
   let bgPickMode = false, bgSrcData = null, bgSrcW = 0, bgSrcH = 0, bgPickX = -1, bgPickY = -1, bgPreviewUrl = null;
@@ -314,17 +315,35 @@ export async function render(intake, ctx = {}) {
   }
   document.addEventListener('keydown', onZoomKey);
 
+  const isJxl = ((intake.filename || '').split('.').pop()?.toLowerCase() === 'jxl') || mime === 'image/jxl';
   img.addEventListener('error', () => {
-    const ext = (intake.filename || '').split('.').pop()?.toLowerCase();
-    if (ext === 'jxl' || mime === 'image/jxl') {
-      note.hidden = false;
-      note.textContent = 'JPEG XL was detected, but this browser cannot decode image/jxl yet. Metadata and download still work; try Safari or a desktop viewer with JPEG XL support.';
-      img.hidden = true;
-    }
+    if (isJxl) return; // jxl is decoded in JS below, never via img.src
   });
-  img.src = url;
-  apply();
-  dimensions(url).then((d) => { if (d) { natural = d.w; apply(); } });
+  if (isJxl) {
+    // Browsers can't decode JPEG XL — decode it in JS (lazy, heavy wasm) into a
+    // canvas → PNG blob and show that. The original .jxl `url` stays the download.
+    img.hidden = true;
+    note.hidden = false; note.textContent = 'Decoding JPEG XL…';
+    (async () => {
+      try {
+        const { decodeJxl } = await import('./jxl-decode.js');
+        const id = await decodeJxl(intake.bytes);
+        const c = document.createElement('canvas'); c.width = id.width; c.height = id.height;
+        c.getContext('2d').putImageData(id, 0, 0);
+        const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+        jxlPngBytes = new Uint8Array(await blob.arrayBuffer());
+        note.hidden = true; img.hidden = false;
+        natural = c.width; img.src = URL.createObjectURL(blob); apply();
+      } catch (e) {
+        note.hidden = false; img.hidden = true;
+        note.textContent = 'JPEG XL could not be decoded here: ' + (e.message || e) + '. Download still works.';
+      }
+    })();
+  } else {
+    img.src = url;
+    apply();
+    dimensions(url).then((d) => { if (d) { natural = d.w; apply(); } });
+  }
 
   // ASCII art — the button toggles the self-contained ASCII Studio, lazy-mounted
   // into the ASCII pane. All conversion UI + logic lives under ./ascii/ so this
@@ -342,8 +361,9 @@ export async function render(intake, ctx = {}) {
     if (asciiMode) {
       // Feed the CURRENT image — including any edits (crop, rotate, BG removal,
       // filters…) — not the untouched original. editedBlob holds the latest edit.
-      const curBytes = editedBlob ? new Uint8Array(await editedBlob.arrayBuffer()) : intake.bytes;
-      const curMime = editedBlob ? (editedBlob.type || mime) : mime;
+      // JXL can't be decoded by createImageBitmap, so feed the decoded PNG bytes.
+      const curBytes = editedBlob ? new Uint8Array(await editedBlob.arrayBuffer()) : (jxlPngBytes || intake.bytes);
+      const curMime = editedBlob ? (editedBlob.type || mime) : (jxlPngBytes ? 'image/png' : mime);
       try {
         if (!asciiStudio) {
           asciiBtn.disabled = true;

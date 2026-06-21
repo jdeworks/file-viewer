@@ -5,6 +5,7 @@
   "devDependencies": {
     "@ffmpeg/core-st": "^0.11.1",
     "@ffmpeg/ffmpeg": "^0.11.6",
+    "@jsquash/jxl": "^1.3.0",
     "abcjs": "^6.6.3",
     "ag-psd": "^30.1.1",
     "chart.js": "4.4.7",

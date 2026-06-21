@@ -1352,8 +1352,7 @@
       "Image",
       "Media"
     ],
-    "partial": true,
-    "description": "JPEG XL wide-gamut browser support sample with explicit unsupported-browser fallback coverage.",
+    "description": "JPEG XL sample — decoded in-browser via a lazily-loaded wasm decoder (browsers have no native JXL support).",
     "source": "https://jpegxl.info/resources/jpeg-xl-test-page.html",
     "license": "JPEG XL community sample; see source",
     "attribution": "JPEG XL community test page"
