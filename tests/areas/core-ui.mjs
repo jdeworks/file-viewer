@@ -40,6 +40,48 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'load' });
   pass('page loaded');
 
+  // ── Phased boot ── boot.js is the eager entry; app.js (heavy registry/detection) loads in the
+  // background and resolves window.__fv. The empty shell must accept input the instant it paints.
+  {
+    // (a) Cold open: in a FRESH context, drive a file open immediately after navigation — before
+    // the background app load has necessarily resolved window.__fv. boot.js must capture it, show
+    // the spinner, and the file must still render once the app is ready (identical to a normal open).
+    const coldCtx = await ctx.browser.newContext({ viewport: { width: 1100, height: 800 } });
+    const cold = await coldCtx.newPage();
+    const coldErrors = [];
+    cold.on('pageerror', (e) => coldErrors.push('pageerror: ' + e.message));
+    await cold.goto(origin, { waitUntil: 'load' });
+    // Drive the file picker as early as possible (the change handler is wired by boot.js eagerly).
+    await cold.evaluate(() => {
+      const input = document.getElementById('fileInput');
+      const file = new File(['# Cold Boot\n\nopened before warm-up'], 'Cold.md', { type: 'text/markdown' });
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    // The heavy app resolves window.__fv, then the captured file flows through the real pipeline.
+    await cold.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 12000 });
+    await cold.waitForSelector('#workspace:not([hidden])', { timeout: 12000 });
+    const coldFrameH = await cold.waitForSelector('iframe.fv-preview-frame', { timeout: 12000 });
+    const coldFrame = await coldFrameH.contentFrame();
+    await coldFrame.waitForSelector('h1', { timeout: 8000 });
+    const coldH1 = await coldFrame.$eval('h1', (el) => el.textContent);
+    const spinnerGone = await cold.evaluate(() => !document.getElementById('bootSpinner'));
+    if (/Cold Boot/.test(coldH1) && spinnerGone && !coldErrors.length)
+      pass('cold open: file opened on the empty shell before warm-up renders correctly (spinner cleared)');
+    else fail('cold open: h1=' + coldH1 + ' spinnerGone=' + spinnerGone + ' errors=' + coldErrors.join('|'));
+    await coldCtx.close();
+  }
+
+  // (b) Ready signal: window.__fv becomes available after the background init, and window.__fvReady
+  // (the boot coordination promise) resolves.
+  await page.waitForFunction(() => typeof window.__fv !== 'undefined', null, { timeout: 12000 });
+  const readyResolved = await page.evaluate(() =>
+    typeof window.__fvReady?.then === 'function' && window.__fvReady.then(() => true));
+  if (readyResolved === true) pass('window.__fv ready after background init; window.__fvReady resolves');
+  else fail('boot ready signal not resolved: ' + JSON.stringify(readyResolved));
+
   // Offline pill shows immediately in its resting state (derived from localStorage), not gated
   // on a SW controller being present — previously it could stay hidden on first load / hard reload.
   await page.waitForFunction(() => { const e = document.getElementById('offlineStatus'); return e && !e.hidden; }, null, { timeout: 8000 });

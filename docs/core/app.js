@@ -80,6 +80,14 @@ async function loadIntake(intake) {
   updateSessionTree(intake);
 }
 
+// Load a dropped/picked folder: reset any prior companion root, build the tree, then resolve the
+// dropped folder's real disk root (for save/watch). Shared by wireIntake and the boot bridge.
+async function openFolderEntries(entries) {
+  resetCompanionFolderRoot();
+  await loadFolder(entries);
+  resolveDroppedFolderRoot(entries.map((e) => e.file).filter(Boolean));
+}
+
 // Return to the intake screen to pick another file/folder (keeps any loaded tree).
 function showIntake() {
   $('intake').hidden = false;
@@ -385,11 +393,7 @@ function init() {
   wireIntake({
     dropZone: $('dropZone'), fileInput: $('fileInput'), folderInput: $('folderInput'),
     onIntake: loadIntake,
-    onFolder: async (entries) => {
-      resetCompanionFolderRoot();
-      await loadFolder(entries);
-      resolveDroppedFolderRoot(entries.map((e) => e.file).filter(Boolean));
-    },
+    onFolder: openFolderEntries,
     onError: (e) => toast('Could not read file: ' + e.message),
     onFolderStatus: (message, opts = {}) => {
       if (!message) { hideFolderLoading(); return; }
@@ -539,6 +543,17 @@ function init() {
     persistence, games,
     screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };
+
+  // Signal the eager boot shell that the full pipeline is live, handing it the open functions so it
+  // can drain any file/folder/paste captured before this heavy module finished loading (forwarded
+  // through the exact same pipeline as a live drop), then resolve window.__fvReady. Runs during this
+  // module's evaluation — before import('./app.js') resolves — so we pass the bridge directly rather
+  // than rely on the module export. No-op if loaded without boot.js.
+  window.__fvOnReady?.({
+    openIntake: loadIntake,
+    openFolder: openFolderEntries,
+    onError: (err) => toast('Could not read file: ' + err.message),
+  });
 }
 
 // Run init once the DOM is ready. A bare addEventListener('DOMContentLoaded') would miss the

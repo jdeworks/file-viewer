@@ -154,6 +154,7 @@ export async function run(ctx) {
 
   // ── import easteregg unlock ── typing the magic line into a file opens the arcade. ──
   await page.goto(origin, { waitUntil: 'load' });
+  await waitForFv();   // boot.js loads the app off the critical path; wait for it before clicking app-wired buttons
   await page.evaluate(() => { try { localStorage.removeItem('fv:games:unlocked'); } catch {} });
   page.once('dialog', (d) => d.accept('trigger.js'));
   await page.click('#newFileBtn');
