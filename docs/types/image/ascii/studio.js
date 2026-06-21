@@ -177,7 +177,15 @@ export function mountAsciiStudio(host, opts = {}) {
     q('.asx-cam').textContent = '🖼 Back to image';
     const { mountAsciiWebcam } = await import('./webcam.js');
     // Inherit the current image-mode settings as the camera's starting point.
-    webcam = mountAsciiWebcam(camHost, { initialOptions: { ...engine.options } });
+    // A finished recording opens DIRECTLY in the media/video studio (no download
+    // round-trip) when the app's Blob-intake seam is available; if not (e.g. the
+    // standalone tool page), webcam.js falls back to downloading the .webm.
+    webcam = mountAsciiWebcam(camHost, {
+      initialOptions: { ...engine.options },
+      onRecorded: window.__fv?.openBlobFile
+        ? (blob) => window.__fv.openBlobFile(blob, 'webcam-recording.webm', { mime: blob.type })
+        : undefined,
+    });
   });
 
   // Set (or replace) the source image and convert.

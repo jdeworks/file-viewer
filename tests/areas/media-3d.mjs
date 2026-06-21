@@ -249,6 +249,17 @@ export async function run(ctx) {
   );
   if (avifType === 'image' && avifEdits === 5) pass('AVIF gets the full editor toolbar (parity with PNG)'); else fail('avif parity: type=' + avifType + ' editControls=' + avifEdits);
 
+  // ── Blob-intake seam ── window.__fv.openBlobFile opens an in-memory Blob via
+  // the same intake→detect→render path a file uses (this is how a webcam
+  // recording opens directly in the studio instead of round-tripping a download).
+  const blobOpen = await page.evaluate(async () => {
+    if (typeof window.__fv.openBlobFile !== 'function') return { fn: false };
+    const bytes = new Uint8Array(await (await fetch('examples/sample.webp')).arrayBuffer());
+    const ok = await window.__fv.openBlobFile(new Blob([bytes], { type: 'image/webp' }), 'from-blob.webp', { mime: 'image/webp' });
+    return { fn: true, ok, filename: window.__fv.state.intake?.filename, type: window.__fv.state.type?.id };
+  });
+  if (blobOpen.fn && blobOpen.ok && blobOpen.filename === 'from-blob.webp' && blobOpen.type === 'image') pass('openBlobFile opens an in-memory Blob through the full intake path'); else fail('openBlobFile: ' + JSON.stringify(blobOpen));
+
   // ── MIDI sequence ── parses SMF header, tempo, tracks, GM programs, and note counts.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.mid');

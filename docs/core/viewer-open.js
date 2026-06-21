@@ -44,6 +44,21 @@ export async function openViewerFile(path, opts = {}) {
   return opened;
 }
 
+// Open an in-memory Blob (e.g. a webcam recording) directly in the viewer — no
+// download/re-open round-trip. A Blob wraps straight into a File, so it flows
+// through the exact same intake → detect → render path as a disk file (a .webm
+// recording lands in the media/video studio). Returns false if no intake handler
+// is wired (e.g. on a standalone page that didn't call initViewerOpen).
+export async function openBlobFile(blob, name, opts = {}) {
+  if (!blob || !loadIntakeCallback) return false;
+  const filename = name || 'recording';
+  const type = opts.mime || blob.type || '';
+  state._skipDiscardGuard = true;
+  await loadIntakeCallback(await intakeFromFile(new File([blob], filename, { type })));
+  recordMetagameViewerOpen({ path: filename, opts });
+  return true;
+}
+
 export async function searchViewerFile(path, query, opts = {}) {
   const target = String(path || '');
   const clean = target.replace(/^\/?docs\/examples\//, '').replace(/^\/?examples\//, '');

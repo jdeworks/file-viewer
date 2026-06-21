@@ -149,8 +149,10 @@ export function mountAsciiWebcam(host, opts = {}) {
       if (recStream) { recStream.getTracks().forEach((t) => t.stop()); recStream = null; }
       clearInterval(recTimer); recTimer = null;
       const rb = q('.cam-rec'); rb.classList.remove('active'); rb.textContent = '● Record';
-      dl(blob, 'webcam-recording.webm');   // re-openable in the media/video studio
-      opts.onRecorded?.(blob, mime);
+      // If the host wired a handler (file viewer → open in the media/video studio),
+      // let it take the blob. Otherwise (standalone page) fall back to a download.
+      if (opts.onRecorded) opts.onRecorded(blob, mime);
+      else dl(blob, 'webcam-recording.webm');
     };
     recorder.start(1000);
     recStart = now();
