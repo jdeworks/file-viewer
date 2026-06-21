@@ -1,0 +1,87 @@
+/* ASCII Studio — scoped under .asx-root so it can be injected anywhere (file
+   viewer pane or the standalone tool page) without colliding with host styles. */
+.asx-root { display: flex; flex-direction: column; height: 100%; min-height: 0; background: #0d0d0d; color: #ddd; }
+.asx-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px; border-bottom: 1px solid #2a2a2a; }
+.asx-btn { font-size: 12px; padding: 4px 9px; border-radius: 6px; border: 1px solid #3a3a3a; background: #1b1b1b; color: #ddd; cursor: pointer; }
+.asx-btn:hover { background: #262626; }
+.asx-perf { font-size: 12px; padding: 4px 6px; border-radius: 6px; border: 1px solid #3a3a3a; background: #1b1b1b; color: #ddd; }
+
+.asx-body { flex: 1; min-height: 0; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
+
+/* ASCII result stage — fills the space; the art auto-fits its width. */
+.asx-stage { position: relative; flex: 1; min-width: 0; min-height: 0; overflow: auto;
+  border: 1px solid #2a2a2a; border-radius: 6px; background: #000; }
+.asx-out {
+  --ascii-font-size: 10px;
+  margin: 0; min-height: 100%; padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: var(--ascii-font-size); line-height: 1; white-space: pre; color: #fff; background: #000;
+}
+
+/* Eye toggles (top-right) reveal the original / processed image on demand. */
+.asx-eyes { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 3; }
+.asx-eye { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+  border-radius: 6px; border: 1px solid #3a3a3a; background: rgba(20,20,20,.85); color: #bbb; cursor: pointer; }
+.asx-eye:hover { color: #fff; background: rgba(40,40,40,.9); }
+.asx-eye.active { color: #6ab0ff; border-color: #3a5a8a; }
+.asx-eye-proc { opacity: .85; }
+.asx-peek { position: absolute; top: 46px; right: 8px; z-index: 3; margin: 0; padding: 6px;
+  background: rgba(13,13,13,.95); border: 1px solid #3a3a3a; border-radius: 6px; }
+.asx-peek figcaption { font: 10px ui-monospace, monospace; color: #9ab; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+.asx-peek canvas { display: block; max-width: 260px; border-radius: 3px; image-rendering: auto; background: #000; }
+
+/* Control panel — collapsible <details> groups so uncommon knobs stay tucked away. */
+.asx-panel { width: 300px; flex: none; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+.asx-group { border: 1px solid #2a2a2a; border-radius: 6px; padding: 0 10px; }
+.asx-group[open] { padding-bottom: 9px; }
+.asx-group summary { font: 11px ui-monospace, monospace; color: #9ab; text-transform: uppercase; letter-spacing: .06em;
+  cursor: pointer; padding: 8px 0; list-style: none; user-select: none; }
+.asx-group summary::-webkit-details-marker { display: none; }
+.asx-group summary::before { content: '▸ '; color: #667; }
+.asx-group[open] summary::before { content: '▾ '; }
+.asx-ctl { display: flex; flex-direction: column; gap: 2px; margin: 7px 0; font-size: 12px; }
+.asx-ctl-name { color: #cfcfcf; }
+.asx-ctl-row { display: flex; align-items: center; gap: 7px; }
+.asx-ctl-input { flex: 1; min-width: 0; }
+.asx-ctl-input[type="checkbox"], .asx-ctl-input[type="color"] { flex: 0 0 auto; }
+.asx-ctl-input[type="color"] { width: 36px; height: 24px; padding: 0; }
+.asx-ctl-input:disabled { opacity: .4; }
+.asx-ctl-val { color: #9a9a9a; font: 11px ui-monospace, monospace; min-width: 2.8em; text-align: right; }
+.asx-ctl-reset { flex: 0 0 auto; width: 20px; height: 20px; line-height: 1; padding: 0; border-radius: 4px;
+  border: 1px solid #3a3a3a; background: #1b1b1b; color: #bbb; cursor: pointer; font-size: 12px; }
+.asx-ctl-reset:hover { background: #2a2a2a; color: #fff; }
+.asx-ctl-reset.asx-hidden { visibility: hidden; }
+
+/* Webcam mode (mounted by webcam.js into .asx-cam-host). */
+.asx-cam-host { flex: 1; min-height: 0; display: flex; }
+.asx-cam { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.asx-cam .asx-bar { gap: 6px; }
+.asx-cam .cam-stats { color: #8f8; font: 12px ui-monospace, monospace; margin-left: auto; }
+.asx-cam .cam-audio-lbl { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #cfcfcf; }
+.asx-cam .cam-rec.active { color: #ff5555; border-color: #aa3333; }
+.asx-cam-stage { position: relative; flex: 1; min-height: 0; overflow: auto; display: flex;
+  align-items: flex-start; justify-content: center; padding: 12px; background: #000; }
+.cam-out { max-width: 100%; image-rendering: pixelated; background: #000; border-radius: 4px; }
+.cam-out:fullscreen { max-width: none; width: 100vw; height: 100vh; object-fit: contain; background: #000; }
+
+/* original feed, revealed top-right by the eye toggle */
+.cam-eye { position: absolute; top: 12px; right: 12px; z-index: 4; display: inline-flex; align-items: center;
+  justify-content: center; width: 30px; height: 30px; border-radius: 6px; border: 1px solid #3a3a3a;
+  background: rgba(20,20,20,.85); color: #bbb; cursor: pointer; }
+.cam-eye:hover { color: #fff; } .cam-eye.active { color: #6ab0ff; border-color: #3a5a8a; }
+.cam-orig-peek { position: absolute; top: 50px; right: 12px; z-index: 3; margin: 0; padding: 6px;
+  background: rgba(13,13,13,.95); border: 1px solid #3a3a3a; border-radius: 6px; }
+.cam-orig-peek figcaption { font: 10px ui-monospace, monospace; color: #9ab; text-transform: uppercase; margin-bottom: 4px; }
+.cam-orig-peek canvas { display: block; max-width: 260px; border-radius: 3px; background: #111; }
+
+/* full settings panel, overlaid from the top behind the ⚙ button */
+.cam-settings { position: absolute; top: 0; left: 0; right: 0; z-index: 5; max-height: 80%; overflow: auto;
+  display: none; flex-direction: column; gap: 8px; padding: 12px;
+  background: rgba(13,13,13,.97); border-bottom: 1px solid #2a2a2a; box-shadow: 0 8px 24px rgba(0,0,0,.6); }
+.cam-settings:not([hidden]) { display: flex; }
+.asx-cam .cam-gear.active { color: #6ab0ff; border-color: #3a5a8a; }
+
+@media (max-width: 720px) {
+  .asx-body { flex-direction: column; overflow: auto; }
+  .asx-panel { width: 100%; }
+}

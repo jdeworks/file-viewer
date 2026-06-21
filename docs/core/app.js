@@ -311,7 +311,10 @@ function applyTheme(dark) {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   localStorage.setItem('fv:theme', dark ? 'dark' : 'light');
   state.rawview?.setTheme(dark ? 'dark' : 'light');
-  if (state.preview && state.type?.capabilities.preview) renderPreview();
+  // Re-render to re-theme the preview — but NOT while there are unsaved binary
+  // edits (image draw/crop/etc.), since a re-render rebuilds the viewer from the
+  // original bytes and would silently discard the user's in-progress edits.
+  if (state.preview && state.type?.capabilities.preview && !state.binaryEdit?.dirty) renderPreview();
 }
 // Toggle the root `reduce-motion` class — CSS kills all transitions/animations under it.
 function applyReduceMotion(on) {

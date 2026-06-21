@@ -222,6 +222,21 @@ export async function run(ctx) {
   ]);
   if (/\.webp$/.test(imgDownload.suggestedFilename())) pass('image converted + downloaded (' + imgDownload.suggestedFilename() + ')'); else fail('image download name: ' + imgDownload.suggestedFilename());
 
+  // ── ASCII Studio ── the ASCII button lazy-mounts the self-contained studio,
+  // which converts the image to glyphs and exposes the control panel.
+  await page.click('#previewHost .imgv-ascii-btn');
+  await page.waitForSelector('#previewHost .asx-root .asx-out', { timeout: 15000 });
+  await page.waitForFunction(() => {
+    const pre = document.querySelector('#previewHost .asx-out');
+    return pre && pre.textContent.replace(/\s/g, '').length > 50;
+  }, null, { timeout: 15000 });
+  const ctlCount = await page.$$eval('#previewHost .asx-panel .asx-ctl-input', (els) => els.length);
+  if (ctlCount > 15) pass('ASCII studio mounts with full control panel (' + ctlCount + ' controls)'); else fail('ascii controls: ' + ctlCount);
+  // Switching gradient re-converts; output stays non-empty.
+  await page.selectOption('#previewHost .asx-panel select[data-key="gradientName"]', 'blocks');
+  await page.waitForFunction(() => document.querySelector('#previewHost .asx-out').textContent.trim().length > 0, null, { timeout: 8000 });
+  pass('ASCII studio gradient change re-converts');
+
   // ── MIDI sequence ── parses SMF header, tempo, tracks, GM programs, and note counts.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.mid');
