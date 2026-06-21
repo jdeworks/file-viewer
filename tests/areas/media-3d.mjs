@@ -477,6 +477,40 @@ export async function run(ctx) {
   const summaryText = await page.$eval('#previewHost .media-export-summary', (e) => e.textContent).catch(() => '');
   if (/fade-in 2/.test(summaryText)) pass('P1: live export summary reflects fade-in setting'); else fail('export summary: ' + summaryText.slice(0, 100));
 
+  // ── P2: export presets + advanced overrides ────────────────────────────────
+  // The flat format picker is now a preset <select> (Podcast / ACX / Custom …).
+  const presetSel = await page.$('#previewHost .media-export-preset');
+  if (presetSel) pass('P2: export preset selector present'); else fail('export preset selector missing');
+  const presetOpts = await page.$$eval('#previewHost .media-export-preset option', (els) => els.map((e) => e.value));
+  if (['custom', 'podcast-mp3', 'acx-mp3'].every((v) => presetOpts.includes(v))) pass('P2: presets include Podcast + Audiobook(ACX) + Custom'); else fail('preset opts: ' + presetOpts.join(','));
+  // Advanced overrides hidden until "Custom"; default preset is Podcast.
+  const advHiddenDefault = await page.$eval('#previewHost .media-export-adv', (e) => e.hidden).catch(() => null);
+  if (advHiddenDefault === true) pass('P2: advanced overrides hidden under a concrete preset'); else fail('adv hidden default: ' + advHiddenDefault);
+  // Switch to Audiobook (ACX): summary must reflect mono / 192k CBR / −20 LUFS.
+  await page.selectOption('#previewHost .media-export-preset', 'acx-mp3');
+  const acxSummary = await page.$eval('#previewHost .media-export-summary', (e) => e.textContent).catch(() => '');
+  if (/mono/i.test(acxSummary) && /192k CBR/.test(acxSummary) && /-20 LUFS/.test(acxSummary)) pass('P2: ACX preset summary shows mono, 192k CBR, normalize -20 LUFS'); else fail('acx summary: ' + acxSummary.slice(0, 140));
+  // Switching to Custom reveals the override fields (container/bitrate/sr/channels/loudness).
+  await page.selectOption('#previewHost .media-export-preset', 'custom');
+  const advShown = await page.$eval('#previewHost .media-export-adv', (e) => e.hidden).catch(() => null);
+  const hasContainer = await page.$('#previewHost .media-export-container');
+  const hasBitrate = await page.$('#previewHost .media-export-bitrate');
+  const hasLufs = await page.$('#previewHost .media-export-lufs');
+  if (advShown === false && hasContainer && hasBitrate && hasLufs) pass('P2: Custom reveals container/bitrate/loudness overrides'); else fail('custom adv: shown=' + advShown + ' c=' + !!hasContainer + ' b=' + !!hasBitrate + ' l=' + !!hasLufs);
+  // Verify the PURE preset/codec layer (no ffmpeg load): ACX → mono CBR mp3 args.
+  const presetParams = await page.evaluate(async () => {
+    const { presetById, resolveExportParams, audioEncodeArgs: enc } = {
+      ...(await import('./types/media/export-presets.js')),
+      audioEncodeArgs: (await import('./types/media/transcoder.js')).audioEncodeArgs,
+    };
+    const p = resolveExportParams(presetById('acx-mp3'), {}, 'mp3');
+    const e = enc(p.container, { bitrate: p.bitrate, cbr: p.cbr });
+    return { channels: p.channels, sampleRate: p.sampleRate, lufs: p.lufsTarget, encArgs: e.args.join(' ') };
+  });
+  if (presetParams.channels === 1 && presetParams.sampleRate === 44100 && presetParams.lufs === -20 && /libmp3lame -b:a 192k/.test(presetParams.encArgs)) pass('P2: ACX resolves to mono/44.1k/-20 LUFS + CBR 192k mp3 args'); else fail('acx params: ' + JSON.stringify(presetParams));
+  // Restore the Podcast preset so the rest of the area sees a stable state.
+  await page.selectOption('#previewHost .media-export-preset', 'podcast-mp3');
+
   // Verify the ffmpeg `-af` chain the export will run, via the PURE builder (no ffmpeg load).
   const chain = await page.evaluate(async () => {
     const { buildAudioFilterChain } = await import('./types/media/transcoder.js');

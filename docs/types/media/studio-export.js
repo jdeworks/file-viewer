@@ -15,6 +15,9 @@
 
 import { getGraph } from './audio-graph.js';
 import { loadFfmpeg, runOperation, buildAudioFilterChain } from './transcoder.js';
+import {
+  EXPORT_PRESETS, presetById, resolveExportParams, describeParams, buildAdvancedOverrides,
+} from './export-presets.js';
 
 function mkBtn(text, cls) {
   const b = document.createElement('button');
@@ -63,28 +66,38 @@ export function buildExportPanel(intake, mediaEl, kind) {
   fadeRow.append(fadeInLabel, fadeOutLabel);
   panel.appendChild(fadeRow);
 
-  // ── Audio-only: output format + the live-EQ summary ──
-  let formatSel = null;
-  let summary = null;
-  if (kind === 'audio') {
-    const fmtRow = document.createElement('div');
-    fmtRow.className = 'media-ed-radio-row';
-    formatSel = document.createElement('select');
-    formatSel.className = 'sp-preset-sel media-export-fmt';
-    [['source', 'Match source (MP3)'], ['mp3', 'MP3'], ['wav', 'WAV (lossless)'], ['m4a', 'M4A / AAC'], ['ogg', 'OGG / Vorbis']]
-      .forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; formatSel.append(o); });
-    fmtRow.append(document.createTextNode('Format '), formatSel);
-    panel.appendChild(fmtRow);
+  // ── P2: export-preset picker + advanced overrides + the live-EQ summary ──
+  // Presets relevant to this source: audio sources get the audio presets; video sources
+  // also get the video presets (MP4 720p / WebM). "Custom" reveals the override controls.
+  const presetSel = document.createElement('select');
+  presetSel.className = 'sp-preset-sel media-export-preset';
+  EXPORT_PRESETS
+    .filter((p) => p.kind !== 'video' || kind === 'video')
+    .forEach((p) => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.label; presetSel.append(o); });
+  presetSel.value = kind === 'video' ? 'web-mp4-720p' : 'podcast-mp3';
 
-    summary = document.createElement('div');
-    summary.className = 'media-export-summary';
-    panel.appendChild(summary);
+  const presetRow = document.createElement('div');
+  presetRow.className = 'media-ed-radio-row';
+  presetRow.append(document.createTextNode('Preset '), presetSel);
+  panel.appendChild(presetRow);
+
+  // Advanced overrides — shown only when "Custom" is selected (always built; just hidden).
+  const advanced = buildAdvancedOverrides();
+  panel.appendChild(advanced.el);
+
+  const summary = document.createElement('div');
+  summary.className = 'media-export-summary';
+  panel.appendChild(summary);
+
+  function currentPreset() { return presetById(presetSel.value); }
+  function syncAdvancedVisibility() {
+    advanced.el.hidden = currentPreset().id !== 'custom';
   }
 
   // ── Action row ──
   const actionRow = document.createElement('div');
   actionRow.className = 'media-ed-actions';
-  const runBtn = mkBtn(kind === 'video' ? 'Render fade to black' : 'Export processed audio', 'media-ed-run media-export-run');
+  const runBtn = mkBtn(kind === 'video' ? 'Export video' : 'Export processed audio', 'media-ed-run media-export-run');
   const cancelBtn = mkBtn('Cancel', 'media-ed-cancel');
   cancelBtn.hidden = true;
   actionRow.append(runBtn, cancelBtn);
@@ -112,27 +125,43 @@ export function buildExportPanel(intake, mediaEl, kind) {
   resultArea.className = 'media-ed-result'; resultArea.hidden = true;
   panel.appendChild(resultArea);
 
-  // Refresh the live-EQ summary so the user sees exactly what will be baked.
+  // Resolve the chosen preset + (when Custom) the override controls into concrete
+  // export params, with the preset's loudness target merged into the live EQ settings.
+  function resolveParams() {
+    const ext = (intake.filename || '').split('.').pop().toLowerCase();
+    return resolveExportParams(currentPreset(), advanced.read(), ext);
+  }
+
+  // Refresh the summary so the user sees exactly what will be baked — preset/overrides
+  // (container/bitrate/sr/channels/loudness) ON TOP of the live-EQ `-af` chain.
   function refreshSummary() {
     if (!summary) return;
-    const s = readLiveSettings(mediaEl);
-    if (!s) { summary.textContent = 'Live EQ unavailable — export will copy the source audio.'; return; }
+    const preset = currentPreset();
+    const p = resolveParams();
+    const s = readLiveSettings(mediaEl) || {};
     const fades = collectFades();
-    const chain = buildAudioFilterChain(s, fades);
-    const active = (s.gains || []).filter((g) => Math.abs(g) >= 0.1).length;
+    // Merge the preset's loudness target so the chain preview matches what bakeAudio emits.
+    const eqSettings = (p.lufsTarget !== null && p.lufsTarget !== undefined)
+      ? { ...s, lufsTarget: p.lufsTarget, truePeak: p.truePeak } : s;
+    const chain = buildAudioFilterChain(eqSettings, fades);
     const bits = [];
-    bits.push(active + ' EQ band' + (active === 1 ? '' : 's'));
+    const desc = describeParams(p);
+    if (desc) bits.push(desc);
+    const active = (s.gains || []).filter((g) => Math.abs(g) >= 0.1).length;
+    if (active) bits.push(active + ' EQ band' + (active === 1 ? '' : 's'));
     if (s.hpf > 20) bits.push('HPF ' + Math.round(s.hpf) + 'Hz');
     if (s.lpf < 20000) bits.push('LPF ' + Math.round(s.lpf) + 'Hz');
-    if (s.lufsTarget !== null && s.lufsTarget !== undefined) bits.push('normalize ' + s.lufsTarget + ' LUFS');
     if (fades.fadeIn > 0) bits.push('fade-in ' + fades.fadeIn + 's');
     if (fades.fadeOut > 0) bits.push('fade-out ' + fades.fadeOut + 's');
-    summary.textContent = chain
-      ? 'Will bake: ' + bits.join(', ') + '  —  -af "' + chain + '"'
-      : 'No EQ/normalize/fade active — export will be a clean re-encode of the source.';
+    const label = preset.id === 'custom' ? 'Custom' : preset.label.split(' (')[0];
+    summary.textContent = 'Will bake: ' + label
+      + (bits.length ? ' — ' + bits.join(', ') : '')
+      + (chain ? '  —  -af "' + chain + '"' : '');
   }
   fadeInInput.addEventListener('input', refreshSummary);
   fadeOutInput.addEventListener('input', refreshSummary);
+  presetSel.addEventListener('change', () => { syncAdvancedVisibility(); refreshSummary(); });
+  advanced.onChange(refreshSummary);
 
   function collectFades() {
     return {
@@ -184,20 +213,25 @@ export function buildExportPanel(intake, mediaEl, kind) {
       ffInstance = ff;
       progressMsg.textContent = 'Encoding…';
 
+      const settings = readLiveSettings(mediaEl) || {};
+      const fades = collectFades();
+      const p = resolveParams();
+
       let result;
-      if (kind === 'video') {
-        const fades = collectFades();
-        if (!(fades.fadeIn > 0) && !(fades.fadeOut > 0)) { showError('Set a fade-in and/or fade-out duration first.'); setRunning(false); runBtn.hidden = false; return; }
-        result = await runOperation(ff, 'videofade', fades, intake);
+      if (p.kind === 'video' && p.video) {
+        // P2: web-video preset (MP4 720p / WebM) — re-encode video + audio with the
+        // live-EQ chain + fades applied to the audio track.
+        result = await runOperation(ff, 'webvideo', {
+          settings, fades, video: p.video, container: p.container,
+          bitrate: p.bitrate, sampleRate: p.sampleRate, channels: p.channels,
+          lufsTarget: p.lufsTarget, truePeak: p.truePeak,
+        }, intake);
       } else {
-        const settings = readLiveSettings(mediaEl) || {};
-        const fades = collectFades();
-        let format = formatSel.value;
-        if (format === 'source') {
-          const ext = (intake.filename || '').split('.').pop().toLowerCase();
-          format = ['mp3', 'wav', 'm4a', 'ogg'].includes(ext) ? ext : 'mp3';
-        }
-        result = await runOperation(ff, 'bakeAudio', { settings, fades, format }, intake);
+        result = await runOperation(ff, 'bakeAudio', {
+          settings, fades, container: p.container, format: p.container,
+          bitrate: p.bitrate, sampleRate: p.sampleRate, channels: p.channels,
+          lufsTarget: p.lufsTarget, truePeak: p.truePeak, cbr: p.cbr,
+        }, intake);
       }
       blobUrls.push(result.url);
       showResult(result.url, result.filename, result.bytes);
@@ -221,6 +255,7 @@ export function buildExportPanel(intake, mediaEl, kind) {
   cancelBtn.addEventListener('click', cancel);
   // Keep the summary fresh when the panel is shown (EQ may have changed since build).
   panel.addEventListener('pointerenter', refreshSummary);
+  syncAdvancedVisibility();
   refreshSummary();
 
   return {

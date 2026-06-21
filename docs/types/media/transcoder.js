@@ -142,25 +142,42 @@ export function buildAudioFilterChain(settings = {}, fades = {}) {
 
   const lufs = settings.lufsTarget;
   if (lufs !== null && lufs !== undefined && isFinite(Number(lufs))) {
-    out.push('loudnorm=I=' + round(Number(lufs)) + ':TP=-1.5:LRA=11');
+    const tp = isFinite(Number(settings.truePeak)) ? round(Number(settings.truePeak)) : -1.5;
+    out.push('loudnorm=I=' + round(Number(lufs)) + ':TP=' + tp + ':LRA=11');
   }
 
   return out.join(',');
 }
 
 // Codec args for the chosen export container. Keyed by output extension.
-function audioEncodeArgs(format) {
+// opts: { bitrate?:string ('192k'), cbr?:boolean } — when a bitrate is given the lossy
+// codecs encode CBR/ABR at that rate; otherwise they fall back to their VBR quality.
+// PURE (no DOM, no ffmpeg) so it stays unit-testable.
+export function audioEncodeArgs(format, opts = {}) {
+  const bitrate = opts.bitrate || null;
   switch (format) {
-    case 'wav': return { ext: 'wav', mime: 'audio/wav',  args: ['-c:a', 'pcm_s16le'] };
-    case 'm4a': return { ext: 'm4a', mime: 'audio/mp4',  args: ['-c:a', 'aac', '-b:a', '192k'] };
-    case 'ogg': return { ext: 'ogg', mime: 'audio/ogg',  args: ['-c:a', 'libvorbis', '-q:a', '5'] };
+    case 'wav':  return { ext: 'wav',  mime: 'audio/wav',  args: ['-c:a', 'pcm_s16le'] };
+    case 'flac': return { ext: 'flac', mime: 'audio/flac', args: ['-c:a', 'flac'] };
+    case 'm4a':  return { ext: 'm4a',  mime: 'audio/mp4',
+      args: ['-c:a', 'aac', '-b:a', bitrate || '192k'] };
+    case 'ogg':  return { ext: 'ogg',  mime: 'audio/ogg',
+      args: bitrate ? ['-c:a', 'libvorbis', '-b:a', bitrate] : ['-c:a', 'libvorbis', '-q:a', '5'] };
+    case 'opus': return { ext: 'opus', mime: 'audio/ogg',
+      args: ['-c:a', 'libopus', '-b:a', bitrate || '128k'] };
     case 'mp3':
-    default:    return { ext: 'mp3', mime: 'audio/mpeg', args: ['-c:a', 'libmp3lame', '-q:a', '2'] };
+    default: {
+      // CBR via -b:a; otherwise VBR via -q:a 2 (~190 kbps). ACX wants CBR.
+      const args = opts.cbr && bitrate
+        ? ['-c:a', 'libmp3lame', '-b:a', bitrate]
+        : (bitrate ? ['-c:a', 'libmp3lame', '-b:a', bitrate] : ['-c:a', 'libmp3lame', '-q:a', '2']);
+      return { ext: 'mp3', mime: 'audio/mpeg', args };
+    }
   }
 }
 
 const MIME = {
   mp4: 'video/mp4', mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4',
+  opus: 'audio/ogg', flac: 'audio/flac',
   png: 'image/png', webm: 'video/webm', gif: 'image/gif', webp: 'image/webp',
 };
 
@@ -299,12 +316,47 @@ export async function runOperation(ff, opId, params, intake) {
       // round-trip parsed from stderr, which the wrapper doesn't expose), so we use the
       // single-pass dynamic normalizer — accurate enough for export and far cheaper in-browser.
       case 'bakeAudio': {
-        const chain = buildAudioFilterChain(params.settings || {}, params.fades || {});
-        const enc = audioEncodeArgs(params.format);
+        // P2: inject the preset/override loudness target into the live EQ settings so
+        // loudnorm is emitted ONCE by buildAudioFilterChain (no double-applying), then
+        // append -ar / -ac / codec+bitrate from the chosen preset or advanced overrides.
+        const baseSettings = params.settings || {};
+        const settings = (params.lufsTarget !== undefined && params.lufsTarget !== null)
+          ? { ...baseSettings, lufsTarget: params.lufsTarget, truePeak: params.truePeak }
+          : baseSettings;
+        const chain = buildAudioFilterChain(settings, params.fades || {});
+        const enc = audioEncodeArgs(params.container || params.format,
+          { bitrate: params.bitrate, cbr: params.cbr });
         outputName = 'out.' + enc.ext; outBase = base + '_processed';
         args = ['-i', inputName, '-vn'];
         if (chain) args.push('-af', chain);
+        if (params.sampleRate) args.push('-ar', String(params.sampleRate));
+        if (params.channels) args.push('-ac', String(params.channels));
         args.push(...enc.args, outputName);
+        break;
+      }
+
+      // ── P2: web-video preset — re-encode to MP4 720p (H.264 + AAC) or another
+      // single-clip video container. params: { video:{codec,preset,scale,audioCodec},
+      // container, bitrate, sampleRate, channels }. The live-EQ -af chain + fades
+      // still apply to the audio track.
+      case 'webvideo': {
+        const v = params.video || {};
+        const ext = params.container || 'mp4';
+        outputName = 'out.' + ext; outBase = base + '_' + (v.scale ? v.scale.split(':').pop() + 'p' : 'web');
+        args = ['-i', inputName];
+        if (v.scale) args.push('-vf', 'scale=' + v.scale);
+        args.push('-c:v', v.codec || 'libx264');
+        if (v.preset) args.push('-preset', v.preset);
+        if (v.codec === 'libvpx-vp9') args.push('-crf', '33', '-b:v', '0');
+        else args.push('-crf', '28', '-movflags', '+faststart');
+        const aSettings = (params.lufsTarget !== undefined && params.lufsTarget !== null)
+          ? { ...(params.settings || {}), lufsTarget: params.lufsTarget, truePeak: params.truePeak }
+          : (params.settings || {});
+        const aChain = buildAudioFilterChain(aSettings, params.fades || {});
+        if (aChain) args.push('-af', aChain);
+        if (params.sampleRate) args.push('-ar', String(params.sampleRate));
+        if (params.channels) args.push('-ac', String(params.channels));
+        args.push('-c:a', v.audioCodec || 'aac', '-b:a', params.bitrate || '192k', outputName);
         break;
       }
 
