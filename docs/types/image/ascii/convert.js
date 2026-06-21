@@ -12,6 +12,14 @@ import { ditherLuminance } from './dither.js';
 
 const ALPHA_CUTOFF = 16; // below this a cell renders as a transparent space
 
+// Plain-text is only needed for copy/export — never for the live canvas render.
+// Build it lazily (and memoised) from the cells so a webcam frame doesn't allocate
+// a full string every frame (steady GC churn shows up as a creeping per-frame ms).
+function lazyText(cells) {
+  let cache;
+  return () => (cache ??= cells.map((row) => row.map((c) => c.ch).join('')).join('\n') + '\n');
+}
+
 // rows from columns, image aspect and font aspect (monospace cells are taller
 // than wide, so we need fewer rows than a naive aspect would suggest).
 export function computeRows(columns, srcW, srcH, fontAspect) {
@@ -48,10 +56,8 @@ export function imageToAscii(processed, original, o, scratch) {
   // Space density is a display-only concern (CSS letter-spacing / canvas advance),
   // so the cell grid + text carry no inserted spaces.
   const cells = [];
-  let text = '';
   for (let y = 0; y < rows; y++) {
     const rowCells = [];
-    let line = '';
     for (let x = 0; x < columns; x++) {
       const i = (y * columns + x) * 4;
       const L = lum[y * columns + x];
@@ -60,12 +66,11 @@ export function imageToAscii(processed, original, o, scratch) {
       const pa = lumGridData[i + 3];
       const ch = pa < ALPHA_CUTOFF ? ' ' : luminanceToChar(L, ramp, o.invertRamp);
       rowCells.push({ ch, r: colorData[i], g: colorData[i + 1], b: colorData[i + 2], a: pa, luminance: L });
-      line += ch;
     }
-    text += line + '\n';
     cells.push(rowCells);
   }
-  return { columns, rows, cells, text, gap: '', braille: false };
+  const getText = lazyText(cells);
+  return { columns, rows, cells, get text() { return getText(); }, gap: '', braille: false };
 }
 
 // Braille: 2 sub-cols × 4 sub-rows per glyph cell drive the dot pattern; colour
@@ -78,10 +83,8 @@ function brailleResult(processed, colorSrc, columns, rows, o, scratch) {
   };
   const colorData = gridFromCanvas(colorSrc, columns, rows, o.samplingMethod, scratch);
   const cells = [];
-  let text = '';
   for (let y = 0; y < rows; y++) {
     const rowCells = [];
-    let line = '';
     for (let x = 0; x < columns; x++) {
       const cell = [];
       for (let dr = 0; dr < 4; dr++) {
@@ -94,10 +97,9 @@ function brailleResult(processed, colorSrc, columns, rows, o, scratch) {
       // grayscale uses overall cell luminance (avg of the 8 sub-samples)
       const L = cell.reduce((s, p) => s + p[0] + p[1], 0) / 8;
       rowCells.push({ ch, r: colorData[i], g: colorData[i + 1], b: colorData[i + 2], a: colorData[i + 3], luminance: L });
-      line += ch;
     }
-    text += line + '\n';
     cells.push(rowCells);
   }
-  return { columns, rows, cells, text, gap: '', braille: true };
+  const getText = lazyText(cells);
+  return { columns, rows, cells, get text() { return getText(); }, gap: '', braille: true };
 }
