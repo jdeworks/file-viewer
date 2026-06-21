@@ -1,13 +1,33 @@
 // s1managers.js — Stage 1 Managers tab and manager auto-fire loop.
 
-import { netRate, managerHireCost, managerRunCost, managerRunCostAtLevel, autoInterval } from './s1economy.js';
+import { netRate, managerRunCost, managerRunCostAtLevel,
+  managerTotalCost, managerMaxLevels, autoInterval } from './s1economy.js';
 import { fromNumber, sub, gte, toDisplay } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements } from './s1achievements.js';
+import { setHtml } from './s1dom.js';
+
+const MGR_COUNTS = [1, 10, 100, 'max'];
 
 export function createManagersController({ panelsEl, state, cfg, tiers, save, paintStats }) {
   const managers = cfg.managers || [];
   const managedTier = (mgr) => tiers.find((t) => t.id === mgr.manages);
+  const mgrCountFor = () => state.mgrBuyMult ?? 1;
+  const affordableLevels = (mgr) => managerMaxLevels(state.bits, mgr, mgrState(mgr.id).level, cfg);
+  // Levels a click would buy/display: the selected count, or (for "max") the affordable amount.
+  function displayLevels(mgr) {
+    const sel = mgrCountFor();
+    return sel === 'max' ? Math.max(1, affordableLevels(mgr)) : sel;
+  }
+  // Inner HTML of a hire/level button: "Hire/Level up [×N] — <total cost>" + the resulting ongoing/s.
+  function actionBtnHtml(mgr) {
+    const lvl = mgrState(mgr.id).level;
+    const n = displayLevels(mgr);
+    const cost = managerTotalCost(mgr, lvl, n, cfg);
+    const ongoing = managerRunCostAtLevel(mgr, lvl + n, cfg);
+    return (lvl === 0 ? 'Hire' : 'Level up') + (n > 1 ? ' ×' + n : '') + ' — ' + toDisplay(cost)
+      + '<small class="mg-mgr-ongoing">ongoing ' + toDisplay(fromNumber(ongoing)) + '/s</small>';
+  }
 
   function mgrState(id) {
     state.managers = state.managers || {};
@@ -21,19 +41,14 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
     // Button shows BOTH the one-off hire price and the ongoing/sec it will cost once active, so the
     // running cost is never increased without being shown up front (`ongoing` = cost at next level).
     if (ms.level === 0) {
-      const cost = managerHireCost(mgr, 0, cfg);
-      const ongoing = managerRunCostAtLevel(mgr, 1, cfg);
       return '<div class="mg-mgr-card mg-mgr-unhired" data-id="' + mgr.id + '">'
         + '<span class="mg-mgr-head"><span class="mg-mgr-icon">' + escapeHtml(mgr.icon) + '</span>'
         + '<span class="mg-mgr-name">' + escapeHtml(mgr.name) + '</span></span>'
         + '<span class="mg-mgr-manages">Manages: ' + escapeHtml(mtName) + '</span>'
-        + '<button class="mg-mgr-hire" type="button" data-id="' + mgr.id + '" data-act="hire">'
-        + 'Hire — ' + toDisplay(cost) + '<small class="mg-mgr-ongoing">ongoing ' + toDisplay(fromNumber(ongoing)) + '/s</small></button>'
+        + '<button class="mg-mgr-hire" type="button" data-id="' + mgr.id + '" data-act="hire">' + actionBtnHtml(mgr) + '</button>'
         + '</div>';
     }
     const runCost = managerRunCost(mgr.id, state, cfg);
-    const lvlCost = managerHireCost(mgr, ms.level, cfg);
-    const nextOngoing = managerRunCostAtLevel(mgr, ms.level + 1, cfg);
     return '<div class="mg-mgr-card mg-mgr-hired" data-id="' + mgr.id + '">'
       + '<span class="mg-mgr-head"><span class="mg-mgr-icon">' + escapeHtml(mgr.icon) + '</span>'
       + '<span class="mg-mgr-name">' + escapeHtml(mgr.name) + '</span>'
@@ -42,8 +57,7 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
       + '<span class="mg-mgr-run">Running cost: <strong class="mg-mgr-runcost">' + toDisplay(fromNumber(runCost)) + '</strong>/s</span>'
       + (ms.paused ? '<span class="mg-mgr-paused">⏸ Paused (out of bits)</span>' : '')
       + '<span class="mg-mgr-actions">'
-      + '<button class="mg-mgr-lvl" type="button" data-id="' + mgr.id + '" data-act="lvl">'
-      + 'Level up — ' + toDisplay(lvlCost) + '<small class="mg-mgr-ongoing">ongoing ' + toDisplay(fromNumber(nextOngoing)) + '/s</small></button>'
+      + '<button class="mg-mgr-lvl" type="button" data-id="' + mgr.id + '" data-act="lvl">' + actionBtnHtml(mgr) + '</button>'
       + '<button class="mg-mgr-fire" type="button" data-id="' + mgr.id + '" data-act="fire">Fire</button>'
       + '</span>'
       + '</div>';
@@ -59,6 +73,9 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
   }
 
   function renderPanel() {
+    // Preserve the panel's scroll position across the full rebuild (hiring/leveling a manager calls
+    // this) so the view doesn't jump back to the top.
+    const prevScroll = panelsEl.querySelector('.mg-s1-panel')?.scrollTop || 0;
     const visible = managers.filter((mgr) => {
       const mt = managedTier(mgr);
       return mt && (state.owned[mt.id] || 0) >= 1;
@@ -66,11 +83,23 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
     const rate = netRate(state, cfg);
     const head = '<div class="mg-mgr-net' + (rate < 0 ? ' mg-s1-neg' : '') + '">Net rate: <strong>'
       + (rate < 0 ? '-' : '') + toDisplay(fromNumber(Math.abs(rate))) + '/s</strong></div>';
+    const counts = MGR_COUNTS.map((n) =>
+      '<button class="mg-mult-b mg-mgr-buyn" type="button" data-n="' + n + '">' + (n === 'max' ? 'MAX' : '×' + n) + '</button>').join('');
+    const selector = visible.length
+      ? '<div class="mg-mgr-buyrow"><span class="mg-mgr-buylabel">Buy</span><span class="mg-s1-counts">' + counts + '</span></div>'
+      : '';
     const body = visible.length
       ? '<div class="mg-mgr-list">' + visible.map(mgrCardHtml).join('') + '</div>'
       : '<div class="mg-managers-stub">no managers available yet</div>';
-    panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="managers">' + head + body + '</div>';
+    panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="managers">' + head + selector + body + '</div>';
+    const newPanel = panelsEl.querySelector('.mg-s1-panel');
+    if (newPanel && prevScroll) newPanel.scrollTop = prevScroll;
 
+    panelsEl.querySelectorAll('.mg-mgr-buyn').forEach((b) => {
+      const v = b.dataset.n === 'max' ? 'max' : Number(b.dataset.n);
+      b.classList.toggle('mg-mult-on', String(v) === String(mgrCountFor()));
+      b.addEventListener('click', () => { state.mgrBuyMult = v; save(state); renderPanel(); });
+    });
     panelsEl.querySelectorAll('.mg-mgr-card [data-act]').forEach((b) => {
       const id = b.dataset.id, act = b.dataset.act;
       const mgr = managers.find((m) => m.id === id);
@@ -110,10 +139,11 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
       if (!card) return;
       const hasIndicator = !!card.querySelector('.mg-mgr-paused');
       if (ms.level >= 1 && hasIndicator !== !!ms.paused) pausedChanged = true;
-      const cost = managerHireCost(mgr, ms.level, cfg);
       const btn = card.querySelector(ms.level === 0 ? '.mg-mgr-hire' : '.mg-mgr-lvl');
       if (btn) {
-        const can = gte(state.bits, cost);
+        setHtml(btn, actionBtnHtml(mgr));   // refresh cost/count/ongoing live (esp. for "max")
+        const n = displayLevels(mgr);
+        const can = n >= 1 && gte(state.bits, managerTotalCost(mgr, ms.level, n, cfg));
         if (btn.disabled !== !can) btn.disabled = !can;
         btn.classList.toggle('mg-buy-locked', !can);
       }
@@ -136,10 +166,11 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
       paintStats();
       return;
     }
-    const cost = managerHireCost(mgr, ms.level, cfg);
-    if (!gte(state.bits, cost)) return;
+    const n = displayLevels(mgr);
+    const cost = managerTotalCost(mgr, ms.level, n, cfg);
+    if (n < 1 || !gte(state.bits, cost)) return;
     state.bits = sub(state.bits, cost);
-    ms.level++;
+    ms.level += n;
     save(state);
     checkMessages('buy', state, bellLoad());
     checkAchievements(state, cfg, bellLoad());

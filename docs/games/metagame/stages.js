@@ -245,10 +245,10 @@ export const STAGES = [
       {
         id: 's1-boost', name: 'Signal Booster', icon: '📡', type: 'timed',
         desc: 'builds 🧰 Bit Boxes',
-        base: { m: 2.5, e: 3 }, mult: 1.10, baseAmount: 75, duration_ms: 5000,
+        base: { m: 20, e: 3 }, mult: 1.13, baseAmount: 75, duration_ms: 5000,
         boost: { targetId: 's1-box', perLevelPct: 0.10 },
         produces: { targetId: 's1-box', perOwned: 1 },
-        unlock: (state) => (state.owned['s1-box'] || 0) >= 1,
+        unlock: (state) => (state.owned['s1-box'] || 0) >= 3,
         bell: 'bell-boost', grid: 'g3',
       },
       // 4. Core Cluster — timed BUILDER; each cycle assembles Signal Boosters (owned[s1-boost] +=
@@ -256,17 +256,17 @@ export const STAGES = [
       {
         id: 's1-cluster', name: 'Core Cluster', icon: '🧊', type: 'timed',
         desc: 'builds 📡 Boosters',
-        base: { m: 12, e: 3 }, mult: 1.08, baseAmount: 500, duration_ms: 8000,
+        base: { m: 250, e: 3 }, mult: 1.13, baseAmount: 500, duration_ms: 8000,
         produces: { targetId: 's1-boost', perOwned: 1 },
-        unlock: (state) => (state.owned['s1-boost'] || 0) >= 1,
+        unlock: (state) => (state.owned['s1-boost'] || 0) >= 3,
         bell: 'bell-cluster', grid: 'g4',
       },
       // 5. Processing Array — passive; 0.5 bits/sec per owned; unlocks at owned[s1-cluster] ≥ 1
       {
         id: 's1-array', name: 'Processing Array', icon: '🛰', type: 'passive',
         desc: 'auto bits / sec',
-        base: { m: 60, e: 3 }, mult: 1.07, rate: 0.5,
-        unlock: (state) => (state.owned['s1-cluster'] || 0) >= 1,
+        base: { m: 4, e: 6 }, mult: 1.12, rate: 0.5,
+        unlock: (state) => (state.owned['s1-cluster'] || 0) >= 3,
         bell: 'bell-array', grid: 'g5',
       },
       // 6. Neural Net — globalMult node: ×(1 + 0.25·level) to all timed payouts;
@@ -275,8 +275,8 @@ export const STAGES = [
         id: 's1-neural', name: 'Neural Net', icon: '🧠', type: 'click_mult',
         desc: 'boosts all timers',
         globalMult: { perLevel: 0.25, targets: 'timed' },
-        base: { m: 500, e: 3 }, mult: 1.06, amount: 0,
-        unlock: (state) => _gte(state.totalBits, { m: 1, e: 6 }),
+        base: { m: 60, e: 6 }, mult: 1.10, amount: 0,
+        unlock: (state) => _gte(state.totalBits, { m: 5, e: 7 }),
         bell: 'bell-neural', grid: 'g6',
       },
       // 7. Quantum Tap — multiplicative click mult: clickPower ×(1 + owned);
@@ -284,7 +284,7 @@ export const STAGES = [
       {
         id: 's1-quantum', name: 'Quantum Tap', icon: '⚛', type: 'click_mult',
         desc: 'multiplies tap power',
-        base: { m: 5, e: 6 }, mult: 1.05, amount: 0, quantumMult: true,
+        base: { m: 500, e: 6 }, mult: 1.10, amount: 0, quantumMult: true,
         unlock: (state) => (state.owned['s1-neural'] || 0) >= 3,
         bell: 'bell-quantum', grid: 'g7',
       },

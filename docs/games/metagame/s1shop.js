@@ -12,7 +12,7 @@
 import {
   netRate, timedPayout, timedProduction, totalCost, maxAffordable, buyTier,
 } from './s1economy.js';
-import { fromNumber, gte, toDisplay } from './bignum.js';
+import { fromNumber, gte, toDisplay, toNumber } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements } from './s1achievements.js';
 import { setText, setHidden, setHtml, setDisabled, bigToNum } from './s1dom.js';
@@ -55,6 +55,20 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       return '+' + (prod ? prod.amount : (t.produces.perOwned || 1)) + ' ' + tName;
     }
     return '+' + toDisplay(timedPayout(state, cfg, t.id)) + ' bits';
+  }
+
+  // Steady output per second — shown when a manager has sped the cycle below the bar's useful range.
+  function rateLabel(t, durMs) {
+    const perSec = 1000 / durMs;
+    const fmt = (n) => (n >= 100 ? toDisplay(fromNumber(n)) : String(Math.round(n * 10) / 10));
+    if (t.produces) {
+      const prod = timedProduction(state, cfg, t.id);
+      const target = tiers.find((x) => x.id === t.produces.targetId);
+      const tName = target ? (target.icon + ' ' + target.name) : t.produces.targetId;
+      const per = (prod ? prod.amount : (t.produces.perOwned || 1)) * perSec;
+      return '+' + fmt(per) + ' ' + tName + '/s';
+    }
+    return '+' + toDisplay(fromNumber(toNumber(timedPayout(state, cfg, t.id)) * perSec)) + ' bits/s';
   }
 
   function shopRowHtml(t) {
@@ -180,10 +194,19 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       if (ts && ts.active) {
         const elapsed = Date.now() - ts.startedAt;
         const dur = ts.duration_ms || t.duration_ms;
-        const w = (Math.max(0, Math.min(1, elapsed / dur)) * 100) + '%';
-        if (fill.style.width !== w) fill.style.width = w;
-        setText(reward, rewardLabel(t) + ' · ' + Math.max(0, (dur - elapsed) / 1000).toFixed(1) + 's');
+        if (dur < 500) {
+          // Too fast for a meaningful progress bar — show a full, shimmering bar + the steady rate.
+          fill.classList.add('mg-s1-rowfill-fast');
+          if (fill.style.width !== '100%') fill.style.width = '100%';
+          setText(reward, rateLabel(t, dur));
+        } else {
+          fill.classList.remove('mg-s1-rowfill-fast');
+          const w = (Math.max(0, Math.min(1, elapsed / dur)) * 100) + '%';
+          if (fill.style.width !== w) fill.style.width = w;
+          setText(reward, rewardLabel(t) + ' · ' + Math.max(0, (dur - elapsed) / 1000).toFixed(1) + 's');
+        }
       } else {
+        fill.classList.remove('mg-s1-rowfill-fast');
         if (fill.style.width !== '0%') fill.style.width = '0%';
         setText(reward, '▸ ' + rewardLabel(t));
       }

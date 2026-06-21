@@ -183,6 +183,24 @@ export function managerHireCost(mgr, level, cfg) {
   return mulScalar(base10, Math.pow(HIRE_LEVEL_MULT, level));
 }
 
+// A manager's hire curve is just a geometric tier (base = 10 × managed base, mult = HIRE_LEVEL_MULT),
+// so reuse the tested totalCost/maxAffordable to buy/level several at once (×1/10/100/max).
+function managerCurve(mgr, cfg) {
+  const managedTier = cfg.tiers.find(t => t.id === mgr.manages);
+  if (!managedTier) return null;
+  return { base: mulScalar(managedTier.base, 10), mult: HIRE_LEVEL_MULT };
+}
+// Total cost to buy n levels starting at `level` (BigNum).
+export function managerTotalCost(mgr, level, n, cfg) {
+  const curve = managerCurve(mgr, cfg);
+  return curve ? totalCost(curve, level, n) : ZERO;
+}
+// Max levels affordable with `bits` on hand, starting at `level` (number).
+export function managerMaxLevels(bits, mgr, level, cfg) {
+  const curve = managerCurve(mgr, cfg);
+  return curve ? maxAffordable(bits, curve, level) : 0;
+}
+
 // Running cost per second for a manager AT a given level (plain number, bits/sec). Pure — used both
 // for the live cost and for previewing the next level on the hire/level-up button.
 //   runCost(level) = RUN_COST_COEFF × hirePrice paid to reach that level = hireCost(mgr, level−1).

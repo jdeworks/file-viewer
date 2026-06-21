@@ -261,7 +261,7 @@
 /* Each tab's panel scrolls on its own (so a long Achievements/Bits list never overflows the modal),
    and the Bits-tab "Compute" stays pinned at the top of that scroll. */
 .mg-s1-panel { display: flex; flex-direction: column; gap: 12px; min-height: 0;
-  max-height: 58vh; overflow-y: auto; }
+  max-height: 58vh; overflow-y: auto; padding-bottom: 12px; }   /* bottom gap so the last item (boss button) clears the scroll edge */
 .mg-s1-earn { position: sticky; top: 0; z-index: 2; }
 
 /* Shop rows (extend .mg-buy). Buy-count selectors + a wide buy button. */
@@ -274,6 +274,15 @@
   border: 1px solid var(--accent); color: var(--fg); border-radius: 8px; padding: 6px 10px; cursor: pointer;
   font: 700 13px ui-monospace, monospace; white-space: nowrap; }
 .mg-s1-buybtn.mg-buy-locked { opacity: .45; border-color: var(--border); color: var(--fg-2); cursor: not-allowed; }
+/* On narrow screens the 2-column row can't fit the buy controls (e.g. Core Cluster's MAX button
+   gets clipped). Stack the row so the buy controls take the full width. */
+@media (max-width: 480px) {
+  .mg-s1-shoprow { grid-template-columns: 1fr; }
+  .mg-s1-buyrow { grid-column: 1; grid-row: auto; flex-direction: row; flex-wrap: wrap;
+    align-items: center; justify-content: space-between; }
+  .mg-s1-counts { justify-content: flex-start; }
+  .mg-s1-buybtn { flex: 1; min-width: 130px; text-align: center; }
+}
 
 /* Timed rows: the row IS the run button; cycle progress fills the row background, and the reward
    label sits inline after the owned count (▸ +N idle · "amount · Xs" while filling). */
@@ -282,6 +291,13 @@
 .mg-s1-timedrow.mg-s1-runnable:hover { border-color: var(--accent); }
 .mg-s1-rowfill { position: absolute; top: 0; left: 0; bottom: 0; width: 0; pointer-events: none;
   background: color-mix(in srgb, #2f81f7 20%, transparent); transition: width .1s linear; }
+/* Manager-sped cycle (<0.5s): full bar with moving stripes instead of a flickering progress fill. */
+.mg-s1-rowfill.mg-s1-rowfill-fast { transition: none;
+  background: repeating-linear-gradient(45deg,
+    color-mix(in srgb, #2f81f7 24%, transparent) 0 10px,
+    color-mix(in srgb, #2f81f7 11%, transparent) 10px 20px);
+  background-size: 28px 28px; animation: mg-s1-fast 0.6s linear infinite; }
+@keyframes mg-s1-fast { from { background-position: 0 0; } to { background-position: 28px 0; } }
 .mg-s1-timedrow > :not(.mg-s1-rowfill) { position: relative; z-index: 1; }
 .mg-s1-rowreward { font: 700 12px ui-monospace, monospace; color: var(--accent); white-space: nowrap; }
 .mg-s1-flash { animation: mg-s1-flash .25s ease; }
@@ -315,6 +331,8 @@
 .mg-s1-boss { align-self: center; }
 
 /* Managers tab */
+.mg-mgr-buyrow { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.mg-mgr-buylabel { font-size: 12px; color: var(--fg-2); }
 .mg-mgr-net { text-align: center; font-size: 13px; color: var(--fg-2); }
 .mg-mgr-net strong { color: var(--fg); font-family: ui-monospace, monospace; }
 .mg-mgr-net.mg-s1-neg strong, .mg-mgr-net.mg-net-neg-preview strong { color: #f85149; }
