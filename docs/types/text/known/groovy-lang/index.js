@@ -6,6 +6,9 @@ export const plugin = {
   tags: ['groovy', 'gvy', 'gy', 'gsh', 'jvm', 'scripting'],
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
+    // Defer the Gradle build-script files to their dedicated build-gradle plugin (they're .gradle
+    // but get a richer build-specific view). Generic *.gradle scripts still fall to Groovy below.
+    if (name === 'build.gradle' || name === 'build.gradle.kts') return false;
     if (name.endsWith('.groovy') || name.endsWith('.gvy') || name.endsWith('.gy') || name.endsWith('.gsh') || name.endsWith('.gradle')) return true;
     // The content heuristic keys off def/class/import/package, which appear in many other
     // languages. Only content-match files with no/unknown extension (a bare extension guard).
