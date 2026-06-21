@@ -59,7 +59,8 @@ export async function render(intake, ctx = {}) {
       + '</select>'
       + '<label class="imgv-fill-opt" hidden style="font-size:0.8em;display:inline-flex;align-items:center;gap:3px;">Tol <input class="imgv-fill-tol" type="range" min="0" max="255" value="0" style="width:70px"><span class="imgv-fill-tolv">0</span></label>'
       + '<label class="imgv-fill-opt" hidden style="font-size:0.8em;display:inline-flex;align-items:center;gap:3px;" title="Stop the fill at detected edges"><input class="imgv-fill-edge" type="checkbox"> Edge match</label>'
-      + '<button class="imgv-undo" title="Undo last stroke" hidden>↩</button>'
+      + '<button class="imgv-undo" title="Undo (Ctrl+Z)" hidden>↩</button>'
+      + '<button class="imgv-redo" title="Redo (Ctrl+Y)" hidden>↪</button>'
       + '<span class="imgv-sep"></span>'
       + '<button class="imgv-rot-l" title="Rotate 90° counter-clockwise">↺ 90°</button>'
       + '<button class="imgv-rot-r" title="Rotate 90° clockwise">↻ 90°</button>'
@@ -126,6 +127,7 @@ export async function render(intake, ctx = {}) {
   const drawColorPicker = canEdit ? host.querySelector('.imgv-draw-color') : null;
   const drawSizePicker = canEdit ? host.querySelector('.imgv-draw-size') : null;
   const undoBtn = canEdit ? host.querySelector('.imgv-undo') : null;
+  const redoBtn = canEdit ? host.querySelector('.imgv-redo') : null;
   const exportFmt = canEdit ? host.querySelector('.imgv-export-fmt') : null;
   const editFont = canEdit ? host.querySelector('.imgv-text-font') : null;
   const bgBtn = canEdit ? host.querySelector('.imgv-bg-btn') : null;
@@ -160,6 +162,7 @@ export async function render(intake, ctx = {}) {
   let textPlaceMode = false, textPlaceX = 0.5, textPlaceY = 0.5;
   let bgPickMode = false, bgSrcData = null, bgSrcW = 0, bgSrcH = 0, bgPickX = -1, bgPickY = -1, bgPreviewUrl = null;
   const undoStack = [];
+  const redoStack = [];
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
   // Crop state
   let cropMode = false, cropOverlay = null, cropSelBox = null;
@@ -172,8 +175,39 @@ export async function render(intake, ctx = {}) {
 
   function pushUndo() {
     undoStack.push({ blob: editedBlob || null, url: editedUrl || null });
+    // A fresh edit forks history — discard any redo branch (and its blob URLs).
+    redoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
+    redoStack.length = 0;
     if (undoBtn) undoBtn.hidden = false;
+    if (redoBtn) redoBtn.hidden = true;
     host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden');
+  }
+
+  // Apply a saved {blob,url} edit state to the canvas + binary-edit hook.
+  function applyEditState(state) {
+    editedBlob = state.blob; editedUrl = state.url;
+    if (editedUrl) {
+      img.src = editedUrl;
+      ctx.onBinaryEdit?.({ dirty: true, mimeType: getExportMime(), getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
+    } else {
+      img.src = url;
+      if (editReset) editReset.hidden = true;
+      ctx.onBinaryEdit?.(null);
+    }
+    if (undoBtn) undoBtn.hidden = undoStack.length === 0;
+    if (redoBtn) redoBtn.hidden = redoStack.length === 0;
+  }
+  function doUndo() {
+    const prev = undoStack.pop();
+    if (!prev) return;
+    redoStack.push({ blob: editedBlob || null, url: editedUrl || null });
+    applyEditState(prev);
+  }
+  function doRedo() {
+    const next = redoStack.pop();
+    if (!next) return;
+    undoStack.push({ blob: editedBlob || null, url: editedUrl || null });
+    applyEditState(next);
   }
 
   // Pan offset (px), applied as a transform so the WHOLE canvas can be dragged
@@ -454,9 +488,10 @@ export async function render(intake, ctx = {}) {
   });
   editReset?.addEventListener('click', () => {
     exitTextPlaceMode();
-    undoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
-    undoStack.length = 0;
+    [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
+    undoStack.length = 0; redoStack.length = 0;
     if (undoBtn) undoBtn.hidden = true;
+    if (redoBtn) redoBtn.hidden = true;
     if (editedUrl) URL.revokeObjectURL(editedUrl);
     editedUrl = null;
     editedBlob = null;
@@ -812,22 +847,23 @@ export async function render(intake, ctx = {}) {
     eraserBtn.addEventListener('click', () => setDrawMode('eraser'));
     fillBtn?.addEventListener('click', () => setDrawMode('fill'));
     fillTol?.addEventListener('input', () => { if (fillTolV) fillTolV.textContent = fillTol.value; });
-    undoBtn?.addEventListener('click', async () => {
-      const prev = undoStack.pop();
-      if (!prev) return;
-      if (editedUrl && editedUrl !== prev.url) URL.revokeObjectURL(editedUrl);
-      editedBlob = prev.blob; editedUrl = prev.url;
-      if (editedUrl) {
-        img.src = editedUrl;
-        ctx.onBinaryEdit?.({ dirty: true, mimeType: getExportMime(), getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
-      } else {
-        img.src = url;
-        if (editReset) editReset.hidden = true;
-        ctx.onBinaryEdit?.(null);
-      }
-      if (undoBtn) undoBtn.hidden = undoStack.length === 0;
-    });
+    undoBtn?.addEventListener('click', doUndo);
+    redoBtn?.addEventListener('click', doRedo);
   }
+
+  // Ctrl/Cmd+Z = undo, Ctrl+Y or Ctrl/Cmd+Shift+Z = redo — only while this image
+  // view is connected, not in ASCII mode, and not typing in a field.
+  function onEditKey(e) {
+    if (!canEdit || asciiMode || !host.isConnected) return;
+    const t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    const mod = e.ctrlKey || e.metaKey;
+    if (!mod) return;
+    const k = e.key.toLowerCase();
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); doUndo(); }
+    else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); doRedo(); }
+  }
+  document.addEventListener('keydown', onEditKey);
 
   // Crop tool — drag a rectangle on the image to select a region, then apply to commit
   function cropExitMode() {
@@ -1106,5 +1142,5 @@ export async function render(intake, ctx = {}) {
     });
   }
 
-  return { parentNode: host, revoke: () => { URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); undoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
 }

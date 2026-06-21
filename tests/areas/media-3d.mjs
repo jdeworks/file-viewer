@@ -208,6 +208,15 @@ export async function run(ctx) {
   if (editedBytes.len > 1000 && editedBytes.sig.join(',') === '137,80,78,71') pass('image text edit produces dirty PNG bytes'); else fail('image edit bytes: ' + JSON.stringify(editedBytes));
   const hasDirtyImage = await page.evaluate(() => window.__fv.hasUnsavedWork());
   if (hasDirtyImage) pass('edited image counts as unsaved work'); else fail('edited image did not count as unsaved');
+  // Undo reverts the edit (back to clean), redo re-applies it (dirty again).
+  await page.click('#previewHost .imgv-undo');
+  await page.waitForFunction(() => !window.__fv.state.binaryEdit, null, { timeout: 5000 }).catch(() => {});
+  const afterUndo = await page.evaluate(() => ({ dirty: !!window.__fv.state.binaryEdit, redoShown: !document.querySelector('#previewHost .imgv-redo').hidden }));
+  if (!afterUndo.dirty && afterUndo.redoShown) pass('image undo reverts edit + reveals redo'); else fail('after undo: ' + JSON.stringify(afterUndo));
+  await page.click('#previewHost .imgv-redo');
+  await page.waitForFunction(() => !!window.__fv.state.binaryEdit, null, { timeout: 5000 }).catch(() => {});
+  const afterRedo = await page.evaluate(() => !!window.__fv.state.binaryEdit);
+  if (afterRedo) pass('image redo re-applies edit'); else fail('redo did not re-apply edit');
   await page.evaluate(() => window.__fv.downloadCurrent());
   const cleanAfterDownload = await page.evaluate(() => !window.__fv.hasUnsavedWork());
   if (cleanAfterDownload) pass('edited image download clears unsaved state'); else fail('edited image stayed dirty after download');
