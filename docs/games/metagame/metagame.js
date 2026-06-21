@@ -33,6 +33,17 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
+// Dev-menu unlock is a *machine-local* setting (a debug affordance), kept in its own
+// localStorage key so it survives "Reset save" — resetting the game should not re-lock
+// the dev tools on a machine where they were already unlocked.
+const DEV_KEY = 'fv:games:mg:dev';
+function devUnlockedPersisted() {
+  try { return localStorage.getItem(DEV_KEY) === '1'; } catch { return false; }
+}
+function persistDevUnlock() {
+  try { localStorage.setItem(DEV_KEY, '1'); } catch { /* storage may be blocked */ }
+}
+
 function ensureStageStates(save) {
   for (const mod of registry.listStages()) {
     const id = mod.stageMeta.id;
@@ -127,7 +138,7 @@ export function mount(host, { onExit } = {}) {
     });
     paintSfx();
     const devBtn = host.querySelector('[data-action="dev"]');
-    if (saveData.global.devUnlocked) devBtn.hidden = false;
+    if (saveData.global.devUnlocked || devUnlockedPersisted()) devBtn.hidden = false;
     devBtn.addEventListener('click', () => toggleDevMenu());
     const nav = host.querySelector('.mg-v3-stages');
     nav.replaceChildren(...registry.listStages().filter((mod) => saveData.unlockedStages.includes(mod.stageMeta.id)).map((mod) => {
@@ -199,6 +210,7 @@ export function mount(host, { onExit } = {}) {
         bellClicks = [];
         panel.hidden = true;
         saveData.global.devUnlocked = true;
+        persistDevUnlock();
         persist();
         const devBtn = host.querySelector('[data-action="dev"]');
         if (devBtn) devBtn.hidden = false;
@@ -218,6 +230,13 @@ export function mount(host, { onExit } = {}) {
       const id = mod.stageMeta.id;
       return `<button type="button" data-dev="stage" data-n="${id}">${id}</button>`;
     }).join('');
+    // Boss-jump buttons: "1b", "2b" … land you on the stage with its boss already
+    // reachable (stage 1: max bits + every tier owned so Confront opens; stages 2-10:
+    // the stage's requiredAction pre-fired so the boss lock is lifted).
+    const bossBtns = registry.listStages().map((mod) => {
+      const id = mod.stageMeta.id;
+      return `<button type="button" data-dev="boss" data-n="${id}">${id}b</button>`;
+    }).join('');
     box.innerHTML = `
       <div class="mg-dev">
         <div class="mg-dev-title">🛠 Dev menu <button type="button" data-dev="close" class="mg-dev-x">✕</button></div>
@@ -227,27 +246,46 @@ export function mount(host, { onExit } = {}) {
           <button type="button" data-dev="bits" data-e="12">1T</button>
           <button type="button" data-dev="bits" data-e="93">1ba</button></div>
         <div class="mg-dev-row"><span>Jump to stage:</span>${stageBtns}</div>
+        <div class="mg-dev-row"><span>Jump to boss:</span>${bossBtns}</div>
         <div class="mg-dev-row">
           <button type="button" data-dev="unlock-all">Unlock all stages</button>
           <button type="button" data-dev="reset">Reset save</button></div>
       </div>`;
     box.hidden = false;
+    const seedStage1Bits = (e) => {
+      const s = saveData.stageState[1];
+      s.bits = { m: 1, e }; s.totalBits = { m: 1, e }; s.tabsUnlocked = true;
+      s.milestones = [...new Set([...(s.milestones || []), 'score-unlock', 'sound-unlock'])];
+      s.helpersUnlocked = true;
+      // Own ≥1 of every Stage-1 tier so the boss "Confront" gate (allSubStagesOwned) is met.
+      s.owned = { 's1-mult': 5, 's1-box': 5, 's1-boost': 5, 's1-cluster': 5, 's1-array': 5, 's1-neural': 5, 's1-quantum': 5 };
+    };
     box.querySelectorAll('[data-dev]').forEach((b) => b.addEventListener('click', () => {
       const kind = b.dataset.dev;
       if (kind === 'close') { box.hidden = true; box.innerHTML = ''; return; }
       if (kind === 'bits') {
-        const e = Number(b.dataset.e);
-        const s = saveData.stageState[1];
-        s.bits = { m: 1, e }; s.totalBits = { m: 1, e }; s.tabsUnlocked = true;
-        s.milestones = [...new Set([...(s.milestones || []), 'score-unlock', 'sound-unlock'])];
-        s.helpersUnlocked = true;
-        // Own ≥1 of every Stage-1 tier so the boss "Confront" gate (allSubStagesOwned) is met.
-        s.owned = { 's1-mult': 5, 's1-box': 5, 's1-boost': 5, 's1-cluster': 5, 's1-array': 5, 's1-neural': 5, 's1-quantum': 5 };
+        seedStage1Bits(Number(b.dataset.e));
         if (saveData.currentStage !== 1) saveData.currentStage = 1;
         persist(); render();
       } else if (kind === 'stage') {
         const n = Number(b.dataset.n);
         for (let i = 1; i <= n; i++) if (!saveData.unlockedStages.includes(i)) saveData.unlockedStages.push(i);
+        selectStage(n);
+      } else if (kind === 'boss') {
+        const n = Number(b.dataset.n);
+        for (let i = 1; i <= n; i++) if (!saveData.unlockedStages.includes(i)) saveData.unlockedStages.push(i);
+        if (n === 1) {
+          seedStage1Bits(93); // 1ba — enough to afford the boss ticket
+        } else {
+          // Pre-fire the stage's required action so its boss lock lifts on mount.
+          const req = registry.getStageMeta(n)?.requiredAction;
+          if (req) {
+            const dot = req.indexOf('.');
+            const stage = Number(req.slice(0, dot));
+            const action = req.slice(dot + 1);
+            actions.setAction(stage, action, { source: 'dev' });
+          }
+        }
         selectStage(n);
       } else if (kind === 'unlock-all') {
         for (let i = 1; i <= 10; i++) if (!saveData.unlockedStages.includes(i)) saveData.unlockedStages.push(i);
