@@ -256,6 +256,31 @@ export async function run(ctx) {
   await page.evaluate(() => window.__fv.downloadCurrent());
   await page.waitForTimeout(150);
 
+  // ── Autosave restore banner — must restore the CURRENT file's save, not the first one seen.
+  // The banner element + its Restore listener are static/reused across files; a stale closure used
+  // to make Restore on a later file write the first file's text. Drive both opens in ONE page
+  // session (direct open, no harness reload) so the reused listener is actually exercised. ──
+  await page.goto(origin, { waitUntil: 'load' });
+  await waitForFv();
+  await page.evaluate(() => {
+    const mk = (fn, text) => localStorage.setItem('fv:autosave:' + fn, JSON.stringify({ text, ts: Date.now(), filename: fn }));
+    mk('welcome.md', 'AUTOSAVE_WELCOME_MARKER');
+    mk('sample.txt', 'AUTOSAVE_SAMPLE_MARKER');
+  });
+  await page.evaluate((l) => window.__fv.openExampleByLabel(l), 'Welcome.md');
+  await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
+  await page.waitForSelector('#autosaveBanner:not([hidden])', { timeout: 15000 });
+  await page.click('#autosaveBanner .autosave-restore');
+  const restoredWelcome = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  await page.evaluate((l) => window.__fv.openExampleByLabel(l), 'Sample.txt');
+  await page.waitForSelector('#autosaveBanner:not([hidden])', { timeout: 15000 });
+  await page.click('#autosaveBanner .autosave-restore');
+  const restoredSample = await page.evaluate(() => window.__fv.state.rawview.getValue());
+  if (restoredWelcome.includes('AUTOSAVE_WELCOME_MARKER') && restoredSample.includes('AUTOSAVE_SAMPLE_MARKER') && !restoredSample.includes('AUTOSAVE_WELCOME_MARKER'))
+    pass('autosave Restore applies the current file’s save, not the first-seen one');
+  else fail('autosave restore: welcome=' + JSON.stringify(restoredWelcome.slice(0, 60)) + ' sample=' + JSON.stringify(restoredSample.slice(0, 60)));
+  await page.evaluate(() => { try { localStorage.removeItem('fv:autosave:welcome.md'); localStorage.removeItem('fv:autosave:sample.txt'); } catch {} });
+
   // ── Preview sizing quick modes ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md');
