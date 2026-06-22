@@ -6,10 +6,12 @@ import { loadGlobal, vendor } from '../../core/script-loader.js';
 import { loadTemplate, fill } from '../../core/template.js';
 import { isSvg, mimeFor, dimensions } from './imglib.js';
 import { recordStage3AsciiActivation } from '../../games/metagame/viewer-actions.js';
-import { hexToRgba, floodFill, bgFloodFill } from './fill.js';
+import { hexToRgba, floodFill } from './fill.js';
 import { createEditCore } from './editor-core.js';
 import { mountFilters } from './edit-filters.js';
 import { mountTextTool } from './edit-text.js';
+import { mountGeometry } from './edit-geometry.js';
+import { mountBg } from './edit-bg.js';
 
 // Toolbar markup lives in sibling .html templates (real HTML, easy to extend).
 // doc.html is the shell (fit/zoom/ascii bar + stage + ascii-out) with an
@@ -94,13 +96,10 @@ export async function render(intake, ctx = {}) {
   const fResetBtn = canEdit ? host.querySelector('.imgv-f-reset') : null;
   let natural = 0, fit = true, zoom = 1, asciiMode = false;
   let jxlPngBytes = null;   // decoded PNG bytes for JXL (display + ASCII source)
+  // Pencil/eraser/fill state stays here (the draw overlay is coupled to the
+  // pan/zoom view); text/crop/BG state lives in their respective tool modules.
   let drawMode = null, isEraserStroke = false;
-  let textPlaceMode = false, textPlaceX = 0.5, textPlaceY = 0.5;
-  let bgPickMode = false, bgSrcData = null, bgSrcW = 0, bgSrcH = 0, bgPickX = -1, bgPickY = -1, bgPreviewUrl = null;
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
-  // Crop state
-  let cropMode = false, cropOverlay = null, cropSelBox = null;
-  let cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0, cropDragging = false, cropHasRegion = false;
 
   // Shared edit state + commit pipeline — undo/redo, blob commits, the
   // onBinaryEdit hook, and full reset all live in editor-core so every tool
@@ -152,6 +151,9 @@ export async function render(intake, ctx = {}) {
     applyPan();
   }
   function resetView() { panX = 0; panY = 0; }
+  // View hook handed to geometry tools so a dimension-changing edit (rotate/resize)
+  // can update the stored natural width + relayout.
+  const view = { setNatural: (n) => { natural = n; apply(); } };
   host.querySelector('.imgv-fit').addEventListener('click', () => { fit = true; resetView(); apply(); });
   host.querySelector('.imgv-100').addEventListener('click', () => { fit = false; zoom = 1; resetView(); apply(); });
   host.querySelector('.imgv-up').addEventListener('click', () => { fit = false; zoom = Math.min(16, zoom * 1.25); apply(); });
@@ -332,51 +334,10 @@ export async function render(intake, ctx = {}) {
     core.reset();
   });
 
-  // Helper: draw the current image onto a canvas with a transform, then commit it as the new edit.
-  async function applyTransform(transformFn, newW, newH) {
-    const base = new Image();
-    base.decoding = 'async';
-    base.src = core.editedUrl || url;
-    await base.decode();
-    const srcW = base.naturalWidth, srcH = base.naturalHeight;
-    const canvas = document.createElement('canvas');
-    canvas.width = newW(srcW, srcH);
-    canvas.height = newH(srcW, srcH);
-    const g = canvas.getContext('2d');
-    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
-    transformFn(g, srcW, srcH, canvas.width, canvas.height);
-    g.drawImage(base, 0, 0);
-    core.pushUndo();
-    if (!await core.commitCanvas(canvas)) return;
-    // The edited image has new dimensions (rotate swaps W/H) — keep zoom correct.
-    natural = canvas.width;
-    apply();
-  }
-
-  // Rotate left (CCW 90°): new canvas is h×w, pivot at center, rotate -90°, then
-  // draw centered (offset by HALF THE SOURCE dims, not the rotated dims).
-  rotLBtn?.addEventListener('click', () => applyTransform(
-    (g, sw, sh, cw, ch) => { g.translate(cw / 2, ch / 2); g.rotate(-Math.PI / 2); g.translate(-sw / 2, -sh / 2); },
-    (sw, sh) => sh, (sw, sh) => sw,
-  ));
-
-  // Rotate right (CW 90°): new canvas is h×w, pivot at center, rotate +90°
-  rotRBtn?.addEventListener('click', () => applyTransform(
-    (g, sw, sh, cw, ch) => { g.translate(cw / 2, ch / 2); g.rotate(Math.PI / 2); g.translate(-sw / 2, -sh / 2); },
-    (sw, sh) => sh, (sw, sh) => sw,
-  ));
-
-  // Flip horizontal: scale(-1,1) around center
-  flipHBtn?.addEventListener('click', () => applyTransform(
-    (g, sw, sh, cw, ch) => { g.translate(cw, 0); g.scale(-1, 1); },
-    (sw) => sw, (sw, sh) => sh,
-  ));
-
-  // Flip vertical: scale(1,-1) around center
-  flipVBtn?.addEventListener('click', () => applyTransform(
-    (g, sw, sh, cw, ch) => { g.translate(0, ch); g.scale(1, -1); },
-    (sw) => sw, (sw, sh) => sh,
-  ));
+  // Geometry — rotate / flip / crop / resize (edit-geometry.js). Crop registers
+  // in editTools so panning stands down during a crop drag.
+  const geometryTool = mountGeometry({ host, img, url, mime, core, view, els });
+  editTools.push(geometryTool);
 
   // Filters — live CSS preview + bake on Apply (edit-filters.js).
   mountFilters({ img, mime, core, els });
@@ -602,263 +563,10 @@ export async function render(intake, ctx = {}) {
   }
   document.addEventListener('keydown', onEditKey);
 
-  // Crop tool — drag a rectangle on the image to select a region, then apply to commit
-  function cropExitMode() {
-    cropMode = false;
-    cropHasRegion = false;
-    cropDragging = false;
-    if (cropOverlay) { cropOverlay.remove(); cropOverlay = null; cropSelBox = null; }
-    if (cropBtn) { cropBtn.classList.remove('active'); }
-    if (cropApplyBtn) cropApplyBtn.hidden = true;
-    if (cropCancelBtn) cropCancelBtn.hidden = true;
-  }
+  // Background removal — sample a colour, flood to transparent, commit as PNG
+  // (edit-bg.js). Registers in editTools so panning stands down while picking.
+  const bgTool = mountBg({ img, url, core, els });
+  editTools.push(bgTool);
 
-  function cropEnterMode() {
-    cropMode = true;
-    cropHasRegion = false;
-    const stage = host.querySelector('.imgv-stage');
-    stage.style.position = 'relative';
-    cropOverlay = document.createElement('div');
-    cropOverlay.style.cssText = 'position:absolute;inset:0;cursor:crosshair;z-index:5;';
-    cropSelBox = document.createElement('div');
-    cropSelBox.style.cssText = 'position:absolute;border:2px dashed #0af;box-sizing:border-box;background:rgba(0,170,255,0.08);pointer-events:none;display:none;';
-    cropOverlay.appendChild(cropSelBox);
-    stage.appendChild(cropOverlay);
-    if (cropBtn) cropBtn.classList.add('active');
-    if (cropCancelBtn) cropCancelBtn.hidden = false;
-
-    cropOverlay.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      cropOverlay.setPointerCapture(e.pointerId);
-      const r = img.getBoundingClientRect();
-      cropStartX = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      cropStartY = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
-      cropEndX = cropStartX; cropEndY = cropStartY;
-      cropDragging = true; cropHasRegion = false;
-      cropSelBox.style.display = 'none';
-      if (cropApplyBtn) cropApplyBtn.hidden = true;
-    });
-
-    cropOverlay.addEventListener('pointermove', (e) => {
-      if (!cropDragging) return;
-      e.preventDefault();
-      const r = img.getBoundingClientRect();
-      cropEndX = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      cropEndY = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
-      // Update the selection box overlay using img bounding rect relative to stage
-      const stageR = host.querySelector('.imgv-stage').getBoundingClientRect();
-      const imgR = img.getBoundingClientRect();
-      const ox = imgR.left - stageR.left;
-      const oy = imgR.top - stageR.top;
-      const x1 = Math.min(cropStartX, cropEndX) * imgR.width + ox;
-      const y1 = Math.min(cropStartY, cropEndY) * imgR.height + oy;
-      const x2 = Math.max(cropStartX, cropEndX) * imgR.width + ox;
-      const y2 = Math.max(cropStartY, cropEndY) * imgR.height + oy;
-      cropSelBox.style.left = x1 + 'px'; cropSelBox.style.top = y1 + 'px';
-      cropSelBox.style.width = (x2 - x1) + 'px'; cropSelBox.style.height = (y2 - y1) + 'px';
-      cropSelBox.style.display = 'block';
-    });
-
-    cropOverlay.addEventListener('pointerup', (e) => {
-      if (!cropDragging) return;
-      cropDragging = false;
-      const r = img.getBoundingClientRect();
-      cropEndX = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      cropEndY = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
-      // Check minimum size (10×10 natural px)
-      const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
-      const selW = Math.abs(cropEndX - cropStartX) * nw;
-      const selH = Math.abs(cropEndY - cropStartY) * nh;
-      if (selW >= 10 && selH >= 10) {
-        cropHasRegion = true;
-        if (cropApplyBtn) cropApplyBtn.hidden = false;
-      }
-    });
-  }
-
-  async function applyCrop() {
-    if (!cropHasRegion) return;
-    const nw = img.naturalWidth, nh = img.naturalHeight;
-    const x1 = Math.round(Math.min(cropStartX, cropEndX) * nw);
-    const y1 = Math.round(Math.min(cropStartY, cropEndY) * nh);
-    const x2 = Math.round(Math.max(cropStartX, cropEndX) * nw);
-    const y2 = Math.round(Math.max(cropStartY, cropEndY) * nh);
-    const cw = Math.max(1, x2 - x1), ch = Math.max(1, y2 - y1);
-    const base = new Image(); base.decoding = 'async';
-    base.src = core.editedUrl || url;
-    await base.decode();
-    const canvas = document.createElement('canvas');
-    canvas.width = cw; canvas.height = ch;
-    const g = canvas.getContext('2d');
-    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, cw, ch); }
-    g.drawImage(base, -x1, -y1);
-    core.pushUndo();
-    if (!await core.commitCanvas(canvas)) return;
-    cropExitMode();
-  }
-
-  if (cropBtn) {
-    cropBtn.addEventListener('click', () => {
-      if (cropMode) { cropExitMode(); } else { cropEnterMode(); }
-    });
-    cropApplyBtn?.addEventListener('click', () => {
-      applyCrop().catch((e) => { if (cropApplyBtn) cropApplyBtn.title = e.message || String(e); });
-    });
-    cropCancelBtn?.addEventListener('click', cropExitMode);
-  }
-
-  // Resize tool — show a panel with width/height inputs, apply draws to a new canvas at that size
-  const resizeUnit = canEdit ? host.querySelector('.imgv-resize-unit') : null;
-  const resizeResample = canEdit ? host.querySelector('.imgv-resize-resample') : null;
-  const pctMode = () => resizeUnit?.value === 'pct';
-  function resizePopulate() {
-    if (!resizeW || !resizeH) return;
-    if (pctMode()) { resizeW.value = '100'; resizeH.value = '100'; }
-    else { resizeW.value = String(img.naturalWidth || ''); resizeH.value = String(img.naturalHeight || ''); }
-  }
-  // Resolve the W/H inputs to absolute target pixels (percent is of the natural size).
-  function resizeTargetPx() {
-    const w = parseFloat(resizeW?.value), h = parseFloat(resizeH?.value);
-    if (pctMode()) return { tw: Math.round((img.naturalWidth || 0) * w / 100), th: Math.round((img.naturalHeight || 0) * h / 100) };
-    return { tw: Math.round(w), th: Math.round(h) };
-  }
-
-  if (resizeBtn) {
-    resizeBtn.addEventListener('click', () => {
-      if (!resizePanel) return;
-      const open = resizePanel.hidden === false;
-      resizePanel.hidden = open;
-      if (!open) resizePopulate();
-    });
-    resizeUnit?.addEventListener('change', resizePopulate);
-
-    resizeW?.addEventListener('input', () => {
-      if (!resizeLock?.checked) return;
-      // In % mode aspect is preserved by matching percentages; in px mode by ratio.
-      if (pctMode()) { if (resizeH) resizeH.value = resizeW.value; return; }
-      const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
-      const w = parseInt(resizeW.value, 10);
-      if (w > 0 && resizeH) resizeH.value = String(Math.round(w * nh / nw));
-    });
-
-    resizeH?.addEventListener('input', () => {
-      if (!resizeLock?.checked) return;
-      if (pctMode()) { if (resizeW) resizeW.value = resizeH.value; return; }
-      const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
-      const h = parseInt(resizeH.value, 10);
-      if (h > 0 && resizeW) resizeW.value = String(Math.round(h * nw / nh));
-    });
-
-    resizeApplyBtn?.addEventListener('click', async () => {
-      const { tw, th } = resizeTargetPx();
-      if (!tw || !th || tw < 1 || th < 1) return;
-      const base = new Image(); base.decoding = 'async';
-      base.src = core.editedUrl || url;
-      await base.decode();
-      const canvas = document.createElement('canvas');
-      canvas.width = tw; canvas.height = th;
-      const g = canvas.getContext('2d');
-      // Resampling: pixelated = nearest-neighbour (crisp pixel art / hard downscale);
-      // smooth = bilinear-ish at the chosen quality.
-      const rs = resizeResample?.value || 'high';
-      g.imageSmoothingEnabled = rs !== 'pixelated';
-      if (g.imageSmoothingEnabled) g.imageSmoothingQuality = rs === 'medium' ? 'medium' : 'high';
-      if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, tw, th); }
-      g.drawImage(base, 0, 0, tw, th);
-      core.pushUndo();
-      if (!await core.commitCanvas(canvas)) return;
-      if (resizePanel) resizePanel.hidden = true;
-    });
-
-    resizeCancelBtn?.addEventListener('click', () => {
-      if (resizePanel) resizePanel.hidden = true;
-    });
-  }
-
-  // BG removal — bgFloodFill (./fill.js) returns the transparency-punched RGBA
-  // bytes; wrap them in an ImageData for putImageData.
-  function bgFilledImageData() {
-    const dst = bgFloodFill(bgSrcData, bgSrcW, bgSrcH, bgPickX, bgPickY, parseInt(bgTol.value, 10));
-    return new ImageData(dst, bgSrcW, bgSrcH);
-  }
-
-  function bgExitMode() {
-    bgPickMode = false;
-    bgPickX = bgPickY = -1;
-    bgSrcData = null;
-    if (bgPreviewUrl) { URL.revokeObjectURL(bgPreviewUrl); bgPreviewUrl = null; }
-    bgBtn?.classList.remove('active');
-    img.style.cursor = '';
-    if (bgTol) bgTol.hidden = true;
-    if (bgOk) bgOk.hidden = true;
-    if (bgX) bgX.hidden = true;
-  }
-
-  function bgRunPreview() {
-    if (!bgSrcData || bgPickX < 0) return;
-    const filled = bgFilledImageData();
-    const c = document.createElement('canvas'); c.width = bgSrcW; c.height = bgSrcH;
-    c.getContext('2d').putImageData(filled, 0, 0);
-    c.toBlob((blob) => {
-      if (!blob) return;
-      if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl);
-      bgPreviewUrl = URL.createObjectURL(blob);
-      img.src = bgPreviewUrl;
-    }, 'image/png');
-  }
-
-  if (bgBtn) {
-    bgBtn.addEventListener('click', () => {
-      if (bgPickMode) { bgExitMode(); if (core.editedUrl) img.src = core.editedUrl; else img.src = url; return; }
-      bgPickMode = true;
-      bgPickX = bgPickY = -1;
-      bgSrcData = null;
-      bgBtn.classList.add('active');
-      img.style.cursor = 'crosshair';
-      bgBtn.title = 'Click the background color on the image';
-    });
-
-    img.addEventListener('click', async (e) => {
-      if (!bgPickMode) return;
-      if (bgPickX >= 0) return; // already picked, re-pick not allowed until cancel
-      const base = new Image(); base.decoding = 'async';
-      base.src = core.editedUrl || url;
-      await base.decode();
-      const c = document.createElement('canvas');
-      c.width = base.naturalWidth; c.height = base.naturalHeight;
-      const g = c.getContext('2d'); g.drawImage(base, 0, 0);
-      bgSrcData = g.getImageData(0, 0, c.width, c.height);
-      bgSrcW = c.width; bgSrcH = c.height;
-      const r = img.getBoundingClientRect();
-      bgPickX = Math.max(0, Math.min(bgSrcW - 1, Math.round((e.clientX - r.left) * bgSrcW / r.width)));
-      bgPickY = Math.max(0, Math.min(bgSrcH - 1, Math.round((e.clientY - r.top) * bgSrcH / r.height)));
-      if (bgTol) bgTol.hidden = false;
-      if (bgOk) bgOk.hidden = false;
-      if (bgX) bgX.hidden = false;
-      bgRunPreview();
-    });
-
-    bgTol?.addEventListener('input', bgRunPreview);
-
-    bgOk?.addEventListener('click', () => {
-      if (!bgSrcData || bgPickX < 0) return;
-      const filled = bgFilledImageData();
-      const c = document.createElement('canvas'); c.width = bgSrcW; c.height = bgSrcH;
-      c.getContext('2d').putImageData(filled, 0, 0);
-      c.toBlob((blob) => {
-        if (!blob) return;
-        core.pushUndo();
-        if (exportFmt) exportFmt.value = 'image/png';
-        core.commitBlob(blob, { mime: 'image/png' });
-        bgExitMode();
-      }, 'image/png');
-    });
-
-    bgX?.addEventListener('click', () => {
-      bgExitMode();
-      if (core.editedUrl) img.src = core.editedUrl; else img.src = url;
-    });
-  }
-
-  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
 }
