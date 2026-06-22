@@ -384,6 +384,31 @@ export async function run(ctx) {
   const rawMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
   if (rawMode === 'raw') pass('.env raw view remains explicitly available'); else fail('env raw mode: ' + rawMode);
 
+  // ── .env form editor: view switch, undo/redo, credential masking, comment round-trip ──
+  // cal-com.env has DATABASE_URL=postgresql://calcom:s3cr3tp4ss@… — the credentialed value must be
+  // detected (password-masked in the form); the read-only preview's masking is unit-tested separately.
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('cal-com.env');
+  await page.waitForFunction(() => typeof window.__fv !== 'undefined', null, { timeout: 10000 });
+  await page.click('#envFormBtn');
+  await page.waitForSelector('#envFormHost .env-form', { timeout: 8000, state: 'visible' });
+  const formMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
+  if (formMode === 'raw') pass('.env "edit as form" switches to the raw pane (form visible)'); else fail('env form mode: ' + formMode);
+  const formBits = await page.evaluate(() => ({
+    undo: !!document.querySelector('#envFormHost .env-btn[title^="Undo"]'),
+    redo: !!document.querySelector('#envFormHost .env-btn[title^="Redo"]'),
+    pwd: [...document.querySelectorAll('#envFormHost .env-val')].some((i) => i.type === 'password'),
+  }));
+  if (formBits.undo && formBits.redo) pass('.env form has Undo/Redo controls'); else fail('env form undo/redo missing: ' + JSON.stringify(formBits));
+  if (formBits.pwd) pass('.env form masks credentialed value (postgres://…) as password'); else fail('env form pwd missing');
+  // Comment a var, then un-comment it back (revert).
+  const v0 = await page.$$eval('#envFormHost .env-var-row', (e) => e.length);
+  await page.evaluate(() => document.querySelector('#envFormHost .env-var-row .env-toggle').click());
+  const vCommented = await page.$$eval('#envFormHost .env-var-row', (e) => e.length);
+  await page.evaluate(() => document.querySelector('#envFormHost .env-uncomment').click());
+  const vBack = await page.$$eval('#envFormHost .env-var-row', (e) => e.length);
+  if (vCommented === v0 - 1 && vBack === v0) pass('.env form comment-out → un-comment round-trip (' + v0 + '→' + vCommented + '→' + vBack + ')'); else fail('env comment round-trip: ' + v0 + '/' + vCommented + '/' + vBack);
+
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('ssh-config');
   await page.waitForSelector('#previewHost .sc-root', { timeout: 12000 });

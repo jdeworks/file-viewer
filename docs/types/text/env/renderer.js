@@ -13,6 +13,13 @@ function isSensitive(key) {
   return SENSITIVE.test(key);
 }
 
+// Credentials embedded in a connection-string value (e.g. DATABASE_URL=postgres://user:pass@host),
+// where the KEY itself isn't flagged sensitive. Redact only the password portion (user/host stay
+// visible) so the value is still informative.
+const URL_CREDS = /(:\/\/[^\s/:@]+:)([^\s/@]+)(@)/g;
+function hasUrlCreds(v) { URL_CREDS.lastIndex = 0; return URL_CREDS.test(v || ''); }
+function redactUrlCreds(v) { return String(v || '').replace(URL_CREDS, (m, a, p, c) => a + '••••' + c); }
+
 function parseEnv(text) {
   const entries = [];
   const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
@@ -78,6 +85,14 @@ function renderValue(key, value, sensitive) {
       + `<button class="env-reveal-btn" onclick="envReveal(this)" aria-label="Reveal value">reveal</button>`;
   }
 
+  // Value with embedded URL credentials — show the value with only the password masked.
+  if (hasUrlCreds(value)) {
+    const masked = esc(redactUrlCreds(value));
+    const full = esc(value);
+    return `<span class="env-secret-val env-cred-val" data-val="${full}" data-redacted="${masked}">${masked}</span>`
+      + `<button class="env-reveal-btn" onclick="envReveal(this)" aria-label="Reveal value">reveal</button>`;
+  }
+
   // NODE_ENV badge
   if (key === 'NODE_ENV') {
     const lv = value.toLowerCase();
@@ -104,7 +119,7 @@ export async function render(intake, _ctx) {
   const entries = parseEnv(text);
 
   const pairs = entries.filter((e) => e.type === 'pair');
-  const sensitiveCount = pairs.filter((e) => isSensitive(e.key)).length;
+  const sensitiveCount = pairs.filter((e) => isSensitive(e.key) || hasUrlCreds(e.value)).length;
 
   const hasSensitive = sensitiveCount > 0;
 
@@ -162,13 +177,13 @@ body.fv-dark .env-reveal-btn:hover, body.fv-dark .env-expand-btn:hover { backgro
 <script>
 function envReveal(btn) {
   var span = btn.previousElementSibling;
-  var isHidden = span.textContent.includes('•');
-  if (isHidden) {
+  var masked = span.dataset.redacted || '••••••••••';
+  if (span.textContent === span.dataset.val) {
+    span.textContent = masked;
+    btn.textContent = 'reveal';
+  } else {
     span.textContent = span.dataset.val;
     btn.textContent = 'hide';
-  } else {
-    span.textContent = '••••••••••';
-    btn.textContent = 'reveal';
   }
 }
 function envExpand(btn) {
@@ -216,7 +231,8 @@ function envExpand(btn) {
     if (entry.type === 'pair') {
       const sensitive = isSensitive(entry.key);
       const valHtml = renderValue(entry.key, entry.value, sensitive);
-      const sensitiveCell = sensitive
+      const redacted = sensitive || hasUrlCreds(entry.value);
+      const sensitiveCell = redacted
         ? `<td class="env-sensitive-icon" title="Sensitive — redacted by default">&#x1F512;</td>`
         : `<td></td>`;
       rows.push(`<tr>
