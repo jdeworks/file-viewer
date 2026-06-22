@@ -5,29 +5,38 @@ import * as bell from './bell.js';
 import * as bts from './bts.js';
 import { createStageRegistry } from './registry.js';
 import { createViewerBridge } from './viewer-bridge.js';
-import * as stage1 from './stages/stage1/index.js';
-import * as stage2 from './stages/stage2/index.js';
-import * as stage3 from './stages/stage3/index.js';
-import * as stage4 from './stages/stage4/index.js';
-import * as stage5 from './stages/stage5/index.js';
-import * as stage6 from './stages/stage6/index.js';
-import * as stage7 from './stages/stage7/index.js';
-import * as stage8 from './stages/stage8/index.js';
-import * as stage9 from './stages/stage9/index.js';
-import * as stage10 from './stages/stage10/index.js';
+import { MANIFEST_FIELDS, listStageMetas, stageMetaFor, loadStage } from './stage-manifest.js';
 
-const registry = createStageRegistry([
-  stage1,
-  stage2,
-  stage3,
-  stage4,
-  stage5,
-  stage6,
-  stage7,
-  stage8,
-  stage9,
-  stage10,
-]);
+// Stages are loaded lazily (one stage's module graph at a time) rather than eagerly importing all
+// ten up front. The registry starts empty and each stage module is registered the first time it's
+// loaded; the hub's all-stages views (nav, title, dev menu, bts) read the lightweight manifest.
+const registry = createStageRegistry([]);
+const loadedStages = new Map();
+
+// Load + register a stage module on demand. Validates that its stageMeta matches the manifest
+// (drift guard — the games smoke traverses every stage, so a mismatch fails the smoke).
+async function ensureStageModule(id) {
+  const n = Number(id);
+  if (loadedStages.has(n)) return loadedStages.get(n);
+  const mod = await loadStage(n);
+  const manifest = stageMetaFor(n);
+  for (const field of MANIFEST_FIELDS) {
+    if (mod.stageMeta?.[field] !== manifest?.[field]) {
+      throw new Error(`stage ${n} stageMeta.${field} drifted from stage-manifest.js`);
+    }
+  }
+  if (!registry.getStage(n)) registry.register(mod);
+  loadedStages.set(n, mod);
+  return mod;
+}
+
+// Warm the module cache for the other unlocked stages once the active one is mounted, so switching
+// stages is instant. Best-effort and idle-scheduled; failures are ignored (lazy load will retry).
+function prefetchStages(ids) {
+  const run = () => { for (const id of ids) loadStage(id).catch(() => {}); };
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 2000 });
+  else setTimeout(run, 400);
+}
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -44,12 +53,12 @@ function persistDevUnlock() {
   try { localStorage.setItem(DEV_KEY, '1'); } catch { /* storage may be blocked */ }
 }
 
-function ensureStageStates(save) {
-  for (const mod of registry.listStages()) {
-    const id = mod.stageMeta.id;
-    if (!save.stageState[id] || !Object.keys(save.stageState[id]).length) {
-      save.stageState[id] = mod.defaultState({ save, now: Date.now() });
-    }
+// Seed a single stage's state from its defaultState if it's still an empty placeholder. Seeding is
+// lazy now (only the stage being mounted), since defaultState lives in the lazily-loaded module.
+function seedStageState(save, mod) {
+  const id = mod.stageMeta.id;
+  if (!save.stageState[id] || !Object.keys(save.stageState[id]).length) {
+    save.stageState[id] = mod.defaultState({ save, now: Date.now() });
   }
 }
 
@@ -57,7 +66,9 @@ function createServices(getSave, persist, viewer) {
   actions.bindActionSaveProvider(getSave, persist);
   achievements.bindAchievementSaveProvider(getSave, persist);
   bell.bindBellSaveProvider(getSave, persist);
-  bts.bindBtsSaveProvider(getSave, persist, () => registry);
+  bts.bindBtsSaveProvider(getSave, persist, () => ({
+    getStageMeta: (stage) => registry.getStageMeta(stage) || stageMetaFor(stage),
+  }));
   const off = actions.subscribeToActions((detail) => {
     const record = achievements.unlockAchievementForAction(detail.stage, detail.action, detail);
     if (record) bell.showBell(`${detail.stage}.${detail.action}`, record.title || record.id, { stage: detail.stage, detail });
@@ -76,7 +87,6 @@ function createServices(getSave, persist, viewer) {
 
 export function mount(host, { onExit } = {}) {
   let saveData = loadSave();
-  ensureStageStates(saveData);
   saveData = persistSave(saveData);
 
   const viewer = createViewerBridge();
@@ -99,7 +109,7 @@ export function mount(host, { onExit } = {}) {
     if (!saveData.defeated.includes(id)) saveData.defeated.push(id);
     if (id < 10 && !saveData.unlockedStages.includes(id + 1)) saveData.unlockedStages.push(id + 1);
     saveData.currentStage = id < 10 ? id + 1 : id;
-    bell.showBell(`stage${id}.defeated`, `${registry.getStageMeta(id)?.name || `Stage ${id}`} cleared.`, { stage: id });
+    bell.showBell(`stage${id}.defeated`, `${stageMetaFor(id)?.name || `Stage ${id}`} cleared.`, { stage: id });
     persist();
     render();
   }
@@ -110,7 +120,7 @@ export function mount(host, { onExit } = {}) {
         <header class="mg-v3-head">
           <div>
             <div class="mg-stage-banner">Defragmenter</div>
-            <strong>${esc(registry.getStageMeta(saveData.currentStage)?.name || 'Stage')}</strong>
+            <strong>${esc(stageMetaFor(saveData.currentStage)?.name || 'Stage')}</strong>
           </div>
           <div class="mg-v3-head-actions">
             <button class="mg-dev-btn" type="button" data-action="dev" aria-label="Dev menu" title="Dev menu" hidden>🛠</button>
@@ -141,8 +151,7 @@ export function mount(host, { onExit } = {}) {
     if (saveData.global.devUnlocked || devUnlockedPersisted()) devBtn.hidden = false;
     devBtn.addEventListener('click', () => toggleDevMenu());
     const nav = host.querySelector('.mg-v3-stages');
-    nav.replaceChildren(...registry.listStages().filter((mod) => saveData.unlockedStages.includes(mod.stageMeta.id)).map((mod) => {
-      const meta = mod.stageMeta;
+    nav.replaceChildren(...listStageMetas().filter((meta) => saveData.unlockedStages.includes(meta.id)).map((meta) => {
       const defeated = saveData.defeated.includes(meta.id);
       const button = document.createElement('button');
       button.type = 'button';
@@ -156,16 +165,21 @@ export function mount(host, { onExit } = {}) {
     mountBell(host.querySelector('.mg-v3-bell'));
   }
 
-  function render() {
+  let renderSeq = 0;
+  async function render() {
+    const seq = ++renderSeq;
     mounted?.destroy?.();
     mounted = null;
     renderShell();
-    const mod = registry.getStage(saveData.currentStage) || registry.getStage(1);
-    const stageState = saveData.stageState[mod.stageMeta.id] || mod.defaultState({ save: saveData });
-    saveData.stageState[mod.stageMeta.id] = stageState;
+    const hostEl = host.querySelector('.mg-v3-host');
+    if (hostEl) hostEl.innerHTML = '<div class="mg-v3-loading">loading…</div>';
+    const id = stageMetaFor(saveData.currentStage) ? Number(saveData.currentStage) : 1;
+    const mod = await ensureStageModule(id);
+    if (seq !== renderSeq) return; // a newer render started while this stage loaded
+    seedStageState(saveData, mod);
     mounted = mod.mountStage({
       host: host.querySelector('.mg-v3-host'),
-      state: stageState,
+      state: saveData.stageState[mod.stageMeta.id],
       save: persist,
       actions,
       achievements,
@@ -177,6 +191,7 @@ export function mount(host, { onExit } = {}) {
       onExit,
       onStageComplete: () => completeStage(mod.stageMeta.id),
     });
+    prefetchStages(saveData.unlockedStages.filter((s) => Number(s) !== id));
   }
 
   let bellDotUnsub = null;
@@ -226,15 +241,15 @@ export function mount(host, { onExit } = {}) {
     const box = host.querySelector('.mg-v3-debug');
     if (!box) return;
     if (!box.hidden) { box.hidden = true; box.innerHTML = ''; return; }
-    const stageBtns = registry.listStages().map((mod) => {
-      const id = mod.stageMeta.id;
+    const stageBtns = listStageMetas().map((meta) => {
+      const id = meta.id;
       return `<button type="button" data-dev="stage" data-n="${id}">${id}</button>`;
     }).join('');
     // Boss-jump buttons: "1b", "2b" … land you on the stage with its boss already
     // reachable (stage 1: max bits + every tier owned so Confront opens; stages 2-10:
     // the stage's requiredAction pre-fired so the boss lock is lifted).
-    const bossBtns = registry.listStages().map((mod) => {
-      const id = mod.stageMeta.id;
+    const bossBtns = listStageMetas().map((meta) => {
+      const id = meta.id;
       return `<button type="button" data-dev="boss" data-n="${id}">${id}b</button>`;
     }).join('');
     box.innerHTML = `
@@ -278,7 +293,7 @@ export function mount(host, { onExit } = {}) {
           seedStage1Bits(93); // 1ba — enough to afford the boss ticket
         } else {
           // Pre-fire the stage's required action so its boss lock lifts on mount.
-          const req = registry.getStageMeta(n)?.requiredAction;
+          const req = stageMetaFor(n)?.requiredAction;
           if (req) {
             const dot = req.indexOf('.');
             const stage = Number(req.slice(0, dot));
@@ -291,7 +306,7 @@ export function mount(host, { onExit } = {}) {
         for (let i = 1; i <= 10; i++) if (!saveData.unlockedStages.includes(i)) saveData.unlockedStages.push(i);
         persist(); render();
       } else if (kind === 'reset') {
-        saveData = resetSave(); ensureStageStates(saveData); render();
+        saveData = resetSave(); render();
       }
     }));
   }
@@ -308,7 +323,7 @@ export function mount(host, { onExit } = {}) {
     },
     _debug: {
       getSave: () => saveData,
-      reset: () => { saveData = resetSave(); ensureStageStates(saveData); render(); },
+      reset: () => { saveData = resetSave(); render(); },
       selectStage,
     },
   };

@@ -454,6 +454,7 @@
 .mg-v3-stage { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; cursor: pointer; font-size: 12px; }
 .mg-v3-stage:disabled { opacity: .45; cursor: not-allowed; }
 .mg-v3-host { display: flex; justify-content: center; }
+.mg-v3-loading { padding: 32px; color: #8a93a7; font-size: 0.9rem; letter-spacing: 0.04em; }
 .mg-v3-panel { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
 .mg-v3-bell { position: relative; }
 .stage2-glyph-dungeon { width: min(720px, 100%); background: #0f0e0c; color: #ef9f27; border: 1px solid #5b3a10; border-radius: 8px; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
