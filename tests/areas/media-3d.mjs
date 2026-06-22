@@ -484,6 +484,19 @@ export async function run(ctx) {
   const curveCommitted = await waitNewSrc(curveBefore);
   const curveClosed = await page.waitForFunction(() => document.querySelector('#previewHost .imgv-curves-panel')?.hidden === true, { timeout: 2000 }).then(() => true).catch(() => false);
   if (curvePreviewed && curveChannelPreviewed && curveCommitted && curveClosed) pass('curves: master + per-channel (Red) curves preview + Apply commits a LUT-mapped image + panel closes'); else fail('curves: ' + JSON.stringify({ curvePreviewed, curveChannelPreviewed, curveCommitted, curveClosed }));
+  // Sharpen/Blur: open panel → caches source pixels; pick Sharpen + nudge strength → live
+  // preview swaps img.src; Apply bakes the convolved pixels and the panel closes (edit-convolve.js).
+  await page.click('#previewHost .imgv-convolve-btn');
+  await page.waitForSelector('#previewHost .imgv-convolve-panel:not([hidden])', { timeout: 3000 });
+  const convOpenSrc = await imgSrcNow();
+  await page.selectOption('#previewHost .imgv-conv-type', 'sharpen');
+  await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-conv-strength'); s.value = '80'; s.dispatchEvent(new Event('input', { bubbles: true })); });
+  const convPreviewed = await waitNewSrc(convOpenSrc);
+  const convBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-conv-apply');
+  const convCommitted = await waitNewSrc(convBefore);
+  const convClosed = await page.waitForFunction(() => document.querySelector('#previewHost .imgv-convolve-panel')?.hidden === true, { timeout: 2000 }).then(() => true).catch(() => false);
+  if (convPreviewed && convCommitted && convClosed) pass('sharpen/blur: convolution previews + Apply commits a filtered image + panel closes'); else fail('convolve: ' + JSON.stringify({ convPreviewed, convCommitted, convClosed }));
   // One-click presets (greyscale/sepia/invert) bake straight to pixels via a canvas filter.
   const greyBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-preset-grey');

@@ -132,6 +132,12 @@ function queryEls(host, canEdit) {
     curveApply: qe(".imgv-curve-apply"),
     curveReset: qe(".imgv-curve-reset"),
     curveCancel: qe(".imgv-curve-cancel"),
+    convolveBtn: qe(".imgv-convolve-btn"),
+    convolvePanel: qe(".imgv-convolve-panel"),
+    convType: qe(".imgv-conv-type"),
+    convStrength: qe(".imgv-conv-strength"),
+    convApply: qe(".imgv-conv-apply"),
+    convCancel: qe(".imgv-conv-cancel"),
     presetGrey: qe(".imgv-preset-grey"),
     presetSepia: qe(".imgv-preset-sepia"),
     presetInvert: qe(".imgv-preset-invert")
@@ -1293,6 +1299,123 @@ function mountCurves({ img, mime, core, els }) {
     c.width = sw;
     c.height = sh;
     c.getContext("2d").putImageData(out, 0, 0);
+    core.pushUndo();
+    await core.commitCanvas(c);
+    close(true);
+  });
+  return { teardown() {
+    if (prevUrl) URL.revokeObjectURL(prevUrl);
+  } };
+}
+
+// ../../docs/types/image/convolve.js
+var GAUSS = [1, 2, 1, 2, 4, 2, 1, 2, 1].map((v) => v / 16);
+var IDENT = [0, 0, 0, 0, 1, 0, 0, 0, 0];
+function buildKernel(type, strength) {
+  const s = Math.max(0, Math.min(1, +strength || 0));
+  const out = new Array(9);
+  if (type === "sharpen") {
+    for (let i = 0; i < 9; i++) out[i] = IDENT[i] + s * (IDENT[i] - GAUSS[i]);
+  } else {
+    for (let i = 0; i < 9; i++) out[i] = IDENT[i] * (1 - s) + GAUSS[i] * s;
+  }
+  return out;
+}
+function applyConvolution(data, w, h, kernel) {
+  const out = new Uint8ClampedArray(data.length);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const di = (y * w + x) * 4;
+      let r = 0, g = 0, b = 0, ki = 0;
+      for (let ky = -1; ky <= 1; ky++) {
+        const yy = y + ky < 0 ? 0 : y + ky >= h ? h - 1 : y + ky;
+        for (let kx = -1; kx <= 1; kx++) {
+          const xx = x + kx < 0 ? 0 : x + kx >= w ? w - 1 : x + kx;
+          const si = (yy * w + xx) * 4;
+          const wt = kernel[ki++];
+          r += data[si] * wt;
+          g += data[si + 1] * wt;
+          b += data[si + 2] * wt;
+        }
+      }
+      out[di] = r;
+      out[di + 1] = g;
+      out[di + 2] = b;
+      out[di + 3] = data[di + 3];
+    }
+  }
+  return out;
+}
+
+// ../../docs/types/image/edit-convolve.js
+function mountConvolve({ img, mime, core, els }) {
+  const { convolveBtn, convolvePanel, convType, convStrength, convApply, convCancel } = els;
+  if (!convolveBtn || !convolvePanel) return { teardown() {
+  } };
+  let src = null, sw = 0, sh = 0, openSrc = null, prevUrl = null, raf = 0;
+  function processed() {
+    const kernel = buildKernel(convType?.value || "blur", (+convStrength.value || 0) / 100);
+    const out = new ImageData(applyConvolution(src.data, sw, sh, kernel), sw, sh);
+    const c = document.createElement("canvas");
+    c.width = sw;
+    c.height = sh;
+    c.getContext("2d").putImageData(out, 0, 0);
+    return c;
+  }
+  function preview() {
+    if (raf || !src) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      if (!src) return;
+      processed().toBlob((blob) => {
+        if (!blob || !src) return;
+        const u = URL.createObjectURL(blob);
+        if (prevUrl) URL.revokeObjectURL(prevUrl);
+        prevUrl = u;
+        img.src = u;
+      }, mime === "image/jpeg" ? "image/jpeg" : "image/png");
+    });
+  }
+  function close(applied) {
+    convolvePanel.hidden = true;
+    if (prevUrl) {
+      URL.revokeObjectURL(prevUrl);
+      prevUrl = null;
+    }
+    if (!applied && openSrc) img.src = openSrc;
+    src = null;
+    convolveBtn.classList.remove("active");
+  }
+  convolveBtn.addEventListener("click", async () => {
+    if (!convolvePanel.hidden) {
+      close(false);
+      return;
+    }
+    const base = await core.loadBase();
+    sw = base.naturalWidth;
+    sh = base.naturalHeight;
+    const c = document.createElement("canvas");
+    c.width = sw;
+    c.height = sh;
+    const cx = c.getContext("2d", { willReadFrequently: true });
+    if (mime === "image/jpeg") {
+      cx.fillStyle = "#fff";
+      cx.fillRect(0, 0, sw, sh);
+    }
+    cx.drawImage(base, 0, 0);
+    src = cx.getImageData(0, 0, sw, sh);
+    openSrc = img.src;
+    if (convType) convType.value = "blur";
+    if (convStrength) convStrength.value = "50";
+    convolvePanel.hidden = false;
+    convolveBtn.classList.add("active");
+  });
+  convType?.addEventListener("change", preview);
+  convStrength?.addEventListener("input", preview);
+  convCancel?.addEventListener("click", () => close(false));
+  convApply?.addEventListener("click", async () => {
+    if (!src) return;
+    const c = processed();
     core.pushUndo();
     await core.commitCanvas(c);
     close(true);
@@ -3102,6 +3225,12 @@ async function render(intake, ctx = {}) {
     curveApply,
     curveReset,
     curveCancel,
+    convolveBtn,
+    convolvePanel,
+    convType,
+    convStrength,
+    convApply,
+    convCancel,
     presetGrey,
     presetSepia,
     presetInvert
@@ -3171,6 +3300,12 @@ async function render(intake, ctx = {}) {
     curveApply,
     curveReset,
     curveCancel,
+    convolveBtn,
+    convolvePanel,
+    convType,
+    convStrength,
+    convApply,
+    convCancel,
     presetGrey,
     presetSepia,
     presetInvert,
@@ -3408,6 +3543,7 @@ async function render(intake, ctx = {}) {
   });
   mountFilters({ img, mime, core, els });
   mountCurves({ img, mime, core, els });
+  mountConvolve({ img, mime, core, els });
   const compareBtn = canEdit ? host.querySelector(".imgv-compare") : null;
   let compareView = null;
   function exitCompare() {

@@ -12,6 +12,7 @@ import { createDrawTools } from './draw-overlay.js';
 import { createEditCore } from './editor-core.js';
 import { mountFilters } from './edit-filters.js';
 import { mountCurves } from './edit-curves.js';
+import { mountConvolve } from './edit-convolve.js';
 import { mountTextTool } from './edit-text.js';
 import { mountGeometry } from './edit-geometry.js';
 import { mountBg } from './edit-bg.js';
@@ -88,6 +89,7 @@ export async function render(intake, ctx = {}) {
     filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn,
     levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel,
     curvesBtn, curvesPanel, curveCanvas, curveChannel, curveApply, curveReset, curveCancel,
+    convolveBtn, convolvePanel, convType, convStrength, convApply, convCancel,
     presetGrey, presetSepia, presetInvert,
   } = queryEls(host, canEdit);
   let asciiMode = false;
@@ -152,6 +154,7 @@ export async function render(intake, ctx = {}) {
     filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn,
     levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel,
     curvesBtn, curvesPanel, curveCanvas, curveChannel, curveApply, curveReset, curveCancel,
+    convolveBtn, convolvePanel, convType, convStrength, convApply, convCancel,
     presetGrey, presetSepia, presetInvert,
     bgBtn, bgTol, bgOk, bgX, exportFmt,
     rotLBtn, rotRBtn, flipHBtn, flipVBtn,
@@ -396,6 +399,7 @@ export async function render(intake, ctx = {}) {
 
   // Curves — drag a tone curve; LUT remap baked on Apply (edit-curves.js).
   mountCurves({ img, mime, core, els });
+  mountConvolve({ img, mime, core, els });
 
   // Compare — original vs current (edited): split / overlay / diff. The view is a
   // self-contained lazy module so this renderer stays thin. Original always uses
