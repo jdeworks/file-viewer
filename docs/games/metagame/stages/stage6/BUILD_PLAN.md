@@ -38,11 +38,17 @@ Building the full roguelite deck-builder from `planning/stage6-02-our-game-desig
   enemies.js (corrupt-packet, firewall-entity), tests/combat.test.mjs.
 - ✅ **WP2** done + committed (`8e8a8673`): mapgen.js (3-act DAG, connectivity-guaranteed), run.js
   (run state machine: navigation, rewards pick-1/3, rest, shop, act progression, death), tests/run.test.mjs.
-- ⏭ **WP3** next: full 30+ card pool (extend cards.js / REWARD_POOL), all enemy archetypes + 2 elites
-  + Defragmenter cameo event (enemies.js + event handling in run.js), relics.js, copy.
-- ⏭ **WP4**: UI rework (ui-combat.js / ui-map.js / ui-rewards.js + renderer.js mount/route), state.js
-  rework (run+meta), wire The Refused Connection as locked final-act boss via existing boss.js +
-  epub gate, rewrite the stage6 block in tests/areas/games.mjs.
+- ✅ **WP3a** done + committed (`2f9be75f`): 20-card pool, strength/permanent-status + clearSelfDebuffs,
+  3rd enemy (Null Pointer).
+- ✅ **WP3b** done + committed (`e12bb654`): relics.js (5 relics) + engine hooks (onCombatStart /
+  onPlayerTurnStart / onCardPlay).
+- ⏭ **WP3c (optional, fold into WP4/WP5)**: 2 elites (Expired Certificate countdown, Man-in-the-Middle
+  copy) — both need small engine features (unavoidable hit / copy-last-card); Defragmenter cameo event.
+- ⏭ **WP4 (PLAYABLE MILESTONE, next)**: UI rework (ui-combat.js / ui-map.js / ui-rewards.js +
+  renderer.js mount/route), state.js rework (active run + meta: handshakes/version/unlock/bossState;
+  combat is transient/in-memory, not persisted), wire The Refused Connection as locked final-act boss
+  via existing boss.js + epub gate, rewrite the stage6 block in tests/areas/games.mjs. ATOMIC swap —
+  keep old renderer until the new loop runs end-to-end.
 - ⏭ **WP5**: balance to ~90–120 min, parchment/navy visual pass, prestige (Protocol Version).
 
 Engine contract (proven, build against it): cards = `{id,type,cost,rarity,exhaust?,text,effect(ctx)}`;
