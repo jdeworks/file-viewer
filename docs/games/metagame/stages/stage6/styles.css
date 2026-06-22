@@ -35,6 +35,9 @@
 .s6db-meta-grid dt { font-size: 0.78rem; color: #6b513a; }
 .s6db-meta-grid dd { margin: 2px 0 0; font-size: 1.3rem; font-weight: 700; }
 
+.s6db-prestige { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 4px 0 12px; }
+.s6db-prestige span { font-size: 0.82rem; color: #6b513a; }
+.s6db-prestige button { background: #4a2f6b; border-color: #4a2f6b; }
 .s6db-hint { color: #6b513a; font-style: italic; }
 .s6db-hub-title { margin: 0 0 4px; }
 .s6db-hub-sub { max-width: 60ch; color: #3b2a1c; }

@@ -15,9 +15,16 @@ const REST_HEAL_FRACTION = 0.30;
 const REWARD_CHOICES = 3;
 const HANDSHAKE_REWARD = { combat: 10, elite: 30, boss: 0 };
 const FINAL_BOSS_ACT = 3;
+const PRESTIGE_HP_PER_VERSION = 5;
+
+// Banked-handshake cost to advance from the given Protocol Version to the next.
+export function prestigeCost(version) {
+  return (Number(version || 0) + 1) * 40;
+}
 
 export function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
-  return {
+  const maxHp = PLAYER_MAX_HP + Number(version || 0) * PRESTIGE_HP_PER_VERSION;
+  const run = {
     seed,
     version,
     map: generateRun(seed, FINAL_BOSS_ACT),
@@ -26,13 +33,16 @@ export function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     clearedIds: [],
     deck: [...STARTING_DECK],
     relics: [],
-    hp: PLAYER_MAX_HP,
-    maxHp: PLAYER_MAX_HP,
+    hp: maxHp,
+    maxHp,
     handshakes,
     status: "map",
     pendingReward: null,
     notice: null
   };
+  // Prestige: each Protocol Version grants one starting relic (until the pool is exhausted).
+  for (let i = 0; i < Number(version || 0); i++) grantRelic(run, `prestige-${i}`);
+  return run;
 }
 
 // Nodes the player may move to next: act start nodes, or the current node's forward edges.

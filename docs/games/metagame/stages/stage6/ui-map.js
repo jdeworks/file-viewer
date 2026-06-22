@@ -3,7 +3,7 @@
 //   [data-action="begin-run"|"continue-run"|"confront"|"epub"|"bts"|"new-run"|"abandon"]
 //   [data-node="<id>"]  move to an available map node.
 
-import { availableNodes } from "./run.js";
+import { availableNodes, prestigeCost } from "./run.js";
 
 const NODE_ICON = {
   combat: "⚔", elite: "☠", rest: "♨", shop: "⛁", event: "❓", boss: "☣"
@@ -32,6 +32,11 @@ export function hubView(state, lock) {
       <button type="button" data-action="confront">confront The Refused Connection</button>
       <button type="button" data-action="epub">open the codex</button>
       ${lock.defeated ? `<button type="button" data-action="bts">open trace.bts</button>` : ""}
+    </div>
+    <div class="s6db-prestige">
+      <button type="button" data-action="prestige"${m.banked < prestigeCost(m.protocolVersion) ? " disabled" : ""}>
+        reinforce protocol → v${m.protocolVersion + 1}</button>
+      <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP &amp; +1 starting relic</span>
     </div>
     <p class="s6db-hint">${esc(lock.unlocked
       ? "Chapter 9 is read. The connection can be negotiated."

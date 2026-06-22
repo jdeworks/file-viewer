@@ -9,7 +9,7 @@ import { relicsFor, relicById } from "./relics.js";
 import { nodeById } from "./mapgen.js";
 import {
   createRun, moveTo, enemyForCurrentNode, resolveCombat,
-  takeReward, rest, removeCard, closeNode, buyCard, awardRelic
+  takeReward, rest, removeCard, closeNode, buyCard, awardRelic, prestigeCost
 } from "./run.js";
 import {
   applyProtocolChapter9Unlock, getBossLockState, recordLockedBossAttempt,
@@ -89,7 +89,15 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     const win = combat.result === "win";
     resolveCombat(run, { win, hpRemaining: combat.player.hp });
     if (win && run.act > (state.meta.bestAct || 0)) state.meta.bestAct = run.act;
+    if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
     combat = null;
+  }
+
+  function doPrestige() {
+    const cost = prestigeCost(state.meta.protocolVersion || 0);
+    if ((state.meta.banked || 0) < cost) return;
+    state.meta.banked -= cost;
+    state.meta.protocolVersion = (state.meta.protocolVersion || 0) + 1;
   }
 
   // ── run lifecycle ────────────────────────────────────────────────────────────────────────────
@@ -172,6 +180,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       case "continue-run": state.ui.screen = "run"; return true;
       case "abandon": state.run = null; combat = null; state.ui.screen = "hub"; return true;
       case "confront": state.ui.screen = "boss"; return true;
+      case "prestige": doPrestige(); return true;
       case "to-hub": state.ui.screen = "hub"; return true;
       case "to-map": if (run) closeNode(run); return true;
       case "end-turn": if (combat && !combat.over) { endTurn(combat); if (combat.over) finishCombat(run); } return true;

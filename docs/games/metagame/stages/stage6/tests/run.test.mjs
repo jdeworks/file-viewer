@@ -6,6 +6,7 @@ import {
   closeNode,
   createRun,
   moveTo,
+  prestigeCost,
   rest,
   resolveCombat,
   takeReward
@@ -126,6 +127,20 @@ import { STARTING_DECK } from "../cards.js";
   assert.ok(run.relics.length >= 1, "at least one relic owned after an act");
   assert.equal(new Set(run.relics).size, run.relics.length, "relics are never duplicated");
   if (eliteRelic) assert.ok(run.relics.includes(eliteRelic), "elite relic was retained");
+}
+
+// ── prestige: Protocol Version raises HP and grants starting relics ──────────────────────────────
+{
+  assert.equal(prestigeCost(0), 40, "v0->v1 costs 40 banked");
+  assert.equal(prestigeCost(2), 120, "cost scales with version");
+  const v0 = createRun({ seed: 1, version: 0 });
+  assert.equal(v0.maxHp, 60, "v0 starts at base HP");
+  assert.equal(v0.relics.length, 0, "v0 starts with no relics");
+  const v2 = createRun({ seed: 1, version: 2 });
+  assert.equal(v2.maxHp, 70, "each version adds 5 max HP");
+  assert.equal(v2.hp, 70, "starts at full HP");
+  assert.equal(v2.relics.length, 2, "version grants one starting relic each");
+  assert.equal(new Set(v2.relics).size, 2, "starting relics are distinct");
 }
 
 function reaches(run, fromId, targetId) {

@@ -9,33 +9,33 @@ export const ENEMIES = {
     id: "corrupt-packet",
     name: "Corrupt Packet",
     tier: "standard",
-    hp: 40, hpPerAct: 15, armor: 0, armorPerAct: 0,
+    hp: 46, hpPerAct: 18, armor: 0, armorPerAct: 0,
     script: [
       { label: "Attack 10", attack: 10 },
-      { label: "Attack 10", attack: 10 },
-      { label: "Attack 15", attack: 15 }
+      { label: "Attack 13", attack: 13 },
+      { label: "Attack 18", attack: 18 }
     ]
   },
   "firewall-entity": {
     id: "firewall-entity",
     name: "Firewall Entity",
     tier: "standard",
-    hp: 30, hpPerAct: 10, armor: 4, armorPerAct: 3,
+    hp: 38, hpPerAct: 12, armor: 4, armorPerAct: 3,
     script: [
-      { label: "Block 12", block: 12 },
-      { label: "Attack 12", attack: 12 },
-      { label: "Block 8 + Attack 8", block: 8, attack: 8 }
+      { label: "Block 14", block: 14 },
+      { label: "Attack 14", attack: 14 },
+      { label: "Block 8 + Attack 10", block: 8, attack: 10 }
     ]
   },
   "null-pointer": {
     id: "null-pointer",
     name: "Null Pointer",
     tier: "standard",
-    hp: 26, hpPerAct: 12, armor: 0, armorPerAct: 0,
+    hp: 32, hpPerAct: 14, armor: 0, armorPerAct: 0,
     script: [
-      { label: "Attack 7 + Weak", attack: 7, applyPlayer: { status: "weak", value: 1 } },
-      { label: "Attack 6, twice", attack: 6, hits: 2 },
-      { label: "Attack 14", attack: 14 }
+      { label: "Attack 8 + Weak", attack: 8, applyPlayer: { status: "weak", value: 1 } },
+      { label: "Attack 7, twice", attack: 7, hits: 2 },
+      { label: "Attack 16", attack: 16 }
     ]
   },
   // ── Elites (need engine features: pierce + mirror) ──────────────────────────────────────────────

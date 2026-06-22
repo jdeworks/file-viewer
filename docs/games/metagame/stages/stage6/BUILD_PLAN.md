@@ -60,9 +60,14 @@ Building the full roguelite deck-builder from `planning/stage6-02-our-game-desig
   relic-gamble option (+relic, −8 HP). combat.test covers pierce + mirror. Elites are genuinely lethal
   (verified: Expired Certificate can kill; MitM punishes spam) — they carry the early difficulty while
   regular combats stay easy (full balance pass still pending below).
-- ⏭ **WP5**: balance to ~90–120 min, deeper parchment/navy visual pass, prestige (Protocol Version:
-  bank handshakes between runs → permanent unlocks/relic pool; `meta.banked`/`protocolVersion` already
-  tracked, no spend path yet), relic acquisition from elites/boss rewards (relics defined, not yet awarded).
+- 🔄 **WP5** in progress: prestige meta-economy DONE — handshakes bank on a run clear (full) or death
+  (half); the hub spends banked on **Protocol Version** (`prestigeCost = (v+1)*40`), each version giving
+  +5 max HP and +1 starting relic via `createRun({version})`. Modest difficulty bump to standard enemies
+  (HP + later-intent damage; kept combat.test's asserted corrupt-packet "Attack 10" + firewall armor 4).
+  run.test covers prestige scaling. STILL OPEN (needs a real playtest, not blind tuning): precise
+  duration/balance to land ~90–120 min — regular trash combats are still easy (elites + bosses carry the
+  threat); the run is ~18–21 nodes which likely plays shorter than 90 min, so lengthening (more content
+  layers and/or longer fights) is the main lever. Deeper visual pass also outstanding.
 
 Engine contract (proven, build against it): cards = `{id,type,cost,rarity,exhaust?,text,effect(ctx)}`;
 ctx API = deal/block/draw/gainEnergy/applyEnemy/applySelf/skipEnemyNext/playedThisTurn(id) +
