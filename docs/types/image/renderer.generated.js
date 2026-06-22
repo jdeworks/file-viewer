@@ -65,6 +65,7 @@ function queryEls(host, canEdit) {
     eraserBtn: qe(".imgv-eraser"),
     fillBtn: qe(".imgv-fill"),
     cloneBtn: qe(".imgv-clone"),
+    healBtn: qe(".imgv-heal"),
     fillTol: qe(".imgv-fill-tol"),
     fillTolV: qe(".imgv-fill-tolv"),
     fillMode: qe(".imgv-fill-mode"),
@@ -451,6 +452,7 @@ function createDrawTools(ctx) {
     eraserBtn,
     fillBtn,
     cloneBtn,
+    healBtn,
     fillTol,
     fillTolV,
     fillMode,
@@ -463,9 +465,10 @@ function createDrawTools(ctx) {
     redoBtn
   } = els;
   const selection = () => ctx.getSelection?.();
-  let drawMode = null, isEraserStroke = false, isCloneStroke = false;
+  let drawMode = null, isEraserStroke = false, isCloneStroke = false, isHealStroke = false;
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
-  let cloneSource = null, cloneSrcPt = null, cloneOffset = null, cloneMarker = null;
+  let cloneSource = null, cloneSrcCtx = null, cloneSrcPt = null, cloneOffset = null, cloneMarker = null;
+  const cloneMode = () => drawMode === "clone" || drawMode === "heal";
   function syncOverlay() {
     selection()?.syncOverlay();
     if (!drawOverlay) return;
@@ -477,7 +480,7 @@ function createDrawTools(ctx) {
   }
   function positionCloneMarker() {
     if (!cloneMarker) return;
-    if (!cloneSrcPt || drawMode !== "clone" || !img.naturalWidth) {
+    if (!cloneSrcPt || !cloneMode() || !img.naturalWidth) {
       cloneMarker.style.display = "none";
       return;
     }
@@ -502,7 +505,7 @@ function createDrawTools(ctx) {
     cloneMarker.style.cssText = "position:absolute;width:12px;height:12px;border:1px solid #0ff;box-shadow:0 0 0 1px rgba(0,0,0,.7);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:3;display:none;";
     stage.appendChild(cloneMarker);
     img.addEventListener("load", () => {
-      if (drawOverlay && !isEraserStroke && !isCloneStroke) {
+      if (drawOverlay && !isEraserStroke && !isCloneStroke && !isHealStroke) {
         drawOverlay.width = img.naturalWidth || 1;
         drawOverlay.height = img.naturalHeight || 1;
       }
@@ -530,7 +533,7 @@ function createDrawTools(ctx) {
     drawOverlay.addEventListener("touchend", onPUp);
   }
   function moveBrushCursor(e) {
-    if (!brushCursor || drawMode !== "pencil" && drawMode !== "eraser" && drawMode !== "clone") {
+    if (!brushCursor || drawMode !== "pencil" && drawMode !== "eraser" && !cloneMode()) {
       hideBrushCursor();
       return;
     }
@@ -552,8 +555,10 @@ function createDrawTools(ctx) {
     eraserBtn?.classList.toggle("active", drawMode === "eraser");
     fillBtn?.classList.toggle("active", drawMode === "fill");
     cloneBtn?.classList.toggle("active", drawMode === "clone");
-    if (drawMode !== "clone") {
+    healBtn?.classList.toggle("active", drawMode === "heal");
+    if (!cloneMode()) {
       cloneSource = null;
+      cloneSrcCtx = null;
       cloneSrcPt = null;
       cloneOffset = null;
       positionCloneMarker();
@@ -564,9 +569,9 @@ function createDrawTools(ctx) {
     if (!drawOverlay && drawMode) buildOverlay();
     if (drawOverlay) {
       drawOverlay.style.pointerEvents = drawMode ? "auto" : "none";
-      drawOverlay.style.cursor = drawMode === "eraser" ? "cell" : drawMode === "fill" ? "crosshair" : drawMode === "pencil" || drawMode === "clone" ? "none" : "";
+      drawOverlay.style.cursor = drawMode === "eraser" ? "cell" : drawMode === "fill" ? "crosshair" : drawMode === "pencil" || cloneMode() ? "none" : "";
     }
-    if (drawMode !== "pencil" && drawMode !== "eraser" && drawMode !== "clone") hideBrushCursor();
+    if (drawMode !== "pencil" && drawMode !== "eraser" && !cloneMode()) hideBrushCursor();
     img.style.pointerEvents = drawMode ? "none" : "";
   }
   function ptToCanvas(e) {
@@ -594,12 +599,13 @@ function createDrawTools(ctx) {
     const c = document.createElement("canvas");
     c.width = img.naturalWidth;
     c.height = img.naturalHeight;
-    const g = c.getContext("2d");
+    const g = c.getContext("2d", { willReadFrequently: true });
     if (mime === "image/jpeg") {
       g.fillStyle = "#fff";
       g.fillRect(0, 0, c.width, c.height);
     }
     g.drawImage(img, 0, 0);
+    cloneSrcCtx = g;
     return c;
   }
   function maybeSetCloneSource(e) {
@@ -622,6 +628,49 @@ function createDrawTools(ctx) {
     drawOCtx.drawImage(cloneSource, cloneOffset.x, cloneOffset.y);
     drawOCtx.restore();
   }
+  function healDab(p, sz) {
+    const r = sz / 2;
+    const x0 = Math.max(0, Math.floor(p.x - r)), y0 = Math.max(0, Math.floor(p.y - r));
+    const x1 = Math.min(drawOverlay.width, Math.ceil(p.x + r)), y1 = Math.min(drawOverlay.height, Math.ceil(p.y + r));
+    const w = x1 - x0, h = y1 - y0;
+    if (w <= 0 || h <= 0 || !cloneSrcCtx) return;
+    if (cloneSource.width < w || cloneSource.height < h) {
+      cloneDab(p, sz);
+      return;
+    }
+    const sx = Math.max(0, Math.min(cloneSource.width - w, Math.round(x0 - cloneOffset.x)));
+    const sy = Math.max(0, Math.min(cloneSource.height - h, Math.round(y0 - cloneOffset.y)));
+    const src = cloneSrcCtx.getImageData(sx, sy, w, h);
+    const dst = drawOCtx.getImageData(x0, y0, w, h);
+    const s = src.data, d = dst.data;
+    let sr = 0, sg = 0, sb = 0, dr = 0, dg = 0, db = 0, n = 0;
+    for (let i = 0; i < s.length; i += 4) {
+      sr += s[i];
+      sg += s[i + 1];
+      sb += s[i + 2];
+      dr += d[i];
+      dg += d[i + 1];
+      db += d[i + 2];
+      n++;
+    }
+    const or = (dr - sr) / n, og = (dg - sg) / n, ob = (db - sb) / n;
+    for (let i = 0; i < s.length; i += 4) {
+      s[i] += or;
+      s[i + 1] += og;
+      s[i + 2] += ob;
+    }
+    const tmp = document.createElement("canvas");
+    tmp.width = w;
+    tmp.height = h;
+    tmp.getContext("2d").putImageData(src, 0, 0);
+    drawOCtx.save();
+    drawOCtx.beginPath();
+    drawOCtx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    drawOCtx.clip();
+    drawOCtx.drawImage(tmp, x0, y0);
+    drawOCtx.restore();
+  }
+  const dab = (p, sz) => (isHealStroke ? healDab : cloneDab)(p, sz);
   async function onPDown(e) {
     if (!drawMode || !drawOverlay) return;
     e.preventDefault();
@@ -629,10 +678,11 @@ function createDrawTools(ctx) {
       await doFill(e);
       return;
     }
-    if (drawMode === "clone" && maybeSetCloneSource(e)) return;
+    if (cloneMode() && maybeSetCloneSource(e)) return;
     isPointerDown = true;
     isEraserStroke = drawMode === "eraser";
-    isCloneStroke = drawMode === "clone";
+    isCloneStroke = cloneMode();
+    isHealStroke = drawMode === "heal";
     core.pushUndo();
     if (isEraserStroke || isCloneStroke) {
       drawOverlay.width = img.naturalWidth;
@@ -654,7 +704,7 @@ function createDrawTools(ctx) {
     const sz = getCanvasBrushSize();
     if (isCloneStroke) {
       if (!cloneOffset) cloneOffset = { x: lastPt.x - cloneSrcPt.x, y: lastPt.y - cloneSrcPt.y };
-      cloneDab(lastPt, sz);
+      dab(lastPt, sz);
       return;
     }
     applyStrokeStyle(sz);
@@ -670,8 +720,8 @@ function createDrawTools(ctx) {
     const sz = getCanvasBrushSize();
     if (isCloneStroke) {
       const dx = pt.x - lastPt.x, dy = pt.y - lastPt.y, dist = Math.hypot(dx, dy), step = Math.max(1, sz / 4);
-      for (let d = step; d < dist; d += step) cloneDab({ x: lastPt.x + dx * d / dist, y: lastPt.y + dy * d / dist }, sz);
-      cloneDab(pt, sz);
+      for (let d = step; d < dist; d += step) dab({ x: lastPt.x + dx * d / dist, y: lastPt.y + dy * d / dist }, sz);
+      dab(pt, sz);
       lastPt = pt;
       return;
     }
@@ -749,6 +799,7 @@ function createDrawTools(ctx) {
     eraserBtn.addEventListener("click", () => setDrawMode("eraser"));
     fillBtn?.addEventListener("click", () => setDrawMode("fill"));
     cloneBtn?.addEventListener("click", () => setDrawMode("clone"));
+    healBtn?.addEventListener("click", () => setDrawMode("heal"));
     fillTol?.addEventListener("input", () => {
       if (fillTolV) fillTolV.textContent = fillTol.value;
     });
@@ -3158,6 +3209,7 @@ async function render(intake, ctx = {}) {
     eraserBtn,
     fillBtn,
     cloneBtn,
+    healBtn,
     fillTol,
     fillTolV,
     fillMode,
@@ -3578,7 +3630,7 @@ async function render(intake, ctx = {}) {
     core,
     getSelection: () => selection,
     applyPan,
-    els: { pencilBtn, eraserBtn, fillBtn, cloneBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts, drawColorPicker, drawSizePicker, undoBtn, redoBtn }
+    els: { pencilBtn, eraserBtn, fillBtn, cloneBtn, healBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts, drawColorPicker, drawSizePicker, undoBtn, redoBtn }
   });
   const unregisterUndoKeys = canEdit ? registerUndoKeys({ host, isEnabled: () => !asciiMode, doUndo: core.doUndo, doRedo: core.doRedo }) : null;
   const bgTool = mountBg({ img, url, core, els });

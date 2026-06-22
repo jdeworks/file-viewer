@@ -78,7 +78,7 @@ export async function render(intake, ctx = {}) {
   const {
     img, note, zoomLabel, asciiBtn, asciiOut,
     editInput, editSize, editColor, editApply, editReset,
-    pencilBtn, eraserBtn, fillBtn, cloneBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts,
+    pencilBtn, eraserBtn, fillBtn, cloneBtn, healBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts,
     selectBtn, marqueeBtn, ellipseBtn, lassoBtn, deselectBtn, selInvertBtn, selCutBtn, moveBtn,
     drawColorPicker, drawSizePicker, undoBtn, redoBtn, exportFmt, editFont,
     bgBtn, bgTol, bgOk, bgX,
@@ -437,7 +437,7 @@ export async function render(intake, ctx = {}) {
     host, img, mime, core,
     getSelection: () => selection,
     applyPan,
-    els: { pencilBtn, eraserBtn, fillBtn, cloneBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts, drawColorPicker, drawSizePicker, undoBtn, redoBtn },
+    els: { pencilBtn, eraserBtn, fillBtn, cloneBtn, healBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts, drawColorPicker, drawSizePicker, undoBtn, redoBtn },
   });
 
   // Ctrl/Cmd+Z = undo, Ctrl+Y or Ctrl/Cmd+Shift+Z = redo. A shared global router

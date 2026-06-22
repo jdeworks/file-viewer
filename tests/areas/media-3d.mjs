@@ -605,6 +605,25 @@ export async function run(ctx) {
   const clDimsAfter = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
   if (cloneModeOn && cloneMarkerShown && cloneCommitted && clDimsAfter.w === clDimsBefore.w && clDimsAfter.h === clDimsBefore.h) pass('clone stamp: Alt-click sets a source marker, painting clones pixels + commits (dims unchanged)'); else fail('clone: ' + JSON.stringify({ cloneModeOn, cloneMarkerShown, cloneCommitted, clDimsBefore, clDimsAfter }));
   await page.click('#previewHost .imgv-clone');    // toggle clone off, restore for later steps
+  // Heal (Draw tab): same Alt-source + paint mechanics as Clone, but the dab is mean-shifted to the
+  // destination surround. Asserts mode activates, the source marker shows, and a paint commits (dims unchanged).
+  await page.click('#previewHost .imgv-heal');
+  const healModeOn = await page.evaluate(() => document.querySelector('#previewHost .imgv-heal').classList.contains('active'));
+  const hlDimsBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  await page.keyboard.down('Alt');
+  await page.mouse.move(clRect.l + clRect.w * 0.6, clRect.t + clRect.h * 0.35);
+  await page.mouse.down(); await page.mouse.up();
+  await page.keyboard.up('Alt');
+  const healMarkerShown = await page.evaluate(() => { const m = document.querySelector('#previewHost .imgv-clone-src'); return !!m && m.style.display !== 'none'; });
+  const healSrcBefore = await imgSrcNow();
+  await page.mouse.move(clRect.l + clRect.w * 0.35, clRect.t + clRect.h * 0.55);
+  await page.mouse.down();
+  await page.mouse.move(clRect.l + clRect.w * 0.5, clRect.t + clRect.h * 0.6, { steps: 6 });
+  await page.mouse.up();
+  const healCommitted = await waitNewSrc(healSrcBefore);
+  const hlDimsAfter = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  if (healModeOn && healMarkerShown && healCommitted && hlDimsAfter.w === hlDimsBefore.w && hlDimsAfter.h === hlDimsBefore.h) pass('heal: Alt-click source + paint mean-shifts the patch + commits (dims unchanged)'); else fail('heal: ' + JSON.stringify({ healModeOn, healMarkerShown, healCommitted, hlDimsBefore, hlDimsAfter }));
+  await page.click('#previewHost .imgv-heal');     // toggle heal off, restore for later steps
   // Toolbar declutter: the 🛠 toggle collapses the editing-tools group.
   const toolsVisInit = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display !== 'none');
   await page.click('#previewHost .imgv-tools-btn');

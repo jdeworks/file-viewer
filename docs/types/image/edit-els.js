@@ -20,6 +20,7 @@ export function queryEls(host, canEdit) {
     eraserBtn: qe('.imgv-eraser'),
     fillBtn: qe('.imgv-fill'),
     cloneBtn: qe('.imgv-clone'),
+    healBtn: qe('.imgv-heal'),
     fillTol: qe('.imgv-fill-tol'),
     fillTolV: qe('.imgv-fill-tolv'),
     fillMode: qe('.imgv-fill-mode'),
