@@ -76,16 +76,19 @@ async function main() {
   page.on('dialog', (d) => { dialogMsg = d.message(); d.accept(); });   // auto-accept the delete confirm
 
   try {
-    // Enable the companion in the page and reload so startup detection runs.
+    // Enable the companion (NO token set — it must be auto-delivered from /ping) and reload so
+    // startup detection runs.
     await page.goto(origin, { waitUntil: 'load' });
-    await page.evaluate((tok) => {
-      localStorage.setItem('fv:companion:enabled', 'true');
-      localStorage.setItem('fv:companion:token', tok);
-    }, TOKEN);
+    await page.evaluate(() => localStorage.setItem('fv:companion:enabled', 'true'));
     await page.goto(origin, { waitUntil: 'load' });
     await page.waitForFunction(() => document.body.classList.contains('companion-active'), { timeout: 8000 })
       .then(() => pass('viewer detects the companion (body.companion-active)'))
       .catch(() => fail('viewer did not detect the companion'));
+
+    // The token must have been picked up from /ping automatically (no manual paste).
+    const gotToken = await page.evaluate(async () => (await import('/core/companion.js')).getToken());
+    if (gotToken === TOKEN) pass('session token auto-delivered from /ping (no manual paste)');
+    else fail('token not auto-delivered: ' + JSON.stringify(gotToken));
 
     // Drive the real companion client (docs/core/companion.js) over HTTP from the page context.
     const paths = await page.evaluate(async () => (await import('/core/companion.js')).getWatchedPaths());

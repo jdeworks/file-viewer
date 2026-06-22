@@ -20,7 +20,11 @@ export async function detectCompanion() {
     ]);
     if (!res.ok) return false;
     const json = await res.json();
-    return json.ok === true;
+    if (json.ok !== true) return false;
+    // Pick up the session token automatically — no manual paste. Only CORS-allowed origins (this
+    // site + localhost) can read /ping, so a disallowed page can't obtain it.
+    if (json.token) setToken(json.token);
+    return true;
   } catch { return false; }
 }
 

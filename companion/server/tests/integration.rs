@@ -38,6 +38,8 @@ async fn test_ping() {
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(json["ok"], true);
     assert_eq!(json["version"], "0.1.0");
+    assert_eq!(json["token"], "secret", "ping returns the session token for auto-pickup");
+    assert!(json["capabilities"].as_array().unwrap().iter().any(|c| c == "file-delete"));
 }
 
 // --- /watched-paths mutation ---

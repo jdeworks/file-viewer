@@ -28,12 +28,26 @@ use crate::{
 pub struct PingResponse {
     pub ok: bool,
     pub version: &'static str,
+    /// The session token. Returned here so the viewer can pick it up automatically — only CORS-
+    /// allowed origins (localhost + the configured Pages origin) can read this response, so a
+    /// disallowed page still can't obtain the token (and thus can't make mutating calls).
+    pub token: String,
+    pub capabilities: Vec<&'static str>,
 }
 
-pub async fn ping() -> Json<PingResponse> {
+pub async fn ping(State(state): State<AppState>) -> Json<PingResponse> {
     Json(PingResponse {
         ok: true,
         version: env!("CARGO_PKG_VERSION"),
+        token: state.token.clone(),
+        capabilities: vec![
+            "file-read",
+            "file-write",
+            "file-delete",
+            "file-watch",
+            "find-file",
+            "find-folder",
+        ],
     })
 }
 
