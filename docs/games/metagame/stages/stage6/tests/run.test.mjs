@@ -6,6 +6,7 @@ import {
   closeNode,
   createRun,
   moveTo,
+  prestigeCost,
   rest,
   resolveCombat,
   takeReward
@@ -106,6 +107,40 @@ import { STARTING_DECK } from "../cards.js";
   }
   assert.equal(run.status, "won", "a clean run clears all three acts");
   assert.equal(run.act, 3, "ended in act 3");
+}
+
+// ── run: elites and act bosses award relics (deduped, deterministic) ─────────────────────────────
+{
+  // Drive a seed where act 1 contains an elite; clearing it grants a relic via the reward.
+  const run = createRun({ seed: 7 });
+  let guard = 0;
+  let eliteRelic = null;
+  while (run.act === 1 && run.status !== "won" && guard++ < 500) {
+    if (run.status === "map") moveTo(run, availableNodes(run)[0].id);
+    else if (run.status === "combat" || run.status === "boss") resolveCombat(run, { win: true, hpRemaining: run.hp });
+    else if (run.status === "reward") { if (run.pendingReward.relic) eliteRelic = run.pendingReward.relic; takeReward(run, run.pendingReward.cards[0]); }
+    else if (run.status === "rest") rest(run, "heal");
+    else closeNode(run);
+  }
+  // Clearing act 1's boss advanced us to act 2 and granted a relic notice.
+  assert.ok(run.act >= 2, "advanced past act 1");
+  assert.ok(run.relics.length >= 1, "at least one relic owned after an act");
+  assert.equal(new Set(run.relics).size, run.relics.length, "relics are never duplicated");
+  if (eliteRelic) assert.ok(run.relics.includes(eliteRelic), "elite relic was retained");
+}
+
+// ── prestige: Protocol Version raises HP and grants starting relics ──────────────────────────────
+{
+  assert.equal(prestigeCost(0), 40, "v0->v1 costs 40 banked");
+  assert.equal(prestigeCost(2), 120, "cost scales with version");
+  const v0 = createRun({ seed: 1, version: 0 });
+  assert.equal(v0.maxHp, 60, "v0 starts at base HP");
+  assert.equal(v0.relics.length, 0, "v0 starts with no relics");
+  const v2 = createRun({ seed: 1, version: 2 });
+  assert.equal(v2.maxHp, 70, "each version adds 5 max HP");
+  assert.equal(v2.hp, 70, "starts at full HP");
+  assert.equal(v2.relics.length, 2, "version grants one starting relic each");
+  assert.equal(new Set(v2.relics).size, 2, "starting relics are distinct");
 }
 
 function reaches(run, fromId, targetId) {

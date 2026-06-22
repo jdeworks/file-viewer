@@ -42,9 +42,16 @@ function formatAgo(ts) {
   return Math.floor(diff / 86400000) + 'd ago';
 }
 
+// The autosave banner element is static (in index.html) and reused across every file, so its
+// Restore/Dismiss listeners are wired ONCE. They must therefore act on the CURRENT autosave, not
+// the one captured the first time the banner was shown — otherwise restoring on a later file would
+// write the first file's saved text. Hold the latest payload here and read it in the handlers.
+let _currentSaved = null;
+
 export function showAutosaveBanner(saved) {
   const el = $('autosaveBanner');
   if (!el) return;
+  _currentSaved = saved;
   el.querySelector('.autosave-age').textContent = `Autosave from ${formatAgo(saved.ts)} found.`;
   el.hidden = false;
   $('rawPane')?.classList.add('has-autosave');
@@ -52,8 +59,9 @@ export function showAutosaveBanner(saved) {
   if (!el.dataset.wired) {
     el.dataset.wired = '1';
     el.querySelector('.autosave-restore').addEventListener('click', () => {
-      state.rawview?.setValue?.(saved.text);
-      state.intake = { ...state.intake, text: saved.text };
+      if (!_currentSaved) return;
+      state.rawview?.setValue?.(_currentSaved.text);
+      state.intake = { ...state.intake, text: _currentSaved.text };
       el.hidden = true;
       $('rawPane')?.classList.remove('has-autosave');
     });

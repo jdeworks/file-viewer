@@ -200,8 +200,10 @@ function resolveIntent(combat, intent) {
   if (intent.block) enemy.block += intent.block;
   if (intent.attack) {
     const hits = intent.hits || 1;
-    for (let i = 0; i < hits; i++) dealToPlayer(combat, intent.attack);
+    for (let i = 0; i < hits; i++) dealToPlayer(combat, intent.attack, { pierce: Boolean(intent.pierce) });
   }
+  // Man-in-the-Middle: reflect the player's just-finished turn — damage scales with cards played.
+  if (intent.mirror) dealToPlayer(combat, intent.mirror * combat.cardsPlayedThisTurn);
   if (intent.applySelf) addStatus(enemy, intent.applySelf.status, intent.applySelf.value);
   if (intent.applyPlayer) addStatus(combat.player, intent.applyPlayer.status, intent.applyPlayer.value);
 }
@@ -219,10 +221,14 @@ export function dealToEnemy(combat, baseAmount) {
   combat.enemy.hp = Math.max(0, combat.enemy.hp - (amount - absorbed));
 }
 
-export function dealToPlayer(combat, baseAmount) {
+export function dealToPlayer(combat, baseAmount, { pierce = false } = {}) {
   let amount = Math.max(0, Math.round(baseAmount));
   if (combat.enemy.statuses.weak) amount = Math.floor(amount * 0.75);
   if (combat.player.statuses.vulnerable) amount = Math.floor(amount * 1.5);
+  if (pierce) { // unblockable (Expired Certificate's expiry) — block does not absorb it
+    combat.player.hp = Math.max(0, combat.player.hp - amount);
+    return;
+  }
   const absorbed = Math.min(combat.player.block, amount);
   combat.player.block -= absorbed;
   combat.player.hp = Math.max(0, combat.player.hp - (amount - absorbed));

@@ -135,4 +135,24 @@ function fresh(enemyId = "corrupt-packet", seed = 7) {
   assert.equal(c.enemy.hp, hp - 18, "ASYMMETRIC deals 18 when block > hp");
 }
 
+// Expired Certificate: its expiry intent pierces block (unblockable).
+{
+  const c = createCombat({ deck: STARTING_DECK, player, enemy: instantiateEnemy("expired-certificate", 1), seed: 2 });
+  c.enemy.intentIndex = 2; // the "Certificate expires — 24 unblockable" step
+  c.player.block = 50; c.hand = [];
+  endTurn(c); // 24 pierces straight through 50 block
+  assert.equal(c.player.hp, 50 - 24, "pierce ignores block");
+}
+
+// Man-in-the-Middle: Mirror reflects 6 damage per card the player played that turn.
+{
+  const c = createCombat({ deck: STARTING_DECK, player, enemy: instantiateEnemy("man-in-the-middle", 1), seed: 3 });
+  c.enemy.intentIndex = 1; // the "Mirror your traffic" step
+  c.hand = ["ACK", "ACK"]; c.player.energy = 3;
+  playCard(c, 0); playCard(c, 0); // two cards played this turn (hand shifts after each)
+  c.player.block = 0; // drop the block those ACKs granted to read the mirror cleanly
+  endTurn(c); // mirror = 6 * 2 = 12
+  assert.equal(c.player.hp, 50 - 12, "MitM mirrors 6 per card played");
+}
+
 console.log("stage6 combat engine tests passed");

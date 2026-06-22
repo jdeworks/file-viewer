@@ -44,12 +44,30 @@ Building the full roguelite deck-builder from `planning/stage6-02-our-game-desig
   onPlayerTurnStart / onCardPlay).
 - ⏭ **WP3c (optional, fold into WP4/WP5)**: 2 elites (Expired Certificate countdown, Man-in-the-Middle
   copy) — both need small engine features (unavoidable hit / copy-last-card); Defragmenter cameo event.
-- ⏭ **WP4 (PLAYABLE MILESTONE, next)**: UI rework (ui-combat.js / ui-map.js / ui-rewards.js +
-  renderer.js mount/route), state.js rework (active run + meta: handshakes/version/unlock/bossState;
-  combat is transient/in-memory, not persisted), wire The Refused Connection as locked final-act boss
-  via existing boss.js + epub gate, rewrite the stage6 block in tests/areas/games.mjs. ATOMIC swap —
-  keep old renderer until the new loop runs end-to-end.
-- ⏭ **WP5**: balance to ~90–120 min, parchment/navy visual pass, prestige (Protocol Version).
+- ✅ **WP4 (PLAYABLE MILESTONE)** done: state.js v2 (meta + active run + ui.screen; combat transient),
+  ui-combat.js / ui-map.js (hub + map + end-screens) / ui-rewards.js (reward/rest/shop/event) /
+  ui-boss.js (The Refused Connection negotiation), renderer.js rewritten as a router/controller over
+  run.status with a transient combat instance and delegated clicks. Hub → begin run → act map →
+  combat (combat.js) → reward/rest/shop/event → act boss → next act. The Refused Connection stays the
+  codex-gated finale (boss.js): confrontable from the hub OR as the act-3 boss node; defeating it (after
+  reading the epub) clears the stage. Old `.s6-*` boss-only UI replaced by `.s6db-*`. Smoke rewritten:
+  hub renders → begin-run shows routable map → to-hub → epub gate → confront → negotiate → clear.
+  All 5 unit suites + games smoke green. Verified the full map→combat→resolve→reward loop end-to-end.
+  KNOWN (defer to WP5): combat balance is generous (starter deck clears act-1 trash at full HP).
+- ✅ **WP3c** done: engine gained `pierce` (unblockable hits) + `mirror` (damage × cards played this
+  turn). Elites Expired Certificate (block-stall → 24 unblockable expiry) + Man-in-the-Middle (mirror
+  reflects your wide turns) added; elite nodes now pick from the elite pool. Defragmenter event gained a
+  relic-gamble option (+relic, −8 HP). combat.test covers pierce + mirror. Elites are genuinely lethal
+  (verified: Expired Certificate can kill; MitM punishes spam) — they carry the early difficulty while
+  regular combats stay easy (full balance pass still pending below).
+- 🔄 **WP5** in progress: prestige meta-economy DONE — handshakes bank on a run clear (full) or death
+  (half); the hub spends banked on **Protocol Version** (`prestigeCost = (v+1)*40`), each version giving
+  +5 max HP and +1 starting relic via `createRun({version})`. Modest difficulty bump to standard enemies
+  (HP + later-intent damage; kept combat.test's asserted corrupt-packet "Attack 10" + firewall armor 4).
+  run.test covers prestige scaling. STILL OPEN (needs a real playtest, not blind tuning): precise
+  duration/balance to land ~90–120 min — regular trash combats are still easy (elites + bosses carry the
+  threat); the run is ~18–21 nodes which likely plays shorter than 90 min, so lengthening (more content
+  layers and/or longer fights) is the main lever. Deeper visual pass also outstanding.
 
 Engine contract (proven, build against it): cards = `{id,type,cost,rarity,exhaust?,text,effect(ctx)}`;
 ctx API = deal/block/draw/gainEnergy/applyEnemy/applySelf/skipEnemyNext/playedThisTurn(id) +

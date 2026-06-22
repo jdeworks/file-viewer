@@ -1,3 +1,4 @@
+/* Stage 6 — Protocol Codex (deck-builder). Parchment + navy archive aesthetic. */
 .stage6-protocol-codex {
   min-height: 100%;
   padding: 16px;
@@ -6,92 +7,136 @@
   font-family: Georgia, "Times New Roman", serif;
 }
 
-.s6-hud,
-.s6-controls,
-.s6-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.s6-hud {
-  padding: 8px 0 12px;
+.s6db-top {
+  padding: 6px 0 12px;
+  letter-spacing: 0.18em;
   border-bottom: 2px solid #b8962e;
 }
 
-.s6-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
-  gap: 16px;
-  margin: 16px 0;
-}
+.s6db-screen { margin-top: 14px; }
 
-.s6-boss,
-.s6-reference article {
-  border: 1px solid #b8962e;
-  border-radius: 6px;
-  background: #f6efdf;
-  padding: 12px;
-}
+/* ── shared chrome ─────────────────────────────────────────────────────────── */
+.s6db-hub-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
 
-.s6-status {
-  color: #8b2020;
-  font-weight: 700;
-  letter-spacing: 0;
-}
-
-.s6-reference {
-  display: grid;
-  gap: 8px;
-}
-
-.s6-reference article {
-  display: grid;
-  gap: 4px;
-}
-
-.s6-cards button {
-  width: 150px;
-  min-height: 116px;
-  display: grid;
-  gap: 6px;
-  align-content: start;
-  text-align: left;
-  color: #241913;
-  background: #fff8e9;
-  border: 2px solid #1e2840;
-  border-radius: 6px;
-  padding: 10px;
-}
-
-.s6-cards small {
-  line-height: 1.3;
-}
-
-.s6-log {
-  min-height: 8rem;
-  margin: 16px 0;
-  padding: 12px 12px 12px 28px;
-  color: #e8dcc8;
-  background: #2c1810;
-  border-radius: 6px;
-}
-
-.s6-controls button {
+.stage6-protocol-codex button {
+  font-family: inherit;
   border: 1px solid #1e2840;
   border-radius: 6px;
   background: #1e2840;
   color: #f6efdf;
-  padding: 8px 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.stage6-protocol-codex button:disabled { opacity: 0.45; cursor: not-allowed; }
+.stage6-protocol-codex .s6db-ghost { background: transparent; color: #1e2840; }
+
+.s6db-meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 12px 0; }
+.s6db-meta-grid div { border: 1px solid #b8962e; border-radius: 6px; background: #f6efdf; padding: 8px 10px; }
+.s6db-meta-grid dt { font-size: 0.78rem; color: #6b513a; }
+.s6db-meta-grid dd { margin: 2px 0 0; font-size: 1.3rem; font-weight: 700; }
+
+.s6db-prestige { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 4px 0 12px; }
+.s6db-prestige span { font-size: 0.82rem; color: #6b513a; }
+.s6db-prestige button { background: #4a2f6b; border-color: #4a2f6b; }
+.s6db-hint { color: #6b513a; font-style: italic; }
+.s6db-hub-title { margin: 0 0 4px; }
+.s6db-hub-sub { max-width: 60ch; color: #3b2a1c; }
+
+.s6db-log {
+  min-height: 6rem;
+  margin: 14px 0 0;
+  padding: 12px 12px 12px 28px;
+  color: #e8dcc8;
+  background: #2c1810;
+  border-radius: 6px;
+  font-size: 0.9rem;
 }
 
-@media (max-width: 720px) {
-  .s6-layout {
-    grid-template-columns: 1fr;
-  }
+/* ── cards ─────────────────────────────────────────────────────────────────── */
+.s6db-card-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.s6db-card {
+  position: relative;
+  width: 150px;
+  min-height: 122px;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  text-align: left;
+  color: #241913 !important;
+  background: #fff8e9 !important;
+  border: 2px solid #1e2840 !important;
+  border-radius: 8px;
+  padding: 10px 10px 22px;
+}
+.s6db-card--protocol { border-color: #2f6f6a !important; }
+.s6db-card--layer { border-color: #7a4ea3 !important; }
+.s6db-card-cost {
+  position: absolute; top: -10px; left: -10px;
+  width: 24px; height: 24px; line-height: 24px; text-align: center;
+  border-radius: 50%; background: #1e2840; color: #f6efdf; font-weight: 700;
+}
+.s6db-card-id { font-size: 1rem; }
+.s6db-card-type { font-size: 0.72rem; color: #6b513a; text-transform: uppercase; letter-spacing: 0.08em; }
+.s6db-card-text { line-height: 1.3; font-size: 0.82rem; }
+.s6db-price { position: absolute; bottom: 4px; right: 8px; font-weight: 700; color: #8b2020; }
 
-  .s6-cards button {
-    width: 100%;
-  }
+/* ── map ───────────────────────────────────────────────────────────────────── */
+.s6db-map-head { font-weight: 700; margin-bottom: 10px; }
+.s6db-map-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+.s6db-map-col { display: flex; flex-direction: column; gap: 10px; min-width: 78px; }
+.s6db-node {
+  display: grid; gap: 2px; place-items: center;
+  padding: 8px 6px; border-radius: 8px;
+  border: 1px solid #b8962e; background: #f6efdf; color: #241913;
+}
+.s6db-node-icon { font-size: 1.3rem; }
+.s6db-node-type { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.s6db-node.is-locked { opacity: 0.4; }
+.s6db-node.is-cleared { opacity: 0.55; background: #ded0b6; }
+.s6db-node.is-current { outline: 2px solid #8b2020; }
+button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !important; border: 2px solid #1e2840 !important; cursor: pointer; }
+.s6db-map-foot { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px; font-weight: 700; color: #3b2a1c; }
+.s6db-notice { margin: 6px 0 10px; padding: 6px 10px; border-left: 3px solid #7a4ea3; background: #f1e7d2; color: #4a2f6b; font-weight: 700; }
+.s6db-relic-won { padding: 6px 10px; border-left: 3px solid #7a4ea3; background: #f1e7d2; color: #4a2f6b; }
+
+/* ── combat ────────────────────────────────────────────────────────────────── */
+.s6db-fighters { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.s6db-fighter { border: 1px solid #b8962e; border-radius: 8px; background: #f6efdf; padding: 12px; }
+.s6db-enemy { border-color: #8b2020; }
+.s6db-fighter-name { font-size: 1.15rem; font-weight: 700; }
+.s6db-hp { font-size: 0.82rem; color: #6b513a; }
+.s6db-bar { height: 10px; border-radius: 5px; background: #d8c7a6; overflow: hidden; margin: 4px 0; }
+.s6db-bar span { display: block; height: 100%; }
+.s6db-bar--enemy span { background: #8b2020; }
+.s6db-bar--player span { background: #2f6f6a; }
+.s6db-meta { display: flex; gap: 8px; font-size: 0.82rem; }
+.s6db-block { color: #2f6f6a; font-weight: 700; }
+.s6db-armor { color: #6b513a; font-weight: 700; }
+.s6db-intent { margin-top: 6px; font-weight: 700; color: #8b2020; }
+.s6db-status { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.s6db-status-chip { font-size: 0.7rem; padding: 1px 6px; border-radius: 10px; background: #1e2840; color: #f6efdf; }
+.s6db-status-chip--vulnerable { background: #8b2020; }
+.s6db-status-chip--weak { background: #6b513a; }
+.s6db-status-chip--strength { background: #2f6f6a; }
+.s6db-energy { margin: 12px 0 4px; font-size: 0.9rem; }
+.s6db-pile { margin-left: 12px; color: #6b513a; }
+.s6db-combat-controls { margin: 8px 0; }
+
+/* ── boss ──────────────────────────────────────────────────────────────────── */
+.s6db-boss-hud { display: flex; flex-wrap: wrap; gap: 14px; align-items: baseline; padding-bottom: 10px; border-bottom: 2px solid #b8962e; }
+.s6db-boss-status { color: #8b2020; font-weight: 700; }
+.s6db-boss-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 300px); gap: 16px; margin: 14px 0; }
+.s6db-boss-hint { font-style: italic; color: #3b2a1c; }
+.s6db-boss-turn { font-size: 0.82rem; color: #6b513a; margin-bottom: 8px; }
+.s6db-boss-rules { display: grid; gap: 8px; align-content: start; }
+.s6db-boss-rules article { display: grid; gap: 4px; border: 1px solid #b8962e; border-radius: 6px; background: #f6efdf; padding: 10px; }
+
+/* ── end screens ───────────────────────────────────────────────────────────── */
+.s6db-end h2 { margin-top: 0; }
+.s6db-end--dead h2 { color: #8b2020; }
+.s6db-end--won h2 { color: #2f6f6a; }
+
+@media (max-width: 720px) {
+  .s6db-fighters, .s6db-boss-layout { grid-template-columns: 1fr; }
+  .s6db-card { width: 100%; }
 }
