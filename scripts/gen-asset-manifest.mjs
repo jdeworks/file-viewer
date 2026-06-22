@@ -85,4 +85,15 @@ for (const f of kept) hash.update(f.path + ':' + f.size + '\n');
 const version = hash.digest('hex').slice(0, 12);
 
 await writeFile(join(DOCS, 'asset-manifest.json'), JSON.stringify({ version, assets, bundles }, null, 0) + '\n');
+
+// Stamp the same version into the service worker. This makes sw.js's BYTES change on every deploy,
+// which is what triggers the browser to install a new SW (and then prompt the user to reload); it
+// also names the per-version cache. sw.js is excluded from the manifest (and from the version hash),
+// so rewriting it here can never change `version` — no chicken-and-egg.
+const SW = join(DOCS, 'sw.js');
+const swText = await readFile(SW, 'utf8');
+const swStamped = swText.replace(/^const VERSION = '[^']*';.*$/m, `const VERSION = '${version}';   // stamped by scripts/gen-asset-manifest.mjs`);
+if (swStamped !== swText) await writeFile(SW, swStamped);
+
 console.log('asset-manifest.json: ' + assets.length + ' assets, ' + bundles.length + ' bundles, version ' + version);
+console.log('sw.js: VERSION stamped to ' + version);

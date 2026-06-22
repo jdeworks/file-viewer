@@ -37,6 +37,29 @@ export async function run(ctx) {
   else fail('ffmpeg bundle missing or not heavy: ' + JSON.stringify(ffmpeg));
 }
 
+// SW update-guard: a deploy bumps the version stamped into sw.js (its bytes change → the browser
+// installs a new SW), the cache is named per version (so a new SW serves a consistent asset set,
+// not a stale old+new mix), updates park in 'waiting', and the page prompts before switching.
+{
+  const manifest = JSON.parse(await readFile(join(ROOT, 'asset-manifest.json'), 'utf8'));
+  const sw = await readFile(join(ROOT, 'sw.js'), 'utf8');
+  const m = sw.match(/^const VERSION = '([^']*)';/m);
+  const stamped = m && m[1] === manifest.version;
+  const versionedCache = /const CACHE = 'file-viewer-' \+ VERSION;/.test(sw);
+  const gatedSkip = /if \(!self\.registration\.active\) self\.skipWaiting\(\);/.test(sw);
+  const handlesSkip = /e\.data\.type === 'skip-waiting'/.test(sw);
+  const dropsStale = /caches\.keys\(\)/.test(sw) && /caches\.delete/.test(sw);
+  if (stamped && versionedCache && gatedSkip && handlesSkip && dropsStale)
+    pass('sw.js: version stamped (' + manifest.version + '), per-version cache, gated skipWaiting + skip-waiting msg + stale-cache cleanup');
+  else fail('sw.js update-guard: stamped=' + stamped + ' versionedCache=' + versionedCache + ' gatedSkip=' + gatedSkip + ' handlesSkip=' + handlesSkip + ' dropsStale=' + dropsStale);
+
+  const off = await readFile(join(ROOT, 'core', 'offline.js'), 'utf8');
+  const banner = /showUpdateBanner/.test(off) && /updatefound/.test(off) && /skip-waiting/.test(off) && /controllerchange/.test(off);
+  const css = (await readFile(join(ROOT, 'assets', 'app.css'), 'utf8')).includes('.update-banner');
+  if (banner && css) pass('offline.js wires the update banner (updatefound → prompt → skip-waiting → reload) + .update-banner CSS present');
+  else fail('update banner wiring: offline.js=' + banner + ' css=' + css);
+}
+
   await page.goto(origin, { waitUntil: 'load' });
   pass('page loaded');
 
