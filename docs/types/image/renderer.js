@@ -8,6 +8,8 @@ import { isSvg, mimeFor, dimensions } from './imglib.js';
 import { recordStage3AsciiActivation } from '../../games/metagame/viewer-actions.js';
 import { hexToRgba, floodFill, bgFloodFill } from './fill.js';
 import { createEditCore } from './editor-core.js';
+import { mountFilters } from './edit-filters.js';
+import { mountTextTool } from './edit-text.js';
 
 // Toolbar markup lives in sibling .html templates (real HTML, easy to extend).
 // doc.html is the shell (fit/zoom/ascii bar + stage + ascii-out) with an
@@ -109,6 +111,21 @@ export async function render(intake, ctx = {}) {
     els: { editReset, exportFmt, undoBtn, redoBtn, dirtyIndicator: host.querySelector('.imgv-dirty-indicator') },
   });
 
+  // The editing tools (text, filters, geometry, background-removal) are mounted
+  // from sibling modules; they share this `els` bag of toolbar controls plus the
+  // edit core. (All null when !canEdit — the modules are null-safe.)
+  const els = {
+    editInput, editSize, editColor, editFont, editApply, editReset,
+    filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn,
+    bgBtn, bgTol, bgOk, bgX, exportFmt,
+    rotLBtn, rotRBtn, flipHBtn, flipVBtn,
+    cropBtn, cropApplyBtn, cropCancelBtn,
+    resizeBtn, resizePanel, resizeW, resizeH, resizeLock, resizeApplyBtn, resizeCancelBtn,
+  };
+  // Interactive tools (text placement, crop, BG pick) register here so the pan
+  // logic stands down while a tool owns the pointer; each exposes isActive().
+  const editTools = [];
+
   // Pan offset (px), applied as a transform so the WHOLE canvas can be dragged
   // freely — even when the image is smaller than the stage. The draw overlay gets
   // the same transform so brush coordinates stay aligned.
@@ -145,7 +162,7 @@ export async function render(intake, ctx = {}) {
   // drag pans even mid-draw (reposition while doing detail work).
   const stageEl = host.querySelector('.imgv-stage');
   stageEl.style.overflow = 'hidden';
-  const editModeActive = () => drawMode || cropMode || bgPickMode || textPlaceMode;
+  const editModeActive = () => drawMode || editTools.some((t) => t.isActive && t.isActive());
   let dragLastX = 0, dragLastY = 0;
   const onPanMove = (e) => {
     panX += e.clientX - dragLastX; panY += e.clientY - dragLastY;
@@ -307,144 +324,11 @@ export async function render(intake, ctx = {}) {
     });
   }
 
-  async function commitText(nx, ny) {
-    const text = (editInput?.value || '').trim();
-    if (!text) return;
-    const base = new Image();
-    base.decoding = 'async';
-    base.src = core.editedUrl || url;
-    await base.decode();
-    const canvas = document.createElement('canvas');
-    canvas.width = base.naturalWidth;
-    canvas.height = base.naturalHeight;
-    const g = canvas.getContext('2d');
-    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
-    g.drawImage(base, 0, 0);
-    const size = Math.max(8, Math.min(240, parseInt(editSize?.value, 10) || 32));
-    const fontFamily = editFont?.value || 'system-ui,sans-serif';
-    g.font = `700 ${size}px ${fontFamily}`;
-    g.textBaseline = 'alphabetic';
-    g.lineJoin = 'round';
-    g.strokeStyle = 'rgba(0,0,0,.72)';
-    g.lineWidth = Math.max(3, Math.round(size / 8));
-    g.fillStyle = editColor?.value || '#ffffff';
-    const px = Math.round((nx ?? 0.5) * canvas.width);
-    const py = Math.round((ny ?? 0.5) * canvas.height);
-    const maxW = Math.round(canvas.width * 0.8);
-    g.strokeText(text, px, py, maxW);
-    g.fillText(text, px, py, maxW);
-    core.pushUndo();
-    await core.commitCanvas(canvas);
-  }
-
-  let textDragDiv = null, textCommitBtn = null, textCancelBtn = null;
-
-  function exitTextPlaceMode() {
-    textPlaceMode = false;
-    if (textDragDiv) { textDragDiv.remove(); textDragDiv = null; }
-    if (textCommitBtn) { textCommitBtn.remove(); textCommitBtn = null; }
-    if (textCancelBtn) { textCancelBtn.remove(); textCancelBtn = null; }
-    if (editApply) { editApply.textContent = 'Add text'; editApply.classList.remove('active'); }
-  }
-
-  function enterTextPlaceMode() {
-    const text = (editInput?.value || '').trim();
-    if (!text) { editInput?.focus(); return; }
-    if (textPlaceMode) { exitTextPlaceMode(); return; }
-    textPlaceMode = true;
-    if (editApply) { editApply.textContent = 'Cancel'; editApply.classList.add('active'); }
-
-    // Create draggable text overlay div
-    const stage = host.querySelector('.imgv-stage');
-    stage.style.position = 'relative';
-    const fontSize = Math.max(8, Math.min(240, parseInt(editSize?.value, 10) || 32));
-    const fontFamily = editFont?.value || 'system-ui,sans-serif';
-    const color = editColor?.value || '#ffffff';
-
-    textDragDiv = document.createElement('div');
-    textDragDiv.textContent = text;
-    textDragDiv.style.cssText = [
-      'position:absolute',
-      'z-index:10',
-      'cursor:move',
-      'user-select:none',
-      `font-size:${fontSize}px`,
-      `font-family:${fontFamily}`,
-      `color:${color}`,
-      'font-weight:700',
-      'background:rgba(255,255,255,0.15)',
-      'padding:2px 4px',
-      'border-radius:3px',
-      'white-space:nowrap',
-      'touch-action:none',
-    ].join(';');
-    stage.appendChild(textDragDiv);
-    // Position centered on the image (not the stage) so the text is immediately visible.
-    requestAnimationFrame(() => {
-      const stageR = stage.getBoundingClientRect();
-      const imgR = img.getBoundingClientRect();
-      const textR = textDragDiv.getBoundingClientRect();
-      const cx = imgR.left - stageR.left + (imgR.width - textR.width) / 2;
-      const cy = imgR.top - stageR.top + imgR.height / 3;
-      textDragDiv.style.left = Math.max(0, cx) + 'px';
-      textDragDiv.style.top = Math.max(0, cy) + 'px';
-    });
-
-    // Drag logic
-    let dragOffX = 0, dragOffY = 0, dragging = false;
-    textDragDiv.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      textDragDiv.setPointerCapture(e.pointerId);
-      const r = textDragDiv.getBoundingClientRect();
-      dragOffX = e.clientX - r.left;
-      dragOffY = e.clientY - r.top;
-      dragging = true;
-    });
-    textDragDiv.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      e.preventDefault();
-      const stageR = stage.getBoundingClientRect();
-      const x = e.clientX - stageR.left - dragOffX;
-      const y = e.clientY - stageR.top - dragOffY;
-      textDragDiv.style.left = x + 'px';
-      textDragDiv.style.top = y + 'px';
-    });
-    textDragDiv.addEventListener('pointerup', () => { dragging = false; });
-
-    // Commit and Cancel buttons injected into the bar
-    const bar = host.querySelector('.imgv-bar');
-    textCommitBtn = document.createElement('button');
-    textCommitBtn.textContent = 'Commit text';
-    textCommitBtn.className = 'imgv-text-commit';
-    textCommitBtn.title = 'Place the text at its current position';
-    bar.appendChild(textCommitBtn);
-
-    textCancelBtn = document.createElement('button');
-    textCancelBtn.textContent = 'Cancel';
-    textCancelBtn.className = 'imgv-text-cancel-place';
-    textCancelBtn.title = 'Cancel text placement';
-    bar.appendChild(textCancelBtn);
-
-    textCommitBtn.addEventListener('click', () => {
-      // Compute position as fraction of img display rect
-      const imgR = img.getBoundingClientRect();
-      const divR = textDragDiv.getBoundingClientRect();
-      const nx = (divR.left - imgR.left) / imgR.width;
-      const ny = (divR.bottom - imgR.top) / imgR.height; // bottom = baseline
-      exitTextPlaceMode();
-      commitText(nx, ny).catch((err) => { if (editApply) editApply.title = err.message || String(err); });
-    });
-
-    textCancelBtn.addEventListener('click', () => {
-      exitTextPlaceMode();
-    });
-  }
-
-  editApply?.addEventListener('click', () => {
-    enterTextPlaceMode();
-  });
+  // Text overlay — drag a label onto the image, then bake it in (edit-text.js).
+  const textTool = mountTextTool({ host, img, mime, core, els });
+  editTools.push(textTool);
   editReset?.addEventListener('click', () => {
-    exitTextPlaceMode();
+    textTool.exitPlaceMode();
     core.reset();
   });
 
@@ -494,49 +378,8 @@ export async function render(intake, ctx = {}) {
     (sw) => sw, (sw, sh) => sh,
   ));
 
-  // Filters panel toggle
-  filtersBtn?.addEventListener('click', () => {
-    if (filtersPanel) filtersPanel.hidden = !filtersPanel.hidden;
-  });
-
-  // Live filter preview — apply as CSS filter on img while sliding
-  function filterString() {
-    return `brightness(${fBrightness.value}%) contrast(${fContrast.value}%) saturate(${fSaturation.value}%) hue-rotate(${fHue?.value || 0}deg)`;
-  }
-  function updateFilterPreview() { img.style.filter = filterString(); }
-  fBrightness?.addEventListener('input', updateFilterPreview);
-  fContrast?.addEventListener('input', updateFilterPreview);
-  fSaturation?.addEventListener('input', updateFilterPreview);
-  fHue?.addEventListener('input', updateFilterPreview);
-
-  // Apply filters — bake current CSS filter into the canvas, then clear the live preview
-  fApplyBtn?.addEventListener('click', async () => {
-    const filter = filterString();
-    img.style.filter = ''; // clear live preview before baking
-    const base = new Image();
-    base.decoding = 'async';
-    base.src = core.editedUrl || url;
-    await base.decode();
-    const canvas = document.createElement('canvas');
-    canvas.width = base.naturalWidth;
-    canvas.height = base.naturalHeight;
-    const g = canvas.getContext('2d');
-    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
-    g.filter = filter;
-    g.drawImage(base, 0, 0);
-    g.filter = 'none';
-    core.pushUndo();
-    await core.commitCanvas(canvas);
-  });
-
-  // Reset filter sliders to default and clear any live preview
-  fResetBtn?.addEventListener('click', () => {
-    if (fBrightness) fBrightness.value = '100';
-    if (fContrast) fContrast.value = '100';
-    if (fSaturation) fSaturation.value = '100';
-    if (fHue) fHue.value = '0';
-    img.style.filter = '';
-  });
+  // Filters — live CSS preview + bake on Apply (edit-filters.js).
+  mountFilters({ img, mime, core, els });
 
   // Compare — original vs current (edited): split / overlay / diff. The view is a
   // self-contained lazy module so this renderer stays thin. Original always uses
