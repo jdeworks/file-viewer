@@ -1,9 +1,9 @@
-// Magic-wand selection — click a region to build a pixel MASK (reusing the same
-// connected-region walk the bucket fill uses: fill.js computeRegionMask, with the
-// shared tolerance / mode / perceptual options). While a selection is active the
-// pixel tools (pencil / eraser / fill) only "take" inside it — the renderer clips
-// their output to the mask via clipToBase. The selection is shown as a translucent
-// tint + a solid boundary outline on its own overlay canvas over the image.
+// Pixel selection — build a MASK two ways: the magic WAND (click a region; reuses
+// fill.js computeRegionMask with the shared tolerance/mode/perceptual options) or a
+// rectangular MARQUEE (drag a box). While a selection is active the pixel tools
+// (pencil / eraser / fill) only "take" inside it — the renderer clips their output to
+// the mask via clipToBase. The selection shows as a translucent tint + boundary
+// outline on its own overlay canvas over the image.
 //
 // The mask is kept at NATURAL resolution (matching the edit canvases); the overlay
 // canvas is natural-res and CSS-scaled to the displayed image box, like the draw
@@ -11,13 +11,14 @@
 import { computeRegionMask, clipToBase } from './fill.js';
 
 export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }) {
-  const { selectBtn, deselectBtn } = els;
-  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {}, async clipCanvas() {}, toggle() {}, setActive() {}, clear() {}, syncOverlay() {}, teardown() {} };
+  const { selectBtn, marqueeBtn, deselectBtn } = els;
+  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {}, async clipCanvas() {}, toggle() {}, setActive() {}, setMode() {}, clear() {}, syncOverlay() {}, teardown() {} };
 
   const stage = host.querySelector('.imgv-stage');
-  let selectMode = false;
+  let mode = null;                   // null | 'wand' | 'marquee'
   let mask = null, mw = 0, mh = 0;   // current selection mask (natural res) + its dims
   let ov = null, octx = null;
+  let dragging = false, dragStart = null;   // marquee rubber-band drag
 
   function ensureOverlay() {
     if (ov) return;
@@ -27,8 +28,51 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     ov.style.cssText = 'position:absolute;pointer-events:none;touch-action:none;z-index:4;';
     octx = ov.getContext('2d');
     stage.appendChild(ov);
-    ov.addEventListener('pointerdown', (e) => { if (selectMode) { e.preventDefault(); pickAt(e); } });
+    ov.addEventListener('pointerdown', onDown);
+    ov.addEventListener('pointermove', onMove);
+    ov.addEventListener('pointerup', onUp);
     syncOverlay();
+  }
+
+  function onDown(e) {
+    if (mode === 'wand') { e.preventDefault(); pickAt(e); return; }
+    if (mode === 'marquee') {
+      e.preventDefault();
+      ov.width = img.naturalWidth || 1; ov.height = img.naturalHeight || 1;   // natural-res drawing surface (clears)
+      syncOverlay();
+      dragging = true; dragStart = ptToCanvas(e);
+      try { ov.setPointerCapture(e.pointerId); } catch { /* not all pointers capture */ }
+    }
+  }
+  function onMove(e) { if (dragging) { e.preventDefault(); drawRubberBand(dragStart, ptToCanvas(e)); } }
+  function onUp(e) {
+    if (!dragging) return;
+    dragging = false;
+    buildRectMask(dragStart, ptToCanvas(e));
+  }
+
+  // Dashed rubber-band rectangle drawn live on the (natural-res) overlay.
+  function drawRubberBand(a, b) {
+    octx.clearRect(0, 0, ov.width, ov.height);
+    const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
+    octx.strokeStyle = 'rgba(0,132,255,0.95)';
+    octx.lineWidth = Math.max(1, ov.width / 320);
+    octx.setLineDash([ov.width / 60, ov.width / 60]);
+    octx.strokeRect(x + 0.5, y + 0.5, w, h);
+    octx.setLineDash([]);
+  }
+
+  // Turn the dragged box into a mask (1 inside the rect), clamped to the image.
+  function buildRectMask(a, b) {
+    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+    const x0 = Math.max(0, Math.min(w, Math.min(a.x, b.x))), x1 = Math.max(0, Math.min(w, Math.max(a.x, b.x)));
+    const y0 = Math.max(0, Math.min(h, Math.min(a.y, b.y))), y1 = Math.max(0, Math.min(h, Math.max(a.y, b.y)));
+    if (x1 - x0 < 2 || y1 - y0 < 2) { octx.clearRect(0, 0, ov.width, ov.height); return; }   // ignore a stray click
+    const m = new Uint8Array(w * h);
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) m[y * w + x] = 1;
+    mask = m; mw = w; mh = h;
+    render();
+    if (deselectBtn) deselectBtn.hidden = false;
   }
 
   // Cover exactly the displayed <img> box so click coords map 1:1 to image pixels.
@@ -82,17 +126,20 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     octx.putImageData(out, 0, 0);
   }
 
-  function setActive(on) {
-    selectMode = on;
-    // Only create the overlay when actually entering wand mode — NOT on a passive
-    // deactivate (e.g. when a draw tool turns the wand off). Creating it eagerly would
+  function setMode(m) {
+    mode = m;
+    // Only create the overlay when actually entering a select mode — NOT on a passive
+    // deactivate (e.g. when a draw tool turns selection off). Creating it eagerly would
     // insert the selection <canvas> into the stage before the draw overlay and shift
     // which canvas is "first" for tools that grab `.imgv-stage canvas`.
-    if (on) ensureOverlay();
-    selectBtn.classList.toggle('active', on);
-    if (ov) { ov.style.pointerEvents = on ? 'auto' : 'none'; ov.style.cursor = on ? 'crosshair' : ''; }
-    if (on) onActivate?.();
+    if (m) ensureOverlay();
+    selectBtn.classList.toggle('active', m === 'wand');
+    marqueeBtn?.classList.toggle('active', m === 'marquee');
+    if (ov) { ov.style.pointerEvents = m ? 'auto' : 'none'; ov.style.cursor = m ? 'crosshair' : ''; }
+    if (m) onActivate?.();
   }
+  // Renderer compat: a draw tool turning selection off calls setActive(false).
+  function setActive(on) { setMode(on ? 'wand' : null); }
 
   function clear() {
     mask = null; mw = mh = 0;
@@ -122,14 +169,15 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     g.putImageData(ed, 0, 0);
   }
 
-  selectBtn.addEventListener('click', () => setActive(!selectMode));
+  selectBtn.addEventListener('click', () => setMode(mode === 'wand' ? null : 'wand'));
+  marqueeBtn?.addEventListener('click', () => setMode(mode === 'marquee' ? null : 'marquee'));
   deselectBtn?.addEventListener('click', clear);
 
   return {
-    isActive: () => selectMode,
+    isActive: () => mode !== null,
     hasSelection: () => !!mask,
     getMask: () => (mask ? { data: mask, w: mw, h: mh } : null),
-    setActive, toggle: () => setActive(!selectMode),
+    setActive, setMode, toggle: () => setMode(mode ? null : 'wand'),
     clipFillInPlace, clipCanvas,
     clear, syncOverlay,
     teardown() { ov?.remove(); ov = null; octx = null; mask = null; },

@@ -347,6 +347,23 @@ export async function run(ctx) {
     modeOff: !document.querySelector('#previewHost .imgv-select').classList.contains('active'),
   }));
   if (selCleared.deselectHidden && selCleared.modeOff) pass('magic-wand: Deselect clears the selection + leaving wand mode'); else fail('wand clear: ' + JSON.stringify(selCleared));
+  // Rectangular marquee — a second mask SOURCE: drag a box → a rectangular selection
+  // (same overlay/tint + Deselect; same clipToBase constraint on the pixel tools).
+  await page.click('#previewHost .imgv-marquee');                 // enter box-select mode
+  const selBox = await page.$eval('#previewHost .imgv-sel-overlay', (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  await page.mouse.move(selBox.x + 15, selBox.y + 15);
+  await page.mouse.down();
+  await page.mouse.move(selBox.x + selBox.w * 0.6, selBox.y + selBox.h * 0.6, { steps: 5 });
+  await page.mouse.up();
+  const marq = await page.evaluate(() => {
+    const ov = document.querySelector('#previewHost .imgv-sel-overlay');
+    let painted = false;
+    if (ov && ov.width) { const d = ov.getContext('2d').getImageData(0, 0, ov.width, ov.height).data; for (let i = 3; i < d.length; i += 4) { if (d[i]) { painted = true; break; } } }
+    return { painted, deselectShown: !document.querySelector('#previewHost .imgv-deselect').hidden, active: document.querySelector('#previewHost .imgv-marquee').classList.contains('active') };
+  });
+  if (marq.painted && marq.deselectShown && marq.active) pass('marquee: drag a box builds a rectangular selection (overlay painted + Deselect shown)'); else fail('marquee: ' + JSON.stringify(marq));
+  await page.click('#previewHost .imgv-deselect');                // clear
+  await page.click('#previewHost .imgv-marquee');                 // leave box-select for later steps
   // ── Transform / filter / draw commit pipeline ── each tool writes a FRESH edited
   // blob, so img.src (a blob: URL) flips to a new value when a commit lands. This is
   // a tool-agnostic regression signal that protects the editor-module split.

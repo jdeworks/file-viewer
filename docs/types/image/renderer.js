@@ -88,6 +88,7 @@ export async function render(intake, ctx = {}) {
   const fillFeather = canEdit ? host.querySelector('.imgv-fill-feather') : null;
   const fillOpts = canEdit ? host.querySelectorAll('.imgv-fill-opt') : [];
   const selectBtn = canEdit ? host.querySelector('.imgv-select') : null;
+  const marqueeBtn = canEdit ? host.querySelector('.imgv-marquee') : null;
   const deselectBtn = canEdit ? host.querySelector('.imgv-deselect') : null;
   const drawColorPicker = canEdit ? host.querySelector('.imgv-draw-color') : null;
   const drawSizePicker = canEdit ? host.querySelector('.imgv-draw-size') : null;
@@ -500,7 +501,7 @@ export async function render(intake, ctx = {}) {
   // shared fill tolerance/mode/perceptual options (edit-select.js → fill.js).
   selection = mountSelection({
     host, img, mime,
-    els: { selectBtn, deselectBtn },
+    els: { selectBtn, marqueeBtn, deselectBtn },
     getFillOpts: () => ({ tol: parseInt(fillTol?.value || '12', 10), mode: fillMode?.value || 'seed', perceptual: !!fillPercep?.checked }),
     onActivate: () => setDrawMode(null),   // the wand is mutually exclusive with pencil/eraser/fill input
   });
