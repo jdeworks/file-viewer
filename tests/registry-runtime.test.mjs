@@ -31,6 +31,14 @@ for (let i = 0; i < FULL.length; i++) {
   }
 }
 
+// A type whose source dir ships a renderer.generated.js bundle must have its runtime loadRenderer
+// point at the BUNDLE, not the modular renderer.js (gen-registry-runtime prefers the bundle). This
+// guards the image renderer's lazy chunk from silently reverting to per-module loading.
+const imageType = getType('image');
+const imageLoaderSrc = String(imageType.loadRenderer);
+assert.match(imageLoaderSrc, /renderer\.generated\.js/, 'image loadRenderer must import the bundled renderer.generated.js');
+assert.doesNotMatch(imageLoaderSrc, /image\/renderer\.js/, 'image loadRenderer must NOT import the unbundled renderer.js');
+
 function intake(filename, { mimeType = '', text = '', bytes = new Uint8Array(), isBinary = false } = {}) {
   return { filename, mimeType, text, textSample: text.slice(0, 2048), bytes, isBinary, size: bytes.length || text.length, lastModified: 0 };
 }
