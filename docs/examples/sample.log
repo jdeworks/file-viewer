@@ -4,3 +4,8 @@
 2026-06-13 09:14:07 WARN  Asset manifest is 3 versions behind
 2026-06-13 09:14:09 ERROR Failed to open file: permission denied
 2026-06-13 09:14:10 INFO  Recovered, serving from cache
+2026-06-13 09:14:12 [32mINFO[0m  Build [1msucceeded[0m in 4.2s
+2026-06-13 09:14:13 [33mWARN[0m  Deprecation: --legacy flag will be removed
+2026-06-13 09:14:14 [31mERROR[0m Connection reset by peer [90m(retry 3/3)[0m
+2026-06-13 09:14:15 [38;5;208mNOTICE[0m 256-color SGR tag rendered
+2026-06-13 09:14:16 [38;2;120;200;255mINFO[0m  truecolor line, shutting down
