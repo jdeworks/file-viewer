@@ -1,3 +1,5 @@
+import { parseTOML } from '../../toml.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -23,11 +25,10 @@ const CSS = `
 const NON_MODULE_KEYS = new Set(['format', 'right_format', 'continuation_prompt', 'scan_timeout', 'command_timeout', 'add_newline', 'palette', 'palettes']);
 
 export function render(intake) {
+  // intake.parsed is never populated at detection time, so parse the TOML ourselves (with a fallback).
   let cfg = {};
   try {
-    if (intake.parsed && typeof intake.parsed === 'object') {
-      cfg = intake.parsed;
-    }
+    cfg = (intake.parsed && typeof intake.parsed === 'object') ? intake.parsed : (parseTOML(intake.text || '') || {});
   } catch { cfg = {}; }
 
   // Top-level modules: any top-level table key that is an object (not palette/palettes)

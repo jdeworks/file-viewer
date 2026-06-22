@@ -60,6 +60,8 @@ function analyzeGroovy(text) {
     }
 
     // Methods/defs: def name( or access def name(
+    // `def name(`  OR  `[mods] returnType name(`  (Java-style typed methods). The method name is
+    // captured directly by the match: group 2 for the `def` form, group 4 for the typed form.
     const methM = trimmed.match(/^(?:(public|private|protected|static|final|abstract|synchronized)\s+)*(?:def\s+(\w+)\s*\(|(\w+)\s+(\w+)\s*\()/);
     if (methM && !typeM) {
       const mods = [];
@@ -72,9 +74,9 @@ function analyzeGroovy(text) {
         rest = rest.slice(mod[0].length);
         modRe.lastIndex = 0;
       }
-      const nameM = rest.match(/^(?:def\s+)?(\w+)\s*\(/);
-      if (nameM && nameM[1] !== 'if' && nameM[1] !== 'while' && nameM[1] !== 'for' && nameM[1] !== 'switch') {
-        methods.push({ name: nameM[1], mods });
+      const methodName = methM[2] || methM[4];
+      if (methodName && !['if', 'while', 'for', 'switch', 'catch', 'return'].includes(methodName)) {
+        methods.push({ name: methodName, mods });
       }
     }
 

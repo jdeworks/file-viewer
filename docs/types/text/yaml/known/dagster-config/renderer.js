@@ -84,18 +84,20 @@ export async function render(intake) {
   }
 
   const filename = (intake.filename || intake.name || 'dagster.yaml').split('/').pop().toLowerCase();
-  const isWorkspace = filename === 'workspace.yaml';
+  // `load_from` (code locations) can live in workspace.yaml OR a dagster.yaml — drive the view by the
+  // content, not just the filename, so a dagster.yaml that lists code locations still renders them.
+  const loadFrom = Array.isArray(cfg.load_from) ? cfg.load_from : [];
+  const showLocations = filename === 'workspace.yaml' || loadFrom.length > 0;
 
   const host = document.createElement('div');
   host.className = 'dagster-doc';
 
-  if (isWorkspace) {
-    // workspace.yaml mode: show load_from code locations
-    const loadFrom = Array.isArray(cfg.load_from) ? cfg.load_from : [];
+  if (showLocations) {
+    // code-locations mode: show load_from entries
     const locationCards = loadFrom.map(codeLocationCard).join('');
 
     host.innerHTML = `<style>${CSS}</style>
-<div class="dagster-title"><span class="badge-dagster">Dagster</span>workspace.yaml</div>
+<div class="dagster-title"><span class="badge-dagster">Dagster</span>${esc(filename)}</div>
 <div class="dagster-sub">Dagster workspace — ${loadFrom.length} code location${loadFrom.length !== 1 ? 's' : ''}</div>
 ${loadFrom.length ? `<div class="dagster-sec"><h3>Code Locations (${loadFrom.length})</h3>${locationCards}</div>` : '<div class="dagster-sec"><div class="dagster-card"><em style="color:var(--fg-2,#888)">No load_from entries found</em></div></div>'}`;
   } else {
