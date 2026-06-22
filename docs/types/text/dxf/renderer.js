@@ -1,3 +1,5 @@
+import { parseGeometry } from './geometry.js';
+
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 // DXF is line pairs: odd lines are group codes (integers), even lines are values.
@@ -145,6 +147,78 @@ dl.kv dd{padding:6px 12px;word-break:break-all}
 .section-pills{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px}
 .pill{font-size:11px;padding:3px 10px;border-radius:12px;background:#e3e8ef;color:#333;border:1px solid #c5cdd8}
 .pill.present{background:#dff0d8;color:#2a5e17;border-color:#a5d69b}
+.dxf-tools{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.dxf-tools button{cursor:pointer;border:1px solid var(--border,#cbd5e1);background:var(--panel,#fff);color:inherit;border-radius:6px;padding:3px 11px;font:600 12px system-ui,sans-serif;line-height:1.4}
+.dxf-hint{font-size:11px;color:var(--fg2,#999);margin-left:auto}
+.dxf-canvas-wrap{position:relative;background:var(--panel,#fbfbfb);border:1px solid var(--border,#e0e0e0);border-radius:6px;overflow:hidden}
+.dxf-canvas{display:block;width:100%;height:440px;touch-action:none;cursor:grab}
+.dxf-canvas:active{cursor:grabbing}
+`;
+
+// Inline canvas renderer, run inside the sandboxed preview iframe. Reads the injected GEO object
+// (entities + bounds) and draws model space with fit / scroll-zoom / drag-pan. Written WITHOUT any
+// backtick or ${...} (it sits inside the renderer's template literal) and the closing tag is split.
+const DRAW_JS = `
+var cv = document.querySelector('.dxf-canvas');
+if (cv && GEO && GEO.bounds) {
+  var ctx = cv.getContext('2d');
+  var b = GEO.bounds;
+  var zoom = 1, panX = 0, panY = 0;
+  var ACI = {1:'#e84a4a',2:'#d6b400',3:'#3fb950',4:'#2bb0c4',5:'#4a7fe8',6:'#c050c0'};
+  function defColor(){ return document.body.classList.contains('fv-dark') ? '#d8dde3' : '#2a2f36'; }
+  function colorOf(e){ return (e.color && ACI[e.color]) ? ACI[e.color] : defColor(); }
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  var W = 1, H = 1, base = 1;
+  var cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
+  function S(){ return base * zoom; }
+  function sx(x){ return (x - cx) * S() + W / 2 + panX; }
+  function sy(y){ return H / 2 - (y - cy) * S() + panY; }
+  function poly(pts, close){ if (!pts.length) return; ctx.beginPath(); ctx.moveTo(sx(pts[0][0]), sy(pts[0][1])); for (var i = 1; i < pts.length; i++) ctx.lineTo(sx(pts[i][0]), sy(pts[i][1])); if (close) ctx.closePath(); ctx.stroke(); }
+  function arcPts(ccx, ccy, r, a0, a1){ var out = [], n = 48; for (var i = 0; i <= n; i++){ var t = a0 + (a1 - a0) * i / n; out.push([ccx + r * Math.cos(t), ccy + r * Math.sin(t)]); } return out; }
+  function dot(x, y, r){ ctx.beginPath(); ctx.arc(sx(x), sy(y), r, 0, Math.PI * 2); ctx.fill(); }
+  function marker(x, y){ var X = sx(x), Y = sy(y), s = 5; ctx.beginPath(); ctx.moveTo(X - s, Y); ctx.lineTo(X + s, Y); ctx.moveTo(X, Y - s); ctx.lineTo(X, Y + s); ctx.stroke(); }
+  function drawText(e){ var h = Math.max(7, Math.min((e.nums.r || 3) * S(), 40)); ctx.save(); ctx.font = h + 'px system-ui,sans-serif'; ctx.textBaseline = 'alphabetic'; ctx.fillText(e.text || '', sx(e.pts.x), sy(e.pts.y)); ctx.restore(); }
+  function drawEllipse(e){ var p = e.pts, nm = e.nums; var mx = p.x2 || 0, my = p.y2 || 0, ratio = nm.r || 1; var t0 = (nm.p1 != null ? nm.p1 : 0), t1 = (nm.p2 != null ? nm.p2 : Math.PI * 2); if (t1 <= t0) t1 = t0 + Math.PI * 2; var px = -my * ratio, py = mx * ratio, out = [], n = 64; for (var i = 0; i <= n; i++){ var t = t0 + (t1 - t0) * i / n; out.push([p.x + Math.cos(t) * mx + Math.sin(t) * px, p.y + Math.cos(t) * my + Math.sin(t) * py]); } poly(out); }
+  function draw(){
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineWidth = 1; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    for (var k = 0; k < GEO.entities.length; k++){
+      var e = GEO.entities[k], p = e.pts || {}, nm = e.nums || {};
+      ctx.strokeStyle = colorOf(e); ctx.fillStyle = ctx.strokeStyle;
+      if (e.type === 'LINE') poly([[p.x, p.y], [p.x2, p.y2]]);
+      else if (e.type === 'CIRCLE') poly(arcPts(p.x, p.y, nm.r || 0, 0, Math.PI * 2), true);
+      else if (e.type === 'ARC'){ var a0 = (nm.a1 || 0) * Math.PI / 180, a1 = (nm.a2 || 0) * Math.PI / 180; if (a1 < a0) a1 += Math.PI * 2; poly(arcPts(p.x, p.y, nm.r || 0, a0, a1)); }
+      else if (e.type === 'ELLIPSE') drawEllipse(e);
+      else if (e.type === 'LWPOLYLINE' || e.type === 'POLYLINE') poly(e.verts || [], !!((nm.flags || 0) & 1));
+      else if (e.type === 'SPLINE') poly(e.verts || []);
+      else if (e.type === 'POINT') dot(p.x, p.y, 2);
+      else if (e.type === 'SOLID' || e.type === '3DFACE'){ var q = [[p.x, p.y], [p.x2, p.y2], [(p.x4 != null ? p.x4 : p.x3), (p.y4 != null ? p.y4 : p.y3)], [p.x3, p.y3]].filter(function(c){ return c[0] != null; }); poly(q, true); }
+      else if (e.type === 'TEXT' || e.type === 'MTEXT') drawText(e);
+      else if (e.type === 'INSERT') marker(p.x, p.y);
+    }
+  }
+  function resize(){
+    var r = cv.getBoundingClientRect();
+    W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    var bw = (b.maxX - b.minX) || 1, bh = (b.maxY - b.minY) || 1;
+    base = Math.min(W / bw, H / bh) * 0.9;
+    draw();
+  }
+  cv.addEventListener('wheel', function(ev){ ev.preventDefault(); var r = cv.getBoundingClientRect(); var ux = (ev.clientX - r.left) - W / 2, uy = (ev.clientY - r.top) - H / 2; var f = ev.deltaY < 0 ? 1.15 : 1 / 1.15; panX = ux - f * (ux - panX); panY = uy - f * (uy - panY); zoom *= f; draw(); }, { passive: false });
+  var dragging = false, lx = 0, ly = 0;
+  cv.addEventListener('mousedown', function(ev){ dragging = true; lx = ev.clientX; ly = ev.clientY; });
+  window.addEventListener('mousemove', function(ev){ if (!dragging) return; panX += ev.clientX - lx; panY += ev.clientY - ly; lx = ev.clientX; ly = ev.clientY; draw(); });
+  window.addEventListener('mouseup', function(){ dragging = false; });
+  var fitBtn = document.querySelector('.dxf-fit'), inBtn = document.querySelector('.dxf-zin'), outBtn = document.querySelector('.dxf-zout');
+  if (fitBtn) fitBtn.addEventListener('click', function(){ zoom = 1; panX = 0; panY = 0; draw(); });
+  if (inBtn) inBtn.addEventListener('click', function(){ zoom *= 1.25; draw(); });
+  if (outBtn) outBtn.addEventListener('click', function(){ zoom /= 1.25; draw(); });
+  if (window.ResizeObserver) new ResizeObserver(function(){ resize(); }).observe(cv);
+  cv.dataset.drawn = String(GEO.entities.length);
+  resize();
+}
 `;
 
 export async function render(intake) {
@@ -154,6 +228,7 @@ export async function render(intake) {
   }
 
   const parsed = parseDxf(text);
+  const geo = parseGeometry(text);
 
   const fmtBytes = (n) => {
     if (!n) return '—';
@@ -175,6 +250,14 @@ export async function render(intake) {
   if (parsed.units) html += `<span class="badge badge-units">${esc(parsed.units)}</span>`;
   html += `<span class="badge badge-size">${esc(fmtBytes(intake.size))}</span>`;
   html += `</div>`;
+
+  // 2D drawing — a real canvas render of the model-space geometry (lines/arcs/circles/polylines/
+  // text/ellipses), with fit + scroll-zoom + drag-pan. Drawn by the inline script appended below.
+  if (geo.entities.length && geo.bounds) {
+    html += `<div class="sec dxf-draw"><div class="sec-title">2D View (${geo.entities.length} drawable entities)</div>`;
+    html += `<div class="dxf-tools"><button type="button" class="dxf-fit">Fit</button><button type="button" class="dxf-zin">+</button><button type="button" class="dxf-zout">−</button><span class="dxf-hint">scroll to zoom · drag to pan</span></div>`;
+    html += `<div class="dxf-canvas-wrap"><canvas class="dxf-canvas"></canvas></div></div>`;
+  }
 
   // Sections present
   const ALL_SECTIONS = ['HEADER', 'CLASSES', 'TABLES', 'BLOCKS', 'ENTITIES', 'OBJECTS'];
@@ -250,6 +333,14 @@ export async function render(intake) {
       html += `<dt>${esc(label)}</dt><dd>${esc(parsed.headerVars[k])}</dd>`;
     }
     html += `</dl></div></div>`;
+  }
+
+  // Inject the geometry + draw script (only when there's something to draw). The GEO JSON is escaped
+  // so neither the template literal (backtick / ${) nor the <script> tag (</) can be broken by a
+  // TEXT/MTEXT entity's content — the only place arbitrary characters appear.
+  if (geo.entities.length && geo.bounds) {
+    const geoJson = JSON.stringify(geo).replace(/</g, '\\u003c').replace(/`/g, '\\u0060').replace(/\$/g, '\\u0024');
+    html += '<script>(function(){var GEO=' + geoJson + ';' + DRAW_JS + '})();</scr' + 'ipt>';
   }
 
   return { bodyHtml: html, hadUnsafe: false };
