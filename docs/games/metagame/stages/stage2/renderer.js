@@ -215,8 +215,13 @@ export function renderStage2({
       return;
     }
     state.run.boss.unlocked = true;
+    // A decisive blow: keep striking through every phase until the boss falls. Each 999-hit only
+    // zeroes the current phase (advancing 1→2→3), so a single strike isn't enough — loop until
+    // defeated, bounded well above the 3 phases as a safety guard.
     let result = damageUnlockedBoss({ state, amount: 999 });
-    if (!result.defeated) result = damageUnlockedBoss({ state, amount: 999 });
+    for (let i = 0; i < 5 && !result.defeated; i++) {
+      result = damageUnlockedBoss({ state, amount: 999 });
+    }
     if (result.defeated) {
       appendLog(state, bellMessages.defeated);
       completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 }, btsPath: BTS_PATH });
