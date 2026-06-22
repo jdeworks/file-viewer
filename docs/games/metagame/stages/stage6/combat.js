@@ -32,10 +32,11 @@ function shuffle(list, rng) {
   return out;
 }
 
-export function createCombat({ deck, player, enemy, seed = 1 }) {
+export function createCombat({ deck, player, enemy, seed = 1, relics = [] }) {
   const rng = makeRng(seed);
   const combat = {
     rng,
+    relics,
     player: {
       hp: player.hp,
       maxHp: player.maxHp,
@@ -70,7 +71,29 @@ export function createCombat({ deck, player, enemy, seed = 1 }) {
     log: []
   };
   drawCards(combat, HAND_SIZE);
+  runHook(combat, "onCombatStart");
+  runHook(combat, "onPlayerTurnStart");
   return combat;
+}
+
+// Relics observe the fight through the same primitives cards use.
+function runHook(combat, name, card = null) {
+  for (const relic of combat.relics) {
+    const fn = relic.hooks?.[name];
+    if (typeof fn === "function") fn(relicCtx(combat, card));
+  }
+}
+
+function relicCtx(combat, card) {
+  return {
+    combat, card,
+    deal: (n) => dealToEnemy(combat, n),
+    block: (n) => { combat.player.block += Math.max(0, Math.round(n)); },
+    draw: (n) => drawCards(combat, n),
+    gainEnergy: (n) => { combat.player.energy += n; },
+    applySelf: (status, n) => addStatus(combat.player, status, n),
+    applyEnemy: (status, n) => addStatus(combat.enemy, status, n)
+  };
 }
 
 export function currentIntent(combat) {
@@ -100,6 +123,7 @@ export function playCard(combat, handIndex) {
   if (card.exhaust) combat.exhaust.push(card.id);
   else combat.discard.push(card.id);
 
+  runHook(combat, "onCardPlay", card);
   checkEnemyDead(combat);
   return { ok: true, card: card.id };
 }
@@ -152,6 +176,7 @@ export function endTurn(combat) {
   combat.playedIdsThisTurn = [];
   tickStatuses(combat.player);
   drawCards(combat, HAND_SIZE);
+  runHook(combat, "onPlayerTurnStart");
   return combat;
 }
 
