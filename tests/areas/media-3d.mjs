@@ -497,8 +497,10 @@ export async function run(ctx) {
   await page.fill('#previewHost .imgv-adv-text', 'Layer A');
   await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-adv-bgop'); s.value = '60'; s.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.click('#previewHost .imgv-adv-add');   // a second text object
-  const advLayers = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 2 rows
-  if (advLayers === 3) pass('Adv Edit: layers panel lists each object (2 layers + header)'); else fail('adv layers rows: ' + advLayers);
+  await page.click('#previewHost .imgv-adv-rect');  // a rectangle shape (selects it)
+  const advLayers = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 3 rows
+  const shapeCtl = await page.$eval('#previewHost .imgv-adv-stroke', (el) => getComputedStyle(el.closest('label')).display !== 'none').catch(() => false);
+  if (advLayers === 4 && shapeCtl) pass('Adv Edit: layers panel + shapes (text ×2 + rect; stroke controls shown)'); else fail('adv layers/shape: ' + JSON.stringify({ advLayers, shapeCtl }));
   await page.click('#previewHost .imgv-adv-btn');   // leave Adv → flatten both labels onto the base
   await page.waitForFunction(() => window.__fv.state.binaryEdit?.dirty === true, null, { timeout: 8000 }).catch(() => {});
   const advFlat = await page.evaluate(async () => {
@@ -593,6 +595,21 @@ export async function run(ctx) {
     (els) => els.length,
   );
   if (avifType === 'image' && avifEdits === 5) pass('AVIF gets the full editor toolbar (parity with PNG)'); else fail('avif parity: type=' + avifType + ' editControls=' + avifEdits);
+
+  // ── Animated GIF ── a multi-frame GIF hands the pane to the player (play/pause +
+  // opt-in Split-into-frames); the vendored gifuct decoder loads lazily, only for a
+  // .gif. Inject a tiny 2-frame GIF89a (red→green, 2×2) through the blob intake.
+  await page.goto(origin, { waitUntil: 'load' });
+  const GIF2 = [71, 73, 70, 56, 57, 97, 2, 0, 2, 0, 128, 0, 0, 255, 0, 0, 0, 255, 0, 33, 255, 11, 78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48, 3, 1, 0, 0, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 4, 128, 2, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 76, 146, 2, 0, 59];
+  await page.evaluate((arr) => window.__fv.openBlobFile(new Blob([new Uint8Array(arr)], { type: 'image/gif' }), 'anim.gif', { mime: 'image/gif' }), GIF2);
+  const gifPlayer = await page.waitForSelector('#previewHost .gifv-root', { timeout: 15000 }).then(() => true).catch(() => false);
+  await page.waitForFunction(() => { const b = document.querySelector('#previewHost .gifv-play'); return b && !b.disabled; }, null, { timeout: 8000 }).catch(() => {});
+  const gifAnimated = await page.evaluate(() => !document.querySelector('#previewHost .gifv-play')?.disabled);
+  if (gifPlayer && gifAnimated) pass('animated GIF mounts the player (play/pause enabled for multi-frame)'); else fail('gif player: ' + JSON.stringify({ gifPlayer, gifAnimated }));
+  await page.click('#previewHost .gifv-split');
+  const gifFrames = await page.waitForFunction(() => document.querySelectorAll('#previewHost .gifv-frame').length >= 2, null, { timeout: 8000 }).then(() => true).catch(() => false);
+  const splitRows = await page.$$eval('#previewHost .gifv-frame', (els) => els.length);
+  if (gifFrames && splitRows === 2) pass('GIF Split decomposes into per-frame images (' + splitRows + ' frames)'); else fail('gif split: rows=' + splitRows);
 
   // ── JPEG XL ── browsers can't decode JXL; the renderer decodes it via a lazy
   // wasm decoder into a canvas. The decoded image shows (note clears, img visible

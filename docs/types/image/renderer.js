@@ -15,6 +15,8 @@ import { mountBg } from './edit-bg.js';
 import { registerUndoKeys } from './edit-undo-key.js';
 import { mountTabs } from './edit-tabs.js';
 import { mountAdvEdit } from './adv-edit.js';
+import { mountGifPlayer } from './gif-anim.js';
+import { decodeGifFrames } from './gif-decode.js';
 
 // Toolbar markup lives in sibling .html templates (real HTML, easy to extend).
 // doc.html is the shell (fit/zoom/ascii bar + stage + ascii-out) with an
@@ -34,6 +36,23 @@ export async function render(intake, ctx = {}) {
     DOMPurify.removed = [];
     const clean = DOMPurify.sanitize(intake.text || '', { USE_PROFILES: { svg: true, svgFilters: true } });
     return { bodyHtml: '<div class="img-doc">' + clean + '</div>', hadUnsafe: DOMPurify.removed.length > 0 };
+  }
+
+  // Animated GIF: the static raster path only shows the first frame. Decode up
+  // front; if it's truly multi-frame, hand the pane to the GIF player (play/pause +
+  // scrubber + opt-in Split-into-frames). Single-frame GIFs fall through to the
+  // normal editable raster path. The decoder + vendored gifuct bundle load only
+  // here, only for a .gif — other images pay nothing on first paint.
+  if (mimeFor(intake) === 'image/gif') {
+    try {
+      const decoded = await decodeGifFrames(intake.bytes);
+      if (decoded.frames.length > 1) {
+        const gifHost = document.createElement('div');
+        gifHost.className = 'imgv-doc';
+        const player = mountGifPlayer({ host: gifHost, bytes: intake.bytes, openBlob: window.__fv?.openBlobFile?.bind(window.__fv) });
+        return { parentNode: gifHost, revoke: () => player.destroy() };
+      }
+    } catch { /* fall through to the static raster path */ }
   }
 
   // Raster: parent pane + blob URL + fit/zoom controls + ASCII toggle.
