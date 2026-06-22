@@ -148,6 +148,13 @@ tr:last-child td{border-bottom:none}
 .td-size{text-align:right;color:var(--fg2,#888);white-space:nowrap}
 .empty{padding:10px 12px;color:var(--fg2,#999);font-style:italic}
 .err{background:#fff3f3;border:1px solid #f5c6c6;border-radius:6px;padding:10px 14px;color:#b00020;font-size:12px;margin-bottom:16px}
+/* Dark mode: the iframe body gets .fv-dark. Flip the theme vars + the few hardcoded accents. */
+body.fv-dark{--fg:#e6e6e6;--bg:#1e1e1e;--bg2:#2a2f37;--fg2:#a8b3c2;--border:#3a4350;--panel:#252a31;--th-bg:#2a2f37}
+body.fv-dark .badge-type{background:#16331b;color:#a5d6a7;border-color:#2e5d34}
+body.fv-dark .tag.dim{background:#222a5a;border-color:#5c6bc0;color:#c5cae9}
+body.fv-dark .tag.addon{background:#46172e;border-color:#ad4373;color:#f8bbd0}
+body.fv-dark .tag.db{background:#3a2e00;border-color:#8a6d1a;color:#ffe082}
+body.fv-dark .err{background:#3a1c1c;border-color:#a04444;color:#ff8a80}
 `;
 
 export async function render(intake) {

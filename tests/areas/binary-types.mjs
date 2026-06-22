@@ -9,6 +9,7 @@ export async function run(ctx) {
     const btn = await page.$('#previewHost .mol3d-load-btn');
     if (!btn) { fail(label + ' 3D load button missing'); return; }
     pass(label + ' 3D load button shown');
+    await btn.evaluate((b) => b.scrollIntoView({ block: 'center' }));   // clear the bottom-left offline pill
     await btn.click();
     try {
       await page.waitForSelector('#previewHost .mol3d-stage canvas', { timeout: 20000 });
@@ -124,6 +125,15 @@ export async function run(ctx) {
   if (/Minecraft/i.test(mcText)) pass('Minecraft badge shown'); else fail('mc badge missing');
   if (/File Viewer Demo World/i.test(mcText)) pass('MC world name shown'); else fail('mc name: ' + mcText.slice(0, 300));
   if (/level\.dat|levelname\.txt/i.test(mcText)) pass('MC key files listed'); else fail('mc files: ' + mcText.slice(0, 300));
+  // Dark mode: toggling the app theme must re-theme the mcworld iframe (it had no dark rules before).
+  if (!(await page.evaluate(() => document.documentElement.dataset.theme === 'dark'))) await page.click('#themeBtn');
+  await page.waitForTimeout(300);
+  const mcDark = await (await frameOf('iframe.fv-preview-frame')).evaluate(() => {
+    const m = (getComputedStyle(document.body).backgroundColor.match(/\d+/g) || []).slice(0, 3).reduce((a, b) => a + +b, 0);
+    return { fvDark: document.body.classList.contains('fv-dark'), bgSum: m };
+  });
+  if (mcDark.fvDark && mcDark.bgSum < 200) pass('mcworld respects dark mode (iframe re-themed dark)'); else fail('mcworld dark: ' + JSON.stringify(mcDark));
+  await page.click('#themeBtn');   // restore light for following tests
 
   // ── DICOM Medical Image ───────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });

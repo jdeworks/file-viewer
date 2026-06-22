@@ -345,6 +345,24 @@ export async function run(ctx) {
   if (barH <= 60) pass('mobile: topbar stays single-row (' + barH + 'px)'); else fail('mobile topbar height: ' + barH);
   await mctx.close();
 
+  // ── Easter egg ── opening a file whose text contains `import easteregg` unlocks the arcade.
+  // Run in a throwaway context so the persisted unlock (localStorage) doesn't bleed into other tests.
+  {
+    const ectx = await browser.newContext();
+    const ep = await ectx.newPage();
+    await ep.goto(origin, { waitUntil: 'load' });
+    const before = await ep.evaluate(() => window.__fv?.state?.games?.isUnlocked?.() === true);
+    await openExample('easteregg.txt', ep);
+    await ep.waitForTimeout(300);
+    const after = await ep.evaluate(() => ({
+      unlocked: window.__fv?.state?.games?.isUnlocked?.() === true,
+      btnShown: !document.getElementById('gamesBtn')?.hidden,
+    }));
+    if (!before && after.unlocked && after.btnShown) pass('easter egg: opening easteregg.txt unlocks the arcade + reveals the 🎮 button');
+    else fail('easteregg unlock: before=' + before + ' after=' + JSON.stringify(after));
+    await ectx.close();
+  }
+
   // ── Service worker + offline ── precache, then reload with the network disabled.
   {
     const octx = await browser.newContext();
@@ -377,7 +395,7 @@ export async function run(ctx) {
     await op.waitForSelector('#offlineStatus.ready', { timeout: 90000 });
     pass('cache modal: saving selected bundles precaches them (Available offline)');
     const cachedMonaco = await op.evaluate(async () => {
-      const k = (await caches.keys()).find((x) => x === 'file-viewer');
+      const k = (await caches.keys()).find((x) => x === 'file-viewer' || x.startsWith('file-viewer-'));
       return k ? !!(await (await caches.open(k)).match('vendor/monaco/vs/loader.js')) : false;
     });
     if (cachedMonaco) pass('offline cache holds vendored assets (Monaco)'); else fail('Monaco not in cache');

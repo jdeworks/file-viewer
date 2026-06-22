@@ -1,0 +1,31 @@
+all:
+  children:
+    webservers:
+      hosts:
+        web1.example.com:
+          ansible_host: 192.168.1.10
+          ansible_user: ubuntu
+        web2.example.com:
+          ansible_host: 192.168.1.11
+          ansible_user: ubuntu
+      vars:
+        http_port: 80
+        nginx_worker_processes: 4
+    databases:
+      hosts:
+        db1.example.com:
+          ansible_host: 192.168.1.20
+          ansible_user: postgres
+        db2.example.com:
+          ansible_host: 192.168.1.21
+          ansible_user: postgres
+      vars:
+        db_port: 5432
+    monitoring:
+      hosts:
+        monitor.example.com:
+          ansible_host: 192.168.1.30
+          ansible_user: ubuntu
+  vars:
+    ansible_ssh_private_key_file: ~/.ssh/id_rsa
+    ansible_python_interpreter: /usr/bin/python3
