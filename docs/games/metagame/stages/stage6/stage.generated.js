@@ -1100,18 +1100,23 @@ var STATUS_LABEL = {
   vulnerable: "VULN",
   weak: "WEAK"
 };
+var TIER_BADGE = { elite: "☠ ELITE", boss: "☣ BOSS" };
 function combatView(combat, run) {
   const el = document.createElement("div");
   el.className = "s6db-combat";
   const intent = currentIntent(combat);
   el.innerHTML = `
+    <div class="s6db-combat-head">
+      <span class="s6db-turn">turn ${combat.turn}</span>
+      <span class="s6db-pile">draw ${combat.draw.length} · discard ${combat.discard.length}${combat.exhaust.length ? ` · exhaust ${combat.exhaust.length}` : ""}</span>
+    </div>
     <div class="s6db-fighters">
-      ${enemyPanel(combat.enemy, intent)}
+      ${enemyPanel(combat.enemy, intent, combat)}
       ${playerPanel(combat.player)}
     </div>
     <div class="s6db-energy" aria-label="energy">
-      energy <strong>${combat.player.energy}</strong> / ${combat.player.maxEnergy}
-      <span class="s6db-pile">draw ${combat.draw.length} · discard ${combat.discard.length}</span>
+      ${energyPips(combat.player.energy, combat.player.maxEnergy)}
+      <span class="s6db-energy-num">${combat.player.energy} / ${combat.player.maxEnergy} energy</span>
     </div>
     <div class="s6db-hand" aria-label="hand"></div>
     <div class="s6db-combat-controls">
@@ -1125,31 +1130,67 @@ function combatView(combat, run) {
   log2.replaceChildren(...combat.log.slice(-5).map(toLi));
   return el;
 }
-function enemyPanel(enemy, intent) {
+function describeIntent(intent, combat) {
+  if (!intent) return { kind: "unknown", icon: "…", primary: "—", detail: "" };
+  if (intent.mirror) {
+    const reflect = intent.mirror * (combat?.cardsPlayedThisTurn || 0);
+    return { kind: "mirror", icon: "🪞", primary: `${intent.mirror}×`, detail: `mirror · ~${reflect} now` };
+  }
+  if (intent.attack) {
+    const hits = intent.hits || 1;
+    const total = intent.attack * hits;
+    return {
+      kind: intent.pierce ? "pierce" : "attack",
+      icon: intent.pierce ? "⚡" : "⚔",
+      primary: String(total),
+      detail: (hits > 1 ? `${intent.attack}×${hits}` : "") + (intent.pierce ? " unblockable" : "")
+    };
+  }
+  if (intent.block) return { kind: "block", icon: "🛡", primary: String(intent.block), detail: "defend" };
+  if (intent.applyPlayer) return { kind: "debuff", icon: "☣", primary: intent.applyPlayer.status, detail: "debuff" };
+  if (intent.applySelf) return { kind: "buff", icon: "▲", primary: intent.applySelf.status, detail: "buff" };
+  return { kind: "wait", icon: "…", primary: "—", detail: "" };
+}
+function enemyPanel(enemy, intent, combat) {
+  const d = describeIntent(intent, combat);
+  const tier = TIER_BADGE[enemy.tier];
   return `
-    <section class="s6db-fighter s6db-enemy">
-      <div class="s6db-fighter-name">${esc(enemy.name)}</div>
-      <div class="s6db-hp">HP ${enemy.hp} / ${enemy.maxHp}</div>
+    <section class="s6db-fighter s6db-enemy s6db-enemy--${enemy.tier || "standard"}">
+      <div class="s6db-fighter-top">
+        <span class="s6db-fighter-name">${esc(enemy.name)}</span>
+        ${tier ? `<span class="s6db-tier s6db-tier--${enemy.tier}">${tier}</span>` : ""}
+      </div>
       ${bar(enemy.hp, enemy.maxHp, "enemy")}
+      <div class="s6db-hp">HP ${enemy.hp} / ${enemy.maxHp}</div>
       <div class="s6db-meta">
-        ${enemy.block ? `<span class="s6db-block">block ${enemy.block}</span>` : ""}
+        ${enemy.block ? `<span class="s6db-block">🛡 ${enemy.block}</span>` : ""}
         ${enemy.armor ? `<span class="s6db-armor">armor ${enemy.armor}</span>` : ""}
       </div>
       ${statusChips(enemy.statuses)}
-      <div class="s6db-intent" title="${esc(intent?.label || "")}">intent: ${esc(intent?.label || "—")}</div>
+      <div class="s6db-intent s6db-intent--${d.kind}" title="${esc(intent?.label || "")}">
+        <span class="s6db-intent-icon">${d.icon}</span>
+        <span class="s6db-intent-num">${esc(d.primary)}</span>
+        <span class="s6db-intent-detail">${esc(d.detail || intent?.label || "")}</span>
+      </div>
     </section>`;
 }
 function playerPanel(player) {
   return `
     <section class="s6db-fighter s6db-player">
-      <div class="s6db-fighter-name">You</div>
-      <div class="s6db-hp">HP ${player.hp} / ${player.maxHp}</div>
+      <div class="s6db-fighter-top"><span class="s6db-fighter-name">You</span></div>
       ${bar(player.hp, player.maxHp, "player")}
+      <div class="s6db-hp">HP ${player.hp} / ${player.maxHp}</div>
       <div class="s6db-meta">
-        <span class="s6db-block">block ${player.block}</span>
+        <span class="s6db-block">🛡 ${player.block}</span>
       </div>
       ${statusChips(player.statuses)}
     </section>`;
+}
+function energyPips(energy, maxEnergy) {
+  const total = Math.max(maxEnergy, energy);
+  let pips = "";
+  for (let i = 0; i < total; i++) pips += `<span class="s6db-pip${i < energy ? " is-full" : ""}"></span>`;
+  return `<span class="s6db-pips" aria-hidden="true">${pips}</span>`;
 }
 function handCard(id, index, energy) {
   const card = cardById(id);
@@ -1230,7 +1271,12 @@ function mapView(run) {
   const act = run.map.acts[run.act - 1];
   const available = new Set(availableNodes(run).map((n) => n.id));
   const cleared = new Set(run.clearedIds);
-  el.innerHTML = `<div class="s6db-map-head">Act ${run.act} / ${run.map.acts.length} — choose your route</div>
+  const total = run.map.acts.length;
+  const dots = Array.from({ length: total }, (_, i) => `<span class="s6db-act-dot${i + 1 < run.act ? " is-done" : ""}${i + 1 === run.act ? " is-here" : ""}"></span>`).join("");
+  el.innerHTML = `<div class="s6db-map-head">
+      <span>Act ${run.act} / ${total} — choose your route</span>
+      <span class="s6db-act-track" aria-label="act ${run.act} of ${total}">${dots}</span>
+    </div>
     ${run.notice ? `<div class="s6db-notice">${esc2(run.notice)}</div>` : ""}`;
   const grid = document.createElement("div");
   grid.className = "s6db-map-grid";
@@ -1256,7 +1302,7 @@ function nodeChip(node, run, available, cleared) {
   const isCleared = cleared.has(node.id);
   const tag = isAvailable ? "button" : "div";
   const chip = document.createElement(tag);
-  chip.className = "s6db-node" + (isAvailable ? " is-available" : "") + (isCurrent ? " is-current" : "") + (isCleared ? " is-cleared" : "") + (!isAvailable && !isCleared && !isCurrent ? " is-locked" : "");
+  chip.className = `s6db-node s6db-node--${node.type}` + (isAvailable ? " is-available" : "") + (isCurrent ? " is-current" : "") + (isCleared ? " is-cleared" : "") + (!isAvailable && !isCleared && !isCurrent ? " is-locked" : "");
   if (tag === "button") {
     chip.type = "button";
     chip.dataset.node = node.id;

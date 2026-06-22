@@ -51,7 +51,13 @@ export function mapView(run) {
   const act = run.map.acts[run.act - 1];
   const available = new Set(availableNodes(run).map((n) => n.id));
   const cleared = new Set(run.clearedIds);
-  el.innerHTML = `<div class="s6db-map-head">Act ${run.act} / ${run.map.acts.length} — choose your route</div>
+  const total = run.map.acts.length;
+  const dots = Array.from({ length: total }, (_, i) =>
+    `<span class="s6db-act-dot${i + 1 < run.act ? " is-done" : ""}${i + 1 === run.act ? " is-here" : ""}"></span>`).join("");
+  el.innerHTML = `<div class="s6db-map-head">
+      <span>Act ${run.act} / ${total} — choose your route</span>
+      <span class="s6db-act-track" aria-label="act ${run.act} of ${total}">${dots}</span>
+    </div>
     ${run.notice ? `<div class="s6db-notice">${esc(run.notice)}</div>` : ""}`;
 
   const grid = document.createElement("div");
@@ -80,7 +86,7 @@ function nodeChip(node, run, available, cleared) {
   const isCleared = cleared.has(node.id);
   const tag = isAvailable ? "button" : "div";
   const chip = document.createElement(tag);
-  chip.className = "s6db-node"
+  chip.className = `s6db-node s6db-node--${node.type}`
     + (isAvailable ? " is-available" : "")
     + (isCurrent ? " is-current" : "")
     + (isCleared ? " is-cleared" : "")
