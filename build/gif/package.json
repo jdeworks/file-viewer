@@ -1,0 +1,12 @@
+{
+  "name": "file-viewer-gif-build",
+  "private": true,
+  "description": "Bundles gifuct-js (MIT) into docs/vendor/gifuct/gifuct.esm.js. Run: cd build/gif && npm install && node build.mjs",
+  "type": "module",
+  "dependencies": {
+    "gifuct-js": "^2.1.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}

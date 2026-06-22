@@ -13197,8 +13197,8 @@
     "description": "JFrog Artifactory system.yaml — database, security, router, and service ports."
   },
   {
-    "label": "easteregg.txt",
-    "file": "easteregg.txt",
+    "label": "easteregg",
+    "file": "easteregg",
     "mime": "text/plain",
     "category": "Other",
     "categories": [
