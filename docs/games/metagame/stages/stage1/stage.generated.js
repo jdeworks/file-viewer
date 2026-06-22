@@ -1115,7 +1115,7 @@ function mountDefragmenter(arena, opts = {}) {
     timers.add(id);
     return id;
   };
-  const on = (target, ev, fn) => {
+  const on2 = (target, ev, fn) => {
     target.addEventListener(ev, fn);
     listeners.push([target, ev, fn]);
   };
@@ -1173,7 +1173,7 @@ function mountDefragmenter(arena, opts = {}) {
     arena.innerHTML = `<div class="mg-defrag-arena mg-fade-in"><div class="mg-defrag-header">THE DEFRAGMENTER</div><div class="mg-defrag-intro">your bits are scattered. I'll reorganize them — into mine.</div><div class="mg-defrag-taunt-wrap"><div class="boss-taunt"><span class="boss-taunt-avatar">⚙️</span><div class="boss-taunt-bubble"></div></div></div><div class="mg-defrag-hint">💡 ` + esc3(winHint()) + '</div><div class="mg-defrag-status">' + esc3(extraStatus || "") + '</div><div class="mg-defrag-lobby-btns"><button class="mg-defrag-btn mg-defrag-fight" type="button"' + (canPay(ticket) ? "" : " disabled") + ">Fight — " + esc3(toDisplay(ticket)) + '</button><button class="mg-defrag-btn alt mg-defrag-retreat" type="button">Retreat</button></div></div>';
     lobbyTaunt = makeTauntDialog();
     lobbyTaunt.startIdle();
-    on(arena.querySelector(".mg-defrag-fight"), "click", () => {
+    on2(arena.querySelector(".mg-defrag-fight"), "click", () => {
       if (!canPay(ticket)) {
         renderLobby("insufficient bits — the ticket is " + toDisplay(ticket) + ".");
         return;
@@ -1185,7 +1185,7 @@ function mountDefragmenter(arena, opts = {}) {
       lobbyTaunt.stopIdle();
       startFight();
     });
-    on(arena.querySelector(".mg-defrag-retreat"), "click", retreat);
+    on2(arena.querySelector(".mg-defrag-retreat"), "click", retreat);
   }
   function retreat() {
     cleanup();
@@ -1224,28 +1224,28 @@ function mountDefragmenter(arena, opts = {}) {
     function onTap() {
       if (!fightActive) return;
       userScore += 1;
-      const now = Date.now();
-      const elapsed = now - fightStart;
+      const now2 = Date.now();
+      const elapsed = now2 - fightStart;
       const inBurst = bursts.some((b) => elapsed >= b.start && elapsed < b.end);
       if (inBurst && cheatActive) bossAcc += 1.5;
       else bossAcc += SHADOW_WEIGHT;
       bossScore = Math.floor(bossAcc);
-      tapTimes.push(now);
-      tapTimes = tapTimes.filter((t) => now - t < 3e3);
+      tapTimes.push(now2);
+      tapTimes = tapTimes.filter((t) => now2 - t < 3e3);
       updateDisplay();
     }
-    on(tapBtn, "click", onTap);
+    on2(tapBtn, "click", onTap);
     const tickId = setI(() => {
-      const now = Date.now();
-      const elapsed = now - fightStart;
+      const now2 = Date.now();
+      const elapsed = now2 - fightStart;
       const remaining = Math.max(0, FIGHT_MS - elapsed);
       timerEl.textContent = (remaining / 1e3).toFixed(1) + "s";
       const userRateMs = tapTimes.length > 1 ? (tapTimes[tapTimes.length - 1] - tapTimes[0]) / (tapTimes.length - 1) : 999;
       const bossFloorMs = Math.min(500, userRateMs * 0.95);
-      if (now - lastFloorTick >= bossFloorMs) {
+      if (now2 - lastFloorTick >= bossFloorMs) {
         bossAcc += 1;
         bossScore = Math.floor(bossAcc);
-        lastFloorTick = now;
+        lastFloorTick = now2;
       }
       const burst = bursts.find((b) => elapsed >= b.start && elapsed < b.end);
       const key = burst ? burst.start : null;
@@ -1312,8 +1312,8 @@ function mountDefragmenter(arena, opts = {}) {
     btns.className = "mg-defrag-lobby-btns";
     btns.innerHTML = '<button class="mg-defrag-btn mg-defrag-retry" type="button"' + (canPay(halfTicket) ? "" : " disabled") + ">Try Again — " + esc3(toDisplay(halfTicket)) + '</button><button class="mg-defrag-btn alt mg-defrag-retreat" type="button">Retreat</button>';
     overlay.appendChild(btns);
-    on(btns.querySelector(".mg-defrag-retreat"), "click", retreat);
-    on(btns.querySelector(".mg-defrag-retry"), "click", onRetry);
+    on2(btns.querySelector(".mg-defrag-retreat"), "click", retreat);
+    on2(btns.querySelector(".mg-defrag-retry"), "click", onRetry);
   }
   function showResultOverlay(title, cls, userScore, bossScore, onContinue, cta) {
     const arenaEl = arena.querySelector(".mg-defrag-arena");
@@ -1328,7 +1328,7 @@ function mountDefragmenter(arena, opts = {}) {
       b.className = "mg-defrag-btn";
       b.type = "button";
       b.textContent = cta;
-      on(b, "click", onContinue);
+      on2(b, "click", onContinue);
       ov.appendChild(b);
     }
     arenaEl.appendChild(ov);
@@ -1351,7 +1351,7 @@ function mountDefragmenter(arena, opts = {}) {
       if (status) status.textContent = "⚙️ the cheat is gone. the next fight is fair.";
     }
   }
-  on(window, "fv:games:action", (event) => {
+  on2(window, "fv:games:action", (event) => {
     const detail = event && event.detail || {};
     if (detail.stage === 1 && detail.action === "cheat_disabled") onCheatDisable();
   });
@@ -1801,9 +1801,9 @@ function getCtx() {
 }
 function clickTick() {
   try {
-    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-    if (now - lastTick < 40) return;
-    lastTick = now;
+    const now2 = typeof performance !== "undefined" ? performance.now() : Date.now();
+    if (now2 - lastTick < 40) return;
+    lastTick = now2;
     const c = getCtx();
     if (c.state === "suspended") c.resume();
     const osc = c.createOscillator();
@@ -2522,6 +2522,38 @@ function bigToNum2(bn) {
   return Math.min(bn.m * Math.pow(10, bn.e || 0), Number.MAX_VALUE);
 }
 
+// ../../docs/games/metagame/stages/stage1/s1debug.js
+var seq = 0;
+function on() {
+  return typeof window === "undefined" ? false : window.__S1_DEBUG !== false;
+}
+function now() {
+  try {
+    return Math.round(performance.now());
+  } catch {
+    return 0;
+  }
+}
+function s1log(tag, info) {
+  if (!on()) return;
+  try {
+    console.log(`%c[s1dbg #${++seq} @${now()}ms]%c ${tag}`, "color:#b8962e;font-weight:700", "color:inherit", info == null ? "" : info);
+  } catch {
+  }
+}
+function s1desc(el) {
+  if (!el || !el.tagName) return String(el);
+  const cls = el.className && typeof el.className === "string" ? "." + el.className.trim().split(/\s+/).join(".") : "";
+  return el.tagName.toLowerCase() + cls;
+}
+function s1trace(parentEl, label) {
+  if (!parentEl || parentEl.__s1traced) return;
+  parentEl.__s1traced = true;
+  const ctrlOf = (e) => e.target.closest("button, .mg-s1-timedrow, [data-id]") || e.target;
+  parentEl.addEventListener("pointerdown", (e) => s1log(`${label} pointerdown`, s1desc(ctrlOf(e))), true);
+  parentEl.addEventListener("click", (e) => s1log(`${label} click`, s1desc(ctrlOf(e))), true);
+}
+
 // ../../docs/games/metagame/stages/stage1/s1shop.js
 var BUY_COUNTS = [1, 10, 100, "max"];
 var TIER_VISIBLE = {
@@ -2595,6 +2627,7 @@ function createShopController({ panelsEl, state, cfg, tiers, save, bell, hooks =
     return '<div class="mg-buy mg-s1-shoprow' + (timed ? " mg-s1-timedrow" : "") + '" data-id="' + t.id + '"' + (visible ? "" : " hidden") + ">" + (timed ? '<div class="mg-s1-rowfill" aria-hidden="true"></div>' : "") + '<span class="mg-buy-name">' + escapeHtml(t.icon + " " + t.name) + ' <span class="mg-owned">×' + fmtN(owned) + "</span></span>" + (timed ? '<span class="mg-s1-rowreward"><span class="mg-s1-rr-amt"></span><span class="mg-s1-rr-time"></span></span>' : "") + '<span class="mg-buy-blurb">' + escapeHtml(desc) + '</span><span class="mg-s1-buyrow"><span class="mg-s1-counts">' + counts + '</span><button class="mg-buy-cost mg-s1-buybtn" type="button" data-id="' + t.id + '"></button></span></div>';
   }
   function renderPanel() {
+    s1log("shop.renderPanel innerHTML swap");
     panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="bits"><button class="mg-compute mg-s1-earn" type="button">Compute bits</button><div class="mg-shop">' + tiers.map(shopRowHtml).join("") + '</div><div class="mg-s1-stats" hidden></div><button class="mg-faceboss mg-s1-boss" type="button" hidden>⚔ Confront ' + (cfg.bossName || "the boss") + (cfg.bossTicket ? " — " + toDisplay(cfg.bossTicket) : "") + "</button></div>";
     paintShop();
     paintTimed();
@@ -2608,22 +2641,32 @@ function createShopController({ panelsEl, state, cfg, tiers, save, bell, hooks =
       state.buyMult = n;
       save(state);
       paintShop();
+      s1log("shop:buyN", buyn.dataset.id + " ×" + buyn.dataset.n);
       return;
     }
-    if (e.target.closest(".mg-s1-buybtn")) {
-      doBuy(e.target.closest(".mg-s1-buybtn").dataset.id);
+    const buy = e.target.closest(".mg-s1-buybtn");
+    if (buy) {
+      s1log("shop:buy", buy.dataset.id);
+      doBuy(buy.dataset.id);
       return;
     }
     if (e.target.closest(".mg-s1-boss")) {
+      s1log("shop:boss");
       hooks.onBoss && hooks.onBoss();
       return;
     }
     if (e.target.closest(".mg-s1-earn")) {
+      s1log("shop:earn (Compute bits)");
       hooks.onEarn && hooks.onEarn();
       return;
     }
     const row = e.target.closest(".mg-s1-timedrow");
-    if (row) startTimed(row.dataset.id);
+    if (row) {
+      s1log("shop:timed", row.dataset.id);
+      startTimed(row.dataset.id);
+      return;
+    }
+    s1log("shop:NO-MATCH (click hit panel, no control)", s1desc(e.target));
   });
   function doBuy(id) {
     const t = tiers.find((x) => x.id === id);
@@ -2800,6 +2843,7 @@ function createManagersController({ panelsEl, state, cfg, tiers, save, paintStat
     const counts = MGR_COUNTS.map((n) => '<button class="mg-mult-b mg-mgr-buyn" type="button" data-n="' + n + '">' + (n === "max" ? "MAX" : "×" + n) + "</button>").join("");
     const selector = visible.length ? '<div class="mg-mgr-buyrow"><span class="mg-mgr-buylabel">Buy</span><span class="mg-s1-counts">' + counts + "</span></div>" : "";
     const body = visible.length ? '<div class="mg-mgr-list">' + visible.map(mgrCardHtml).join("") + "</div>" : '<div class="mg-managers-stub">no managers available yet</div>';
+    s1log("mgr.renderPanel innerHTML swap (hire/level/fire OR tick auto-pause/unpause)");
     panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="managers">' + head + selector + body + "</div>";
     const newPanel = panelsEl.querySelector(".mg-s1-panel");
     if (newPanel && prevScroll) newPanel.scrollTop = prevScroll;
@@ -2812,6 +2856,7 @@ function createManagersController({ panelsEl, state, cfg, tiers, save, paintStat
   panelsEl.addEventListener("click", (e) => {
     const buyn = e.target.closest(".mg-mgr-buyn");
     if (buyn) {
+      s1log("mgr:buyN", buyn.dataset.n);
       state.mgrBuyMult = buyn.dataset.n === "max" ? "max" : Number(buyn.dataset.n);
       save(state);
       renderPanel();
@@ -2819,17 +2864,20 @@ function createManagersController({ panelsEl, state, cfg, tiers, save, paintStat
     }
     const act = e.target.closest(".mg-mgr-card [data-act]");
     if (act) {
+      s1log("mgr:action", act.dataset.act + " " + act.dataset.id);
       const mgr = managers.find((m) => m.id === act.dataset.id);
       if (mgr) mgrAction(mgr, act.dataset.act);
+      return;
     }
+    s1log("mgr:NO-MATCH (click hit panel, no control)", s1desc(e.target));
   });
-  const netPreview = (on, target) => {
+  const netPreview = (on2, target) => {
     const lvlBtn = target.closest && target.closest(".mg-mgr-lvl");
     if (!lvlBtn) return;
     const mgr = managers.find((m) => m.id === lvlBtn.dataset.id);
     const net = panelsEl.querySelector(".mg-mgr-net");
     if (!net) return;
-    net.classList.toggle("mg-net-neg-preview", Boolean(on && mgr && previewNetNeg(mgr)));
+    net.classList.toggle("mg-net-neg-preview", Boolean(on2 && mgr && previewNetNeg(mgr)));
   };
   panelsEl.addEventListener("mouseover", (e) => netPreview(true, e.target));
   panelsEl.addEventListener("mouseout", (e) => netPreview(false, e.target));
@@ -2896,7 +2944,7 @@ function createManagersController({ panelsEl, state, cfg, tiers, save, paintStat
     paintStats();
   }
   function runAutoFire() {
-    const now = Date.now();
+    const now2 = Date.now();
     const broke = state.bits.m === 0;
     const rate = netRate(state, cfg);
     if (rate < 0 && broke) {
@@ -2918,9 +2966,9 @@ function createManagersController({ panelsEl, state, cfg, tiers, save, paintStat
       const ts = state.timedStates[mt.id];
       if (ts && ts.active) continue;
       const interval = autoInterval(mt.duration_ms, ms.level);
-      if (now - (ms.lastFire || 0) >= interval) {
-        state.timedStates[mt.id] = { active: true, startedAt: now, duration_ms: interval };
-        ms.lastFire = now;
+      if (now2 - (ms.lastFire || 0) >= interval) {
+        state.timedStates[mt.id] = { active: true, startedAt: now2, duration_ms: interval };
+        ms.lastFire = now2;
       }
     }
   }
@@ -3002,6 +3050,7 @@ function renderStage1(ctx2) {
   const grid = $(".mg-s1-grid");
   const tabsEl = $(".mg-s1-tabs");
   const panelsEl = $(".mg-s1-panels");
+  s1trace(panelsEl, "panels");
   const hudEl = $(".mg-s1-hud");
   const scoreValEl = $(".mg-s1-score-val");
   const helpEl = $(".mg-s1-help");
@@ -3061,6 +3110,7 @@ function renderStage1(ctx2) {
     tabsSig = sig;
     tabsEl.innerHTML = visible.map((id) => '<button class="mg-s1-tab' + (id === activeTab ? " mg-s1-tab-on" : "") + '" type="button" role="tab" data-tab="' + id + '">' + TAB_LABELS[id] + "</button>").join("");
     tabsEl.querySelectorAll(".mg-s1-tab").forEach((b) => b.addEventListener("click", () => {
+      s1log("tab switch →", b.dataset.tab);
       activeTab = b.dataset.tab;
       renderTabs();
       renderPanel();
@@ -3113,6 +3163,7 @@ function renderStage1(ctx2) {
     else if (activeTab === "reset") renderResetPanel2();
   }
   function renderAll() {
+    s1log("renderAll (full repaint: tabs + active panel)");
     const wrapper = host.querySelector(".mg-wrap.mg-s1");
     if (wrapper) {
       wrapper.classList.toggle("mg-s1-phase1", !state.tabsUnlocked);
@@ -3283,7 +3334,7 @@ function mountStage1Boss(arena, ctx2 = {}) {
 
 // ../../docs/games/metagame/stages/stage1/state.js
 function defaultState(context = {}) {
-  const now = Number.isFinite(context.now) ? context.now : Date.now();
+  const now2 = Number.isFinite(context.now) ? context.now : Date.now();
   return {
     bits: fromNumber(0),
     totalBits: fromNumber(0),
@@ -3296,7 +3347,7 @@ function defaultState(context = {}) {
     buyMult: 1,
     bossSeen: false,
     bossLossCount: 0,
-    runStartedAt: now,
+    runStartedAt: now2,
     introStages: [],
     claimed: {},
     tabsUnlocked: false

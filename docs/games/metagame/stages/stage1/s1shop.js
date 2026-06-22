@@ -17,6 +17,7 @@ import { fromNumber, gte, toDisplay, toNumber } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements } from './s1achievements.js';
 import { setText, setHidden, setHtml, bigToNum } from './s1dom.js';
+import { s1log, s1desc } from './s1debug.js';
 
 // Buy-count selector options for the shop.
 const BUY_COUNTS = [1, 10, 100, 'max'];
@@ -122,6 +123,7 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
   }
 
   function renderPanel() {
+    s1log("shop.renderPanel innerHTML swap");
     panelsEl.innerHTML =
       '<div class="mg-s1-panel" data-panel="bits">'
       + '<button class="mg-compute mg-s1-earn" type="button">Compute bits</button>'
@@ -149,13 +151,18 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       state.buyMult = n;   // persist globally so it survives reload
       save(state);
       paintShop();
+      s1log('shop:buyN', buyn.dataset.id + ' ×' + buyn.dataset.n);
       return;
     }
-    if (e.target.closest('.mg-s1-buybtn')) { doBuy(e.target.closest('.mg-s1-buybtn').dataset.id); return; }
-    if (e.target.closest('.mg-s1-boss')) { hooks.onBoss && hooks.onBoss(); return; }
-    if (e.target.closest('.mg-s1-earn')) { hooks.onEarn && hooks.onEarn(); return; }
+    const buy = e.target.closest('.mg-s1-buybtn');
+    if (buy) { s1log('shop:buy', buy.dataset.id); doBuy(buy.dataset.id); return; }
+    if (e.target.closest('.mg-s1-boss')) { s1log('shop:boss'); hooks.onBoss && hooks.onBoss(); return; }
+    if (e.target.closest('.mg-s1-earn')) { s1log('shop:earn (Compute bits)'); hooks.onEarn && hooks.onEarn(); return; }
     const row = e.target.closest('.mg-s1-timedrow');
-    if (row) startTimed(row.dataset.id);
+    if (row) { s1log('shop:timed', row.dataset.id); startTimed(row.dataset.id); return; }
+    // Click reached the panel but matched NO control — the prime suspect for a "lost tap" (the
+    // pressed element was swapped out by a renderPanel innerHTML rebuild between down and up).
+    s1log('shop:NO-MATCH (click hit panel, no control)', s1desc(e.target));
   });
 
   function doBuy(id) {

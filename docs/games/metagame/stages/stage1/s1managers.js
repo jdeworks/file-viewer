@@ -6,6 +6,7 @@ import { fromNumber, sub, gte, toDisplay } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements } from './s1achievements.js';
 import { setHtml } from './s1dom.js';
+import { s1log, s1desc } from './s1debug.js';
 
 const MGR_COUNTS = [1, 10, 100, 'max'];
 
@@ -104,6 +105,7 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
     const body = visible.length
       ? '<div class="mg-mgr-list">' + visible.map(mgrCardHtml).join('') + '</div>'
       : '<div class="mg-managers-stub">no managers available yet</div>';
+    s1log('mgr.renderPanel innerHTML swap (hire/level/fire OR tick auto-pause/unpause)');
     panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="managers">' + head + selector + body + '</div>';
     const newPanel = panelsEl.querySelector('.mg-s1-panel');
     if (newPanel && prevScroll) newPanel.scrollTop = prevScroll;
@@ -121,9 +123,10 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
   // mid-rebuild window. Routes buy-count selectors and the per-card hire/level/fire actions.
   panelsEl.addEventListener('click', (e) => {
     const buyn = e.target.closest('.mg-mgr-buyn');
-    if (buyn) { state.mgrBuyMult = buyn.dataset.n === 'max' ? 'max' : Number(buyn.dataset.n); save(state); renderPanel(); return; }
+    if (buyn) { s1log('mgr:buyN', buyn.dataset.n); state.mgrBuyMult = buyn.dataset.n === 'max' ? 'max' : Number(buyn.dataset.n); save(state); renderPanel(); return; }
     const act = e.target.closest('.mg-mgr-card [data-act]');
-    if (act) { const mgr = managers.find((m) => m.id === act.dataset.id); if (mgr) mgrAction(mgr, act.dataset.act); }
+    if (act) { s1log('mgr:action', act.dataset.act + ' ' + act.dataset.id); const mgr = managers.find((m) => m.id === act.dataset.id); if (mgr) mgrAction(mgr, act.dataset.act); return; }
+    s1log('mgr:NO-MATCH (click hit panel, no control)', s1desc(e.target));
   });
   // Net-negative preview when hovering/focusing a Level-up button (mouseover/focusin bubble, so they
   // delegate cleanly where mouseenter/focus would not).
