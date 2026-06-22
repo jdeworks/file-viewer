@@ -456,6 +456,26 @@ export async function run(ctx) {
   const lvCommitted = await waitNewSrc(lvBefore);
   const lvClosed = await page.evaluate(() => document.querySelector('#previewHost .imgv-levels-panel').hidden);
   if (lvPreviewed && lvCommitted && lvClosed) pass('levels: live preview + Apply commits a LUT-mapped image + panel closes'); else fail('levels: ' + JSON.stringify({ lvPreviewed, lvCommitted, lvClosed }));
+  // Curves: drag a control point on the curve canvas to lift the midtones → live preview by
+  // swapping img.src, Apply bakes the LUT-remapped pixels, panel closes (edit-curves.js).
+  await page.click('#previewHost .imgv-curves-btn');               // open + cache source pixels
+  await page.waitForSelector('#previewHost .imgv-curves-panel:not([hidden])', { timeout: 3000 });
+  const curveOpenSrc = await imgSrcNow();
+  const cbox = await page.evaluate(() => {
+    const r = document.querySelector('#previewHost .imgv-curve-canvas').getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  // Empty-space pointerdown at the curve's middle inserts a handle; dragging it up brightens.
+  await page.mouse.move(cbox.x + cbox.w / 2, cbox.y + cbox.h / 2);
+  await page.mouse.down();
+  await page.mouse.move(cbox.x + cbox.w / 2, cbox.y + cbox.h / 2 - 45, { steps: 6 });
+  await page.mouse.up();
+  const curvePreviewed = await waitNewSrc(curveOpenSrc);           // a processed preview blob swapped in
+  const curveBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-curve-apply');
+  const curveCommitted = await waitNewSrc(curveBefore);
+  const curveClosed = await page.waitForFunction(() => document.querySelector('#previewHost .imgv-curves-panel')?.hidden === true, { timeout: 2000 }).then(() => true).catch(() => false);
+  if (curvePreviewed && curveCommitted && curveClosed) pass('curves: drag lifts the tone curve → preview + Apply commits a LUT-mapped image + panel closes'); else fail('curves: ' + JSON.stringify({ curvePreviewed, curveCommitted, curveClosed }));
   // One-click presets (greyscale/sepia/invert) bake straight to pixels via a canvas filter.
   const greyBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-preset-grey');

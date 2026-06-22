@@ -83,8 +83,8 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
   - ✅ **Marquee (rect + ellipse) + lasso** SHIPPED — `edit-select.js` modes `'marquee'`/`'ellipse'`/`'lasso'`; rect is a fast loop, ellipse + lasso rasterize a canvas path (`maskFromPath`) into the mask.
   - ✅ **Selection ops** SHIPPED — ✥ Move (drag the selected pixels to a new spot, leaving a transparent hole), ⇄ Invert (flip the mask), ✂ Cut (delete the selected pixels → transparent PNG). Fill-within-selection works via the mask-constrained bucket. **The selection feature is complete** (4 sources + constrain-tools + move/invert/cut).
 
-- **Color adjustments panel** — brightness/contrast/saturation/**hue** sliders shipped (`edit-filters.js`); **Levels** (black/white/gamma) ✅ SHIPPED (`levels.js` LUT + live preview, in the Adjust tab). Still to add:
-  - Curves (interactive cubic Bezier per channel) — build a 256-entry LUT from four control points, apply via `putImageData`. UI: small `<canvas>` with draggable handles, no lib needed. The LUT-apply plumbing (`levels.js` `applyLevels`) generalizes.
+- **Color adjustments panel** — brightness/contrast/saturation/**hue** sliders shipped (`edit-filters.js`); **Levels** (black/white/gamma) ✅ SHIPPED (`levels.js` LUT + live preview, in the Adjust tab).
+  - ✅ SHIPPED — **Curves** (`curves.js` + `edit-curves.js`): a small `<canvas>` with draggable control points (click empty space to add a handle, double-click to remove). The handles drive a **monotone-cubic (Fritsch–Carlson)** spline — smooth but never overshoots, so the tone map stays monotone — sampled into a 256-entry LUT applied to R/G/B through the shared `applyLevels`. Live preview swaps `img.src` to a processed blob (rAF-coalesced); Apply bakes it via the edit core. Master RGB curve only (per-channel deferred).
   - ✅ SHIPPED — Sepia / greyscale / invert one-click presets (`edit-filters.js`, `ctx.filter` bake, Adjust tab).
   — M per item, no lib required
 
