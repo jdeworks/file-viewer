@@ -210,13 +210,13 @@ function applyFilter(container) {
 }
 
 export async function loadExamples(onPick) {
+  const host = $('examples');
   try {
     const res = await fetch('examples/index.json');
-    if (!res.ok) return;
+    if (!res.ok) { if (host) host.textContent = ''; return; }
     const list = await res.json();
-    const host = $('examples');
-    renderGallery(host, list, onPick);
-  } catch { /* gallery is optional */ }
+    renderGallery(host, list, onPick);            // clears the "Loading examples…" placeholder
+  } catch { if (host) host.textContent = ''; }    // gallery is optional — drop the placeholder
 }
 
 function renderGallery(host, list, onPick) {
@@ -448,9 +448,13 @@ function renderGallery(host, list, onPick) {
     host.appendChild(renderFilterBar(host));
 
     // (b) file-type category groups, grouped by super-category.
-    // Group categories by super-category
+    // Only the curated top-level categories (those with a real icon in CATEGORY_ICONS) get a
+    // card here — the long tail of fine-grained tag categories (Geo, DevOps, OCaml, …) is kept
+    // out of the top grid to declutter it. Those examples stay fully reachable via the bottom
+    // "Show all files" view and the "Known files" search section.
     const superGroups = new Map(); // superCat -> [cat, ...]
     for (const cat of cats) {
+      if (!CATEGORY_ICONS[cat]) continue;   // curated-icon categories only
       const superCat = SUPER_CATEGORIES[cat] || 'Other';
       if (!superGroups.has(superCat)) superGroups.set(superCat, []);
       superGroups.get(superCat).push(cat);
