@@ -77,8 +77,23 @@ function applyFill(data, mask, w, h, fill, feather) {
 // Mutates `data` in place; returns the number of pixels filled.
 export function floodFill(data, w, h, x0, y0, fill, tol, opts = {}) {
   if (typeof opts === 'boolean') opts = { mode: opts ? 'shade' : 'seed' };
-  const { mode = 'seed', perceptual = false, feather = false } = opts;
-  if (x0 < 0 || y0 < 0 || x0 >= w || y0 >= h) return 0;
+  const seen = computeRegionMask(data, w, h, x0, y0, tol, opts);
+  if (!seen) return 0;
+  let cnt = 0;
+  for (let p = 0; p < w * h; p++) if (seen[p]) cnt++;
+  applyFill(data, seen, w, h, fill, !!opts.feather);
+  return cnt;
+}
+
+// The connected-region walk shared by the bucket fill AND the magic-wand selection:
+// from the clicked pixel, BFS outward accepting neighbours per `opts.mode`
+// (seed/shade/region) — the same seed/shade colour-distance or Sobel edge-stop the
+// bucket uses. Returns a Uint8Array (1 = in region) the size of the image, or null
+// if the seed is out of bounds. Does NOT mutate `data`.
+export function computeRegionMask(data, w, h, x0, y0, tol, opts = {}) {
+  if (typeof opts === 'boolean') opts = { mode: opts ? 'shade' : 'seed' };
+  const { mode = 'seed', perceptual = false } = opts;
+  if (x0 < 0 || y0 < 0 || x0 >= w || y0 >= h) return null;
   const src = Uint8ClampedArray.from(data);
   const idx = (x, y) => y * w + x;
   const at = (x, y) => idx(x, y) << 2;
@@ -104,10 +119,8 @@ export function floodFill(data, w, h, x0, y0, fill, tol, opts = {}) {
 
   const seen = new Uint8Array(w * h);
   const st = [x0 | 0, y0 | 0]; seen[idx(x0, y0)] = 1;
-  let cnt = 0;
   while (st.length) {
     const y = st.pop(), x = st.pop();
-    cnt++;
     const fromI = at(x, y);
     const nb = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
     for (let k = 0; k < 4; k++) {
@@ -117,8 +130,19 @@ export function floodFill(data, w, h, x0, y0, fill, tol, opts = {}) {
       if (accept(nx, ny, fromI)) { seen[p] = 1; st.push(nx, ny); }
     }
   }
-  applyFill(data, seen, w, h, fill, feather);
-  return cnt;
+  return seen;
+}
+
+// Constrain a pixel edit to a selection: copy `baseData` back into `editedData` for
+// every pixel OUTSIDE the mask (mask[p] === 0), so an edit only "takes" inside the
+// selection. Both are flat RGBA byte arrays of the same length; mutates editedData.
+export function clipToBase(editedData, baseData, mask) {
+  for (let p = 0; p < mask.length; p++) {
+    if (mask[p]) continue;
+    const i = p << 2;
+    editedData[i] = baseData[i]; editedData[i + 1] = baseData[i + 1];
+    editedData[i + 2] = baseData[i + 2]; editedData[i + 3] = baseData[i + 3];
+  }
 }
 
 // Background-removal flood: from the seed pixel, make every connected pixel whose

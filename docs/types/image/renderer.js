@@ -14,6 +14,7 @@ import { mountGeometry } from './edit-geometry.js';
 import { mountBg } from './edit-bg.js';
 import { registerUndoKeys } from './edit-undo-key.js';
 import { mountTabs } from './edit-tabs.js';
+import { mountSelection } from './edit-select.js';
 import { mountAdvEdit } from './adv-edit.js';
 import { mountGifPlayer } from './gif-anim.js';
 import { decodeGifFrames } from './gif-decode.js';
@@ -86,6 +87,8 @@ export async function render(intake, ctx = {}) {
   const fillPercep = canEdit ? host.querySelector('.imgv-fill-percep') : null;
   const fillFeather = canEdit ? host.querySelector('.imgv-fill-feather') : null;
   const fillOpts = canEdit ? host.querySelectorAll('.imgv-fill-opt') : [];
+  const selectBtn = canEdit ? host.querySelector('.imgv-select') : null;
+  const deselectBtn = canEdit ? host.querySelector('.imgv-deselect') : null;
   const drawColorPicker = canEdit ? host.querySelector('.imgv-draw-color') : null;
   const drawSizePicker = canEdit ? host.querySelector('.imgv-draw-size') : null;
   const undoBtn = canEdit ? host.querySelector('.imgv-undo') : null;
@@ -137,6 +140,9 @@ export async function render(intake, ctx = {}) {
   // it without tripping the temporal-dead-zone.
   let advController = null, advActive = false;
   const overlayActive = () => !!(advController && !advController.isEmpty());
+  // Magic-wand selection controller (mounted below; declared here so apply()/syncOverlay,
+  // which run during initial load, can reference it without a temporal-dead-zone error).
+  let selection = null;
 
   // Shared edit state + commit pipeline — undo/redo, blob commits, the
   // onBinaryEdit hook, and full reset all live in editor-core so every tool
@@ -222,7 +228,7 @@ export async function render(intake, ctx = {}) {
   function resetView() { panX = 0; panY = 0; }
   // View hook handed to geometry tools so a dimension-changing edit (rotate/resize)
   // can update the stored natural width + relayout.
-  const view = { setNatural: (n) => { natural = n; apply(); } };
+  const view = { setNatural: (n) => { natural = n; apply(); selection?.clear(); } };   // a resize/crop/rotate invalidates the pixel selection
   host.querySelector('.imgv-fit').addEventListener('click', () => { fit = true; resetView(); apply(); });
   host.querySelector('.imgv-100').addEventListener('click', () => { fit = false; zoom = 1; resetView(); apply(); });
   host.querySelector('.imgv-up').addEventListener('click', () => { fit = false; zoom = Math.min(16, zoom * 1.25); apply(); });
@@ -472,6 +478,17 @@ export async function render(intake, ctx = {}) {
   const geometryTool = mountGeometry({ host, img, url, mime, core, view, els, onBeforeGeometry: bakeOverlayForGeometry });
   editTools.push(geometryTool);
 
+  // Magic-wand selection — click a region to build a pixel mask; while it's active
+  // the pixel tools (fill/pencil/eraser) only "take" inside the selection. Reuses the
+  // shared fill tolerance/mode/perceptual options (edit-select.js → fill.js).
+  selection = mountSelection({
+    host, img, mime,
+    els: { selectBtn, deselectBtn },
+    getFillOpts: () => ({ tol: parseInt(fillTol?.value || '12', 10), mode: fillMode?.value || 'seed', perceptual: !!fillPercep?.checked }),
+    onActivate: () => setDrawMode(null),   // the wand is mutually exclusive with pencil/eraser/fill input
+  });
+  editTools.push({ isActive: () => selection.isActive() });
+
   // Filters — live CSS preview + bake on Apply (edit-filters.js).
   mountFilters({ img, mime, core, els });
 
@@ -507,6 +524,7 @@ export async function render(intake, ctx = {}) {
   // the whole stage), so brush coordinates map 1:1 to image pixels regardless of
   // fit/zoom/scroll letterboxing.
   function syncOverlay() {
+    selection?.syncOverlay();   // the selection overlay exists independently of the draw overlay
     if (!drawOverlay) return;
     drawOverlay.style.left = img.offsetLeft + 'px';
     drawOverlay.style.top = img.offsetTop + 'px';
@@ -558,10 +576,12 @@ export async function render(intake, ctx = {}) {
 
   function setDrawMode(mode) {
     drawMode = drawMode === mode ? null : mode;
+    if (drawMode) selection?.setActive(false);   // a draw mode turns off the wand's input (the mask itself persists)
     pencilBtn?.classList.toggle('active', drawMode === 'pencil');
     eraserBtn?.classList.toggle('active', drawMode === 'eraser');
     fillBtn?.classList.toggle('active', drawMode === 'fill');
-    fillOpts.forEach((el) => { el.hidden = drawMode !== 'fill'; });
+    // Fill-tuning controls are shared by the bucket AND the wand — show for either.
+    fillOpts.forEach((el) => { el.hidden = !(drawMode === 'fill' || selection?.isActive()); });
     if (!drawOverlay && drawMode) buildOverlay();
     if (drawOverlay) {
       drawOverlay.style.pointerEvents = drawMode ? 'auto' : 'none';
@@ -642,10 +662,13 @@ export async function render(intake, ctx = {}) {
     g.drawImage(img, 0, 0);
     const id = g.getImageData(0, 0, c.width, c.height);
     const pt = ptToCanvas(e);
+    // If a selection is active, snapshot first so the fill can be clipped to it.
+    const before = selection?.hasSelection() ? Uint8ClampedArray.from(id.data) : null;
     const filled = floodFill(id.data, c.width, c.height, Math.round(pt.x), Math.round(pt.y),
       hexToRgba(drawColorPicker?.value), parseInt(fillTol?.value || '0', 10),
       { mode: fillMode?.value || 'seed', perceptual: !!fillPercep?.checked, feather: !!fillFeather?.checked });
     if (!filled) return;
+    if (before) selection.clipFillInPlace(id.data, before);   // constrain the fill to the selection
     g.putImageData(id, 0, 0);
     const targetMime = core.getExportMime();
     core.pushUndo();
@@ -658,6 +681,9 @@ export async function render(intake, ctx = {}) {
     const targetMime = core.getExportMime();
     let blob;
     if (isEraserStroke) {
+      // The eraser overlay is a copy of the image with holes punched. Clip it to the
+      // selection (restore image pixels outside the mask) so erasing stays inside it.
+      await selection?.clipCanvas(drawOverlay, img);
       blob = await new Promise((r) => drawOverlay.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     } else {
       // Composite from the already-loaded <img> (the current committed image) —
@@ -666,6 +692,7 @@ export async function render(intake, ctx = {}) {
       const g = c.getContext('2d');
       if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
       g.drawImage(img, 0, 0); g.drawImage(drawOverlay, 0, 0);
+      await selection?.clipCanvas(c, img);   // constrain the brush stroke to the selection
       blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     }
     drawOCtx.clearRect(0, 0, drawOverlay.width, drawOverlay.height);
@@ -701,5 +728,5 @@ export async function render(intake, ctx = {}) {
   const bgChecker = canEdit ? host.querySelector('.imgv-bg-checker') : null;
   bgChecker?.addEventListener('change', () => img.classList.toggle('imgv-checker', bgChecker.checked));
 
-  return { parentNode: host, revoke: () => { advController?.destroy(); unregisterUndoKeys?.(); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { advController?.destroy(); selection?.teardown(); unregisterUndoKeys?.(); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
 }

@@ -323,6 +323,30 @@ export async function run(ctx) {
   await openTab('common');
   await page.click('#previewHost .imgv-fill');   // toggle fill off, restore for later steps
   if (sliderFocused && kbdUndo && kbdRedo) pass('Ctrl+Z / Ctrl+Y reach the editor with focus on a toolbar slider'); else fail('keyboard undo w/ slider focus: ' + JSON.stringify({ sliderFocused, kbdUndo, kbdRedo }));
+  // ── Magic-wand selection ── click a region to build a pixel mask (its own overlay
+  // canvas shows a tint + boundary); a Deselect button appears. The mask constrains
+  // the pixel tools (verified by the pure clipToBase unit tests).
+  await openTab('common');
+  await page.click('#previewHost .imgv-select');                 // enter wand mode
+  await page.click('#previewHost .imgv-sel-overlay', { position: { x: 20, y: 20 } });   // pick a region
+  const selState = await page.evaluate(() => {
+    const ov = document.querySelector('#previewHost .imgv-sel-overlay');
+    let painted = false;
+    if (ov && ov.width) { const d = ov.getContext('2d').getImageData(0, 0, ov.width, ov.height).data; for (let i = 3; i < d.length; i += 4) { if (d[i]) { painted = true; break; } } }
+    return {
+      active: document.querySelector('#previewHost .imgv-select').classList.contains('active'),
+      deselectShown: !document.querySelector('#previewHost .imgv-deselect').hidden,
+      painted,
+    };
+  });
+  if (selState.active && selState.deselectShown && selState.painted) pass('magic-wand: selects a region (mask overlay painted + Deselect shown)'); else fail('wand select: ' + JSON.stringify(selState));
+  await page.click('#previewHost .imgv-deselect');               // clear the selection
+  await page.click('#previewHost .imgv-select');                 // leave wand mode (restore state for later steps)
+  const selCleared = await page.evaluate(() => ({
+    deselectHidden: document.querySelector('#previewHost .imgv-deselect').hidden,
+    modeOff: !document.querySelector('#previewHost .imgv-select').classList.contains('active'),
+  }));
+  if (selCleared.deselectHidden && selCleared.modeOff) pass('magic-wand: Deselect clears the selection + leaving wand mode'); else fail('wand clear: ' + JSON.stringify(selCleared));
   // ── Transform / filter / draw commit pipeline ── each tool writes a FRESH edited
   // blob, so img.src (a blob: URL) flips to a new value when a commit lands. This is
   // a tool-agnostic regression signal that protects the editor-module split.
@@ -361,7 +385,8 @@ export async function run(ctx) {
   });
   if (fillModeOn) pass('fill tool activates + reveals tolerance/mode/perceptual/feather options'); else fail('fill mode not active');
   const clickCanvasCentre = () => page.evaluate(() => {
-    const cv = document.querySelector('#previewHost .imgv-stage canvas');
+    // The draw overlay (the fill/brush canvas) — NOT the magic-wand selection overlay.
+    const cv = document.querySelector('#previewHost .imgv-stage canvas:not(.imgv-sel-overlay)');
     const r = cv.getBoundingClientRect();
     cv.dispatchEvent(new MouseEvent('mousedown', { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true }));
   });
