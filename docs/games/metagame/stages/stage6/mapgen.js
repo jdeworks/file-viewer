@@ -8,7 +8,13 @@ import { makeRng } from "./combat.js";
 
 export const NODE_TYPES = ["combat", "elite", "rest", "shop", "event", "boss"];
 
-const COMBAT_ENEMIES = ["corrupt-packet", "firewall-entity", "null-pointer"];
+// Standard trash pool widens and hardens by act, so later acts feel meaner than the opener.
+const STANDARD_POOLS = {
+  1: ["corrupt-packet", "firewall-entity", "null-pointer"],
+  2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition"],
+  3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm"],
+  4: ["null-pointer", "race-condition", "packet-storm"]
+};
 const ELITE_ENEMIES = ["expired-certificate", "man-in-the-middle"];
 const CONTENT_LAYERS = 6; // + 1 boss layer => ~15 nodes/act
 
@@ -94,7 +100,8 @@ function nodeId(act, layer, col) {
   return `a${act}-l${layer}-n${col}`;
 }
 
-export function enemyForNode(node, rng = Math.random) {
+export function enemyForNode(node, act = 1, rng = Math.random) {
   if (node.type === "elite") return ELITE_ENEMIES[Math.floor(rng() * ELITE_ENEMIES.length)];
-  return COMBAT_ENEMIES[Math.floor(rng() * COMBAT_ENEMIES.length)];
+  const pool = STANDARD_POOLS[act] || STANDARD_POOLS[4];
+  return pool[Math.floor(rng() * pool.length)];
 }

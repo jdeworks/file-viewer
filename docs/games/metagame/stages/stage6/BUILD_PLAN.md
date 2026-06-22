@@ -64,10 +64,20 @@ Building the full roguelite deck-builder from `planning/stage6-02-our-game-desig
   (half); the hub spends banked on **Protocol Version** (`prestigeCost = (v+1)*40`), each version giving
   +5 max HP and +1 starting relic via `createRun({version})`. Modest difficulty bump to standard enemies
   (HP + later-intent damage; kept combat.test's asserted corrupt-packet "Attack 10" + firewall armor 4).
-  run.test covers prestige scaling. STILL OPEN (needs a real playtest, not blind tuning): precise
-  duration/balance to land ~90–120 min — regular trash combats are still easy (elites + bosses carry the
-  threat); the run is ~18–21 nodes which likely plays shorter than 90 min, so lengthening (more content
-  layers and/or longer fights) is the main lever. Deeper visual pass also outstanding.
+  run.test covers prestige scaling.
+- ✅ **WP5 duration/balance + visual pass** (`3a806c90`, `a0fe674e`), driven by playtest feedback
+  (trash too easy / run too short / visuals thin):
+  - **Act IV**: `FINAL_BOSS_ACT=4` → ~19 combats/run (was ~14). Acts 1–3 end on dedicated combat
+    mini-bosses (`kernel-panic` 150HP / `buffer-overflow` 205HP / `deadlock` 260HP, fixed HP, no
+    act-scaling); act 4 stays the codex-gated negotiation. Dropped the generic ×1.7 boss-HP boost.
+  - **Harder/longer trash**: tiered standard pools per act in mapgen (`race-condition` act2+,
+    `packet-storm` act3+), bumped standard scaling + late-intent damage. Kept act-1 corrupt-packet
+    "Attack 10" + firewall armor 4 for combat.test.
+  - **Visual depth**: intent telegraph (kind icon + incoming-damage number), energy pips, enemy
+    tier badges + glow, gradient/animated HP bars, card hover-lift, per-node-type map colours,
+    act-progress dot tracker.
+  STILL OPEN (next playtest): fine-tune the new numbers — confirm mini-boss HP isn't a slog with a
+  starter-ish deck, and that act-3/4 trash now actually threatens. No blind tuning.
 
 Engine contract (proven, build against it): cards = `{id,type,cost,rarity,exhaust?,text,effect(ctx)}`;
 ctx API = deal/block/draw/gainEnergy/applyEnemy/applySelf/skipEnemyNext/playedThisTurn(id) +

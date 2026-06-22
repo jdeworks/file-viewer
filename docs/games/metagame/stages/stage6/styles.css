@@ -112,7 +112,20 @@ button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !
 .s6db-meta { display: flex; gap: 8px; font-size: 0.82rem; }
 .s6db-block { color: #2f6f6a; font-weight: 700; }
 .s6db-armor { color: #6b513a; font-weight: 700; }
-.s6db-intent { margin-top: 6px; font-weight: 700; color: #8b2020; }
+.s6db-intent {
+  display: flex; align-items: center; gap: 8px; margin-top: 8px;
+  padding: 6px 10px; border-radius: 8px; font-weight: 700;
+  background: #2c1810; color: #f0e2c8; border-left: 4px solid #8b2020;
+}
+.s6db-intent-icon { font-size: 1.25rem; line-height: 1; }
+.s6db-intent-num { font-size: 1.2rem; min-width: 1.4em; }
+.s6db-intent-detail { font-size: 0.74rem; font-weight: 400; color: #c9b896; letter-spacing: 0.02em; }
+.s6db-intent--attack, .s6db-intent--pierce, .s6db-intent--mirror { border-left-color: #c0392b; }
+.s6db-intent--pierce { background: #3a1410; }
+.s6db-intent--block { border-left-color: #2f6f6a; }
+.s6db-intent--buff { border-left-color: #b8962e; }
+.s6db-intent--debuff { border-left-color: #7a4ea3; }
+.s6db-intent--wait, .s6db-intent--unknown { border-left-color: #6b513a; }
 .s6db-status { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .s6db-status-chip { font-size: 0.7rem; padding: 1px 6px; border-radius: 10px; background: #1e2840; color: #f6efdf; }
 .s6db-status-chip--vulnerable { background: #8b2020; }
@@ -135,6 +148,45 @@ button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !
 .s6db-end h2 { margin-top: 0; }
 .s6db-end--dead h2 { color: #8b2020; }
 .s6db-end--won h2 { color: #2f6f6a; }
+
+/* ── combat depth: header, tier badges, energy pips, animated bars ───────────── */
+.s6db-combat-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.82rem; color: #6b513a; margin-bottom: 8px; }
+.s6db-turn { font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.s6db-fighter-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.s6db-tier { font-size: 0.64rem; font-weight: 700; letter-spacing: 0.08em; padding: 1px 7px; border-radius: 10px; color: #fff8e9; }
+.s6db-tier--elite { background: #7a4ea3; }
+.s6db-tier--boss { background: #8b2020; }
+.s6db-enemy--elite { border-color: #7a4ea3; box-shadow: inset 0 0 0 1px #7a4ea3; }
+.s6db-enemy--boss { border-color: #8b2020; box-shadow: inset 0 0 0 2px #8b2020, 0 2px 10px rgba(139, 32, 32, 0.25); }
+
+.s6db-bar { height: 14px; }
+.s6db-bar span { transition: width 0.32s ease; }
+.s6db-bar--enemy span { background: linear-gradient(90deg, #c0392b, #8b2020); }
+.s6db-bar--player span { background: linear-gradient(90deg, #3a9188, #2f6f6a); }
+
+.s6db-pips { display: inline-flex; gap: 5px; vertical-align: middle; margin-right: 8px; }
+.s6db-pip { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #1e2840; background: transparent; }
+.s6db-pip.is-full { background: radial-gradient(circle at 35% 30%, #ffe9a8, #b8962e); border-color: #b8962e; }
+.s6db-energy-num { font-size: 0.82rem; color: #6b513a; }
+
+.s6db-card { transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.s6db-card:not(:disabled):hover { transform: translateY(-6px); box-shadow: 0 8px 18px rgba(30, 40, 64, 0.3); }
+.s6db-card:disabled { opacity: 0.5; }
+
+/* ── map depth: node-type colour + act tracker ───────────────────────────────── */
+.s6db-map-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.s6db-act-track { display: inline-flex; gap: 6px; }
+.s6db-act-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #b8962e; background: transparent; }
+.s6db-act-dot.is-done { background: #b8962e; }
+.s6db-act-dot.is-here { border-color: #8b2020; background: #8b2020; box-shadow: 0 0 0 3px rgba(139, 32, 32, 0.2); }
+
+.s6db-node--elite { border-color: #7a4ea3; }
+.s6db-node--boss { border-color: #8b2020; border-width: 2px; }
+.s6db-node--rest { border-color: #2f6f6a; }
+.s6db-node--shop { border-color: #b8962e; }
+.s6db-node--event { border-color: #4a2f6b; }
+button.s6db-node.is-available:hover { transform: translateY(-3px); transition: transform 0.12s ease; }
 
 @media (max-width: 720px) {
   .s6db-fighters, .s6db-boss-layout { grid-template-columns: 1fr; }

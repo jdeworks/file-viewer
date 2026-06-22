@@ -11,19 +11,24 @@ import { currentIntent } from "./combat.js";
 const STATUS_LABEL = {
   strength: "STR", vulnerable: "VULN", weak: "WEAK"
 };
+const TIER_BADGE = { elite: "☠ ELITE", boss: "☣ BOSS" };
 
 export function combatView(combat, run) {
   const el = document.createElement("div");
   el.className = "s6db-combat";
   const intent = currentIntent(combat);
   el.innerHTML = `
+    <div class="s6db-combat-head">
+      <span class="s6db-turn">turn ${combat.turn}</span>
+      <span class="s6db-pile">draw ${combat.draw.length} · discard ${combat.discard.length}${combat.exhaust.length ? ` · exhaust ${combat.exhaust.length}` : ""}</span>
+    </div>
     <div class="s6db-fighters">
-      ${enemyPanel(combat.enemy, intent)}
+      ${enemyPanel(combat.enemy, intent, combat)}
       ${playerPanel(combat.player)}
     </div>
     <div class="s6db-energy" aria-label="energy">
-      energy <strong>${combat.player.energy}</strong> / ${combat.player.maxEnergy}
-      <span class="s6db-pile">draw ${combat.draw.length} · discard ${combat.discard.length}</span>
+      ${energyPips(combat.player.energy, combat.player.maxEnergy)}
+      <span class="s6db-energy-num">${combat.player.energy} / ${combat.player.maxEnergy} energy</span>
     </div>
     <div class="s6db-hand" aria-label="hand"></div>
     <div class="s6db-combat-controls">
@@ -40,32 +45,72 @@ export function combatView(combat, run) {
   return el;
 }
 
-function enemyPanel(enemy, intent) {
+// Classify an enemy intent so the UI can telegraph it with an icon, a kind colour, and the number
+// that actually matters this turn (incoming damage, block gained, etc.).
+function describeIntent(intent, combat) {
+  if (!intent) return { kind: "unknown", icon: "…", primary: "—", detail: "" };
+  if (intent.mirror) {
+    const reflect = intent.mirror * (combat?.cardsPlayedThisTurn || 0);
+    return { kind: "mirror", icon: "🪞", primary: `${intent.mirror}×`, detail: `mirror · ~${reflect} now` };
+  }
+  if (intent.attack) {
+    const hits = intent.hits || 1;
+    const total = intent.attack * hits;
+    return {
+      kind: intent.pierce ? "pierce" : "attack",
+      icon: intent.pierce ? "⚡" : "⚔",
+      primary: String(total),
+      detail: (hits > 1 ? `${intent.attack}×${hits}` : "") + (intent.pierce ? " unblockable" : "")
+    };
+  }
+  if (intent.block) return { kind: "block", icon: "🛡", primary: String(intent.block), detail: "defend" };
+  if (intent.applyPlayer) return { kind: "debuff", icon: "☣", primary: intent.applyPlayer.status, detail: "debuff" };
+  if (intent.applySelf) return { kind: "buff", icon: "▲", primary: intent.applySelf.status, detail: "buff" };
+  return { kind: "wait", icon: "…", primary: "—", detail: "" };
+}
+
+function enemyPanel(enemy, intent, combat) {
+  const d = describeIntent(intent, combat);
+  const tier = TIER_BADGE[enemy.tier];
   return `
-    <section class="s6db-fighter s6db-enemy">
-      <div class="s6db-fighter-name">${esc(enemy.name)}</div>
-      <div class="s6db-hp">HP ${enemy.hp} / ${enemy.maxHp}</div>
+    <section class="s6db-fighter s6db-enemy s6db-enemy--${enemy.tier || "standard"}">
+      <div class="s6db-fighter-top">
+        <span class="s6db-fighter-name">${esc(enemy.name)}</span>
+        ${tier ? `<span class="s6db-tier s6db-tier--${enemy.tier}">${tier}</span>` : ""}
+      </div>
       ${bar(enemy.hp, enemy.maxHp, "enemy")}
+      <div class="s6db-hp">HP ${enemy.hp} / ${enemy.maxHp}</div>
       <div class="s6db-meta">
-        ${enemy.block ? `<span class="s6db-block">block ${enemy.block}</span>` : ""}
+        ${enemy.block ? `<span class="s6db-block">🛡 ${enemy.block}</span>` : ""}
         ${enemy.armor ? `<span class="s6db-armor">armor ${enemy.armor}</span>` : ""}
       </div>
       ${statusChips(enemy.statuses)}
-      <div class="s6db-intent" title="${esc(intent?.label || "")}">intent: ${esc(intent?.label || "—")}</div>
+      <div class="s6db-intent s6db-intent--${d.kind}" title="${esc(intent?.label || "")}">
+        <span class="s6db-intent-icon">${d.icon}</span>
+        <span class="s6db-intent-num">${esc(d.primary)}</span>
+        <span class="s6db-intent-detail">${esc(d.detail || intent?.label || "")}</span>
+      </div>
     </section>`;
 }
 
 function playerPanel(player) {
   return `
     <section class="s6db-fighter s6db-player">
-      <div class="s6db-fighter-name">You</div>
-      <div class="s6db-hp">HP ${player.hp} / ${player.maxHp}</div>
+      <div class="s6db-fighter-top"><span class="s6db-fighter-name">You</span></div>
       ${bar(player.hp, player.maxHp, "player")}
+      <div class="s6db-hp">HP ${player.hp} / ${player.maxHp}</div>
       <div class="s6db-meta">
-        <span class="s6db-block">block ${player.block}</span>
+        <span class="s6db-block">🛡 ${player.block}</span>
       </div>
       ${statusChips(player.statuses)}
     </section>`;
+}
+
+function energyPips(energy, maxEnergy) {
+  const total = Math.max(maxEnergy, energy);
+  let pips = "";
+  for (let i = 0; i < total; i++) pips += `<span class="s6db-pip${i < energy ? " is-full" : ""}"></span>`;
+  return `<span class="s6db-pips" aria-hidden="true">${pips}</span>`;
 }
 
 function handCard(id, index, energy) {

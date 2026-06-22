@@ -14,7 +14,9 @@ export const PLAYER_MAX_HP = 60;
 const REST_HEAL_FRACTION = 0.30;
 const REWARD_CHOICES = 3;
 const HANDSHAKE_REWARD = { combat: 10, elite: 30, boss: 0 };
-const FINAL_BOSS_ACT = 3;
+export const FINAL_BOSS_ACT = 4;
+// Per-act combat mini-bosses; the final act is the codex-gated negotiation (handled in the UI).
+const ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock" };
 const PRESTIGE_HP_PER_VERSION = 5;
 
 // Banked-handshake cost to advance from the given Protocol Version to the next.
@@ -66,8 +68,8 @@ export function moveTo(run, nodeId) {
 export function enemyForCurrentNode(run, rng = Math.random) {
   const node = nodeById(run.map, run.currentNodeId);
   if (!node) return null;
-  if (node.type === "boss") return run.act === FINAL_BOSS_ACT ? "the-refused-connection" : "firewall-entity";
-  return enemyForNode(node, rng);
+  if (node.type === "boss") return run.act === FINAL_BOSS_ACT ? "the-refused-connection" : (ACT_BOSSES[run.act] || "kernel-panic");
+  return enemyForNode(node, run.act, rng);
 }
 
 // Called by the UI once a combat resolves. win=false => the run ends (death restart).
