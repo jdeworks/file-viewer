@@ -1,0 +1,45 @@
+<button class="imgv-tools-btn" title="Show / hide editing tools">🛠 Edit</button>
+<span class="imgv-edit-tools">
+  <span class="imgv-sep"></span>
+  <input class="imgv-text-input" type="text" placeholder="Text overlay" aria-label="Image text">
+  <input class="imgv-text-size" type="number" min="8" max="240" value="32" title="Font size">
+  <select class="imgv-text-font" title="Font family"><option value="system-ui,sans-serif">Sans-serif</option><option value="Georgia,serif">Serif</option><option value="monospace">Mono</option><option value="Impact,sans-serif">Impact</option><option value="cursive">Cursive</option></select>
+  <input class="imgv-text-color" type="color" value="#ffffff" title="Text color">
+  <button class="imgv-text-apply" title="Draw text on image">Add text</button>
+  <span class="imgv-sep"></span>
+  <button class="imgv-pencil" title="Pencil / brush draw mode">Pencil</button>
+  <button class="imgv-eraser" title="Eraser mode">Eraser</button>
+  <button class="imgv-fill" title="Fill tool — click a region to flood-fill it with the brush color">🪣 Fill</button>
+  <input class="imgv-draw-color" type="color" value="#ff0000" title="Brush / fill color">
+  <select class="imgv-draw-size" title="Brush size"><option value="3">3px</option><option value="8" selected>8px</option><option value="20">20px</option><option value="40">40px</option></select>
+  <label class="imgv-fill-opt" hidden style="font-size:0.8em;display:inline-flex;align-items:center;gap:3px;">Tol <input class="imgv-fill-tol" type="range" min="0" max="255" value="0" style="width:70px"><span class="imgv-fill-tolv">0</span></label>
+  <label class="imgv-fill-opt" hidden style="font-size:0.8em;display:inline-flex;align-items:center;gap:3px;" title="Stop the fill at detected edges"><input class="imgv-fill-edge" type="checkbox"> Edge match</label>
+  <button class="imgv-undo" title="Undo (Ctrl+Z)" hidden>↩</button>
+  <button class="imgv-redo" title="Redo (Ctrl+Y)" hidden>↪</button>
+  <span class="imgv-sep"></span>
+  <button class="imgv-rot-l" title="Rotate 90° counter-clockwise">↺ 90°</button>
+  <button class="imgv-rot-r" title="Rotate 90° clockwise">↻ 90°</button>
+  <button class="imgv-flip-h" title="Flip horizontally">↔ Flip H</button>
+  <button class="imgv-flip-v" title="Flip vertically">↕ Flip V</button>
+  <span class="imgv-sep"></span>
+  <button class="imgv-compare" title="Compare original vs current (split view)">⇄ Compare</button>
+  <span class="imgv-sep"></span>
+  <button class="imgv-filters-btn" title="Show brightness/contrast/saturation controls">⚙ Filters</button>
+  <span class="imgv-filters-panel" hidden style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;"><label style="font-size:0.8em">Brightness <input class="imgv-f-brightness" type="range" min="0" max="200" value="100" style="width:70px"></label><label style="font-size:0.8em">Contrast <input class="imgv-f-contrast" type="range" min="0" max="200" value="100" style="width:70px"></label><label style="font-size:0.8em">Saturation <input class="imgv-f-saturation" type="range" min="0" max="200" value="100" style="width:70px"></label><label style="font-size:0.8em">Hue <input class="imgv-f-hue" type="range" min="0" max="360" value="0" style="width:70px"></label><button class="imgv-f-apply">Apply Filters</button><button class="imgv-f-reset">Reset</button></span>
+  <span class="imgv-sep"></span>
+  <select class="imgv-export-fmt" title="Export format"><option value="">Original format</option><option value="image/png">PNG</option><option value="image/jpeg">JPEG</option><option value="image/webp">WebP</option><option value="image/avif">AVIF</option></select>
+  <span class="imgv-sep"></span>
+  <button class="imgv-bg-btn" title="Remove background — click to sample a color, then flood-fill to transparent">✂ BG</button>
+  <input class="imgv-bg-tol" type="range" min="0" max="80" value="20" title="Tolerance" hidden style="width:72px">
+  <button class="imgv-bg-ok" hidden title="Apply background removal (saves as PNG)">Apply</button>
+  <button class="imgv-bg-x" hidden title="Cancel background removal">✕</button>
+  <span class="imgv-sep"></span>
+  <button class="imgv-crop-btn" title="Crop image — drag a rectangle to select the region to keep">✂ Crop</button>
+  <button class="imgv-crop-apply" hidden title="Apply the selected crop region">Apply Crop</button>
+  <button class="imgv-crop-cancel" hidden title="Cancel crop">Cancel</button>
+  <span class="imgv-sep"></span>
+  <button class="imgv-resize-btn" title="Resize image to specific dimensions">⊡ Resize</button>
+  <span class="imgv-resize-panel" hidden style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;"><select class="imgv-resize-unit" title="Resize units" style="font-size:0.8em"><option value="px">px</option><option value="pct">%</option></select><label style="font-size:0.8em">W <input class="imgv-resize-w" type="number" min="1" max="16000" style="width:60px"></label><label style="font-size:0.8em">H <input class="imgv-resize-h" type="number" min="1" max="16000" style="width:60px"></label><label style="font-size:0.8em"><input class="imgv-resize-lock" type="checkbox" checked> Lock ratio</label><label style="font-size:0.8em">Resample <select class="imgv-resize-resample"><option value="high">Smooth</option><option value="medium">Medium</option><option value="pixelated">Pixelated</option></select></label><button class="imgv-resize-apply">Apply Resize</button><button class="imgv-resize-cancel">Cancel</button></span>
+  <button class="imgv-text-reset" title="Reset all edits" hidden>Reset</button>
+  <span class="imgv-dirty-indicator" hidden style="color:var(--accent,#f59e0b);font-size:0.75em;align-self:center;">● Modified</span>
+</span>
