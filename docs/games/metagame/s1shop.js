@@ -16,7 +16,7 @@ import {
 import { fromNumber, gte, toDisplay, toNumber } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements } from './s1achievements.js';
-import { setText, setHidden, setHtml, setDisabled, bigToNum } from './s1dom.js';
+import { setText, setHidden, setHtml, bigToNum } from './s1dom.js';
 
 // Buy-count selector options for the shop.
 const BUY_COUNTS = [1, 10, 100, 'max'];
@@ -131,30 +131,32 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       + (cfg.bossTicket ? ' — ' + toDisplay(cfg.bossTicket) : '') + '</button>'
       + '</div>';
 
-    const earnBtn = panelsEl.querySelector('.mg-s1-earn');
-    if (earnBtn && hooks.onEarn) earnBtn.addEventListener('click', hooks.onEarn);
-    // Buy-count selectors (per-row remembered active count; default ×1). stopPropagation so a tap on
-    // a control inside a timed row doesn't ALSO start that row's cycle.
-    panelsEl.querySelectorAll('.mg-s1-buyn').forEach((b) => b.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const n = b.dataset.n === 'max' ? 'max' : Number(b.dataset.n);
-      buyCounts[b.dataset.id] = n;
-      state.buyMult = n;   // persist globally so it survives reload
-      save(state);
-      paintShop();
-    }));
-    // Buy buttons.
-    panelsEl.querySelectorAll('.mg-s1-buybtn').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); doBuy(b.dataset.id); }));
-    // Timed rows ARE the run button — click anywhere on the row (outside the buy controls) to run.
-    panelsEl.querySelectorAll('.mg-s1-timedrow').forEach((row) => row.addEventListener('click', () => startTimed(row.dataset.id)));
-    // Boss button.
-    const bossBtn = panelsEl.querySelector('.mg-s1-boss');
-    if (bossBtn) bossBtn.addEventListener('click', (e) => { e.stopPropagation(); hooks.onBoss && hooks.onBoss(); });
-
     paintShop();
     paintTimed();
     paintStats();
   }
+
+  // Event delegation: ONE click listener on the stable panelsEl routes every shop interaction.
+  // renderPanel() rebuilds panelsEl's children and the 100ms tick repaints them, but the listener
+  // lives on the parent — so a rebuild can never drop listeners or open a window where a tap lands
+  // on a half-rebuilt control (the cause of "buy doesn't register until later"). Routing order puts
+  // the inner buy controls before the timed-row, so a tap on a control never also starts a cycle.
+  panelsEl.addEventListener('click', (e) => {
+    const buyn = e.target.closest('.mg-s1-buyn');
+    if (buyn) {
+      const n = buyn.dataset.n === 'max' ? 'max' : Number(buyn.dataset.n);
+      buyCounts[buyn.dataset.id] = n;
+      state.buyMult = n;   // persist globally so it survives reload
+      save(state);
+      paintShop();
+      return;
+    }
+    if (e.target.closest('.mg-s1-buybtn')) { doBuy(e.target.closest('.mg-s1-buybtn').dataset.id); return; }
+    if (e.target.closest('.mg-s1-boss')) { hooks.onBoss && hooks.onBoss(); return; }
+    if (e.target.closest('.mg-s1-earn')) { hooks.onEarn && hooks.onEarn(); return; }
+    const row = e.target.closest('.mg-s1-timedrow');
+    if (row) startTimed(row.dataset.id);
+  });
 
   function doBuy(id) {
     const t = tiers.find((x) => x.id === id);
@@ -209,9 +211,11 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       const buyBtn = row.querySelector('.mg-s1-buybtn');
       const label = sel === 'max' ? 'MAX' : '×' + displayN;
       setText(buyBtn, 'Buy ' + label + ' — ' + toDisplay(cost));
+      // Locked state is VISUAL only (.mg-buy-locked). Don't toggle the native `disabled` attribute:
+      // the 100ms tick repaints this, and a button that flips disabled mid-press swallows the click.
+      // An unaffordable tap is a harmless no-op anyway — doBuy/buyTier guard the actual purchase.
       const affordable = sel === 'max' ? (maxN >= 1) : gte(state.bits, cost);
       buyBtn.classList.toggle('mg-buy-locked', !affordable);
-      setDisabled(buyBtn, !affordable);
     });
   }
 

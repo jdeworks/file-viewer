@@ -124,6 +124,7 @@ export function mount(host, { onExit } = {}) {
           </div>
           <div class="mg-v3-head-actions">
             <button class="mg-dev-btn" type="button" data-action="dev" aria-label="Dev menu" title="Dev menu" hidden>🛠</button>
+            <button class="mg-help-btn" type="button" data-action="help" aria-label="Help" title="Help" hidden>❓</button>
             <button class="mg-sfx-btn" type="button" data-action="sfx" aria-label="Toggle sound effects"></button>
             <div class="mg-v3-bell"></div>
             <button class="mg-back" type="button" data-action="exit">Back to arcade</button>
@@ -191,6 +192,12 @@ export function mount(host, { onExit } = {}) {
       onExit,
       onStageComplete: () => completeStage(mod.stageMeta.id),
     });
+    // Wire the header help button to the active stage's help affordance (if it provides one).
+    const helpBtn = host.querySelector('[data-action="help"]');
+    if (helpBtn && mounted && typeof mounted.help === 'function') {
+      helpBtn.hidden = false;
+      helpBtn.addEventListener('click', () => mounted.help());
+    }
     prefetchStages(saveData.unlockedStages.filter((s) => Number(s) !== id));
   }
 

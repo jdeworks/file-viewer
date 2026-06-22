@@ -30,6 +30,7 @@ export function mountStage(ctx = {}) {
   const state = normalizeState(ctx.state || defaultState(ctx), ctx);
   const stageConfig = ctx.stageConfig || stageByNumber(1);
   let bossCtl = null;
+  let s1ctl = null;
   let destroyed = false;
 
   const save = () => {
@@ -40,7 +41,7 @@ export function mountStage(ctx = {}) {
     if (destroyed) return;
     if (bossCtl && typeof bossCtl.destroy === 'function') bossCtl.destroy();
     bossCtl = null;
-    renderStage1({
+    s1ctl = renderStage1({
       host,
       state,
       save,
@@ -49,6 +50,7 @@ export function mountStage(ctx = {}) {
       stage: () => stageConfig,
       onExit: ctx.onExit,
       onBoss: () => {
+        s1ctl = null;   // help has no panel during the boss fight
         host.innerHTML = '<div class="mg-wrap mg-stage1-boss-host"></div>';
         const arena = host.querySelector('.mg-stage1-boss-host');
         bossCtl = mountStage1Boss(arena, {
@@ -66,6 +68,8 @@ export function mountStage(ctx = {}) {
   render();
 
   return {
+    // The orchestrator wires the header help button to this when present.
+    help: () => { if (s1ctl && typeof s1ctl.toggleHelp === 'function') s1ctl.toggleHelp(); },
     destroy() {
       destroyed = true;
       if (bossCtl && typeof bossCtl.destroy === 'function') bossCtl.destroy();

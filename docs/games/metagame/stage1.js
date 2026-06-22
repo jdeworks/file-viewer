@@ -84,7 +84,6 @@ export function renderStage1(ctx) {
     '<div class="mg-wrap mg-s1">'
     + '<div class="mg-s1-hud" hidden>'
     + '  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span>'
-    + '  <button class="mg-s1-help-btn" type="button" hidden aria-expanded="false">❓ Help</button>'
     + '</div>'
     + '<div class="mg-s1-help" hidden></div>'
     + '<div class="mg-s1-top">'
@@ -106,7 +105,6 @@ export function renderStage1(ctx) {
   const panelsEl = $('.mg-s1-panels');
   const hudEl = $('.mg-s1-hud');
   const scoreValEl = $('.mg-s1-score-val');
-  const helpBtn = $('.mg-s1-help-btn');
   const helpEl = $('.mg-s1-help');
 
   // ── Score HUD + helper buttons (progressive disclosure) ──────────────────────
@@ -125,24 +123,19 @@ export function renderStage1(ctx) {
       + HELP_SECTIONS.map(([h, b]) =>
         '<div class="mg-s1-help-row"><strong>' + escapeHtml(h) + '</strong><span>' + escapeHtml(b) + '</span></div>').join(''));
   }
-  helpBtn.addEventListener('click', () => {
+  // The help affordance now lives in the metagame header (next to SFX); this toggles the panel.
+  function toggleHelp() {
     const open = helpEl.hidden;
     if (open) renderHelp();
     setHidden(helpEl, !open);
-    helpBtn.setAttribute('aria-expanded', String(open));
-  });
+  }
   function updateHud() {
-    if (!state.helpersUnlocked && bigToNum(state.bits) >= 1000) {
-      state.helpersUnlocked = true;
-      save(state);
-    }
     // Once unlocked the score stays visible — the 'score-unlock' milestone persists across a prestige
-    // reset (which zeroes totalBits), so gate on it rather than the live total.
+    // reset (which zeroes totalBits), so gate on it rather than the live total. The score chip is an
+    // absolute top-right overlay (see games.css), so revealing it never reflows the play area.
     const scoreOn = (state.milestones || []).includes('score-unlock') || bigToNum(state.totalBits) >= 400;
     setHidden(hudEl, !scoreOn);
     if (scoreOn) setText(scoreValEl, toDisplay(fromNumber(Math.floor(bigToNum(state.bits)))));
-    setHidden(helpBtn, !state.helpersUnlocked);
-    if (!state.helpersUnlocked) setHidden(helpEl, true);
   }
 
   // ── Pixel-reveal grid (column-major fill order) ────────────────────────────
@@ -396,6 +389,9 @@ export function renderStage1(ctx) {
 
   renderAll();
   attachChrome(host);
+
+  // Expose the help toggle so the orchestrator can wire it to the header help button.
+  return { toggleHelp };
 }
 
 export const STAGE1 = { GRID_CELLS, GRID_COLS, GRID_ROWS };

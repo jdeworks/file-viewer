@@ -219,6 +219,21 @@ export async function run(ctx) {
   } else {
     fail('Stage 1 achievements tab not visible after tab unlock with 10M totalBits');
   }
+  // Interaction-robustness regressions: buy buttons must never use the native `disabled` attribute
+  // (toggled every 100ms tick, it swallowed mid-press clicks); locked state is the .mg-buy-locked
+  // class only. (Clicks themselves are delegated on the stable panel — covered by the earn test above.)
+  const buyBtns = await page.$$eval('.mg-s1-buybtn', (btns) => ({
+    count: btns.length,
+    anyNativeDisabled: btns.some((b) => b.disabled),
+  }));
+  if (buyBtns.count > 0 && !buyBtns.anyNativeDisabled) pass('Stage 1 buy buttons stay clickable (no native disabled flicker)');
+  else fail('Stage 1 buy buttons use native disabled: ' + JSON.stringify(buyBtns));
+  // Score is an absolute overlay so revealing it never reflows the play area (and shifts the button).
+  const scorePos = await page.$eval('.mg-s1-hud', (el) => getComputedStyle(el).position).catch(() => null);
+  if (scorePos === 'absolute') pass('Stage 1 score HUD is an absolute top-right overlay'); else fail('Stage 1 score HUD position: ' + scorePos);
+  // Help affordance now lives in the metagame header next to SFX.
+  const helpInHeader = await page.$eval('.mg-v3-head-actions .mg-help-btn', (el) => !el.hidden).catch(() => false);
+  if (helpInHeader) pass('Stage 1 help button appears in the header next to SFX'); else fail('Stage 1 header help button missing/hidden');
   await page.click('.games-close');
 
   await page.evaluate(async () => {

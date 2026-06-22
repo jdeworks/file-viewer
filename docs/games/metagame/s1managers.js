@@ -108,27 +108,37 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
     const newPanel = panelsEl.querySelector('.mg-s1-panel');
     if (newPanel && prevScroll) newPanel.scrollTop = prevScroll;
 
+    // Buy-count selector active state is VISUAL (mg-mult-on); the clicks themselves are delegated.
     panelsEl.querySelectorAll('.mg-mgr-buyn').forEach((b) => {
       const v = b.dataset.n === 'max' ? 'max' : Number(b.dataset.n);
       b.classList.toggle('mg-mult-on', String(v) === String(mgrCountFor()));
-      b.addEventListener('click', () => { state.mgrBuyMult = v; save(state); renderPanel(); });
-    });
-    panelsEl.querySelectorAll('.mg-mgr-card [data-act]').forEach((b) => {
-      const id = b.dataset.id, act = b.dataset.act;
-      const mgr = managers.find((m) => m.id === id);
-      if (!mgr) return;
-      b.addEventListener('click', () => mgrAction(mgr, act));
-      if (act === 'lvl') {
-        const show = () => { if (previewNetNeg(mgr)) panelsEl.querySelector('.mg-mgr-net')?.classList.add('mg-net-neg-preview'); };
-        const hide = () => panelsEl.querySelector('.mg-mgr-net')?.classList.remove('mg-net-neg-preview');
-        b.addEventListener('mouseenter', show);
-        b.addEventListener('focus', show);
-        b.addEventListener('mouseleave', hide);
-        b.addEventListener('blur', hide);
-      }
     });
     paint();
   }
+
+  // Event delegation on the stable panelsEl — survives every renderPanel() rebuild (which fires on
+  // hire/level/fire AND whenever a manager auto-pauses/unpauses), so a click is never lost to a
+  // mid-rebuild window. Routes buy-count selectors and the per-card hire/level/fire actions.
+  panelsEl.addEventListener('click', (e) => {
+    const buyn = e.target.closest('.mg-mgr-buyn');
+    if (buyn) { state.mgrBuyMult = buyn.dataset.n === 'max' ? 'max' : Number(buyn.dataset.n); save(state); renderPanel(); return; }
+    const act = e.target.closest('.mg-mgr-card [data-act]');
+    if (act) { const mgr = managers.find((m) => m.id === act.dataset.id); if (mgr) mgrAction(mgr, act.dataset.act); }
+  });
+  // Net-negative preview when hovering/focusing a Level-up button (mouseover/focusin bubble, so they
+  // delegate cleanly where mouseenter/focus would not).
+  const netPreview = (on, target) => {
+    const lvlBtn = target.closest && target.closest('.mg-mgr-lvl');
+    if (!lvlBtn) return;
+    const mgr = managers.find((m) => m.id === lvlBtn.dataset.id);
+    const net = panelsEl.querySelector('.mg-mgr-net');
+    if (!net) return;
+    net.classList.toggle('mg-net-neg-preview', Boolean(on && mgr && previewNetNeg(mgr)));
+  };
+  panelsEl.addEventListener('mouseover', (e) => netPreview(true, e.target));
+  panelsEl.addEventListener('mouseout', (e) => netPreview(false, e.target));
+  panelsEl.addEventListener('focusin', (e) => netPreview(true, e.target));
+  panelsEl.addEventListener('focusout', (e) => netPreview(false, e.target));
 
   function paint() {
     // Net rate is CURRENT state, recomputed every tick: as the builder chain assembles more Bit
@@ -157,7 +167,7 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
         setHtml(btn, actionBtnHtml(mgr));   // refresh cost/count/ongoing live (esp. for "max")
         const n = displayLevels(mgr);
         const can = n >= 1 && gte(state.bits, managerTotalCost(mgr, ms.level, n, cfg));
-        if (btn.disabled !== !can) btn.disabled = !can;
+        // Visual-only lock (no native `disabled` — toggling it every tick swallows mid-press clicks).
         btn.classList.toggle('mg-buy-locked', !can);
       }
       const runEl = card.querySelector('.mg-mgr-runcost');
