@@ -84,7 +84,7 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
 
 - **Color adjustments panel** — brightness/contrast/saturation/**hue** sliders shipped (`edit-filters.js`); **Levels** (black/white/gamma) ✅ SHIPPED (`levels.js` LUT + live preview, in the Adjust tab). Still to add:
   - Curves (interactive cubic Bezier per channel) — build a 256-entry LUT from four control points, apply via `putImageData`. UI: small `<canvas>` with draggable handles, no lib needed. The LUT-apply plumbing (`levels.js` `applyLevels`) generalizes.
-  - Sepia / greyscale / invert as one-click presets — all achievable with `ctx.filter`
+  - ✅ SHIPPED — Sepia / greyscale / invert one-click presets (`edit-filters.js`, `ctx.filter` bake, Adjust tab).
   — M per item, no lib required
 
 - **Blend modes on composited layers** — When the Konva layers panel is present, expose a blend-mode `<select>` per layer using the 26 CSS mix-blend-mode values (`multiply`, `screen`, `overlay`, `color-dodge`, `hard-light`, etc.). Konva maps these to Canvas2D `globalCompositeOperation`. The export flatten step uses `drawImage` with each layer's blend mode active. — M (depends on Konva layers task above)

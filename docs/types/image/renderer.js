@@ -135,6 +135,9 @@ export async function render(intake, ctx = {}) {
   const lvGamma = canEdit ? host.querySelector('.imgv-lv-gamma') : null;
   const lvApply = canEdit ? host.querySelector('.imgv-lv-apply') : null;
   const lvCancel = canEdit ? host.querySelector('.imgv-lv-cancel') : null;
+  const presetGrey = canEdit ? host.querySelector('.imgv-preset-grey') : null;
+  const presetSepia = canEdit ? host.querySelector('.imgv-preset-sepia') : null;
+  const presetInvert = canEdit ? host.querySelector('.imgv-preset-invert') : null;
   let natural = 0, fit = true, zoom = 1, asciiMode = false;
   let jxlPngBytes = null;   // decoded PNG bytes for JXL (display + ASCII source)
   // Pencil/eraser/fill state stays here (the draw overlay is coupled to the
@@ -197,6 +200,7 @@ export async function render(intake, ctx = {}) {
     editInput, editSize, editColor, editFont, editApply, editReset,
     filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn,
     levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel,
+    presetGrey, presetSepia, presetInvert,
     bgBtn, bgTol, bgOk, bgX, exportFmt,
     rotLBtn, rotRBtn, flipHBtn, flipVBtn,
     cropBtn, cropApplyBtn, cropCancelBtn,

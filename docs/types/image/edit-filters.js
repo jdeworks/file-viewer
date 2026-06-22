@@ -9,6 +9,7 @@ import { buildLevelsLUT, applyLevels } from './levels.js';
 export function mountFilters({ img, mime, core, els }) {
   const { filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn } = els;
   const { levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel } = els;
+  const { presetGrey, presetSepia, presetInvert } = els;
 
   filtersBtn?.addEventListener('click', () => { if (filtersPanel) filtersPanel.hidden = !filtersPanel.hidden; });
 
@@ -108,4 +109,22 @@ export function mountFilters({ img, mime, core, els }) {
     levelsBtn?.classList.remove('active');
   });
   lvCancel?.addEventListener('click', () => { lvClose(false); levelsBtn?.classList.remove('active'); });
+
+  // ── One-click presets ── greyscale / sepia / invert, baked straight to pixels via
+  // a canvas filter (no panel; just undoable like any other commit).
+  async function applyPreset(filter) {
+    const base = await core.loadBase();
+    const canvas = document.createElement('canvas');
+    canvas.width = base.naturalWidth; canvas.height = base.naturalHeight;
+    const g = canvas.getContext('2d');
+    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
+    g.filter = filter;
+    g.drawImage(base, 0, 0);
+    g.filter = 'none';
+    core.pushUndo();
+    await core.commitCanvas(canvas);
+  }
+  presetGrey?.addEventListener('click', () => applyPreset('grayscale(1)'));
+  presetSepia?.addEventListener('click', () => applyPreset('sepia(1)'));
+  presetInvert?.addEventListener('click', () => applyPreset('invert(1)'));
 }

@@ -384,6 +384,10 @@ export async function run(ctx) {
   const lvCommitted = await waitNewSrc(lvBefore);
   const lvClosed = await page.evaluate(() => document.querySelector('#previewHost .imgv-levels-panel').hidden);
   if (lvPreviewed && lvCommitted && lvClosed) pass('levels: live preview + Apply commits a LUT-mapped image + panel closes'); else fail('levels: ' + JSON.stringify({ lvPreviewed, lvCommitted, lvClosed }));
+  // One-click presets (greyscale/sepia/invert) bake straight to pixels via a canvas filter.
+  const greyBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-preset-grey');
+  if (await waitNewSrc(greyBefore)) pass('preset: greyscale bakes a new edited image'); else fail('greyscale preset did not commit');
   await openTab('common');
   // Fill bucket: the button lives in Common; its options live in the Draw tab.
   // Activating from Common still un-hides the option controls.
