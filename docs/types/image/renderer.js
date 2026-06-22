@@ -94,6 +94,7 @@ export async function render(intake, ctx = {}) {
   const deselectBtn = canEdit ? host.querySelector('.imgv-deselect') : null;
   const selInvertBtn = canEdit ? host.querySelector('.imgv-sel-invert') : null;
   const selCutBtn = canEdit ? host.querySelector('.imgv-sel-cut') : null;
+  const moveBtn = canEdit ? host.querySelector('.imgv-sel-move') : null;
   const drawColorPicker = canEdit ? host.querySelector('.imgv-draw-color') : null;
   const drawSizePicker = canEdit ? host.querySelector('.imgv-draw-size') : null;
   const undoBtn = canEdit ? host.querySelector('.imgv-undo') : null;
@@ -505,9 +506,10 @@ export async function render(intake, ctx = {}) {
   // shared fill tolerance/mode/perceptual options (edit-select.js → fill.js).
   selection = mountSelection({
     host, img, mime,
-    els: { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, deselectBtn },
+    els: { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn },
     getFillOpts: () => ({ tol: parseInt(fillTol?.value || '12', 10), mode: fillMode?.value || 'seed', perceptual: !!fillPercep?.checked }),
-    onActivate: () => setDrawMode(null),   // the wand is mutually exclusive with pencil/eraser/fill input
+    onActivate: () => setDrawMode(null),   // selection is mutually exclusive with pencil/eraser/fill input
+    onCommit: async (canvas) => { core.pushUndo(); const blob = await new Promise((r) => canvas.toBlob(r, 'image/png')); core.commitBlob(blob, { mime: 'image/png' }); },
   });
   editTools.push({ isActive: () => selection.isActive() });
 

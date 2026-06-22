@@ -10,15 +10,16 @@
 // overlay. A dimension-changing geometry op invalidates it (renderer calls clear()).
 import { computeRegionMask, clipToBase } from './fill.js';
 
-export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }) {
-  const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, deselectBtn } = els;
+export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommit }) {
+  const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn } = els;
   if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {}, async clipCanvas() {}, invert() {}, toggle() {}, setActive() {}, setMode() {}, clear() {}, syncOverlay() {}, teardown() {} };
 
   const stage = host.querySelector('.imgv-stage');
-  let mode = null;                   // null | 'wand' | 'marquee' | 'ellipse' | 'lasso'
+  let mode = null;                   // null | 'wand' | 'marquee' | 'ellipse' | 'lasso' | 'move'
   let mask = null, mw = 0, mh = 0;   // current selection mask (natural res) + its dims
   let ov = null, octx = null;
   let dragging = false, dragStart = null, lassoPts = null;   // rubber-band / freehand drag
+  let moving = false, moveStart = null, holedCanvas = null, pieceCanvas = null;   // move-selection drag
 
   function ensureOverlay() {
     if (ov) return;
@@ -38,6 +39,7 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
 
   function onDown(e) {
     if (mode === 'wand') { e.preventDefault(); pickAt(e); return; }
+    if (mode === 'move') { startMove(e); return; }
     if (!isDrag(mode)) return;
     e.preventDefault();
     ov.width = img.naturalWidth || 1; ov.height = img.naturalHeight || 1;   // natural-res drawing surface (clears)
@@ -47,6 +49,7 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     try { ov.setPointerCapture(e.pointerId); } catch { /* not all pointers capture */ }
   }
   function onMove(e) {
+    if (moving) { e.preventDefault(); previewMove(ptToCanvas(e)); return; }
     if (!dragging) return;
     e.preventDefault();
     const pt = ptToCanvas(e);
@@ -54,12 +57,58 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     else drawRubberBand(dragStart, pt, mode);
   }
   function onUp(e) {
+    if (moving) { dropMove(ptToCanvas(e)); return; }
     if (!dragging) return;
     dragging = false;
     const pt = ptToCanvas(e);
     if (mode === 'marquee') setMask(rectMask(dragStart, pt));
     else if (mode === 'ellipse') setMask(ellipseMask(dragStart, pt));
     else if (mode === 'lasso') { const pts = lassoPts; lassoPts = null; setMask(lassoMask(pts)); }
+  }
+
+  // ── Move the selected pixels ── lift the masked region off the base (leaving a
+  // transparent hole), float it on the overlay following the cursor, and on drop
+  // commit base-with-hole + the piece at its new offset (one PNG commit).
+  function startMove(e) {
+    if (!mask) return;
+    e.preventDefault();
+    const bc = document.createElement('canvas'); bc.width = mw; bc.height = mh;
+    const bg = bc.getContext('2d', { willReadFrequently: true });
+    bg.drawImage(img, 0, 0, mw, mh);
+    const baseId = bg.getImageData(0, 0, mw, mh);
+    pieceCanvas = document.createElement('canvas'); pieceCanvas.width = mw; pieceCanvas.height = mh;
+    const pg = pieceCanvas.getContext('2d');
+    const pieceId = pg.createImageData(mw, mh);
+    for (let p = 0; p < mask.length; p++) {
+      if (!mask[p]) continue;
+      const i = p << 2;
+      pieceId.data[i] = baseId.data[i]; pieceId.data[i + 1] = baseId.data[i + 1];
+      pieceId.data[i + 2] = baseId.data[i + 2]; pieceId.data[i + 3] = baseId.data[i + 3];
+      baseId.data[i + 3] = 0;   // punch the hole in the base copy
+    }
+    pg.putImageData(pieceId, 0, 0);
+    bg.putImageData(baseId, 0, 0);
+    holedCanvas = bc;
+    moving = true; moveStart = ptToCanvas(e);
+    try { ov.setPointerCapture(e.pointerId); } catch { /* not all pointers capture */ }
+    previewMove(moveStart);
+  }
+  function previewMove(pt) {
+    const dx = pt.x - moveStart.x, dy = pt.y - moveStart.y;
+    octx.clearRect(0, 0, ov.width, ov.height);
+    octx.drawImage(holedCanvas, 0, 0);          // the overlay (z-index 4) covers the <img> with the live preview
+    octx.drawImage(pieceCanvas, dx, dy);
+  }
+  async function dropMove(pt) {
+    moving = false;
+    const dx = pt.x - moveStart.x, dy = pt.y - moveStart.y;
+    const out = document.createElement('canvas'); out.width = mw; out.height = mh;
+    const og = out.getContext('2d');
+    og.drawImage(holedCanvas, 0, 0);
+    og.drawImage(pieceCanvas, dx, dy);
+    holedCanvas = pieceCanvas = null;
+    await onCommit?.(out);    // renderer: pushUndo + commit a PNG (keeps the transparent hole)
+    clear();                  // the selection is consumed by the move
   }
 
   // Live rubber-band (rect or ellipse) drawn on the natural-res overlay.
@@ -190,7 +239,8 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     marqueeBtn?.classList.toggle('active', m === 'marquee');
     ellipseBtn?.classList.toggle('active', m === 'ellipse');
     lassoBtn?.classList.toggle('active', m === 'lasso');
-    if (ov) { ov.style.pointerEvents = m ? 'auto' : 'none'; ov.style.cursor = m ? 'crosshair' : ''; }
+    moveBtn?.classList.toggle('active', m === 'move');
+    if (ov) { ov.style.pointerEvents = m ? 'auto' : 'none'; ov.style.cursor = m === 'move' ? 'move' : m ? 'crosshair' : ''; }
     if (m) onActivate?.();
   }
   // Renderer compat: a draw tool turning selection off calls setActive(false).
@@ -235,6 +285,7 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
   marqueeBtn?.addEventListener('click', () => setMode(mode === 'marquee' ? null : 'marquee'));
   ellipseBtn?.addEventListener('click', () => setMode(mode === 'ellipse' ? null : 'ellipse'));
   lassoBtn?.addEventListener('click', () => setMode(mode === 'lasso' ? null : 'lasso'));
+  moveBtn?.addEventListener('click', () => setMode(mode === 'move' ? null : 'move'));
   deselectBtn?.addEventListener('click', clear);
 
   return {

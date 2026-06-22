@@ -405,6 +405,25 @@ export async function run(ctx) {
   await openTab('common');
   await page.click('#previewHost .imgv-select');                  // leave wand
   await page.click('#previewHost .imgv-deselect');                // clear the mask
+  // Selection MOVE — box-select a region, then drag it to a new spot (one PNG commit).
+  await page.click('#previewHost .imgv-marquee');                 // box-select mode
+  const mvBox = await page.$eval('#previewHost .imgv-sel-overlay', (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  await page.mouse.move(mvBox.x + mvBox.w * 0.25, mvBox.y + mvBox.h * 0.25);
+  await page.mouse.down();
+  await page.mouse.move(mvBox.x + mvBox.w * 0.55, mvBox.y + mvBox.h * 0.55, { steps: 4 });
+  await page.mouse.up();
+  await page.click('#previewHost .imgv-marquee');                 // leave box-select (mask stays)
+  await openTab('draw');
+  await page.click('#previewHost .imgv-sel-move');                // move mode
+  const moveBefore = await imgSrcNow();
+  await page.mouse.move(mvBox.x + mvBox.w * 0.4, mvBox.y + mvBox.h * 0.4);
+  await page.mouse.down();
+  await page.mouse.move(mvBox.x + mvBox.w * 0.62, mvBox.y + mvBox.h * 0.5, { steps: 4 });
+  await page.mouse.up();
+  const moveCommitted = await waitNewSrc(moveBefore);
+  if (moveCommitted) pass('selection move: drag the selected pixels commits a new image'); else fail('selection move did not commit');
+  await page.click('#previewHost .imgv-sel-move');                // leave move mode
+  await openTab('common');
   // Rotate 90° CW also swaps width/height — a strong correctness check.
   await openTab('common');
   const rotBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight, src: e.src }));
