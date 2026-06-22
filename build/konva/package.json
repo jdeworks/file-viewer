@@ -1,0 +1,9 @@
+{
+  "name": "file-viewer-konva-build",
+  "private": true,
+  "description": "Vendors Konva (MIT) into docs/vendor/konva/. Run: cd build/konva && npm install && node build.mjs",
+  "type": "module",
+  "dependencies": {
+    "konva": "^9.3.20"
+  }
+}

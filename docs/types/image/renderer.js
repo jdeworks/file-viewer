@@ -14,6 +14,7 @@ import { mountGeometry } from './edit-geometry.js';
 import { mountBg } from './edit-bg.js';
 import { registerUndoKeys } from './edit-undo-key.js';
 import { mountTabs } from './edit-tabs.js';
+import { mountAdvEdit } from './adv-edit.js';
 
 // Toolbar markup lives in sibling .html templates (real HTML, easy to extend).
 // doc.html is the shell (fit/zoom/ascii bar + stage + ascii-out) with an
@@ -278,6 +279,13 @@ export async function render(intake, ctx = {}) {
   // renderer stays thin.
   let asciiStudio = null;
   async function toggleAscii() {
+    // ASCII needs final pixels. If a vector overlay is active, flatten it (with a
+    // warning) before converting — the user explicitly accepted this conversion.
+    if (!asciiMode && advController && !advController.isEmpty()) {
+      if (!confirm('ASCII needs a flat image. Your Adv Edit text/vector layers will be rendered into the image (no longer separately editable). Continue?')) return;
+      leaveAdv();
+      await commitAdv();
+    }
     asciiMode = !asciiMode;
     asciiBtn.textContent = asciiMode ? 'Image' : 'ASCII';
     asciiBtn.classList.toggle('active', asciiMode);
@@ -337,9 +345,50 @@ export async function render(intake, ctx = {}) {
     bar.classList.add('imgv-tools-collapsed');    // open in plain VIEW mode; Edit reveals the toolbar
     toolsBtn.classList.remove('active');
     toolsBtn.addEventListener('click', () => {
+      // Entering the pixel Edit toolbar flattens any vector overlay first (it edits pixels).
+      if (!bar.classList.contains('imgv-tools-collapsed')) { /* closing */ } else { commitAdv(); }
       const open = !bar.classList.toggle('imgv-tools-collapsed');
       toolsBtn.classList.toggle('active', open);
+      if (open && advActive) leaveAdv();
     });
+  }
+
+  // ── Adv Edit (vector) mode ── lazy-loads Konva (adv-edit.js) and overlays the
+  // image with re-editable text/vector objects. Leaving for a pixel mode flattens
+  // the overlay onto the base (commitCanvas → pixel undo captures it). ASCII does
+  // the same with a warning. See ADV_EDIT.md.
+  const advBtn = canEdit ? host.querySelector('.imgv-adv-btn') : null;
+  let advController = null, advActive = false;
+  if (advBtn) {
+    advBtn.hidden = false;
+    advBtn.addEventListener('click', async () => {
+      if (advActive) { leaveAdv(); commitAdv(); return; }
+      // Enter Adv: leave the pixel Edit toolbar (mutually exclusive modes).
+      host.querySelector('.imgv-bar').classList.add('imgv-tools-collapsed');
+      toolsBtn?.classList.remove('active');
+      advBtn.disabled = true;
+      try {
+        if (!advController) advController = await mountAdvEdit({ host, img, onDirty: () => host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden') });
+        advActive = true;
+        advController.setInteractive(true);
+        advBtn.classList.add('active');
+        if (advController.objectCount() === 0) advController.addText();   // start with one editable label
+      } catch (e) { advBtn.title = 'Advanced editing failed: ' + (e.message || e); }
+      advBtn.disabled = false;
+    });
+  }
+  function leaveAdv() { advActive = false; advController?.setInteractive(false); advBtn?.classList.remove('active'); }
+  // Bake the overlay into the pixel base and drop the stage (convert-on-leaving).
+  async function commitAdv() {
+    if (!advController) return;
+    if (!advController.isEmpty()) {
+      core.pushUndo();
+      await core.commitCanvas(advController.flattenToCanvas());
+    }
+    advController.destroy();
+    advController = null;
+    advActive = false;
+    advBtn?.classList.remove('active');
   }
 
   // Text overlay — drag a label onto the image, then bake it in (edit-text.js).
@@ -584,5 +633,5 @@ export async function render(intake, ctx = {}) {
   const bgChecker = canEdit ? host.querySelector('.imgv-bg-checker') : null;
   bgChecker?.addEventListener('change', () => img.classList.toggle('imgv-checker', bgChecker.checked));
 
-  return { parentNode: host, revoke: () => { unregisterUndoKeys?.(); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { advController?.destroy(); unregisterUndoKeys?.(); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
 }
