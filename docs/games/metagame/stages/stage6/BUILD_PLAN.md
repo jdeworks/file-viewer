@@ -33,4 +33,19 @@ Building the full roguelite deck-builder from `planning/stage6-02-our-game-desig
   epub gate, smoke rewrite.
 - **WP5 — balance & polish:** numbers tuning to ~90–120 min, parchment/navy visual pass, prestige.
 
-Status: WP1 in progress.
+## Status (update each session)
+- ✅ **WP1** done + committed (`fe7346fe`): combat.js, cards.js (core set + REWARD_POOL + STARTING_DECK),
+  enemies.js (corrupt-packet, firewall-entity), tests/combat.test.mjs.
+- ✅ **WP2** done + committed (`8e8a8673`): mapgen.js (3-act DAG, connectivity-guaranteed), run.js
+  (run state machine: navigation, rewards pick-1/3, rest, shop, act progression, death), tests/run.test.mjs.
+- ⏭ **WP3** next: full 30+ card pool (extend cards.js / REWARD_POOL), all enemy archetypes + 2 elites
+  + Defragmenter cameo event (enemies.js + event handling in run.js), relics.js, copy.
+- ⏭ **WP4**: UI rework (ui-combat.js / ui-map.js / ui-rewards.js + renderer.js mount/route), state.js
+  rework (run+meta), wire The Refused Connection as locked final-act boss via existing boss.js +
+  epub gate, rewrite the stage6 block in tests/areas/games.mjs.
+- ⏭ **WP5**: balance to ~90–120 min, parchment/navy visual pass, prestige (Protocol Version).
+
+Engine contract (proven, build against it): cards = `{id,type,cost,rarity,exhaust?,text,effect(ctx)}`;
+ctx API = deal/block/draw/gainEnergy/applyEnemy/applySelf/skipEnemyNext/playedThisTurn(id) +
+getters cardsPlayed/energySpent/handSize/blockNow/hp/discardPile. Enemies = base stats + looping
+intent script `{label,attack?,hits?,block?,applyPlayer?,applySelf?}`, scaled by act via instantiateEnemy.
