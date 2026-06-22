@@ -456,6 +456,26 @@ export async function run(ctx) {
   const lvCommitted = await waitNewSrc(lvBefore);
   const lvClosed = await page.evaluate(() => document.querySelector('#previewHost .imgv-levels-panel').hidden);
   if (lvPreviewed && lvCommitted && lvClosed) pass('levels: live preview + Apply commits a LUT-mapped image + panel closes'); else fail('levels: ' + JSON.stringify({ lvPreviewed, lvCommitted, lvClosed }));
+  // Curves: drag a control point on the curve canvas to lift the midtones → live preview by
+  // swapping img.src, Apply bakes the LUT-remapped pixels, panel closes (edit-curves.js).
+  await page.click('#previewHost .imgv-curves-btn');               // open + cache source pixels
+  await page.waitForSelector('#previewHost .imgv-curves-panel:not([hidden])', { timeout: 3000 });
+  const curveOpenSrc = await imgSrcNow();
+  const cbox = await page.evaluate(() => {
+    const r = document.querySelector('#previewHost .imgv-curve-canvas').getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  // Empty-space pointerdown at the curve's middle inserts a handle; dragging it up brightens.
+  await page.mouse.move(cbox.x + cbox.w / 2, cbox.y + cbox.h / 2);
+  await page.mouse.down();
+  await page.mouse.move(cbox.x + cbox.w / 2, cbox.y + cbox.h / 2 - 45, { steps: 6 });
+  await page.mouse.up();
+  const curvePreviewed = await waitNewSrc(curveOpenSrc);           // a processed preview blob swapped in
+  const curveBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-curve-apply');
+  const curveCommitted = await waitNewSrc(curveBefore);
+  const curveClosed = await page.waitForFunction(() => document.querySelector('#previewHost .imgv-curves-panel')?.hidden === true, { timeout: 2000 }).then(() => true).catch(() => false);
+  if (curvePreviewed && curveCommitted && curveClosed) pass('curves: drag lifts the tone curve → preview + Apply commits a LUT-mapped image + panel closes'); else fail('curves: ' + JSON.stringify({ curvePreviewed, curveCommitted, curveClosed }));
   // One-click presets (greyscale/sepia/invert) bake straight to pixels via a canvas filter.
   const greyBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-preset-grey');
@@ -543,6 +563,27 @@ export async function run(ctx) {
   const penCommitted = await waitNewSrc(penSrcBefore);
   if (penModeOn && penCommitted) pass('pencil stroke draws + commits a new image'); else fail('pencil: ' + JSON.stringify({ penModeOn, penCommitted }));
   await page.click('#previewHost .imgv-pencil');   // toggle pencil off, restore for later steps
+  // Clone stamp (Draw tab): Alt-click sets a source anchor + snapshot, then a plain drag paints
+  // sampled pixels from (dest − offset). Asserts the source marker shows + a commit with unchanged dims.
+  await openTab('draw');
+  await page.click('#previewHost .imgv-clone');
+  const cloneModeOn = await page.evaluate(() => document.querySelector('#previewHost .imgv-clone').classList.contains('active'));
+  const clRect = await page.$eval('#previewHost .imgv-img', (e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, w: b.width, h: b.height }; });
+  const clDimsBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  await page.keyboard.down('Alt');                 // Alt-click → set the clone source
+  await page.mouse.move(clRect.l + clRect.w * 0.65, clRect.t + clRect.h * 0.3);
+  await page.mouse.down(); await page.mouse.up();
+  await page.keyboard.up('Alt');
+  const cloneMarkerShown = await page.evaluate(() => { const m = document.querySelector('#previewHost .imgv-clone-src'); return !!m && m.style.display !== 'none'; });
+  const cloneSrcBefore = await imgSrcNow();
+  await page.mouse.move(clRect.l + clRect.w * 0.3, clRect.t + clRect.h * 0.6);   // paint elsewhere
+  await page.mouse.down();
+  await page.mouse.move(clRect.l + clRect.w * 0.45, clRect.t + clRect.h * 0.65, { steps: 6 });
+  await page.mouse.up();
+  const cloneCommitted = await waitNewSrc(cloneSrcBefore);
+  const clDimsAfter = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  if (cloneModeOn && cloneMarkerShown && cloneCommitted && clDimsAfter.w === clDimsBefore.w && clDimsAfter.h === clDimsBefore.h) pass('clone stamp: Alt-click sets a source marker, painting clones pixels + commits (dims unchanged)'); else fail('clone: ' + JSON.stringify({ cloneModeOn, cloneMarkerShown, cloneCommitted, clDimsBefore, clDimsAfter }));
+  await page.click('#previewHost .imgv-clone');    // toggle clone off, restore for later steps
   // Toolbar declutter: the 🛠 toggle collapses the editing-tools group.
   const toolsVisInit = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display !== 'none');
   await page.click('#previewHost .imgv-tools-btn');

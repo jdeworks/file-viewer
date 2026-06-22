@@ -50,6 +50,7 @@
     <button data-link="imgv-pencil" title="Pencil / brush draw mode">Pencil</button>
     <button data-link="imgv-eraser" title="Eraser mode">Eraser</button>
     <button data-link="imgv-fill" title="Fill tool">🪣 Fill</button>
+    <button class="imgv-clone" title="Clone stamp — Alt-click to set a source, then paint to copy from it">🩹 Clone</button>
     <button data-link="imgv-select" title="Magic-wand select">🪄 Select</button>
     <button data-link="imgv-marquee" title="Rectangular select — drag a box">▭ Box select</button>
     <button class="imgv-ellipse" title="Elliptical select — drag an oval">⬭ Oval select</button>
@@ -84,6 +85,9 @@
     <span class="imgv-sep"></span>
     <button class="imgv-levels-btn" title="Levels — set black point / white point / gamma (midtones)">📊 Levels</button>
     <span class="imgv-levels-panel" hidden style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;"><label style="font-size:0.8em">Black <input class="imgv-lv-black" type="range" min="0" max="254" value="0" title="Pixels at or below this become black" style="width:64px"></label><label style="font-size:0.8em">White <input class="imgv-lv-white" type="range" min="1" max="255" value="255" title="Pixels at or above this become white" style="width:64px"></label><label style="font-size:0.8em">Gamma <input class="imgv-lv-gamma" type="range" min="20" max="300" value="100" title="Midtone gamma ×0.01 (100 = 1.0)" style="width:64px"></label><button class="imgv-lv-apply">Apply Levels</button><button class="imgv-lv-cancel">Cancel</button></span>
+    <span class="imgv-sep"></span>
+    <button class="imgv-curves-btn" title="Curves — drag a tone curve (shadows → highlights)">📈 Curves</button>
+    <span class="imgv-curves-panel" hidden style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;"><canvas class="imgv-curve-canvas" width="150" height="150" title="Drag to bend the curve · click to add a point · double-click a point to remove it" style="width:150px;height:150px;border:1px solid #444;border-radius:4px;cursor:crosshair;touch-action:none"></canvas><button class="imgv-curve-apply">Apply Curve</button><button class="imgv-curve-reset">Reset</button><button class="imgv-curve-cancel">Cancel</button></span>
     <span class="imgv-sep"></span>
     <button class="imgv-preset-grey" title="Convert to greyscale">Greyscale</button>
     <button class="imgv-preset-sepia" title="Apply a sepia tone">Sepia</button>

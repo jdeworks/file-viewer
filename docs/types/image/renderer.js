@@ -11,6 +11,7 @@ import { createView } from './view-controller.js';
 import { createDrawTools } from './draw-overlay.js';
 import { createEditCore } from './editor-core.js';
 import { mountFilters } from './edit-filters.js';
+import { mountCurves } from './edit-curves.js';
 import { mountTextTool } from './edit-text.js';
 import { mountGeometry } from './edit-geometry.js';
 import { mountBg } from './edit-bg.js';
@@ -76,7 +77,7 @@ export async function render(intake, ctx = {}) {
   const {
     img, note, zoomLabel, asciiBtn, asciiOut,
     editInput, editSize, editColor, editApply, editReset,
-    pencilBtn, eraserBtn, fillBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts,
+    pencilBtn, eraserBtn, fillBtn, cloneBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts,
     selectBtn, marqueeBtn, ellipseBtn, lassoBtn, deselectBtn, selInvertBtn, selCutBtn, moveBtn,
     drawColorPicker, drawSizePicker, undoBtn, redoBtn, exportFmt, editFont,
     bgBtn, bgTol, bgOk, bgX,
@@ -86,6 +87,7 @@ export async function render(intake, ctx = {}) {
     rotLBtn, rotRBtn, flipHBtn, flipVBtn,
     filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn,
     levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel,
+    curvesBtn, curvesPanel, curveCanvas, curveApply, curveReset, curveCancel,
     presetGrey, presetSepia, presetInvert,
   } = queryEls(host, canEdit);
   let asciiMode = false;
@@ -149,6 +151,7 @@ export async function render(intake, ctx = {}) {
     editInput, editSize, editColor, editFont, editApply, editReset,
     filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn,
     levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel,
+    curvesBtn, curvesPanel, curveCanvas, curveApply, curveReset, curveCancel,
     presetGrey, presetSepia, presetInvert,
     bgBtn, bgTol, bgOk, bgX, exportFmt,
     rotLBtn, rotRBtn, flipHBtn, flipVBtn,
@@ -391,6 +394,9 @@ export async function render(intake, ctx = {}) {
   // Filters — live CSS preview + bake on Apply (edit-filters.js).
   mountFilters({ img, mime, core, els });
 
+  // Curves — drag a tone curve; LUT remap baked on Apply (edit-curves.js).
+  mountCurves({ img, mime, core, els });
+
   // Compare — original vs current (edited): split / overlay / diff. The view is a
   // self-contained lazy module so this renderer stays thin. Original always uses
   // the pristine `url`; current uses the latest edit.
@@ -427,7 +433,7 @@ export async function render(intake, ctx = {}) {
     host, img, mime, core,
     getSelection: () => selection,
     applyPan,
-    els: { pencilBtn, eraserBtn, fillBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts, drawColorPicker, drawSizePicker, undoBtn, redoBtn },
+    els: { pencilBtn, eraserBtn, fillBtn, cloneBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts, drawColorPicker, drawSizePicker, undoBtn, redoBtn },
   });
 
   // Ctrl/Cmd+Z = undo, Ctrl+Y or Ctrl/Cmd+Shift+Z = redo. A shared global router

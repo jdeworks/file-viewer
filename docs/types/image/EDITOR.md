@@ -83,14 +83,14 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
   - ✅ **Marquee (rect + ellipse) + lasso** SHIPPED — `edit-select.js` modes `'marquee'`/`'ellipse'`/`'lasso'`; rect is a fast loop, ellipse + lasso rasterize a canvas path (`maskFromPath`) into the mask.
   - ✅ **Selection ops** SHIPPED — ✥ Move (drag the selected pixels to a new spot, leaving a transparent hole), ⇄ Invert (flip the mask), ✂ Cut (delete the selected pixels → transparent PNG). Fill-within-selection works via the mask-constrained bucket. **The selection feature is complete** (4 sources + constrain-tools + move/invert/cut).
 
-- **Color adjustments panel** — brightness/contrast/saturation/**hue** sliders shipped (`edit-filters.js`); **Levels** (black/white/gamma) ✅ SHIPPED (`levels.js` LUT + live preview, in the Adjust tab). Still to add:
-  - Curves (interactive cubic Bezier per channel) — build a 256-entry LUT from four control points, apply via `putImageData`. UI: small `<canvas>` with draggable handles, no lib needed. The LUT-apply plumbing (`levels.js` `applyLevels`) generalizes.
+- **Color adjustments panel** — brightness/contrast/saturation/**hue** sliders shipped (`edit-filters.js`); **Levels** (black/white/gamma) ✅ SHIPPED (`levels.js` LUT + live preview, in the Adjust tab).
+  - ✅ SHIPPED — **Curves** (`curves.js` + `edit-curves.js`): a small `<canvas>` with draggable control points (click empty space to add a handle, double-click to remove). The handles drive a **monotone-cubic (Fritsch–Carlson)** spline — smooth but never overshoots, so the tone map stays monotone — sampled into a 256-entry LUT applied to R/G/B through the shared `applyLevels`. Live preview swaps `img.src` to a processed blob (rAF-coalesced); Apply bakes it via the edit core. Master RGB curve only (per-channel deferred).
   - ✅ SHIPPED — Sepia / greyscale / invert one-click presets (`edit-filters.js`, `ctx.filter` bake, Adjust tab).
   — M per item, no lib required
 
 - **Blend modes on composited layers** — When the Konva layers panel is present, expose a blend-mode `<select>` per layer using the 26 CSS mix-blend-mode values (`multiply`, `screen`, `overlay`, `color-dodge`, `hard-light`, etc.). Konva maps these to Canvas2D `globalCompositeOperation`. The export flatten step uses `drawImage` with each layer's blend mode active. — M (depends on Konva layers task above)
 
-- **Clone stamp / heal** — Sample a source region (alt-click), paint it at the destination. The copy-on-paint blit is a `drawImage` from a scratch canvas patch. No lib. — M
+- ✅ **SHIPPED — Clone stamp** (`draw-overlay.js`, mode `'clone'`): **Alt-click** sets a source anchor + snapshots the base; a plain drag paints, copying pixels from `dest − offset` (offset fixed on the first dab = *aligned* clone) by clip-circle + `drawImage(sourceSnapshot, offset)`. A cyan source marker (`.imgv-clone-src`) pins the sampled pixel; reuses the brush hover circle, brush-size, selection-clip, and commit pipeline (overlay = full image, like the eraser). Master/raster only; **heal** (blend against surroundings) not done. Smoke in media-3d.
 
 - **Perspective crop** — Four-corner drag UI, then `ctx.transform()` with the computed homography matrix. A minimal 3×3 homography solver is ~40 lines of JS. — L (no lib, but math-heavy)
 

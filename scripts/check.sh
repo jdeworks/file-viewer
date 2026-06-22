@@ -64,6 +64,7 @@ node tests/markdown-edit-actions.test.mjs
 node tests/image-fill.test.mjs
 node tests/image-geometry.test.mjs
 node tests/image-levels.test.mjs
+node tests/image-curves.test.mjs
 node tests/image-gif.test.mjs
 node tests/settings-defaults.test.mjs
 node tests/registry-runtime.test.mjs
