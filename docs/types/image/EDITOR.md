@@ -75,7 +75,7 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
 
 - **Brush / paint engine upgrade** — Replace the raw canvas mouse listener with a pressure-aware, anti-aliased brush engine. Options: (a) keep native Canvas2D but add midpoint smoothing with `quadraticCurveTo` between pointer samples — very small diff; (b) use Fabric.js `PencilBrush` which supports width-pressure simulation. The current `buildOverlay()` approach plugs directly into either. — M (option a) / L (option b), lib: Fabric.js (~900 KB) or none
 
-- **Shape tools** — Rectangle, ellipse, line, arrow, polygon overlays. Draw as a preview ghost during drag (redraw on each `pointermove`), commit on `pointerup`. Fit naturally alongside the pencil/eraser toggle. Reuses `applyTransform` pattern. Arrow = line + filled arrowhead at endpoint. — M
+- ✅ **SHIPPED — Shape tools** (`adv-edit.js`, Adv Edit overlay): rectangle, ellipse, line, arrow, **polygon (`Konva.RegularPolygon`, pentagon) + star (`Konva.Star`, 5-point)** — all re-editable vector objects tagged `name:'obj'`, sharing the fill/stroke/width controls + layers panel + unified Ctrl+Z, and riding geometry transforms (rotate/flip/crop) without baking. Flattened only on output.
 
 - ✅ **SHIPPED — Fill bucket** (`fill.js`): seed / connected-shade / Sobel edge-stop region modes, Euclidean or perceptual (redmean) distance, feather. Its BFS+Sobel walk is factored into `computeRegionMask` and reused by the magic-wand selection.
 

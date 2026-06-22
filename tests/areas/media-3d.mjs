@@ -671,6 +671,16 @@ export async function run(ctx) {
   await page.waitForFunction(() => document.querySelectorAll('#previewHost .imgv-adv-layers > div').length === 3, null, { timeout: 5000 }).catch(() => {});
   const afterAdvUndo = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 2 rows
   if (afterAdvUndo === 3) pass('Adv Edit: unified Ctrl+Z removes the last vector object (header + 2 rows)'); else fail('adv unified undo: ' + afterAdvUndo);
+  // Polygon + star shapes: RegularPolygon/Star objects join the same overlay model
+  // (selectable, layered, named in the panel). Adds two rows → header + 4.
+  await page.click('#previewHost .imgv-adv-poly');
+  await page.click('#previewHost .imgv-adv-star');
+  const advPolyStar = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#previewHost .imgv-adv-layers > div')];
+    const names = rows.map((r) => r.querySelector('span')?.textContent || '').join('|');
+    return { count: rows.length, hasPoly: names.includes('Polygon'), hasStar: names.includes('Star') };
+  });
+  if (advPolyStar.count === 5 && advPolyStar.hasPoly && advPolyStar.hasStar) pass('Adv Edit: polygon + star shapes added (named in layers panel)'); else fail('adv poly/star: ' + JSON.stringify(advPolyStar));
   // Persistent overlay: leaving Adv makes the stage non-interactive but KEEPS it
   // mounted (non-destructive). The doc is dirty and getBytes() flattens base+overlay
   // ON DEMAND — the overlay is never baked onto the base just for leaving Adv.
@@ -696,8 +706,8 @@ export async function run(ctx) {
   await page.click('#previewHost .imgv-tools-btn');                 // leave Edit
   await page.click('#previewHost .imgv-adv-btn');                   // re-enter Adv to read the layers panel
   await page.waitForSelector('#previewHost .imgv-adv-layers > div', { timeout: 5000 }).catch(() => {});
-  const afterGeom = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 2 rows
-  if (afterGeom === 3) pass('Adv Edit: geometry (rotate) transforms the overlay objects, keeps them editable (not baked)'); else fail('adv geometry-transform: ' + afterGeom);
+  const afterGeom = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 4 rows (2 text + poly + star)
+  if (afterGeom === 5) pass('Adv Edit: geometry (rotate) transforms the overlay objects, keeps them editable (not baked)'); else fail('adv geometry-transform: ' + afterGeom);
   await page.click('#previewHost .imgv-adv-btn');                   // leave Adv again for the export/ASCII steps
   // Image export (loadExports hook): menu offers PNG/JPEG/WebP, and a conversion actually downloads.
   await page.click('#exportBtn');
