@@ -112,6 +112,20 @@ export async function run(ctx) {
   if (/AC1027|AutoCAD 2013/i.test(dxfText)) pass('DXF version AC1027 shown'); else fail('dxf ver: ' + dxfText.slice(0, 300));
   if (/LINE|CIRCLE|TEXT/i.test(dxfText)) pass('DXF entity types shown'); else fail('dxf entities: ' + dxfText.slice(0, 300));
   if (/Walls|Dimensions/i.test(dxfText)) pass('DXF layer names shown'); else fail('dxf layers: ' + dxfText.slice(0, 300));
+  // 2D canvas render: the geometry is actually drawn (not just metadata counts).
+  await dxff.waitForSelector('.dxf-canvas', { timeout: 8000 });
+  const dxfTools = await dxff.$$eval('.dxf-tools button', (b) => b.map((x) => x.textContent));
+  if (dxfTools.includes('Fit') && dxfTools.includes('+') && dxfTools.includes('−')) pass('DXF 2D view has fit/zoom controls'); else fail('dxf tools: ' + JSON.stringify(dxfTools));
+  const dxfDrawn = await dxff.$eval('.dxf-canvas', (c) => parseInt(c.dataset.drawn || '0', 10));
+  if (dxfDrawn > 0) pass(`DXF 2D view drew ${dxfDrawn} entities`); else fail('dxf canvas drawn count: ' + dxfDrawn);
+  // Prove real pixels landed on the canvas (some non-transparent pixel exists).
+  const dxfPainted = await dxff.$eval('.dxf-canvas', (c) => {
+    const g = c.getContext('2d'); if (!c.width || !c.height) return false;
+    const d = g.getImageData(0, 0, c.width, c.height).data;
+    for (let i = 3; i < d.length; i += 4) if (d[i] !== 0) return true;
+    return false;
+  });
+  if (dxfPainted) pass('DXF 2D canvas has painted pixels'); else fail('dxf canvas is blank');
 
   // ── Minecraft World (.mcworld) ────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
