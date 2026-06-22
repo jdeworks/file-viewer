@@ -12,6 +12,8 @@ import { mountFilters } from './edit-filters.js';
 import { mountTextTool } from './edit-text.js';
 import { mountGeometry } from './edit-geometry.js';
 import { mountBg } from './edit-bg.js';
+import { registerUndoKeys } from './edit-undo-key.js';
+import { mountTabs } from './edit-tabs.js';
 
 // Toolbar markup lives in sibling .html templates (real HTML, easy to extend).
 // doc.html is the shell (fit/zoom/ascii bar + stage + ascii-out) with an
@@ -60,7 +62,9 @@ export async function render(intake, ctx = {}) {
   const fillBtn = canEdit ? host.querySelector('.imgv-fill') : null;
   const fillTol = canEdit ? host.querySelector('.imgv-fill-tol') : null;
   const fillTolV = canEdit ? host.querySelector('.imgv-fill-tolv') : null;
-  const fillEdge = canEdit ? host.querySelector('.imgv-fill-edge') : null;
+  const fillMode = canEdit ? host.querySelector('.imgv-fill-mode') : null;
+  const fillPercep = canEdit ? host.querySelector('.imgv-fill-percep') : null;
+  const fillFeather = canEdit ? host.querySelector('.imgv-fill-feather') : null;
   const fillOpts = canEdit ? host.querySelectorAll('.imgv-fill-opt') : [];
   const drawColorPicker = canEdit ? host.querySelector('.imgv-draw-color') : null;
   const drawSizePicker = canEdit ? host.querySelector('.imgv-draw-size') : null;
@@ -82,6 +86,13 @@ export async function render(intake, ctx = {}) {
   const resizeLock = canEdit ? host.querySelector('.imgv-resize-lock') : null;
   const resizeApplyBtn = canEdit ? host.querySelector('.imgv-resize-apply') : null;
   const resizeCancelBtn = canEdit ? host.querySelector('.imgv-resize-cancel') : null;
+  const expandBtn = canEdit ? host.querySelector('.imgv-expand-btn') : null;
+  const expandPanel = canEdit ? host.querySelector('.imgv-expand-panel') : null;
+  const expandPad = canEdit ? host.querySelector('.imgv-expand-pad') : null;
+  const expandTransparent = canEdit ? host.querySelector('.imgv-expand-transparent') : null;
+  const expandColor = canEdit ? host.querySelector('.imgv-expand-color') : null;
+  const expandApplyBtn = canEdit ? host.querySelector('.imgv-expand-apply') : null;
+  const expandCancelBtn = canEdit ? host.querySelector('.imgv-expand-cancel') : null;
   const rotLBtn = canEdit ? host.querySelector('.imgv-rot-l') : null;
   const rotRBtn = canEdit ? host.querySelector('.imgv-rot-r') : null;
   const flipHBtn = canEdit ? host.querySelector('.imgv-flip-h') : null;
@@ -120,7 +131,12 @@ export async function render(intake, ctx = {}) {
     rotLBtn, rotRBtn, flipHBtn, flipVBtn,
     cropBtn, cropApplyBtn, cropCancelBtn,
     resizeBtn, resizePanel, resizeW, resizeH, resizeLock, resizeApplyBtn, resizeCancelBtn,
+    expandBtn, expandPanel, expandPad, expandTransparent, expandColor, expandApplyBtn, expandCancelBtn,
   };
+  // Group the editing controls into tabs (Common / Draw / Text / Adjust / Size /
+  // Background) so the toolbar isn't a wall of buttons; non-active tabs hint once.
+  if (canEdit) mountTabs(host);
+
   // Interactive tools (text placement, crop, BG pick) register here so the pan
   // logic stands down while a tool owns the pointer; each exposes isActive().
   const editTools = [];
@@ -317,9 +333,9 @@ export async function render(intake, ctx = {}) {
   const toolsBtn = canEdit ? host.querySelector('.imgv-tools-btn') : null;
   if (toolsBtn) {
     const bar = host.querySelector('.imgv-bar');
-    const collapsed = window.matchMedia('(max-width: 720px)').matches;
-    bar.classList.toggle('imgv-tools-collapsed', collapsed);
-    toolsBtn.classList.toggle('active', !collapsed);
+    toolsBtn.hidden = false;                      // editable image → reveal the Edit toggle
+    bar.classList.add('imgv-tools-collapsed');    // open in plain VIEW mode; Edit reveals the toolbar
+    toolsBtn.classList.remove('active');
     toolsBtn.addEventListener('click', () => {
       const open = !bar.classList.toggle('imgv-tools-collapsed');
       toolsBtn.classList.toggle('active', open);
@@ -510,7 +526,8 @@ export async function render(intake, ctx = {}) {
     const id = g.getImageData(0, 0, c.width, c.height);
     const pt = ptToCanvas(e);
     const filled = floodFill(id.data, c.width, c.height, Math.round(pt.x), Math.round(pt.y),
-      hexToRgba(drawColorPicker?.value), parseInt(fillTol?.value || '0', 10), !!fillEdge?.checked);
+      hexToRgba(drawColorPicker?.value), parseInt(fillTol?.value || '0', 10),
+      { mode: fillMode?.value || 'seed', perceptual: !!fillPercep?.checked, feather: !!fillFeather?.checked });
     if (!filled) return;
     g.putImageData(id, 0, 0);
     const targetMime = core.getExportMime();
@@ -549,24 +566,23 @@ export async function render(intake, ctx = {}) {
     redoBtn?.addEventListener('click', core.doRedo);
   }
 
-  // Ctrl/Cmd+Z = undo, Ctrl+Y or Ctrl/Cmd+Shift+Z = redo — only while this image
-  // view is connected, not in ASCII mode, and not typing in a field.
-  function onEditKey(e) {
-    if (!canEdit || asciiMode || !host.isConnected) return;
-    const t = e.target;
-    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-    const mod = e.ctrlKey || e.metaKey;
-    if (!mod) return;
-    const k = e.key.toLowerCase();
-    if (k === 'z' && !e.shiftKey) { e.preventDefault(); core.doUndo(); }
-    else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); core.doRedo(); }
-  }
-  document.addEventListener('keydown', onEditKey);
+  // Ctrl/Cmd+Z = undo, Ctrl+Y or Ctrl/Cmd+Shift+Z = redo. A shared global router
+  // (edit-undo-key.js) routes the shortcut to this editor while it's the active
+  // one and not in ASCII mode — including when focus is on a slider/colour/number
+  // control inside the toolbar. Text fields keep their native undo.
+  const unregisterUndoKeys = canEdit
+    ? registerUndoKeys({ host, isEnabled: () => !asciiMode, doUndo: core.doUndo, doRedo: core.doRedo })
+    : null;
 
   // Background removal — sample a colour, flood to transparent, commit as PNG
   // (edit-bg.js). Registers in editTools so panning stands down while picking.
   const bgTool = mountBg({ img, url, core, els });
   editTools.push(bgTool);
 
-  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
+  // Transparency display: show transparent pixels as a checkerboard (the editor
+  // convention) instead of the plain page background. Purely a view toggle.
+  const bgChecker = canEdit ? host.querySelector('.imgv-bg-checker') : null;
+  bgChecker?.addEventListener('change', () => img.classList.toggle('imgv-checker', bgChecker.checked));
+
+  return { parentNode: host, revoke: () => { unregisterUndoKeys?.(); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
 }

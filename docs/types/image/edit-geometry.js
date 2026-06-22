@@ -9,6 +9,7 @@ export function mountGeometry({ host, img, url, mime, core, view, els }) {
     rotLBtn, rotRBtn, flipHBtn, flipVBtn,
     cropBtn, cropApplyBtn, cropCancelBtn,
     resizeBtn, resizePanel, resizeW, resizeH, resizeLock, resizeApplyBtn, resizeCancelBtn,
+    expandBtn, expandPanel, expandPad, expandTransparent, expandColor, expandApplyBtn, expandCancelBtn,
   } = els;
   const resizeUnit = host.querySelector('.imgv-resize-unit');
   const resizeResample = host.querySelector('.imgv-resize-resample');
@@ -214,6 +215,41 @@ export function mountGeometry({ host, img, url, mime, core, view, els }) {
     resizeCancelBtn?.addEventListener('click', () => {
       if (resizePanel) resizePanel.hidden = true;
     });
+  }
+
+  // ── Expand ── the opposite of crop: grow the canvas by `pad` px on every side
+  // without scaling the image, filling the new border transparent (saved as PNG)
+  // or with a solid colour. The content stays put; only the canvas gets bigger.
+  if (expandBtn) {
+    expandBtn.addEventListener('click', () => {
+      if (!expandPanel) return;
+      expandPanel.hidden = expandPanel.hidden === false;
+    });
+    expandApplyBtn?.addEventListener('click', async () => {
+      const pad = Math.round(parseFloat(expandPad?.value) || 0);
+      if (pad <= 0) return;
+      // Transparency needs an alpha format; JPEG has none, so fall back to a fill.
+      const wantTransparent = expandTransparent?.checked !== false;
+      const transparent = wantTransparent && mime !== 'image/jpeg';
+      const base = await core.loadBase();
+      const sw = base.naturalWidth, sh = base.naturalHeight;
+      const canvas = document.createElement('canvas');
+      canvas.width = sw + pad * 2; canvas.height = sh + pad * 2;
+      const g = canvas.getContext('2d');
+      if (!transparent) { g.fillStyle = wantTransparent ? '#ffffff' : (expandColor?.value || '#ffffff'); g.fillRect(0, 0, canvas.width, canvas.height); }
+      g.drawImage(base, pad, pad);
+      core.pushUndo();
+      // Commit as PNG when keeping transparency; otherwise honour the export format.
+      if (transparent) {
+        const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
+        if (!core.commitBlob(blob, { mime: 'image/png' })) return;
+      } else if (!await core.commitCanvas(canvas)) {
+        return;
+      }
+      view.setNatural(canvas.width);
+      if (expandPanel) expandPanel.hidden = true;
+    });
+    expandCancelBtn?.addEventListener('click', () => { if (expandPanel) expandPanel.hidden = true; });
   }
 
   return { isActive: () => cropMode };

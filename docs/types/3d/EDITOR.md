@@ -5,8 +5,22 @@
 All five formats share `docs/core/meshview.js`: a dependency-free canvas renderer using the painter's algorithm with flat shading, orthographic projection, and mouse/touch orbit. The toolbar already has:
 
 - Global mesh color override (color picker)
-- Per-group/material color picker (click a face to select group, popover appears)
-- Reset group colors button
+- **Select-mode toggle (Region / Face / Group)** in the toolbar — controls what a click selects
+  to color (touch-friendly buttons, not modifier keys):
+  - **Region** (default) — flood-fills from the clicked triangle to the connected *coplanar* set
+    (a flat cube side = its 2 fan-triangles), so a plain ungrouped cube can have its sides colored
+    individually. Adjacency = welded-vertex edge map, built once and cached on the model
+    (`docs/core/meshview-faces.js`).
+  - **Face** — colors just the one clicked triangle.
+  - **Group** — colors the whole OBJ/material group (the original behaviour).
+- Per-face / per-region / per-group color picker (click a face, popover shows
+  "Region (k faces)" / "Face #N" / group id; ✕ clears that selection)
+- Reset all colors button (clears group **and** per-face colors)
+- Color precedence: `faceColors[triIdx]` → `groupColors[groupIdx]` → global override → tri color → default
+- **Colored OBJ export** promotes per-face/region colors into synthetic deduped materials
+  (`newmtl fv_face_<rgb>` / `usemtl`) without clobbering real OBJ-derived group materials; PLY
+  export already carries the resolved per-triangle color. (Benefits STL/PLY/GLTF too — all share
+  meshview.)
 - Download as PLY (with applied colors) via meshview.js inline export
 - Download as OBJ + MTL (with applied colors) via meshview.js inline export
 - Format conversion via `docs/core/mesh-export.js`: STL/OBJ/PLY round-trip for any mesh type

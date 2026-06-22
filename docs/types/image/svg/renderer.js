@@ -163,13 +163,16 @@ export async function render(intake, _ctx) {
     editorPane.style.position = 'relative';
     editorPane.appendChild(editorEl);
 
+    // Follow the IN-APP theme toggle, not the OS. The app marks dark mode with
+    // `body.fv-dark` (parent-pane renderers) / `[data-theme="dark"]` on <html>.
+    const isAppDark = () => document.body.classList.contains('fv-dark') ||
+      document.documentElement.getAttribute('data-theme') === 'dark';
+
     const model = monaco.editor.createModel(svgSource, 'xml');
     monacoInstance = monaco.editor.create(editorEl, {
       model,
       automaticLayout: true,
-      theme: document.documentElement.classList.contains('dark') ||
-             window.matchMedia?.('(prefers-color-scheme: dark)').matches
-               ? 'vs-dark' : 'vs',
+      theme: isAppDark() ? 'vs-dark' : 'vs',
       minimap: { enabled: false },
       lineNumbers: 'on',
       wordWrap: 'off',
@@ -187,15 +190,25 @@ export async function render(intake, _ctx) {
       navigator.clipboard?.writeText(model.getValue()).catch(() => {});
     });
 
-    // Dispose Monaco model when the node is removed from the DOM
+    // Dispose Monaco when removed from the DOM; also re-theme live when the user
+    // flips the in-app light/dark toggle (body.fv-dark / <html data-theme>).
+    let lastDark = isAppDark();
     const observer = new MutationObserver(() => {
       if (!host.isConnected) {
         model.dispose();
         monacoInstance.dispose();
+        themeObserver.disconnect();
         observer.disconnect();
+        return;
       }
     });
     observer.observe(document, { childList: true, subtree: true });
+    const themeObserver = new MutationObserver(() => {
+      const dark = isAppDark();
+      if (dark !== lastDark) { lastDark = dark; monaco.editor.setTheme(dark ? 'vs-dark' : 'vs'); }
+    });
+    themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
   } catch (_err) {
     // Monaco unavailable — use a plain textarea

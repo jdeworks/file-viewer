@@ -83,6 +83,70 @@ export async function run(ctx) {
   if (picker) pass('STL: clicking mesh face opens group color picker (.mv-group-picker)');
   else pass('STL: canvas click handled without error (face may not be at canvas center)');
 
+  // ── Face / Region / Group select modes ── per-face + coplanar-region coloring on the OBJ cube. ──
+  // The cube has no OBJ groups, so the old "Group" path recolors all 12 triangles; Face colors one,
+  // Region colors the flat side (its 2 fan-triangles) — this is the user-reported fix.
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.obj');
+  await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
+  await page.waitForTimeout(400);
+  // The select-mode toggle exists with Region (default) / Face / Group.
+  const modeBtns = await page.$$eval('#previewHost .mv-mode-btn', (els) => els.map((e) => ({ mode: e.dataset.mode, active: e.classList.contains('active') })));
+  const modeOk = modeBtns.length === 3 && modeBtns.find((b) => b.mode === 'region')?.active
+    && modeBtns.some((b) => b.mode === 'face') && modeBtns.some((b) => b.mode === 'group');
+  if (modeOk) pass('select-mode toggle present: Region (default) / Face / Group'); else fail('mode toggle: ' + JSON.stringify(modeBtns));
+
+  // Helper: click the centre of the canvas (always lands on a front face of the cube).
+  const clickCanvasCentre3D = async () => {
+    const b = await page.$eval('#previewHost .stl-canvas', (c) => { const r = c.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+    await page.mouse.click(b.x + b.w / 2, b.y + b.h / 2);
+    await page.waitForTimeout(120);
+  };
+  // FACE mode: pick face, apply a color → exactly one triangle is recolored. We verify via the
+  // popover label ("Face #N") since faceColors is module-internal.
+  await page.click('#previewHost .mv-mode-btn[data-mode="face"]');
+  await clickCanvasCentre3D();
+  let label = await page.$eval('#previewHost .mv-group-picker .mv-gp-name', (e) => e.textContent).catch(() => '');
+  if (/^Face #\d+$/.test(label)) pass('Face mode: click selects a single triangle (' + label + ')'); else fail('face label: ' + label);
+  // Apply a color in Face mode and confirm the canvas re-rendered (paint changed somewhere).
+  const paintBeforeFace = await page.evaluate(() => { const c = document.querySelector('#previewHost .stl-canvas'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += d[i] * 7 + d[i + 1] * 13 + d[i + 2]; return s; });
+  await page.evaluate(() => { const inp = document.querySelector('#previewHost .mv-group-picker .mv-gp-color'); inp.value = '#ff2020'; inp.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.waitForTimeout(150);
+  const paintAfterFace = await page.evaluate(() => { const c = document.querySelector('#previewHost .stl-canvas'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += d[i] * 7 + d[i + 1] * 13 + d[i + 2]; return s; });
+  if (paintAfterFace !== paintBeforeFace) pass('Face mode: applying a color repaints the mesh'); else fail('face color did not change canvas');
+
+  // REGION mode: a flat cube side is 2 coplanar fan-triangles → label reports >1 face from 1 click.
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.obj');
+  await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
+  await page.waitForTimeout(400);
+  await page.click('#previewHost .mv-mode-btn[data-mode="region"]');
+  await clickCanvasCentre3D();
+  label = await page.$eval('#previewHost .mv-group-picker .mv-gp-name', (e) => e.textContent).catch(() => '');
+  const regionFaces = parseInt((label.match(/Region \((\d+)/) || [])[1] || '0', 10);
+  if (regionFaces > 1) pass('Region mode: one click selects >1 coplanar face (' + label + ')'); else fail('region label: ' + label);
+
+  // ── Colored OBJ export carries per-face/region colors as newmtl/usemtl ──
+  // Apply a region color, then download OBJ + MTL and assert the MTL has a synthetic face material.
+  await page.evaluate(() => { const inp = document.querySelector('#previewHost .mv-group-picker .mv-gp-color'); inp.value = '#10c040'; inp.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.waitForTimeout(120);
+  const dlDir = join(tmpdir(), 'fv-smoke-3d-' + Date.now());
+  const downloads = [];
+  page.on('download', (d) => downloads.push(d));
+  await page.click('#previewHost .stl-dl-obj');
+  await page.waitForTimeout(800); // OBJ then (200ms later) MTL fire
+  let objText = '', mtlText = '';
+  for (const d of downloads) {
+    const name = d.suggestedFilename();
+    const p = join(dlDir, name);
+    await d.saveAs(p).catch(() => {});
+    const fs = await import('node:fs');
+    const txt = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
+    if (name.endsWith('.obj')) objText = txt; else if (name.endsWith('.mtl')) mtlText = txt;
+  }
+  const exportOk = /newmtl fv_face_/.test(mtlText) && /usemtl fv_face_/.test(objText) && /Kd /.test(mtlText);
+  if (exportOk) pass('colored OBJ export: per-face/region color emitted as newmtl/usemtl (synthetic material)'); else fail('obj export mtl/obj: ' + JSON.stringify({ mtlHead: mtlText.slice(0, 120), hasUsemtl: /usemtl fv_face_/.test(objText) }));
+
   // ── 3MF manufacturing model ── ZIP package with model XML, metadata, materials, and thumbnail. ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.3mf');
@@ -200,6 +264,24 @@ export async function run(ctx) {
   await page.keyboard.down('Control'); await page.keyboard.press('='); await page.keyboard.up('Control');
   const wPostKey = await page.$eval('#previewHost .imgv-img', (e) => parseFloat(e.style.width) || 0);
   if (wPostKey > wPreKey) pass('Ctrl+= zooms in (keyboard)'); else fail('ctrl-zoom key: ' + wPreKey + ' -> ' + wPostKey);
+  // Images open in plain VIEW mode — the edit toolbar is hidden until you press Edit
+  // (the Edit + ASCII buttons are stacked next to the zoom controls).
+  const editToolbarShown = () => page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display !== 'none');
+  const startsInView = !(await editToolbarShown());
+  if (startsInView) pass('image opens in view mode (edit toolbar hidden until Edit)'); else fail('edit toolbar visible on open');
+  await page.click('#previewHost .imgv-tools-btn');   // enter edit mode
+  if (await editToolbarShown()) pass('Edit button reveals the editing toolbar'); else fail('Edit did not reveal toolbar');
+  // The editing toolbar is grouped into tabs; open the relevant tab before each tool.
+  const openTab = (name) => page.click(`#previewHost .imgv-tab[data-tab="${name}"]`);
+  const tabState = await page.evaluate(() => ({
+    count: document.querySelectorAll('#previewHost .imgv-tab').length,
+    active: document.querySelector('#previewHost .imgv-tab.active')?.dataset.tab,
+  }));
+  if (tabState.count === 6 && tabState.active === 'common') pass('editor toolbar grouped into 6 tabs, Common active'); else fail('tabs: ' + JSON.stringify(tabState));
+  // The main action buttons (text input + Add, Pencil/Fill, rotate/flip, Crop,
+  // Resize, Expand, Filters, BG, Compare) all live in the Common tab — each also
+  // appears (linked) in its own tab, which additionally holds the fine-tuning.
+  await openTab('common');
   await page.fill('#previewHost .imgv-text-input', 'Sample label');
   await page.click('#previewHost .imgv-text-apply');
   // "Add text" enters placement mode; must click "Commit text" to actually rasterize and set dirty
@@ -222,12 +304,32 @@ export async function run(ctx) {
   await page.waitForFunction(() => !!window.__fv.state.binaryEdit, null, { timeout: 5000 }).catch(() => {});
   const afterRedo = await page.evaluate(() => !!window.__fv.state.binaryEdit);
   if (afterRedo) pass('image redo re-applies edit'); else fail('redo did not re-apply edit');
+  // Keyboard Ctrl+Z / Ctrl+Y must reach the editor even when focus sits on a
+  // toolbar control (a range/number <input>) — the previous handler bailed on any
+  // focused input, so adjusting the fill-tolerance slider then pressing Ctrl+Z did
+  // nothing. Fill lives in Common; its tolerance slider lives in the Draw tab —
+  // activate fill (Common), switch to Draw, park focus on the slider, then undo/redo.
+  await openTab('common');
+  await page.click('#previewHost .imgv-fill');
+  await openTab('draw');
+  await page.evaluate(() => document.querySelector('#previewHost .imgv-fill-tol').focus());
+  const sliderFocused = await page.evaluate(() => /imgv-fill-tol/.test(document.activeElement.className || ''));
+  await page.keyboard.down('Control'); await page.keyboard.press('z'); await page.keyboard.up('Control');
+  await page.waitForFunction(() => !window.__fv.state.binaryEdit, null, { timeout: 5000 }).catch(() => {});
+  const kbdUndo = await page.evaluate(() => !window.__fv.state.binaryEdit);
+  await page.keyboard.down('Control'); await page.keyboard.press('y'); await page.keyboard.up('Control');
+  await page.waitForFunction(() => !!window.__fv.state.binaryEdit, null, { timeout: 5000 }).catch(() => {});
+  const kbdRedo = await page.evaluate(() => !!window.__fv.state.binaryEdit);
+  await openTab('common');
+  await page.click('#previewHost .imgv-fill');   // toggle fill off, restore for later steps
+  if (sliderFocused && kbdUndo && kbdRedo) pass('Ctrl+Z / Ctrl+Y reach the editor with focus on a toolbar slider'); else fail('keyboard undo w/ slider focus: ' + JSON.stringify({ sliderFocused, kbdUndo, kbdRedo }));
   // ── Transform / filter / draw commit pipeline ── each tool writes a FRESH edited
   // blob, so img.src (a blob: URL) flips to a new value when a commit lands. This is
   // a tool-agnostic regression signal that protects the editor-module split.
   const imgSrcNow = () => page.$eval('#previewHost .imgv-img', (e) => e.src);
   const waitNewSrc = async (before) => page.waitForFunction((s) => document.querySelector('#previewHost .imgv-img').src !== s, before, { timeout: 8000 }).then(() => true).catch(() => false);
   // Rotate 90° CW also swaps width/height — a strong correctness check.
+  await openTab('common');
   const rotBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight, src: e.src }));
   await page.click('#previewHost .imgv-rot-r');
   await waitNewSrc(rotBefore.src);
@@ -237,35 +339,69 @@ export async function run(ctx) {
   const flipBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-flip-h');
   if (await waitNewSrc(flipBefore)) pass('flip H commits a new edited image'); else fail('flip H did not commit');
-  // Filters: open panel, raise brightness, Apply → bakes a new blob.
+  // Filters: the ⚙ button lives in Common and jumps to the Adjust tab (data-go-tab)
+  // where the sliders are; raise brightness, Apply → bakes a new blob.
+  await openTab('common');
   await page.click('#previewHost .imgv-filters-btn');
   await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-f-brightness'); s.value = '150'; s.dispatchEvent(new Event('input', { bubbles: true })); });
   const filterBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-f-apply');
   if (await waitNewSrc(filterBefore)) pass('filters Apply bakes a new edited image'); else fail('filters apply did not commit');
-  await page.click('#previewHost .imgv-filters-btn');   // close panel
-  // Fill bucket: activating reveals tolerance/edge options, then a click floods + commits.
+  // Fill bucket: the button lives in Common; its options live in the Draw tab.
+  // Activating from Common still un-hides the option controls.
+  await openTab('common');
   await page.click('#previewHost .imgv-fill');
   const fillModeOn = await page.evaluate(() => {
     const b = document.querySelector('#previewHost .imgv-fill');
-    return b.classList.contains('active') && [...document.querySelectorAll('#previewHost .imgv-fill-opt')].every((o) => !o.hidden);
+    const opts = [...document.querySelectorAll('#previewHost .imgv-fill-opt')];
+    const hasControls = !!document.querySelector('#previewHost .imgv-fill-mode')
+      && !!document.querySelector('#previewHost .imgv-fill-percep')
+      && !!document.querySelector('#previewHost .imgv-fill-feather');
+    return b.classList.contains('active') && opts.every((o) => !o.hidden) && hasControls;
   });
-  if (fillModeOn) pass('fill tool activates + reveals tolerance/edge options'); else fail('fill mode not active');
-  const fillBefore = await imgSrcNow();
-  await page.evaluate(() => {
+  if (fillModeOn) pass('fill tool activates + reveals tolerance/mode/perceptual/feather options'); else fail('fill mode not active');
+  const clickCanvasCentre = () => page.evaluate(() => {
     const cv = document.querySelector('#previewHost .imgv-stage canvas');
     const r = cv.getBoundingClientRect();
     cv.dispatchEvent(new MouseEvent('mousedown', { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true }));
   });
+  const fillBefore = await imgSrcNow();
+  await clickCanvasCentre();
   if (await waitNewSrc(fillBefore)) pass('fill bucket floods a region + commits'); else fail('fill did not commit');
+  // Region (Sobel edge-stop) mode + feather — set in the Draw tab — also commit.
+  await openTab('draw');
+  await page.selectOption('#previewHost .imgv-fill-mode', 'region');
+  await page.check('#previewHost .imgv-fill-feather');
+  const regionBefore = await imgSrcNow();
+  await clickCanvasCentre();
+  if (await waitNewSrc(regionBefore)) pass('fill region/edge-stop mode + feather floods + commits'); else fail('region fill did not commit');
+  await page.uncheck('#previewHost .imgv-fill-feather');
+  await page.selectOption('#previewHost .imgv-fill-mode', 'seed');
+  await openTab('common');
   await page.click('#previewHost .imgv-fill');   // toggle fill mode off
-  // BG removal: activating enters pick mode (button active + crosshair cursor).
+  // BG removal: the ✂ BG button lives in Common and jumps to the Background tab.
+  await openTab('common');
   await page.click('#previewHost .imgv-bg-btn');
   const bgActive = await page.evaluate(() => document.querySelector('#previewHost .imgv-bg-btn').classList.contains('active'));
   if (bgActive) pass('BG-removal tool enters colour-pick mode'); else fail('BG tool did not activate');
+  await openTab('common');
   await page.click('#previewHost .imgv-bg-btn');   // cancel BG mode, restore for later steps
-  // Crop: enter mode, drag a centre rectangle (real mouse → pointer capture works),
-  // Apply → the image shrinks + commits.
+  // Background tab: the "Extract tolerance" label stays hidden until a colour is
+  // sampled, and the Checkerboard toggle changes how transparency is displayed.
+  await openTab('bg');
+  const bgTabState = await page.evaluate(() => ({
+    tolHidden: document.querySelector('#previewHost .imgv-bg-tol-wrap')?.hidden !== false,
+    hasChecker: !!document.querySelector('#previewHost .imgv-bg-checker'),
+  }));
+  await page.check('#previewHost .imgv-bg-checker');
+  const checkerOn = await page.evaluate(() => document.querySelector('#previewHost .imgv-img').classList.contains('imgv-checker'));
+  await page.uncheck('#previewHost .imgv-bg-checker');
+  const checkerOff = await page.evaluate(() => !document.querySelector('#previewHost .imgv-img').classList.contains('imgv-checker'));
+  if (bgTabState.tolHidden && bgTabState.hasChecker && checkerOn && checkerOff) pass('Background tab: tolerance hidden until sampled; checkerboard toggle shows transparency'); else fail('bg tab: ' + JSON.stringify({ ...bgTabState, checkerOn, checkerOff }));
+  await openTab('common');
+  // Crop: button + apply/cancel live in Common. Enter mode, drag a centre rectangle
+  // (real mouse → pointer capture works), Apply → the image shrinks + commits.
+  await openTab('common');
   await page.click('#previewHost .imgv-crop-btn');
   const cropModeOn = await page.evaluate(() => document.querySelector('#previewHost .imgv-crop-btn').classList.contains('active'));
   const cropDimsBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
@@ -279,7 +415,8 @@ export async function run(ctx) {
   const cropped = await waitNewSrc(cropSrcBefore);
   const cropDimsAfter = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
   if (cropModeOn && cropped && cropDimsAfter.w < cropDimsBefore.w && cropDimsAfter.h < cropDimsBefore.h) pass('crop selects a region + shrinks the image'); else fail('crop: ' + JSON.stringify({ cropModeOn, cropped, cropDimsBefore, cropDimsAfter }));
-  // Pencil: a real drag over the image draws a stroke + commits a new blob.
+  // Pencil: button lives in Common. A real drag over the image draws + commits.
+  await openTab('common');
   await page.click('#previewHost .imgv-pencil');
   const penModeOn = await page.evaluate(() => document.querySelector('#previewHost .imgv-pencil').classList.contains('active'));
   const penRect = await page.$eval('#previewHost .imgv-img', (e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, w: b.width, h: b.height }; });
@@ -297,7 +434,9 @@ export async function run(ctx) {
   const toolsHidden = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display === 'none');
   await page.click('#previewHost .imgv-tools-btn');   // restore for later steps
   if (toolsVisInit && toolsHidden) pass('image editing tools collapse behind the 🛠 toggle'); else fail('tools toggle: ' + JSON.stringify({ toolsVisInit, toolsHidden }));
-  // Resize in PERCENT: 50% should halve the natural width.
+  // Resize in PERCENT: the ⊡ button lives in Common and jumps to the Size tab where
+  // the W/H panel lives; 50% should halve the natural width.
+  await openTab('common');
   const wBefore = await page.$eval('#previewHost .imgv-img', (el) => el.naturalWidth);
   await page.click('#previewHost .imgv-resize-btn');
   await page.selectOption('#previewHost .imgv-resize-unit', 'pct');
@@ -306,10 +445,29 @@ export async function run(ctx) {
   await page.waitForFunction((w) => document.querySelector('#previewHost .imgv-img').naturalWidth > 0 && document.querySelector('#previewHost .imgv-img').naturalWidth < w, wBefore, { timeout: 8000 }).catch(() => {});
   const wAfter = await page.$eval('#previewHost .imgv-img', (el) => el.naturalWidth);
   if (Math.abs(wAfter - Math.round(wBefore / 2)) <= 1) pass('resize percent (50%) halves the image width'); else fail('resize %: ' + wBefore + ' -> ' + wAfter);
+  // Expand (opposite of crop): pad 30px on every side → width grows by 60, content
+  // unchanged. Button is in Common, panel in the Size tab.
+  await openTab('common');
+  const expBefore = await page.$eval('#previewHost .imgv-img', (el) => el.naturalWidth);
+  await page.click('#previewHost .imgv-expand-btn');
+  await page.fill('#previewHost .imgv-expand-pad', '30');
+  await page.click('#previewHost .imgv-expand-apply');
+  await page.waitForFunction((w) => document.querySelector('#previewHost .imgv-img').naturalWidth === w + 60, expBefore, { timeout: 8000 }).catch(() => {});
+  const expAfter = await page.$eval('#previewHost .imgv-img', (el) => el.naturalWidth);
+  if (expAfter === expBefore + 60) pass('expand pads the canvas (+30px each side) without resizing content'); else fail('expand: ' + expBefore + ' -> ' + expAfter);
+  // Linked proxies: the Fill button in the Draw tab drives the same canonical Fill.
+  await openTab('draw');
+  await page.click('#previewHost .imgv-tabpanel[data-tab="draw"] [data-link="imgv-fill"]');
+  const proxyLinked = await page.evaluate(() => document.querySelector('#previewHost .imgv-fill').classList.contains('active'));
+  await page.click('#previewHost .imgv-tabpanel[data-tab="draw"] [data-link="imgv-fill"]');   // toggle back off
+  const adjustHasFilters = await page.evaluate(() => !!document.querySelector('#previewHost .imgv-tabpanel[data-tab="adjust"] [data-link="imgv-filters-btn"]'));
+  if (proxyLinked && adjustHasFilters) pass('linked proxies: Draw-tab Fill drives canonical Fill; Adjust tab has its Filters button'); else fail('proxies: ' + JSON.stringify({ proxyLinked, adjustHasFilters }));
+  await openTab('common');
   await page.evaluate(() => window.__fv.downloadCurrent());
   const cleanAfterDownload = await page.evaluate(() => !window.__fv.hasUnsavedWork());
   if (cleanAfterDownload) pass('edited image download clears unsaved state'); else fail('edited image stayed dirty after download');
   // ── Compare overlay: split / overlay (opacity) / diff (highlight) modes ──
+  await openTab('common');
   await page.click('#previewHost .imgv-compare');
   await page.waitForSelector('#previewHost .imgv-compare-view .imgv-cmp-mode', { timeout: 8000 });
   const editToolsHiddenInCompare = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display === 'none');

@@ -44,6 +44,43 @@ const pixel = (d, w, x, y) => { const i = (y * w + x) * 4; return [d[i], d[i + 1
 // ── floodFill: out-of-bounds seed is a no-op ──
 ok(floodFill(buf(2, 2, () => [0, 0, 0]), 2, 2, 9, 9, [1, 2, 3, 255], 0, false) === 0, 'floodFill: out-of-bounds seed fills nothing');
 
+// ── floodFill region (Sobel edge-stop) mode: stops at a luminance edge ──
+{
+  // 8×8 split: left 4 cols dark, right 4 cols light → a sharp vertical edge at x=3/4.
+  const w = 8, h = 8;
+  const d = buf(w, h, (x) => (x < 4 ? [60, 60, 60] : [190, 190, 190]));
+  // Region mode ignores colour; seeded in the dark half it must not leak into the
+  // light half's interior. tol low → even a soft edge halts the spread.
+  const cnt = floodFill(d, w, h, 1, 4, [255, 0, 0, 255], 4, { mode: 'region' });
+  ok(cnt > 1 && cnt < w * h, `floodFill region: fills a bounded area, not 1px and not all (${cnt})`);
+  ok(JSON.stringify(pixel(d, w, 6, 4)) === JSON.stringify([190, 190, 190, 255]), 'floodFill region: does not cross the edge into the light interior');
+}
+
+// ── floodFill perceptual: a pure-grey difference matches the plain-RGB result ──
+{
+  // grey gradient row: neighbours differ by 10 each. With tol=15, both metrics must
+  // agree on greys (perceptual is normalised to the RGB scale for neutral colours).
+  const w = 6, h = 1;
+  const grey = (x) => [x * 10, x * 10, x * 10];
+  const a = buf(w, h, grey), b = buf(w, h, grey);
+  const ca = floodFill(a, w, h, 0, 0, [255, 0, 0, 255], 15, { mode: 'shade', perceptual: false });
+  const cb = floodFill(b, w, h, 0, 0, [255, 0, 0, 255], 15, { mode: 'shade', perceptual: true });
+  ok(ca === cb, `floodFill perceptual: neutral-grey fill matches RGB scale (${ca} vs ${cb})`);
+}
+
+// ── floodFill feather: a 1px fill leaves a partial (anti-aliased) halo outside ──
+{
+  // single white pixel centre, black surround; tol 0 fills only the centre. With
+  // feather, the centre is fully filled and its neighbours get a partial blend.
+  const w = 3, h = 3;
+  const d = buf(w, h, (x, y) => (x === 1 && y === 1 ? [255, 255, 255] : [0, 0, 0]));
+  const cnt = floodFill(d, w, h, 1, 1, [200, 0, 0, 255], 0, { feather: true });
+  ok(cnt === 1, 'floodFill feather: still fills exactly the one matched pixel');
+  ok(JSON.stringify(pixel(d, w, 1, 1)) === JSON.stringify([200, 0, 0, 255]), 'floodFill feather: the filled pixel is fully opaque fill colour (interior not hollowed)');
+  const halo = pixel(d, w, 0, 1);   // an edge neighbour of the centre
+  ok(halo[0] > 0 && halo[0] < 200, `floodFill feather: neighbour gets a partial halo (r=${halo[0]})`);
+}
+
 // ── bgFloodFill: punches the seed region transparent, returns new bytes ──
 {
   const w = 3, h = 1;

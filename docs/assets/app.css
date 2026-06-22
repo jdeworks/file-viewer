@@ -881,6 +881,13 @@ body.fv-dragging .intake::after {
 .env-key:focus, .env-val:focus { background: var(--bg, #fff); border-radius: 3px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #0969da) 25%, transparent); }
 .env-eye, .env-del { background: transparent; border: none; cursor: pointer; color: var(--fg-2, #888); padding: 2px 4px; flex-shrink: 0; font-size: 13px; }
 .env-del:hover { color: #cf222e; }
+.env-drag { cursor: grab; color: var(--fg-2, #888); flex-shrink: 0; font-size: 13px; line-height: 1; user-select: none; padding: 0 2px; opacity: .5; }
+.env-row:hover .env-drag { opacity: 1; }
+.env-drag:active { cursor: grabbing; }
+.env-check { flex-shrink: 0; margin: 0 2px; cursor: pointer; }
+.env-selected { background: color-mix(in srgb, var(--accent, #0969da) 12%, transparent); border-radius: 3px; }
+.env-row.env-dragging { opacity: .4; }
+.env-row.env-dragover { box-shadow: inset 0 2px 0 var(--accent, #0969da); }
 
 /* ── Inline INI/conf form editor ── */
 /* #iniFormHost shares the .editor-host class so all banner-offset rules apply automatically */
