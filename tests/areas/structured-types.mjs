@@ -533,6 +533,15 @@ export async function run(ctx) {
   const dels = await patchf.$$eval('.patch .p-del', (els) => els.length);
   const hunks = await patchf.$$eval('.patch .p-hunk', (els) => els.length);
   if (adds >= 2 && dels >= 1 && hunks >= 1) pass('patch colorized (+' + adds + ' −' + dels + ', ' + hunks + ' hunk)'); else fail('patch lines: add=' + adds + ' del=' + dels + ' hunk=' + hunks);
+  // Hunk include/exclude → rebuilds a filtered partial patch in the output textarea.
+  const patchInit = await patchf.evaluate(() => ({ cbs: document.querySelectorAll('.patch-hcb').length, count: document.querySelector('.patch-count')?.textContent || '', out: document.querySelector('.patch-out')?.value || '' }));
+  if (patchInit.cbs === 3 && /3 of 3/.test(patchInit.count) && /greeting library/.test(patchInit.out)) pass('patch hunk checkboxes + full filtered output'); else fail('patch init: ' + JSON.stringify(patchInit));
+  await patchf.evaluate(() => { const c = document.querySelectorAll('.patch-hcb'); const last = c[c.length - 1]; last.checked = false; last.dispatchEvent(new Event('change', { bubbles: true })); });
+  const patchAfter = await patchf.evaluate(() => ({ count: document.querySelector('.patch-count')?.textContent || '', out: document.querySelector('.patch-out')?.value || '' }));
+  if (/2 of 3/.test(patchAfter.count) && !/greeting library/.test(patchAfter.out) && /Hello, /.test(patchAfter.out)) pass('patch excludes a deselected hunk from the filtered output'); else fail('patch after: ' + JSON.stringify(patchAfter));
+  await patchf.click('.patch-none');
+  const patchNone = await patchf.evaluate(() => ({ count: document.querySelector('.patch-count')?.textContent || '', out: (document.querySelector('.patch-out')?.value || '').trim() }));
+  if (/0 of 3/.test(patchNone.count) && patchNone.out === '') pass('patch None clears the filtered output'); else fail('patch none: ' + JSON.stringify(patchNone));
 
   // ── Log ── severity highlighting + timestamps. ──
   await page.goto(origin, { waitUntil: 'load' });
