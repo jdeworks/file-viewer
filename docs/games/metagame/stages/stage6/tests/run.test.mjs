@@ -15,8 +15,8 @@ import { STARTING_DECK } from "../cards.js";
 
 // ── mapgen: structure + full connectivity ────────────────────────────────────────────────────────
 {
-  const run = generateRun(42, 3);
-  assert.equal(run.acts.length, 3, "three acts");
+  const run = generateRun(42, 4);
+  assert.equal(run.acts.length, 4, "four acts");
   for (const act of run.acts) {
     const boss = act.layers.at(-1);
     assert.equal(boss.length, 1, "one boss node per act");
@@ -105,8 +105,8 @@ import { STARTING_DECK } from "../cards.js";
       break;
     }
   }
-  assert.equal(run.status, "won", "a clean run clears all three acts");
-  assert.equal(run.act, 3, "ended in act 3");
+  assert.equal(run.status, "won", "a clean run clears all four acts");
+  assert.equal(run.act, 4, "ended in act 4");
 }
 
 // ── run: elites and act bosses award relics (deduped, deterministic) ─────────────────────────────

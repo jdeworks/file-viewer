@@ -9,7 +9,7 @@ import { relicsFor, relicById } from "./relics.js";
 import { nodeById } from "./mapgen.js";
 import {
   createRun, moveTo, enemyForCurrentNode, resolveCombat,
-  takeReward, rest, removeCard, closeNode, buyCard, awardRelic, prestigeCost
+  takeReward, rest, removeCard, closeNode, buyCard, awardRelic, prestigeCost, FINAL_BOSS_ACT
 } from "./run.js";
 import {
   applyProtocolChapter9Unlock, getBossLockState, recordLockedBossAttempt,
@@ -48,7 +48,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     if (state.ui.screen !== "run" || !run) { combat = null; return mount(hubView(state, lockState())); }
     switch (run.status) {
       case "combat": return mountCombat(run);
-      case "boss": return run.act >= 3
+      case "boss": return run.act >= FINAL_BOSS_ACT
         ? mount(bossView(state, lockState(), { fromRun: true }))
         : mountCombat(run);
       case "reward": combat = null; return mount(rewardView(run));
@@ -73,7 +73,6 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     const node = nodeById(run.map, run.currentNodeId);
     const enemyId = enemyForCurrentNode(run, makeRng(strHash(`${run.seed}:${run.currentNodeId}:enemy`)));
     const enemy = instantiateEnemy(enemyId, run.act);
-    if (node?.type === "boss") { enemy.hp = Math.round(enemy.hp * 1.7); enemy.name += " ⟂"; }
     const c = createCombat({
       deck: run.deck,
       player: { hp: run.hp, maxHp: run.maxHp },

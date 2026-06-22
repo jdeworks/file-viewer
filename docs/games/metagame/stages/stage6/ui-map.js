@@ -17,7 +17,7 @@ export function hubView(state, lock) {
   el.innerHTML = `
     <h2 class="s6db-hub-title">Protocol Codex</h2>
     <p class="s6db-hub-sub">A refused handshake at the edge of the archive. Build a deck of signals
-      and protocols, descend three acts, and earn the right to be acknowledged.</p>
+      and protocols, descend four acts, and earn the right to be acknowledged.</p>
     <dl class="s6db-meta-grid">
       <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
       <div><dt>Protocol Version</dt><dd>v${m.protocolVersion}</dd></div>
@@ -51,7 +51,7 @@ export function mapView(run) {
   const act = run.map.acts[run.act - 1];
   const available = new Set(availableNodes(run).map((n) => n.id));
   const cleared = new Set(run.clearedIds);
-  el.innerHTML = `<div class="s6db-map-head">Act ${run.act} / 3 — choose your route</div>
+  el.innerHTML = `<div class="s6db-map-head">Act ${run.act} / ${run.map.acts.length} — choose your route</div>
     ${run.notice ? `<div class="s6db-notice">${esc(run.notice)}</div>` : ""}`;
 
   const grid = document.createElement("div");
@@ -113,7 +113,7 @@ export function wonView(state) {
   el.className = "s6db-end s6db-end--won";
   el.innerHTML = `
     <h2>The connection accepted a shared rule</h2>
-    <p>Three acts negotiated. The archive lets you pass.</p>
+    <p>Four acts negotiated. The archive lets you pass.</p>
     <div class="s6db-hub-actions">
       <button type="button" data-action="bts">open trace.bts</button>
       <button type="button" data-action="new-run">run again ▸</button>

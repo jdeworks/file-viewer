@@ -645,18 +645,19 @@ function log(combat, line) {
 
 // ../../docs/games/metagame/stages/stage6/enemies.js
 var ENEMIES = {
+  // ── Standard trash ──────────────────────────────────────────────────────────────────────────────
   "corrupt-packet": {
     id: "corrupt-packet",
     name: "Corrupt Packet",
     tier: "standard",
     hp: 46,
-    hpPerAct: 18,
+    hpPerAct: 22,
     armor: 0,
     armorPerAct: 0,
     script: [
       { label: "Attack 10", attack: 10 },
-      { label: "Attack 13", attack: 13 },
-      { label: "Attack 18", attack: 18 }
+      { label: "Attack 15", attack: 15 },
+      { label: "Attack 22", attack: 22 }
     ]
   },
   "firewall-entity": {
@@ -664,13 +665,13 @@ var ENEMIES = {
     name: "Firewall Entity",
     tier: "standard",
     hp: 38,
-    hpPerAct: 12,
+    hpPerAct: 16,
     armor: 4,
-    armorPerAct: 3,
+    armorPerAct: 4,
     script: [
       { label: "Block 14", block: 14 },
-      { label: "Attack 14", attack: 14 },
-      { label: "Block 8 + Attack 10", block: 8, attack: 10 }
+      { label: "Attack 16", attack: 16 },
+      { label: "Block 10 + Attack 12", block: 10, attack: 12 }
     ]
   },
   "null-pointer": {
@@ -678,13 +679,43 @@ var ENEMIES = {
     name: "Null Pointer",
     tier: "standard",
     hp: 32,
-    hpPerAct: 14,
+    hpPerAct: 18,
     armor: 0,
     armorPerAct: 0,
     script: [
-      { label: "Attack 8 + Weak", attack: 8, applyPlayer: { status: "weak", value: 1 } },
-      { label: "Attack 7, twice", attack: 7, hits: 2 },
-      { label: "Attack 16", attack: 16 }
+      { label: "Attack 9 + Weak", attack: 9, applyPlayer: { status: "weak", value: 1 } },
+      { label: "Attack 9, twice", attack: 9, hits: 2 },
+      { label: "Attack 20", attack: 20 }
+    ]
+  },
+  // Appears act 2+: an escalating spike that punishes slow kills.
+  "race-condition": {
+    id: "race-condition",
+    name: "Race Condition",
+    tier: "standard",
+    hp: 50,
+    hpPerAct: 20,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Attack 8, twice", attack: 8, hits: 2 },
+      { label: "Attack 11 + Vulnerable", attack: 11, applyPlayer: { status: "vulnerable", value: 1 } },
+      { label: "Data race — Attack 26", attack: 26 }
+    ]
+  },
+  // Appears act 3+: armored bruiser, long fights, sustained pressure.
+  "packet-storm": {
+    id: "packet-storm",
+    name: "Packet Storm",
+    tier: "standard",
+    hp: 64,
+    hpPerAct: 22,
+    armor: 2,
+    armorPerAct: 2,
+    script: [
+      { label: "Attack 14", attack: 14 },
+      { label: "Block 12 + Attack 10", block: 12, attack: 10 },
+      { label: "Flood — Attack 7, three times", attack: 7, hits: 3 }
     ]
   },
   // ── Elites (need engine features: pierce + mirror) ──────────────────────────────────────────────
@@ -716,6 +747,53 @@ var ENEMIES = {
       { label: "Intercept — attack 9", attack: 9 },
       { label: "Mirror your traffic — 6 × cards played", mirror: 6 },
       { label: "Inject — attack 7, twice", attack: 7, hits: 2 }
+    ]
+  },
+  // ── Per-act mini-bosses (fixed HP; carry their act's combat finale) ───────────────────────────────
+  "kernel-panic": {
+    id: "kernel-panic",
+    name: "Kernel Panic",
+    tier: "boss",
+    hp: 150,
+    hpPerAct: 0,
+    armor: 2,
+    armorPerAct: 0,
+    script: [
+      { label: "Attack 14", attack: 14 },
+      { label: "Block 14 + Attack 8", block: 14, attack: 8 },
+      { label: "Attack 9, twice", attack: 9, hits: 2 },
+      { label: "Halt — Attack 30", attack: 30 }
+    ]
+  },
+  "buffer-overflow": {
+    id: "buffer-overflow",
+    name: "Buffer Overflow",
+    tier: "boss",
+    hp: 205,
+    hpPerAct: 0,
+    armor: 4,
+    armorPerAct: 0,
+    script: [
+      { label: "Overflow — Attack 9, three times", attack: 9, hits: 3 },
+      { label: "Block 18", block: 18 },
+      { label: "Smash — Attack 14 + Weak", attack: 14, applyPlayer: { status: "weak", value: 1 } },
+      { label: "Stack smash — Attack 34", attack: 34 }
+    ]
+  },
+  "deadlock": {
+    id: "deadlock",
+    name: "Deadlock",
+    tier: "boss",
+    hp: 260,
+    hpPerAct: 0,
+    armor: 6,
+    armorPerAct: 0,
+    script: [
+      { label: "Attack 20", attack: 20 },
+      { label: "Mirror your traffic — 5 × cards played", mirror: 5 },
+      { label: "Block 26", block: 26 },
+      { label: "Attack 16 + Vulnerable", attack: 16, applyPlayer: { status: "vulnerable", value: 1 } },
+      { label: "Deadlock — Attack 32", attack: 32 }
     ]
   }
 };
@@ -789,7 +867,12 @@ function rollRelic(seed, owned = []) {
 }
 
 // ../../docs/games/metagame/stages/stage6/mapgen.js
-var COMBAT_ENEMIES = ["corrupt-packet", "firewall-entity", "null-pointer"];
+var STANDARD_POOLS = {
+  1: ["corrupt-packet", "firewall-entity", "null-pointer"],
+  2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition"],
+  3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm"],
+  4: ["null-pointer", "race-condition", "packet-storm"]
+};
 var ELITE_ENEMIES = ["expired-certificate", "man-in-the-middle"];
 var CONTENT_LAYERS = 6;
 function generateAct(act, seed) {
@@ -859,9 +942,10 @@ function wireEdges(layers, rng) {
 function nodeId(act, layer, col) {
   return `a${act}-l${layer}-n${col}`;
 }
-function enemyForNode(node, rng = Math.random) {
+function enemyForNode(node, act = 1, rng = Math.random) {
   if (node.type === "elite") return ELITE_ENEMIES[Math.floor(rng() * ELITE_ENEMIES.length)];
-  return COMBAT_ENEMIES[Math.floor(rng() * COMBAT_ENEMIES.length)];
+  const pool = STANDARD_POOLS[act] || STANDARD_POOLS[4];
+  return pool[Math.floor(rng() * pool.length)];
 }
 
 // ../../docs/games/metagame/stages/stage6/run.js
@@ -869,7 +953,8 @@ var PLAYER_MAX_HP = 60;
 var REST_HEAL_FRACTION = 0.3;
 var REWARD_CHOICES = 3;
 var HANDSHAKE_REWARD = { combat: 10, elite: 30, boss: 0 };
-var FINAL_BOSS_ACT = 3;
+var FINAL_BOSS_ACT = 4;
+var ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock" };
 var PRESTIGE_HP_PER_VERSION = 5;
 function prestigeCost(version) {
   return (Number(version || 0) + 1) * 40;
@@ -913,8 +998,8 @@ function moveTo(run, nodeId2) {
 function enemyForCurrentNode(run, rng = Math.random) {
   const node = nodeById(run.map, run.currentNodeId);
   if (!node) return null;
-  if (node.type === "boss") return run.act === FINAL_BOSS_ACT ? "the-refused-connection" : "firewall-entity";
-  return enemyForNode(node, rng);
+  if (node.type === "boss") return run.act === FINAL_BOSS_ACT ? "the-refused-connection" : ACT_BOSSES[run.act] || "kernel-panic";
+  return enemyForNode(node, run.act, rng);
 }
 function resolveCombat(run, { win, hpRemaining }) {
   const node = nodeById(run.map, run.currentNodeId);
@@ -1116,7 +1201,7 @@ function hubView(state, lock) {
   el.innerHTML = `
     <h2 class="s6db-hub-title">Protocol Codex</h2>
     <p class="s6db-hub-sub">A refused handshake at the edge of the archive. Build a deck of signals
-      and protocols, descend three acts, and earn the right to be acknowledged.</p>
+      and protocols, descend four acts, and earn the right to be acknowledged.</p>
     <dl class="s6db-meta-grid">
       <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
       <div><dt>Protocol Version</dt><dd>v${m.protocolVersion}</dd></div>
@@ -1145,7 +1230,7 @@ function mapView(run) {
   const act = run.map.acts[run.act - 1];
   const available = new Set(availableNodes(run).map((n) => n.id));
   const cleared = new Set(run.clearedIds);
-  el.innerHTML = `<div class="s6db-map-head">Act ${run.act} / 3 — choose your route</div>
+  el.innerHTML = `<div class="s6db-map-head">Act ${run.act} / ${run.map.acts.length} — choose your route</div>
     ${run.notice ? `<div class="s6db-notice">${esc2(run.notice)}</div>` : ""}`;
   const grid = document.createElement("div");
   grid.className = "s6db-map-grid";
@@ -1201,7 +1286,7 @@ function wonView(state) {
   el.className = "s6db-end s6db-end--won";
   el.innerHTML = `
     <h2>The connection accepted a shared rule</h2>
-    <p>Three acts negotiated. The archive lets you pass.</p>
+    <p>Four acts negotiated. The archive lets you pass.</p>
     <div class="s6db-hub-actions">
       <button type="button" data-action="bts">open trace.bts</button>
       <button type="button" data-action="new-run">run again ▸</button>
@@ -1438,7 +1523,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       case "combat":
         return mountCombat(run);
       case "boss":
-        return run.act >= 3 ? mount(bossView(state, lockState(), { fromRun: true })) : mountCombat(run);
+        return run.act >= FINAL_BOSS_ACT ? mount(bossView(state, lockState(), { fromRun: true })) : mountCombat(run);
       case "reward":
         combat = null;
         return mount(rewardView(run));
@@ -1475,10 +1560,6 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     const node = nodeById(run.map, run.currentNodeId);
     const enemyId = enemyForCurrentNode(run, makeRng(strHash2(`${run.seed}:${run.currentNodeId}:enemy`)));
     const enemy = instantiateEnemy(enemyId, run.act);
-    if (node?.type === "boss") {
-      enemy.hp = Math.round(enemy.hp * 1.7);
-      enemy.name += " ⟂";
-    }
     const c = createCombat({
       deck: run.deck,
       player: { hp: run.hp, maxHp: run.maxHp },
