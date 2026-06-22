@@ -9,6 +9,7 @@ import { makeRng } from "./combat.js";
 export const NODE_TYPES = ["combat", "elite", "rest", "shop", "event", "boss"];
 
 const COMBAT_ENEMIES = ["corrupt-packet", "firewall-entity", "null-pointer"];
+const ELITE_ENEMIES = ["expired-certificate", "man-in-the-middle"];
 const CONTENT_LAYERS = 6; // + 1 boss layer => ~15 nodes/act
 
 export function generateAct(act, seed) {
@@ -94,6 +95,6 @@ function nodeId(act, layer, col) {
 }
 
 export function enemyForNode(node, rng = Math.random) {
-  if (node.type === "elite") return "firewall-entity";
+  if (node.type === "elite") return ELITE_ENEMIES[Math.floor(rng() * ELITE_ENEMIES.length)];
   return COMBAT_ENEMIES[Math.floor(rng() * COMBAT_ENEMIES.length)];
 }

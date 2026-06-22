@@ -5,11 +5,11 @@
 
 import { createCombat, playCard, endTurn, makeRng } from "./combat.js";
 import { instantiateEnemy } from "./enemies.js";
-import { relicsFor } from "./relics.js";
+import { relicsFor, relicById } from "./relics.js";
 import { nodeById } from "./mapgen.js";
 import {
   createRun, moveTo, enemyForCurrentNode, resolveCombat,
-  takeReward, rest, removeCard, closeNode, buyCard
+  takeReward, rest, removeCard, closeNode, buyCard, awardRelic
 } from "./run.js";
 import {
   applyProtocolChapter9Unlock, getBossLockState, recordLockedBossAttempt,
@@ -104,6 +104,11 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   function resolveEvent(run, key) {
     if (key === "scan") run.handshakes += 12;
     else if (key === "defrag") run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * 0.30));
+    else if (key === "rewrite") {
+      run.hp = Math.max(1, run.hp - 8);
+      const id = awardRelic(run, `event-${run.currentNodeId}`);
+      run.notice = id ? `Relic acquired — ${relicById(id)?.name || id}` : "no protocol left to rewrite";
+    }
     closeNode(run);
   }
 

@@ -139,6 +139,11 @@ function clearBoss(run) {
   return { ok: true, status: "map", advancedToAct: run.act, relic: relicId };
 }
 
+// Public relic grant for events (Defragmenter rewrite). Returns the granted relic id, or null.
+export function awardRelic(run, key = "event") {
+  return grantRelic(run, key);
+}
+
 // Grant a not-yet-owned relic deterministically (per run seed + key). Returns its id, or null.
 function grantRelic(run, key) {
   const id = rollRelic(hashSeed(run.seed, `${key}:relic`), run.relics);

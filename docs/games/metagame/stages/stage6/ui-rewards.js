@@ -79,6 +79,7 @@ export function eventView(run) {
     <div class="s6db-hub-actions">
       <button type="button" data-event="scan">accept payment — +12 handshakes ▸</button>
       <button type="button" data-event="defrag">let it optimize you — heal 30% HP ▸</button>
+      <button type="button" data-event="rewrite">let it rewrite a protocol — +relic, −8 HP ▸</button>
       <button type="button" data-action="to-map" class="s6db-ghost">walk past</button>
     </div>`;
   return el;

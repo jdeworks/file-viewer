@@ -54,8 +54,12 @@ Building the full roguelite deck-builder from `planning/stage6-02-our-game-desig
   hub renders → begin-run shows routable map → to-hub → epub gate → confront → negotiate → clear.
   All 5 unit suites + games smoke green. Verified the full map→combat→resolve→reward loop end-to-end.
   KNOWN (defer to WP5): combat balance is generous (starter deck clears act-1 trash at full HP).
-- ⏭ **WP3c**: Expired Certificate (countdown / unavoidable hit) + Man-in-the-Middle (copy-last-card)
-  elites — both need a small engine feature; richer Defragmenter event (currently a 2-choice stub).
+- ✅ **WP3c** done: engine gained `pierce` (unblockable hits) + `mirror` (damage × cards played this
+  turn). Elites Expired Certificate (block-stall → 24 unblockable expiry) + Man-in-the-Middle (mirror
+  reflects your wide turns) added; elite nodes now pick from the elite pool. Defragmenter event gained a
+  relic-gamble option (+relic, −8 HP). combat.test covers pierce + mirror. Elites are genuinely lethal
+  (verified: Expired Certificate can kill; MitM punishes spam) — they carry the early difficulty while
+  regular combats stay easy (full balance pass still pending below).
 - ⏭ **WP5**: balance to ~90–120 min, deeper parchment/navy visual pass, prestige (Protocol Version:
   bank handshakes between runs → permanent unlocks/relic pool; `meta.banked`/`protocolVersion` already
   tracked, no spend path yet), relic acquisition from elites/boss rewards (relics defined, not yet awarded).

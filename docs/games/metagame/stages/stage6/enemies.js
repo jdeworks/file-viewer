@@ -37,6 +37,31 @@ export const ENEMIES = {
       { label: "Attack 6, twice", attack: 6, hits: 2 },
       { label: "Attack 14", attack: 14 }
     ]
+  },
+  // ── Elites (need engine features: pierce + mirror) ──────────────────────────────────────────────
+  "expired-certificate": {
+    // Stalls behind heavy block, then expires for a large UNBLOCKABLE hit — race it or heal.
+    id: "expired-certificate",
+    name: "Expired Certificate",
+    tier: "elite",
+    hp: 64, hpPerAct: 22, armor: 2, armorPerAct: 2,
+    script: [
+      { label: "Re-signing — block 14", block: 14 },
+      { label: "Re-signing — block 14", block: 14 },
+      { label: "Certificate expires — 24 unblockable", attack: 24, pierce: true }
+    ]
+  },
+  "man-in-the-middle": {
+    // Punishes wide turns: its Mirror reflects 6 damage per card you played that turn.
+    id: "man-in-the-middle",
+    name: "Man-in-the-Middle",
+    tier: "elite",
+    hp: 72, hpPerAct: 24, armor: 0, armorPerAct: 0,
+    script: [
+      { label: "Intercept — attack 9", attack: 9 },
+      { label: "Mirror your traffic — 6 × cards played", mirror: 6 },
+      { label: "Inject — attack 7, twice", attack: 7, hits: 2 }
+    ]
   }
 };
 
