@@ -1,7 +1,7 @@
 import { intakeFromFile } from './intake.js';
 import { layoutTopbar } from './layout.js';
 import { $, state, toast, escapeHtml } from './state.js';
-import { detectCompanion, findFile, findFolder, saveFile, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
+import { detectCompanion, findFile, findFolder, saveFile, deleteFile, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
 
 let companionAvailable = false;
 let companionLinkedPath = null;
@@ -162,7 +162,14 @@ export function syncSaveBtn() {
   const canSaveBinaryEdit = !!(state.binaryEdit?.dirty && typeof state.binaryEdit.getBytes === 'function');
   const show = companionAvailable && !!state.intake && (!state.intake.isBinary || canSaveBinaryEdit) && folderSaveReady;
   btn.hidden = !show;
-  if (show) layoutTopbar();
+  // The delete button shows only when a CONCRETE on-disk file is linked (single-file link or a
+  // folder file with a resolved root) — so a not-yet-linked file can't be deleted by accident.
+  const delBtn = $('deleteBtn');
+  if (delBtn) {
+    const linked = !!companionLinkedPath || (isFolderFile && !!companionFolderRoot);
+    delBtn.hidden = !(companionAvailable && !!state.intake && linked);
+  }
+  if (show || (delBtn && !delBtn.hidden)) layoutTopbar();
 }
 
 export async function onSaveClick() {
@@ -225,6 +232,37 @@ export async function onSaveClick() {
     }
   } finally {
     $('saveBtn').disabled = false;
+  }
+}
+
+export async function onDeleteClick() {
+  if (!companionAvailable || !state.intake) return;
+  const { filename, size } = state.intake;
+  const btn = $('deleteBtn');
+  if (btn) btn.disabled = true;
+  try {
+    let absPath = null;
+    if (state.currentFolderPath && companionFolderRoot) absPath = absolutePathForFile(state.intake.file);
+    if (!absPath) absPath = companionLinkedPath;
+    if (!absPath) {
+      let matches;
+      try { matches = await findFile(filename, size); } catch (err) { toast('Companion: could not search — ' + err.message); return; }
+      if (!matches || matches.length === 0) { toast('File not found in watched folders.'); return; }
+      absPath = matches.length === 1 ? matches[0] : await pickCompanionPath(matches);
+      if (!absPath) return;
+    }
+    // Destructive — explicit confirm. The file stays open in the viewer and Download still works.
+    if (!confirm(`Delete this file from disk?\n\n${absPath}\n\nThis permanently removes the original on disk. The file stays open here and the Download button still works.`)) return;
+    try {
+      await deleteFile(absPath);
+      setCompanionLinked(null);   // no longer on disk → drop the link + stop watching
+      syncSaveBtn();
+      toast('Deleted from disk: ' + absPath);
+    } catch (err) {
+      toast('Delete failed: ' + err.message);
+    }
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 

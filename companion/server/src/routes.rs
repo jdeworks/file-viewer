@@ -253,6 +253,45 @@ pub async fn post_file(
 }
 
 // ---------------------------------------------------------------------------
+// DELETE /file?path=   (token required — enforced by middleware layer)
+// Deletes a single file inside a watched folder. Refuses directories. The browser
+// gates this behind an explicit confirm; the Download button is unaffected.
+// ---------------------------------------------------------------------------
+
+pub async fn delete_file(State(state): State<AppState>, Query(q): Query<FileQuery>) -> Response {
+    let watched = state.watched_paths.lock().unwrap().clone();
+    let pb = PathBuf::from(&q.path);
+    match validate_path(&pb, &watched) {
+        Err(e) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": e })),
+        )
+            .into_response(),
+        Ok(canonical) => {
+            if canonical.is_dir() {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({ "error": "refusing to delete a directory" })),
+                )
+                    .into_response();
+            }
+            match tokio::fs::remove_file(&canonical).await {
+                Err(e) => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({ "error": e.to_string() })),
+                )
+                    .into_response(),
+                Ok(()) => (
+                    StatusCode::OK,
+                    Json(serde_json::json!({ "ok": true })),
+                )
+                    .into_response(),
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // GET /files?path=
 // ---------------------------------------------------------------------------
 

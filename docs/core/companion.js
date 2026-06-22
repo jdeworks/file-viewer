@@ -56,6 +56,18 @@ export async function saveFile(absolutePath, bytes) {
   return res.json();
 }
 
+// Delete a single file on disk (token-gated server-side; path-restricted to watched folders).
+// The caller MUST confirm with the user first — this is destructive. The Download button is
+// unaffected; this only removes the on-disk original the file is linked to.
+export async function deleteFile(absolutePath) {
+  const res = await fetch(`${BASE}/file?path=${encodeURIComponent(absolutePath)}`, {
+    method: 'DELETE',
+    headers: { 'X-Companion-Token': _token || '' },
+  });
+  if (!res.ok) throw new Error(`delete failed: ${res.status}`);
+  return res.json();
+}
+
 export async function getWatchedPaths() {
   const res = await fetch(`${BASE}/watched-paths`);
   return (await res.json()).paths;
