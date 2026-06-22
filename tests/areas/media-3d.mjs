@@ -713,6 +713,18 @@ export async function run(ctx) {
     return { count: rows.length, hasPoly: names.includes('Polygon'), hasStar: names.includes('Star') };
   });
   if (advPolyStar.count === 5 && advPolyStar.hasPoly && advPolyStar.hasStar) pass('Adv Edit: polygon + star shapes added (named in layers panel)'); else fail('adv poly/star: ' + JSON.stringify(advPolyStar));
+  // Per-object blend mode: set the (selected) star to Multiply; selecting Polygon then Star again shows
+  // the blend select reflects each object's own value (per-object, persisted on the Konva node).
+  const clickAdvRow = (n) => page.evaluate((name) => {
+    const row = [...document.querySelectorAll('#previewHost .imgv-adv-layers > div')].find((r) => r.querySelector('span')?.textContent === name);
+    row?.click(); return !!row;
+  }, n);
+  await page.selectOption('#previewHost .imgv-adv-blend', 'multiply');   // star is the active selection
+  await clickAdvRow('Polygon');
+  const polyBlend = await page.$eval('#previewHost .imgv-adv-blend', (e) => e.value);
+  await clickAdvRow('Star');
+  const starBlend = await page.$eval('#previewHost .imgv-adv-blend', (e) => e.value);
+  if (polyBlend === 'source-over' && starBlend === 'multiply') pass('Adv Edit: per-object blend mode persists on the node (poly=Normal, star=Multiply)'); else fail('adv blend: ' + JSON.stringify({ polyBlend, starBlend }));
   // Persistent overlay: leaving Adv makes the stage non-interactive but KEEPS it
   // mounted (non-destructive). The doc is dirty and getBytes() flattens base+overlay
   // ON DEMAND — the overlay is never baked onto the base just for leaving Adv.
