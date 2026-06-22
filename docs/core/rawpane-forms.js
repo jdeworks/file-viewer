@@ -3,6 +3,7 @@
 // Monaco on exit. Extracted from rawpane.js for modularity; the four near-identical toggles are
 // collapsed into one parameterized helper (one config row per type).
 import { state } from './state.js';
+import { applyLayout } from './layout.js';
 import { EnvFormEditor } from '../types/text/env/form-editor.js';
 import { IniFormEditor } from '../types/text/ini/form-editor.js';
 import { TomlFormEditor } from '../types/text/toml/form-editor.js';
@@ -24,12 +25,22 @@ const FORMS = {
 };
 
 const instances = { env: null, ini: null, toml: null, yaml: null };
+// The form host lives in the raw pane; remember the view mode so activating the form can switch to
+// raw (otherwise the form is built but hidden behind the preview — "edit as form did nothing"),
+// then restore the prior mode on exit.
+let priorMode = null, priorTab = null;
 
 function setFormMode(kind, on) {
   const cfg = FORMS[kind];
   const editorEl = document.getElementById('editor');
   const btn = document.getElementById(cfg.btnId);
   if (on) {
+    // Switch to the raw pane so the form is visible (remember where to return to).
+    if (state.mode !== 'raw' || state.tab !== 'raw') {
+      priorMode = state.mode; priorTab = state.tab;
+      state.mode = 'raw'; state.tab = 'raw';
+      applyLayout();
+    }
     const text = state.rawview ? state.rawview.getValue() : (state.intake?.text || '');
     state.rawview?.updateOptions?.({ readOnly: true });   // freeze Monaco while form is active
     let host = document.getElementById(cfg.hostId);
@@ -56,6 +67,12 @@ function setFormMode(kind, on) {
     const host = document.getElementById(cfg.hostId);
     if (host) host.hidden = true;
     if (editorEl) editorEl.style.display = '';
+    // Restore the view mode we switched away from when the form was opened.
+    if (priorMode != null) {
+      state.mode = priorMode; state.tab = priorTab;
+      priorMode = priorTab = null;
+      applyLayout();
+    }
   }
   if (btn) {
     btn.classList.toggle('active', on);

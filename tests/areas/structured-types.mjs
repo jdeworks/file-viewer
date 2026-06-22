@@ -384,6 +384,31 @@ export async function run(ctx) {
   const rawMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
   if (rawMode === 'raw') pass('.env raw view remains explicitly available'); else fail('env raw mode: ' + rawMode);
 
+  // ── .env form editor: view switch, undo/redo, credential masking, comment round-trip ──
+  // cal-com.env has DATABASE_URL=postgresql://calcom:s3cr3tp4ss@… — the credentialed value must be
+  // detected (password-masked in the form); the read-only preview's masking is unit-tested separately.
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('cal-com.env');
+  await page.waitForFunction(() => typeof window.__fv !== 'undefined', null, { timeout: 10000 });
+  await page.click('#envFormBtn');
+  await page.waitForSelector('#envFormHost .env-form', { timeout: 8000, state: 'visible' });
+  const formMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
+  if (formMode === 'raw') pass('.env "edit as form" switches to the raw pane (form visible)'); else fail('env form mode: ' + formMode);
+  const formBits = await page.evaluate(() => ({
+    undo: !!document.querySelector('#envFormHost .env-btn[title^="Undo"]'),
+    redo: !!document.querySelector('#envFormHost .env-btn[title^="Redo"]'),
+    pwd: [...document.querySelectorAll('#envFormHost .env-val')].some((i) => i.type === 'password'),
+  }));
+  if (formBits.undo && formBits.redo) pass('.env form has Undo/Redo controls'); else fail('env form undo/redo missing: ' + JSON.stringify(formBits));
+  if (formBits.pwd) pass('.env form masks credentialed value (postgres://…) as password'); else fail('env form pwd missing');
+  // Comment a var, then un-comment it back (revert).
+  const v0 = await page.$$eval('#envFormHost .env-var-row', (e) => e.length);
+  await page.evaluate(() => document.querySelector('#envFormHost .env-var-row .env-toggle').click());
+  const vCommented = await page.$$eval('#envFormHost .env-var-row', (e) => e.length);
+  await page.evaluate(() => document.querySelector('#envFormHost .env-uncomment').click());
+  const vBack = await page.$$eval('#envFormHost .env-var-row', (e) => e.length);
+  if (vCommented === v0 - 1 && vBack === v0) pass('.env form comment-out → un-comment round-trip (' + v0 + '→' + vCommented + '→' + vBack + ')'); else fail('env comment round-trip: ' + v0 + '/' + vCommented + '/' + vBack);
+
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('ssh-config');
   await page.waitForSelector('#previewHost .sc-root', { timeout: 12000 });
@@ -475,11 +500,17 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('welcome.md');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
-  const wcBarHidden = await page.$eval('#wordCountBar', (el) => el.hidden);
-  if (!wcBarHidden) pass('word count bar visible for markdown file'); else fail('word count bar hidden for markdown');
-  const wcText = await page.$eval('#wordCountBar', (el) => el.textContent);
-  if (wcText.includes('words') && wcText.includes('chars')) pass('word count bar shows words and chars for markdown: ' + wcText.trim()); else fail('word count bar missing stats: ' + wcText);
-  if (/min read/.test(wcText)) pass('word count bar shows reading time for markdown'); else fail('word count bar missing read time: ' + wcText);
+  // The count renders on the standalone bar, OR inline on the text-utils row when that bar is
+  // showing (markdown shows the text-utils row, so the count is inline there).
+  const wc = await page.evaluate(() => {
+    const bar = document.getElementById('wordCountBar');
+    const inline = document.getElementById('textUtilsCount');
+    const el = (bar && !bar.hidden) ? bar : (inline && !inline.hidden ? inline : null);
+    return { shown: !!el, text: el ? el.textContent : '' };
+  });
+  if (wc.shown) pass('word count visible for markdown file'); else fail('word count hidden for markdown');
+  if (wc.text.includes('words') && wc.text.includes('chars')) pass('word count shows words and chars for markdown: ' + wc.text.trim()); else fail('word count missing stats: ' + wc.text);
+  if (/min read/.test(wc.text)) pass('word count shows reading time for markdown'); else fail('word count missing read time: ' + wc.text);
 
   // ── Text utilities toolbar ── visible for all non-binary text files. ──
   await page.goto(origin, { waitUntil: 'load' });

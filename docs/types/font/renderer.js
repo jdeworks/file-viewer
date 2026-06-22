@@ -42,12 +42,13 @@ export async function render(intake, _ctx) {
   const interactive = document.createElement('div');
   interactive.className = 'font-interactive';
 
-  // Sentence input
-  const input = document.createElement('input');
-  input.type = 'text';
+  // Sentence input — a textarea so long sentences wrap and stay fully visible.
+  const input = document.createElement('textarea');
   input.className = 'font-sentence-input';
+  input.rows = 2;
   input.value = PANGRAM;
   input.placeholder = 'Type something…';
+  input.spellcheck = false;
   interactive.appendChild(input);
 
   // Controls bar

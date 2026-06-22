@@ -35,7 +35,7 @@ Step 2 — route before working:
 |-------------|-----------------------------------------|--------------------------------|-----------------------|
 | general     | `/home/jens/repos/file-viewer`          | `dev`                          | cross-cutting: load/bundle/SW/import-graph/build/core/CLAUDE.md |
 | metagame    | `.claude/worktrees/metagame-bitfoundry` | `worktree-metagame-bitfoundry` | `docs/games/metagame/**`, `docs/assets/games.css` |
-| image/ascii | `.claude/worktrees/ascii-art`           | `worktree-ascii-art`           | `docs/types/image/**` (image editor + ASCII studio) |
+| image/ascii | `.claude/worktrees/ascii-art`           | `worktree-ascii-art`           | `docs/types/image/**` (image editor + ASCII studio engine) + `docs/tools/ascii-studio/**` (standalone ASCII studio tool page) |
 
 ### Creating a new worktree (general only)
 From the main checkout:

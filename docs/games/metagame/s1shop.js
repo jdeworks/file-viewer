@@ -11,6 +11,7 @@
 
 import {
   netRate, timedPayout, timedProduction, totalCost, maxAffordable, buyTier,
+  globalPull, achievMult,
 } from './s1economy.js';
 import { fromNumber, gte, toDisplay, toNumber } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
@@ -74,10 +75,33 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
     return '+' + toDisplay(fromNumber(toNumber(timedPayout(state, cfg, t.id)) * perSec)) + ' bits/s';
   }
 
+  // Live, effect-revealing blurb for the tiers whose benefit is otherwise invisible (global/click
+  // multipliers + the passive array). Shows the CURRENT effect so buying one visibly moves a number;
+  // a short number is rounded to 1 decimal, large totals use the compact suffix display.
+  const short = (n) => (n >= 100 ? toDisplay(fromNumber(n)) : String(Math.round(n * 10) / 10));
+  function blurbFor(t) {
+    const owned = state.owned || {};
+    switch (t.id) {
+      case 's1-mult':
+        return '+' + fmtN(1 + (owned['s1-mult'] || 0)) + ' bits / tap';
+      case 's1-array': {
+        const n = owned['s1-array'] || 0;
+        if (n < 1) return '+' + (t.rate || 0) + ' bits/s each';
+        return '+' + short(n * (t.rate || 0) * globalPull(state) * achievMult(state)) + ' bits/s';
+      }
+      case 's1-neural':
+        return '×' + (1 + 0.25 * (owned['s1-neural'] || 0)).toFixed(2) + ' to all timers';
+      case 's1-quantum':
+        return '×' + (1 + (owned['s1-quantum'] || 0)) + ' tap power';
+      default:
+        return t.desc || t.name;
+    }
+  }
+
   function shopRowHtml(t) {
     const owned = state.owned[t.id] || 0;
     const visible = (TIER_VISIBLE[t.id] || (() => true))(state);
-    const desc = t.desc || t.name;
+    const desc = blurbFor(t);
     const timed = t.type === 'timed';
     const counts = BUY_COUNTS.map((n) =>
       '<button class="mg-mult-b mg-s1-buyn" type="button" data-id="' + t.id + '" data-n="' + n + '">'
@@ -87,8 +111,10 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       + (timed ? '<div class="mg-s1-rowfill" aria-hidden="true"></div>' : '')
       + '<span class="mg-buy-name">' + escapeHtml(t.icon + ' ' + t.name) + ' <span class="mg-owned">×' + fmtN(owned) + '</span></span>'
       // Reward on its OWN line (timed rows) so the row is always 3 lines — its length changing while
-      // running (e.g. "+780 bits · 2.1s") never adds a line and shifts the layout.
-      + (timed ? '<span class="mg-s1-rowreward"></span>' : '')
+      // running (e.g. "+780 bits · 2.1s") never adds a line and shifts the layout. Split into a
+      // static amount part and a ticking time part so the 100ms countdown only rewrites the small
+      // time node (not the whole "+780 bits · …" string) every tick.
+      + (timed ? '<span class="mg-s1-rowreward"><span class="mg-s1-rr-amt"></span><span class="mg-s1-rr-time"></span></span>' : '')
       + '<span class="mg-buy-blurb">' + escapeHtml(desc) + '</span>'
       + '<span class="mg-s1-buyrow"><span class="mg-s1-counts">' + counts + '</span>'
       + '<button class="mg-buy-cost mg-s1-buybtn" type="button" data-id="' + t.id + '"></button></span>'
@@ -168,6 +194,8 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       if (!visible) return;
       const owned = state.owned[t.id] || 0;
       setText(row.querySelector('.mg-owned'), '×' + fmtN(owned));
+      // Effect-revealing blurb updates live (Neural Net ×1.00→×1.25, etc.) so a purchase shows.
+      setText(row.querySelector('.mg-buy-blurb'), blurbFor(t));
       // Highlight the active count selector (classList.toggle is idempotent).
       const sel = countFor(t.id);
       row.querySelectorAll('.mg-s1-buyn').forEach((b) => {
@@ -193,13 +221,14 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       const row = panelsEl.querySelector('.mg-s1-shoprow[data-id="' + t.id + '"]');
       if (!row) return;
       const fill = row.querySelector('.mg-s1-rowfill');
-      const reward = row.querySelector('.mg-s1-rowreward');
-      if (!fill || !reward) return;
+      const amtEl = row.querySelector('.mg-s1-rr-amt');
+      const timeEl = row.querySelector('.mg-s1-rr-time');
+      if (!fill || !amtEl || !timeEl) return;
       const owned = state.owned[t.id] || 0;
       row.classList.toggle('mg-s1-runnable', owned >= 1);
       // Fill via transform: scaleX (compositor-only) instead of width (which relayouts every frame).
       const setFill = (frac) => { const v = 'scaleX(' + frac + ')'; if (fill.style.transform !== v) fill.style.transform = v; };
-      if (owned < 1) { setFill(0); setText(reward, ''); return; }
+      if (owned < 1) { setFill(0); setText(amtEl, ''); setText(timeEl, ''); return; }
       const ts = state.timedStates[t.id];
       if (ts && ts.active) {
         const elapsed = Date.now() - ts.startedAt;
@@ -208,16 +237,20 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
           // Too fast for a meaningful progress bar — show a full, shimmering bar + the steady rate.
           fill.classList.add('mg-s1-rowfill-fast');
           setFill(1);
-          setText(reward, rateLabel(t, dur));
+          setText(amtEl, rateLabel(t, dur));   // changes only when owned/mult changes → no per-tick write
+          setText(timeEl, '');
         } else {
           fill.classList.remove('mg-s1-rowfill-fast');
           setFill(Math.max(0, Math.min(1, elapsed / dur)));
-          setText(reward, rewardLabel(t) + ' · ' + Math.max(0, (dur - elapsed) / 1000).toFixed(1) + 's');
+          // Static amount stays put; only the small ·Xs node rewrites as the countdown ticks.
+          setText(amtEl, rewardLabel(t) + ' · ');
+          setText(timeEl, Math.max(0, (dur - elapsed) / 1000).toFixed(1) + 's');
         }
       } else {
         fill.classList.remove('mg-s1-rowfill-fast');
         setFill(0);
-        setText(reward, '▸ ' + rewardLabel(t));
+        setText(amtEl, '▸ ' + rewardLabel(t));
+        setText(timeEl, '');
       }
     });
   }

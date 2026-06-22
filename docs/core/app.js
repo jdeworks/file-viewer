@@ -78,6 +78,19 @@ async function loadIntake(intake) {
     toast(`Large file: showing the first ${shown} MB of ${total} MB.`, 6000);
   }
   updateSessionTree(intake);
+  maybeUnlockEasteregg(intake.text);
+}
+
+// Easter egg: opening (or editing) any file whose text contains a line `import easteregg`
+// unlocks the arcade. Mirrors the edit-time hook in rawpane.js so a dedicated easter-egg file
+// (docs/examples/easteregg.txt) enables it just by being opened.
+function maybeUnlockEasteregg(text) {
+  if (!text || !state.games || state.games.isUnlocked()) return;
+  if (!/(^|\n)\s*import\s+easteregg\b/.test(text)) return;
+  state.games.unlock();
+  $('gamesBtn').hidden = false;
+  toast('🎮 import easteregg — arcade unlocked!');
+  state.games.open();
 }
 
 // Load a dropped/picked folder: reset any prior companion root, build the tree, then resolve the
@@ -310,6 +323,10 @@ function onSettingsChange(model, changedKey) {
 
 function applyTheme(dark) {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  // Parent-pane (parentNode) renderers theme off `body.fv-dark` — the same class the iframe body
+  // gets — so mirror the dark state there too. Without this, those renderers' dark rules never
+  // applied in the parent (the class was only ever set inside the sandboxed iframe).
+  document.body.classList.toggle('fv-dark', !!dark);
   localStorage.setItem('fv:theme', dark ? 'dark' : 'light');
   state.rawview?.setTheme(dark ? 'dark' : 'light');
   // Re-render to re-theme the preview — but NOT while there are unsaved binary

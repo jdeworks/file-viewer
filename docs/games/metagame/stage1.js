@@ -69,11 +69,14 @@ export function renderStage1(ctx) {
     return allSubStagesOwned() && cfg.bossTicket && gte(state.bits, cfg.bossTicket);
   }
 
+  // Prestige unlocks once total bits ever earned reaches "ab" (10^18) — the point where a reset
+  // yields a meaningful Gravitational Pull gain — independent of (and well before) the boss ticket.
+  const RESET_THRESHOLD = { m: 1, e: 18 };   // "1.00ab"
   const tabVisible = {
     bits: () => true,
     managers: () => (state.owned['s1-box'] || 0) >= 1,
     achievements: () => (state.achievements || []).length >= 1,
-    reset: () => canFightBoss(),
+    reset: () => gte(state.totalBits, RESET_THRESHOLD),
   };
   const TAB_LABELS = { bits: '🧮 Bits', managers: '🛠 Managers', achievements: '🏆 Achievements', reset: '🌀 Reset' };
 
@@ -115,7 +118,7 @@ export function renderStage1(ctx) {
     ['📡 Signal Booster', 'Each cycle BUILDS Bit Boxes for you (and boosts their payout). It makes machines, not bits.'],
     ['🧊 Core Cluster', 'Each cycle BUILDS Signal Boosters — a machine that builds the machine that builds boxes.'],
     ['🛠 Managers', 'Hire one to auto-run a builder for a per-second bit cost. Watch the net rate stays positive.'],
-    ['🌀 Reset', 'Once you can fight the boss you may reset for a permanent ×pull multiplier on everything.'],
+    ['🌀 Reset', 'Once your total reaches ~1ab bits you may reset for a permanent ×pull multiplier on everything.'],
   ];
   function renderHelp() {
     setHtml(helpEl, '<div class="mg-s1-help-title">How the Foundry works</div>'
