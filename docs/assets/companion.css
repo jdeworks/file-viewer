@@ -70,3 +70,7 @@
   opacity: 0.6; font-size: 18px; line-height: 1; padding: 0 4px;
 }
 .companion-reload-banner .dismiss-btn:hover { opacity: 1; }
+
+/* Delete-from-disk button — destructive, so it gets a red hover accent to set it apart from Save. */
+.icon-btn.delete-btn:hover { color: #d9362b; border-color: #d9362b; }
+body.fv-dark .icon-btn.delete-btn:hover { color: #ff6b5e; border-color: #ff6b5e; }

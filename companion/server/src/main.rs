@@ -22,7 +22,7 @@ async fn main() {
         std::env::var("COMPANION_TOKEN").unwrap_or_else(|_| uuid::Uuid::new_v4().to_string());
 
     let pages_origin = std::env::var("COMPANION_ORIGIN")
-        .unwrap_or_else(|_| "https://nicholaswilde.io".to_string());
+        .unwrap_or_else(|_| "https://jdeworks.github.io".to_string());
 
     let watched = load_config();
 
@@ -69,7 +69,7 @@ async fn main() {
     let protected = Router::new()
         .route("/watched-paths", post(routes::add_watched_path))
         .route("/watched-paths", delete(routes::remove_watched_path))
-        .route("/file", post(routes::post_file))
+        .route("/file", post(routes::post_file).delete(routes::delete_file))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_token));
 
     let app = Router::new()

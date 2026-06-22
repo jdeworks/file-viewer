@@ -22,7 +22,7 @@ fn build_app(token: &str, watched: Vec<std::path::PathBuf>) -> Router {
     let protected = Router::new()
         .route("/watched-paths", post(routes::add_watched_path))
         .route("/watched-paths", delete(routes::remove_watched_path))
-        .route("/file", post(routes::post_file))
+        .route("/file", post(routes::post_file).delete(routes::delete_file))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_token));
 
     Router::new()
@@ -292,4 +292,98 @@ async fn test_watch_endpoint_exists() {
         ct.starts_with("text/event-stream"),
         "expected text/event-stream, got: {ct}"
     );
+}
+
+// --- DELETE /file ---
+
+#[tokio::test]
+async fn test_delete_file() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("doomed.txt");
+    fs::write(&file_path, b"bye").unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = file_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::DELETE)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert!(!file_path.exists(), "file should be gone after delete");
+}
+
+#[tokio::test]
+async fn test_delete_file_requires_token() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("keep.txt");
+    fs::write(&file_path, b"x").unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = file_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::DELETE)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    assert!(file_path.exists(), "file must survive an unauthorized delete");
+}
+
+#[tokio::test]
+async fn test_delete_file_outside_watched_returns_403() {
+    let tmp = TempDir::new().unwrap();
+    let other = TempDir::new().unwrap();
+    let file_path = other.path().join("secret.txt");
+    fs::write(&file_path, b"secret").unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = file_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::DELETE)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+    assert!(file_path.exists(), "out-of-watched file must not be deleted");
+}
+
+#[tokio::test]
+async fn test_delete_refuses_directory() {
+    let tmp = TempDir::new().unwrap();
+    let dir_path = tmp.path().join("subdir");
+    fs::create_dir(&dir_path).unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = dir_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::DELETE)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+    assert!(dir_path.exists(), "directory must not be deleted");
 }
