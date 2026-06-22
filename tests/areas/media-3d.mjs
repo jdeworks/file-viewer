@@ -222,6 +222,75 @@ export async function run(ctx) {
   await page.waitForFunction(() => !!window.__fv.state.binaryEdit, null, { timeout: 5000 }).catch(() => {});
   const afterRedo = await page.evaluate(() => !!window.__fv.state.binaryEdit);
   if (afterRedo) pass('image redo re-applies edit'); else fail('redo did not re-apply edit');
+  // ── Transform / filter / draw commit pipeline ── each tool writes a FRESH edited
+  // blob, so img.src (a blob: URL) flips to a new value when a commit lands. This is
+  // a tool-agnostic regression signal that protects the editor-module split.
+  const imgSrcNow = () => page.$eval('#previewHost .imgv-img', (e) => e.src);
+  const waitNewSrc = async (before) => page.waitForFunction((s) => document.querySelector('#previewHost .imgv-img').src !== s, before, { timeout: 8000 }).then(() => true).catch(() => false);
+  // Rotate 90° CW also swaps width/height — a strong correctness check.
+  const rotBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight, src: e.src }));
+  await page.click('#previewHost .imgv-rot-r');
+  await waitNewSrc(rotBefore.src);
+  const rotAfter = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  if (rotAfter.w === rotBefore.h && rotAfter.h === rotBefore.w) pass('rotate 90° swaps image dimensions + commits'); else fail('rotate dims: ' + JSON.stringify({ rotBefore, rotAfter }));
+  // Flip H commits a new edited image.
+  const flipBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-flip-h');
+  if (await waitNewSrc(flipBefore)) pass('flip H commits a new edited image'); else fail('flip H did not commit');
+  // Filters: open panel, raise brightness, Apply → bakes a new blob.
+  await page.click('#previewHost .imgv-filters-btn');
+  await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-f-brightness'); s.value = '150'; s.dispatchEvent(new Event('input', { bubbles: true })); });
+  const filterBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-f-apply');
+  if (await waitNewSrc(filterBefore)) pass('filters Apply bakes a new edited image'); else fail('filters apply did not commit');
+  await page.click('#previewHost .imgv-filters-btn');   // close panel
+  // Fill bucket: activating reveals tolerance/edge options, then a click floods + commits.
+  await page.click('#previewHost .imgv-fill');
+  const fillModeOn = await page.evaluate(() => {
+    const b = document.querySelector('#previewHost .imgv-fill');
+    return b.classList.contains('active') && [...document.querySelectorAll('#previewHost .imgv-fill-opt')].every((o) => !o.hidden);
+  });
+  if (fillModeOn) pass('fill tool activates + reveals tolerance/edge options'); else fail('fill mode not active');
+  const fillBefore = await imgSrcNow();
+  await page.evaluate(() => {
+    const cv = document.querySelector('#previewHost .imgv-stage canvas');
+    const r = cv.getBoundingClientRect();
+    cv.dispatchEvent(new MouseEvent('mousedown', { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true }));
+  });
+  if (await waitNewSrc(fillBefore)) pass('fill bucket floods a region + commits'); else fail('fill did not commit');
+  await page.click('#previewHost .imgv-fill');   // toggle fill mode off
+  // BG removal: activating enters pick mode (button active + crosshair cursor).
+  await page.click('#previewHost .imgv-bg-btn');
+  const bgActive = await page.evaluate(() => document.querySelector('#previewHost .imgv-bg-btn').classList.contains('active'));
+  if (bgActive) pass('BG-removal tool enters colour-pick mode'); else fail('BG tool did not activate');
+  await page.click('#previewHost .imgv-bg-btn');   // cancel BG mode, restore for later steps
+  // Crop: enter mode, drag a centre rectangle (real mouse → pointer capture works),
+  // Apply → the image shrinks + commits.
+  await page.click('#previewHost .imgv-crop-btn');
+  const cropModeOn = await page.evaluate(() => document.querySelector('#previewHost .imgv-crop-btn').classList.contains('active'));
+  const cropDimsBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  const imgRect = await page.$eval('#previewHost .imgv-img', (e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, w: b.width, h: b.height }; });
+  await page.mouse.move(imgRect.l + imgRect.w * 0.25, imgRect.t + imgRect.h * 0.25);
+  await page.mouse.down();
+  await page.mouse.move(imgRect.l + imgRect.w * 0.75, imgRect.t + imgRect.h * 0.75, { steps: 6 });
+  await page.mouse.up();
+  const cropSrcBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-crop-apply');
+  const cropped = await waitNewSrc(cropSrcBefore);
+  const cropDimsAfter = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  if (cropModeOn && cropped && cropDimsAfter.w < cropDimsBefore.w && cropDimsAfter.h < cropDimsBefore.h) pass('crop selects a region + shrinks the image'); else fail('crop: ' + JSON.stringify({ cropModeOn, cropped, cropDimsBefore, cropDimsAfter }));
+  // Pencil: a real drag over the image draws a stroke + commits a new blob.
+  await page.click('#previewHost .imgv-pencil');
+  const penModeOn = await page.evaluate(() => document.querySelector('#previewHost .imgv-pencil').classList.contains('active'));
+  const penRect = await page.$eval('#previewHost .imgv-img', (e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, w: b.width, h: b.height }; });
+  const penSrcBefore = await imgSrcNow();
+  await page.mouse.move(penRect.l + penRect.w * 0.3, penRect.t + penRect.h * 0.3);
+  await page.mouse.down();
+  await page.mouse.move(penRect.l + penRect.w * 0.6, penRect.t + penRect.h * 0.6, { steps: 6 });
+  await page.mouse.up();
+  const penCommitted = await waitNewSrc(penSrcBefore);
+  if (penModeOn && penCommitted) pass('pencil stroke draws + commits a new image'); else fail('pencil: ' + JSON.stringify({ penModeOn, penCommitted }));
+  await page.click('#previewHost .imgv-pencil');   // toggle pencil off, restore for later steps
   // Toolbar declutter: the 🛠 toggle collapses the editing-tools group.
   const toolsVisInit = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display !== 'none');
   await page.click('#previewHost .imgv-tools-btn');

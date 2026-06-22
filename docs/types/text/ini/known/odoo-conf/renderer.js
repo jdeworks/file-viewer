@@ -1,4 +1,14 @@
+import { parseIni } from '../../renderer.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// intake.parsed is never populated at detection time, so flatten the INI ourselves into a key→value
+// map (odoo.conf keeps everything under [options], but we merge all sections to be tolerant).
+function flattenIni(text) {
+  const out = {};
+  for (const sec of parseIni(text || '')) for (const { key, value } of sec.pairs) out[key] = value;
+  return out;
+}
 
 const CSS = `
 .odoo-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
@@ -36,7 +46,8 @@ function formatBytes(val) {
 }
 
 export function render(intake) {
-  const opts = (intake.parsed && intake.parsed.options) || intake.parsed || {};
+  let opts = (intake.parsed && intake.parsed.options) || intake.parsed || {};
+  if (!opts || !Object.keys(opts).length) opts = flattenIni(intake.text || '');
 
   const addonsPath = opts['addons_path'] || '';
   const dbHost = opts['db_host'] || '';

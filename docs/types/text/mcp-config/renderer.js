@@ -396,7 +396,7 @@ export async function render(intake) {
   if (!parseError) {
     const count = document.createElement('span');
     count.className = 'mc-count';
-    count.textContent = `${servers.length} server${servers.length !== 1 ? 's' : ''}`;
+    count.textContent = `${servers.length} server${servers.length !== 1 ? 's' : ''} configured`;
     header.appendChild(count);
   }
 

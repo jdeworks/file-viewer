@@ -3,10 +3,22 @@
 // transform, so it stays crisp. SVG is text that can carry scripts, so it is DOMPurify-sanitized
 // (SVG profile) and shown inside the sandboxed iframe.
 import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { loadTemplate, fill } from '../../core/template.js';
 import { isSvg, mimeFor, dimensions } from './imglib.js';
 import { recordStage3AsciiActivation } from '../../games/metagame/viewer-actions.js';
+import { hexToRgba, floodFill } from './fill.js';
+import { createEditCore } from './editor-core.js';
+import { mountFilters } from './edit-filters.js';
+import { mountTextTool } from './edit-text.js';
+import { mountGeometry } from './edit-geometry.js';
+import { mountBg } from './edit-bg.js';
 
-const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// Toolbar markup lives in sibling .html templates (real HTML, easy to extend).
+// doc.html is the shell (fit/zoom/ascii bar + stage + ascii-out) with an
+// {{editTools}} slot; edit-tools.html is the full editing toolbar, inlined only
+// for canvas-encodable formats.
+const DOC_TPL = new URL('./doc.html', import.meta.url);
+const EDIT_TOOLS_TPL = new URL('./edit-tools.html', import.meta.url);
 // Every raster format the browser can decode into a <canvas> is editable — the
 // editor pipeline re-encodes via canvas.toBlob (PNG/JPEG/WebP/AVIF, falling back
 // to PNG for non-encodable sources like BMP/GIF), so the source format doesn't
@@ -27,90 +39,11 @@ export async function render(intake, ctx = {}) {
   const canEdit = EDITABLE_MIME.has(mime);
   const host = document.createElement('div');
   host.className = 'imgv-doc';
-  host.innerHTML =
-    '<div class="imgv-bar">'
-    + '<button class="imgv-fit active" title="Fit to screen">Fit</button>'
-    + '<button class="imgv-100" title="Actual size">100%</button>'
-    + '<button class="imgv-dn" title="Zoom out">−</button>'
-    + '<button class="imgv-up" title="Zoom in">+</button>'
-    + '<span class="imgv-zoom"></span>'
-    + '<span class="imgv-sep"></span>'
-    + '<button class="imgv-ascii-btn" title="Open the ASCII art studio">ASCII</button>'
-    + (canEdit ? '<button class="imgv-tools-btn" title="Show / hide editing tools">🛠 Edit</button>'
-      + '<span class="imgv-edit-tools">'
-      + '<span class="imgv-sep"></span>'
-      + '<input class="imgv-text-input" type="text" placeholder="Text overlay" aria-label="Image text">'
-      + '<input class="imgv-text-size" type="number" min="8" max="240" value="32" title="Font size">'
-      + '<select class="imgv-text-font" title="Font family">'
-      + '<option value="system-ui,sans-serif">Sans-serif</option>'
-      + '<option value="Georgia,serif">Serif</option>'
-      + '<option value="monospace">Mono</option>'
-      + '<option value="Impact,sans-serif">Impact</option>'
-      + '<option value="cursive">Cursive</option>'
-      + '</select>'
-      + '<input class="imgv-text-color" type="color" value="#ffffff" title="Text color">'
-      + '<button class="imgv-text-apply" title="Draw text on image">Add text</button>'
-      + '<span class="imgv-sep"></span>'
-      + '<button class="imgv-pencil" title="Pencil / brush draw mode">Pencil</button>'
-      + '<button class="imgv-eraser" title="Eraser mode">Eraser</button>'
-      + '<button class="imgv-fill" title="Fill tool — click a region to flood-fill it with the brush color">🪣 Fill</button>'
-      + '<input class="imgv-draw-color" type="color" value="#ff0000" title="Brush / fill color">'
-      + '<select class="imgv-draw-size" title="Brush size">'
-      + '<option value="3">3px</option><option value="8" selected>8px</option>'
-      + '<option value="20">20px</option><option value="40">40px</option>'
-      + '</select>'
-      + '<label class="imgv-fill-opt" hidden style="font-size:0.8em;display:inline-flex;align-items:center;gap:3px;">Tol <input class="imgv-fill-tol" type="range" min="0" max="255" value="0" style="width:70px"><span class="imgv-fill-tolv">0</span></label>'
-      + '<label class="imgv-fill-opt" hidden style="font-size:0.8em;display:inline-flex;align-items:center;gap:3px;" title="Stop the fill at detected edges"><input class="imgv-fill-edge" type="checkbox"> Edge match</label>'
-      + '<button class="imgv-undo" title="Undo (Ctrl+Z)" hidden>↩</button>'
-      + '<button class="imgv-redo" title="Redo (Ctrl+Y)" hidden>↪</button>'
-      + '<span class="imgv-sep"></span>'
-      + '<button class="imgv-rot-l" title="Rotate 90° counter-clockwise">↺ 90°</button>'
-      + '<button class="imgv-rot-r" title="Rotate 90° clockwise">↻ 90°</button>'
-      + '<button class="imgv-flip-h" title="Flip horizontally">↔ Flip H</button>'
-      + '<button class="imgv-flip-v" title="Flip vertically">↕ Flip V</button>'
-      + '<span class="imgv-sep"></span>'
-      + '<button class="imgv-compare" title="Compare original vs current (split view)">⇄ Compare</button>'
-      + '<span class="imgv-sep"></span>'
-      + '<button class="imgv-filters-btn" title="Show brightness/contrast/saturation controls">⚙ Filters</button>'
-      + '<span class="imgv-filters-panel" hidden style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;">'
-      + '<label style="font-size:0.8em">Brightness <input class="imgv-f-brightness" type="range" min="0" max="200" value="100" style="width:70px"></label>'
-      + '<label style="font-size:0.8em">Contrast <input class="imgv-f-contrast" type="range" min="0" max="200" value="100" style="width:70px"></label>'
-      + '<label style="font-size:0.8em">Saturation <input class="imgv-f-saturation" type="range" min="0" max="200" value="100" style="width:70px"></label>'
-      + '<label style="font-size:0.8em">Hue <input class="imgv-f-hue" type="range" min="0" max="360" value="0" style="width:70px"></label>'
-      + '<button class="imgv-f-apply">Apply Filters</button>'
-      + '<button class="imgv-f-reset">Reset</button>'
-      + '</span>'
-      + '<span class="imgv-sep"></span>'
-      + '<select class="imgv-export-fmt" title="Export format"><option value="">Original format</option>'
-      + '<option value="image/png">PNG</option><option value="image/jpeg">JPEG</option><option value="image/webp">WebP</option>'
-      + '<option value="image/avif">AVIF</option>'
-      + '</select>'
-      + '<span class="imgv-sep"></span>'
-      + '<button class="imgv-bg-btn" title="Remove background — click to sample a color, then flood-fill to transparent">✂ BG</button>'
-      + '<input class="imgv-bg-tol" type="range" min="0" max="80" value="20" title="Tolerance" hidden style="width:72px">'
-      + '<button class="imgv-bg-ok" hidden title="Apply background removal (saves as PNG)">Apply</button>'
-      + '<button class="imgv-bg-x" hidden title="Cancel background removal">✕</button>'
-      + '<span class="imgv-sep"></span>'
-      + '<button class="imgv-crop-btn" title="Crop image — drag a rectangle to select the region to keep">✂ Crop</button>'
-      + '<button class="imgv-crop-apply" hidden title="Apply the selected crop region">Apply Crop</button>'
-      + '<button class="imgv-crop-cancel" hidden title="Cancel crop">Cancel</button>'
-      + '<span class="imgv-sep"></span>'
-      + '<button class="imgv-resize-btn" title="Resize image to specific dimensions">⊡ Resize</button>'
-      + '<span class="imgv-resize-panel" hidden style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;">'
-      + '<select class="imgv-resize-unit" title="Resize units" style="font-size:0.8em"><option value="px">px</option><option value="pct">%</option></select>'
-      + '<label style="font-size:0.8em">W <input class="imgv-resize-w" type="number" min="1" max="16000" style="width:60px"></label>'
-      + '<label style="font-size:0.8em">H <input class="imgv-resize-h" type="number" min="1" max="16000" style="width:60px"></label>'
-      + '<label style="font-size:0.8em"><input class="imgv-resize-lock" type="checkbox" checked> Lock ratio</label>'
-      + '<label style="font-size:0.8em">Resample <select class="imgv-resize-resample"><option value="high">Smooth</option><option value="medium">Medium</option><option value="pixelated">Pixelated</option></select></label>'
-      + '<button class="imgv-resize-apply">Apply Resize</button>'
-      + '<button class="imgv-resize-cancel">Cancel</button>'
-      + '</span>'
-      + '<button class="imgv-text-reset" title="Reset all edits" hidden>Reset</button>'
-      + '<span class="imgv-dirty-indicator" hidden style="color:var(--accent,#f59e0b);font-size:0.75em;align-self:center;">● Modified</span>'
-      + '</span>' : '')
-    + '</div>'
-    + '<div class="imgv-stage"><img class="imgv-img" draggable="false" alt="' + esc(intake.filename) + '"><div class="imgv-note" hidden></div></div>'
-    + '<div class="imgv-ascii-out" hidden></div>';
+  const [docTpl, editToolsTpl] = await Promise.all([
+    loadTemplate(DOC_TPL),
+    canEdit ? loadTemplate(EDIT_TOOLS_TPL) : Promise.resolve(''),
+  ]);
+  host.innerHTML = fill(docTpl, { filename: intake.filename, editTools: editToolsTpl });
 
   const img = host.querySelector('.imgv-img');
   const note = host.querySelector('.imgv-note');
@@ -162,59 +95,35 @@ export async function render(intake, ctx = {}) {
   const fApplyBtn = canEdit ? host.querySelector('.imgv-f-apply') : null;
   const fResetBtn = canEdit ? host.querySelector('.imgv-f-reset') : null;
   let natural = 0, fit = true, zoom = 1, asciiMode = false;
-  let editedUrl = null, editedBlob = null;
   let jxlPngBytes = null;   // decoded PNG bytes for JXL (display + ASCII source)
+  // Pencil/eraser/fill state stays here (the draw overlay is coupled to the
+  // pan/zoom view); text/crop/BG state lives in their respective tool modules.
   let drawMode = null, isEraserStroke = false;
-  let textPlaceMode = false, textPlaceX = 0.5, textPlaceY = 0.5;
-  let bgPickMode = false, bgSrcData = null, bgSrcW = 0, bgSrcH = 0, bgPickX = -1, bgPickY = -1, bgPreviewUrl = null;
-  const undoStack = [];
-  const redoStack = [];
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
-  // Crop state
-  let cropMode = false, cropOverlay = null, cropSelBox = null;
-  let cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0, cropDragging = false, cropHasRegion = false;
 
-  // BMP and GIF: browsers don't support canvas.toBlob for these formats;
-  // fall back to PNG when the source mime is not a canvas-encodable type.
-  const CANVAS_ENCODABLE = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/avif']);
-  function getExportMime() { const m = (exportFmt?.value) || mime; return CANVAS_ENCODABLE.has(m) ? m : 'image/png'; }
+  // Shared edit state + commit pipeline — undo/redo, blob commits, the
+  // onBinaryEdit hook, and full reset all live in editor-core so every tool
+  // shares one consistent edit history. The view (fit/zoom/pan, ASCII, JXL)
+  // stays here in the renderer shell.
+  const core = createEditCore({
+    img, url, mime, ctx,
+    els: { editReset, exportFmt, undoBtn, redoBtn, dirtyIndicator: host.querySelector('.imgv-dirty-indicator') },
+  });
 
-  function pushUndo() {
-    undoStack.push({ blob: editedBlob || null, url: editedUrl || null });
-    // A fresh edit forks history — discard any redo branch (and its blob URLs).
-    redoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
-    redoStack.length = 0;
-    if (undoBtn) undoBtn.hidden = false;
-    if (redoBtn) redoBtn.hidden = true;
-    host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden');
-  }
-
-  // Apply a saved {blob,url} edit state to the canvas + binary-edit hook.
-  function applyEditState(state) {
-    editedBlob = state.blob; editedUrl = state.url;
-    if (editedUrl) {
-      img.src = editedUrl;
-      ctx.onBinaryEdit?.({ dirty: true, mimeType: getExportMime(), getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
-    } else {
-      img.src = url;
-      if (editReset) editReset.hidden = true;
-      ctx.onBinaryEdit?.(null);
-    }
-    if (undoBtn) undoBtn.hidden = undoStack.length === 0;
-    if (redoBtn) redoBtn.hidden = redoStack.length === 0;
-  }
-  function doUndo() {
-    const prev = undoStack.pop();
-    if (!prev) return;
-    redoStack.push({ blob: editedBlob || null, url: editedUrl || null });
-    applyEditState(prev);
-  }
-  function doRedo() {
-    const next = redoStack.pop();
-    if (!next) return;
-    undoStack.push({ blob: editedBlob || null, url: editedUrl || null });
-    applyEditState(next);
-  }
+  // The editing tools (text, filters, geometry, background-removal) are mounted
+  // from sibling modules; they share this `els` bag of toolbar controls plus the
+  // edit core. (All null when !canEdit — the modules are null-safe.)
+  const els = {
+    editInput, editSize, editColor, editFont, editApply, editReset,
+    filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn,
+    bgBtn, bgTol, bgOk, bgX, exportFmt,
+    rotLBtn, rotRBtn, flipHBtn, flipVBtn,
+    cropBtn, cropApplyBtn, cropCancelBtn,
+    resizeBtn, resizePanel, resizeW, resizeH, resizeLock, resizeApplyBtn, resizeCancelBtn,
+  };
+  // Interactive tools (text placement, crop, BG pick) register here so the pan
+  // logic stands down while a tool owns the pointer; each exposes isActive().
+  const editTools = [];
 
   // Pan offset (px), applied as a transform so the WHOLE canvas can be dragged
   // freely — even when the image is smaller than the stage. The draw overlay gets
@@ -242,6 +151,9 @@ export async function render(intake, ctx = {}) {
     applyPan();
   }
   function resetView() { panX = 0; panY = 0; }
+  // View hook handed to geometry tools so a dimension-changing edit (rotate/resize)
+  // can update the stored natural width + relayout.
+  const view = { setNatural: (n) => { natural = n; apply(); } };
   host.querySelector('.imgv-fit').addEventListener('click', () => { fit = true; resetView(); apply(); });
   host.querySelector('.imgv-100').addEventListener('click', () => { fit = false; zoom = 1; resetView(); apply(); });
   host.querySelector('.imgv-up').addEventListener('click', () => { fit = false; zoom = Math.min(16, zoom * 1.25); apply(); });
@@ -252,7 +164,7 @@ export async function render(intake, ctx = {}) {
   // drag pans even mid-draw (reposition while doing detail work).
   const stageEl = host.querySelector('.imgv-stage');
   stageEl.style.overflow = 'hidden';
-  const editModeActive = () => drawMode || cropMode || bgPickMode || textPlaceMode;
+  const editModeActive = () => drawMode || editTools.some((t) => t.isActive && t.isActive());
   let dragLastX = 0, dragLastY = 0;
   const onPanMove = (e) => {
     panX += e.clientX - dragLastX; panY += e.clientY - dragLastY;
@@ -362,8 +274,9 @@ export async function render(intake, ctx = {}) {
       // Feed the CURRENT image — including any edits (crop, rotate, BG removal,
       // filters…) — not the untouched original. editedBlob holds the latest edit.
       // JXL can't be decoded by createImageBitmap, so feed the decoded PNG bytes.
-      const curBytes = editedBlob ? new Uint8Array(await editedBlob.arrayBuffer()) : (jxlPngBytes || intake.bytes);
-      const curMime = editedBlob ? (editedBlob.type || mime) : (jxlPngBytes ? 'image/png' : mime);
+      const eb = core.editedBlob;
+      const curBytes = eb ? new Uint8Array(await eb.arrayBuffer()) : (jxlPngBytes || intake.bytes);
+      const curMime = eb ? (eb.type || mime) : (jxlPngBytes ? 'image/png' : mime);
       try {
         if (!asciiStudio) {
           asciiBtn.disabled = true;
@@ -413,273 +326,21 @@ export async function render(intake, ctx = {}) {
     });
   }
 
-  async function commitText(nx, ny) {
-    const text = (editInput?.value || '').trim();
-    if (!text) return;
-    const base = new Image();
-    base.decoding = 'async';
-    base.src = editedUrl || url;
-    await base.decode();
-    const canvas = document.createElement('canvas');
-    canvas.width = base.naturalWidth;
-    canvas.height = base.naturalHeight;
-    const g = canvas.getContext('2d');
-    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
-    g.drawImage(base, 0, 0);
-    const size = Math.max(8, Math.min(240, parseInt(editSize?.value, 10) || 32));
-    const fontFamily = editFont?.value || 'system-ui,sans-serif';
-    g.font = `700 ${size}px ${fontFamily}`;
-    g.textBaseline = 'alphabetic';
-    g.lineJoin = 'round';
-    g.strokeStyle = 'rgba(0,0,0,.72)';
-    g.lineWidth = Math.max(3, Math.round(size / 8));
-    g.fillStyle = editColor?.value || '#ffffff';
-    const px = Math.round((nx ?? 0.5) * canvas.width);
-    const py = Math.round((ny ?? 0.5) * canvas.height);
-    const maxW = Math.round(canvas.width * 0.8);
-    g.strokeText(text, px, py, maxW);
-    g.fillText(text, px, py, maxW);
-    const targetMime = getExportMime();
-    pushUndo();
-    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    if (!editedBlob) return;
-    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-    editedUrl = URL.createObjectURL(editedBlob);
-    img.src = editedUrl;
-    editReset.hidden = false;
-    ctx.onBinaryEdit?.({
-      dirty: true,
-      mimeType: targetMime,
-      getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()),
-    });
-  }
-
-  let textDragDiv = null, textCommitBtn = null, textCancelBtn = null;
-
-  function exitTextPlaceMode() {
-    textPlaceMode = false;
-    if (textDragDiv) { textDragDiv.remove(); textDragDiv = null; }
-    if (textCommitBtn) { textCommitBtn.remove(); textCommitBtn = null; }
-    if (textCancelBtn) { textCancelBtn.remove(); textCancelBtn = null; }
-    if (editApply) { editApply.textContent = 'Add text'; editApply.classList.remove('active'); }
-  }
-
-  function enterTextPlaceMode() {
-    const text = (editInput?.value || '').trim();
-    if (!text) { editInput?.focus(); return; }
-    if (textPlaceMode) { exitTextPlaceMode(); return; }
-    textPlaceMode = true;
-    if (editApply) { editApply.textContent = 'Cancel'; editApply.classList.add('active'); }
-
-    // Create draggable text overlay div
-    const stage = host.querySelector('.imgv-stage');
-    stage.style.position = 'relative';
-    const fontSize = Math.max(8, Math.min(240, parseInt(editSize?.value, 10) || 32));
-    const fontFamily = editFont?.value || 'system-ui,sans-serif';
-    const color = editColor?.value || '#ffffff';
-
-    textDragDiv = document.createElement('div');
-    textDragDiv.textContent = text;
-    textDragDiv.style.cssText = [
-      'position:absolute',
-      'z-index:10',
-      'cursor:move',
-      'user-select:none',
-      `font-size:${fontSize}px`,
-      `font-family:${fontFamily}`,
-      `color:${color}`,
-      'font-weight:700',
-      'background:rgba(255,255,255,0.15)',
-      'padding:2px 4px',
-      'border-radius:3px',
-      'white-space:nowrap',
-      'touch-action:none',
-    ].join(';');
-    stage.appendChild(textDragDiv);
-    // Position centered on the image (not the stage) so the text is immediately visible.
-    requestAnimationFrame(() => {
-      const stageR = stage.getBoundingClientRect();
-      const imgR = img.getBoundingClientRect();
-      const textR = textDragDiv.getBoundingClientRect();
-      const cx = imgR.left - stageR.left + (imgR.width - textR.width) / 2;
-      const cy = imgR.top - stageR.top + imgR.height / 3;
-      textDragDiv.style.left = Math.max(0, cx) + 'px';
-      textDragDiv.style.top = Math.max(0, cy) + 'px';
-    });
-
-    // Drag logic
-    let dragOffX = 0, dragOffY = 0, dragging = false;
-    textDragDiv.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      textDragDiv.setPointerCapture(e.pointerId);
-      const r = textDragDiv.getBoundingClientRect();
-      dragOffX = e.clientX - r.left;
-      dragOffY = e.clientY - r.top;
-      dragging = true;
-    });
-    textDragDiv.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      e.preventDefault();
-      const stageR = stage.getBoundingClientRect();
-      const x = e.clientX - stageR.left - dragOffX;
-      const y = e.clientY - stageR.top - dragOffY;
-      textDragDiv.style.left = x + 'px';
-      textDragDiv.style.top = y + 'px';
-    });
-    textDragDiv.addEventListener('pointerup', () => { dragging = false; });
-
-    // Commit and Cancel buttons injected into the bar
-    const bar = host.querySelector('.imgv-bar');
-    textCommitBtn = document.createElement('button');
-    textCommitBtn.textContent = 'Commit text';
-    textCommitBtn.className = 'imgv-text-commit';
-    textCommitBtn.title = 'Place the text at its current position';
-    bar.appendChild(textCommitBtn);
-
-    textCancelBtn = document.createElement('button');
-    textCancelBtn.textContent = 'Cancel';
-    textCancelBtn.className = 'imgv-text-cancel-place';
-    textCancelBtn.title = 'Cancel text placement';
-    bar.appendChild(textCancelBtn);
-
-    textCommitBtn.addEventListener('click', () => {
-      // Compute position as fraction of img display rect
-      const imgR = img.getBoundingClientRect();
-      const divR = textDragDiv.getBoundingClientRect();
-      const nx = (divR.left - imgR.left) / imgR.width;
-      const ny = (divR.bottom - imgR.top) / imgR.height; // bottom = baseline
-      exitTextPlaceMode();
-      commitText(nx, ny).catch((err) => { if (editApply) editApply.title = err.message || String(err); });
-    });
-
-    textCancelBtn.addEventListener('click', () => {
-      exitTextPlaceMode();
-    });
-  }
-
-  editApply?.addEventListener('click', () => {
-    enterTextPlaceMode();
-  });
+  // Text overlay — drag a label onto the image, then bake it in (edit-text.js).
+  const textTool = mountTextTool({ host, img, mime, core, els });
+  editTools.push(textTool);
   editReset?.addEventListener('click', () => {
-    exitTextPlaceMode();
-    [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
-    undoStack.length = 0; redoStack.length = 0;
-    if (undoBtn) undoBtn.hidden = true;
-    if (redoBtn) redoBtn.hidden = true;
-    if (editedUrl) URL.revokeObjectURL(editedUrl);
-    editedUrl = null;
-    editedBlob = null;
-    img.src = url;
-    img.style.filter = '';
-    editReset.hidden = true;
-    const dirtyIndicator = host.querySelector('.imgv-dirty-indicator');
-    if (dirtyIndicator) dirtyIndicator.hidden = true;
-    ctx.onBinaryEdit?.(null);
+    textTool.exitPlaceMode();
+    core.reset();
   });
 
-  // Helper: draw the current image onto a canvas with a transform, then commit it as the new edit.
-  async function applyTransform(transformFn, newW, newH) {
-    const base = new Image();
-    base.decoding = 'async';
-    base.src = editedUrl || url;
-    await base.decode();
-    const srcW = base.naturalWidth, srcH = base.naturalHeight;
-    const canvas = document.createElement('canvas');
-    canvas.width = newW(srcW, srcH);
-    canvas.height = newH(srcW, srcH);
-    const g = canvas.getContext('2d');
-    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
-    transformFn(g, srcW, srcH, canvas.width, canvas.height);
-    g.drawImage(base, 0, 0);
-    const targetMime = getExportMime();
-    pushUndo();
-    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    if (!editedBlob) return;
-    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-    editedUrl = URL.createObjectURL(editedBlob);
-    img.src = editedUrl;
-    // The edited image has new dimensions (rotate swaps W/H) — keep zoom correct.
-    natural = canvas.width;
-    apply();
-    editReset.hidden = false;
-    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
-  }
+  // Geometry — rotate / flip / crop / resize (edit-geometry.js). Crop registers
+  // in editTools so panning stands down during a crop drag.
+  const geometryTool = mountGeometry({ host, img, url, mime, core, view, els });
+  editTools.push(geometryTool);
 
-  // Rotate left (CCW 90°): new canvas is h×w, pivot at center, rotate -90°, then
-  // draw centered (offset by HALF THE SOURCE dims, not the rotated dims).
-  rotLBtn?.addEventListener('click', () => applyTransform(
-    (g, sw, sh, cw, ch) => { g.translate(cw / 2, ch / 2); g.rotate(-Math.PI / 2); g.translate(-sw / 2, -sh / 2); },
-    (sw, sh) => sh, (sw, sh) => sw,
-  ));
-
-  // Rotate right (CW 90°): new canvas is h×w, pivot at center, rotate +90°
-  rotRBtn?.addEventListener('click', () => applyTransform(
-    (g, sw, sh, cw, ch) => { g.translate(cw / 2, ch / 2); g.rotate(Math.PI / 2); g.translate(-sw / 2, -sh / 2); },
-    (sw, sh) => sh, (sw, sh) => sw,
-  ));
-
-  // Flip horizontal: scale(-1,1) around center
-  flipHBtn?.addEventListener('click', () => applyTransform(
-    (g, sw, sh, cw, ch) => { g.translate(cw, 0); g.scale(-1, 1); },
-    (sw) => sw, (sw, sh) => sh,
-  ));
-
-  // Flip vertical: scale(1,-1) around center
-  flipVBtn?.addEventListener('click', () => applyTransform(
-    (g, sw, sh, cw, ch) => { g.translate(0, ch); g.scale(1, -1); },
-    (sw) => sw, (sw, sh) => sh,
-  ));
-
-  // Filters panel toggle
-  filtersBtn?.addEventListener('click', () => {
-    if (filtersPanel) filtersPanel.hidden = !filtersPanel.hidden;
-  });
-
-  // Live filter preview — apply as CSS filter on img while sliding
-  function filterString() {
-    return `brightness(${fBrightness.value}%) contrast(${fContrast.value}%) saturate(${fSaturation.value}%) hue-rotate(${fHue?.value || 0}deg)`;
-  }
-  function updateFilterPreview() { img.style.filter = filterString(); }
-  fBrightness?.addEventListener('input', updateFilterPreview);
-  fContrast?.addEventListener('input', updateFilterPreview);
-  fSaturation?.addEventListener('input', updateFilterPreview);
-  fHue?.addEventListener('input', updateFilterPreview);
-
-  // Apply filters — bake current CSS filter into the canvas, then clear the live preview
-  fApplyBtn?.addEventListener('click', async () => {
-    const filter = filterString();
-    img.style.filter = ''; // clear live preview before baking
-    const base = new Image();
-    base.decoding = 'async';
-    base.src = editedUrl || url;
-    await base.decode();
-    const canvas = document.createElement('canvas');
-    canvas.width = base.naturalWidth;
-    canvas.height = base.naturalHeight;
-    const g = canvas.getContext('2d');
-    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
-    g.filter = filter;
-    g.drawImage(base, 0, 0);
-    g.filter = 'none';
-    const targetMime = getExportMime();
-    pushUndo();
-    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    if (!editedBlob) return;
-    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-    editedUrl = URL.createObjectURL(editedBlob);
-    img.src = editedUrl;
-    editReset.hidden = false;
-    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
-  });
-
-  // Reset filter sliders to default and clear any live preview
-  fResetBtn?.addEventListener('click', () => {
-    if (fBrightness) fBrightness.value = '100';
-    if (fContrast) fContrast.value = '100';
-    if (fSaturation) fSaturation.value = '100';
-    if (fHue) fHue.value = '0';
-    img.style.filter = '';
-  });
+  // Filters — live CSS preview + bake on Apply (edit-filters.js).
+  mountFilters({ img, mime, core, els });
 
   // Compare — original vs current (edited): split / overlay / diff. The view is a
   // self-contained lazy module so this renderer stays thin. Original always uses
@@ -705,7 +366,7 @@ export async function render(intake, ctx = {}) {
     host.querySelector('.imgv-bar').classList.add('imgv-compare-on');
     compareBtn.classList.add('active');
     const { mountCompare } = await import('./compare-view.js');
-    compareView = mountCompare(stage, { originalUrl: url, currentUrl: editedUrl || url, onClose: exitCompare });
+    compareView = mountCompare(stage, { originalUrl: url, currentUrl: core.editedUrl || url, onClose: exitCompare });
   });
 
   // Pencil / eraser drawing tools
@@ -807,7 +468,7 @@ export async function render(intake, ctx = {}) {
     if (drawMode === 'fill') { await doFill(e); return; }
     isPointerDown = true;
     isEraserStroke = drawMode === 'eraser';
-    pushUndo();
+    core.pushUndo();
     if (isEraserStroke) {
       // preload overlay from the already-loaded <img> (no extra fetch) so
       // destination-out punches real pixels.
@@ -838,40 +499,8 @@ export async function render(intake, ctx = {}) {
     lastPt = pt;
   }
 
-  // Flood-fill bucket. Tolerance (0–255) sets how close a pixel's colour must be
-  // to be filled; default 0 = exact match. With "edge match" on, pixels are
-  // compared to their NEIGHBOUR (local gradient) instead of the seed, so a fill
-  // flows across smooth shading but stops at sharp edges.
-  function hexToRgba(hex) {
-    const h = (hex || '#ff0000').replace('#', '');
-    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 255];
-  }
-  function floodFill(data, w, h, x0, y0, fill, tol, edge) {
-    if (x0 < 0 || y0 < 0 || x0 >= w || y0 >= h) return 0;
-    const src = Uint8ClampedArray.from(data);
-    const at = (x, y) => (y * w + x) << 2;
-    const seed = at(x0, y0);
-    const sr = src[seed], sg = src[seed + 1], sb = src[seed + 2];
-    const close = (i, r, g, b) => Math.max(Math.abs(src[i] - r), Math.abs(src[i + 1] - g), Math.abs(src[i + 2] - b)) <= tol;
-    const seen = new Uint8Array(w * h);
-    const st = [x0 | 0, y0 | 0]; seen[y0 * w + x0] = 1;
-    let cnt = 0;
-    while (st.length) {
-      const y = st.pop(), x = st.pop();
-      const i = at(x, y);
-      data[i] = fill[0]; data[i + 1] = fill[1]; data[i + 2] = fill[2]; data[i + 3] = fill[3];
-      cnt++;
-      const nb = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
-      for (let k = 0; k < 4; k++) {
-        const nx = nb[k][0], ny = nb[k][1];
-        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-        const p = ny * w + nx; if (seen[p]) continue;
-        const ok = edge ? close(p << 2, src[i], src[i + 1], src[i + 2]) : close(p << 2, sr, sg, sb);
-        if (ok) { seen[p] = 1; st.push(nx, ny); }
-      }
-    }
-    return cnt;
-  }
+  // Flood-fill bucket — the pure pixel walk lives in ./fill.js (floodFill);
+  // doFill wires it to the canvas + edit-commit pipeline.
   async function doFill(e) {
     const c = document.createElement('canvas');
     c.width = img.naturalWidth; c.height = img.naturalHeight;
@@ -884,19 +513,15 @@ export async function render(intake, ctx = {}) {
       hexToRgba(drawColorPicker?.value), parseInt(fillTol?.value || '0', 10), !!fillEdge?.checked);
     if (!filled) return;
     g.putImageData(id, 0, 0);
-    const targetMime = getExportMime();
-    pushUndo();
+    const targetMime = core.getExportMime();
+    core.pushUndo();
     const blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    if (!blob) return;
-    editedBlob = blob; editedUrl = URL.createObjectURL(blob);
-    img.src = editedUrl;
-    if (editReset) editReset.hidden = false;
-    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await blob.arrayBuffer()) });
+    core.commitBlob(blob, { mime: targetMime });
   }
 
   async function commitDraw() {
     if (!drawOverlay || !drawOverlay.width) return;
-    const targetMime = getExportMime();
+    const targetMime = core.getExportMime();
     let blob;
     if (isEraserStroke) {
       blob = await new Promise((r) => drawOverlay.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
@@ -910,12 +535,7 @@ export async function render(intake, ctx = {}) {
       blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     }
     drawOCtx.clearRect(0, 0, drawOverlay.width, drawOverlay.height);
-    if (!blob) return;
-    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-    editedBlob = blob; editedUrl = URL.createObjectURL(blob);
-    img.src = editedUrl;
-    if (editReset) editReset.hidden = false;
-    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await blob.arrayBuffer()) });
+    core.commitBlob(blob, { mime: targetMime });
   }
 
   async function onPUp(e) { if (isPointerDown) { isPointerDown = false; await commitDraw(); } }
@@ -925,8 +545,8 @@ export async function render(intake, ctx = {}) {
     eraserBtn.addEventListener('click', () => setDrawMode('eraser'));
     fillBtn?.addEventListener('click', () => setDrawMode('fill'));
     fillTol?.addEventListener('input', () => { if (fillTolV) fillTolV.textContent = fillTol.value; });
-    undoBtn?.addEventListener('click', doUndo);
-    redoBtn?.addEventListener('click', doRedo);
+    undoBtn?.addEventListener('click', core.doUndo);
+    redoBtn?.addEventListener('click', core.doRedo);
   }
 
   // Ctrl/Cmd+Z = undo, Ctrl+Y or Ctrl/Cmd+Shift+Z = redo — only while this image
@@ -938,304 +558,15 @@ export async function render(intake, ctx = {}) {
     const mod = e.ctrlKey || e.metaKey;
     if (!mod) return;
     const k = e.key.toLowerCase();
-    if (k === 'z' && !e.shiftKey) { e.preventDefault(); doUndo(); }
-    else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); doRedo(); }
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); core.doUndo(); }
+    else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); core.doRedo(); }
   }
   document.addEventListener('keydown', onEditKey);
 
-  // Crop tool — drag a rectangle on the image to select a region, then apply to commit
-  function cropExitMode() {
-    cropMode = false;
-    cropHasRegion = false;
-    cropDragging = false;
-    if (cropOverlay) { cropOverlay.remove(); cropOverlay = null; cropSelBox = null; }
-    if (cropBtn) { cropBtn.classList.remove('active'); }
-    if (cropApplyBtn) cropApplyBtn.hidden = true;
-    if (cropCancelBtn) cropCancelBtn.hidden = true;
-  }
+  // Background removal — sample a colour, flood to transparent, commit as PNG
+  // (edit-bg.js). Registers in editTools so panning stands down while picking.
+  const bgTool = mountBg({ img, url, core, els });
+  editTools.push(bgTool);
 
-  function cropEnterMode() {
-    cropMode = true;
-    cropHasRegion = false;
-    const stage = host.querySelector('.imgv-stage');
-    stage.style.position = 'relative';
-    cropOverlay = document.createElement('div');
-    cropOverlay.style.cssText = 'position:absolute;inset:0;cursor:crosshair;z-index:5;';
-    cropSelBox = document.createElement('div');
-    cropSelBox.style.cssText = 'position:absolute;border:2px dashed #0af;box-sizing:border-box;background:rgba(0,170,255,0.08);pointer-events:none;display:none;';
-    cropOverlay.appendChild(cropSelBox);
-    stage.appendChild(cropOverlay);
-    if (cropBtn) cropBtn.classList.add('active');
-    if (cropCancelBtn) cropCancelBtn.hidden = false;
-
-    cropOverlay.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      cropOverlay.setPointerCapture(e.pointerId);
-      const r = img.getBoundingClientRect();
-      cropStartX = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      cropStartY = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
-      cropEndX = cropStartX; cropEndY = cropStartY;
-      cropDragging = true; cropHasRegion = false;
-      cropSelBox.style.display = 'none';
-      if (cropApplyBtn) cropApplyBtn.hidden = true;
-    });
-
-    cropOverlay.addEventListener('pointermove', (e) => {
-      if (!cropDragging) return;
-      e.preventDefault();
-      const r = img.getBoundingClientRect();
-      cropEndX = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      cropEndY = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
-      // Update the selection box overlay using img bounding rect relative to stage
-      const stageR = host.querySelector('.imgv-stage').getBoundingClientRect();
-      const imgR = img.getBoundingClientRect();
-      const ox = imgR.left - stageR.left;
-      const oy = imgR.top - stageR.top;
-      const x1 = Math.min(cropStartX, cropEndX) * imgR.width + ox;
-      const y1 = Math.min(cropStartY, cropEndY) * imgR.height + oy;
-      const x2 = Math.max(cropStartX, cropEndX) * imgR.width + ox;
-      const y2 = Math.max(cropStartY, cropEndY) * imgR.height + oy;
-      cropSelBox.style.left = x1 + 'px'; cropSelBox.style.top = y1 + 'px';
-      cropSelBox.style.width = (x2 - x1) + 'px'; cropSelBox.style.height = (y2 - y1) + 'px';
-      cropSelBox.style.display = 'block';
-    });
-
-    cropOverlay.addEventListener('pointerup', (e) => {
-      if (!cropDragging) return;
-      cropDragging = false;
-      const r = img.getBoundingClientRect();
-      cropEndX = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      cropEndY = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
-      // Check minimum size (10×10 natural px)
-      const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
-      const selW = Math.abs(cropEndX - cropStartX) * nw;
-      const selH = Math.abs(cropEndY - cropStartY) * nh;
-      if (selW >= 10 && selH >= 10) {
-        cropHasRegion = true;
-        if (cropApplyBtn) cropApplyBtn.hidden = false;
-      }
-    });
-  }
-
-  async function applyCrop() {
-    if (!cropHasRegion) return;
-    const nw = img.naturalWidth, nh = img.naturalHeight;
-    const x1 = Math.round(Math.min(cropStartX, cropEndX) * nw);
-    const y1 = Math.round(Math.min(cropStartY, cropEndY) * nh);
-    const x2 = Math.round(Math.max(cropStartX, cropEndX) * nw);
-    const y2 = Math.round(Math.max(cropStartY, cropEndY) * nh);
-    const cw = Math.max(1, x2 - x1), ch = Math.max(1, y2 - y1);
-    const base = new Image(); base.decoding = 'async';
-    base.src = editedUrl || url;
-    await base.decode();
-    const canvas = document.createElement('canvas');
-    canvas.width = cw; canvas.height = ch;
-    const g = canvas.getContext('2d');
-    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, cw, ch); }
-    g.drawImage(base, -x1, -y1);
-    const targetMime = getExportMime();
-    pushUndo();
-    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    if (!editedBlob) return;
-    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-    editedUrl = URL.createObjectURL(editedBlob);
-    img.src = editedUrl;
-    if (editReset) editReset.hidden = false;
-    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
-    cropExitMode();
-  }
-
-  if (cropBtn) {
-    cropBtn.addEventListener('click', () => {
-      if (cropMode) { cropExitMode(); } else { cropEnterMode(); }
-    });
-    cropApplyBtn?.addEventListener('click', () => {
-      applyCrop().catch((e) => { if (cropApplyBtn) cropApplyBtn.title = e.message || String(e); });
-    });
-    cropCancelBtn?.addEventListener('click', cropExitMode);
-  }
-
-  // Resize tool — show a panel with width/height inputs, apply draws to a new canvas at that size
-  const resizeUnit = canEdit ? host.querySelector('.imgv-resize-unit') : null;
-  const resizeResample = canEdit ? host.querySelector('.imgv-resize-resample') : null;
-  const pctMode = () => resizeUnit?.value === 'pct';
-  function resizePopulate() {
-    if (!resizeW || !resizeH) return;
-    if (pctMode()) { resizeW.value = '100'; resizeH.value = '100'; }
-    else { resizeW.value = String(img.naturalWidth || ''); resizeH.value = String(img.naturalHeight || ''); }
-  }
-  // Resolve the W/H inputs to absolute target pixels (percent is of the natural size).
-  function resizeTargetPx() {
-    const w = parseFloat(resizeW?.value), h = parseFloat(resizeH?.value);
-    if (pctMode()) return { tw: Math.round((img.naturalWidth || 0) * w / 100), th: Math.round((img.naturalHeight || 0) * h / 100) };
-    return { tw: Math.round(w), th: Math.round(h) };
-  }
-
-  if (resizeBtn) {
-    resizeBtn.addEventListener('click', () => {
-      if (!resizePanel) return;
-      const open = resizePanel.hidden === false;
-      resizePanel.hidden = open;
-      if (!open) resizePopulate();
-    });
-    resizeUnit?.addEventListener('change', resizePopulate);
-
-    resizeW?.addEventListener('input', () => {
-      if (!resizeLock?.checked) return;
-      // In % mode aspect is preserved by matching percentages; in px mode by ratio.
-      if (pctMode()) { if (resizeH) resizeH.value = resizeW.value; return; }
-      const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
-      const w = parseInt(resizeW.value, 10);
-      if (w > 0 && resizeH) resizeH.value = String(Math.round(w * nh / nw));
-    });
-
-    resizeH?.addEventListener('input', () => {
-      if (!resizeLock?.checked) return;
-      if (pctMode()) { if (resizeW) resizeW.value = resizeH.value; return; }
-      const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
-      const h = parseInt(resizeH.value, 10);
-      if (h > 0 && resizeW) resizeW.value = String(Math.round(h * nw / nh));
-    });
-
-    resizeApplyBtn?.addEventListener('click', async () => {
-      const { tw, th } = resizeTargetPx();
-      if (!tw || !th || tw < 1 || th < 1) return;
-      const base = new Image(); base.decoding = 'async';
-      base.src = editedUrl || url;
-      await base.decode();
-      const canvas = document.createElement('canvas');
-      canvas.width = tw; canvas.height = th;
-      const g = canvas.getContext('2d');
-      // Resampling: pixelated = nearest-neighbour (crisp pixel art / hard downscale);
-      // smooth = bilinear-ish at the chosen quality.
-      const rs = resizeResample?.value || 'high';
-      g.imageSmoothingEnabled = rs !== 'pixelated';
-      if (g.imageSmoothingEnabled) g.imageSmoothingQuality = rs === 'medium' ? 'medium' : 'high';
-      if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, tw, th); }
-      g.drawImage(base, 0, 0, tw, th);
-      const targetMime = getExportMime();
-      pushUndo();
-      editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-      if (!editedBlob) return;
-      // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-      editedUrl = URL.createObjectURL(editedBlob);
-      img.src = editedUrl;
-      if (editReset) editReset.hidden = false;
-      ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
-      if (resizePanel) resizePanel.hidden = true;
-    });
-
-    resizeCancelBtn?.addEventListener('click', () => {
-      if (resizePanel) resizePanel.hidden = true;
-    });
-  }
-
-  // BG removal — flood-fill from a clicked pixel, making matched region transparent (PNG only)
-  function bgFloodFill(srcData, w, h, sx, sy, tol) {
-    const threshold = tol * 4.42;
-    const dst = new Uint8ClampedArray(srcData.data);
-    const si = (sy * w + sx) * 4;
-    const r0 = dst[si], g0 = dst[si + 1], b0 = dst[si + 2];
-    const visited = new Uint8Array(w * h);
-    const stack = [sy * w + sx];
-    while (stack.length) {
-      const pos = stack.pop();
-      if (visited[pos]) continue;
-      visited[pos] = 1;
-      const pi = pos * 4;
-      const dr = dst[pi] - r0, dg = dst[pi + 1] - g0, db = dst[pi + 2] - b0;
-      if (Math.sqrt(dr * dr + dg * dg + db * db) > threshold) continue;
-      dst[pi + 3] = 0;
-      const x = pos % w, y = (pos / w) | 0;
-      if (x > 0) stack.push(pos - 1);
-      if (x < w - 1) stack.push(pos + 1);
-      if (y > 0) stack.push(pos - w);
-      if (y < h - 1) stack.push(pos + w);
-    }
-    return new ImageData(dst, w, h);
-  }
-
-  function bgExitMode() {
-    bgPickMode = false;
-    bgPickX = bgPickY = -1;
-    bgSrcData = null;
-    if (bgPreviewUrl) { URL.revokeObjectURL(bgPreviewUrl); bgPreviewUrl = null; }
-    bgBtn?.classList.remove('active');
-    img.style.cursor = '';
-    if (bgTol) bgTol.hidden = true;
-    if (bgOk) bgOk.hidden = true;
-    if (bgX) bgX.hidden = true;
-  }
-
-  function bgRunPreview() {
-    if (!bgSrcData || bgPickX < 0) return;
-    const filled = bgFloodFill(bgSrcData, bgSrcW, bgSrcH, bgPickX, bgPickY, parseInt(bgTol.value, 10));
-    const c = document.createElement('canvas'); c.width = bgSrcW; c.height = bgSrcH;
-    c.getContext('2d').putImageData(filled, 0, 0);
-    c.toBlob((blob) => {
-      if (!blob) return;
-      if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl);
-      bgPreviewUrl = URL.createObjectURL(blob);
-      img.src = bgPreviewUrl;
-    }, 'image/png');
-  }
-
-  if (bgBtn) {
-    bgBtn.addEventListener('click', () => {
-      if (bgPickMode) { bgExitMode(); if (editedUrl) img.src = editedUrl; else img.src = url; return; }
-      bgPickMode = true;
-      bgPickX = bgPickY = -1;
-      bgSrcData = null;
-      bgBtn.classList.add('active');
-      img.style.cursor = 'crosshair';
-      bgBtn.title = 'Click the background color on the image';
-    });
-
-    img.addEventListener('click', async (e) => {
-      if (!bgPickMode) return;
-      if (bgPickX >= 0) return; // already picked, re-pick not allowed until cancel
-      const base = new Image(); base.decoding = 'async';
-      base.src = editedUrl || url;
-      await base.decode();
-      const c = document.createElement('canvas');
-      c.width = base.naturalWidth; c.height = base.naturalHeight;
-      const g = c.getContext('2d'); g.drawImage(base, 0, 0);
-      bgSrcData = g.getImageData(0, 0, c.width, c.height);
-      bgSrcW = c.width; bgSrcH = c.height;
-      const r = img.getBoundingClientRect();
-      bgPickX = Math.max(0, Math.min(bgSrcW - 1, Math.round((e.clientX - r.left) * bgSrcW / r.width)));
-      bgPickY = Math.max(0, Math.min(bgSrcH - 1, Math.round((e.clientY - r.top) * bgSrcH / r.height)));
-      if (bgTol) bgTol.hidden = false;
-      if (bgOk) bgOk.hidden = false;
-      if (bgX) bgX.hidden = false;
-      bgRunPreview();
-    });
-
-    bgTol?.addEventListener('input', bgRunPreview);
-
-    bgOk?.addEventListener('click', () => {
-      if (!bgSrcData || bgPickX < 0) return;
-      const filled = bgFloodFill(bgSrcData, bgSrcW, bgSrcH, bgPickX, bgPickY, parseInt(bgTol.value, 10));
-      const c = document.createElement('canvas'); c.width = bgSrcW; c.height = bgSrcH;
-      c.getContext('2d').putImageData(filled, 0, 0);
-      c.toBlob((blob) => {
-        if (!blob) return;
-        pushUndo();
-        // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-        editedBlob = blob; editedUrl = URL.createObjectURL(blob);
-        img.src = editedUrl;
-        if (editReset) editReset.hidden = false;
-        if (exportFmt) exportFmt.value = 'image/png';
-        ctx.onBinaryEdit?.({ dirty: true, mimeType: 'image/png', getBytes: async () => new Uint8Array(await blob.arrayBuffer()) });
-        bgExitMode();
-      }, 'image/png');
-    });
-
-    bgX?.addEventListener('click', () => {
-      bgExitMode();
-      if (editedUrl) img.src = editedUrl; else img.src = url;
-    });
-  }
-
-  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
 }
