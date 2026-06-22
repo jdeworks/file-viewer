@@ -32,6 +32,13 @@ if ! git diff --quiet -- docs/known/registry.generated.js; then
   exit 1
 fi
 
+echo "→ regenerating bundled image renderer (must be committed fresh)…"
+node scripts/gen-image-renderer.mjs >/dev/null
+if ! git diff --quiet -- docs/types/image/renderer.generated.js; then
+  echo "  image renderer.generated.js changed — stage it (renderer source changed since last regen)."
+  exit 1
+fi
+
 echo "→ regenerating metagame stage bundles (must be committed fresh)…"
 node scripts/gen-metagame-bundles.mjs >/dev/null
 if ! git diff --quiet -- 'docs/games/metagame/stages/*/stage.generated.js'; then

@@ -12,7 +12,9 @@ export default {
     screenshot: true,
   },
   syntaxLanguage: null,
-  loadRenderer: () => import('./renderer.js'),
+  // renderer.generated.js is the build-time bundle of renderer.js + its edit modules (one chunk on
+  // image-open instead of ~12). Source stays modular; regen: node scripts/gen-image-renderer.mjs.
+  loadRenderer: () => import('./renderer.generated.js'),
   loadMetadata: () => import('./metadata.js'),
   loadExports: () => import('./exports.js'),   // Export menu: PNG / JPEG / WebP (+ SVG)
   settingsUrl: new URL('./settings.default.json', import.meta.url),
