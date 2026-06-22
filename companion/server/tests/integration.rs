@@ -1,15 +1,16 @@
-use axum::routing::{delete, get, post};
 use axum::{
     body::Body,
     http::{header, Method, Request, StatusCode},
+    Router,
 };
-use axum::{middleware, Router};
-use file_viewer_companion::{auth::require_token, routes, AppState};
+use file_viewer_companion::{router, AppState};
 use std::fs;
 use std::sync::{Arc, Mutex};
 use tempfile::TempDir;
 use tower::ServiceExt;
 
+// Build the real router via the shared lib fn, so the tests exercise the exact route surface +
+// token middleware the binary and Tauri wrapper use (no drift).
 fn build_app(token: &str, watched: Vec<std::path::PathBuf>) -> Router {
     let (watcher_tx, _) = tokio::sync::broadcast::channel(1);
     let state = AppState {
@@ -18,23 +19,7 @@ fn build_app(token: &str, watched: Vec<std::path::PathBuf>) -> Router {
         debug: false,
         watcher_tx,
     };
-
-    let protected = Router::new()
-        .route("/watched-paths", post(routes::add_watched_path))
-        .route("/watched-paths", delete(routes::remove_watched_path))
-        .route("/file", post(routes::post_file).delete(routes::delete_file))
-        .route_layer(middleware::from_fn_with_state(state.clone(), require_token));
-
-    Router::new()
-        .route("/ping", get(routes::ping))
-        .route("/watched-paths", get(routes::get_watched_paths))
-        .route("/find-file", get(routes::get_find_file))
-        .route("/find-folder", get(routes::get_find_folder))
-        .route("/file", get(routes::get_file))
-        .route("/files", get(routes::get_files))
-        .route("/watch", get(routes::watch_sse))
-        .merge(protected)
-        .with_state(state)
+    router(state, "https://test.invalid".to_string())
 }
 
 // --- /ping ---
