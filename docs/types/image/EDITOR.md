@@ -80,12 +80,12 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
 - ✅ **SHIPPED — Fill bucket** (`fill.js`): seed / connected-shade / Sobel edge-stop region modes, Euclidean or perceptual (redmean) distance, feather. Its BFS+Sobel walk is factored into `computeRegionMask` and reused by the magic-wand selection.
 
 - ✅ **SHIPPED — Magic-wand selection** (`edit-select.js`): 🪄 click a region (reusing the shared fill tolerance/mode/perceptual) to build a pixel **mask** via `computeRegionMask`; shown as a tint + boundary on its own overlay canvas. While a selection is active, the pixel tools (fill / pencil / eraser) are **constrained to it** — the renderer clips each edit with `clipToBase` (restore base pixels outside the mask). Deselect clears it; a dimension-changing geometry op invalidates it.
-  - **Still to add:** rectangular / elliptical marquee + lasso (other ways to build the same mask), and selection ops (cut / copy / nudge). The mask plumbing (`getMask`/`clipToBase`) is in place; these are additional mask SOURCES + actions. — M
+  - ✅ **Rectangular marquee** SHIPPED — drag a box (`edit-select.js` `'marquee'` mode) to build the same mask.
+  - **Still to add:** elliptical marquee + lasso (more mask SOURCES), and selection ops (cut / copy / nudge). The mask plumbing (`getMask`/`clipToBase`/the mode framework) is in place. — M
 
-- **Color adjustments panel** — brightness/contrast/saturation/**hue** sliders already shipped (`edit-filters.js`). Still to add:
-  - Levels (black point / white point / gamma) — remap pixel values via a lookup table (256-entry Uint8ClampedArray), applied with `getImageData`/`putImageData`
-  - Curves (interactive cubic Bezier per channel) — build a 256-entry LUT from four control points, apply via `putImageData`. UI: small `<canvas>` with draggable handles, no lib needed
-  - Sepia / greyscale / invert as one-click presets — all achievable with `ctx.filter`
+- **Color adjustments panel** — brightness/contrast/saturation/**hue** sliders shipped (`edit-filters.js`); **Levels** (black/white/gamma) ✅ SHIPPED (`levels.js` LUT + live preview, in the Adjust tab). Still to add:
+  - Curves (interactive cubic Bezier per channel) — build a 256-entry LUT from four control points, apply via `putImageData`. UI: small `<canvas>` with draggable handles, no lib needed. The LUT-apply plumbing (`levels.js` `applyLevels`) generalizes.
+  - ✅ SHIPPED — Sepia / greyscale / invert one-click presets (`edit-filters.js`, `ctx.filter` bake, Adjust tab).
   — M per item, no lib required
 
 - **Blend modes on composited layers** — When the Konva layers panel is present, expose a blend-mode `<select>` per layer using the 26 CSS mix-blend-mode values (`multiply`, `screen`, `overlay`, `color-dodge`, `hard-light`, etc.). Konva maps these to Canvas2D `globalCompositeOperation`. The export flatten step uses `drawImage` with each layer's blend mode active. — M (depends on Konva layers task above)

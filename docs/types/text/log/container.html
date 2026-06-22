@@ -1,1 +1,15 @@
-<div class="logv">{{&rows}}</div>
+<div class="logv-doc"><div class="logv-filters">{{&filters}}</div><div class="logv">{{&rows}}</div><script>
+(function () {
+  var sev = 'all';
+  var rows = [].slice.call(document.querySelectorAll('.logv .ll'));
+  function render() { rows.forEach(function (r) { r.style.display = (sev === 'all' || r.classList.contains(sev)) ? '' : 'none'; }); }
+  document.querySelectorAll('.logv-filter').forEach(function (b) {
+    b.addEventListener('click', function () {
+      sev = b.getAttribute('data-sev');
+      document.querySelectorAll('.logv-filter').forEach(function (x) { x.classList.toggle('active', x === b); });
+      render();
+    });
+  });
+  render();
+})();
+</script></div>

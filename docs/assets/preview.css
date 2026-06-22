@@ -238,6 +238,11 @@
   .patch .p-hunk{background:#4c9aff22;color:#4c9aff;}
   .patch .p-file{font-weight:600;background:#8884;}
   body.fv-dark .patch .p-add{color:#3fb950;} body.fv-dark .patch .p-del{color:#ff7b72;}
+  .logv-filters{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}
+  .logv-filter{cursor:pointer;border:1px solid #b0bec5;background:transparent;color:#57606a;border-radius:13px;padding:2px 11px;font:600 12px system-ui,sans-serif;}
+  .logv-filter.active{background:#57606a;color:#fff;border-color:#57606a;}
+  body.fv-dark .logv-filter{border-color:#444c56;color:#9aa0a8;}
+  body.fv-dark .logv-filter.active{background:#9aa0a8;color:#161b22;border-color:#9aa0a8;}
   .logv{font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;}
   .logv .ll{display:block;padding:0 6px;border-left:3px solid transparent;}
   .logv .l-error{border-left-color:#cf222e;background:#cf222e14;}

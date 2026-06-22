@@ -4,7 +4,9 @@
 // zoom math correct; crop returns { isActive } so the renderer's pan logic stands
 // down while a crop rectangle is being dragged.
 
-export function mountGeometry({ host, img, url, mime, core, view, els, onBeforeGeometry }) {
+import { affineForGeometry } from './geometry-affine.js';
+
+export function mountGeometry({ host, img, url, mime, core, view, els, onGeometry }) {
   const {
     rotLBtn, rotRBtn, flipHBtn, flipVBtn,
     cropBtn, cropApplyBtn, cropCancelBtn,
@@ -15,8 +17,7 @@ export function mountGeometry({ host, img, url, mime, core, view, els, onBeforeG
   const resizeResample = host.querySelector('.imgv-resize-resample');
 
   // ── Rotate / flip ── draw the current image onto a transformed canvas + commit.
-  async function applyTransform(transformFn, newW, newH) {
-    await onBeforeGeometry?.();   // flatten any vector overlay into the base first (it can't follow a rotate/flip)
+  async function applyTransform(transformFn, newW, newH, opKind) {
     const base = await core.loadBase();
     const srcW = base.naturalWidth, srcH = base.naturalHeight;
     const canvas = document.createElement('canvas');
@@ -30,24 +31,26 @@ export function mountGeometry({ host, img, url, mime, core, view, els, onBeforeG
     if (!await core.commitCanvas(canvas)) return;
     // The edited image has new dimensions (rotate swaps W/H) — keep zoom correct.
     view.setNatural(canvas.width);
+    // A live vector overlay rides along by the same matrix (kept editable, not baked).
+    onGeometry?.(affineForGeometry(opKind, srcW, srcH));
   }
 
   // Rotate left (CCW 90°): new canvas is h×w, pivot at center, rotate -90°.
   rotLBtn?.addEventListener('click', () => applyTransform(
     (g, sw, sh, cw, ch) => { g.translate(cw / 2, ch / 2); g.rotate(-Math.PI / 2); g.translate(-sw / 2, -sh / 2); },
-    (sw, sh) => sh, (sw, sh) => sw,
+    (sw, sh) => sh, (sw, sh) => sw, 'rotateCCW',
   ));
   rotRBtn?.addEventListener('click', () => applyTransform(
     (g, sw, sh, cw, ch) => { g.translate(cw / 2, ch / 2); g.rotate(Math.PI / 2); g.translate(-sw / 2, -sh / 2); },
-    (sw, sh) => sh, (sw, sh) => sw,
+    (sw, sh) => sh, (sw, sh) => sw, 'rotateCW',
   ));
   flipHBtn?.addEventListener('click', () => applyTransform(
     (g, sw, sh, cw, ch) => { g.translate(cw, 0); g.scale(-1, 1); },
-    (sw) => sw, (sw, sh) => sh,
+    (sw) => sw, (sw, sh) => sh, 'flipH',
   ));
   flipVBtn?.addEventListener('click', () => applyTransform(
     (g, sw, sh, cw, ch) => { g.translate(0, ch); g.scale(1, -1); },
-    (sw) => sw, (sw, sh) => sh,
+    (sw) => sw, (sw, sh) => sh, 'flipV',
   ));
 
   // ── Crop ── drag a rectangle on the image, then Apply to keep that region.
@@ -129,7 +132,6 @@ export function mountGeometry({ host, img, url, mime, core, view, els, onBeforeG
 
   async function applyCrop() {
     if (!cropHasRegion) return;
-    await onBeforeGeometry?.();   // flatten any vector overlay into the base before cropping it away
     const nw = img.naturalWidth, nh = img.naturalHeight;
     const x1 = Math.round(Math.min(cropStartX, cropEndX) * nw);
     const y1 = Math.round(Math.min(cropStartY, cropEndY) * nh);
@@ -144,6 +146,7 @@ export function mountGeometry({ host, img, url, mime, core, view, els, onBeforeG
     g.drawImage(base, -x1, -y1);
     core.pushUndo();
     if (!await core.commitCanvas(canvas)) return;
+    onGeometry?.(affineForGeometry('crop', nw, nh, { x1, y1 }));   // overlay rides the crop (reads new img dims on load)
     cropExitMode();
   }
 
@@ -198,8 +201,8 @@ export function mountGeometry({ host, img, url, mime, core, view, els, onBeforeG
     resizeApplyBtn?.addEventListener('click', async () => {
       const { tw, th } = resizeTargetPx();
       if (!tw || !th || tw < 1 || th < 1) return;
-      await onBeforeGeometry?.();   // flatten any vector overlay into the base before rescaling
       const base = await core.loadBase();
+      const ow = base.naturalWidth, oh = base.naturalHeight;
       const canvas = document.createElement('canvas');
       canvas.width = tw; canvas.height = th;
       const g = canvas.getContext('2d');
@@ -212,6 +215,7 @@ export function mountGeometry({ host, img, url, mime, core, view, els, onBeforeG
       g.drawImage(base, 0, 0, tw, th);
       core.pushUndo();
       if (!await core.commitCanvas(canvas)) return;
+      onGeometry?.(affineForGeometry('resize', ow, oh, { tw, th }));   // overlay rescales with the base
       if (resizePanel) resizePanel.hidden = true;
     });
 
@@ -231,7 +235,6 @@ export function mountGeometry({ host, img, url, mime, core, view, els, onBeforeG
     expandApplyBtn?.addEventListener('click', async () => {
       const pad = Math.round(parseFloat(expandPad?.value) || 0);
       if (pad <= 0) return;
-      await onBeforeGeometry?.();   // flatten any vector overlay into the base before padding the canvas
       // Transparency needs an alpha format; JPEG has none, so fall back to a fill.
       const wantTransparent = expandTransparent?.checked !== false;
       const transparent = wantTransparent && mime !== 'image/jpeg';
@@ -251,6 +254,7 @@ export function mountGeometry({ host, img, url, mime, core, view, els, onBeforeG
         return;
       }
       view.setNatural(canvas.width);
+      onGeometry?.(affineForGeometry('expand', sw, sh, { pad }));   // overlay shifts in with the content
       if (expandPanel) expandPanel.hidden = true;
     });
     expandCancelBtn?.addEventListener('click', () => { if (expandPanel) expandPanel.hidden = true; });

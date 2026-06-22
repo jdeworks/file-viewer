@@ -88,6 +88,7 @@ export async function render(intake, ctx = {}) {
   const fillFeather = canEdit ? host.querySelector('.imgv-fill-feather') : null;
   const fillOpts = canEdit ? host.querySelectorAll('.imgv-fill-opt') : [];
   const selectBtn = canEdit ? host.querySelector('.imgv-select') : null;
+  const marqueeBtn = canEdit ? host.querySelector('.imgv-marquee') : null;
   const deselectBtn = canEdit ? host.querySelector('.imgv-deselect') : null;
   const drawColorPicker = canEdit ? host.querySelector('.imgv-draw-color') : null;
   const drawSizePicker = canEdit ? host.querySelector('.imgv-draw-size') : null;
@@ -128,6 +129,16 @@ export async function render(intake, ctx = {}) {
   const fHue = canEdit ? host.querySelector('.imgv-f-hue') : null;
   const fApplyBtn = canEdit ? host.querySelector('.imgv-f-apply') : null;
   const fResetBtn = canEdit ? host.querySelector('.imgv-f-reset') : null;
+  const levelsBtn = canEdit ? host.querySelector('.imgv-levels-btn') : null;
+  const levelsPanel = canEdit ? host.querySelector('.imgv-levels-panel') : null;
+  const lvBlack = canEdit ? host.querySelector('.imgv-lv-black') : null;
+  const lvWhite = canEdit ? host.querySelector('.imgv-lv-white') : null;
+  const lvGamma = canEdit ? host.querySelector('.imgv-lv-gamma') : null;
+  const lvApply = canEdit ? host.querySelector('.imgv-lv-apply') : null;
+  const lvCancel = canEdit ? host.querySelector('.imgv-lv-cancel') : null;
+  const presetGrey = canEdit ? host.querySelector('.imgv-preset-grey') : null;
+  const presetSepia = canEdit ? host.querySelector('.imgv-preset-sepia') : null;
+  const presetInvert = canEdit ? host.querySelector('.imgv-preset-invert') : null;
   let natural = 0, fit = true, zoom = 1, asciiMode = false;
   let jxlPngBytes = null;   // decoded PNG bytes for JXL (display + ASCII source)
   // Pencil/eraser/fill state stays here (the draw overlay is coupled to the
@@ -143,6 +154,10 @@ export async function render(intake, ctx = {}) {
   // Magic-wand selection controller (mounted below; declared here so apply()/syncOverlay,
   // which run during initial load, can reference it without a temporal-dead-zone error).
   let selection = null;
+  // A geometry op (rotate/flip/crop/resize/expand) with a live overlay stashes its
+  // natural-space affine here; the overlay is transformed by it on the NEXT img load
+  // (once the re-encoded base has decoded at its new size). See ADV_EDIT.md.
+  let pendingGeom = null;
 
   // Shared edit state + commit pipeline — undo/redo, blob commits, the
   // onBinaryEdit hook, and full reset all live in editor-core so every tool
@@ -185,6 +200,8 @@ export async function render(intake, ctx = {}) {
   const els = {
     editInput, editSize, editColor, editFont, editApply, editReset,
     filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn,
+    levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel,
+    presetGrey, presetSepia, presetInvert,
     bgBtn, bgTol, bgOk, bgX, exportFmt,
     rotLBtn, rotRBtn, flipHBtn, flipVBtn,
     cropBtn, cropApplyBtn, cropCancelBtn,
@@ -218,6 +235,13 @@ export async function render(intake, ctx = {}) {
     requestAnimationFrame(() => { void img.offsetWidth; img.style.transform = `translate3d(${panX}px, ${panY}px, 0.001px)`; requestAnimationFrame(applyPan); });
   }
   img.addEventListener('load', nudgeRepaint);
+  // After a geometry op re-encodes + reloads the base at its new size, transform the
+  // vector overlay objects by the same matrix so they stay registered + editable.
+  img.addEventListener('load', () => {
+    if (!pendingGeom) return;
+    const A = pendingGeom; pendingGeom = null;
+    advController?.applyGeometry(A);
+  });
   function apply() {
     host.querySelector('.imgv-fit').classList.toggle('active', fit);
     if (fit || !natural) { img.style.width = ''; img.style.maxWidth = ''; img.style.maxHeight = ''; zoomLabel.textContent = 'fit'; }
@@ -422,8 +446,8 @@ export async function render(intake, ctx = {}) {
   // image with re-editable text/vector objects. The overlay is PERSISTENT and
   // non-destructive: leaving Adv just makes it non-interactive (it stays mounted +
   // visible across View/Edit); it's flattened onto the base only for OUTPUT
-  // (emitBinaryEdit/ASCII) or before a base-resizing geometry op
-  // (bakeOverlayForGeometry). See ADV_EDIT.md.
+  // (emitBinaryEdit/ASCII). A geometry op transforms the objects by the same matrix
+  // (onGeometry → advController.applyGeometry) instead of baking. See ADV_EDIT.md.
   const advBtn = canEdit ? host.querySelector('.imgv-adv-btn') : null;
   if (advBtn) {
     advBtn.hidden = false;
@@ -452,16 +476,10 @@ export async function render(intake, ctx = {}) {
     });
   }
   function leaveAdv() { advActive = false; advController?.setInteractive(false); advBtn?.classList.remove('active'); }
-  // Flatten the overlay into the pixel base, then clear it — used before a base-resizing
-  // geometry op (crop/resize/rotate/flip/expand) so the op acts on a single aligned
-  // raster and the overlay never drifts out of registration with content it can't follow.
-  async function bakeOverlayForGeometry() {
-    if (!overlayActive()) return;
-    const canvas = advController.flattenToCanvas();
-    core.pushUndo();
-    await core.commitCanvas(canvas);
-    advController.clear();
-  }
+  // Geometry ops (rotate/flip/crop/resize/expand) report their natural-space affine here;
+  // when an overlay exists we stash it so its objects get transformed by the same matrix
+  // on the next img load — keeping the vector layers editable instead of baking them in.
+  function onGeometry(affine) { if (advController) pendingGeom = affine; }
 
   // Text overlay — drag a label onto the image, then bake it in (edit-text.js).
   const textTool = mountTextTool({ host, img, mime, core, els });
@@ -475,7 +493,7 @@ export async function render(intake, ctx = {}) {
 
   // Geometry — rotate / flip / crop / resize (edit-geometry.js). Crop registers
   // in editTools so panning stands down during a crop drag.
-  const geometryTool = mountGeometry({ host, img, url, mime, core, view, els, onBeforeGeometry: bakeOverlayForGeometry });
+  const geometryTool = mountGeometry({ host, img, url, mime, core, view, els, onGeometry });
   editTools.push(geometryTool);
 
   // Magic-wand selection — click a region to build a pixel mask; while it's active
@@ -483,7 +501,7 @@ export async function render(intake, ctx = {}) {
   // shared fill tolerance/mode/perceptual options (edit-select.js → fill.js).
   selection = mountSelection({
     host, img, mime,
-    els: { selectBtn, deselectBtn },
+    els: { selectBtn, marqueeBtn, deselectBtn },
     getFillOpts: () => ({ tol: parseInt(fillTol?.value || '12', 10), mode: fillMode?.value || 'seed', perceptual: !!fillPercep?.checked }),
     onActivate: () => setDrawMode(null),   // the wand is mutually exclusive with pencil/eraser/fill input
   });

@@ -347,6 +347,23 @@ export async function run(ctx) {
     modeOff: !document.querySelector('#previewHost .imgv-select').classList.contains('active'),
   }));
   if (selCleared.deselectHidden && selCleared.modeOff) pass('magic-wand: Deselect clears the selection + leaving wand mode'); else fail('wand clear: ' + JSON.stringify(selCleared));
+  // Rectangular marquee — a second mask SOURCE: drag a box → a rectangular selection
+  // (same overlay/tint + Deselect; same clipToBase constraint on the pixel tools).
+  await page.click('#previewHost .imgv-marquee');                 // enter box-select mode
+  const selBox = await page.$eval('#previewHost .imgv-sel-overlay', (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  await page.mouse.move(selBox.x + 15, selBox.y + 15);
+  await page.mouse.down();
+  await page.mouse.move(selBox.x + selBox.w * 0.6, selBox.y + selBox.h * 0.6, { steps: 5 });
+  await page.mouse.up();
+  const marq = await page.evaluate(() => {
+    const ov = document.querySelector('#previewHost .imgv-sel-overlay');
+    let painted = false;
+    if (ov && ov.width) { const d = ov.getContext('2d').getImageData(0, 0, ov.width, ov.height).data; for (let i = 3; i < d.length; i += 4) { if (d[i]) { painted = true; break; } } }
+    return { painted, deselectShown: !document.querySelector('#previewHost .imgv-deselect').hidden, active: document.querySelector('#previewHost .imgv-marquee').classList.contains('active') };
+  });
+  if (marq.painted && marq.deselectShown && marq.active) pass('marquee: drag a box builds a rectangular selection (overlay painted + Deselect shown)'); else fail('marquee: ' + JSON.stringify(marq));
+  await page.click('#previewHost .imgv-deselect');                // clear
+  await page.click('#previewHost .imgv-marquee');                 // leave box-select for later steps
   // ── Transform / filter / draw commit pipeline ── each tool writes a FRESH edited
   // blob, so img.src (a blob: URL) flips to a new value when a commit lands. This is
   // a tool-agnostic regression signal that protects the editor-module split.
@@ -371,6 +388,24 @@ export async function run(ctx) {
   const filterBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-f-apply');
   if (await waitNewSrc(filterBefore)) pass('filters Apply bakes a new edited image'); else fail('filters apply did not commit');
+  // Levels: black/white/gamma LUT (not expressible as a CSS filter) — live preview by
+  // swapping img.src, Apply commits the LUT-mapped pixels, panel closes. The Adjust tab
+  // is already open (Filters jumped here via data-go-tab).
+  await page.click('#previewHost .imgv-levels-btn');               // open + cache source pixels
+  await page.waitForSelector('#previewHost .imgv-levels-panel:not([hidden])', { timeout: 3000 });
+  const lvOpenSrc = await imgSrcNow();
+  await page.evaluate(() => { const g = document.querySelector('#previewHost .imgv-lv-gamma'); g.value = '200'; g.dispatchEvent(new Event('input', { bubbles: true })); });
+  const lvPreviewed = await waitNewSrc(lvOpenSrc);                 // a processed preview blob swapped in
+  const lvBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-lv-apply');
+  const lvCommitted = await waitNewSrc(lvBefore);
+  const lvClosed = await page.evaluate(() => document.querySelector('#previewHost .imgv-levels-panel').hidden);
+  if (lvPreviewed && lvCommitted && lvClosed) pass('levels: live preview + Apply commits a LUT-mapped image + panel closes'); else fail('levels: ' + JSON.stringify({ lvPreviewed, lvCommitted, lvClosed }));
+  // One-click presets (greyscale/sepia/invert) bake straight to pixels via a canvas filter.
+  const greyBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-preset-grey');
+  if (await waitNewSrc(greyBefore)) pass('preset: greyscale bakes a new edited image'); else fail('greyscale preset did not commit');
+  await openTab('common');
   // Fill bucket: the button lives in Common; its options live in the Draw tab.
   // Activating from Common still un-hides the option controls.
   await openTab('common');
@@ -547,6 +582,19 @@ export async function run(ctx) {
     };
   });
   if (advFlat.dirty && advFlat.len > 1000 && advFlat.sig === '137,80,78,71' && advFlat.stagePresent && !advFlat.barInteractive) pass('Adv Edit: overlay persists non-interactively; output flattens base+overlay (dirty PNG)'); else fail('adv persist: ' + JSON.stringify(advFlat));
+  // Geometry coord-transform: a rotate in Edit mode with a live overlay TRANSFORMS the
+  // vector objects (they stay editable) instead of baking them. Re-enter Adv and confirm
+  // the objects are still listed — a bake-first seam would have emptied the overlay.
+  await page.click('#previewHost .imgv-tools-btn');                 // enter pixel Edit
+  await openTab('common');                                         // rotate/flip live in the Common tab
+  await page.click('#previewHost .imgv-rot-r');                     // rotate 90° CW (base + overlay ride along)
+  await page.waitForTimeout(500);                                   // base re-encodes/reloads → applyGeometry runs
+  await page.click('#previewHost .imgv-tools-btn');                 // leave Edit
+  await page.click('#previewHost .imgv-adv-btn');                   // re-enter Adv to read the layers panel
+  await page.waitForSelector('#previewHost .imgv-adv-layers > div', { timeout: 5000 }).catch(() => {});
+  const afterGeom = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 2 rows
+  if (afterGeom === 3) pass('Adv Edit: geometry (rotate) transforms the overlay objects, keeps them editable (not baked)'); else fail('adv geometry-transform: ' + afterGeom);
+  await page.click('#previewHost .imgv-adv-btn');                   // leave Adv again for the export/ASCII steps
   // Image export (loadExports hook): menu offers PNG/JPEG/WebP, and a conversion actually downloads.
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });

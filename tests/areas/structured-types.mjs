@@ -535,6 +535,16 @@ export async function run(ctx) {
   const warnLines = await lf.$$eval('.logv .l-warn', (els) => els.length);
   const tsSpans = await lf.$$eval('.logv .l-ts', (els) => els.length);
   if (errLines >= 1 && warnLines >= 1 && tsSpans >= 4) pass('log severity highlighted (' + errLines + ' error, ' + warnLines + ' warn, ' + tsSpans + ' timestamps)'); else fail('log: err=' + errLines + ' warn=' + warnLines + ' ts=' + tsSpans);
+  // ANSI escapes render as coloured spans (sample.log has \x1b[..m lines, incl. 256/truecolor).
+  const ansiSpans = await lf.$$eval('.logv .ll span[style*="color"]', (els) => els.length);
+  if (ansiSpans >= 3) pass('log renders ANSI colour escapes (' + ansiSpans + ' coloured spans)'); else fail('log ANSI spans: ' + ansiSpans);
+  // Severity filter: clicking "Error" leaves only error rows visible.
+  await lf.click('.logv-filter[data-sev="l-error"]');
+  const filtered = await lf.evaluate(() => {
+    const vis = [...document.querySelectorAll('.logv .ll')].filter((r) => r.style.display !== 'none');
+    return { count: vis.length, allError: vis.every((r) => r.classList.contains('l-error')) };
+  });
+  if (filtered.count >= 1 && filtered.allError) pass('log severity filter narrows to errors (' + filtered.count + ')'); else fail('log filter: ' + JSON.stringify(filtered));
 
   // ── Word count bar ── visible for markdown, shows stats. ──
   await page.goto(origin, { waitUntil: 'load' });

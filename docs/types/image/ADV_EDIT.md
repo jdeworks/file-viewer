@@ -20,7 +20,7 @@ Konva is **vendored** (`docs/vendor/konva/konva.min.js`, MIT, UMD → `window.Ko
 ## Transitions (warn only when lossy)
 - View/Edit → **Adv Edit**: lazy-load Konva; base = background image; restore existing overlay objects. On entry, if the overlay is **empty**, `rebaseline()` re-aligns the stage to the current base (picks up any geometry done while away).
 - Adv Edit → Edit/View: overlay **kept** (rendered, non-interactive — `setInteractive(false)`); pixel tools edit the base **under** it. It stays registered to the image across fit/zoom/pan via `relayout()` (a CSS scale on the container; object coords untouched). **Leaving Adv never bakes.**
-- **Geometry op in Edit with a non-empty overlay** (rotate/flip/crop/resize/expand): the overlay can't follow these matrices, so it's **flattened into the base first** (`bakeOverlayForGeometry` → `onBeforeGeometry` hook) and cleared; the op then acts on one aligned raster. *(Full vector coord-transform — keeping objects editable through a rotate — is the next increment.)*
+- **Geometry op in Edit with a non-empty overlay** (rotate/flip/crop/resize/expand): the overlay objects are **transformed by the same matrix** (kept editable, not baked). The op reports a natural-space affine (`geometry-affine.js` `affineForGeometry`) via the `onGeometry` hook; the renderer stashes it and, on the next img load (base re-encoded at its new size), calls `advController.applyGeometry(affine)`, which recomposes each object's transform `(naturalNew→stageNew) ∘ affine ∘ (stageOld→naturalOld) ∘ oldTransform` (Konva `Transform` multiply/decompose).
 - A pixel tool painting **onto** an object → pixels go **under** the overlay (text/shapes stay on top + editable); no flatten.
 - → **ASCII / export / download**: flatten a **copy** (base+overlay) via the wrapped `onBinaryEdit.getBytes`; editor keeps both models editable. ASCII feeds a flattened copy (overlay survives) — no warning needed.
 
@@ -46,4 +46,6 @@ Konva has **no built-in undo**; the pattern is *serialize the stage to JSON and 
 - ✅ Visible **layers panel** (the Konva stage IS the model); **shapes** (rect/ellipse/line/arrow).
 - ✅ **Persistent overlay** — non-destructive across View/Edit/ASCII; flatten only for output (`emitBinaryEdit`/ASCII) or the geometry-seam bake; `relayout()`/`rebaseline()`/`clear()` keep it registered.
 - ✅ **Unified Ctrl+Z** — vector snapshots folded into `editor-core` (`{blob,url,overlay}`); one stack across pixel + vector.
-- Next: **selection/magic-wand** (pixel mask via `fill.js`, separate from Konva), then full **geometry coord-transform** (keep objects editable through rotate/flip/crop/resize instead of the bake-first seam).
+- ✅ **Magic-wand selection** — pixel mask via `fill.js` `computeRegionMask`, constrains the pixel tools (`edit-select.js`, separate from Konva).
+- ✅ **Geometry coord-transform** — objects ride rotate/flip/crop/resize/expand by the same affine and stay editable (`applyGeometry`), replacing the bake-first seam.
+- Next (optional polish): marquee/lasso mask sources, selection cut/copy/nudge, levels/curves, per-layer blend modes.
