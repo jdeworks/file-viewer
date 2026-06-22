@@ -8,6 +8,7 @@
 
 function bigGte(bn, n) {
   if (!bn || bn.m === 0) return n <= 0;
+  if (!isFinite(n)) return false;   // Inf/NaN threshold would spin the while; a finite BigNum is never >= it
   let e = 0, m = n;
   while (m >= 1000) { m /= 1000; e += 3; }
   if (bn.e !== e) return bn.e > e;
