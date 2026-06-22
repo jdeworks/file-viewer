@@ -99,6 +99,12 @@ async function main() {
     if (Array.isArray(matches) && matches.length === 1 && matches[0].endsWith('note.txt')) pass('find-file locates note.txt by name+size');
     else fail('find-file wrong: ' + JSON.stringify(matches));
 
+    // The standalone server has no native dialog → /path-picker 404s → pickFolder resolves to null
+    // (the desktop/Tauri build implements it). Assert the graceful fallback, not a throw.
+    const picked = await page.evaluate(async () => (await import('/core/companion.js')).pickFolder());
+    if (picked === null) pass('pickFolder degrades to null on the standalone server (404)');
+    else fail('pickFolder should be null on the bare server: ' + JSON.stringify(picked));
+
     const abs = matches[0];
     await page.evaluate(async (p) => {
       const m = await import('/core/companion.js');

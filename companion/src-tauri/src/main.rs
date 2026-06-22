@@ -1,18 +1,21 @@
 // File Viewer Companion — desktop tray wrapper.
 //
 // A windowless (tray-only) Tauri app that runs the companion HTTP server (the same Axum router the
-// standalone binary uses, via file_viewer_companion::router) in-process on 127.0.0.1:7700, and adds
-// the things a browser page can't do for itself: a tray menu, a NATIVE folder picker for adding
-// watched folders, and login-item autostart. The viewer talks to it over HTTP exactly as it does
-// with the standalone server.
+// standalone binary uses, via file_viewer_companion::router_with) in-process on 127.0.0.1:7700, and
+// adds the things a browser page can't do for itself: a tray menu, a NATIVE folder picker (both
+// from the tray AND browser-initiated via POST /path-picker), and login-item autostart. The viewer
+// talks to it over HTTP exactly as it does with the standalone server.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use axum::{extract::State, middleware, routing::post, Json, Router};
 use file_viewer_companion::{
+    auth::require_token,
     config::{config_path, load_config, save_config},
-    router,
+    router_with,
     watcher::FileWatcher,
     AppState,
 };
+use serde_json::json;
 use std::sync::{Arc, Mutex};
 use tauri::{
     image::Image,
@@ -29,24 +32,6 @@ const PAGES_ORIGIN: &str = "https://jdeworks.github.io";
 // Keeps the file watcher alive for the whole app lifetime (dropping it stops fs events).
 struct WatcherGuard(#[allow(dead_code)] Option<FileWatcher>);
 
-fn spawn_server(state: AppState) {
-    std::thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()
-            .expect("tokio runtime");
-        rt.block_on(async move {
-            let app = router(state, PAGES_ORIGIN.to_string());
-            match tokio::net::TcpListener::bind(("127.0.0.1", PORT)).await {
-                Ok(listener) => {
-                    let _ = axum::serve(listener, app).await;
-                }
-                Err(e) => eprintln!("companion: cannot bind 127.0.0.1:{PORT}: {e}"),
-            }
-        });
-    });
-}
-
 fn open_url(url: &str) {
     #[cfg(target_os = "linux")]
     let _ = std::process::Command::new("xdg-open").arg(url).spawn();
@@ -54,6 +39,49 @@ fn open_url(url: &str) {
     let _ = std::process::Command::new("open").arg(url).spawn();
     #[cfg(target_os = "windows")]
     let _ = std::process::Command::new("cmd").args(["/C", "start", "", url]).spawn();
+}
+
+// Add a folder to the watched set + persist; returns the updated list as display strings.
+fn add_watched(paths: &Arc<Mutex<Vec<std::path::PathBuf>>>, pb: std::path::PathBuf) -> Vec<String> {
+    let updated = {
+        let mut locked = paths.lock().unwrap();
+        if !locked.contains(&pb) {
+            locked.push(pb);
+        }
+        locked.clone()
+    };
+    let _ = save_config(&updated);
+    updated.iter().map(|p| p.display().to_string()).collect()
+}
+
+// POST /path-picker — browser-initiated native folder picker. Shows the OS dialog on the GTK/main
+// thread (via run_on_main_thread), adds the chosen folder to the watched set, and returns it.
+async fn path_picker(handle: tauri::AppHandle, state: AppState) -> Json<serde_json::Value> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    let h2 = handle.clone();
+    if handle
+        .run_on_main_thread(move || {
+            h2.dialog().file().pick_folder(move |folder| {
+                let _ = tx.send(folder);
+            });
+        })
+        .is_err()
+    {
+        return Json(json!({ "ok": false, "chosen": serde_json::Value::Null }));
+    }
+    let chosen = rx
+        .await
+        .ok()
+        .flatten()
+        .and_then(|fp| fp.as_path().map(|p| p.to_path_buf()))
+        .filter(|p| p.is_dir());
+    match chosen {
+        Some(pb) => {
+            let paths = add_watched(&state.watched_paths, pb.clone());
+            Json(json!({ "ok": true, "chosen": pb.display().to_string(), "paths": paths }))
+        }
+        None => Json(json!({ "ok": false, "chosen": serde_json::Value::Null })),
+    }
 }
 
 fn main() {
@@ -79,10 +107,9 @@ fn main() {
         debug: false,
         watcher_tx,
     };
-    spawn_server(state);
 
     // Make the session token discoverable without a console: write it next to the config file.
-    // (The viewer's Companion settings panel takes the token; mutating calls require it.)
+    // (The viewer also auto-reads it from /ping; this is a fallback.)
     let token_file = config_path().with_file_name("token");
     if let Some(parent) = token_file.parent() {
         let _ = std::fs::create_dir_all(parent);
@@ -99,6 +126,37 @@ fn main() {
         ))
         .setup(move |app| {
             app.manage(WatcherGuard(watcher));
+
+            // Run the HTTP server (shared router + a Tauri-only /path-picker route) on its own
+            // runtime thread, now that we have an AppHandle for the native dialog.
+            let handle = app.handle().clone();
+            let server_state = state.clone();
+            std::thread::spawn(move || {
+                let rt = tokio::runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .build()
+                    .expect("tokio runtime");
+                rt.block_on(async move {
+                    let mw_state = server_state.clone();
+                    let picker_handle = handle.clone();
+                    let extra: Router<AppState> = Router::new()
+                        .route(
+                            "/path-picker",
+                            post(move |State(st): State<AppState>| {
+                                let h = picker_handle.clone();
+                                async move { path_picker(h, st).await }
+                            }),
+                        )
+                        .route_layer(middleware::from_fn_with_state(mw_state, require_token));
+                    let app = router_with(server_state, PAGES_ORIGIN.to_string(), extra);
+                    match tokio::net::TcpListener::bind(("127.0.0.1", PORT)).await {
+                        Ok(listener) => {
+                            let _ = axum::serve(listener, app).await;
+                        }
+                        Err(e) => eprintln!("companion: cannot bind 127.0.0.1:{PORT}: {e}"),
+                    }
+                });
+            });
 
             let status = MenuItemBuilder::with_id("status", format!("Running on 127.0.0.1:{PORT}"))
                 .enabled(false)
@@ -124,17 +182,9 @@ fn main() {
                             let Some(fp) = folder else { return };
                             let Some(p) = fp.as_path() else { return };
                             let pb = p.to_path_buf();
-                            if !pb.is_dir() {
-                                return;
+                            if pb.is_dir() {
+                                add_watched(&wp2, pb);
                             }
-                            let paths = {
-                                let mut locked = wp2.lock().unwrap();
-                                if !locked.contains(&pb) {
-                                    locked.push(pb);
-                                }
-                                locked.clone()
-                            };
-                            let _ = save_config(&paths);
                         });
                     }
                     "quit" => app.exit(0),

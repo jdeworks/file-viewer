@@ -1,7 +1,7 @@
 import { intakeFromFile } from './intake.js';
 import { layoutTopbar } from './layout.js';
 import { $, state, toast, escapeHtml } from './state.js';
-import { detectCompanion, findFile, findFolder, saveFile, deleteFile, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
+import { detectCompanion, findFile, findFolder, saveFile, deleteFile, pickFolder, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
 
 let companionAvailable = false;
 let companionLinkedPath = null;
@@ -309,6 +309,7 @@ const COMPANION_ENDPOINTS = [
   ['DELETE /file', 'an absolute path (delete on disk)'],
   ['GET /files', 'a folder path; its directory listing back'],
   ['GET /watch', 'an absolute path; change/delete events streamed (SSE)'],
+  ['POST /path-picker', 'nothing; desktop app shows the native folder dialog, adds the choice'],
 ];
 
 function appendCompanionDownloadPanel(panel) {
@@ -505,7 +506,22 @@ export function renderCompanionSettings(container) {
     catch (err) { toast('Add failed: ' + err.message); }
   });
   addInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); } });
-  addRow.append(addInput, addBtn);
+  // Native folder picker — works only with the desktop (Tauri) companion; falls back to the typed
+  // field on the standalone server.
+  const pickBtn = document.createElement('button');
+  pickBtn.className = 'btn small';
+  pickBtn.textContent = '📁 Pick…';
+  pickBtn.title = 'Choose a folder with the native dialog (desktop companion)';
+  pickBtn.addEventListener('click', async () => {
+    pickBtn.disabled = true;
+    try {
+      const res = await pickFolder();
+      if (res === null) { toast('Native picker needs the desktop companion app — type a path instead.'); return; }
+      if (res.ok) await refreshFolders();   // res.ok === false means the user cancelled
+    } catch (err) { toast('Pick failed: ' + err.message); }
+    finally { pickBtn.disabled = false; }
+  });
+  addRow.append(addInput, addBtn, pickBtn);
   panel.appendChild(addRow);
 
   appendCompanionDownloadPanel(panel);

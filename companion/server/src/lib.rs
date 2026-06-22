@@ -29,6 +29,14 @@ pub struct AppState {
 /// surface and security middleware can never drift between them. CORS is locked to localhost,
 /// 127.0.0.1, and `pages_origin` (the deployed viewer origin).
 pub fn router(state: AppState, pages_origin: String) -> Router {
+    router_with(state, pages_origin, Router::new())
+}
+
+/// Like `router`, plus `extra` routes merged in before CORS + state are applied — used by the Tauri
+/// wrapper to add `/path-picker` (which needs the native dialog and so can't live in this crate).
+/// The caller applies its own auth `route_layer` to `extra` when those routes mutate; the final
+/// `.with_state` here supplies the state both that middleware and the handlers need.
+pub fn router_with(state: AppState, pages_origin: String, extra: Router<AppState>) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(AllowOrigin::predicate(move |origin: &HeaderValue, _| {
             let o = origin.to_str().unwrap_or("");
@@ -54,6 +62,7 @@ pub fn router(state: AppState, pages_origin: String) -> Router {
         .route("/files", get(routes::get_files))
         .route("/watch", get(routes::watch_sse))
         .merge(protected)
+        .merge(extra)
         .layer(cors)
         .with_state(state)
 }

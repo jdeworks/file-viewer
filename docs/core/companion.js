@@ -86,6 +86,20 @@ export async function addWatchedPath(path) {
   return res.json();
 }
 
+// Browser-initiated native folder picker. Only the desktop (Tauri) companion implements this —
+// the standalone server has no GUI and returns 404, in which case this resolves to null and the
+// caller falls back to the typed "Add path" field.
+export async function pickFolder() {
+  try {
+    const res = await fetch(`${BASE}/path-picker`, {
+      method: 'POST',
+      headers: { 'X-Companion-Token': _token || '' },
+    });
+    if (!res.ok) return null;        // 404 on the standalone (non-Tauri) server
+    return res.json();               // { ok, chosen, paths } (ok:false if the user cancelled)
+  } catch { return null; }
+}
+
 export async function removeWatchedPath(path) {
   const res = await fetch(`${BASE}/watched-paths`, {
     method: 'DELETE',

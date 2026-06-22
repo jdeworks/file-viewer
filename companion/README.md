@@ -6,7 +6,7 @@ Local HTTP server for file-viewer that enables save-back to disk.
 
 | Endpoint | Method | Data sent | Data received |
 |----------|--------|-----------|---------------|
-| /ping | GET | nothing | `{ ok, version }` |
+| /ping | GET | nothing | `{ ok, version, token, capabilities }` (token auto-read by the viewer; CORS-gated) |
 | /watched-paths | GET | nothing | list of watched folder paths |
 | /watched-paths | POST/DELETE | folder path | success/error |
 | /find-file | GET | filename + size | list of matching absolute paths |
@@ -16,6 +16,7 @@ Local HTTP server for file-viewer that enables save-back to disk.
 | /file | DELETE | absolute path | success/error (token-gated; refuses directories) |
 | /files | GET | absolute dir path | directory listing |
 | /watch | GET (SSE) | nothing | `changed` / `remove` events for watched files |
+| /path-picker | POST | nothing | desktop build only: shows the native folder dialog, adds the chosen folder, returns the list |
 
 The companion only accesses files within configured watched folders. All mutating endpoints require a session token (`X-Companion-Token` header) generated at startup.
 
