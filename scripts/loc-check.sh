@@ -16,10 +16,12 @@ HARD=500
 strict=0
 [[ "${1:-}" == "--strict" ]] && strict=1
 
-# Authored source only: docs/ JS+CSS minus vendor, plus the test/util scripts.
+# Authored source only: docs/ JS+CSS minus vendor and build-time *.generated.* bundles (those are
+# concatenated artifacts, not hand-authored — splitting them is meaningless), plus the test/util
+# scripts.
 mapfile -t files < <(
-  { find docs -type f \( -name '*.js' -o -name '*.css' -o -name '*.mjs' \) -not -path 'docs/vendor/*';
-    find scripts tests -type f \( -name '*.sh' -o -name '*.mjs' -o -name '*.js' \) 2>/dev/null; } | sort -u
+  { find docs -type f \( -name '*.js' -o -name '*.css' -o -name '*.mjs' \) -not -path 'docs/vendor/*' -not -name '*.generated.*';
+    find scripts tests -type f \( -name '*.sh' -o -name '*.mjs' -o -name '*.js' \) -not -name '*.generated.*' 2>/dev/null; } | sort -u
 )
 
 over_hard=0

@@ -1,6 +1,19 @@
 export async function run(ctx) {
   const { browser, page, origin, pass, fail, consoleErrors, offOrigin } = ctx;
 
+  // Track HOW metagame stages load: each must come from its bundled stage.generated.js (one
+  // request) and NEVER from the raw per-module index.js (which would mean the bundle was bypassed
+  // and we're back to fetching 6–16 modules per stage). Asserted after Stage 1 mounts below.
+  const stageBundleReqs = new Set();
+  const stageIndexReqs = new Set();
+  page.on('request', (r) => {
+    const u = r.url();
+    let m = u.match(/\/stages\/(stage\d+)\/stage\.generated\.js(?:[?#]|$)/);
+    if (m) { stageBundleReqs.add(m[1]); return; }
+    m = u.match(/\/stages\/(stage\d+)\/index\.js(?:[?#]|$)/);
+    if (m) stageIndexReqs.add(m[1]);
+  });
+
   await page.goto(origin, { waitUntil: 'load' });
   await page.evaluate(() => {
     try {
@@ -147,6 +160,11 @@ export async function run(ctx) {
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.mg-v3', { timeout: 8000 });
   await page.waitForSelector('.mg-s1', { timeout: 8000 });
+  // Stage 1 just mounted — it must have come from the bundle, not the raw index.js.
+  if (stageBundleReqs.has('stage1') && !stageIndexReqs.has('stage1'))
+    pass('Stage 1 loads from bundled stage.generated.js (not per-module index.js)');
+  else
+    fail(`Stage 1 load path wrong: bundle=${[...stageBundleReqs]} index=${[...stageIndexReqs]}`);
   const freshStageButtons = await page.$$eval('.mg-v3-stage', (buttons) => buttons.map((button) => ({
     stage: button.dataset.stage,
     disabled: button.disabled,

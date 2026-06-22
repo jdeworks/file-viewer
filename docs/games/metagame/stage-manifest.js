@@ -7,8 +7,12 @@
 //
 // This is the single hub-facing source of stage metadata. metagame.js validates each lazily-loaded
 // stage's `stageMeta` against the matching entry here and throws on mismatch — and the games smoke
-// traverses all ten stages, so any drift fails the smoke automatically. (A future build step can
-// generate one bundle file per stage; the loaders below would then point at the generated bundle.)
+// traverses all ten stages, so any drift fails the smoke automatically.
+//
+// Each LOADER imports the stage's BUNDLE (stage.generated.js), not its index.js: build/metagame/
+// build.mjs collapses each stage's 6–16 source modules into that one same-origin ESM, so opening a
+// stage is a single request instead of one-per-module. Sources stay modular under stageN/; the
+// bundle is a committed *.generated.* artifact (regen: node scripts/gen-metagame-bundles.mjs).
 
 export const MANIFEST_FIELDS = ["id", "slug", "name", "btsPath", "requiredAction"];
 
@@ -27,16 +31,16 @@ export const STAGE_MANIFEST = [
 
 // Per-stage lazy loaders. The dynamic import() is what defers each stage's module graph.
 const LOADERS = {
-  1: () => import("./stages/stage1/index.js"),
-  2: () => import("./stages/stage2/index.js"),
-  3: () => import("./stages/stage3/index.js"),
-  4: () => import("./stages/stage4/index.js"),
-  5: () => import("./stages/stage5/index.js"),
-  6: () => import("./stages/stage6/index.js"),
-  7: () => import("./stages/stage7/index.js"),
-  8: () => import("./stages/stage8/index.js"),
-  9: () => import("./stages/stage9/index.js"),
-  10: () => import("./stages/stage10/index.js")
+  1: () => import("./stages/stage1/stage.generated.js"),
+  2: () => import("./stages/stage2/stage.generated.js"),
+  3: () => import("./stages/stage3/stage.generated.js"),
+  4: () => import("./stages/stage4/stage.generated.js"),
+  5: () => import("./stages/stage5/stage.generated.js"),
+  6: () => import("./stages/stage6/stage.generated.js"),
+  7: () => import("./stages/stage7/stage.generated.js"),
+  8: () => import("./stages/stage8/stage.generated.js"),
+  9: () => import("./stages/stage9/stage.generated.js"),
+  10: () => import("./stages/stage10/stage.generated.js")
 };
 
 const moduleCache = new Map();

@@ -32,6 +32,13 @@ if ! git diff --quiet -- docs/known/registry.generated.js; then
   exit 1
 fi
 
+echo "→ regenerating metagame stage bundles (must be committed fresh)…"
+node scripts/gen-metagame-bundles.mjs >/dev/null
+if ! git diff --quiet -- 'docs/games/metagame/stages/*/stage.generated.js'; then
+  echo "  metagame stage bundle(s) changed — stage them (a stage's source modules changed since last regen)."
+  exit 1
+fi
+
 echo "→ running compatibility matrix generator…"
 node scripts/gen-example-compatibility.mjs
 
