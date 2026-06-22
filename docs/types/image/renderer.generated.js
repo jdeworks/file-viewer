@@ -128,6 +128,7 @@ function queryEls(host, canEdit) {
     curvesBtn: qe(".imgv-curves-btn"),
     curvesPanel: qe(".imgv-curves-panel"),
     curveCanvas: qe(".imgv-curve-canvas"),
+    curveChannel: qe(".imgv-curve-ch"),
     curveApply: qe(".imgv-curve-apply"),
     curveReset: qe(".imgv-curve-reset"),
     curveCancel: qe(".imgv-curve-cancel"),
@@ -1087,16 +1088,36 @@ function buildCurveLUT(points) {
   }
   return lut;
 }
+function buildChannelLUTs(pts) {
+  const master = buildCurveLUT(pts.rgb || []);
+  const compose = (chPts) => {
+    const ch = buildCurveLUT(chPts || []);
+    const out = new Uint8ClampedArray(256);
+    for (let i = 0; i < 256; i++) out[i] = master[ch[i]];
+    return out;
+  };
+  return { r: compose(pts.r), g: compose(pts.g), b: compose(pts.b) };
+}
+function applyChannelLUTs(data, luts) {
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = luts.r[data[i]];
+    data[i + 1] = luts.g[data[i + 1]];
+    data[i + 2] = luts.b[data[i + 2]];
+  }
+}
 
 // ../../docs/types/image/edit-curves.js
 function mountCurves({ img, mime, core, els }) {
-  const { curvesBtn, curvesPanel, curveCanvas, curveApply, curveReset, curveCancel } = els;
+  const { curvesBtn, curvesPanel, curveCanvas, curveChannel, curveApply, curveReset, curveCancel } = els;
   if (!curvesBtn || !curveCanvas) return { teardown() {
   } };
   const g = curveCanvas.getContext("2d");
   const W = curveCanvas.width, H = curveCanvas.height;
   const identity = () => [{ x: 0, y: 0 }, { x: 255, y: 255 }];
-  let points = identity();
+  const freshChannels = () => ({ rgb: identity(), r: identity(), g: identity(), b: identity() });
+  const CH_COLOR = { rgb: "#6cf", r: "#f66", g: "#6f6", b: "#69f" };
+  let channels = freshChannels(), activeCh = "rgb";
+  let points = channels[activeCh];
   let src = null, sw = 0, sh = 0, openSrc = null, prevUrl = null, raf = 0, drag = -1;
   const toCanvas = (p) => ({ cx: p.x / 255 * W, cy: (1 - p.y / 255) * H });
   const fromEvent = (e) => {
@@ -1125,7 +1146,7 @@ function mountCurves({ img, mime, core, els }) {
     g.lineTo(W, 0);
     g.stroke();
     const lut = buildCurveLUT(points);
-    g.strokeStyle = "#6cf";
+    g.strokeStyle = CH_COLOR[activeCh];
     g.lineWidth = 2;
     g.beginPath();
     for (let x = 0; x < 256; x++) {
@@ -1146,9 +1167,8 @@ function mountCurves({ img, mime, core, els }) {
     raf = requestAnimationFrame(() => {
       raf = 0;
       if (!src) return;
-      const lut = buildCurveLUT(points);
       const out = new ImageData(new Uint8ClampedArray(src.data), sw, sh);
-      applyLevels(out.data, lut);
+      applyChannelLUTs(out.data, buildChannelLUTs(channels));
       const c = document.createElement("canvas");
       c.width = sw;
       c.height = sh;
@@ -1245,22 +1265,30 @@ function mountCurves({ img, mime, core, els }) {
     cx.drawImage(base, 0, 0);
     src = cx.getImageData(0, 0, sw, sh);
     openSrc = img.src;
-    points = identity();
+    channels = freshChannels();
+    activeCh = "rgb";
+    points = channels.rgb;
+    if (curveChannel) curveChannel.value = "rgb";
     curvesPanel.hidden = false;
     curvesBtn.classList.add("active");
     draw();
   });
+  curveChannel?.addEventListener("change", () => {
+    activeCh = curveChannel.value in channels ? curveChannel.value : "rgb";
+    points = channels[activeCh];
+    draw();
+  });
   curveReset?.addEventListener("click", () => {
-    points = identity();
+    channels[activeCh] = identity();
+    points = channels[activeCh];
     draw();
     preview();
   });
   curveCancel?.addEventListener("click", () => close(false));
   curveApply?.addEventListener("click", async () => {
     if (!src) return;
-    const lut = buildCurveLUT(points);
     const out = new ImageData(new Uint8ClampedArray(src.data), sw, sh);
-    applyLevels(out.data, lut);
+    applyChannelLUTs(out.data, buildChannelLUTs(channels));
     const c = document.createElement("canvas");
     c.width = sw;
     c.height = sh;
@@ -3064,6 +3092,7 @@ async function render(intake, ctx = {}) {
     curvesBtn,
     curvesPanel,
     curveCanvas,
+    curveChannel,
     curveApply,
     curveReset,
     curveCancel,
@@ -3132,6 +3161,7 @@ async function render(intake, ctx = {}) {
     curvesBtn,
     curvesPanel,
     curveCanvas,
+    curveChannel,
     curveApply,
     curveReset,
     curveCancel,

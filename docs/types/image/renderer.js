@@ -87,7 +87,7 @@ export async function render(intake, ctx = {}) {
     rotLBtn, rotRBtn, flipHBtn, flipVBtn,
     filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn,
     levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel,
-    curvesBtn, curvesPanel, curveCanvas, curveApply, curveReset, curveCancel,
+    curvesBtn, curvesPanel, curveCanvas, curveChannel, curveApply, curveReset, curveCancel,
     presetGrey, presetSepia, presetInvert,
   } = queryEls(host, canEdit);
   let asciiMode = false;
@@ -151,7 +151,7 @@ export async function render(intake, ctx = {}) {
     editInput, editSize, editColor, editFont, editApply, editReset,
     filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn,
     levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel,
-    curvesBtn, curvesPanel, curveCanvas, curveApply, curveReset, curveCancel,
+    curvesBtn, curvesPanel, curveCanvas, curveChannel, curveApply, curveReset, curveCancel,
     presetGrey, presetSepia, presetInvert,
     bgBtn, bgTol, bgOk, bgX, exportFmt,
     rotLBtn, rotRBtn, flipHBtn, flipVBtn,

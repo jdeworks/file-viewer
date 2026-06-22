@@ -466,16 +466,24 @@ export async function run(ctx) {
     return { x: r.x, y: r.y, w: r.width, h: r.height };
   });
   // Empty-space pointerdown at the curve's middle inserts a handle; dragging it up brightens.
-  await page.mouse.move(cbox.x + cbox.w / 2, cbox.y + cbox.h / 2);
-  await page.mouse.down();
-  await page.mouse.move(cbox.x + cbox.w / 2, cbox.y + cbox.h / 2 - 45, { steps: 6 });
-  await page.mouse.up();
+  const dragCurve = async () => {
+    await page.mouse.move(cbox.x + cbox.w / 2, cbox.y + cbox.h / 2);
+    await page.mouse.down();
+    await page.mouse.move(cbox.x + cbox.w / 2, cbox.y + cbox.h / 2 - 45, { steps: 6 });
+    await page.mouse.up();
+  };
+  await dragCurve();
   const curvePreviewed = await waitNewSrc(curveOpenSrc);           // a processed preview blob swapped in
+  // Switch to the Red channel and bend it too — per-channel grading composes onto the master curve.
+  const redBefore = await imgSrcNow();
+  await page.selectOption('#previewHost .imgv-curve-ch', 'r');
+  await dragCurve();
+  const curveChannelPreviewed = await waitNewSrc(redBefore);
   const curveBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-curve-apply');
   const curveCommitted = await waitNewSrc(curveBefore);
   const curveClosed = await page.waitForFunction(() => document.querySelector('#previewHost .imgv-curves-panel')?.hidden === true, { timeout: 2000 }).then(() => true).catch(() => false);
-  if (curvePreviewed && curveCommitted && curveClosed) pass('curves: drag lifts the tone curve → preview + Apply commits a LUT-mapped image + panel closes'); else fail('curves: ' + JSON.stringify({ curvePreviewed, curveCommitted, curveClosed }));
+  if (curvePreviewed && curveChannelPreviewed && curveCommitted && curveClosed) pass('curves: master + per-channel (Red) curves preview + Apply commits a LUT-mapped image + panel closes'); else fail('curves: ' + JSON.stringify({ curvePreviewed, curveChannelPreviewed, curveCommitted, curveClosed }));
   // One-click presets (greyscale/sepia/invert) bake straight to pixels via a canvas filter.
   const greyBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-preset-grey');
