@@ -323,6 +323,30 @@ export async function run(ctx) {
   await openTab('common');
   await page.click('#previewHost .imgv-fill');   // toggle fill off, restore for later steps
   if (sliderFocused && kbdUndo && kbdRedo) pass('Ctrl+Z / Ctrl+Y reach the editor with focus on a toolbar slider'); else fail('keyboard undo w/ slider focus: ' + JSON.stringify({ sliderFocused, kbdUndo, kbdRedo }));
+  // ── Magic-wand selection ── click a region to build a pixel mask (its own overlay
+  // canvas shows a tint + boundary); a Deselect button appears. The mask constrains
+  // the pixel tools (verified by the pure clipToBase unit tests).
+  await openTab('common');
+  await page.click('#previewHost .imgv-select');                 // enter wand mode
+  await page.click('#previewHost .imgv-sel-overlay', { position: { x: 20, y: 20 } });   // pick a region
+  const selState = await page.evaluate(() => {
+    const ov = document.querySelector('#previewHost .imgv-sel-overlay');
+    let painted = false;
+    if (ov && ov.width) { const d = ov.getContext('2d').getImageData(0, 0, ov.width, ov.height).data; for (let i = 3; i < d.length; i += 4) { if (d[i]) { painted = true; break; } } }
+    return {
+      active: document.querySelector('#previewHost .imgv-select').classList.contains('active'),
+      deselectShown: !document.querySelector('#previewHost .imgv-deselect').hidden,
+      painted,
+    };
+  });
+  if (selState.active && selState.deselectShown && selState.painted) pass('magic-wand: selects a region (mask overlay painted + Deselect shown)'); else fail('wand select: ' + JSON.stringify(selState));
+  await page.click('#previewHost .imgv-deselect');               // clear the selection
+  await page.click('#previewHost .imgv-select');                 // leave wand mode (restore state for later steps)
+  const selCleared = await page.evaluate(() => ({
+    deselectHidden: document.querySelector('#previewHost .imgv-deselect').hidden,
+    modeOff: !document.querySelector('#previewHost .imgv-select').classList.contains('active'),
+  }));
+  if (selCleared.deselectHidden && selCleared.modeOff) pass('magic-wand: Deselect clears the selection + leaving wand mode'); else fail('wand clear: ' + JSON.stringify(selCleared));
   // ── Transform / filter / draw commit pipeline ── each tool writes a FRESH edited
   // blob, so img.src (a blob: URL) flips to a new value when a commit lands. This is
   // a tool-agnostic regression signal that protects the editor-module split.
@@ -361,7 +385,8 @@ export async function run(ctx) {
   });
   if (fillModeOn) pass('fill tool activates + reveals tolerance/mode/perceptual/feather options'); else fail('fill mode not active');
   const clickCanvasCentre = () => page.evaluate(() => {
-    const cv = document.querySelector('#previewHost .imgv-stage canvas');
+    // The draw overlay (the fill/brush canvas) — NOT the magic-wand selection overlay.
+    const cv = document.querySelector('#previewHost .imgv-stage canvas:not(.imgv-sel-overlay)');
     const r = cv.getBoundingClientRect();
     cv.dispatchEvent(new MouseEvent('mousedown', { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true }));
   });
@@ -501,14 +526,27 @@ export async function run(ctx) {
   const advLayers = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 3 rows
   const shapeCtl = await page.$eval('#previewHost .imgv-adv-stroke', (el) => getComputedStyle(el.closest('label')).display !== 'none').catch(() => false);
   if (advLayers === 4 && shapeCtl) pass('Adv Edit: layers panel + shapes (text ×2 + rect; stroke controls shown)'); else fail('adv layers/shape: ' + JSON.stringify({ advLayers, shapeCtl }));
-  await page.click('#previewHost .imgv-adv-btn');   // leave Adv → flatten both labels onto the base
+  // Unified Ctrl+Z: the vector overlay shares editor-core's history, so a global undo
+  // removes the last object (the rectangle) — one undo stack across pixel + vector.
+  await page.keyboard.press('Control+z');
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .imgv-adv-layers > div').length === 3, null, { timeout: 5000 }).catch(() => {});
+  const afterAdvUndo = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 2 rows
+  if (afterAdvUndo === 3) pass('Adv Edit: unified Ctrl+Z removes the last vector object (header + 2 rows)'); else fail('adv unified undo: ' + afterAdvUndo);
+  // Persistent overlay: leaving Adv makes the stage non-interactive but KEEPS it
+  // mounted (non-destructive). The doc is dirty and getBytes() flattens base+overlay
+  // ON DEMAND — the overlay is never baked onto the base just for leaving Adv.
+  await page.click('#previewHost .imgv-adv-btn');   // leave Adv → overlay STAYS, just non-interactive
   await page.waitForFunction(() => window.__fv.state.binaryEdit?.dirty === true, null, { timeout: 8000 }).catch(() => {});
   const advFlat = await page.evaluate(async () => {
     const be = window.__fv.state.binaryEdit; if (!be) return { dirty: false };
     const bytes = await be.getBytes();
-    return { dirty: true, len: bytes.length, sig: Array.from(bytes.slice(0, 4)).join(','), stageGone: !document.querySelector('#previewHost .imgv-adv-stage') };
+    return {
+      dirty: true, len: bytes.length, sig: Array.from(bytes.slice(0, 4)).join(','),
+      stagePresent: !!document.querySelector('#previewHost .imgv-adv-stage canvas'),
+      barInteractive: getComputedStyle(document.querySelector('#previewHost .imgv-adv-bar')).display !== 'none',
+    };
   });
-  if (advFlat.dirty && advFlat.len > 1000 && advFlat.sig === '137,80,78,71' && advFlat.stageGone) pass('Adv Edit: leaving flattens text layers onto the image (dirty PNG)'); else fail('adv flatten: ' + JSON.stringify(advFlat));
+  if (advFlat.dirty && advFlat.len > 1000 && advFlat.sig === '137,80,78,71' && advFlat.stagePresent && !advFlat.barInteractive) pass('Adv Edit: overlay persists non-interactively; output flattens base+overlay (dirty PNG)'); else fail('adv persist: ' + JSON.stringify(advFlat));
   // Image export (loadExports hook): menu offers PNG/JPEG/WebP, and a conversion actually downloads.
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });

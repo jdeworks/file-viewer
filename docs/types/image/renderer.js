@@ -14,6 +14,7 @@ import { mountGeometry } from './edit-geometry.js';
 import { mountBg } from './edit-bg.js';
 import { registerUndoKeys } from './edit-undo-key.js';
 import { mountTabs } from './edit-tabs.js';
+import { mountSelection } from './edit-select.js';
 import { mountAdvEdit } from './adv-edit.js';
 import { mountGifPlayer } from './gif-anim.js';
 import { decodeGifFrames } from './gif-decode.js';
@@ -86,6 +87,8 @@ export async function render(intake, ctx = {}) {
   const fillPercep = canEdit ? host.querySelector('.imgv-fill-percep') : null;
   const fillFeather = canEdit ? host.querySelector('.imgv-fill-feather') : null;
   const fillOpts = canEdit ? host.querySelectorAll('.imgv-fill-opt') : [];
+  const selectBtn = canEdit ? host.querySelector('.imgv-select') : null;
+  const deselectBtn = canEdit ? host.querySelector('.imgv-deselect') : null;
   const drawColorPicker = canEdit ? host.querySelector('.imgv-draw-color') : null;
   const drawSizePicker = canEdit ? host.querySelector('.imgv-draw-size') : null;
   const undoBtn = canEdit ? host.querySelector('.imgv-undo') : null;
@@ -132,12 +135,47 @@ export async function render(intake, ctx = {}) {
   let drawMode = null, isEraserStroke = false;
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
 
+  // Adv Edit (vector overlay) state. Declared up here so the onBinaryEdit wrapper
+  // and applyPan() (both defined below but run after these are initialised) can see
+  // it without tripping the temporal-dead-zone.
+  let advController = null, advActive = false;
+  const overlayActive = () => !!(advController && !advController.isEmpty());
+  // Magic-wand selection controller (mounted below; declared here so apply()/syncOverlay,
+  // which run during initial load, can reference it without a temporal-dead-zone error).
+  let selection = null;
+
   // Shared edit state + commit pipeline — undo/redo, blob commits, the
   // onBinaryEdit hook, and full reset all live in editor-core so every tool
   // shares one consistent edit history. The view (fit/zoom/pan, ASCII, JXL)
   // stays here in the renderer shell.
+  //
+  // The vector overlay is PERSISTENT + non-destructive: the raster base and the
+  // overlay stay separately editable, and the doc is flattened (base+overlay) only
+  // for OUTPUT. So we wrap the host's onBinaryEdit — when the overlay is non-empty
+  // every getBytes returns the flattened composite; otherwise the raster payload
+  // passes through untouched.
+  const hostOnBinaryEdit = ctx.onBinaryEdit;
+  let lastRasterEdit = null;
+  function emitBinaryEdit() {
+    if (!hostOnBinaryEdit) return;
+    if (overlayActive()) {
+      hostOnBinaryEdit({
+        dirty: true,
+        mimeType: core.getExportMime(),
+        getBytes: async () => {
+          const canvas = advController.flattenToCanvas();
+          const mt = core.getExportMime();
+          const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === 'image/jpeg' ? 0.92 : undefined));
+          return new Uint8Array(await blob.arrayBuffer());
+        },
+      });
+    } else {
+      hostOnBinaryEdit(lastRasterEdit);
+    }
+  }
   const core = createEditCore({
-    img, url, mime, ctx,
+    img, url, mime,
+    ctx: { ...ctx, onBinaryEdit: (payload) => { lastRasterEdit = payload; emitBinaryEdit(); } },
     els: { editReset, exportFmt, undoBtn, redoBtn, dirtyIndicator: host.querySelector('.imgv-dirty-indicator') },
   });
 
@@ -173,6 +211,7 @@ export async function render(intake, ctx = {}) {
     const t = `translate3d(${panX}px, ${panY}px, 0)`;
     img.style.transform = t;
     if (drawOverlay) drawOverlay.style.transform = t;
+    advController?.relayout();   // keep the persistent vector overlay registered to the image
   }
   // Force a recomposite after an edit swaps img.src (mobile stale-paint guard).
   function nudgeRepaint() {
@@ -189,7 +228,7 @@ export async function render(intake, ctx = {}) {
   function resetView() { panX = 0; panY = 0; }
   // View hook handed to geometry tools so a dimension-changing edit (rotate/resize)
   // can update the stored natural width + relayout.
-  const view = { setNatural: (n) => { natural = n; apply(); } };
+  const view = { setNatural: (n) => { natural = n; apply(); selection?.clear(); } };   // a resize/crop/rotate invalidates the pixel selection
   host.querySelector('.imgv-fit').addEventListener('click', () => { fit = true; resetView(); apply(); });
   host.querySelector('.imgv-100').addEventListener('click', () => { fit = false; zoom = 1; resetView(); apply(); });
   host.querySelector('.imgv-up').addEventListener('click', () => { fit = false; zoom = Math.min(16, zoom * 1.25); apply(); });
@@ -298,13 +337,10 @@ export async function render(intake, ctx = {}) {
   // renderer stays thin.
   let asciiStudio = null;
   async function toggleAscii() {
-    // ASCII needs final pixels. If a vector overlay is active, flatten it (with a
-    // warning) before converting — the user explicitly accepted this conversion.
-    if (!asciiMode && advController && !advController.isEmpty()) {
-      if (!confirm('ASCII needs a flat image. Your Adv Edit text/vector layers will be rendered into the image (no longer separately editable). Continue?')) return;
-      leaveAdv();
-      await commitAdv();
-    }
+    // Entering ASCII: stop Adv interaction but KEEP the overlay (non-destructive). The
+    // ASCII source is a flattened COPY (base+overlay) computed below — the overlay
+    // survives and is still editable when you return to the image.
+    if (!asciiMode && advActive) leaveAdv();
     asciiMode = !asciiMode;
     asciiBtn.textContent = asciiMode ? 'Image' : 'ASCII';
     asciiBtn.classList.toggle('active', asciiMode);
@@ -315,11 +351,20 @@ export async function render(intake, ctx = {}) {
     asciiOut.hidden = !asciiMode;
     if (asciiMode) {
       // Feed the CURRENT image — including any edits (crop, rotate, BG removal,
-      // filters…) — not the untouched original. editedBlob holds the latest edit.
-      // JXL can't be decoded by createImageBitmap, so feed the decoded PNG bytes.
-      const eb = core.editedBlob;
-      const curBytes = eb ? new Uint8Array(await eb.arrayBuffer()) : (jxlPngBytes || intake.bytes);
-      const curMime = eb ? (eb.type || mime) : (jxlPngBytes ? 'image/png' : mime);
+      // filters…) — not the untouched original. With a live vector overlay, flatten a
+      // COPY (base+overlay) so ASCII sees the composite; otherwise editedBlob holds the
+      // latest raster edit. JXL can't be decoded by createImageBitmap, so feed the PNG.
+      let curBytes, curMime;
+      if (overlayActive()) {
+        const mt = core.getExportMime();
+        const canvas = advController.flattenToCanvas();
+        const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === 'image/jpeg' ? 0.92 : undefined));
+        curBytes = new Uint8Array(await blob.arrayBuffer()); curMime = mt;
+      } else {
+        const eb = core.editedBlob;
+        curBytes = eb ? new Uint8Array(await eb.arrayBuffer()) : (jxlPngBytes || intake.bytes);
+        curMime = eb ? (eb.type || mime) : (jxlPngBytes ? 'image/png' : mime);
+      }
       try {
         if (!asciiStudio) {
           asciiBtn.disabled = true;
@@ -349,6 +394,7 @@ export async function render(intake, ctx = {}) {
     } else {
       host._ss?.stop();
       asciiStudio?.stopCamera?.();   // leaving ASCII view → release the webcam
+      advController?.relayout();      // the stage was hidden with .imgv-stage — re-register it to the image
     }
   }
 
@@ -364,32 +410,41 @@ export async function render(intake, ctx = {}) {
     bar.classList.add('imgv-tools-collapsed');    // open in plain VIEW mode; Edit reveals the toolbar
     toolsBtn.classList.remove('active');
     toolsBtn.addEventListener('click', () => {
-      // Entering the pixel Edit toolbar flattens any vector overlay first (it edits pixels).
-      if (!bar.classList.contains('imgv-tools-collapsed')) { /* closing */ } else { commitAdv(); }
       const open = !bar.classList.toggle('imgv-tools-collapsed');
       toolsBtn.classList.toggle('active', open);
+      // Edit (pixel) and Adv (vector) are mutually exclusive INTERACTIVE modes; the
+      // overlay stays mounted + visible, just non-interactive, while you edit pixels.
       if (open && advActive) leaveAdv();
     });
   }
 
   // ── Adv Edit (vector) mode ── lazy-loads Konva (adv-edit.js) and overlays the
-  // image with re-editable text/vector objects. Leaving for a pixel mode flattens
-  // the overlay onto the base (commitCanvas → pixel undo captures it). ASCII does
-  // the same with a warning. See ADV_EDIT.md.
+  // image with re-editable text/vector objects. The overlay is PERSISTENT and
+  // non-destructive: leaving Adv just makes it non-interactive (it stays mounted +
+  // visible across View/Edit); it's flattened onto the base only for OUTPUT
+  // (emitBinaryEdit/ASCII) or before a base-resizing geometry op
+  // (bakeOverlayForGeometry). See ADV_EDIT.md.
   const advBtn = canEdit ? host.querySelector('.imgv-adv-btn') : null;
-  let advController = null, advActive = false;
   if (advBtn) {
     advBtn.hidden = false;
     advBtn.addEventListener('click', async () => {
-      if (advActive) { leaveAdv(); commitAdv(); return; }
+      if (advActive) { leaveAdv(); return; }   // leave = non-interactive, overlay STAYS
       // Enter Adv: leave the pixel Edit toolbar (mutually exclusive modes).
       host.querySelector('.imgv-bar').classList.add('imgv-tools-collapsed');
       toolsBtn?.classList.remove('active');
       advBtn.disabled = true;
       try {
-        if (!advController) advController = await mountAdvEdit({ host, img, onDirty: () => host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden') });
+        if (!advController) {
+          advController = await mountAdvEdit({ host, img, pushUndo: core.pushUndo, onDirty: () => { host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden'); emitBinaryEdit(); } });
+          // Fold the overlay into editor-core's history → one unified Ctrl+Z spanning
+          // pixel + vector. Each entry now also carries the overlay JSON snapshot.
+          core.setOverlayHooks({ snapshot: () => advController.serialize(), restore: (j) => advController.restore(j) });
+        }
         advActive = true;
         advController.setInteractive(true);
+        // Re-align the (empty) stage to the current base — picks up any geometry done
+        // while the overlay was away. Only safe with no objects (it resets the frame).
+        if (advController.isEmpty()) advController.rebaseline();
         advBtn.classList.add('active');
         if (advController.objectCount() === 0) advController.addText();   // start with one editable label
       } catch (e) { advBtn.title = 'Advanced editing failed: ' + (e.message || e); }
@@ -397,17 +452,15 @@ export async function render(intake, ctx = {}) {
     });
   }
   function leaveAdv() { advActive = false; advController?.setInteractive(false); advBtn?.classList.remove('active'); }
-  // Bake the overlay into the pixel base and drop the stage (convert-on-leaving).
-  async function commitAdv() {
-    if (!advController) return;
-    if (!advController.isEmpty()) {
-      core.pushUndo();
-      await core.commitCanvas(advController.flattenToCanvas());
-    }
-    advController.destroy();
-    advController = null;
-    advActive = false;
-    advBtn?.classList.remove('active');
+  // Flatten the overlay into the pixel base, then clear it — used before a base-resizing
+  // geometry op (crop/resize/rotate/flip/expand) so the op acts on a single aligned
+  // raster and the overlay never drifts out of registration with content it can't follow.
+  async function bakeOverlayForGeometry() {
+    if (!overlayActive()) return;
+    const canvas = advController.flattenToCanvas();
+    core.pushUndo();
+    await core.commitCanvas(canvas);
+    advController.clear();
   }
 
   // Text overlay — drag a label onto the image, then bake it in (edit-text.js).
@@ -415,13 +468,26 @@ export async function render(intake, ctx = {}) {
   editTools.push(textTool);
   editReset?.addEventListener('click', () => {
     textTool.exitPlaceMode();
-    core.reset();
+    if (advActive) leaveAdv();
+    advController?.clear();   // Reset clears the vector overlay too (ADV_EDIT.md)
+    core.reset();             // …and core.reset() has the final say on dirty/onBinaryEdit
   });
 
   // Geometry — rotate / flip / crop / resize (edit-geometry.js). Crop registers
   // in editTools so panning stands down during a crop drag.
-  const geometryTool = mountGeometry({ host, img, url, mime, core, view, els });
+  const geometryTool = mountGeometry({ host, img, url, mime, core, view, els, onBeforeGeometry: bakeOverlayForGeometry });
   editTools.push(geometryTool);
+
+  // Magic-wand selection — click a region to build a pixel mask; while it's active
+  // the pixel tools (fill/pencil/eraser) only "take" inside the selection. Reuses the
+  // shared fill tolerance/mode/perceptual options (edit-select.js → fill.js).
+  selection = mountSelection({
+    host, img, mime,
+    els: { selectBtn, deselectBtn },
+    getFillOpts: () => ({ tol: parseInt(fillTol?.value || '12', 10), mode: fillMode?.value || 'seed', perceptual: !!fillPercep?.checked }),
+    onActivate: () => setDrawMode(null),   // the wand is mutually exclusive with pencil/eraser/fill input
+  });
+  editTools.push({ isActive: () => selection.isActive() });
 
   // Filters — live CSS preview + bake on Apply (edit-filters.js).
   mountFilters({ img, mime, core, els });
@@ -458,6 +524,7 @@ export async function render(intake, ctx = {}) {
   // the whole stage), so brush coordinates map 1:1 to image pixels regardless of
   // fit/zoom/scroll letterboxing.
   function syncOverlay() {
+    selection?.syncOverlay();   // the selection overlay exists independently of the draw overlay
     if (!drawOverlay) return;
     drawOverlay.style.left = img.offsetLeft + 'px';
     drawOverlay.style.top = img.offsetTop + 'px';
@@ -509,10 +576,12 @@ export async function render(intake, ctx = {}) {
 
   function setDrawMode(mode) {
     drawMode = drawMode === mode ? null : mode;
+    if (drawMode) selection?.setActive(false);   // a draw mode turns off the wand's input (the mask itself persists)
     pencilBtn?.classList.toggle('active', drawMode === 'pencil');
     eraserBtn?.classList.toggle('active', drawMode === 'eraser');
     fillBtn?.classList.toggle('active', drawMode === 'fill');
-    fillOpts.forEach((el) => { el.hidden = drawMode !== 'fill'; });
+    // Fill-tuning controls are shared by the bucket AND the wand — show for either.
+    fillOpts.forEach((el) => { el.hidden = !(drawMode === 'fill' || selection?.isActive()); });
     if (!drawOverlay && drawMode) buildOverlay();
     if (drawOverlay) {
       drawOverlay.style.pointerEvents = drawMode ? 'auto' : 'none';
@@ -593,10 +662,13 @@ export async function render(intake, ctx = {}) {
     g.drawImage(img, 0, 0);
     const id = g.getImageData(0, 0, c.width, c.height);
     const pt = ptToCanvas(e);
+    // If a selection is active, snapshot first so the fill can be clipped to it.
+    const before = selection?.hasSelection() ? Uint8ClampedArray.from(id.data) : null;
     const filled = floodFill(id.data, c.width, c.height, Math.round(pt.x), Math.round(pt.y),
       hexToRgba(drawColorPicker?.value), parseInt(fillTol?.value || '0', 10),
       { mode: fillMode?.value || 'seed', perceptual: !!fillPercep?.checked, feather: !!fillFeather?.checked });
     if (!filled) return;
+    if (before) selection.clipFillInPlace(id.data, before);   // constrain the fill to the selection
     g.putImageData(id, 0, 0);
     const targetMime = core.getExportMime();
     core.pushUndo();
@@ -609,6 +681,9 @@ export async function render(intake, ctx = {}) {
     const targetMime = core.getExportMime();
     let blob;
     if (isEraserStroke) {
+      // The eraser overlay is a copy of the image with holes punched. Clip it to the
+      // selection (restore image pixels outside the mask) so erasing stays inside it.
+      await selection?.clipCanvas(drawOverlay, img);
       blob = await new Promise((r) => drawOverlay.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     } else {
       // Composite from the already-loaded <img> (the current committed image) —
@@ -617,6 +692,7 @@ export async function render(intake, ctx = {}) {
       const g = c.getContext('2d');
       if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
       g.drawImage(img, 0, 0); g.drawImage(drawOverlay, 0, 0);
+      await selection?.clipCanvas(c, img);   // constrain the brush stroke to the selection
       blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     }
     drawOCtx.clearRect(0, 0, drawOverlay.width, drawOverlay.height);
@@ -652,5 +728,5 @@ export async function render(intake, ctx = {}) {
   const bgChecker = canEdit ? host.querySelector('.imgv-bg-checker') : null;
   bgChecker?.addEventListener('change', () => img.classList.toggle('imgv-checker', bgChecker.checked));
 
-  return { parentNode: host, revoke: () => { advController?.destroy(); unregisterUndoKeys?.(); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { advController?.destroy(); selection?.teardown(); unregisterUndoKeys?.(); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
 }

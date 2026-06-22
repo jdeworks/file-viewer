@@ -19,13 +19,14 @@ const DEFAULTS = { text: 'Text', fontFamily: 'system-ui, sans-serif', fontSize: 
 // mountAdvEdit builds the stage over `.imgv-stage` sized to the displayed image,
 // plus an editing toolbar appended to `.imgv-bar`. Returns the controller the
 // renderer drives (flatten / interactive / dirty / destroy).
-export async function mountAdvEdit({ host, img, onDirty }) {
+export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   const Konva = await loadKonva();
   const stageHost = host.querySelector('.imgv-stage');
-  const naturalW = img.naturalWidth || 1, naturalH = img.naturalHeight || 1;
+  let naturalW = img.naturalWidth || 1, naturalH = img.naturalHeight || 1;
   // Stage matches the DISPLAYED image box; flatten scales back up to natural res.
+  // (let, not const — rebaseline() updates them after a base-resizing geometry op.)
   const rect = img.getBoundingClientRect();
-  const stageW = Math.max(1, Math.round(rect.width)), stageH = Math.max(1, Math.round(rect.height));
+  let stageW = Math.max(1, Math.round(rect.width)), stageH = Math.max(1, Math.round(rect.height));
 
   const container = document.createElement('div');
   container.className = 'imgv-adv-stage';
@@ -45,9 +46,11 @@ export async function mountAdvEdit({ host, img, onDirty }) {
 
   let interactive = true;
   let selected = null;
-  const undoStack = [];
   const markDirty = () => onDirty?.();
-  const snapshot = () => { undoStack.push(layer.toJSON()); if (undoStack.length > 50) undoStack.shift(); };
+  // Vector edits push onto the SHARED editor-core history (one unified Ctrl+Z across
+  // pixel + vector); the renderer injects core.pushUndo. snap() is called BEFORE a
+  // mutation so the entry captures the pre-change overlay (via the overlay hooks).
+  const snap = () => pushUndo?.();
 
   // The selected-object toolbar (only meaningful while one label is selected).
   const bar = host.querySelector('.imgv-bar');
@@ -111,14 +114,15 @@ export async function mountAdvEdit({ host, img, onDirty }) {
   function placeObject(node) {
     node.name('obj');
     node.on('click tap', (e) => { e.cancelBubble = true; if (interactive) select(node); });
-    node.on('transformend dragend', () => { snapshot(); markDirty(); });
+    node.on('dragstart transformstart', () => snap());   // snapshot the PRE-drag state
+    node.on('transformend dragend', () => markDirty());
     layer.add(node);
     select(node);
     markDirty();
   }
 
   function addShape(type) {
-    snapshot();
+    snap();
     const cx = stageW / 2, cy = stageH / 2;
     const common = { x: cx - 60, y: cy - 40, draggable: true, fill: '#3388ff', stroke: '#1144aa', strokeWidth: 2 };
     let node;
@@ -130,7 +134,7 @@ export async function mountAdvEdit({ host, img, onDirty }) {
   }
 
   function addText() {
-    snapshot();
+    snap();
     const label = new Konva.Label({ x: stageW / 2 - 60, y: stageH / 2 - 24, draggable: true });
     label.add(new Konva.Tag({ fill: DEFAULTS.bg, opacity: DEFAULTS.bgOpacity, cornerRadius: 4 }));
     label.add(new Konva.Text({ text: DEFAULTS.text, fontFamily: DEFAULTS.fontFamily, fontSize: DEFAULTS.fontSize, fill: DEFAULTS.fill, padding: 6 }));
@@ -146,7 +150,7 @@ export async function mountAdvEdit({ host, img, onDirty }) {
   $('.imgv-adv-ellipse').addEventListener('click', () => addShape('ellipse'));
   $('.imgv-adv-line').addEventListener('click', () => addShape('line'));
   $('.imgv-adv-arrow').addEventListener('click', () => addShape('arrow'));
-  $('.imgv-adv-del').addEventListener('click', () => { if (!selected) return; snapshot(); selected.destroy(); select(null); markDirty(); });
+  $('.imgv-adv-del').addEventListener('click', () => { if (!selected) return; snap(); selected.destroy(); select(null); markDirty(); });
   $('.imgv-adv-text').addEventListener('input', () => { if (isLabel(selected)) { textNodeOf(selected).text($('.imgv-adv-text').value); layer.draw(); refreshLayers(); markDirty(); } });
   $('.imgv-adv-size').addEventListener('input', () => { if (isLabel(selected)) { textNodeOf(selected).fontSize(parseInt($('.imgv-adv-size').value, 10) || DEFAULTS.fontSize); layer.draw(); markDirty(); } });
   $('.imgv-adv-font').addEventListener('change', () => { if (isLabel(selected)) { textNodeOf(selected).fontFamily($('.imgv-adv-font').value); layer.draw(); markDirty(); } });
@@ -180,12 +184,12 @@ export async function mountAdvEdit({ host, img, onDirty }) {
       const eye = document.createElement('button');
       eye.textContent = label.visible() ? '👁' : '🚫';
       eye.title = 'Show / hide'; eye.style.cssText = 'background:none;border:none;cursor:pointer;font-size:12px;padding:0';
-      eye.addEventListener('click', (e) => { e.stopPropagation(); snapshot(); label.visible(!label.visible()); if (!label.visible() && selected === label) select(null); layer.draw(); refreshLayers(); markDirty(); });
+      eye.addEventListener('click', (e) => { e.stopPropagation(); snap(); label.visible(!label.visible()); if (!label.visible() && selected === label) select(null); layer.draw(); refreshLayers(); markDirty(); });
       const name = document.createElement('span');
       name.textContent = labelName(label); name.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-      const up = mkMini('↑', 'Bring forward', (e) => { e.stopPropagation(); snapshot(); label.moveUp(); tr.moveToTop(); layer.draw(); refreshLayers(); markDirty(); });
-      const dn = mkMini('↓', 'Send backward', (e) => { e.stopPropagation(); snapshot(); label.moveDown(); tr.moveToTop(); layer.draw(); refreshLayers(); markDirty(); });
-      const del = mkMini('🗑', 'Delete', (e) => { e.stopPropagation(); snapshot(); if (selected === label) select(null); label.destroy(); layer.draw(); refreshLayers(); markDirty(); });
+      const up = mkMini('↑', 'Bring forward', (e) => { e.stopPropagation(); snap(); label.moveUp(); tr.moveToTop(); layer.draw(); refreshLayers(); markDirty(); });
+      const dn = mkMini('↓', 'Send backward', (e) => { e.stopPropagation(); snap(); label.moveDown(); tr.moveToTop(); layer.draw(); refreshLayers(); markDirty(); });
+      const del = mkMini('🗑', 'Delete', (e) => { e.stopPropagation(); snap(); if (selected === label) select(null); label.destroy(); layer.draw(); refreshLayers(); markDirty(); });
       row.append(eye, name, up, dn, del);
       row.addEventListener('click', () => { if (label.visible()) select(label); });
       panel.appendChild(row);
@@ -194,17 +198,54 @@ export async function mountAdvEdit({ host, img, onDirty }) {
   function mkMini(txt, title, fn) { const b = document.createElement('button'); b.textContent = txt; b.title = title; b.style.cssText = 'background:none;border:none;color:inherit;cursor:pointer;font-size:11px;padding:0 1px'; b.addEventListener('click', fn); return b; }
 
   // Flatten the base image + the vector overlay into a fresh natural-res canvas.
-  // Transformer handles are hidden first so they don't bake in.
+  // Transformer handles are hidden first so they don't bake in. Reads the CURRENT
+  // image dimensions (the base may have been re-encoded by a non-geometry pixel edit).
   function flattenToCanvas() {
     const wasSel = selected; select(null);
+    const nW = img.naturalWidth || naturalW, nH = img.naturalHeight || naturalH;
     const canvas = document.createElement('canvas');
-    canvas.width = naturalW; canvas.height = naturalH;
+    canvas.width = nW; canvas.height = nH;
     const g = canvas.getContext('2d');
-    g.drawImage(img, 0, 0, naturalW, naturalH);
-    const overlay = stage.toCanvas({ pixelRatio: naturalW / stageW });
-    g.drawImage(overlay, 0, 0, naturalW, naturalH);
+    g.drawImage(img, 0, 0, nW, nH);
+    const overlay = stage.toCanvas({ pixelRatio: nW / stageW });
+    g.drawImage(overlay, 0, 0, nW, nH);
     if (wasSel) select(wasSel);
     return canvas;
+  }
+
+  // Keep the overlay container glued to the displayed image box as the view changes
+  // (fit/zoom/pan). The Konva stage keeps its mount-time pixel coords; a CSS scale on
+  // the container tracks zoom so objects stay registered to the image without touching
+  // their coordinates. The renderer calls this from its apply()/applyPan().
+  function relayout() {
+    const hostR = stageHost.getBoundingClientRect();
+    const r = img.getBoundingClientRect();
+    container.style.left = Math.round(r.left - hostR.left) + 'px';
+    container.style.top = Math.round(r.top - hostR.top) + 'px';
+    const s = stageW ? r.width / stageW : 1;
+    container.style.transformOrigin = 'top left';
+    container.style.transform = Math.abs(s - 1) < 1e-3 ? '' : `scale(${s})`;
+  }
+
+  // Re-baseline the (empty) stage onto the CURRENT base image — display size + natural
+  // res — after a geometry op resized the base while the overlay was away. Only valid
+  // with no objects (it resets the coordinate frame); the renderer calls it on Adv
+  // entry when the overlay is empty.
+  function rebaseline() {
+    naturalW = img.naturalWidth || naturalW; naturalH = img.naturalHeight || naturalH;
+    const r = img.getBoundingClientRect();
+    stageW = Math.max(1, Math.round(r.width)); stageH = Math.max(1, Math.round(r.height));
+    stage.width(stageW); stage.height(stageH);
+    container.style.width = stageW + 'px'; container.style.height = stageH + 'px';
+    container.style.transform = '';
+    relayout();
+  }
+
+  // Remove every object (used when the overlay is flattened into the base — before a
+  // geometry op, or on Reset). The stage itself stays mounted.
+  function clear() {
+    layer.find('.obj').forEach((n) => n.destroy());
+    select(null); layer.draw(); refreshLayers(); markDirty();
   }
 
   return {
@@ -218,8 +259,15 @@ export async function mountAdvEdit({ host, img, onDirty }) {
       container.style.pointerEvents = on ? 'auto' : 'none';
       if (on) refreshLayers(); else select(null);
     },
-    undo() { if (!undoStack.length) return; rebuild(undoStack.pop()); },
+    // Overlay history bridge for editor-core's unified undo: serialize the current
+    // objects to JSON, and restore a snapshot (null/empty → clear). restore must NOT
+    // push its own undo entry (editor-core owns the stack) — rebuild/clear don't.
+    serialize: () => layer.toJSON(),
+    restore: (json) => { if (json) rebuild(json); else clear(); },
     flattenToCanvas,
+    relayout,
+    rebaseline,
+    clear,
     destroy() { tr.destroy(); stage.destroy(); container.remove(); tb.remove(); panel.remove(); },
   };
 
@@ -231,7 +279,8 @@ export async function mountAdvEdit({ host, img, onDirty }) {
       const node = src.clone();
       node.draggable(true);
       node.on('click tap', (e) => { e.cancelBubble = true; if (interactive) select(node); });
-      node.on('transformend dragend', () => { snapshot(); markDirty(); });
+      node.on('dragstart transformstart', () => snap());
+      node.on('transformend dragend', () => markDirty());
       layer.add(node);
     });
     layer.add(tr);

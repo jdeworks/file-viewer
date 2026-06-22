@@ -20,6 +20,21 @@ export async function run(ctx) {
   await page.click('.games-card[data-game="snake"]');
   await page.waitForSelector('.snake-canvas', { timeout: 8000 });
   pass('Snake launches');
+  // Optional modes: Walls (2× score) + Boosters, persisted and restart cleanly.
+  const snakeOpts = await page.$$eval('.snake-opts input[type="checkbox"]', (els) => els.map((e) => e.className));
+  if (snakeOpts.length === 2 && snakeOpts.some((c) => c.includes('walls')) && snakeOpts.some((c) => c.includes('boost')))
+    pass('Snake exposes Walls + Boosters options');
+  else fail('Snake options missing: ' + JSON.stringify(snakeOpts));
+  await page.click('.snake-opt-walls');
+  const wallsState = await page.evaluate(() => ({
+    ls: localStorage.getItem('fv:snake:walls'),
+    checked: document.querySelector('.snake-opt-walls').checked,
+  }));
+  const snakeCanvasStill = await page.$('.snake-canvas');
+  if (snakeCanvasStill && ((wallsState.checked && wallsState.ls === '1') || (!wallsState.checked && wallsState.ls === '0')))
+    pass('Snake Walls toggle persists and restarts cleanly');
+  else fail('Snake walls toggle inconsistent: ' + JSON.stringify(wallsState) + ' canvas=' + !!snakeCanvasStill);
+  await page.evaluate(() => { try { localStorage.removeItem('fv:snake:walls'); localStorage.removeItem('fv:snake:boost'); } catch {} });
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 

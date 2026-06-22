@@ -1,6 +1,6 @@
 // Unit tests for the pure image-fill helpers (extracted from image/renderer.js).
 // No DOM / canvas needed — these operate on plain RGBA byte arrays.
-import { hexToRgba, floodFill, bgFloodFill } from '../docs/types/image/fill.js';
+import { hexToRgba, floodFill, bgFloodFill, computeRegionMask, clipToBase } from '../docs/types/image/fill.js';
 
 let failed = 0;
 const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!cond) failed++; };
@@ -90,6 +90,32 @@ ok(floodFill(buf(2, 2, () => [0, 0, 0]), 2, 2, 9, 9, [1, 2, 3, 255], 0, false) =
   ok(out[2 * 4 + 3] === 0 && out[1 * 4 + 3] === 0, 'bgFloodFill: makes the matched (white) region transparent');
   ok(out[0 * 4 + 3] === 255, 'bgFloodFill: leaves the distinct (dark) pixel opaque');
   ok(src.data[2 * 4 + 3] === 255, 'bgFloodFill: does not mutate the source data');
+}
+
+// ── computeRegionMask (magic-wand): same region the bucket would fill, as a mask ──
+{
+  // left column black, rest white; seed in white → mask covers the 2 white pixels only.
+  const w = 3, h = 1;
+  const d = buf(w, h, (x) => (x === 0 ? [0, 0, 0] : [255, 255, 255]));
+  const m = computeRegionMask(d, w, h, 2, 0, 0, { mode: 'seed' });
+  ok(m instanceof Uint8Array && m.length === w * h, 'computeRegionMask: returns a per-pixel Uint8Array mask');
+  ok(m[0] === 0 && m[1] === 1 && m[2] === 1, 'computeRegionMask: marks the connected same-colour region (not across the edge)');
+  ok(computeRegionMask(d, w, h, 9, 9, 0) === null, 'computeRegionMask: out-of-bounds seed → null');
+  // The mask is exactly the set floodFill would paint (same walk).
+  const painted = buf(w, h, (x) => (x === 0 ? [0, 0, 0] : [255, 255, 255]));
+  const cnt = floodFill(painted, w, h, 2, 0, [1, 2, 3, 255], 0, { mode: 'seed' });
+  ok(cnt === m.reduce((a, v) => a + v, 0), 'computeRegionMask: mask popcount equals floodFill count (shared walk)');
+}
+
+// ── clipToBase: restores out-of-mask pixels from the base (selection constraint) ──
+{
+  const w = 2, h = 1;
+  const edited = buf(w, h, () => [9, 9, 9, 9]);    // both pixels "edited"
+  const base = buf(w, h, () => [40, 50, 60, 255]); // original
+  const mask = new Uint8Array([1, 0]);             // only pixel 0 is selected
+  clipToBase(edited, base, mask);
+  ok(JSON.stringify(pixel(edited, w, 0, 0)) === JSON.stringify([9, 9, 9, 9]), 'clipToBase: keeps the edited value inside the mask');
+  ok(JSON.stringify(pixel(edited, w, 1, 0)) === JSON.stringify([40, 50, 60, 255]), 'clipToBase: restores the base value outside the mask');
 }
 
 console.log(failed ? `\n${failed} assertion(s) failed` : '\nall image-fill assertions passed');

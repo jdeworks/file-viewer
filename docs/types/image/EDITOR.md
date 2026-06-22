@@ -77,9 +77,10 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
 
 - **Shape tools** — Rectangle, ellipse, line, arrow, polygon overlays. Draw as a preview ghost during drag (redraw on each `pointermove`), commit on `pointerup`. Fit naturally alongside the pencil/eraser toggle. Reuses `applyTransform` pattern. Arrow = line + filled arrowhead at endpoint. — M
 
-- ✅ **SHIPPED — Fill bucket** (`fill.js`): seed / connected-shade / Sobel edge-stop region modes, Euclidean or perceptual (redmean) distance, feather. Reusable BFS + Sobel already here for the magic-wand selection below.
+- ✅ **SHIPPED — Fill bucket** (`fill.js`): seed / connected-shade / Sobel edge-stop region modes, Euclidean or perceptual (redmean) distance, feather. Its BFS+Sobel walk is factored into `computeRegionMask` and reused by the magic-wand selection.
 
-- ⭐ **Selection tools (TOP GAP)** — Rectangular marquee (refactor the crop rect to produce a selection mask instead of cropping), elliptical marquee, lasso (freehand polygon), and **magic wand** (reuse `fill.js`'s seed/region BFS but write to a mask instead of painting). Operations on selection: cut, copy, fill, nudge. Selection mask = a separate `ImageData` alpha channel. — L, optional lib: OpenCV.js for contour refinement (~3 MB, heavy)
+- ✅ **SHIPPED — Magic-wand selection** (`edit-select.js`): 🪄 click a region (reusing the shared fill tolerance/mode/perceptual) to build a pixel **mask** via `computeRegionMask`; shown as a tint + boundary on its own overlay canvas. While a selection is active, the pixel tools (fill / pencil / eraser) are **constrained to it** — the renderer clips each edit with `clipToBase` (restore base pixels outside the mask). Deselect clears it; a dimension-changing geometry op invalidates it.
+  - **Still to add:** rectangular / elliptical marquee + lasso (other ways to build the same mask), and selection ops (cut / copy / nudge). The mask plumbing (`getMask`/`clipToBase`) is in place; these are additional mask SOURCES + actions. — M
 
 - **Color adjustments panel** — brightness/contrast/saturation/**hue** sliders already shipped (`edit-filters.js`). Still to add:
   - Levels (black point / white point / gamma) — remap pixel values via a lookup table (256-entry Uint8ClampedArray), applied with `getImageData`/`putImageData`
