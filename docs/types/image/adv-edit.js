@@ -22,10 +22,11 @@ const DEFAULTS = { text: 'Text', fontFamily: 'system-ui, sans-serif', fontSize: 
 export async function mountAdvEdit({ host, img, onDirty }) {
   const Konva = await loadKonva();
   const stageHost = host.querySelector('.imgv-stage');
-  const naturalW = img.naturalWidth || 1, naturalH = img.naturalHeight || 1;
+  let naturalW = img.naturalWidth || 1, naturalH = img.naturalHeight || 1;
   // Stage matches the DISPLAYED image box; flatten scales back up to natural res.
+  // (let, not const — rebaseline() updates them after a base-resizing geometry op.)
   const rect = img.getBoundingClientRect();
-  const stageW = Math.max(1, Math.round(rect.width)), stageH = Math.max(1, Math.round(rect.height));
+  let stageW = Math.max(1, Math.round(rect.width)), stageH = Math.max(1, Math.round(rect.height));
 
   const container = document.createElement('div');
   container.className = 'imgv-adv-stage';
@@ -194,17 +195,54 @@ export async function mountAdvEdit({ host, img, onDirty }) {
   function mkMini(txt, title, fn) { const b = document.createElement('button'); b.textContent = txt; b.title = title; b.style.cssText = 'background:none;border:none;color:inherit;cursor:pointer;font-size:11px;padding:0 1px'; b.addEventListener('click', fn); return b; }
 
   // Flatten the base image + the vector overlay into a fresh natural-res canvas.
-  // Transformer handles are hidden first so they don't bake in.
+  // Transformer handles are hidden first so they don't bake in. Reads the CURRENT
+  // image dimensions (the base may have been re-encoded by a non-geometry pixel edit).
   function flattenToCanvas() {
     const wasSel = selected; select(null);
+    const nW = img.naturalWidth || naturalW, nH = img.naturalHeight || naturalH;
     const canvas = document.createElement('canvas');
-    canvas.width = naturalW; canvas.height = naturalH;
+    canvas.width = nW; canvas.height = nH;
     const g = canvas.getContext('2d');
-    g.drawImage(img, 0, 0, naturalW, naturalH);
-    const overlay = stage.toCanvas({ pixelRatio: naturalW / stageW });
-    g.drawImage(overlay, 0, 0, naturalW, naturalH);
+    g.drawImage(img, 0, 0, nW, nH);
+    const overlay = stage.toCanvas({ pixelRatio: nW / stageW });
+    g.drawImage(overlay, 0, 0, nW, nH);
     if (wasSel) select(wasSel);
     return canvas;
+  }
+
+  // Keep the overlay container glued to the displayed image box as the view changes
+  // (fit/zoom/pan). The Konva stage keeps its mount-time pixel coords; a CSS scale on
+  // the container tracks zoom so objects stay registered to the image without touching
+  // their coordinates. The renderer calls this from its apply()/applyPan().
+  function relayout() {
+    const hostR = stageHost.getBoundingClientRect();
+    const r = img.getBoundingClientRect();
+    container.style.left = Math.round(r.left - hostR.left) + 'px';
+    container.style.top = Math.round(r.top - hostR.top) + 'px';
+    const s = stageW ? r.width / stageW : 1;
+    container.style.transformOrigin = 'top left';
+    container.style.transform = Math.abs(s - 1) < 1e-3 ? '' : `scale(${s})`;
+  }
+
+  // Re-baseline the (empty) stage onto the CURRENT base image — display size + natural
+  // res — after a geometry op resized the base while the overlay was away. Only valid
+  // with no objects (it resets the coordinate frame); the renderer calls it on Adv
+  // entry when the overlay is empty.
+  function rebaseline() {
+    naturalW = img.naturalWidth || naturalW; naturalH = img.naturalHeight || naturalH;
+    const r = img.getBoundingClientRect();
+    stageW = Math.max(1, Math.round(r.width)); stageH = Math.max(1, Math.round(r.height));
+    stage.width(stageW); stage.height(stageH);
+    container.style.width = stageW + 'px'; container.style.height = stageH + 'px';
+    container.style.transform = '';
+    relayout();
+  }
+
+  // Remove every object (used when the overlay is flattened into the base — before a
+  // geometry op, or on Reset). The stage itself stays mounted.
+  function clear() {
+    layer.find('.obj').forEach((n) => n.destroy());
+    select(null); layer.draw(); refreshLayers(); markDirty();
   }
 
   return {
@@ -220,6 +258,9 @@ export async function mountAdvEdit({ host, img, onDirty }) {
     },
     undo() { if (!undoStack.length) return; rebuild(undoStack.pop()); },
     flattenToCanvas,
+    relayout,
+    rebaseline,
+    clear,
     destroy() { tr.destroy(); stage.destroy(); container.remove(); tb.remove(); panel.remove(); },
   };
 

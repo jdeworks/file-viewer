@@ -4,7 +4,7 @@
 // zoom math correct; crop returns { isActive } so the renderer's pan logic stands
 // down while a crop rectangle is being dragged.
 
-export function mountGeometry({ host, img, url, mime, core, view, els }) {
+export function mountGeometry({ host, img, url, mime, core, view, els, onBeforeGeometry }) {
   const {
     rotLBtn, rotRBtn, flipHBtn, flipVBtn,
     cropBtn, cropApplyBtn, cropCancelBtn,
@@ -16,6 +16,7 @@ export function mountGeometry({ host, img, url, mime, core, view, els }) {
 
   // ── Rotate / flip ── draw the current image onto a transformed canvas + commit.
   async function applyTransform(transformFn, newW, newH) {
+    await onBeforeGeometry?.();   // flatten any vector overlay into the base first (it can't follow a rotate/flip)
     const base = await core.loadBase();
     const srcW = base.naturalWidth, srcH = base.naturalHeight;
     const canvas = document.createElement('canvas');
@@ -128,6 +129,7 @@ export function mountGeometry({ host, img, url, mime, core, view, els }) {
 
   async function applyCrop() {
     if (!cropHasRegion) return;
+    await onBeforeGeometry?.();   // flatten any vector overlay into the base before cropping it away
     const nw = img.naturalWidth, nh = img.naturalHeight;
     const x1 = Math.round(Math.min(cropStartX, cropEndX) * nw);
     const y1 = Math.round(Math.min(cropStartY, cropEndY) * nh);
@@ -196,6 +198,7 @@ export function mountGeometry({ host, img, url, mime, core, view, els }) {
     resizeApplyBtn?.addEventListener('click', async () => {
       const { tw, th } = resizeTargetPx();
       if (!tw || !th || tw < 1 || th < 1) return;
+      await onBeforeGeometry?.();   // flatten any vector overlay into the base before rescaling
       const base = await core.loadBase();
       const canvas = document.createElement('canvas');
       canvas.width = tw; canvas.height = th;
@@ -228,6 +231,7 @@ export function mountGeometry({ host, img, url, mime, core, view, els }) {
     expandApplyBtn?.addEventListener('click', async () => {
       const pad = Math.round(parseFloat(expandPad?.value) || 0);
       if (pad <= 0) return;
+      await onBeforeGeometry?.();   // flatten any vector overlay into the base before padding the canvas
       // Transparency needs an alpha format; JPEG has none, so fall back to a fill.
       const wantTransparent = expandTransparent?.checked !== false;
       const transparent = wantTransparent && mime !== 'image/jpeg';

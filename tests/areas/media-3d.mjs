@@ -501,14 +501,21 @@ export async function run(ctx) {
   const advLayers = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 3 rows
   const shapeCtl = await page.$eval('#previewHost .imgv-adv-stroke', (el) => getComputedStyle(el.closest('label')).display !== 'none').catch(() => false);
   if (advLayers === 4 && shapeCtl) pass('Adv Edit: layers panel + shapes (text ×2 + rect; stroke controls shown)'); else fail('adv layers/shape: ' + JSON.stringify({ advLayers, shapeCtl }));
-  await page.click('#previewHost .imgv-adv-btn');   // leave Adv → flatten both labels onto the base
+  // Persistent overlay: leaving Adv makes the stage non-interactive but KEEPS it
+  // mounted (non-destructive). The doc is dirty and getBytes() flattens base+overlay
+  // ON DEMAND — the overlay is never baked onto the base just for leaving Adv.
+  await page.click('#previewHost .imgv-adv-btn');   // leave Adv → overlay STAYS, just non-interactive
   await page.waitForFunction(() => window.__fv.state.binaryEdit?.dirty === true, null, { timeout: 8000 }).catch(() => {});
   const advFlat = await page.evaluate(async () => {
     const be = window.__fv.state.binaryEdit; if (!be) return { dirty: false };
     const bytes = await be.getBytes();
-    return { dirty: true, len: bytes.length, sig: Array.from(bytes.slice(0, 4)).join(','), stageGone: !document.querySelector('#previewHost .imgv-adv-stage') };
+    return {
+      dirty: true, len: bytes.length, sig: Array.from(bytes.slice(0, 4)).join(','),
+      stagePresent: !!document.querySelector('#previewHost .imgv-adv-stage canvas'),
+      barInteractive: getComputedStyle(document.querySelector('#previewHost .imgv-adv-bar')).display !== 'none',
+    };
   });
-  if (advFlat.dirty && advFlat.len > 1000 && advFlat.sig === '137,80,78,71' && advFlat.stageGone) pass('Adv Edit: leaving flattens text layers onto the image (dirty PNG)'); else fail('adv flatten: ' + JSON.stringify(advFlat));
+  if (advFlat.dirty && advFlat.len > 1000 && advFlat.sig === '137,80,78,71' && advFlat.stagePresent && !advFlat.barInteractive) pass('Adv Edit: overlay persists non-interactively; output flattens base+overlay (dirty PNG)'); else fail('adv persist: ' + JSON.stringify(advFlat));
   // Image export (loadExports hook): menu offers PNG/JPEG/WebP, and a conversion actually downloads.
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
