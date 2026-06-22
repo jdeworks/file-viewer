@@ -21,6 +21,11 @@ export function defaultState(context = {}) {
       completedAt: null,
       route: null
     },
+    // One-memory-at-a-time stepper: cursor = index into memories[] (0..8); view = "memories" | "final".
+    ui: {
+      cursor: 0,
+      view: "memories"
+    },
     meta: {
       finalQuestionUnlockedAt: null,
       memoryRouteCompleteAt: null,
@@ -39,6 +44,11 @@ export function normalizeState(state, context = {}) {
     target.memories[memory.id] = normalizeMemoryState(target.memories[memory.id], fresh.memories[memory.id]);
   }
   target.final = { ...fresh.final, ...(target.final && typeof target.final === "object" ? target.final : {}) };
+  const ui = target.ui && typeof target.ui === "object" ? target.ui : {};
+  target.ui = {
+    cursor: Math.min(Math.max(Number(ui.cursor) || 0, 0), memories.length - 1),
+    view: ui.view === "final" ? "final" : "memories"
+  };
   target.meta = { ...fresh.meta, ...(target.meta && typeof target.meta === "object" ? target.meta : {}) };
   return target;
 }

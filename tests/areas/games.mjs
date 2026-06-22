@@ -403,15 +403,25 @@ export async function run(ctx) {
   pass('Stage 9 offline action unlocks and clears Observer State');
 
   await page.waitForSelector('.mg-stage10', { timeout: 8000 });
-  const memoryIds = await page.$$eval('[data-resolve-memory]', (buttons) => [...new Set(buttons.map((button) => button.dataset.resolveMemory))]);
-  for (const id of memoryIds) await page.click(`[data-resolve-memory="${id}"]`);
-  for (const id of memoryIds) await page.click(`[data-integrate-memory="${id}"]`);
+  // Stage 10 presents one memory at a time: read -> pick a stance -> integrate -> advance with Next.
+  for (let i = 0; i < 9; i++) {
+    await page.waitForSelector('[data-read-memory]', { timeout: 5000 });
+    await page.click('[data-read-memory]');
+    await page.waitForSelector('[data-resolve-memory]', { timeout: 5000 });
+    await page.click('[data-resolve-memory]');
+    await page.waitForSelector('[data-integrate-memory]', { timeout: 5000 });
+    await page.click('[data-integrate-memory]');
+    if (i < 8) await page.click('[data-step="1"]');
+  }
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return Boolean(save.actions?.['10.memory_resolved'] && save.achievements?.['stage10.memory_resolved'] && save.achievements?.['stage10.full_capstone']);
     } catch { return false; }
   }, null, { timeout: 5000 });
+  await page.waitForSelector('[data-goto-final]', { timeout: 5000 });
+  await page.click('[data-goto-final]');
+  await page.waitForSelector('[data-final-choice="continue"]', { timeout: 5000 });
   await page.click('[data-final-choice="continue"]');
   await page.waitForFunction(() => {
     try {
