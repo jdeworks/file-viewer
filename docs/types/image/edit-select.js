@@ -12,7 +12,7 @@ import { computeRegionMask, clipToBase } from './fill.js';
 
 export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }) {
   const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, deselectBtn } = els;
-  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {}, async clipCanvas() {}, toggle() {}, setActive() {}, setMode() {}, clear() {}, syncOverlay() {}, teardown() {} };
+  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {}, async clipCanvas() {}, invert() {}, toggle() {}, setActive() {}, setMode() {}, clear() {}, syncOverlay() {}, teardown() {} };
 
   const stage = host.querySelector('.imgv-stage');
   let mode = null;                   // null | 'wand' | 'marquee' | 'ellipse' | 'lasso'
@@ -202,6 +202,13 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     if (deselectBtn) deselectBtn.hidden = true;
   }
 
+  // Invert the current selection (select the complement). No-op without a mask.
+  function invert() {
+    if (!mask) return;
+    for (let p = 0; p < mask.length; p++) mask[p] = mask[p] ? 0 : 1;
+    render();
+  }
+
   // Clip a fill result (ImageData byte arrays) to the selection: `editedData` keeps
   // its new values only inside the mask, restoring `beforeData` outside. No-op when
   // there's no selection or the dimensions don't match.
@@ -235,7 +242,7 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     hasSelection: () => !!mask,
     getMask: () => (mask ? { data: mask, w: mw, h: mh } : null),
     setActive, setMode, toggle: () => setMode(mode ? null : 'wand'),
-    clipFillInPlace, clipCanvas,
+    clipFillInPlace, clipCanvas, invert,
     clear, syncOverlay,
     teardown() { ov?.remove(); ov = null; octx = null; mask = null; },
   };

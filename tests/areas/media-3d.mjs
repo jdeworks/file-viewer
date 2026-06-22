@@ -391,6 +391,20 @@ export async function run(ctx) {
   // a tool-agnostic regression signal that protects the editor-module split.
   const imgSrcNow = () => page.$eval('#previewHost .imgv-img', (e) => e.src);
   const waitNewSrc = async (before) => page.waitForFunction((s) => document.querySelector('#previewHost .imgv-img').src !== s, before, { timeout: 8000 }).then(() => true).catch(() => false);
+  // Selection OPS — build a wand selection, Invert the mask, then Cut deletes the
+  // selected pixels (commits a transparent PNG). Then clear for the later steps.
+  await openTab('common');
+  await page.click('#previewHost .imgv-select');                  // wand mode
+  await page.click('#previewHost .imgv-sel-overlay', { position: { x: 18, y: 18 } });   // pick a region
+  await openTab('draw');
+  await page.click('#previewHost .imgv-sel-invert');              // invert the mask
+  const cutBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-sel-cut');                 // delete selected → new PNG
+  const cutCommitted = await waitNewSrc(cutBefore);
+  if (cutCommitted) pass('selection ops: invert + cut deletes the selection (commits a new image)'); else fail('selection cut did not commit');
+  await openTab('common');
+  await page.click('#previewHost .imgv-select');                  // leave wand
+  await page.click('#previewHost .imgv-deselect');                // clear the mask
   // Rotate 90° CW also swaps width/height — a strong correctness check.
   await openTab('common');
   const rotBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight, src: e.src }));

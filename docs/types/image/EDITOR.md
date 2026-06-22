@@ -81,7 +81,8 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
 
 - ✅ **SHIPPED — Magic-wand selection** (`edit-select.js`): 🪄 click a region (reusing the shared fill tolerance/mode/perceptual) to build a pixel **mask** via `computeRegionMask`; shown as a tint + boundary on its own overlay canvas. While a selection is active, the pixel tools (fill / pencil / eraser) are **constrained to it** — the renderer clips each edit with `clipToBase` (restore base pixels outside the mask). Deselect clears it; a dimension-changing geometry op invalidates it.
   - ✅ **Marquee (rect + ellipse) + lasso** SHIPPED — `edit-select.js` modes `'marquee'`/`'ellipse'`/`'lasso'`; rect is a fast loop, ellipse + lasso rasterize a canvas path (`maskFromPath`) into the mask.
-  - **Still to add:** selection ops (cut / copy / nudge / fill-with-colour). The mask plumbing (`getMask`/`clipToBase`/the mode framework) is in place — these are ACTIONS on the mask, not new sources. — M
+  - ✅ **Selection ops** SHIPPED — ⇄ Invert (flip the mask) + ✂ Cut (delete the selected pixels → transparent PNG). Fill-within-selection already works via the mask-constrained bucket.
+  - **Still to add:** copy / nudge / move the selected pixels (drag the masked region) — the only selection actions left. — S
 
 - **Color adjustments panel** — brightness/contrast/saturation/**hue** sliders shipped (`edit-filters.js`); **Levels** (black/white/gamma) ✅ SHIPPED (`levels.js` LUT + live preview, in the Adjust tab). Still to add:
   - Curves (interactive cubic Bezier per channel) — build a 256-entry LUT from four control points, apply via `putImageData`. UI: small `<canvas>` with draggable handles, no lib needed. The LUT-apply plumbing (`levels.js` `applyLevels`) generalizes.
