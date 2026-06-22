@@ -1,4 +1,4 @@
-import { ACHIEVEMENTS1 } from '../../achievements1.js';
+import { ACHIEVEMENTS1 } from './achievements1.js';
 
 export const stageAchievements = ACHIEVEMENTS1;
 

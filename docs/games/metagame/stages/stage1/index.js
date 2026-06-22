@@ -1,4 +1,4 @@
-import { stageByNumber } from '../../stages.js';
+import { stageByNumber } from './stages.js';
 import { renderStage1 } from './renderer.js';
 import { mountStage1Boss } from './boss.js';
 import { defaultState as createDefaultState, normalizeState } from './state.js';

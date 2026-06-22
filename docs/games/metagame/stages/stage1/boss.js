@@ -1,4 +1,4 @@
-import { mountDefragmenter } from '../../boss1.js';
+import { mountDefragmenter } from './boss1.js';
 
 export function hasCheatDisabledAction(ctx = {}) {
   const actions = ctx.actions;

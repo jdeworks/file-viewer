@@ -1,4 +1,4 @@
-import { MESSAGES1 } from '../../messages1.js';
+import { MESSAGES1 } from './messages1.js';
 
 export const stageMessages = MESSAGES1;
 
