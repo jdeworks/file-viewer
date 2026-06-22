@@ -64,6 +64,8 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     <button class="imgv-adv-ellipse" title="Add ellipse">◯</button>
     <button class="imgv-adv-line" title="Add line">╱</button>
     <button class="imgv-adv-arrow" title="Add arrow">➤</button>
+    <button class="imgv-adv-poly" title="Add polygon">⬠</button>
+    <button class="imgv-adv-star" title="Add star">★</button>
     <span class="imgv-sep"></span>
     <input class="imgv-adv-text imgv-adv-txtctl" type="text" placeholder="Selected text" style="min-width:120px">
     <label class="imgv-adv-txtctl" style="font-size:.8em">Size <input class="imgv-adv-size" type="number" min="6" max="400" value="${DEFAULTS.fontSize}" style="width:56px"></label>
@@ -129,7 +131,9 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     if (type === 'rect') node = new Konva.Rect({ ...common, width: 120, height: 80, cornerRadius: 4 });
     else if (type === 'ellipse') node = new Konva.Ellipse({ x: cx, y: cy, radiusX: 60, radiusY: 40, draggable: true, fill: '#3388ff', stroke: '#1144aa', strokeWidth: 2 });
     else if (type === 'line') node = new Konva.Line({ points: [cx - 60, cy, cx + 60, cy], stroke: '#1144aa', strokeWidth: 4, hitStrokeWidth: 14, draggable: true });
-    else node = new Konva.Arrow({ points: [cx - 60, cy, cx + 60, cy], stroke: '#1144aa', strokeWidth: 4, fill: '#1144aa', pointerLength: 12, pointerWidth: 12, hitStrokeWidth: 14, draggable: true });
+    else if (type === 'arrow') node = new Konva.Arrow({ points: [cx - 60, cy, cx + 60, cy], stroke: '#1144aa', strokeWidth: 4, fill: '#1144aa', pointerLength: 12, pointerWidth: 12, hitStrokeWidth: 14, draggable: true });
+    else if (type === 'poly') node = new Konva.RegularPolygon({ x: cx, y: cy, sides: 5, radius: 56, draggable: true, fill: '#3388ff', stroke: '#1144aa', strokeWidth: 2 });
+    else node = new Konva.Star({ x: cx, y: cy, numPoints: 5, innerRadius: 26, outerRadius: 56, draggable: true, fill: '#3388ff', stroke: '#1144aa', strokeWidth: 2 });
     placeObject(node);
   }
 
@@ -150,6 +154,8 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   $('.imgv-adv-ellipse').addEventListener('click', () => addShape('ellipse'));
   $('.imgv-adv-line').addEventListener('click', () => addShape('line'));
   $('.imgv-adv-arrow').addEventListener('click', () => addShape('arrow'));
+  $('.imgv-adv-poly').addEventListener('click', () => addShape('poly'));
+  $('.imgv-adv-star').addEventListener('click', () => addShape('star'));
   $('.imgv-adv-del').addEventListener('click', () => { if (!selected) return; snap(); selected.destroy(); select(null); markDirty(); });
   $('.imgv-adv-text').addEventListener('input', () => { if (isLabel(selected)) { textNodeOf(selected).text($('.imgv-adv-text').value); layer.draw(); refreshLayers(); markDirty(); } });
   $('.imgv-adv-size').addEventListener('input', () => { if (isLabel(selected)) { textNodeOf(selected).fontSize(parseInt($('.imgv-adv-size').value, 10) || DEFAULTS.fontSize); layer.draw(); markDirty(); } });
@@ -172,7 +178,7 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
 
   function labelName(node) {
     if (isLabel(node)) { const t = textNodeOf(node)?.text?.(); if (t && t.trim()) return t.trim().slice(0, 18); }
-    return ({ Rect: 'Rectangle', Ellipse: 'Ellipse', Line: 'Line', Arrow: 'Arrow', Label: 'Text' })[node.getClassName?.()] || 'Layer';
+    return ({ Rect: 'Rectangle', Ellipse: 'Ellipse', Line: 'Line', Arrow: 'Arrow', RegularPolygon: 'Polygon', Star: 'Star', Label: 'Text' })[node.getClassName?.()] || 'Layer';
   }
 
   function refreshLayers() {

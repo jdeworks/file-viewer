@@ -1,5 +1,5 @@
 // Unit tests for the pure tone-curve mapping (image/curves.js). No DOM needed.
-import { buildCurveLUT } from '../docs/types/image/curves.js';
+import { buildCurveLUT, buildChannelLUTs, applyChannelLUTs } from '../docs/types/image/curves.js';
 
 let failed = 0;
 const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!cond) failed++; };
@@ -46,6 +46,29 @@ const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!co
   ok(single instanceof Uint8ClampedArray && single.length === 256, 'a single handle still returns a 256-entry LUT');
   const empty = buildCurveLUT([]);
   ok(empty[0] === 0 && empty[255] === 255, 'empty input falls back to the identity diagonal');
+}
+
+// ── Per-channel: buildChannelLUTs composes master ∘ channel; applyChannelLUTs maps R/G/B independently ──
+{
+  const idAll = buildChannelLUTs({ rgb: [], r: [], g: [], b: [] });
+  let id = true;
+  for (let i = 0; i < 256; i++) if (idAll.r[i] !== i || idAll.g[i] !== i || idAll.b[i] !== i) { id = false; break; }
+  ok(id, 'buildChannelLUTs: all-identity channels → identity per channel');
+
+  // Red channel lifted, green/blue identity → only R changes.
+  const redUp = buildChannelLUTs({ rgb: [], r: [{ x: 0, y: 0 }, { x: 128, y: 200 }, { x: 255, y: 255 }], g: [], b: [] });
+  ok(redUp.r[128] > 128 && redUp.g[128] === 128 && redUp.b[128] === 128, `red curve lifts only R (r=${redUp.r[128]}, g=${redUp.g[128]}, b=${redUp.b[128]})`);
+
+  // Master inverts, channels identity → every composed channel inverts (master runs on top).
+  const masterInv = buildChannelLUTs({ rgb: [{ x: 0, y: 255 }, { x: 255, y: 0 }], r: [], g: [], b: [] });
+  ok(masterInv.r[0] === 255 && masterInv.g[255] === 0 && masterInv.b[0] === 255, 'master curve composes onto all channels (invert)');
+
+  // applyChannelLUTs maps each channel through its own LUT, alpha untouched.
+  const data = new Uint8ClampedArray([10, 20, 30, 123]);
+  const luts = buildChannelLUTs({ rgb: [], r: [{ x: 0, y: 0 }, { x: 255, y: 255 }], g: [], b: [] });
+  applyChannelLUTs(data, luts);
+  ok(data[0] === luts.r[10] && data[1] === luts.g[20] && data[2] === luts.b[30], 'applyChannelLUTs: per-channel mapping');
+  ok(data[3] === 123, 'applyChannelLUTs: leaves alpha unchanged');
 }
 
 console.log(failed ? `\n${failed} assertion(s) failed` : '\nall image-curves assertions passed');

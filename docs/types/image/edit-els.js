@@ -83,6 +83,7 @@ export function queryEls(host, canEdit) {
     curvesBtn: qe('.imgv-curves-btn'),
     curvesPanel: qe('.imgv-curves-panel'),
     curveCanvas: qe('.imgv-curve-canvas'),
+    curveChannel: qe('.imgv-curve-ch'),
     curveApply: qe('.imgv-curve-apply'),
     curveReset: qe('.imgv-curve-reset'),
     curveCancel: qe('.imgv-curve-cancel'),

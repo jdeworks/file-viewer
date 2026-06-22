@@ -128,6 +128,7 @@ function queryEls(host, canEdit) {
     curvesBtn: qe(".imgv-curves-btn"),
     curvesPanel: qe(".imgv-curves-panel"),
     curveCanvas: qe(".imgv-curve-canvas"),
+    curveChannel: qe(".imgv-curve-ch"),
     curveApply: qe(".imgv-curve-apply"),
     curveReset: qe(".imgv-curve-reset"),
     curveCancel: qe(".imgv-curve-cancel"),
@@ -1087,16 +1088,36 @@ function buildCurveLUT(points) {
   }
   return lut;
 }
+function buildChannelLUTs(pts) {
+  const master = buildCurveLUT(pts.rgb || []);
+  const compose = (chPts) => {
+    const ch = buildCurveLUT(chPts || []);
+    const out = new Uint8ClampedArray(256);
+    for (let i = 0; i < 256; i++) out[i] = master[ch[i]];
+    return out;
+  };
+  return { r: compose(pts.r), g: compose(pts.g), b: compose(pts.b) };
+}
+function applyChannelLUTs(data, luts) {
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = luts.r[data[i]];
+    data[i + 1] = luts.g[data[i + 1]];
+    data[i + 2] = luts.b[data[i + 2]];
+  }
+}
 
 // ../../docs/types/image/edit-curves.js
 function mountCurves({ img, mime, core, els }) {
-  const { curvesBtn, curvesPanel, curveCanvas, curveApply, curveReset, curveCancel } = els;
+  const { curvesBtn, curvesPanel, curveCanvas, curveChannel, curveApply, curveReset, curveCancel } = els;
   if (!curvesBtn || !curveCanvas) return { teardown() {
   } };
   const g = curveCanvas.getContext("2d");
   const W = curveCanvas.width, H = curveCanvas.height;
   const identity = () => [{ x: 0, y: 0 }, { x: 255, y: 255 }];
-  let points = identity();
+  const freshChannels = () => ({ rgb: identity(), r: identity(), g: identity(), b: identity() });
+  const CH_COLOR = { rgb: "#6cf", r: "#f66", g: "#6f6", b: "#69f" };
+  let channels = freshChannels(), activeCh = "rgb";
+  let points = channels[activeCh];
   let src = null, sw = 0, sh = 0, openSrc = null, prevUrl = null, raf = 0, drag = -1;
   const toCanvas = (p) => ({ cx: p.x / 255 * W, cy: (1 - p.y / 255) * H });
   const fromEvent = (e) => {
@@ -1125,7 +1146,7 @@ function mountCurves({ img, mime, core, els }) {
     g.lineTo(W, 0);
     g.stroke();
     const lut = buildCurveLUT(points);
-    g.strokeStyle = "#6cf";
+    g.strokeStyle = CH_COLOR[activeCh];
     g.lineWidth = 2;
     g.beginPath();
     for (let x = 0; x < 256; x++) {
@@ -1146,9 +1167,8 @@ function mountCurves({ img, mime, core, els }) {
     raf = requestAnimationFrame(() => {
       raf = 0;
       if (!src) return;
-      const lut = buildCurveLUT(points);
       const out = new ImageData(new Uint8ClampedArray(src.data), sw, sh);
-      applyLevels(out.data, lut);
+      applyChannelLUTs(out.data, buildChannelLUTs(channels));
       const c = document.createElement("canvas");
       c.width = sw;
       c.height = sh;
@@ -1245,22 +1265,30 @@ function mountCurves({ img, mime, core, els }) {
     cx.drawImage(base, 0, 0);
     src = cx.getImageData(0, 0, sw, sh);
     openSrc = img.src;
-    points = identity();
+    channels = freshChannels();
+    activeCh = "rgb";
+    points = channels.rgb;
+    if (curveChannel) curveChannel.value = "rgb";
     curvesPanel.hidden = false;
     curvesBtn.classList.add("active");
     draw();
   });
+  curveChannel?.addEventListener("change", () => {
+    activeCh = curveChannel.value in channels ? curveChannel.value : "rgb";
+    points = channels[activeCh];
+    draw();
+  });
   curveReset?.addEventListener("click", () => {
-    points = identity();
+    channels[activeCh] = identity();
+    points = channels[activeCh];
     draw();
     preview();
   });
   curveCancel?.addEventListener("click", () => close(false));
   curveApply?.addEventListener("click", async () => {
     if (!src) return;
-    const lut = buildCurveLUT(points);
     const out = new ImageData(new Uint8ClampedArray(src.data), sw, sh);
-    applyLevels(out.data, lut);
+    applyChannelLUTs(out.data, buildChannelLUTs(channels));
     const c = document.createElement("canvas");
     c.width = sw;
     c.height = sh;
@@ -2352,6 +2380,8 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     <button class="imgv-adv-ellipse" title="Add ellipse">◯</button>
     <button class="imgv-adv-line" title="Add line">╱</button>
     <button class="imgv-adv-arrow" title="Add arrow">➤</button>
+    <button class="imgv-adv-poly" title="Add polygon">⬠</button>
+    <button class="imgv-adv-star" title="Add star">★</button>
     <span class="imgv-sep"></span>
     <input class="imgv-adv-text imgv-adv-txtctl" type="text" placeholder="Selected text" style="min-width:120px">
     <label class="imgv-adv-txtctl" style="font-size:.8em">Size <input class="imgv-adv-size" type="number" min="6" max="400" value="${DEFAULTS.fontSize}" style="width:56px"></label>
@@ -2422,7 +2452,9 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     if (type === "rect") node = new Konva.Rect({ ...common, width: 120, height: 80, cornerRadius: 4 });
     else if (type === "ellipse") node = new Konva.Ellipse({ x: cx, y: cy, radiusX: 60, radiusY: 40, draggable: true, fill: "#3388ff", stroke: "#1144aa", strokeWidth: 2 });
     else if (type === "line") node = new Konva.Line({ points: [cx - 60, cy, cx + 60, cy], stroke: "#1144aa", strokeWidth: 4, hitStrokeWidth: 14, draggable: true });
-    else node = new Konva.Arrow({ points: [cx - 60, cy, cx + 60, cy], stroke: "#1144aa", strokeWidth: 4, fill: "#1144aa", pointerLength: 12, pointerWidth: 12, hitStrokeWidth: 14, draggable: true });
+    else if (type === "arrow") node = new Konva.Arrow({ points: [cx - 60, cy, cx + 60, cy], stroke: "#1144aa", strokeWidth: 4, fill: "#1144aa", pointerLength: 12, pointerWidth: 12, hitStrokeWidth: 14, draggable: true });
+    else if (type === "poly") node = new Konva.RegularPolygon({ x: cx, y: cy, sides: 5, radius: 56, draggable: true, fill: "#3388ff", stroke: "#1144aa", strokeWidth: 2 });
+    else node = new Konva.Star({ x: cx, y: cy, numPoints: 5, innerRadius: 26, outerRadius: 56, draggable: true, fill: "#3388ff", stroke: "#1144aa", strokeWidth: 2 });
     placeObject(node);
   }
   function addText() {
@@ -2441,6 +2473,8 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   $(".imgv-adv-ellipse").addEventListener("click", () => addShape("ellipse"));
   $(".imgv-adv-line").addEventListener("click", () => addShape("line"));
   $(".imgv-adv-arrow").addEventListener("click", () => addShape("arrow"));
+  $(".imgv-adv-poly").addEventListener("click", () => addShape("poly"));
+  $(".imgv-adv-star").addEventListener("click", () => addShape("star"));
   $(".imgv-adv-del").addEventListener("click", () => {
     if (!selected) return;
     snap();
@@ -2515,7 +2549,7 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
       const t = textNodeOf(node)?.text?.();
       if (t && t.trim()) return t.trim().slice(0, 18);
     }
-    return { Rect: "Rectangle", Ellipse: "Ellipse", Line: "Line", Arrow: "Arrow", Label: "Text" }[node.getClassName?.()] || "Layer";
+    return { Rect: "Rectangle", Ellipse: "Ellipse", Line: "Line", Arrow: "Arrow", RegularPolygon: "Polygon", Star: "Star", Label: "Text" }[node.getClassName?.()] || "Layer";
   }
   function refreshLayers() {
     const labels = layer.find(".obj").slice().reverse();
@@ -3064,6 +3098,7 @@ async function render(intake, ctx = {}) {
     curvesBtn,
     curvesPanel,
     curveCanvas,
+    curveChannel,
     curveApply,
     curveReset,
     curveCancel,
@@ -3132,6 +3167,7 @@ async function render(intake, ctx = {}) {
     curvesBtn,
     curvesPanel,
     curveCanvas,
+    curveChannel,
     curveApply,
     curveReset,
     curveCancel,

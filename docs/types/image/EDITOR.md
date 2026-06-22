@@ -75,7 +75,7 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
 
 - **Brush / paint engine upgrade** — Replace the raw canvas mouse listener with a pressure-aware, anti-aliased brush engine. Options: (a) keep native Canvas2D but add midpoint smoothing with `quadraticCurveTo` between pointer samples — very small diff; (b) use Fabric.js `PencilBrush` which supports width-pressure simulation. The current `buildOverlay()` approach plugs directly into either. — M (option a) / L (option b), lib: Fabric.js (~900 KB) or none
 
-- **Shape tools** — Rectangle, ellipse, line, arrow, polygon overlays. Draw as a preview ghost during drag (redraw on each `pointermove`), commit on `pointerup`. Fit naturally alongside the pencil/eraser toggle. Reuses `applyTransform` pattern. Arrow = line + filled arrowhead at endpoint. — M
+- ✅ **SHIPPED — Shape tools** (`adv-edit.js`, Adv Edit overlay): rectangle, ellipse, line, arrow, **polygon (`Konva.RegularPolygon`, pentagon) + star (`Konva.Star`, 5-point)** — all re-editable vector objects tagged `name:'obj'`, sharing the fill/stroke/width controls + layers panel + unified Ctrl+Z, and riding geometry transforms (rotate/flip/crop) without baking. Flattened only on output.
 
 - ✅ **SHIPPED — Fill bucket** (`fill.js`): seed / connected-shade / Sobel edge-stop region modes, Euclidean or perceptual (redmean) distance, feather. Its BFS+Sobel walk is factored into `computeRegionMask` and reused by the magic-wand selection.
 
@@ -84,7 +84,7 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
   - ✅ **Selection ops** SHIPPED — ✥ Move (drag the selected pixels to a new spot, leaving a transparent hole), ⇄ Invert (flip the mask), ✂ Cut (delete the selected pixels → transparent PNG). Fill-within-selection works via the mask-constrained bucket. **The selection feature is complete** (4 sources + constrain-tools + move/invert/cut).
 
 - **Color adjustments panel** — brightness/contrast/saturation/**hue** sliders shipped (`edit-filters.js`); **Levels** (black/white/gamma) ✅ SHIPPED (`levels.js` LUT + live preview, in the Adjust tab).
-  - ✅ SHIPPED — **Curves** (`curves.js` + `edit-curves.js`): a small `<canvas>` with draggable control points (click empty space to add a handle, double-click to remove). The handles drive a **monotone-cubic (Fritsch–Carlson)** spline — smooth but never overshoots, so the tone map stays monotone — sampled into a 256-entry LUT applied to R/G/B through the shared `applyLevels`. Live preview swaps `img.src` to a processed blob (rAF-coalesced); Apply bakes it via the edit core. Master RGB curve only (per-channel deferred).
+  - ✅ SHIPPED — **Curves** (`curves.js` + `edit-curves.js`): a small `<canvas>` with draggable control points (click empty space to add a handle, double-click to remove). The handles drive a **monotone-cubic (Fritsch–Carlson)** spline — smooth but never overshoots, so the tone map stays monotone — sampled into a 256-entry LUT. Live preview swaps `img.src` to a processed blob (rAF-coalesced); Apply bakes it via the edit core. **Per-channel** ✅ — a Channel selector (RGB / Red / Green / Blue) edits the composite (master) curve or each channel; `buildChannelLUTs` composes `master ∘ channel` into one LUT per channel, applied via `applyChannelLUTs`. The active channel's curve is drawn in its colour.
   - ✅ SHIPPED — Sepia / greyscale / invert one-click presets (`edit-filters.js`, `ctx.filter` bake, Adjust tab).
   — M per item, no lib required
 

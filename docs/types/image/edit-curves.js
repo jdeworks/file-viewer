@@ -1,19 +1,22 @@
-// Tone-curve tool — a draggable curve over a small square canvas remaps the image
-// tones. Control points (input→output) drive a monotone spline (curves.js) sampled to a
-// 256-LUT, applied to R/G/B via the shared applyLevels. Lifecycle mirrors Levels
-// (edit-filters.js): cache the source pixels on open, preview by swapping img.src to a
-// processed blob (rAF-coalesced so dragging stays smooth), commit the canvas on Apply.
-import { buildCurveLUT } from './curves.js';
-import { applyLevels } from './levels.js';
+// Tone-curve tool — a draggable curve over a small square canvas remaps the image tones.
+// Control points (input→output) drive a monotone spline (curves.js) sampled to a 256-LUT.
+// A channel selector switches between the composite RGB (master) curve and per-channel R/G/B
+// curves; on apply, buildChannelLUTs composes master ∘ channel into one LUT per channel
+// (applyChannelLUTs). Lifecycle mirrors Levels (edit-filters.js): cache the source pixels on
+// open, preview by swapping img.src to a processed blob (rAF-coalesced), commit on Apply.
+import { buildCurveLUT, buildChannelLUTs, applyChannelLUTs } from './curves.js';
 
 export function mountCurves({ img, mime, core, els }) {
-  const { curvesBtn, curvesPanel, curveCanvas, curveApply, curveReset, curveCancel } = els;
+  const { curvesBtn, curvesPanel, curveCanvas, curveChannel, curveApply, curveReset, curveCancel } = els;
   if (!curvesBtn || !curveCanvas) return { teardown() {} };
 
   const g = curveCanvas.getContext('2d');
   const W = curveCanvas.width, H = curveCanvas.height;
   const identity = () => [{ x: 0, y: 0 }, { x: 255, y: 255 }];
-  let points = identity();
+  const freshChannels = () => ({ rgb: identity(), r: identity(), g: identity(), b: identity() });
+  const CH_COLOR = { rgb: '#6cf', r: '#f66', g: '#6f6', b: '#69f' };
+  let channels = freshChannels(), activeCh = 'rgb';
+  let points = channels[activeCh];   // always aliases channels[activeCh] (handlers mutate in place)
   let src = null, sw = 0, sh = 0, openSrc = null, prevUrl = null, raf = 0, drag = -1;
 
   // ── curve-domain (0..255, y-up) ↔ canvas-pixel mapping ──
@@ -33,8 +36,8 @@ export function mountCurves({ img, mime, core, els }) {
       g.beginPath(); g.moveTo(gx, 0); g.lineTo(gx, H); g.moveTo(0, gy); g.lineTo(W, gy); g.stroke();
     }
     g.strokeStyle = '#555'; g.beginPath(); g.moveTo(0, H); g.lineTo(W, 0); g.stroke();   // diagonal ref
-    const lut = buildCurveLUT(points);                    // the curve itself
-    g.strokeStyle = '#6cf'; g.lineWidth = 2; g.beginPath();
+    const lut = buildCurveLUT(points);                    // the active channel's curve
+    g.strokeStyle = CH_COLOR[activeCh]; g.lineWidth = 2; g.beginPath();
     for (let x = 0; x < 256; x++) {
       const px = (x / 255) * W, py = (1 - lut[x] / 255) * H;
       x ? g.lineTo(px, py) : g.moveTo(px, py);
@@ -48,9 +51,8 @@ export function mountCurves({ img, mime, core, els }) {
     if (raf || !src) return;
     raf = requestAnimationFrame(() => {
       raf = 0; if (!src) return;
-      const lut = buildCurveLUT(points);
       const out = new ImageData(new Uint8ClampedArray(src.data), sw, sh);
-      applyLevels(out.data, lut);
+      applyChannelLUTs(out.data, buildChannelLUTs(channels));
       const c = document.createElement('canvas'); c.width = sw; c.height = sh;
       c.getContext('2d').putImageData(out, 0, 0);
       c.toBlob((blob) => {
@@ -118,16 +120,20 @@ export function mountCurves({ img, mime, core, els }) {
     if (mime === 'image/jpeg') { cx.fillStyle = '#fff'; cx.fillRect(0, 0, sw, sh); }
     cx.drawImage(base, 0, 0);
     src = cx.getImageData(0, 0, sw, sh);
-    openSrc = img.src; points = identity();
+    openSrc = img.src; channels = freshChannels(); activeCh = 'rgb'; points = channels.rgb;
+    if (curveChannel) curveChannel.value = 'rgb';
     curvesPanel.hidden = false; curvesBtn.classList.add('active'); draw();
   });
-  curveReset?.addEventListener('click', () => { points = identity(); draw(); preview(); });
+  curveChannel?.addEventListener('change', () => {
+    activeCh = curveChannel.value in channels ? curveChannel.value : 'rgb';
+    points = channels[activeCh]; draw();   // switching channel changes no pixels until you edit
+  });
+  curveReset?.addEventListener('click', () => { channels[activeCh] = identity(); points = channels[activeCh]; draw(); preview(); });
   curveCancel?.addEventListener('click', () => close(false));
   curveApply?.addEventListener('click', async () => {
     if (!src) return;
-    const lut = buildCurveLUT(points);
     const out = new ImageData(new Uint8ClampedArray(src.data), sw, sh);
-    applyLevels(out.data, lut);
+    applyChannelLUTs(out.data, buildChannelLUTs(channels));
     const c = document.createElement('canvas'); c.width = sw; c.height = sh;
     c.getContext('2d').putImageData(out, 0, 0);
     core.pushUndo();

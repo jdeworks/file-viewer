@@ -52,3 +52,25 @@ export function buildCurveLUT(points) {
   }
   return lut;
 }
+
+// Compose the master (RGB) curve with each per-channel curve into one LUT per channel:
+//   final_channel[v] = master[ channel[v] ]   — the channel curve runs first, then the master on top
+// so an identity channel leaves the master curve and an identity master leaves the channel curve.
+// `pts` = { rgb, r, g, b }, each an array of control points (any may be omitted → identity).
+export function buildChannelLUTs(pts) {
+  const master = buildCurveLUT(pts.rgb || []);
+  const compose = (chPts) => {
+    const ch = buildCurveLUT(chPts || []);
+    const out = new Uint8ClampedArray(256);
+    for (let i = 0; i < 256; i++) out[i] = master[ch[i]];
+    return out;
+  };
+  return { r: compose(pts.r), g: compose(pts.g), b: compose(pts.b) };
+}
+
+// Map R/G/B through their own LUT in place (alpha untouched). `luts` = { r, g, b } from buildChannelLUTs.
+export function applyChannelLUTs(data, luts) {
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = luts.r[data[i]]; data[i + 1] = luts.g[data[i + 1]]; data[i + 2] = luts.b[data[i + 2]];
+  }
+}

@@ -466,16 +466,24 @@ export async function run(ctx) {
     return { x: r.x, y: r.y, w: r.width, h: r.height };
   });
   // Empty-space pointerdown at the curve's middle inserts a handle; dragging it up brightens.
-  await page.mouse.move(cbox.x + cbox.w / 2, cbox.y + cbox.h / 2);
-  await page.mouse.down();
-  await page.mouse.move(cbox.x + cbox.w / 2, cbox.y + cbox.h / 2 - 45, { steps: 6 });
-  await page.mouse.up();
+  const dragCurve = async () => {
+    await page.mouse.move(cbox.x + cbox.w / 2, cbox.y + cbox.h / 2);
+    await page.mouse.down();
+    await page.mouse.move(cbox.x + cbox.w / 2, cbox.y + cbox.h / 2 - 45, { steps: 6 });
+    await page.mouse.up();
+  };
+  await dragCurve();
   const curvePreviewed = await waitNewSrc(curveOpenSrc);           // a processed preview blob swapped in
+  // Switch to the Red channel and bend it too — per-channel grading composes onto the master curve.
+  const redBefore = await imgSrcNow();
+  await page.selectOption('#previewHost .imgv-curve-ch', 'r');
+  await dragCurve();
+  const curveChannelPreviewed = await waitNewSrc(redBefore);
   const curveBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-curve-apply');
   const curveCommitted = await waitNewSrc(curveBefore);
   const curveClosed = await page.waitForFunction(() => document.querySelector('#previewHost .imgv-curves-panel')?.hidden === true, { timeout: 2000 }).then(() => true).catch(() => false);
-  if (curvePreviewed && curveCommitted && curveClosed) pass('curves: drag lifts the tone curve → preview + Apply commits a LUT-mapped image + panel closes'); else fail('curves: ' + JSON.stringify({ curvePreviewed, curveCommitted, curveClosed }));
+  if (curvePreviewed && curveChannelPreviewed && curveCommitted && curveClosed) pass('curves: master + per-channel (Red) curves preview + Apply commits a LUT-mapped image + panel closes'); else fail('curves: ' + JSON.stringify({ curvePreviewed, curveChannelPreviewed, curveCommitted, curveClosed }));
   // One-click presets (greyscale/sepia/invert) bake straight to pixels via a canvas filter.
   const greyBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-preset-grey');
@@ -663,6 +671,16 @@ export async function run(ctx) {
   await page.waitForFunction(() => document.querySelectorAll('#previewHost .imgv-adv-layers > div').length === 3, null, { timeout: 5000 }).catch(() => {});
   const afterAdvUndo = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 2 rows
   if (afterAdvUndo === 3) pass('Adv Edit: unified Ctrl+Z removes the last vector object (header + 2 rows)'); else fail('adv unified undo: ' + afterAdvUndo);
+  // Polygon + star shapes: RegularPolygon/Star objects join the same overlay model
+  // (selectable, layered, named in the panel). Adds two rows → header + 4.
+  await page.click('#previewHost .imgv-adv-poly');
+  await page.click('#previewHost .imgv-adv-star');
+  const advPolyStar = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#previewHost .imgv-adv-layers > div')];
+    const names = rows.map((r) => r.querySelector('span')?.textContent || '').join('|');
+    return { count: rows.length, hasPoly: names.includes('Polygon'), hasStar: names.includes('Star') };
+  });
+  if (advPolyStar.count === 5 && advPolyStar.hasPoly && advPolyStar.hasStar) pass('Adv Edit: polygon + star shapes added (named in layers panel)'); else fail('adv poly/star: ' + JSON.stringify(advPolyStar));
   // Persistent overlay: leaving Adv makes the stage non-interactive but KEEPS it
   // mounted (non-destructive). The doc is dirty and getBytes() flattens base+overlay
   // ON DEMAND — the overlay is never baked onto the base just for leaving Adv.
@@ -688,8 +706,8 @@ export async function run(ctx) {
   await page.click('#previewHost .imgv-tools-btn');                 // leave Edit
   await page.click('#previewHost .imgv-adv-btn');                   // re-enter Adv to read the layers panel
   await page.waitForSelector('#previewHost .imgv-adv-layers > div', { timeout: 5000 }).catch(() => {});
-  const afterGeom = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 2 rows
-  if (afterGeom === 3) pass('Adv Edit: geometry (rotate) transforms the overlay objects, keeps them editable (not baked)'); else fail('adv geometry-transform: ' + afterGeom);
+  const afterGeom = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 4 rows (2 text + poly + star)
+  if (afterGeom === 5) pass('Adv Edit: geometry (rotate) transforms the overlay objects, keeps them editable (not baked)'); else fail('adv geometry-transform: ' + afterGeom);
   await page.click('#previewHost .imgv-adv-btn');                   // leave Adv again for the export/ASCII steps
   // Image export (loadExports hook): menu offers PNG/JPEG/WebP, and a conversion actually downloads.
   await page.click('#exportBtn');
