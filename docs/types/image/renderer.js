@@ -6,7 +6,9 @@ import { loadGlobal, vendor } from '../../core/script-loader.js';
 import { loadTemplate, fill } from '../../core/template.js';
 import { isSvg, mimeFor, dimensions } from './imglib.js';
 import { recordStage3AsciiActivation } from '../../games/metagame/viewer-actions.js';
-import { hexToRgba, floodFill } from './fill.js';
+import { queryEls } from './edit-els.js';
+import { createView } from './view-controller.js';
+import { createDrawTools } from './draw-overlay.js';
 import { createEditCore } from './editor-core.js';
 import { mountFilters } from './edit-filters.js';
 import { mountTextTool } from './edit-text.js';
@@ -68,88 +70,29 @@ export async function render(intake, ctx = {}) {
   ]);
   host.innerHTML = fill(docTpl, { filename: intake.filename, editTools: editToolsTpl });
 
-  const img = host.querySelector('.imgv-img');
-  const note = host.querySelector('.imgv-note');
-  const zoomLabel = host.querySelector('.imgv-zoom');
-  const asciiBtn = host.querySelector('.imgv-ascii-btn');
-  const asciiOut = host.querySelector('.imgv-ascii-out');
-  const editInput = host.querySelector('.imgv-text-input');
-  const editSize = host.querySelector('.imgv-text-size');
-  const editColor = host.querySelector('.imgv-text-color');
-  const editApply = host.querySelector('.imgv-text-apply');
-  const editReset = host.querySelector('.imgv-text-reset');
-  const pencilBtn = canEdit ? host.querySelector('.imgv-pencil') : null;
-  const eraserBtn = canEdit ? host.querySelector('.imgv-eraser') : null;
-  const fillBtn = canEdit ? host.querySelector('.imgv-fill') : null;
-  const fillTol = canEdit ? host.querySelector('.imgv-fill-tol') : null;
-  const fillTolV = canEdit ? host.querySelector('.imgv-fill-tolv') : null;
-  const fillMode = canEdit ? host.querySelector('.imgv-fill-mode') : null;
-  const fillPercep = canEdit ? host.querySelector('.imgv-fill-percep') : null;
-  const fillFeather = canEdit ? host.querySelector('.imgv-fill-feather') : null;
-  const fillOpts = canEdit ? host.querySelectorAll('.imgv-fill-opt') : [];
-  const selectBtn = canEdit ? host.querySelector('.imgv-select') : null;
-  const marqueeBtn = canEdit ? host.querySelector('.imgv-marquee') : null;
-  const ellipseBtn = canEdit ? host.querySelector('.imgv-ellipse') : null;
-  const lassoBtn = canEdit ? host.querySelector('.imgv-lasso') : null;
-  const deselectBtn = canEdit ? host.querySelector('.imgv-deselect') : null;
-  const selInvertBtn = canEdit ? host.querySelector('.imgv-sel-invert') : null;
-  const selCutBtn = canEdit ? host.querySelector('.imgv-sel-cut') : null;
-  const moveBtn = canEdit ? host.querySelector('.imgv-sel-move') : null;
-  const drawColorPicker = canEdit ? host.querySelector('.imgv-draw-color') : null;
-  const drawSizePicker = canEdit ? host.querySelector('.imgv-draw-size') : null;
-  const undoBtn = canEdit ? host.querySelector('.imgv-undo') : null;
-  const redoBtn = canEdit ? host.querySelector('.imgv-redo') : null;
-  const exportFmt = canEdit ? host.querySelector('.imgv-export-fmt') : null;
-  const editFont = canEdit ? host.querySelector('.imgv-text-font') : null;
-  const bgBtn = canEdit ? host.querySelector('.imgv-bg-btn') : null;
-  const bgTol = canEdit ? host.querySelector('.imgv-bg-tol') : null;
-  const bgOk = canEdit ? host.querySelector('.imgv-bg-ok') : null;
-  const bgX = canEdit ? host.querySelector('.imgv-bg-x') : null;
-  const cropBtn = canEdit ? host.querySelector('.imgv-crop-btn') : null;
-  const cropApplyBtn = canEdit ? host.querySelector('.imgv-crop-apply') : null;
-  const cropCancelBtn = canEdit ? host.querySelector('.imgv-crop-cancel') : null;
-  const resizeBtn = canEdit ? host.querySelector('.imgv-resize-btn') : null;
-  const resizePanel = canEdit ? host.querySelector('.imgv-resize-panel') : null;
-  const resizeW = canEdit ? host.querySelector('.imgv-resize-w') : null;
-  const resizeH = canEdit ? host.querySelector('.imgv-resize-h') : null;
-  const resizeLock = canEdit ? host.querySelector('.imgv-resize-lock') : null;
-  const resizeApplyBtn = canEdit ? host.querySelector('.imgv-resize-apply') : null;
-  const resizeCancelBtn = canEdit ? host.querySelector('.imgv-resize-cancel') : null;
-  const expandBtn = canEdit ? host.querySelector('.imgv-expand-btn') : null;
-  const expandPanel = canEdit ? host.querySelector('.imgv-expand-panel') : null;
-  const expandPad = canEdit ? host.querySelector('.imgv-expand-pad') : null;
-  const expandTransparent = canEdit ? host.querySelector('.imgv-expand-transparent') : null;
-  const expandColor = canEdit ? host.querySelector('.imgv-expand-color') : null;
-  const expandApplyBtn = canEdit ? host.querySelector('.imgv-expand-apply') : null;
-  const expandCancelBtn = canEdit ? host.querySelector('.imgv-expand-cancel') : null;
-  const rotLBtn = canEdit ? host.querySelector('.imgv-rot-l') : null;
-  const rotRBtn = canEdit ? host.querySelector('.imgv-rot-r') : null;
-  const flipHBtn = canEdit ? host.querySelector('.imgv-flip-h') : null;
-  const flipVBtn = canEdit ? host.querySelector('.imgv-flip-v') : null;
-  const filtersBtn = canEdit ? host.querySelector('.imgv-filters-btn') : null;
-  const filtersPanel = canEdit ? host.querySelector('.imgv-filters-panel') : null;
-  const fBrightness = canEdit ? host.querySelector('.imgv-f-brightness') : null;
-  const fContrast = canEdit ? host.querySelector('.imgv-f-contrast') : null;
-  const fSaturation = canEdit ? host.querySelector('.imgv-f-saturation') : null;
-  const fHue = canEdit ? host.querySelector('.imgv-f-hue') : null;
-  const fApplyBtn = canEdit ? host.querySelector('.imgv-f-apply') : null;
-  const fResetBtn = canEdit ? host.querySelector('.imgv-f-reset') : null;
-  const levelsBtn = canEdit ? host.querySelector('.imgv-levels-btn') : null;
-  const levelsPanel = canEdit ? host.querySelector('.imgv-levels-panel') : null;
-  const lvBlack = canEdit ? host.querySelector('.imgv-lv-black') : null;
-  const lvWhite = canEdit ? host.querySelector('.imgv-lv-white') : null;
-  const lvGamma = canEdit ? host.querySelector('.imgv-lv-gamma') : null;
-  const lvApply = canEdit ? host.querySelector('.imgv-lv-apply') : null;
-  const lvCancel = canEdit ? host.querySelector('.imgv-lv-cancel') : null;
-  const presetGrey = canEdit ? host.querySelector('.imgv-preset-grey') : null;
-  const presetSepia = canEdit ? host.querySelector('.imgv-preset-sepia') : null;
-  const presetInvert = canEdit ? host.querySelector('.imgv-preset-invert') : null;
-  let natural = 0, fit = true, zoom = 1, asciiMode = false;
+  // All ~75 `.imgv-*` toolbar lookups live in edit-els.js; destructure them into the same local
+  // names the body below uses (edit-only controls are null when !canEdit). Separately-queried
+  // controls (bgChecker/compareBtn/toolsBtn/advBtn) stay inline near their wiring.
+  const {
+    img, note, zoomLabel, asciiBtn, asciiOut,
+    editInput, editSize, editColor, editApply, editReset,
+    pencilBtn, eraserBtn, fillBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts,
+    selectBtn, marqueeBtn, ellipseBtn, lassoBtn, deselectBtn, selInvertBtn, selCutBtn, moveBtn,
+    drawColorPicker, drawSizePicker, undoBtn, redoBtn, exportFmt, editFont,
+    bgBtn, bgTol, bgOk, bgX,
+    cropBtn, cropApplyBtn, cropCancelBtn,
+    resizeBtn, resizePanel, resizeW, resizeH, resizeLock, resizeApplyBtn, resizeCancelBtn,
+    expandBtn, expandPanel, expandPad, expandTransparent, expandColor, expandApplyBtn, expandCancelBtn,
+    rotLBtn, rotRBtn, flipHBtn, flipVBtn,
+    filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn,
+    levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel,
+    presetGrey, presetSepia, presetInvert,
+  } = queryEls(host, canEdit);
+  let asciiMode = false;
   let jxlPngBytes = null;   // decoded PNG bytes for JXL (display + ASCII source)
-  // Pencil/eraser/fill state stays here (the draw overlay is coupled to the
-  // pan/zoom view); text/crop/BG state lives in their respective tool modules.
-  let drawMode = null, isEraserStroke = false;
-  let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
+  // Pencil/eraser/fill state + handlers live in draw-overlay.js (createDrawTools); the controller
+  // is created below, after the magic-wand selection it clips against exists.
+  let drawCtl = null;
 
   // Adv Edit (vector overlay) state. Declared up here so the onBinaryEdit wrapper
   // and applyPan() (both defined below but run after these are initialised) can see
@@ -221,115 +164,30 @@ export async function render(intake, ctx = {}) {
   // logic stands down while a tool owns the pointer; each exposes isActive().
   const editTools = [];
 
-  // Pan offset (px), applied as a transform so the WHOLE canvas can be dragged
-  // freely — even when the image is smaller than the stage. The draw overlay gets
-  // the same transform so brush coordinates stay aligned.
-  let panX = 0, panY = 0;
-  function applyPan() {
-    // Always keep a 3D transform so the <img> stays on a stable compositing layer.
-    // Some mobile WebViews don't repaint a transformed <img> when only its src
-    // changes (e.g. after a fill) unless the layer is stable + nudged — see
-    // nudgeRepaint() below. translate3d also GPU-accelerates the pan.
-    const t = `translate3d(${panX}px, ${panY}px, 0)`;
-    img.style.transform = t;
-    if (drawOverlay) drawOverlay.style.transform = t;
-    advController?.relayout();   // keep the persistent vector overlay registered to the image
-  }
-  // Force a recomposite after an edit swaps img.src (mobile stale-paint guard).
-  function nudgeRepaint() {
-    requestAnimationFrame(() => { void img.offsetWidth; img.style.transform = `translate3d(${panX}px, ${panY}px, 0.001px)`; requestAnimationFrame(applyPan); });
-  }
-  img.addEventListener('load', nudgeRepaint);
-  // After a geometry op re-encodes + reloads the base at its new size, transform the
-  // vector overlay objects by the same matrix so they stay registered + editable.
+  // Fit/zoom/pan over the raster <img> lives in view-controller.js. It reads the draw overlay +
+  // vector overlay through late-bound getters (both are created after the view) so it keeps them
+  // transform-aligned, and asks the renderer whether an edit mode owns the pointer / ASCII is on.
+  const viewCtl = createView({
+    host, img, zoomLabel,
+    syncOverlay: () => drawCtl?.syncOverlay(),
+    getOverlayEl: () => drawCtl?.getOverlayEl(),
+    getAdv: () => advController,
+    isEditModeActive: () => (drawCtl?.isDrawMode()) || editTools.some((t) => t.isActive && t.isActive()),
+    isAscii: () => asciiMode,
+  });
+  // Local aliases so the rest of render() reads unchanged.
+  const apply = viewCtl.apply;
+  const applyPan = viewCtl.applyPan;
+  // View hook handed to geometry tools so a dimension-changing edit (rotate/resize) updates the
+  // stored natural width + relayout; a resize/crop/rotate also invalidates the pixel selection.
+  const view = { setNatural: (n) => { viewCtl.setNatural(n); selection?.clear(); } };
+  // After a geometry op re-encodes + reloads the base at its new size, transform the vector overlay
+  // objects by the same matrix so they stay registered + editable.
   img.addEventListener('load', () => {
     if (!pendingGeom) return;
     const A = pendingGeom; pendingGeom = null;
     advController?.applyGeometry(A);
   });
-  function apply() {
-    host.querySelector('.imgv-fit').classList.toggle('active', fit);
-    if (fit || !natural) { img.style.width = ''; img.style.maxWidth = ''; img.style.maxHeight = ''; zoomLabel.textContent = 'fit'; }
-    else { img.style.maxWidth = 'none'; img.style.maxHeight = 'none'; img.style.width = Math.round(natural * zoom) + 'px'; zoomLabel.textContent = Math.round(zoom * 100) + '%'; }
-    if (typeof syncOverlay === 'function') syncOverlay();
-    applyPan();
-  }
-  function resetView() { panX = 0; panY = 0; }
-  // View hook handed to geometry tools so a dimension-changing edit (rotate/resize)
-  // can update the stored natural width + relayout.
-  const view = { setNatural: (n) => { natural = n; apply(); selection?.clear(); } };   // a resize/crop/rotate invalidates the pixel selection
-  host.querySelector('.imgv-fit').addEventListener('click', () => { fit = true; resetView(); apply(); });
-  host.querySelector('.imgv-100').addEventListener('click', () => { fit = false; zoom = 1; resetView(); apply(); });
-  host.querySelector('.imgv-up').addEventListener('click', () => { fit = false; zoom = Math.min(16, zoom * 1.25); apply(); });
-  host.querySelector('.imgv-dn').addEventListener('click', () => { fit = false; zoom = Math.max(0.1, zoom / 1.25); apply(); });
-
-  // ── Pan & wheel-zoom ── click-drag moves the whole canvas; wheel zooms toward
-  // the cursor. Left-drag pans only when no edit mode owns the pointer; middle
-  // drag pans even mid-draw (reposition while doing detail work).
-  const stageEl = host.querySelector('.imgv-stage');
-  stageEl.style.overflow = 'hidden';
-  const editModeActive = () => drawMode || editTools.some((t) => t.isActive && t.isActive());
-  let dragLastX = 0, dragLastY = 0;
-  const onPanMove = (e) => {
-    panX += e.clientX - dragLastX; panY += e.clientY - dragLastY;
-    dragLastX = e.clientX; dragLastY = e.clientY;
-    applyPan();
-  };
-  const onPanUp = () => {
-    stageEl.style.cursor = '';
-    window.removeEventListener('mousemove', onPanMove);
-    window.removeEventListener('mouseup', onPanUp);
-  };
-  stageEl.addEventListener('mousedown', (e) => {
-    if (e.button === 0 && (e.ctrlKey || e.metaKey)) { e.preventDefault(); startCtrlZoom(e); return; }
-    const leftPan = e.button === 0 && !editModeActive();
-    const midPan = e.button === 1;
-    if (!leftPan && !midPan) return;
-    dragLastX = e.clientX; dragLastY = e.clientY;
-    stageEl.style.cursor = 'grabbing';
-    e.preventDefault();
-    window.addEventListener('mousemove', onPanMove);
-    window.addEventListener('mouseup', onPanUp);
-  });
-  // Zoom by `factor`, keeping the image point under (clientX,clientY) fixed. The
-  // anchor defaults to the stage centre (used by the +/- keys). Shared by wheel,
-  // Ctrl+drag and the keyboard shortcuts.
-  function zoomAt(factor, clientX, clientY) {
-    const r = stageEl.getBoundingClientRect();
-    const prev = fit ? (img.offsetWidth / (natural || img.offsetWidth)) : zoom;
-    fit = false;
-    zoom = Math.max(0.1, Math.min(16, prev * factor));
-    const k = zoom / prev;
-    const cx = clientX == null ? r.left + r.width / 2 : clientX;
-    const cy = clientY == null ? r.top + r.height / 2 : clientY;
-    const relX = (cx - r.left) - (r.width / 2 + panX);
-    const relY = (cy - r.top) - (r.height / 2 + panY);
-    panX += relX * (1 - k); panY += relY * (1 - k);
-    apply();
-  }
-  // Wheel zoom works even mid-edit (never conflicts with the brush).
-  stageEl.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY);
-  }, { passive: false });
-  // Ctrl/Cmd + drag = scrubby zoom: drag up to zoom in, down to zoom out, anchored
-  // at the press point.
-  function startCtrlZoom(e) {
-    const ax = e.clientX, ay = e.clientY; let lastY = e.clientY;
-    stageEl.style.cursor = 'ns-resize';
-    const move = (ev) => { const dy = lastY - ev.clientY; lastY = ev.clientY; if (dy) zoomAt(Math.exp(dy * 0.006), ax, ay); };
-    const up = () => { stageEl.style.cursor = ''; window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
-    window.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
-  }
-  // Ctrl/Cmd with +/- (or =) zooms toward the stage centre.
-  function onZoomKey(e) {
-    if (asciiMode || !host.isConnected || !(e.ctrlKey || e.metaKey)) return;
-    const t = e.target;
-    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-    if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomAt(1.25); }
-    else if (e.key === '-' || e.key === '_') { e.preventDefault(); zoomAt(1 / 1.25); }
-  }
-  document.addEventListener('keydown', onZoomKey);
 
   const isJxl = ((intake.filename || '').split('.').pop()?.toLowerCase() === 'jxl') || mime === 'image/jxl';
   img.addEventListener('error', () => {
@@ -349,7 +207,7 @@ export async function render(intake, ctx = {}) {
         const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
         jxlPngBytes = new Uint8Array(await blob.arrayBuffer());
         note.hidden = true; img.hidden = false;
-        natural = c.width; img.src = URL.createObjectURL(blob); apply();
+        img.src = URL.createObjectURL(blob); viewCtl.setNatural(c.width);
       } catch (e) {
         note.hidden = false; img.hidden = true;
         note.textContent = 'JPEG XL could not be decoded here: ' + (e.message || e) + '. Download still works.';
@@ -358,7 +216,7 @@ export async function render(intake, ctx = {}) {
   } else {
     img.src = url;
     apply();
-    dimensions(url).then((d) => { if (d) { natural = d.w; apply(); } });
+    dimensions(url).then((d) => { if (d) viewCtl.setNatural(d.w); });
   }
 
   // ASCII art — the button toggles the self-contained ASCII Studio, lazy-mounted
@@ -508,7 +366,7 @@ export async function render(intake, ctx = {}) {
     host, img, mime,
     els: { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn },
     getFillOpts: () => ({ tol: parseInt(fillTol?.value || '12', 10), mode: fillMode?.value || 'seed', perceptual: !!fillPercep?.checked }),
-    onActivate: () => setDrawMode(null),   // selection is mutually exclusive with pencil/eraser/fill input
+    onActivate: () => drawCtl?.setDrawMode(null),   // selection is mutually exclusive with pencil/eraser/fill input
     onCommit: async (canvas) => { core.pushUndo(); const blob = await new Promise((r) => canvas.toBlob(r, 'image/png')); core.commitBlob(blob, { mime: 'image/png' }); },
   });
   editTools.push({ isActive: () => selection.isActive() });
@@ -542,7 +400,7 @@ export async function render(intake, ctx = {}) {
     if (!compareView) return;
     compareView.destroy(); compareView = null;
     img.style.display = '';
-    if (drawOverlay) drawOverlay.style.display = '';
+    const ov = drawCtl?.getOverlayEl(); if (ov) ov.style.display = '';
     host.querySelector('.imgv-bar').classList.remove('imgv-compare-on');
     compareBtn?.classList.remove('active');
     apply();   // restore layout/pan so the image is interactive again
@@ -551,7 +409,7 @@ export async function render(intake, ctx = {}) {
     if (compareView) { exitCompare(); return; }
     const stage = host.querySelector('.imgv-stage');
     img.style.display = 'none';
-    if (drawOverlay) drawOverlay.style.display = 'none';
+    const ov = drawCtl?.getOverlayEl(); if (ov) ov.style.display = 'none';
     // Hide the edit toolbar while comparing — those tools don't apply here; the
     // compare overlay has its own Close button.
     host.querySelector('.imgv-bar').classList.add('imgv-compare-on');
@@ -560,196 +418,17 @@ export async function render(intake, ctx = {}) {
     compareView = mountCompare(stage, { originalUrl: url, currentUrl: core.editedUrl || url, onClose: exitCompare });
   });
 
-  // Pencil / eraser drawing tools
-  // Position the overlay canvas to exactly cover the displayed <img> box (NOT
-  // the whole stage), so brush coordinates map 1:1 to image pixels regardless of
-  // fit/zoom/scroll letterboxing.
-  function syncOverlay() {
-    selection?.syncOverlay();   // the selection overlay exists independently of the draw overlay
-    if (!drawOverlay) return;
-    drawOverlay.style.left = img.offsetLeft + 'px';
-    drawOverlay.style.top = img.offsetTop + 'px';
-    drawOverlay.style.width = img.offsetWidth + 'px';
-    drawOverlay.style.height = img.offsetHeight + 'px';
-  }
-
-  function buildOverlay() {
-    const stage = host.querySelector('.imgv-stage');
-    stage.style.position = 'relative';
-    drawOverlay = document.createElement('canvas');
-    drawOverlay.style.cssText = 'position:absolute;pointer-events:none;touch-action:none;z-index:2;';
-    stage.appendChild(drawOverlay);
-    drawOCtx = drawOverlay.getContext('2d');
-    // Brush hover preview — a circle that tracks the cursor so you see the brush
-    // position + size before painting.
-    brushCursor = document.createElement('div');
-    brushCursor.className = 'imgv-brush-cursor';
-    brushCursor.style.cssText = 'position:absolute;border:1px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.6);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:3;display:none;mix-blend-mode:difference;';
-    stage.appendChild(brushCursor);
-    img.addEventListener('load', () => {
-      if (drawOverlay && !isEraserStroke) { drawOverlay.width = img.naturalWidth || 1; drawOverlay.height = img.naturalHeight || 1; }
-      syncOverlay(); applyPan();
-    });
-    if (img.naturalWidth) { drawOverlay.width = img.naturalWidth; drawOverlay.height = img.naturalHeight; }
-    syncOverlay(); applyPan(); // adopt the current pan so the draw area sits on the image
-    drawOverlay.addEventListener('mousedown', onPDown);
-    drawOverlay.addEventListener('mousemove', onPMove);
-    drawOverlay.addEventListener('mouseup', onPUp);
-    drawOverlay.addEventListener('mouseleave', () => { hideBrushCursor(); if (isPointerDown) { isPointerDown = false; commitDraw(); } });
-    drawOverlay.addEventListener('touchstart', onPDown, { passive: false });
-    drawOverlay.addEventListener('touchmove', onPMove, { passive: false });
-    drawOverlay.addEventListener('touchend', onPUp);
-  }
-
-  // Move/size the brush hover circle (screen px = the brush-size value, which is
-  // constant on screen regardless of zoom). Only shown for pencil/eraser.
-  function moveBrushCursor(e) {
-    if (!brushCursor || (drawMode !== 'pencil' && drawMode !== 'eraser')) { hideBrushCursor(); return; }
-    const stageR = host.querySelector('.imgv-stage').getBoundingClientRect();
-    const d = parseInt(drawSizePicker?.value || '8', 10);
-    brushCursor.style.width = d + 'px';
-    brushCursor.style.height = d + 'px';
-    brushCursor.style.left = (e.clientX - stageR.left) + 'px';
-    brushCursor.style.top = (e.clientY - stageR.top) + 'px';
-    brushCursor.style.display = 'block';
-  }
-  function hideBrushCursor() { if (brushCursor) brushCursor.style.display = 'none'; }
-
-  function setDrawMode(mode) {
-    drawMode = drawMode === mode ? null : mode;
-    if (drawMode) selection?.setActive(false);   // a draw mode turns off the wand's input (the mask itself persists)
-    pencilBtn?.classList.toggle('active', drawMode === 'pencil');
-    eraserBtn?.classList.toggle('active', drawMode === 'eraser');
-    fillBtn?.classList.toggle('active', drawMode === 'fill');
-    // Fill-tuning controls are shared by the bucket AND the wand — show for either.
-    fillOpts.forEach((el) => { el.hidden = !(drawMode === 'fill' || selection?.isActive()); });
-    if (!drawOverlay && drawMode) buildOverlay();
-    if (drawOverlay) {
-      drawOverlay.style.pointerEvents = drawMode ? 'auto' : 'none';
-      drawOverlay.style.cursor = drawMode === 'eraser' ? 'cell'
-        : drawMode === 'fill' ? 'crosshair'
-        : drawMode === 'pencil' ? 'none' : ''; // pencil hidden — the hover circle is the cursor
-    }
-    if (drawMode !== 'pencil' && drawMode !== 'eraser') hideBrushCursor();
-    img.style.pointerEvents = drawMode ? 'none' : '';
-  }
-
-  function ptToCanvas(e) {
-    const r = drawOverlay.getBoundingClientRect();
-    const sx = drawOverlay.width / r.width, sy = drawOverlay.height / r.height;
-    const src = e.touches ? e.touches[0] : e;
-    return { x: (src.clientX - r.left) * sx, y: (src.clientY - r.top) * sy };
-  }
-
-  function getCanvasBrushSize() {
-    const displayPx = parseInt(drawSizePicker?.value || '8', 10);
-    if (!drawOverlay) return displayPx;
-    const r = drawOverlay.getBoundingClientRect();
-    const scale = r.width > 0 ? drawOverlay.width / r.width : 1;
-    return Math.max(1, Math.round(displayPx * scale));
-  }
-
-  function applyStrokeStyle(sz) {
-    drawOCtx.globalCompositeOperation = isEraserStroke ? 'destination-out' : 'source-over';
-    drawOCtx.strokeStyle = drawColorPicker?.value || '#ff0000';
-    drawOCtx.fillStyle = drawColorPicker?.value || '#ff0000';
-    drawOCtx.lineWidth = sz; drawOCtx.lineCap = 'round'; drawOCtx.lineJoin = 'round';
-  }
-
-  async function onPDown(e) {
-    if (!drawMode || !drawOverlay) return;
-    e.preventDefault();
-    if (drawMode === 'fill') { await doFill(e); return; }
-    isPointerDown = true;
-    isEraserStroke = drawMode === 'eraser';
-    core.pushUndo();
-    if (isEraserStroke) {
-      // preload overlay from the already-loaded <img> (no extra fetch) so
-      // destination-out punches real pixels.
-      drawOverlay.width = img.naturalWidth; drawOverlay.height = img.naturalHeight;
-      if (mime === 'image/jpeg') { drawOCtx.fillStyle = '#fff'; drawOCtx.fillRect(0, 0, drawOverlay.width, drawOverlay.height); }
-      drawOCtx.drawImage(img, 0, 0);
-    } else if (!drawOverlay.width || !img.naturalWidth) {
-      drawOverlay.width = img.naturalWidth || 1; drawOverlay.height = img.naturalHeight || 1;
-    }
-    if (!isEraserStroke && img.naturalWidth && drawOverlay.width !== img.naturalWidth) {
-      drawOverlay.width = img.naturalWidth;
-      drawOverlay.height = img.naturalHeight;
-    }
-    lastPt = ptToCanvas(e);
-    const sz = getCanvasBrushSize();
-    applyStrokeStyle(sz);
-    drawOCtx.beginPath(); drawOCtx.arc(lastPt.x, lastPt.y, sz / 2, 0, Math.PI * 2); drawOCtx.fill();
-  }
-
-  function onPMove(e) {
-    moveBrushCursor(e);
-    if (!isPointerDown || !drawOCtx) return;
-    e.preventDefault();
-    const pt = ptToCanvas(e);
-    const sz = getCanvasBrushSize();
-    applyStrokeStyle(sz);
-    drawOCtx.beginPath(); drawOCtx.moveTo(lastPt.x, lastPt.y); drawOCtx.lineTo(pt.x, pt.y); drawOCtx.stroke();
-    lastPt = pt;
-  }
-
-  // Flood-fill bucket — the pure pixel walk lives in ./fill.js (floodFill);
-  // doFill wires it to the canvas + edit-commit pipeline.
-  async function doFill(e) {
-    const c = document.createElement('canvas');
-    c.width = img.naturalWidth; c.height = img.naturalHeight;
-    const g = c.getContext('2d', { willReadFrequently: true });
-    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
-    g.drawImage(img, 0, 0);
-    const id = g.getImageData(0, 0, c.width, c.height);
-    const pt = ptToCanvas(e);
-    // If a selection is active, snapshot first so the fill can be clipped to it.
-    const before = selection?.hasSelection() ? Uint8ClampedArray.from(id.data) : null;
-    const filled = floodFill(id.data, c.width, c.height, Math.round(pt.x), Math.round(pt.y),
-      hexToRgba(drawColorPicker?.value), parseInt(fillTol?.value || '0', 10),
-      { mode: fillMode?.value || 'seed', perceptual: !!fillPercep?.checked, feather: !!fillFeather?.checked });
-    if (!filled) return;
-    if (before) selection.clipFillInPlace(id.data, before);   // constrain the fill to the selection
-    g.putImageData(id, 0, 0);
-    const targetMime = core.getExportMime();
-    core.pushUndo();
-    const blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    core.commitBlob(blob, { mime: targetMime });
-  }
-
-  async function commitDraw() {
-    if (!drawOverlay || !drawOverlay.width) return;
-    const targetMime = core.getExportMime();
-    let blob;
-    if (isEraserStroke) {
-      // The eraser overlay is a copy of the image with holes punched. Clip it to the
-      // selection (restore image pixels outside the mask) so erasing stays inside it.
-      await selection?.clipCanvas(drawOverlay, img);
-      blob = await new Promise((r) => drawOverlay.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    } else {
-      // Composite from the already-loaded <img> (the current committed image) —
-      // NOT a fresh fetch of editedUrl. Avoids a second blob-URL request per stroke.
-      const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
-      const g = c.getContext('2d');
-      if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
-      g.drawImage(img, 0, 0); g.drawImage(drawOverlay, 0, 0);
-      await selection?.clipCanvas(c, img);   // constrain the brush stroke to the selection
-      blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    }
-    drawOCtx.clearRect(0, 0, drawOverlay.width, drawOverlay.height);
-    core.commitBlob(blob, { mime: targetMime });
-  }
-
-  async function onPUp(e) { if (isPointerDown) { isPointerDown = false; await commitDraw(); } }
-
-  if (pencilBtn) {
-    pencilBtn.addEventListener('click', () => setDrawMode('pencil'));
-    eraserBtn.addEventListener('click', () => setDrawMode('eraser'));
-    fillBtn?.addEventListener('click', () => setDrawMode('fill'));
-    fillTol?.addEventListener('input', () => { if (fillTolV) fillTolV.textContent = fillTol.value; });
-    undoBtn?.addEventListener('click', core.doUndo);
-    redoBtn?.addEventListener('click', core.doRedo);
-  }
+  // Pencil / eraser / flood-fill overlay lives in draw-overlay.js (createDrawTools). It owns the
+  // overlay canvas + pointer handlers, clips strokes/fills to the live magic-wand selection, and is
+  // kept transform-aligned via the view's applyPan. Created here — after `selection` exists — and
+  // assigned to the `drawCtl` declared near the top so the view/compare/selection wiring above can
+  // reference it lazily.
+  drawCtl = createDrawTools({
+    host, img, mime, core,
+    getSelection: () => selection,
+    applyPan,
+    els: { pencilBtn, eraserBtn, fillBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts, drawColorPicker, drawSizePicker, undoBtn, redoBtn },
+  });
 
   // Ctrl/Cmd+Z = undo, Ctrl+Y or Ctrl/Cmd+Shift+Z = redo. A shared global router
   // (edit-undo-key.js) routes the shortcut to this editor while it's the active
@@ -769,5 +448,5 @@ export async function render(intake, ctx = {}) {
   const bgChecker = canEdit ? host.querySelector('.imgv-bg-checker') : null;
   bgChecker?.addEventListener('change', () => img.classList.toggle('imgv-checker', bgChecker.checked));
 
-  return { parentNode: host, revoke: () => { advController?.destroy(); selection?.teardown(); unregisterUndoKeys?.(); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { advController?.destroy(); selection?.teardown(); unregisterUndoKeys?.(); viewCtl.teardown(); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
 }

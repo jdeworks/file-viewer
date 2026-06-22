@@ -46,6 +46,246 @@ function dimensions(url) {
 // ../../docs/types/image/renderer.js
 import { recordStage3AsciiActivation } from "../../games/metagame/viewer-actions.js";
 
+// ../../docs/types/image/edit-els.js
+function queryEls(host, canEdit) {
+  const q = (sel) => host.querySelector(sel);
+  const qe = (sel) => canEdit ? host.querySelector(sel) : null;
+  return {
+    img: q(".imgv-img"),
+    note: q(".imgv-note"),
+    zoomLabel: q(".imgv-zoom"),
+    asciiBtn: q(".imgv-ascii-btn"),
+    asciiOut: q(".imgv-ascii-out"),
+    editInput: q(".imgv-text-input"),
+    editSize: q(".imgv-text-size"),
+    editColor: q(".imgv-text-color"),
+    editApply: q(".imgv-text-apply"),
+    editReset: q(".imgv-text-reset"),
+    pencilBtn: qe(".imgv-pencil"),
+    eraserBtn: qe(".imgv-eraser"),
+    fillBtn: qe(".imgv-fill"),
+    fillTol: qe(".imgv-fill-tol"),
+    fillTolV: qe(".imgv-fill-tolv"),
+    fillMode: qe(".imgv-fill-mode"),
+    fillPercep: qe(".imgv-fill-percep"),
+    fillFeather: qe(".imgv-fill-feather"),
+    fillOpts: canEdit ? host.querySelectorAll(".imgv-fill-opt") : [],
+    selectBtn: qe(".imgv-select"),
+    marqueeBtn: qe(".imgv-marquee"),
+    ellipseBtn: qe(".imgv-ellipse"),
+    lassoBtn: qe(".imgv-lasso"),
+    deselectBtn: qe(".imgv-deselect"),
+    selInvertBtn: qe(".imgv-sel-invert"),
+    selCutBtn: qe(".imgv-sel-cut"),
+    moveBtn: qe(".imgv-sel-move"),
+    drawColorPicker: qe(".imgv-draw-color"),
+    drawSizePicker: qe(".imgv-draw-size"),
+    undoBtn: qe(".imgv-undo"),
+    redoBtn: qe(".imgv-redo"),
+    exportFmt: qe(".imgv-export-fmt"),
+    editFont: qe(".imgv-text-font"),
+    bgBtn: qe(".imgv-bg-btn"),
+    bgTol: qe(".imgv-bg-tol"),
+    bgOk: qe(".imgv-bg-ok"),
+    bgX: qe(".imgv-bg-x"),
+    cropBtn: qe(".imgv-crop-btn"),
+    cropApplyBtn: qe(".imgv-crop-apply"),
+    cropCancelBtn: qe(".imgv-crop-cancel"),
+    resizeBtn: qe(".imgv-resize-btn"),
+    resizePanel: qe(".imgv-resize-panel"),
+    resizeW: qe(".imgv-resize-w"),
+    resizeH: qe(".imgv-resize-h"),
+    resizeLock: qe(".imgv-resize-lock"),
+    resizeApplyBtn: qe(".imgv-resize-apply"),
+    resizeCancelBtn: qe(".imgv-resize-cancel"),
+    expandBtn: qe(".imgv-expand-btn"),
+    expandPanel: qe(".imgv-expand-panel"),
+    expandPad: qe(".imgv-expand-pad"),
+    expandTransparent: qe(".imgv-expand-transparent"),
+    expandColor: qe(".imgv-expand-color"),
+    expandApplyBtn: qe(".imgv-expand-apply"),
+    expandCancelBtn: qe(".imgv-expand-cancel"),
+    rotLBtn: qe(".imgv-rot-l"),
+    rotRBtn: qe(".imgv-rot-r"),
+    flipHBtn: qe(".imgv-flip-h"),
+    flipVBtn: qe(".imgv-flip-v"),
+    filtersBtn: qe(".imgv-filters-btn"),
+    filtersPanel: qe(".imgv-filters-panel"),
+    fBrightness: qe(".imgv-f-brightness"),
+    fContrast: qe(".imgv-f-contrast"),
+    fSaturation: qe(".imgv-f-saturation"),
+    fHue: qe(".imgv-f-hue"),
+    fApplyBtn: qe(".imgv-f-apply"),
+    fResetBtn: qe(".imgv-f-reset"),
+    levelsBtn: qe(".imgv-levels-btn"),
+    levelsPanel: qe(".imgv-levels-panel"),
+    lvBlack: qe(".imgv-lv-black"),
+    lvWhite: qe(".imgv-lv-white"),
+    lvGamma: qe(".imgv-lv-gamma"),
+    lvApply: qe(".imgv-lv-apply"),
+    lvCancel: qe(".imgv-lv-cancel"),
+    presetGrey: qe(".imgv-preset-grey"),
+    presetSepia: qe(".imgv-preset-sepia"),
+    presetInvert: qe(".imgv-preset-invert")
+  };
+}
+
+// ../../docs/types/image/view-controller.js
+function createView(ctx) {
+  const { host, img, zoomLabel } = ctx;
+  let natural = 0, fit = true, zoom = 1;
+  let panX = 0, panY = 0;
+  function applyPan() {
+    const t = `translate3d(${panX}px, ${panY}px, 0)`;
+    img.style.transform = t;
+    const overlay = ctx.getOverlayEl?.();
+    if (overlay) overlay.style.transform = t;
+    ctx.getAdv?.()?.relayout();
+  }
+  function nudgeRepaint() {
+    requestAnimationFrame(() => {
+      void img.offsetWidth;
+      img.style.transform = `translate3d(${panX}px, ${panY}px, 0.001px)`;
+      requestAnimationFrame(applyPan);
+    });
+  }
+  img.addEventListener("load", nudgeRepaint);
+  function apply() {
+    host.querySelector(".imgv-fit").classList.toggle("active", fit);
+    if (fit || !natural) {
+      img.style.width = "";
+      img.style.maxWidth = "";
+      img.style.maxHeight = "";
+      zoomLabel.textContent = "fit";
+    } else {
+      img.style.maxWidth = "none";
+      img.style.maxHeight = "none";
+      img.style.width = Math.round(natural * zoom) + "px";
+      zoomLabel.textContent = Math.round(zoom * 100) + "%";
+    }
+    ctx.syncOverlay?.();
+    applyPan();
+  }
+  function resetView() {
+    panX = 0;
+    panY = 0;
+  }
+  function setNatural(n) {
+    natural = n;
+    apply();
+  }
+  host.querySelector(".imgv-fit").addEventListener("click", () => {
+    fit = true;
+    resetView();
+    apply();
+  });
+  host.querySelector(".imgv-100").addEventListener("click", () => {
+    fit = false;
+    zoom = 1;
+    resetView();
+    apply();
+  });
+  host.querySelector(".imgv-up").addEventListener("click", () => {
+    fit = false;
+    zoom = Math.min(16, zoom * 1.25);
+    apply();
+  });
+  host.querySelector(".imgv-dn").addEventListener("click", () => {
+    fit = false;
+    zoom = Math.max(0.1, zoom / 1.25);
+    apply();
+  });
+  const stageEl = host.querySelector(".imgv-stage");
+  stageEl.style.overflow = "hidden";
+  let dragLastX = 0, dragLastY = 0;
+  const onPanMove = (e) => {
+    panX += e.clientX - dragLastX;
+    panY += e.clientY - dragLastY;
+    dragLastX = e.clientX;
+    dragLastY = e.clientY;
+    applyPan();
+  };
+  const onPanUp = () => {
+    stageEl.style.cursor = "";
+    window.removeEventListener("mousemove", onPanMove);
+    window.removeEventListener("mouseup", onPanUp);
+  };
+  stageEl.addEventListener("mousedown", (e) => {
+    if (e.button === 0 && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      startCtrlZoom(e);
+      return;
+    }
+    const leftPan = e.button === 0 && !ctx.isEditModeActive?.();
+    const midPan = e.button === 1;
+    if (!leftPan && !midPan) return;
+    dragLastX = e.clientX;
+    dragLastY = e.clientY;
+    stageEl.style.cursor = "grabbing";
+    e.preventDefault();
+    window.addEventListener("mousemove", onPanMove);
+    window.addEventListener("mouseup", onPanUp);
+  });
+  function zoomAt(factor, clientX, clientY) {
+    const r = stageEl.getBoundingClientRect();
+    const prev = fit ? img.offsetWidth / (natural || img.offsetWidth) : zoom;
+    fit = false;
+    zoom = Math.max(0.1, Math.min(16, prev * factor));
+    const k = zoom / prev;
+    const cx = clientX == null ? r.left + r.width / 2 : clientX;
+    const cy = clientY == null ? r.top + r.height / 2 : clientY;
+    const relX = cx - r.left - (r.width / 2 + panX);
+    const relY = cy - r.top - (r.height / 2 + panY);
+    panX += relX * (1 - k);
+    panY += relY * (1 - k);
+    apply();
+  }
+  stageEl.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY);
+  }, { passive: false });
+  function startCtrlZoom(e) {
+    const ax = e.clientX, ay = e.clientY;
+    let lastY = e.clientY;
+    stageEl.style.cursor = "ns-resize";
+    const move = (ev) => {
+      const dy = lastY - ev.clientY;
+      lastY = ev.clientY;
+      if (dy) zoomAt(Math.exp(dy * 6e-3), ax, ay);
+    };
+    const up = () => {
+      stageEl.style.cursor = "";
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  }
+  function onZoomKey(e) {
+    if (ctx.isAscii?.() || !host.isConnected || !(e.ctrlKey || e.metaKey)) return;
+    const t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    if (e.key === "+" || e.key === "=") {
+      e.preventDefault();
+      zoomAt(1.25);
+    } else if (e.key === "-" || e.key === "_") {
+      e.preventDefault();
+      zoomAt(1 / 1.25);
+    }
+  }
+  document.addEventListener("keydown", onZoomKey);
+  return {
+    apply,
+    applyPan,
+    resetView,
+    zoomAt,
+    setNatural,
+    teardown() {
+      document.removeEventListener("keydown", onZoomKey);
+    }
+  };
+}
+
 // ../../docs/types/image/fill.js
 function hexToRgba(hex) {
   const h = (hex || "#ff0000").replace("#", "");
@@ -187,6 +427,254 @@ function bgFloodFill(srcData, w, h, sx, sy, tol) {
     if (y < h - 1) stack.push(pos + w);
   }
   return dst;
+}
+
+// ../../docs/types/image/draw-overlay.js
+function createDrawTools(ctx) {
+  const { host, img, mime, core, els } = ctx;
+  const {
+    pencilBtn,
+    eraserBtn,
+    fillBtn,
+    fillTol,
+    fillTolV,
+    fillMode,
+    fillPercep,
+    fillFeather,
+    fillOpts,
+    drawColorPicker,
+    drawSizePicker,
+    undoBtn,
+    redoBtn
+  } = els;
+  const selection = () => ctx.getSelection?.();
+  let drawMode = null, isEraserStroke = false;
+  let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
+  function syncOverlay() {
+    selection()?.syncOverlay();
+    if (!drawOverlay) return;
+    drawOverlay.style.left = img.offsetLeft + "px";
+    drawOverlay.style.top = img.offsetTop + "px";
+    drawOverlay.style.width = img.offsetWidth + "px";
+    drawOverlay.style.height = img.offsetHeight + "px";
+  }
+  function buildOverlay() {
+    const stage = host.querySelector(".imgv-stage");
+    stage.style.position = "relative";
+    drawOverlay = document.createElement("canvas");
+    drawOverlay.style.cssText = "position:absolute;pointer-events:none;touch-action:none;z-index:2;";
+    stage.appendChild(drawOverlay);
+    drawOCtx = drawOverlay.getContext("2d");
+    brushCursor = document.createElement("div");
+    brushCursor.className = "imgv-brush-cursor";
+    brushCursor.style.cssText = "position:absolute;border:1px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.6);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:3;display:none;mix-blend-mode:difference;";
+    stage.appendChild(brushCursor);
+    img.addEventListener("load", () => {
+      if (drawOverlay && !isEraserStroke) {
+        drawOverlay.width = img.naturalWidth || 1;
+        drawOverlay.height = img.naturalHeight || 1;
+      }
+      syncOverlay();
+      ctx.applyPan();
+    });
+    if (img.naturalWidth) {
+      drawOverlay.width = img.naturalWidth;
+      drawOverlay.height = img.naturalHeight;
+    }
+    syncOverlay();
+    ctx.applyPan();
+    drawOverlay.addEventListener("mousedown", onPDown);
+    drawOverlay.addEventListener("mousemove", onPMove);
+    drawOverlay.addEventListener("mouseup", onPUp);
+    drawOverlay.addEventListener("mouseleave", () => {
+      hideBrushCursor();
+      if (isPointerDown) {
+        isPointerDown = false;
+        commitDraw();
+      }
+    });
+    drawOverlay.addEventListener("touchstart", onPDown, { passive: false });
+    drawOverlay.addEventListener("touchmove", onPMove, { passive: false });
+    drawOverlay.addEventListener("touchend", onPUp);
+  }
+  function moveBrushCursor(e) {
+    if (!brushCursor || drawMode !== "pencil" && drawMode !== "eraser") {
+      hideBrushCursor();
+      return;
+    }
+    const stageR = host.querySelector(".imgv-stage").getBoundingClientRect();
+    const d = parseInt(drawSizePicker?.value || "8", 10);
+    brushCursor.style.width = d + "px";
+    brushCursor.style.height = d + "px";
+    brushCursor.style.left = e.clientX - stageR.left + "px";
+    brushCursor.style.top = e.clientY - stageR.top + "px";
+    brushCursor.style.display = "block";
+  }
+  function hideBrushCursor() {
+    if (brushCursor) brushCursor.style.display = "none";
+  }
+  function setDrawMode(mode) {
+    drawMode = drawMode === mode ? null : mode;
+    if (drawMode) selection()?.setActive(false);
+    pencilBtn?.classList.toggle("active", drawMode === "pencil");
+    eraserBtn?.classList.toggle("active", drawMode === "eraser");
+    fillBtn?.classList.toggle("active", drawMode === "fill");
+    fillOpts.forEach((el) => {
+      el.hidden = !(drawMode === "fill" || selection()?.isActive());
+    });
+    if (!drawOverlay && drawMode) buildOverlay();
+    if (drawOverlay) {
+      drawOverlay.style.pointerEvents = drawMode ? "auto" : "none";
+      drawOverlay.style.cursor = drawMode === "eraser" ? "cell" : drawMode === "fill" ? "crosshair" : drawMode === "pencil" ? "none" : "";
+    }
+    if (drawMode !== "pencil" && drawMode !== "eraser") hideBrushCursor();
+    img.style.pointerEvents = drawMode ? "none" : "";
+  }
+  function ptToCanvas(e) {
+    const r = drawOverlay.getBoundingClientRect();
+    const sx = drawOverlay.width / r.width, sy = drawOverlay.height / r.height;
+    const src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - r.left) * sx, y: (src.clientY - r.top) * sy };
+  }
+  function getCanvasBrushSize() {
+    const displayPx = parseInt(drawSizePicker?.value || "8", 10);
+    if (!drawOverlay) return displayPx;
+    const r = drawOverlay.getBoundingClientRect();
+    const scale = r.width > 0 ? drawOverlay.width / r.width : 1;
+    return Math.max(1, Math.round(displayPx * scale));
+  }
+  function applyStrokeStyle(sz) {
+    drawOCtx.globalCompositeOperation = isEraserStroke ? "destination-out" : "source-over";
+    drawOCtx.strokeStyle = drawColorPicker?.value || "#ff0000";
+    drawOCtx.fillStyle = drawColorPicker?.value || "#ff0000";
+    drawOCtx.lineWidth = sz;
+    drawOCtx.lineCap = "round";
+    drawOCtx.lineJoin = "round";
+  }
+  async function onPDown(e) {
+    if (!drawMode || !drawOverlay) return;
+    e.preventDefault();
+    if (drawMode === "fill") {
+      await doFill(e);
+      return;
+    }
+    isPointerDown = true;
+    isEraserStroke = drawMode === "eraser";
+    core.pushUndo();
+    if (isEraserStroke) {
+      drawOverlay.width = img.naturalWidth;
+      drawOverlay.height = img.naturalHeight;
+      if (mime === "image/jpeg") {
+        drawOCtx.fillStyle = "#fff";
+        drawOCtx.fillRect(0, 0, drawOverlay.width, drawOverlay.height);
+      }
+      drawOCtx.drawImage(img, 0, 0);
+    } else if (!drawOverlay.width || !img.naturalWidth) {
+      drawOverlay.width = img.naturalWidth || 1;
+      drawOverlay.height = img.naturalHeight || 1;
+    }
+    if (!isEraserStroke && img.naturalWidth && drawOverlay.width !== img.naturalWidth) {
+      drawOverlay.width = img.naturalWidth;
+      drawOverlay.height = img.naturalHeight;
+    }
+    lastPt = ptToCanvas(e);
+    const sz = getCanvasBrushSize();
+    applyStrokeStyle(sz);
+    drawOCtx.beginPath();
+    drawOCtx.arc(lastPt.x, lastPt.y, sz / 2, 0, Math.PI * 2);
+    drawOCtx.fill();
+  }
+  function onPMove(e) {
+    moveBrushCursor(e);
+    if (!isPointerDown || !drawOCtx) return;
+    e.preventDefault();
+    const pt = ptToCanvas(e);
+    const sz = getCanvasBrushSize();
+    applyStrokeStyle(sz);
+    drawOCtx.beginPath();
+    drawOCtx.moveTo(lastPt.x, lastPt.y);
+    drawOCtx.lineTo(pt.x, pt.y);
+    drawOCtx.stroke();
+    lastPt = pt;
+  }
+  async function doFill(e) {
+    const c = document.createElement("canvas");
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const g = c.getContext("2d", { willReadFrequently: true });
+    if (mime === "image/jpeg") {
+      g.fillStyle = "#fff";
+      g.fillRect(0, 0, c.width, c.height);
+    }
+    g.drawImage(img, 0, 0);
+    const id = g.getImageData(0, 0, c.width, c.height);
+    const pt = ptToCanvas(e);
+    const sel = selection();
+    const before = sel?.hasSelection() ? Uint8ClampedArray.from(id.data) : null;
+    const filled = floodFill(
+      id.data,
+      c.width,
+      c.height,
+      Math.round(pt.x),
+      Math.round(pt.y),
+      hexToRgba(drawColorPicker?.value),
+      parseInt(fillTol?.value || "0", 10),
+      { mode: fillMode?.value || "seed", perceptual: !!fillPercep?.checked, feather: !!fillFeather?.checked }
+    );
+    if (!filled) return;
+    if (before) sel.clipFillInPlace(id.data, before);
+    g.putImageData(id, 0, 0);
+    const targetMime = core.getExportMime();
+    core.pushUndo();
+    const blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === "image/jpeg" ? 0.92 : void 0));
+    core.commitBlob(blob, { mime: targetMime });
+  }
+  async function commitDraw() {
+    if (!drawOverlay || !drawOverlay.width) return;
+    const targetMime = core.getExportMime();
+    let blob;
+    if (isEraserStroke) {
+      await selection()?.clipCanvas(drawOverlay, img);
+      blob = await new Promise((r) => drawOverlay.toBlob(r, targetMime, targetMime === "image/jpeg" ? 0.92 : void 0));
+    } else {
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      const g = c.getContext("2d");
+      if (mime === "image/jpeg") {
+        g.fillStyle = "#fff";
+        g.fillRect(0, 0, c.width, c.height);
+      }
+      g.drawImage(img, 0, 0);
+      g.drawImage(drawOverlay, 0, 0);
+      await selection()?.clipCanvas(c, img);
+      blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === "image/jpeg" ? 0.92 : void 0));
+    }
+    drawOCtx.clearRect(0, 0, drawOverlay.width, drawOverlay.height);
+    core.commitBlob(blob, { mime: targetMime });
+  }
+  async function onPUp() {
+    if (isPointerDown) {
+      isPointerDown = false;
+      await commitDraw();
+    }
+  }
+  if (pencilBtn) {
+    pencilBtn.addEventListener("click", () => setDrawMode("pencil"));
+    eraserBtn.addEventListener("click", () => setDrawMode("eraser"));
+    fillBtn?.addEventListener("click", () => setDrawMode("fill"));
+    fillTol?.addEventListener("input", () => {
+      if (fillTolV) fillTolV.textContent = fillTol.value;
+    });
+    undoBtn?.addEventListener("click", core.doUndo);
+    redoBtn?.addEventListener("click", core.doRedo);
+  }
+  return {
+    syncOverlay,
+    setDrawMode,
+    isDrawMode: () => !!drawMode,
+    getOverlayEl: () => drawOverlay
+  };
 }
 
 // ../../docs/types/image/editor-core.js
@@ -2178,86 +2666,87 @@ async function render(intake, ctx = {}) {
     canEdit ? loadTemplate(EDIT_TOOLS_TPL) : Promise.resolve("")
   ]);
   host.innerHTML = fill(docTpl, { filename: intake.filename, editTools: editToolsTpl });
-  const img = host.querySelector(".imgv-img");
-  const note = host.querySelector(".imgv-note");
-  const zoomLabel = host.querySelector(".imgv-zoom");
-  const asciiBtn = host.querySelector(".imgv-ascii-btn");
-  const asciiOut = host.querySelector(".imgv-ascii-out");
-  const editInput = host.querySelector(".imgv-text-input");
-  const editSize = host.querySelector(".imgv-text-size");
-  const editColor = host.querySelector(".imgv-text-color");
-  const editApply = host.querySelector(".imgv-text-apply");
-  const editReset = host.querySelector(".imgv-text-reset");
-  const pencilBtn = canEdit ? host.querySelector(".imgv-pencil") : null;
-  const eraserBtn = canEdit ? host.querySelector(".imgv-eraser") : null;
-  const fillBtn = canEdit ? host.querySelector(".imgv-fill") : null;
-  const fillTol = canEdit ? host.querySelector(".imgv-fill-tol") : null;
-  const fillTolV = canEdit ? host.querySelector(".imgv-fill-tolv") : null;
-  const fillMode = canEdit ? host.querySelector(".imgv-fill-mode") : null;
-  const fillPercep = canEdit ? host.querySelector(".imgv-fill-percep") : null;
-  const fillFeather = canEdit ? host.querySelector(".imgv-fill-feather") : null;
-  const fillOpts = canEdit ? host.querySelectorAll(".imgv-fill-opt") : [];
-  const selectBtn = canEdit ? host.querySelector(".imgv-select") : null;
-  const marqueeBtn = canEdit ? host.querySelector(".imgv-marquee") : null;
-  const ellipseBtn = canEdit ? host.querySelector(".imgv-ellipse") : null;
-  const lassoBtn = canEdit ? host.querySelector(".imgv-lasso") : null;
-  const deselectBtn = canEdit ? host.querySelector(".imgv-deselect") : null;
-  const selInvertBtn = canEdit ? host.querySelector(".imgv-sel-invert") : null;
-  const selCutBtn = canEdit ? host.querySelector(".imgv-sel-cut") : null;
-  const moveBtn = canEdit ? host.querySelector(".imgv-sel-move") : null;
-  const drawColorPicker = canEdit ? host.querySelector(".imgv-draw-color") : null;
-  const drawSizePicker = canEdit ? host.querySelector(".imgv-draw-size") : null;
-  const undoBtn = canEdit ? host.querySelector(".imgv-undo") : null;
-  const redoBtn = canEdit ? host.querySelector(".imgv-redo") : null;
-  const exportFmt = canEdit ? host.querySelector(".imgv-export-fmt") : null;
-  const editFont = canEdit ? host.querySelector(".imgv-text-font") : null;
-  const bgBtn = canEdit ? host.querySelector(".imgv-bg-btn") : null;
-  const bgTol = canEdit ? host.querySelector(".imgv-bg-tol") : null;
-  const bgOk = canEdit ? host.querySelector(".imgv-bg-ok") : null;
-  const bgX = canEdit ? host.querySelector(".imgv-bg-x") : null;
-  const cropBtn = canEdit ? host.querySelector(".imgv-crop-btn") : null;
-  const cropApplyBtn = canEdit ? host.querySelector(".imgv-crop-apply") : null;
-  const cropCancelBtn = canEdit ? host.querySelector(".imgv-crop-cancel") : null;
-  const resizeBtn = canEdit ? host.querySelector(".imgv-resize-btn") : null;
-  const resizePanel = canEdit ? host.querySelector(".imgv-resize-panel") : null;
-  const resizeW = canEdit ? host.querySelector(".imgv-resize-w") : null;
-  const resizeH = canEdit ? host.querySelector(".imgv-resize-h") : null;
-  const resizeLock = canEdit ? host.querySelector(".imgv-resize-lock") : null;
-  const resizeApplyBtn = canEdit ? host.querySelector(".imgv-resize-apply") : null;
-  const resizeCancelBtn = canEdit ? host.querySelector(".imgv-resize-cancel") : null;
-  const expandBtn = canEdit ? host.querySelector(".imgv-expand-btn") : null;
-  const expandPanel = canEdit ? host.querySelector(".imgv-expand-panel") : null;
-  const expandPad = canEdit ? host.querySelector(".imgv-expand-pad") : null;
-  const expandTransparent = canEdit ? host.querySelector(".imgv-expand-transparent") : null;
-  const expandColor = canEdit ? host.querySelector(".imgv-expand-color") : null;
-  const expandApplyBtn = canEdit ? host.querySelector(".imgv-expand-apply") : null;
-  const expandCancelBtn = canEdit ? host.querySelector(".imgv-expand-cancel") : null;
-  const rotLBtn = canEdit ? host.querySelector(".imgv-rot-l") : null;
-  const rotRBtn = canEdit ? host.querySelector(".imgv-rot-r") : null;
-  const flipHBtn = canEdit ? host.querySelector(".imgv-flip-h") : null;
-  const flipVBtn = canEdit ? host.querySelector(".imgv-flip-v") : null;
-  const filtersBtn = canEdit ? host.querySelector(".imgv-filters-btn") : null;
-  const filtersPanel = canEdit ? host.querySelector(".imgv-filters-panel") : null;
-  const fBrightness = canEdit ? host.querySelector(".imgv-f-brightness") : null;
-  const fContrast = canEdit ? host.querySelector(".imgv-f-contrast") : null;
-  const fSaturation = canEdit ? host.querySelector(".imgv-f-saturation") : null;
-  const fHue = canEdit ? host.querySelector(".imgv-f-hue") : null;
-  const fApplyBtn = canEdit ? host.querySelector(".imgv-f-apply") : null;
-  const fResetBtn = canEdit ? host.querySelector(".imgv-f-reset") : null;
-  const levelsBtn = canEdit ? host.querySelector(".imgv-levels-btn") : null;
-  const levelsPanel = canEdit ? host.querySelector(".imgv-levels-panel") : null;
-  const lvBlack = canEdit ? host.querySelector(".imgv-lv-black") : null;
-  const lvWhite = canEdit ? host.querySelector(".imgv-lv-white") : null;
-  const lvGamma = canEdit ? host.querySelector(".imgv-lv-gamma") : null;
-  const lvApply = canEdit ? host.querySelector(".imgv-lv-apply") : null;
-  const lvCancel = canEdit ? host.querySelector(".imgv-lv-cancel") : null;
-  const presetGrey = canEdit ? host.querySelector(".imgv-preset-grey") : null;
-  const presetSepia = canEdit ? host.querySelector(".imgv-preset-sepia") : null;
-  const presetInvert = canEdit ? host.querySelector(".imgv-preset-invert") : null;
-  let natural = 0, fit = true, zoom = 1, asciiMode = false;
+  const {
+    img,
+    note,
+    zoomLabel,
+    asciiBtn,
+    asciiOut,
+    editInput,
+    editSize,
+    editColor,
+    editApply,
+    editReset,
+    pencilBtn,
+    eraserBtn,
+    fillBtn,
+    fillTol,
+    fillTolV,
+    fillMode,
+    fillPercep,
+    fillFeather,
+    fillOpts,
+    selectBtn,
+    marqueeBtn,
+    ellipseBtn,
+    lassoBtn,
+    deselectBtn,
+    selInvertBtn,
+    selCutBtn,
+    moveBtn,
+    drawColorPicker,
+    drawSizePicker,
+    undoBtn,
+    redoBtn,
+    exportFmt,
+    editFont,
+    bgBtn,
+    bgTol,
+    bgOk,
+    bgX,
+    cropBtn,
+    cropApplyBtn,
+    cropCancelBtn,
+    resizeBtn,
+    resizePanel,
+    resizeW,
+    resizeH,
+    resizeLock,
+    resizeApplyBtn,
+    resizeCancelBtn,
+    expandBtn,
+    expandPanel,
+    expandPad,
+    expandTransparent,
+    expandColor,
+    expandApplyBtn,
+    expandCancelBtn,
+    rotLBtn,
+    rotRBtn,
+    flipHBtn,
+    flipVBtn,
+    filtersBtn,
+    filtersPanel,
+    fBrightness,
+    fContrast,
+    fSaturation,
+    fHue,
+    fApplyBtn,
+    fResetBtn,
+    levelsBtn,
+    levelsPanel,
+    lvBlack,
+    lvWhite,
+    lvGamma,
+    lvApply,
+    lvCancel,
+    presetGrey,
+    presetSepia,
+    presetInvert
+  } = queryEls(host, canEdit);
+  let asciiMode = false;
   let jxlPngBytes = null;
-  let drawMode = null, isEraserStroke = false;
-  let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
+  let drawCtl = null;
   let advController = null, advActive = false;
   const overlayActive = () => !!(advController && !advController.isEmpty());
   let selection = null;
@@ -2345,153 +2834,28 @@ async function render(intake, ctx = {}) {
   };
   if (canEdit) mountTabs(host);
   const editTools = [];
-  let panX = 0, panY = 0;
-  function applyPan() {
-    const t = `translate3d(${panX}px, ${panY}px, 0)`;
-    img.style.transform = t;
-    if (drawOverlay) drawOverlay.style.transform = t;
-    advController?.relayout();
-  }
-  function nudgeRepaint() {
-    requestAnimationFrame(() => {
-      void img.offsetWidth;
-      img.style.transform = `translate3d(${panX}px, ${panY}px, 0.001px)`;
-      requestAnimationFrame(applyPan);
-    });
-  }
-  img.addEventListener("load", nudgeRepaint);
+  const viewCtl = createView({
+    host,
+    img,
+    zoomLabel,
+    syncOverlay: () => drawCtl?.syncOverlay(),
+    getOverlayEl: () => drawCtl?.getOverlayEl(),
+    getAdv: () => advController,
+    isEditModeActive: () => drawCtl?.isDrawMode() || editTools.some((t) => t.isActive && t.isActive()),
+    isAscii: () => asciiMode
+  });
+  const apply = viewCtl.apply;
+  const applyPan = viewCtl.applyPan;
+  const view = { setNatural: (n) => {
+    viewCtl.setNatural(n);
+    selection?.clear();
+  } };
   img.addEventListener("load", () => {
     if (!pendingGeom) return;
     const A = pendingGeom;
     pendingGeom = null;
     advController?.applyGeometry(A);
   });
-  function apply() {
-    host.querySelector(".imgv-fit").classList.toggle("active", fit);
-    if (fit || !natural) {
-      img.style.width = "";
-      img.style.maxWidth = "";
-      img.style.maxHeight = "";
-      zoomLabel.textContent = "fit";
-    } else {
-      img.style.maxWidth = "none";
-      img.style.maxHeight = "none";
-      img.style.width = Math.round(natural * zoom) + "px";
-      zoomLabel.textContent = Math.round(zoom * 100) + "%";
-    }
-    if (typeof syncOverlay === "function") syncOverlay();
-    applyPan();
-  }
-  function resetView() {
-    panX = 0;
-    panY = 0;
-  }
-  const view = { setNatural: (n) => {
-    natural = n;
-    apply();
-    selection?.clear();
-  } };
-  host.querySelector(".imgv-fit").addEventListener("click", () => {
-    fit = true;
-    resetView();
-    apply();
-  });
-  host.querySelector(".imgv-100").addEventListener("click", () => {
-    fit = false;
-    zoom = 1;
-    resetView();
-    apply();
-  });
-  host.querySelector(".imgv-up").addEventListener("click", () => {
-    fit = false;
-    zoom = Math.min(16, zoom * 1.25);
-    apply();
-  });
-  host.querySelector(".imgv-dn").addEventListener("click", () => {
-    fit = false;
-    zoom = Math.max(0.1, zoom / 1.25);
-    apply();
-  });
-  const stageEl = host.querySelector(".imgv-stage");
-  stageEl.style.overflow = "hidden";
-  const editModeActive = () => drawMode || editTools.some((t) => t.isActive && t.isActive());
-  let dragLastX = 0, dragLastY = 0;
-  const onPanMove = (e) => {
-    panX += e.clientX - dragLastX;
-    panY += e.clientY - dragLastY;
-    dragLastX = e.clientX;
-    dragLastY = e.clientY;
-    applyPan();
-  };
-  const onPanUp = () => {
-    stageEl.style.cursor = "";
-    window.removeEventListener("mousemove", onPanMove);
-    window.removeEventListener("mouseup", onPanUp);
-  };
-  stageEl.addEventListener("mousedown", (e) => {
-    if (e.button === 0 && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      startCtrlZoom(e);
-      return;
-    }
-    const leftPan = e.button === 0 && !editModeActive();
-    const midPan = e.button === 1;
-    if (!leftPan && !midPan) return;
-    dragLastX = e.clientX;
-    dragLastY = e.clientY;
-    stageEl.style.cursor = "grabbing";
-    e.preventDefault();
-    window.addEventListener("mousemove", onPanMove);
-    window.addEventListener("mouseup", onPanUp);
-  });
-  function zoomAt(factor, clientX, clientY) {
-    const r = stageEl.getBoundingClientRect();
-    const prev = fit ? img.offsetWidth / (natural || img.offsetWidth) : zoom;
-    fit = false;
-    zoom = Math.max(0.1, Math.min(16, prev * factor));
-    const k = zoom / prev;
-    const cx = clientX == null ? r.left + r.width / 2 : clientX;
-    const cy = clientY == null ? r.top + r.height / 2 : clientY;
-    const relX = cx - r.left - (r.width / 2 + panX);
-    const relY = cy - r.top - (r.height / 2 + panY);
-    panX += relX * (1 - k);
-    panY += relY * (1 - k);
-    apply();
-  }
-  stageEl.addEventListener("wheel", (e) => {
-    e.preventDefault();
-    zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY);
-  }, { passive: false });
-  function startCtrlZoom(e) {
-    const ax = e.clientX, ay = e.clientY;
-    let lastY = e.clientY;
-    stageEl.style.cursor = "ns-resize";
-    const move = (ev) => {
-      const dy = lastY - ev.clientY;
-      lastY = ev.clientY;
-      if (dy) zoomAt(Math.exp(dy * 6e-3), ax, ay);
-    };
-    const up = () => {
-      stageEl.style.cursor = "";
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseup", up);
-    };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
-  }
-  function onZoomKey(e) {
-    if (asciiMode || !host.isConnected || !(e.ctrlKey || e.metaKey)) return;
-    const t = e.target;
-    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-    if (e.key === "+" || e.key === "=") {
-      e.preventDefault();
-      zoomAt(1.25);
-    } else if (e.key === "-" || e.key === "_") {
-      e.preventDefault();
-      zoomAt(1 / 1.25);
-    }
-  }
-  document.addEventListener("keydown", onZoomKey);
   const isJxl = (intake.filename || "").split(".").pop()?.toLowerCase() === "jxl" || mime === "image/jxl";
   img.addEventListener("error", () => {
     if (isJxl) return;
@@ -2512,9 +2876,8 @@ async function render(intake, ctx = {}) {
         jxlPngBytes = new Uint8Array(await blob.arrayBuffer());
         note.hidden = true;
         img.hidden = false;
-        natural = c.width;
         img.src = URL.createObjectURL(blob);
-        apply();
+        viewCtl.setNatural(c.width);
       } catch (e) {
         note.hidden = false;
         img.hidden = true;
@@ -2525,10 +2888,7 @@ async function render(intake, ctx = {}) {
     img.src = url;
     apply();
     dimensions(url).then((d) => {
-      if (d) {
-        natural = d.w;
-        apply();
-      }
+      if (d) viewCtl.setNatural(d.w);
     });
   }
   let asciiStudio = null;
@@ -2652,7 +3012,7 @@ async function render(intake, ctx = {}) {
     mime,
     els: { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn },
     getFillOpts: () => ({ tol: parseInt(fillTol?.value || "12", 10), mode: fillMode?.value || "seed", perceptual: !!fillPercep?.checked }),
-    onActivate: () => setDrawMode(null),
+    onActivate: () => drawCtl?.setDrawMode(null),
     // selection is mutually exclusive with pencil/eraser/fill input
     onCommit: async (canvas) => {
       core.pushUndo();
@@ -2685,7 +3045,8 @@ async function render(intake, ctx = {}) {
     compareView.destroy();
     compareView = null;
     img.style.display = "";
-    if (drawOverlay) drawOverlay.style.display = "";
+    const ov = drawCtl?.getOverlayEl();
+    if (ov) ov.style.display = "";
     host.querySelector(".imgv-bar").classList.remove("imgv-compare-on");
     compareBtn?.classList.remove("active");
     apply();
@@ -2697,230 +3058,22 @@ async function render(intake, ctx = {}) {
     }
     const stage = host.querySelector(".imgv-stage");
     img.style.display = "none";
-    if (drawOverlay) drawOverlay.style.display = "none";
+    const ov = drawCtl?.getOverlayEl();
+    if (ov) ov.style.display = "none";
     host.querySelector(".imgv-bar").classList.add("imgv-compare-on");
     compareBtn.classList.add("active");
     const { mountCompare } = await import("./compare-view.js");
     compareView = mountCompare(stage, { originalUrl: url, currentUrl: core.editedUrl || url, onClose: exitCompare });
   });
-  function syncOverlay() {
-    selection?.syncOverlay();
-    if (!drawOverlay) return;
-    drawOverlay.style.left = img.offsetLeft + "px";
-    drawOverlay.style.top = img.offsetTop + "px";
-    drawOverlay.style.width = img.offsetWidth + "px";
-    drawOverlay.style.height = img.offsetHeight + "px";
-  }
-  function buildOverlay() {
-    const stage = host.querySelector(".imgv-stage");
-    stage.style.position = "relative";
-    drawOverlay = document.createElement("canvas");
-    drawOverlay.style.cssText = "position:absolute;pointer-events:none;touch-action:none;z-index:2;";
-    stage.appendChild(drawOverlay);
-    drawOCtx = drawOverlay.getContext("2d");
-    brushCursor = document.createElement("div");
-    brushCursor.className = "imgv-brush-cursor";
-    brushCursor.style.cssText = "position:absolute;border:1px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.6);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:3;display:none;mix-blend-mode:difference;";
-    stage.appendChild(brushCursor);
-    img.addEventListener("load", () => {
-      if (drawOverlay && !isEraserStroke) {
-        drawOverlay.width = img.naturalWidth || 1;
-        drawOverlay.height = img.naturalHeight || 1;
-      }
-      syncOverlay();
-      applyPan();
-    });
-    if (img.naturalWidth) {
-      drawOverlay.width = img.naturalWidth;
-      drawOverlay.height = img.naturalHeight;
-    }
-    syncOverlay();
-    applyPan();
-    drawOverlay.addEventListener("mousedown", onPDown);
-    drawOverlay.addEventListener("mousemove", onPMove);
-    drawOverlay.addEventListener("mouseup", onPUp);
-    drawOverlay.addEventListener("mouseleave", () => {
-      hideBrushCursor();
-      if (isPointerDown) {
-        isPointerDown = false;
-        commitDraw();
-      }
-    });
-    drawOverlay.addEventListener("touchstart", onPDown, { passive: false });
-    drawOverlay.addEventListener("touchmove", onPMove, { passive: false });
-    drawOverlay.addEventListener("touchend", onPUp);
-  }
-  function moveBrushCursor(e) {
-    if (!brushCursor || drawMode !== "pencil" && drawMode !== "eraser") {
-      hideBrushCursor();
-      return;
-    }
-    const stageR = host.querySelector(".imgv-stage").getBoundingClientRect();
-    const d = parseInt(drawSizePicker?.value || "8", 10);
-    brushCursor.style.width = d + "px";
-    brushCursor.style.height = d + "px";
-    brushCursor.style.left = e.clientX - stageR.left + "px";
-    brushCursor.style.top = e.clientY - stageR.top + "px";
-    brushCursor.style.display = "block";
-  }
-  function hideBrushCursor() {
-    if (brushCursor) brushCursor.style.display = "none";
-  }
-  function setDrawMode(mode) {
-    drawMode = drawMode === mode ? null : mode;
-    if (drawMode) selection?.setActive(false);
-    pencilBtn?.classList.toggle("active", drawMode === "pencil");
-    eraserBtn?.classList.toggle("active", drawMode === "eraser");
-    fillBtn?.classList.toggle("active", drawMode === "fill");
-    fillOpts.forEach((el) => {
-      el.hidden = !(drawMode === "fill" || selection?.isActive());
-    });
-    if (!drawOverlay && drawMode) buildOverlay();
-    if (drawOverlay) {
-      drawOverlay.style.pointerEvents = drawMode ? "auto" : "none";
-      drawOverlay.style.cursor = drawMode === "eraser" ? "cell" : drawMode === "fill" ? "crosshair" : drawMode === "pencil" ? "none" : "";
-    }
-    if (drawMode !== "pencil" && drawMode !== "eraser") hideBrushCursor();
-    img.style.pointerEvents = drawMode ? "none" : "";
-  }
-  function ptToCanvas(e) {
-    const r = drawOverlay.getBoundingClientRect();
-    const sx = drawOverlay.width / r.width, sy = drawOverlay.height / r.height;
-    const src = e.touches ? e.touches[0] : e;
-    return { x: (src.clientX - r.left) * sx, y: (src.clientY - r.top) * sy };
-  }
-  function getCanvasBrushSize() {
-    const displayPx = parseInt(drawSizePicker?.value || "8", 10);
-    if (!drawOverlay) return displayPx;
-    const r = drawOverlay.getBoundingClientRect();
-    const scale = r.width > 0 ? drawOverlay.width / r.width : 1;
-    return Math.max(1, Math.round(displayPx * scale));
-  }
-  function applyStrokeStyle(sz) {
-    drawOCtx.globalCompositeOperation = isEraserStroke ? "destination-out" : "source-over";
-    drawOCtx.strokeStyle = drawColorPicker?.value || "#ff0000";
-    drawOCtx.fillStyle = drawColorPicker?.value || "#ff0000";
-    drawOCtx.lineWidth = sz;
-    drawOCtx.lineCap = "round";
-    drawOCtx.lineJoin = "round";
-  }
-  async function onPDown(e) {
-    if (!drawMode || !drawOverlay) return;
-    e.preventDefault();
-    if (drawMode === "fill") {
-      await doFill(e);
-      return;
-    }
-    isPointerDown = true;
-    isEraserStroke = drawMode === "eraser";
-    core.pushUndo();
-    if (isEraserStroke) {
-      drawOverlay.width = img.naturalWidth;
-      drawOverlay.height = img.naturalHeight;
-      if (mime === "image/jpeg") {
-        drawOCtx.fillStyle = "#fff";
-        drawOCtx.fillRect(0, 0, drawOverlay.width, drawOverlay.height);
-      }
-      drawOCtx.drawImage(img, 0, 0);
-    } else if (!drawOverlay.width || !img.naturalWidth) {
-      drawOverlay.width = img.naturalWidth || 1;
-      drawOverlay.height = img.naturalHeight || 1;
-    }
-    if (!isEraserStroke && img.naturalWidth && drawOverlay.width !== img.naturalWidth) {
-      drawOverlay.width = img.naturalWidth;
-      drawOverlay.height = img.naturalHeight;
-    }
-    lastPt = ptToCanvas(e);
-    const sz = getCanvasBrushSize();
-    applyStrokeStyle(sz);
-    drawOCtx.beginPath();
-    drawOCtx.arc(lastPt.x, lastPt.y, sz / 2, 0, Math.PI * 2);
-    drawOCtx.fill();
-  }
-  function onPMove(e) {
-    moveBrushCursor(e);
-    if (!isPointerDown || !drawOCtx) return;
-    e.preventDefault();
-    const pt = ptToCanvas(e);
-    const sz = getCanvasBrushSize();
-    applyStrokeStyle(sz);
-    drawOCtx.beginPath();
-    drawOCtx.moveTo(lastPt.x, lastPt.y);
-    drawOCtx.lineTo(pt.x, pt.y);
-    drawOCtx.stroke();
-    lastPt = pt;
-  }
-  async function doFill(e) {
-    const c = document.createElement("canvas");
-    c.width = img.naturalWidth;
-    c.height = img.naturalHeight;
-    const g = c.getContext("2d", { willReadFrequently: true });
-    if (mime === "image/jpeg") {
-      g.fillStyle = "#fff";
-      g.fillRect(0, 0, c.width, c.height);
-    }
-    g.drawImage(img, 0, 0);
-    const id = g.getImageData(0, 0, c.width, c.height);
-    const pt = ptToCanvas(e);
-    const before = selection?.hasSelection() ? Uint8ClampedArray.from(id.data) : null;
-    const filled = floodFill(
-      id.data,
-      c.width,
-      c.height,
-      Math.round(pt.x),
-      Math.round(pt.y),
-      hexToRgba(drawColorPicker?.value),
-      parseInt(fillTol?.value || "0", 10),
-      { mode: fillMode?.value || "seed", perceptual: !!fillPercep?.checked, feather: !!fillFeather?.checked }
-    );
-    if (!filled) return;
-    if (before) selection.clipFillInPlace(id.data, before);
-    g.putImageData(id, 0, 0);
-    const targetMime = core.getExportMime();
-    core.pushUndo();
-    const blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === "image/jpeg" ? 0.92 : void 0));
-    core.commitBlob(blob, { mime: targetMime });
-  }
-  async function commitDraw() {
-    if (!drawOverlay || !drawOverlay.width) return;
-    const targetMime = core.getExportMime();
-    let blob;
-    if (isEraserStroke) {
-      await selection?.clipCanvas(drawOverlay, img);
-      blob = await new Promise((r) => drawOverlay.toBlob(r, targetMime, targetMime === "image/jpeg" ? 0.92 : void 0));
-    } else {
-      const c = document.createElement("canvas");
-      c.width = img.naturalWidth;
-      c.height = img.naturalHeight;
-      const g = c.getContext("2d");
-      if (mime === "image/jpeg") {
-        g.fillStyle = "#fff";
-        g.fillRect(0, 0, c.width, c.height);
-      }
-      g.drawImage(img, 0, 0);
-      g.drawImage(drawOverlay, 0, 0);
-      await selection?.clipCanvas(c, img);
-      blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === "image/jpeg" ? 0.92 : void 0));
-    }
-    drawOCtx.clearRect(0, 0, drawOverlay.width, drawOverlay.height);
-    core.commitBlob(blob, { mime: targetMime });
-  }
-  async function onPUp(e) {
-    if (isPointerDown) {
-      isPointerDown = false;
-      await commitDraw();
-    }
-  }
-  if (pencilBtn) {
-    pencilBtn.addEventListener("click", () => setDrawMode("pencil"));
-    eraserBtn.addEventListener("click", () => setDrawMode("eraser"));
-    fillBtn?.addEventListener("click", () => setDrawMode("fill"));
-    fillTol?.addEventListener("input", () => {
-      if (fillTolV) fillTolV.textContent = fillTol.value;
-    });
-    undoBtn?.addEventListener("click", core.doUndo);
-    redoBtn?.addEventListener("click", core.doRedo);
-  }
+  drawCtl = createDrawTools({
+    host,
+    img,
+    mime,
+    core,
+    getSelection: () => selection,
+    applyPan,
+    els: { pencilBtn, eraserBtn, fillBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts, drawColorPicker, drawSizePicker, undoBtn, redoBtn }
+  });
   const unregisterUndoKeys = canEdit ? registerUndoKeys({ host, isEnabled: () => !asciiMode, doUndo: core.doUndo, doRedo: core.doRedo }) : null;
   const bgTool = mountBg({ img, url, core, els });
   editTools.push(bgTool);
@@ -2930,7 +3083,7 @@ async function render(intake, ctx = {}) {
     advController?.destroy();
     selection?.teardown();
     unregisterUndoKeys?.();
-    document.removeEventListener("keydown", onZoomKey);
+    viewCtl.teardown();
     compareView?.destroy?.();
     asciiStudio?.destroy?.();
     URL.revokeObjectURL(url);
