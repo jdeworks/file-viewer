@@ -4,6 +4,12 @@
 // OBJ viewers (and any future mesh format) — each supplies a normalized model + an info string.
 //
 // model: { tris: [{ v: [[x,y,z],[x,y,z],[x,y,z]], n: [x,y,z], color?: [r,g,b,a] }], size, center }
+//
+// Selection: click picks a triangle and opens a popover that recolors per the active select mode:
+//   • Region (default) — the connected coplanar set around the hit triangle (a flat cube side),
+//   • Face — just the one triangle,
+//   • Group — the OBJ/material group the triangle belongs to (the original behaviour).
+import { ptInTri2D, buildAdjacency, coplanarRegion } from './meshview-faces.js';
 
 export function mountMeshView(model, infoText) {
   const host = document.createElement('div');
@@ -11,10 +17,14 @@ export function mountMeshView(model, infoText) {
   if (!model.tris.length) { host.innerHTML = '<p class="stl-empty">No triangles found.</p>'; return { parentNode: host }; }
 
   host.innerHTML = '<div class="stl-bar"><span class="stl-info"></span>'
+    + '<span class="mv-mode" title="What a click selects to color">'
+    + '<button class="mv-mode-btn active" data-mode="region" title="Color the coplanar region (a flat side)">Region</button>'
+    + '<button class="mv-mode-btn" data-mode="face" title="Color one triangle">Face</button>'
+    + '<button class="mv-mode-btn" data-mode="group" title="Color the whole group/material">Group</button></span>'
     + '<input type="color" class="stl-color" value="#4978c8" title="Mesh color">'
     + '<button class="stl-dl-ply" title="Download colored PLY">&#8595; PLY</button>'
     + '<button class="stl-dl-obj" title="Download as OBJ">&#8595; OBJ</button>'
-    + '<button class="stl-reset-colors" title="Reset all group colors">Colors \xd7</button>'
+    + '<button class="stl-reset-colors" title="Reset all colors">Colors \xd7</button>'
     + '<button class="stl-reset" title="Reset view">Reset</button></div>'
     + '<div class="stl-stage"><canvas class="stl-canvas"></canvas></div>';
   const canvas = host.querySelector('.stl-canvas');
@@ -25,8 +35,12 @@ export function mountMeshView(model, infoText) {
   const baseRotX = -1.1, baseRotY = 0.6;
   let rotX = baseRotX, rotY = baseRotY;
   let overrideColor = null;
+  let selectMode = 'region'; // 'region' | 'face' | 'group'
   const groupColors = new Map(); // groupIdx → [r,g,b,1]
-  function resolveColor(t) {
+  const faceColors = new Map();  // triIdx → [r,g,b,1]
+  // Precedence: per-face > per-group > global override > the triangle's own color > default.
+  function resolveColor(t, triIdx) {
+    if (triIdx != null && faceColors.has(triIdx)) return faceColors.get(triIdx);
     if (t.groupIdx != null && groupColors.has(t.groupIdx)) return groupColors.get(t.groupIdx);
     if (overrideColor) return overrideColor;
     return t.color || null;
@@ -38,8 +52,8 @@ export function mountMeshView(model, infoText) {
     return [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255, 1];
   }
   const light = (() => { const l = [0.4, 0.5, 0.8]; const n = Math.hypot(...l); return l.map((x) => x / n); })();
-  function faceFill(t, shade) {
-    const color = resolveColor(t);
+  function faceFill(t, shade, triIdx) {
+    const color = resolveColor(t, triIdx);
     const lit = 0.25 + 0.75 * shade;
     if (!color) return 'rgb(' + Math.round(70 * lit + 40) + ',' + Math.round(120 * lit + 40) + ',' + Math.round(200 * lit + 30) + ')';
     return 'rgba(' + Math.round(255 * color[0] * lit) + ',' + Math.round(255 * color[1] * lit) + ',' + Math.round(255 * color[2] * lit) + ',' + (color[3] ?? 1) + ')';
@@ -62,18 +76,19 @@ export function mountMeshView(model, infoText) {
       return [x2, y1, z2];
     };
     const faces = [];
-    for (const t of model.tris) {
+    for (let ti = 0; ti < model.tris.length; ti++) {
+      const t = model.tris[ti];
       const a = rot(t.v[0], true), b = rot(t.v[1], true), c = rot(t.v[2], true);
       const n = rot(t.n, false);
       const pa = [cx + a[0] * s, cy - a[1] * s];
       const pb = [cx + b[0] * s, cy - b[1] * s];
       const pc = [cx + c[0] * s, cy - c[1] * s];
-      faces.push({ color: t.color, groupIdx: t.groupIdx, proj2d: [pa, pb, pc], shade: Math.max(0, n[0] * light[0] + n[1] * light[1] + n[2] * light[2]), depth: (a[2] + b[2] + c[2]) / 3 });
+      faces.push({ color: t.color, groupIdx: t.groupIdx, triIdx: ti, proj2d: [pa, pb, pc], shade: Math.max(0, n[0] * light[0] + n[1] * light[1] + n[2] * light[2]), depth: (a[2] + b[2] + c[2]) / 3 });
     }
     faces.sort((p, q) => p.depth - q.depth);
     _lastFaces = faces;
     for (const f of faces) {
-      ctx.fillStyle = faceFill(f, f.shade);
+      ctx.fillStyle = faceFill(f, f.shade, f.triIdx);
       ctx.beginPath();
       ctx.moveTo(f.proj2d[0][0], f.proj2d[0][1]);
       ctx.lineTo(f.proj2d[1][0], f.proj2d[1][1]);
@@ -99,38 +114,69 @@ export function mountMeshView(model, infoText) {
   canvas.addEventListener('pointermove', (e) => { if (!dragging) return; _wasDragging = true; rotY += (e.clientX - px) * 0.01; rotX += (e.clientY - py) * 0.01; px = e.clientX; py = e.clientY; schedule(); });
   canvas.addEventListener('pointerup', () => { dragging = false; });
   host.querySelector('.stl-reset').addEventListener('click', () => { rotX = baseRotX; rotY = baseRotY; schedule(); });
-  host.querySelector('.stl-reset-colors').addEventListener('click', () => { groupColors.clear(); schedule(); });
+  host.querySelector('.stl-reset-colors').addEventListener('click', () => { groupColors.clear(); faceColors.clear(); schedule(); });
 
-  function ptInTri2D(px2, py2, [ax, ay], [bx, by], [pcx, pcy]) {
-    const d1 = (px2 - bx) * (ay - by) - (ax - bx) * (py2 - by);
-    const d2 = (px2 - pcx) * (by - pcy) - (bx - pcx) * (py2 - pcy);
-    const d3 = (px2 - ax) * (pcy - ay) - (pcx - ax) * (py2 - ay);
-    const hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
-    const hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
-    return !(hasNeg && hasPos);
+  // Select-mode toggle (touch-friendly buttons, not modifier keys).
+  host.querySelectorAll('.mv-mode-btn').forEach((b) => b.addEventListener('click', () => {
+    selectMode = b.dataset.mode;
+    host.querySelectorAll('.mv-mode-btn').forEach((o) => o.classList.toggle('active', o === b));
+  }));
+
+  // Welded-vertex edge adjacency for region flood-fill — built lazily, cached on the model.
+  function adjacency() {
+    if (!model._mvAdj) model._mvAdj = buildAdjacency(model);
+    return model._mvAdj;
   }
-  function showGroupPicker(screenX, screenY, groupIdx) {
-    const group = (model.groups || [])[groupIdx] ?? { id: 'mesh', color: [0.286, 0.471, 0.784, 1] };
-    const current = groupColors.get(groupIdx) ?? group.color;
-    const hex = colorToHex(current);
+
+  // A selection is one of: { kind:'group', groupIdx } / { kind:'face', triIdx } /
+  // { kind:'region', triIdx, tris:[…] }. The popover writes the chosen color into the right map.
+  function selectionFromHit(triIdx) {
+    if (selectMode === 'group') return { kind: 'group', groupIdx: model.tris[triIdx]?.groupIdx ?? 0 };
+    if (selectMode === 'face') return { kind: 'face', triIdx };
+    return { kind: 'region', triIdx, tris: coplanarRegion(model, adjacency(), triIdx) };
+  }
+  function selCurrentColor(sel) {
+    if (sel.kind === 'group') {
+      const group = (model.groups || [])[sel.groupIdx] ?? { id: 'mesh', color: [0.286, 0.471, 0.784, 1] };
+      return groupColors.get(sel.groupIdx) ?? group.color;
+    }
+    return faceColors.get(sel.triIdx) ?? model.tris[sel.triIdx]?.color ?? [0.286, 0.471, 0.784, 1];
+  }
+  function selLabel(sel) {
+    if (sel.kind === 'group') return ((model.groups || [])[sel.groupIdx] ?? { id: 'mesh' }).id;
+    if (sel.kind === 'face') return 'Face #' + sel.triIdx;
+    return 'Region (' + sel.tris.length + ' face' + (sel.tris.length === 1 ? '' : 's') + ')';
+  }
+  function selApply(sel, color) {
+    if (sel.kind === 'group') groupColors.set(sel.groupIdx, color);
+    else if (sel.kind === 'face') faceColors.set(sel.triIdx, color);
+    else for (const ti of sel.tris) faceColors.set(ti, color);
+  }
+  function selClear(sel) {
+    if (sel.kind === 'group') groupColors.delete(sel.groupIdx);
+    else if (sel.kind === 'face') faceColors.delete(sel.triIdx);
+    else for (const ti of sel.tris) faceColors.delete(ti);
+  }
+  function showGroupPicker(screenX, screenY, sel) {
+    const hex = colorToHex(selCurrentColor(sel));
     let picker = host.querySelector('.mv-group-picker');
     if (!picker) {
       picker = document.createElement('div');
       picker.className = 'mv-group-picker';
-      picker.innerHTML = '<span class="mv-gp-name"></span><input type="color" class="mv-gp-color"><button class="mv-gp-clear" title="Reset group color">\xd7</button>';
+      picker.innerHTML = '<span class="mv-gp-name"></span><input type="color" class="mv-gp-color"><button class="mv-gp-clear" title="Clear this selection’s color">\xd7</button>';
       host.appendChild(picker);
       picker.querySelector('.mv-gp-color').addEventListener('input', (e) => {
-        groupColors.set(picker._groupIdx, hexToColor(e.target.value));
+        selApply(picker._sel, hexToColor(e.target.value));
         schedule();
       });
       picker.querySelector('.mv-gp-clear').addEventListener('click', () => {
-        groupColors.delete(picker._groupIdx);
+        selClear(picker._sel);
         schedule();
         hideGroupPicker();
       });
     }
-    picker._groupIdx = groupIdx;
-    picker.querySelector('.mv-gp-name').textContent = group.id;
+    picker._sel = sel;
+    picker.querySelector('.mv-gp-name').textContent = selLabel(sel);
     picker.querySelector('.mv-gp-color').value = hex;
     picker.style.cssText = 'display:flex;position:fixed;left:' + (screenX + 12) + 'px;top:' + (screenY + 12) + 'px;z-index:10;gap:6px;align-items:center;background:var(--bg,#fff);border:1px solid var(--border,#ccc);border-radius:6px;padding:4px 8px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.15)';
   }
@@ -143,7 +189,7 @@ export function mountMeshView(model, infoText) {
     for (let i = _lastFaces.length - 1; i >= 0; i--) {
       const f = _lastFaces[i];
       if (ptInTri2D(mx, my, ...f.proj2d)) {
-        showGroupPicker(e.clientX, e.clientY, f.groupIdx ?? 0);
+        showGroupPicker(e.clientX, e.clientY, selectionFromHit(f.triIdx ?? 0));
         return;
       }
     }
@@ -161,8 +207,9 @@ export function mountMeshView(model, infoText) {
       'property uchar red', 'property uchar green', 'property uchar blue',
       'element face ' + model.tris.length, 'property list uchar int vertex_indices', 'end_header'];
     let vi = 0;
-    for (const t of model.tris) {
-      const tc = resolveColor(t) || [0.286, 0.471, 0.784, 1];
+    for (let ti = 0; ti < model.tris.length; ti++) {
+      const t = model.tris[ti];
+      const tc = resolveColor(t, ti) || [0.286, 0.471, 0.784, 1];
       const r = Math.round(tc[0] * 255), g = Math.round(tc[1] * 255), b = Math.round(tc[2] * 255);
       for (const v of t.v) lines.push(v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + r + ' ' + g + ' ' + b);
     }
@@ -175,11 +222,38 @@ export function mountMeshView(model, infoText) {
   host.querySelector('.stl-dl-obj').addEventListener('click', () => {
     const base = model._filename ? model._filename.replace(/\.[^.]+$/, '') : 'model';
     const grps = model.groups || [{ id: 'mesh', color: [0.286, 0.471, 0.784, 1] }];
+    // Per-triangle effective material: a face/region color is promoted to a SYNTHETIC material
+    // (deduped by color) so OBJ usemtl carries it; un-recolored faces keep their real group's
+    // material. This never clobbers OBJ-derived usemtl groups.
+    const mats = []; // { id, color }
+    const matIdxByKey = new Map();
+    const groupMatIdx = new Map(); // groupIdx → mat index (real groups, possibly recolored)
+    const ensureGroupMat = (gIdx) => {
+      if (groupMatIdx.has(gIdx)) return groupMatIdx.get(gIdx);
+      const grp = grps[gIdx] || { id: 'mesh', color: [0.286, 0.471, 0.784, 1] };
+      const idx = mats.length;
+      mats.push({ id: grp.id || 'mesh', color: groupColors.get(gIdx) ?? grp.color });
+      groupMatIdx.set(gIdx, idx);
+      return idx;
+    };
+    const ensureFaceMat = (color) => {
+      const key = color.map((c) => Math.round(c * 255)).slice(0, 3).join('_');
+      if (matIdxByKey.has(key)) return matIdxByKey.get(key);
+      const idx = mats.length;
+      mats.push({ id: 'fv_face_' + key, color });
+      matIdxByKey.set(key, idx);
+      return idx;
+    };
+    const triMat = new Array(model.tris.length);
+    for (let i = 0; i < model.tris.length; i++) {
+      const t = model.tris[i];
+      if (faceColors.has(i)) triMat[i] = ensureFaceMat(faceColors.get(i));
+      else triMat[i] = ensureGroupMat(t.groupIdx ?? 0);
+    }
     let mtl = '# Generated by file-viewer\n\n';
-    for (let idx = 0; idx < grps.length; idx++) {
-      const grp = grps[idx];
-      const [r, g, b] = (groupColors.get(idx) ?? grp.color).slice(0, 3);
-      mtl += 'newmtl ' + grp.id + '\nKd ' + r.toFixed(4) + ' ' + g.toFixed(4) + ' ' + b.toFixed(4) + '\nNs 10\nd 1\n\n';
+    for (const m of mats) {
+      const [r, g, b] = m.color.slice(0, 3);
+      mtl += 'newmtl ' + m.id + '\nKd ' + r.toFixed(4) + ' ' + g.toFixed(4) + ' ' + b.toFixed(4) + '\nNs 10\nd 1\n\n';
     }
     const objLines = ['# Generated by file-viewer', 'mtllib ' + base + '-colored.mtl'];
     for (const t of model.tris) for (const v of t.v) objLines.push('v ' + v[0] + ' ' + v[1] + ' ' + v[2]);
@@ -189,11 +263,10 @@ export function mountMeshView(model, infoText) {
       objLines.push('vn ' + n[0] + ' ' + n[1] + ' ' + n[2]);
       objLines.push('vn ' + n[0] + ' ' + n[1] + ' ' + n[2]);
     }
-    let vi = 1, vni = 1, lastGIdx = -1;
+    let vi = 1, vni = 1, lastMat = -1;
     for (let i = 0; i < model.tris.length; i++) {
-      const t = model.tris[i];
-      const gIdx = t.groupIdx ?? 0;
-      if (gIdx !== lastGIdx) { objLines.push('usemtl ' + (grps[gIdx]?.id || 'mesh')); lastGIdx = gIdx; }
+      const mIdx = triMat[i];
+      if (mIdx !== lastMat) { objLines.push('usemtl ' + mats[mIdx].id); lastMat = mIdx; }
       objLines.push('f ' + vi + '//' + vni + ' ' + (vi + 1) + '//' + (vni + 1) + ' ' + (vi + 2) + '//' + (vni + 2));
       vi += 3; vni += 3;
     }

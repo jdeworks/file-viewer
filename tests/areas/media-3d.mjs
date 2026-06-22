@@ -83,6 +83,70 @@ export async function run(ctx) {
   if (picker) pass('STL: clicking mesh face opens group color picker (.mv-group-picker)');
   else pass('STL: canvas click handled without error (face may not be at canvas center)');
 
+  // ── Face / Region / Group select modes ── per-face + coplanar-region coloring on the OBJ cube. ──
+  // The cube has no OBJ groups, so the old "Group" path recolors all 12 triangles; Face colors one,
+  // Region colors the flat side (its 2 fan-triangles) — this is the user-reported fix.
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.obj');
+  await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
+  await page.waitForTimeout(400);
+  // The select-mode toggle exists with Region (default) / Face / Group.
+  const modeBtns = await page.$$eval('#previewHost .mv-mode-btn', (els) => els.map((e) => ({ mode: e.dataset.mode, active: e.classList.contains('active') })));
+  const modeOk = modeBtns.length === 3 && modeBtns.find((b) => b.mode === 'region')?.active
+    && modeBtns.some((b) => b.mode === 'face') && modeBtns.some((b) => b.mode === 'group');
+  if (modeOk) pass('select-mode toggle present: Region (default) / Face / Group'); else fail('mode toggle: ' + JSON.stringify(modeBtns));
+
+  // Helper: click the centre of the canvas (always lands on a front face of the cube).
+  const clickCanvasCentre3D = async () => {
+    const b = await page.$eval('#previewHost .stl-canvas', (c) => { const r = c.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+    await page.mouse.click(b.x + b.w / 2, b.y + b.h / 2);
+    await page.waitForTimeout(120);
+  };
+  // FACE mode: pick face, apply a color → exactly one triangle is recolored. We verify via the
+  // popover label ("Face #N") since faceColors is module-internal.
+  await page.click('#previewHost .mv-mode-btn[data-mode="face"]');
+  await clickCanvasCentre3D();
+  let label = await page.$eval('#previewHost .mv-group-picker .mv-gp-name', (e) => e.textContent).catch(() => '');
+  if (/^Face #\d+$/.test(label)) pass('Face mode: click selects a single triangle (' + label + ')'); else fail('face label: ' + label);
+  // Apply a color in Face mode and confirm the canvas re-rendered (paint changed somewhere).
+  const paintBeforeFace = await page.evaluate(() => { const c = document.querySelector('#previewHost .stl-canvas'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += d[i] * 7 + d[i + 1] * 13 + d[i + 2]; return s; });
+  await page.evaluate(() => { const inp = document.querySelector('#previewHost .mv-group-picker .mv-gp-color'); inp.value = '#ff2020'; inp.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.waitForTimeout(150);
+  const paintAfterFace = await page.evaluate(() => { const c = document.querySelector('#previewHost .stl-canvas'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += d[i] * 7 + d[i + 1] * 13 + d[i + 2]; return s; });
+  if (paintAfterFace !== paintBeforeFace) pass('Face mode: applying a color repaints the mesh'); else fail('face color did not change canvas');
+
+  // REGION mode: a flat cube side is 2 coplanar fan-triangles → label reports >1 face from 1 click.
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.obj');
+  await page.waitForSelector('#previewHost .stl-canvas', { timeout: 12000 });
+  await page.waitForTimeout(400);
+  await page.click('#previewHost .mv-mode-btn[data-mode="region"]');
+  await clickCanvasCentre3D();
+  label = await page.$eval('#previewHost .mv-group-picker .mv-gp-name', (e) => e.textContent).catch(() => '');
+  const regionFaces = parseInt((label.match(/Region \((\d+)/) || [])[1] || '0', 10);
+  if (regionFaces > 1) pass('Region mode: one click selects >1 coplanar face (' + label + ')'); else fail('region label: ' + label);
+
+  // ── Colored OBJ export carries per-face/region colors as newmtl/usemtl ──
+  // Apply a region color, then download OBJ + MTL and assert the MTL has a synthetic face material.
+  await page.evaluate(() => { const inp = document.querySelector('#previewHost .mv-group-picker .mv-gp-color'); inp.value = '#10c040'; inp.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.waitForTimeout(120);
+  const dlDir = join(tmpdir(), 'fv-smoke-3d-' + Date.now());
+  const downloads = [];
+  page.on('download', (d) => downloads.push(d));
+  await page.click('#previewHost .stl-dl-obj');
+  await page.waitForTimeout(800); // OBJ then (200ms later) MTL fire
+  let objText = '', mtlText = '';
+  for (const d of downloads) {
+    const name = d.suggestedFilename();
+    const p = join(dlDir, name);
+    await d.saveAs(p).catch(() => {});
+    const fs = await import('node:fs');
+    const txt = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
+    if (name.endsWith('.obj')) objText = txt; else if (name.endsWith('.mtl')) mtlText = txt;
+  }
+  const exportOk = /newmtl fv_face_/.test(mtlText) && /usemtl fv_face_/.test(objText) && /Kd /.test(mtlText);
+  if (exportOk) pass('colored OBJ export: per-face/region color emitted as newmtl/usemtl (synthetic material)'); else fail('obj export mtl/obj: ' + JSON.stringify({ mtlHead: mtlText.slice(0, 120), hasUsemtl: /usemtl fv_face_/.test(objText) }));
+
   // ── 3MF manufacturing model ── ZIP package with model XML, metadata, materials, and thumbnail. ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.3mf');
