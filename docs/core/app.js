@@ -323,6 +323,10 @@ function onSettingsChange(model, changedKey) {
 
 function applyTheme(dark) {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  // Parent-pane (parentNode) renderers theme off `body.fv-dark` — the same class the iframe body
+  // gets — so mirror the dark state there too. Without this, those renderers' dark rules never
+  // applied in the parent (the class was only ever set inside the sandboxed iframe).
+  document.body.classList.toggle('fv-dark', !!dark);
   localStorage.setItem('fv:theme', dark ? 'dark' : 'light');
   state.rawview?.setTheme(dark ? 'dark' : 'light');
   // Re-render to re-theme the preview — but NOT while there are unsaved binary
