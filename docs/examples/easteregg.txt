@@ -1,0 +1,21 @@
+import easteregg
+
+         ▄▀▀▀▀▀▄
+        █ ▄   ▄ █        ▗▄▄▄▄▄▄▄▄▄▄▄▄▖
+        █  ▀▀▀  █        ▐  INSERT     ▌
+     ▄▄▄█▄▄▄▄▄▄▄█▄▄▄      ▐    COIN     ▌
+    █   ▀▀▀▀▀▀▀▀▀   █     ▐ ▶ PLAYER 1 ▌
+    █  ▟█▙  ▄▄  ▟█▙ █     ▝▀▀▀▀▀▀▀▀▀▀▀▀▘
+    ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+
+        ▌ ▐  GAME OVER?  ▌ ▐
+       ▗▄▟███████████████▙▄▖
+       ▘ ▝▀▀▀▀▀▀▀▀▀▀▀▀▀▀▘ ▝
+
+  ░█▀▀░█▀█░█▀▀░▀█▀░█▀▀░█▀▄░░░█▀▀░█▀▀░█▀▀
+  ░█▀▀░█▀█░▀▀█░░█░░█▀▀░█▀▄░░░█▀▀░█░█░█░█
+  ░▀▀▀░▀░▀░▀▀▀░░▀░░▀▀▀░▀░▀░░░▀▀▀░▀▀▀░▀▀▀
+
+  You found the secret arcade.
+  Opening this file flips the switch — the games are now unlocked. 🎮
+  (Look for the 🎮 button in the top bar.)

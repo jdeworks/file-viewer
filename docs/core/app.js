@@ -78,6 +78,19 @@ async function loadIntake(intake) {
     toast(`Large file: showing the first ${shown} MB of ${total} MB.`, 6000);
   }
   updateSessionTree(intake);
+  maybeUnlockEasteregg(intake.text);
+}
+
+// Easter egg: opening (or editing) any file whose text contains a line `import easteregg`
+// unlocks the arcade. Mirrors the edit-time hook in rawpane.js so a dedicated easter-egg file
+// (docs/examples/easteregg.txt) enables it just by being opened.
+function maybeUnlockEasteregg(text) {
+  if (!text || !state.games || state.games.isUnlocked()) return;
+  if (!/(^|\n)\s*import\s+easteregg\b/.test(text)) return;
+  state.games.unlock();
+  $('gamesBtn').hidden = false;
+  toast('🎮 import easteregg — arcade unlocked!');
+  state.games.open();
 }
 
 // Load a dropped/picked folder: reset any prior companion root, build the tree, then resolve the

@@ -13195,5 +13195,15 @@
     "enhanced": true,
     "knownFile": "artifactory-system",
     "description": "JFrog Artifactory system.yaml — database, security, router, and service ports."
+  },
+  {
+    "label": "easteregg.txt",
+    "file": "easteregg.txt",
+    "mime": "text/plain",
+    "category": "Other",
+    "categories": [
+      "Other"
+    ],
+    "description": "A mysterious file. Open it and see what happens. 🎮"
   }
 ]
