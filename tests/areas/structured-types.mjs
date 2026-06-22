@@ -116,15 +116,26 @@ export async function run(ctx) {
   if (harChartPainted > 100) pass('HAR waterfall chart painted (' + harChartPainted + ' pixels)'); else fail('har chart painted=' + harChartPainted);
   await harf.click('.har-filter[data-filter="xhr"]');
   const harVisibleXhr = await harf.$$eval('.har-table tbody tr:not([hidden])', (rows) => rows.map((r) => r.textContent));
-  if (harVisibleXhr.length === 1 && /POST/.test(harVisibleXhr[0]) && /api\/search/.test(harVisibleXhr[0])) pass('HAR XHR filter narrows table'); else fail('har xhr rows=' + harVisibleXhr.join(' | '));
+  if (harVisibleXhr.length === 2 && harVisibleXhr.some((t) => /api\/users/.test(t)) && harVisibleXhr.some((t) => /POST/.test(t) && /api\/login/.test(t))) pass('HAR XHR filter narrows table'); else fail('har xhr rows=' + harVisibleXhr.join(' | '));
   await harf.click('.har-filter[data-filter="all"]');
   await harf.click('.har-table th[data-sort="status"]');
   const harStatuses = await harf.$$eval('.har-table tbody tr:not([hidden]) .har-status', (els) => els.map((e) => e.textContent));
-  if (harStatuses[0] === '200' && harStatuses.at(-1) === '404') pass('HAR table sorts by status'); else fail('har statuses=' + harStatuses.join(','));
+  if (harStatuses[0] === '200' && harStatuses.at(-1) === '401') pass('HAR table sorts by status'); else fail('har statuses=' + harStatuses.join(','));
+  // Per-entry detail panel: click the /api/users row → headers/timing/body, with auth/token redacted.
+  await harf.click('.har-row[data-url*="api/users"]');
+  await harf.waitForSelector('.har-detail:not([hidden])', { timeout: 4000 });
+  const harDetail = await harf.evaluate(() => {
+    const p = document.querySelector('.har-detail');
+    return { text: p.textContent, redactedCount: p.querySelectorAll('.har-redacted').length, hasTiming: !!p.querySelector('.har-tim-bar'), hasReqHeaders: /Request headers/.test(p.textContent), hasRespBody: /Response body/.test(p.textContent) };
+  });
+  const harSecretLeak = /sk_live_9f8a7b6c5d/.test(harDetail.text) || /eyJhbGciOi/.test(harDetail.text);
+  if (harDetail.hasTiming && harDetail.hasReqHeaders && harDetail.hasRespBody && harDetail.redactedCount >= 2 && !harSecretLeak)
+    pass('HAR detail panel shows headers/timing/body with secrets redacted (' + harDetail.redactedCount + ' redacted)');
+  else fail('har detail: ' + JSON.stringify({ ...harDetail, text: harDetail.text.replace(/\s+/g, ' ').slice(0, 160) }));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const harMeta = await page.$eval('#metaBody', (e) => e.textContent);
-  if (/Entries\s*6/.test(harMeta) && /Creator\s*file-viewer fixture 1\.0/.test(harMeta) && /Pages\s*1/.test(harMeta))
+  if (/Entries\s*6/.test(harMeta) && /Creator\s*DemoCapture 2\.0/.test(harMeta) && /Pages\s*1/.test(harMeta))
     pass('HAR metadata includes entries, creator, and pages');
   else fail('har meta: ' + harMeta.replace(/\s+/g, ' ').slice(0, 180));
   await page.click('#metaDrawer [data-close]');
