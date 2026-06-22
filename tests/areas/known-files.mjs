@@ -4257,6 +4257,18 @@ export async function run(ctx) {
   if (!strykerText.includes('Stryker')) fail('stryker.conf.json: missing badge'); else pass('stryker.conf.json: badge shown');
   if (!strykerText.includes('jest') && !strykerText.includes('runner')) fail('stryker.conf.json: no test runner shown'); else pass('stryker.conf.json: test runner shown');
 
+  // ── volta.json viewer ──
+  await openExample('volta.json');
+  pass(await page.waitForSelector('#previewHost .vlt-doc', { timeout: 12000 }), 'volta.json: vlt-doc shown');
+  const voltaText = await page.$eval('#previewHost .vlt-doc', el => el.textContent);
+  if (/Volta/i.test(voltaText) && /node/i.test(voltaText)) pass('volta.json: pinned tools shown'); else fail('volta: ' + voltaText.slice(0, 200));
+
+  // ── .windsurfrules viewer ──
+  await openExample('.windsurfrules');
+  pass(await page.waitForSelector('#previewHost .wsr-doc', { timeout: 12000 }), '.windsurfrules: wsr-doc shown');
+  const wsrText = await page.$eval('#previewHost .wsr-doc', el => el.textContent);
+  if (/Windsurf/i.test(wsrText) && /section/i.test(wsrText)) pass('.windsurfrules: rule sections shown'); else fail('windsurfrules: ' + wsrText.slice(0, 200));
+
   // ── airflow.cfg viewer ──
   await openExample('airflow.cfg');
   pass(await page.waitForSelector('#previewHost .airflowcfg-doc', { timeout: 12000 }), 'airflow.cfg: airflowcfg-doc shown');

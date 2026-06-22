@@ -652,6 +652,8 @@ import harbor from '../types/text/yaml/known/harbor/index.js';
 import harborConfig from '../types/text/yaml/known/harbor-config/index.js';
 import gardenIo from '../types/text/yaml/known/garden-io/index.js';
 import stryker from '../types/text/json/known/stryker/index.js';
+import volta from '../types/text/json/known/volta/index.js';
+import windsurfrules from '../types/text/known/windsurfrules/index.js';
 import airflowCfg from '../types/text/ini/known/airflow/index.js';
 import radicaleConfig from '../types/text/ini/known/radicale-config/index.js';
 import registriesConf from '../types/text/toml/known/registries-conf/index.js';
@@ -1066,7 +1068,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   helmfile, releaseIt,
   benthos, testKitchen,
   harbor, harborConfig, gardenIo,
-  stryker, airflowCfg,
+  stryker, volta, windsurfrules, airflowCfg,
   registriesConf, storageConf,
   asyncapi, telegraf,
   devfile, ncurc,

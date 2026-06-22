@@ -1,0 +1,15 @@
+# Coding Standards
+Follow clean code principles. Keep functions small and single-purpose.
+Use meaningful variable names. Avoid magic numbers.
+
+# Architecture
+Prefer dependency injection. Use SOLID principles.
+Separate concerns: presentation, business logic, data access.
+
+# Documentation
+Add comments for complex logic. Document public APIs.
+Keep README updated with setup instructions.
+
+# Git Guidelines
+Write atomic commits. Use conventional commit messages.
+Never commit secrets or credentials.

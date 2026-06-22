@@ -13110,5 +13110,28 @@
     "enhanced": true,
     "description": "PROMELA process metalanguage model for the SPIN model checker with processes and message channels.",
     "knownFile": "promela"
+  },
+  {
+    "label": "volta.json",
+    "file": "volta.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "volta",
+    "description": "Volta tool pinning configuration — pinned Node, npm, and yarn versions."
+  },
+  {
+    "label": ".windsurfrules",
+    "file": ".windsurfrules",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "windsurfrules",
+    "description": "Windsurf AI editor rules file — coding standards and rule sections for the AI assistant."
   }
 ]

@@ -10478,6 +10478,30 @@ var stryker_default = {
   }
 };
 
+// ../../docs/types/text/json/known/volta/index.js
+var volta_default = {
+  id: "volta",
+  label: "Volta pins",
+  match: (intake, baseType) => {
+    if (baseType.id !== "json") return false;
+    const name = (intake.filename || "").split("/").pop().toLowerCase();
+    return name === "volta.json" || name === "package.json" && (intake.text || "").includes('"volta"');
+  },
+  loadRenderer: () => import("../types/text/json/known/volta/renderer.js"),
+  about: { description: "Volta tool pinning configuration — shows pinned Node, npm, and yarn versions." }
+};
+
+// ../../docs/types/text/known/windsurfrules/index.js
+var windsurfrules_default = {
+  id: "windsurfrules",
+  label: ".windsurfrules",
+  match: (intake) => {
+    return (intake.filename || "").split("/").pop() === ".windsurfrules";
+  },
+  loadRenderer: () => import("../types/text/known/windsurfrules/renderer.js"),
+  about: { description: "Windsurf AI editor rules file — shows coding standards and rule sections for the AI assistant." }
+};
+
 // ../../docs/types/text/ini/known/airflow/index.js
 var airflow_default = {
   id: "airflow-cfg",
@@ -16837,6 +16861,8 @@ var KNOWN = [
   harbor_config_default,
   garden_io_default,
   stryker_default,
+  volta_default,
+  windsurfrules_default,
   airflow_default,
   registries_conf_default,
   storage_conf_default,
