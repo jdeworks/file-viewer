@@ -7,6 +7,7 @@ import { loadTemplate, fill } from '../../core/template.js';
 import { isSvg, mimeFor, dimensions } from './imglib.js';
 import { recordStage3AsciiActivation } from '../../games/metagame/viewer-actions.js';
 import { hexToRgba, floodFill, bgFloodFill } from './fill.js';
+import { createEditCore } from './editor-core.js';
 
 // Toolbar markup lives in sibling .html templates (real HTML, easy to extend).
 // doc.html is the shell (fit/zoom/ascii bar + stage + ascii-out) with an
@@ -90,59 +91,23 @@ export async function render(intake, ctx = {}) {
   const fApplyBtn = canEdit ? host.querySelector('.imgv-f-apply') : null;
   const fResetBtn = canEdit ? host.querySelector('.imgv-f-reset') : null;
   let natural = 0, fit = true, zoom = 1, asciiMode = false;
-  let editedUrl = null, editedBlob = null;
   let jxlPngBytes = null;   // decoded PNG bytes for JXL (display + ASCII source)
   let drawMode = null, isEraserStroke = false;
   let textPlaceMode = false, textPlaceX = 0.5, textPlaceY = 0.5;
   let bgPickMode = false, bgSrcData = null, bgSrcW = 0, bgSrcH = 0, bgPickX = -1, bgPickY = -1, bgPreviewUrl = null;
-  const undoStack = [];
-  const redoStack = [];
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
   // Crop state
   let cropMode = false, cropOverlay = null, cropSelBox = null;
   let cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0, cropDragging = false, cropHasRegion = false;
 
-  // BMP and GIF: browsers don't support canvas.toBlob for these formats;
-  // fall back to PNG when the source mime is not a canvas-encodable type.
-  const CANVAS_ENCODABLE = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/avif']);
-  function getExportMime() { const m = (exportFmt?.value) || mime; return CANVAS_ENCODABLE.has(m) ? m : 'image/png'; }
-
-  function pushUndo() {
-    undoStack.push({ blob: editedBlob || null, url: editedUrl || null });
-    // A fresh edit forks history — discard any redo branch (and its blob URLs).
-    redoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
-    redoStack.length = 0;
-    if (undoBtn) undoBtn.hidden = false;
-    if (redoBtn) redoBtn.hidden = true;
-    host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden');
-  }
-
-  // Apply a saved {blob,url} edit state to the canvas + binary-edit hook.
-  function applyEditState(state) {
-    editedBlob = state.blob; editedUrl = state.url;
-    if (editedUrl) {
-      img.src = editedUrl;
-      ctx.onBinaryEdit?.({ dirty: true, mimeType: getExportMime(), getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
-    } else {
-      img.src = url;
-      if (editReset) editReset.hidden = true;
-      ctx.onBinaryEdit?.(null);
-    }
-    if (undoBtn) undoBtn.hidden = undoStack.length === 0;
-    if (redoBtn) redoBtn.hidden = redoStack.length === 0;
-  }
-  function doUndo() {
-    const prev = undoStack.pop();
-    if (!prev) return;
-    redoStack.push({ blob: editedBlob || null, url: editedUrl || null });
-    applyEditState(prev);
-  }
-  function doRedo() {
-    const next = redoStack.pop();
-    if (!next) return;
-    undoStack.push({ blob: editedBlob || null, url: editedUrl || null });
-    applyEditState(next);
-  }
+  // Shared edit state + commit pipeline — undo/redo, blob commits, the
+  // onBinaryEdit hook, and full reset all live in editor-core so every tool
+  // shares one consistent edit history. The view (fit/zoom/pan, ASCII, JXL)
+  // stays here in the renderer shell.
+  const core = createEditCore({
+    img, url, mime, ctx,
+    els: { editReset, exportFmt, undoBtn, redoBtn, dirtyIndicator: host.querySelector('.imgv-dirty-indicator') },
+  });
 
   // Pan offset (px), applied as a transform so the WHOLE canvas can be dragged
   // freely — even when the image is smaller than the stage. The draw overlay gets
@@ -290,8 +255,9 @@ export async function render(intake, ctx = {}) {
       // Feed the CURRENT image — including any edits (crop, rotate, BG removal,
       // filters…) — not the untouched original. editedBlob holds the latest edit.
       // JXL can't be decoded by createImageBitmap, so feed the decoded PNG bytes.
-      const curBytes = editedBlob ? new Uint8Array(await editedBlob.arrayBuffer()) : (jxlPngBytes || intake.bytes);
-      const curMime = editedBlob ? (editedBlob.type || mime) : (jxlPngBytes ? 'image/png' : mime);
+      const eb = core.editedBlob;
+      const curBytes = eb ? new Uint8Array(await eb.arrayBuffer()) : (jxlPngBytes || intake.bytes);
+      const curMime = eb ? (eb.type || mime) : (jxlPngBytes ? 'image/png' : mime);
       try {
         if (!asciiStudio) {
           asciiBtn.disabled = true;
@@ -346,7 +312,7 @@ export async function render(intake, ctx = {}) {
     if (!text) return;
     const base = new Image();
     base.decoding = 'async';
-    base.src = editedUrl || url;
+    base.src = core.editedUrl || url;
     await base.decode();
     const canvas = document.createElement('canvas');
     canvas.width = base.naturalWidth;
@@ -367,19 +333,8 @@ export async function render(intake, ctx = {}) {
     const maxW = Math.round(canvas.width * 0.8);
     g.strokeText(text, px, py, maxW);
     g.fillText(text, px, py, maxW);
-    const targetMime = getExportMime();
-    pushUndo();
-    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    if (!editedBlob) return;
-    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-    editedUrl = URL.createObjectURL(editedBlob);
-    img.src = editedUrl;
-    editReset.hidden = false;
-    ctx.onBinaryEdit?.({
-      dirty: true,
-      mimeType: targetMime,
-      getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()),
-    });
+    core.pushUndo();
+    await core.commitCanvas(canvas);
   }
 
   let textDragDiv = null, textCommitBtn = null, textCancelBtn = null;
@@ -490,26 +445,14 @@ export async function render(intake, ctx = {}) {
   });
   editReset?.addEventListener('click', () => {
     exitTextPlaceMode();
-    [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
-    undoStack.length = 0; redoStack.length = 0;
-    if (undoBtn) undoBtn.hidden = true;
-    if (redoBtn) redoBtn.hidden = true;
-    if (editedUrl) URL.revokeObjectURL(editedUrl);
-    editedUrl = null;
-    editedBlob = null;
-    img.src = url;
-    img.style.filter = '';
-    editReset.hidden = true;
-    const dirtyIndicator = host.querySelector('.imgv-dirty-indicator');
-    if (dirtyIndicator) dirtyIndicator.hidden = true;
-    ctx.onBinaryEdit?.(null);
+    core.reset();
   });
 
   // Helper: draw the current image onto a canvas with a transform, then commit it as the new edit.
   async function applyTransform(transformFn, newW, newH) {
     const base = new Image();
     base.decoding = 'async';
-    base.src = editedUrl || url;
+    base.src = core.editedUrl || url;
     await base.decode();
     const srcW = base.naturalWidth, srcH = base.naturalHeight;
     const canvas = document.createElement('canvas');
@@ -519,18 +462,11 @@ export async function render(intake, ctx = {}) {
     if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
     transformFn(g, srcW, srcH, canvas.width, canvas.height);
     g.drawImage(base, 0, 0);
-    const targetMime = getExportMime();
-    pushUndo();
-    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    if (!editedBlob) return;
-    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-    editedUrl = URL.createObjectURL(editedBlob);
-    img.src = editedUrl;
+    core.pushUndo();
+    if (!await core.commitCanvas(canvas)) return;
     // The edited image has new dimensions (rotate swaps W/H) — keep zoom correct.
     natural = canvas.width;
     apply();
-    editReset.hidden = false;
-    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
   }
 
   // Rotate left (CCW 90°): new canvas is h×w, pivot at center, rotate -90°, then
@@ -579,7 +515,7 @@ export async function render(intake, ctx = {}) {
     img.style.filter = ''; // clear live preview before baking
     const base = new Image();
     base.decoding = 'async';
-    base.src = editedUrl || url;
+    base.src = core.editedUrl || url;
     await base.decode();
     const canvas = document.createElement('canvas');
     canvas.width = base.naturalWidth;
@@ -589,15 +525,8 @@ export async function render(intake, ctx = {}) {
     g.filter = filter;
     g.drawImage(base, 0, 0);
     g.filter = 'none';
-    const targetMime = getExportMime();
-    pushUndo();
-    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    if (!editedBlob) return;
-    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-    editedUrl = URL.createObjectURL(editedBlob);
-    img.src = editedUrl;
-    editReset.hidden = false;
-    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
+    core.pushUndo();
+    await core.commitCanvas(canvas);
   });
 
   // Reset filter sliders to default and clear any live preview
@@ -633,7 +562,7 @@ export async function render(intake, ctx = {}) {
     host.querySelector('.imgv-bar').classList.add('imgv-compare-on');
     compareBtn.classList.add('active');
     const { mountCompare } = await import('./compare-view.js');
-    compareView = mountCompare(stage, { originalUrl: url, currentUrl: editedUrl || url, onClose: exitCompare });
+    compareView = mountCompare(stage, { originalUrl: url, currentUrl: core.editedUrl || url, onClose: exitCompare });
   });
 
   // Pencil / eraser drawing tools
@@ -735,7 +664,7 @@ export async function render(intake, ctx = {}) {
     if (drawMode === 'fill') { await doFill(e); return; }
     isPointerDown = true;
     isEraserStroke = drawMode === 'eraser';
-    pushUndo();
+    core.pushUndo();
     if (isEraserStroke) {
       // preload overlay from the already-loaded <img> (no extra fetch) so
       // destination-out punches real pixels.
@@ -780,19 +709,15 @@ export async function render(intake, ctx = {}) {
       hexToRgba(drawColorPicker?.value), parseInt(fillTol?.value || '0', 10), !!fillEdge?.checked);
     if (!filled) return;
     g.putImageData(id, 0, 0);
-    const targetMime = getExportMime();
-    pushUndo();
+    const targetMime = core.getExportMime();
+    core.pushUndo();
     const blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    if (!blob) return;
-    editedBlob = blob; editedUrl = URL.createObjectURL(blob);
-    img.src = editedUrl;
-    if (editReset) editReset.hidden = false;
-    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await blob.arrayBuffer()) });
+    core.commitBlob(blob, { mime: targetMime });
   }
 
   async function commitDraw() {
     if (!drawOverlay || !drawOverlay.width) return;
-    const targetMime = getExportMime();
+    const targetMime = core.getExportMime();
     let blob;
     if (isEraserStroke) {
       blob = await new Promise((r) => drawOverlay.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
@@ -806,12 +731,7 @@ export async function render(intake, ctx = {}) {
       blob = await new Promise((r) => c.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     }
     drawOCtx.clearRect(0, 0, drawOverlay.width, drawOverlay.height);
-    if (!blob) return;
-    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-    editedBlob = blob; editedUrl = URL.createObjectURL(blob);
-    img.src = editedUrl;
-    if (editReset) editReset.hidden = false;
-    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await blob.arrayBuffer()) });
+    core.commitBlob(blob, { mime: targetMime });
   }
 
   async function onPUp(e) { if (isPointerDown) { isPointerDown = false; await commitDraw(); } }
@@ -821,8 +741,8 @@ export async function render(intake, ctx = {}) {
     eraserBtn.addEventListener('click', () => setDrawMode('eraser'));
     fillBtn?.addEventListener('click', () => setDrawMode('fill'));
     fillTol?.addEventListener('input', () => { if (fillTolV) fillTolV.textContent = fillTol.value; });
-    undoBtn?.addEventListener('click', doUndo);
-    redoBtn?.addEventListener('click', doRedo);
+    undoBtn?.addEventListener('click', core.doUndo);
+    redoBtn?.addEventListener('click', core.doRedo);
   }
 
   // Ctrl/Cmd+Z = undo, Ctrl+Y or Ctrl/Cmd+Shift+Z = redo — only while this image
@@ -834,8 +754,8 @@ export async function render(intake, ctx = {}) {
     const mod = e.ctrlKey || e.metaKey;
     if (!mod) return;
     const k = e.key.toLowerCase();
-    if (k === 'z' && !e.shiftKey) { e.preventDefault(); doUndo(); }
-    else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); doRedo(); }
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); core.doUndo(); }
+    else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); core.doRedo(); }
   }
   document.addEventListener('keydown', onEditKey);
 
@@ -922,22 +842,15 @@ export async function render(intake, ctx = {}) {
     const y2 = Math.round(Math.max(cropStartY, cropEndY) * nh);
     const cw = Math.max(1, x2 - x1), ch = Math.max(1, y2 - y1);
     const base = new Image(); base.decoding = 'async';
-    base.src = editedUrl || url;
+    base.src = core.editedUrl || url;
     await base.decode();
     const canvas = document.createElement('canvas');
     canvas.width = cw; canvas.height = ch;
     const g = canvas.getContext('2d');
     if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, cw, ch); }
     g.drawImage(base, -x1, -y1);
-    const targetMime = getExportMime();
-    pushUndo();
-    editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-    if (!editedBlob) return;
-    // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-    editedUrl = URL.createObjectURL(editedBlob);
-    img.src = editedUrl;
-    if (editReset) editReset.hidden = false;
-    ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
+    core.pushUndo();
+    if (!await core.commitCanvas(canvas)) return;
     cropExitMode();
   }
 
@@ -997,7 +910,7 @@ export async function render(intake, ctx = {}) {
       const { tw, th } = resizeTargetPx();
       if (!tw || !th || tw < 1 || th < 1) return;
       const base = new Image(); base.decoding = 'async';
-      base.src = editedUrl || url;
+      base.src = core.editedUrl || url;
       await base.decode();
       const canvas = document.createElement('canvas');
       canvas.width = tw; canvas.height = th;
@@ -1009,15 +922,8 @@ export async function render(intake, ctx = {}) {
       if (g.imageSmoothingEnabled) g.imageSmoothingQuality = rs === 'medium' ? 'medium' : 'high';
       if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, tw, th); }
       g.drawImage(base, 0, 0, tw, th);
-      const targetMime = getExportMime();
-      pushUndo();
-      editedBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
-      if (!editedBlob) return;
-      // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-      editedUrl = URL.createObjectURL(editedBlob);
-      img.src = editedUrl;
-      if (editReset) editReset.hidden = false;
-      ctx.onBinaryEdit?.({ dirty: true, mimeType: targetMime, getBytes: async () => new Uint8Array(await editedBlob.arrayBuffer()) });
+      core.pushUndo();
+      if (!await core.commitCanvas(canvas)) return;
       if (resizePanel) resizePanel.hidden = true;
     });
 
@@ -1060,7 +966,7 @@ export async function render(intake, ctx = {}) {
 
   if (bgBtn) {
     bgBtn.addEventListener('click', () => {
-      if (bgPickMode) { bgExitMode(); if (editedUrl) img.src = editedUrl; else img.src = url; return; }
+      if (bgPickMode) { bgExitMode(); if (core.editedUrl) img.src = core.editedUrl; else img.src = url; return; }
       bgPickMode = true;
       bgPickX = bgPickY = -1;
       bgSrcData = null;
@@ -1073,7 +979,7 @@ export async function render(intake, ctx = {}) {
       if (!bgPickMode) return;
       if (bgPickX >= 0) return; // already picked, re-pick not allowed until cancel
       const base = new Image(); base.decoding = 'async';
-      base.src = editedUrl || url;
+      base.src = core.editedUrl || url;
       await base.decode();
       const c = document.createElement('canvas');
       c.width = base.naturalWidth; c.height = base.naturalHeight;
@@ -1098,22 +1004,18 @@ export async function render(intake, ctx = {}) {
       c.getContext('2d').putImageData(filled, 0, 0);
       c.toBlob((blob) => {
         if (!blob) return;
-        pushUndo();
-        // Do NOT revoke editedUrl here — pushUndo() retained it as the undo target.
-        editedBlob = blob; editedUrl = URL.createObjectURL(blob);
-        img.src = editedUrl;
-        if (editReset) editReset.hidden = false;
+        core.pushUndo();
         if (exportFmt) exportFmt.value = 'image/png';
-        ctx.onBinaryEdit?.({ dirty: true, mimeType: 'image/png', getBytes: async () => new Uint8Array(await blob.arrayBuffer()) });
+        core.commitBlob(blob, { mime: 'image/png' });
         bgExitMode();
       }, 'image/png');
     });
 
     bgX?.addEventListener('click', () => {
       bgExitMode();
-      if (editedUrl) img.src = editedUrl; else img.src = url;
+      if (core.editedUrl) img.src = core.editedUrl; else img.src = url;
     });
   }
 
-  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); if (editedUrl) URL.revokeObjectURL(editedUrl); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); [...undoStack, ...redoStack].forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); }); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { document.removeEventListener('keydown', onEditKey); document.removeEventListener('keydown', onZoomKey); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); if (bgPreviewUrl) URL.revokeObjectURL(bgPreviewUrl); host._ss?.stop(); } };
 }
