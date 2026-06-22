@@ -44,12 +44,21 @@ Building the full roguelite deck-builder from `planning/stage6-02-our-game-desig
   onPlayerTurnStart / onCardPlay).
 - ⏭ **WP3c (optional, fold into WP4/WP5)**: 2 elites (Expired Certificate countdown, Man-in-the-Middle
   copy) — both need small engine features (unavoidable hit / copy-last-card); Defragmenter cameo event.
-- ⏭ **WP4 (PLAYABLE MILESTONE, next)**: UI rework (ui-combat.js / ui-map.js / ui-rewards.js +
-  renderer.js mount/route), state.js rework (active run + meta: handshakes/version/unlock/bossState;
-  combat is transient/in-memory, not persisted), wire The Refused Connection as locked final-act boss
-  via existing boss.js + epub gate, rewrite the stage6 block in tests/areas/games.mjs. ATOMIC swap —
-  keep old renderer until the new loop runs end-to-end.
-- ⏭ **WP5**: balance to ~90–120 min, parchment/navy visual pass, prestige (Protocol Version).
+- ✅ **WP4 (PLAYABLE MILESTONE)** done: state.js v2 (meta + active run + ui.screen; combat transient),
+  ui-combat.js / ui-map.js (hub + map + end-screens) / ui-rewards.js (reward/rest/shop/event) /
+  ui-boss.js (The Refused Connection negotiation), renderer.js rewritten as a router/controller over
+  run.status with a transient combat instance and delegated clicks. Hub → begin run → act map →
+  combat (combat.js) → reward/rest/shop/event → act boss → next act. The Refused Connection stays the
+  codex-gated finale (boss.js): confrontable from the hub OR as the act-3 boss node; defeating it (after
+  reading the epub) clears the stage. Old `.s6-*` boss-only UI replaced by `.s6db-*`. Smoke rewritten:
+  hub renders → begin-run shows routable map → to-hub → epub gate → confront → negotiate → clear.
+  All 5 unit suites + games smoke green. Verified the full map→combat→resolve→reward loop end-to-end.
+  KNOWN (defer to WP5): combat balance is generous (starter deck clears act-1 trash at full HP).
+- ⏭ **WP3c**: Expired Certificate (countdown / unavoidable hit) + Man-in-the-Middle (copy-last-card)
+  elites — both need a small engine feature; richer Defragmenter event (currently a 2-choice stub).
+- ⏭ **WP5**: balance to ~90–120 min, deeper parchment/navy visual pass, prestige (Protocol Version:
+  bank handshakes between runs → permanent unlocks/relic pool; `meta.banked`/`protocolVersion` already
+  tracked, no spend path yet), relic acquisition from elites/boss rewards (relics defined, not yet awarded).
 
 Engine contract (proven, build against it): cards = `{id,type,cost,rarity,exhaust?,text,effect(ctx)}`;
 ctx API = deal/block/draw/gainEnergy/applyEnemy/applySelf/skipEnemyNext/playedThisTurn(id) +
