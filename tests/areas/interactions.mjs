@@ -352,13 +352,13 @@ export async function run(ctx) {
     const ep = await ectx.newPage();
     await ep.goto(origin, { waitUntil: 'load' });
     const before = await ep.evaluate(() => window.__fv?.state?.games?.isUnlocked?.() === true);
-    await openExample('easteregg.txt', ep);
+    await openExample('easteregg', ep);
     await ep.waitForTimeout(300);
     const after = await ep.evaluate(() => ({
       unlocked: window.__fv?.state?.games?.isUnlocked?.() === true,
       btnShown: !document.getElementById('gamesBtn')?.hidden,
     }));
-    if (!before && after.unlocked && after.btnShown) pass('easter egg: opening easteregg.txt unlocks the arcade + reveals the 🎮 button');
+    if (!before && after.unlocked && after.btnShown) pass('easter egg: opening extensionless "easteregg" unlocks the arcade + reveals the 🎮 button');
     else fail('easteregg unlock: before=' + before + ' after=' + JSON.stringify(after));
     await ectx.close();
   }
