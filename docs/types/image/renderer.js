@@ -5,6 +5,7 @@
 import { loadGlobal, vendor } from '../../core/script-loader.js';
 import { isSvg, mimeFor, dimensions } from './imglib.js';
 import { recordStage3AsciiActivation } from '../../games/metagame/viewer-actions.js';
+import { hexToRgba, floodFill, bgFloodFill } from './fill.js';
 
 const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // Every raster format the browser can decode into a <canvas> is editable — the
@@ -838,40 +839,8 @@ export async function render(intake, ctx = {}) {
     lastPt = pt;
   }
 
-  // Flood-fill bucket. Tolerance (0–255) sets how close a pixel's colour must be
-  // to be filled; default 0 = exact match. With "edge match" on, pixels are
-  // compared to their NEIGHBOUR (local gradient) instead of the seed, so a fill
-  // flows across smooth shading but stops at sharp edges.
-  function hexToRgba(hex) {
-    const h = (hex || '#ff0000').replace('#', '');
-    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 255];
-  }
-  function floodFill(data, w, h, x0, y0, fill, tol, edge) {
-    if (x0 < 0 || y0 < 0 || x0 >= w || y0 >= h) return 0;
-    const src = Uint8ClampedArray.from(data);
-    const at = (x, y) => (y * w + x) << 2;
-    const seed = at(x0, y0);
-    const sr = src[seed], sg = src[seed + 1], sb = src[seed + 2];
-    const close = (i, r, g, b) => Math.max(Math.abs(src[i] - r), Math.abs(src[i + 1] - g), Math.abs(src[i + 2] - b)) <= tol;
-    const seen = new Uint8Array(w * h);
-    const st = [x0 | 0, y0 | 0]; seen[y0 * w + x0] = 1;
-    let cnt = 0;
-    while (st.length) {
-      const y = st.pop(), x = st.pop();
-      const i = at(x, y);
-      data[i] = fill[0]; data[i + 1] = fill[1]; data[i + 2] = fill[2]; data[i + 3] = fill[3];
-      cnt++;
-      const nb = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
-      for (let k = 0; k < 4; k++) {
-        const nx = nb[k][0], ny = nb[k][1];
-        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-        const p = ny * w + nx; if (seen[p]) continue;
-        const ok = edge ? close(p << 2, src[i], src[i + 1], src[i + 2]) : close(p << 2, sr, sg, sb);
-        if (ok) { seen[p] = 1; st.push(nx, ny); }
-      }
-    }
-    return cnt;
-  }
+  // Flood-fill bucket — the pure pixel walk lives in ./fill.js (floodFill);
+  // doFill wires it to the canvas + edit-commit pipeline.
   async function doFill(e) {
     const c = document.createElement('canvas');
     c.width = img.naturalWidth; c.height = img.naturalHeight;
@@ -1130,29 +1099,11 @@ export async function render(intake, ctx = {}) {
     });
   }
 
-  // BG removal — flood-fill from a clicked pixel, making matched region transparent (PNG only)
-  function bgFloodFill(srcData, w, h, sx, sy, tol) {
-    const threshold = tol * 4.42;
-    const dst = new Uint8ClampedArray(srcData.data);
-    const si = (sy * w + sx) * 4;
-    const r0 = dst[si], g0 = dst[si + 1], b0 = dst[si + 2];
-    const visited = new Uint8Array(w * h);
-    const stack = [sy * w + sx];
-    while (stack.length) {
-      const pos = stack.pop();
-      if (visited[pos]) continue;
-      visited[pos] = 1;
-      const pi = pos * 4;
-      const dr = dst[pi] - r0, dg = dst[pi + 1] - g0, db = dst[pi + 2] - b0;
-      if (Math.sqrt(dr * dr + dg * dg + db * db) > threshold) continue;
-      dst[pi + 3] = 0;
-      const x = pos % w, y = (pos / w) | 0;
-      if (x > 0) stack.push(pos - 1);
-      if (x < w - 1) stack.push(pos + 1);
-      if (y > 0) stack.push(pos - w);
-      if (y < h - 1) stack.push(pos + w);
-    }
-    return new ImageData(dst, w, h);
+  // BG removal — bgFloodFill (./fill.js) returns the transparency-punched RGBA
+  // bytes; wrap them in an ImageData for putImageData.
+  function bgFilledImageData() {
+    const dst = bgFloodFill(bgSrcData, bgSrcW, bgSrcH, bgPickX, bgPickY, parseInt(bgTol.value, 10));
+    return new ImageData(dst, bgSrcW, bgSrcH);
   }
 
   function bgExitMode() {
@@ -1169,7 +1120,7 @@ export async function render(intake, ctx = {}) {
 
   function bgRunPreview() {
     if (!bgSrcData || bgPickX < 0) return;
-    const filled = bgFloodFill(bgSrcData, bgSrcW, bgSrcH, bgPickX, bgPickY, parseInt(bgTol.value, 10));
+    const filled = bgFilledImageData();
     const c = document.createElement('canvas'); c.width = bgSrcW; c.height = bgSrcH;
     c.getContext('2d').putImageData(filled, 0, 0);
     c.toBlob((blob) => {
@@ -1215,7 +1166,7 @@ export async function render(intake, ctx = {}) {
 
     bgOk?.addEventListener('click', () => {
       if (!bgSrcData || bgPickX < 0) return;
-      const filled = bgFloodFill(bgSrcData, bgSrcW, bgSrcH, bgPickX, bgPickY, parseInt(bgTol.value, 10));
+      const filled = bgFilledImageData();
       const c = document.createElement('canvas'); c.width = bgSrcW; c.height = bgSrcH;
       c.getContext('2d').putImageData(filled, 0, 0);
       c.toBlob((blob) => {
