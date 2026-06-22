@@ -524,7 +524,12 @@ function init() {
     if (hasUnsavedWork()) { e.preventDefault(); e.returnValue = ''; }
   });
 
-  loadExamples(loadIntake);
+  // Defer the example gallery until after the main UI is wired and first paint has settled. The
+  // intake screen shows a lightweight "Loading examples…" placeholder (in index.html) meanwhile,
+  // so the ~1154-entry catalogue render stays off the critical interaction path.
+  const loadGallery = () => loadExamples(loadIntake);
+  if ('requestIdleCallback' in window) requestIdleCallback(loadGallery, { timeout: 2000 });
+  else setTimeout(loadGallery, 0);
 
   // Startup stays light (Monaco isn't loaded just to show the intake screen). Warm it in
   // the background during idle so the FIRST file opens instantly instead of waiting on
