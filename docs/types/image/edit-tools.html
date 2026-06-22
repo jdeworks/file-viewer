@@ -70,10 +70,13 @@
     <label style="font-size:0.8em;display:inline-flex;align-items:center;gap:3px;">Colour <input class="imgv-text-color" type="color" value="#ffffff" title="Text color"></label>
   </span>
 
-  <!-- ADJUST: linked Filters button + the slider panel. -->
+  <!-- ADJUST: linked Filters button + the slider panel; plus Levels (black/white/gamma). -->
   <span class="imgv-tabpanel" data-tab="adjust" hidden>
     <button data-link="imgv-filters-btn" title="Show / hide the filter sliders">⚙ Filters</button>
     <span class="imgv-filters-panel" hidden style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;"><label style="font-size:0.8em">Brightness <input class="imgv-f-brightness" type="range" min="0" max="200" value="100" style="width:70px"></label><label style="font-size:0.8em">Contrast <input class="imgv-f-contrast" type="range" min="0" max="200" value="100" style="width:70px"></label><label style="font-size:0.8em">Saturation <input class="imgv-f-saturation" type="range" min="0" max="200" value="100" style="width:70px"></label><label style="font-size:0.8em">Hue <input class="imgv-f-hue" type="range" min="0" max="360" value="0" style="width:70px"></label><button class="imgv-f-apply">Apply Filters</button><button class="imgv-f-reset">Reset</button></span>
+    <span class="imgv-sep"></span>
+    <button class="imgv-levels-btn" title="Levels — set black point / white point / gamma (midtones)">📊 Levels</button>
+    <span class="imgv-levels-panel" hidden style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;"><label style="font-size:0.8em">Black <input class="imgv-lv-black" type="range" min="0" max="254" value="0" title="Pixels at or below this become black" style="width:64px"></label><label style="font-size:0.8em">White <input class="imgv-lv-white" type="range" min="1" max="255" value="255" title="Pixels at or above this become white" style="width:64px"></label><label style="font-size:0.8em">Gamma <input class="imgv-lv-gamma" type="range" min="20" max="300" value="100" title="Midtone gamma ×0.01 (100 = 1.0)" style="width:64px"></label><button class="imgv-lv-apply">Apply Levels</button><button class="imgv-lv-cancel">Cancel</button></span>
   </span>
 
   <!-- SIZE: linked Crop / Resize / Expand + the resize & expand panels. -->

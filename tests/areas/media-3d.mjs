@@ -371,6 +371,20 @@ export async function run(ctx) {
   const filterBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-f-apply');
   if (await waitNewSrc(filterBefore)) pass('filters Apply bakes a new edited image'); else fail('filters apply did not commit');
+  // Levels: black/white/gamma LUT (not expressible as a CSS filter) — live preview by
+  // swapping img.src, Apply commits the LUT-mapped pixels, panel closes. The Adjust tab
+  // is already open (Filters jumped here via data-go-tab).
+  await page.click('#previewHost .imgv-levels-btn');               // open + cache source pixels
+  await page.waitForSelector('#previewHost .imgv-levels-panel:not([hidden])', { timeout: 3000 });
+  const lvOpenSrc = await imgSrcNow();
+  await page.evaluate(() => { const g = document.querySelector('#previewHost .imgv-lv-gamma'); g.value = '200'; g.dispatchEvent(new Event('input', { bubbles: true })); });
+  const lvPreviewed = await waitNewSrc(lvOpenSrc);                 // a processed preview blob swapped in
+  const lvBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-lv-apply');
+  const lvCommitted = await waitNewSrc(lvBefore);
+  const lvClosed = await page.evaluate(() => document.querySelector('#previewHost .imgv-levels-panel').hidden);
+  if (lvPreviewed && lvCommitted && lvClosed) pass('levels: live preview + Apply commits a LUT-mapped image + panel closes'); else fail('levels: ' + JSON.stringify({ lvPreviewed, lvCommitted, lvClosed }));
+  await openTab('common');
   // Fill bucket: the button lives in Common; its options live in the Draw tab.
   // Activating from Common still un-hides the option controls.
   await openTab('common');

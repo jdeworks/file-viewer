@@ -128,6 +128,13 @@ export async function render(intake, ctx = {}) {
   const fHue = canEdit ? host.querySelector('.imgv-f-hue') : null;
   const fApplyBtn = canEdit ? host.querySelector('.imgv-f-apply') : null;
   const fResetBtn = canEdit ? host.querySelector('.imgv-f-reset') : null;
+  const levelsBtn = canEdit ? host.querySelector('.imgv-levels-btn') : null;
+  const levelsPanel = canEdit ? host.querySelector('.imgv-levels-panel') : null;
+  const lvBlack = canEdit ? host.querySelector('.imgv-lv-black') : null;
+  const lvWhite = canEdit ? host.querySelector('.imgv-lv-white') : null;
+  const lvGamma = canEdit ? host.querySelector('.imgv-lv-gamma') : null;
+  const lvApply = canEdit ? host.querySelector('.imgv-lv-apply') : null;
+  const lvCancel = canEdit ? host.querySelector('.imgv-lv-cancel') : null;
   let natural = 0, fit = true, zoom = 1, asciiMode = false;
   let jxlPngBytes = null;   // decoded PNG bytes for JXL (display + ASCII source)
   // Pencil/eraser/fill state stays here (the draw overlay is coupled to the
@@ -189,6 +196,7 @@ export async function render(intake, ctx = {}) {
   const els = {
     editInput, editSize, editColor, editFont, editApply, editReset,
     filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn,
+    levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel,
     bgBtn, bgTol, bgOk, bgX, exportFmt,
     rotLBtn, rotRBtn, flipHBtn, flipVBtn,
     cropBtn, cropApplyBtn, cropCancelBtn,
