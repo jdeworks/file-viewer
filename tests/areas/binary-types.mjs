@@ -9,6 +9,7 @@ export async function run(ctx) {
     const btn = await page.$('#previewHost .mol3d-load-btn');
     if (!btn) { fail(label + ' 3D load button missing'); return; }
     pass(label + ' 3D load button shown');
+    await btn.evaluate((b) => b.scrollIntoView({ block: 'center' }));   // clear the bottom-left offline pill
     await btn.click();
     try {
       await page.waitForSelector('#previewHost .mol3d-stage canvas', { timeout: 20000 });

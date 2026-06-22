@@ -475,11 +475,17 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('welcome.md');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
-  const wcBarHidden = await page.$eval('#wordCountBar', (el) => el.hidden);
-  if (!wcBarHidden) pass('word count bar visible for markdown file'); else fail('word count bar hidden for markdown');
-  const wcText = await page.$eval('#wordCountBar', (el) => el.textContent);
-  if (wcText.includes('words') && wcText.includes('chars')) pass('word count bar shows words and chars for markdown: ' + wcText.trim()); else fail('word count bar missing stats: ' + wcText);
-  if (/min read/.test(wcText)) pass('word count bar shows reading time for markdown'); else fail('word count bar missing read time: ' + wcText);
+  // The count renders on the standalone bar, OR inline on the text-utils row when that bar is
+  // showing (markdown shows the text-utils row, so the count is inline there).
+  const wc = await page.evaluate(() => {
+    const bar = document.getElementById('wordCountBar');
+    const inline = document.getElementById('textUtilsCount');
+    const el = (bar && !bar.hidden) ? bar : (inline && !inline.hidden ? inline : null);
+    return { shown: !!el, text: el ? el.textContent : '' };
+  });
+  if (wc.shown) pass('word count visible for markdown file'); else fail('word count hidden for markdown');
+  if (wc.text.includes('words') && wc.text.includes('chars')) pass('word count shows words and chars for markdown: ' + wc.text.trim()); else fail('word count missing stats: ' + wc.text);
+  if (/min read/.test(wc.text)) pass('word count shows reading time for markdown'); else fail('word count missing read time: ' + wc.text);
 
   // ── Text utilities toolbar ── visible for all non-binary text files. ──
   await page.goto(origin, { waitUntil: 'load' });

@@ -331,7 +331,11 @@ body.fv-dragging .intake::after {
 /* Markdown toolbar — horizontal button strip */
 .md-tools-bar { position: absolute; top: 0; left: 0; right: 0; height: 34px; z-index: 6;
   display: flex; align-items: center; gap: 2px; padding: 2px 8px;
-  background: var(--bg-2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  background: var(--bg-2); border-bottom: 1px solid var(--border);
+  /* On narrow widths the buttons must NOT wrap to a second row — the bar is a fixed 34px and
+     wrapped buttons would spill below its background ("hanging in the air") over the editor.
+     Keep one row and let the extra buttons scroll horizontally instead. */
+  flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
 .md-tools-bar[hidden] { display: none; }
 .md-btn { padding: 3px 7px; border: none; background: transparent; border-radius: 4px;
   cursor: pointer; font-size: 13px; color: var(--fg, #24292f); font-family: inherit;
@@ -386,7 +390,8 @@ body.fv-dragging .intake::after {
 /* HTML WYSIWYG toolbar — same geometry as .md-tools-bar */
 .html-toolbar { position: absolute; top: 0; left: 0; right: 0; height: 34px; z-index: 6;
   display: flex; align-items: center; gap: 2px; padding: 2px 8px;
-  background: var(--bg-2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  background: var(--bg-2); border-bottom: 1px solid var(--border);
+  flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
 .html-toolbar[hidden] { display: none; }
 .ht-btn { padding: 3px 7px; border: none; background: transparent; border-radius: 4px;
   cursor: pointer; font-size: 13px; color: var(--fg, #24292f); font-family: inherit;

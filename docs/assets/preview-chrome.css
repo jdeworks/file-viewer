@@ -1035,7 +1035,10 @@ html[data-theme="dark"] .qp-preview .json-warning { color: #ffd166; background: 
 .jsonl-qp .jsonl-preview { padding-top: 14px; }
 
 /* Molecular 3D viewer (parent pane): metadata scrolls above; 3D panel mounts on demand. */
-.preview-host .mol-doc { position: absolute; inset: 0; overflow: auto; background: var(--bg); padding: 16px; }
+/* Extra bottom padding so the "Load 3D structure" button (and other trailing content) can always
+   scroll clear of the fixed offline pill in the bottom-left corner, which would otherwise overlap
+   and intercept clicks on it. */
+.preview-host .mol-doc { position: absolute; inset: 0; overflow: auto; background: var(--bg); padding: 16px 16px 72px; }
 .mol3d-panel { margin-top: 16px; }
 .mol3d-load-btn { font-size: 13px; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-2); color: var(--fg); cursor: pointer; }
 .mol3d-load-btn:hover { background: var(--bg); }
