@@ -428,7 +428,12 @@ export async function render(intake, ctx = {}) {
       toolsBtn?.classList.remove('active');
       advBtn.disabled = true;
       try {
-        if (!advController) advController = await mountAdvEdit({ host, img, onDirty: () => { host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden'); emitBinaryEdit(); } });
+        if (!advController) {
+          advController = await mountAdvEdit({ host, img, pushUndo: core.pushUndo, onDirty: () => { host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden'); emitBinaryEdit(); } });
+          // Fold the overlay into editor-core's history → one unified Ctrl+Z spanning
+          // pixel + vector. Each entry now also carries the overlay JSON snapshot.
+          core.setOverlayHooks({ snapshot: () => advController.serialize(), restore: (j) => advController.restore(j) });
+        }
         advActive = true;
         advController.setInteractive(true);
         // Re-align the (empty) stage to the current base — picks up any geometry done

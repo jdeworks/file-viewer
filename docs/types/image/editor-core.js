@@ -18,12 +18,20 @@ export function createEditCore({ img, url, mime, ctx, els }) {
   const undoStack = [];
   const redoStack = [];
 
+  // Optional vector-overlay bridge (Adv Edit / Konva). When set, each history entry
+  // also captures the overlay's JSON snapshot, so ONE Ctrl+Z spans pixel + vector.
+  // The renderer wires these to advController once the overlay mounts; until then
+  // entries carry overlay:null and behave exactly as the raster-only history did.
+  let overlayHooks = null;   // { snapshot: () => json|null, restore: (json) => void }
+  function setOverlayHooks(h) { overlayHooks = h; }
+  const snapOverlay = () => overlayHooks?.snapshot() ?? null;
+
   // BMP/GIF can't be re-encoded by canvas.toBlob — fall back to PNG when the
   // chosen format isn't canvas-encodable.
   function getExportMime() { const m = (exportFmt?.value) || mime; return CANVAS_ENCODABLE.has(m) ? m : 'image/png'; }
 
   function pushUndo() {
-    undoStack.push({ blob: editedBlob || null, url: editedUrl || null });
+    undoStack.push({ blob: editedBlob || null, url: editedUrl || null, overlay: snapOverlay() });
     // A fresh edit forks history — discard any redo branch (and its blob URLs).
     redoStack.forEach((s) => { if (s.url) URL.revokeObjectURL(s.url); });
     redoStack.length = 0;
@@ -45,9 +53,11 @@ export function createEditCore({ img, url, mime, ctx, els }) {
     }
     if (undoBtn) undoBtn.hidden = undoStack.length === 0;
     if (redoBtn) redoBtn.hidden = redoStack.length === 0;
+    // Restore the overlay LAST so its dirty/onBinaryEdit emit reflects the final state.
+    if (overlayHooks && 'overlay' in state) overlayHooks.restore(state.overlay);
   }
-  function doUndo() { const prev = undoStack.pop(); if (!prev) return; redoStack.push({ blob: editedBlob || null, url: editedUrl || null }); applyEditState(prev); }
-  function doRedo() { const next = redoStack.pop(); if (!next) return; undoStack.push({ blob: editedBlob || null, url: editedUrl || null }); applyEditState(next); }
+  function doUndo() { const prev = undoStack.pop(); if (!prev) return; redoStack.push({ blob: editedBlob || null, url: editedUrl || null, overlay: snapOverlay() }); applyEditState(prev); }
+  function doRedo() { const next = redoStack.pop(); if (!next) return; undoStack.push({ blob: editedBlob || null, url: editedUrl || null, overlay: snapOverlay() }); applyEditState(next); }
 
   // Decode the CURRENT image (latest edit, else the pristine original) so a tool
   // can draw from it onto a fresh canvas.
@@ -102,7 +112,7 @@ export function createEditCore({ img, url, mime, ctx, els }) {
 
   return {
     getExportMime, pushUndo, applyEditState, doUndo, doRedo, loadBase,
-    commitBlob, commitCanvas, reset, revoke,
+    commitBlob, commitCanvas, reset, revoke, setOverlayHooks,
     get editedUrl() { return editedUrl; },
     get editedBlob() { return editedBlob; },
   };

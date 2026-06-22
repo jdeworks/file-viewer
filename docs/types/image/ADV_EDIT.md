@@ -26,8 +26,8 @@ Konva is **vendored** (`docs/vendor/konva/konva.min.js`, MIT, UMD → `window.Ko
 
 **Key principle:** flatten for *output* is non-destructive (throwaway copy, computed on demand in `getBytes`). The only destructive flatten is the geometry-seam bake (and, later, pixel-painting over a vector object).
 
-## Undo/redo
-Konva has **no built-in undo**; the pattern is *serialize the stage to JSON and snapshot*. We fold vector snapshots into the existing `editor-core` undo stack → **one unified Ctrl+Z** across pixel + vector (each entry `{rasterBlob, overlayJSON}`). Reuses the global keydown router (`edit-undo-key.js`).
+## Undo/redo — ✅ unified
+Konva has **no built-in undo**; the pattern is *serialize the stage to JSON and snapshot*. Vector snapshots are folded into the existing `editor-core` undo stack → **one unified Ctrl+Z** across pixel + vector. Each history entry is `{blob, url, overlay}` where `overlay` is the stage JSON at that point. `editor-core` captures it via injected `overlayHooks.{snapshot,restore}` (the renderer wires them to `advController.serialize`/`restore`); the overlay pushes onto the SAME stack via injected `pushUndo` (snapped on `dragstart`/`transformstart`/add/delete/layer-op). Restoring `overlay:null` clears the overlay (undoing past the point it existed). Reuses the global keydown router (`edit-undo-key.js`).
 
 ## Connection points
 - **Dirty/`onBinaryEdit`** — vector edits also mark the doc dirty.
@@ -45,4 +45,5 @@ Konva has **no built-in undo**; the pattern is *serialize the stage to JSON and 
 - ✅ Adv Edit text layers (the foundation that forces the model).
 - ✅ Visible **layers panel** (the Konva stage IS the model); **shapes** (rect/ellipse/line/arrow).
 - ✅ **Persistent overlay** — non-destructive across View/Edit/ASCII; flatten only for output (`emitBinaryEdit`/ASCII) or the geometry-seam bake; `relayout()`/`rebaseline()`/`clear()` keep it registered.
-- Next: **unified Ctrl+Z** (fold `{rasterBlob, overlayJSON}` snapshots into `editor-core`; today Adv has in-mode snapshot undo only), full **geometry coord-transform** (keep objects editable through rotate/flip/crop/resize), **selection/magic-wand** (pixel mask via `fill.js`, separate from Konva).
+- ✅ **Unified Ctrl+Z** — vector snapshots folded into `editor-core` (`{blob,url,overlay}`); one stack across pixel + vector.
+- Next: **selection/magic-wand** (pixel mask via `fill.js`, separate from Konva), then full **geometry coord-transform** (keep objects editable through rotate/flip/crop/resize instead of the bake-first seam).
