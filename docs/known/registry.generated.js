@@ -1463,6 +1463,98 @@ var ansible_playbook_default = {
   }
 };
 
+// ../../docs/types/text/yaml/known/ansible-inventory/index.js
+var ansible_inventory_default = {
+  id: "ansible-inventory",
+  label: "Ansible Inventory",
+  match: (intake, baseType) => {
+    if (baseType?.id !== "yaml") return false;
+    const name = (intake.filename || "").split("/").pop().toLowerCase();
+    if (name === "inventory.yml" || name === "inventory.yaml" || name === "hosts.yml" || name === "hosts.yaml") return true;
+    const t = intake.textSample || intake.text || "";
+    return /\bhosts\s*:/.test(t) && /\bansible_host\s*:/.test(t);
+  },
+  loadRenderer: () => import("../types/text/yaml/known/ansible-inventory/renderer.js"),
+  about: {
+    description: "Ansible inventory — shows host groups, hosts, and variables.",
+    usedFor: [{ label: "Infrastructure inventory", description: "Define Ansible host groups and variables.", href: "https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html" }]
+  }
+};
+
+// ../../docs/types/text/yaml/known/ansible-requirements/index.js
+var ansible_requirements_default = {
+  id: "ansible-requirements",
+  label: "Ansible Requirements",
+  match: (intake, baseType) => {
+    if (baseType?.id !== "yaml") return false;
+    const name = (intake.filename || "").split("/").pop().toLowerCase();
+    if (name !== "requirements.yml" && name !== "requirements.yaml") return false;
+    const t = intake.textSample || intake.text || "";
+    return t.includes("roles:") || t.includes("collections:");
+  },
+  loadRenderer: () => import("../types/text/yaml/known/ansible-requirements/renderer.js"),
+  about: {
+    description: "Ansible Galaxy requirements — lists roles and collections to install.",
+    usedFor: [{ label: "Galaxy dependencies", description: "Specify Ansible Galaxy roles and collections required by your project.", href: "https://docs.ansible.com/ansible/latest/galaxy/user_guide.html" }]
+  }
+};
+
+// ../../docs/types/text/yaml/known/artifactory-system/index.js
+var artifactory_system_default = {
+  id: "artifactory-system",
+  label: "Artifactory system config",
+  match(intake, baseType) {
+    if (baseType?.id !== "yaml") return false;
+    const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
+    const t = intake.text || "";
+    return n === "system.yaml" && (t.includes("artifactory") || t.includes("jfrog"));
+  },
+  loadRenderer: () => import("../types/text/yaml/known/artifactory-system/renderer.js"),
+  about: {
+    description: "JFrog Artifactory system.yaml configuration — database, security, router, and service ports.",
+    usedFor: [{ label: "JFrog Artifactory", description: "Universal artifact repository manager supporting all major package formats.", href: "https://jfrog.com/help/r/jfrog-installation-setup-documentation/system-yaml-configuration-parameters" }]
+  }
+};
+
+// ../../docs/types/text/known/eleventy-config/index.js
+var eleventy_config_default = {
+  id: "eleventy-config",
+  label: "Eleventy Config",
+  match(intake) {
+    const name = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
+    return name === ".eleventy.js" || name === "eleventy.config.js" || name === "eleventy.config.mjs" || name === ".eleventy.cjs";
+  },
+  loadRenderer: () => import("../types/text/known/eleventy-config/renderer.js"),
+  about: { description: "Eleventy (11ty) static site generator configuration — defines template formats, plugins, and directory settings." }
+};
+
+// ../../docs/types/text/known/gatsby-config/index.js
+var gatsby_config_default = {
+  id: "gatsby-config",
+  label: "Gatsby Config",
+  match(intake) {
+    const name = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
+    return name === "gatsby-config.js" || name === "gatsby-config.ts" || name === "gatsby-config.mjs";
+  },
+  loadRenderer: () => import("../types/text/known/gatsby-config/renderer.js"),
+  about: { description: "Gatsby static site generator configuration — defines site metadata, plugins, and flags." }
+};
+
+// ../../docs/types/text/known/jvm-options/index.js
+var jvm_options_default = {
+  id: "jvm-options",
+  label: "JVM Options",
+  match: (intake) => {
+    const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
+    if (n === "jvm.options" || n === "jvm-default.options") return true;
+    if (n.endsWith(".options") && n.startsWith("jvm")) return true;
+    const text = intake.text || "";
+    return n.endsWith(".options") && (text.includes("-Xms") || text.includes("-Xmx") || text.includes("-XX:"));
+  },
+  loadRenderer: () => import("../types/text/known/jvm-options/renderer.js"),
+  about: { description: "JVM options file (Elasticsearch, Logstash, etc.) — heap sizing, GC configuration, system properties, and other JVM tuning flags." }
+};
+
 // ../../docs/types/text/yaml/known/pulumi/index.js
 var pulumi_default = {
   id: "pulumi",
@@ -16308,12 +16400,18 @@ var KNOWN = [
   hadolint_default,
   helm_chart_default,
   kustomize_default,
+  ansible_inventory_default,
+  ansible_requirements_default,
   ansible_playbook_default,
   pulumi_default,
   packer_default,
   ruff_toml_default,
   uv_default,
   kube_helm_values_default,
+  eleventy_config_default,
+  gatsby_config_default,
+  jvm_options_default,
+  artifactory_system_default,
   firebase_default,
   expo_default,
   tailwind_default,

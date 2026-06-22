@@ -4269,6 +4269,30 @@ export async function run(ctx) {
   const wsrText = await page.$eval('#previewHost .wsr-doc', el => el.textContent);
   if (/Windsurf/i.test(wsrText) && /section/i.test(wsrText)) pass('.windsurfrules: rule sections shown'); else fail('windsurfrules: ' + wsrText.slice(0, 200));
 
+  // ── eleventy.config.js viewer ──
+  await openExample('eleventy.config.js');
+  pass(await page.waitForSelector('#previewHost .elev-doc', { timeout: 12000 }), 'eleventy.config.js: elev-doc shown');
+
+  // ── gatsby-config.js viewer ──
+  await openExample('gatsby-config.js');
+  pass(await page.waitForSelector('#previewHost .gatsby-doc', { timeout: 12000 }), 'gatsby-config.js: gatsby-doc shown');
+
+  // ── jvm.options viewer ──
+  await openExample('jvm.options');
+  pass(await page.waitForSelector('#previewHost .jo-doc', { timeout: 12000 }), 'jvm.options: jo-doc shown');
+
+  // ── inventory.yml (Ansible inventory) viewer ──
+  await openExample('inventory.yml');
+  pass(await page.waitForSelector('#previewHost .ansi-doc', { timeout: 12000 }), 'inventory.yml: ansible-inventory shown');
+
+  // ── requirements.yml (Ansible Galaxy) viewer ──
+  await openExample('requirements.yml');
+  pass(await page.waitForSelector('#previewHost .ansr-doc', { timeout: 12000 }), 'requirements.yml: ansible-requirements shown');
+
+  // ── system.yaml (Artifactory) viewer ──
+  await openExample('system.yaml');
+  pass(await page.waitForSelector('#previewHost .art-doc', { timeout: 12000 }), 'system.yaml: artifactory-system shown');
+
   // ── airflow.cfg viewer ──
   await openExample('airflow.cfg');
   pass(await page.waitForSelector('#previewHost .airflowcfg-doc', { timeout: 12000 }), 'airflow.cfg: airflowcfg-doc shown');

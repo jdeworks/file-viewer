@@ -115,6 +115,12 @@ import hadolint from '../types/text/yaml/known/hadolint/index.js';
 import helmChart from '../types/text/yaml/known/helm-chart/index.js';
 import kustomize from '../types/text/yaml/known/kustomize/index.js';
 import ansiblePlaybook from '../types/text/yaml/known/ansible-playbook/index.js';
+import ansibleInventory from '../types/text/yaml/known/ansible-inventory/index.js';
+import ansibleRequirements from '../types/text/yaml/known/ansible-requirements/index.js';
+import artifactorySystem from '../types/text/yaml/known/artifactory-system/index.js';
+import eleventyConfig from '../types/text/known/eleventy-config/index.js';
+import gatsbyConfig from '../types/text/known/gatsby-config/index.js';
+import jvmOptions from '../types/text/known/jvm-options/index.js';
 import pulumi from '../types/text/yaml/known/pulumi/index.js';
 import packer from '../types/text/json/known/packer/index.js';
 import ruff from '../types/text/toml/known/ruff-toml/index.js';
@@ -945,7 +951,8 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   angularJson, capacitor, nycrc, devcontainer, knip, mocha, gitlabCi, pnpmWorkspace,
   vitest, graphqlConfig, graphqlCodegen, tspconfigYaml, apollo, storybook,
   drone, buildkite, skaffold, hadolint,
-  helmChart, kustomize, ansiblePlaybook, pulumi, packer, ruff, uv, kubeHelmValues,
+  helmChart, kustomize, ansibleInventory, ansibleRequirements, ansiblePlaybook, pulumi, packer, ruff, uv, kubeHelmValues,
+  eleventyConfig, gatsbyConfig, jvmOptions, artifactorySystem,
   firebase, expo, tailwind, postcss, husky, lintStaged, nestCli, swcrc,
   packageLock, composerLock, pnpmLock, cargoLock, poetryLock, goSum,
   makefileKf, justfile, procfile, envExample, envrc, etcEnvironment, miseConfig, toolVersions,
