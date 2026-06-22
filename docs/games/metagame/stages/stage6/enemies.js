@@ -26,6 +26,17 @@ export const ENEMIES = {
       { label: "Attack 12", attack: 12 },
       { label: "Block 8 + Attack 8", block: 8, attack: 8 }
     ]
+  },
+  "null-pointer": {
+    id: "null-pointer",
+    name: "Null Pointer",
+    tier: "standard",
+    hp: 26, hpPerAct: 12, armor: 0, armorPerAct: 0,
+    script: [
+      { label: "Attack 7 + Weak", attack: 7, applyPlayer: { status: "weak", value: 1 } },
+      { label: "Attack 6, twice", attack: 6, hits: 2 },
+      { label: "Attack 14", attack: 14 }
+    ]
   }
 };
 

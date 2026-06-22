@@ -114,6 +114,13 @@ function makeCtx(combat, card) {
     gainEnergy: (n) => { combat.player.energy += n; },
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
     applySelf: (status, n) => addStatus(combat.player, status, n),
+    clearSelfDebuffs: () => {
+      let cleared = 0;
+      for (const key of Object.keys(combat.player.statuses)) {
+        if (DURATION_STATUSES.has(key)) { cleared += combat.player.statuses[key]; delete combat.player.statuses[key]; }
+      }
+      return cleared;
+    },
     skipEnemyNext: () => { combat.enemy.skipNext = true; },
     playedThisTurn: (id) => combat.playedIdsThisTurn.includes(id),
     get cardsPlayed() { return combat.cardsPlayedThisTurn; },
@@ -178,6 +185,7 @@ function resolveIntent(combat, intent) {
 
 export function dealToEnemy(combat, baseAmount) {
   let amount = Math.max(0, Math.round(baseAmount));
+  if (combat.player.statuses.strength) amount += combat.player.statuses.strength;
   if (combat.player.statuses.weak) amount = Math.floor(amount * 0.75);
   if (combat.enemy.statuses.vulnerable) amount = Math.floor(amount * 1.5);
   amount = Math.max(0, amount - combat.enemy.armor);
@@ -200,8 +208,12 @@ function addStatus(entity, status, value) {
   if (entity.statuses[status] <= 0) delete entity.statuses[status];
 }
 
+// Only duration statuses count down at the owner's turn start; powers (e.g. strength) persist.
+const DURATION_STATUSES = new Set(["vulnerable", "weak"]);
+
 function tickStatuses(entity) {
   for (const key of Object.keys(entity.statuses)) {
+    if (!DURATION_STATUSES.has(key)) continue;
     entity.statuses[key] -= 1;
     if (entity.statuses[key] <= 0) delete entity.statuses[key];
   }

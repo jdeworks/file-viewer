@@ -56,6 +56,56 @@ export const CARDS = [
     id: "NULL_ROUTE", type: "Signal", cost: 2, rarity: "rare",
     text: "Apply 2 Vulnerable to the enemy.",
     effect: (ctx) => ctx.applyEnemy("vulnerable", 2)
+  },
+  {
+    id: "PROBE", type: "Signal", cost: 1, rarity: "common",
+    text: "Deal 6. Apply 1 Vulnerable.",
+    effect: (ctx) => { ctx.deal(6); ctx.applyEnemy("vulnerable", 1); }
+  },
+  {
+    id: "PRIORITY_PACKET", type: "Signal", cost: 2, rarity: "rare",
+    text: "Deal 12.",
+    effect: (ctx) => ctx.deal(12)
+  },
+  {
+    id: "ASYMMETRIC", type: "Signal", cost: 1, rarity: "rare",
+    text: "Deal 6. If your block exceeds your HP, deal 12 more.",
+    effect: (ctx) => { ctx.deal(6); if (ctx.blockNow > ctx.hp) ctx.deal(12); }
+  },
+  {
+    id: "BURST_FRAME", type: "Signal", cost: 3, rarity: "uncommon", exhaust: true,
+    text: "Deal 30. Apply 1 Weak to yourself. Exhaust.",
+    effect: (ctx) => { ctx.deal(30); ctx.applySelf("weak", 1); }
+  },
+  {
+    id: "SEGMENT", type: "Protocol", cost: 0, rarity: "common",
+    text: "Gain 5 block.",
+    effect: (ctx) => ctx.block(5)
+  },
+  {
+    id: "KEEPALIVE", type: "Protocol", cost: 1, rarity: "uncommon",
+    text: "Gain 5 block. If ACK was played this turn, gain 8 more.",
+    effect: (ctx) => { ctx.block(5); if (ctx.playedThisTurn("ACK")) ctx.block(8); }
+  },
+  {
+    id: "THROTTLE", type: "Protocol", cost: 2, rarity: "rare",
+    text: "Apply 2 Weak to the enemy.",
+    effect: (ctx) => ctx.applyEnemy("weak", 2)
+  },
+  {
+    id: "RENEGOTIATE", type: "Protocol", cost: 1, rarity: "rare",
+    text: "Remove your debuffs and gain 6 block.",
+    effect: (ctx) => { ctx.clearSelfDebuffs(); ctx.block(6); }
+  },
+  {
+    id: "CIPHER_LAYER", type: "Layer", cost: 2, rarity: "uncommon",
+    text: "Gain 1 Strength and 6 block.",
+    effect: (ctx) => { ctx.applySelf("strength", 1); ctx.block(6); }
+  },
+  {
+    id: "TCP_STACK", type: "Layer", cost: 2, rarity: "rare",
+    text: "Gain 2 Strength.",
+    effect: (ctx) => ctx.applySelf("strength", 2)
   }
 ];
 

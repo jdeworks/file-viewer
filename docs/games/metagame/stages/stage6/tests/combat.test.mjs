@@ -97,4 +97,42 @@ function fresh(enemyId = "corrupt-packet", seed = 7) {
   assert.equal(c.hand.length + c.draw.length + c.discard.length, total, "no cards lost in reshuffle");
 }
 
+// Strength is permanent (does not tick down) and adds to attack damage.
+{
+  const c = createCombat({ deck: ["TCP_STACK", "SYN", "SYN", "ACK", "ACK", "RST"], player, enemy: instantiateEnemy("corrupt-packet", 1), seed: 5 });
+  c.hand = ["TCP_STACK", "SYN"]; c.draw = ["ACK"]; c.discard = []; c.player.energy = 3;
+  playCard(c, 0); // +2 strength
+  assert.equal(c.player.statuses.strength, 2, "TCP_STACK grants 2 strength");
+  const hp = c.enemy.hp;
+  playCard(c, c.hand.indexOf("SYN")); // 8 + 2 strength = 10
+  assert.equal(c.enemy.hp, hp - 10, "strength adds to SYN damage");
+  c.hand = []; endTurn(c); // a full turn cycle
+  assert.equal(c.player.statuses.strength, 2, "strength persists across turns");
+}
+
+// RENEGOTIATE clears self debuffs; weak reduces outgoing attack damage first.
+{
+  const c = createCombat({ deck: ["RENEGOTIATE", "SYN", "ACK", "ACK", "RST", "WINDOW"], player, enemy: instantiateEnemy("corrupt-packet", 1), seed: 9 });
+  c.player.statuses.weak = 2;
+  const hp = c.enemy.hp;
+  c.hand = ["SYN"]; c.player.energy = 3;
+  playCard(c, 0); // SYN 8 * 0.75 weak = 6
+  assert.equal(c.enemy.hp, hp - 6, "weak reduces SYN to 6");
+  c.player.statuses.weak = 2;
+  c.hand = ["RENEGOTIATE"]; c.player.energy = 3;
+  playCard(c, 0);
+  assert.equal(c.player.statuses.weak, undefined, "RENEGOTIATE clears weak");
+  assert.equal(c.player.block, 6, "RENEGOTIATE grants 6 block");
+}
+
+// ASYMMETRIC bonus triggers when block exceeds HP.
+{
+  const c = fresh();
+  c.player.hp = 10; c.player.block = 20;
+  c.hand = ["ASYMMETRIC"]; c.player.energy = 3;
+  const hp = c.enemy.hp;
+  playCard(c, 0); // 6 + 12 = 18
+  assert.equal(c.enemy.hp, hp - 18, "ASYMMETRIC deals 18 when block > hp");
+}
+
 console.log("stage6 combat engine tests passed");

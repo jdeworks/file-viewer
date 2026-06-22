@@ -8,7 +8,7 @@ import { makeRng } from "./combat.js";
 
 export const NODE_TYPES = ["combat", "elite", "rest", "shop", "event", "boss"];
 
-const COMBAT_ENEMIES = ["corrupt-packet", "firewall-entity"];
+const COMBAT_ENEMIES = ["corrupt-packet", "firewall-entity", "null-pointer"];
 const CONTENT_LAYERS = 6; // + 1 boss layer => ~15 nodes/act
 
 export function generateAct(act, seed) {
