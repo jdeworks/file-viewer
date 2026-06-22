@@ -547,6 +547,19 @@ export async function run(ctx) {
     };
   });
   if (advFlat.dirty && advFlat.len > 1000 && advFlat.sig === '137,80,78,71' && advFlat.stagePresent && !advFlat.barInteractive) pass('Adv Edit: overlay persists non-interactively; output flattens base+overlay (dirty PNG)'); else fail('adv persist: ' + JSON.stringify(advFlat));
+  // Geometry coord-transform: a rotate in Edit mode with a live overlay TRANSFORMS the
+  // vector objects (they stay editable) instead of baking them. Re-enter Adv and confirm
+  // the objects are still listed — a bake-first seam would have emptied the overlay.
+  await page.click('#previewHost .imgv-tools-btn');                 // enter pixel Edit
+  await openTab('common');                                         // rotate/flip live in the Common tab
+  await page.click('#previewHost .imgv-rot-r');                     // rotate 90° CW (base + overlay ride along)
+  await page.waitForTimeout(500);                                   // base re-encodes/reloads → applyGeometry runs
+  await page.click('#previewHost .imgv-tools-btn');                 // leave Edit
+  await page.click('#previewHost .imgv-adv-btn');                   // re-enter Adv to read the layers panel
+  await page.waitForSelector('#previewHost .imgv-adv-layers > div', { timeout: 5000 }).catch(() => {});
+  const afterGeom = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 2 rows
+  if (afterGeom === 3) pass('Adv Edit: geometry (rotate) transforms the overlay objects, keeps them editable (not baked)'); else fail('adv geometry-transform: ' + afterGeom);
+  await page.click('#previewHost .imgv-adv-btn');                   // leave Adv again for the export/ASCII steps
   // Image export (loadExports hook): menu offers PNG/JPEG/WebP, and a conversion actually downloads.
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });

@@ -241,8 +241,40 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     relayout();
   }
 
-  // Remove every object (used when the overlay is flattened into the base — before a
-  // geometry op, or on Reset). The stage itself stays mounted.
+  // Transform every object by a base-geometry op (rotate/flip/crop/resize/expand) so it
+  // stays registered to the image AND editable — the alternative to baking it in. `affine`
+  // is [a,b,c,d,e,f] in OLD-natural → NEW-natural space (geometry-affine.js). The base has
+  // ALREADY been re-encoded + re-displayed at the new size when this runs.
+  //
+  // Objects live in stage(display) coords; the op is in natural coords. So each object's
+  // new transform = (naturalNew→stageNew) ∘ affine ∘ (stageOld→naturalOld) ∘ oldTransform,
+  // composed with Konva's Transform and decomposed back to x/y/rotation/scale/skew.
+  function applyGeometry(affine) {
+    const oldK = naturalW / stageW;                          // stageOld → naturalOld scale
+    const objs = layer.find('.obj');
+    const olds = objs.map((n) => n.getTransform().copy());   // local → stageOld, captured before resize
+    // Adopt the new base geometry (objects make this safe — we re-place them below).
+    naturalW = img.naturalWidth || naturalW; naturalH = img.naturalHeight || naturalH;
+    const r = img.getBoundingClientRect();
+    stageW = Math.max(1, Math.round(r.width)); stageH = Math.max(1, Math.round(r.height));
+    stage.width(stageW); stage.height(stageH);
+    container.style.width = stageW + 'px'; container.style.height = stageH + 'px';
+    container.style.transform = '';
+    const newK = naturalW / stageW;                          // naturalNew → stageNew = 1/newK
+    const Sk = new Konva.Transform([oldK, 0, 0, oldK, 0, 0]);
+    const A = new Konva.Transform(affine);
+    const InvK = new Konva.Transform([1 / newK, 0, 0, 1 / newK, 0, 0]);
+    select(null);
+    objs.forEach((node, i) => {
+      const d = InvK.copy().multiply(A).multiply(Sk).multiply(olds[i]).decompose();
+      node.setAttrs({ x: d.x, y: d.y, rotation: d.rotation, scaleX: d.scaleX, scaleY: d.scaleY, skewX: d.skewX, skewY: d.skewY, offsetX: 0, offsetY: 0 });
+    });
+    relayout();
+    layer.draw(); refreshLayers(); markDirty();
+  }
+
+  // Remove every object (used on Reset, or when the overlay is flattened into the base).
+  // The stage itself stays mounted.
   function clear() {
     layer.find('.obj').forEach((n) => n.destroy());
     select(null); layer.draw(); refreshLayers(); markDirty();
@@ -267,6 +299,7 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     flattenToCanvas,
     relayout,
     rebaseline,
+    applyGeometry,
     clear,
     destroy() { tr.destroy(); stage.destroy(); container.remove(); tb.remove(); panel.remove(); },
   };
