@@ -9,6 +9,9 @@ import { bgFloodFill } from './fill.js';
 
 export function mountBg({ img, url, core, els }) {
   const { bgBtn, bgTol, bgOk, bgX, exportFmt } = els;
+  // Toggle the whole "Extract tolerance" label, not just the slider, so the tab
+  // doesn't show a bare label before a colour has been sampled.
+  const bgTolWrap = bgTol && (bgTol.closest('.imgv-bg-tol-wrap') || bgTol);
   let bgPickMode = false, bgSrcData = null, bgSrcW = 0, bgSrcH = 0, bgPickX = -1, bgPickY = -1, bgPreviewUrl = null;
 
   function bgFilledImageData() {
@@ -23,7 +26,7 @@ export function mountBg({ img, url, core, els }) {
     if (bgPreviewUrl) { URL.revokeObjectURL(bgPreviewUrl); bgPreviewUrl = null; }
     bgBtn?.classList.remove('active');
     img.style.cursor = '';
-    if (bgTol) bgTol.hidden = true;
+    if (bgTolWrap) bgTolWrap.hidden = true;
     if (bgOk) bgOk.hidden = true;
     if (bgX) bgX.hidden = true;
   }
@@ -64,7 +67,7 @@ export function mountBg({ img, url, core, els }) {
       const r = img.getBoundingClientRect();
       bgPickX = Math.max(0, Math.min(bgSrcW - 1, Math.round((e.clientX - r.left) * bgSrcW / r.width)));
       bgPickY = Math.max(0, Math.min(bgSrcH - 1, Math.round((e.clientY - r.top) * bgSrcH / r.height)));
-      if (bgTol) bgTol.hidden = false;
+      if (bgTolWrap) bgTolWrap.hidden = false;
       if (bgOk) bgOk.hidden = false;
       if (bgX) bgX.hidden = false;
       bgRunPreview();
