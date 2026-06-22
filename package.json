@@ -28,6 +28,6 @@
     "xlsx": "0.18.5"
   },
   "scripts": {
-    "serve": "node scripts/serve.mjs"
+    "serve": "python3 -m http.server 8097 --directory docs"
   }
 }
