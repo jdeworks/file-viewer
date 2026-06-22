@@ -1321,8 +1321,7 @@
       "Image",
       "Media"
     ],
-    "partial": true,
-    "description": "TIFF conversion of the CC0 flower PNG sample for metadata-focused TIFF coverage.",
+    "description": "TIFF conversion of the CC0 flower PNG sample; decodes in-browser (vendored UTIF) into the editable image editor.",
     "source": "https://commons.wikimedia.org/wiki/File:Red_flower_01.png",
     "license": "CC0 1.0 Universal",
     "attribution": "Wikimedia Commons contributor; converted to TIFF for this catalog"

@@ -868,6 +868,22 @@ export async function run(ctx) {
   }, null, { timeout: 30000 }).then(() => true).catch(() => false);
   if (jxlOk) pass('JPEG XL decoded in-browser (lazy wasm) and rendered'); else fail('jxl did not decode/render');
 
+  // ── TIFF ── browsers can't decode TIFF natively; the tiff plugin decodes it via the lazy
+  // vendored UTIF bundle → PNG and delegates to the full image editor, so a .tiff opens as an
+  // editable raster (real dimensions + the editing toolbar), not the metadata-only fallback.
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.tiff');
+  await page.waitForSelector('#previewHost .imgv-img', { timeout: 30000 });
+  const tiffOk = await page.waitForFunction(() => {
+    const img = document.querySelector('#previewHost .imgv-img');
+    return img && !img.hidden && img.naturalWidth > 0;
+  }, null, { timeout: 30000 }).then(() => true).catch(() => false);
+  const tiffEdits = await page.$$eval(
+    '#previewHost .imgv-pencil, #previewHost .imgv-fill, #previewHost .imgv-crop-btn, #previewHost .imgv-f-hue, #previewHost .imgv-bg-btn',
+    (els) => els.length,
+  ).catch(() => 0);
+  if (tiffOk && tiffEdits === 5) pass('TIFF decoded in-browser (lazy UTIF) into the full editable image editor'); else fail('tiff decode/edit: ' + JSON.stringify({ tiffOk, tiffEdits }));
+
   // ── Blob-intake seam ── window.__fv.openBlobFile opens an in-memory Blob via
   // the same intake→detect→render path a file uses (this is how a webcam
   // recording opens directly in the studio instead of round-tripping a download).

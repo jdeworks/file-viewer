@@ -90,10 +90,12 @@ export async function run(ctx) {
     pass('dedicated raster image format samples indexed (' + imageFormatSamples.length + ')');
   }
   const tiffSample = byFile.get('sample.tiff');
-  if (tiffSample?.type === 'tiff' && tiffSample.partial) {
-    pass('dedicated TIFF partial-support sample indexed');
+  // TIFF now decodes in-browser (vendored UTIF, lazy) into the editable image editor, so it's
+  // a fully-supported dedicated 'tiff' sample (no longer partial / metadata-only).
+  if (tiffSample?.type === 'tiff' && !tiffSample.partial) {
+    pass('dedicated TIFF sample indexed as a decodable image');
   } else {
-    fail('missing dedicated TIFF partial-support sample');
+    fail('TIFF sample state: ' + JSON.stringify(tiffSample));
   }
   // HEIC is a dedicated 'heif' type; AVIF is decoded natively by the base image renderer
   // (the heif detector deliberately yields to 'image' for the avif brand), so it indexes as 'image'.
