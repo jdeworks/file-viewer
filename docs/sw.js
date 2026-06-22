@@ -6,10 +6,25 @@
 // online) and network-first for navigations (fresh HTML online, cached shell offline).
 // Same-origin GET only — never touches a third party.
 
-const CACHE = 'file-viewer';
+// VERSION is stamped at build time by scripts/gen-asset-manifest.mjs (it equals the asset-manifest
+// version). Two things hang off it: (1) the SW's bytes change every deploy, so the browser detects
+// an update and installs a new SW; (2) the cache is NAMED per version, so a new SW serves a single
+// CONSISTENT asset set instead of a stale mix of old+new modules (the version-skew that looked like
+// a hang). Keep this line in the exact `const VERSION = '...';` shape — the generator rewrites it.
+const VERSION = '6ad8f9e6b55c';   // stamped by scripts/gen-asset-manifest.mjs
+const CACHE = 'file-viewer-' + VERSION;
 
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener('install', () => {
+  // First install (no worker is active yet): activate immediately so cache-on-use starts now.
+  // An UPDATE (an old worker is still active): stay in 'waiting' so the page can prompt the user
+  // before we switch versions — auto-takeover would serve a mix of old+new modules (version skew).
+  if (!self.registration.active) self.skipWaiting();
+});
+self.addEventListener('activate', (e) => e.waitUntil((async () => {
+  // Drop caches from older versions so we never serve stale assets after an update activates.
+  for (const k of await caches.keys()) if (k !== CACHE && k.startsWith('file-viewer')) await caches.delete(k);
+  await self.clients.claim();
+})()));
 
 async function notify(msg) {
   for (const c of await self.clients.matchAll()) c.postMessage(msg);
@@ -69,6 +84,9 @@ self.addEventListener('message', (e) => {
   if (!e.data) return;
   if (e.data.type === 'precache') e.waitUntil(precache(e.data.files));
   else if (e.data.type === 'status') e.waitUntil(status());
+  // The page's update banner asks us to take over once the user clicks Reload; activating now fires
+  // controllerchange in the page, which then reloads into the consistent new version.
+  else if (e.data.type === 'skip-waiting') self.skipWaiting();
 });
 
 self.addEventListener('fetch', (e) => {

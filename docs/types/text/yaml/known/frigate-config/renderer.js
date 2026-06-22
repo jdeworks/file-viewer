@@ -196,7 +196,7 @@ export async function render(intake) {
   const bodyParts = [];
   if (detectorsHtml) bodyParts.push(section('Detectors', detectorsHtml));
   if (mqttHtml) bodyParts.push(section('MQTT', mqttHtml));
-  if (camerasHtml) bodyParts.push(section(`Cameras (${cameraEntries.length})`, camerasHtml));
+  if (camerasHtml) bodyParts.push(section(`${cameraEntries.length} Camera${cameraEntries.length !== 1 ? 's' : ''}`, camerasHtml));
   if (recordHtml) bodyParts.push(section('Recording', recordHtml));
   if (snapshotsHtml) bodyParts.push(section('Snapshots', snapshotsHtml));
   if (objectsHtml) bodyParts.push(section('Object Tracking', objectsHtml));

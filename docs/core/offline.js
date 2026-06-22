@@ -72,13 +72,63 @@ export function initOffline(statusEl) {
   // rest() reads localStorage and works without the SW; the SW message just refines it later.
   rest();
 
-  navigator.serviceWorker.register('sw.js').then(async () => {
+  navigator.serviceWorker.register('sw.js').then(async (reg) => {
     await navigator.serviceWorker.ready;
     // Do NOT auto-precache. Just ask for status to pick the resting state.
     send({ type: 'status' });
     // controller may not be set on the very first load; retry once it takes over.
     navigator.serviceWorker.addEventListener('controllerchange', () => send({ type: 'status' }));
+
+    // ── Update guard ──────────────────────────────────────────────────────────
+    // A deploy bumps the version stamped into sw.js, so its bytes change → the browser installs a
+    // NEW service worker that parks in 'waiting'. We deliberately do NOT let it auto-activate (that
+    // would serve a mix of old+new modules — the version-skew that masqueraded as a hard hang).
+    // Instead, surface a "new version — reload?" banner and let the new SW take over only on click.
+    // The `controller != null` guard means we prompt for an UPDATE, never the very first install.
+    const promptIfWaiting = (worker) => { if (worker && navigator.serviceWorker.controller) showUpdateBanner(worker); };
+    promptIfWaiting(reg.waiting);                                   // update already downloaded before this load
+    reg.addEventListener('updatefound', () => {
+      const sw = reg.installing;
+      sw?.addEventListener('statechange', () => { if (sw.state === 'installed') promptIfWaiting(sw); });
+    });
+    // Notice a deploy that lands while this tab sits open: re-check when the tab regains focus.
+    let checking = false;
+    const checkForUpdate = () => {
+      if (checking || document.hidden) return;
+      checking = true;
+      reg.update().catch(() => {}).finally(() => { checking = false; });
+    };
+    document.addEventListener('visibilitychange', checkForUpdate);
+    window.addEventListener('focus', checkForUpdate);
   }).catch(() => { /* offline support unavailable — stay online-only */ });
+}
+
+// "New version available — reload?" banner. Shown once a newer build's SW is installed and waiting.
+// Reloading is the user's choice: clicking Reload tells the waiting SW to take over, and we reload
+// the moment it does (controllerchange) so the whole page comes up on one consistent version.
+let updateBannerShown = false;
+function showUpdateBanner(worker) {
+  if (updateBannerShown || document.getElementById('updateBanner')) return;
+  updateBannerShown = true;
+  const bar = document.createElement('div');
+  bar.id = 'updateBanner';
+  bar.className = 'update-banner';
+  bar.setAttribute('role', 'status');
+  bar.setAttribute('aria-live', 'polite');
+  bar.innerHTML = '<span class="ub-msg">A new version of the viewer is available.</span>'
+    + '<button class="ub-reload" type="button">Reload</button>'
+    + '<button class="ub-dismiss" type="button" aria-label="Dismiss">✕</button>';
+  document.body.appendChild(bar);
+
+  let reloading = false;
+  const reload = () => { if (!reloading) { reloading = true; location.reload(); } };
+  bar.querySelector('.ub-reload').addEventListener('click', () => {
+    bar.querySelector('.ub-reload').textContent = 'Reloading…';
+    navigator.serviceWorker.addEventListener('controllerchange', reload, { once: true });
+    worker.postMessage({ type: 'skip-waiting' });
+    setTimeout(reload, 2500);          // fallback if controllerchange never fires
+  });
+  bar.querySelector('.ub-dismiss').addEventListener('click', () => { bar.remove(); });
 }
 
 // Cache-download modal: grouped, collapsible bundle picker with select-all, per-group meta, and

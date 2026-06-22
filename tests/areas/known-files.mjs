@@ -4096,7 +4096,7 @@ export async function run(ctx) {
   pass('app.json: renders');
   const appjsonText = await page.$eval('.appjson-doc', el => el.textContent);
   if (!appjsonText.includes('Heroku')) fail('app.json: missing badge'); else pass('app.json: badge shown');
-  if (!appjsonText.includes('buildpack') && !appjsonText.includes('addon') && !appjsonText.includes('formation')) fail('app.json: no config shown'); else pass('app.json: config shown');
+  if (/buildpack|add-?ons?|formation/i.test(appjsonText)) pass('app.json: config shown'); else fail('app.json: no config shown: ' + appjsonText.slice(0, 200));
 
   // ── cliff.toml upgraded viewer (plugin id: cliff-toml) ──
   await openExample('cliff.toml');

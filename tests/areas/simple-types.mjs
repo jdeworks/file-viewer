@@ -3,7 +3,6 @@ export async function run(ctx) {
 
   // ── vCard (.vcf) ── parse contacts into cards (name, email, phone). ──
   // parentNode mode (QR code interactive feature, no iframe)
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.vcf');
   await page.waitForSelector('#previewHost .vcf-doc', { timeout: 12000 });
   await page.waitForSelector('#previewHost .vcf-card', { timeout: 8000 });
@@ -29,7 +28,6 @@ export async function run(ctx) {
   if (/\.csv$/.test(vcfDl.suggestedFilename())) pass('vCard → CSV download (' + vcfDl.suggestedFilename() + ')'); else fail('vcf→csv: ' + vcfDl.suggestedFilename());
 
   // ── Subtitles (.srt/.vtt) ── parse cues into a timecoded list. ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.srt');
   const subframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const subf = await frameOf('iframe.fv-preview-frame');
@@ -46,7 +44,6 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
 
   // ── GeoJSON map ── pure inline SVG, no tiles (zero network). ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.geojson');
   const geoframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const geof = await frameOf('iframe.fv-preview-frame');
@@ -74,7 +71,6 @@ export async function run(ctx) {
   if (/\.gpx$/.test(gpxDl.suggestedFilename())) pass('GeoJSON → GPX download (' + gpxDl.suggestedFilename() + ')'); else fail('geo→gpx: ' + gpxDl.suggestedFilename());
 
   // ── GPX track viewer ── canvas map, elevation profile, stats, metadata, and GeoJSON export. ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.gpx');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const gpxTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -112,7 +108,6 @@ export async function run(ctx) {
   if (/\.geojson$/.test(geojsonDl.suggestedFilename())) pass('GPX → GeoJSON download (' + geojsonDl.suggestedFilename() + ')'); else fail('gpx→geojson: ' + geojsonDl.suggestedFilename());
 
   // ── Ableton Live Set (.als) ── gzip XML decoded to project summary. ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.als');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const alsTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -132,7 +127,6 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]');
 
   // ── ID3 metadata ── an MP3's tags surface in the info drawer. ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.mp3');
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
   await page.click('#metaBtn');
@@ -143,7 +137,6 @@ export async function run(ctx) {
   await page.click('#metaDrawer [data-close]').catch(() => {});
 
   // ── Font specimen ── load the font via FontFace + render sample text in the parent pane. ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.ttf');
   await page.waitForSelector('#previewHost .font-doc', { timeout: 12000 });
   const fontTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -250,7 +243,6 @@ export async function run(ctx) {
 
   // ── JSONL / NDJSON viewer ── summary card + table columns + record filter panel. ──
   // JSONL now renders as a live parentNode (records + filter panel) in #previewHost, not an iframe.
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.jsonl');
   await page.waitForSelector('#previewHost .jsonl-qp .jsonl-preview', { timeout: 30000 });
   const jsonlTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -269,7 +261,6 @@ export async function run(ctx) {
   if (jsonlMatched >= 1) pass('JSONL filter keeps matching records (' + jsonlMatched + ')'); else fail('jsonl filter matched=' + jsonlMatched);
 
   // ── Bioinformatics viewer (FASTA / VCF) ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample gene sequences (FASTA)');
   const fastaf = await frameOf('iframe.fv-preview-frame');
   await fastaf.waitForSelector('.bio-preview', { timeout: 8000 });
@@ -281,7 +272,6 @@ export async function run(ctx) {
   const fastaStats = await fastaf.$eval('.bio-header', (e) => e.textContent);
   if (/3\s*sequences/i.test(fastaStats)) pass('FASTA sequence count shown in header'); else fail('fasta stats: ' + fastaStats.replace(/\s+/g, ' ').slice(0, 80));
 
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample variants (VCF)');
   const vcff2 = await frameOf('iframe.fv-preview-frame');
   await vcff2.waitForSelector('.bio-preview', { timeout: 8000 });
@@ -292,7 +282,6 @@ export async function run(ctx) {
   if (vcfBadge === 'VCF' && vcfVarRows.length >= 5) pass('VCF variants table shown with VCF badge'); else fail('vcf badge=' + vcfBadge + ' rows=' + vcfVarRows.length);
 
   // ── MusicXML music notation viewer ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Ode to Joy Theme (MusicXML)');
   await page.waitForSelector('#previewHost .mxml-preview', { timeout: 12000 });
   const mxmlTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -304,7 +293,6 @@ export async function run(ctx) {
   if (mxmlTreeNodes.length >= 2 && mxmlTreeNodes.some((p) => /violin/i.test(p)) && mxmlTreeNodes.some((p) => /piano/i.test(p))) pass('MusicXML instrumentation list shows parts'); else fail('mxml parts: ' + mxmlTreeNodes.join(', '));
 
   // ── OFX / QFX financial viewer (parentNode) ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.ofx');
   await page.waitForSelector('#previewHost .ofx-preview', { timeout: 8000 });
   const ofxTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -315,7 +303,6 @@ export async function run(ctx) {
   if (ofxRows >= 4) pass('OFX transaction table shows expected rows'); else fail('ofx txn rows: ' + ofxRows);
 
   // ── KiCad EDA PCB viewer ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('LED Blinker PCB (KiCad)');
   const kicadf = await frameOf('iframe.fv-preview-frame');
   await kicadf.waitForSelector('.kicad-preview', { timeout: 8000 });
@@ -329,7 +316,6 @@ export async function run(ctx) {
   if (/LED Blinker/i.test(kicadTitle)) pass('KiCad PCB title shown'); else fail('kicad title: ' + kicadTitle);
 
   // ── PostScript / EPS viewer ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Hello PostScript (EPS)');
   const psf = await frameOf('iframe.fv-preview-frame');
   await psf.waitForSelector('.ps-preview', { timeout: 8000 });
@@ -341,7 +327,6 @@ export async function run(ctx) {
   if (/Hello PostScript/i.test(psTitle)) pass('PostScript title from DSC comments shown'); else fail('ps table: ' + psTitle.slice(0, 100));
 
   // ── Steam ACF viewer (known-file plugin) ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Steam App Manifest (ACF)');
   await page.waitForSelector('#previewHost .steam-doc', { timeout: 12000 });
   const acfText = await page.$eval('#previewHost .steam-doc', (e) => e.textContent);
@@ -350,7 +335,6 @@ export async function run(ctx) {
   if (/480/.test(acfText)) pass('sample.acf: App ID shown'); else fail('acf appid: ' + acfText.slice(0, 300));
 
   // ── FITS astronomy image viewer ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Helix Nebula (FITS)');
   const fitsf = await frameOf('iframe.fv-preview-frame');
   await fitsf.waitForSelector('.fits-preview', { timeout: 8000 });
@@ -362,7 +346,6 @@ export async function run(ctx) {
   if (/NGC.?7293|Helix/i.test(fitsSubhead)) pass('FITS object name shown'); else fail('fits subhead: ' + fitsSubhead);
 
   // ── KML map viewer ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Silicon Valley Map (KML)');
   const kmlf = await frameOf('iframe.fv-preview-frame');
   await kmlf.waitForSelector('.kml-preview', { timeout: 8000 });
@@ -374,7 +357,6 @@ export async function run(ctx) {
   if (kmlRows >= 4) pass('KML placemark table rows rendered'); else fail('kml rows: ' + kmlRows);
 
   // ── ABC music notation viewer (parentNode) ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Folk Tunes (ABC)');
   await page.waitForSelector('#previewHost .abc-preview', { timeout: 8000 });
   const abcTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -385,7 +367,6 @@ export async function run(ctx) {
   if (/Scarborough/i.test(abcFirstTitle)) pass('ABC first tune title shown'); else fail('abc title: ' + abcFirstTitle);
 
   // ── HL7 health message viewer ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Patient Admission (HL7)');
   const hl7f = await frameOf('iframe.fv-preview-frame');
   await hl7f.waitForSelector('.hl7-preview', { timeout: 8000 });
@@ -397,7 +378,6 @@ export async function run(ctx) {
   if (hl7Segs >= 8) pass('HL7 segment table rows rendered'); else fail('hl7 segs: ' + hl7Segs);
 
   // ── Hydrogen drum machine viewer ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Demo Beat (Hydrogen)');
   const h2f = await frameOf('iframe.fv-preview-frame');
   await h2f.waitForSelector('.h2-preview', { timeout: 8000 });
@@ -409,7 +389,6 @@ export async function run(ctx) {
   if (h2Chips.length >= 4) pass('Hydrogen instrument chips shown'); else fail('h2 chips: ' + h2Chips.length);
 
   // ── Adobe Premiere .prproj viewer ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Short Film Project (Premiere)');
   const ppf = await frameOf('iframe.fv-preview-frame');
   await ppf.waitForSelector('.prproj-preview', { timeout: 10000 });
@@ -421,7 +400,6 @@ export async function run(ctx) {
   if (ppStats.length >= 2) pass('Premiere project stats shown'); else fail('prproj stats: ' + ppStats.length);
 
   // ── MT940 Bank Statement ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('MT940 bank statement (demo)');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const mt940f = await frameOf('iframe.fv-preview-frame');
@@ -433,7 +411,6 @@ export async function run(ctx) {
   if (/DE89|EUR|balance/i.test(mt940Text)) pass('MT940 account\/balance shown'); else fail('mt940 acct: ' + mt940Text.slice(0, 300));
 
   // ── GFF/GTF Genomic Features ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('GFF3 genome annotation (demo)');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const gfff = await frameOf('iframe.fv-preview-frame');
@@ -447,7 +424,6 @@ export async function run(ctx) {
 
   // ── Dockerfile viewer ──
   // Known-file enhancement takes over for Dockerfiles (returns parentNode with .kf-list, no iframe)
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Dockerfile');
   await page.waitForSelector('#previewHost .kf-list', { timeout: 12000 });
   const dfTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -458,7 +434,6 @@ export async function run(ctx) {
 
   // ── docker-compose viewer ──
   // Known-file enhancement takes over (returns parentNode with .kf-svc, no iframe)
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('docker-compose.yml');
   await page.waitForSelector('#previewHost .kf-svc', { timeout: 12000 });
   const dcTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -468,7 +443,6 @@ export async function run(ctx) {
   if (/web|api|db/i.test(dcText)) pass('docker-compose services shown'); else fail('dc services: ' + dcText.slice(0, 200));
 
   // ── SARIF security scan viewer ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('SARIF security scan results (demo)');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const srf = await frameOf('iframe.fv-preview-frame');
@@ -480,7 +454,6 @@ export async function run(ctx) {
   if (/error|warning/i.test(srText)) pass('SARIF findings shown'); else fail('sarif findings: ' + srText.slice(0, 200));
 
   // ── Protocol Buffer viewer ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Protocol Buffer IDL (demo)');
   await page.waitForSelector('#previewHost .proto-root', { timeout: 12000 });
   const protoTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -490,7 +463,6 @@ export async function run(ctx) {
   if (/message|UserService/i.test(protoText)) pass('proto messages and service shown'); else fail('proto content: ' + protoText.slice(0, 300));
 
   // ── Apache Thrift viewer ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Apache Thrift IDL (demo)');
   await page.waitForSelector('#previewHost .thrift-root', { timeout: 12000 });
   const thriftTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -500,7 +472,6 @@ export async function run(ctx) {
   if (/struct|UserService/i.test(thriftText)) pass('thrift structs and service shown'); else fail('thrift content: ' + thriftText.slice(0, 300));
 
   // ── secret.txt Easter egg — The Archivist lore file loads as plain text ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('secret.txt');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const secretf = await frameOf('iframe.fv-preview-frame');
@@ -509,7 +480,6 @@ export async function run(ctx) {
   if (/Archivist/i.test(secretText)) pass('secret.txt Easter egg loads as plain text with Archivist lore'); else fail('secret.txt text: ' + secretText.slice(0, 200));
 
   // ── RTF WYSIWYG editor (parentNode) ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.rtf');
   await page.waitForSelector('#previewHost .rtf-paper', { timeout: 12000 });
   const rtfTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -528,7 +498,6 @@ export async function run(ctx) {
   if (rtfColorInput) pass('RTF text color picker present'); else fail('rtf color picker missing');
 
   // ── SVG dual-pane viewer ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('example.svg');
   // SVG type: dual-pane (Monaco editor left, sandboxed iframe preview right) via parentNode
   const svgTypeId = await page.$eval('#typeSelect', (s) => s.value);
@@ -544,7 +513,6 @@ export async function run(ctx) {
   if (svgToolbar) pass('SVG toolbar present'); else fail('SVG toolbar not found');
 
   // ── Plain text: line count in metadata + preview word-wrap toggle ──
-  await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.txt');
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 30000 });
   // Metadata now reports Lines alongside Words/Characters.
