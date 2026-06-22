@@ -511,6 +511,22 @@ export async function run(ctx) {
   // The toolbar with Copy SVG button and dimensions badge should be present
   const svgToolbar = await page.$('.svg-toolbar');
   if (svgToolbar) pass('SVG toolbar present'); else fail('SVG toolbar not found');
+  // The SVG editor's Monaco theme must follow the IN-APP light/dark toggle
+  // (body.fv-dark / <html data-theme>), not the OS prefers-color-scheme. Flip to
+  // dark live → vs-dark; back to light → vs.
+  const hasSvgMonaco = await page.waitForSelector('#previewHost .monaco-editor', { timeout: 15000 }).then(() => true).catch(() => false);
+  if (hasSvgMonaco) {
+    const svgMonacoClass = () => page.$eval('#previewHost .monaco-editor', (el) => el.className).catch(() => '');
+    const svgLight = await svgMonacoClass();
+    await page.evaluate(() => { document.body.classList.add('fv-dark'); document.documentElement.setAttribute('data-theme', 'dark'); });
+    await page.waitForFunction(() => /vs-dark/.test(document.querySelector('#previewHost .monaco-editor')?.className || ''), null, { timeout: 4000 }).catch(() => {});
+    const svgDark = await svgMonacoClass();
+    await page.evaluate(() => { document.body.classList.remove('fv-dark'); document.documentElement.setAttribute('data-theme', 'light'); });
+    const relit = await page.waitForFunction(() => { const c = document.querySelector('#previewHost .monaco-editor')?.className || ''; return /\bvs\b/.test(c) && !/vs-dark/.test(c); }, null, { timeout: 4000 }).then(() => true).catch(() => false);
+    if (!/vs-dark/.test(svgLight) && /vs-dark/.test(svgDark) && relit) pass('SVG editor theme follows the in-app toggle (vs ↔ vs-dark), not the OS'); else fail('svg theme: ' + JSON.stringify({ svgLight, svgDark, relit }));
+  } else {
+    pass('SVG editor uses textarea fallback (CSS-themed) — Monaco theme test skipped');
+  }
 
   // ── Plain text: line count in metadata + preview word-wrap toggle ──
   await openExample('Sample.txt');

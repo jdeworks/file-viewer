@@ -6,23 +6,26 @@ Covers: PNG, JPG, WebP, BMP, AVIF, GIF, TIFF, HEIF/HEIC, ICO/CUR, SVG, Procreate
 
 ## Current state
 
-`docs/types/image/renderer.js` (~44 KB) is the shared raster editor. It activates for `image/png`, `image/jpeg`, and `image/webp` (`EDITABLE_MIME`). All other raster types (TIFF, HEIF, ICO, BMP, GIF) are **view-only** and rendered by their own sub-renderers.
+`docs/types/image/renderer.js` is the shared raster editor (split across sibling modules — see "Shared toolbar / modular note"). `EDITABLE_MIME` is now **PNG, JPEG, WebP, AVIF, BMP, GIF** (BMP/GIF re-encode to PNG; GIF edits the first frame). JXL decodes to a PNG canvas via `jxl-decode.js` and is editable through that. Other raster types (TIFF, HEIF, ICO, Procreate, Sketch, layered) are **view-only** sub-renderers.
 
-**Editing tools already shipped (PNG/JPG/WebP only):**
-- Pencil / free-draw with colour + size picker, overlay canvas committed on stroke end
-- Eraser (destination-out composite, preloads current image into overlay)
-- Undo stack — command-pattern blobs; each destructive operation calls `pushUndo()` before writing
-- Text overlay — drag-to-place ghost div, commit bakes text onto canvas at fractional image coordinates; font family, size, colour
-- Rotate 90 left/right, flip horizontal/vertical — `applyTransform()` helper, creates new canvas
-- Brightness / contrast / saturation sliders — live CSS-filter preview, baked via `ctx.filter` on Apply
-- Background removal — flood-fill colour picker, tolerance slider, `destination-out` fill, saves as PNG
-- Crop — overlay rect with drag handles, applies crop to a new canvas
-- Resize — width/height inputs with optional aspect-lock
-- Export format selector — PNG, JPEG, WebP, AVIF (browser-native via `canvas.toBlob`)
-- ASCII art view (separate toggle, `ascii-converter.js`)
-- `ctx.onBinaryEdit` callback fires after every destructive operation so the host shell can track dirty state
+Opens in plain **view mode**; the editing toolbar is hidden until you press **Edit**. ASCII + Edit are stacked toggle buttons anchored left by the zoom controls (`doc.html` `.imgv-mode-col`). The toolbar is grouped into **tabs** (`edit-tabs.js`): Common / Draw / Text / Adjust / Size / Background — each tool's button is in Common AND (linked via `data-link` proxy) its own tab, which holds the fine-tuning.
 
-**SVG** (`docs/types/image/svg/renderer.js`): Monaco text editor left pane + sandboxed iframe live preview right pane. Script tags and `on*` attributes stripped before iframe injection. Copy-SVG button.
+**Editing tools shipped (the full `EDITABLE_MIME` set):**
+- Pencil / eraser free-draw (colour + size); overlay canvas committed on stroke end
+- **Fill bucket** (`fill.js`): seed / connected-shade / **Sobel edge-stop region** modes, Euclidean or **perceptual (redmean)** distance, tolerance (default 12), **feathered** edges
+- Undo / redo — blob snapshots via `editor-core.js`; **Ctrl+Z / Ctrl+Y** routed through a global keydown router (`edit-undo-key.js`) that reaches the active editor even when focus is on a slider
+- Text overlay — drag-to-place ghost, bakes at fractional image coords; font / size / colour
+- Rotate 90 L/R, flip H/V (`edit-geometry.js`)
+- **Crop** (drag rect) and its opposite, **Expand** — pad N px around the image without resizing, transparent (PNG) or solid fill
+- **Resize** — W/H in px or %, aspect-lock, resample quality
+- Brightness / contrast / saturation / **hue** sliders — live CSS-filter preview, baked on Apply (`edit-filters.js`)
+- **Background removal** (`edit-bg.js`) — sample colour, tolerance flood to transparent, saves PNG; plus a **Checkerboard** transparency-display toggle
+- **Compare** original vs current (split / overlay / diff) — `compare-view.js`
+- Export format selector — PNG / JPEG / WebP / AVIF (`canvas.toBlob`)
+- ASCII art studio (separate toggle, `ascii/` engine)
+- `ctx.onBinaryEdit` fires after every destructive op so the host tracks dirty state
+
+**SVG** (`svg/renderer.js`): Monaco editor (left) + sandboxed iframe live preview (right); scripts / `on*` attrs stripped before injection; Copy-SVG. Monaco theme **follows the in-app light/dark toggle** (`body.fv-dark` / `<html data-theme>`), updating live — not the OS `prefers-color-scheme`.
 
 **HEIF** (`heif/renderer.js`): libheif.js (~800 KB) decodes to canvas. Multi-image thumbnail strip with click-to-select. Download-as-PNG only.
 
@@ -42,7 +45,7 @@ Covers: PNG, JPG, WebP, BMP, AVIF, GIF, TIFF, HEIF/HEIC, ICO/CUR, SVG, Procreate
 
 ## Viewer enhancements (no write-back needed)
 
-- **Extend EDITABLE_MIME to BMP/GIF** — `image/bmp` and `image/gif` decode cleanly in all browsers via `<img>` / `createImageBitmap`; adding them to `EDITABLE_MIME` gives the full editor toolbar for free. For GIF only the first frame edits correctly — add a note. — S
+- ✅ **SHIPPED — EDITABLE_MIME now includes BMP/GIF** (re-encode to PNG; GIF edits first frame), plus AVIF and JXL-via-PNG.
 
 - **TIFF cross-browser decode** — Integrate `UTIF.js` (~60 KB, MIT, already used in some viewers) or `tiff.js`. Decode to ImageData, push to canvas, hand off to the shared raster editor toolbar. Replace the "metadata only" fallback path in `tiff/renderer.js`. — M, lib: UTIF.js or tiff.js
 
@@ -74,12 +77,11 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
 
 - **Shape tools** — Rectangle, ellipse, line, arrow, polygon overlays. Draw as a preview ghost during drag (redraw on each `pointermove`), commit on `pointerup`. Fit naturally alongside the pencil/eraser toggle. Reuses `applyTransform` pattern. Arrow = line + filled arrowhead at endpoint. — M
 
-- **Fill bucket** — Flood-fill from a clicked pixel using `getImageData` / `putImageData`. Classic 4-connected BFS on a flat `Uint8ClampedArray`. Tolerance control already exists (the BG-removal slider can be repurposed). Merge into the active layer if layers are present. — M (no lib)
+- ✅ **SHIPPED — Fill bucket** (`fill.js`): seed / connected-shade / Sobel edge-stop region modes, Euclidean or perceptual (redmean) distance, feather. Reusable BFS + Sobel already here for the magic-wand selection below.
 
-- **Selection tools** — Rectangular marquee (already partially present as the crop rect; refactor to produce a selection mask instead of cropping), elliptical marquee, lasso (freehand polygon). Operations on selection: cut, copy, fill, nudge. Selection mask stored as a separate `ImageData` alpha channel. For magic wand / flood-select use the same BFS as fill bucket but write to the mask instead. — L, optional lib: OpenCV.js for contour-based selection refinement (~3 MB, heavy)
+- ⭐ **Selection tools (TOP GAP)** — Rectangular marquee (refactor the crop rect to produce a selection mask instead of cropping), elliptical marquee, lasso (freehand polygon), and **magic wand** (reuse `fill.js`'s seed/region BFS but write to a mask instead of painting). Operations on selection: cut, copy, fill, nudge. Selection mask = a separate `ImageData` alpha channel. — L, optional lib: OpenCV.js for contour refinement (~3 MB, heavy)
 
-- **Color adjustments panel** — Extend the current brightness/contrast/saturation sliders with:
-  - Hue rotation (`ctx.filter: hue-rotate(Xdeg)`) — trivial, same bake pattern as existing filters
+- **Color adjustments panel** — brightness/contrast/saturation/**hue** sliders already shipped (`edit-filters.js`). Still to add:
   - Levels (black point / white point / gamma) — remap pixel values via a lookup table (256-entry Uint8ClampedArray), applied with `getImageData`/`putImageData`
   - Curves (interactive cubic Bezier per channel) — build a 256-entry LUT from four control points, apply via `putImageData`. UI: small `<canvas>` with draggable handles, no lib needed
   - Sepia / greyscale / invert as one-click presets — all achievable with `ctx.filter`
