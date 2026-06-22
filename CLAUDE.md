@@ -4,6 +4,62 @@ A static, offline-first file viewer hosted on GitHub Pages. `docs/` is the web r
 Native ES modules, **no app-level bundler**, **zero off-origin at runtime** (every library is
 vendored into `docs/vendor/`; the running page never fetches a CDN).
 
+## Worktree lanes — orient before any work (every session)
+
+This repo is developed across parallel LANES so concurrent agents don't collide. Each lane is
+an isolated git worktree under `.claude/worktrees/`; the GENERAL lane is the main checkout on
+`dev`. The FIRST thing every session does — before any task work — is establish which lane it
+is in and route the user to the right one.
+
+Step 1 — identify your lane from cwd:
+- cwd = `/home/jens/repos/file-viewer` → you are THE GENERAL (main checkout, branch `dev`).
+  Lane = cross-cutting/global only: load-time, bundling, service worker, import graph, build
+  scripts, shared core, this CLAUDE.md, multi-type changes.
+- cwd = `/home/jens/repos/file-viewer/.claude/worktrees/<name>` → you are the <name> lane;
+  edit only that lane's owned paths (registry below).
+- cwd under `.claude/worktrees/agent-*` → ephemeral subagent sandbox (auto-created with
+  `isolation: worktree`, auto-cleaned). Never a destination.
+
+Step 2 — route before working:
+- If you are THE GENERAL and the user has not already named a lane, ASK which lane this task
+  belongs to — offer the real lanes (bit-foundry/metagame, image/ascii-art) or "general
+  cross-cutting". If they pick a worktree lane, TELL them to `cd .claude/worktrees/<name>` and
+  relaunch (then run that worktree's setup prompt), and do NOT start the lane work from main.
+- If the task is genuinely cross-cutting or a one-off → stay in general and do it here.
+- If you are the general and the task is a focused stream spanning multiple commits (a game, a
+  viewer family, an editor subsystem) that has no lane yet → offer to create one (below).
+- If you are in a worktree and the task is outside your lane → say so; don't reach across.
+
+### Lane registry (keep current: add a row on create, remove on teardown)
+| Lane        | Worktree dir                            | Branch                         | Owns (edit only here) |
+|-------------|-----------------------------------------|--------------------------------|-----------------------|
+| general     | `/home/jens/repos/file-viewer`          | `dev`                          | cross-cutting: load/bundle/SW/import-graph/build/core/CLAUDE.md |
+| metagame    | `.claude/worktrees/metagame-bitfoundry` | `worktree-metagame-bitfoundry` | `docs/games/metagame/**`, `docs/assets/games.css` |
+| image/ascii | `.claude/worktrees/ascii-art`           | `worktree-ascii-art`           | `docs/types/image/**` (image editor + ASCII studio) |
+
+### Creating a new worktree (general only)
+From the main checkout:
+
+    git worktree add .claude/worktrees/<name> -b worktree-<name>
+
+- NEST under `.claude/worktrees/` so Node resolves `node_modules` upward from main (a worktree
+  elsewhere needs its own `npm install`).
+- Branch = `worktree-<name>`. Add a registry row naming the paths it owns.
+- Launch Claude from the new dir and run the one-time setup (memory symlink + lane-guard hook).
+
+### Merge back and forth (any lane → dev) — only when the user says so
+commit on the lane branch → `git fetch origin` → merge `origin/dev` in (only
+`docs/asset-manifest.json` should conflict; resolve by regenerating with
+`node scripts/gen-asset-manifest.mjs`, never hand-edit) → `git push origin HEAD:dev`.
+
+### Cleaning up a finished lane (general only), once fully merged to dev
+
+    git worktree remove .claude/worktrees/<name>    # --force if it holds untracked files
+    git branch -D worktree-<name>
+
+Then drop its registry row, and reap any hung smoke subprocesses whose cwd was the removed dir
+(they survive removal and pin CPU). Optionally remove its `~/.claude/projects/` memory symlink.
+
 ## Core principle: author modular, ship bundled
 
 Two competing constraints shape every structural decision:
