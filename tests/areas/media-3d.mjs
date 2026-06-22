@@ -484,6 +484,27 @@ export async function run(ctx) {
     toolsShown: getComputedStyle(document.querySelector('#previewHost .imgv-edit-tools')).display !== 'none',
   }));
   if (cmpRestored.gone && cmpRestored.imgShown && cmpRestored.toolsShown) pass('compare closes + restores image interaction'); else fail('compare close: ' + JSON.stringify(cmpRestored));
+  // ── Adv Edit (vector layers) ── lazy-loads Konva and overlays re-editable TEXT
+  // objects (bg colour + opacity, multiple); leaving flattens onto the pixel base.
+  await page.click('#previewHost .imgv-adv-btn');
+  await page.waitForSelector('#previewHost .imgv-adv-stage canvas', { timeout: 15000 });
+  const advUp = await page.evaluate(() => ({
+    stage: !!document.querySelector('#previewHost .imgv-adv-stage canvas'),
+    toolbar: getComputedStyle(document.querySelector('#previewHost .imgv-adv-bar')).display !== 'none',
+    konva: !!window.Konva,
+  }));
+  if (advUp.stage && advUp.toolbar && advUp.konva) pass('Adv Edit: Konva lazy-loads + stage/toolbar mount'); else fail('adv mount: ' + JSON.stringify(advUp));
+  await page.fill('#previewHost .imgv-adv-text', 'Layer A');
+  await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-adv-bgop'); s.value = '60'; s.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.click('#previewHost .imgv-adv-add');   // a second text object
+  await page.click('#previewHost .imgv-adv-btn');   // leave Adv → flatten both labels onto the base
+  await page.waitForFunction(() => window.__fv.state.binaryEdit?.dirty === true, null, { timeout: 8000 }).catch(() => {});
+  const advFlat = await page.evaluate(async () => {
+    const be = window.__fv.state.binaryEdit; if (!be) return { dirty: false };
+    const bytes = await be.getBytes();
+    return { dirty: true, len: bytes.length, sig: Array.from(bytes.slice(0, 4)).join(','), stageGone: !document.querySelector('#previewHost .imgv-adv-stage') };
+  });
+  if (advFlat.dirty && advFlat.len > 1000 && advFlat.sig === '137,80,78,71' && advFlat.stageGone) pass('Adv Edit: leaving flattens text layers onto the image (dirty PNG)'); else fail('adv flatten: ' + JSON.stringify(advFlat));
   // Image export (loadExports hook): menu offers PNG/JPEG/WebP, and a conversion actually downloads.
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
