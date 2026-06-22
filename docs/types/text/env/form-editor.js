@@ -68,6 +68,67 @@ export class EnvFormEditor {
 
   _notify() { this._onChange?.(serializeEnv(this._entries)); }
 
+  // ── Selection / scope ──
+  // Indices to operate on: the selected (entry._sel) entries if any are selected, else all entries.
+  _scopeIndices() {
+    const sel = [];
+    this._entries.forEach((e, i) => { if (e._sel) sel.push(i); });
+    if (sel.length) return sel;
+    return this._entries.map((_, i) => i);
+  }
+
+  // Sort the scoped entries in place: gather them, sort by key (vars) / text (comments) / '' (blanks),
+  // then write them back into the same slots they occupied. Non-scoped rows stay put.
+  _sortScope() {
+    const idx = this._scopeIndices();
+    const sortKey = (e) => (e.type === 'var' ? (e.key || '') : e.type === 'comment' ? (e.text || '') : '');
+    const sorted = idx.map((i) => this._entries[i]).sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+    this._pushHistory();
+    idx.forEach((slot, n) => { this._entries[slot] = sorted[n]; });
+    this._render(); this._notify();
+  }
+
+  // Trim leading/trailing whitespace from scoped var keys+values and comment text.
+  _trimScope() {
+    this._pushHistory();
+    for (const i of this._scopeIndices()) {
+      const e = this._entries[i];
+      if (e.type === 'var') { e.key = (e.key || '').trim(); e.value = (e.value || '').trim(); }
+      else if (e.type === 'comment') { e.text = (e.text || '').trim(); }
+    }
+    this._render(); this._notify();
+  }
+
+  // Remove later var entries whose key already appeared (keep first). Uses full order to decide
+  // "already appeared", but only removes entries that are in scope.
+  _dedupScope() {
+    const scope = new Set(this._scopeIndices());
+    const seen = new Set();
+    const keep = [];
+    this._entries.forEach((e, i) => {
+      if (e.type === 'var') {
+        const k = e.key || '';
+        if (seen.has(k)) { if (scope.has(i)) return; /* drop */ }
+        else seen.add(k);
+      }
+      keep.push(e);
+    });
+    if (keep.length === this._entries.length) return; // nothing removed
+    this._pushHistory();
+    this._entries = keep;
+    this._render(); this._notify();
+  }
+
+  // Move the entry at `from` to land at index `to` (drop target's slot).
+  _moveEntry(from, to) {
+    if (from === to || from < 0 || to < 0) return;
+    this._pushHistory();
+    const [moved] = this._entries.splice(from, 1);
+    if (from < to) to -= 1; // splice shifted indices left
+    this._entries.splice(to, 0, moved);
+    this._render(); this._notify();
+  }
+
   // ── Undo / redo ──
   _snapshot() { return JSON.stringify(this._entries); }
   _pushHistory() { this._undo.push(this._snapshot()); if (this._undo.length > 100) this._undo.shift(); this._redo = []; }
@@ -119,12 +180,63 @@ export class EnvFormEditor {
     redoBtn.type = 'button'; redoBtn.className = 'env-btn'; redoBtn.textContent = '↷ Redo';
     redoBtn.title = 'Redo (Ctrl+Y)'; redoBtn.disabled = !this._redo.length;
     redoBtn.addEventListener('click', () => this._redoOp());
-    toolbar.append(addBtn, undoBtn, redoBtn);
+
+    // Sort / Trim / Dedup — act on the selected rows, or ALL rows if none are selected.
+    const anySel = this._entries.some((e) => e._sel);
+    const scopeNote = anySel ? ' selected rows' : ' all rows';
+    const sortBtn = document.createElement('button');
+    sortBtn.type = 'button'; sortBtn.className = 'env-btn'; sortBtn.textContent = 'Sort';
+    sortBtn.title = 'Sort' + scopeNote + ' by key (in place)';
+    sortBtn.addEventListener('click', () => this._sortScope());
+    const trimBtn = document.createElement('button');
+    trimBtn.type = 'button'; trimBtn.className = 'env-btn'; trimBtn.textContent = 'Trim';
+    trimBtn.title = 'Trim whitespace from' + scopeNote;
+    trimBtn.addEventListener('click', () => this._trimScope());
+    const dedupBtn = document.createElement('button');
+    dedupBtn.type = 'button'; dedupBtn.className = 'env-btn'; dedupBtn.textContent = 'Dedup';
+    dedupBtn.title = 'Remove duplicate keys from' + scopeNote + ' (keep first)';
+    dedupBtn.addEventListener('click', () => this._dedupScope());
+
+    toolbar.append(addBtn, undoBtn, redoBtn, sortBtn, trimBtn, dedupBtn);
     wrapper.append(toolbar);
 
     // Rows
     const list = document.createElement('div');
     list.className = 'env-list';
+
+    // Decorate a non-blank row with a drag handle (reorder) + a selection checkbox, and wire
+    // HTML5 drag/drop so dropping onto a row moves the dragged entry into that row's slot.
+    const decorate = (row, entry, i) => {
+      row.draggable = true;
+      if (entry._sel) row.classList.add('env-selected');
+      const handle = document.createElement('span');
+      handle.className = 'env-drag'; handle.textContent = '⠿'; handle.title = 'Drag to reorder';
+      const check = document.createElement('input');
+      check.type = 'checkbox'; check.className = 'env-check'; check.checked = !!entry._sel;
+      check.title = 'Select row';
+      check.addEventListener('change', () => {
+        this._entries[i]._sel = check.checked;
+        row.classList.toggle('env-selected', check.checked);
+        // Re-render so the toolbar tooltips/scope reflect the new selection.
+        this._render();
+      });
+      row.addEventListener('dragstart', (e) => {
+        // Don't hijack drags that start inside an editable input (lets users select text normally).
+        if (e.target instanceof HTMLInputElement) { e.preventDefault(); return; }
+        this._dragFrom = i; row.classList.add('env-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', String(i)); } catch { /* ignore */ }
+      });
+      row.addEventListener('dragend', () => { row.classList.remove('env-dragging'); this._dragFrom = null; });
+      row.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; row.classList.add('env-dragover'); });
+      row.addEventListener('dragleave', () => row.classList.remove('env-dragover'));
+      row.addEventListener('drop', (e) => {
+        e.preventDefault(); row.classList.remove('env-dragover');
+        const from = this._dragFrom;
+        if (from != null) this._moveEntry(from, i);
+      });
+      row.prepend(handle, check);
+    };
 
     this._entries.forEach((entry, i) => {
       const row = document.createElement('div');
@@ -159,6 +271,7 @@ export class EnvFormEditor {
         delBtn.type = 'button'; delBtn.className = 'env-del'; delBtn.title = 'Delete line'; delBtn.textContent = '×';
         delBtn.addEventListener('click', () => { this._pushHistory(); this._entries.splice(i, 1); this._render(); this._notify(); });
         row.append(text, delBtn);
+        decorate(row, entry, i);
       } else {
         // var entry
         row.className = 'env-row env-var-row';
@@ -207,6 +320,7 @@ export class EnvFormEditor {
           row.append(eyeBtn);
         }
         row.append(delBtn);
+        decorate(row, entry, i);
       }
       list.append(row);
     });

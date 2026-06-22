@@ -409,6 +409,46 @@ export async function run(ctx) {
   const vBack = await page.$$eval('#envFormHost .env-var-row', (e) => e.length);
   if (vCommented === v0 - 1 && vBack === v0) pass('.env form comment-out → un-comment round-trip (' + v0 + '→' + vCommented + '→' + vBack + ')'); else fail('env comment round-trip: ' + v0 + '/' + vCommented + '/' + vBack);
 
+  // ── .env form: Sort / Trim / Dedup toolbar + selection + drag reorder ──
+  const utilBits = await page.evaluate(() => ({
+    sort: !!document.querySelector('#envFormHost .env-btn[title^="Sort"]'),
+    trim: !!document.querySelector('#envFormHost .env-btn[title^="Trim"]'),
+    dedup: !!document.querySelector('#envFormHost .env-btn[title^="Remove duplicate"]'),
+    checks: document.querySelectorAll('#envFormHost .env-check').length,
+    handles: document.querySelectorAll('#envFormHost .env-drag').length,
+    draggable: [...document.querySelectorAll('#envFormHost .env-var-row')].every((r) => r.draggable === true),
+  }));
+  if (utilBits.sort && utilBits.trim && utilBits.dedup) pass('.env form has Sort/Trim/Dedup buttons'); else fail('env form util buttons: ' + JSON.stringify(utilBits));
+  if (utilBits.checks > 0 && utilBits.handles > 0) pass('.env form rows have selection checkboxes + drag handles'); else fail('env form check/handle missing: ' + JSON.stringify(utilBits));
+  if (utilBits.draggable) pass('.env form var rows are draggable'); else fail('env form rows not draggable');
+
+  // Sort ALL keys (no selection) — keys should come back in ascending order.
+  const keysBefore = await page.$$eval('#envFormHost .env-key', (e) => e.map((i) => i.value));
+  await page.evaluate(() => document.querySelector('#envFormHost .env-btn[title^="Sort"]').click());
+  const keysAfter = await page.$$eval('#envFormHost .env-key', (e) => e.map((i) => i.value));
+  const expectSorted = [...keysBefore].sort((a, b) => a.localeCompare(b));
+  const sortedOk = JSON.stringify(keysAfter) === JSON.stringify(expectSorted) && JSON.stringify(keysBefore) !== JSON.stringify(keysAfter);
+  if (sortedOk) pass('.env form Sort orders all keys A→Z'); else fail('env sort: ' + JSON.stringify(keysAfter));
+  // Undo the sort to restore original order (verifies Sort is an undoable mutation).
+  await page.evaluate(() => document.querySelector('#envFormHost .env-btn[title^="Undo"]').click());
+  const keysUndone = await page.$$eval('#envFormHost .env-key', (e) => e.map((i) => i.value));
+  if (JSON.stringify(keysUndone) === JSON.stringify(keysBefore)) pass('.env form Sort is undoable'); else fail('env sort undo: ' + JSON.stringify(keysUndone));
+
+  // Dedup: add a row, type a duplicate of the first key into it, then Dedup ALL → row removed.
+  const dCount0 = await page.$$eval('#envFormHost .env-var-row', (e) => e.length);
+  const firstKey = await page.$eval('#envFormHost .env-key', (e) => e.value);
+  await page.evaluate(() => document.querySelector('#envFormHost .env-btn').click()); // + Add variable
+  const dCountAdded = await page.$$eval('#envFormHost .env-var-row', (e) => e.length);
+  // Type the duplicate key into the newly-added (last) key input; fire input so _entries updates.
+  await page.evaluate((k) => {
+    const keys = document.querySelectorAll('#envFormHost .env-key');
+    const inp = keys[keys.length - 1];
+    inp.value = k; inp.dispatchEvent(new Event('input', { bubbles: true }));
+  }, firstKey);
+  await page.evaluate(() => document.querySelector('#envFormHost .env-btn[title^="Remove duplicate"]').click());
+  const dCountDedup = await page.$$eval('#envFormHost .env-var-row', (e) => e.length);
+  if (dCountAdded === dCount0 + 1 && dCountDedup === dCount0) pass('.env form Dedup removes duplicate keys (' + dCount0 + '→' + dCountAdded + '→' + dCountDedup + ')'); else fail('env dedup: ' + dCount0 + '/' + dCountAdded + '/' + dCountDedup);
+
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('ssh-config');
   await page.waitForSelector('#previewHost .sc-root', { timeout: 12000 });
