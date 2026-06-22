@@ -77,8 +77,25 @@ Headless-Chromium smoke tests live in `tests/areas/*.mjs`, each exporting `run(c
   area in a fresh process. `check.sh` runs both before a push.
 - **Cost model:** the dominant test cost is full SPA reloads (`page.goto` re-parses Monaco's 13 MB
   bundle). The harness `openExample()` therefore reuses one page load and only reloads every ~50
-  opens to flush accumulated state. Don't reintroduce a per-test `page.goto` — let `openExample`
-  manage isolation.
+  opens to flush accumulated state. Prefer `openExample` — let it manage isolation. **Exception:**
+  areas that open WebGL/emulator/wasm renderers (binary-types, media-3d, emulators) legitimately keep
+  a per-test `page.goto(origin)`: reusing one page across dozens of heavy opens accumulates WebGL
+  contexts (hard browser cap ~16), buffers, and document listeners → context-loss / OOM / double-fire
+  flakiness that a reload avoids. So: light/text areas → `openExample`; heavy/binary areas → `goto`.
+  **Caveat from the 2026-06-22 migration:** even a "light" area can hide stateful sub-tests that
+  silently relied on per-test `goto` — e.g. one that injects a dirty editor (`rawview.setValue`) or
+  toggles to raw view mode bleeds into the NEXT open (which `openExample` does not fully reset). When
+  converting `goto`→`openExample`, run the area BOTH alone and after another area and confirm it's
+  green (the every-50 reload can mask a bleed depending on `openCount` position). `simple-types` was
+  migrated (green alone + combined); `structured-types` was reverted for exactly this reason.
+- **A failing assertion is ambiguous — analyze BOTH ends before fixing.** The product code may be
+  wrong, OR the assertion may be brittle/wrong. Don't reflexively change the renderer to satisfy a
+  test, nor blindly relax a test to make it pass. Read the rendered output and the assertion together,
+  decide which side is actually correct, and fix that side. (Worked example, 2026-06-22: a batch of
+  known-files "content" fails — most were real renderer bugs, e.g. `intake.parsed` never populated,
+  but `app.json` was a brittle test doing case-sensitive `.includes('buildpack')` against the
+  renderer's correct capitalized "Buildpacks" heading → the test was the bug. A case-insensitive
+  probe even *masked* it; only the real area run caught it.)
 - Tests must be self-contained (no dependency on local-only files).
 
 ## Hard runtime rules
