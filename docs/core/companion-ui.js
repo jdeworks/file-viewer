@@ -294,33 +294,73 @@ function pickCompanionPath(paths) {
   });
 }
 
+// The companion is an opt-in LOCAL server — a meaningful change from the browser-only model — so
+// the download is gated behind this informational panel: what it does, exactly what network access
+// it opens, every endpoint and what flows through it, the source link, and a checksum reminder,
+// and ONLY THEN the download link. (Transparency requirement; mirrors companion/README.md.)
+const COMPANION_ENDPOINTS = [
+  ['GET /ping', 'nothing sent; version + capabilities back'],
+  ['GET /watched-paths', 'nothing sent; your configured folder paths back'],
+  ['POST/DELETE /watched-paths', 'a folder path to add/remove'],
+  ['GET /find-file', 'filename + size (no content); matching absolute paths back'],
+  ['GET /find-folder', 'a relative path; matching root folders back'],
+  ['GET /file', 'an absolute path; file bytes back'],
+  ['POST /file', 'an absolute path + new bytes (save-back)'],
+  ['DELETE /file', 'an absolute path (delete on disk)'],
+  ['GET /files', 'a folder path; its directory listing back'],
+  ['GET /watch', 'an absolute path; change/delete events streamed (SSE)'],
+];
+
 function appendCompanionDownloadPanel(panel) {
   const info = document.createElement('div');
   info.className = 'companion-download';
 
   const title = document.createElement('div');
   title.className = 'companion-folders-label';
-  title.textContent = 'Download Companion';
+  title.textContent = 'Get the Companion';
 
   const description = document.createElement('p');
-  description.textContent = 'The Companion is a local app that lets this viewer save changed files back to disk.';
+  description.textContent = 'The Companion is an optional local app that lets this viewer save (and delete) the files you open, back to disk. The viewer works fully without it.';
+
+  // What network access it opens — the key disclosure.
+  const net = document.createElement('p');
+  net.className = 'companion-net';
+  net.innerHTML = 'It runs a local server on <code>127.0.0.1:7700</code> only — never any external network. Requests are CORS-locked to localhost and this site, and every file action is restricted to folders you explicitly add. Mutating actions also require a per-session token.';
+
+  // Endpoint table — exactly what flows through the companion.
+  const tableLabel = document.createElement('p');
+  tableLabel.className = 'companion-table-label';
+  tableLabel.textContent = 'Every request it can make (inspect them in your Network tab):';
+  const table = document.createElement('table');
+  table.className = 'companion-endpoints';
+  for (const [ep, flow] of COMPANION_ENDPOINTS) {
+    const tr = document.createElement('tr');
+    const tdEp = document.createElement('td');
+    tdEp.innerHTML = `<code>${ep}</code>`;
+    const tdFlow = document.createElement('td');
+    tdFlow.textContent = flow;
+    tr.append(tdEp, tdFlow);
+    table.appendChild(tr);
+  }
 
   const source = document.createElement('a');
   source.href = 'https://github.com/jdeworks/file-viewer/tree/dev/companion';
   source.target = '_blank';
   source.rel = 'noopener noreferrer';
-  source.textContent = 'View companion source code';
+  source.textContent = 'Review the companion source code →';
 
   const checksum = document.createElement('p');
-  checksum.textContent = 'Before running a binary, compare its SHA-256 checksum on the release page.';
+  checksum.className = 'companion-checksum';
+  checksum.textContent = 'Before running a downloaded binary, compare its SHA-256 against the checksum on the release page (or build from source above).';
 
   const download = document.createElement('a');
+  download.className = 'companion-download-btn';
   download.href = 'https://github.com/jdeworks/file-viewer/releases';
   download.target = '_blank';
   download.rel = 'noopener noreferrer';
   download.textContent = 'Download from GitHub Releases';
 
-  info.append(title, description, source, checksum, download);
+  info.append(title, description, net, tableLabel, table, source, checksum, download);
   panel.appendChild(info);
 }
 

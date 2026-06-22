@@ -1,0 +1,25 @@
+[package]
+name = "file-viewer-companion-desktop"
+version = "0.1.0"
+edition = "2021"
+description = "Tray wrapper around the file-viewer companion server (tray + autostart + native folder picker)"
+
+# Standalone workspace: kept OUT of companion/Cargo.toml's workspace so the server's
+# `cargo build/test --offline` loop never has to compile the heavy Tauri/wry graph.
+[workspace]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-autostart = "2"
+file-viewer-companion = { path = "../server" }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
+axum = "0.7"
+uuid = { version = "1", features = ["v4"] }
+
+[[bin]]
+name = "file-viewer-companion-desktop"
+path = "src/main.rs"
