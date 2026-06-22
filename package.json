@@ -28,6 +28,10 @@
     "xlsx": "0.18.5"
   },
   "scripts": {
-    "serve": "python3 -m http.server 8097 --directory docs"
+    "serve": "python3 -m http.server 8097 --directory docs",
+    "companion:build": "cargo build --offline --manifest-path companion/Cargo.toml",
+    "companion:run": "cargo run --offline --manifest-path companion/Cargo.toml",
+    "companion:test": "cargo test --offline --manifest-path companion/Cargo.toml",
+    "test:companion": "node tests/companion-e2e.mjs"
   }
 }
