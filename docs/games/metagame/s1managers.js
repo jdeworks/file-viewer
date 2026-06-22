@@ -29,6 +29,19 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
       + '<small class="mg-mgr-ongoing">ongoing ' + toDisplay(fromNumber(ongoing)) + '/s</small>';
   }
 
+  // How many levels a Fire click sheds, given the selected buy count ("max" = all). Shown in the
+  // button label so the action matches the ×1/×10/×100/MAX selector the player picked.
+  function fireLevels(level) {
+    const sel = mgrCountFor();
+    return sel === 'max' ? level : Math.min(level, sel);
+  }
+  function fireBtnLabel(level) {
+    const sel = mgrCountFor();
+    if (sel === 'max') return 'Fire all';
+    const n = Math.min(level, sel);
+    return n > 1 ? 'Fire ×' + n : 'Fire';
+  }
+
   function mgrState(id) {
     state.managers = state.managers || {};
     return (state.managers[id] = state.managers[id] || { level: 0, paused: false, lastFire: 0 });
@@ -58,7 +71,7 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
       + (ms.paused ? '<span class="mg-mgr-paused">⏸ Paused (out of bits)</span>' : '')
       + '<span class="mg-mgr-actions">'
       + '<button class="mg-mgr-lvl" type="button" data-id="' + mgr.id + '" data-act="lvl">' + actionBtnHtml(mgr) + '</button>'
-      + '<button class="mg-mgr-fire" type="button" data-id="' + mgr.id + '" data-act="fire">Fire</button>'
+      + '<button class="mg-mgr-fire" type="button" data-id="' + mgr.id + '" data-act="fire">' + fireBtnLabel(ms.level) + '</button>'
       + '</span>'
       + '</div>';
   }
@@ -160,7 +173,9 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
   function mgrAction(mgr, act) {
     const ms = mgrState(mgr.id);
     if (act === 'fire') {
-      ms.level = 0; ms.paused = false; ms.lastFire = 0;
+      const dec = fireLevels(ms.level);
+      ms.level = Math.max(0, ms.level - dec);
+      if (ms.level === 0) { ms.paused = false; ms.lastFire = 0; }
       save(state);
       renderPanel();
       paintStats();

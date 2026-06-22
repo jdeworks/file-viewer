@@ -84,7 +84,12 @@
 /* g2048-moving board animation removed; tiles use per-element FLIP transform instead. */
 
 /* Bit Foundry (meta-game incremental core). */
-.mg-wrap { display: flex; flex-direction: column; gap: 14px; width: min(420px, 100%); }
+/* Text in the metagame is never selectable by default — fast clicking on labels/rows must not
+   start a text selection. Real editable fields (boss cheat-editors) re-enable selection below. */
+.mg-wrap { display: flex; flex-direction: column; gap: 14px; width: min(420px, 100%);
+  user-select: none; -webkit-user-select: none; }
+.mg-wrap :is(input, textarea, [contenteditable="true"], .monaco-editor) {
+  user-select: text; -webkit-user-select: text; }
 .mg-head { text-align: center; }
 .mg-bits { font: 700 28px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .mg-rate { color: var(--fg-2); font-size: 13px; margin-top: 2px; }
