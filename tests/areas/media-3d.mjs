@@ -497,6 +497,8 @@ export async function run(ctx) {
   await page.fill('#previewHost .imgv-adv-text', 'Layer A');
   await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-adv-bgop'); s.value = '60'; s.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.click('#previewHost .imgv-adv-add');   // a second text object
+  const advLayers = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 2 rows
+  if (advLayers === 3) pass('Adv Edit: layers panel lists each object (2 layers + header)'); else fail('adv layers rows: ' + advLayers);
   await page.click('#previewHost .imgv-adv-btn');   // leave Adv → flatten both labels onto the base
   await page.waitForFunction(() => window.__fv.state.binaryEdit?.dirty === true, null, { timeout: 8000 }).catch(() => {});
   const advFlat = await page.evaluate(async () => {

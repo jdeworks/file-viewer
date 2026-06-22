@@ -90,6 +90,7 @@ export async function mountAdvEdit({ host, img, onDirty }) {
     tr.nodes(label ? [label] : []);
     layer.draw();
     syncToolbar();
+    refreshLayers();
   }
 
   function addText() {
@@ -109,13 +110,46 @@ export async function mountAdvEdit({ host, img, onDirty }) {
 
   $('.imgv-adv-add').addEventListener('click', addText);
   $('.imgv-adv-del').addEventListener('click', () => { if (!selected) return; snapshot(); selected.destroy(); select(null); markDirty(); });
-  $('.imgv-adv-text').addEventListener('input', () => { if (selected) { textNodeOf(selected).text($('.imgv-adv-text').value); layer.draw(); markDirty(); } });
+  $('.imgv-adv-text').addEventListener('input', () => { if (selected) { textNodeOf(selected).text($('.imgv-adv-text').value); layer.draw(); refreshLayers(); markDirty(); } });
   $('.imgv-adv-size').addEventListener('input', () => { if (selected) { textNodeOf(selected).fontSize(parseInt($('.imgv-adv-size').value, 10) || DEFAULTS.fontSize); layer.draw(); markDirty(); } });
   $('.imgv-adv-font').addEventListener('change', () => { if (selected) { textNodeOf(selected).fontFamily($('.imgv-adv-font').value); layer.draw(); markDirty(); } });
   $('.imgv-adv-fill').addEventListener('input', () => { if (selected) { textNodeOf(selected).fill($('.imgv-adv-fill').value); layer.draw(); markDirty(); } });
   $('.imgv-adv-bg').addEventListener('input', () => { if (selected) { tagNodeOf(selected).fill($('.imgv-adv-bg').value); layer.draw(); markDirty(); } });
   $('.imgv-adv-bgop').addEventListener('input', () => { if (selected) { tagNodeOf(selected).opacity((parseInt($('.imgv-adv-bgop').value, 10) || 0) / 100); layer.draw(); markDirty(); } });
   syncToolbar();
+
+  // ── Layers panel ── one row per object, docked top-right of the stage host:
+  // select, eye-toggle visibility, reorder (z-order), delete. The Transformer is
+  // kept on top after any reorder so its handles never get buried.
+  const panel = document.createElement('div');
+  panel.className = 'imgv-adv-layers';
+  panel.hidden = true;
+  panel.style.cssText = 'position:absolute;top:8px;right:8px;z-index:7;width:172px;max-height:60%;overflow:auto;background:var(--bg-2,#222);color:var(--fg,#eee);border:1px solid var(--border,#444);border-radius:6px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.3);';
+  stageHost.appendChild(panel);
+
+  function labelName(label) { const t = textNodeOf(label)?.text?.(); return (t && t.trim()) ? t.trim().slice(0, 18) : (label.name() || 'Layer'); }
+
+  function refreshLayers() {
+    const labels = layer.find('Label').slice().reverse();   // top-most first
+    panel.innerHTML = `<div style="padding:5px 8px;font-weight:600;border-bottom:1px solid var(--border,#444)">Layers (${labels.length})</div>`;
+    labels.forEach((label) => {
+      const row = document.createElement('div');
+      row.style.cssText = `display:flex;align-items:center;gap:4px;padding:3px 6px;cursor:pointer;${label === selected ? 'background:var(--accent,#2563eb);color:#fff;' : ''}`;
+      const eye = document.createElement('button');
+      eye.textContent = label.visible() ? '👁' : '🚫';
+      eye.title = 'Show / hide'; eye.style.cssText = 'background:none;border:none;cursor:pointer;font-size:12px;padding:0';
+      eye.addEventListener('click', (e) => { e.stopPropagation(); snapshot(); label.visible(!label.visible()); if (!label.visible() && selected === label) select(null); layer.draw(); refreshLayers(); markDirty(); });
+      const name = document.createElement('span');
+      name.textContent = labelName(label); name.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      const up = mkMini('↑', 'Bring forward', (e) => { e.stopPropagation(); snapshot(); label.moveUp(); tr.moveToTop(); layer.draw(); refreshLayers(); markDirty(); });
+      const dn = mkMini('↓', 'Send backward', (e) => { e.stopPropagation(); snapshot(); label.moveDown(); tr.moveToTop(); layer.draw(); refreshLayers(); markDirty(); });
+      const del = mkMini('🗑', 'Delete', (e) => { e.stopPropagation(); snapshot(); if (selected === label) select(null); label.destroy(); layer.draw(); refreshLayers(); markDirty(); });
+      row.append(eye, name, up, dn, del);
+      row.addEventListener('click', () => { if (label.visible()) select(label); });
+      panel.appendChild(row);
+    });
+  }
+  function mkMini(txt, title, fn) { const b = document.createElement('button'); b.textContent = txt; b.title = title; b.style.cssText = 'background:none;border:none;color:inherit;cursor:pointer;font-size:11px;padding:0 1px'; b.addEventListener('click', fn); return b; }
 
   // Flatten the base image + the vector overlay into a fresh natural-res canvas.
   // Transformer handles are hidden first so they don't bake in.
@@ -138,12 +172,13 @@ export async function mountAdvEdit({ host, img, onDirty }) {
     setInteractive(on) {
       interactive = on;
       tb.hidden = !on; tb.style.display = on ? 'flex' : 'none';
+      panel.hidden = !on; panel.style.display = on ? 'block' : 'none';
       container.style.pointerEvents = on ? 'auto' : 'none';
-      if (!on) select(null);
+      if (on) refreshLayers(); else select(null);
     },
     undo() { if (!undoStack.length) return; rebuild(undoStack.pop()); },
     flattenToCanvas,
-    destroy() { tr.destroy(); stage.destroy(); container.remove(); tb.remove(); },
+    destroy() { tr.destroy(); stage.destroy(); container.remove(); tb.remove(); panel.remove(); },
   };
 
   // Rebuild the layer from a saved JSON snapshot (re-wires events + transformer).
