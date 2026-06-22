@@ -10,15 +10,16 @@
 // overlay. A dimension-changing geometry op invalidates it (renderer calls clear()).
 import { computeRegionMask, clipToBase } from './fill.js';
 
-export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }) {
-  const { selectBtn, marqueeBtn, deselectBtn } = els;
-  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {}, async clipCanvas() {}, toggle() {}, setActive() {}, setMode() {}, clear() {}, syncOverlay() {}, teardown() {} };
+export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommit }) {
+  const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn } = els;
+  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {}, async clipCanvas() {}, invert() {}, toggle() {}, setActive() {}, setMode() {}, clear() {}, syncOverlay() {}, teardown() {} };
 
   const stage = host.querySelector('.imgv-stage');
-  let mode = null;                   // null | 'wand' | 'marquee'
+  let mode = null;                   // null | 'wand' | 'marquee' | 'ellipse' | 'lasso' | 'move'
   let mask = null, mw = 0, mh = 0;   // current selection mask (natural res) + its dims
   let ov = null, octx = null;
-  let dragging = false, dragStart = null;   // marquee rubber-band drag
+  let dragging = false, dragStart = null, lassoPts = null;   // rubber-band / freehand drag
+  let moving = false, moveStart = null, holedCanvas = null, pieceCanvas = null;   // move-selection drag
 
   function ensureOverlay() {
     if (ov) return;
@@ -34,45 +35,146 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     syncOverlay();
   }
 
+  const isDrag = (m) => m === 'marquee' || m === 'ellipse' || m === 'lasso';
+
   function onDown(e) {
     if (mode === 'wand') { e.preventDefault(); pickAt(e); return; }
-    if (mode === 'marquee') {
-      e.preventDefault();
-      ov.width = img.naturalWidth || 1; ov.height = img.naturalHeight || 1;   // natural-res drawing surface (clears)
-      syncOverlay();
-      dragging = true; dragStart = ptToCanvas(e);
-      try { ov.setPointerCapture(e.pointerId); } catch { /* not all pointers capture */ }
-    }
+    if (mode === 'move') { startMove(e); return; }
+    if (!isDrag(mode)) return;
+    e.preventDefault();
+    ov.width = img.naturalWidth || 1; ov.height = img.naturalHeight || 1;   // natural-res drawing surface (clears)
+    syncOverlay();
+    dragging = true; dragStart = ptToCanvas(e);
+    if (mode === 'lasso') lassoPts = [dragStart];
+    try { ov.setPointerCapture(e.pointerId); } catch { /* not all pointers capture */ }
   }
-  function onMove(e) { if (dragging) { e.preventDefault(); drawRubberBand(dragStart, ptToCanvas(e)); } }
+  function onMove(e) {
+    if (moving) { e.preventDefault(); previewMove(ptToCanvas(e)); return; }
+    if (!dragging) return;
+    e.preventDefault();
+    const pt = ptToCanvas(e);
+    if (mode === 'lasso') { lassoPts.push(pt); drawLasso(lassoPts); }
+    else drawRubberBand(dragStart, pt, mode);
+  }
   function onUp(e) {
+    if (moving) { dropMove(ptToCanvas(e)); return; }
     if (!dragging) return;
     dragging = false;
-    buildRectMask(dragStart, ptToCanvas(e));
+    const pt = ptToCanvas(e);
+    if (mode === 'marquee') setMask(rectMask(dragStart, pt));
+    else if (mode === 'ellipse') setMask(ellipseMask(dragStart, pt));
+    else if (mode === 'lasso') { const pts = lassoPts; lassoPts = null; setMask(lassoMask(pts)); }
   }
 
-  // Dashed rubber-band rectangle drawn live on the (natural-res) overlay.
-  function drawRubberBand(a, b) {
+  // ── Move the selected pixels ── lift the masked region off the base (leaving a
+  // transparent hole), float it on the overlay following the cursor, and on drop
+  // commit base-with-hole + the piece at its new offset (one PNG commit).
+  function startMove(e) {
+    if (!mask) return;
+    e.preventDefault();
+    const bc = document.createElement('canvas'); bc.width = mw; bc.height = mh;
+    const bg = bc.getContext('2d', { willReadFrequently: true });
+    bg.drawImage(img, 0, 0, mw, mh);
+    const baseId = bg.getImageData(0, 0, mw, mh);
+    pieceCanvas = document.createElement('canvas'); pieceCanvas.width = mw; pieceCanvas.height = mh;
+    const pg = pieceCanvas.getContext('2d');
+    const pieceId = pg.createImageData(mw, mh);
+    for (let p = 0; p < mask.length; p++) {
+      if (!mask[p]) continue;
+      const i = p << 2;
+      pieceId.data[i] = baseId.data[i]; pieceId.data[i + 1] = baseId.data[i + 1];
+      pieceId.data[i + 2] = baseId.data[i + 2]; pieceId.data[i + 3] = baseId.data[i + 3];
+      baseId.data[i + 3] = 0;   // punch the hole in the base copy
+    }
+    pg.putImageData(pieceId, 0, 0);
+    bg.putImageData(baseId, 0, 0);
+    holedCanvas = bc;
+    moving = true; moveStart = ptToCanvas(e);
+    try { ov.setPointerCapture(e.pointerId); } catch { /* not all pointers capture */ }
+    previewMove(moveStart);
+  }
+  function previewMove(pt) {
+    const dx = pt.x - moveStart.x, dy = pt.y - moveStart.y;
     octx.clearRect(0, 0, ov.width, ov.height);
-    const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
+    octx.drawImage(holedCanvas, 0, 0);          // the overlay (z-index 4) covers the <img> with the live preview
+    octx.drawImage(pieceCanvas, dx, dy);
+  }
+  async function dropMove(pt) {
+    moving = false;
+    const dx = pt.x - moveStart.x, dy = pt.y - moveStart.y;
+    const out = document.createElement('canvas'); out.width = mw; out.height = mh;
+    const og = out.getContext('2d');
+    og.drawImage(holedCanvas, 0, 0);
+    og.drawImage(pieceCanvas, dx, dy);
+    holedCanvas = pieceCanvas = null;
+    await onCommit?.(out);    // renderer: pushUndo + commit a PNG (keeps the transparent hole)
+    clear();                  // the selection is consumed by the move
+  }
+
+  // Live rubber-band (rect or ellipse) drawn on the natural-res overlay.
+  function drawRubberBand(a, b, kind) {
+    octx.clearRect(0, 0, ov.width, ov.height);
     octx.strokeStyle = 'rgba(0,132,255,0.95)';
     octx.lineWidth = Math.max(1, ov.width / 320);
     octx.setLineDash([ov.width / 60, ov.width / 60]);
-    octx.strokeRect(x + 0.5, y + 0.5, w, h);
+    octx.beginPath();
+    if (kind === 'ellipse') {
+      octx.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, Math.abs(b.x - a.x) / 2, Math.abs(b.y - a.y) / 2, 0, 0, Math.PI * 2);
+    } else {
+      octx.rect(Math.min(a.x, b.x) + 0.5, Math.min(a.y, b.y) + 0.5, Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+    }
+    octx.stroke();
     octx.setLineDash([]);
   }
+  function drawLasso(pts) {
+    octx.clearRect(0, 0, ov.width, ov.height);
+    octx.strokeStyle = 'rgba(0,132,255,0.95)';
+    octx.lineWidth = Math.max(1, ov.width / 320);
+    octx.beginPath();
+    pts.forEach((q, i) => (i ? octx.lineTo(q.x, q.y) : octx.moveTo(q.x, q.y)));
+    octx.stroke();
+  }
 
-  // Turn the dragged box into a mask (1 inside the rect), clamped to the image.
-  function buildRectMask(a, b) {
+  // Install a computed mask (or clear the rubber-band if the gesture was too small).
+  function setMask(res) {
+    if (!res) { octx.clearRect(0, 0, ov.width, ov.height); return; }
+    mask = res.m; mw = res.w; mh = res.h;
+    render();
+    if (deselectBtn) deselectBtn.hidden = false;
+  }
+
+  // Rectangle mask (fast loop). Ellipse/lasso rasterize a canvas path instead.
+  function rectMask(a, b) {
     const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
     const x0 = Math.max(0, Math.min(w, Math.min(a.x, b.x))), x1 = Math.max(0, Math.min(w, Math.max(a.x, b.x)));
     const y0 = Math.max(0, Math.min(h, Math.min(a.y, b.y))), y1 = Math.max(0, Math.min(h, Math.max(a.y, b.y)));
-    if (x1 - x0 < 2 || y1 - y0 < 2) { octx.clearRect(0, 0, ov.width, ov.height); return; }   // ignore a stray click
+    if (x1 - x0 < 2 || y1 - y0 < 2) return null;
     const m = new Uint8Array(w * h);
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) m[y * w + x] = 1;
-    mask = m; mw = w; mh = h;
-    render();
-    if (deselectBtn) deselectBtn.hidden = false;
+    return { m, w, h };
+  }
+  // Rasterize a filled path to a mask (alpha > half = inside). Shared by ellipse + lasso.
+  function maskFromPath(draw) {
+    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#fff'; g.beginPath();
+    draw(g);
+    g.fill();
+    const d = g.getImageData(0, 0, w, h).data;
+    const m = new Uint8Array(w * h);
+    let any = false;
+    for (let p = 0; p < w * h; p++) if (d[(p << 2) + 3] > 127) { m[p] = 1; any = true; }
+    return any ? { m, w, h } : null;
+  }
+  function ellipseMask(a, b) {
+    const rx = Math.abs(b.x - a.x) / 2, ry = Math.abs(b.y - a.y) / 2;
+    if (rx < 1 || ry < 1) return null;
+    return maskFromPath((g) => g.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, rx, ry, 0, 0, Math.PI * 2));
+  }
+  function lassoMask(pts) {
+    if (!pts || pts.length < 3) return null;
+    return maskFromPath((g) => { pts.forEach((q, i) => (i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y))); g.closePath(); });
   }
 
   // Cover exactly the displayed <img> box so click coords map 1:1 to image pixels.
@@ -135,7 +237,10 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     if (m) ensureOverlay();
     selectBtn.classList.toggle('active', m === 'wand');
     marqueeBtn?.classList.toggle('active', m === 'marquee');
-    if (ov) { ov.style.pointerEvents = m ? 'auto' : 'none'; ov.style.cursor = m ? 'crosshair' : ''; }
+    ellipseBtn?.classList.toggle('active', m === 'ellipse');
+    lassoBtn?.classList.toggle('active', m === 'lasso');
+    moveBtn?.classList.toggle('active', m === 'move');
+    if (ov) { ov.style.pointerEvents = m ? 'auto' : 'none'; ov.style.cursor = m === 'move' ? 'move' : m ? 'crosshair' : ''; }
     if (m) onActivate?.();
   }
   // Renderer compat: a draw tool turning selection off calls setActive(false).
@@ -145,6 +250,13 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     mask = null; mw = mh = 0;
     if (octx) octx.clearRect(0, 0, ov.width, ov.height);
     if (deselectBtn) deselectBtn.hidden = true;
+  }
+
+  // Invert the current selection (select the complement). No-op without a mask.
+  function invert() {
+    if (!mask) return;
+    for (let p = 0; p < mask.length; p++) mask[p] = mask[p] ? 0 : 1;
+    render();
   }
 
   // Clip a fill result (ImageData byte arrays) to the selection: `editedData` keeps
@@ -171,6 +283,9 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
 
   selectBtn.addEventListener('click', () => setMode(mode === 'wand' ? null : 'wand'));
   marqueeBtn?.addEventListener('click', () => setMode(mode === 'marquee' ? null : 'marquee'));
+  ellipseBtn?.addEventListener('click', () => setMode(mode === 'ellipse' ? null : 'ellipse'));
+  lassoBtn?.addEventListener('click', () => setMode(mode === 'lasso' ? null : 'lasso'));
+  moveBtn?.addEventListener('click', () => setMode(mode === 'move' ? null : 'move'));
   deselectBtn?.addEventListener('click', clear);
 
   return {
@@ -178,7 +293,7 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     hasSelection: () => !!mask,
     getMask: () => (mask ? { data: mask, w: mw, h: mh } : null),
     setActive, setMode, toggle: () => setMode(mode ? null : 'wand'),
-    clipFillInPlace, clipCanvas,
+    clipFillInPlace, clipCanvas, invert,
     clear, syncOverlay,
     teardown() { ov?.remove(); ov = null; octx = null; mask = null; },
   };

@@ -363,12 +363,67 @@ export async function run(ctx) {
   });
   if (marq.painted && marq.deselectShown && marq.active) pass('marquee: drag a box builds a rectangular selection (overlay painted + Deselect shown)'); else fail('marquee: ' + JSON.stringify(marq));
   await page.click('#previewHost .imgv-deselect');                // clear
-  await page.click('#previewHost .imgv-marquee');                 // leave box-select for later steps
+  await page.click('#previewHost .imgv-marquee');                 // leave box-select
+  // Elliptical + lasso selection (Draw tab) — more mask SOURCES via canvas-path raster.
+  const ovPainted = () => page.evaluate(() => { const ov = document.querySelector('#previewHost .imgv-sel-overlay'); if (!ov || !ov.width) return false; const d = ov.getContext('2d').getImageData(0, 0, ov.width, ov.height).data; for (let i = 3; i < d.length; i += 4) if (d[i]) return true; return false; });
+  await openTab('draw');
+  await page.click('#previewHost .imgv-ellipse');                 // oval-select mode
+  const ovBox = await page.$eval('#previewHost .imgv-sel-overlay', (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  await page.mouse.move(ovBox.x + ovBox.w * 0.2, ovBox.y + ovBox.h * 0.2);
+  await page.mouse.down();
+  await page.mouse.move(ovBox.x + ovBox.w * 0.8, ovBox.y + ovBox.h * 0.8, { steps: 5 });
+  await page.mouse.up();
+  const ellipsePainted = await ovPainted();
+  await page.click('#previewHost .imgv-lasso');                   // lasso (freehand) mode — overwrites the mask
+  await page.mouse.move(ovBox.x + ovBox.w * 0.3, ovBox.y + ovBox.h * 0.3);
+  await page.mouse.down();
+  await page.mouse.move(ovBox.x + ovBox.w * 0.7, ovBox.y + ovBox.h * 0.35, { steps: 3 });
+  await page.mouse.move(ovBox.x + ovBox.w * 0.6, ovBox.y + ovBox.h * 0.7, { steps: 3 });
+  await page.mouse.move(ovBox.x + ovBox.w * 0.35, ovBox.y + ovBox.h * 0.6, { steps: 3 });
+  await page.mouse.up();
+  const lassoPainted = await ovPainted();
+  await page.click('#previewHost .imgv-lasso');                   // leave select mode (mask lingers)
+  await openTab('common');                                        // Common tab → canonical Deselect is visible
+  await page.click('#previewHost .imgv-deselect');                // clear the selection for later steps
+  if (ellipsePainted && lassoPainted) pass('selection: elliptical + lasso build masks (canvas-path raster)'); else fail('ellipse/lasso: ' + JSON.stringify({ ellipsePainted, lassoPainted }));
   // ── Transform / filter / draw commit pipeline ── each tool writes a FRESH edited
   // blob, so img.src (a blob: URL) flips to a new value when a commit lands. This is
   // a tool-agnostic regression signal that protects the editor-module split.
   const imgSrcNow = () => page.$eval('#previewHost .imgv-img', (e) => e.src);
   const waitNewSrc = async (before) => page.waitForFunction((s) => document.querySelector('#previewHost .imgv-img').src !== s, before, { timeout: 8000 }).then(() => true).catch(() => false);
+  // Selection OPS — build a wand selection, Invert the mask, then Cut deletes the
+  // selected pixels (commits a transparent PNG). Then clear for the later steps.
+  await openTab('common');
+  await page.click('#previewHost .imgv-select');                  // wand mode
+  await page.click('#previewHost .imgv-sel-overlay', { position: { x: 18, y: 18 } });   // pick a region
+  await openTab('draw');
+  await page.click('#previewHost .imgv-sel-invert');              // invert the mask
+  const cutBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-sel-cut');                 // delete selected → new PNG
+  const cutCommitted = await waitNewSrc(cutBefore);
+  if (cutCommitted) pass('selection ops: invert + cut deletes the selection (commits a new image)'); else fail('selection cut did not commit');
+  await openTab('common');
+  await page.click('#previewHost .imgv-select');                  // leave wand
+  await page.click('#previewHost .imgv-deselect');                // clear the mask
+  // Selection MOVE — box-select a region, then drag it to a new spot (one PNG commit).
+  await page.click('#previewHost .imgv-marquee');                 // box-select mode
+  const mvBox = await page.$eval('#previewHost .imgv-sel-overlay', (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  await page.mouse.move(mvBox.x + mvBox.w * 0.25, mvBox.y + mvBox.h * 0.25);
+  await page.mouse.down();
+  await page.mouse.move(mvBox.x + mvBox.w * 0.55, mvBox.y + mvBox.h * 0.55, { steps: 4 });
+  await page.mouse.up();
+  await page.click('#previewHost .imgv-marquee');                 // leave box-select (mask stays)
+  await openTab('draw');
+  await page.click('#previewHost .imgv-sel-move');                // move mode
+  const moveBefore = await imgSrcNow();
+  await page.mouse.move(mvBox.x + mvBox.w * 0.4, mvBox.y + mvBox.h * 0.4);
+  await page.mouse.down();
+  await page.mouse.move(mvBox.x + mvBox.w * 0.62, mvBox.y + mvBox.h * 0.5, { steps: 4 });
+  await page.mouse.up();
+  const moveCommitted = await waitNewSrc(moveBefore);
+  if (moveCommitted) pass('selection move: drag the selected pixels commits a new image'); else fail('selection move did not commit');
+  await page.click('#previewHost .imgv-sel-move');                // leave move mode
+  await openTab('common');
   // Rotate 90° CW also swaps width/height — a strong correctness check.
   await openTab('common');
   const rotBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight, src: e.src }));

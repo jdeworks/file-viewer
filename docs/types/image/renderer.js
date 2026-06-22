@@ -89,7 +89,12 @@ export async function render(intake, ctx = {}) {
   const fillOpts = canEdit ? host.querySelectorAll('.imgv-fill-opt') : [];
   const selectBtn = canEdit ? host.querySelector('.imgv-select') : null;
   const marqueeBtn = canEdit ? host.querySelector('.imgv-marquee') : null;
+  const ellipseBtn = canEdit ? host.querySelector('.imgv-ellipse') : null;
+  const lassoBtn = canEdit ? host.querySelector('.imgv-lasso') : null;
   const deselectBtn = canEdit ? host.querySelector('.imgv-deselect') : null;
+  const selInvertBtn = canEdit ? host.querySelector('.imgv-sel-invert') : null;
+  const selCutBtn = canEdit ? host.querySelector('.imgv-sel-cut') : null;
+  const moveBtn = canEdit ? host.querySelector('.imgv-sel-move') : null;
   const drawColorPicker = canEdit ? host.querySelector('.imgv-draw-color') : null;
   const drawSizePicker = canEdit ? host.querySelector('.imgv-draw-size') : null;
   const undoBtn = canEdit ? host.querySelector('.imgv-undo') : null;
@@ -501,11 +506,29 @@ export async function render(intake, ctx = {}) {
   // shared fill tolerance/mode/perceptual options (edit-select.js → fill.js).
   selection = mountSelection({
     host, img, mime,
-    els: { selectBtn, marqueeBtn, deselectBtn },
+    els: { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn },
     getFillOpts: () => ({ tol: parseInt(fillTol?.value || '12', 10), mode: fillMode?.value || 'seed', perceptual: !!fillPercep?.checked }),
-    onActivate: () => setDrawMode(null),   // the wand is mutually exclusive with pencil/eraser/fill input
+    onActivate: () => setDrawMode(null),   // selection is mutually exclusive with pencil/eraser/fill input
+    onCommit: async (canvas) => { core.pushUndo(); const blob = await new Promise((r) => canvas.toBlob(r, 'image/png')); core.commitBlob(blob, { mime: 'image/png' }); },
   });
   editTools.push({ isActive: () => selection.isActive() });
+
+  // Selection OPS (act on the current mask): Invert flips it; Cut deletes the selected
+  // pixels (→ transparent PNG) through the shared edit core.
+  selInvertBtn?.addEventListener('click', () => selection.invert());
+  selCutBtn?.addEventListener('click', async () => {
+    const sel = selection.getMask();
+    if (!sel) return;
+    const c = document.createElement('canvas'); c.width = sel.w; c.height = sel.h;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0, sel.w, sel.h);
+    const id = g.getImageData(0, 0, sel.w, sel.h);
+    for (let p = 0; p < sel.data.length; p++) if (sel.data[p]) id.data[(p << 2) + 3] = 0;
+    g.putImageData(id, 0, 0);
+    core.pushUndo();
+    const blob = await new Promise((r) => c.toBlob(r, 'image/png'));   // PNG keeps the punched-out transparency
+    core.commitBlob(blob, { mime: 'image/png' });
+  });
 
   // Filters — live CSS preview + bake on Apply (edit-filters.js).
   mountFilters({ img, mime, core, els });
