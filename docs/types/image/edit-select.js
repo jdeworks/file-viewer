@@ -11,14 +11,14 @@
 import { computeRegionMask, clipToBase } from './fill.js';
 
 export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }) {
-  const { selectBtn, marqueeBtn, deselectBtn } = els;
+  const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, deselectBtn } = els;
   if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {}, async clipCanvas() {}, toggle() {}, setActive() {}, setMode() {}, clear() {}, syncOverlay() {}, teardown() {} };
 
   const stage = host.querySelector('.imgv-stage');
-  let mode = null;                   // null | 'wand' | 'marquee'
+  let mode = null;                   // null | 'wand' | 'marquee' | 'ellipse' | 'lasso'
   let mask = null, mw = 0, mh = 0;   // current selection mask (natural res) + its dims
   let ov = null, octx = null;
-  let dragging = false, dragStart = null;   // marquee rubber-band drag
+  let dragging = false, dragStart = null, lassoPts = null;   // rubber-band / freehand drag
 
   function ensureOverlay() {
     if (ov) return;
@@ -34,45 +34,98 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     syncOverlay();
   }
 
+  const isDrag = (m) => m === 'marquee' || m === 'ellipse' || m === 'lasso';
+
   function onDown(e) {
     if (mode === 'wand') { e.preventDefault(); pickAt(e); return; }
-    if (mode === 'marquee') {
-      e.preventDefault();
-      ov.width = img.naturalWidth || 1; ov.height = img.naturalHeight || 1;   // natural-res drawing surface (clears)
-      syncOverlay();
-      dragging = true; dragStart = ptToCanvas(e);
-      try { ov.setPointerCapture(e.pointerId); } catch { /* not all pointers capture */ }
-    }
+    if (!isDrag(mode)) return;
+    e.preventDefault();
+    ov.width = img.naturalWidth || 1; ov.height = img.naturalHeight || 1;   // natural-res drawing surface (clears)
+    syncOverlay();
+    dragging = true; dragStart = ptToCanvas(e);
+    if (mode === 'lasso') lassoPts = [dragStart];
+    try { ov.setPointerCapture(e.pointerId); } catch { /* not all pointers capture */ }
   }
-  function onMove(e) { if (dragging) { e.preventDefault(); drawRubberBand(dragStart, ptToCanvas(e)); } }
+  function onMove(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    const pt = ptToCanvas(e);
+    if (mode === 'lasso') { lassoPts.push(pt); drawLasso(lassoPts); }
+    else drawRubberBand(dragStart, pt, mode);
+  }
   function onUp(e) {
     if (!dragging) return;
     dragging = false;
-    buildRectMask(dragStart, ptToCanvas(e));
+    const pt = ptToCanvas(e);
+    if (mode === 'marquee') setMask(rectMask(dragStart, pt));
+    else if (mode === 'ellipse') setMask(ellipseMask(dragStart, pt));
+    else if (mode === 'lasso') { const pts = lassoPts; lassoPts = null; setMask(lassoMask(pts)); }
   }
 
-  // Dashed rubber-band rectangle drawn live on the (natural-res) overlay.
-  function drawRubberBand(a, b) {
+  // Live rubber-band (rect or ellipse) drawn on the natural-res overlay.
+  function drawRubberBand(a, b, kind) {
     octx.clearRect(0, 0, ov.width, ov.height);
-    const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
     octx.strokeStyle = 'rgba(0,132,255,0.95)';
     octx.lineWidth = Math.max(1, ov.width / 320);
     octx.setLineDash([ov.width / 60, ov.width / 60]);
-    octx.strokeRect(x + 0.5, y + 0.5, w, h);
+    octx.beginPath();
+    if (kind === 'ellipse') {
+      octx.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, Math.abs(b.x - a.x) / 2, Math.abs(b.y - a.y) / 2, 0, 0, Math.PI * 2);
+    } else {
+      octx.rect(Math.min(a.x, b.x) + 0.5, Math.min(a.y, b.y) + 0.5, Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+    }
+    octx.stroke();
     octx.setLineDash([]);
   }
+  function drawLasso(pts) {
+    octx.clearRect(0, 0, ov.width, ov.height);
+    octx.strokeStyle = 'rgba(0,132,255,0.95)';
+    octx.lineWidth = Math.max(1, ov.width / 320);
+    octx.beginPath();
+    pts.forEach((q, i) => (i ? octx.lineTo(q.x, q.y) : octx.moveTo(q.x, q.y)));
+    octx.stroke();
+  }
 
-  // Turn the dragged box into a mask (1 inside the rect), clamped to the image.
-  function buildRectMask(a, b) {
+  // Install a computed mask (or clear the rubber-band if the gesture was too small).
+  function setMask(res) {
+    if (!res) { octx.clearRect(0, 0, ov.width, ov.height); return; }
+    mask = res.m; mw = res.w; mh = res.h;
+    render();
+    if (deselectBtn) deselectBtn.hidden = false;
+  }
+
+  // Rectangle mask (fast loop). Ellipse/lasso rasterize a canvas path instead.
+  function rectMask(a, b) {
     const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
     const x0 = Math.max(0, Math.min(w, Math.min(a.x, b.x))), x1 = Math.max(0, Math.min(w, Math.max(a.x, b.x)));
     const y0 = Math.max(0, Math.min(h, Math.min(a.y, b.y))), y1 = Math.max(0, Math.min(h, Math.max(a.y, b.y)));
-    if (x1 - x0 < 2 || y1 - y0 < 2) { octx.clearRect(0, 0, ov.width, ov.height); return; }   // ignore a stray click
+    if (x1 - x0 < 2 || y1 - y0 < 2) return null;
     const m = new Uint8Array(w * h);
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) m[y * w + x] = 1;
-    mask = m; mw = w; mh = h;
-    render();
-    if (deselectBtn) deselectBtn.hidden = false;
+    return { m, w, h };
+  }
+  // Rasterize a filled path to a mask (alpha > half = inside). Shared by ellipse + lasso.
+  function maskFromPath(draw) {
+    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#fff'; g.beginPath();
+    draw(g);
+    g.fill();
+    const d = g.getImageData(0, 0, w, h).data;
+    const m = new Uint8Array(w * h);
+    let any = false;
+    for (let p = 0; p < w * h; p++) if (d[(p << 2) + 3] > 127) { m[p] = 1; any = true; }
+    return any ? { m, w, h } : null;
+  }
+  function ellipseMask(a, b) {
+    const rx = Math.abs(b.x - a.x) / 2, ry = Math.abs(b.y - a.y) / 2;
+    if (rx < 1 || ry < 1) return null;
+    return maskFromPath((g) => g.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, rx, ry, 0, 0, Math.PI * 2));
+  }
+  function lassoMask(pts) {
+    if (!pts || pts.length < 3) return null;
+    return maskFromPath((g) => { pts.forEach((q, i) => (i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y))); g.closePath(); });
   }
 
   // Cover exactly the displayed <img> box so click coords map 1:1 to image pixels.
@@ -135,6 +188,8 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
     if (m) ensureOverlay();
     selectBtn.classList.toggle('active', m === 'wand');
     marqueeBtn?.classList.toggle('active', m === 'marquee');
+    ellipseBtn?.classList.toggle('active', m === 'ellipse');
+    lassoBtn?.classList.toggle('active', m === 'lasso');
     if (ov) { ov.style.pointerEvents = m ? 'auto' : 'none'; ov.style.cursor = m ? 'crosshair' : ''; }
     if (m) onActivate?.();
   }
@@ -171,6 +226,8 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate }
 
   selectBtn.addEventListener('click', () => setMode(mode === 'wand' ? null : 'wand'));
   marqueeBtn?.addEventListener('click', () => setMode(mode === 'marquee' ? null : 'marquee'));
+  ellipseBtn?.addEventListener('click', () => setMode(mode === 'ellipse' ? null : 'ellipse'));
+  lassoBtn?.addEventListener('click', () => setMode(mode === 'lasso' ? null : 'lasso'));
   deselectBtn?.addEventListener('click', clear);
 
   return {

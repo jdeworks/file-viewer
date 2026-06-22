@@ -363,7 +363,29 @@ export async function run(ctx) {
   });
   if (marq.painted && marq.deselectShown && marq.active) pass('marquee: drag a box builds a rectangular selection (overlay painted + Deselect shown)'); else fail('marquee: ' + JSON.stringify(marq));
   await page.click('#previewHost .imgv-deselect');                // clear
-  await page.click('#previewHost .imgv-marquee');                 // leave box-select for later steps
+  await page.click('#previewHost .imgv-marquee');                 // leave box-select
+  // Elliptical + lasso selection (Draw tab) — more mask SOURCES via canvas-path raster.
+  const ovPainted = () => page.evaluate(() => { const ov = document.querySelector('#previewHost .imgv-sel-overlay'); if (!ov || !ov.width) return false; const d = ov.getContext('2d').getImageData(0, 0, ov.width, ov.height).data; for (let i = 3; i < d.length; i += 4) if (d[i]) return true; return false; });
+  await openTab('draw');
+  await page.click('#previewHost .imgv-ellipse');                 // oval-select mode
+  const ovBox = await page.$eval('#previewHost .imgv-sel-overlay', (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  await page.mouse.move(ovBox.x + ovBox.w * 0.2, ovBox.y + ovBox.h * 0.2);
+  await page.mouse.down();
+  await page.mouse.move(ovBox.x + ovBox.w * 0.8, ovBox.y + ovBox.h * 0.8, { steps: 5 });
+  await page.mouse.up();
+  const ellipsePainted = await ovPainted();
+  await page.click('#previewHost .imgv-lasso');                   // lasso (freehand) mode — overwrites the mask
+  await page.mouse.move(ovBox.x + ovBox.w * 0.3, ovBox.y + ovBox.h * 0.3);
+  await page.mouse.down();
+  await page.mouse.move(ovBox.x + ovBox.w * 0.7, ovBox.y + ovBox.h * 0.35, { steps: 3 });
+  await page.mouse.move(ovBox.x + ovBox.w * 0.6, ovBox.y + ovBox.h * 0.7, { steps: 3 });
+  await page.mouse.move(ovBox.x + ovBox.w * 0.35, ovBox.y + ovBox.h * 0.6, { steps: 3 });
+  await page.mouse.up();
+  const lassoPainted = await ovPainted();
+  await page.click('#previewHost .imgv-lasso');                   // leave select mode (mask lingers)
+  await openTab('common');                                        // Common tab → canonical Deselect is visible
+  await page.click('#previewHost .imgv-deselect');                // clear the selection for later steps
+  if (ellipsePainted && lassoPainted) pass('selection: elliptical + lasso build masks (canvas-path raster)'); else fail('ellipse/lasso: ' + JSON.stringify({ ellipsePainted, lassoPainted }));
   // ── Transform / filter / draw commit pipeline ── each tool writes a FRESH edited
   // blob, so img.src (a blob: URL) flips to a new value when a commit lands. This is
   // a tool-agnostic regression signal that protects the editor-module split.
