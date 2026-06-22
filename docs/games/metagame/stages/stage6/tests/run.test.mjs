@@ -108,6 +108,26 @@ import { STARTING_DECK } from "../cards.js";
   assert.equal(run.act, 3, "ended in act 3");
 }
 
+// ── run: elites and act bosses award relics (deduped, deterministic) ─────────────────────────────
+{
+  // Drive a seed where act 1 contains an elite; clearing it grants a relic via the reward.
+  const run = createRun({ seed: 7 });
+  let guard = 0;
+  let eliteRelic = null;
+  while (run.act === 1 && run.status !== "won" && guard++ < 500) {
+    if (run.status === "map") moveTo(run, availableNodes(run)[0].id);
+    else if (run.status === "combat" || run.status === "boss") resolveCombat(run, { win: true, hpRemaining: run.hp });
+    else if (run.status === "reward") { if (run.pendingReward.relic) eliteRelic = run.pendingReward.relic; takeReward(run, run.pendingReward.cards[0]); }
+    else if (run.status === "rest") rest(run, "heal");
+    else closeNode(run);
+  }
+  // Clearing act 1's boss advanced us to act 2 and granted a relic notice.
+  assert.ok(run.act >= 2, "advanced past act 1");
+  assert.ok(run.relics.length >= 1, "at least one relic owned after an act");
+  assert.equal(new Set(run.relics).size, run.relics.length, "relics are never duplicated");
+  if (eliteRelic) assert.ok(run.relics.includes(eliteRelic), "elite relic was retained");
+}
+
 function reaches(run, fromId, targetId) {
   const seen = new Set();
   const stack = [fromId];

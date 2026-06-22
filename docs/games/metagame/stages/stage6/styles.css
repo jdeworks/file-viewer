@@ -92,7 +92,9 @@
 .s6db-node.is-cleared { opacity: 0.55; background: #ded0b6; }
 .s6db-node.is-current { outline: 2px solid #8b2020; }
 button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !important; border: 2px solid #1e2840 !important; cursor: pointer; }
-.s6db-map-foot { display: flex; gap: 16px; margin-top: 12px; font-weight: 700; color: #3b2a1c; }
+.s6db-map-foot { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px; font-weight: 700; color: #3b2a1c; }
+.s6db-notice { margin: 6px 0 10px; padding: 6px 10px; border-left: 3px solid #7a4ea3; background: #f1e7d2; color: #4a2f6b; font-weight: 700; }
+.s6db-relic-won { padding: 6px 10px; border-left: 3px solid #7a4ea3; background: #f1e7d2; color: #4a2f6b; }
 
 /* ── combat ────────────────────────────────────────────────────────────────── */
 .s6db-fighters { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

@@ -10,6 +10,7 @@
 import { cardById } from "./cards.js";
 import { REWARD_POOL } from "./cards.js";
 import { makeRng } from "./combat.js";
+import { relicById } from "./relics.js";
 
 const PRICE = { common: 25, uncommon: 40, rare: 60, starter: 20 };
 
@@ -17,7 +18,10 @@ export function rewardView(run) {
   const el = document.createElement("div");
   el.className = "s6db-reward";
   const cards = run.pendingReward?.cards || [];
-  el.innerHTML = `<h2>Signal recovered</h2><p>Add one card to your deck.</p>`;
+  const relic = run.pendingReward?.relic ? relicById(run.pendingReward.relic) : null;
+  el.innerHTML = `<h2>Signal recovered</h2>
+    ${relic ? `<p class="s6db-relic-won">⬢ Relic acquired — <strong>${esc(relic.name)}</strong>: ${esc(relic.text)}</p>` : ""}
+    <p>Add one card to your deck.</p>`;
   const row = document.createElement("div");
   row.className = "s6db-card-row";
   row.replaceChildren(...cards.map((id) => cardOption(id, "take", id)));

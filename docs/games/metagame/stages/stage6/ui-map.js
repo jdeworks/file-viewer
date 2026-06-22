@@ -46,7 +46,8 @@ export function mapView(run) {
   const act = run.map.acts[run.act - 1];
   const available = new Set(availableNodes(run).map((n) => n.id));
   const cleared = new Set(run.clearedIds);
-  el.innerHTML = `<div class="s6db-map-head">Act ${run.act} / 3 — choose your route</div>`;
+  el.innerHTML = `<div class="s6db-map-head">Act ${run.act} / 3 — choose your route</div>
+    ${run.notice ? `<div class="s6db-notice">${esc(run.notice)}</div>` : ""}`;
 
   const grid = document.createElement("div");
   grid.className = "s6db-map-grid";
@@ -61,7 +62,7 @@ export function mapView(run) {
   const footer = document.createElement("div");
   footer.className = "s6db-map-foot";
   footer.innerHTML = `<span>HP ${run.hp}/${run.maxHp}</span><span>handshakes ${run.handshakes}</span>
-    <span>deck ${run.deck.length}</span>
+    <span>deck ${run.deck.length}</span><span>relics ${run.relics.length}</span>
     <button type="button" data-action="to-hub" class="s6db-ghost">to hub</button>
     <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>`;
   el.appendChild(footer);

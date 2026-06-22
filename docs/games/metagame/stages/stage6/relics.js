@@ -32,6 +32,8 @@ export const RELICS = [
   }
 ];
 
+import { makeRng } from "./combat.js";
+
 const BY_ID = new Map(RELICS.map((relic) => [relic.id, relic]));
 
 export function relicById(id) {
@@ -41,4 +43,13 @@ export function relicById(id) {
 // Resolve a run's stored relic ids into relic objects for createCombat({ relics }).
 export function relicsFor(ids) {
   return (ids || []).map(relicById).filter(Boolean);
+}
+
+// Pick a relic the player does not already own (deterministic per seed); null once all are owned.
+export function rollRelic(seed, owned = []) {
+  const ownedSet = new Set(owned);
+  const pool = RELICS.filter((relic) => !ownedSet.has(relic.id));
+  if (!pool.length) return null;
+  const rng = makeRng(seed);
+  return pool[Math.floor(rng() * pool.length)].id;
 }
