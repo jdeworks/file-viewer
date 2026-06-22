@@ -103,15 +103,28 @@ export async function run(ctx) {
     pass('MOBI reader toolbar adjusts size, font, theme, line height, and margins');
   else fail('mobi reader controls: ' + JSON.stringify({ before: mobiSize0, after: mobiPrefs }));
 
-  // ── Sony LRF ── recognized (BBeB), shown with a clear note instead of a raw hex dump. ──
+  // ── Sony LRF (BBeB) ── real binary reader. Build a MINIMAL synthetic .lrf in-test (header +
+  // object index + PageTree/Page/Block + a zlib-compressed UTF-16LE TextBlock) so the suite is
+  // self-contained (CI has no example .lrf), then open it through the viewer and assert the reader
+  // decompresses + renders the text, parses the metadata XML, and stays zero-off-origin. ──
   await page.goto(origin, { waitUntil: 'load' });
-  await openExample('Sample.lrf');
-  const lrfframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const lrff = await frameOf('iframe.fv-preview-frame');
-  await lrff.waitForSelector('.comic-note', { timeout: 8000 });
+  await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 15000 });
+  const lrfBytes = buildSynthLrf('Hello from a synthetic Sony LRF book.', zlib);
+  await page.evaluate(async (b64) => {
+    const bin = atob(b64); const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    await window.__fv.openBlobFile(new Blob([u8]), 'synthetic.lrf');
+  }, lrfBytes.toString('base64'));
+  await page.waitForSelector('#previewHost .lrf-doc', { timeout: 15000 });
   const lrfType = await page.$eval('#typeSelect', (s) => s.value);
-  const lrfNote = await lrff.$eval('.comic-note', (e) => e.textContent);
-  if (lrfType === 'lrf' && /Sony/.test(lrfNote)) pass('.lrf recognized as Sony LRF with a friendly note'); else fail('lrf: type=' + lrfType + ' note=' + lrfNote.slice(0, 40));
+  if (lrfType === 'lrf') pass('.lrf detected as Sony LRF'); else fail('lrf type: ' + lrfType);
+  const lrfTitle = await page.$eval('#previewHost .epub-title', (e) => e.textContent).catch(() => '');
+  const lrfAuthor = await page.$eval('#previewHost .epub-author', (e) => e.textContent).catch(() => '');
+  if (/Synthetic LRF/.test(lrfTitle) && /Test Suite/.test(lrfAuthor)) pass('LRF metadata XML parsed (title + author)'); else fail('lrf meta: title=' + lrfTitle + ' author=' + lrfAuthor);
+  const lrfPages = await page.$$eval('#previewHost .epub-toc-item', (els) => els.length);
+  if (lrfPages >= 1) pass('LRF page list built (' + lrfPages + ' page)'); else fail('lrf pages: ' + lrfPages);
+  const lrfText = await page.$eval('#previewHost .epub-content', (e) => e.textContent || '');
+  if (/Hello from a synthetic Sony LRF book\./.test(lrfText)) pass('LRF TextBlock decompressed (deflate) + UTF-16LE text rendered'); else fail('lrf text: ' + lrfText.slice(0, 60));
 
   // ── DjVu ── either renders through the decoder or shows the intentional partial-support message.
   await page.goto(origin, { waitUntil: 'load' });
@@ -341,4 +354,48 @@ export async function run(ctx) {
   if (loadedCount === 20010 && ftNoticeHidden && domRows < 200)
     pass('virtual tree: all ' + loadedCount + ' entries loaded, only ' + domRows + ' DOM rows mounted');
   else fail('virtual tree: loaded=' + loadedCount + ' ftNoticeHidden=' + ftNoticeHidden + ' domRows=' + domRows);
+}
+
+// Build a minimal but valid Sony LRF (BBeB) entirely in-memory so the LRF reader test is
+// self-contained (CI has no real .lrf). Layout mirrors a real book: ~0x58 header, a zlib info-XML
+// block, four objects (PageTree → Page → Block → Text), and the object index. The Text object's
+// stream is a deflate-compressed (flags & 0x100) UTF-16LE run wrapped in start_para/end_para, so the
+// reader's whole decode path (header → index → object-tag walk → inflate → UTF-16 → HTML) is exercised.
+function buildSynthLrf(text, zlib) {
+  const LE = (n, bytes) => { const b = Buffer.alloc(bytes); b.writeUIntLE(n >>> 0, 0, Math.min(bytes, 6)); return b; };
+  const tag = (low, operand = Buffer.alloc(0)) => Buffer.concat([Buffer.from([low, 0xf5]), operand]);
+  const wrapObj = (id, type, body) =>
+    Buffer.concat([Buffer.concat([Buffer.from([0x00, 0xf5]), LE(id, 4), Buffer.from([type, 0x00])]), body, tag(0x01)]);
+  const streamObj = (id, type, body) => wrapObj(id, type, Buffer.concat([tag(0x54, LE(body.flags || 0, 2)), tag(0x04, LE(body.bytes.length, 4)), tag(0x05), body.bytes, tag(0x06)]));
+
+  const u16 = Buffer.from(text, 'utf16le');
+  const inner = Buffer.concat([tag(0xa1, LE(0, 4)), u16, tag(0xa2)]);                 // <p>text</p>
+  const textStream = Buffer.concat([LE(inner.length, 4), zlib.deflateSync(inner)]);   // u32 size + zlib
+  const objs = [
+    wrapObj(2, 0x01, tag(0x5c, Buffer.concat([LE(1, 2), LE(10, 4)]))),                // PageTree → [Page 10]
+    streamObj(10, 0x02, { bytes: tag(0x03, LE(20, 4)) }),                             // Page → Link Block 20
+    streamObj(20, 0x06, { bytes: tag(0x03, LE(30, 4)) }),                             // Block → Link Text 30
+    streamObj(30, 0x0a, { flags: 0x100, bytes: textStream }),                         // Text (compressed)
+  ];
+  const ids = [2, 10, 20, 30];
+
+  const HEADER = 0x58;
+  const infoXml = '<?xml version="1.0" encoding="UTF-8"?><Info version="1.1"><BookInfo><Title>Synthetic LRF</Title><Author>Test Suite</Author></BookInfo></Info>';
+  const infoZ = zlib.deflateSync(Buffer.from(infoXml, 'utf8'));
+
+  let offset = HEADER + infoZ.length;
+  const placed = ids.map((id, i) => { const p = { id, offset, size: objs[i].length }; offset += objs[i].length; return p; });
+  const indexOffset = offset;
+  const index = Buffer.concat(placed.map((p) => Buffer.concat([LE(p.id, 4), LE(p.offset, 4), LE(p.size, 4), LE(0, 4)])));
+
+  const header = Buffer.alloc(HEADER);
+  Buffer.from([0x4c, 0x00, 0x52, 0x00, 0x46, 0x00, 0x00, 0x00]).copy(header, 0);
+  header.writeUInt16LE(1000, 0x08);                  // version
+  header.writeUInt32LE(2, 0x0c);                     // root object id
+  header.writeBigUInt64LE(BigInt(objs.length), 0x10);
+  header.writeBigUInt64LE(BigInt(indexOffset), 0x18);
+  header.writeUInt16LE(600, 0x2a); header.writeUInt16LE(800, 0x2c);
+  header.writeUInt16LE(infoZ.length, 0x4c);          // compressed info size
+  header.writeUInt32LE(infoXml.length, 0x54);        // uncompressed info size
+  return Buffer.concat([header, infoZ, ...objs, index]);
 }
