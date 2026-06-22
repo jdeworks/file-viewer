@@ -15885,6 +15885,7 @@ var plugin221 = {
       if (/\/debian\/|\/DEBIAN\//.test(path) || name === "control") return true;
     }
     const text = intake.text || "";
+    if (intake.isBinary || text.startsWith("!<arch>")) return false;
     return /^Package:\s/m.test(text) && /^Version:\s/m.test(text) && /^Architecture:\s/m.test(text) && /^Description:\s/m.test(text);
   },
   loadRenderer: () => import("../types/text/known/debian-control/renderer.js"),

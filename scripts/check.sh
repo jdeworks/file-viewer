@@ -79,4 +79,7 @@ node tests/smoke.mjs
 echo "→ smoke test: known-file viewers (fresh browser process, avoids WSL2 OOM)…"
 node tests/smoke-known.mjs
 
+echo "→ smoke test: binary/container types (fresh browser process, ~45 heavy WebGL/wasm opens)…"
+node tests/smoke-binary.mjs
+
 echo "✓ all checks passed"

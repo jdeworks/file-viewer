@@ -10,6 +10,11 @@ export const plugin = {
       if (/\/debian\/|\/DEBIAN\//.test(path) || name === 'control') return true;
     }
     const text = intake.text || '';
+    // A debian control file is TEXT that BEGINS with its fields. A binary .deb is an `ar` archive
+    // ("!<arch>\n") whose embedded control member decodes to text further in — without this guard
+    // the whole package false-matches here and renders as a control doc instead of the proper .deb
+    // package view. Exclude ar archives (and anything flagged binary).
+    if (intake.isBinary || text.startsWith('!<arch>')) return false;
     // Must have Package: + Version: + Architecture: + Description: in proximity
     return /^Package:\s/m.test(text) && /^Version:\s/m.test(text) && /^Architecture:\s/m.test(text) && /^Description:\s/m.test(text);
   },

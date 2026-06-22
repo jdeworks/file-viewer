@@ -17,7 +17,9 @@ import * as interactions from './areas/interactions.mjs';
 import * as games from './areas/games.mjs';
 import * as treeDrag from './areas/tree-drag.mjs';
 import * as examplesCatalog from './areas/examples-catalog.mjs';
-import * as binaryTypes from './areas/binary-types.mjs';
+// binary-types is NOT run here — it's the heavy WebGL/wasm area (45 per-test page.goto opens) and
+// runs in its own fresh process via smoke-binary.mjs (like known-files via smoke-known.mjs) so
+// those heavy renderers don't accumulate in the shared browser after 14 prior areas.
 
 const ctx = await createHarness();
 try {
@@ -35,7 +37,6 @@ try {
   await games.run(ctx);
   await treeDrag.run(ctx);
   await examplesCatalog.run(ctx);
-  await binaryTypes.run(ctx);
 } catch (e) {
   ctx.fail('exception: ' + e.message);
 } finally {
