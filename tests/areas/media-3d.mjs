@@ -264,6 +264,33 @@ export async function run(ctx) {
   const bgActive = await page.evaluate(() => document.querySelector('#previewHost .imgv-bg-btn').classList.contains('active'));
   if (bgActive) pass('BG-removal tool enters colour-pick mode'); else fail('BG tool did not activate');
   await page.click('#previewHost .imgv-bg-btn');   // cancel BG mode, restore for later steps
+  // Crop: enter mode, drag a centre rectangle (real mouse → pointer capture works),
+  // Apply → the image shrinks + commits.
+  await page.click('#previewHost .imgv-crop-btn');
+  const cropModeOn = await page.evaluate(() => document.querySelector('#previewHost .imgv-crop-btn').classList.contains('active'));
+  const cropDimsBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  const imgRect = await page.$eval('#previewHost .imgv-img', (e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, w: b.width, h: b.height }; });
+  await page.mouse.move(imgRect.l + imgRect.w * 0.25, imgRect.t + imgRect.h * 0.25);
+  await page.mouse.down();
+  await page.mouse.move(imgRect.l + imgRect.w * 0.75, imgRect.t + imgRect.h * 0.75, { steps: 6 });
+  await page.mouse.up();
+  const cropSrcBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-crop-apply');
+  const cropped = await waitNewSrc(cropSrcBefore);
+  const cropDimsAfter = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  if (cropModeOn && cropped && cropDimsAfter.w < cropDimsBefore.w && cropDimsAfter.h < cropDimsBefore.h) pass('crop selects a region + shrinks the image'); else fail('crop: ' + JSON.stringify({ cropModeOn, cropped, cropDimsBefore, cropDimsAfter }));
+  // Pencil: a real drag over the image draws a stroke + commits a new blob.
+  await page.click('#previewHost .imgv-pencil');
+  const penModeOn = await page.evaluate(() => document.querySelector('#previewHost .imgv-pencil').classList.contains('active'));
+  const penRect = await page.$eval('#previewHost .imgv-img', (e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, w: b.width, h: b.height }; });
+  const penSrcBefore = await imgSrcNow();
+  await page.mouse.move(penRect.l + penRect.w * 0.3, penRect.t + penRect.h * 0.3);
+  await page.mouse.down();
+  await page.mouse.move(penRect.l + penRect.w * 0.6, penRect.t + penRect.h * 0.6, { steps: 6 });
+  await page.mouse.up();
+  const penCommitted = await waitNewSrc(penSrcBefore);
+  if (penModeOn && penCommitted) pass('pencil stroke draws + commits a new image'); else fail('pencil: ' + JSON.stringify({ penModeOn, penCommitted }));
+  await page.click('#previewHost .imgv-pencil');   // toggle pencil off, restore for later steps
   // Toolbar declutter: the 🛠 toggle collapses the editing-tools group.
   const toolsVisInit = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display !== 'none');
   await page.click('#previewHost .imgv-tools-btn');
