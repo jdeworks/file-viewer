@@ -24,7 +24,8 @@ export function getBossLockState({ actions, state }) {
     totalPoints: coverage.total,
     vulnerability: unlocked ? 'mapped' : 'unread',
     defeatPossible: unlocked && coverage.covered.length > 0,
-    hint: unlocked ? bellMessages.unlock : lockedHintLadder[hintIndex],
+    hint: !unlocked ? lockedHintLadder[hintIndex]
+      : (coverage.covered.length > 0 ? bellMessages.unlock : bellMessages.needsCoverage),
   };
 }
 

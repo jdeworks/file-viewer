@@ -8,6 +8,9 @@ export const RECURSION_BLUEPRINT_PATH = '/docs/examples/metagame/stage4/towers/u
 export const bellMessages = {
   start: 'the path repeats at every scale.',
   unlock: 'the recursion points are no longer guesses.',
+  // Shown once the blueprint is read but no tower yet covers a recursion point — teaches the
+  // second step of the two-step gate so the ladder doesn't dead-end on a congratulation.
+  needsCoverage: 'the points are mapped, but nothing holds them. place a tower so its range covers a marked recursion point, then fight.',
   covered: 'a tower anchors the repeating point.',
   defeated: 'the loop reached its own beginning and stopped.',
 };

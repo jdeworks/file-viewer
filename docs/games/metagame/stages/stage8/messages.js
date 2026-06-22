@@ -17,9 +17,9 @@ export const bellMessages = {
 
 export const lockedHintLadder = [
   "the collapse is not waiting for a heroic moment.",
-  "failed nodes leave States behind, but the files decay.",
-  "move .sav debris from /entropy/debris/ into /entropy/active_archive/ before Heat Death.",
-  "archive enough .sav debris first. the Archive button and drag/drop target use the same salvage path."
+  "you keep defending the field. what it discards does not vanish — it settles somewhere outside the fight.",
+  "the States from failed nodes cool into .sav debris in /entropy/debris/.",
+  "move that debris into /entropy/active_archive/ — the Archive button or drag/drop — and bank enough before Heat Death."
 ];
 
 export const btsSummary = [
