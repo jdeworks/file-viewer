@@ -452,6 +452,25 @@ export async function run(ctx) {
   const srText = await srf.$eval('body', (el) => el.textContent);
   if (/SARIF/i.test(srText)) pass('SARIF badge shown'); else fail('sarif badge: ' + srText.slice(0, 200));
   if (/error|warning/i.test(srText)) pass('SARIF findings shown'); else fail('sarif findings: ' + srText.slice(0, 200));
+  // Pagination + severity filter (findings table no longer capped at 20; sample has 62 findings).
+  await srf.waitForFunction(() => /of 62/.test(document.querySelector('#sarif-page-info')?.textContent || ''), { timeout: 8000 });
+  const srPage1 = await srf.evaluate(() => ({
+    visible: [...document.querySelectorAll('tr[data-sev]')].filter((r) => r.style.display !== 'none').length,
+    info: document.querySelector('#sarif-page-info').textContent,
+  }));
+  if (srPage1.visible === 50 && /1.?50.*of 62/.test(srPage1.info)) pass('SARIF paginates findings (50/page of 62)'); else fail('sarif page1: ' + JSON.stringify(srPage1));
+  await srf.click('#sarif-next');
+  const srPage2 = await srf.evaluate(() => ({
+    visible: [...document.querySelectorAll('tr[data-sev]')].filter((r) => r.style.display !== 'none').length,
+    info: document.querySelector('#sarif-page-info').textContent,
+  }));
+  if (srPage2.visible === 12 && /51.?62.*of 62/.test(srPage2.info)) pass('SARIF Next advances to the final page'); else fail('sarif page2: ' + JSON.stringify(srPage2));
+  await srf.click('.sarif-filter[data-sev="error"]');
+  const srErr = await srf.evaluate(() => {
+    const vis = [...document.querySelectorAll('tr[data-sev]')].filter((r) => r.style.display !== 'none');
+    return { count: vis.length, allError: vis.every((r) => r.getAttribute('data-sev') === 'error'), info: document.querySelector('#sarif-page-info').textContent };
+  });
+  if (srErr.count === 13 && srErr.allError && /of 13/.test(srErr.info)) pass('SARIF severity filter narrows to errors (13)'); else fail('sarif filter: ' + JSON.stringify(srErr));
 
   // ── Protocol Buffer viewer ──
   await openExample('Protocol Buffer IDL (demo)');

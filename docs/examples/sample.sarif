@@ -8,11 +8,76 @@
           "name": "DemoScanner",
           "version": "1.4.2",
           "rules": [
-            { "id": "SQL001", "name": "SqlInjection", "shortDescription": { "text": "Potential SQL injection vulnerability" } },
-            { "id": "XSS002", "name": "CrossSiteScripting", "shortDescription": { "text": "Unsanitized user input in HTML output" } },
-            { "id": "SEC003", "name": "HardcodedCredential", "shortDescription": { "text": "Hardcoded password or API key detected" } },
-            { "id": "PERF004", "name": "InefficientQuery", "shortDescription": { "text": "N+1 database query pattern detected" } },
-            { "id": "DEP005", "name": "OutdatedDependency", "shortDescription": { "text": "Dependency with known vulnerability" } }
+            {
+              "id": "SQL001",
+              "name": "SqlInjection",
+              "shortDescription": {
+                "text": "Potential SQL injection vulnerability"
+              }
+            },
+            {
+              "id": "XSS002",
+              "name": "CrossSiteScripting",
+              "shortDescription": {
+                "text": "Unsanitized user input in HTML output"
+              }
+            },
+            {
+              "id": "SEC003",
+              "name": "HardcodedCredential",
+              "shortDescription": {
+                "text": "Hardcoded password or API key detected"
+              }
+            },
+            {
+              "id": "PERF004",
+              "name": "InefficientQuery",
+              "shortDescription": {
+                "text": "N+1 database query pattern detected"
+              }
+            },
+            {
+              "id": "DEP005",
+              "name": "OutdatedDependency",
+              "shortDescription": {
+                "text": "Dependency with known vulnerability"
+              }
+            },
+            {
+              "id": "CRY006",
+              "name": "WeakCrypto",
+              "shortDescription": {
+                "text": "Use of a weak or broken cryptographic algorithm"
+              }
+            },
+            {
+              "id": "PATH007",
+              "name": "PathTraversal",
+              "shortDescription": {
+                "text": "Unvalidated path used in filesystem access"
+              }
+            },
+            {
+              "id": "AUTH008",
+              "name": "MissingAuthCheck",
+              "shortDescription": {
+                "text": "Endpoint lacks an authorization check"
+              }
+            },
+            {
+              "id": "LOG009",
+              "name": "SensitiveDataLog",
+              "shortDescription": {
+                "text": "Sensitive data written to logs"
+              }
+            },
+            {
+              "id": "CFG010",
+              "name": "InsecureConfig",
+              "shortDescription": {
+                "text": "Insecure default configuration value"
+              }
+            }
           ]
         }
       },
@@ -20,44 +85,1242 @@
         {
           "ruleId": "SQL001",
           "level": "error",
-          "message": { "text": "User input is concatenated directly into SQL query without parameterization." },
-          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/db/users.js" }, "region": { "startLine": 42, "startColumn": 18 } } }]
+          "message": {
+            "text": "User input is concatenated directly into SQL query without parameterization."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/services/orders.js"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
         },
         {
           "ruleId": "XSS002",
-          "level": "error",
-          "message": { "text": "innerHTML assignment with unsanitized request parameter 'name'." },
-          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/views/profile.js" }, "region": { "startLine": 87 } } }]
+          "level": "warning",
+          "message": {
+            "text": "Template literal with unescaped user data rendered to DOM."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/api/admin.js"
+                },
+                "region": {
+                  "startLine": 42,
+                  "startColumn": 14
+                }
+              }
+            }
+          ]
         },
         {
           "ruleId": "SEC003",
-          "level": "error",
-          "message": { "text": "Hardcoded API key found in source file." },
-          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/config/api.js" }, "region": { "startLine": 12 } } }]
+          "level": "warning",
+          "message": {
+            "text": "Bearer token committed in source."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/config/api.js"
+                },
+                "region": {
+                  "startLine": 79,
+                  "startColumn": 27
+                }
+              }
+            }
+          ]
         },
         {
           "ruleId": "PERF004",
-          "level": "warning",
-          "message": { "text": "Database query inside a loop may cause N+1 query problem." },
-          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/services/orders.js" }, "region": { "startLine": 156 } } }]
+          "level": "note",
+          "message": {
+            "text": "Database query inside a loop may cause N+1 query problem."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/api/upload.js"
+                },
+                "region": {
+                  "startLine": 116,
+                  "startColumn": 40
+                }
+              }
+            }
+          ]
         },
         {
           "ruleId": "DEP005",
           "level": "warning",
-          "message": { "text": "Package 'lodash@4.17.20' has a known prototype pollution vulnerability (CVE-2021-23337)." },
-          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "package.json" }, "region": { "startLine": 23 } } }]
+          "message": {
+            "text": "Transitive dependency pinned to a version with a published CVE."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/views/profile.js"
+                },
+                "region": {
+                  "startLine": 153,
+                  "startColumn": 53
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CRY006",
+          "level": "error",
+          "message": {
+            "text": "Static IV reused across encryption calls."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/utils/crypto.js"
+                },
+                "region": {
+                  "startLine": 190,
+                  "startColumn": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "PATH007",
+          "level": "note",
+          "message": {
+            "text": "Request-supplied filename joined to a base directory without normalization."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/db/users.js"
+                },
+                "region": {
+                  "startLine": 227,
+                  "startColumn": 19
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AUTH008",
+          "level": "warning",
+          "message": {
+            "text": "Admin action reachable without an authentication middleware."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/auth/session.js"
+                },
+                "region": {
+                  "startLine": 264,
+                  "startColumn": 32
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "LOG009",
+          "level": "warning",
+          "message": {
+            "text": "PII logged at info level."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/workers/import.js"
+                },
+                "region": {
+                  "startLine": 301,
+                  "startColumn": 45
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CFG010",
+          "level": "note",
+          "message": {
+            "text": "CORS configured to allow any origin with credentials."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/db/connection.js"
+                },
+                "region": {
+                  "startLine": 338,
+                  "startColumn": 58
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SQL001",
+          "level": "error",
+          "message": {
+            "text": "Dynamic SQL built from request body field without binding."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib/template.js"
+                },
+                "region": {
+                  "startLine": 375,
+                  "startColumn": 11
+                }
+              }
+            }
+          ]
         },
         {
           "ruleId": "XSS002",
           "level": "warning",
-          "message": { "text": "Template literal with unescaped user data rendered to DOM." },
-          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/components/Comment.js" }, "region": { "startLine": 31 } } }]
+          "message": {
+            "text": "Reflected query parameter written to the response without encoding."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/components/Comment.js"
+                },
+                "region": {
+                  "startLine": 412,
+                  "startColumn": 24
+                }
+              }
+            }
+          ]
         },
         {
           "ruleId": "SEC003",
           "level": "note",
-          "message": { "text": "Consider using environment variables for database connection string." },
-          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "src/db/connection.js" }, "region": { "startLine": 5 } } }]
+          "message": {
+            "text": "Hardcoded API key found in source file."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/routes/payment.js"
+                },
+                "region": {
+                  "startLine": 449,
+                  "startColumn": 37
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "PERF004",
+          "level": "warning",
+          "message": {
+            "text": "Repeated lookup not memoized inside a hot path."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package.json"
+                },
+                "region": {
+                  "startLine": 6,
+                  "startColumn": 50
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "DEP005",
+          "level": "warning",
+          "message": {
+            "text": "Dependency is past end-of-life and unpatched."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/middleware/logger.js"
+                },
+                "region": {
+                  "startLine": 43,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CRY006",
+          "level": "error",
+          "message": {
+            "text": "MD5 used to hash security-relevant data."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/services/orders.js"
+                },
+                "region": {
+                  "startLine": 80,
+                  "startColumn": 16
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "PATH007",
+          "level": "warning",
+          "message": {
+            "text": "Archive entry extracted using its embedded path (zip slip)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/api/admin.js"
+                },
+                "region": {
+                  "startLine": 117,
+                  "startColumn": 29
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AUTH008",
+          "level": "warning",
+          "message": {
+            "text": "Ownership check missing before returning the record."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/config/api.js"
+                },
+                "region": {
+                  "startLine": 154,
+                  "startColumn": 42
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "LOG009",
+          "level": "note",
+          "message": {
+            "text": "Full request body containing credentials written to the log."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/api/upload.js"
+                },
+                "region": {
+                  "startLine": 191,
+                  "startColumn": 55
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CFG010",
+          "level": "warning",
+          "message": {
+            "text": "Debug mode enabled in a production profile."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/views/profile.js"
+                },
+                "region": {
+                  "startLine": 228,
+                  "startColumn": 8
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SQL001",
+          "level": "error",
+          "message": {
+            "text": "Query string interpolates an untrusted identifier."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/utils/crypto.js"
+                },
+                "region": {
+                  "startLine": 265,
+                  "startColumn": 21
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "XSS002",
+          "level": "note",
+          "message": {
+            "text": "innerHTML assignment with unsanitized request parameter."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/db/users.js"
+                },
+                "region": {
+                  "startLine": 302,
+                  "startColumn": 34
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SEC003",
+          "level": "warning",
+          "message": {
+            "text": "Static password literal used for service authentication."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/auth/session.js"
+                },
+                "region": {
+                  "startLine": 339,
+                  "startColumn": 47
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "PERF004",
+          "level": "warning",
+          "message": {
+            "text": "Synchronous query executed per row of a result set."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/workers/import.js"
+                },
+                "region": {
+                  "startLine": 376,
+                  "startColumn": 60
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "DEP005",
+          "level": "note",
+          "message": {
+            "text": "Package has a known prototype pollution vulnerability (CVE-2021-23337)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/db/connection.js"
+                },
+                "region": {
+                  "startLine": 413,
+                  "startColumn": 13
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CRY006",
+          "level": "error",
+          "message": {
+            "text": "ECB mode cipher offers no semantic security."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib/template.js"
+                },
+                "region": {
+                  "startLine": 450,
+                  "startColumn": 26
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "PATH007",
+          "level": "warning",
+          "message": {
+            "text": "User parameter used directly in fs.readFile."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/components/Comment.js"
+                },
+                "region": {
+                  "startLine": 7,
+                  "startColumn": 39
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AUTH008",
+          "level": "note",
+          "message": {
+            "text": "Route handler does not verify the caller role before mutating data."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/routes/payment.js"
+                },
+                "region": {
+                  "startLine": 44,
+                  "startColumn": 52
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "LOG009",
+          "level": "warning",
+          "message": {
+            "text": "Session token included in an error log line."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package.json"
+                },
+                "region": {
+                  "startLine": 81,
+                  "startColumn": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CFG010",
+          "level": "warning",
+          "message": {
+            "text": "Cookie set without the Secure/HttpOnly flags."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/middleware/logger.js"
+                },
+                "region": {
+                  "startLine": 118,
+                  "startColumn": 18
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SQL001",
+          "level": "error",
+          "message": {
+            "text": "User input is concatenated directly into SQL query without parameterization."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/services/orders.js"
+                },
+                "region": {
+                  "startLine": 155,
+                  "startColumn": 31
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "XSS002",
+          "level": "warning",
+          "message": {
+            "text": "Template literal with unescaped user data rendered to DOM."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/api/admin.js"
+                },
+                "region": {
+                  "startLine": 192,
+                  "startColumn": 44
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SEC003",
+          "level": "warning",
+          "message": {
+            "text": "Bearer token committed in source."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/config/api.js"
+                },
+                "region": {
+                  "startLine": 229,
+                  "startColumn": 57
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "PERF004",
+          "level": "note",
+          "message": {
+            "text": "Database query inside a loop may cause N+1 query problem."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/api/upload.js"
+                },
+                "region": {
+                  "startLine": 266,
+                  "startColumn": 10
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "DEP005",
+          "level": "warning",
+          "message": {
+            "text": "Transitive dependency pinned to a version with a published CVE."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/views/profile.js"
+                },
+                "region": {
+                  "startLine": 303,
+                  "startColumn": 23
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CRY006",
+          "level": "error",
+          "message": {
+            "text": "Static IV reused across encryption calls."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/utils/crypto.js"
+                },
+                "region": {
+                  "startLine": 340,
+                  "startColumn": 36
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "PATH007",
+          "level": "note",
+          "message": {
+            "text": "Request-supplied filename joined to a base directory without normalization."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/db/users.js"
+                },
+                "region": {
+                  "startLine": 377,
+                  "startColumn": 49
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AUTH008",
+          "level": "warning",
+          "message": {
+            "text": "Admin action reachable without an authentication middleware."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/auth/session.js"
+                },
+                "region": {
+                  "startLine": 414,
+                  "startColumn": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "LOG009",
+          "level": "warning",
+          "message": {
+            "text": "PII logged at info level."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/workers/import.js"
+                },
+                "region": {
+                  "startLine": 451,
+                  "startColumn": 15
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CFG010",
+          "level": "note",
+          "message": {
+            "text": "CORS configured to allow any origin with credentials."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/db/connection.js"
+                },
+                "region": {
+                  "startLine": 8,
+                  "startColumn": 28
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SQL001",
+          "level": "error",
+          "message": {
+            "text": "Dynamic SQL built from request body field without binding."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib/template.js"
+                },
+                "region": {
+                  "startLine": 45,
+                  "startColumn": 41
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "XSS002",
+          "level": "warning",
+          "message": {
+            "text": "Reflected query parameter written to the response without encoding."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/components/Comment.js"
+                },
+                "region": {
+                  "startLine": 82,
+                  "startColumn": 54
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SEC003",
+          "level": "note",
+          "message": {
+            "text": "Hardcoded API key found in source file."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/routes/payment.js"
+                },
+                "region": {
+                  "startLine": 119,
+                  "startColumn": 7
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "PERF004",
+          "level": "warning",
+          "message": {
+            "text": "Repeated lookup not memoized inside a hot path."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package.json"
+                },
+                "region": {
+                  "startLine": 156,
+                  "startColumn": 20
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "DEP005",
+          "level": "warning",
+          "message": {
+            "text": "Dependency is past end-of-life and unpatched."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/middleware/logger.js"
+                },
+                "region": {
+                  "startLine": 193,
+                  "startColumn": 33
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CRY006",
+          "level": "error",
+          "message": {
+            "text": "MD5 used to hash security-relevant data."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/services/orders.js"
+                },
+                "region": {
+                  "startLine": 230,
+                  "startColumn": 46
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "PATH007",
+          "level": "warning",
+          "message": {
+            "text": "Archive entry extracted using its embedded path (zip slip)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/api/admin.js"
+                },
+                "region": {
+                  "startLine": 267,
+                  "startColumn": 59
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AUTH008",
+          "level": "warning",
+          "message": {
+            "text": "Ownership check missing before returning the record."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/config/api.js"
+                },
+                "region": {
+                  "startLine": 304,
+                  "startColumn": 12
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "LOG009",
+          "level": "note",
+          "message": {
+            "text": "Full request body containing credentials written to the log."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/api/upload.js"
+                },
+                "region": {
+                  "startLine": 341,
+                  "startColumn": 25
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CFG010",
+          "level": "warning",
+          "message": {
+            "text": "Debug mode enabled in a production profile."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/views/profile.js"
+                },
+                "region": {
+                  "startLine": 378,
+                  "startColumn": 38
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SQL001",
+          "level": "error",
+          "message": {
+            "text": "Query string interpolates an untrusted identifier."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/utils/crypto.js"
+                },
+                "region": {
+                  "startLine": 415,
+                  "startColumn": 51
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "XSS002",
+          "level": "note",
+          "message": {
+            "text": "innerHTML assignment with unsanitized request parameter."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/db/users.js"
+                },
+                "region": {
+                  "startLine": 452,
+                  "startColumn": 4
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SEC003",
+          "level": "warning",
+          "message": {
+            "text": "Static password literal used for service authentication."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/auth/session.js"
+                },
+                "region": {
+                  "startLine": 9,
+                  "startColumn": 17
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "PERF004",
+          "level": "warning",
+          "message": {
+            "text": "Synchronous query executed per row of a result set."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/workers/import.js"
+                },
+                "region": {
+                  "startLine": 46,
+                  "startColumn": 30
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "DEP005",
+          "level": "note",
+          "message": {
+            "text": "Package has a known prototype pollution vulnerability (CVE-2021-23337)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/db/connection.js"
+                },
+                "region": {
+                  "startLine": 83,
+                  "startColumn": 43
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CRY006",
+          "level": "error",
+          "message": {
+            "text": "ECB mode cipher offers no semantic security."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib/template.js"
+                },
+                "region": {
+                  "startLine": 120,
+                  "startColumn": 56
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "PATH007",
+          "level": "warning",
+          "message": {
+            "text": "User parameter used directly in fs.readFile."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/components/Comment.js"
+                },
+                "region": {
+                  "startLine": 157,
+                  "startColumn": 9
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "AUTH008",
+          "level": "note",
+          "message": {
+            "text": "Route handler does not verify the caller role before mutating data."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/routes/payment.js"
+                },
+                "region": {
+                  "startLine": 194,
+                  "startColumn": 22
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "LOG009",
+          "level": "warning",
+          "message": {
+            "text": "Session token included in an error log line."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package.json"
+                },
+                "region": {
+                  "startLine": 231,
+                  "startColumn": 35
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CFG010",
+          "level": "warning",
+          "message": {
+            "text": "Cookie set without the Secure/HttpOnly flags."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/middleware/logger.js"
+                },
+                "region": {
+                  "startLine": 268,
+                  "startColumn": 48
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "SQL001",
+          "level": "error",
+          "message": {
+            "text": "User input is concatenated directly into SQL query without parameterization."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/services/orders.js"
+                },
+                "region": {
+                  "startLine": 305,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "XSS002",
+          "level": "warning",
+          "message": {
+            "text": "Template literal with unescaped user data rendered to DOM."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/api/admin.js"
+                },
+                "region": {
+                  "startLine": 342,
+                  "startColumn": 14
+                }
+              }
+            }
+          ]
         }
       ]
     }
