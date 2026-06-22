@@ -563,6 +563,27 @@ export async function run(ctx) {
   const penCommitted = await waitNewSrc(penSrcBefore);
   if (penModeOn && penCommitted) pass('pencil stroke draws + commits a new image'); else fail('pencil: ' + JSON.stringify({ penModeOn, penCommitted }));
   await page.click('#previewHost .imgv-pencil');   // toggle pencil off, restore for later steps
+  // Clone stamp (Draw tab): Alt-click sets a source anchor + snapshot, then a plain drag paints
+  // sampled pixels from (dest − offset). Asserts the source marker shows + a commit with unchanged dims.
+  await openTab('draw');
+  await page.click('#previewHost .imgv-clone');
+  const cloneModeOn = await page.evaluate(() => document.querySelector('#previewHost .imgv-clone').classList.contains('active'));
+  const clRect = await page.$eval('#previewHost .imgv-img', (e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, w: b.width, h: b.height }; });
+  const clDimsBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  await page.keyboard.down('Alt');                 // Alt-click → set the clone source
+  await page.mouse.move(clRect.l + clRect.w * 0.65, clRect.t + clRect.h * 0.3);
+  await page.mouse.down(); await page.mouse.up();
+  await page.keyboard.up('Alt');
+  const cloneMarkerShown = await page.evaluate(() => { const m = document.querySelector('#previewHost .imgv-clone-src'); return !!m && m.style.display !== 'none'; });
+  const cloneSrcBefore = await imgSrcNow();
+  await page.mouse.move(clRect.l + clRect.w * 0.3, clRect.t + clRect.h * 0.6);   // paint elsewhere
+  await page.mouse.down();
+  await page.mouse.move(clRect.l + clRect.w * 0.45, clRect.t + clRect.h * 0.65, { steps: 6 });
+  await page.mouse.up();
+  const cloneCommitted = await waitNewSrc(cloneSrcBefore);
+  const clDimsAfter = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  if (cloneModeOn && cloneMarkerShown && cloneCommitted && clDimsAfter.w === clDimsBefore.w && clDimsAfter.h === clDimsBefore.h) pass('clone stamp: Alt-click sets a source marker, painting clones pixels + commits (dims unchanged)'); else fail('clone: ' + JSON.stringify({ cloneModeOn, cloneMarkerShown, cloneCommitted, clDimsBefore, clDimsAfter }));
+  await page.click('#previewHost .imgv-clone');    // toggle clone off, restore for later steps
   // Toolbar declutter: the 🛠 toggle collapses the editing-tools group.
   const toolsVisInit = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display !== 'none');
   await page.click('#previewHost .imgv-tools-btn');

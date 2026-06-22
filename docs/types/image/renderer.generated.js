@@ -64,6 +64,7 @@ function queryEls(host, canEdit) {
     pencilBtn: qe(".imgv-pencil"),
     eraserBtn: qe(".imgv-eraser"),
     fillBtn: qe(".imgv-fill"),
+    cloneBtn: qe(".imgv-clone"),
     fillTol: qe(".imgv-fill-tol"),
     fillTolV: qe(".imgv-fill-tolv"),
     fillMode: qe(".imgv-fill-mode"),
@@ -442,6 +443,7 @@ function createDrawTools(ctx) {
     pencilBtn,
     eraserBtn,
     fillBtn,
+    cloneBtn,
     fillTol,
     fillTolV,
     fillMode,
@@ -454,8 +456,9 @@ function createDrawTools(ctx) {
     redoBtn
   } = els;
   const selection = () => ctx.getSelection?.();
-  let drawMode = null, isEraserStroke = false;
+  let drawMode = null, isEraserStroke = false, isCloneStroke = false;
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
+  let cloneSource = null, cloneSrcPt = null, cloneOffset = null, cloneMarker = null;
   function syncOverlay() {
     selection()?.syncOverlay();
     if (!drawOverlay) return;
@@ -463,6 +466,18 @@ function createDrawTools(ctx) {
     drawOverlay.style.top = img.offsetTop + "px";
     drawOverlay.style.width = img.offsetWidth + "px";
     drawOverlay.style.height = img.offsetHeight + "px";
+    positionCloneMarker();
+  }
+  function positionCloneMarker() {
+    if (!cloneMarker) return;
+    if (!cloneSrcPt || drawMode !== "clone" || !img.naturalWidth) {
+      cloneMarker.style.display = "none";
+      return;
+    }
+    const sx = img.offsetWidth / img.naturalWidth, sy = img.offsetHeight / img.naturalHeight;
+    cloneMarker.style.left = img.offsetLeft + cloneSrcPt.x * sx + "px";
+    cloneMarker.style.top = img.offsetTop + cloneSrcPt.y * sy + "px";
+    cloneMarker.style.display = "block";
   }
   function buildOverlay() {
     const stage = host.querySelector(".imgv-stage");
@@ -475,8 +490,12 @@ function createDrawTools(ctx) {
     brushCursor.className = "imgv-brush-cursor";
     brushCursor.style.cssText = "position:absolute;border:1px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.6);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:3;display:none;mix-blend-mode:difference;";
     stage.appendChild(brushCursor);
+    cloneMarker = document.createElement("div");
+    cloneMarker.className = "imgv-clone-src";
+    cloneMarker.style.cssText = "position:absolute;width:12px;height:12px;border:1px solid #0ff;box-shadow:0 0 0 1px rgba(0,0,0,.7);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:3;display:none;";
+    stage.appendChild(cloneMarker);
     img.addEventListener("load", () => {
-      if (drawOverlay && !isEraserStroke) {
+      if (drawOverlay && !isEraserStroke && !isCloneStroke) {
         drawOverlay.width = img.naturalWidth || 1;
         drawOverlay.height = img.naturalHeight || 1;
       }
@@ -504,7 +523,7 @@ function createDrawTools(ctx) {
     drawOverlay.addEventListener("touchend", onPUp);
   }
   function moveBrushCursor(e) {
-    if (!brushCursor || drawMode !== "pencil" && drawMode !== "eraser") {
+    if (!brushCursor || drawMode !== "pencil" && drawMode !== "eraser" && drawMode !== "clone") {
       hideBrushCursor();
       return;
     }
@@ -525,15 +544,22 @@ function createDrawTools(ctx) {
     pencilBtn?.classList.toggle("active", drawMode === "pencil");
     eraserBtn?.classList.toggle("active", drawMode === "eraser");
     fillBtn?.classList.toggle("active", drawMode === "fill");
+    cloneBtn?.classList.toggle("active", drawMode === "clone");
+    if (drawMode !== "clone") {
+      cloneSource = null;
+      cloneSrcPt = null;
+      cloneOffset = null;
+      positionCloneMarker();
+    }
     fillOpts.forEach((el) => {
       el.hidden = !(drawMode === "fill" || selection()?.isActive());
     });
     if (!drawOverlay && drawMode) buildOverlay();
     if (drawOverlay) {
       drawOverlay.style.pointerEvents = drawMode ? "auto" : "none";
-      drawOverlay.style.cursor = drawMode === "eraser" ? "cell" : drawMode === "fill" ? "crosshair" : drawMode === "pencil" ? "none" : "";
+      drawOverlay.style.cursor = drawMode === "eraser" ? "cell" : drawMode === "fill" ? "crosshair" : drawMode === "pencil" || drawMode === "clone" ? "none" : "";
     }
-    if (drawMode !== "pencil" && drawMode !== "eraser") hideBrushCursor();
+    if (drawMode !== "pencil" && drawMode !== "eraser" && drawMode !== "clone") hideBrushCursor();
     img.style.pointerEvents = drawMode ? "none" : "";
   }
   function ptToCanvas(e) {
@@ -557,6 +583,38 @@ function createDrawTools(ctx) {
     drawOCtx.lineCap = "round";
     drawOCtx.lineJoin = "round";
   }
+  function snapshotImg() {
+    const c = document.createElement("canvas");
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const g = c.getContext("2d");
+    if (mime === "image/jpeg") {
+      g.fillStyle = "#fff";
+      g.fillRect(0, 0, c.width, c.height);
+    }
+    g.drawImage(img, 0, 0);
+    return c;
+  }
+  function maybeSetCloneSource(e) {
+    const pt = ptToCanvas(e);
+    if (e.altKey || !cloneSource) {
+      cloneSource = snapshotImg();
+      cloneSrcPt = pt;
+      cloneOffset = null;
+      positionCloneMarker();
+      return true;
+    }
+    return false;
+  }
+  function cloneDab(p, sz) {
+    drawOCtx.save();
+    drawOCtx.beginPath();
+    drawOCtx.arc(p.x, p.y, sz / 2, 0, Math.PI * 2);
+    drawOCtx.clip();
+    drawOCtx.clearRect(0, 0, drawOverlay.width, drawOverlay.height);
+    drawOCtx.drawImage(cloneSource, cloneOffset.x, cloneOffset.y);
+    drawOCtx.restore();
+  }
   async function onPDown(e) {
     if (!drawMode || !drawOverlay) return;
     e.preventDefault();
@@ -564,10 +622,12 @@ function createDrawTools(ctx) {
       await doFill(e);
       return;
     }
+    if (drawMode === "clone" && maybeSetCloneSource(e)) return;
     isPointerDown = true;
     isEraserStroke = drawMode === "eraser";
+    isCloneStroke = drawMode === "clone";
     core.pushUndo();
-    if (isEraserStroke) {
+    if (isEraserStroke || isCloneStroke) {
       drawOverlay.width = img.naturalWidth;
       drawOverlay.height = img.naturalHeight;
       if (mime === "image/jpeg") {
@@ -579,12 +639,17 @@ function createDrawTools(ctx) {
       drawOverlay.width = img.naturalWidth || 1;
       drawOverlay.height = img.naturalHeight || 1;
     }
-    if (!isEraserStroke && img.naturalWidth && drawOverlay.width !== img.naturalWidth) {
+    if (!isEraserStroke && !isCloneStroke && img.naturalWidth && drawOverlay.width !== img.naturalWidth) {
       drawOverlay.width = img.naturalWidth;
       drawOverlay.height = img.naturalHeight;
     }
     lastPt = ptToCanvas(e);
     const sz = getCanvasBrushSize();
+    if (isCloneStroke) {
+      if (!cloneOffset) cloneOffset = { x: lastPt.x - cloneSrcPt.x, y: lastPt.y - cloneSrcPt.y };
+      cloneDab(lastPt, sz);
+      return;
+    }
     applyStrokeStyle(sz);
     drawOCtx.beginPath();
     drawOCtx.arc(lastPt.x, lastPt.y, sz / 2, 0, Math.PI * 2);
@@ -596,6 +661,13 @@ function createDrawTools(ctx) {
     e.preventDefault();
     const pt = ptToCanvas(e);
     const sz = getCanvasBrushSize();
+    if (isCloneStroke) {
+      const dx = pt.x - lastPt.x, dy = pt.y - lastPt.y, dist = Math.hypot(dx, dy), step = Math.max(1, sz / 4);
+      for (let d = step; d < dist; d += step) cloneDab({ x: lastPt.x + dx * d / dist, y: lastPt.y + dy * d / dist }, sz);
+      cloneDab(pt, sz);
+      lastPt = pt;
+      return;
+    }
     applyStrokeStyle(sz);
     drawOCtx.beginPath();
     drawOCtx.moveTo(lastPt.x, lastPt.y);
@@ -639,7 +711,7 @@ function createDrawTools(ctx) {
     if (!drawOverlay || !drawOverlay.width) return;
     const targetMime = core.getExportMime();
     let blob;
-    if (isEraserStroke) {
+    if (isEraserStroke || isCloneStroke) {
       await selection()?.clipCanvas(drawOverlay, img);
       blob = await new Promise((r) => drawOverlay.toBlob(r, targetMime, targetMime === "image/jpeg" ? 0.92 : void 0));
     } else {
@@ -669,6 +741,7 @@ function createDrawTools(ctx) {
     pencilBtn.addEventListener("click", () => setDrawMode("pencil"));
     eraserBtn.addEventListener("click", () => setDrawMode("eraser"));
     fillBtn?.addEventListener("click", () => setDrawMode("fill"));
+    cloneBtn?.addEventListener("click", () => setDrawMode("clone"));
     fillTol?.addEventListener("input", () => {
       if (fillTolV) fillTolV.textContent = fillTol.value;
     });
@@ -2927,6 +3000,7 @@ async function render(intake, ctx = {}) {
     pencilBtn,
     eraserBtn,
     fillBtn,
+    cloneBtn,
     fillTol,
     fillTolV,
     fillMode,
@@ -3332,7 +3406,7 @@ async function render(intake, ctx = {}) {
     core,
     getSelection: () => selection,
     applyPan,
-    els: { pencilBtn, eraserBtn, fillBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts, drawColorPicker, drawSizePicker, undoBtn, redoBtn }
+    els: { pencilBtn, eraserBtn, fillBtn, cloneBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts, drawColorPicker, drawSizePicker, undoBtn, redoBtn }
   });
   const unregisterUndoKeys = canEdit ? registerUndoKeys({ host, isEnabled: () => !asciiMode, doUndo: core.doUndo, doRedo: core.doRedo }) : null;
   const bgTool = mountBg({ img, url, core, els });

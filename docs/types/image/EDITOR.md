@@ -90,7 +90,7 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
 
 - **Blend modes on composited layers** — When the Konva layers panel is present, expose a blend-mode `<select>` per layer using the 26 CSS mix-blend-mode values (`multiply`, `screen`, `overlay`, `color-dodge`, `hard-light`, etc.). Konva maps these to Canvas2D `globalCompositeOperation`. The export flatten step uses `drawImage` with each layer's blend mode active. — M (depends on Konva layers task above)
 
-- **Clone stamp / heal** — Sample a source region (alt-click), paint it at the destination. The copy-on-paint blit is a `drawImage` from a scratch canvas patch. No lib. — M
+- ✅ **SHIPPED — Clone stamp** (`draw-overlay.js`, mode `'clone'`): **Alt-click** sets a source anchor + snapshots the base; a plain drag paints, copying pixels from `dest − offset` (offset fixed on the first dab = *aligned* clone) by clip-circle + `drawImage(sourceSnapshot, offset)`. A cyan source marker (`.imgv-clone-src`) pins the sampled pixel; reuses the brush hover circle, brush-size, selection-clip, and commit pipeline (overlay = full image, like the eraser). Master/raster only; **heal** (blend against surroundings) not done. Smoke in media-3d.
 
 - **Perspective crop** — Four-corner drag UI, then `ctx.transform()` with the computed homography matrix. A minimal 3×3 homography solver is ~40 lines of JS. — L (no lib, but math-heavy)
 

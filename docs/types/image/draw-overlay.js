@@ -12,13 +12,16 @@ import { hexToRgba, floodFill } from './fill.js';
 export function createDrawTools(ctx) {
   const { host, img, mime, core, els } = ctx;
   const {
-    pencilBtn, eraserBtn, fillBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts,
+    pencilBtn, eraserBtn, fillBtn, cloneBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts,
     drawColorPicker, drawSizePicker, undoBtn, redoBtn,
   } = els;
   const selection = () => ctx.getSelection?.();
 
-  let drawMode = null, isEraserStroke = false;
+  let drawMode = null, isEraserStroke = false, isCloneStroke = false;
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
+  // Clone stamp: alt-click sets a source anchor + snapshots the base; painting copies pixels from
+  // (dest − offset) where offset is fixed on the first dab (aligned clone). cloneMarker shows the source.
+  let cloneSource = null, cloneSrcPt = null, cloneOffset = null, cloneMarker = null;
 
   // Position the overlay canvas to exactly cover the displayed <img> box (NOT the whole stage), so
   // brush coordinates map 1:1 to image pixels regardless of fit/zoom/scroll letterboxing.
@@ -29,6 +32,17 @@ export function createDrawTools(ctx) {
     drawOverlay.style.top = img.offsetTop + 'px';
     drawOverlay.style.width = img.offsetWidth + 'px';
     drawOverlay.style.height = img.offsetHeight + 'px';
+    positionCloneMarker();
+  }
+
+  // Place the clone-source marker over the source pixel, mapping natural → displayed coords.
+  function positionCloneMarker() {
+    if (!cloneMarker) return;
+    if (!cloneSrcPt || drawMode !== 'clone' || !img.naturalWidth) { cloneMarker.style.display = 'none'; return; }
+    const sx = img.offsetWidth / img.naturalWidth, sy = img.offsetHeight / img.naturalHeight;
+    cloneMarker.style.left = (img.offsetLeft + cloneSrcPt.x * sx) + 'px';
+    cloneMarker.style.top = (img.offsetTop + cloneSrcPt.y * sy) + 'px';
+    cloneMarker.style.display = 'block';
   }
 
   function buildOverlay() {
@@ -43,8 +57,13 @@ export function createDrawTools(ctx) {
     brushCursor.className = 'imgv-brush-cursor';
     brushCursor.style.cssText = 'position:absolute;border:1px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.6);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:3;display:none;mix-blend-mode:difference;';
     stage.appendChild(brushCursor);
+    // Clone-source marker — a crosshair circle pinned to the sampled source pixel.
+    cloneMarker = document.createElement('div');
+    cloneMarker.className = 'imgv-clone-src';
+    cloneMarker.style.cssText = 'position:absolute;width:12px;height:12px;border:1px solid #0ff;box-shadow:0 0 0 1px rgba(0,0,0,.7);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:3;display:none;';
+    stage.appendChild(cloneMarker);
     img.addEventListener('load', () => {
-      if (drawOverlay && !isEraserStroke) { drawOverlay.width = img.naturalWidth || 1; drawOverlay.height = img.naturalHeight || 1; }
+      if (drawOverlay && !isEraserStroke && !isCloneStroke) { drawOverlay.width = img.naturalWidth || 1; drawOverlay.height = img.naturalHeight || 1; }
       syncOverlay(); ctx.applyPan();
     });
     if (img.naturalWidth) { drawOverlay.width = img.naturalWidth; drawOverlay.height = img.naturalHeight; }
@@ -61,7 +80,7 @@ export function createDrawTools(ctx) {
   // Move/size the brush hover circle (screen px = the brush-size value, constant on screen). Only
   // shown for pencil/eraser.
   function moveBrushCursor(e) {
-    if (!brushCursor || (drawMode !== 'pencil' && drawMode !== 'eraser')) { hideBrushCursor(); return; }
+    if (!brushCursor || (drawMode !== 'pencil' && drawMode !== 'eraser' && drawMode !== 'clone')) { hideBrushCursor(); return; }
     const stageR = host.querySelector('.imgv-stage').getBoundingClientRect();
     const d = parseInt(drawSizePicker?.value || '8', 10);
     brushCursor.style.width = d + 'px';
@@ -78,6 +97,8 @@ export function createDrawTools(ctx) {
     pencilBtn?.classList.toggle('active', drawMode === 'pencil');
     eraserBtn?.classList.toggle('active', drawMode === 'eraser');
     fillBtn?.classList.toggle('active', drawMode === 'fill');
+    cloneBtn?.classList.toggle('active', drawMode === 'clone');
+    if (drawMode !== 'clone') { cloneSource = null; cloneSrcPt = null; cloneOffset = null; positionCloneMarker(); }
     // Fill-tuning controls are shared by the bucket AND the wand — show for either.
     fillOpts.forEach((el) => { el.hidden = !(drawMode === 'fill' || selection()?.isActive()); });
     if (!drawOverlay && drawMode) buildOverlay();
@@ -85,9 +106,9 @@ export function createDrawTools(ctx) {
       drawOverlay.style.pointerEvents = drawMode ? 'auto' : 'none';
       drawOverlay.style.cursor = drawMode === 'eraser' ? 'cell'
         : drawMode === 'fill' ? 'crosshair'
-        : drawMode === 'pencil' ? 'none' : ''; // pencil hidden — the hover circle is the cursor
+        : (drawMode === 'pencil' || drawMode === 'clone') ? 'none' : ''; // hover circle is the cursor
     }
-    if (drawMode !== 'pencil' && drawMode !== 'eraser') hideBrushCursor();
+    if (drawMode !== 'pencil' && drawMode !== 'eraser' && drawMode !== 'clone') hideBrushCursor();
     img.style.pointerEvents = drawMode ? 'none' : '';
   }
 
@@ -113,27 +134,68 @@ export function createDrawTools(ctx) {
     drawOCtx.lineWidth = sz; drawOCtx.lineCap = 'round'; drawOCtx.lineJoin = 'round';
   }
 
+  // Snapshot the current committed image to its own canvas (the clone-stamp source).
+  function snapshotImg() {
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const g = c.getContext('2d');
+    if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
+    g.drawImage(img, 0, 0);
+    return c;
+  }
+
+  // Alt-click (or the first click before a source exists) anchors the clone source. Returns true when
+  // the gesture set the source — the caller then skips painting for this pointer-down.
+  function maybeSetCloneSource(e) {
+    const pt = ptToCanvas(e);
+    if (e.altKey || !cloneSource) {
+      cloneSource = snapshotImg();
+      cloneSrcPt = pt; cloneOffset = null;
+      positionCloneMarker();
+      return true;
+    }
+    return false;
+  }
+
+  // One clone dab: within a brush-sized circle, replace the dest pixels with the source shifted by
+  // cloneOffset (= firstDab − sourceAnchor), so dest P shows source (P − offset).
+  function cloneDab(p, sz) {
+    drawOCtx.save();
+    drawOCtx.beginPath(); drawOCtx.arc(p.x, p.y, sz / 2, 0, Math.PI * 2); drawOCtx.clip();
+    drawOCtx.clearRect(0, 0, drawOverlay.width, drawOverlay.height);
+    drawOCtx.drawImage(cloneSource, cloneOffset.x, cloneOffset.y);
+    drawOCtx.restore();
+  }
+
   async function onPDown(e) {
     if (!drawMode || !drawOverlay) return;
     e.preventDefault();
     if (drawMode === 'fill') { await doFill(e); return; }
+    if (drawMode === 'clone' && maybeSetCloneSource(e)) return;   // alt-click set the source; don't paint
     isPointerDown = true;
     isEraserStroke = drawMode === 'eraser';
+    isCloneStroke = drawMode === 'clone';
     core.pushUndo();
-    if (isEraserStroke) {
-      // preload overlay from the already-loaded <img> (no extra fetch) so destination-out punches.
+    if (isEraserStroke || isCloneStroke) {
+      // preload overlay from the already-loaded <img> (no extra fetch): eraser punches into it with
+      // destination-out; clone overwrites circular patches with sampled source pixels.
       drawOverlay.width = img.naturalWidth; drawOverlay.height = img.naturalHeight;
       if (mime === 'image/jpeg') { drawOCtx.fillStyle = '#fff'; drawOCtx.fillRect(0, 0, drawOverlay.width, drawOverlay.height); }
       drawOCtx.drawImage(img, 0, 0);
     } else if (!drawOverlay.width || !img.naturalWidth) {
       drawOverlay.width = img.naturalWidth || 1; drawOverlay.height = img.naturalHeight || 1;
     }
-    if (!isEraserStroke && img.naturalWidth && drawOverlay.width !== img.naturalWidth) {
+    if (!isEraserStroke && !isCloneStroke && img.naturalWidth && drawOverlay.width !== img.naturalWidth) {
       drawOverlay.width = img.naturalWidth;
       drawOverlay.height = img.naturalHeight;
     }
     lastPt = ptToCanvas(e);
     const sz = getCanvasBrushSize();
+    if (isCloneStroke) {
+      if (!cloneOffset) cloneOffset = { x: lastPt.x - cloneSrcPt.x, y: lastPt.y - cloneSrcPt.y };
+      cloneDab(lastPt, sz);
+      return;
+    }
     applyStrokeStyle(sz);
     drawOCtx.beginPath(); drawOCtx.arc(lastPt.x, lastPt.y, sz / 2, 0, Math.PI * 2); drawOCtx.fill();
   }
@@ -144,6 +206,14 @@ export function createDrawTools(ctx) {
     e.preventDefault();
     const pt = ptToCanvas(e);
     const sz = getCanvasBrushSize();
+    if (isCloneStroke) {
+      // dab along the segment so fast moves stay continuous
+      const dx = pt.x - lastPt.x, dy = pt.y - lastPt.y, dist = Math.hypot(dx, dy), step = Math.max(1, sz / 4);
+      for (let d = step; d < dist; d += step) cloneDab({ x: lastPt.x + (dx * d) / dist, y: lastPt.y + (dy * d) / dist }, sz);
+      cloneDab(pt, sz);
+      lastPt = pt;
+      return;
+    }
     applyStrokeStyle(sz);
     drawOCtx.beginPath(); drawOCtx.moveTo(lastPt.x, lastPt.y); drawOCtx.lineTo(pt.x, pt.y); drawOCtx.stroke();
     lastPt = pt;
@@ -178,9 +248,9 @@ export function createDrawTools(ctx) {
     if (!drawOverlay || !drawOverlay.width) return;
     const targetMime = core.getExportMime();
     let blob;
-    if (isEraserStroke) {
-      // The eraser overlay is a copy of the image with holes punched. Clip it to the selection
-      // (restore image pixels outside the mask) so erasing stays inside it.
+    if (isEraserStroke || isCloneStroke) {
+      // Eraser/clone overlays ARE the full image (holes punched / patches cloned). Clip to the
+      // selection (restore base pixels outside the mask) so the edit stays inside it.
       await selection()?.clipCanvas(drawOverlay, img);
       blob = await new Promise((r) => drawOverlay.toBlob(r, targetMime, targetMime === 'image/jpeg' ? 0.92 : undefined));
     } else {
@@ -202,6 +272,7 @@ export function createDrawTools(ctx) {
     pencilBtn.addEventListener('click', () => setDrawMode('pencil'));
     eraserBtn.addEventListener('click', () => setDrawMode('eraser'));
     fillBtn?.addEventListener('click', () => setDrawMode('fill'));
+    cloneBtn?.addEventListener('click', () => setDrawMode('clone'));
     fillTol?.addEventListener('input', () => { if (fillTolV) fillTolV.textContent = fillTol.value; });
     undoBtn?.addEventListener('click', core.doUndo);
     redoBtn?.addEventListener('click', core.doRedo);
