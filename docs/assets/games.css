@@ -229,7 +229,7 @@
    of normal flow means revealing it never reflows the play area (which would shift the button under
    the cursor). pointer-events:none so the chip can never intercept a tap. (Help now lives in the
    metagame header next to SFX.) */
-.mg-s1-hud { position: absolute; top: 6px; right: 6px; z-index: 6; pointer-events: none;
+.mg-s1-hud { position: absolute; top: 2px; right: 6px; z-index: 6; pointer-events: none;
   display: flex; align-items: center; gap: 6px;
   padding: 4px 10px; background: color-mix(in srgb, var(--bg-2) 88%, transparent);
   border: 1px solid var(--border); border-radius: 999px; }
