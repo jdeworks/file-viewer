@@ -1,4 +1,4 @@
-import jsYaml from '../../../../vendor/js-yaml/js-yaml.min.js';
+import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -19,14 +19,15 @@ const CSS = `
 .ansr-src{font-family:ui-monospace,monospace;font-size:11px;color:var(--fg-2,#888);word-break:break-all;}
 `;
 
-export function render(intake) {
+export async function render(intake) {
   const text = intake.text || '';
   const host = document.createElement('div');
   host.className = 'ansr-doc';
 
   let data = null;
   try {
-    data = jsYaml.load(text);
+    const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
+    data = jsyaml.load(text);
   } catch (e) {
     host.innerHTML = `<style>${CSS}</style><p style="color:#c00">YAML parse error: ${esc(e.message)}</p>`;
     return { parentNode: host };
