@@ -1,4 +1,4 @@
-import { fromNumber, fromStore } from '../../bignum.js';
+import { fromNumber, fromStore } from './bignum.js';
 
 export function defaultState(context = {}) {
   const now = Number.isFinite(context.now) ? context.now : Date.now();
