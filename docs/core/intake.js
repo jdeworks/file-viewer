@@ -84,6 +84,20 @@ export function intakeFromText(text, filename) {
   return buildIntake({ filename, mimeType: 'text/plain', bytes, isPaste: true });
 }
 
+// Should this paste be left for a focused input surface instead of becoming a "pasted" file?
+// The global window paste handlers turn clipboard text/files into a new viewer tab — but when the
+// paste lands in a real editable element (a form field, a <select>, contenteditable, or Monaco's
+// hidden textarea) the user means to type INTO that element, not open a file. Hijacking it both
+// breaks the field and can leak a secret: e.g. pasting the companion token into the Settings token
+// box would otherwise spill it into a plaintext "pasted" viewer file. Walk the event's composed
+// path (falling back to the target/activeElement) and bail if any node is an editable surface.
+export function pasteTargetIsEditable(e) {
+  const path = (typeof e.composedPath === 'function' ? e.composedPath() : null) || [];
+  const nodes = path.length ? path : [e.target, document.activeElement];
+  return nodes.some((n) => n && n.nodeType === 1 &&
+    (n.tagName === 'INPUT' || n.tagName === 'TEXTAREA' || n.tagName === 'SELECT' || n.isContentEditable === true));
+}
+
 // Build an intake from raw bytes already in memory (e.g. a single entry extracted from a zip).
 // Detection + binary/text sniffing run exactly as for a dropped file.
 export function intakeFromBytes(bytes, filename, mimeType = '') {
@@ -221,6 +235,7 @@ export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolde
 
   // Paste: prefer a pasted file (image, etc.), else pasted text.
   window.addEventListener('paste', (e) => {
+    if (pasteTargetIsEditable(e)) return;   // let a focused input/editor consume it (no "pasted" file)
     const item = [...(e.clipboardData?.items || [])].find((i) => i.kind === 'file');
     if (item) {
       handleFile(item.getAsFile());
