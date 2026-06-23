@@ -17,15 +17,21 @@ const MARGIN = 56;               // keep each gap this far from ceiling/ground
 const PLAY_H = H - GROUND;       // playable height (above the ground)
 const HI_KEY = 'fv:games:hi:flappybird';
 
+const SFX_KEY = 'fv:flappybird:sfx';   // '0' = muted; anything else (incl. unset) = on
+
 const rand = (min, max) => min + Math.random() * (max - min);
 const hiScore = () => { try { return Number(localStorage.getItem(HI_KEY) || 0); } catch { return 0; } };
+const sfxPref = () => { try { return localStorage.getItem(SFX_KEY) !== '0'; } catch { return true; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v ? '1' : '0'); } catch { /* ok */ } };
 
 export function mount(host, { onScore, onExit } = {}) {
   host.innerHTML =
     '<div class="flappybird-wrap" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px">'
     + '<div class="flappybird-hud" style="display:flex;gap:14px;align-items:center;font-size:14px">'
     + '<span class="flappybird-score" style="font-weight:700">Score: 0</span>'
-    + '<span style="opacity:.7">Click / tap / Space to flap</span></div>'
+    + '<span style="opacity:.7">Click / tap / Space to flap</span>'
+    + '<button class="flappybird-sfx" type="button" title="Toggle sound" '
+    + 'style="margin-left:auto;border:0;background:transparent;cursor:pointer;font-size:17px;line-height:1;padding:2px 4px">🔊</button></div>'
     + '<div class="flappybird-board" style="position:relative;line-height:0">'
     + '<canvas class="flappybird-canvas" width="' + W + '" height="' + H + '" '
     + 'style="display:block;max-width:100%;height:auto;border-radius:10px;cursor:pointer;touch-action:none"></canvas>'
@@ -47,6 +53,34 @@ export function mount(host, { onScore, onExit } = {}) {
 
   let birdY, vy, pipes, score, started, dead, raf, last;
   let groundX = 0, wing = 0;                                    // ambient animation state
+
+  // ── Sound: synthesized via Web Audio (no assets, offline-safe). Singleton context created lazily
+  // on first use (a flap is a user gesture, so autoplay policy allows it). Everything is wrapped so
+  // an unsupported/blocked context can never throw into the game loop. Muteable + persisted. ──
+  let sfxOn = sfxPref();
+  let actx = null;
+  const audioCtx = () => { try { return actx ||= new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } };
+  function tone(type, f0, f1, dur, vol) {
+    if (!sfxOn) return;
+    try {
+      const c = audioCtx(); if (!c) return;
+      if (c.state === 'suspended') c.resume();
+      const osc = c.createOscillator(), gain = c.createGain();
+      osc.connect(gain); gain.connect(c.destination);
+      osc.type = type;
+      const t = c.currentTime;
+      osc.frequency.setValueAtTime(f0, t);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
+      gain.gain.setValueAtTime(vol, t);
+      gain.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+      osc.start(t); osc.stop(t + dur + 0.02);
+    } catch { /* no audio support */ }
+  }
+  const sfx = {
+    flap: () => tone('square', 520, 680, 0.08, 0.05),
+    score: () => tone('sine', 880, 1240, 0.12, 0.07),
+    hit: () => tone('sawtooth', 300, 70, 0.22, 0.12),
+  };
   const clouds = Array.from({ length: 4 }, () => ({ x: rand(0, W), y: rand(20, PLAY_H * 0.55), s: rand(0.2, 0.5), r: rand(16, 28) }));
 
   function reset() {
@@ -69,6 +103,7 @@ export function mount(host, { onScore, onExit } = {}) {
     started = true;
     vy = FLAP_V;
     wing = 1;                                                   // kick the wing-flap animation
+    sfx.flap();
   }
 
   function update(dtf) {
@@ -83,7 +118,7 @@ export function mount(host, { onScore, onExit } = {}) {
 
     for (const p of pipes) {
       if (!p.passed && p.x + PIPE_W < BIRD_X - BIRD_R) {
-        p.passed = true; score++; scoreEl.textContent = 'Score: ' + score; onScore?.(score);
+        p.passed = true; score++; scoreEl.textContent = 'Score: ' + score; onScore?.(score); sfx.score();
       }
     }
 
@@ -180,6 +215,7 @@ export function mount(host, { onScore, onExit } = {}) {
   function gameOver() {
     if (dead) return;
     dead = true;
+    sfx.hit();
     const best = Math.max(hiScore(), score);
     overSub.textContent = 'Score ' + score + '  ·  Best ' + best;
     overEl.style.display = 'flex';
@@ -192,6 +228,11 @@ export function mount(host, { onScore, onExit } = {}) {
     if (e.target.closest('button')) return;   // overlay buttons (Play again / Back) act normally
     flap(); e.preventDefault();
   }
+
+  const sfxBtn = host.querySelector('.flappybird-sfx');
+  const renderSfx = () => { sfxBtn.textContent = sfxOn ? '🔊' : '🔇'; sfxBtn.setAttribute('aria-pressed', String(!sfxOn)); };
+  sfxBtn.addEventListener('click', () => { sfxOn = !sfxOn; lsSet(SFX_KEY, sfxOn); renderSfx(); });
+  renderSfx();
 
   window.addEventListener('keydown', onKey);
   host.addEventListener('pointerdown', onPointer);
@@ -207,6 +248,8 @@ export function mount(host, { onScore, onExit } = {}) {
   return {
     destroy() {
       if (raf) cancelAnimationFrame(raf);
+      try { actx?.close(); } catch { /* ok */ }
+      actx = null;
       window.removeEventListener('keydown', onKey);
       host.removeEventListener('pointerdown', onPointer);
       host.innerHTML = '';

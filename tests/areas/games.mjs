@@ -171,6 +171,12 @@ export async function run(ctx) {
   await page.click('.flappybird-canvas');
   const fbClick = await page.$eval('.flappybird-wrap', (w) => w.__flappybird.state());
   if (fbClick.started && fbClick.vy < 0) pass('Flappy Bird: click flaps'); else fail('Flappy Bird click: ' + JSON.stringify(fbClick));
+  const fbSfxInit = await page.$eval('.flappybird-sfx', (b) => b.textContent);
+  await page.click('.flappybird-sfx');
+  const fbSfxOff = await page.evaluate(() => ({ icon: document.querySelector('.flappybird-sfx').textContent, ls: localStorage.getItem('fv:flappybird:sfx') }));
+  if (/🔊/.test(fbSfxInit) && /🔇/.test(fbSfxOff.icon) && fbSfxOff.ls === '0') pass('Flappy Bird: SFX toggle mutes + persists');
+  else fail('Flappy Bird SFX toggle: ' + JSON.stringify({ init: fbSfxInit, off: fbSfxOff }));
+  await page.evaluate(() => { try { localStorage.removeItem('fv:flappybird:sfx'); } catch {} });
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
