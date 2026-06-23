@@ -22,7 +22,7 @@ Step 1 — identify your lane from cwd:
 
 Step 2 — route before working:
 - If you are THE GENERAL and the user has not already named a lane, ASK which lane this task
-  belongs to — offer the real lanes (bit-foundry/metagame, image/ascii-art) or "general
+  belongs to — offer the real lanes (bit-foundry/metagame, image/ascii-art, media) or "general
   cross-cutting". If they pick a worktree lane, TELL them to `cd .claude/worktrees/<name>` and
   relaunch (then run that worktree's setup prompt), and do NOT start the lane work from main.
 - If the task is genuinely cross-cutting or a one-off → stay in general and do it here.
@@ -36,6 +36,7 @@ Step 2 — route before working:
 | general     | `/home/jens/repos/file-viewer`          | `dev`                          | cross-cutting: load/bundle/SW/import-graph/build/core/CLAUDE.md |
 | metagame    | `.claude/worktrees/metagame-bitfoundry` | `worktree-metagame-bitfoundry` | `docs/games/metagame/**`, `docs/assets/games.css` |
 | image/ascii | `.claude/worktrees/ascii-art`           | `worktree-ascii-art`           | `docs/types/image/**` (image editor + ASCII studio engine) + `docs/tools/ascii-studio/**` (standalone ASCII studio tool page) |
+| media       | `.claude/worktrees/media`               | `worktree-media`               | `docs/types/media/**` (video + audio/music studio: audio graph, mixer, transcoder, spectrum, loudness/QC, video studio, subtitles, timeline) |
 
 ### Creating a new worktree (general only)
 From the main checkout:
