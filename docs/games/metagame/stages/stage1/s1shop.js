@@ -16,8 +16,7 @@ import {
 import { fromNumber, gte, toDisplay, toNumber } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements } from './s1achievements.js';
-import { setText, setHidden, setHtml, bigToNum } from './s1dom.js';
-import { s1log, s1desc } from './s1debug.js';
+import { setText, setHidden, setHtml, bigToNum, bindActivate, bindHoldRepeat } from './s1dom.js';
 
 // Buy-count selector options for the shop.
 const BUY_COUNTS = [1, 10, 100, 'max'];
@@ -123,7 +122,6 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
   }
 
   function renderPanel() {
-    s1log("shop.renderPanel innerHTML swap");
     panelsEl.innerHTML =
       '<div class="mg-s1-panel" data-panel="bits">'
       + '<button class="mg-compute mg-s1-earn" type="button">Compute bits</button>'
@@ -143,27 +141,36 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
   // lives on the parent — so a rebuild can never drop listeners or open a window where a tap lands
   // on a half-rebuilt control (the cause of "buy doesn't register until later"). Routing order puts
   // the inner buy controls before the timed-row, so a tap on a control never also starts a cycle.
-  panelsEl.addEventListener('click', (e) => {
-    const buyn = e.target.closest('.mg-s1-buyn');
+  // Activate on pointerdown (mouse/touchpad) OR click (touch/keyboard) — a fast touchpad tap can
+  // drop the pointerup/click, so the press is the reliable signal. See bindActivate in s1dom.js.
+  bindActivate(panelsEl, (target) => {
+    // Both the shop and managers controllers listen on the SAME panelsEl. Ignore activations that
+    // landed in another tab's panel so each controller only acts on its own controls.
+    if (!target.closest('[data-panel="bits"]')) return null;
+    const buyn = target.closest('.mg-s1-buyn');
     if (buyn) {
       const n = buyn.dataset.n === 'max' ? 'max' : Number(buyn.dataset.n);
       buyCounts[buyn.dataset.id] = n;
       state.buyMult = n;   // persist globally so it survives reload
       save(state);
       paintShop();
-      s1log('shop:buyN', buyn.dataset.id + ' ×' + buyn.dataset.n);
-      return;
+      return buyn;
     }
-    const buy = e.target.closest('.mg-s1-buybtn');
-    if (buy) { s1log('shop:buy', buy.dataset.id); doBuy(buy.dataset.id); return; }
-    if (e.target.closest('.mg-s1-boss')) { s1log('shop:boss'); hooks.onBoss && hooks.onBoss(); return; }
-    if (e.target.closest('.mg-s1-earn')) { s1log('shop:earn (Compute bits)'); hooks.onEarn && hooks.onEarn(); return; }
-    const row = e.target.closest('.mg-s1-timedrow');
-    if (row) { s1log('shop:timed', row.dataset.id); startTimed(row.dataset.id); return; }
-    // Click reached the panel but matched NO control — the prime suspect for a "lost tap" (the
-    // pressed element was swapped out by a renderPanel innerHTML rebuild between down and up).
-    s1log('shop:NO-MATCH (click hit panel, no control)', s1desc(e.target));
+    const buy = target.closest('.mg-s1-buybtn');
+    if (buy) { doBuy(buy.dataset.id); return buy; }
+    const boss = target.closest('.mg-s1-boss');
+    if (boss) { hooks.onBoss && hooks.onBoss(); return boss; }
+    const earn = target.closest('.mg-s1-earn');
+    if (earn) { hooks.onEarn && hooks.onEarn(); return earn; }
+    const row = target.closest('.mg-s1-timedrow');
+    if (row) { startTimed(row.dataset.id); return row; }
+    return null;
   });
+
+  // Press-and-hold "Compute bits" to auto-fire every 250ms — so the user holds instead of rapid-
+  // tapping (which trips the touchpad drag-lock). bindActivate fires the first earn on press; this
+  // adds the repeat while held (and toggles .mg-s1-holding so CSS can show the hold affordance).
+  bindHoldRepeat(panelsEl, '.mg-s1-earn', () => hooks.onEarn && hooks.onEarn(), 250);
 
   function doBuy(id) {
     const t = tiers.find((x) => x.id === id);

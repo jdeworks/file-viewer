@@ -97,6 +97,20 @@
   padding: 18px; font-size: 18px; font-weight: 700; cursor: pointer; transition: transform .05s; }
 .mg-compute:active { transform: scale(.97); }
 .mg-click { opacity: .85; font-size: 14px; font-weight: 600; margin-left: 6px; }
+
+/* "Compute bits" is press-and-hold (auto-fires while held). A gentle idle pulse hints that it can be
+   held; while actually held (.mg-s1-holding) the ring pulses quicker, in step with the ~250ms fire. */
+.mg-s1-earn { animation: mg-s1-hold-hint 2.4s ease-in-out infinite; }
+@keyframes mg-s1-hold-hint {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent); }
+  50%      { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+.mg-s1-earn.mg-s1-holding { animation: mg-s1-hold-active .5s ease-in-out infinite; transform: scale(.98); }
+@keyframes mg-s1-hold-active {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 65%, transparent); }
+  50%      { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .mg-s1-earn, .mg-s1-earn.mg-s1-holding { animation: none; } }
 .mg-bonus { display: flex; flex-direction: column; gap: 6px; }
 .mg-bonus[hidden] { display: none; }
 .mg-bonus-title { font-size: 11px; color: var(--fg-2); text-align: center; }
@@ -216,9 +230,12 @@
 .mg-s1-cell.mg-s1-on { background: transparent; pointer-events: none; }   /* revealed → click-through */
 
 /* Button hygiene: never select label text on tap (mobile double-tap), kill the tap-flash,
-   and render focus as an outline (paints over content, never reflows the layout). */
-.mg-s1 button, .mg-bell-btn, .mg-sfx-btn {
-  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+   and render focus as an outline (paints over content, never reflows the layout). touch-action:
+   manipulation + -webkit-touch-callout:none keep a press-and-HOLD (Compute auto-fire, timed rows)
+   from triggering the mobile text-selection callout / magnifier or double-tap-zoom delay. */
+.mg-s1 button, .mg-bell-btn, .mg-sfx-btn, .mg-s1-timedrow {
+  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; -webkit-touch-callout: none; }
 .mg-s1 button:focus-visible, .mg-bell-btn:focus-visible, .mg-sfx-btn:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 1px; }
 /* Timed builder buttons (Bit Box / Signal Booster …) keep one line so a growing payout

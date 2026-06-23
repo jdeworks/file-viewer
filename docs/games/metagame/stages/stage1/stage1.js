@@ -20,7 +20,6 @@ import { checkAchievements, checkMilestones } from './s1achievements.js';
 import { createManagersController } from './s1managers.js';
 import { renderResetPanel as renderS1ResetPanel } from './s1reset.js';
 import { setText, setHidden, setHtml, bigToNum } from './s1dom.js';
-import { s1trace, s1log } from './s1debug.js';
 
 const GRID_COLS = 20, GRID_ROWS = 5, GRID_CELLS = GRID_COLS * GRID_ROWS;   // 20×5 = 100
 
@@ -104,7 +103,6 @@ export function renderStage1(ctx) {
   const grid = $('.mg-s1-grid');
   const tabsEl = $('.mg-s1-tabs');
   const panelsEl = $('.mg-s1-panels');
-  s1trace(panelsEl, 'panels');   // TEMP: pairs each pointerdown with its click to catch lost taps
   const hudEl = $('.mg-s1-hud');
   const scoreValEl = $('.mg-s1-score-val');
   const helpEl = $('.mg-s1-help');
@@ -185,7 +183,6 @@ export function renderStage1(ctx) {
       .map((id) => '<button class="mg-s1-tab' + (id === activeTab ? ' mg-s1-tab-on' : '') + '" type="button" role="tab" data-tab="' + id + '">' + TAB_LABELS[id] + '</button>')
       .join('');
     tabsEl.querySelectorAll('.mg-s1-tab').forEach((b) => b.addEventListener('click', () => {
-      s1log('tab switch →', b.dataset.tab);
       activeTab = b.dataset.tab;
       renderTabs();
       renderPanel();
@@ -240,7 +237,6 @@ export function renderStage1(ctx) {
 
   // Full re-render of the dynamic UI (tabs + active panel + reveal). Used after a buy.
   function renderAll() {
-    s1log('renderAll (full repaint: tabs + active panel)');
     // Toggle phase: phase 1 = no tabs (pixel reveal only); phase 2 = tabs, no pixel button.
     const wrapper = host.querySelector('.mg-wrap.mg-s1');
     if (wrapper) {

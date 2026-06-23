@@ -5,8 +5,7 @@ import { netRate, managerRunCost, managerRunCostAtLevel,
 import { fromNumber, sub, gte, toDisplay } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements } from './s1achievements.js';
-import { setHtml } from './s1dom.js';
-import { s1log, s1desc } from './s1debug.js';
+import { setHtml, bindActivate } from './s1dom.js';
 
 const MGR_COUNTS = [1, 10, 100, 'max'];
 
@@ -105,7 +104,6 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
     const body = visible.length
       ? '<div class="mg-mgr-list">' + visible.map(mgrCardHtml).join('') + '</div>'
       : '<div class="mg-managers-stub">no managers available yet</div>';
-    s1log('mgr.renderPanel innerHTML swap (hire/level/fire OR tick auto-pause/unpause)');
     panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="managers">' + head + selector + body + '</div>';
     const newPanel = panelsEl.querySelector('.mg-s1-panel');
     if (newPanel && prevScroll) newPanel.scrollTop = prevScroll;
@@ -121,12 +119,15 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
   // Event delegation on the stable panelsEl — survives every renderPanel() rebuild (which fires on
   // hire/level/fire AND whenever a manager auto-pauses/unpauses), so a click is never lost to a
   // mid-rebuild window. Routes buy-count selectors and the per-card hire/level/fire actions.
-  panelsEl.addEventListener('click', (e) => {
-    const buyn = e.target.closest('.mg-mgr-buyn');
-    if (buyn) { s1log('mgr:buyN', buyn.dataset.n); state.mgrBuyMult = buyn.dataset.n === 'max' ? 'max' : Number(buyn.dataset.n); save(state); renderPanel(); return; }
-    const act = e.target.closest('.mg-mgr-card [data-act]');
-    if (act) { s1log('mgr:action', act.dataset.act + ' ' + act.dataset.id); const mgr = managers.find((m) => m.id === act.dataset.id); if (mgr) mgrAction(mgr, act.dataset.act); return; }
-    s1log('mgr:NO-MATCH (click hit panel, no control)', s1desc(e.target));
+  // Activate on pointerdown (mouse/touchpad) OR click (touch/keyboard) — see bindActivate in s1dom.js.
+  bindActivate(panelsEl, (target) => {
+    // Shared panelsEl with the shop controller — only handle activations inside the managers panel.
+    if (!target.closest('[data-panel="managers"]')) return null;
+    const buyn = target.closest('.mg-mgr-buyn');
+    if (buyn) { state.mgrBuyMult = buyn.dataset.n === 'max' ? 'max' : Number(buyn.dataset.n); save(state); renderPanel(); return buyn; }
+    const act = target.closest('.mg-mgr-card [data-act]');
+    if (act) { const mgr = managers.find((m) => m.id === act.dataset.id); if (mgr) mgrAction(mgr, act.dataset.act); return act; }
+    return null;
   });
   // Net-negative preview when hovering/focusing a Level-up button (mouseover/focusin bubble, so they
   // delegate cleanly where mouseenter/focus would not).
@@ -158,13 +159,25 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
         if (strong.textContent !== v) strong.textContent = v;
       }
     }
-    let pausedChanged = false;
     managers.forEach((mgr) => {
       const ms = mgrState(mgr.id);
       const card = panelsEl.querySelector('.mg-mgr-card[data-id="' + mgr.id + '"]');
       if (!card) return;
-      const hasIndicator = !!card.querySelector('.mg-mgr-paused');
-      if (ms.level >= 1 && hasIndicator !== !!ms.paused) pausedChanged = true;
+      // Toggle the "⏸ Paused" indicator IN PLACE. Previously a paused-state flip triggered a full
+      // renderPanel() (innerHTML swap) from the 100ms tick — if that landed while a button was being
+      // pressed it detached the button, so the pointerup/click never fired (stuck "held" button +
+      // lost tap). Adding/removing just the one span leaves every button element untouched.
+      const indicator = card.querySelector('.mg-mgr-paused');
+      const wantIndicator = ms.level >= 1 && ms.paused;
+      if (wantIndicator && !indicator) {
+        const span = document.createElement('span');
+        span.className = 'mg-mgr-paused';
+        span.textContent = '⏸ Paused (out of bits)';
+        const actions = card.querySelector('.mg-mgr-actions');
+        if (actions) card.insertBefore(span, actions); else card.appendChild(span);
+      } else if (!wantIndicator && indicator) {
+        indicator.remove();
+      }
       const btn = card.querySelector(ms.level === 0 ? '.mg-mgr-hire' : '.mg-mgr-lvl');
       if (btn) {
         setHtml(btn, actionBtnHtml(mgr));   // refresh cost/count/ongoing live (esp. for "max")
@@ -180,7 +193,6 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
         runEl.classList.toggle('mg-mgr-runcost-neg', rateNeg);
       }
     });
-    if (pausedChanged) renderPanel();
   }
 
   function mgrAction(mgr, act) {
