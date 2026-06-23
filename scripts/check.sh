@@ -87,6 +87,7 @@ node tests/example-compatibility.test.mjs
 node tests/type-info.test.mjs
 node tests/metadata-normalize.test.mjs
 node tests/metadata-owned.test.mjs
+node tests/sokoban-levels.test.mjs
 
 echo "→ smoke test: core areas (headless Chromium, zero off-origin)…"
 node tests/smoke.mjs

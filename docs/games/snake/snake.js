@@ -1,21 +1,27 @@
 // Snake — the first easter-egg game. Self-contained canvas grid game with keyboard (arrows / WASD)
 // and touch-swipe controls, score + high-score callback, and a game-over/restart overlay.
 //
-// Two optional, persisted modes (checkboxes above the board):
-//   • Walls — random internal obstacles; hitting one ends the game. Food is worth 2× score, but
-//     the tail still grows by only 1 (the bonus is points, not length).
+// Options (persisted, above the board):
+//   • Walls — randomly placed but CONNECTED wall segments (short grid-aligned bars, classic-snake
+//     style), not scattered single cells. Generation guarantees the open area stays fully
+//     reachable (flood-fill check with the board's wrap-around adjacency), so walls can never seal
+//     off a region. Hitting a wall ends the game; food is worth 2× score (the tail still grows 1).
 //   • Boosters — power-ups that act on the snake itself: faster, slower, longer, and shorter.
 //     "shorter" trims the tail with NO score loss, so a smaller, safer snake can out-score a long
 //     one. Speed boosters are timed; length boosters are instant.
+//   • Size — Small / Medium / Large field; the cell size scales so the board stays ~constant px.
 //
 // All new styling is inline so this file stays the only thing touched (snake CSS lives in the
-// metagame-owned games.css). Contract: mount(host, { onScore, onExit }) => { destroy() }.
-const GRID = 20;            // cells per side
+// metagame-owned games.css). Wall generation + reachability live in ./snake-walls.js.
+// Contract: mount(host, { onScore, onExit }) => { destroy() }.
+import { generateWalls, allReachable } from './snake-walls.js';
+
 const TICK_MS = 110;        // base movement cadence
 const FAST_MS = 65;         // "faster" booster cadence
 const SLOW_MS = 175;        // "slower" booster cadence
-const CELL = 18;            // px per cell (canvas is GRID*CELL square, scaled to fit via CSS)
-const WALL_COUNT = 14;      // random wall cells in Walls mode
+const BOARD_PX = 360;       // target canvas size in px; cell scales with grid so the board stays ~constant
+const SIZES = { small: 13, medium: 20, large: 28 };   // cells per side per field size
+const DEFAULT_SIZE = 'medium';
 const SPEED_TICKS = 60;     // duration of a speed booster, in ticks
 const FX_TICKS = 22;        // how long a one-shot booster label lingers in the HUD
 const GROW = 3;             // segments added by "longer"
@@ -26,11 +32,13 @@ const BOOST_TYPES = ['faster', 'slower', 'longer', 'shorter'];
 const BOOST_COLORS = { faster: '#fab005', slower: '#4dabf7', longer: '#9775fa', shorter: '#f06595' };
 const BOOST_SYM = { faster: '»', slower: '«', longer: '+', shorter: '–' };
 const BOOST_FX = { faster: '⚡ faster', slower: '🐌 slower', longer: '＋ longer', shorter: '－ shorter' };
-const LS = { walls: 'fv:snake:walls', boost: 'fv:snake:boost' };
+const LS = { walls: 'fv:snake:walls', boost: 'fv:snake:boost', size: 'fv:snake:size' };
 
 const rand = (n) => Math.floor(Math.random() * n);
 function lsGet(k) { try { return localStorage.getItem(k) === '1'; } catch { return false; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v ? '1' : '0'); } catch { /* ok */ } }
+function lsGetStr(k, def) { try { return localStorage.getItem(k) || def; } catch { return def; } }
+function lsSetStr(k, v) { try { localStorage.setItem(k, v); } catch { /* ok */ } }
 
 export function mount(host, { onScore, onExit } = {}) {
   host.innerHTML =
@@ -38,17 +46,22 @@ export function mount(host, { onScore, onExit } = {}) {
     + '<div class="snake-hud"><span class="snake-score">Score: 0</span>'
     + '<span class="snake-fx" style="font-weight:600"></span>'
     + '<span class="snake-hint">Arrows / WASD · Swipe on touch</span></div>'
-    + '<div class="snake-opts" style="display:flex;gap:14px;margin:2px 0 6px;font-size:13px;opacity:.85;flex-wrap:wrap">'
+    + '<div class="snake-opts" style="display:flex;gap:14px;margin:2px 0 6px;font-size:13px;opacity:.85;flex-wrap:wrap;align-items:center">'
     + '<label style="display:inline-flex;gap:5px;align-items:center;cursor:pointer">'
     + '<input type="checkbox" class="snake-opt-walls">Walls <span style="opacity:.7">(2× score)</span></label>'
     + '<label style="display:inline-flex;gap:5px;align-items:center;cursor:pointer">'
     + '<input type="checkbox" class="snake-opt-boost">Boosters</label>'
+    + '<label style="display:inline-flex;gap:5px;align-items:center;cursor:pointer">Size'
+    + '<select class="snake-opt-size" style="font-size:13px;cursor:pointer">'
+    + '<option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option>'
+    + '</select></label>'
     + '</div>'
-    + '<div class="snake-board"><canvas class="snake-canvas" width="' + GRID * CELL + '" height="' + GRID * CELL + '"></canvas>'
+    + '<div class="snake-board"><canvas class="snake-canvas" width="' + BOARD_PX + '" height="' + BOARD_PX + '"></canvas>'
     + '<div class="snake-over" hidden><div class="snake-over-box"><div class="snake-over-msg"></div>'
     + '<button class="snake-restart">Play again</button> <button class="snake-quit">Back</button></div></div>'
     + '</div></div>';
 
+  const wrap = host.querySelector('.snake-wrap');
   const canvas = host.querySelector('.snake-canvas');
   const ctx = canvas.getContext('2d');
   const scoreEl = host.querySelector('.snake-score');
@@ -57,13 +70,27 @@ export function mount(host, { onScore, onExit } = {}) {
   const overMsg = host.querySelector('.snake-over-msg');
   const wallsBox = host.querySelector('.snake-opt-walls');
   const boostBox = host.querySelector('.snake-opt-boost');
+  const sizeSel = host.querySelector('.snake-opt-size');
 
   let snake, dir, nextDir, food, score, timer, dead;
   let walls, booster, boosterTtl, pendingGrow, curMs, speedExpire, fxExpire, ticks;
+  let grid, cell, spawnY;                              // set by applySize()
   let wallsOn = lsGet(LS.walls);
   let boostOn = lsGet(LS.boost);
+  let sizeKey = lsGetStr(LS.size, DEFAULT_SIZE);
+  if (!SIZES[sizeKey]) sizeKey = DEFAULT_SIZE;
   wallsBox.checked = wallsOn;
   boostBox.checked = boostOn;
+  sizeSel.value = sizeKey;
+
+  // Field size → grid + cell; cell scales so the board stays ~BOARD_PX px regardless of grid.
+  function applySize() {
+    grid = SIZES[sizeKey];
+    cell = Math.round(BOARD_PX / grid);
+    spawnY = Math.floor(grid / 2);
+    canvas.width = grid * cell;
+    canvas.height = grid * cell;
+  }
 
   function occupied(p) {
     return snake.some((s) => s.x === p.x && s.y === p.y)
@@ -71,27 +98,20 @@ export function mount(host, { onScore, onExit } = {}) {
       || (food && food.x === p.x && food.y === p.y)
       || (booster && booster.x === p.x && booster.y === p.y);
   }
-  function freeCell() { let p; do { p = { x: rand(GRID), y: rand(GRID) }; } while (occupied(p)); return p; }
+  function freeCell() { let p; do { p = { x: rand(grid), y: rand(grid) }; } while (occupied(p)); return p; }
 
   function genWalls() {
-    walls = [];
-    if (!wallsOn) return;
-    let tries = 0;
-    while (walls.length < WALL_COUNT && tries < 600) {
-      tries++;
-      const x = rand(GRID), y = rand(GRID);
-      if (Math.abs(y - snake[0].y) <= 1) continue;                                  // keep the spawn lane clear
-      if (snake.some((s) => s.x === x && s.y === y)) continue;
-      if (walls.some((w) => w.x === x && w.y === y)) continue;
-      walls.push({ x, y });
-    }
+    const count = Math.max(2, Math.round(grid * grid / 90));   // density scales with field area
+    walls = wallsOn ? generateWalls(grid, spawnY, count) : [];
   }
 
   // Speed is the setInterval cadence; changing it means clearing + re-arming the timer.
   function setSpeed(ms) { if (ms === curMs) return; curMs = ms; if (timer) clearInterval(timer); timer = setInterval(tick, ms); }
 
   function reset() {
-    snake = [{ x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }];
+    applySize();
+    const hx = Math.floor(grid / 2);
+    snake = [{ x: hx, y: spawnY }, { x: hx - 1, y: spawnY }, { x: hx - 2, y: spawnY }];
     dir = { x: 1, y: 0 }; nextDir = dir;
     score = 0; dead = false;
     walls = []; booster = null; boosterTtl = 0; pendingGrow = 0;
@@ -132,7 +152,7 @@ export function mount(host, { onScore, onExit } = {}) {
     if (fxExpire && ticks >= fxExpire) { fxEl.textContent = ''; fxExpire = 0; }
 
     dir = nextDir;
-    const head = { x: (snake[0].x + dir.x + GRID) % GRID, y: (snake[0].y + dir.y + GRID) % GRID };
+    const head = { x: (snake[0].x + dir.x + grid) % grid, y: (snake[0].y + dir.y + grid) % grid };
     if (snake.some((s) => s.x === head.x && s.y === head.y)) return gameOver();
     if (walls.some((w) => w.x === head.x && w.y === head.y)) return gameOver();
 
@@ -174,23 +194,23 @@ export function mount(host, { onScore, onExit } = {}) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     // walls
     ctx.fillStyle = dark ? '#5c5f66' : '#adb5bd';
-    for (const w of walls) ctx.fillRect(w.x * CELL, w.y * CELL, CELL, CELL);
+    for (const w of walls) ctx.fillRect(w.x * cell, w.y * cell, cell, cell);
     // food (a byte)
     ctx.fillStyle = '#e0533d';
-    ctx.fillRect(food.x * CELL + 3, food.y * CELL + 3, CELL - 6, CELL - 6);
+    ctx.fillRect(food.x * cell + 3, food.y * cell + 3, cell - 6, cell - 6);
     // booster
     if (booster) {
       ctx.fillStyle = BOOST_COLORS[booster.type];
-      ctx.fillRect(booster.x * CELL + 2, booster.y * CELL + 2, CELL - 4, CELL - 4);
+      ctx.fillRect(booster.x * cell + 2, booster.y * cell + 2, cell - 4, cell - 4);
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 12px system-ui, sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(BOOST_SYM[booster.type], booster.x * CELL + CELL / 2, booster.y * CELL + CELL / 2 + 0.5);
+      ctx.fillText(BOOST_SYM[booster.type], booster.x * cell + cell / 2, booster.y * cell + cell / 2 + 0.5);
     }
     // snake
     for (let i = 0; i < snake.length; i++) {
       ctx.fillStyle = i === 0 ? '#2f9e44' : '#40c057';
-      ctx.fillRect(snake[i].x * CELL + 1, snake[i].y * CELL + 1, CELL - 2, CELL - 2);
+      ctx.fillRect(snake[i].x * cell + 1, snake[i].y * cell + 1, cell - 2, cell - 2);
     }
   }
 
@@ -218,12 +238,19 @@ export function mount(host, { onScore, onExit } = {}) {
 
   wallsBox.addEventListener('change', () => { wallsOn = wallsBox.checked; lsSet(LS.walls, wallsOn); reset(); });
   boostBox.addEventListener('change', () => { boostOn = boostBox.checked; lsSet(LS.boost, boostOn); reset(); });
+  sizeSel.addEventListener('change', () => { sizeKey = SIZES[sizeSel.value] ? sizeSel.value : DEFAULT_SIZE; lsSetStr(LS.size, sizeKey); reset(); });
 
   window.addEventListener('keydown', onKey);
   host.addEventListener('touchstart', onTouchStart, { passive: false });
   host.addEventListener('touchend', onTouchEnd, { passive: true });
   host.querySelector('.snake-restart').addEventListener('click', () => reset());
   host.querySelector('.snake-quit').addEventListener('click', () => onExit?.());
+
+  // Test/debug hook: lets smoke tests assert the field size and that walls stay connected + reachable.
+  wrap.__snake = {
+    info: () => ({ grid, cell, size: sizeKey, wallsOn, wallCount: walls.length, reachable: allReachable(grid, walls) }),
+    walls: () => walls.map((w) => ({ x: w.x, y: w.y })),
+  };
 
   reset();
 

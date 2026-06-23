@@ -47,7 +47,27 @@ export async function run(ctx) {
   if (snakeCanvasStill && ((wallsState.checked && wallsState.ls === '1') || (!wallsState.checked && wallsState.ls === '0')))
     pass('Snake Walls toggle persists and restarts cleanly');
   else fail('Snake walls toggle inconsistent: ' + JSON.stringify(wallsState) + ' canvas=' + !!snakeCanvasStill);
-  await page.evaluate(() => { try { localStorage.removeItem('fv:snake:walls'); localStorage.removeItem('fv:snake:boost'); } catch {} });
+  // Field-size selector resizes the grid; with walls on they must be connected AND fully reachable.
+  const sizeProbe = await page.evaluate(() => {
+    const sel = document.querySelector('.snake-opt-size');
+    sel.value = 'large';
+    sel.dispatchEvent(new Event('change'));
+    const api = document.querySelector('.snake-wrap').__snake;
+    const info = api.info();
+    const ws = api.walls();
+    const set = new Set(ws.map((w) => w.x + ',' + w.y));
+    // "connected" = every wall cell touches at least one orthogonal wall neighbour (no lone cells)
+    const connected = ws.every((w) =>
+      set.has((w.x + 1) + ',' + w.y) || set.has((w.x - 1) + ',' + w.y)
+      || set.has(w.x + ',' + (w.y + 1)) || set.has(w.x + ',' + (w.y - 1)));
+    return { grid: info.grid, reachable: info.reachable, wallCount: info.wallCount, connected,
+      ls: localStorage.getItem('fv:snake:size'), cw: document.querySelector('.snake-canvas').width };
+  });
+  if (sizeProbe.grid === 28 && sizeProbe.ls === 'large' && sizeProbe.reachable
+      && sizeProbe.wallCount > 0 && sizeProbe.connected)
+    pass('Snake: field size resizes grid + walls are connected and fully reachable');
+  else fail('Snake size/walls: ' + JSON.stringify(sizeProbe));
+  await page.evaluate(() => { try { localStorage.removeItem('fv:snake:walls'); localStorage.removeItem('fv:snake:boost'); localStorage.removeItem('fv:snake:size'); } catch {} });
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
@@ -177,6 +197,176 @@ export async function run(ctx) {
   if (/🔊/.test(fbSfxInit) && /🔇/.test(fbSfxOff.icon) && fbSfxOff.ls === '0') pass('Flappy Bird: SFX toggle mutes + persists');
   else fail('Flappy Bird SFX toggle: ' + JSON.stringify({ init: fbSfxInit, off: fbSfxOff }));
   await page.evaluate(() => { try { localStorage.removeItem('fv:flappybird:sfx'); } catch {} });
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
+  // Tetris — clean start, escalating gravity, ramped hard-drop scoring
+  await page.click('.games-card[data-game="tetris"]');
+  await page.waitForSelector('.tetris-canvas', { timeout: 8000 });
+  pass('Tetris launches');
+  const tet = await page.$eval('.tetris-wrap', (w) => {
+    const s = w.__tetris.state();
+    return { score: s.score, level: s.level, lines: s.lines, dead: s.dead, hasNext: s.hasNext,
+      preview: !!document.querySelector('.tetris-next'), ms0: w.__tetris.speedAt(0), msFast: w.__tetris.speedAt(6) };
+  });
+  if (tet.score === 0 && tet.level === 0 && tet.lines === 0 && !tet.dead && tet.hasNext && tet.preview && tet.ms0 === 800 && tet.msFast < tet.ms0)
+    pass('Tetris: clean start + next preview + gravity escalates with level');
+  else fail('Tetris start/escalation: ' + JSON.stringify(tet));
+  await page.keyboard.press('Space');                       // hard drop the first piece
+  const tetDrop = await page.$eval('.tetris-wrap', (w) => w.__tetris.state());
+  if (tetDrop.score > 0 && !tetDrop.dead) pass('Tetris: hard drop scores + locks without error');
+  else fail('Tetris hard drop: ' + JSON.stringify(tetDrop));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
+  // Breakout — clean start, escalating ball speed, launch on Space
+  await page.click('.games-card[data-game="breakout"]');
+  await page.waitForSelector('.breakout-canvas', { timeout: 8000 });
+  pass('Breakout launches');
+  const bo = await page.$eval('.breakout-wrap', (w) => {
+    const s = w.__breakout.state();
+    return { score: s.score, lives: s.lives, level: s.level, dead: s.dead, stuck: s.stuck,
+      bricks: s.bricks, sp0: w.__breakout.speedAt(0), spFast: w.__breakout.speedAt(5) };
+  });
+  if (bo.score === 0 && bo.lives === 3 && bo.level === 0 && !bo.dead && bo.stuck && bo.bricks > 0 && bo.spFast > bo.sp0)
+    pass('Breakout: clean start + ball speed escalates with level');
+  else fail('Breakout start/escalation: ' + JSON.stringify(bo));
+  await page.keyboard.press('Space');                       // launch the ball
+  const boLaunched = await page.$eval('.breakout-wrap', (w) => w.__breakout.state());
+  if (!boLaunched.stuck && !boLaunched.dead) pass('Breakout: ball launches on Space');
+  else fail('Breakout launch: ' + JSON.stringify(boLaunched));
+  const boPower = await page.$eval('.breakout-wrap', (w) => {
+    const before = w.__breakout.state().balls;
+    w.__breakout.activate('multi');
+    const after = w.__breakout.state().balls;
+    w.__breakout.activate('life');
+    return { before, after, lives: w.__breakout.state().lives };
+  });
+  if (boPower.after > boPower.before && boPower.lives === 4) pass('Breakout: multiball adds balls + extra-life power-up');
+  else fail('Breakout power-ups: ' + JSON.stringify(boPower));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
+  // Memory — clean 6-pair start; matching a pair scores (ramped by round)
+  await page.click('.games-card[data-game="memory"]');
+  await page.waitForSelector('.memory-grid', { timeout: 8000 });
+  pass('Memory launches');
+  const mem0 = await page.$eval('.memory-wrap', (w) => w.__memory.state());
+  const pairIdx = await page.$eval('.memory-wrap', (w) => {
+    const d = w.__memory.deck();
+    for (let i = 0; i < d.length; i++) for (let j = i + 1; j < d.length; j++) if (d[i] === d[j]) return [i, j];
+    return null;
+  });
+  if (mem0.score === 0 && mem0.round === 1 && mem0.cards === 12 && mem0.matched === 0 && pairIdx)
+    pass('Memory: clean start, 6-pair board');
+  else fail('Memory start: ' + JSON.stringify({ mem0, pairIdx }));
+  await page.click('.memory-card[data-idx="' + pairIdx[0] + '"]');
+  await page.click('.memory-card[data-idx="' + pairIdx[1] + '"]');
+  const memM = await page.$eval('.memory-wrap', (w) => w.__memory.state());
+  if (memM.matched >= 1 && memM.score > 0) pass('Memory: matching a pair scores (ramped by round)');
+  else fail('Memory match: ' + JSON.stringify(memM));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
+  // Minesweeper — safe first click reveals + scores; Flag mode flags without digging
+  await page.click('.games-card[data-game="minesweeper"]');
+  await page.waitForSelector('.mine-grid', { timeout: 8000 });
+  pass('Minesweeper launches');
+  const ms0 = await page.$eval('.mine-wrap', (w) => w.__mine.state());
+  if (ms0.score === 0 && ms0.level === 0 && !ms0.dead && !ms0.flagMode && ms0.cells === 81 && ms0.minesLeft > 0 && ms0.revealed === 0)
+    pass('Minesweeper: clean 9×9 start');
+  else fail('Minesweeper start: ' + JSON.stringify(ms0));
+  await page.click('.mine-cell[data-i="40"]');             // center; first click is always safe
+  const ms1 = await page.$eval('.mine-wrap', (w) => w.__mine.state());
+  if (!ms1.dead && ms1.revealed > 0 && ms1.score > 0) pass('Minesweeper: safe first dig reveals + scores');
+  else fail('Minesweeper dig: ' + JSON.stringify(ms1));
+  await page.click('.mine-flag');                          // switch to Flag mode
+  const cov = await page.$eval('.mine-wrap', (w) => w.__mine.firstCovered());
+  await page.click('.mine-cell[data-i="' + cov + '"]');
+  const ms2 = await page.$eval('.mine-wrap', (w) => w.__mine.state());
+  if (ms2.flagMode && ms2.minesLeft === ms1.minesLeft - 1) pass('Minesweeper: Flag mode flags a covered cell');
+  else fail('Minesweeper flag: ' + JSON.stringify({ ms1, ms2, cov }));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
+  // Sokoban — pushing the box onto the goal solves level 1 and scores (ramped by levels solved)
+  await page.click('.games-card[data-game="sokoban"]');
+  await page.waitForSelector('.sokoban-canvas', { timeout: 8000 });
+  pass('Sokoban launches');
+  const sk0 = await page.$eval('.sokoban-wrap', (w) => ({ ...w.__sokoban.state(),
+    v1: w.__sokoban.solveValueAt(1), v3: w.__sokoban.solveValueAt(3) }));
+  if (sk0.score === 0 && sk0.solved === 0 && sk0.levelIndex === 0 && sk0.boxes === 1 && sk0.onGoal === 0
+      && !sk0.done && sk0.total >= 10 && sk0.v3 > sk0.v1)
+    pass('Sokoban: clean start + ' + sk0.total + ' levels + ramped solve value');
+  else fail('Sokoban start: ' + JSON.stringify(sk0));
+  await page.keyboard.press('ArrowLeft');                  // single push solves level 1
+  const sk1 = await page.$eval('.sokoban-wrap', (w) => w.__sokoban.state());
+  if (sk1.solved >= 1 && sk1.score > 0) pass('Sokoban: pushing the box onto the goal solves + scores');
+  else fail('Sokoban solve: ' + JSON.stringify(sk1));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
+  // Asteroids — clean start, escalating waves, Space fires a bullet
+  await page.click('.games-card[data-game="asteroids"]');
+  await page.waitForSelector('.asteroids-canvas', { timeout: 8000 });
+  pass('Asteroids launches');
+  const as0 = await page.$eval('.asteroids-wrap', (w) => ({ ...w.__asteroids.state(),
+    r1: w.__asteroids.rocksInWave(1), r5: w.__asteroids.rocksInWave(5) }));
+  if (as0.score === 0 && as0.lives === 3 && as0.wave === 1 && !as0.dead && as0.rocks === 4 && as0.bullets === 0 && as0.r5 > as0.r1)
+    pass('Asteroids: clean start + waves escalate');
+  else fail('Asteroids start/escalation: ' + JSON.stringify(as0));
+  await page.keyboard.press('Space');                      // fire
+  const as1 = await page.$eval('.asteroids-wrap', (w) => w.__asteroids.state());
+  if (as1.bullets >= 1 && !as1.dead) pass('Asteroids: Space fires a bullet');
+  else fail('Asteroids fire: ' + JSON.stringify(as1));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
+  // Simon — clean start, escalating tempo, repeating the sequence scores
+  await page.click('.games-card[data-game="simon"]');
+  await page.waitForSelector('.simon-board', { timeout: 8000 });
+  pass('Simon launches');
+  const si0 = await page.$eval('.simon-wrap', (w) => ({ ...w.__simon.state(),
+    t1: w.__simon.tempoAt(1), t8: w.__simon.tempoAt(8) }));
+  if (si0.score === 0 && si0.round === 1 && !si0.dead && si0.seqLen === 1 && si0.t8 < si0.t1)
+    pass('Simon: clean start + tempo escalates');
+  else fail('Simon start/escalation: ' + JSON.stringify(si0));
+  const siR = await page.$eval('.simon-wrap', (w) => { w.__simon.forceAccept(); w.__simon.tap(w.__simon.seq()[0]); return w.__simon.state(); });
+  if (siR.round >= 2 && siR.score > 0 && !siR.dead) pass('Simon: repeating the sequence scores (ramped by round)');
+  else fail('Simon repeat: ' + JSON.stringify(siR));
+  const siD = await page.$eval('.simon-wrap', (w) => {
+    const sel = w.querySelector('.simon-diff'); sel.value = 'hard'; sel.dispatchEvent(new Event('change'));
+    w.__simon.forceAccept();
+    const wrong = (w.__simon.seq()[0] + 1) % w.__simon.state().count;
+    w.__simon.tap(wrong);
+    const s = w.__simon.state();
+    return { count: s.count, dead: s.dead, lit: s.lit };
+  });
+  if (siD.count === 16 && siD.dead && siD.lit === 0) pass('Simon: Hard = 16 pads + losing resets the board (no stuck-lit pad)');
+  else fail('Simon difficulty/loss: ' + JSON.stringify(siD));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
+  // Pong — clean start, escalating ball speed, ball in play
+  await page.click('.games-card[data-game="pong"]');
+  await page.waitForSelector('.pong-canvas', { timeout: 8000 });
+  pass('Pong launches');
+  const pg0 = await page.$eval('.pong-wrap', (w) => ({ ...w.__pong.state(), s0: w.__pong.speedAt(0), s5: w.__pong.speedAt(5) }));
+  if (pg0.score === 0 && pg0.lives === 3 && pg0.level === 0 && !pg0.dead && pg0.s5 > pg0.s0)
+    pass('Pong: clean start + ball speed escalates');
+  else fail('Pong start/escalation: ' + JSON.stringify(pg0));
+  const pgMoving = await page.evaluate(async () => {
+    const w = document.querySelector('.pong-wrap');
+    const a = w.__pong.state().ballX;
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    return w.__pong.state().ballX !== a;
+  });
+  if (pgMoving) pass('Pong: ball is in play (loop running)');
+  else fail('Pong: ball not moving');
+  await page.keyboard.press('w');                          // W/S brings in player 2
+  const pg2 = await page.$eval('.pong-wrap', (w) => w.__pong.state());
+  if (pg2.mode === '2p') pass('Pong: W/S activates 2-player mode');
+  else fail('Pong 2-player: ' + JSON.stringify(pg2));
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
