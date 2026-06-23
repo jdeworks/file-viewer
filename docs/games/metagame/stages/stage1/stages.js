@@ -304,7 +304,7 @@ export const STAGES = [
 
     // ── Boss ticket (§10.2) ──────────────────────────────────────────────────────────────────
     // canFightBoss = allSubStagesOwned AND gte(bits, bossTicket). Checked in orchestrator (WP-S1-12).
-    bossTicket: { m: 1, e: 93 },   // 1ba — a long exponential climb past the steepened late tiers
+    bossTicket: { m: 1, e: 54 },   // 1an — reachable well before the steepened late tiers
 
     // ── Intro / boss dialog ──────────────────────────────────────────────────────────────────
     intro: [

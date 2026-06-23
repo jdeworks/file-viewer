@@ -142,7 +142,7 @@ export function renderStage1(ctx) {
     // Gravitational Pull chip — shown once a prestige has earned pull (×>1); guarded so it only
     // writes when the value changes.
     const grav = globalPull(state);
-    if (grav > 1.0001) { setText(gravEl, '🌀 ×' + grav.toFixed(1)); setHidden(gravEl, false); }
+    if (grav > 1.0001) { setText(gravEl, '🌀 ×' + toDisplay(fromNumber(grav))); setHidden(gravEl, false); }
     else setHidden(gravEl, true);
     // Bits score is recomputed at most every 0.25s (the 100ms tick would otherwise rewrite it 10×/s).
     const now = Date.now();
