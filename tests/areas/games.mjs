@@ -301,6 +301,12 @@ export async function run(ctx) {
       && !sk0.done && sk0.total >= 10 && sk0.v3 > sk0.v1)
     pass('Sokoban: clean start + ' + sk0.total + ' levels + ramped solve value');
   else fail('Sokoban start: ' + JSON.stringify(sk0));
+  const solInfo = await page.$eval('.sokoban-wrap', (w) => {
+    const plan = w.__sokoban.solution();
+    return { hasBtn: !!document.querySelector('.sokoban-solve'), planLen: Array.isArray(plan) ? plan.length : -1 };
+  });
+  if (solInfo.hasBtn && solInfo.planLen >= 1) pass('Sokoban: Solve computes a shortest plan');
+  else fail('Sokoban solve plan: ' + JSON.stringify(solInfo));
   await page.keyboard.press('ArrowLeft');                  // single push solves level 1
   const sk1 = await page.$eval('.sokoban-wrap', (w) => w.__sokoban.state());
   if (sk1.solved >= 1 && sk1.score > 0) pass('Sokoban: pushing the box onto the goal solves + scores');
