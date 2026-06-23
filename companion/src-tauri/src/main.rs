@@ -223,9 +223,13 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error building tauri application")
         .run(|_app, event| {
-            // Tray-only app: closing the (nonexistent) last window must not quit.
-            if let tauri::RunEvent::ExitRequested { api, .. } = event {
-                api.prevent_exit();
+            // Tray-only app: an automatic exit request (last window closed → code None) must NOT
+            // quit. But an EXPLICIT app.exit(code) — e.g. the tray "Quit" item → code Some(_) — must
+            // be honoured, otherwise Quit does nothing.
+            if let tauri::RunEvent::ExitRequested { code, api, .. } = event {
+                if code.is_none() {
+                    api.prevent_exit();
+                }
             }
         });
 }
