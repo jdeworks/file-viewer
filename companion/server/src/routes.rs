@@ -401,6 +401,42 @@ pub async fn delete_file(State(state): State<AppState>, Query(q): Query<FileQuer
 }
 
 // ---------------------------------------------------------------------------
+// POST /reveal?path=   (token required) — show a file/folder in the OS file manager.
+// Path-restricted to watched folders. Opens the native browser (Explorer/Finder), it does NOT run
+// the file or any associated app.
+// ---------------------------------------------------------------------------
+
+pub async fn reveal(State(state): State<AppState>, Query(q): Query<FileQuery>) -> Response {
+    let watched = state.watched_paths.lock().unwrap().clone();
+    let pb = PathBuf::from(&q.path);
+    match validate_path(&pb, &watched) {
+        Err(e) => (StatusCode::FORBIDDEN, Json(serde_json::json!({ "error": e }))).into_response(),
+        Ok(canonical) => {
+            #[cfg(target_os = "windows")]
+            {
+                let _ = std::process::Command::new("explorer")
+                    .arg(format!("/select,{}", canonical.display()))
+                    .spawn();
+            }
+            #[cfg(target_os = "macos")]
+            {
+                let _ = std::process::Command::new("open")
+                    .args(["-R", &canonical.display().to_string()])
+                    .spawn();
+            }
+            #[cfg(target_os = "linux")]
+            {
+                // No portable "select the file", so open its containing directory.
+                let dir = if canonical.is_dir() { canonical.as_path() } else { canonical.parent().unwrap_or(&canonical) };
+                let _ = std::process::Command::new("xdg-open").arg(dir).spawn();
+            }
+            logging::info(format!("revealed {}", canonical.display()));
+            (StatusCode::OK, Json(serde_json::json!({ "ok": true }))).into_response()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // GET /files?path=
 // ---------------------------------------------------------------------------
 

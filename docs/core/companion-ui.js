@@ -1,7 +1,7 @@
 import { intakeFromFile } from './intake.js';
 import { layoutTopbar } from './layout.js';
 import { $, state, toast, escapeHtml } from './state.js';
-import { detectCompanion, findFile, findFolder, saveFile, deleteFile, pickFolder, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
+import { detectCompanion, findFile, findFolder, saveFile, deleteFile, pickFolder, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile, revealFile } from './companion.js';
 import { browseForFolder, joinPath } from './companion-browse.js';
 import { setupFolderRefresh, onFolderRootResolved, onFolderRootCleared, refreshFolderFromDisk } from './companion-folder.js';
 export { renderCompanionSettings } from './companion-settings.js';
@@ -357,6 +357,15 @@ export async function deleteTreePath({ path, isFolder, name }) {
   } catch (err) {
     toast('Delete failed: ' + err.message);
   }
+}
+
+// Reveal a tree file/folder in the OS file manager (Explorer/Finder) via the companion.
+export async function revealTreePath({ path }) {
+  if (!companionAvailable || !companionFolderRoot) { toast('Companion folder not linked.'); return; }
+  const absPath = absolutePathForFile(path);
+  if (!absPath) { toast('Could not resolve that path on disk.'); return; }
+  try { await revealFile(absPath); }
+  catch (err) { toast('Reveal failed: ' + err.message); }
 }
 
 function pickCompanionPath(paths) {

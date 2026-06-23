@@ -89,7 +89,7 @@ function collectFolderPaths(node, prefix, out, depth = 0, maxDepth = Infinity) {
 
 // Render into `host`. onOpen(node) fires on a file click. onMove(srcPath, destFolderPath) fires
 // when a file is dropped onto a folder row. Returns controller API.
-export function renderTree(host, root, { onOpen, onMove, onDelete, initialOpenDepth = Infinity }) {
+export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, initialOpenDepth = Infinity }) {
   host.innerHTML = '';
   const inner = document.createElement('div');
   inner.className = 'ft-virtual-inner';
@@ -156,14 +156,26 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, initialOpenDe
 
   // A per-row delete affordance (shown on hover via CSS, only while a companion folder is active).
   // stopPropagation so clicking it never opens the file or toggles the folder.
-  function appendDeleteBtn(row, target) {
-    const del = document.createElement('button');
-    del.className = 'ft-del';
-    del.textContent = '🗑';
-    del.title = target.isFolder ? 'Delete this folder from disk' : 'Delete this file from disk';
-    del.tabIndex = -1;
-    del.addEventListener('click', (e) => { e.stopPropagation(); onDelete(target); });
-    row.appendChild(del);
+  function appendRowActions(row, target) {
+    // Reveal in the OS file manager (added before delete so 🗑 stays rightmost).
+    if (onReveal) {
+      const rev = document.createElement('button');
+      rev.className = 'ft-reveal';
+      rev.textContent = '📂';
+      rev.title = 'Reveal in file manager';
+      rev.tabIndex = -1;
+      rev.addEventListener('click', (e) => { e.stopPropagation(); onReveal(target); });
+      row.appendChild(rev);
+    }
+    if (onDelete) {
+      const del = document.createElement('button');
+      del.className = 'ft-del';
+      del.textContent = '🗑';
+      del.title = target.isFolder ? 'Delete this folder from disk' : 'Delete this file from disk';
+      del.tabIndex = -1;
+      del.addEventListener('click', (e) => { e.stopPropagation(); onDelete(target); });
+      row.appendChild(del);
+    }
   }
 
   function makeRow(item, idx) {
@@ -188,7 +200,7 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, initialOpenDe
         else openFolders.add(item.folderPath);
         buildFlat();
       });
-      if (onDelete) appendDeleteBtn(row, { path: item.folderPath, isFolder: true, name: item.node.name });
+      appendRowActions(row, { path: item.folderPath, isFolder: true, name: item.node.name });
       // Drop target: accept dragged tree files → move into this folder.
       if (onMove) {
         row.addEventListener('dragover', (e) => {
@@ -225,7 +237,7 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, initialOpenDe
       if (movedPaths.has(item.node.path)) row.classList.add('ft-moved');
       if (state.sessionTree) row.classList.add('ft-session');
       row.addEventListener('click', () => { setActive(item.node.path); onOpen(item.node); });
-      if (onDelete) appendDeleteBtn(row, { path: item.node.path, isFolder: false, name: item.node.name });
+      appendRowActions(row, { path: item.node.path, isFolder: false, name: item.node.name });
       row.addEventListener('dragstart', (e) => {
         _dragNode = item.node;
         e.dataTransfer.setData(TREE_DRAG_TYPE, item.node.path);

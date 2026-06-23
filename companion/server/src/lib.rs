@@ -85,6 +85,7 @@ pub fn router_with(state: AppState, pages_origin: String, extra: Router<AppState
         .route("/watched-paths", post(routes::add_watched_path))
         .route("/watched-paths", delete(routes::remove_watched_path))
         .route("/file", post(routes::post_file).delete(routes::delete_file))
+        .route("/reveal", post(routes::reveal))
         .route_layer(middleware::from_fn_with_state(state.clone(), auth::require_token));
 
     Router::new()

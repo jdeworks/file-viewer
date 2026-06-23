@@ -18,11 +18,13 @@ let loadIntake = () => {};
 let confirmDiscard = () => true;
 let onFolderFileOpened = null; // optional callback(node) called after a tree file opens
 let onTreeDelete = null;       // optional callback({path,isFolder,name}) for per-row delete-on-disk
+let onTreeReveal = null;       // optional callback({path,isFolder,name}) for per-row reveal-in-folder
 export function initFolder(deps) {
   loadIntake = deps.loadIntake;
   confirmDiscard = deps.confirmDiscard;
   onFolderFileOpened = deps.onFolderFileOpened || null;
   onTreeDelete = deps.onTreeDelete || null;
+  onTreeReveal = deps.onTreeReveal || null;
 }
 
 // Track whether the one-time move disclaimer toast has been shown this folder session.
@@ -109,7 +111,7 @@ export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders
     state.treeApi = renderTree($('ftBody'), buildTree(state.treeEntries), {
       onOpen: (node) => openTreeFile(node),
       onMove: _onMove,
-      onDelete: (t) => onTreeDelete?.(t),
+      onDelete: (t) => onTreeDelete?.(t), onReveal: (t) => onTreeReveal?.(t),
       initialOpenDepth: 0,
     });
     for (const movedDest of state.folderMoves.values()) state.treeApi.setMoved(movedDest, movedDest);
@@ -135,7 +137,7 @@ export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders
   showFolderLoading('Building file tree…', { progress: 0.45, detail: display.length.toLocaleString() + ' visible file' + (display.length === 1 ? '' : 's') });
   await nextFrame();
   const tree = buildTree(display);
-  state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node), onMove: _onMove, onDelete: (t) => onTreeDelete?.(t), initialOpenDepth: 0 });
+  state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node), onMove: _onMove, onDelete: (t) => onTreeDelete?.(t), onReveal: (t) => onTreeReveal?.(t), initialOpenDepth: 0 });
   // Restore previously-expanded folders (e.g. across a refresh) so the tree doesn't collapse.
   if (openFolders && openFolders.length) state.treeApi.openPaths(openFolders);
 
@@ -163,7 +165,7 @@ export function renderFolderTree({ openFolders = [], activePath = null } = {}) {
   state.treeApi = renderTree($('ftBody'), buildTree(state.treeEntries), {
     onOpen: (node) => openTreeFile(node),
     onMove: _onMove,
-    onDelete: (t) => onTreeDelete?.(t),
+    onDelete: (t) => onTreeDelete?.(t), onReveal: (t) => onTreeReveal?.(t),
     initialOpenDepth: 0,
   });
   if (openFolders.length) state.treeApi.openPaths(openFolders);

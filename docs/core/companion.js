@@ -78,6 +78,17 @@ export async function deleteFile(absolutePath) {
   return res.json();
 }
 
+// Show a file/folder in the OS file manager (Explorer/Finder). Path-restricted server-side; opens
+// the native browser only — never runs the file.
+export async function revealFile(absolutePath) {
+  const res = await fetch(`${BASE}/reveal?path=${encodeURIComponent(absolutePath)}`, {
+    method: 'POST',
+    headers: { 'X-Companion-Token': _token || '' },
+  });
+  if (!res.ok) throw new Error(`reveal failed: ${res.status}`);
+  return res.json();
+}
+
 export async function getWatchedPaths() {
   const res = await fetch(`${BASE}/watched-paths`);
   return (await res.json()).paths;

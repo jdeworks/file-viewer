@@ -139,8 +139,10 @@ body.fv-dark .companion-download code { background: #2a2a2d; }
 .companion-conn.conn-down { color: #d9362b; }
 
 /* Per-row delete (shown on row hover, only while a companion folder is linked). */
-.ft-del { display: none; margin-left: 4px; border: 0; background: transparent; cursor: pointer;
-  font-size: 12px; line-height: 1; padding: 0 4px; opacity: .65; flex: none; }
-.ft-del:hover { opacity: 1; }
+.ft-del, .ft-reveal { display: none; margin-left: 4px; border: 0; background: transparent;
+  cursor: pointer; font-size: 12px; line-height: 1; padding: 0 4px; opacity: .65; flex: none; }
+.ft-del:hover, .ft-reveal:hover { opacity: 1; }
 body.companion-folder-active .ft-row:hover .ft-del,
-body.companion-folder-active .ft-row:focus-within .ft-del { display: inline-flex; align-items: center; }
+body.companion-folder-active .ft-row:focus-within .ft-del,
+body.companion-folder-active .ft-row:hover .ft-reveal,
+body.companion-folder-active .ft-row:focus-within .ft-reveal { display: inline-flex; align-items: center; }

@@ -324,6 +324,38 @@ async fn test_list_files() {
     assert!(names.contains(&"subdir"));
 }
 
+// --- /reveal ---
+
+#[tokio::test]
+async fn test_reveal_requires_token_and_watched_path() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("r.txt");
+    fs::write(&file_path, b"x").unwrap();
+    let other = TempDir::new().unwrap();
+    let outside = other.path().join("o.txt");
+    fs::write(&outside, b"x").unwrap();
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let p = file_path.to_str().unwrap().to_string();
+
+    // No token → 401.
+    let r1 = app.clone().oneshot(Request::builder().method(Method::POST)
+        .uri(format!("/reveal?path={}", urlencoding::encode(&p))).body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(r1.status(), StatusCode::UNAUTHORIZED);
+
+    // Token + watched file → 200 (the OS reveal command is best-effort/ignored in tests).
+    let r2 = app.clone().oneshot(Request::builder().method(Method::POST)
+        .uri(format!("/reveal?path={}", urlencoding::encode(&p)))
+        .header("X-Companion-Token", "secret").body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(r2.status(), StatusCode::OK);
+
+    // Token + outside watched → 403.
+    let po = outside.to_str().unwrap().to_string();
+    let r3 = app.oneshot(Request::builder().method(Method::POST)
+        .uri(format!("/reveal?path={}", urlencoding::encode(&po)))
+        .header("X-Companion-Token", "secret").body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(r3.status(), StatusCode::FORBIDDEN);
+}
+
 // --- /tree recursive listing ---
 
 #[tokio::test]

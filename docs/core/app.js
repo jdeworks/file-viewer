@@ -25,7 +25,7 @@ import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard,
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, showFolderLoading, hideFolderLoading } from './folder.js';
 import { clearArchiveTree, mountArchiveTree } from './archive-tree.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
-import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, onDeleteClick, renderCompanionSettings, detectCompanionOnStartup, tryAutoLink, deleteTreePath, onConnButtonClick } from './companion-ui.js';
+import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, onDeleteClick, renderCompanionSettings, detectCompanionOnStartup, tryAutoLink, deleteTreePath, revealTreePath, onConnButtonClick } from './companion-ui.js';
 import { initSessionTree, updateSessionTree, createNewFile, onTreeFileDrop, flushSessionEdit } from './session-tree.js';
 import { populateTypeSelect } from './type-select.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
@@ -403,6 +403,7 @@ function init() {
     },
     // Per-row delete (file or folder) straight from the tree, without opening the file first.
     onTreeDelete: deleteTreePath,
+    onTreeReveal: revealTreePath,   // per-row "reveal in file manager"
   });
   initLayout({ renderPreview, openSettings });
   initRawPane({ renderPreview });
