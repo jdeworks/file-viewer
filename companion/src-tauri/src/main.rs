@@ -76,6 +76,28 @@ fn status_icon(connected: bool) -> tauri::image::Image<'static> {
     tauri::image::Image::new_owned(buf, S as u32, S as u32)
 }
 
+// Register the `fvcompanion://` URL scheme so the browser can LAUNCH this app (the viewer's
+// connection button opens `fvcompanion://start`, the OS prompts "Open File Viewer Companion?" and
+// runs us). Windows-only for now, dependency-free via `reg`. Idempotent — re-runs each start so the
+// command always points at the current exe. We ignore the URL argument on launch; just starting is
+// the point.
+#[cfg(target_os = "windows")]
+fn register_url_scheme() {
+    let exe = match std::env::current_exe() {
+        Ok(p) => p.display().to_string(),
+        Err(_) => return,
+    };
+    let base = r"HKCU\Software\Classes\fvcompanion";
+    let cmd = format!("\"{exe}\" \"%1\"");
+    let reg = |args: &[&str]| {
+        let _ = std::process::Command::new("reg").args(args).output();
+    };
+    reg(&["add", base, "/ve", "/d", "URL:File Viewer Companion", "/f"]);
+    reg(&["add", base, "/v", "URL Protocol", "/d", "", "/f"]);
+    reg(&["add", &format!(r"{base}\shell\open\command"), "/ve", "/d", &cmd, "/f"]);
+    logging::info("registered fvcompanion:// URL scheme");
+}
+
 fn open_url(url: &str) {
     #[cfg(target_os = "linux")]
     let _ = std::process::Command::new("xdg-open").arg(url).spawn();
@@ -166,6 +188,10 @@ fn main() {
     println!("File Viewer Companion (desktop) — server on 127.0.0.1:{PORT}");
     println!("  token: {token}  (also written to {})", token_file.display());
     logging::info(format!("companion (desktop) started on 127.0.0.1:{PORT}"));
+
+    // Let the browser launch us on demand via the fvcompanion:// scheme (one-click "start it").
+    #[cfg(target_os = "windows")]
+    register_url_scheme();
 
     // Values surfaced by the tray menu (Show session token / Open logs folder). The token is also
     // auto-delivered to the viewer via /ping, but the tray makes it discoverable without a console.

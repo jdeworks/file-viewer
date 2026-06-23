@@ -445,14 +445,31 @@ export function updateConnButton(connected) {
 
 export async function onConnButtonClick() {
   if (!companionEnabled()) return;
-  const ok = await detectCompanion();   // retry immediately
+  let ok = await detectCompanion();   // retry immediately
+  if (!ok) {
+    // Try to LAUNCH the companion via its registered URL scheme (set up by the desktop app on
+    // first run). The browser shows an "Open File Viewer Companion?" prompt; if it's not installed/
+    // registered, nothing happens — so we then poll /ping and fall back to manual guidance.
+    toast('Trying to start the Companion…', 2500);
+    try {
+      const f = document.createElement('iframe');   // iframe src avoids navigating the page away
+      f.style.display = 'none';
+      f.src = 'fvcompanion://start';
+      document.body.appendChild(f);
+      setTimeout(() => f.remove(), 1500);
+    } catch { /* scheme not handled */ }
+    for (let i = 0; i < 8 && !ok; i++) {
+      await new Promise((r) => setTimeout(r, 700));
+      ok = await detectCompanion().catch(() => false);
+    }
+  }
   companionAvailable = ok;
   document.body.classList.toggle('companion-active', ok);
   updateConnButton(ok);
   syncSaveBtn();
-  if (ok) { _backoffIdx = 0; showCompanionIndicator(); }
+  if (ok) { _backoffIdx = 0; startHealthCheck(); showCompanionIndicator(); }
   else {
-    toast('Companion not reachable. Start it on your PC — the tray app or companion.exe (e.g. in your fv-companion folder) — and it will connect automatically. See ⋯ Settings → Companion to get it.', 9000);
+    toast('Could not reach or start the Companion. Start it manually (the tray app or companion.exe in your fv-companion folder); it connects automatically. See ⋯ Settings → Companion to get it.', 9000);
   }
 }
 

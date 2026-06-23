@@ -5,7 +5,7 @@
 import { toast } from './state.js';
 import {
   detectCompanion, isEnabled as companionEnabled, setEnabled as setCompanionEnabled,
-  getToken, setToken, getWatchedPaths, addWatchedPath, removeWatchedPath, pickFolder, getLogs,
+  getToken, setToken, getWatchedPaths, addWatchedPath, removeWatchedPath, pickFolder, getLogs, isMobileDevice,
 } from './companion.js';
 import { isCompanionAvailable, setCompanionAvailable, syncSaveBtn, stopWatching, showCompanionIndicator, updateConnButton } from './companion-ui.js';
 
@@ -191,6 +191,16 @@ export function renderCompanionSettings(container) {
   const summary = document.createElement('summary');
   summary.innerHTML = `Companion <span class="companion-status-dot ${isCompanionAvailable() ? 'connected' : ''}">${isCompanionAvailable() ? '● connected' : '○ not found'}</span>`;
   panel.appendChild(summary);
+
+  // Desktop-only: on mobile, show a brief note instead of the controls (the companion can't run).
+  if (isMobileDevice()) {
+    const note = document.createElement('p');
+    note.className = 'companion-net';
+    note.textContent = 'The Companion is a desktop-only feature (it runs a local app on your computer). It is not available on phones or tablets.';
+    panel.appendChild(note);
+    container.prepend(panel);
+    return;
+  }
 
   const enableRow = document.createElement('div');
   enableRow.className = 'set-row';

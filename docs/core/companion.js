@@ -9,7 +9,13 @@ const LS_TOKEN   = 'fv:companion:token';
 
 let _token = localStorage.getItem(LS_TOKEN) || null;
 
-export function isEnabled() { return localStorage.getItem(LS_ENABLED) === 'true'; }
+// The companion is a DESKTOP-only feature (a local server + native app). On phones/tablets there's
+// no companion to reach, so we hard-disable it: isEnabled() is forced false, which gates every
+// companion fetch — zero off-origin requests on mobile regardless of the saved opt-in flag.
+export function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(navigator.userAgent || '');
+}
+export function isEnabled() { return !isMobileDevice() && localStorage.getItem(LS_ENABLED) === 'true'; }
 export function setEnabled(on) { localStorage.setItem(LS_ENABLED, on ? 'true' : 'false'); }
 
 export async function detectCompanion() {
