@@ -11,7 +11,7 @@ use axum::{extract::State, middleware, routing::post, Json, Router};
 use file_viewer_companion::{
     auth::require_token,
     config::{config_path, load_config, save_config},
-    router_with,
+    logging, router_with,
     watcher::FileWatcher,
     AppState,
 };
@@ -85,6 +85,7 @@ async fn path_picker(handle: tauri::AppHandle, state: AppState) -> Json<serde_js
 }
 
 fn main() {
+    logging::init(Some(config_path()));
     let token =
         std::env::var("COMPANION_TOKEN").unwrap_or_else(|_| uuid::Uuid::new_v4().to_string());
     let watched_paths = Arc::new(Mutex::new(load_config()));
@@ -95,7 +96,7 @@ fn main() {
             (tx, Some(fw))
         }
         Err(e) => {
-            eprintln!("companion: file watcher unavailable: {e}");
+            logging::warn(format!("file watcher unavailable: {e}"));
             let (tx, _) = tokio::sync::broadcast::channel(1);
             (tx, None)
         }
@@ -117,6 +118,7 @@ fn main() {
     let _ = std::fs::write(&token_file, &token);
     println!("File Viewer Companion (desktop) — server on 127.0.0.1:{PORT}");
     println!("  token: {token}  (also written to {})", token_file.display());
+    logging::info(format!("companion (desktop) started on 127.0.0.1:{PORT}"));
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())

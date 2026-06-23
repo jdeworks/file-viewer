@@ -13,12 +13,19 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use crate::{
     config::save_config,
     finder::{find_file, find_folder},
+    logging,
     paths::validate_path,
     AppState,
 };
+
+// Log "viewer connected" only once per process (ping is polled periodically by the browser, so we
+// don't want a line every 30s). Reset implicitly by a server restart.
+static CONNECTED_LOGGED: AtomicBool = AtomicBool::new(false);
 
 // ---------------------------------------------------------------------------
 // GET /ping
@@ -36,6 +43,9 @@ pub struct PingResponse {
 }
 
 pub async fn ping(State(state): State<AppState>) -> Json<PingResponse> {
+    if !CONNECTED_LOGGED.swap(true, Ordering::Relaxed) {
+        logging::info("viewer connected");
+    }
     Json(PingResponse {
         ok: true,
         version: env!("CARGO_PKG_VERSION"),
@@ -86,6 +96,7 @@ pub async fn add_watched_path(
 ) -> Response {
     let pb = PathBuf::from(&body.path);
     if !pb.is_dir() {
+        logging::warn(format!("rejected watched folder (not a directory): {}", body.path));
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({ "error": "path is not a directory" })),
@@ -100,8 +111,9 @@ pub async fn add_watched_path(
         locked.clone()
     };
     if let Err(e) = save_config(&paths) {
-        tracing::warn!("Failed to save config: {e}");
+        logging::error(format!("failed to save config: {e}"));
     }
+    logging::info(format!("watched folder added: {}", body.path));
     let path_strs: Vec<String> = paths.iter().map(|p| p.display().to_string()).collect();
     (
         StatusCode::OK,
@@ -125,8 +137,9 @@ pub async fn remove_watched_path(
         locked.clone()
     };
     if let Err(e) = save_config(&paths) {
-        tracing::warn!("Failed to save config: {e}");
+        logging::error(format!("failed to save config: {e}"));
     }
+    logging::info(format!("watched folder removed: {}", body.path));
     let path_strs: Vec<String> = paths.iter().map(|p| p.display().to_string()).collect();
     (
         StatusCode::OK,
@@ -155,10 +168,16 @@ pub async fn get_find_file(
     Query(q): Query<FindFileQuery>,
 ) -> Json<FindFileResponse> {
     let watched = state.watched_paths.lock().unwrap().clone();
-    let matches = find_file(&q.name, q.size, &watched)
+    let matches: Vec<String> = find_file(&q.name, q.size, &watched)
         .into_iter()
         .map(|p| p.display().to_string())
         .collect();
+    logging::info(format!(
+        "find-file '{}' ({} bytes) → {} match(es)",
+        q.name,
+        q.size,
+        matches.len()
+    ));
     Json(FindFileResponse { matches })
 }
 
@@ -235,15 +254,19 @@ pub async fn post_file(
     let watched = state.watched_paths.lock().unwrap().clone();
     let pb = PathBuf::from(&q.path);
     match validate_path(&pb, &watched) {
-        Err(e) => (
-            StatusCode::FORBIDDEN,
-            Json(serde_json::json!({ "error": e })),
-        )
-            .into_response(),
+        Err(e) => {
+            logging::warn(format!("save refused (outside watched folders): {}", q.path));
+            (
+                StatusCode::FORBIDDEN,
+                Json(serde_json::json!({ "error": e })),
+            )
+                .into_response()
+        }
         Ok(canonical) => {
             let tmp_path = format!("{}.companion_tmp", canonical.display());
             let byte_count = body.len();
             if let Err(e) = tokio::fs::write(&tmp_path, &body).await {
+                logging::error(format!("save failed ({}): {e}", canonical.display()));
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(serde_json::json!({ "error": e.to_string() })),
@@ -251,12 +274,14 @@ pub async fn post_file(
                     .into_response();
             }
             if let Err(e) = tokio::fs::rename(&tmp_path, &canonical).await {
+                logging::error(format!("save failed ({}): {e}", canonical.display()));
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(serde_json::json!({ "error": e.to_string() })),
                 )
                     .into_response();
             }
+            logging::info(format!("saved {} ({} bytes)", canonical.display(), byte_count));
             (
                 StatusCode::OK,
                 Json(serde_json::json!({ "ok": true, "bytes": byte_count })),
@@ -283,6 +308,7 @@ pub async fn delete_file(State(state): State<AppState>, Query(q): Query<FileQuer
             .into_response(),
         Ok(canonical) => {
             if canonical.is_dir() {
+                logging::warn(format!("delete refused (is a directory): {}", canonical.display()));
                 return (
                     StatusCode::BAD_REQUEST,
                     Json(serde_json::json!({ "error": "refusing to delete a directory" })),
@@ -290,16 +316,22 @@ pub async fn delete_file(State(state): State<AppState>, Query(q): Query<FileQuer
                     .into_response();
             }
             match tokio::fs::remove_file(&canonical).await {
-                Err(e) => (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(serde_json::json!({ "error": e.to_string() })),
-                )
-                    .into_response(),
-                Ok(()) => (
-                    StatusCode::OK,
-                    Json(serde_json::json!({ "ok": true })),
-                )
-                    .into_response(),
+                Err(e) => {
+                    logging::error(format!("delete failed ({}): {e}", canonical.display()));
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(serde_json::json!({ "error": e.to_string() })),
+                    )
+                        .into_response()
+                }
+                Ok(()) => {
+                    logging::info(format!("deleted {}", canonical.display()));
+                    (
+                        StatusCode::OK,
+                        Json(serde_json::json!({ "ok": true })),
+                    )
+                        .into_response()
+                }
             }
         }
     }
@@ -379,4 +411,33 @@ pub async fn watch_sse(
             .interval(std::time::Duration::from_secs(15))
             .text("ping"),
     )
+}
+
+// ---------------------------------------------------------------------------
+// GET /logs?level=&q=&since=&limit=  — recent log entries for the viewers.
+// No auth: it only exposes the companion's own activity log (paths the viewer
+// already knows). CORS-gated like the other read endpoints.
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct LogsQuery {
+    /// Minimum level: "info" (all), "warn", or "error".
+    pub level: Option<String>,
+    /// Case-insensitive substring filter on the message.
+    pub q: Option<String>,
+    /// RFC3339 cutoff — only entries at or after this timestamp.
+    pub since: Option<String>,
+    pub limit: Option<usize>,
+}
+
+#[derive(Serialize)]
+pub struct LogsResponse {
+    pub entries: Vec<logging::LogEntry>,
+}
+
+pub async fn get_logs(Query(q): Query<LogsQuery>) -> Json<LogsResponse> {
+    let min_level = q.level.as_deref().and_then(logging::Level::from_filter);
+    let limit = q.limit.unwrap_or(500).min(2000);
+    let entries = logging::recent(min_level, q.q.as_deref(), q.since.as_deref(), limit);
+    Json(LogsResponse { entries })
 }

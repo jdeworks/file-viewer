@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod config;
 pub mod finder;
+pub mod logging;
 pub mod paths;
 pub mod routes;
 pub mod watcher;
@@ -61,6 +62,7 @@ pub fn router_with(state: AppState, pages_origin: String, extra: Router<AppState
         .route("/file", get(routes::get_file))
         .route("/files", get(routes::get_files))
         .route("/watch", get(routes::watch_sse))
+        .route("/logs", get(routes::get_logs))
         .merge(protected)
         .merge(extra)
         .layer(cors)

@@ -374,3 +374,60 @@ async fn test_delete_refuses_directory() {
     assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
     assert!(dir_path.exists(), "directory must not be deleted");
 }
+
+// --- /logs ---
+
+#[tokio::test]
+async fn test_logs_records_actions_and_filters() {
+    use file_viewer_companion::logging;
+    // Enable the ring buffer (idempotent; dir=None means no file writes in tests).
+    logging::init(None);
+
+    let tmp = TempDir::new().unwrap();
+    // Unique marker so we find our own entry amid other tests sharing the global ring.
+    let fname = "logtest_marker_zzz.txt";
+    let file_path = tmp.path().join(fname);
+    fs::write(&file_path, b"x").unwrap();
+    let path_str = file_path.to_str().unwrap().to_string();
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+
+    // A save should produce a "saved …" info log mentioning the file.
+    let resp = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::from("hello"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // GET /logs filtered to our marker + info level.
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .uri("/logs?level=info&q=logtest_marker_zzz")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let entries = json["entries"].as_array().unwrap();
+    assert!(
+        entries.iter().any(|e| {
+            let m = e["msg"].as_str().unwrap_or("");
+            e["level"] == "info" && m.contains("saved") && m.contains(fname)
+        }),
+        "expected a 'saved' info log for our file; got {:?}",
+        entries
+    );
+    // Every returned entry must carry a timestamp + level (shape for the viewers).
+    assert!(entries.iter().all(|e| e["ts"].as_str().is_some() && e["level"].as_str().is_some()));
+}

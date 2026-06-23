@@ -1,4 +1,9 @@
-use file_viewer_companion::{config::load_config, router, watcher::FileWatcher, AppState};
+use file_viewer_companion::{
+    config::{config_path, load_config},
+    logging, router,
+    watcher::FileWatcher,
+    AppState,
+};
 use std::sync::{Arc, Mutex};
 
 #[tokio::main]
@@ -8,6 +13,10 @@ async fn main() {
     if debug {
         tracing_subscriber::fmt().with_env_filter("info").init();
     }
+
+    // Logging writes to stdout + a daily file next to config.json (logs/companion-YYYY-MM-DD.log),
+    // kept for 7 days. Always on — running the bare server now shows live activity.
+    logging::init(Some(config_path()));
 
     let token =
         std::env::var("COMPANION_TOKEN").unwrap_or_else(|_| uuid::Uuid::new_v4().to_string());
@@ -23,6 +32,10 @@ async fn main() {
     println!("  Token: {token}");
     println!("  (set COMPANION_TOKEN env var to use a fixed token)");
     println!("═══════════════════════════════════");
+    logging::info(format!(
+        "companion started on 127.0.0.1:7700 ({} watched folder(s))",
+        watched.len()
+    ));
 
     let watched_paths = Arc::new(Mutex::new(watched));
 
@@ -34,7 +47,7 @@ async fn main() {
             (tx, Some(fw))
         }
         Err(e) => {
-            eprintln!("Warning: file watcher could not start: {e}");
+            logging::warn(format!("file watcher could not start: {e}"));
             let (tx, _) = tokio::sync::broadcast::channel(1);
             (tx, None)
         }
