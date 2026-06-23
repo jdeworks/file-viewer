@@ -363,6 +363,10 @@ export async function run(ctx) {
   });
   if (pgMoving) pass('Pong: ball is in play (loop running)');
   else fail('Pong: ball not moving');
+  await page.keyboard.press('w');                          // W/S brings in player 2
+  const pg2 = await page.$eval('.pong-wrap', (w) => w.__pong.state());
+  if (pg2.mode === '2p') pass('Pong: W/S activates 2-player mode');
+  else fail('Pong 2-player: ' + JSON.stringify(pg2));
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
