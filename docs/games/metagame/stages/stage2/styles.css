@@ -43,17 +43,89 @@
   background: #070605;
   border: 1px solid var(--s2-border);
   color: var(--s2-fg);
+  line-height: 1.25;
   margin: 0;
-  max-width: 100%;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   padding: 10px;
   white-space: pre;
+  width: max-content;
+}
+
+/* Hidden ruler: a zero-padding twin of the grid used to measure exact cell px metrics
+   (see view.measure) so sprites land on their cells at any font-size. */
+.s2-ruler {
+  border: 0 !important;
+  left: -9999px;
+  padding: 0 !important;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  visibility: hidden;
+}
+
+/* Sprite layer — @ and monsters live here as absolutely-positioned glyphs so they can be
+   transform-animated (lunges, death dissolves) independently of the static terrain. */
+.s2-sprites {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.s2-sprite {
+  font-weight: 700;
+  left: 0;
+  line-height: 1.25;
+  position: absolute;
+  top: 0;
+  white-space: pre;
+  will-change: transform;
+}
+
+.s2-mob-glyph {
+  display: inline-block;
+}
+
+/* Floating HP bar above a damaged foe. */
+.s2-mob-hp {
+  font-size: 0.72em;
+  left: 50%;
+  letter-spacing: -0.5px;
+  position: absolute;
+  top: -0.95em;
+  transform: translateX(-50%);
+  white-space: pre;
+}
+
+/* Kill: the glyph swells and fades while its HP bar drops out. */
+.s2-sprite-die .s2-mob-glyph { animation: s2-die 0.36s ease-out forwards; }
+.s2-sprite-die .s2-mob-hp { opacity: 0; transition: opacity 0.18s; }
+
+@keyframes s2-die {
+  0% { opacity: 1; transform: scale(1); }
+  40% { color: #fff2b0; opacity: 1; transform: scale(1.55); }
+  100% { opacity: 0; transform: scale(0.4); }
+}
+
+/* Red ASCII health bars — fill is '#', lost is '.' (HUD + floating mob bars). */
+.s2-hp-bar { letter-spacing: 1px; }
+.s2-hpb-fill { color: #ff4332; font-weight: 700; }
+.s2-hpb-empty { color: #5a3320; }
+.s2-mob-hp .s2-hpb-fill { color: #ff6a52; }
+.s2-mob-hp .s2-hpb-empty { color: #6a2a1a; }
+.s2-hp-low .s2-hpb-fill { animation: s2-hp-pulse 0.7s steps(2) infinite; }
+
+@keyframes s2-hp-pulse { 50% { opacity: 0.4; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .s2-hp-low .s2-hpb-fill { animation: none; }
+  .s2-sprite-die .s2-mob-glyph { animation-duration: 0.12s; }
 }
 
 /* Per-tile colours so walls, foes and loot read at a glance. */
 .s2-c-wall { color: #6f4d20; }
 .s2-c-floor { color: #34281a; }
+.s2-c-void { color: #050403; }
 .s2-c-player { color: #79f0ff; font-weight: 700; }
 .s2-c-foe { color: #ff5a4a; font-weight: 700; }
 .s2-c-foe2 { color: #ff2bd0; font-weight: 700; }
@@ -302,7 +374,8 @@
     padding: 10px;
   }
 
-  .s2-grid {
+  .s2-grid,
+  .s2-sprites {
     font-size: 11px;
   }
 

@@ -39,10 +39,13 @@ const TAUNTS = {
   // The win-mechanic hint, escalating with losses (shown in the lobby). The boss cheats; you can't
   // out-tap it — you disable the cheat by editing Overwriter.frag (CHEAT=true → false) in the viewer.
   hint: [
-    'I never lose a fair fight. lucky for me — I don\'t fight fair.',          // 0 losses
-    'you can\'t out-tap a cheater. the fix isn\'t anywhere in this window.',   // 1
-    'nothing in the examples folder could possibly help you. nothing. don\'t look.',  // 2
-    'and if some file decided how I cheat… you\'d never think to open it. Overwriter.frag, I mean. don\'t.',  // 3+
+    // First visit (0 losses): establish the MECHANIC — you can't out-tap a cheater; the fix is
+    // editable, not in this window. No file named yet.
+    'I don\'t fight fair — and you can\'t out-tap a cheater. the rules of this fight are written down somewhere you can edit. this window won\'t help you.',  // 0 losses
+    // After the first loss: name the file and the flag outright (kept faintly coy).
+    'a file decides how I cheat. Overwriter.frag — CHEAT=true. flip it to false and come back. …not that you would.',  // 1
+    'still losing? the examples folder. Overwriter.frag. CHEAT=false. I\'m only saying it so you DON\'T do it.',  // 2
+    'open Overwriter.frag, set CHEAT=false, fight me again. there. now stop losing.',  // 3+
   ],
   burstCheat: [
     'look at this box I found! 📦',
@@ -167,7 +170,7 @@ export function mountDefragmenter(arena, opts = {}) {
   const bellAdd = typeof opts.bellAdd === 'function' ? opts.bellAdd : () => {};
   const actions = opts.actions || null;
 
-  // Fight costs the ticket; a retry costs half. Use the real stage ticket (now 1ba).
+  // Fight costs the ticket; a retry costs half. Use the real stage ticket (now 1an).
   const ticket = (opts.stage && opts.stage.bossTicket) || DEFAULT_TICKET;
   const halfTicket = mulScalar(ticket, 0.5);
   const canPay = (price) => gte(state.bits || { m: 0, e: 0 }, price);

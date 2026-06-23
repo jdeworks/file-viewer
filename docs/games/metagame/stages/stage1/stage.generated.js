@@ -961,13 +961,16 @@ var TAUNTS = {
   // The win-mechanic hint, escalating with losses (shown in the lobby). The boss cheats; you can't
   // out-tap it — you disable the cheat by editing Overwriter.frag (CHEAT=true → false) in the viewer.
   hint: [
-    "I never lose a fair fight. lucky for me — I don't fight fair.",
+    // First visit (0 losses): establish the MECHANIC — you can't out-tap a cheater; the fix is
+    // editable, not in this window. No file named yet.
+    "I don't fight fair — and you can't out-tap a cheater. the rules of this fight are written down somewhere you can edit. this window won't help you.",
     // 0 losses
-    "you can't out-tap a cheater. the fix isn't anywhere in this window.",
+    // After the first loss: name the file and the flag outright (kept faintly coy).
+    "a file decides how I cheat. Overwriter.frag — CHEAT=true. flip it to false and come back. …not that you would.",
     // 1
-    "nothing in the examples folder could possibly help you. nothing. don't look.",
+    "still losing? the examples folder. Overwriter.frag. CHEAT=false. I'm only saying it so you DON'T do it.",
     // 2
-    "and if some file decided how I cheat… you'd never think to open it. Overwriter.frag, I mean. don't."
+    "open Overwriter.frag, set CHEAT=false, fight me again. there. now stop losing."
     // 3+
   ],
   burstCheat: [
@@ -1666,8 +1669,8 @@ var STAGES = [
     ],
     // ── Boss ticket (§10.2) ──────────────────────────────────────────────────────────────────
     // canFightBoss = allSubStagesOwned AND gte(bits, bossTicket). Checked in orchestrator (WP-S1-12).
-    bossTicket: { m: 1, e: 93 },
-    // 1ba — a long exponential climb past the steepened late tiers
+    bossTicket: { m: 1, e: 54 },
+    // 1an — reachable well before the steepened late tiers
     // ── Intro / boss dialog ──────────────────────────────────────────────────────────────────
     intro: [
       { speaker: "SYS", text: "Tap to get started." }
@@ -3034,8 +3037,8 @@ function createManagersController({ panelsEl, state, cfg, tiers, save, paintStat
 // ../../docs/games/metagame/stages/stage1/s1reset.js
 function renderResetPanel({ panelsEl, state, cfg, save, renderAll }) {
   const gain = pullGain(state.totalBits);
-  const newTotal = (globalPull(state) * gain).toFixed(1);
-  panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel"><div class="mg-reset-title">Reset Stage 1?</div><p class="mg-reset-line">You will gain <strong>×' + gain.toFixed(1) + "</strong> Gravitational Pull (total <strong>×" + newTotal + '</strong>).</p><p class="mg-reset-line">All bits, buildings, and managers will be lost.</p><p class="mg-reset-line mg-reset-keep">Achievements and pull persist.</p><div class="mg-reset-actions"><button class="mg-reset-go" type="button">Reset</button><button class="mg-reset-cancel" type="button">Cancel</button></div></div></div>';
+  const newTotal = globalPull(state) * gain;
+  panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel"><div class="mg-reset-title">Reset Stage 1?</div><p class="mg-reset-line">You will gain <strong>×' + toDisplay(fromNumber(gain)) + "</strong> Gravitational Pull (total <strong>×" + toDisplay(fromNumber(newTotal)) + '</strong>).</p><p class="mg-reset-line">All bits, buildings, and managers will be lost.</p><p class="mg-reset-line mg-reset-keep">Achievements and pull persist.</p><div class="mg-reset-actions"><button class="mg-reset-go" type="button">Reset</button><button class="mg-reset-cancel" type="button">Cancel</button></div></div></div>';
   panelsEl.querySelector(".mg-reset-go").addEventListener("click", () => doReset({ state, cfg, save, renderAll }));
   panelsEl.querySelector(".mg-reset-cancel").addEventListener("click", () => renderResetPanel({ panelsEl, state, cfg, save, renderAll }));
 }
@@ -3133,7 +3136,7 @@ function renderStage1(ctx2) {
     if (!scoreOn) return;
     const grav = globalPull(state);
     if (grav > 1.0001) {
-      setText(gravEl, "🌀 ×" + grav.toFixed(1));
+      setText(gravEl, "🌀 ×" + toDisplay(fromNumber(grav)));
       setHidden(gravEl, false);
     } else setHidden(gravEl, true);
     const now = Date.now();

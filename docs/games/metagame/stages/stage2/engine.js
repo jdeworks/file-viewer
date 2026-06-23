@@ -21,10 +21,13 @@ export const DIRS = {
 // Generate one floor: layout + spawn + stairs + entities, all from `${runSeed}:${floor}`.
 export function buildFloor(runSeed, floorNum) {
   const rng = makeRng(`${runSeed}:${floorNum}`);
-  const width = Math.min(60, 45 + floorNum * 2);
-  const height = Math.min(32, 25 + floorNum);
-  const maxRooms = Math.min(12, 6 + floorNum);
-  const { grid, rooms } = generate(rng, { width, height, maxRooms, minRoom: 4, maxRoom: 8 });
+  // Maps grow with depth, well past the fixed viewport (see view.js VIEW_W/H) so deeper
+  // floors only ever show a chunk and have to be explored. Floor 1 ≈ 50×26 / 9 rooms,
+  // floor 5 ≈ 98×50 / 21 rooms.
+  const width = Math.min(110, 50 + (floorNum - 1) * 12);
+  const height = Math.min(54, 26 + (floorNum - 1) * 6);
+  const maxRooms = Math.min(26, 9 + (floorNum - 1) * 3);
+  const { grid, rooms } = generate(rng, { width, height, maxRooms, minRoom: 4, maxRoom: 9 });
   const start = { x: rooms[0].cx, y: rooms[0].cy };
   const dist = floodDistances(grid, start);
   // Stairs go on the farthest reachable cell so a floor takes some crossing.
@@ -43,7 +46,7 @@ export function buildFloor(runSeed, floorNum) {
   let ci = 0;
   const take = () => (ci < cells.length ? cells[ci++] : null);
 
-  const monsterCount = Math.min(14, 3 + floorNum * 2);
+  const monsterCount = Math.min(24, 4 + floorNum * 3);
   const monsters = [];
   for (let i = 0; i < monsterCount; i += 1) {
     const c = take();
@@ -57,7 +60,7 @@ export function buildFloor(runSeed, floorNum) {
   const wc = take();
   if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[weaponTier], taken: false });
   const glyphs = [];
-  const glyphCount = 2 + Math.floor(floorNum / 2);
+  const glyphCount = 3 + floorNum;
   for (let i = 0; i < glyphCount; i += 1) {
     const c = take();
     if (!c) break;
@@ -104,12 +107,16 @@ export function step(world, player, dir) {
   if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= world.width) return events;
   if (world.grid[ny][nx] === "#") return events; // wall — stay put
 
-  const foe = world.monsters.find((m) => m.alive && m.x === nx && m.y === ny);
+  const foeIndex = world.monsters.findIndex((m) => m.alive && m.x === nx && m.y === ny);
+  const foe = foeIndex >= 0 ? world.monsters[foeIndex] : null;
   if (foe) {
+    // Record the clash so the renderer can lunge @ and foe toward each other (view.js).
+    events.attack = { x: nx, y: ny, foeIndex, killed: false };
     foe.hp -= Math.max(1, player.atk);
     if (foe.hp <= 0) {
       foe.alive = false;
       events.killed = true;
+      events.attack.killed = true;
       const got = gainGlyphs(player, foe.drop);
       events.log.push(`${foe.name} unparsed. +${got} glyph${got === 1 ? "" : "s"}.`);
       awardXp(player, foe.xp, events);
