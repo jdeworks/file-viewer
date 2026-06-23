@@ -238,6 +238,27 @@ export async function run(ctx) {
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
+  // Memory — clean 6-pair start; matching a pair scores (ramped by round)
+  await page.click('.games-card[data-game="memory"]');
+  await page.waitForSelector('.memory-grid', { timeout: 8000 });
+  pass('Memory launches');
+  const mem0 = await page.$eval('.memory-wrap', (w) => w.__memory.state());
+  const pairIdx = await page.$eval('.memory-wrap', (w) => {
+    const d = w.__memory.deck();
+    for (let i = 0; i < d.length; i++) for (let j = i + 1; j < d.length; j++) if (d[i] === d[j]) return [i, j];
+    return null;
+  });
+  if (mem0.score === 0 && mem0.round === 1 && mem0.cards === 12 && mem0.matched === 0 && pairIdx)
+    pass('Memory: clean start, 6-pair board');
+  else fail('Memory start: ' + JSON.stringify({ mem0, pairIdx }));
+  await page.click('.memory-card[data-idx="' + pairIdx[0] + '"]');
+  await page.click('.memory-card[data-idx="' + pairIdx[1] + '"]');
+  const memM = await page.$eval('.memory-wrap', (w) => w.__memory.state());
+  if (memM.matched >= 1 && memM.score > 0) pass('Memory: matching a pair scores (ramped by round)');
+  else fail('Memory match: ' + JSON.stringify(memM));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.mg-v3', { timeout: 8000 });
   await page.waitForSelector('.mg-s1', { timeout: 8000 });

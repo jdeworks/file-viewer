@@ -42,6 +42,13 @@ export const GAMES = [
     load: () => import('./breakout/breakout.js'),
   },
   {
+    id: 'memory',
+    title: 'Memory',
+    emoji: '🃏',
+    blurb: 'Flip and match the file-type pairs. Tap to play. Each round adds more cards.',
+    load: () => import('./memory/memory.js'),
+  },
+  {
     id: 'metagame',
     title: 'Bit Foundry',
     emoji: '⚙️',
