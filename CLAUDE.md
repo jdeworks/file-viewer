@@ -127,6 +127,13 @@ tests → smoke tests. If a generated file changes, stage it. **A real git pre-c
 the generators (and stages the artifacts) is desirable so the bundle is never committed stale** —
 add one when convenient; until then `check.sh` is the gate.
 
+**Iteration tier:** `./scripts/check.sh --fast` runs the generators + unit tests + CORE smoke but
+SKIPS the two heaviest Chromium suites (known-files `smoke-known.mjs` ≈812 Monaco-reloading
+`page.goto`s, and binary `smoke-binary.mjs` WebGL/wasm) — they dominate the gate's CPU/time. Use
+`--fast` while iterating to keep the machine cool; it also only warns (not fails) on an unstaged
+regen. **The FULL `./scripts/check.sh` is still REQUIRED before every push.** For a single concern,
+the cheapest path remains `node tests/smoke-area.mjs <area>` (one area, no heavy suites).
+
 ## Testing (keep it cheap — see [tests](tests/))
 
 Headless-Chromium smoke tests live in `tests/areas/*.mjs`, each exporting `run(ctx)`.
