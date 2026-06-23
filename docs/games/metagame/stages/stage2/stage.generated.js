@@ -805,6 +805,7 @@ function createView(screenEl) {
   const playerEl = makeSprite("@", "s2-c-player");
   sprites.append(playerEl);
   const mobEls = /* @__PURE__ */ new Map();
+  const itemEls = /* @__PURE__ */ new Map();
   function measure() {
     const r = ruler.getBoundingClientRect();
     if (r.width > 0) chW = r.width / 10;
@@ -829,6 +830,7 @@ function createView(screenEl) {
     lastWorld = null;
     sprites.replaceChildren();
     mobEls.clear();
+    itemEls.clear();
     map.innerHTML = colorize(lines);
   }
   function paintExplore(world) {
@@ -836,32 +838,50 @@ function createView(screenEl) {
     sprites.append(playerEl);
     cam.x = clamp(world.pos.x - (VIEW_W >> 1), 0, Math.max(0, world.width - VIEW_W));
     cam.y = clamp(world.pos.y - (VIEW_H >> 1), 0, Math.max(0, world.grid.length - VIEW_H));
-    map.innerHTML = colorize(terrainSlice(world));
+    map.textContent = terrainText(world);
+    reconcileItems(world);
     reconcileSprites(world);
   }
-  function terrainSlice(world) {
-    const overlay = /* @__PURE__ */ new Map();
-    for (const g of world.glyphs) if (!g.taken) overlay.set(key(g.x, g.y), "%");
-    for (const w of world.weapons) if (!w.taken) overlay.set(key(w.x, w.y), "/");
-    if (world.potions) {
-      for (const p of world.potions) if (!p.taken) overlay.set(key(p.x, p.y), "!");
-    }
-    overlay.set(key(world.exit.x, world.exit.y), ">");
+  function terrainText(world) {
     const rows = [];
     for (let vy = 0; vy < VIEW_H; vy += 1) {
       const gy = cam.y + vy;
       let line = "";
       for (let vx = 0; vx < VIEW_W; vx += 1) {
         const gx = cam.x + vx;
-        if (gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width) {
-          line += " ";
-          continue;
-        }
-        line += overlay.get(key(gx, gy)) || world.grid[gy][gx];
+        line += gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width ? " " : world.grid[gy][gx];
       }
       rows.push(line);
     }
-    return rows;
+    return rows.join("\n");
+  }
+  function reconcileItems(world) {
+    const live = /* @__PURE__ */ new Set();
+    const place = (id, x, y, ch, cls) => {
+      if (!inView(x, y)) return;
+      live.add(id);
+      let el = itemEls.get(id);
+      if (!el) {
+        el = makeSprite(ch, cls);
+        itemEls.set(id, el);
+        sprites.append(el);
+      }
+      pos(el, x, y);
+    };
+    place("exit", world.exit.x, world.exit.y, ">", "s2-c-exit");
+    world.weapons.forEach((w, i) => {
+      if (!w.taken) place("w" + i, w.x, w.y, "/", "s2-c-item");
+    });
+    world.glyphs.forEach((g, i) => {
+      if (!g.taken) place("g" + i, g.x, g.y, "%", "s2-c-glyph");
+    });
+    if (world.potions) world.potions.forEach((p, i) => {
+      if (!p.taken) place("p" + i, p.x, p.y, "!", "s2-c-potion");
+    });
+    for (const id of [...itemEls.keys()]) if (!live.has(id)) {
+      itemEls.get(id).remove();
+      itemEls.delete(id);
+    }
   }
   function reconcileSprites(world, mobMs) {
     pos(playerEl, world.pos.x, world.pos.y);
@@ -1016,9 +1036,6 @@ function createView(screenEl) {
     }
   }
   return { mapEl: map, flashEl: flash, screenEl, paintExplore, paintArena, applyMove, tickMonsters, toggleFullMap, measure, destroy };
-}
-function key(x, y) {
-  return x + "," + y;
 }
 function makeSprite(glyph, cls) {
   const el = document.createElement("span");
