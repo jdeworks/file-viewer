@@ -303,10 +303,22 @@ export async function run(ctx) {
   else fail('Sokoban start: ' + JSON.stringify(sk0));
   const solInfo = await page.$eval('.sokoban-wrap', (w) => {
     const plan = w.__sokoban.solution();
-    return { hasBtn: !!document.querySelector('.sokoban-solve'), planLen: Array.isArray(plan) ? plan.length : -1 };
+    return { hasBtn: !!document.querySelector('.sokoban-solve'), planLen: typeof plan === 'string' ? plan.length : -1 };
   });
-  if (solInfo.hasBtn && solInfo.planLen >= 1) pass('Sokoban: Solve computes a shortest plan');
+  if (solInfo.hasBtn && solInfo.planLen >= 1) pass('Sokoban: Solve has a stored solution for the level');
   else fail('Sokoban solve plan: ' + JSON.stringify(solInfo));
+  // Solve demo disables Undo while running, then offers Next when done.
+  await page.click('.sokoban-solve');
+  const skDuring = await page.$eval('.sokoban-wrap', (w) => w.__sokoban.state());
+  await page.waitForTimeout(900);                          // level 1 = a single move @500ms
+  const skDone = await page.$eval('.sokoban-wrap', (w) => w.__sokoban.state());
+  if (skDuring.solving && skDuring.undoDisabled && !skDone.solving && !skDone.undoDisabled
+      && skDone.nextShown && skDone.onGoal === skDone.boxes)
+    pass('Sokoban: Solve disables Undo while running, then offers Next');
+  else fail('Sokoban solve flow: ' + JSON.stringify({ skDuring, skDone }));
+  const ffOn = await page.$eval('.sokoban-wrap', (w) => { document.querySelector('.sokoban-ff').click(); return w.__sokoban.state().ffMode; });
+  if (ffOn) pass('Sokoban: fast-forward toggle switches speed mode'); else fail('Sokoban FF toggle: ' + ffOn);
+  await page.click('.sokoban-reset');                      // back to a clean level 1 for the next assertion
   await page.keyboard.press('ArrowLeft');                  // single push solves level 1
   const sk1 = await page.$eval('.sokoban-wrap', (w) => w.__sokoban.state());
   if (sk1.solved >= 1 && sk1.score > 0) pass('Sokoban: pushing the box onto the goal solves + scores');

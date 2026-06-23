@@ -1,24 +1,28 @@
-// Validates the embedded Sokoban levels using the SAME solver the game ships (docs/.../solve.js).
-// STRUCTURAL checks run on every level (exactly one player, equal boxes & goals, ≥1 box) and FAIL the
-// build if violated. The BFS solver then confirms solvability within a node budget: a level proven
-// UNSOLVABLE fails; a hard published level that exceeds the budget is reported "unverified" (Microban
-// is a trusted solvable set, so we don't fail the gate on solver budget). Cheap enough for the gate.
+// Validates the embedded Sokoban levels + their precomputed solutions. For every level: STRUCTURAL
+// checks (exactly one player, equal boxes & goals, ≥1 box). For every level WITH a stored solution, a
+// REPLAY confirms the move string actually solves it — a broken solution fails the build. A small,
+// bounded number of the very hardest Microban levels may ship without a precomputed solution yet
+// (the Solve demo shows a notice for those); MAX_PENDING caps how many are allowed so a regression
+// that drops solutions still fails.
 import { LEVELS } from '../docs/games/sokoban/sokoban-levels.js';
-import { parseLevel, solve } from '../docs/games/sokoban/solve.js';
+import { SOLUTIONS } from '../docs/games/sokoban/sokoban-solutions.js';
+import { parseLevel, replay } from '../docs/games/sokoban/solve.js';
 
-const CAP = 20000;   // gate budget: confirms easy levels fast; hard levels bail to "unverified"
-let fails = 0, solved = 0, unverified = 0;
-
+const MAX_PENDING = 2;
+let fails = 0, solved = 0, pending = 0;
+if (SOLUTIONS.length !== LEVELS.length) { console.error('SOLUTIONS length ' + SOLUTIONS.length + ' != LEVELS ' + LEVELS.length); fails++; }
 LEVELS.forEach((lvl, i) => {
   const p = parseLevel(lvl);
   if (p.players !== 1 || p.boxes.size < 1 || p.boxes.size !== p.goals.size) {
     console.error('  Level ' + (i + 1) + ': MALFORMED (players=' + p.players + ', boxes=' + p.boxes.size + ', goals=' + p.goals.size + ')');
     fails++; return;
   }
-  const r = solve(lvl, CAP);
-  if (Array.isArray(r)) solved++;
-  else if (r === 'cap') unverified++;
-  else { console.error('  Level ' + (i + 1) + ': UNSOLVABLE'); fails++; }
+  const sol = SOLUTIONS[i];
+  if (typeof sol !== 'string') { console.error('  Level ' + (i + 1) + ': solution not a string'); fails++; return; }
+  if (!sol.length) { pending++; return; }                 // not yet solved — allowed up to MAX_PENDING
+  if (!replay(lvl, sol)) { console.error('  Level ' + (i + 1) + ': stored solution does NOT solve it'); fails++; return; }
+  solved++;
 });
-console.log('✓ ' + LEVELS.length + ' sokoban levels: ' + solved + ' solved, ' + unverified + ' unverified (solver budget), ' + fails + ' bad');
-if (fails) { console.error('FAIL: ' + fails + ' invalid level(s)'); process.exit(1); }
+console.log('✓ ' + LEVELS.length + ' sokoban levels: ' + solved + ' solved+verified, ' + pending + ' pending, ' + fails + ' bad');
+if (pending > MAX_PENDING) { console.error('FAIL: ' + pending + ' levels without a solution (max ' + MAX_PENDING + ')'); fails++; }
+if (fails) { console.error('FAIL: ' + fails + ' problem(s)'); process.exit(1); }

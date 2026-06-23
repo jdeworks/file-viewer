@@ -1,8 +1,9 @@
-// Shared Sokoban solver (no DOM). Used by the game's "Solve" demo and by the level-verification test.
-// parseLevel() turns an ASCII level into sets; solve() runs BFS over (player, boxes) states with
-// corner-deadlock pruning and a node cap, returning the SHORTEST move sequence ('U'/'D'/'L'/'R'),
-// or 'cap' if the search budget is exhausted, or null if the level is provably unsolvable.
+// Shared Sokoban helpers (no DOM, no search). parseLevel() turns an ASCII level into sets; replay()
+// applies a move string (U/D/L/R) and reports whether it solves the level. The actual solving is done
+// OFFLINE (a push-based BFS in scripts/presolve) and the move strings are stored in sokoban-solutions.js,
+// so the game's "Solve" demo plays them back with zero runtime search and the test just replays them.
 const key = (x, y) => x + ',' + y;
+const DIRS = { U: [0, -1], D: [0, 1], L: [-1, 0], R: [1, 0] };
 
 export function parseLevel(str) {
   const lines = str.replace(/\n+$/, '').split('\n');
@@ -21,45 +22,19 @@ export function parseLevel(str) {
   return { w, h: lines.length, walls, goals, boxes, player, players };
 }
 
-function cornerDead(bx, by, walls, goals) {
-  if (goals.has(key(bx, by))) return false;
-  const up = walls.has(key(bx, by - 1)), down = walls.has(key(bx, by + 1));
-  const left = walls.has(key(bx - 1, by)), right = walls.has(key(bx + 1, by));
-  return (up && left) || (up && right) || (down && left) || (down && right);
-}
-const skey = (px, py, boxes) => px + ',' + py + '|' + [...boxes].sort().join(';');
-
-export function solve(strOrParsed, cap = 160000) {
-  const { walls, goals, boxes, player } = typeof strOrParsed === 'string' ? parseLevel(strOrParsed) : strOrParsed;
-  const won = (bs) => { for (const k of bs) if (!goals.has(k)) return false; return true; };
-  const start = skey(player.x, player.y, boxes);
-  if (won(boxes)) return [];
-  const prev = new Map([[start, null]]);
-  const q = [{ x: player.x, y: player.y, boxes, k: start }];
-  let head = 0, nodes = 0;
-  const dirs = [['U', 0, -1], ['D', 0, 1], ['L', -1, 0], ['R', 1, 0]];
-  while (head < q.length) {
-    if (++nodes > cap) return 'cap';
-    const cur = q[head++];
-    for (const [mv, dx, dy] of dirs) {
-      const nx = cur.x + dx, ny = cur.y + dy, nk = key(nx, ny);
-      if (walls.has(nk)) continue;
-      let boxes2 = cur.boxes;
-      if (cur.boxes.has(nk)) {
-        const bx = nx + dx, by = ny + dy, bk = key(bx, by);
-        if (walls.has(bk) || cur.boxes.has(bk) || cornerDead(bx, by, walls, goals)) continue;
-        boxes2 = new Set(cur.boxes); boxes2.delete(nk); boxes2.add(bk);
-      }
-      const sk = skey(nx, ny, boxes2);
-      if (prev.has(sk)) continue;
-      prev.set(sk, { from: cur.k, mv });
-      if (won(boxes2)) {
-        const moves = [];
-        for (let k = sk; prev.get(k); k = prev.get(k).from) moves.push(prev.get(k).mv);
-        return moves.reverse();
-      }
-      q.push({ x: nx, y: ny, boxes: boxes2, k: sk });
-    }
+// Replay a move string from the level's start; returns true iff every box ends on a goal.
+export function replay(strOrParsed, moves) {
+  const lvl = typeof strOrParsed === 'string' ? parseLevel(strOrParsed) : strOrParsed;
+  const { walls, goals } = lvl;
+  const boxes = new Set(lvl.boxes);
+  let p = { ...lvl.player };
+  for (const m of moves) {
+    const d = DIRS[m]; if (!d) return false;
+    const nx = p.x + d[0], ny = p.y + d[1], nk = key(nx, ny);
+    if (walls.has(nk)) return false;
+    if (boxes.has(nk)) { const bk = key(nx + d[0], ny + d[1]); if (walls.has(bk) || boxes.has(bk)) return false; boxes.delete(nk); boxes.add(bk); }
+    p = { x: nx, y: ny };
   }
-  return null;
+  for (const k of boxes) if (!goals.has(k)) return false;
+  return true;
 }

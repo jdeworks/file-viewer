@@ -5,11 +5,13 @@
 // mount(host, { onScore, onExit }) => { destroy() }.
 import { swipe, dpad } from '../controls.js';
 import { LEVELS } from './sokoban-levels.js';
-import { parseLevel, solve } from './solve.js';
+import { SOLUTIONS } from './sokoban-solutions.js';
+import { parseLevel } from './solve.js';
 
 const key = (x, y) => x + ',' + y;
 const solveValue = (n) => 100 * n;                          // n = total levels solved so far (1-based)
-const MOVE_MS = 500;                                        // auto-solve playback: one move every 0.5s
+const MOVE_MS = 500;                                        // auto-solve playback: normal cadence
+const MOVE_FAST = 100;                                      // fast-forward cadence for non-push moves
 const DIRS = { U: [0, -1], D: [0, 1], L: [-1, 0], R: [1, 0] };
 
 export function mount(host, { onScore, onExit } = {}) {
@@ -28,7 +30,8 @@ export function mount(host, { onScore, onExit } = {}) {
     + '</div>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="sokoban-undo">↶ Undo</button>'
     + '<button class="sokoban-reset">⟲ Reset</button><button class="sokoban-solve">💡 Solve</button>'
-    + '<button class="sokoban-quit">Back</button></div>'
+    + '<button class="sokoban-ff">▶ Normal</button>'
+    + '<button class="sokoban-next" hidden>Next →</button><button class="sokoban-quit">Back</button></div>'
     + '<div class="sokoban-status" style="font-size:12px;opacity:.75;min-height:1.1em">Arrows / WASD · swipe or d-pad on touch</div></div>';
 
   const wrap = host.querySelector('.sokoban-wrap');
@@ -40,8 +43,13 @@ export function mount(host, { onScore, onExit } = {}) {
   const overEl = host.querySelector('.sokoban-over');
   const overMsg = host.querySelector('.sokoban-over-msg');
   const statusEl = host.querySelector('.sokoban-status');
+  const undoBtn = host.querySelector('.sokoban-undo');
+  const solveBtn = host.querySelector('.sokoban-solve');
+  const nextBtn = host.querySelector('.sokoban-next');
+  const ffBtn = host.querySelector('.sokoban-ff');
 
   let lvl, lvlIndex, solved, score, moves, history, cell, busy, done, solving, solveTimer;
+  let ffMode = false;   // fast-forward: non-push moves play fast, pushes stay at normal speed
 
   function syncHud() {
     scoreEl.textContent = 'Score: ' + score;
@@ -53,6 +61,7 @@ export function mount(host, { onScore, onExit } = {}) {
     lvlIndex = i % LEVELS.length;
     lvl = parseLevel(LEVELS[lvlIndex]);
     moves = 0; history = []; busy = false;
+    nextBtn.hidden = true;
     cell = Math.max(16, Math.min(36, Math.floor(Math.min(320 / lvl.w, 320 / lvl.h))));
     canvas.width = lvl.w * cell; canvas.height = lvl.h * cell;
     syncHud(); draw();
@@ -68,6 +77,7 @@ export function mount(host, { onScore, onExit } = {}) {
 
   function snapshot() { history.push({ px: lvl.player.x, py: lvl.player.y, boxes: [...lvl.boxes] }); }
   function undo() {
+    if (solving) return;
     const s = history.pop();
     if (!s) return;
     lvl.player = { x: s.px, y: s.py };
@@ -97,26 +107,35 @@ export function mount(host, { onScore, onExit } = {}) {
   }
   function move(dx, dy) { if (busy || solving) return; doMove(dx, dy); }
 
-  // "Solve" demo: reset the level, then auto-play the shortest solution one move every MOVE_MS.
-  // It does NOT score or advance (it's a hint), so the board just ends solved.
-  function stopSolve() { if (solveTimer) { clearInterval(solveTimer); solveTimer = null; } solving = false; }
-  function finishSolve() { stopSolve(); statusEl.textContent = 'Solved! (demo) — Reset to replay'; }
+  // "Solve" demo: reset the level, then auto-play the precomputed shortest solution (no runtime
+  // search) one move every MOVE_MS. It's a hint — it does NOT score; when done it offers "Next →".
+  function stopSolve() { if (solveTimer) { clearTimeout(solveTimer); solveTimer = null; } solving = false; undoBtn.disabled = false; solveBtn.disabled = false; }
+  function toggleFF() { ffMode = !ffMode; ffBtn.textContent = ffMode ? '⏩ Fast' : '▶ Normal'; }
+  function finishSolve() {
+    stopSolve();
+    nextBtn.hidden = lvlIndex + 1 >= LEVELS.length;       // offer Next unless this was the last level
+    statusEl.textContent = nextBtn.hidden ? 'Solved! (demo) — last level' : 'Solved! (demo) — Next → or Reset';
+  }
   function solveLevel() {
     if (solving) return;
     resetLevel();
+    const plan = SOLUTIONS[lvlIndex] || '';
+    if (!plan) { statusEl.textContent = 'No stored solution'; return; }
     statusEl.textContent = 'Solving…';
-    const res = solve(LEVELS[lvlIndex]);
-    if (!Array.isArray(res)) { statusEl.textContent = res === 'cap' ? 'Too complex to auto-solve' : 'No solution found'; return; }
-    if (!res.length) { finishSolve(); return; }
-    solving = true;
+    solving = true; undoBtn.disabled = true; solveBtn.disabled = true;
     let i = 0;
-    solveTimer = setInterval(() => {
+    const stepOnce = () => {
       if (!solving) return;
-      if (i >= res.length) return finishSolve();
-      const [dx, dy] = DIRS[res[i++]];
+      if (i >= plan.length) return finishSolve();
+      const [dx, dy] = DIRS[plan[i++]];
+      const pushed = lvl.boxes.has(key(lvl.player.x + dx, lvl.player.y + dy));   // box ahead → this is a push
       doMove(dx, dy);
-    }, MOVE_MS);
+      if (!solving) return;                                  // win → finishSolve already ran
+      solveTimer = setTimeout(stepOnce, ffMode && !pushed ? MOVE_FAST : MOVE_MS);
+    };
+    solveTimer = setTimeout(stepOnce, MOVE_MS);              // initial beat
   }
+  function nextStage() { nextBtn.hidden = true; if (lvlIndex + 1 < LEVELS.length) loadLevel(lvlIndex + 1); }
 
   function levelSolved() {
     busy = true;
@@ -175,14 +194,17 @@ export function mount(host, { onScore, onExit } = {}) {
   host.querySelector('.sokoban-undo').addEventListener('click', undo);
   host.querySelector('.sokoban-reset').addEventListener('click', resetLevel);
   host.querySelector('.sokoban-solve').addEventListener('click', solveLevel);
+  host.querySelector('.sokoban-ff').addEventListener('click', toggleFF);
+  host.querySelector('.sokoban-next').addEventListener('click', nextStage);
   host.querySelector('.sokoban-restart').addEventListener('click', reset);
   host.querySelector('.sokoban-quit').addEventListener('click', () => onExit?.());
 
   wrap.__sokoban = {
-    state: () => ({ score, moves, solved, levelIndex: lvlIndex, done, total: LEVELS.length, solving,
+    state: () => ({ score, moves, solved, levelIndex: lvlIndex, done, total: LEVELS.length, solving, ffMode,
+      undoDisabled: undoBtn.disabled, nextShown: !nextBtn.hidden,
       boxes: lvl.boxes.size, onGoal: [...lvl.boxes].filter((k) => lvl.goals.has(k)).length }),
     solveValueAt: (n) => solveValue(n),
-    solution: () => solve(LEVELS[lvlIndex]),
+    solution: () => SOLUTIONS[lvlIndex],
   };
 
   reset();
