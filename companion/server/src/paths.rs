@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 /// Returns true only if `path` starts with one of the watched paths.
 /// Paths with `..` components are rejected because they may escape the
@@ -35,38 +35,56 @@ pub fn validate_path(path: &Path, watched: &[PathBuf]) -> Result<PathBuf, String
     }
 }
 
-/// Like [`validate_path`], but also permits a path that does NOT yet exist (file creation): in that
-/// case the file's PARENT directory must exist and canonicalize to within a watched folder. Returns
-/// the absolute path to write to (canonical parent joined with the file name). This is what powers
-/// the "create a new file in a watched folder" flow — an existing path still goes through the
-/// stricter [`validate_path`].
+/// Like [`validate_path`], but also permits a path that does NOT yet exist (file creation), even
+/// inside subfolders that don't exist yet — as long as the nearest ANCESTOR that does exist sits
+/// within a watched folder. (The immediate parent need not exist; the caller creates the missing
+/// intermediate directories.) An existing path still goes through the stricter [`validate_path`].
+/// Returns the absolute path to write to (built under the canonicalized existing ancestor).
 pub fn validate_path_for_write(path: &Path, watched: &[PathBuf]) -> Result<PathBuf, String> {
     if path.exists() {
         return validate_path(path, watched);
     }
-    let parent = path
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .ok_or_else(|| format!("Path '{}' has no parent directory", path.display()))?;
-    let file_name = path
-        .file_name()
-        .ok_or_else(|| format!("Path '{}' has no file name", path.display()))?;
-    // Canonicalize the PARENT (it must exist); this also resolves any `..` so a path like
-    // /watched/../etc/passwd ends up outside the watched set and is rejected below.
-    let canonical_parent = std::fs::canonicalize(parent)
-        .map_err(|e| format!("Cannot resolve parent of '{}': {}", path.display(), e))?;
-    if watched.iter().any(|w| {
+    // Reject explicit traversal up front: with no `..` component, any descendant of a watched dir is
+    // guaranteed to stay within it, so checking the nearest existing ancestor is sufficient.
+    if path.components().any(|c| c == Component::ParentDir) {
+        return Err(format!("Path '{}' contains a '..' component", path.display()));
+    }
+    if path.file_name().is_none() {
+        return Err(format!("Path '{}' has no file name", path.display()));
+    }
+    // Walk up to the nearest ancestor directory that already exists on disk.
+    let mut existing: Option<&Path> = None;
+    let mut cur = path.parent();
+    while let Some(a) = cur {
+        if a.as_os_str().is_empty() {
+            break;
+        }
+        if a.exists() {
+            existing = Some(a);
+            break;
+        }
+        cur = a.parent();
+    }
+    let existing = existing
+        .ok_or_else(|| format!("No existing parent directory for '{}'", path.display()))?;
+    // Canonicalize the existing ancestor (resolves symlinks/`.`); it must be within a watched dir.
+    let canonical_existing = std::fs::canonicalize(existing)
+        .map_err(|e| format!("Cannot resolve '{}': {}", existing.display(), e))?;
+    if !watched.iter().any(|w| {
         std::fs::canonicalize(w)
-            .map(|cw| canonical_parent.starts_with(&cw))
+            .map(|cw| canonical_existing.starts_with(&cw))
             .unwrap_or(false)
     }) {
-        Ok(canonical_parent.join(file_name))
-    } else {
-        Err(format!(
+        return Err(format!(
             "Path '{}' is not within any watched directory",
             path.display()
-        ))
+        ));
     }
+    // Re-root the not-yet-existing tail (e.g. `subfolder/new.txt`) under the canonical ancestor.
+    let tail = path
+        .strip_prefix(existing)
+        .map_err(|_| format!("Cannot resolve '{}' under a watched directory", path.display()))?;
+    Ok(canonical_existing.join(tail))
 }
 
 #[cfg(test)]
@@ -157,6 +175,18 @@ mod tests {
         let watched = vec![tmp.path().to_path_buf()];
         let new_file = other.path().join("nope.txt"); // parent not watched
         assert!(validate_path_for_write(&new_file, &watched).is_err());
+    }
+
+    #[test]
+    fn test_validate_for_write_allows_new_nested_subfolder() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let watched = vec![tmp.path().to_path_buf()];
+        // Neither the subfolders nor the file exist yet — still valid (parent is created on save).
+        let nested = tmp.path().join("sub").join("deeper").join("new.txt");
+        let resolved = validate_path_for_write(&nested, &watched).unwrap();
+        assert!(resolved.ends_with("new.txt"));
+        let cw = std::fs::canonicalize(tmp.path()).unwrap();
+        assert!(resolved.starts_with(&cw), "resolved {resolved:?} not under {cw:?}");
     }
 
     #[test]

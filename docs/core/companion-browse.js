@@ -63,12 +63,24 @@ export async function browseForFolder({ title = 'Choose a folder:' } = {}) {
       cancelBtn.className = 'btn small';
       cancelBtn.textContent = 'Cancel';
       cancelBtn.addEventListener('click', () => done(null));
+      // Make a brand-new subfolder under the current dir and use it as the destination — the server
+      // creates missing intermediate directories on save.
+      const newBtn = document.createElement('button');
+      newBtn.className = 'btn small';
+      newBtn.textContent = '+ New folder';
+      newBtn.disabled = !current;
+      newBtn.addEventListener('click', () => {
+        const name = (prompt('New subfolder name (it will be created here):') || '').trim();
+        if (!name) return;
+        if (/[\\/]/.test(name) || name === '.' || name === '..') { toast('Invalid folder name.'); return; }
+        done(joinPath(current, name));
+      });
       const okBtn = document.createElement('button');
       okBtn.className = 'btn small companion-browse-ok';
       okBtn.textContent = 'Create here';
       okBtn.disabled = !current;
       okBtn.addEventListener('click', () => done(current));
-      footer.append(upBtn, cancelBtn, okBtn);
+      footer.append(upBtn, newBtn, cancelBtn, okBtn);
 
       dialog.append(h, crumb, list, footer);
 

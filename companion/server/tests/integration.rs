@@ -197,6 +197,32 @@ async fn test_create_new_file_in_watched_dir() {
 }
 
 #[tokio::test]
+async fn test_create_file_in_new_subfolder() {
+    // Reproduces the reported case: saving welcome.md into a subfolder that doesn't exist yet, but
+    // lives under a watched folder, must succeed (the subfolder is created).
+    let tmp = TempDir::new().unwrap();
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let nested = tmp.path().join("folder").join("welcome.md");
+    assert!(!nested.parent().unwrap().exists(), "precondition: subfolder absent");
+
+    let path_str = nested.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::from("# hi"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert!(nested.exists(), "file should be created in the new subfolder");
+    assert_eq!(fs::read_to_string(&nested).unwrap(), "# hi");
+}
+
+#[tokio::test]
 async fn test_create_new_file_outside_watched_returns_403() {
     let tmp = TempDir::new().unwrap();
     let other = TempDir::new().unwrap();

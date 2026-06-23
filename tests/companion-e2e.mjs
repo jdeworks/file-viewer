@@ -120,6 +120,12 @@ async function main() {
       .then(() => pass('opening a watched file reveals the Save-to-disk button'))
       .catch(() => fail('Save button did not appear for an opened watched file'));
 
+    // Auto-link: opening a file that exists in a watched folder should silently associate it (one
+    // name+size match) and reveal the Delete button WITHOUT a manual save first.
+    await page.waitForFunction(() => { const b = document.getElementById('deleteBtn'); return b && !b.hidden; }, { timeout: 8000 })
+      .then(() => pass('opening a watched file auto-links it and reveals the Delete button'))
+      .catch(() => fail('Delete button did not appear (auto-link on open failed)'));
+
     // UI-driven save (onSaveClick): edit in the editor, click the Save button, and assert BOTH the
     // disk write AND that the editor is marked clean afterward (rawview.markClean) — so a later
     // navigation does NOT fire a false "unsaved changes" guard. This exercises the companion-ui
@@ -137,9 +143,14 @@ async function main() {
     for (let i = 0; i < 40 && !uiSaved; i++) { uiSaved = readFileSync(filePath, 'utf8') === 'EDITED IN EDITOR'; if (!uiSaved) await new Promise((r) => setTimeout(r, 250)); }
     if (uiSaved) pass('Save button writes the editor content to disk (onSaveClick path)');
     else fail('UI save did not hit disk: ' + JSON.stringify(readFileSync(filePath, 'utf8')));
-    const cleanAfter = await page.evaluate(async () => (await import('/core/state.js')).state.rawview.isDirty());
-    if (cleanAfter === false) pass('editor marked clean after save (markClean) — no false unsaved-changes guard');
-    else fail('markClean did not clear the dirty state after save: ' + JSON.stringify(cleanAfter));
+    // markClean runs after the save's HTTP 200, which can land AFTER the disk write above — so wait
+    // for the clean state rather than reading it once (avoids a flaky disk-vs-response race).
+    const becameClean = await page.waitForFunction(async () => {
+      const { state } = await import('/core/state.js');
+      return state.rawview && !state.rawview.isDirty();
+    }, { timeout: 8000 }).then(() => true).catch(() => false);
+    if (becameClean) pass('editor marked clean after save (markClean) — no false unsaved-changes guard');
+    else fail('markClean did not clear the dirty state after save');
 
     // Item 3 (create-unknown-file, backend): saveFile to a path that does NOT exist yet must create
     // it inside the watched folder (server validate_path_for_write parent-dir check).

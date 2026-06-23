@@ -258,7 +258,7 @@ pub async fn post_file(
     // canonicalize path.
     match validate_path_for_write(&pb, &watched) {
         Err(e) => {
-            logging::warn(format!("save refused (outside watched folders): {}", q.path));
+            logging::warn(format!("save refused: {e} (path: {})", q.path));
             (
                 StatusCode::FORBIDDEN,
                 Json(serde_json::json!({ "error": e })),
@@ -267,6 +267,18 @@ pub async fn post_file(
         }
         Ok(canonical) => {
             let is_create = !canonical.exists();
+            // Create any missing intermediate subfolders (validate_path_for_write already proved the
+            // target stays within a watched dir), so saving into a not-yet-existing subfolder works.
+            if let Some(parent) = canonical.parent() {
+                if let Err(e) = tokio::fs::create_dir_all(parent).await {
+                    logging::error(format!("save failed (mkdir {}): {e}", parent.display()));
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(serde_json::json!({ "error": e.to_string() })),
+                    )
+                        .into_response();
+                }
+            }
             let tmp_path = format!("{}.companion_tmp", canonical.display());
             let byte_count = body.len();
             if let Err(e) = tokio::fs::write(&tmp_path, &body).await {

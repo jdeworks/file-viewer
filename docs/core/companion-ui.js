@@ -109,6 +109,23 @@ export function absolutePathForFile(file) {
   return `${companionFolderRoot}/${relFromRoot}`;
 }
 
+// On opening a single file, silently associate it with its on-disk path when exactly one watched
+// file matches (name + size) — searching watched folders recursively, so files in SUBFOLDERS link
+// too. This lights up both Save-to-existing and the Delete button without needing a manual save
+// first. Zero matches (e.g. a built-in example not on disk) or several → stay unlinked: Delete
+// stays hidden and Save will prompt. Fire-and-forget; safe if the user opens another file meanwhile.
+export async function tryAutoLink() {
+  if (!companionAvailable || !companionEnabled() || !state.intake) return;
+  if (state.currentFolderPath || companionLinkedPath) return;  // folder-tree files link via the root
+  const { filename, size } = state.intake;
+  let matches;
+  try { matches = await findFile(filename, size); } catch { return; }
+  if (matches && matches.length === 1 && state.intake && state.intake.filename === filename) {
+    setCompanionLinked(matches[0]);
+    syncSaveBtn();   // reveal the Delete button now that a concrete on-disk file is linked
+  }
+}
+
 export function setCompanionLinked(absPath) {
   companionLinkedPath = absPath;
   const el = $('companionLinked');
