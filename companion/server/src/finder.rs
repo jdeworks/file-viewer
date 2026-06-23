@@ -29,15 +29,38 @@ fn walk_for_file(dir: &Path, name: &str, size: u64, out: &mut Vec<PathBuf>) {
     }
 }
 
-/// Find all watched roots that contain a sub-path matching `rel_path`.
-/// For example, `rel_path = "src/main.rs"` finds every watched dir that has
-/// that relative path underneath it.
+/// Resolve a dropped folder's ABSOLUTE path from a file's `webkitRelativePath`.
+///
+/// The browser hands us the relative path of one file inside the dropped folder, e.g.
+/// `"test/folder 2/New Text Document.txt"` — its FIRST segment (`test`) is the dropped folder's own
+/// name and the rest is the path under it. We return the absolute path of that dropped folder for
+/// each watched root that contains it, because the browser appends `webkitRelativePath` minus its
+/// first segment to this value. Two layouts are handled:
+///   1. the watched root IS the dropped folder (root basename == first segment), or
+///   2. the dropped folder sits directly inside the watched root.
 pub fn find_folder(rel_path: &str, watched: &[PathBuf]) -> Vec<PathBuf> {
-    watched
-        .iter()
-        .filter(|root| root.join(rel_path).exists())
-        .cloned()
-        .collect()
+    let rel = Path::new(rel_path);
+    let mut comps = rel.components();
+    let first = match comps.next() {
+        Some(std::path::Component::Normal(s)) => s.to_owned(),
+        _ => return vec![],
+    };
+    let rest = comps.as_path(); // the path under the dropped folder ("folder 2/New ….txt")
+
+    let mut out = Vec::new();
+    for root in watched {
+        // 1. Watched root IS the dropped folder.
+        if root.file_name() == Some(first.as_os_str()) && root.join(rest).exists() {
+            out.push(root.clone());
+            continue;
+        }
+        // 2. Dropped folder sits directly inside the watched root.
+        let candidate = root.join(&first);
+        if candidate.join(rest).exists() {
+            out.push(candidate);
+        }
+    }
+    out
 }
 
 #[cfg(test)]
@@ -78,6 +101,28 @@ mod tests {
         // "sub/hello.txt" exists under the watched root
         let results = find_folder("sub/hello.txt", &watched);
         assert_eq!(results.len(), 1);
+    }
+
+    #[test]
+    fn test_find_folder_when_watched_root_is_the_dropped_folder() {
+        // Watched folder == the dropped folder: webkitRelativePath starts with the folder's OWN name.
+        let dir = setup_temp_tree();
+        let watched = vec![dir.path().to_path_buf()];
+        let base = dir.path().file_name().unwrap().to_string_lossy().into_owned();
+        let rel = format!("{base}/sub/hello.txt");
+        let results = find_folder(&rel, &watched);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], dir.path().to_path_buf(), "returns the dropped folder's own abs path");
+    }
+
+    #[test]
+    fn test_find_folder_when_dropped_inside_watched_root() {
+        // Watched folder is the PARENT; the dropped folder "sub" lives directly inside it.
+        let dir = setup_temp_tree();
+        let watched = vec![dir.path().to_path_buf()];
+        let results = find_folder("sub/hello.txt", &watched);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], dir.path().join("sub"), "returns the dropped folder's abs path (root/sub)");
     }
 
     #[test]

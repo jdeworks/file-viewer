@@ -134,6 +134,9 @@ export async function createRawView(host, {
       std.focus();
     },
     isDirty: () => originalModel.getValue() !== modifiedModel.getValue(),
+    // Adopt the current working copy as the new baseline (so isDirty() → false). Used after a
+    // successful save-back to disk: the on-disk content now IS the original, nothing is unsaved.
+    markClean: () => { if (originalModel.getValue() !== modifiedModel.getValue()) originalModel.setValue(modifiedModel.getValue()); },
     setLanguage(lang) { monaco.editor.setModelLanguage(originalModel, lang); monaco.editor.setModelLanguage(modifiedModel, lang); if (compareModel) monaco.editor.setModelLanguage(compareModel, lang); },
     // Compare the current file against another file's text (current ↔ other). Switches to diff.
     setCompare(text, lang) {

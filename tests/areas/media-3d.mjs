@@ -484,6 +484,19 @@ export async function run(ctx) {
   const curveCommitted = await waitNewSrc(curveBefore);
   const curveClosed = await page.waitForFunction(() => document.querySelector('#previewHost .imgv-curves-panel')?.hidden === true, { timeout: 2000 }).then(() => true).catch(() => false);
   if (curvePreviewed && curveChannelPreviewed && curveCommitted && curveClosed) pass('curves: master + per-channel (Red) curves preview + Apply commits a LUT-mapped image + panel closes'); else fail('curves: ' + JSON.stringify({ curvePreviewed, curveChannelPreviewed, curveCommitted, curveClosed }));
+  // Sharpen/Blur: open panel → caches source pixels; pick Sharpen + nudge strength → live
+  // preview swaps img.src; Apply bakes the convolved pixels and the panel closes (edit-convolve.js).
+  await page.click('#previewHost .imgv-convolve-btn');
+  await page.waitForSelector('#previewHost .imgv-convolve-panel:not([hidden])', { timeout: 3000 });
+  const convOpenSrc = await imgSrcNow();
+  await page.selectOption('#previewHost .imgv-conv-type', 'sharpen');
+  await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-conv-strength'); s.value = '80'; s.dispatchEvent(new Event('input', { bubbles: true })); });
+  const convPreviewed = await waitNewSrc(convOpenSrc);
+  const convBefore = await imgSrcNow();
+  await page.click('#previewHost .imgv-conv-apply');
+  const convCommitted = await waitNewSrc(convBefore);
+  const convClosed = await page.waitForFunction(() => document.querySelector('#previewHost .imgv-convolve-panel')?.hidden === true, { timeout: 2000 }).then(() => true).catch(() => false);
+  if (convPreviewed && convCommitted && convClosed) pass('sharpen/blur: convolution previews + Apply commits a filtered image + panel closes'); else fail('convolve: ' + JSON.stringify({ convPreviewed, convCommitted, convClosed }));
   // One-click presets (greyscale/sepia/invert) bake straight to pixels via a canvas filter.
   const greyBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-preset-grey');
@@ -592,6 +605,25 @@ export async function run(ctx) {
   const clDimsAfter = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
   if (cloneModeOn && cloneMarkerShown && cloneCommitted && clDimsAfter.w === clDimsBefore.w && clDimsAfter.h === clDimsBefore.h) pass('clone stamp: Alt-click sets a source marker, painting clones pixels + commits (dims unchanged)'); else fail('clone: ' + JSON.stringify({ cloneModeOn, cloneMarkerShown, cloneCommitted, clDimsBefore, clDimsAfter }));
   await page.click('#previewHost .imgv-clone');    // toggle clone off, restore for later steps
+  // Heal (Draw tab): same Alt-source + paint mechanics as Clone, but the dab is mean-shifted to the
+  // destination surround. Asserts mode activates, the source marker shows, and a paint commits (dims unchanged).
+  await page.click('#previewHost .imgv-heal');
+  const healModeOn = await page.evaluate(() => document.querySelector('#previewHost .imgv-heal').classList.contains('active'));
+  const hlDimsBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  await page.keyboard.down('Alt');
+  await page.mouse.move(clRect.l + clRect.w * 0.6, clRect.t + clRect.h * 0.35);
+  await page.mouse.down(); await page.mouse.up();
+  await page.keyboard.up('Alt');
+  const healMarkerShown = await page.evaluate(() => { const m = document.querySelector('#previewHost .imgv-clone-src'); return !!m && m.style.display !== 'none'; });
+  const healSrcBefore = await imgSrcNow();
+  await page.mouse.move(clRect.l + clRect.w * 0.35, clRect.t + clRect.h * 0.55);
+  await page.mouse.down();
+  await page.mouse.move(clRect.l + clRect.w * 0.5, clRect.t + clRect.h * 0.6, { steps: 6 });
+  await page.mouse.up();
+  const healCommitted = await waitNewSrc(healSrcBefore);
+  const hlDimsAfter = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight }));
+  if (healModeOn && healMarkerShown && healCommitted && hlDimsAfter.w === hlDimsBefore.w && hlDimsAfter.h === hlDimsBefore.h) pass('heal: Alt-click source + paint mean-shifts the patch + commits (dims unchanged)'); else fail('heal: ' + JSON.stringify({ healModeOn, healMarkerShown, healCommitted, hlDimsBefore, hlDimsAfter }));
+  await page.click('#previewHost .imgv-heal');     // toggle heal off, restore for later steps
   // Toolbar declutter: the 🛠 toggle collapses the editing-tools group.
   const toolsVisInit = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display !== 'none');
   await page.click('#previewHost .imgv-tools-btn');
@@ -681,6 +713,18 @@ export async function run(ctx) {
     return { count: rows.length, hasPoly: names.includes('Polygon'), hasStar: names.includes('Star') };
   });
   if (advPolyStar.count === 5 && advPolyStar.hasPoly && advPolyStar.hasStar) pass('Adv Edit: polygon + star shapes added (named in layers panel)'); else fail('adv poly/star: ' + JSON.stringify(advPolyStar));
+  // Per-object blend mode: set the (selected) star to Multiply; selecting Polygon then Star again shows
+  // the blend select reflects each object's own value (per-object, persisted on the Konva node).
+  const clickAdvRow = (n) => page.evaluate((name) => {
+    const row = [...document.querySelectorAll('#previewHost .imgv-adv-layers > div')].find((r) => r.querySelector('span')?.textContent === name);
+    row?.click(); return !!row;
+  }, n);
+  await page.selectOption('#previewHost .imgv-adv-blend', 'multiply');   // star is the active selection
+  await clickAdvRow('Polygon');
+  const polyBlend = await page.$eval('#previewHost .imgv-adv-blend', (e) => e.value);
+  await clickAdvRow('Star');
+  const starBlend = await page.$eval('#previewHost .imgv-adv-blend', (e) => e.value);
+  if (polyBlend === 'source-over' && starBlend === 'multiply') pass('Adv Edit: per-object blend mode persists on the node (poly=Normal, star=Multiply)'); else fail('adv blend: ' + JSON.stringify({ polyBlend, starBlend }));
   // Persistent overlay: leaving Adv makes the stage non-interactive but KEEPS it
   // mounted (non-destructive). The doc is dirty and getBytes() flattens base+overlay
   // ON DEMAND — the overlay is never baked onto the base just for leaving Adv.
@@ -823,6 +867,22 @@ export async function run(ctx) {
     return img && !img.hidden && img.naturalWidth > 0 && (!note || note.hidden);
   }, null, { timeout: 30000 }).then(() => true).catch(() => false);
   if (jxlOk) pass('JPEG XL decoded in-browser (lazy wasm) and rendered'); else fail('jxl did not decode/render');
+
+  // ── TIFF ── browsers can't decode TIFF natively; the tiff plugin decodes it via the lazy
+  // vendored UTIF bundle → PNG and delegates to the full image editor, so a .tiff opens as an
+  // editable raster (real dimensions + the editing toolbar), not the metadata-only fallback.
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.tiff');
+  await page.waitForSelector('#previewHost .imgv-img', { timeout: 30000 });
+  const tiffOk = await page.waitForFunction(() => {
+    const img = document.querySelector('#previewHost .imgv-img');
+    return img && !img.hidden && img.naturalWidth > 0;
+  }, null, { timeout: 30000 }).then(() => true).catch(() => false);
+  const tiffEdits = await page.$$eval(
+    '#previewHost .imgv-pencil, #previewHost .imgv-fill, #previewHost .imgv-crop-btn, #previewHost .imgv-f-hue, #previewHost .imgv-bg-btn',
+    (els) => els.length,
+  ).catch(() => 0);
+  if (tiffOk && tiffEdits === 5) pass('TIFF decoded in-browser (lazy UTIF) into the full editable image editor'); else fail('tiff decode/edit: ' + JSON.stringify({ tiffOk, tiffEdits }));
 
   // ── Blob-intake seam ── window.__fv.openBlobFile opens an in-memory Blob via
   // the same intake→detect→render path a file uses (this is how a webcam

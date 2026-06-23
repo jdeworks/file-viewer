@@ -13,12 +13,19 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use crate::{
     config::save_config,
     finder::{find_file, find_folder},
-    paths::validate_path,
+    logging,
+    paths::{validate_path, validate_path_for_write},
     AppState,
 };
+
+// Log "viewer connected" only once per process (ping is polled periodically by the browser, so we
+// don't want a line every 30s). Reset implicitly by a server restart.
+static CONNECTED_LOGGED: AtomicBool = AtomicBool::new(false);
 
 // ---------------------------------------------------------------------------
 // GET /ping
@@ -28,12 +35,29 @@ use crate::{
 pub struct PingResponse {
     pub ok: bool,
     pub version: &'static str,
+    /// The session token. Returned here so the viewer can pick it up automatically — only CORS-
+    /// allowed origins (localhost + the configured Pages origin) can read this response, so a
+    /// disallowed page still can't obtain the token (and thus can't make mutating calls).
+    pub token: String,
+    pub capabilities: Vec<&'static str>,
 }
 
-pub async fn ping() -> Json<PingResponse> {
+pub async fn ping(State(state): State<AppState>) -> Json<PingResponse> {
+    if !CONNECTED_LOGGED.swap(true, Ordering::Relaxed) {
+        logging::info("viewer connected");
+    }
     Json(PingResponse {
         ok: true,
         version: env!("CARGO_PKG_VERSION"),
+        token: state.token.clone(),
+        capabilities: vec![
+            "file-read",
+            "file-write",
+            "file-delete",
+            "file-watch",
+            "find-file",
+            "find-folder",
+        ],
     })
 }
 
@@ -72,6 +96,7 @@ pub async fn add_watched_path(
 ) -> Response {
     let pb = PathBuf::from(&body.path);
     if !pb.is_dir() {
+        logging::warn(format!("rejected watched folder (not a directory): {}", body.path));
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({ "error": "path is not a directory" })),
@@ -86,8 +111,9 @@ pub async fn add_watched_path(
         locked.clone()
     };
     if let Err(e) = save_config(&paths) {
-        tracing::warn!("Failed to save config: {e}");
+        logging::error(format!("failed to save config: {e}"));
     }
+    logging::info(format!("watched folder added: {}", body.path));
     let path_strs: Vec<String> = paths.iter().map(|p| p.display().to_string()).collect();
     (
         StatusCode::OK,
@@ -111,8 +137,9 @@ pub async fn remove_watched_path(
         locked.clone()
     };
     if let Err(e) = save_config(&paths) {
-        tracing::warn!("Failed to save config: {e}");
+        logging::error(format!("failed to save config: {e}"));
     }
+    logging::info(format!("watched folder removed: {}", body.path));
     let path_strs: Vec<String> = paths.iter().map(|p| p.display().to_string()).collect();
     (
         StatusCode::OK,
@@ -141,10 +168,16 @@ pub async fn get_find_file(
     Query(q): Query<FindFileQuery>,
 ) -> Json<FindFileResponse> {
     let watched = state.watched_paths.lock().unwrap().clone();
-    let matches = find_file(&q.name, q.size, &watched)
+    let matches: Vec<String> = find_file(&q.name, q.size, &watched)
         .into_iter()
         .map(|p| p.display().to_string())
         .collect();
+    logging::info(format!(
+        "find-file '{}' ({} bytes) → {} match(es)",
+        q.name,
+        q.size,
+        matches.len()
+    ));
     Json(FindFileResponse { matches })
 }
 
@@ -220,16 +253,36 @@ pub async fn post_file(
 ) -> Response {
     let watched = state.watched_paths.lock().unwrap().clone();
     let pb = PathBuf::from(&q.path);
-    match validate_path(&pb, &watched) {
-        Err(e) => (
-            StatusCode::FORBIDDEN,
-            Json(serde_json::json!({ "error": e })),
-        )
-            .into_response(),
+    // validate_path_for_write also permits a not-yet-existing file (the "create" flow), as long as
+    // its parent dir resolves inside a watched folder. An existing file goes through the stricter
+    // canonicalize path.
+    match validate_path_for_write(&pb, &watched) {
+        Err(e) => {
+            logging::warn(format!("save refused: {e} (path: {})", q.path));
+            (
+                StatusCode::FORBIDDEN,
+                Json(serde_json::json!({ "error": e })),
+            )
+                .into_response()
+        }
         Ok(canonical) => {
+            let is_create = !canonical.exists();
+            // Create any missing intermediate subfolders (validate_path_for_write already proved the
+            // target stays within a watched dir), so saving into a not-yet-existing subfolder works.
+            if let Some(parent) = canonical.parent() {
+                if let Err(e) = tokio::fs::create_dir_all(parent).await {
+                    logging::error(format!("save failed (mkdir {}): {e}", parent.display()));
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(serde_json::json!({ "error": e.to_string() })),
+                    )
+                        .into_response();
+                }
+            }
             let tmp_path = format!("{}.companion_tmp", canonical.display());
             let byte_count = body.len();
             if let Err(e) = tokio::fs::write(&tmp_path, &body).await {
+                logging::error(format!("save failed ({}): {e}", canonical.display()));
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(serde_json::json!({ "error": e.to_string() })),
@@ -237,17 +290,70 @@ pub async fn post_file(
                     .into_response();
             }
             if let Err(e) = tokio::fs::rename(&tmp_path, &canonical).await {
+                logging::error(format!("save failed ({}): {e}", canonical.display()));
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(serde_json::json!({ "error": e.to_string() })),
                 )
                     .into_response();
             }
+            logging::info(format!(
+                "{} {} ({} bytes)",
+                if is_create { "created" } else { "saved" },
+                canonical.display(),
+                byte_count
+            ));
             (
                 StatusCode::OK,
                 Json(serde_json::json!({ "ok": true, "bytes": byte_count })),
             )
                 .into_response()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /file?path=   (token required — enforced by middleware layer)
+// Deletes a single file inside a watched folder. Refuses directories. The browser
+// gates this behind an explicit confirm; the Download button is unaffected.
+// ---------------------------------------------------------------------------
+
+pub async fn delete_file(State(state): State<AppState>, Query(q): Query<FileQuery>) -> Response {
+    let watched = state.watched_paths.lock().unwrap().clone();
+    let pb = PathBuf::from(&q.path);
+    match validate_path(&pb, &watched) {
+        Err(e) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": e })),
+        )
+            .into_response(),
+        Ok(canonical) => {
+            if canonical.is_dir() {
+                logging::warn(format!("delete refused (is a directory): {}", canonical.display()));
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({ "error": "refusing to delete a directory" })),
+                )
+                    .into_response();
+            }
+            match tokio::fs::remove_file(&canonical).await {
+                Err(e) => {
+                    logging::error(format!("delete failed ({}): {e}", canonical.display()));
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(serde_json::json!({ "error": e.to_string() })),
+                    )
+                        .into_response()
+                }
+                Ok(()) => {
+                    logging::info(format!("deleted {}", canonical.display()));
+                    (
+                        StatusCode::OK,
+                        Json(serde_json::json!({ "ok": true })),
+                    )
+                        .into_response()
+                }
+            }
         }
     }
 }
@@ -326,4 +432,33 @@ pub async fn watch_sse(
             .interval(std::time::Duration::from_secs(15))
             .text("ping"),
     )
+}
+
+// ---------------------------------------------------------------------------
+// GET /logs?level=&q=&since=&limit=  — recent log entries for the viewers.
+// No auth: it only exposes the companion's own activity log (paths the viewer
+// already knows). CORS-gated like the other read endpoints.
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct LogsQuery {
+    /// Minimum level: "info" (all), "warn", or "error".
+    pub level: Option<String>,
+    /// Case-insensitive substring filter on the message.
+    pub q: Option<String>,
+    /// RFC3339 cutoff — only entries at or after this timestamp.
+    pub since: Option<String>,
+    pub limit: Option<usize>,
+}
+
+#[derive(Serialize)]
+pub struct LogsResponse {
+    pub entries: Vec<logging::LogEntry>,
+}
+
+pub async fn get_logs(Query(q): Query<LogsQuery>) -> Json<LogsResponse> {
+    let min_level = q.level.as_deref().and_then(logging::Level::from_filter);
+    let limit = q.limit.unwrap_or(500).min(2000);
+    let entries = logging::recent(min_level, q.q.as_deref(), q.since.as_deref(), limit);
+    Json(LogsResponse { entries })
 }

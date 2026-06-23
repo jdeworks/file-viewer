@@ -1,0 +1,14 @@
+# Cross-compile the companion to native Windows (x86_64-pc-windows-msvc) from
+# Linux/WSL with no Windows machine and no host pollution. Uses cargo-xwin, which
+# fetches the MSVC CRT + Windows SDK headers/libs automatically (no Visual Studio,
+# no licensing snag — xwin pulls the redistributable Microsoft packages).
+#
+# Build the image:   docker build -t fv-xwin -f companion/Dockerfile.win companion
+# Then see:          companion/scripts/build-windows.sh  (drives the actual builds)
+FROM rust:1.96-bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      clang lld llvm \
+    && rm -rf /var/lib/apt/lists/*
+RUN rustup target add x86_64-pc-windows-msvc
+RUN cargo install cargo-xwin --version 0.23.0
+ENV XWIN_CACHE_DIR=/work/.xwin-cache

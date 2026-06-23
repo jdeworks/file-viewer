@@ -75,6 +75,8 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     <label class="imgv-adv-txtctl" style="font-size:.8em">BG opacity <input class="imgv-adv-bgop" type="range" min="0" max="100" value="${DEFAULTS.bgOpacity * 100}" style="width:70px"></label>
     <label class="imgv-adv-shpctl" style="font-size:.8em">Stroke <input class="imgv-adv-stroke" type="color" value="#1144aa"></label>
     <label class="imgv-adv-shpctl" style="font-size:.8em">Width <input class="imgv-adv-strokew" type="number" min="0" max="80" value="2" style="width:48px"></label>
+    <label class="imgv-adv-anyctl" style="font-size:.8em" title="How this object blends with the objects BEHIND it in the overlay (not the base image)">Blend
+      <select class="imgv-adv-blend"><option value="source-over">Normal</option><option value="multiply">Multiply</option><option value="screen">Screen</option><option value="overlay">Overlay</option><option value="darken">Darken</option><option value="lighten">Lighten</option><option value="color-dodge">Dodge</option><option value="color-burn">Burn</option><option value="hard-light">Hard light</option><option value="soft-light">Soft light</option><option value="difference">Difference</option><option value="exclusion">Exclusion</option></select></label>
     <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
   bar.appendChild(tb);
   const $ = (s) => tb.querySelector(s);
@@ -86,9 +88,11 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     const has = !!selected, label = isLabel(selected);
     tb.querySelectorAll('.imgv-adv-txtctl').forEach((el) => { el.style.display = label ? '' : 'none'; });
     tb.querySelectorAll('.imgv-adv-shpctl').forEach((el) => { el.style.display = (has && !label) ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-anyctl').forEach((el) => { el.style.display = has ? '' : 'none'; });
     $('.imgv-adv-del').disabled = !has;
     $('.imgv-adv-fill').disabled = !has;
     if (!has) return;
+    $('.imgv-adv-blend').value = selected.globalCompositeOperation() || 'source-over';
     if (label) {
       const t = textNodeOf(selected), tag = tagNodeOf(selected);
       $('.imgv-adv-text').value = t.text();
@@ -165,6 +169,9 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   $('.imgv-adv-bgop').addEventListener('input', () => { if (isLabel(selected)) { tagNodeOf(selected).opacity((parseInt($('.imgv-adv-bgop').value, 10) || 0) / 100); layer.draw(); markDirty(); } });
   $('.imgv-adv-stroke').addEventListener('input', () => { if (selected && !isLabel(selected)) { selected.stroke($('.imgv-adv-stroke').value); layer.draw(); markDirty(); } });
   $('.imgv-adv-strokew').addEventListener('input', () => { if (selected && !isLabel(selected)) { selected.strokeWidth(parseInt($('.imgv-adv-strokew').value, 10) || 0); layer.draw(); markDirty(); } });
+  // Per-object blend mode — Konva globalCompositeOperation composites this object against the ones
+  // BEHIND it in the overlay stage (NOT the base <img>); honoured by flattenToCanvas on export.
+  $('.imgv-adv-blend').addEventListener('change', () => { if (selected) { snap(); selected.globalCompositeOperation($('.imgv-adv-blend').value); layer.draw(); markDirty(); } });
   syncToolbar();
 
   // ── Layers panel ── one row per object, docked top-right of the stage host:

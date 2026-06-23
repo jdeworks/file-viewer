@@ -25,6 +25,7 @@ notify = { version = "6", features = ["macos_fsevent"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+time = { version = "0.3", features = ["formatting", "parsing", "macros"] }
 
 [dev-dependencies]
 axum-test = "14"

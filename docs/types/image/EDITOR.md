@@ -6,7 +6,7 @@ Covers: PNG, JPG, WebP, BMP, AVIF, GIF, TIFF, HEIF/HEIC, ICO/CUR, SVG, Procreate
 
 ## Current state
 
-`docs/types/image/renderer.js` is the shared raster editor (split across sibling modules — see "Shared toolbar / modular note"). `EDITABLE_MIME` is now **PNG, JPEG, WebP, AVIF, BMP, GIF** (BMP/GIF re-encode to PNG; GIF edits the first frame). JXL decodes to a PNG canvas via `jxl-decode.js` and is editable through that. Other raster types (TIFF, HEIF, ICO, Procreate, Sketch, layered) are **view-only** sub-renderers.
+`docs/types/image/renderer.js` is the shared raster editor (split across sibling modules — see "Shared toolbar / modular note"). `EDITABLE_MIME` is now **PNG, JPEG, WebP, AVIF, BMP, GIF** (BMP/GIF re-encode to PNG; GIF edits the first frame). JXL decodes to a PNG canvas via `jxl-decode.js` and is editable through that; **TIFF** likewise decodes via `tiff/decode-tiff.js` (vendored UTIF) and delegates to this editor. Other raster types (HEIF, ICO, Procreate, Sketch, layered) are **view-only** sub-renderers.
 
 Opens in plain **view mode**; the editing toolbar is hidden until you press **Edit**. ASCII + Edit are stacked toggle buttons anchored left by the zoom controls (`doc.html` `.imgv-mode-col`). The toolbar is grouped into **tabs** (`edit-tabs.js`): Common / Draw / Text / Adjust / Size / Background — each tool's button is in Common AND (linked via `data-link` proxy) its own tab, which holds the fine-tuning.
 
@@ -31,7 +31,7 @@ Opens in plain **view mode**; the editing toolbar is hidden until you press **Ed
 
 **ICO** (`ico/renderer.js`): Pure-JS parser, renders each embedded size (PNG-embedded or BMP-in-ICO) into individual `<canvas>` elements in a grid. Read-only.
 
-**TIFF** (`tiff/renderer.js`): Tries native browser decode first (Safari/macOS). Falls back to metadata table via `parseTiffMetadata`. No cross-browser pixel decode yet.
+**TIFF** (`tiff/renderer.js`): ✅ **SHIPPED cross-browser decode** — `decode-tiff.js` lazy-loads the vendored **UTIF** bundle (`docs/vendor/utif/utif.esm.js`, MIT, ~84 KB, built by `build/tiff/`), decodes the first page → a PNG, and **delegates to the main image editor** (`renderer.generated.js`) so a `.tiff` opens as a fully editable raster (crop/filters/draw/Adv/ASCII/export). The app keeps the original intake for Download (untouched `.tiff` still downloads); edits save as PNG. On decode failure (exotic compression/colour space) it falls back to the `parseTiffMetadata` card.
 
 **Procreate** (`procreate/renderer.js`): Extracts `thumbnail.png` / `QuickLook/Thumbnail.png` from the ZIP archive and renders it on a checkerboard canvas. Structural metadata not surfaced.
 
@@ -47,7 +47,7 @@ Opens in plain **view mode**; the editing toolbar is hidden until you press **Ed
 
 - ✅ **SHIPPED — EDITABLE_MIME now includes BMP/GIF** (re-encode to PNG; GIF edits first frame), plus AVIF and JXL-via-PNG.
 
-- **TIFF cross-browser decode** — Integrate `UTIF.js` (~60 KB, MIT, already used in some viewers) or `tiff.js`. Decode to ImageData, push to canvas, hand off to the shared raster editor toolbar. Replace the "metadata only" fallback path in `tiff/renderer.js`. — M, lib: UTIF.js or tiff.js
+- ✅ **SHIPPED — TIFF cross-browser decode** — vendored **UTIF** (`build/tiff/` → `docs/vendor/utif/utif.esm.js`, MIT, ~84 KB, lazy) decodes the first page to ImageData → PNG; `tiff/renderer.js` hands it to the main image editor (full toolbar). Metadata card remains only as the decode-failure fallback. Single-page only so far (multi-page TIFF = a future page selector).
 
 - **HEIF EXIF panel** — libheif exposes raw EXIF bytes via `get_metadata()`; pipe them through the existing `exif.js` parser already used by the main renderer and show the panel below the canvas. — S (no new lib)
 
@@ -76,6 +76,7 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
 - **Brush / paint engine upgrade** — Replace the raw canvas mouse listener with a pressure-aware, anti-aliased brush engine. Options: (a) keep native Canvas2D but add midpoint smoothing with `quadraticCurveTo` between pointer samples — very small diff; (b) use Fabric.js `PencilBrush` which supports width-pressure simulation. The current `buildOverlay()` approach plugs directly into either. — M (option a) / L (option b), lib: Fabric.js (~900 KB) or none
 
 - ✅ **SHIPPED — Shape tools** (`adv-edit.js`, Adv Edit overlay): rectangle, ellipse, line, arrow, **polygon (`Konva.RegularPolygon`, pentagon) + star (`Konva.Star`, 5-point)** — all re-editable vector objects tagged `name:'obj'`, sharing the fill/stroke/width controls + layers panel + unified Ctrl+Z, and riding geometry transforms (rotate/flip/crop) without baking. Flattened only on output.
+- ✅ **SHIPPED — Per-object blend modes** (`adv-edit.js`): a Blend `<select>` in the selected-object toolbar sets the node's `globalCompositeOperation` (Normal/Multiply/Screen/Overlay/Darken/Lighten/Dodge/Burn/Hard/Soft-light/Difference/Exclusion); persists in the overlay JSON (unified Ctrl+Z) + honoured by `flattenToCanvas`. **CAVEAT:** blends an object against the overlay objects BEHIND it, **not** the raster base (the stage flattens separately, then draws over the base) — see ADV_EDIT.md. True object-vs-base blend would need a per-object flatten-against-base pass (not done).
 
 - ✅ **SHIPPED — Fill bucket** (`fill.js`): seed / connected-shade / Sobel edge-stop region modes, Euclidean or perceptual (redmean) distance, feather. Its BFS+Sobel walk is factored into `computeRegionMask` and reused by the magic-wand selection.
 
@@ -86,11 +87,13 @@ All raster editing uses `canvas.toBlob()` and a blob URL download. No server req
 - **Color adjustments panel** — brightness/contrast/saturation/**hue** sliders shipped (`edit-filters.js`); **Levels** (black/white/gamma) ✅ SHIPPED (`levels.js` LUT + live preview, in the Adjust tab).
   - ✅ SHIPPED — **Curves** (`curves.js` + `edit-curves.js`): a small `<canvas>` with draggable control points (click empty space to add a handle, double-click to remove). The handles drive a **monotone-cubic (Fritsch–Carlson)** spline — smooth but never overshoots, so the tone map stays monotone — sampled into a 256-entry LUT. Live preview swaps `img.src` to a processed blob (rAF-coalesced); Apply bakes it via the edit core. **Per-channel** ✅ — a Channel selector (RGB / Red / Green / Blue) edits the composite (master) curve or each channel; `buildChannelLUTs` composes `master ∘ channel` into one LUT per channel, applied via `applyChannelLUTs`. The active channel's curve is drawn in its colour.
   - ✅ SHIPPED — Sepia / greyscale / invert one-click presets (`edit-filters.js`, `ctx.filter` bake, Adjust tab).
+  - ✅ SHIPPED — **Sharpen / Blur** (`convolve.js` + `edit-convolve.js`): a 3×3 convolution in the Adjust tab. `buildKernel(type, strength)` blends identity → normalised Gaussian (blur) or identity + s·(identity − Gaussian) (sharpen / unsharp mask); `applyConvolution` is edge-clamped and alpha-preserving. Strength 0 is a guaranteed no-op. Live `img.src` preview (rAF-coalesced); Apply bakes via the edit core. Same lifecycle as Levels/Curves.
   — M per item, no lib required
 
 - **Blend modes on composited layers** — When the Konva layers panel is present, expose a blend-mode `<select>` per layer using the 26 CSS mix-blend-mode values (`multiply`, `screen`, `overlay`, `color-dodge`, `hard-light`, etc.). Konva maps these to Canvas2D `globalCompositeOperation`. The export flatten step uses `drawImage` with each layer's blend mode active. — M (depends on Konva layers task above)
 
-- ✅ **SHIPPED — Clone stamp** (`draw-overlay.js`, mode `'clone'`): **Alt-click** sets a source anchor + snapshots the base; a plain drag paints, copying pixels from `dest − offset` (offset fixed on the first dab = *aligned* clone) by clip-circle + `drawImage(sourceSnapshot, offset)`. A cyan source marker (`.imgv-clone-src`) pins the sampled pixel; reuses the brush hover circle, brush-size, selection-clip, and commit pipeline (overlay = full image, like the eraser). Master/raster only; **heal** (blend against surroundings) not done. Smoke in media-3d.
+- ✅ **SHIPPED — Clone stamp** (`draw-overlay.js`, mode `'clone'`): **Alt-click** sets a source anchor + snapshots the base; a plain drag paints, copying pixels from `dest − offset` (offset fixed on the first dab = *aligned* clone) by clip-circle + `drawImage(sourceSnapshot, offset)`. A cyan source marker (`.imgv-clone-src`) pins the sampled pixel; reuses the brush hover circle, brush-size, selection-clip, and commit pipeline (overlay = full image, like the eraser). Master/raster only. Smoke in media-3d.
+- ✅ **SHIPPED — Heal** (`draw-overlay.js`, mode `'heal'`): same Alt-source + aligned-offset sampling as Clone, but each dab **mean-shifts** the sampled patch by the per-channel difference between the destination surround (read from the evolving overlay) and the source patch — texture transfers, tone blends in, so a blemish vanishes instead of being hard-copied (`healDab`; falls back to a hard clone when the image is smaller than the brush). Shares all the clone plumbing via `cloneMode()`. Smoke in media-3d.
 
 - **Perspective crop** — Four-corner drag UI, then `ctx.transform()` with the computed homography matrix. A minimal 3×3 homography solver is ~40 lines of JS. — L (no lib, but math-heavy)
 

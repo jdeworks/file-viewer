@@ -7,6 +7,11 @@ struct Config {
 }
 
 pub fn config_path() -> PathBuf {
+    // COMPANION_CONFIG overrides the location — used by the e2e test to isolate from the real
+    // user config (so tests never read or clobber a developer's watched-paths).
+    if let Ok(p) = std::env::var("COMPANION_CONFIG") {
+        return PathBuf::from(p);
+    }
     dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("."))
         .join("file-viewer-companion")

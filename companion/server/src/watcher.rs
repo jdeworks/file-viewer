@@ -29,8 +29,10 @@ impl FileWatcher {
                     _ => return, // ignore "other" / rename/any variants we don't need
                 };
                 for path in event.paths {
+                    let path_str = path.to_string_lossy().to_string();
+                    crate::logging::info(format!("file {kind} on disk: {path_str}"));
                     let _ = tx_clone.send(WatchEvent {
-                        path: path.to_string_lossy().to_string(),
+                        path: path_str,
                         kind: kind.to_string(),
                     });
                 }

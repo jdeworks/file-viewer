@@ -1,14 +1,10 @@
-use axum::http::{HeaderValue, Method};
-use axum::{
-    middleware,
-    routing::{delete, get, post},
-    Router,
-};
 use file_viewer_companion::{
-    auth::require_token, config::load_config, routes, watcher::FileWatcher, AppState,
+    config::{config_path, load_config},
+    logging, router,
+    watcher::FileWatcher,
+    AppState,
 };
 use std::sync::{Arc, Mutex};
-use tower_http::cors::{AllowOrigin, CorsLayer};
 
 #[tokio::main]
 async fn main() {
@@ -18,11 +14,15 @@ async fn main() {
         tracing_subscriber::fmt().with_env_filter("info").init();
     }
 
+    // Logging writes to stdout + a daily file next to config.json (logs/companion-YYYY-MM-DD.log),
+    // kept for 7 days. Always on — running the bare server now shows live activity.
+    logging::init(Some(config_path()));
+
     let token =
         std::env::var("COMPANION_TOKEN").unwrap_or_else(|_| uuid::Uuid::new_v4().to_string());
 
     let pages_origin = std::env::var("COMPANION_ORIGIN")
-        .unwrap_or_else(|_| "https://nicholaswilde.io".to_string());
+        .unwrap_or_else(|_| "https://jdeworks.github.io".to_string());
 
     let watched = load_config();
 
@@ -32,6 +32,10 @@ async fn main() {
     println!("  Token: {token}");
     println!("  (set COMPANION_TOKEN env var to use a fixed token)");
     println!("═══════════════════════════════════");
+    logging::info(format!(
+        "companion started on 127.0.0.1:7700 ({} watched folder(s))",
+        watched.len()
+    ));
 
     let watched_paths = Arc::new(Mutex::new(watched));
 
@@ -43,7 +47,7 @@ async fn main() {
             (tx, Some(fw))
         }
         Err(e) => {
-            eprintln!("Warning: file watcher could not start: {e}");
+            logging::warn(format!("file watcher could not start: {e}"));
             let (tx, _) = tokio::sync::broadcast::channel(1);
             (tx, None)
         }
@@ -56,39 +60,29 @@ async fn main() {
         watcher_tx,
     };
 
-    let cors = CorsLayer::new()
-        .allow_origin(AllowOrigin::predicate(move |origin: &HeaderValue, _| {
-            let o = origin.to_str().unwrap_or("");
-            o.starts_with("http://localhost:")
-                || o.starts_with("http://127.0.0.1:")
-                || o == pages_origin
-        }))
-        .allow_methods([Method::GET, Method::POST, Method::DELETE, Method::OPTIONS])
-        .allow_headers(tower_http::cors::Any);
-
-    let protected = Router::new()
-        .route("/watched-paths", post(routes::add_watched_path))
-        .route("/watched-paths", delete(routes::remove_watched_path))
-        .route("/file", post(routes::post_file))
-        .route_layer(middleware::from_fn_with_state(state.clone(), require_token));
-
-    let app = Router::new()
-        .route("/ping", get(routes::ping))
-        .route("/watched-paths", get(routes::get_watched_paths))
-        .route("/find-file", get(routes::get_find_file))
-        .route("/find-folder", get(routes::get_find_folder))
-        .route("/file", get(routes::get_file))
-        .route("/files", get(routes::get_files))
-        .route("/watch", get(routes::watch_sse))
-        .merge(protected)
-        .layer(cors)
-        .with_state(state);
+    let app = router(state, pages_origin);
 
     // Keep _watcher alive for the lifetime of main so FS events keep flowing.
     let _keep = _watcher;
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:7700")
-        .await
-        .unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = match tokio::net::TcpListener::bind("127.0.0.1:7700").await {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!();
+            eprintln!("ERROR: could not start — 127.0.0.1:7700 is already in use ({e}).");
+            eprintln!("Another companion (the tray app or another console server) is already");
+            eprintln!("running. Quit it first (tray → Quit, or end it in Task Manager), then");
+            eprintln!("run this again.");
+            logging::error(format!("cannot bind 127.0.0.1:7700: {e}"));
+            // Keep the console window open so the message is readable (Windows closes it on exit).
+            eprintln!();
+            eprint!("Press Enter to close…");
+            let mut _line = String::new();
+            let _ = std::io::stdin().read_line(&mut _line);
+            std::process::exit(1);
+        }
+    };
+    if let Err(e) = axum::serve(listener, app).await {
+        logging::error(format!("server stopped: {e}"));
+    }
 }

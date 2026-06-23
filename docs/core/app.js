@@ -25,7 +25,7 @@ import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard,
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, showFolderLoading, hideFolderLoading } from './folder.js';
 import { clearArchiveTree, mountArchiveTree } from './archive-tree.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
-import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, renderCompanionSettings, detectCompanionOnStartup } from './companion-ui.js';
+import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, onDeleteClick, renderCompanionSettings, detectCompanionOnStartup, tryAutoLink } from './companion-ui.js';
 import { initSessionTree, updateSessionTree, createNewFile, onTreeFileDrop, flushSessionEdit } from './session-tree.js';
 import { populateTypeSelect } from './type-select.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
@@ -78,6 +78,9 @@ async function loadIntake(intake) {
     toast(`Large file: showing the first ${shown} MB of ${total} MB.`, 6000);
   }
   updateSessionTree(intake);
+  // Silently link a single opened file to its on-disk match (recursive in watched folders, incl.
+  // subfolders) so Save-to-existing and Delete light up without a manual save first.
+  if (!fromTree) tryAutoLink();
   maybeUnlockEasteregg(intake.text);
 }
 
@@ -504,6 +507,7 @@ function init() {
   $('compareBar').querySelector('.compare-stop').addEventListener('click', stopCompare);
   $('downloadBtn').addEventListener('click', downloadCurrent);
   $('saveBtn').addEventListener('click', onSaveClick);
+  $('deleteBtn').addEventListener('click', onDeleteClick);
 
   // Viewport change must NOT rebuild the editor (would drop edits) — just relayout
   // and toggle which view controls apply (desktop split vs mobile tabs).

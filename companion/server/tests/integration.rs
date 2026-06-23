@@ -1,15 +1,16 @@
-use axum::routing::{delete, get, post};
 use axum::{
     body::Body,
     http::{header, Method, Request, StatusCode},
+    Router,
 };
-use axum::{middleware, Router};
-use file_viewer_companion::{auth::require_token, routes, AppState};
+use file_viewer_companion::{router, AppState};
 use std::fs;
 use std::sync::{Arc, Mutex};
 use tempfile::TempDir;
 use tower::ServiceExt;
 
+// Build the real router via the shared lib fn, so the tests exercise the exact route surface +
+// token middleware the binary and Tauri wrapper use (no drift).
 fn build_app(token: &str, watched: Vec<std::path::PathBuf>) -> Router {
     let (watcher_tx, _) = tokio::sync::broadcast::channel(1);
     let state = AppState {
@@ -18,23 +19,7 @@ fn build_app(token: &str, watched: Vec<std::path::PathBuf>) -> Router {
         debug: false,
         watcher_tx,
     };
-
-    let protected = Router::new()
-        .route("/watched-paths", post(routes::add_watched_path))
-        .route("/watched-paths", delete(routes::remove_watched_path))
-        .route("/file", post(routes::post_file))
-        .route_layer(middleware::from_fn_with_state(state.clone(), require_token));
-
-    Router::new()
-        .route("/ping", get(routes::ping))
-        .route("/watched-paths", get(routes::get_watched_paths))
-        .route("/find-file", get(routes::get_find_file))
-        .route("/find-folder", get(routes::get_find_folder))
-        .route("/file", get(routes::get_file))
-        .route("/files", get(routes::get_files))
-        .route("/watch", get(routes::watch_sse))
-        .merge(protected)
-        .with_state(state)
+    router(state, "https://test.invalid".to_string())
 }
 
 // --- /ping ---
@@ -53,6 +38,8 @@ async fn test_ping() {
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(json["ok"], true);
     assert_eq!(json["version"], "0.1.0");
+    assert_eq!(json["token"], "secret", "ping returns the session token for auto-pickup");
+    assert!(json["capabilities"].as_array().unwrap().iter().any(|c| c == "file-delete"));
 }
 
 // --- /watched-paths mutation ---
@@ -183,6 +170,80 @@ async fn test_post_and_get_file() {
     assert_eq!(&bytes[..], b"new content");
 }
 
+// --- create a NOT-yet-existing file in a watched dir (the "create unknown file" flow) ---
+
+#[tokio::test]
+async fn test_create_new_file_in_watched_dir() {
+    let tmp = TempDir::new().unwrap();
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let new_path = tmp.path().join("brand-new.txt");
+    assert!(!new_path.exists(), "precondition: file must not exist yet");
+
+    let path_str = new_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::from("created!"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert!(new_path.exists(), "the new file should have been created");
+    assert_eq!(fs::read_to_string(&new_path).unwrap(), "created!");
+}
+
+#[tokio::test]
+async fn test_create_file_in_new_subfolder() {
+    // Reproduces the reported case: saving welcome.md into a subfolder that doesn't exist yet, but
+    // lives under a watched folder, must succeed (the subfolder is created).
+    let tmp = TempDir::new().unwrap();
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let nested = tmp.path().join("folder").join("welcome.md");
+    assert!(!nested.parent().unwrap().exists(), "precondition: subfolder absent");
+
+    let path_str = nested.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::from("# hi"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert!(nested.exists(), "file should be created in the new subfolder");
+    assert_eq!(fs::read_to_string(&nested).unwrap(), "# hi");
+}
+
+#[tokio::test]
+async fn test_create_new_file_outside_watched_returns_403() {
+    let tmp = TempDir::new().unwrap();
+    let other = TempDir::new().unwrap();
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let new_path = other.path().join("nope.txt"); // parent dir is not watched
+    let path_str = new_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::from("x"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+    assert!(!new_path.exists(), "must not create a file outside watched dirs");
+}
+
 // --- 403 on out-of-watched-path access ---
 
 #[tokio::test]
@@ -292,4 +353,155 @@ async fn test_watch_endpoint_exists() {
         ct.starts_with("text/event-stream"),
         "expected text/event-stream, got: {ct}"
     );
+}
+
+// --- DELETE /file ---
+
+#[tokio::test]
+async fn test_delete_file() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("doomed.txt");
+    fs::write(&file_path, b"bye").unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = file_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::DELETE)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert!(!file_path.exists(), "file should be gone after delete");
+}
+
+#[tokio::test]
+async fn test_delete_file_requires_token() {
+    let tmp = TempDir::new().unwrap();
+    let file_path = tmp.path().join("keep.txt");
+    fs::write(&file_path, b"x").unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = file_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::DELETE)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    assert!(file_path.exists(), "file must survive an unauthorized delete");
+}
+
+#[tokio::test]
+async fn test_delete_file_outside_watched_returns_403() {
+    let tmp = TempDir::new().unwrap();
+    let other = TempDir::new().unwrap();
+    let file_path = other.path().join("secret.txt");
+    fs::write(&file_path, b"secret").unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = file_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::DELETE)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+    assert!(file_path.exists(), "out-of-watched file must not be deleted");
+}
+
+#[tokio::test]
+async fn test_delete_refuses_directory() {
+    let tmp = TempDir::new().unwrap();
+    let dir_path = tmp.path().join("subdir");
+    fs::create_dir(&dir_path).unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = dir_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::DELETE)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+    assert!(dir_path.exists(), "directory must not be deleted");
+}
+
+// --- /logs ---
+
+#[tokio::test]
+async fn test_logs_records_actions_and_filters() {
+    use file_viewer_companion::logging;
+    // Enable the ring buffer (idempotent; dir=None means no file writes in tests).
+    logging::init(None);
+
+    let tmp = TempDir::new().unwrap();
+    // Unique marker so we find our own entry amid other tests sharing the global ring.
+    let fname = "logtest_marker_zzz.txt";
+    let file_path = tmp.path().join(fname);
+    fs::write(&file_path, b"x").unwrap();
+    let path_str = file_path.to_str().unwrap().to_string();
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+
+    // A save should produce a "saved …" info log mentioning the file.
+    let resp = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::from("hello"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    // GET /logs filtered to our marker + info level.
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .uri("/logs?level=info&q=logtest_marker_zzz")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let entries = json["entries"].as_array().unwrap();
+    assert!(
+        entries.iter().any(|e| {
+            let m = e["msg"].as_str().unwrap_or("");
+            e["level"] == "info" && m.contains("saved") && m.contains(fname)
+        }),
+        "expected a 'saved' info log for our file; got {:?}",
+        entries
+    );
+    // Every returned entry must carry a timestamp + level (shape for the viewers).
+    assert!(entries.iter().all(|e| e["ts"].as_str().is_some() && e["level"].as_str().is_some()));
 }

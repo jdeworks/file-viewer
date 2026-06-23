@@ -12,7 +12,7 @@ The image editor has **two coexisting representations**, kept editable until you
 |---|---|---|
 | **View** | display + fit/zoom/pan | no |
 | **Edit** (pixel) | crop, resize, rotate/flip, filters, BG, expand, pencil/eraser/fill, export format | no |
-| **Adv. Edit** (vector) | text **objects** (drag, font/size/colour, **bg colour + opacity**, multiple, re-editable), shapes, layers, transform handles | **yes — lazy** |
+| **Adv. Edit** (vector) | text **objects** (drag, font/size/colour, **bg colour + opacity**, multiple, re-editable), shapes (rect/ellipse/line/arrow/**polygon/star**), **per-object blend mode**, layers, transform handles | **yes — lazy** |
 | **ASCII** | ASCII studio | no |
 
 Konva is **vendored** (`docs/vendor/konva/konva.min.js`, MIT, UMD → `window.Konva`) and **lazy-loaded on first entry to Adv Edit** via `loadGlobal`. View/Edit/ASCII on an image with no overlay never fetch it. Flagged **heavy** for the offline precache (opt-in).
@@ -48,4 +48,7 @@ Konva has **no built-in undo**; the pattern is *serialize the stage to JSON and 
 - ✅ **Unified Ctrl+Z** — vector snapshots folded into `editor-core` (`{blob,url,overlay}`); one stack across pixel + vector.
 - ✅ **Magic-wand selection** — pixel mask via `fill.js` `computeRegionMask`, constrains the pixel tools (`edit-select.js`, separate from Konva).
 - ✅ **Geometry coord-transform** — objects ride rotate/flip/crop/resize/expand by the same affine and stay editable (`applyGeometry`), replacing the bake-first seam.
-- Next (optional polish): marquee/lasso mask sources, selection cut/copy/nudge, levels/curves, per-layer blend modes.
+- ✅ **Polygon + star shapes** — `Konva.RegularPolygon` (pentagon) + `Konva.Star` (5-point) join the shape model; same `name:'obj'` plumbing, fill/stroke/width controls, layers, geometry ride-along.
+- ✅ **Per-object blend mode** — a Blend `<select>` in the selected-object toolbar sets the node's `globalCompositeOperation` (Normal/Multiply/Screen/Overlay/Darken/Lighten/Dodge/Burn/Hard-light/Soft-light/Difference/Exclusion). Persists on the node (serialized in the overlay JSON, so unified Ctrl+Z covers it) and is honoured by `flattenToCanvas` on export.
+  - **CAVEAT — blends objects vs each OTHER, not vs the base image.** `flattenToCanvas` renders the Konva stage to its own canvas (`stage.toCanvas`) and *then* `drawImage`s it over the base. So a blend mode composites an object only against the overlay objects **behind** it within the stage — it does **not** see the raster base. True object-vs-base blending would need a per-object flatten-against-base pass (render base → object with gco → read back), which v1 does not do; the control is labelled/scoped accordingly ("blend with the objects BEHIND it in the overlay").
+- Next (optional polish): marquee/lasso mask sources, selection cut/copy/nudge, true object-vs-base blend, TIFF decode.

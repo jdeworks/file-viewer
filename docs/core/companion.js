@@ -20,7 +20,11 @@ export async function detectCompanion() {
     ]);
     if (!res.ok) return false;
     const json = await res.json();
-    return json.ok === true;
+    if (json.ok !== true) return false;
+    // Pick up the session token automatically — no manual paste. Only CORS-allowed origins (this
+    // site + localhost) can read /ping, so a disallowed page can't obtain it.
+    if (json.token) setToken(json.token);
+    return true;
   } catch { return false; }
 }
 
@@ -56,9 +60,43 @@ export async function saveFile(absolutePath, bytes) {
   return res.json();
 }
 
+// Delete a single file on disk (token-gated server-side; path-restricted to watched folders).
+// The caller MUST confirm with the user first — this is destructive. The Download button is
+// unaffected; this only removes the on-disk original the file is linked to.
+export async function deleteFile(absolutePath) {
+  const res = await fetch(`${BASE}/file?path=${encodeURIComponent(absolutePath)}`, {
+    method: 'DELETE',
+    headers: { 'X-Companion-Token': _token || '' },
+  });
+  if (!res.ok) throw new Error(`delete failed: ${res.status}`);
+  return res.json();
+}
+
 export async function getWatchedPaths() {
   const res = await fetch(`${BASE}/watched-paths`);
   return (await res.json()).paths;
+}
+
+// List the entries of a directory inside a watched folder ({ name, size, isDir }[]). Used by the
+// folder-browser (create-unknown-file flow). Path-restricted server-side to watched folders.
+export async function listFiles(path) {
+  const res = await fetch(`${BASE}/files?path=${encodeURIComponent(path)}`);
+  if (!res.ok) throw new Error(`files failed: ${res.status}`);
+  return (await res.json()).entries;
+}
+
+// Fetch recent companion activity-log entries ({ ts, level, msg }[]), filtered server-side by
+// minimum level ("info"|"warn"|"error"), a case-insensitive substring `q`, and an RFC3339 `since`
+// cutoff. Used by the in-settings log viewer.
+export async function getLogs({ level, q, since, limit } = {}) {
+  const params = new URLSearchParams();
+  if (level) params.set('level', level);
+  if (q) params.set('q', q);
+  if (since) params.set('since', since);
+  if (limit) params.set('limit', String(limit));
+  const res = await fetch(`${BASE}/logs?${params}`);
+  if (!res.ok) throw new Error(`logs failed: ${res.status}`);
+  return (await res.json()).entries;
 }
 
 export async function addWatchedPath(path) {
@@ -68,6 +106,20 @@ export async function addWatchedPath(path) {
     body: JSON.stringify({ path }),
   });
   return res.json();
+}
+
+// Browser-initiated native folder picker. Only the desktop (Tauri) companion implements this —
+// the standalone server has no GUI and returns 404, in which case this resolves to null and the
+// caller falls back to the typed "Add path" field.
+export async function pickFolder() {
+  try {
+    const res = await fetch(`${BASE}/path-picker`, {
+      method: 'POST',
+      headers: { 'X-Companion-Token': _token || '' },
+    });
+    if (!res.ok) return null;        // 404 on the standalone (non-Tauri) server
+    return res.json();               // { ok, chosen, paths } (ok:false if the user cancelled)
+  } catch { return null; }
 }
 
 export async function removeWatchedPath(path) {

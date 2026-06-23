@@ -5,23 +5,26 @@
 // to the active mask) through the injected ctx.
 //
 // ctx: { host, img, mime, core, getSelection(), applyPan(), els }
-//   els: pencilBtn eraserBtn fillBtn fillTol fillTolV fillMode fillPercep fillFeather fillOpts
-//        drawColorPicker drawSizePicker undoBtn redoBtn
+//   els: pencilBtn eraserBtn fillBtn cloneBtn healBtn fillTol fillTolV fillMode fillPercep fillFeather
+//        fillOpts drawColorPicker drawSizePicker undoBtn redoBtn
 import { hexToRgba, floodFill } from './fill.js';
 
 export function createDrawTools(ctx) {
   const { host, img, mime, core, els } = ctx;
   const {
-    pencilBtn, eraserBtn, fillBtn, cloneBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts,
+    pencilBtn, eraserBtn, fillBtn, cloneBtn, healBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts,
     drawColorPicker, drawSizePicker, undoBtn, redoBtn,
   } = els;
   const selection = () => ctx.getSelection?.();
 
-  let drawMode = null, isEraserStroke = false, isCloneStroke = false;
+  let drawMode = null, isEraserStroke = false, isCloneStroke = false, isHealStroke = false;
   let drawOverlay = null, drawOCtx = null, isPointerDown = false, lastPt = null, brushCursor = null;
-  // Clone stamp: alt-click sets a source anchor + snapshots the base; painting copies pixels from
-  // (dest − offset) where offset is fixed on the first dab (aligned clone). cloneMarker shows the source.
-  let cloneSource = null, cloneSrcPt = null, cloneOffset = null, cloneMarker = null;
+  // Clone stamp / heal: alt-click sets a source anchor + snapshots the base; painting copies pixels
+  // from (dest − offset) where offset is fixed on the first dab (aligned clone). Heal is the same
+  // sampling but mean-shifts the patch to the destination's surrounding tone (seamless blemish fix).
+  // cloneMarker shows the source. `cloneMode()` covers both clone + heal modes.
+  let cloneSource = null, cloneSrcCtx = null, cloneSrcPt = null, cloneOffset = null, cloneMarker = null;
+  const cloneMode = () => drawMode === 'clone' || drawMode === 'heal';
 
   // Position the overlay canvas to exactly cover the displayed <img> box (NOT the whole stage), so
   // brush coordinates map 1:1 to image pixels regardless of fit/zoom/scroll letterboxing.
@@ -38,7 +41,7 @@ export function createDrawTools(ctx) {
   // Place the clone-source marker over the source pixel, mapping natural → displayed coords.
   function positionCloneMarker() {
     if (!cloneMarker) return;
-    if (!cloneSrcPt || drawMode !== 'clone' || !img.naturalWidth) { cloneMarker.style.display = 'none'; return; }
+    if (!cloneSrcPt || !cloneMode() || !img.naturalWidth) { cloneMarker.style.display = 'none'; return; }
     const sx = img.offsetWidth / img.naturalWidth, sy = img.offsetHeight / img.naturalHeight;
     cloneMarker.style.left = (img.offsetLeft + cloneSrcPt.x * sx) + 'px';
     cloneMarker.style.top = (img.offsetTop + cloneSrcPt.y * sy) + 'px';
@@ -63,7 +66,7 @@ export function createDrawTools(ctx) {
     cloneMarker.style.cssText = 'position:absolute;width:12px;height:12px;border:1px solid #0ff;box-shadow:0 0 0 1px rgba(0,0,0,.7);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:3;display:none;';
     stage.appendChild(cloneMarker);
     img.addEventListener('load', () => {
-      if (drawOverlay && !isEraserStroke && !isCloneStroke) { drawOverlay.width = img.naturalWidth || 1; drawOverlay.height = img.naturalHeight || 1; }
+      if (drawOverlay && !isEraserStroke && !isCloneStroke && !isHealStroke) { drawOverlay.width = img.naturalWidth || 1; drawOverlay.height = img.naturalHeight || 1; }
       syncOverlay(); ctx.applyPan();
     });
     if (img.naturalWidth) { drawOverlay.width = img.naturalWidth; drawOverlay.height = img.naturalHeight; }
@@ -80,7 +83,7 @@ export function createDrawTools(ctx) {
   // Move/size the brush hover circle (screen px = the brush-size value, constant on screen). Only
   // shown for pencil/eraser.
   function moveBrushCursor(e) {
-    if (!brushCursor || (drawMode !== 'pencil' && drawMode !== 'eraser' && drawMode !== 'clone')) { hideBrushCursor(); return; }
+    if (!brushCursor || (drawMode !== 'pencil' && drawMode !== 'eraser' && !cloneMode())) { hideBrushCursor(); return; }
     const stageR = host.querySelector('.imgv-stage').getBoundingClientRect();
     const d = parseInt(drawSizePicker?.value || '8', 10);
     brushCursor.style.width = d + 'px';
@@ -98,7 +101,8 @@ export function createDrawTools(ctx) {
     eraserBtn?.classList.toggle('active', drawMode === 'eraser');
     fillBtn?.classList.toggle('active', drawMode === 'fill');
     cloneBtn?.classList.toggle('active', drawMode === 'clone');
-    if (drawMode !== 'clone') { cloneSource = null; cloneSrcPt = null; cloneOffset = null; positionCloneMarker(); }
+    healBtn?.classList.toggle('active', drawMode === 'heal');
+    if (!cloneMode()) { cloneSource = null; cloneSrcCtx = null; cloneSrcPt = null; cloneOffset = null; positionCloneMarker(); }
     // Fill-tuning controls are shared by the bucket AND the wand — show for either.
     fillOpts.forEach((el) => { el.hidden = !(drawMode === 'fill' || selection()?.isActive()); });
     if (!drawOverlay && drawMode) buildOverlay();
@@ -106,9 +110,9 @@ export function createDrawTools(ctx) {
       drawOverlay.style.pointerEvents = drawMode ? 'auto' : 'none';
       drawOverlay.style.cursor = drawMode === 'eraser' ? 'cell'
         : drawMode === 'fill' ? 'crosshair'
-        : (drawMode === 'pencil' || drawMode === 'clone') ? 'none' : ''; // hover circle is the cursor
+        : (drawMode === 'pencil' || cloneMode()) ? 'none' : ''; // hover circle is the cursor
     }
-    if (drawMode !== 'pencil' && drawMode !== 'eraser' && drawMode !== 'clone') hideBrushCursor();
+    if (drawMode !== 'pencil' && drawMode !== 'eraser' && !cloneMode()) hideBrushCursor();
     img.style.pointerEvents = drawMode ? 'none' : '';
   }
 
@@ -138,9 +142,10 @@ export function createDrawTools(ctx) {
   function snapshotImg() {
     const c = document.createElement('canvas');
     c.width = img.naturalWidth; c.height = img.naturalHeight;
-    const g = c.getContext('2d');
+    const g = c.getContext('2d', { willReadFrequently: true });
     if (mime === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
     g.drawImage(img, 0, 0);
+    cloneSrcCtx = g;   // cached for heal's per-dab source reads
     return c;
   }
 
@@ -167,14 +172,43 @@ export function createDrawTools(ctx) {
     drawOCtx.restore();
   }
 
+  // Heal dab: like clone, but mean-shift the sampled source patch so its average colour matches the
+  // DESTINATION surround (read from the evolving overlay). Texture transfers; tone blends in — so a
+  // blemish vanishes instead of being hard-copied. Source coords = dest − offset (clamped in-bounds).
+  function healDab(p, sz) {
+    const r = sz / 2;
+    const x0 = Math.max(0, Math.floor(p.x - r)), y0 = Math.max(0, Math.floor(p.y - r));
+    const x1 = Math.min(drawOverlay.width, Math.ceil(p.x + r)), y1 = Math.min(drawOverlay.height, Math.ceil(p.y + r));
+    const w = x1 - x0, h = y1 - y0;
+    if (w <= 0 || h <= 0 || !cloneSrcCtx) return;
+    if (cloneSource.width < w || cloneSource.height < h) { cloneDab(p, sz); return; }   // image smaller than brush
+    const sx = Math.max(0, Math.min(cloneSource.width - w, Math.round(x0 - cloneOffset.x)));
+    const sy = Math.max(0, Math.min(cloneSource.height - h, Math.round(y0 - cloneOffset.y)));
+    const src = cloneSrcCtx.getImageData(sx, sy, w, h);
+    const dst = drawOCtx.getImageData(x0, y0, w, h);
+    const s = src.data, d = dst.data;
+    let sr = 0, sg = 0, sb = 0, dr = 0, dg = 0, db = 0, n = 0;
+    for (let i = 0; i < s.length; i += 4) { sr += s[i]; sg += s[i + 1]; sb += s[i + 2]; dr += d[i]; dg += d[i + 1]; db += d[i + 2]; n++; }
+    const or = (dr - sr) / n, og = (dg - sg) / n, ob = (db - sb) / n;   // per-channel mean shift
+    for (let i = 0; i < s.length; i += 4) { s[i] += or; s[i + 1] += og; s[i + 2] += ob; }   // Uint8Clamped clamps
+    const tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h;
+    tmp.getContext('2d').putImageData(src, 0, 0);
+    drawOCtx.save();
+    drawOCtx.beginPath(); drawOCtx.arc(p.x, p.y, r, 0, Math.PI * 2); drawOCtx.clip();
+    drawOCtx.drawImage(tmp, x0, y0);
+    drawOCtx.restore();
+  }
+  const dab = (p, sz) => (isHealStroke ? healDab : cloneDab)(p, sz);
+
   async function onPDown(e) {
     if (!drawMode || !drawOverlay) return;
     e.preventDefault();
     if (drawMode === 'fill') { await doFill(e); return; }
-    if (drawMode === 'clone' && maybeSetCloneSource(e)) return;   // alt-click set the source; don't paint
+    if (cloneMode() && maybeSetCloneSource(e)) return;   // alt-click set the source; don't paint
     isPointerDown = true;
     isEraserStroke = drawMode === 'eraser';
-    isCloneStroke = drawMode === 'clone';
+    isCloneStroke = cloneMode();
+    isHealStroke = drawMode === 'heal';
     core.pushUndo();
     if (isEraserStroke || isCloneStroke) {
       // preload overlay from the already-loaded <img> (no extra fetch): eraser punches into it with
@@ -193,7 +227,7 @@ export function createDrawTools(ctx) {
     const sz = getCanvasBrushSize();
     if (isCloneStroke) {
       if (!cloneOffset) cloneOffset = { x: lastPt.x - cloneSrcPt.x, y: lastPt.y - cloneSrcPt.y };
-      cloneDab(lastPt, sz);
+      dab(lastPt, sz);
       return;
     }
     applyStrokeStyle(sz);
@@ -209,8 +243,8 @@ export function createDrawTools(ctx) {
     if (isCloneStroke) {
       // dab along the segment so fast moves stay continuous
       const dx = pt.x - lastPt.x, dy = pt.y - lastPt.y, dist = Math.hypot(dx, dy), step = Math.max(1, sz / 4);
-      for (let d = step; d < dist; d += step) cloneDab({ x: lastPt.x + (dx * d) / dist, y: lastPt.y + (dy * d) / dist }, sz);
-      cloneDab(pt, sz);
+      for (let d = step; d < dist; d += step) dab({ x: lastPt.x + (dx * d) / dist, y: lastPt.y + (dy * d) / dist }, sz);
+      dab(pt, sz);
       lastPt = pt;
       return;
     }
@@ -273,6 +307,7 @@ export function createDrawTools(ctx) {
     eraserBtn.addEventListener('click', () => setDrawMode('eraser'));
     fillBtn?.addEventListener('click', () => setDrawMode('fill'));
     cloneBtn?.addEventListener('click', () => setDrawMode('clone'));
+    healBtn?.addEventListener('click', () => setDrawMode('heal'));
     fillTol?.addEventListener('input', () => { if (fillTolV) fillTolV.textContent = fillTol.value; });
     undoBtn?.addEventListener('click', core.doUndo);
     redoBtn?.addEventListener('click', core.doRedo);
