@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Local validation gate — the SAME checks the (now-disabled) CI ran, so we catch failures here
-# before pushing instead of paying for GitHub Actions. Run this before every commit/push.
+# before pushing instead of paying for GitHub Actions. Run --fast before every commit/push.
 #
-#   ./scripts/check.sh           full gate (run before every commit/push)
-#   ./scripts/check.sh --fast    iteration tier: generators + unit tests + CORE smoke only
+#   ./scripts/check.sh           full gate — recommended before a release/tag (adds heavy suites)
+#   ./scripts/check.sh --fast    DEFAULT pre-push gate: generators + unit tests + CORE smoke only
 #
 # Does: (1) regenerate the asset manifest and fail if it was stale (the smoke test also asserts
 # this, but failing early is clearer); (2) the move-diff unit tests; (3) the headless smoke test
@@ -15,7 +15,7 @@
 # binary/container types (smoke-binary.mjs, ~45 heavy WebGL/wasm opens) — which together dominate
 # the gate's cost. It still regenerates every bundle (all generators total ~2s) so core smoke runs
 # against fresh artifacts, but it does NOT hard-fail on an unstaged regen (that staleness gate is a
-# pre-push concern, not an iteration one). ALWAYS run the full gate before you push.
+# pre-push concern). --fast is the default before every push; run the full gate before a release/tag.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -32,7 +32,7 @@ stale() {  # $1 = message, $2.. = paths to diff
   local msg="$1"; shift
   if ! git diff --quiet -- "$@"; then
     if [ "$FAST" = 1 ]; then
-      echo "  (fast) $msg — regenerated but not staged (fine while iterating)"
+      echo "  (fast) $msg — regenerated but not staged; 'git add' it before you push"
     else
       echo "  $msg — stage it."
       exit 1
@@ -93,7 +93,7 @@ node tests/smoke.mjs
 
 if [ "$FAST" = 1 ]; then
   echo "→ fast mode: SKIPPING known-file + binary smoke suites (the two heaviest)."
-  echo "  Run the full gate before pushing:  ./scripts/check.sh"
+  echo "  This is the default pre-push gate. Run the full gate before a release:  ./scripts/check.sh"
   echo "✓ fast checks passed (known + binary suites skipped)"
   exit 0
 fi

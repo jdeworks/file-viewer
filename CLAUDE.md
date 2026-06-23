@@ -127,12 +127,15 @@ tests → smoke tests. If a generated file changes, stage it. **A real git pre-c
 the generators (and stages the artifacts) is desirable so the bundle is never committed stale** —
 add one when convenient; until then `check.sh` is the gate.
 
-**Iteration tier:** `./scripts/check.sh --fast` runs the generators + unit tests + CORE smoke but
-SKIPS the two heaviest Chromium suites (known-files `smoke-known.mjs` ≈812 Monaco-reloading
-`page.goto`s, and binary `smoke-binary.mjs` WebGL/wasm) — they dominate the gate's CPU/time. Use
-`--fast` while iterating to keep the machine cool; it also only warns (not fails) on an unstaged
-regen. **The FULL `./scripts/check.sh` is still REQUIRED before every push.** For a single concern,
-the cheapest path remains `node tests/smoke-area.mjs <area>` (one area, no heavy suites).
+**Pre-push gate = `./scripts/check.sh --fast`.** This is the DEFAULT before every commit/push. It
+runs the generators + unit tests + CORE smoke but SKIPS the two heaviest Chromium suites (known-files
+`smoke-known.mjs` ≈812 Monaco-reloading `page.goto`s, and binary `smoke-binary.mjs` WebGL/wasm) —
+they dominate the gate's CPU/time, and skipping them keeps the machine cool. It still regenerates
+every bundle so core smoke runs against fresh artifacts, but it only WARNS (does not fail) on an
+unstaged regen — so when it reports a regenerated `*.generated.*` / `asset-manifest.json` / `sw.js`,
+`git add` it before you push. The **FULL `./scripts/check.sh`** (adds the two heavy suites) is a
+**recommendation before a release/tag**, not a per-push requirement. For a single concern, the
+cheapest path remains `node tests/smoke-area.mjs <area>` (one area, no heavy suites).
 
 ## Testing (keep it cheap — see [tests](tests/))
 
@@ -141,7 +144,8 @@ Headless-Chromium smoke tests live in `tests/areas/*.mjs`, each exporting `run(c
   use this for per-change verification. `--list` shows areas. This is the cheap path; prefer it
   while iterating.
 - `tests/smoke.mjs` runs the core areas; `tests/smoke-known.mjs` runs the heavy `known-files`
-  area in a fresh process. `check.sh` runs both before a push.
+  area in a fresh process. The `--fast` pre-push default runs only `smoke.mjs`; the full
+  `check.sh` (recommended before a release) runs both.
 - **Cost model:** the dominant test cost is full SPA reloads (`page.goto` re-parses Monaco's 13 MB
   bundle). The harness `openExample()` therefore reuses one page load and only reloads every ~50
   opens to flush accumulated state. Prefer `openExample` — let it manage isolation. **Exception:**
