@@ -280,6 +280,22 @@ export async function run(ctx) {
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
+  // Sokoban — pushing the box onto the goal solves level 1 and scores (ramped by levels solved)
+  await page.click('.games-card[data-game="sokoban"]');
+  await page.waitForSelector('.sokoban-canvas', { timeout: 8000 });
+  pass('Sokoban launches');
+  const sk0 = await page.$eval('.sokoban-wrap', (w) => ({ ...w.__sokoban.state(),
+    v1: w.__sokoban.solveValueAt(1), v3: w.__sokoban.solveValueAt(3) }));
+  if (sk0.score === 0 && sk0.solved === 0 && sk0.levelIndex === 0 && sk0.boxes === 1 && sk0.onGoal === 0 && sk0.v3 > sk0.v1)
+    pass('Sokoban: clean start + ramped solve value');
+  else fail('Sokoban start: ' + JSON.stringify(sk0));
+  await page.keyboard.press('ArrowLeft');                  // single push solves level 1
+  const sk1 = await page.$eval('.sokoban-wrap', (w) => w.__sokoban.state());
+  if (sk1.solved >= 1 && sk1.score > 0) pass('Sokoban: pushing the box onto the goal solves + scores');
+  else fail('Sokoban solve: ' + JSON.stringify(sk1));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.mg-v3', { timeout: 8000 });
   await page.waitForSelector('.mg-s1', { timeout: 8000 });

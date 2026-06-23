@@ -56,6 +56,13 @@ export const GAMES = [
     load: () => import('./minesweeper/minesweeper.js'),
   },
   {
+    id: 'sokoban',
+    title: 'Sokoban',
+    emoji: '📦',
+    blurb: 'Push every box onto a goal. Arrows / swipe / d-pad. Levels get trickier.',
+    load: () => import('./sokoban/sokoban.js'),
+  },
+  {
     id: 'metagame',
     title: 'Bit Foundry',
     emoji: '⚙️',
