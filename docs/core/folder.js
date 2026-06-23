@@ -155,6 +155,23 @@ export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders
   }
 }
 
+// Re-render the tree from the CURRENT state.treeEntries without reopening files or refetching bytes
+// (used by the incremental folder refresh). Preserves expanded folders, the active row, and the
+// edited/moved markers. The open file in the viewer is left untouched.
+export function renderFolderTree({ openFolders = [], activePath = null } = {}) {
+  if (state.treeApi) state.treeApi.stop();
+  state.treeApi = renderTree($('ftBody'), buildTree(state.treeEntries), {
+    onOpen: (node) => openTreeFile(node),
+    onMove: _onMove,
+    onDelete: (t) => onTreeDelete?.(t),
+    initialOpenDepth: 0,
+  });
+  if (openFolders.length) state.treeApi.openPaths(openFolders);
+  for (const dest of state.folderMoves.values()) state.treeApi.setMoved(dest, dest);
+  for (const p of state.folderEdits.keys()) state.treeApi.setEdited(p, true);
+  if (activePath) state.treeApi.setActive(activePath);
+}
+
 // Render the git branch/commit browser into the repo panel (parent document).
 export async function openRepoView({ auto = false, walkLimit } = {}) {
   if (!state.repoEntries) return;

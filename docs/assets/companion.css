@@ -134,6 +134,10 @@ body.fv-dark .companion-download code { background: #2a2a2d; }
 #ftRefreshBtn.ft-spin { animation: ft-spin .7s linear infinite; }
 @keyframes ft-spin { to { transform: rotate(360deg); } }
 
+/* Topbar connection indicator. */
+.companion-conn.conn-up { color: #2f9e44; }
+.companion-conn.conn-down { color: #d9362b; }
+
 /* Per-row delete (shown on row hover, only while a companion folder is linked). */
 .ft-del { display: none; margin-left: 4px; border: 0; background: transparent; cursor: pointer;
   font-size: 12px; line-height: 1; padding: 0 4px; opacity: .65; flex: none; }

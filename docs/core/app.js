@@ -25,7 +25,7 @@ import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard,
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, showFolderLoading, hideFolderLoading } from './folder.js';
 import { clearArchiveTree, mountArchiveTree } from './archive-tree.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
-import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, onDeleteClick, renderCompanionSettings, detectCompanionOnStartup, tryAutoLink, deleteTreePath } from './companion-ui.js';
+import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, onDeleteClick, renderCompanionSettings, detectCompanionOnStartup, tryAutoLink, deleteTreePath, onConnButtonClick } from './companion-ui.js';
 import { initSessionTree, updateSessionTree, createNewFile, onTreeFileDrop, flushSessionEdit } from './session-tree.js';
 import { populateTypeSelect } from './type-select.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
@@ -385,7 +385,7 @@ const META_BTN_MSGS = [
 /* ─────────────────────────── Wire up ─────────────────────────── */
 
 function init() {
-  initCompanionUi({ loadIntake, loadFolder });
+  initCompanionUi({ loadIntake });
   initSessionTree({ loadIntake });
   initViewerOpen({ loadIntake });
   // Inject the core-flow callbacks the folder module needs (one-way: app imports folder, folder
@@ -510,6 +510,7 @@ function init() {
   $('downloadBtn').addEventListener('click', downloadCurrent);
   $('saveBtn').addEventListener('click', onSaveClick);
   $('deleteBtn').addEventListener('click', onDeleteClick);
+  $('companionStatusBtn').addEventListener('click', onConnButtonClick);
 
   // Viewport change must NOT rebuild the editor (would drop edits) — just relayout
   // and toggle which view controls apply (desktop split vs mobile tabs).

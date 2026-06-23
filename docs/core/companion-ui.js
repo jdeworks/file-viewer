@@ -29,9 +29,9 @@ function wasSelfSaved(absPath) {
   return true;
 }
 
-export function initCompanionUi({ loadIntake, loadFolder }) {
+export function initCompanionUi({ loadIntake }) {
   loadIntakeCallback = loadIntake;
-  setupFolderRefresh({ loadFolder, getFolderRoot: () => companionFolderRoot });
+  setupFolderRefresh({ getFolderRoot: () => companionFolderRoot });
 }
 
 export function isCompanionAvailable() {
@@ -387,37 +387,82 @@ function pickCompanionPath(paths) {
   });
 }
 
-// Poll /ping every 30s so a companion that was closed (or started) mid-session is reflected in the
-// UI without a manual "Test connection". Only runs while the companion is ENABLED — so a user who
-// hasn't opted in still makes ZERO off-origin requests. Idempotent.
-const HEALTH_INTERVAL_MS = 30000;
-export function startHealthCheck() {
-  if (_healthTimer) return;
-  _healthTimer = setInterval(async () => {
-    if (!companionEnabled()) return;            // disabled → no fetch (zero off-origin)
-    let ok = false;
-    try { ok = await detectCompanion(); } catch { ok = false; }
-    if (ok === companionAvailable) return;       // unchanged
+// Poll /ping so a companion closed/started mid-session is reflected without a manual "Test
+// connection". To avoid spamming the console with ERR_CONNECTION_REFUSED forever while it's down,
+// we back OFF when disconnected (5s → 10s → 30s → 60s) and poll steadily (30s) while connected.
+// Only fetches while ENABLED — a user who hasn't opted in still makes ZERO off-origin requests.
+const POLL_CONNECTED_MS = 30000;
+const BACKOFF_MS = [5000, 10000, 30000, 60000];
+let _backoffIdx = 0;
+
+function scheduleHealth(ms) {
+  clearTimeout(_healthTimer);
+  _healthTimer = setTimeout(healthTick, ms);
+}
+
+async function healthTick() {
+  _healthTimer = null;
+  if (!companionEnabled()) { scheduleHealth(BACKOFF_MS[BACKOFF_MS.length - 1]); return; } // no fetch
+  let ok = false;
+  try { ok = await detectCompanion(); } catch { ok = false; }
+  if (ok !== companionAvailable) {
     companionAvailable = ok;
     document.body.classList.toggle('companion-active', ok);
     if (!ok) { stopWatching(); toast('Companion disconnected — is it still running on :7700?'); }
     else { showCompanionIndicator(); }
     syncSaveBtn();
-  }, HEALTH_INTERVAL_MS);
+  }
+  updateConnButton(ok);
+  if (ok) { _backoffIdx = 0; scheduleHealth(POLL_CONNECTED_MS); }
+  else { scheduleHealth(BACKOFF_MS[Math.min(_backoffIdx++, BACKOFF_MS.length - 1)]); }
+}
+
+export function startHealthCheck() {
+  if (_healthTimer) return;
+  _backoffIdx = 0;
+  scheduleHealth(companionAvailable ? POLL_CONNECTED_MS : BACKOFF_MS[0]);
 }
 export function stopHealthCheck() {
-  if (_healthTimer) { clearInterval(_healthTimer); _healthTimer = null; }
+  clearTimeout(_healthTimer);
+  _healthTimer = null;
+}
+
+// Topbar connection indicator: a green dot when the companion is reachable, a red ❗ when it's
+// enabled but not reachable (click → retry + guidance to start it). Hidden entirely when the
+// companion isn't enabled, so non-users see nothing.
+export function updateConnButton(connected) {
+  const btn = $('companionStatusBtn');
+  if (!btn) return;
+  if (!companionEnabled()) { btn.hidden = true; return; }
+  btn.hidden = false;
+  btn.classList.toggle('conn-up', connected);
+  btn.classList.toggle('conn-down', !connected);
+  btn.textContent = connected ? '●' : '❗';
+  btn.title = connected
+    ? 'Companion connected (127.0.0.1:7700)'
+    : 'Companion not reachable — click to retry / how to start it';
+}
+
+export async function onConnButtonClick() {
+  if (!companionEnabled()) return;
+  const ok = await detectCompanion();   // retry immediately
+  companionAvailable = ok;
+  document.body.classList.toggle('companion-active', ok);
+  updateConnButton(ok);
+  syncSaveBtn();
+  if (ok) { _backoffIdx = 0; showCompanionIndicator(); }
+  else {
+    toast('Companion not reachable. Start it on your PC — the tray app or companion.exe (e.g. in your fv-companion folder) — and it will connect automatically. See ⋯ Settings → Companion to get it.', 9000);
+  }
 }
 
 export function detectCompanionOnStartup() {
   if (!companionEnabled()) return;
   detectCompanion().then((ok) => {
     companionAvailable = ok;
-    if (ok) {
-      document.body.classList.add('companion-active');
-      showCompanionIndicator();
-      syncSaveBtn();
-    }
+    document.body.classList.toggle('companion-active', ok);
+    if (ok) { showCompanionIndicator(); syncSaveBtn(); }
+    updateConnButton(ok);
     startHealthCheck();   // keep watching liveness whether or not it's up right now
   });
 }

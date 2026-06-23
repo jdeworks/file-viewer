@@ -7,7 +7,7 @@ import {
   detectCompanion, isEnabled as companionEnabled, setEnabled as setCompanionEnabled,
   getToken, setToken, getWatchedPaths, addWatchedPath, removeWatchedPath, pickFolder, getLogs,
 } from './companion.js';
-import { isCompanionAvailable, setCompanionAvailable, syncSaveBtn, stopWatching, showCompanionIndicator } from './companion-ui.js';
+import { isCompanionAvailable, setCompanionAvailable, syncSaveBtn, stopWatching, showCompanionIndicator, updateConnButton } from './companion-ui.js';
 
 // Heuristic guard: flag watched folders that are a whole drive / system root / very large tree.
 // Watching one forces a recursive scan on every find/save and exposes a lot of files. Returns a
@@ -209,6 +209,7 @@ export function renderCompanionSettings(container) {
       document.body.classList.toggle('companion-active', ok);
       summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
       syncSaveBtn();
+      updateConnButton(ok);
       if (ok) showCompanionIndicator();
       else toast('Companion not found — is it running on :7700?');
       if (ok) refreshFolders();
@@ -219,6 +220,7 @@ export function renderCompanionSettings(container) {
       document.body.classList.remove('companion-active');
       summary.innerHTML = `Companion <span class="companion-status-dot">○ not found</span>`;
       syncSaveBtn();
+      updateConnButton(false);   // hides the topbar indicator (companion now disabled)
     }
   });
 
@@ -234,6 +236,7 @@ export function renderCompanionSettings(container) {
     document.body.classList.toggle('companion-active', ok);
     summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
     syncSaveBtn();
+    updateConnButton(ok);
     toast(ok ? 'Companion connected ✓' : 'Companion not found — is it running?');
   });
 

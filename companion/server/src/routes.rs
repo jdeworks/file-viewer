@@ -465,6 +465,7 @@ const TREE_MAX_FILES: usize = 5000;
 pub struct TreeFile {
     pub path: String,
     pub size: u64,
+    pub mtime: u64, // epoch ms of last modification — lets the viewer detect changes cheaply
 }
 
 #[derive(Serialize)]
@@ -498,9 +499,16 @@ fn walk_tree(root: &std::path::Path, dir: &std::path::Path, out: &mut Vec<TreeFi
             }
         } else if meta.is_file() {
             if let Ok(rel) = path.strip_prefix(root) {
+                let mtime = meta
+                    .modified()
+                    .ok()
+                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|d| d.as_millis() as u64)
+                    .unwrap_or(0);
                 out.push(TreeFile {
                     path: rel.to_string_lossy().replace('\\', "/"),
                     size: meta.len(),
+                    mtime,
                 });
             }
         }
