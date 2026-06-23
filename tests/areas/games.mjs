@@ -157,6 +157,29 @@ export async function run(ctx) {
   await page.setViewportSize({ width: 1100, height: 800 });
   await page.click('.games-back');
 
+  // ── Flappy Bird: click OR Space is the only control; verify BOTH start the run + flap upward. ──
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+  await page.click('.games-card[data-game="flappybird"]');
+  await page.waitForSelector('.flappybird-canvas', { timeout: 8000 });
+  pass('Flappy Bird launches');
+  const fbStart = await page.$eval('.flappybird-wrap', (w) => w.__flappybird.state());
+  await page.keyboard.press('Space');
+  const fbSpace = await page.$eval('.flappybird-wrap', (w) => w.__flappybird.state());
+  if (!fbStart.started && fbSpace.started && fbSpace.vy < 0) pass('Flappy Bird: Space flaps (run starts, upward velocity)');
+  else fail('Flappy Bird space: ' + JSON.stringify({ before: fbStart, after: fbSpace }));
+  await page.$eval('.flappybird-wrap', (w) => w.__flappybird.reset());
+  await page.click('.flappybird-canvas');
+  const fbClick = await page.$eval('.flappybird-wrap', (w) => w.__flappybird.state());
+  if (fbClick.started && fbClick.vy < 0) pass('Flappy Bird: click flaps'); else fail('Flappy Bird click: ' + JSON.stringify(fbClick));
+  const fbSfxInit = await page.$eval('.flappybird-sfx', (b) => b.textContent);
+  await page.click('.flappybird-sfx');
+  const fbSfxOff = await page.evaluate(() => ({ icon: document.querySelector('.flappybird-sfx').textContent, ls: localStorage.getItem('fv:flappybird:sfx') }));
+  if (/🔊/.test(fbSfxInit) && /🔇/.test(fbSfxOff.icon) && fbSfxOff.ls === '0') pass('Flappy Bird: SFX toggle mutes + persists');
+  else fail('Flappy Bird SFX toggle: ' + JSON.stringify({ init: fbSfxInit, off: fbSfxOff }));
+  await page.evaluate(() => { try { localStorage.removeItem('fv:flappybird:sfx'); } catch {} });
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.mg-v3', { timeout: 8000 });
   await page.waitForSelector('.mg-s1', { timeout: 8000 });

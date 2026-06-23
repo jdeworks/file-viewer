@@ -258,6 +258,33 @@ export async function run(ctx) {
   await page.evaluate(() => window.__fv.downloadCurrent());
   await page.waitForTimeout(150);
 
+  // ── Paste → file is gated by focus: a paste landing in an input/editor must NOT become a "pasted"
+  // file (it stays in the field — e.g. pasting the companion token into Settings can't leak it). ──
+  await openExample('Welcome.md');
+  const beforePasteName = await page.evaluate(() => window.__fv.state.intake.filename);
+  const guardedName = await page.evaluate(() => {
+    const inp = document.createElement('input');
+    inp.id = '__fvPasteProbe'; inp.type = 'text'; document.body.appendChild(inp); inp.focus();
+    const dt = new DataTransfer(); dt.setData('text/plain', 'SECRET-TOKEN-abc123');
+    inp.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    inp.remove();
+    return window.__fv.state.intake.filename;
+  });
+  await page.waitForTimeout(60);
+  const stillSameAfterInput = await page.evaluate(() => window.__fv.state.intake.filename);
+  if (guardedName === beforePasteName && stillSameAfterInput === beforePasteName)
+    pass('paste into a focused input does NOT create a "pasted" file (secret stays in the field)');
+  else fail('paste-guard: opened "' + stillSameAfterInput + '" (expected ' + beforePasteName + ')');
+  // …but a paste with no editable target still opens a "pasted" file (the feature itself works).
+  await page.evaluate(() => {
+    document.activeElement?.blur?.();
+    const dt = new DataTransfer(); dt.setData('text/plain', 'plain pasted note');
+    document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+  });
+  await page.waitForFunction(() => window.__fv.state.intake.filename === 'pasted', null, { timeout: 8000 })
+    .then(() => pass('paste with no editable target still opens a "pasted" file'))
+    .catch(() => fail('paste-to-file: no "pasted" file created on bare paste'));
+
   // ── Autosave restore banner — must restore the CURRENT file's save, not the first one seen.
   // The banner element + its Restore listener are static/reused across files; a stale closure used
   // to make Restore on a later file write the first file's text. Drive both opens in ONE page

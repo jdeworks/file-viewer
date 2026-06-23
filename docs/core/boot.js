@@ -14,7 +14,7 @@
 // handlers capture input only until then; once ready, the real intake wiring in app.js owns
 // everything and boot's handlers no-op.
 
-import { intakeFromFile, intakeFromText, entriesFromFileList, walkEntries } from './intake.js';
+import { intakeFromFile, intakeFromText, entriesFromFileList, walkEntries, pasteTargetIsEditable } from './intake.js';
 
 // ── Early-open queue ────────────────────────────────────────────────────────
 // A file/folder/paste captured before app.js finished loading. At most one is held (the latest);
@@ -160,6 +160,7 @@ function wireEarlyIntake() {
 
   window.addEventListener('paste', (e) => {
     if (taken()) return;
+    if (pasteTargetIsEditable(e)) return;   // let a focused input/editor consume it (no "pasted" file)
     const item = [...(e.clipboardData?.items || [])].find((i) => i.kind === 'file');
     if (item) { const f = item.getAsFile(); if (f) capture({ kind: 'file', payload: f }); return; }
     const text = e.clipboardData?.getData('text');

@@ -1,50 +1,64 @@
 #!/usr/bin/env bash
 # Local validation gate — the SAME checks the (now-disabled) CI ran, so we catch failures here
-# before pushing instead of paying for GitHub Actions. Run this before every commit/push.
+# before pushing instead of paying for GitHub Actions. Run --fast before every commit/push.
 #
-#   ./scripts/check.sh
+#   ./scripts/check.sh           full gate — recommended before a release/tag (adds heavy suites)
+#   ./scripts/check.sh --fast    DEFAULT pre-push gate: generators + unit tests + CORE smoke only
 #
 # Does: (1) regenerate the asset manifest and fail if it was stale (the smoke test also asserts
 # this, but failing early is clearer); (2) the move-diff unit tests; (3) the headless smoke test
 # (serves docs/, drives Chromium, asserts ZERO off-origin). Tests are self-contained — they never
 # depend on local-only files (see autonomous-loop memory: TEST DISCIPLINE).
+#
+# --fast trades coverage for CPU/time: it SKIPS the two heaviest Chromium suites — known-file
+# viewers (smoke-known.mjs, ~812 page.goto reloads, each re-parsing Monaco's 13 MB bundle) and
+# binary/container types (smoke-binary.mjs, ~45 heavy WebGL/wasm opens) — which together dominate
+# the gate's cost. It still regenerates every bundle (all generators total ~2s) so core smoke runs
+# against fresh artifacts, but it does NOT hard-fail on an unstaged regen (that staleness gate is a
+# pre-push concern). --fast is the default before every push; run the full gate before a release/tag.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+FAST=0
+case "${1:-}" in
+  --fast|-f) FAST=1 ;;
+  "") ;;
+  *) echo "usage: $(basename "$0") [--fast]"; exit 2 ;;
+esac
+
+# Full mode: a generated artifact differing from HEAD means "you forgot to regenerate+stage" — fail
+# loudly. --fast mode: that's expected mid-iteration, so just note it and carry on.
+stale() {  # $1 = message, $2.. = paths to diff
+  local msg="$1"; shift
+  if ! git diff --quiet -- "$@"; then
+    if [ "$FAST" = 1 ]; then
+      echo "  (fast) $msg — regenerated but not staged; 'git add' it before you push"
+    else
+      echo "  $msg — stage it."
+      exit 1
+    fi
+  fi
+}
+
 echo "→ regenerating settings defaults (must be committed fresh)…"
 node scripts/gen-settings-defaults.mjs >/dev/null
-if ! git diff --quiet -- docs/core/settings-defaults.generated.json; then
-  echo "  settings-defaults.generated.json changed — stage it."
-  exit 1
-fi
+stale "settings-defaults.generated.json changed" docs/core/settings-defaults.generated.json
 
 echo "→ regenerating runtime registry (must be committed fresh)…"
 node scripts/gen-registry-runtime.mjs >/dev/null
-if ! git diff --quiet -- docs/core/registry-runtime.generated.js docs/core/registry-detect.generated.*.js; then
-  echo "  runtime registry changed — stage it."
-  exit 1
-fi
+stale "runtime registry changed" docs/core/registry-runtime.generated.js docs/core/registry-detect.generated.*.js
 
 echo "→ regenerating bundled known-file registry (must be committed fresh)…"
 node scripts/gen-known-runtime.mjs >/dev/null
-if ! git diff --quiet -- docs/known/registry.generated.js; then
-  echo "  known/registry.generated.js changed — stage it (known plugins changed since last regen)."
-  exit 1
-fi
+stale "known/registry.generated.js changed (known plugins changed since last regen)" docs/known/registry.generated.js
 
 echo "→ regenerating bundled image renderer (must be committed fresh)…"
 node scripts/gen-image-renderer.mjs >/dev/null
-if ! git diff --quiet -- docs/types/image/renderer.generated.js; then
-  echo "  image renderer.generated.js changed — stage it (renderer source changed since last regen)."
-  exit 1
-fi
+stale "image renderer.generated.js changed (renderer source changed since last regen)" docs/types/image/renderer.generated.js
 
 echo "→ regenerating metagame stage bundles (must be committed fresh)…"
 node scripts/gen-metagame-bundles.mjs >/dev/null
-if ! git diff --quiet -- 'docs/games/metagame/stages/*/stage.generated.js'; then
-  echo "  metagame stage bundle(s) changed — stage them (a stage's source modules changed since last regen)."
-  exit 1
-fi
+stale "metagame stage bundle(s) changed (a stage's source modules changed since last regen)" 'docs/games/metagame/stages/*/stage.generated.js'
 
 echo "→ running compatibility matrix generator…"
 node scripts/gen-example-compatibility.mjs
@@ -76,6 +90,13 @@ node tests/metadata-owned.test.mjs
 
 echo "→ smoke test: core areas (headless Chromium, zero off-origin)…"
 node tests/smoke.mjs
+
+if [ "$FAST" = 1 ]; then
+  echo "→ fast mode: SKIPPING known-file + binary smoke suites (the two heaviest)."
+  echo "  This is the default pre-push gate. Run the full gate before a release:  ./scripts/check.sh"
+  echo "✓ fast checks passed (known + binary suites skipped)"
+  exit 0
+fi
 
 echo "→ smoke test: known-file viewers (fresh browser process, avoids WSL2 OOM)…"
 node tests/smoke-known.mjs

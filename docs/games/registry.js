@@ -21,6 +21,13 @@ export const GAMES = [
     load: () => import('./2048/g2048.js'),
   },
   {
+    id: 'flappybird',
+    title: 'Flappy Bird',
+    emoji: '🐤',
+    blurb: 'Click, tap, or press Space to flap. Thread the pipes — don’t hit one.',
+    load: () => import('./flappybird/flappybird.js'),
+  },
+  {
     id: 'metagame',
     title: 'Bit Foundry',
     emoji: '⚙️',
