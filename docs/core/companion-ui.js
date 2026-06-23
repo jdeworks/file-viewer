@@ -80,12 +80,16 @@ function promptFolderRootPicker(matches) {
   });
 }
 
-export async function resolveDroppedFolderRoot(files) {
-  if (!companionAvailable || !companionEnabled() || !files || !files.length) return;
-  const first = files[0];
-  if (!first.webkitRelativePath) return;
-  const relPath = first.webkitRelativePath;
-  const matches = await findFolder(relPath, first.size, first.lastModified).catch(() => []);
+// `entries` is the dropped/picked folder as [{ file, path }] — `path` is the file's path RELATIVE
+// to the dropped folder (e.g. "test/folder 2/x.txt"), set for BOTH the entries API (drag-drop) and
+// the webkitdirectory picker. We must use it, NOT file.webkitRelativePath, which is EMPTY for
+// drag-dropped folders — that was why a dragged folder never resolved a root (no Save/Delete).
+export async function resolveDroppedFolderRoot(entries) {
+  if (!companionAvailable || !companionEnabled() || !entries || !entries.length) return;
+  const first = entries[0];
+  const relPath = first.path || first.file?.webkitRelativePath;
+  if (!relPath) return;
+  const matches = await findFolder(relPath, first.file?.size ?? 0, first.file?.lastModified ?? 0).catch(() => []);
   let root = null;
   if (matches.length === 1) {
     root = matches[0];
@@ -95,19 +99,19 @@ export async function resolveDroppedFolderRoot(files) {
   companionFolderRoot = root;
   if (root) {
     syncSaveBtn();
-    const fileHandle = state.intake?.file;
-    const currentAbsPath = absolutePathForFile(fileHandle);
+    const currentAbsPath = absolutePathForFile(state.currentFolderPath);
     if (currentAbsPath && state.currentFolderPath) startWatching(currentAbsPath);
   }
 }
 
-export function absolutePathForFile(file) {
-  if (!companionFolderRoot || !file?.webkitRelativePath) return null;
-  // webkitRelativePath always uses '/'; its first segment is the dropped folder's own name (which
-  // companionFolderRoot already includes), so drop it. Build the path with the ROOT's own separator
-  // so Windows paths stay all-backslash — otherwise the mixed-separator result won't match the
-  // watcher's native event paths (breaking the change-on-disk banner).
-  const relFromRoot = file.webkitRelativePath.split('/').slice(1);
+// Map a folder file's RELATIVE tree path (state.currentFolderPath / node.path, e.g.
+// "test/folder 2/x.txt") to its absolute disk path. The first segment is the dropped folder's own
+// name (already part of companionFolderRoot), so drop it. Build with the ROOT's own separator so
+// Windows paths stay all-backslash — otherwise the mixed-separator result won't match the watcher's
+// native event paths (breaking the change-on-disk banner).
+export function absolutePathForFile(relPath) {
+  if (!companionFolderRoot || !relPath) return null;
+  const relFromRoot = relPath.split('/').slice(1);
   if (!relFromRoot.length) return null;
   const sep = (companionFolderRoot.includes('\\') && !companionFolderRoot.includes('/')) ? '\\' : '/';
   const base = companionFolderRoot.endsWith(sep) ? companionFolderRoot.slice(0, -1) : companionFolderRoot;
@@ -229,8 +233,7 @@ export async function onSaveClick() {
     let isCreate = false;
 
     if (state.currentFolderPath && companionFolderRoot) {
-      const fileHandle = state.intake.file;
-      absPath = absolutePathForFile(fileHandle);
+      absPath = absolutePathForFile(state.currentFolderPath);
     }
 
     if (!absPath) {
@@ -306,7 +309,7 @@ export async function onDeleteClick() {
   if (btn) btn.disabled = true;
   try {
     let absPath = null;
-    if (state.currentFolderPath && companionFolderRoot) absPath = absolutePathForFile(state.intake.file);
+    if (state.currentFolderPath && companionFolderRoot) absPath = absolutePathForFile(state.currentFolderPath);
     if (!absPath) absPath = companionLinkedPath;
     if (!absPath) {
       let matches;

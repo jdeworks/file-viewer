@@ -101,7 +101,7 @@ function maybeUnlockEasteregg(text) {
 async function openFolderEntries(entries) {
   resetCompanionFolderRoot();
   await loadFolder(entries);
-  resolveDroppedFolderRoot(entries.map((e) => e.file).filter(Boolean));
+  resolveDroppedFolderRoot(entries);   // pass {file, path} entries — `path` is the real relative path
 }
 
 // Return to the intake screen to pick another file/folder (keeps any loaded tree).
@@ -395,7 +395,7 @@ function init() {
     // Called after each folder-tree file opens so we can start watching its absolute disk path.
     onFolderFileOpened: (node) => {
       if (!isCompanionAvailable() || !hasCompanionFolderRoot()) return;
-      const absPath = absolutePathForFile(node.file);
+      const absPath = absolutePathForFile(node.path);
       if (!absPath) return;
       // Watch this specific file for changes on disk (replaces any prior single-file watch).
       startWatching(absPath);
