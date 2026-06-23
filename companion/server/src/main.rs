@@ -65,8 +65,24 @@ async fn main() {
     // Keep _watcher alive for the lifetime of main so FS events keep flowing.
     let _keep = _watcher;
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:7700")
-        .await
-        .unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = match tokio::net::TcpListener::bind("127.0.0.1:7700").await {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!();
+            eprintln!("ERROR: could not start — 127.0.0.1:7700 is already in use ({e}).");
+            eprintln!("Another companion (the tray app or another console server) is already");
+            eprintln!("running. Quit it first (tray → Quit, or end it in Task Manager), then");
+            eprintln!("run this again.");
+            logging::error(format!("cannot bind 127.0.0.1:7700: {e}"));
+            // Keep the console window open so the message is readable (Windows closes it on exit).
+            eprintln!();
+            eprint!("Press Enter to close…");
+            let mut _line = String::new();
+            let _ = std::io::stdin().read_line(&mut _line);
+            std::process::exit(1);
+        }
+    };
+    if let Err(e) = axum::serve(listener, app).await {
+        logging::error(format!("server stopped: {e}"));
+    }
 }
