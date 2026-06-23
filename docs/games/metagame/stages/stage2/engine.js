@@ -18,55 +18,98 @@ export const DIRS = {
   right: { dx: 1, dy: 0 }
 };
 
+// Floor dimensions: a run-wide random 200–250 base (stable across floors via the run seed),
+// grown ×1.35 per floor (area thus ~×1.8/floor) and capped so floor 5 lands near ~750². Rooms
+// and monsters scale with area. Deterministic so attachGrid() can rebuild the exact terrain.
+const GROWTH = 1.35;
+export function floorDims(runSeed, floorNum) {
+  const dimRng = makeRng(`${runSeed}:dims`);
+  const baseW = dimRng.int(200, 250);
+  const baseH = dimRng.int(200, 250);
+  const g = Math.pow(GROWTH, floorNum - 1);
+  const width = Math.min(900, Math.round(baseW * g));
+  const height = Math.min(900, Math.round(baseH * g));
+  const maxRooms = Math.round((width * height) / 950);
+  return { width, height, maxRooms, minRoom: 4, maxRoom: 9 };
+}
+
+// Deterministic terrain only (grid + rooms) from `${runSeed}:${floor}`. buildFloor continues
+// consuming the SAME rng to place entities; attachGrid re-runs just this to recover the grid.
+function buildGrid(runSeed, floorNum) {
+  const dims = floorDims(runSeed, floorNum);
+  const rng = makeRng(`${runSeed}:${floorNum}`);
+  const { grid, rooms } = generate(rng, dims);
+  return { grid, rooms, dims, rng };
+}
+
+// The grid is large (a 750² floor is ~600KB of strings) and fully derivable from the seed, so we
+// keep it as a NON-ENUMERABLE property: JSON.stringify (the save path) skips it, but step()/view
+// still read world.grid in memory. attachGrid() restores it on load (see renderer ensureWorld).
+function defineGrid(world, grid) {
+  Object.defineProperty(world, "grid", { value: grid, enumerable: false, writable: true, configurable: true });
+}
+export function attachGrid(world, runSeed, floorNum) {
+  defineGrid(world, buildGrid(runSeed, floorNum).grid);
+  return world;
+}
+
 // Generate one floor: layout + spawn + stairs + entities, all from `${runSeed}:${floor}`.
 export function buildFloor(runSeed, floorNum) {
-  const rng = makeRng(`${runSeed}:${floorNum}`);
-  // Maps grow with depth, well past the fixed viewport (see view.js VIEW_W/H) so deeper
-  // floors only ever show a chunk and have to be explored. Floor 1 ≈ 50×26 / 9 rooms,
-  // floor 5 ≈ 98×50 / 21 rooms.
-  const width = Math.min(110, 50 + (floorNum - 1) * 12);
-  const height = Math.min(54, 26 + (floorNum - 1) * 6);
-  const maxRooms = Math.min(26, 9 + (floorNum - 1) * 3);
-  const { grid, rooms } = generate(rng, { width, height, maxRooms, minRoom: 4, maxRoom: 9 });
+  const { grid, rooms, dims, rng } = buildGrid(runSeed, floorNum);
+  const width = dims.width;
+  const height = dims.height;
   const start = { x: rooms[0].cx, y: rooms[0].cy };
-  const dist = floodDistances(grid, start);
+  const flood = floodDistances(grid, start);
   // Stairs go on the farthest reachable cell so a floor takes some crossing.
   let exit = start;
   let far = -1;
-  for (const [k, d] of dist) {
-    if (d > far) { far = d; const [x, y] = k.split(",").map(Number); exit = { x, y }; }
+  for (let i = 0; i < flood.count; i += 1) {
+    const idx = flood.order[i];
+    if (flood.dist[idx] > far) { far = flood.dist[idx]; exit = { x: idx % width, y: Math.floor(idx / width) }; }
   }
-  // Unique, reachable spawn cells (not the start or stairs), shuffled for placement.
-  const spawnable = [];
-  for (const k of dist.keys()) {
-    const [x, y] = k.split(",").map(Number);
-    if ((x !== start.x || y !== start.y) && (x !== exit.x || y !== exit.y)) spawnable.push({ x, y });
+  // Shuffle the reached cells in place (Fisher–Yates) and hand them out as unique spawn points.
+  const order = flood.order;
+  for (let i = flood.count - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng.float() * (i + 1));
+    const t = order[i]; order[i] = order[j]; order[j] = t;
   }
-  const cells = rng.shuffle(spawnable);
   let ci = 0;
-  const take = () => (ci < cells.length ? cells[ci++] : null);
+  const take = () => {
+    while (ci < flood.count) {
+      const idx = order[ci++];
+      const x = idx % width;
+      const y = Math.floor(idx / width);
+      if ((x !== start.x || y !== start.y) && (x !== exit.x || y !== exit.y)) return { x, y };
+    }
+    return null;
+  };
 
-  const monsterCount = Math.min(24, 4 + floorNum * 3);
+  const monsterCount = Math.max(8, Math.min(280, Math.round(dims.maxRooms * 0.7)));
   const monsters = [];
   for (let i = 0; i < monsterCount; i += 1) {
     const c = take();
     if (!c) break;
     const m = spawnMonster(rng, floorNum, i);
-    m.x = c.x; m.y = c.y;
+    m.x = c.x; m.y = c.y; m.home = { x: c.x, y: c.y };
     monsters.push(m);
   }
   const weaponTier = Math.min(WEAPONS.length - 1, Math.floor(floorNum / 2) + 1);
   const weapons = [];
-  const wc = take();
-  if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[weaponTier], taken: false });
+  const weaponCount = 1 + Math.floor(floorNum / 2);
+  for (let i = 0; i < weaponCount; i += 1) {
+    const wc = take();
+    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[weaponTier], taken: false });
+  }
   const glyphs = [];
-  const glyphCount = 3 + floorNum;
+  const glyphCount = Math.max(4, Math.round(dims.maxRooms * 0.25));
   for (let i = 0; i < glyphCount; i += 1) {
     const c = take();
     if (!c) break;
     glyphs.push({ x: c.x, y: c.y, taken: false });
   }
-  return { floor: floorNum, grid, width, height, pos: { ...start }, exit, monsters, weapons, glyphs };
+  const world = { floor: floorNum, width, height, pos: { ...start }, exit, monsters, weapons, glyphs };
+  defineGrid(world, grid);
+  return world;
 }
 
 function gainGlyphs(player, base) {
@@ -83,7 +126,7 @@ function awardXp(player, amount, events) {
     player.level += 1;
     player.maxHp += 5;
     player.atk += 1;
-    player.hp = Math.min(player.maxHp, player.hp + 8);
+    player.hp = Math.min(player.maxHp, player.hp + 3);
     events.log.push(`LVL ${player.level}. ATK ${player.atk}, HP ${player.hp}/${player.maxHp}.`);
   }
 }
@@ -153,4 +196,100 @@ export function step(world, player, dir) {
   }
   if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
   return events;
+}
+
+// ── Monster turn — patrol, chase on sight ───────────────────────────────────────────────────────
+const DIR_LIST = ["up", "down", "left", "right"];
+
+function isOpen(world, x, y) {
+  return y >= 0 && x >= 0 && y < world.grid.length && x < world.width && world.grid[y][x] !== "#";
+}
+
+function freeCell(world, x, y, occupied) {
+  return isOpen(world, x, y) && !occupied.has(y * world.width + x) && !(x === world.pos.x && y === world.pos.y);
+}
+
+// Cheap Bresenham line-of-sight: any wall between monster and @ blocks the sighting.
+function hasLOS(world, x0, y0, x1, y1) {
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1;
+  const sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+  let x = x0;
+  let y = y0;
+  for (let guard = 0; guard < 80; guard += 1) {
+    if (x === x1 && y === y1) return true;
+    const e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; x += sx; }
+    if (e2 < dx) { err += dx; y += sy; }
+    if (world.grid[y] && world.grid[y][x] === "#") return false;
+  }
+  return false;
+}
+
+function monsterBite(m, player, events) {
+  const dmg = Math.max(1, m.atk - Number(player.def || 0));
+  player.hp = Math.max(0, player.hp - dmg);
+  events.damageTaken += dmg;
+  if (player.hp <= 0) events.died = true;
+  events.log.push(`${m.name} bites for ${dmg}.`);
+  return dmg;
+}
+
+// Greedy chase: close the larger axis first, fall back to the other; never onto @ (that's a bite).
+function greedyStep(world, m, px, py, occupied) {
+  const ddx = px - m.x;
+  const ddy = py - m.y;
+  const order = Math.abs(ddx) >= Math.abs(ddy)
+    ? [[Math.sign(ddx), 0], [0, Math.sign(ddy)]]
+    : [[0, Math.sign(ddy)], [Math.sign(ddx), 0]];
+  for (const [sx, sy] of order) {
+    if (!sx && !sy) continue;
+    if (freeCell(world, m.x + sx, m.y + sy, occupied)) return { x: m.x + sx, y: m.y + sy };
+  }
+  return null;
+}
+
+// Patrol: keep the current heading; on a block, take the first open direction (paces corridors,
+// bounces in rooms). The heading lives on the monster so it persists across turns/saves.
+function patrolStep(world, m, occupied) {
+  const dirs = [m.dir, ...DIR_LIST.filter((d) => d !== m.dir)];
+  for (const d of dirs) {
+    const mv = DIRS[d];
+    if (!mv) continue;
+    if (freeCell(world, m.x + mv.dx, m.y + mv.dy, occupied)) return { x: m.x + mv.dx, y: m.y + mv.dy, dir: d };
+  }
+  return null;
+}
+
+// Advance monsters one tile. `filter` (optional) restricts which monsters act this call — used to
+// drive the 5 shared real-time clocks (one bucket per call) so monsters move without the player.
+// Mutates monsters + the player entity (bites) and appends to `events`.
+export function monsterTurn(world, player, events, filter) {
+  const px = world.pos.x;
+  const py = world.pos.y;
+  const occupied = new Set();
+  for (const m of world.monsters) if (m.alive) occupied.add(m.y * world.width + m.x);
+  for (const m of world.monsters) {
+    if (!m.alive) continue;
+    if (filter && !filter(m)) continue;
+    const sight = m.sight || 5;
+    const adjacent = Math.abs(px - m.x) + Math.abs(py - m.y) === 1;
+    const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
+    if (adjacent && (sees || m.chasing)) {
+      m.chasing = true;
+      monsterBite(m, player, events);
+      if (m.fast && player.hp > 0) monsterBite(m, player, events);
+      if (player.hp <= 0) { events.died = true; return; }
+      continue;
+    }
+    const target = sees ? (m.chasing = true, greedyStep(world, m, px, py, occupied))
+      : (m.chasing = false, patrolStep(world, m, occupied));
+    if (target) {
+      occupied.delete(m.y * world.width + m.x);
+      m.x = target.x; m.y = target.y; if (target.dir) m.dir = target.dir;
+      occupied.add(m.y * world.width + m.x);
+    }
+  }
 }

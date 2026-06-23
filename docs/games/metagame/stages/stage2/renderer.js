@@ -1,6 +1,6 @@
 import { damageUnlockedBoss, getBossLockState, recordLockedBossAttempt } from "./boss.js";
 import { bossArenaLocked, bossArenaUnlocked } from "./content.js";
-import { buildFloor, step } from "./engine.js";
+import { attachGrid, buildFloor, monsterTurn, step } from "./engine.js";
 import { rollEntity } from "./data.js";
 import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
@@ -26,8 +26,9 @@ export function renderStage2({
   const root = document.createElement("section");
   root.className = "stage2-glyph-dungeon";
   root.innerHTML = `
+    <div class="s2-board">
     <header class="s2-hud">
-      <div><strong>FLOOR <span data-field="floor"></span>/${MAX_FLOOR} - GLYPH DUNGEON</strong></div>
+      <div><strong>FLOOR <span data-field="floor"></span>/${MAX_FLOOR}</strong></div>
       <div>HP <span class="s2-hp-bar" data-field="hpbar"></span> <span data-field="hp"></span>/<span data-field="maxHp"></span></div>
       <div>LVL <span data-field="level"></span> (<span data-field="xp"></span>xp)</div>
       <div>ATK <span data-field="atk"></span></div>
@@ -35,33 +36,36 @@ export function renderStage2({
       <div>GLYPHS <span data-field="glyphs"></span></div>
     </header>
     <div class="s2-objective" data-field="objective"></div>
-    <div class="s2-screen"></div>
-    <div class="s2-legend">
-      <span class="s2-c-player">@</span> you
-      <span class="s2-c-foe">s</span> foe
-      <span class="s2-c-item">/</span> weapon
-      <span class="s2-c-glyph">%</span> glyph
-      <span class="s2-c-exit">&gt;</span> stairs
-    </div>
-    <div class="s2-boss-panel">
-      <div class="s2-boss-title">THE AMBIGUOUS EXPRESSION</div>
-      <div data-field="bossStatus"></div>
-      <div class="s2-hint" data-field="hint"></div>
+    <div class="s2-play">
+      <div class="s2-stage">
+        <div class="s2-screen"></div>
+        <div class="s2-legend">
+          <span class="s2-c-player">@</span> you
+          <span class="s2-c-foe">s</span> foe
+          <span class="s2-c-item">/</span> weapon
+          <span class="s2-c-glyph">%</span> glyph
+          <span class="s2-c-exit">&gt;</span> stairs
+        </div>
+      </div>
+      <div class="s2-controls">
+        <button type="button" data-action="help">how to play</button>
+        <button type="button" data-action="shop">glyph shop</button>
+        <button type="button" data-action="retreat">retreat (new run)</button>
+        <button type="button" data-action="search" hidden>open cipher.txt</button>
+        <button type="button" data-action="boss" hidden>challenge boss</button>
+        <button type="button" data-action="bts" hidden>open trace.bts</button>
+        <div class="s2-dpad" aria-label="move (touch)">
+          <button type="button" data-move="up" aria-label="move up">&#9650;</button>
+          <button type="button" data-move="left" aria-label="move left">&#9664;</button>
+          <button type="button" data-move="down" aria-label="move down">&#9660;</button>
+          <button type="button" data-move="right" aria-label="move right">&#9654;</button>
+        </div>
+      </div>
     </div>
     <ol class="s2-log" aria-label="combat log"></ol>
-    <div class="s2-controls">
-      <div class="s2-dpad" aria-label="move">
-        <button type="button" data-move="up" aria-label="move up">&#9650;</button>
-        <button type="button" data-move="left" aria-label="move left">&#9664;</button>
-        <button type="button" data-move="down" aria-label="move down">&#9660;</button>
-        <button type="button" data-move="right" aria-label="move right">&#9654;</button>
-      </div>
-      <button type="button" data-action="boss">challenge boss</button>
-      <button type="button" data-action="search">open cipher.txt</button>
-      <button type="button" data-action="shop">glyph shop</button>
-      <button type="button" data-action="help">how to play</button>
-      <button type="button" data-action="retreat">retreat (new run)</button>
-      <button type="button" data-action="bts" hidden>open trace.bts</button>
+    </div>
+    <div class="s2-bossmeta" hidden>
+      <span data-field="bossStatus"></span><span class="s2-hint" data-field="hint"></span>
     </div>
   `;
 
@@ -72,6 +76,7 @@ export function renderStage2({
   const log = root.querySelector(".s2-log");
   let flashTimer = null;
   let overlay = null; // { el } for the open shop/help panel, or null
+  let monsterClocks = []; // the 5 real-time monster-movement intervals
 
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
@@ -104,6 +109,11 @@ export function renderStage2({
       item.textContent = line;
       return item;
     }));
+    // The cipher.txt + challenge-boss actions only appear once you've reached the final floor
+    // (boss.reached); the trace.bts link only after the boss falls.
+    const atBoss = state.run.boss.reached && !state.run.boss.defeated;
+    root.querySelector('[data-action="search"]').hidden = !atBoss;
+    root.querySelector('[data-action="boss"]').hidden = !atBoss;
     root.querySelector('[data-action="bts"]').hidden = !state.run.boss.defeated;
   }
 
@@ -127,7 +137,10 @@ export function renderStage2({
   // ── Movement / combat ──────────────────────────────────────────────────────────────────────
   function move(dir) {
     if (overlay || state.run.boss.reached || state.run.boss.defeated) return; // exploration only
-    const events = step(state.run.world, state.run.entity, dir);
+    const world = state.run.world;
+    const events = step(world, state.run.entity, dir);
+    // Monsters move on their own real-time clocks (see startMonsterClocks), NOT on the player's
+    // step — so a moving player can outrun them. step() still resolves the bumped foe's counter.
     for (const line of events.log) appendLog(state, line);
     if (events.damageTaken > 0) flashDamage(events.died);
     if (events.died) {
@@ -201,16 +214,62 @@ export function renderStage2({
   });
 
   repaint();
+  startMonsterClocks();
+
+  // Dev-menu cheats for this stage (see index.js stageMeta.devControls). Map = the full-map overlay.
+  function dev(id) {
+    const e = state.run.entity;
+    if (id === "heal") e.hp = e.maxHp;
+    else if (id === "atk") e.atk += 5;
+    else if (id === "lvl") { e.level += 1; e.maxHp += 5; e.atk += 1; e.hp = e.maxHp; }
+    else if (id === "glyphs") e.glyphsThisRun = Number(e.glyphsThisRun || 0) + 1000;
+    else if (id === "map") { view.toggleFullMap(state.run.world); return; }
+    if (typeof save === "function") save();
+    paintHud();
+  }
 
   return {
     repaint,
+    dev,
     destroy() {
       window.removeEventListener("keydown", onKey);
       if (flashTimer) clearTimeout(flashTimer);
+      stopMonsterClocks();
       view.destroy();
       root.remove();
     }
   };
+
+  // Five shared real-time clocks (0.4–0.8s); each ticks one bucket of monsters so they advance
+  // without the player. A monster's bucket is fixed at generation. Paused while a panel is open
+  // or once the boss is reached.
+  function tickBucket(bucket) {
+    if (overlay || state.run.boss.reached || state.run.boss.defeated) return;
+    const world = state.run.world;
+    if (!world || !world.grid) return;
+    const events = { moved: false, log: [], damageTaken: 0, died: false };
+    monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
+    for (const line of events.log) appendLog(state, line);
+    if (events.damageTaken > 0) flashDamage(events.died);
+    if (events.died) {
+      appendLog(state, "@ was unparsed. run reset — banked glyphs survive.");
+      resetRun(state, { banked: true, death: true });
+      persistAndPaint();
+      return;
+    }
+    view.tickMonsters(world);
+    paintHud();
+  }
+
+  function startMonsterClocks() {
+    stopMonsterClocks();
+    monsterClocks = [400, 500, 600, 700, 800].map((ms, b) => setInterval(() => tickBucket(b), ms));
+  }
+
+  function stopMonsterClocks() {
+    for (const id of monsterClocks) clearInterval(id);
+    monsterClocks = [];
+  }
 
   function challengeBoss() {
     state.run.boss.reached = true;
@@ -240,6 +299,10 @@ function ensureWorld(state) {
   if (!run.seed) run.seed = `s2-run${state.meta.runCount || 0}`;
   if (!run.world || run.world.floor !== run.floor || !Array.isArray(run.world.monsters)) {
     run.world = buildFloor(run.seed, run.floor);
+  } else if (!run.world.grid) {
+    // Loaded from a save: the grid is non-enumerable so it wasn't serialised. Regenerate the
+    // deterministic terrain (entities kept their saved positions) and re-attach it in memory.
+    attachGrid(run.world, run.seed, run.world.floor);
   }
 }
 

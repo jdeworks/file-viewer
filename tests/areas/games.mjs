@@ -297,6 +297,10 @@ export async function run(ctx) {
     save.currentStage = 2;
     save.unlockedStages = [1, 2];
     save.defeated = [1];
+    // The cipher.txt + challenge-boss actions only surface once the final floor is reached
+    // (boss.reached); preset it so the boss flow is exercisable without walking all floors.
+    save.stageState = save.stageState || {};
+    save.stageState[2] = { run: { boss: { reached: true } } };
     localStorage.setItem('fv:games:metagame:v3', JSON.stringify(save));
     window.__fv.games.open();
   });

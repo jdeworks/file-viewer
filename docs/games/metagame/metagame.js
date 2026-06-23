@@ -259,6 +259,11 @@ export function mount(host, { onExit } = {}) {
       const id = meta.id;
       return `<button type="button" data-dev="boss" data-n="${id}">${id}b</button>`;
     }).join('');
+    // Controls for the stage currently mounted (each stage exposes its own via stageMeta.devControls).
+    const activeCtrls = (mounted && Array.isArray(mounted.devControls)) ? mounted.devControls : [];
+    const activeDevRow = activeCtrls.length
+      ? `<div class="mg-dev-row"><span>Stage ${saveData.currentStage}:</span>${activeCtrls.map((c) => `<button type="button" data-dev="stagedev" data-id="${c.id}">${c.label}</button>`).join('')}</div>`
+      : '';
     box.innerHTML = `
       <div class="mg-dev">
         <div class="mg-dev-title">🛠 Dev menu <button type="button" data-dev="close" class="mg-dev-x">✕</button></div>
@@ -267,6 +272,7 @@ export function mount(host, { onExit } = {}) {
           <button type="button" data-dev="bits" data-e="9">1B</button>
           <button type="button" data-dev="bits" data-e="12">1T</button>
           <button type="button" data-dev="bits" data-e="93">1ba</button></div>
+        ${activeDevRow}
         <div class="mg-dev-row"><span>Jump to stage:</span>${stageBtns}</div>
         <div class="mg-dev-row"><span>Jump to boss:</span>${bossBtns}</div>
         <div class="mg-dev-row">
@@ -285,6 +291,7 @@ export function mount(host, { onExit } = {}) {
     box.querySelectorAll('[data-dev]').forEach((b) => b.addEventListener('click', () => {
       const kind = b.dataset.dev;
       if (kind === 'close') { box.hidden = true; box.innerHTML = ''; return; }
+      if (kind === 'stagedev') { mounted?.dev?.(b.dataset.id); return; } // live cheat; keep menu open
       if (kind === 'bits') {
         seedStage1Bits(Number(b.dataset.e));
         if (saveData.currentStage !== 1) saveData.currentStage = 1;

@@ -215,10 +215,18 @@ function carveRoom(grid, room) {
   }
 }
 function carveH(grid, x1, x2, y) {
-  for (let x = Math.min(x1, x2); x <= Math.max(x1, x2); x += 1) grid[y][x] = ".";
+  const y2 = y + 1 < grid.length - 1 ? y + 1 : y;
+  for (let x = Math.min(x1, x2); x <= Math.max(x1, x2); x += 1) {
+    grid[y][x] = ".";
+    grid[y2][x] = ".";
+  }
 }
 function carveV(grid, y1, y2, x) {
-  for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y += 1) grid[y][x] = ".";
+  const x2 = x + 1 < grid[0].length - 1 ? x + 1 : x;
+  for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y += 1) {
+    grid[y][x] = ".";
+    grid[y][x2] = ".";
+  }
 }
 function connect(grid, a, b, rng) {
   if (rng.chance(0.5)) {
@@ -256,38 +264,49 @@ function generate(rng, { width, height, maxRooms, minRoom, maxRoom }) {
   return { grid: grid.map((row) => row.join("")), rooms };
 }
 function floodDistances(gridRows, start) {
-  const width = gridRows[0].length;
   const height = gridRows.length;
-  const dist = /* @__PURE__ */ new Map();
-  const key2 = (x, y) => `${x},${y}`;
-  dist.set(key2(start.x, start.y), 0);
-  const queue = [start];
-  while (queue.length) {
-    const cur = queue.shift();
-    const d = dist.get(key2(cur.x, cur.y));
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nx = cur.x + dx;
-      const ny = cur.y + dy;
-      if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-      if (gridRows[ny][nx] === "#") continue;
-      const k = key2(nx, ny);
-      if (dist.has(k)) continue;
-      dist.set(k, d + 1);
-      queue.push({ x: nx, y: ny });
+  const width = gridRows[0].length;
+  const dist = new Int32Array(width * height).fill(-1);
+  const order = new Int32Array(width * height);
+  let count = 0;
+  let head = 0;
+  const si = start.y * width + start.x;
+  dist[si] = 0;
+  order[count++] = si;
+  while (head < count) {
+    const cur = order[head++];
+    const cx = cur % width;
+    const cy = (cur - cx) / width;
+    const d = dist[cur];
+    if (cy > 0 && dist[cur - width] === -1 && gridRows[cy - 1][cx] !== "#") {
+      dist[cur - width] = d + 1;
+      order[count++] = cur - width;
+    }
+    if (cy < height - 1 && dist[cur + width] === -1 && gridRows[cy + 1][cx] !== "#") {
+      dist[cur + width] = d + 1;
+      order[count++] = cur + width;
+    }
+    if (cx > 0 && dist[cur - 1] === -1 && gridRows[cy][cx - 1] !== "#") {
+      dist[cur - 1] = d + 1;
+      order[count++] = cur - 1;
+    }
+    if (cx < width - 1 && dist[cur + 1] === -1 && gridRows[cy][cx + 1] !== "#") {
+      dist[cur + 1] = d + 1;
+      order[count++] = cur + 1;
     }
   }
-  return dist;
+  return { width, height, dist, order, count };
 }
 
 // ../../docs/games/metagame/stages/stage2/data.js
 var BASE_STATS = { hp: 30, maxHp: 30, atk: 5, def: 2, sight: 7 };
 var MONSTERS = [
-  { id: "mite", glyph: "m", name: "parse mite", hp: 4, atk: 2, xp: 2, drop: 1, minFloor: 1 },
-  { id: "spider", glyph: "s", name: "syntax spider", hp: 6, atk: 3, xp: 3, drop: 1, minFloor: 1 },
-  { id: "null", glyph: "n", name: "null pointer", hp: 5, atk: 5, xp: 4, drop: 2, minFloor: 2 },
-  { id: "race", glyph: "r", name: "race condition", hp: 8, atk: 4, xp: 6, drop: 2, minFloor: 3, fast: true },
-  { id: "leak", glyph: "L", name: "memory leak", hp: 16, atk: 2, xp: 5, drop: 3, minFloor: 3 },
-  { id: "overflow", glyph: "O", name: "stack overflow", hp: 22, atk: 6, xp: 9, drop: 4, minFloor: 4 }
+  { id: "mite", glyph: "m", name: "parse mite", hp: 16, atk: 5, xp: 2, drop: 1, minFloor: 1 },
+  { id: "spider", glyph: "s", name: "syntax spider", hp: 20, atk: 6, xp: 3, drop: 1, minFloor: 1 },
+  { id: "null", glyph: "n", name: "null pointer", hp: 18, atk: 9, xp: 4, drop: 2, minFloor: 2 },
+  { id: "race", glyph: "r", name: "race condition", hp: 22, atk: 7, xp: 6, drop: 2, minFloor: 3, fast: true },
+  { id: "leak", glyph: "L", name: "memory leak", hp: 40, atk: 6, xp: 5, drop: 3, minFloor: 3 },
+  { id: "overflow", glyph: "O", name: "stack overflow", hp: 52, atk: 13, xp: 9, drop: 4, minFloor: 4 }
 ];
 var WEAPONS = [
   { name: "hand_cursor", atk: 0 },
@@ -317,7 +336,7 @@ function upgradeCost(id, level) {
   return Math.round((SHOP_BASE[id] || 10) * (SHOP_GROWTH[id] || 1.7) ** level);
 }
 function xpForLevel(level) {
-  return 4 + (level - 1) * 4;
+  return 6 + (level - 1) * 5;
 }
 function rollEntity(shopUpgrades = {}) {
   const stats = { ...BASE_STATS, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, equipment: { weapon: "hand_cursor" } };
@@ -331,7 +350,7 @@ function rollEntity(shopUpgrades = {}) {
 function spawnMonster(rng, floor, index) {
   const eligible = MONSTERS.filter((m) => m.minFloor <= floor);
   const def = rng.pick(eligible.length ? eligible : MONSTERS);
-  const scale = 1 + (floor - 1) * 0.25;
+  const scale = 1 + (floor - 1) * 0.35;
   const hp = Math.round(def.hp * scale) + index % 2;
   return {
     id: def.id,
@@ -345,7 +364,13 @@ function spawnMonster(rng, floor, index) {
     atk: Math.round(def.atk * scale),
     alive: true,
     x: 0,
-    y: 0
+    y: 0,
+    // Patrol heading + how far it can spot @ (set at generation; fast foes are more alert).
+    dir: rng.pick(["up", "down", "left", "right"]),
+    sight: def.fast ? 7 : 5,
+    chasing: false,
+    // Which of the 5 shared real-time movement clocks this monster ticks on (0=fastest .4s).
+    bucket: rng.int(0, 4)
   };
 }
 
@@ -356,32 +381,63 @@ var DIRS = {
   left: { dx: -1, dy: 0 },
   right: { dx: 1, dy: 0 }
 };
-function buildFloor(runSeed, floorNum) {
+var GROWTH = 1.35;
+function floorDims(runSeed, floorNum) {
+  const dimRng = makeRng(`${runSeed}:dims`);
+  const baseW = dimRng.int(200, 250);
+  const baseH = dimRng.int(200, 250);
+  const g = Math.pow(GROWTH, floorNum - 1);
+  const width = Math.min(900, Math.round(baseW * g));
+  const height = Math.min(900, Math.round(baseH * g));
+  const maxRooms = Math.round(width * height / 950);
+  return { width, height, maxRooms, minRoom: 4, maxRoom: 9 };
+}
+function buildGrid(runSeed, floorNum) {
+  const dims = floorDims(runSeed, floorNum);
   const rng = makeRng(`${runSeed}:${floorNum}`);
-  const width = Math.min(110, 50 + (floorNum - 1) * 12);
-  const height = Math.min(54, 26 + (floorNum - 1) * 6);
-  const maxRooms = Math.min(26, 9 + (floorNum - 1) * 3);
-  const { grid, rooms } = generate(rng, { width, height, maxRooms, minRoom: 4, maxRoom: 9 });
+  const { grid, rooms } = generate(rng, dims);
+  return { grid, rooms, dims, rng };
+}
+function defineGrid(world, grid) {
+  Object.defineProperty(world, "grid", { value: grid, enumerable: false, writable: true, configurable: true });
+}
+function attachGrid(world, runSeed, floorNum) {
+  defineGrid(world, buildGrid(runSeed, floorNum).grid);
+  return world;
+}
+function buildFloor(runSeed, floorNum) {
+  const { grid, rooms, dims, rng } = buildGrid(runSeed, floorNum);
+  const width = dims.width;
+  const height = dims.height;
   const start = { x: rooms[0].cx, y: rooms[0].cy };
-  const dist = floodDistances(grid, start);
+  const flood = floodDistances(grid, start);
   let exit = start;
   let far = -1;
-  for (const [k, d] of dist) {
-    if (d > far) {
-      far = d;
-      const [x, y] = k.split(",").map(Number);
-      exit = { x, y };
+  for (let i = 0; i < flood.count; i += 1) {
+    const idx = flood.order[i];
+    if (flood.dist[idx] > far) {
+      far = flood.dist[idx];
+      exit = { x: idx % width, y: Math.floor(idx / width) };
     }
   }
-  const spawnable = [];
-  for (const k of dist.keys()) {
-    const [x, y] = k.split(",").map(Number);
-    if ((x !== start.x || y !== start.y) && (x !== exit.x || y !== exit.y)) spawnable.push({ x, y });
+  const order = flood.order;
+  for (let i = flood.count - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng.float() * (i + 1));
+    const t = order[i];
+    order[i] = order[j];
+    order[j] = t;
   }
-  const cells = rng.shuffle(spawnable);
   let ci = 0;
-  const take = () => ci < cells.length ? cells[ci++] : null;
-  const monsterCount = Math.min(24, 4 + floorNum * 3);
+  const take = () => {
+    while (ci < flood.count) {
+      const idx = order[ci++];
+      const x = idx % width;
+      const y = Math.floor(idx / width);
+      if ((x !== start.x || y !== start.y) && (x !== exit.x || y !== exit.y)) return { x, y };
+    }
+    return null;
+  };
+  const monsterCount = Math.max(8, Math.min(280, Math.round(dims.maxRooms * 0.7)));
   const monsters = [];
   for (let i = 0; i < monsterCount; i += 1) {
     const c = take();
@@ -389,20 +445,26 @@ function buildFloor(runSeed, floorNum) {
     const m = spawnMonster(rng, floorNum, i);
     m.x = c.x;
     m.y = c.y;
+    m.home = { x: c.x, y: c.y };
     monsters.push(m);
   }
   const weaponTier = Math.min(WEAPONS.length - 1, Math.floor(floorNum / 2) + 1);
   const weapons = [];
-  const wc = take();
-  if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[weaponTier], taken: false });
+  const weaponCount = 1 + Math.floor(floorNum / 2);
+  for (let i = 0; i < weaponCount; i += 1) {
+    const wc = take();
+    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[weaponTier], taken: false });
+  }
   const glyphs = [];
-  const glyphCount = 3 + floorNum;
+  const glyphCount = Math.max(4, Math.round(dims.maxRooms * 0.25));
   for (let i = 0; i < glyphCount; i += 1) {
     const c = take();
     if (!c) break;
     glyphs.push({ x: c.x, y: c.y, taken: false });
   }
-  return { floor: floorNum, grid, width, height, pos: { ...start }, exit, monsters, weapons, glyphs };
+  const world = { floor: floorNum, width, height, pos: { ...start }, exit, monsters, weapons, glyphs };
+  defineGrid(world, grid);
+  return world;
 }
 function gainGlyphs(player, base) {
   const mult = Number(player.glyphMult || 1);
@@ -417,7 +479,7 @@ function awardXp(player, amount, events) {
     player.level += 1;
     player.maxHp += 5;
     player.atk += 1;
-    player.hp = Math.min(player.maxHp, player.hp + 8);
+    player.hp = Math.min(player.maxHp, player.hp + 3);
     events.log.push(`LVL ${player.level}. ATK ${player.atk}, HP ${player.hp}/${player.maxHp}.`);
   }
 }
@@ -477,6 +539,94 @@ function step(world, player, dir) {
   }
   if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
   return events;
+}
+var DIR_LIST = ["up", "down", "left", "right"];
+function isOpen(world, x, y) {
+  return y >= 0 && x >= 0 && y < world.grid.length && x < world.width && world.grid[y][x] !== "#";
+}
+function freeCell(world, x, y, occupied) {
+  return isOpen(world, x, y) && !occupied.has(y * world.width + x) && !(x === world.pos.x && y === world.pos.y);
+}
+function hasLOS(world, x0, y0, x1, y1) {
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1;
+  const sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+  let x = x0;
+  let y = y0;
+  for (let guard = 0; guard < 80; guard += 1) {
+    if (x === x1 && y === y1) return true;
+    const e2 = 2 * err;
+    if (e2 > -dy) {
+      err -= dy;
+      x += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      y += sy;
+    }
+    if (world.grid[y] && world.grid[y][x] === "#") return false;
+  }
+  return false;
+}
+function monsterBite(m, player, events) {
+  const dmg = Math.max(1, m.atk - Number(player.def || 0));
+  player.hp = Math.max(0, player.hp - dmg);
+  events.damageTaken += dmg;
+  if (player.hp <= 0) events.died = true;
+  events.log.push(`${m.name} bites for ${dmg}.`);
+  return dmg;
+}
+function greedyStep(world, m, px, py, occupied) {
+  const ddx = px - m.x;
+  const ddy = py - m.y;
+  const order = Math.abs(ddx) >= Math.abs(ddy) ? [[Math.sign(ddx), 0], [0, Math.sign(ddy)]] : [[0, Math.sign(ddy)], [Math.sign(ddx), 0]];
+  for (const [sx, sy] of order) {
+    if (!sx && !sy) continue;
+    if (freeCell(world, m.x + sx, m.y + sy, occupied)) return { x: m.x + sx, y: m.y + sy };
+  }
+  return null;
+}
+function patrolStep(world, m, occupied) {
+  const dirs = [m.dir, ...DIR_LIST.filter((d) => d !== m.dir)];
+  for (const d of dirs) {
+    const mv = DIRS[d];
+    if (!mv) continue;
+    if (freeCell(world, m.x + mv.dx, m.y + mv.dy, occupied)) return { x: m.x + mv.dx, y: m.y + mv.dy, dir: d };
+  }
+  return null;
+}
+function monsterTurn(world, player, events, filter) {
+  const px = world.pos.x;
+  const py = world.pos.y;
+  const occupied = /* @__PURE__ */ new Set();
+  for (const m of world.monsters) if (m.alive) occupied.add(m.y * world.width + m.x);
+  for (const m of world.monsters) {
+    if (!m.alive) continue;
+    if (filter && !filter(m)) continue;
+    const sight = m.sight || 5;
+    const adjacent = Math.abs(px - m.x) + Math.abs(py - m.y) === 1;
+    const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
+    if (adjacent && (sees || m.chasing)) {
+      m.chasing = true;
+      monsterBite(m, player, events);
+      if (m.fast && player.hp > 0) monsterBite(m, player, events);
+      if (player.hp <= 0) {
+        events.died = true;
+        return;
+      }
+      continue;
+    }
+    const target = sees ? (m.chasing = true, greedyStep(world, m, px, py, occupied)) : (m.chasing = false, patrolStep(world, m, occupied));
+    if (target) {
+      occupied.delete(m.y * world.width + m.x);
+      m.x = target.x;
+      m.y = target.y;
+      if (target.dir) m.dir = target.dir;
+      occupied.add(m.y * world.width + m.x);
+    }
+  }
 }
 
 // ../../docs/games/metagame/stages/stage2/shop.js
@@ -612,20 +762,25 @@ function createView(screenEl) {
     if (r.height > 0) chH = r.height / 2;
   }
   measure();
-  const onResize = () => {
+  let lastWorld = null;
+  const observer = typeof ResizeObserver === "function" ? new ResizeObserver(() => {
+    const pw = chW, ph = chH;
     measure();
-  };
-  window.addEventListener("resize", onResize);
+    if ((Math.abs(chW - pw) > 0.01 || Math.abs(chH - ph) > 0.01) && lastWorld) paintExplore(lastWorld);
+  }) : null;
+  if (observer) observer.observe(ruler);
   function pos(el, cx, cy, ms) {
     el.style.transition = ms ? `transform ${ms}ms ease-out` : "none";
     el.style.transform = `translate(${ORIGIN + (cx - cam.x) * chW}px, ${ORIGIN + (cy - cam.y) * chH}px)`;
   }
   function paintArena(lines) {
+    lastWorld = null;
     sprites.replaceChildren();
     mobEls.clear();
     map.innerHTML = colorize(lines);
   }
   function paintExplore(world) {
+    lastWorld = world;
     sprites.append(playerEl);
     cam.x = clamp(world.pos.x - (VIEW_W >> 1), 0, Math.max(0, world.width - VIEW_W));
     cam.y = clamp(world.pos.y - (VIEW_H >> 1), 0, Math.max(0, world.grid.length - VIEW_H));
@@ -658,7 +813,7 @@ function createView(screenEl) {
     }
     return rows;
   }
-  function reconcileSprites(world) {
+  function reconcileSprites(world, mobMs) {
     pos(playerEl, world.pos.x, world.pos.y);
     const live = /* @__PURE__ */ new Set();
     world.monsters.forEach((m, i) => {
@@ -668,10 +823,12 @@ function createView(screenEl) {
       }
       live.add(i);
       let s = mobEls.get(i);
+      let fresh = false;
       if (!s) {
         s = makeMob(m);
         mobEls.set(i, s);
         sprites.append(s.el);
+        fresh = true;
       }
       s.glyph.textContent = m.glyph;
       s.el.className = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
@@ -679,9 +836,12 @@ function createView(screenEl) {
         s.hp.hidden = false;
         renderHpBar(s.hp, m.hp, m.maxHp, 5);
       } else s.hp.hidden = true;
-      pos(s.el, m.x, m.y);
+      pos(s.el, m.x, m.y, fresh ? 0 : mobMs);
     });
     for (const i of [...mobEls.keys()]) if (!live.has(i)) dropMob(i);
+  }
+  function tickMonsters(world) {
+    reconcileSprites(world, 200);
   }
   function dropMob(i) {
     const s = mobEls.get(i);
@@ -725,10 +885,77 @@ function createView(screenEl) {
       }
     }, LUNGE_IN + 10);
   }
-  function destroy() {
-    window.removeEventListener("resize", onResize);
+  let fullMap = null;
+  function toggleFullMap(world) {
+    if (fullMap) {
+      fullMap.remove();
+      fullMap = null;
+      return;
+    }
+    if (!world || !world.grid) return;
+    fullMap = document.createElement("div");
+    fullMap.className = "s2-fullmap";
+    const cap = document.createElement("div");
+    cap.className = "s2-fullmap-cap";
+    cap.textContent = `FULL MAP (dev) — ${world.width}×${world.grid.length}, ${world.monsters.filter((m) => m.alive).length} foes · click to close`;
+    const canvas = document.createElement("canvas");
+    drawFullMap(canvas, world);
+    fullMap.append(cap, canvas);
+    fullMap.addEventListener("click", () => {
+      if (fullMap) {
+        fullMap.remove();
+        fullMap = null;
+      }
+    });
+    screenEl.appendChild(fullMap);
   }
-  return { mapEl: map, flashEl: flash, screenEl, paintExplore, paintArena, applyMove, measure, destroy };
+  function drawFullMap(canvas, world) {
+    const W = world.width;
+    const H = world.grid.length;
+    const scale = Math.min(640 / W, 440 / H, 4);
+    const dispW = Math.max(1, Math.round(W * scale));
+    const dispH = Math.max(1, Math.round(H * scale));
+    canvas.width = dispW;
+    canvas.height = dispH;
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    const off = document.createElement("canvas");
+    off.width = W;
+    off.height = H;
+    const octx = off.getContext("2d");
+    const img = octx.createImageData(W, H);
+    const d = img.data;
+    for (let y = 0; y < H; y += 1) {
+      const row = world.grid[y];
+      for (let x = 0; x < W; x += 1) {
+        const i = (y * W + x) * 4;
+        const wall = row[x] === "#";
+        d[i] = wall ? 18 : 60;
+        d[i + 1] = wall ? 14 : 46;
+        d[i + 2] = wall ? 10 : 28;
+        d[i + 3] = 255;
+      }
+    }
+    octx.putImageData(img, 0, 0);
+    ctx.drawImage(off, 0, 0, W, H, 0, 0, dispW, dispH);
+    const dot = (x, y, color, sz) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(x * scale) - (sz >> 1), Math.round(y * scale) - (sz >> 1), sz, sz);
+    };
+    for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
+    for (const g of world.glyphs) if (!g.taken) dot(g.x, g.y, "#d78bff", 3);
+    dot(world.exit.x, world.exit.y, "#7fe07f", 4);
+    for (const m of world.monsters) if (m.alive) dot(m.x, m.y, HEAVY_FOES.has(m.glyph) ? "#ff2bd0" : "#ff5a4a", 3);
+    dot(world.pos.x, world.pos.y, "#79f0ff", 5);
+  }
+  function destroy() {
+    if (observer) observer.disconnect();
+    if (fullMap) {
+      fullMap.remove();
+      fullMap = null;
+    }
+  }
+  return { mapEl: map, flashEl: flash, screenEl, paintExplore, paintArena, applyMove, tickMonsters, toggleFullMap, measure, destroy };
 }
 function key(x, y) {
   return x + "," + y;
@@ -792,8 +1019,9 @@ function renderStage2({
   const root = document.createElement("section");
   root.className = "stage2-glyph-dungeon";
   root.innerHTML = `
+    <div class="s2-board">
     <header class="s2-hud">
-      <div><strong>FLOOR <span data-field="floor"></span>/${MAX_FLOOR} - GLYPH DUNGEON</strong></div>
+      <div><strong>FLOOR <span data-field="floor"></span>/${MAX_FLOOR}</strong></div>
       <div>HP <span class="s2-hp-bar" data-field="hpbar"></span> <span data-field="hp"></span>/<span data-field="maxHp"></span></div>
       <div>LVL <span data-field="level"></span> (<span data-field="xp"></span>xp)</div>
       <div>ATK <span data-field="atk"></span></div>
@@ -801,33 +1029,36 @@ function renderStage2({
       <div>GLYPHS <span data-field="glyphs"></span></div>
     </header>
     <div class="s2-objective" data-field="objective"></div>
-    <div class="s2-screen"></div>
-    <div class="s2-legend">
-      <span class="s2-c-player">@</span> you
-      <span class="s2-c-foe">s</span> foe
-      <span class="s2-c-item">/</span> weapon
-      <span class="s2-c-glyph">%</span> glyph
-      <span class="s2-c-exit">&gt;</span> stairs
-    </div>
-    <div class="s2-boss-panel">
-      <div class="s2-boss-title">THE AMBIGUOUS EXPRESSION</div>
-      <div data-field="bossStatus"></div>
-      <div class="s2-hint" data-field="hint"></div>
+    <div class="s2-play">
+      <div class="s2-stage">
+        <div class="s2-screen"></div>
+        <div class="s2-legend">
+          <span class="s2-c-player">@</span> you
+          <span class="s2-c-foe">s</span> foe
+          <span class="s2-c-item">/</span> weapon
+          <span class="s2-c-glyph">%</span> glyph
+          <span class="s2-c-exit">&gt;</span> stairs
+        </div>
+      </div>
+      <div class="s2-controls">
+        <button type="button" data-action="help">how to play</button>
+        <button type="button" data-action="shop">glyph shop</button>
+        <button type="button" data-action="retreat">retreat (new run)</button>
+        <button type="button" data-action="search" hidden>open cipher.txt</button>
+        <button type="button" data-action="boss" hidden>challenge boss</button>
+        <button type="button" data-action="bts" hidden>open trace.bts</button>
+        <div class="s2-dpad" aria-label="move (touch)">
+          <button type="button" data-move="up" aria-label="move up">&#9650;</button>
+          <button type="button" data-move="left" aria-label="move left">&#9664;</button>
+          <button type="button" data-move="down" aria-label="move down">&#9660;</button>
+          <button type="button" data-move="right" aria-label="move right">&#9654;</button>
+        </div>
+      </div>
     </div>
     <ol class="s2-log" aria-label="combat log"></ol>
-    <div class="s2-controls">
-      <div class="s2-dpad" aria-label="move">
-        <button type="button" data-move="up" aria-label="move up">&#9650;</button>
-        <button type="button" data-move="left" aria-label="move left">&#9664;</button>
-        <button type="button" data-move="down" aria-label="move down">&#9660;</button>
-        <button type="button" data-move="right" aria-label="move right">&#9654;</button>
-      </div>
-      <button type="button" data-action="boss">challenge boss</button>
-      <button type="button" data-action="search">open cipher.txt</button>
-      <button type="button" data-action="shop">glyph shop</button>
-      <button type="button" data-action="help">how to play</button>
-      <button type="button" data-action="retreat">retreat (new run)</button>
-      <button type="button" data-action="bts" hidden>open trace.bts</button>
+    </div>
+    <div class="s2-bossmeta" hidden>
+      <span data-field="bossStatus"></span><span class="s2-hint" data-field="hint"></span>
     </div>
   `;
   host.replaceChildren(root);
@@ -836,6 +1067,7 @@ function renderStage2({
   const log = root.querySelector(".s2-log");
   let flashTimer = null;
   let overlay = null;
+  let monsterClocks = [];
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
@@ -860,6 +1092,9 @@ function renderStage2({
       item.textContent = line;
       return item;
     }));
+    const atBoss = state.run.boss.reached && !state.run.boss.defeated;
+    root.querySelector('[data-action="search"]').hidden = !atBoss;
+    root.querySelector('[data-action="boss"]').hidden = !atBoss;
     root.querySelector('[data-action="bts"]').hidden = !state.run.boss.defeated;
   }
   function paintWorld() {
@@ -880,7 +1115,8 @@ function renderStage2({
   }
   function move(dir) {
     if (overlay || state.run.boss.reached || state.run.boss.defeated) return;
-    const events = step(state.run.world, state.run.entity, dir);
+    const world = state.run.world;
+    const events = step(world, state.run.entity, dir);
     for (const line of events.log) appendLog(state, line);
     if (events.damageTaken > 0) flashDamage(events.died);
     if (events.died) {
@@ -965,15 +1201,60 @@ function renderStage2({
     persistAndPaint();
   });
   repaint();
+  startMonsterClocks();
+  function dev(id) {
+    const e = state.run.entity;
+    if (id === "heal") e.hp = e.maxHp;
+    else if (id === "atk") e.atk += 5;
+    else if (id === "lvl") {
+      e.level += 1;
+      e.maxHp += 5;
+      e.atk += 1;
+      e.hp = e.maxHp;
+    } else if (id === "glyphs") e.glyphsThisRun = Number(e.glyphsThisRun || 0) + 1e3;
+    else if (id === "map") {
+      view.toggleFullMap(state.run.world);
+      return;
+    }
+    if (typeof save === "function") save();
+    paintHud();
+  }
   return {
     repaint,
+    dev,
     destroy() {
       window.removeEventListener("keydown", onKey);
       if (flashTimer) clearTimeout(flashTimer);
+      stopMonsterClocks();
       view.destroy();
       root.remove();
     }
   };
+  function tickBucket(bucket) {
+    if (overlay || state.run.boss.reached || state.run.boss.defeated) return;
+    const world = state.run.world;
+    if (!world || !world.grid) return;
+    const events = { moved: false, log: [], damageTaken: 0, died: false };
+    monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
+    for (const line of events.log) appendLog(state, line);
+    if (events.damageTaken > 0) flashDamage(events.died);
+    if (events.died) {
+      appendLog(state, "@ was unparsed. run reset — banked glyphs survive.");
+      resetRun(state, { banked: true, death: true });
+      persistAndPaint();
+      return;
+    }
+    view.tickMonsters(world);
+    paintHud();
+  }
+  function startMonsterClocks() {
+    stopMonsterClocks();
+    monsterClocks = [400, 500, 600, 700, 800].map((ms, b) => setInterval(() => tickBucket(b), ms));
+  }
+  function stopMonsterClocks() {
+    for (const id of monsterClocks) clearInterval(id);
+    monsterClocks = [];
+  }
   function challengeBoss() {
     state.run.boss.reached = true;
     const lock = getBossLockState({ actions, state });
@@ -997,6 +1278,8 @@ function ensureWorld(state) {
   if (!run.seed) run.seed = `s2-run${state.meta.runCount || 0}`;
   if (!run.world || run.world.floor !== run.floor || !Array.isArray(run.world.monsters)) {
     run.world = buildFloor(run.seed, run.floor);
+  } else if (!run.world.grid) {
+    attachGrid(run.world, run.seed, run.world.floor);
   }
 }
 function descend(state) {
@@ -1143,7 +1426,15 @@ var stageMeta = {
   slug: "glyph-dungeon",
   name: "Glyph Dungeon",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: [
+    { id: "heal", label: "Full HP" },
+    { id: "atk", label: "+5 ATK" },
+    { id: "lvl", label: "+1 LVL" },
+    { id: "glyphs", label: "+1k glyphs" },
+    { id: "map", label: "Zoom out (full map)" }
+  ]
 };
 function defaultState2(context) {
   return defaultState(context);
@@ -1169,6 +1460,10 @@ function mountStage(ctx) {
   });
   view = renderStage2({ ...ctx, state });
   return {
+    devControls: stageMeta.devControls,
+    dev(id) {
+      if (view && typeof view.dev === "function") view.dev(id);
+    },
     destroy() {
       unsubscribe();
       if (view && typeof view.destroy === "function") view.destroy();

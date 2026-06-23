@@ -74,8 +74,17 @@ export function createView(screenEl) {
     if (r.height > 0) chH = r.height / 2;
   }
   measure();
-  const onResize = () => { measure(); };
-  window.addEventListener("resize", onResize);
+  // The stage's styles.css is injected as an async <link>, so the first measure() above can run
+  // BEFORE it applies — when the ruler is an unstyled full-width block and chW is wildly wrong,
+  // flinging every sprite off the map. Re-measure and re-project whenever the ruler's box changes
+  // (stylesheet load, font swap, font-size media query), which is exactly when chW/chH go valid.
+  let lastWorld = null;
+  const observer = typeof ResizeObserver === "function" ? new ResizeObserver(() => {
+    const pw = chW, ph = chH;
+    measure();
+    if ((Math.abs(chW - pw) > 0.01 || Math.abs(chH - ph) > 0.01) && lastWorld) paintExplore(lastWorld);
+  }) : null;
+  if (observer) observer.observe(ruler);
 
   function pos(el, cx, cy, ms) {
     el.style.transition = ms ? `transform ${ms}ms ease-out` : "none";
@@ -84,6 +93,7 @@ export function createView(screenEl) {
 
   // ── Boss arena: hand-authored art, no camera/sprites ──────────────────────────────────────
   function paintArena(lines) {
+    lastWorld = null;
     sprites.replaceChildren();
     mobEls.clear();
     map.innerHTML = colorize(lines);
@@ -91,6 +101,7 @@ export function createView(screenEl) {
 
   // ── Exploration: terrain slice + reconciled sprites ───────────────────────────────────────
   function paintExplore(world) {
+    lastWorld = world;
     sprites.append(playerEl);
     cam.x = clamp(world.pos.x - (VIEW_W >> 1), 0, Math.max(0, world.width - VIEW_W));
     cam.y = clamp(world.pos.y - (VIEW_H >> 1), 0, Math.max(0, world.grid.length - VIEW_H));
@@ -119,20 +130,28 @@ export function createView(screenEl) {
     return rows;
   }
 
-  function reconcileSprites(world) {
+  // Reposition all sprites. `mobMs` glides monsters into place (used by the real-time monster
+  // clocks); newly-appeared sprites always snap so they don't fly in from the origin.
+  function reconcileSprites(world, mobMs) {
     pos(playerEl, world.pos.x, world.pos.y);
     const live = new Set();
     world.monsters.forEach((m, i) => {
       if (!m.alive || !inView(m.x, m.y)) { dropMob(i); return; }
       live.add(i);
       let s = mobEls.get(i);
-      if (!s) { s = makeMob(m); mobEls.set(i, s); sprites.append(s.el); }
+      let fresh = false;
+      if (!s) { s = makeMob(m); mobEls.set(i, s); sprites.append(s.el); fresh = true; }
       s.glyph.textContent = m.glyph;
       s.el.className = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
       if (m.hp < m.maxHp) { s.hp.hidden = false; renderHpBar(s.hp, m.hp, m.maxHp, 5); } else s.hp.hidden = true;
-      pos(s.el, m.x, m.y);
+      pos(s.el, m.x, m.y, fresh ? 0 : mobMs);
     });
     for (const i of [...mobEls.keys()]) if (!live.has(i)) dropMob(i);
+  }
+
+  // Sprite-only refresh after a real-time monster clock fires (terrain/camera are unchanged).
+  function tickMonsters(world) {
+    reconcileSprites(world, 200);
   }
 
   function dropMob(i) {
@@ -177,11 +196,66 @@ export function createView(screenEl) {
     }, LUNGE_IN + 10);
   }
 
-  function destroy() {
-    window.removeEventListener("resize", onResize);
+  // Dev "zoom out": a non-interactive minimap of the WHOLE floor (terrain + entity dots) so we can
+  // eyeball generation/tuning. Terrain is drawn 1px/cell on an offscreen canvas then scaled.
+  let fullMap = null;
+  function toggleFullMap(world) {
+    if (fullMap) { fullMap.remove(); fullMap = null; return; }
+    if (!world || !world.grid) return;
+    fullMap = document.createElement("div");
+    fullMap.className = "s2-fullmap";
+    const cap = document.createElement("div");
+    cap.className = "s2-fullmap-cap";
+    cap.textContent = `FULL MAP (dev) — ${world.width}×${world.grid.length}, ${world.monsters.filter((m) => m.alive).length} foes · click to close`;
+    const canvas = document.createElement("canvas");
+    drawFullMap(canvas, world);
+    fullMap.append(cap, canvas);
+    fullMap.addEventListener("click", () => { if (fullMap) { fullMap.remove(); fullMap = null; } });
+    screenEl.appendChild(fullMap);
   }
 
-  return { mapEl: map, flashEl: flash, screenEl, paintExplore, paintArena, applyMove, measure, destroy };
+  function drawFullMap(canvas, world) {
+    const W = world.width;
+    const H = world.grid.length;
+    const scale = Math.min(640 / W, 440 / H, 4);
+    const dispW = Math.max(1, Math.round(W * scale));
+    const dispH = Math.max(1, Math.round(H * scale));
+    canvas.width = dispW;
+    canvas.height = dispH;
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    const off = document.createElement("canvas");
+    off.width = W; off.height = H;
+    const octx = off.getContext("2d");
+    const img = octx.createImageData(W, H);
+    const d = img.data;
+    for (let y = 0; y < H; y += 1) {
+      const row = world.grid[y];
+      for (let x = 0; x < W; x += 1) {
+        const i = (y * W + x) * 4;
+        const wall = row[x] === "#";
+        d[i] = wall ? 18 : 60; d[i + 1] = wall ? 14 : 46; d[i + 2] = wall ? 10 : 28; d[i + 3] = 255;
+      }
+    }
+    octx.putImageData(img, 0, 0);
+    ctx.drawImage(off, 0, 0, W, H, 0, 0, dispW, dispH);
+    const dot = (x, y, color, sz) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(x * scale) - (sz >> 1), Math.round(y * scale) - (sz >> 1), sz, sz);
+    };
+    for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
+    for (const g of world.glyphs) if (!g.taken) dot(g.x, g.y, "#d78bff", 3);
+    dot(world.exit.x, world.exit.y, "#7fe07f", 4);
+    for (const m of world.monsters) if (m.alive) dot(m.x, m.y, HEAVY_FOES.has(m.glyph) ? "#ff2bd0" : "#ff5a4a", 3);
+    dot(world.pos.x, world.pos.y, "#79f0ff", 5);
+  }
+
+  function destroy() {
+    if (observer) observer.disconnect();
+    if (fullMap) { fullMap.remove(); fullMap = null; }
+  }
+
+  return { mapEl: map, flashEl: flash, screenEl, paintExplore, paintArena, applyMove, tickMonsters, toggleFullMap, measure, destroy };
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────────────────────
