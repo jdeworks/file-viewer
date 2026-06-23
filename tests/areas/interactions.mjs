@@ -260,6 +260,12 @@ export async function run(ctx) {
   // The banner element + its Restore listener are static/reused across files; a stale closure used
   // to make Restore on a later file write the first file's text. Drive both opens in ONE page
   // session (direct open, no harness reload) so the reused listener is actually exercised. ──
+  // We dispatch the click in-page (el.click()) rather than page.click(): the thing under test is
+  // the reused Restore LISTENER, not pointer hit-testing. In the full suite (run after ~10 areas)
+  // the split-view layout is still settling when the banner appears, so Playwright's actionability
+  // hit-test intermittently sees a transient interceptor (divider / preview iframe / tree head) and
+  // retries to timeout — a test-harness artifact, not a real clickability bug (in every settled
+  // state the button is cleanly on top). el.click() fires the listener regardless of that churn.
   await page.goto(origin, { waitUntil: 'load' });
   await waitForFv();
   await page.evaluate(() => {
@@ -270,11 +276,11 @@ export async function run(ctx) {
   await page.evaluate((l) => window.__fv.openExampleByLabel(l), 'Welcome.md');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
   await page.waitForSelector('#autosaveBanner:not([hidden])', { timeout: 15000 });
-  await page.click('#autosaveBanner .autosave-restore');
+  await page.$eval('#autosaveBanner .autosave-restore', (el) => el.click());
   const restoredWelcome = await page.evaluate(() => window.__fv.state.rawview.getValue());
   await page.evaluate((l) => window.__fv.openExampleByLabel(l), 'Sample.txt');
   await page.waitForSelector('#autosaveBanner:not([hidden])', { timeout: 15000 });
-  await page.click('#autosaveBanner .autosave-restore');
+  await page.$eval('#autosaveBanner .autosave-restore', (el) => el.click());
   const restoredSample = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (restoredWelcome.includes('AUTOSAVE_WELCOME_MARKER') && restoredSample.includes('AUTOSAVE_SAMPLE_MARKER') && !restoredSample.includes('AUTOSAVE_WELCOME_MARKER'))
     pass('autosave Restore applies the current file’s save, not the first-seen one');

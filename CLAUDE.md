@@ -49,8 +49,12 @@ From the main checkout:
 
 ### Merge back and forth (any lane → dev) — only when the user says so
 commit on the lane branch → `git fetch origin` → merge `origin/dev` in (only
-`docs/asset-manifest.json` should conflict; resolve by regenerating with
-`node scripts/gen-asset-manifest.mjs`, never hand-edit) → `git push origin HEAD:dev`.
+`docs/asset-manifest.json` and `docs/sw.js` should conflict; resolve BOTH by regenerating with
+`node scripts/gen-asset-manifest.mjs`, never hand-edit, then `git add` them) → `git push origin
+HEAD:dev`. The generator overwrites `asset-manifest.json` wholesale and **auto-collapses the
+`sw.js` VERSION-line conflict** (it strips the `<<<<<<< / ======= / >>>>>>>` markers and stamps the
+fresh hash); if it instead throws "conflict NOT confined to the VERSION line", the `sw.js` conflict
+is real — resolve that block by hand, then re-run.
 
 ### Cleaning up a finished lane (general only), once fully merged to dev
 

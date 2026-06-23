@@ -91,9 +91,40 @@ await writeFile(join(DOCS, 'asset-manifest.json'), JSON.stringify({ version, ass
 // also names the per-version cache. sw.js is excluded from the manifest (and from the version hash),
 // so rewriting it here can never change `version` — no chicken-and-egg.
 const SW = join(DOCS, 'sw.js');
-const swText = await readFile(SW, 'utf8');
+const swOriginal = await readFile(SW, 'utf8');
+let swText = swOriginal;
+
+// Self-heal a merge conflict around the VERSION line. sw.js is regenerated on every deploy, so a
+// lane→dev merge ALWAYS conflicts here. The documented resolution is "just run this generator" — for
+// that to be sufficient, collapse any conflict block whose two sides are ONLY VERSION lines down to a
+// single line, which the stamp below rewrites to the fresh hash. A conflict containing anything other
+// than VERSION lines is NOT safe to auto-resolve, so fail loudly rather than commit half-merged JS
+// (a sw.js with literal <<<<<<< markers is broken JS that bricks the service worker). Handles diff3
+// style too (the optional `|||||||` base section). Idempotent on a clean file (no markers → no-op).
+if (/^<{7}/m.test(swText)) {
+  const VERSION_LINE = /^const VERSION = '[^']*';/;
+  const stampedLine = `const VERSION = '${version}';   // stamped by scripts/gen-asset-manifest.mjs`;
+  const out = [];
+  let inConflict = false, conflictLines = [];
+  for (const line of swText.split('\n')) {
+    if (/^<{7}/.test(line)) { inConflict = true; conflictLines = []; continue; }   // <<<<<<< ours
+    if (inConflict && /^(={7}|\|{7})/.test(line)) continue;                        // ======= / ||||||| separators
+    if (inConflict && /^>{7}/.test(line)) {                                        // >>>>>>> theirs — close block
+      const bad = conflictLines.find((l) => l.trim() !== '' && !VERSION_LINE.test(l));
+      if (bad) throw new Error('gen-asset-manifest: sw.js has a merge conflict NOT confined to the ' +
+        'VERSION line — resolve it by hand, then re-run. Offending line: ' + bad.trim());
+      out.push(stampedLine);                                                       // collapse to one good line
+      inConflict = false; conflictLines = [];
+      continue;
+    }
+    if (inConflict) { conflictLines.push(line); continue; }
+    out.push(line);
+  }
+  swText = out.join('\n');
+}
+
 const swStamped = swText.replace(/^const VERSION = '[^']*';.*$/m, `const VERSION = '${version}';   // stamped by scripts/gen-asset-manifest.mjs`);
-if (swStamped !== swText) await writeFile(SW, swStamped);
+if (swStamped !== swOriginal) await writeFile(SW, swStamped);
 
 console.log('asset-manifest.json: ' + assets.length + ' assets, ' + bundles.length + ' bundles, version ' + version);
 console.log('sw.js: VERSION stamped to ' + version);
