@@ -47,7 +47,27 @@ export async function run(ctx) {
   if (snakeCanvasStill && ((wallsState.checked && wallsState.ls === '1') || (!wallsState.checked && wallsState.ls === '0')))
     pass('Snake Walls toggle persists and restarts cleanly');
   else fail('Snake walls toggle inconsistent: ' + JSON.stringify(wallsState) + ' canvas=' + !!snakeCanvasStill);
-  await page.evaluate(() => { try { localStorage.removeItem('fv:snake:walls'); localStorage.removeItem('fv:snake:boost'); } catch {} });
+  // Field-size selector resizes the grid; with walls on they must be connected AND fully reachable.
+  const sizeProbe = await page.evaluate(() => {
+    const sel = document.querySelector('.snake-opt-size');
+    sel.value = 'large';
+    sel.dispatchEvent(new Event('change'));
+    const api = document.querySelector('.snake-wrap').__snake;
+    const info = api.info();
+    const ws = api.walls();
+    const set = new Set(ws.map((w) => w.x + ',' + w.y));
+    // "connected" = every wall cell touches at least one orthogonal wall neighbour (no lone cells)
+    const connected = ws.every((w) =>
+      set.has((w.x + 1) + ',' + w.y) || set.has((w.x - 1) + ',' + w.y)
+      || set.has(w.x + ',' + (w.y + 1)) || set.has(w.x + ',' + (w.y - 1)));
+    return { grid: info.grid, reachable: info.reachable, wallCount: info.wallCount, connected,
+      ls: localStorage.getItem('fv:snake:size'), cw: document.querySelector('.snake-canvas').width };
+  });
+  if (sizeProbe.grid === 28 && sizeProbe.ls === 'large' && sizeProbe.reachable
+      && sizeProbe.wallCount > 0 && sizeProbe.connected)
+    pass('Snake: field size resizes grid + walls are connected and fully reachable');
+  else fail('Snake size/walls: ' + JSON.stringify(sizeProbe));
+  await page.evaluate(() => { try { localStorage.removeItem('fv:snake:walls'); localStorage.removeItem('fv:snake:boost'); localStorage.removeItem('fv:snake:size'); } catch {} });
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
