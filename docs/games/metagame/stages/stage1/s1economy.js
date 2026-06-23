@@ -71,6 +71,8 @@ export function maxAffordable(bits, t, owned) {
   for (let i = 0; i < 1000 && maxN > 0 && !gte(bits, totalCost(t, owned, maxN)); i++) maxN--;
   for (let i = 0; i < 1000 && gte(bits, totalCost(t, owned, maxN + 1)); i++) maxN++;
 
+  // Capped tiers (e.g. Quantum Tap) can never be bought past their max level.
+  if (t.maxLevel != null) maxN = Math.min(maxN, Math.max(0, t.maxLevel - owned));
   return Math.max(0, maxN);
 }
 
@@ -94,16 +96,40 @@ export function achievMult(state) {
 // 3. Click power (§1.4, §2.1) — returns plain number (scalar bits/tap)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// clickPower = (1 + owned[s1-mult]) × (1 + owned[s1-quantum]) × globalPull × achievMult.
-// The constant 1 is the base 1 bit/tap; s1-mult adds +1 per level and s1-quantum multiplies.
+// Quantum Tap (§ reworked): a capped diminishing-returns node. Each Compute tap additionally yields a
+// PERCENTAGE of the Bit Box's current bits/sec — 24% at lvl 1, rising to exactly +200% at the max
+// level — so active clicking scales with your idle economy instead of paying a flat 5/10/… amount.
+export const QUANTUM_MAX_LEVEL = 10;
+export function quantumPct(level) {
+  const L = Math.min(Math.max(level || 0, 0), QUANTUM_MAX_LEVEL);
+  if (L <= 0) return 0;
+  return 2 * (1 - Math.pow(1 - L / QUANTUM_MAX_LEVEL, 1.2));   // 0.24, 0.47, … → exactly 2.0 at max
+}
+
+// Bit Box effective output in bits/sec: per-cycle payout over its cycle time (sped up by the Box
+// Operator manager when hired). Drives the Quantum Tap click bonus. Returns a plain number.
+export function bitBoxPerSec(state, cfg) {
+  const box = (cfg.tiers || []).find((t) => t.id === 's1-box');
+  if (!box) return 0;
+  const payout = toNumber(timedPayout(state, cfg, 's1-box'));
+  if (payout <= 0) return 0;
+  const mgr = (cfg.managers || []).find((m) => m.manages === 's1-box');
+  const lvl = mgr ? (((state.managers || {})[mgr.id]) || {}).level || 0 : 0;
+  const cycleMs = lvl > 0 ? autoInterval(box.duration_ms, lvl) : box.duration_ms;
+  return cycleMs > 0 ? payout / (cycleMs / 1000) : 0;
+}
+
+// clickPower = (1 + owned[s1-mult]) × globalPull × achievMult  +  Quantum Tap bonus.
+// The constant 1 is the base 1 bit/tap; s1-mult adds +1 per level. Quantum adds a % of Bit Box/sec.
 export function clickPower(state, cfg) {
   const owned = state.owned || {};
   const additive = 1 + (owned['s1-mult'] || 0);
-  // Quantum Tap: multiplicative ×(1 + owned[s1-quantum]).
-  const quantum = 1 + (owned['s1-quantum'] || 0);
   const pull = globalPull(state);
   const ach = achievMult(state);
-  return additive * quantum * pull * ach;
+  const base = additive * pull * ach;
+  // Quantum bonus already carries pull/ach via timedPayout inside bitBoxPerSec — don't re-multiply.
+  const quantumBonus = quantumPct(owned['s1-quantum']) * bitBoxPerSec(state, cfg);
+  return base + quantumBonus;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -167,7 +193,10 @@ export function timedProduction(state, cfg, tierId) {
   if (!t || !t.produces) return null;
   const ownedCount = (state.owned || {})[tierId] || 0;
   if (ownedCount === 0) return null;
-  const amount = (t.produces.perOwned || 1) * ownedCount;
+  // Gravity multiplies builder OUTPUT too: at ×3 pull a single Signal Booster assembles 3 Bit Boxes
+  // per cycle (and a Core Cluster 3 Boosters, etc.) — so a prestige speeds the whole chain, not just
+  // the bit payouts. Rounded to whole units.
+  const amount = Math.round((t.produces.perOwned || 1) * ownedCount * globalPull(state));
   return { targetId: t.produces.targetId, amount };
 }
 
@@ -290,6 +319,8 @@ export function buyTier(state, cfg, tierId, requestedN, save) {
   } else {
     n = requestedN;
   }
+  // Respect a per-tier level cap (Quantum Tap maxes at QUANTUM_MAX_LEVEL).
+  if (t.maxLevel != null) n = Math.min(n, Math.max(0, t.maxLevel - k));
   if (n <= 0) return 0;
 
   let cost = totalCost(t, k, n);
@@ -313,13 +344,14 @@ export function buyTier(state, cfg, tierId, requestedN, save) {
 // 9. Pull gain (§8.3)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Pull gained from a prestige. Input: totalBits as BigNum at time of reset.
-//   pullGain = 1 + floor(log10(max(n, 1e6)) / 3 − 2) × 0.5
-//   clamped to [0.1, PULL_GAIN_CAP] (PULL_GAIN_CAP = 50).
+// Gravitational Pull gained from a prestige, scaled by how far PAST the unlock point you reached.
+//   ratio = totalBits / RESET_UNLOCK_BITS   (≥ 1 — a reset is gated at the unlock point)
+//   gain  = 2 + (log10 ratio)^1.92          → 2.0 at unlock, 2.1 at ×2, 3.0 at ×10, climbing.
+// Pushed multiplicatively into pullFactors, so repeated resets compound (globalPull = Π factors).
+// No upper cap — the further past unlock you push, the bigger the gain. Input: totalBits BigNum.
+export const RESET_UNLOCK_BITS = 1e18;   // matches stage1.js RESET_THRESHOLD { m: 1, e: 18 }
 export function pullGain(totalBitsAtReset) {
   const n = toNumber(totalBitsAtReset);
-  const logVal = Math.log10(Math.max(n, 1e6));
-  const gain = 1 + Math.max(0, Math.floor(logVal / 3 - 2)) * 0.5;
-  const PULL_GAIN_CAP = 50;
-  return Math.max(0.1, Math.min(gain, PULL_GAIN_CAP));
+  const ratio = Math.max(1, n / RESET_UNLOCK_BITS);
+  return Math.max(2, 2 + Math.pow(Math.log10(ratio), 1.92));
 }

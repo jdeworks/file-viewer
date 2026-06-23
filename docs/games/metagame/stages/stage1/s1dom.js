@@ -6,6 +6,9 @@
 // unchanged, so a steady state produces zero DOM writes. Shared by stage1.js and s1shop.js.
 
 export function setText(el, s) { if (el && el.textContent !== s) el.textContent = s; }
+// Guarded class toggle: only touches the DOM when the class actually needs to flip (so a steady
+// 100ms tick over an unchanged row performs zero classList mutations).
+export function setClass(el, name, on) { if (el && el.classList.contains(name) !== !!on) el.classList.toggle(name, !!on); }
 export function setHtml(el, s) { if (el && el.innerHTML !== s) el.innerHTML = s; }
 export function setHidden(el, b) { if (el && el.hidden !== b) el.hidden = b; }
 export function setDisabled(el, b) { if (el && el.disabled !== b) el.disabled = b; }

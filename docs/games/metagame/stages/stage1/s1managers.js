@@ -5,7 +5,7 @@ import { netRate, managerRunCost, managerRunCostAtLevel,
 import { fromNumber, sub, gte, toDisplay } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements } from './s1achievements.js';
-import { setHtml, bindActivate } from './s1dom.js';
+import { setHtml, setClass, bindActivate } from './s1dom.js';
 
 const MGR_COUNTS = [1, 10, 100, 'max'];
 
@@ -152,7 +152,7 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
     const rateNeg = rate < 0;
     const net = panelsEl.querySelector('.mg-mgr-net');
     if (net) {
-      net.classList.toggle('mg-s1-neg', rateNeg);
+      setClass(net, 'mg-s1-neg', rateNeg);
       const strong = net.querySelector('strong');
       if (strong) {
         const v = (rateNeg ? '-' : '') + toDisplay(fromNumber(Math.abs(rate))) + '/s';
@@ -184,13 +184,13 @@ export function createManagersController({ panelsEl, state, cfg, tiers, save, pa
         const n = displayLevels(mgr);
         const can = n >= 1 && gte(state.bits, managerTotalCost(mgr, ms.level, n, cfg));
         // Visual-only lock (no native `disabled` — toggling it every tick swallows mid-press clicks).
-        btn.classList.toggle('mg-buy-locked', !can);
+        setClass(btn, 'mg-buy-locked', !can);
       }
       const runEl = card.querySelector('.mg-mgr-runcost');
       if (runEl) {
         const v = toDisplay(fromNumber(managerRunCost(mgr.id, state, cfg)));
         if (runEl.textContent !== v) runEl.textContent = v;
-        runEl.classList.toggle('mg-mgr-runcost-neg', rateNeg);
+        setClass(runEl, 'mg-mgr-runcost-neg', rateNeg);
       }
     });
   }

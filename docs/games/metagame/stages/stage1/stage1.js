@@ -12,7 +12,7 @@ import { renderAchievementsPanel as renderS1AchPanel } from './s1achpanel.js';
 import { createShopController } from './s1shop.js';
 import {
   netRate, passiveRate, managerCostPerSec, clickPower as economyClickPower,
-  timedPayout, timedProduction, totalCost,
+  timedPayout, timedProduction, totalCost, globalPull,
 } from './s1economy.js';
 import { fromNumber, add, sub, mulScalar, gte, toDisplay } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
@@ -83,6 +83,7 @@ export function renderStage1(ctx) {
   host.innerHTML =
     '<div class="mg-wrap mg-s1">'
     + '<div class="mg-s1-hud" hidden>'
+    + '  <span class="mg-s1-grav" hidden>🌀 ×1.0</span>'
     + '  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span>'
     + '</div>'
     + '<div class="mg-s1-help" hidden></div>'
@@ -105,6 +106,7 @@ export function renderStage1(ctx) {
   const panelsEl = $('.mg-s1-panels');
   const hudEl = $('.mg-s1-hud');
   const scoreValEl = $('.mg-s1-score-val');
+  const gravEl = $('.mg-s1-grav');
   const helpEl = $('.mg-s1-help');
 
   // ── Score HUD + helper buttons (progressive disclosure) ──────────────────────
@@ -129,13 +131,25 @@ export function renderStage1(ctx) {
     if (open) renderHelp();
     setHidden(helpEl, !open);
   }
+  let lastScoreAt = 0;
   function updateHud() {
     // Once unlocked the score stays visible — the 'score-unlock' milestone persists across a prestige
     // reset (which zeroes totalBits), so gate on it rather than the live total. The score chip is an
     // absolute top-right overlay (see games.css), so revealing it never reflows the play area.
     const scoreOn = (state.milestones || []).includes('score-unlock') || bigToNum(state.totalBits) >= 400;
     setHidden(hudEl, !scoreOn);
-    if (scoreOn) setText(scoreValEl, toDisplay(fromNumber(Math.floor(bigToNum(state.bits)))));
+    if (!scoreOn) return;
+    // Gravitational Pull chip — shown once a prestige has earned pull (×>1); guarded so it only
+    // writes when the value changes.
+    const grav = globalPull(state);
+    if (grav > 1.0001) { setText(gravEl, '🌀 ×' + grav.toFixed(1)); setHidden(gravEl, false); }
+    else setHidden(gravEl, true);
+    // Bits score is recomputed at most every 0.25s (the 100ms tick would otherwise rewrite it 10×/s).
+    const now = Date.now();
+    if (now - lastScoreAt >= 250) {
+      lastScoreAt = now;
+      setText(scoreValEl, toDisplay(fromNumber(Math.floor(bigToNum(state.bits)))));
+    }
   }
 
   // ── Pixel-reveal grid (column-major fill order) ────────────────────────────

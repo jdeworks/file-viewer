@@ -10,13 +10,13 @@
 // hooks: { onEarn, onAfterBuy, onBoss, canFightBoss, isBeaten } — wiring back to the orchestrator.
 
 import {
-  netRate, timedPayout, timedProduction, totalCost, maxAffordable, buyTier,
+  netRate, timedPayout, timedProduction, totalCost, maxAffordable, buyTier, quantumPct, autoInterval,
   globalPull, achievMult,
 } from './s1economy.js';
 import { fromNumber, gte, toDisplay, toNumber } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements } from './s1achievements.js';
-import { setText, setHidden, setHtml, bigToNum, bindActivate, bindHoldRepeat } from './s1dom.js';
+import { setText, setHidden, setHtml, setClass, bigToNum, bindActivate, bindHoldRepeat } from './s1dom.js';
 
 // Buy-count selector options for the shop.
 const BUY_COUNTS = [1, 10, 100, 'max'];
@@ -75,24 +75,24 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
     return '+' + toDisplay(fromNumber(toNumber(timedPayout(state, cfg, t.id)) * perSec)) + ' bits/s';
   }
 
-  // Live, effect-revealing blurb for the tiers whose benefit is otherwise invisible (global/click
-  // multipliers + the passive array). Shows the CURRENT effect so buying one visibly moves a number;
-  // a short number is rounded to 1 decimal, large totals use the compact suffix display.
-  const short = (n) => (n >= 100 ? toDisplay(fromNumber(n)) : String(Math.round(n * 10) / 10));
+  // Live, effect-revealing blurb for the tiers whose benefit is otherwise invisible (Neural global
+  // multiplier, Quantum tap %). Shows the CURRENT effect so buying one visibly moves a number.
   function blurbFor(t) {
     const owned = state.owned || {};
     switch (t.id) {
-      case 's1-mult':
-        return '+' + fmtN(1 + (owned['s1-mult'] || 0)) + ' bits / tap';
-      case 's1-array': {
-        const n = owned['s1-array'] || 0;
-        if (n < 1) return '+' + (t.rate || 0) + ' bits/s each';
-        return '+' + short(n * (t.rate || 0) * globalPull(state) * achievMult(state)) + ' bits/s';
+      case 's1-mult': {
+        // Show the RESULTING per-tap bits (multiplier × gravity × achievements), not the raw base, so
+        // a prestige visibly bumps it — just the final number, no breakdown.
+        const tap = (1 + (owned['s1-mult'] || 0)) * globalPull(state) * achievMult(state);
+        return '+' + fmtN(tap) + ' bits / tap';
       }
       case 's1-neural':
         return '×' + (1 + 0.25 * (owned['s1-neural'] || 0)).toFixed(2) + ' to all timers';
-      case 's1-quantum':
-        return '×' + (1 + (owned['s1-quantum'] || 0)) + ' tap power';
+      case 's1-quantum': {
+        const lvl = owned['s1-quantum'] || 0;
+        const pct = quantumPct(lvl > 0 ? lvl : 1);   // preview lvl 1 when not yet owned
+        return '+' + Math.round(pct * 100) + '% Bit Box/s per tap';
+      }
       default:
         return t.desc || t.name;
     }
@@ -212,28 +212,46 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       setText(row.querySelector('.mg-owned'), '×' + fmtN(owned));
       // Effect-revealing blurb updates live (Neural Net ×1.00→×1.25, etc.) so a purchase shows.
       setText(row.querySelector('.mg-buy-blurb'), blurbFor(t));
-      // Highlight the active count selector (classList.toggle is idempotent).
+      // Highlight the active count selector (guarded so a steady tick writes nothing).
       const sel = countFor(t.id);
       row.querySelectorAll('.mg-s1-buyn').forEach((b) => {
         const v = b.dataset.n === 'max' ? 'max' : Number(b.dataset.n);
-        b.classList.toggle('mg-mult-on', String(v) === String(sel));
+        setClass(b, 'mg-mult-on', String(v) === String(sel));
       });
+      const buyBtn = row.querySelector('.mg-s1-buybtn');
+      // Capped tier sitting at its ceiling (Quantum Tap maxLevel) — show MAX LEVEL, nothing to buy.
+      if (t.maxLevel != null && owned >= t.maxLevel) {
+        setText(buyBtn, 'MAX LEVEL');
+        setClass(buyBtn, 'mg-buy-locked', true);
+        return;
+      }
       // For MAX, show the price of 1 when you can't afford even one (so the cost is always visible).
       const maxN = sel === 'max' ? maxAffordable(state.bits, t, owned) : null;
       const displayN = sel === 'max' ? Math.max(1, maxN) : sel;
       const cost = totalCost(t, owned, displayN);
-      const buyBtn = row.querySelector('.mg-s1-buybtn');
       const label = sel === 'max' ? 'MAX' : '×' + displayN;
       setText(buyBtn, 'Buy ' + label + ' — ' + toDisplay(cost));
       // Locked state is VISUAL only (.mg-buy-locked). Don't toggle the native `disabled` attribute:
       // the 100ms tick repaints this, and a button that flips disabled mid-press swallows the click.
       // An unaffordable tap is a harmless no-op anyway — doBuy/buyTier guard the actual purchase.
       const affordable = sel === 'max' ? (maxN >= 1) : gte(state.bits, cost);
-      buyBtn.classList.toggle('mg-buy-locked', !affordable);
+      setClass(buyBtn, 'mg-buy-locked', !affordable);
     });
   }
 
-  // Paints the timed-row state: background fill + the "▸ +reward" / "+reward · Xs" label.
+  // Interval (ms) a hired, non-paused manager auto-fires this tier at, or null if none. A row driven
+  // faster than the eye is shown as a STABLE "always full" bar instead of flickering its progress
+  // through the real (micro-second) active/inactive cycle.
+  function autoFireMs(t) {
+    const mgr = (cfg.managers || []).find((m) => m.manages === t.id);
+    const ms = mgr ? (state.managers || {})[mgr.id] : null;
+    if (!ms || ms.level <= 0 || ms.paused) return null;
+    return autoInterval(t.duration_ms, ms.level);
+  }
+
+  // Paints the timed-row state. EVERY write is guarded (React-style: only touch the DOM when a value
+  // actually changes) so a steady row — especially a manager-driven "always full" one — costs zero
+  // DOM ops per 100ms tick. Helpers below short-circuit when the target already holds the value.
   function paintTimed() {
     timedTiers.forEach((t) => {
       const row = panelsEl.querySelector('.mg-s1-shoprow[data-id="' + t.id + '"]');
@@ -243,29 +261,30 @@ export function createShopController({ panelsEl, state, cfg, tiers, save, bell, 
       const timeEl = row.querySelector('.mg-s1-rr-time');
       if (!fill || !amtEl || !timeEl) return;
       const owned = state.owned[t.id] || 0;
-      row.classList.toggle('mg-s1-runnable', owned >= 1);
+      setClass(row, 'mg-s1-runnable', owned >= 1);
       // Fill via transform: scaleX (compositor-only) instead of width (which relayouts every frame).
       const setFill = (frac) => { const v = 'scaleX(' + frac + ')'; if (fill.style.transform !== v) fill.style.transform = v; };
-      if (owned < 1) { setFill(0); setText(amtEl, ''); setText(timeEl, ''); return; }
+      const setFast = (on) => setClass(fill, 'mg-s1-rowfill-fast', on);
+      if (owned < 1) { setFast(false); setFill(0); setText(amtEl, ''); setText(timeEl, ''); return; }
+
+      // Manager-driven faster than ~2 cycles/sec → one stable "always full" bar; the underlying
+      // active/inactive flips are invisible, so don't re-render them (this was the per-tick churn).
+      const auto = autoFireMs(t);
+      if (auto != null && auto < 500) {
+        setFast(true); setFill(1); setText(amtEl, rateLabel(t, auto)); setText(timeEl, '');
+        return;
+      }
+      setFast(false);
+
       const ts = state.timedStates[t.id];
       if (ts && ts.active) {
         const elapsed = Date.now() - ts.startedAt;
         const dur = ts.duration_ms || t.duration_ms;
-        if (dur < 500) {
-          // Too fast for a meaningful progress bar — show a full, shimmering bar + the steady rate.
-          fill.classList.add('mg-s1-rowfill-fast');
-          setFill(1);
-          setText(amtEl, rateLabel(t, dur));   // changes only when owned/mult changes → no per-tick write
-          setText(timeEl, '');
-        } else {
-          fill.classList.remove('mg-s1-rowfill-fast');
-          setFill(Math.max(0, Math.min(1, elapsed / dur)));
-          // Static amount stays put; only the small ·Xs node rewrites as the countdown ticks.
-          setText(amtEl, rewardLabel(t) + ' · ');
-          setText(timeEl, Math.max(0, (dur - elapsed) / 1000).toFixed(1) + 's');
-        }
+        setFill(Math.max(0, Math.min(1, elapsed / dur)));
+        // Static amount stays put; only the small ·Xs node rewrites as the countdown ticks.
+        setText(amtEl, rewardLabel(t) + ' · ');
+        setText(timeEl, Math.max(0, (dur - elapsed) / 1000).toFixed(1) + 's');
       } else {
-        fill.classList.remove('mg-s1-rowfill-fast');
         setFill(0);
         setText(amtEl, '▸ ' + rewardLabel(t));
         setText(timeEl, '');

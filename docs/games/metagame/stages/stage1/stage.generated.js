@@ -1605,28 +1605,31 @@ var STAGES = [
         bell: "bell-cluster",
         grid: "g4"
       },
-      // 5. Processing Array — passive; 0.5 bits/sec per owned; unlocks at owned[s1-cluster] ≥ 1
+      // 5. Processing Array — timed BUILDER; each cycle assembles Core Clusters (owned[s1-cluster] +=
+      //    owned arrays), extending the escalation chain. Unlocks at owned[s1-cluster] ≥ 3.
       {
         id: "s1-array",
         name: "Processing Array",
         icon: "🛰",
-        type: "passive",
-        desc: "auto bits / sec",
+        type: "timed",
+        desc: "builds 🧊 Core Clusters",
         base: { m: 50, e: 6 },
         mult: 1.28,
-        rate: 0.5,
+        baseAmount: 0,
+        duration_ms: 12e3,
+        produces: { targetId: "s1-cluster", perOwned: 1 },
         unlock: (state) => (state.owned["s1-cluster"] || 0) >= 3,
         bell: "bell-array",
         grid: "g5"
       },
-      // 6. Neural Net — globalMult node: ×(1 + 0.25·level) to all timed payouts;
-      //    unlocks at totalBits ≥ 1 000 000
+      // 6. Neural Net — globalMult node: ×(1 + 0.25·level) to all timed payouts (in practice the Bit
+      //    Box, the only bit-paying timer). Linear, uncapped. Unlocks at totalBits ≥ 50 000 000.
       {
         id: "s1-neural",
         name: "Neural Net",
         icon: "🧠",
         type: "click_mult",
-        desc: "boosts all timers",
+        desc: "+25% bits / timer cycle per level",
         globalMult: { perLevel: 0.25, targets: "timed" },
         base: { m: 5, e: 9 },
         mult: 1.3,
@@ -1635,18 +1638,18 @@ var STAGES = [
         bell: "bell-neural",
         grid: "g6"
       },
-      // 7. Quantum Tap — multiplicative click mult: clickPower ×(1 + owned);
-      //    unlocks at owned[s1-neural] ≥ 3
+      // 7. Quantum Tap — each Compute tap also yields a % of the Bit Box's bits/sec (24% → +200% over
+      //    10 levels, capped). Unlocks at owned[s1-neural] ≥ 3.
       {
         id: "s1-quantum",
         name: "Quantum Tap",
         icon: "⚛",
         type: "click_mult",
-        desc: "multiplies tap power",
+        desc: "taps pay a % of Bit Box/s",
         base: { m: 500, e: 9 },
         mult: 1.32,
         amount: 0,
-        quantumMult: true,
+        maxLevel: 10,
         unlock: (state) => (state.owned["s1-neural"] || 0) >= 3,
         bell: "bell-quantum",
         grid: "g7"
@@ -1658,7 +1661,8 @@ var STAGES = [
     managers: [
       { id: "m-box", name: "Box Operator", icon: "🛠", manages: "s1-box", hireCostBase: 5e3, runCostPerSec: 20 },
       { id: "m-signal", name: "Signal Engineer", icon: "🔧", manages: "s1-boost", hireCostBase: 25e3, runCostPerSec: 90 },
-      { id: "m-cluster", name: "Cluster Foreman", icon: "👷", manages: "s1-cluster", hireCostBase: 12e4, runCostPerSec: 400 }
+      { id: "m-cluster", name: "Cluster Foreman", icon: "👷", manages: "s1-cluster", hireCostBase: 12e4, runCostPerSec: 400 },
+      { id: "m-array", name: "Array Foreman", icon: "🤖", manages: "s1-array", hireCostBase: 5e8, runCostPerSec: 5e4 }
     ],
     // ── Boss ticket (§10.2) ──────────────────────────────────────────────────────────────────
     // canFightBoss = allSubStagesOwned AND gte(bits, bossTicket). Checked in orchestrator (WP-S1-12).
@@ -2308,6 +2312,7 @@ function maxAffordable(bits, t, owned) {
   if (!isFinite(maxN) || maxN < 0) maxN = 0;
   for (let i = 0; i < 1e3 && maxN > 0 && !gte(bits, totalCost(t, owned, maxN)); i++) maxN--;
   for (let i = 0; i < 1e3 && gte(bits, totalCost(t, owned, maxN + 1)); i++) maxN++;
+  if (t.maxLevel != null) maxN = Math.min(maxN, Math.max(0, t.maxLevel - owned));
   return Math.max(0, maxN);
 }
 function globalPull(state) {
@@ -2318,13 +2323,30 @@ function achievMult(state) {
   const n = (state.achievements || []).length;
   return Math.pow(1.02, n);
 }
+var QUANTUM_MAX_LEVEL = 10;
+function quantumPct(level) {
+  const L = Math.min(Math.max(level || 0, 0), QUANTUM_MAX_LEVEL);
+  if (L <= 0) return 0;
+  return 2 * (1 - Math.pow(1 - L / QUANTUM_MAX_LEVEL, 1.2));
+}
+function bitBoxPerSec(state, cfg) {
+  const box = (cfg.tiers || []).find((t) => t.id === "s1-box");
+  if (!box) return 0;
+  const payout = toNumber(timedPayout(state, cfg, "s1-box"));
+  if (payout <= 0) return 0;
+  const mgr = (cfg.managers || []).find((m) => m.manages === "s1-box");
+  const lvl = mgr ? ((state.managers || {})[mgr.id] || {}).level || 0 : 0;
+  const cycleMs = lvl > 0 ? autoInterval(box.duration_ms, lvl) : box.duration_ms;
+  return cycleMs > 0 ? payout / (cycleMs / 1e3) : 0;
+}
 function clickPower(state, cfg) {
   const owned = state.owned || {};
   const additive = 1 + (owned["s1-mult"] || 0);
-  const quantum = 1 + (owned["s1-quantum"] || 0);
   const pull = globalPull(state);
   const ach = achievMult(state);
-  return additive * quantum * pull * ach;
+  const base = additive * pull * ach;
+  const quantumBonus = quantumPct(owned["s1-quantum"]) * bitBoxPerSec(state, cfg);
+  return base + quantumBonus;
 }
 function passiveRate(state, cfg) {
   const owned = state.owned || {};
@@ -2361,7 +2383,7 @@ function timedProduction(state, cfg, tierId) {
   if (!t || !t.produces) return null;
   const ownedCount = (state.owned || {})[tierId] || 0;
   if (ownedCount === 0) return null;
-  const amount = (t.produces.perOwned || 1) * ownedCount;
+  const amount = Math.round((t.produces.perOwned || 1) * ownedCount * globalPull(state));
   return { targetId: t.produces.targetId, amount };
 }
 var HIRE_LEVEL_MULT = 1.1;
@@ -2437,6 +2459,7 @@ function buyTier(state, cfg, tierId, requestedN, save) {
   } else {
     n = requestedN;
   }
+  if (t.maxLevel != null) n = Math.min(n, Math.max(0, t.maxLevel - k));
   if (n <= 0) return 0;
   let cost = totalCost(t, k, n);
   if (!gte(state.bits, cost)) {
@@ -2452,12 +2475,11 @@ function buyTier(state, cfg, tierId, requestedN, save) {
   if (save) save(state);
   return n;
 }
+var RESET_UNLOCK_BITS = 1e18;
 function pullGain(totalBitsAtReset) {
   const n = toNumber(totalBitsAtReset);
-  const logVal = Math.log10(Math.max(n, 1e6));
-  const gain = 1 + Math.max(0, Math.floor(logVal / 3 - 2)) * 0.5;
-  const PULL_GAIN_CAP = 50;
-  return Math.max(0.1, Math.min(gain, PULL_GAIN_CAP));
+  const ratio = Math.max(1, n / RESET_UNLOCK_BITS);
+  return Math.max(2, 2 + Math.pow(Math.log10(ratio), 1.92));
 }
 
 // ../../docs/games/metagame/stages/stage1/s1achievements.js
@@ -2508,6 +2530,9 @@ function checkAchievements(state, cfg, bs) {
 // ../../docs/games/metagame/stages/stage1/s1dom.js
 function setText(el, s) {
   if (el && el.textContent !== s) el.textContent = s;
+}
+function setClass(el, name, on) {
+  if (el && el.classList.contains(name) !== !!on) el.classList.toggle(name, !!on);
 }
 function setHtml(el, s) {
   if (el && el.innerHTML !== s) el.innerHTML = s;
@@ -2614,21 +2639,20 @@ function createShopController({ panelsEl, state, cfg, tiers, save, bell, hooks =
     }
     return "+" + toDisplay(fromNumber(toNumber(timedPayout(state, cfg, t.id)) * perSec)) + " bits/s";
   }
-  const short = (n) => n >= 100 ? toDisplay(fromNumber(n)) : String(Math.round(n * 10) / 10);
   function blurbFor(t) {
     const owned = state.owned || {};
     switch (t.id) {
-      case "s1-mult":
-        return "+" + fmtN(1 + (owned["s1-mult"] || 0)) + " bits / tap";
-      case "s1-array": {
-        const n = owned["s1-array"] || 0;
-        if (n < 1) return "+" + (t.rate || 0) + " bits/s each";
-        return "+" + short(n * (t.rate || 0) * globalPull(state) * achievMult(state)) + " bits/s";
+      case "s1-mult": {
+        const tap = (1 + (owned["s1-mult"] || 0)) * globalPull(state) * achievMult(state);
+        return "+" + fmtN(tap) + " bits / tap";
       }
       case "s1-neural":
         return "×" + (1 + 0.25 * (owned["s1-neural"] || 0)).toFixed(2) + " to all timers";
-      case "s1-quantum":
-        return "×" + (1 + (owned["s1-quantum"] || 0)) + " tap power";
+      case "s1-quantum": {
+        const lvl = owned["s1-quantum"] || 0;
+        const pct = quantumPct(lvl > 0 ? lvl : 1);
+        return "+" + Math.round(pct * 100) + "% Bit Box/s per tap";
+      }
       default:
         return t.desc || t.name;
     }
@@ -2724,17 +2748,28 @@ function createShopController({ panelsEl, state, cfg, tiers, save, bell, hooks =
       const sel = countFor(t.id);
       row.querySelectorAll(".mg-s1-buyn").forEach((b) => {
         const v = b.dataset.n === "max" ? "max" : Number(b.dataset.n);
-        b.classList.toggle("mg-mult-on", String(v) === String(sel));
+        setClass(b, "mg-mult-on", String(v) === String(sel));
       });
+      const buyBtn = row.querySelector(".mg-s1-buybtn");
+      if (t.maxLevel != null && owned >= t.maxLevel) {
+        setText(buyBtn, "MAX LEVEL");
+        setClass(buyBtn, "mg-buy-locked", true);
+        return;
+      }
       const maxN = sel === "max" ? maxAffordable(state.bits, t, owned) : null;
       const displayN = sel === "max" ? Math.max(1, maxN) : sel;
       const cost = totalCost(t, owned, displayN);
-      const buyBtn = row.querySelector(".mg-s1-buybtn");
       const label = sel === "max" ? "MAX" : "×" + displayN;
       setText(buyBtn, "Buy " + label + " — " + toDisplay(cost));
       const affordable = sel === "max" ? maxN >= 1 : gte(state.bits, cost);
-      buyBtn.classList.toggle("mg-buy-locked", !affordable);
+      setClass(buyBtn, "mg-buy-locked", !affordable);
     });
+  }
+  function autoFireMs(t) {
+    const mgr = (cfg.managers || []).find((m) => m.manages === t.id);
+    const ms = mgr ? (state.managers || {})[mgr.id] : null;
+    if (!ms || ms.level <= 0 || ms.paused) return null;
+    return autoInterval(t.duration_ms, ms.level);
   }
   function paintTimed() {
     timedTiers.forEach((t) => {
@@ -2745,34 +2780,36 @@ function createShopController({ panelsEl, state, cfg, tiers, save, bell, hooks =
       const timeEl = row.querySelector(".mg-s1-rr-time");
       if (!fill || !amtEl || !timeEl) return;
       const owned = state.owned[t.id] || 0;
-      row.classList.toggle("mg-s1-runnable", owned >= 1);
+      setClass(row, "mg-s1-runnable", owned >= 1);
       const setFill = (frac) => {
         const v = "scaleX(" + frac + ")";
         if (fill.style.transform !== v) fill.style.transform = v;
       };
+      const setFast = (on) => setClass(fill, "mg-s1-rowfill-fast", on);
       if (owned < 1) {
+        setFast(false);
         setFill(0);
         setText(amtEl, "");
         setText(timeEl, "");
         return;
       }
+      const auto = autoFireMs(t);
+      if (auto != null && auto < 500) {
+        setFast(true);
+        setFill(1);
+        setText(amtEl, rateLabel(t, auto));
+        setText(timeEl, "");
+        return;
+      }
+      setFast(false);
       const ts = state.timedStates[t.id];
       if (ts && ts.active) {
         const elapsed = Date.now() - ts.startedAt;
         const dur = ts.duration_ms || t.duration_ms;
-        if (dur < 500) {
-          fill.classList.add("mg-s1-rowfill-fast");
-          setFill(1);
-          setText(amtEl, rateLabel(t, dur));
-          setText(timeEl, "");
-        } else {
-          fill.classList.remove("mg-s1-rowfill-fast");
-          setFill(Math.max(0, Math.min(1, elapsed / dur)));
-          setText(amtEl, rewardLabel(t) + " · ");
-          setText(timeEl, Math.max(0, (dur - elapsed) / 1e3).toFixed(1) + "s");
-        }
+        setFill(Math.max(0, Math.min(1, elapsed / dur)));
+        setText(amtEl, rewardLabel(t) + " · ");
+        setText(timeEl, Math.max(0, (dur - elapsed) / 1e3).toFixed(1) + "s");
       } else {
-        fill.classList.remove("mg-s1-rowfill-fast");
         setFill(0);
         setText(amtEl, "▸ " + rewardLabel(t));
         setText(timeEl, "");
@@ -2899,7 +2936,7 @@ function createManagersController({ panelsEl, state, cfg, tiers, save, paintStat
     const rateNeg = rate < 0;
     const net = panelsEl.querySelector(".mg-mgr-net");
     if (net) {
-      net.classList.toggle("mg-s1-neg", rateNeg);
+      setClass(net, "mg-s1-neg", rateNeg);
       const strong = net.querySelector("strong");
       if (strong) {
         const v = (rateNeg ? "-" : "") + toDisplay(fromNumber(Math.abs(rate))) + "/s";
@@ -2927,13 +2964,13 @@ function createManagersController({ panelsEl, state, cfg, tiers, save, paintStat
         setHtml(btn, actionBtnHtml(mgr));
         const n = displayLevels(mgr);
         const can = n >= 1 && gte(state.bits, managerTotalCost(mgr, ms.level, n, cfg));
-        btn.classList.toggle("mg-buy-locked", !can);
+        setClass(btn, "mg-buy-locked", !can);
       }
       const runEl = card.querySelector(".mg-mgr-runcost");
       if (runEl) {
         const v = toDisplay(fromNumber(managerRunCost(mgr.id, state, cfg)));
         if (runEl.textContent !== v) runEl.textContent = v;
-        runEl.classList.toggle("mg-mgr-runcost-neg", rateNeg);
+        setClass(runEl, "mg-mgr-runcost-neg", rateNeg);
       }
     });
   }
@@ -3062,7 +3099,7 @@ function renderStage1(ctx2) {
     reset: () => gte(state.totalBits, RESET_THRESHOLD)
   };
   const TAB_LABELS = { bits: "🧮 Bits", managers: "🛠 Managers", achievements: "🏆 Achievements", reset: "🌀 Reset" };
-  host.innerHTML = '<div class="mg-wrap mg-s1"><div class="mg-s1-hud" hidden>  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span></div><div class="mg-s1-help" hidden></div><div class="mg-s1-top">  <div class="mg-s1-tap" aria-label="tap to compute"></div>  <div class="mg-s1-stage">    <button class="mg-s1-btn mg-compute" type="button">' + (multTier ? multTier.icon + " " + multTier.name : "Compute") + '</button>    <div class="mg-s1-grid" aria-hidden="true"></div>  </div></div><div class="mg-s1-tabs" role="tablist"></div><div class="mg-s1-panels"></div></div>';
+  host.innerHTML = '<div class="mg-wrap mg-s1"><div class="mg-s1-hud" hidden>  <span class="mg-s1-grav" hidden>🌀 ×1.0</span>  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span></div><div class="mg-s1-help" hidden></div><div class="mg-s1-top">  <div class="mg-s1-tap" aria-label="tap to compute"></div>  <div class="mg-s1-stage">    <button class="mg-s1-btn mg-compute" type="button">' + (multTier ? multTier.icon + " " + multTier.name : "Compute") + '</button>    <div class="mg-s1-grid" aria-hidden="true"></div>  </div></div><div class="mg-s1-tabs" role="tablist"></div><div class="mg-s1-panels"></div></div>';
   const $ = (s) => host.querySelector(s);
   const tap = $(".mg-s1-tap");
   const computeBtn = $(".mg-s1-btn");
@@ -3071,6 +3108,7 @@ function renderStage1(ctx2) {
   const panelsEl = $(".mg-s1-panels");
   const hudEl = $(".mg-s1-hud");
   const scoreValEl = $(".mg-s1-score-val");
+  const gravEl = $(".mg-s1-grav");
   const helpEl = $(".mg-s1-help");
   const HELP_SECTIONS = [
     ["👆 Tap", "Tap the top area to compute bits. The ✖ Multiplier adds +1 bit per tap each level."],
@@ -3088,10 +3126,21 @@ function renderStage1(ctx2) {
     if (open) renderHelp();
     setHidden(helpEl, !open);
   }
+  let lastScoreAt = 0;
   function updateHud() {
     const scoreOn = (state.milestones || []).includes("score-unlock") || bigToNum2(state.totalBits) >= 400;
     setHidden(hudEl, !scoreOn);
-    if (scoreOn) setText(scoreValEl, toDisplay(fromNumber(Math.floor(bigToNum2(state.bits)))));
+    if (!scoreOn) return;
+    const grav = globalPull(state);
+    if (grav > 1.0001) {
+      setText(gravEl, "🌀 ×" + grav.toFixed(1));
+      setHidden(gravEl, false);
+    } else setHidden(gravEl, true);
+    const now = Date.now();
+    if (now - lastScoreAt >= 250) {
+      lastScoreAt = now;
+      setText(scoreValEl, toDisplay(fromNumber(Math.floor(bigToNum2(state.bits)))));
+    }
   }
   const cells = [];
   for (let i = 0; i < GRID_CELLS; i++) {

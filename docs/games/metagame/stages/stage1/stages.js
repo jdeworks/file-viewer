@@ -261,30 +261,32 @@ export const STAGES = [
         unlock: (state) => (state.owned['s1-boost'] || 0) >= 3,
         bell: 'bell-cluster', grid: 'g4',
       },
-      // 5. Processing Array — passive; 0.5 bits/sec per owned; unlocks at owned[s1-cluster] ≥ 1
+      // 5. Processing Array — timed BUILDER; each cycle assembles Core Clusters (owned[s1-cluster] +=
+      //    owned arrays), extending the escalation chain. Unlocks at owned[s1-cluster] ≥ 3.
       {
-        id: 's1-array', name: 'Processing Array', icon: '🛰', type: 'passive',
-        desc: 'auto bits / sec',
-        base: { m: 50, e: 6 }, mult: 1.28, rate: 0.5,
+        id: 's1-array', name: 'Processing Array', icon: '🛰', type: 'timed',
+        desc: 'builds 🧊 Core Clusters',
+        base: { m: 50, e: 6 }, mult: 1.28, baseAmount: 0, duration_ms: 12000,
+        produces: { targetId: 's1-cluster', perOwned: 1 },
         unlock: (state) => (state.owned['s1-cluster'] || 0) >= 3,
         bell: 'bell-array', grid: 'g5',
       },
-      // 6. Neural Net — globalMult node: ×(1 + 0.25·level) to all timed payouts;
-      //    unlocks at totalBits ≥ 1 000 000
+      // 6. Neural Net — globalMult node: ×(1 + 0.25·level) to all timed payouts (in practice the Bit
+      //    Box, the only bit-paying timer). Linear, uncapped. Unlocks at totalBits ≥ 50 000 000.
       {
         id: 's1-neural', name: 'Neural Net', icon: '🧠', type: 'click_mult',
-        desc: 'boosts all timers',
+        desc: '+25% bits / timer cycle per level',
         globalMult: { perLevel: 0.25, targets: 'timed' },
         base: { m: 5, e: 9 }, mult: 1.30, amount: 0,
         unlock: (state) => _gte(state.totalBits, { m: 5, e: 7 }),
         bell: 'bell-neural', grid: 'g6',
       },
-      // 7. Quantum Tap — multiplicative click mult: clickPower ×(1 + owned);
-      //    unlocks at owned[s1-neural] ≥ 3
+      // 7. Quantum Tap — each Compute tap also yields a % of the Bit Box's bits/sec (24% → +200% over
+      //    10 levels, capped). Unlocks at owned[s1-neural] ≥ 3.
       {
         id: 's1-quantum', name: 'Quantum Tap', icon: '⚛', type: 'click_mult',
-        desc: 'multiplies tap power',
-        base: { m: 500, e: 9 }, mult: 1.32, amount: 0, quantumMult: true,
+        desc: 'taps pay a % of Bit Box/s',
+        base: { m: 500, e: 9 }, mult: 1.32, amount: 0, maxLevel: 10,
         unlock: (state) => (state.owned['s1-neural'] || 0) >= 3,
         bell: 'bell-quantum', grid: 'g7',
       },
@@ -294,9 +296,10 @@ export const STAGES = [
     // hireCostBase = 10 × toNumber(managedTier.base). Scaling formula (hireCost(mgr, level) =
     // 10 × baseCost_of_managedTier × 1.15^level) is implemented in s1economy.js.
     managers: [
-      { id: 'm-box',     name: 'Box Operator',    icon: '🛠', manages: 's1-box',     hireCostBase: 5000,   runCostPerSec: 20  },
-      { id: 'm-signal',  name: 'Signal Engineer',  icon: '🔧', manages: 's1-boost',   hireCostBase: 25000,  runCostPerSec: 90  },
-      { id: 'm-cluster', name: 'Cluster Foreman',  icon: '👷', manages: 's1-cluster', hireCostBase: 120000, runCostPerSec: 400 },
+      { id: 'm-box',     name: 'Box Operator',    icon: '🛠', manages: 's1-box',     hireCostBase: 5000,     runCostPerSec: 20   },
+      { id: 'm-signal',  name: 'Signal Engineer',  icon: '🔧', manages: 's1-boost',   hireCostBase: 25000,    runCostPerSec: 90   },
+      { id: 'm-cluster', name: 'Cluster Foreman',  icon: '👷', manages: 's1-cluster', hireCostBase: 120000,   runCostPerSec: 400  },
+      { id: 'm-array',   name: 'Array Foreman',    icon: '🤖', manages: 's1-array',   hireCostBase: 500000000, runCostPerSec: 50000 },
     ],
 
     // ── Boss ticket (§10.2) ──────────────────────────────────────────────────────────────────
