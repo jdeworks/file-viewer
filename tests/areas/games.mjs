@@ -259,6 +259,27 @@ export async function run(ctx) {
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
+  // Minesweeper — safe first click reveals + scores; Flag mode flags without digging
+  await page.click('.games-card[data-game="minesweeper"]');
+  await page.waitForSelector('.mine-grid', { timeout: 8000 });
+  pass('Minesweeper launches');
+  const ms0 = await page.$eval('.mine-wrap', (w) => w.__mine.state());
+  if (ms0.score === 0 && ms0.level === 0 && !ms0.dead && !ms0.flagMode && ms0.cells === 81 && ms0.minesLeft > 0 && ms0.revealed === 0)
+    pass('Minesweeper: clean 9×9 start');
+  else fail('Minesweeper start: ' + JSON.stringify(ms0));
+  await page.click('.mine-cell[data-i="40"]');             // center; first click is always safe
+  const ms1 = await page.$eval('.mine-wrap', (w) => w.__mine.state());
+  if (!ms1.dead && ms1.revealed > 0 && ms1.score > 0) pass('Minesweeper: safe first dig reveals + scores');
+  else fail('Minesweeper dig: ' + JSON.stringify(ms1));
+  await page.click('.mine-flag');                          // switch to Flag mode
+  const cov = await page.$eval('.mine-wrap', (w) => w.__mine.firstCovered());
+  await page.click('.mine-cell[data-i="' + cov + '"]');
+  const ms2 = await page.$eval('.mine-wrap', (w) => w.__mine.state());
+  if (ms2.flagMode && ms2.minesLeft === ms1.minesLeft - 1) pass('Minesweeper: Flag mode flags a covered cell');
+  else fail('Minesweeper flag: ' + JSON.stringify({ ms1, ms2, cov }));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.mg-v3', { timeout: 8000 });
   await page.waitForSelector('.mg-s1', { timeout: 8000 });

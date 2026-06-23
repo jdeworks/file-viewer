@@ -49,6 +49,13 @@ export const GAMES = [
     load: () => import('./memory/memory.js'),
   },
   {
+    id: 'minesweeper',
+    title: 'Minesweeper',
+    emoji: '💣',
+    blurb: 'Clear the field without hitting a mine. Tap to dig, toggle Flag mode. Boards grow.',
+    load: () => import('./minesweeper/minesweeper.js'),
+  },
+  {
     id: 'metagame',
     title: 'Bit Foundry',
     emoji: '⚙️',
