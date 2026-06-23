@@ -334,6 +334,16 @@ export async function run(ctx) {
   const siR = await page.$eval('.simon-wrap', (w) => { w.__simon.forceAccept(); w.__simon.tap(w.__simon.seq()[0]); return w.__simon.state(); });
   if (siR.round >= 2 && siR.score > 0 && !siR.dead) pass('Simon: repeating the sequence scores (ramped by round)');
   else fail('Simon repeat: ' + JSON.stringify(siR));
+  const siD = await page.$eval('.simon-wrap', (w) => {
+    const sel = w.querySelector('.simon-diff'); sel.value = 'hard'; sel.dispatchEvent(new Event('change'));
+    w.__simon.forceAccept();
+    const wrong = (w.__simon.seq()[0] + 1) % w.__simon.state().count;
+    w.__simon.tap(wrong);
+    const s = w.__simon.state();
+    return { count: s.count, dead: s.dead, lit: s.lit };
+  });
+  if (siD.count === 16 && siD.dead && siD.lit === 0) pass('Simon: Hard = 16 pads + losing resets the board (no stuck-lit pad)');
+  else fail('Simon difficulty/loss: ' + JSON.stringify(siD));
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
