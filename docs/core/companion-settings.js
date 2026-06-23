@@ -5,9 +5,9 @@
 import { toast } from './state.js';
 import {
   detectCompanion, isEnabled as companionEnabled, setEnabled as setCompanionEnabled,
-  getToken, setToken, getWatchedPaths, addWatchedPath, removeWatchedPath, pickFolder, getLogs,
+  getToken, setToken, getWatchedPaths, addWatchedPath, removeWatchedPath, pickFolder, getLogs, isMobileDevice,
 } from './companion.js';
-import { isCompanionAvailable, setCompanionAvailable, syncSaveBtn, stopWatching, showCompanionIndicator } from './companion-ui.js';
+import { isCompanionAvailable, setCompanionAvailable, syncSaveBtn, stopWatching, showCompanionIndicator, updateConnButton } from './companion-ui.js';
 
 // Heuristic guard: flag watched folders that are a whole drive / system root / very large tree.
 // Watching one forces a recursive scan on every find/save and exposes a lot of files. Returns a
@@ -192,6 +192,16 @@ export function renderCompanionSettings(container) {
   summary.innerHTML = `Companion <span class="companion-status-dot ${isCompanionAvailable() ? 'connected' : ''}">${isCompanionAvailable() ? '● connected' : '○ not found'}</span>`;
   panel.appendChild(summary);
 
+  // Desktop-only: on mobile, show a brief note instead of the controls (the companion can't run).
+  if (isMobileDevice()) {
+    const note = document.createElement('p');
+    note.className = 'companion-net';
+    note.textContent = 'The Companion is a desktop-only feature (it runs a local app on your computer). It is not available on phones or tablets.';
+    panel.appendChild(note);
+    container.prepend(panel);
+    return;
+  }
+
   const enableRow = document.createElement('div');
   enableRow.className = 'set-row';
   const enableLabel = document.createElement('label');
@@ -209,6 +219,7 @@ export function renderCompanionSettings(container) {
       document.body.classList.toggle('companion-active', ok);
       summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
       syncSaveBtn();
+      updateConnButton(ok);
       if (ok) showCompanionIndicator();
       else toast('Companion not found — is it running on :7700?');
       if (ok) refreshFolders();
@@ -219,6 +230,7 @@ export function renderCompanionSettings(container) {
       document.body.classList.remove('companion-active');
       summary.innerHTML = `Companion <span class="companion-status-dot">○ not found</span>`;
       syncSaveBtn();
+      updateConnButton(false);   // hides the topbar indicator (companion now disabled)
     }
   });
 
@@ -234,6 +246,7 @@ export function renderCompanionSettings(container) {
     document.body.classList.toggle('companion-active', ok);
     summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
     syncSaveBtn();
+    updateConnButton(ok);
     toast(ok ? 'Companion connected ✓' : 'Companion not found — is it running?');
   });
 

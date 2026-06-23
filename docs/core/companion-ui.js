@@ -3,7 +3,9 @@ import { layoutTopbar } from './layout.js';
 import { $, state, toast, escapeHtml } from './state.js';
 import { detectCompanion, findFile, findFolder, saveFile, deleteFile, pickFolder, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
 import { browseForFolder, joinPath } from './companion-browse.js';
+import { setupFolderRefresh, onFolderRootResolved, onFolderRootCleared, refreshFolderFromDisk } from './companion-folder.js';
 export { renderCompanionSettings } from './companion-settings.js';
+export { refreshFolderFromDisk } from './companion-folder.js';
 
 let companionAvailable = false;
 let companionLinkedPath = null;
@@ -29,6 +31,7 @@ function wasSelfSaved(absPath) {
 
 export function initCompanionUi({ loadIntake }) {
   loadIntakeCallback = loadIntake;
+  setupFolderRefresh({ getFolderRoot: () => companionFolderRoot });
 }
 
 export function isCompanionAvailable() {
@@ -47,6 +50,7 @@ export function hasCompanionFolderRoot() {
 
 export function resetCompanionFolderRoot() {
   companionFolderRoot = null;
+  onFolderRootCleared();
 }
 
 export function showCompanionIndicator() {
@@ -99,6 +103,7 @@ export async function resolveDroppedFolderRoot(entries) {
   companionFolderRoot = root;
   if (root) {
     syncSaveBtn();
+    onFolderRootResolved();   // reveal the ⟳ Refresh / auto controls + start the folder watch
     const currentAbsPath = absolutePathForFile(state.currentFolderPath);
     if (currentAbsPath && state.currentFolderPath) startWatching(currentAbsPath);
   }
@@ -319,7 +324,7 @@ export async function onDeleteClick() {
       if (!absPath) return;
     }
     // Destructive — explicit confirm. The file stays open in the viewer and Download still works.
-    if (!confirm(`Delete this file from disk?\n\n${absPath}\n\nThis permanently removes the original on disk. The file stays open here and the Download button still works.`)) return;
+    if (!confirm(`Delete "${filename}" from disk?\n\n${absPath}\n\nThis permanently deletes the file and cannot be undone. (It stays open here, so you can still re-download this copy.)`)) return;
     try {
       await deleteFile(absPath);
       setCompanionLinked(null);   // no longer on disk → drop the link + stop watching
@@ -330,6 +335,27 @@ export async function onDeleteClick() {
     }
   } finally {
     if (btn) btn.disabled = false;
+  }
+}
+
+// Delete a file OR folder straight from the tree row — no need to open it first. Resolves the disk
+// path from the relative tree path, confirms (permanent + irreversible wording), deletes via the
+// companion, then re-syncs the tree from disk.
+export async function deleteTreePath({ path, isFolder, name }) {
+  if (!companionAvailable || !companionFolderRoot) { toast('Companion folder not linked.'); return; }
+  const absPath = absolutePathForFile(path);
+  if (!absPath) { toast('Could not resolve that path on disk.'); return; }
+  const msg = isFolder
+    ? `Delete the folder "${name}" and everything inside it from disk?\n\n${absPath}\n\nThis permanently deletes the folder and all its contents and cannot be undone.`
+    : `Delete "${name}" from disk?\n\n${absPath}\n\nThis permanently deletes the file and cannot be undone.`;
+  if (!confirm(msg)) return;
+  try {
+    await deleteFile(absPath);
+    if (companionLinkedPath === absPath) setCompanionLinked(null);
+    toast((isFolder ? 'Folder deleted: ' : 'Deleted: ') + absPath);
+    refreshFolderFromDisk({ silent: true });   // reflect the removal in the sidebar
+  } catch (err) {
+    toast('Delete failed: ' + err.message);
   }
 }
 
@@ -361,37 +387,99 @@ function pickCompanionPath(paths) {
   });
 }
 
-// Poll /ping every 30s so a companion that was closed (or started) mid-session is reflected in the
-// UI without a manual "Test connection". Only runs while the companion is ENABLED — so a user who
-// hasn't opted in still makes ZERO off-origin requests. Idempotent.
-const HEALTH_INTERVAL_MS = 30000;
-export function startHealthCheck() {
-  if (_healthTimer) return;
-  _healthTimer = setInterval(async () => {
-    if (!companionEnabled()) return;            // disabled → no fetch (zero off-origin)
-    let ok = false;
-    try { ok = await detectCompanion(); } catch { ok = false; }
-    if (ok === companionAvailable) return;       // unchanged
+// Poll /ping so a companion closed/started mid-session is reflected without a manual "Test
+// connection". To avoid spamming the console with ERR_CONNECTION_REFUSED forever while it's down,
+// we back OFF when disconnected (5s → 10s → 30s → 60s) and poll steadily (30s) while connected.
+// Only fetches while ENABLED — a user who hasn't opted in still makes ZERO off-origin requests.
+const POLL_CONNECTED_MS = 30000;
+const BACKOFF_MS = [5000, 10000, 30000, 60000];
+let _backoffIdx = 0;
+
+function scheduleHealth(ms) {
+  clearTimeout(_healthTimer);
+  _healthTimer = setTimeout(healthTick, ms);
+}
+
+async function healthTick() {
+  _healthTimer = null;
+  if (!companionEnabled()) { scheduleHealth(BACKOFF_MS[BACKOFF_MS.length - 1]); return; } // no fetch
+  let ok = false;
+  try { ok = await detectCompanion(); } catch { ok = false; }
+  if (ok !== companionAvailable) {
     companionAvailable = ok;
     document.body.classList.toggle('companion-active', ok);
     if (!ok) { stopWatching(); toast('Companion disconnected — is it still running on :7700?'); }
     else { showCompanionIndicator(); }
     syncSaveBtn();
-  }, HEALTH_INTERVAL_MS);
+  }
+  updateConnButton(ok);
+  if (ok) { _backoffIdx = 0; scheduleHealth(POLL_CONNECTED_MS); }
+  else { scheduleHealth(BACKOFF_MS[Math.min(_backoffIdx++, BACKOFF_MS.length - 1)]); }
+}
+
+export function startHealthCheck() {
+  if (_healthTimer) return;
+  _backoffIdx = 0;
+  scheduleHealth(companionAvailable ? POLL_CONNECTED_MS : BACKOFF_MS[0]);
 }
 export function stopHealthCheck() {
-  if (_healthTimer) { clearInterval(_healthTimer); _healthTimer = null; }
+  clearTimeout(_healthTimer);
+  _healthTimer = null;
+}
+
+// Topbar connection indicator: a green dot when the companion is reachable, a red ❗ when it's
+// enabled but not reachable (click → retry + guidance to start it). Hidden entirely when the
+// companion isn't enabled, so non-users see nothing.
+export function updateConnButton(connected) {
+  const btn = $('companionStatusBtn');
+  if (!btn) return;
+  if (!companionEnabled()) { btn.hidden = true; return; }
+  btn.hidden = false;
+  btn.classList.toggle('conn-up', connected);
+  btn.classList.toggle('conn-down', !connected);
+  btn.textContent = connected ? '●' : '❗';
+  btn.title = connected
+    ? 'Companion connected (127.0.0.1:7700)'
+    : 'Companion not reachable — click to retry / how to start it';
+}
+
+export async function onConnButtonClick() {
+  if (!companionEnabled()) return;
+  let ok = await detectCompanion();   // retry immediately
+  if (!ok) {
+    // Try to LAUNCH the companion via its registered URL scheme (set up by the desktop app on
+    // first run). The browser shows an "Open File Viewer Companion?" prompt; if it's not installed/
+    // registered, nothing happens — so we then poll /ping and fall back to manual guidance.
+    toast('Trying to start the Companion…', 2500);
+    try {
+      const f = document.createElement('iframe');   // iframe src avoids navigating the page away
+      f.style.display = 'none';
+      f.src = 'fvcompanion://start';
+      document.body.appendChild(f);
+      setTimeout(() => f.remove(), 1500);
+    } catch { /* scheme not handled */ }
+    for (let i = 0; i < 8 && !ok; i++) {
+      await new Promise((r) => setTimeout(r, 700));
+      ok = await detectCompanion().catch(() => false);
+    }
+  }
+  companionAvailable = ok;
+  document.body.classList.toggle('companion-active', ok);
+  updateConnButton(ok);
+  syncSaveBtn();
+  if (ok) { _backoffIdx = 0; startHealthCheck(); showCompanionIndicator(); }
+  else {
+    toast('Could not reach or start the Companion. Start it manually (the tray app or companion.exe in your fv-companion folder); it connects automatically. See ⋯ Settings → Companion to get it.', 9000);
+  }
 }
 
 export function detectCompanionOnStartup() {
   if (!companionEnabled()) return;
   detectCompanion().then((ok) => {
     companionAvailable = ok;
-    if (ok) {
-      document.body.classList.add('companion-active');
-      showCompanionIndicator();
-      syncSaveBtn();
-    }
+    document.body.classList.toggle('companion-active', ok);
+    if (ok) { showCompanionIndicator(); syncSaveBtn(); }
+    updateConnButton(ok);
     startHealthCheck();   // keep watching liveness whether or not it's up right now
   });
 }

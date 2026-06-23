@@ -89,7 +89,7 @@ function collectFolderPaths(node, prefix, out, depth = 0, maxDepth = Infinity) {
 
 // Render into `host`. onOpen(node) fires on a file click. onMove(srcPath, destFolderPath) fires
 // when a file is dropped onto a folder row. Returns controller API.
-export function renderTree(host, root, { onOpen, onMove, initialOpenDepth = Infinity }) {
+export function renderTree(host, root, { onOpen, onMove, onDelete, initialOpenDepth = Infinity }) {
   host.innerHTML = '';
   const inner = document.createElement('div');
   inner.className = 'ft-virtual-inner';
@@ -154,6 +154,18 @@ export function renderTree(host, root, { onOpen, onMove, initialOpenDepth = Infi
     mq = { el, name, timer: setInterval(() => { s = s.slice(1) + s[0]; el.textContent = s; }, 100) };
   }
 
+  // A per-row delete affordance (shown on hover via CSS, only while a companion folder is active).
+  // stopPropagation so clicking it never opens the file or toggles the folder.
+  function appendDeleteBtn(row, target) {
+    const del = document.createElement('button');
+    del.className = 'ft-del';
+    del.textContent = '🗑';
+    del.title = target.isFolder ? 'Delete this folder from disk' : 'Delete this file from disk';
+    del.tabIndex = -1;
+    del.addEventListener('click', (e) => { e.stopPropagation(); onDelete(target); });
+    row.appendChild(del);
+  }
+
   function makeRow(item, idx) {
     const row = document.createElement('div');
     row.className = 'ft-row ' + (item.isFolder ? 'ft-folder' : 'ft-file');
@@ -176,6 +188,7 @@ export function renderTree(host, root, { onOpen, onMove, initialOpenDepth = Infi
         else openFolders.add(item.folderPath);
         buildFlat();
       });
+      if (onDelete) appendDeleteBtn(row, { path: item.folderPath, isFolder: true, name: item.node.name });
       // Drop target: accept dragged tree files → move into this folder.
       if (onMove) {
         row.addEventListener('dragover', (e) => {
@@ -212,6 +225,7 @@ export function renderTree(host, root, { onOpen, onMove, initialOpenDepth = Infi
       if (movedPaths.has(item.node.path)) row.classList.add('ft-moved');
       if (state.sessionTree) row.classList.add('ft-session');
       row.addEventListener('click', () => { setActive(item.node.path); onOpen(item.node); });
+      if (onDelete) appendDeleteBtn(row, { path: item.node.path, isFolder: false, name: item.node.name });
       row.addEventListener('dragstart', (e) => {
         _dragNode = item.node;
         e.dataTransfer.setData(TREE_DRAG_TYPE, item.node.path);
@@ -311,6 +325,10 @@ export function renderTree(host, root, { onOpen, onMove, initialOpenDepth = Infi
     buildFlat();
   }
 
+  // Expand/collapse state accessors — used to preserve the tree's open folders across a refresh.
+  function getOpenFolders() { return [...openFolders]; }
+  function openPaths(paths) { for (const p of paths || []) openFolders.add(p); buildFlat(); }
+
   function openAncestors(path) {
     const parts = path.split('/').filter(Boolean);
     let cur = '';
@@ -340,7 +358,7 @@ export function renderTree(host, root, { onOpen, onMove, initialOpenDepth = Infi
 
   buildFlat();
 
-  return { setActive, setEdited, setMoved, filter, clearFilter, navigate, refresh, expandAll, collapseAll, stop };
+  return { setActive, setEdited, setMoved, filter, clearFilter, navigate, refresh, expandAll, collapseAll, getOpenFolders, openPaths, stop };
 }
 
 function escapeHtml(s) { return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }

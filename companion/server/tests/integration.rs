@@ -324,6 +324,36 @@ async fn test_list_files() {
     assert!(names.contains(&"subdir"));
 }
 
+// --- /tree recursive listing ---
+
+#[tokio::test]
+async fn test_tree_lists_files_recursively() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.txt"), b"aaa").unwrap();
+    fs::create_dir(tmp.path().join("sub")).unwrap();
+    fs::write(tmp.path().join("sub").join("b.txt"), b"bb").unwrap();
+
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = tmp.path().to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .uri(format!("/tree?path={}", urlencoding::encode(&path_str)))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let files = json["files"].as_array().unwrap();
+    let paths: Vec<&str> = files.iter().map(|f| f["path"].as_str().unwrap()).collect();
+    assert!(paths.contains(&"a.txt"));
+    assert!(paths.contains(&"sub/b.txt"), "nested file should use a '/'-separated relative path; got {paths:?}");
+    assert_eq!(json["truncated"], false);
+}
+
 // --- GET /watch (SSE) ---
 
 #[tokio::test]
@@ -427,10 +457,11 @@ async fn test_delete_file_outside_watched_returns_403() {
 }
 
 #[tokio::test]
-async fn test_delete_refuses_directory() {
+async fn test_delete_subfolder_recursively() {
     let tmp = TempDir::new().unwrap();
     let dir_path = tmp.path().join("subdir");
     fs::create_dir(&dir_path).unwrap();
+    fs::write(dir_path.join("inner.txt"), b"x").unwrap();
 
     let app = build_app("secret", vec![tmp.path().to_path_buf()]);
     let path_str = dir_path.to_str().unwrap().to_string();
@@ -445,8 +476,28 @@ async fn test_delete_refuses_directory() {
         )
         .await
         .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert!(!dir_path.exists(), "subfolder should be deleted recursively");
+}
+
+#[tokio::test]
+async fn test_delete_refuses_watched_root() {
+    let tmp = TempDir::new().unwrap();
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let path_str = tmp.path().to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::DELETE)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
     assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-    assert!(dir_path.exists(), "directory must not be deleted");
+    assert!(tmp.path().exists(), "the watched root must never be deleted");
 }
 
 // --- /logs ---

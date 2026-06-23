@@ -9,7 +9,13 @@ const LS_TOKEN   = 'fv:companion:token';
 
 let _token = localStorage.getItem(LS_TOKEN) || null;
 
-export function isEnabled() { return localStorage.getItem(LS_ENABLED) === 'true'; }
+// The companion is a DESKTOP-only feature (a local server + native app). On phones/tablets there's
+// no companion to reach, so we hard-disable it: isEnabled() is forced false, which gates every
+// companion fetch — zero off-origin requests on mobile regardless of the saved opt-in flag.
+export function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(navigator.userAgent || '');
+}
+export function isEnabled() { return !isMobileDevice() && localStorage.getItem(LS_ENABLED) === 'true'; }
 export function setEnabled(on) { localStorage.setItem(LS_ENABLED, on ? 'true' : 'false'); }
 
 export async function detectCompanion() {
@@ -83,6 +89,39 @@ export async function listFiles(path) {
   const res = await fetch(`${BASE}/files?path=${encodeURIComponent(path)}`);
   if (!res.ok) throw new Error(`files failed: ${res.status}`);
   return (await res.json()).entries;
+}
+
+// Recursive file listing under a folder: { files: [{ path, size }], truncated } where path is
+// relative to `absRoot` ('/'-separated). Used to refresh the folder tree from disk.
+export async function getTree(absRoot) {
+  const res = await fetch(`${BASE}/tree?path=${encodeURIComponent(absRoot)}`);
+  if (!res.ok) throw new Error(`tree failed: ${res.status}`);
+  return res.json();
+}
+
+// Fetch a single file's bytes as a Blob (for rebuilding the in-memory folder on refresh).
+export async function fetchFileBlob(absPath) {
+  const res = await fetch(`${BASE}/file?path=${encodeURIComponent(absPath)}`);
+  if (!res.ok) throw new Error(`read failed: ${res.status}`);
+  return res.blob();
+}
+
+// Watch a whole FOLDER subtree via SSE: fire `onChange(event)` for any create/modify/remove whose
+// path is under `rootAbs`. Returns a cleanup fn. Only opens when the companion is enabled.
+export function watchFolder(rootAbs, onChange) {
+  if (!isEnabled() || !rootAbs) return () => {};
+  const es = new EventSource(`${BASE}/watch`);
+  const norm = (p) => (p || '').replace(/\\/g, '/');
+  const root = norm(rootAbs).replace(/\/+$/, '');
+  es.onmessage = (e) => {
+    try {
+      const ev = JSON.parse(e.data);
+      if (ev.kind === 'other') return;
+      if (norm(ev.path).startsWith(root)) onChange(ev);
+    } catch { /* ignore */ }
+  };
+  es.onerror = () => { /* EventSource auto-reconnects */ };
+  return () => es.close();
 }
 
 // Fetch recent companion activity-log entries ({ ts, level, msg }[]), filtered server-side by

@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 
 use crate::{
     config::save_config,
@@ -26,6 +26,26 @@ use crate::{
 // Log "viewer connected" only once per process (ping is polled periodically by the browser, so we
 // don't want a line every 30s). Reset implicitly by a server restart.
 static CONNECTED_LOGGED: AtomicBool = AtomicBool::new(false);
+
+// Epoch-seconds of the most recent /ping. The viewer polls /ping every ~30s while open, so the tray
+// can show a green/red connection dot: "connected" = a ping within the last ~45s.
+static LAST_PING_EPOCH: AtomicI64 = AtomicI64::new(0);
+
+fn now_epoch_secs() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
+/// Seconds since the last viewer /ping (i64::MAX if none yet). The tray polls this for the status dot.
+pub fn seconds_since_last_ping() -> i64 {
+    let last = LAST_PING_EPOCH.load(Ordering::Relaxed);
+    if last == 0 {
+        return i64::MAX;
+    }
+    now_epoch_secs() - last
+}
 
 // ---------------------------------------------------------------------------
 // GET /ping
@@ -43,6 +63,7 @@ pub struct PingResponse {
 }
 
 pub async fn ping(State(state): State<AppState>) -> Json<PingResponse> {
+    LAST_PING_EPOCH.store(now_epoch_secs(), Ordering::Relaxed);
     if !CONNECTED_LOGGED.swap(true, Ordering::Relaxed) {
         logging::info("viewer connected");
     }
@@ -329,12 +350,33 @@ pub async fn delete_file(State(state): State<AppState>, Query(q): Query<FileQuer
             .into_response(),
         Ok(canonical) => {
             if canonical.is_dir() {
-                logging::warn(format!("delete refused (is a directory): {}", canonical.display()));
-                return (
-                    StatusCode::BAD_REQUEST,
-                    Json(serde_json::json!({ "error": "refusing to delete a directory" })),
-                )
-                    .into_response();
+                // A subfolder can be deleted (recursively), but NEVER a watched root itself — that
+                // would wipe the whole folder the user configured.
+                let is_root = watched.iter().any(|w| {
+                    std::fs::canonicalize(w).map(|cw| cw == canonical).unwrap_or(false)
+                });
+                if is_root {
+                    logging::warn(format!("delete refused (watched root): {}", canonical.display()));
+                    return (
+                        StatusCode::BAD_REQUEST,
+                        Json(serde_json::json!({ "error": "refusing to delete a watched folder root" })),
+                    )
+                        .into_response();
+                }
+                return match tokio::fs::remove_dir_all(&canonical).await {
+                    Err(e) => {
+                        logging::error(format!("delete failed ({}): {e}", canonical.display()));
+                        (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            Json(serde_json::json!({ "error": e.to_string() })),
+                        )
+                            .into_response()
+                    }
+                    Ok(()) => {
+                        logging::info(format!("deleted folder {}", canonical.display()));
+                        (StatusCode::OK, Json(serde_json::json!({ "ok": true, "folder": true }))).into_response()
+                    }
+                };
             }
             match tokio::fs::remove_file(&canonical).await {
                 Err(e) => {
@@ -407,6 +449,88 @@ pub async fn get_files(State(state): State<AppState>, Query(q): Query<FileQuery>
                 entries.push(DirEntry { name, size, is_dir });
             }
             (StatusCode::OK, Json(FilesResponse { entries })).into_response()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// GET /tree?path=  — recursive file listing under a folder (for the sidebar refresh).
+// Returns every file's path RELATIVE to the requested dir ('/'-separated) plus its size.
+// Path-restricted to watched folders; capped so a huge tree can't hang the request.
+// ---------------------------------------------------------------------------
+
+const TREE_MAX_FILES: usize = 5000;
+
+#[derive(Serialize)]
+pub struct TreeFile {
+    pub path: String,
+    pub size: u64,
+    pub mtime: u64, // epoch ms of last modification — lets the viewer detect changes cheaply
+}
+
+#[derive(Serialize)]
+pub struct TreeResponse {
+    pub files: Vec<TreeFile>,
+    pub truncated: bool,
+}
+
+fn walk_tree(root: &std::path::Path, dir: &std::path::Path, out: &mut Vec<TreeFile>, truncated: &mut bool) {
+    if *truncated {
+        return;
+    }
+    let rd = match std::fs::read_dir(dir) {
+        Ok(r) => r,
+        Err(_) => return,
+    };
+    for entry in rd.flatten() {
+        if out.len() >= TREE_MAX_FILES {
+            *truncated = true;
+            return;
+        }
+        let path = entry.path();
+        let meta = match entry.metadata() {
+            Ok(m) => m,
+            Err(_) => continue,
+        };
+        if meta.is_dir() {
+            walk_tree(root, &path, out, truncated);
+            if *truncated {
+                return;
+            }
+        } else if meta.is_file() {
+            if let Ok(rel) = path.strip_prefix(root) {
+                let mtime = meta
+                    .modified()
+                    .ok()
+                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|d| d.as_millis() as u64)
+                    .unwrap_or(0);
+                out.push(TreeFile {
+                    path: rel.to_string_lossy().replace('\\', "/"),
+                    size: meta.len(),
+                    mtime,
+                });
+            }
+        }
+    }
+}
+
+pub async fn get_tree(State(state): State<AppState>, Query(q): Query<FileQuery>) -> Response {
+    let watched = state.watched_paths.lock().unwrap().clone();
+    let pb = PathBuf::from(&q.path);
+    match validate_path(&pb, &watched) {
+        Err(e) => (StatusCode::FORBIDDEN, Json(serde_json::json!({ "error": e }))).into_response(),
+        Ok(canonical) => {
+            let mut files = Vec::new();
+            let mut truncated = false;
+            walk_tree(&canonical, &canonical, &mut files, &mut truncated);
+            logging::info(format!(
+                "tree {} → {} file(s){}",
+                canonical.display(),
+                files.len(),
+                if truncated { " (truncated)" } else { "" }
+            ));
+            (StatusCode::OK, Json(TreeResponse { files, truncated })).into_response()
         }
     }
 }
