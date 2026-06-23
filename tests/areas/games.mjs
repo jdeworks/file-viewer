@@ -286,8 +286,9 @@ export async function run(ctx) {
   pass('Sokoban launches');
   const sk0 = await page.$eval('.sokoban-wrap', (w) => ({ ...w.__sokoban.state(),
     v1: w.__sokoban.solveValueAt(1), v3: w.__sokoban.solveValueAt(3) }));
-  if (sk0.score === 0 && sk0.solved === 0 && sk0.levelIndex === 0 && sk0.boxes === 1 && sk0.onGoal === 0 && sk0.v3 > sk0.v1)
-    pass('Sokoban: clean start + ramped solve value');
+  if (sk0.score === 0 && sk0.solved === 0 && sk0.levelIndex === 0 && sk0.boxes === 1 && sk0.onGoal === 0
+      && !sk0.done && sk0.total >= 10 && sk0.v3 > sk0.v1)
+    pass('Sokoban: clean start + ' + sk0.total + ' levels + ramped solve value');
   else fail('Sokoban start: ' + JSON.stringify(sk0));
   await page.keyboard.press('ArrowLeft');                  // single push solves level 1
   const sk1 = await page.$eval('.sokoban-wrap', (w) => w.__sokoban.state());
