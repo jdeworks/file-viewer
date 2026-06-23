@@ -56,8 +56,8 @@ export function generate(rng, { width, height, maxRooms, minRoom, maxRoom }) {
     if (rooms.length > 0) connect(grid, rooms[rooms.length - 1], room, rng);
     rooms.push(room);
   }
-  // A few extra corridors between random rooms create loops (less tree-like, more explorable).
-  const extraLoops = Math.min(rooms.length - 1, 1 + Math.floor(rooms.length / 4));
+  // Extra corridors between random rooms create loops (less tree-like, more explorable).
+  const extraLoops = Math.min(rooms.length - 1, 2 + Math.floor(rooms.length / 3));
   for (let i = 0; i < extraLoops; i += 1) {
     const a = rng.pick(rooms);
     const b = rng.pick(rooms);

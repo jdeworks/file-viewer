@@ -247,7 +247,7 @@ function generate(rng, { width, height, maxRooms, minRoom, maxRoom }) {
     if (rooms.length > 0) connect(grid, rooms[rooms.length - 1], room, rng);
     rooms.push(room);
   }
-  const extraLoops = Math.min(rooms.length - 1, 1 + Math.floor(rooms.length / 4));
+  const extraLoops = Math.min(rooms.length - 1, 2 + Math.floor(rooms.length / 3));
   for (let i = 0; i < extraLoops; i += 1) {
     const a = rng.pick(rooms);
     const b = rng.pick(rooms);
@@ -259,18 +259,18 @@ function floodDistances(gridRows, start) {
   const width = gridRows[0].length;
   const height = gridRows.length;
   const dist = /* @__PURE__ */ new Map();
-  const key = (x, y) => `${x},${y}`;
-  dist.set(key(start.x, start.y), 0);
+  const key2 = (x, y) => `${x},${y}`;
+  dist.set(key2(start.x, start.y), 0);
   const queue = [start];
   while (queue.length) {
     const cur = queue.shift();
-    const d = dist.get(key(cur.x, cur.y));
+    const d = dist.get(key2(cur.x, cur.y));
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = cur.x + dx;
       const ny = cur.y + dy;
       if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
       if (gridRows[ny][nx] === "#") continue;
-      const k = key(nx, ny);
+      const k = key2(nx, ny);
       if (dist.has(k)) continue;
       dist.set(k, d + 1);
       queue.push({ x: nx, y: ny });
@@ -358,10 +358,10 @@ var DIRS = {
 };
 function buildFloor(runSeed, floorNum) {
   const rng = makeRng(`${runSeed}:${floorNum}`);
-  const width = Math.min(60, 45 + floorNum * 2);
-  const height = Math.min(32, 25 + floorNum);
-  const maxRooms = Math.min(12, 6 + floorNum);
-  const { grid, rooms } = generate(rng, { width, height, maxRooms, minRoom: 4, maxRoom: 8 });
+  const width = Math.min(110, 50 + (floorNum - 1) * 12);
+  const height = Math.min(54, 26 + (floorNum - 1) * 6);
+  const maxRooms = Math.min(26, 9 + (floorNum - 1) * 3);
+  const { grid, rooms } = generate(rng, { width, height, maxRooms, minRoom: 4, maxRoom: 9 });
   const start = { x: rooms[0].cx, y: rooms[0].cy };
   const dist = floodDistances(grid, start);
   let exit = start;
@@ -381,7 +381,7 @@ function buildFloor(runSeed, floorNum) {
   const cells = rng.shuffle(spawnable);
   let ci = 0;
   const take = () => ci < cells.length ? cells[ci++] : null;
-  const monsterCount = Math.min(14, 3 + floorNum * 2);
+  const monsterCount = Math.min(24, 4 + floorNum * 3);
   const monsters = [];
   for (let i = 0; i < monsterCount; i += 1) {
     const c = take();
@@ -396,7 +396,7 @@ function buildFloor(runSeed, floorNum) {
   const wc = take();
   if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[weaponTier], taken: false });
   const glyphs = [];
-  const glyphCount = 2 + Math.floor(floorNum / 2);
+  const glyphCount = 3 + floorNum;
   for (let i = 0; i < glyphCount; i += 1) {
     const c = take();
     if (!c) break;
@@ -436,12 +436,15 @@ function step(world, player, dir) {
   const ny = world.pos.y + move.dy;
   if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= world.width) return events;
   if (world.grid[ny][nx] === "#") return events;
-  const foe = world.monsters.find((m) => m.alive && m.x === nx && m.y === ny);
+  const foeIndex = world.monsters.findIndex((m) => m.alive && m.x === nx && m.y === ny);
+  const foe = foeIndex >= 0 ? world.monsters[foeIndex] : null;
   if (foe) {
+    events.attack = { x: nx, y: ny, foeIndex, killed: false };
     foe.hp -= Math.max(1, player.atk);
     if (foe.hp <= 0) {
       foe.alive = false;
       events.killed = true;
+      events.attack.killed = true;
       const got = gainGlyphs(player, foe.drop);
       events.log.push(`${foe.name} unparsed. +${got} glyph${got === 1 ? "" : "s"}.`);
       awardXp(player, foe.xp, events);
@@ -551,17 +554,17 @@ function buildHelpPanel({ onClose }) {
   return { el: box };
 }
 
-// ../../docs/games/metagame/stages/stage2/renderer.js
-var MAX_FLOOR = 5;
+// ../../docs/games/metagame/stages/stage2/view.js
+var VIEW_W = 48;
+var VIEW_H = 22;
+var ORIGIN = 11;
+var REDUCE = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+var LUNGE_IN = 95;
+var LUNGE_OUT = 130;
 var CELL_CLASS = {
   "#": "s2-c-wall",
-  "@": "s2-c-player",
-  m: "s2-c-foe",
-  s: "s2-c-foe",
-  n: "s2-c-foe",
-  r: "s2-c-foe",
-  L: "s2-c-foe2",
-  O: "s2-c-foe2",
+  ".": "s2-c-floor",
+  " ": "s2-c-void",
   "/": "s2-c-item",
   "[": "s2-c-item",
   "]": "s2-c-item",
@@ -569,6 +572,200 @@ var CELL_CLASS = {
   "?": "s2-c-glyph",
   ">": "s2-c-exit"
 };
+var HEAVY_FOES = /* @__PURE__ */ new Set(["L", "O"]);
+var clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+function hpBar(cur, max, width) {
+  const ratio = max > 0 ? clamp(cur / max, 0, 1) : 0;
+  let filled = Math.round(ratio * width);
+  if (cur > 0 && filled === 0) filled = 1;
+  if (cur >= max) filled = width;
+  return { filled, empty: Math.max(0, width - filled) };
+}
+function renderHpBar(el, cur, max, width) {
+  const { filled, empty } = hpBar(cur, max, width);
+  el.innerHTML = `<span class="s2-hpb-fill">${"#".repeat(filled)}</span><span class="s2-hpb-empty">${".".repeat(empty)}</span>`;
+  el.classList.toggle("s2-hp-low", max > 0 && cur / max <= 0.25 && cur > 0);
+}
+function createView(screenEl) {
+  const map = document.createElement("pre");
+  map.className = "s2-grid";
+  map.setAttribute("aria-label", "ASCII dungeon map");
+  const sprites = document.createElement("div");
+  sprites.className = "s2-sprites";
+  sprites.setAttribute("aria-hidden", "true");
+  const flash = document.createElement("div");
+  flash.className = "s2-flash";
+  flash.setAttribute("aria-hidden", "true");
+  const ruler = document.createElement("pre");
+  ruler.className = "s2-grid s2-ruler";
+  ruler.textContent = "MMMMMMMMMM\nMMMMMMMMMM";
+  screenEl.replaceChildren(map, sprites, flash, ruler);
+  let chW = 8.4;
+  let chH = 17.5;
+  const cam = { x: 0, y: 0 };
+  const playerEl = makeSprite("@", "s2-c-player");
+  sprites.append(playerEl);
+  const mobEls = /* @__PURE__ */ new Map();
+  function measure() {
+    const r = ruler.getBoundingClientRect();
+    if (r.width > 0) chW = r.width / 10;
+    if (r.height > 0) chH = r.height / 2;
+  }
+  measure();
+  const onResize = () => {
+    measure();
+  };
+  window.addEventListener("resize", onResize);
+  function pos(el, cx, cy, ms) {
+    el.style.transition = ms ? `transform ${ms}ms ease-out` : "none";
+    el.style.transform = `translate(${ORIGIN + (cx - cam.x) * chW}px, ${ORIGIN + (cy - cam.y) * chH}px)`;
+  }
+  function paintArena(lines) {
+    sprites.replaceChildren();
+    mobEls.clear();
+    map.innerHTML = colorize(lines);
+  }
+  function paintExplore(world) {
+    sprites.append(playerEl);
+    cam.x = clamp(world.pos.x - (VIEW_W >> 1), 0, Math.max(0, world.width - VIEW_W));
+    cam.y = clamp(world.pos.y - (VIEW_H >> 1), 0, Math.max(0, world.grid.length - VIEW_H));
+    map.innerHTML = colorize(terrainSlice(world));
+    reconcileSprites(world);
+  }
+  function terrainSlice(world) {
+    const items = /* @__PURE__ */ new Set();
+    for (const g of world.glyphs) if (!g.taken) items.add(key(g.x, g.y) + ":%");
+    for (const w of world.weapons) if (!w.taken) items.add(key(w.x, w.y) + ":/");
+    const overlay = /* @__PURE__ */ new Map();
+    for (const it of items) {
+      const [k, ch] = it.split(":");
+      overlay.set(k, ch);
+    }
+    overlay.set(key(world.exit.x, world.exit.y), ">");
+    const rows = [];
+    for (let vy = 0; vy < VIEW_H; vy += 1) {
+      const gy = cam.y + vy;
+      let line = "";
+      for (let vx = 0; vx < VIEW_W; vx += 1) {
+        const gx = cam.x + vx;
+        if (gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width) {
+          line += " ";
+          continue;
+        }
+        line += overlay.get(key(gx, gy)) || world.grid[gy][gx];
+      }
+      rows.push(line);
+    }
+    return rows;
+  }
+  function reconcileSprites(world) {
+    pos(playerEl, world.pos.x, world.pos.y);
+    const live = /* @__PURE__ */ new Set();
+    world.monsters.forEach((m, i) => {
+      if (!m.alive || !inView(m.x, m.y)) {
+        dropMob(i);
+        return;
+      }
+      live.add(i);
+      let s = mobEls.get(i);
+      if (!s) {
+        s = makeMob(m);
+        mobEls.set(i, s);
+        sprites.append(s.el);
+      }
+      s.glyph.textContent = m.glyph;
+      s.el.className = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
+      if (m.hp < m.maxHp) {
+        s.hp.hidden = false;
+        renderHpBar(s.hp, m.hp, m.maxHp, 5);
+      } else s.hp.hidden = true;
+      pos(s.el, m.x, m.y);
+    });
+    for (const i of [...mobEls.keys()]) if (!live.has(i)) dropMob(i);
+  }
+  function dropMob(i) {
+    const s = mobEls.get(i);
+    if (s) {
+      s.el.remove();
+      mobEls.delete(i);
+    }
+  }
+  function inView(x, y) {
+    return x >= cam.x && x < cam.x + VIEW_W && y >= cam.y && y < cam.y + VIEW_H;
+  }
+  function applyMove(world, events) {
+    let dying = null;
+    if (events.attack && events.attack.killed) {
+      dying = mobEls.get(events.attack.foeIndex) || null;
+      if (dying) mobEls.delete(events.attack.foeIndex);
+    }
+    paintExplore(world);
+    if (events.attack) {
+      const foe = events.attack.killed ? dying : mobEls.get(events.attack.foeIndex);
+      lunge(world.pos, events.attack, foe);
+    }
+  }
+  function lunge(p, attack, foe) {
+    const dx = Math.sign(attack.x - p.x);
+    const dy = Math.sign(attack.y - p.y);
+    if (REDUCE) {
+      if (attack.killed && foe) foe.el.remove();
+      return;
+    }
+    pos(playerEl, p.x + dx * 0.5, p.y + dy * 0.5, LUNGE_IN);
+    if (foe) pos(foe.el, attack.x - dx * 0.45, attack.y - dy * 0.45, LUNGE_IN);
+    setTimeout(() => {
+      pos(playerEl, p.x, p.y, LUNGE_OUT);
+      if (!foe) return;
+      if (attack.killed) {
+        foe.el.classList.add("s2-sprite-die");
+        setTimeout(() => foe.el.remove(), 360);
+      } else {
+        pos(foe.el, attack.x, attack.y, LUNGE_OUT);
+      }
+    }, LUNGE_IN + 10);
+  }
+  function destroy() {
+    window.removeEventListener("resize", onResize);
+  }
+  return { mapEl: map, flashEl: flash, screenEl, paintExplore, paintArena, applyMove, measure, destroy };
+}
+function key(x, y) {
+  return x + "," + y;
+}
+function makeSprite(glyph, cls) {
+  const el = document.createElement("span");
+  el.className = "s2-sprite " + cls;
+  el.textContent = glyph;
+  return el;
+}
+function makeMob(m) {
+  const el = document.createElement("span");
+  el.className = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
+  const hp = document.createElement("span");
+  hp.className = "s2-mob-hp";
+  hp.hidden = true;
+  const glyph = document.createElement("span");
+  glyph.className = "s2-mob-glyph";
+  glyph.textContent = m.glyph;
+  el.append(hp, glyph);
+  return { el, glyph, hp };
+}
+function colorize(lines) {
+  return lines.map((line) => [...line].map((ch) => {
+    const cls = CELL_CLASS[ch] || "s2-c-floor";
+    return `<span class="${cls}">${escapeChar(ch)}</span>`;
+  }).join("")).join("\n");
+}
+function escapeChar(ch) {
+  if (ch === "&") return "&amp;";
+  if (ch === "<") return "&lt;";
+  if (ch === ">") return "&gt;";
+  return ch;
+}
+
+// ../../docs/games/metagame/stages/stage2/renderer.js
+var MAX_FLOOR = 5;
 var MOVE_KEYS = {
   ArrowUp: "up",
   ArrowDown: "down",
@@ -597,17 +794,14 @@ function renderStage2({
   root.innerHTML = `
     <header class="s2-hud">
       <div><strong>FLOOR <span data-field="floor"></span>/${MAX_FLOOR} - GLYPH DUNGEON</strong></div>
-      <div>HP <span data-field="hp"></span>/<span data-field="maxHp"></span></div>
+      <div>HP <span class="s2-hp-bar" data-field="hpbar"></span> <span data-field="hp"></span>/<span data-field="maxHp"></span></div>
       <div>LVL <span data-field="level"></span> (<span data-field="xp"></span>xp)</div>
       <div>ATK <span data-field="atk"></span></div>
       <div>DEF <span data-field="def"></span></div>
       <div>GLYPHS <span data-field="glyphs"></span></div>
     </header>
     <div class="s2-objective" data-field="objective"></div>
-    <div class="s2-screen">
-      <pre class="s2-grid" aria-label="ASCII dungeon map"></pre>
-      <div class="s2-flash" aria-hidden="true"></div>
-    </div>
+    <div class="s2-screen"></div>
     <div class="s2-legend">
       <span class="s2-c-player">@</span> you
       <span class="s2-c-foe">s</span> foe
@@ -638,8 +832,7 @@ function renderStage2({
   `;
   host.replaceChildren(root);
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
-  const grid = root.querySelector(".s2-grid");
-  const flash = root.querySelector(".s2-flash");
+  const view = createView(root.querySelector(".s2-screen"));
   const log = root.querySelector(".s2-log");
   let flashTimer = null;
   let overlay = null;
@@ -647,12 +840,13 @@ function renderStage2({
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
   ensureWorld(state);
-  function repaint() {
+  function paintHud() {
     const entity = state.run.entity;
     const lock = getBossLockState({ actions, state });
     fields.floor.textContent = String(state.run.floor);
     fields.hp.textContent = String(entity.hp);
     fields.maxHp.textContent = String(entity.maxHp);
+    renderHpBar(fields.hpbar, entity.hp, entity.maxHp, 10);
     fields.level.textContent = String(entity.level);
     fields.xp.textContent = String(entity.xp || 0);
     fields.atk.textContent = String(entity.atk);
@@ -661,17 +855,24 @@ function renderStage2({
     fields.bossStatus.textContent = state.run.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`;
     fields.hint.textContent = lock.hint;
     fields.objective.textContent = state.run.boss.reached ? lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way." : `reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`;
-    if (state.run.boss.reached) {
-      grid.innerHTML = colorize(lock.unlocked ? bossArenaUnlocked : bossArenaLocked);
-    } else {
-      grid.innerHTML = colorize(composeExplore(state.run.world));
-    }
     log.replaceChildren(...state.run.combatLog.slice(-4).map((line) => {
       const item = document.createElement("li");
       item.textContent = line;
       return item;
     }));
     root.querySelector('[data-action="bts"]').hidden = !state.run.boss.defeated;
+  }
+  function paintWorld() {
+    if (state.run.boss.reached) {
+      const lock = getBossLockState({ actions, state });
+      view.paintArena(lock.unlocked ? bossArenaUnlocked : bossArenaLocked);
+    } else {
+      view.paintExplore(state.run.world);
+    }
+  }
+  function repaint() {
+    paintHud();
+    paintWorld();
   }
   function persistAndPaint() {
     if (typeof save === "function") save();
@@ -685,12 +886,20 @@ function renderStage2({
     if (events.died) {
       appendLog(state, "@ was unparsed. run reset — banked glyphs survive.");
       resetRun(state, { banked: true, death: true });
-    } else if (events.descend) {
-      descend(state);
+      persistAndPaint();
+      return;
     }
-    persistAndPaint();
+    if (events.descend) {
+      descend(state);
+      persistAndPaint();
+      return;
+    }
+    if (typeof save === "function") save();
+    view.applyMove(state.run.world, events);
+    paintHud();
   }
   function flashDamage(fatal) {
+    const flash = view.flashEl;
     flash.textContent = damageNoise(fatal);
     flash.classList.remove("s2-flash-on");
     void flash.offsetWidth;
@@ -761,6 +970,7 @@ function renderStage2({
     destroy() {
       window.removeEventListener("keydown", onKey);
       if (flashTimer) clearTimeout(flashTimer);
+      view.destroy();
       root.remove();
     }
   };
@@ -817,30 +1027,6 @@ function resetRun(state, { banked, death }) {
   run.active = false;
   run.boss.reached = false;
   run.world = buildFloor(run.seed, 1);
-}
-function composeExplore(world) {
-  const rows = world.grid.map((r) => r.split(""));
-  const put = (x, y, ch) => {
-    if (rows[y] && rows[y][x] !== void 0) rows[y][x] = ch;
-  };
-  for (const g of world.glyphs) if (!g.taken) put(g.x, g.y, "%");
-  for (const wp of world.weapons) if (!wp.taken) put(wp.x, wp.y, "/");
-  put(world.exit.x, world.exit.y, ">");
-  for (const m of world.monsters) if (m.alive) put(m.x, m.y, m.glyph);
-  put(world.pos.x, world.pos.y, "@");
-  return rows.map((r) => r.join(""));
-}
-function colorize(lines) {
-  return lines.map((line) => [...line].map((ch) => {
-    const cls = CELL_CLASS[ch] || "s2-c-floor";
-    return `<span class="${cls}">${escapeChar(ch)}</span>`;
-  }).join("")).join("\n");
-}
-function escapeChar(ch) {
-  if (ch === "&") return "&amp;";
-  if (ch === "<") return "&lt;";
-  if (ch === ">") return "&gt;";
-  return ch;
 }
 var NOISE_CHARS = "╳✕X#▓░*/\\";
 function damageNoise(fatal) {

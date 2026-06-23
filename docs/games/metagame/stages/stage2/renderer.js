@@ -4,19 +4,10 @@ import { buildFloor, step } from "./engine.js";
 import { rollEntity } from "./data.js";
 import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
+import { createView, renderHpBar } from "./view.js";
 import { BTS_PATH, CIPHER_PATH, bellMessages } from "./messages.js";
 
 const MAX_FLOOR = 5;
-
-// Per-character colour classes for the grid. All monster glyphs read as "foe"; the heavy
-// foes (memory leak L, stack overflow O) get a hotter shade.
-const CELL_CLASS = {
-  "#": "s2-c-wall", "@": "s2-c-player",
-  m: "s2-c-foe", s: "s2-c-foe", n: "s2-c-foe", r: "s2-c-foe",
-  L: "s2-c-foe2", O: "s2-c-foe2",
-  "/": "s2-c-item", "[": "s2-c-item", "]": "s2-c-item",
-  "%": "s2-c-glyph", "?": "s2-c-glyph", ">": "s2-c-exit"
-};
 
 const MOVE_KEYS = {
   ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
@@ -37,17 +28,14 @@ export function renderStage2({
   root.innerHTML = `
     <header class="s2-hud">
       <div><strong>FLOOR <span data-field="floor"></span>/${MAX_FLOOR} - GLYPH DUNGEON</strong></div>
-      <div>HP <span data-field="hp"></span>/<span data-field="maxHp"></span></div>
+      <div>HP <span class="s2-hp-bar" data-field="hpbar"></span> <span data-field="hp"></span>/<span data-field="maxHp"></span></div>
       <div>LVL <span data-field="level"></span> (<span data-field="xp"></span>xp)</div>
       <div>ATK <span data-field="atk"></span></div>
       <div>DEF <span data-field="def"></span></div>
       <div>GLYPHS <span data-field="glyphs"></span></div>
     </header>
     <div class="s2-objective" data-field="objective"></div>
-    <div class="s2-screen">
-      <pre class="s2-grid" aria-label="ASCII dungeon map"></pre>
-      <div class="s2-flash" aria-hidden="true"></div>
-    </div>
+    <div class="s2-screen"></div>
     <div class="s2-legend">
       <span class="s2-c-player">@</span> you
       <span class="s2-c-foe">s</span> foe
@@ -80,8 +68,7 @@ export function renderStage2({
   host.replaceChildren(root);
 
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
-  const grid = root.querySelector(".s2-grid");
-  const flash = root.querySelector(".s2-flash");
+  const view = createView(root.querySelector(".s2-screen"));
   const log = root.querySelector(".s2-log");
   let flashTimer = null;
   let overlay = null; // { el } for the open shop/help panel, or null
@@ -92,12 +79,14 @@ export function renderStage2({
 
   ensureWorld(state);
 
-  function repaint() {
+  // HUD + log + boss panel — everything outside the dungeon screen.
+  function paintHud() {
     const entity = state.run.entity;
     const lock = getBossLockState({ actions, state });
     fields.floor.textContent = String(state.run.floor);
     fields.hp.textContent = String(entity.hp);
     fields.maxHp.textContent = String(entity.maxHp);
+    renderHpBar(fields.hpbar, entity.hp, entity.maxHp, 10);
     fields.level.textContent = String(entity.level);
     fields.xp.textContent = String(entity.xp || 0);
     fields.atk.textContent = String(entity.atk);
@@ -110,12 +99,6 @@ export function renderStage2({
     fields.objective.textContent = state.run.boss.reached
       ? (lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way.")
       : `reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`;
-
-    if (state.run.boss.reached) {
-      grid.innerHTML = colorize(lock.unlocked ? bossArenaUnlocked : bossArenaLocked);
-    } else {
-      grid.innerHTML = colorize(composeExplore(state.run.world));
-    }
     log.replaceChildren(...state.run.combatLog.slice(-4).map((line) => {
       const item = document.createElement("li");
       item.textContent = line;
@@ -123,6 +106,18 @@ export function renderStage2({
     }));
     root.querySelector('[data-action="bts"]').hidden = !state.run.boss.defeated;
   }
+
+  // The dungeon screen — boss arena art, or the camera-following exploration view.
+  function paintWorld() {
+    if (state.run.boss.reached) {
+      const lock = getBossLockState({ actions, state });
+      view.paintArena(lock.unlocked ? bossArenaUnlocked : bossArenaLocked);
+    } else {
+      view.paintExplore(state.run.world);
+    }
+  }
+
+  function repaint() { paintHud(); paintWorld(); }
 
   function persistAndPaint() {
     if (typeof save === "function") save();
@@ -138,13 +133,22 @@ export function renderStage2({
     if (events.died) {
       appendLog(state, "@ was unparsed. run reset — banked glyphs survive.");
       resetRun(state, { banked: true, death: true });
-    } else if (events.descend) {
-      descend(state);
+      persistAndPaint();
+      return;
     }
-    persistAndPaint();
+    if (events.descend) {
+      descend(state);
+      persistAndPaint();
+      return;
+    }
+    // Normal walk / bump-attack — animate the sprite layer, repaint only the HUD.
+    if (typeof save === "function") save();
+    view.applyMove(state.run.world, events);
+    paintHud();
   }
 
   function flashDamage(fatal) {
+    const flash = view.flashEl;
     flash.textContent = damageNoise(fatal);
     flash.classList.remove("s2-flash-on");
     void flash.offsetWidth; // restart the animation even on rapid hits
@@ -203,6 +207,7 @@ export function renderStage2({
     destroy() {
       window.removeEventListener("keydown", onKey);
       if (flashTimer) clearTimeout(flashTimer);
+      view.destroy();
       root.remove();
     }
   };
@@ -271,32 +276,6 @@ function resetRun(state, { banked, death }) {
 }
 
 // ── Rendering helpers ─────────────────────────────────────────────────────────────────────────
-// Overlay live entities (glyphs, weapons, monsters, stairs, player) onto the floor layout.
-function composeExplore(world) {
-  const rows = world.grid.map((r) => r.split(""));
-  const put = (x, y, ch) => { if (rows[y] && rows[y][x] !== undefined) rows[y][x] = ch; };
-  for (const g of world.glyphs) if (!g.taken) put(g.x, g.y, "%");
-  for (const wp of world.weapons) if (!wp.taken) put(wp.x, wp.y, "/");
-  put(world.exit.x, world.exit.y, ">");
-  for (const m of world.monsters) if (m.alive) put(m.x, m.y, m.glyph);
-  put(world.pos.x, world.pos.y, "@");
-  return rows.map((r) => r.join(""));
-}
-
-function colorize(lines) {
-  return lines.map((line) => [...line].map((ch) => {
-    const cls = CELL_CLASS[ch] || "s2-c-floor";
-    return `<span class="${cls}">${escapeChar(ch)}</span>`;
-  }).join("")).join("\n");
-}
-
-function escapeChar(ch) {
-  if (ch === "&") return "&amp;";
-  if (ch === "<") return "&lt;";
-  if (ch === ">") return "&gt;";
-  return ch;
-}
-
 const NOISE_CHARS = "╳✕X#▓░*/\\";
 function damageNoise(fatal) {
   const rows = fatal ? 7 : 4;
