@@ -235,6 +235,15 @@ export async function run(ctx) {
   const boLaunched = await page.$eval('.breakout-wrap', (w) => w.__breakout.state());
   if (!boLaunched.stuck && !boLaunched.dead) pass('Breakout: ball launches on Space');
   else fail('Breakout launch: ' + JSON.stringify(boLaunched));
+  const boPower = await page.$eval('.breakout-wrap', (w) => {
+    const before = w.__breakout.state().balls;
+    w.__breakout.activate('multi');
+    const after = w.__breakout.state().balls;
+    w.__breakout.activate('life');
+    return { before, after, lives: w.__breakout.state().lives };
+  });
+  if (boPower.after > boPower.before && boPower.lives === 4) pass('Breakout: multiball adds balls + extra-life power-up');
+  else fail('Breakout power-ups: ' + JSON.stringify(boPower));
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
