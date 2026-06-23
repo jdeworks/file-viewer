@@ -6,7 +6,7 @@ import { dpad } from '../controls.js';
 import { AST, wrap, splitAsteroid, dist2, spawnWave } from './entities.js';
 
 const W = 360, H = 360;
-const ROT = 4.2, THRUST = 240, DRAG = 0.7, MAX_V = 320;     // ship handling
+const ROT = 4.2, THRUST = 240, DRAG = 0.06, MAX_V = 320;    // ship handling — near-frictionless drift (classic inertia)
 const BULLET_V = 420, BULLET_LIFE = 0.9, FIRE_MS = 180, MAX_BULLETS = 5;
 const rockSpeed = (wave) => 36 + wave * 12;                 // escalates with wave
 const rocksInWave = (wave) => 3 + wave;
@@ -37,7 +37,7 @@ export function mount(host, { onScore, onExit } = {}) {
   const overMsg = host.querySelector('.asteroids-over-msg');
 
   let ship, bullets, rocks, score, lives, wave, dead, raf, last, fireCd;
-  const keys = { l: false, r: false, thrust: false };
+  const keys = { l: false, r: false, thrust: false, fire: false };
 
   function syncHud() {
     scoreEl.textContent = 'Score: ' + score;
@@ -53,7 +53,7 @@ export function mount(host, { onScore, onExit } = {}) {
 
   function reset() {
     ship = newShip(); bullets = []; score = 0; lives = 3; wave = 1; dead = false; fireCd = 0;
-    keys.l = keys.r = keys.thrust = false;
+    keys.l = keys.r = keys.thrust = keys.fire = false;
     startWave();
     overEl.hidden = true; syncHud();
     last = null; cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
@@ -82,6 +82,7 @@ export function mount(host, { onScore, onExit } = {}) {
     ship.x += ship.vx * dt; ship.y += ship.vy * dt; wrap(ship, W, H);
     if (ship.inv > 0) ship.inv -= dt;
     if (fireCd > 0) fireCd -= dt;
+    if (keys.fire) fire();                                  // hold Space to keep firing (respects cooldown)
 
     for (const b of bullets) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; wrap(b, W, H); }
     bullets = bullets.filter((b) => b.life > 0);
@@ -142,7 +143,7 @@ export function mount(host, { onScore, onExit } = {}) {
     if (k === 'arrowleft' || k === 'a') keys.l = true;
     else if (k === 'arrowright' || k === 'd') keys.r = true;
     else if (k === 'arrowup' || k === 'w') keys.thrust = true;
-    else if (k === ' ') fire();
+    else if (k === ' ') { keys.fire = true; fire(); }
     else return;
     e.preventDefault();
   }
@@ -151,6 +152,7 @@ export function mount(host, { onScore, onExit } = {}) {
     if (k === 'arrowleft' || k === 'a') keys.l = false;
     else if (k === 'arrowright' || k === 'd') keys.r = false;
     else if (k === 'arrowup' || k === 'w') keys.thrust = false;
+    else if (k === ' ') keys.fire = false;
   }
 
   // Touch: discrete impulses per press (the d-pad repeats while held).

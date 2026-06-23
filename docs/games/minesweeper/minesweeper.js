@@ -63,9 +63,13 @@ export function mount(host, { onScore, onExit } = {}) {
   }
 
   function seed(safe) {
+    // First click is always safe AND opens an area: ban the clicked cell + all 8 neighbours from
+    // holding a mine, so it has 0 adjacent mines and floods. Clamp + guard so it can never hang.
     const banned = new Set([safe, ...neighbors(safe)]);
-    let placed = 0;
-    while (placed < mines) {
+    mines = Math.min(mines, Math.max(0, cells.length - banned.size));
+    let placed = 0, guard = 0;
+    while (placed < mines && guard < cells.length * 50) {
+      guard++;
       const i = Math.floor(Math.random() * cells.length);
       if (banned.has(i) || cells[i].mine) continue;
       cells[i].mine = true; placed++;
