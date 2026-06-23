@@ -354,6 +354,11 @@ function appendCompanionDownloadPanel(panel) {
   checksum.className = 'companion-checksum';
   checksum.textContent = 'Before running a downloaded binary, compare its SHA-256 against the checksum on the release page (or build from source above).';
 
+  // Honest disclosure: builds are unsigned, so AV/SmartScreen may false-positive.
+  const signing = document.createElement('p');
+  signing.className = 'companion-checksum';
+  signing.textContent = 'Builds are unsigned, so antivirus or SmartScreen may flag a fresh binary that opens a local port and touches files (e.g. "IDP.Generic") — a false positive, not malware. Building from source and trusting your own build is the most reliable path.';
+
   const download = document.createElement('a');
   download.className = 'companion-download-btn';
   download.href = 'https://github.com/jdeworks/file-viewer/releases';
@@ -361,7 +366,7 @@ function appendCompanionDownloadPanel(panel) {
   download.rel = 'noopener noreferrer';
   download.textContent = 'Download from GitHub Releases';
 
-  info.append(title, description, net, tableLabel, table, source, checksum, download);
+  info.append(title, description, net, tableLabel, table, source, checksum, signing, download);
   panel.appendChild(info);
 }
 
