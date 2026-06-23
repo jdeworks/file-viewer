@@ -431,7 +431,7 @@ export async function run(ctx) {
   else fail('companion download panel missing unsigned/AV disclosure: ' + JSON.stringify(companionOrder));
 
   // Switch preset to Compact -> preview re-renders at 680px max width.
-  const presetSel = await page.$('#settingsBody select');
+  const presetSel = await page.$('#settingsBody select.set-preset');
   await presetSel.selectOption('compact');
   await page.waitForTimeout(500);
   const frame2 = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 5000 });
@@ -440,14 +440,14 @@ export async function run(ctx) {
   if (maxW === '680px') pass('preset applied to preview (maxWidth=680px)'); else fail('preview maxWidth after Compact: ' + maxW);
 
   // Preset matcher reports Compact (not Custom) after selecting it.
-  const presetVal = await page.$eval('#settingsBody select', (s) => s.value);
+  const presetVal = await page.$eval('#settingsBody select.set-preset', (s) => s.value);
   if (presetVal === 'compact') pass('preset dropdown reflects selection'); else fail('preset value: ' + presetVal);
 
   // Changing one value flips the dropdown to Custom.
   const numInput = await page.$('#settingsBody input[type="number"]');
   await numInput.fill('22'); await numInput.dispatchEvent('change');
   await page.waitForTimeout(200);
-  const afterEdit = await page.$eval('#settingsBody select', (s) => s.value);
+  const afterEdit = await page.$eval('#settingsBody select.set-preset', (s) => s.value);
   if (afterEdit === 'custom') pass('manual edit -> Custom preset'); else fail('expected custom, got ' + afterEdit);
 
   // Every setting carries a visible info hint (self-documenting).

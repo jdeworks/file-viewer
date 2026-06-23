@@ -77,6 +77,28 @@ export async function getWatchedPaths() {
   return (await res.json()).paths;
 }
 
+// List the entries of a directory inside a watched folder ({ name, size, isDir }[]). Used by the
+// folder-browser (create-unknown-file flow). Path-restricted server-side to watched folders.
+export async function listFiles(path) {
+  const res = await fetch(`${BASE}/files?path=${encodeURIComponent(path)}`);
+  if (!res.ok) throw new Error(`files failed: ${res.status}`);
+  return (await res.json()).entries;
+}
+
+// Fetch recent companion activity-log entries ({ ts, level, msg }[]), filtered server-side by
+// minimum level ("info"|"warn"|"error"), a case-insensitive substring `q`, and an RFC3339 `since`
+// cutoff. Used by the in-settings log viewer.
+export async function getLogs({ level, q, since, limit } = {}) {
+  const params = new URLSearchParams();
+  if (level) params.set('level', level);
+  if (q) params.set('q', q);
+  if (since) params.set('since', since);
+  if (limit) params.set('limit', String(limit));
+  const res = await fetch(`${BASE}/logs?${params}`);
+  if (!res.ok) throw new Error(`logs failed: ${res.status}`);
+  return (await res.json()).entries;
+}
+
 export async function addWatchedPath(path) {
   const res = await fetch(`${BASE}/watched-paths`, {
     method: 'POST',

@@ -2,6 +2,8 @@ import { intakeFromFile } from './intake.js';
 import { layoutTopbar } from './layout.js';
 import { $, state, toast, escapeHtml } from './state.js';
 import { detectCompanion, findFile, findFolder, saveFile, deleteFile, pickFolder, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
+import { browseForFolder, joinPath } from './companion-browse.js';
+export { renderCompanionSettings } from './companion-settings.js';
 
 let companionAvailable = false;
 let companionLinkedPath = null;
@@ -33,6 +35,12 @@ export function isCompanionAvailable() {
   return companionAvailable;
 }
 
+// Lets the settings module (companion-settings.js) update availability after a manual
+// enable/test/toggle without owning the module-level state.
+export function setCompanionAvailable(v) {
+  companionAvailable = v;
+}
+
 export function hasCompanionFolderRoot() {
   return !!companionFolderRoot;
 }
@@ -41,7 +49,7 @@ export function resetCompanionFolderRoot() {
   companionFolderRoot = null;
 }
 
-function showCompanionIndicator() {
+export function showCompanionIndicator() {
   toast('Companion connected — save files back to disk with 💾', 3500);
 }
 
@@ -124,7 +132,7 @@ export function startWatching(absolutePath) {
   });
 }
 
-function stopWatching() {
+export function stopWatching() {
   if (_watchCleanup) { _watchCleanup(); _watchCleanup = null; }
   document.querySelector('.companion-reload-banner')?.remove();
 }
@@ -196,6 +204,7 @@ export async function onSaveClick() {
   $('saveBtn').disabled = true;
   try {
     let absPath = null;
+    let isCreate = false;
 
     if (state.currentFolderPath && companionFolderRoot) {
       const fileHandle = state.intake.file;
@@ -214,10 +223,13 @@ export async function onSaveClick() {
         return;
       }
       if (!matches || matches.length === 0) {
-        toast('File not found in watched folders. Check Companion settings.');
-        return;
-      }
-      if (matches.length === 1) {
+        // Not on disk yet → offer to CREATE it in a watched folder the user browses to.
+        if (!confirm(`Couldn't find "${filename}" in your watched folders.\n\nDo you want to create it as a new file? You'll choose which watched folder to put it in.`)) return;
+        const dir = await browseForFolder({ title: `Choose a folder to create "${filename}" in:` });
+        if (!dir) return;
+        absPath = joinPath(dir, filename);
+        isCreate = true;
+      } else if (matches.length === 1) {
         absPath = matches[0];
       } else {
         absPath = await pickCompanionPath(matches);
@@ -229,7 +241,9 @@ export async function onSaveClick() {
     const msg = isBinaryEdit
       ? `Overwrite image on disk?\n\n${absPath}\n\nThis replaces the original file with the edited image bytes.`
       : `Save to:\n${absPath}?`;
-    if (!confirm(msg)) return;
+    // For a freshly-chosen create target the user already confirmed + picked the folder — don't
+    // double-prompt.
+    if (!isCreate && !confirm(msg)) return;
     const bytes = isBinaryEdit
       ? await state.binaryEdit.getBytes()
       : (state.rawview ? new TextEncoder().encode(state.rawview.getValue()) : (state.intake.bytes || new TextEncoder().encode(state.intake.text || '')));
@@ -254,7 +268,7 @@ export async function onSaveClick() {
       state.rawview?.markClean?.();
       state.downloadedSinceEdit = true;
       syncSaveBtn();
-      toast('Saved to disk: ' + absPath);
+      toast((isCreate ? 'Created on disk: ' : 'Saved to disk: ') + absPath);
     } catch (err) {
       toast('Save failed: ' + err.message);
     }
@@ -320,249 +334,6 @@ function pickCompanionPath(paths) {
     overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.remove(); resolve(null); } });
     document.body.appendChild(overlay);
   });
-}
-
-// The companion is an opt-in LOCAL server — a meaningful change from the browser-only model — so
-// the download is gated behind this informational panel: what it does, exactly what network access
-// it opens, every endpoint and what flows through it, the source link, and a checksum reminder,
-// and ONLY THEN the download link. (Transparency requirement; mirrors companion/README.md.)
-const COMPANION_ENDPOINTS = [
-  ['GET /ping', 'nothing sent; version + capabilities back'],
-  ['GET /watched-paths', 'nothing sent; your configured folder paths back'],
-  ['POST/DELETE /watched-paths', 'a folder path to add/remove'],
-  ['GET /find-file', 'filename + size (no content); matching absolute paths back'],
-  ['GET /find-folder', 'a relative path; matching root folders back'],
-  ['GET /file', 'an absolute path; file bytes back'],
-  ['POST /file', 'an absolute path + new bytes (save-back)'],
-  ['DELETE /file', 'an absolute path (delete on disk)'],
-  ['GET /files', 'a folder path; its directory listing back'],
-  ['GET /watch', 'an absolute path; change/delete events streamed (SSE)'],
-  ['POST /path-picker', 'nothing; desktop app shows the native folder dialog, adds the choice'],
-];
-
-function appendCompanionDownloadPanel(panel) {
-  const info = document.createElement('div');
-  info.className = 'companion-download';
-
-  const title = document.createElement('div');
-  title.className = 'companion-folders-label';
-  title.textContent = 'Get the Companion';
-
-  const description = document.createElement('p');
-  description.textContent = 'The Companion is an optional local app that lets this viewer save (and delete) the files you open, back to disk. The viewer works fully without it.';
-
-  // What network access it opens — the key disclosure.
-  const net = document.createElement('p');
-  net.className = 'companion-net';
-  net.innerHTML = 'It runs a local server on <code>127.0.0.1:7700</code> only — never any external network. Requests are CORS-locked to localhost and this site, and every file action is restricted to folders you explicitly add. Mutating actions also require a per-session token.';
-
-  // Endpoint table — exactly what flows through the companion.
-  const tableLabel = document.createElement('p');
-  tableLabel.className = 'companion-table-label';
-  tableLabel.textContent = 'Every request it can make (inspect them in your Network tab):';
-  const table = document.createElement('table');
-  table.className = 'companion-endpoints';
-  for (const [ep, flow] of COMPANION_ENDPOINTS) {
-    const tr = document.createElement('tr');
-    const tdEp = document.createElement('td');
-    tdEp.innerHTML = `<code>${ep}</code>`;
-    const tdFlow = document.createElement('td');
-    tdFlow.textContent = flow;
-    tr.append(tdEp, tdFlow);
-    table.appendChild(tr);
-  }
-
-  const source = document.createElement('a');
-  source.href = 'https://github.com/jdeworks/file-viewer/tree/dev/companion';
-  source.target = '_blank';
-  source.rel = 'noopener noreferrer';
-  source.textContent = 'Review the companion source code →';
-
-  const checksum = document.createElement('p');
-  checksum.className = 'companion-checksum';
-  checksum.textContent = 'Before running a downloaded binary, compare its SHA-256 against the checksum on the release page (or build from source above).';
-
-  // Honest disclosure: builds are unsigned, so AV/SmartScreen may false-positive.
-  const signing = document.createElement('p');
-  signing.className = 'companion-checksum';
-  signing.textContent = 'Builds are unsigned, so antivirus or SmartScreen may flag a fresh binary that opens a local port and touches files (e.g. "IDP.Generic") — a false positive, not malware. Building from source and trusting your own build is the most reliable path.';
-
-  const download = document.createElement('a');
-  download.className = 'companion-download-btn';
-  download.href = 'https://github.com/jdeworks/file-viewer/releases';
-  download.target = '_blank';
-  download.rel = 'noopener noreferrer';
-  download.textContent = 'Download from GitHub Releases';
-
-  info.append(title, description, net, tableLabel, table, source, checksum, signing, download);
-  panel.appendChild(info);
-}
-
-export function renderCompanionSettings(container) {
-  const old = container.querySelector('.companion-panel');
-  if (old) old.remove();
-
-  const panel = document.createElement('details');
-  panel.className = 'set-group companion-panel';
-  panel.open = true;
-
-  const summary = document.createElement('summary');
-  summary.innerHTML = `Companion <span class="companion-status-dot ${companionAvailable ? 'connected' : ''}">${companionAvailable ? '● connected' : '○ not found'}</span>`;
-  panel.appendChild(summary);
-
-  const enableRow = document.createElement('div');
-  enableRow.className = 'set-row';
-  const enableLabel = document.createElement('label');
-  enableLabel.textContent = 'Enable companion';
-  enableLabel.htmlFor = 'companionEnabledToggle';
-  const enableToggle = document.createElement('input');
-  enableToggle.type = 'checkbox';
-  enableToggle.id = 'companionEnabledToggle';
-  enableToggle.checked = companionEnabled();
-  enableToggle.addEventListener('change', async () => {
-    setCompanionEnabled(enableToggle.checked);
-    if (enableToggle.checked) {
-      const ok = await detectCompanion();
-      companionAvailable = ok;
-      document.body.classList.toggle('companion-active', ok);
-      summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
-      syncSaveBtn();
-      if (ok) showCompanionIndicator();
-      else toast('Companion not found — is it running on :7700?');
-      if (ok) refreshFolders();
-      else foldersList.innerHTML = '<span class="companion-folders-empty">Start the Companion app to manage folders.</span>';
-    } else {
-      companionAvailable = false;
-      stopWatching();
-      document.body.classList.remove('companion-active');
-      summary.innerHTML = `Companion <span class="companion-status-dot">○ not found</span>`;
-      syncSaveBtn();
-    }
-  });
-
-  const testBtn = document.createElement('button');
-  testBtn.className = 'btn small';
-  testBtn.textContent = 'Test connection';
-  testBtn.addEventListener('click', async () => {
-    if (!companionEnabled()) { toast('Enable companion first.'); return; }
-    testBtn.disabled = true;
-    const ok = await detectCompanion();
-    testBtn.disabled = false;
-    companionAvailable = ok;
-    document.body.classList.toggle('companion-active', ok);
-    summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
-    syncSaveBtn();
-    toast(ok ? 'Companion connected ✓' : 'Companion not found — is it running?');
-  });
-
-  const enableControls = document.createElement('div');
-  enableControls.style.display = 'flex'; enableControls.style.gap = '8px'; enableControls.style.alignItems = 'center';
-  enableControls.append(enableToggle, testBtn);
-  enableRow.append(enableLabel, enableControls);
-  panel.appendChild(enableRow);
-
-  const tokenRow = document.createElement('div');
-  tokenRow.className = 'set-row';
-  const tokenLabel = document.createElement('label');
-  tokenLabel.textContent = 'Token';
-  const tokenWrap = document.createElement('div');
-  tokenWrap.className = 'companion-token-wrap';
-  const tokenEl = document.createElement('input');
-  tokenEl.type = 'password';
-  tokenEl.className = 'companion-token-input companion-token-reveal';
-  tokenEl.placeholder = 'paste token here';
-  tokenEl.value = getToken() || '';
-  tokenEl.setAttribute('autocomplete', 'off');
-  tokenEl.setAttribute('spellcheck', 'false');
-  tokenEl.addEventListener('click', () => {
-    tokenEl.type = tokenEl.type === 'password' ? 'text' : 'password';
-  });
-  tokenEl.addEventListener('change', () => setToken(tokenEl.value));
-  tokenEl.addEventListener('input', () => setToken(tokenEl.value));
-  tokenWrap.appendChild(tokenEl);
-  tokenRow.append(tokenLabel, tokenWrap);
-  panel.appendChild(tokenRow);
-
-  const foldersLabel = document.createElement('div');
-  foldersLabel.className = 'companion-folders-label';
-  foldersLabel.textContent = 'Watched folders';
-  panel.appendChild(foldersLabel);
-
-  const foldersList = document.createElement('div');
-  foldersList.className = 'companion-folders-list';
-  panel.appendChild(foldersList);
-
-  async function refreshFolders() {
-    foldersList.innerHTML = '<span class="companion-folders-loading">Loading…</span>';
-    try {
-      const paths = await getWatchedPaths();
-      foldersList.innerHTML = '';
-      if (!paths || paths.length === 0) {
-        foldersList.innerHTML = '<span class="companion-folders-empty">No watched folders.</span>';
-      } else {
-        for (const p of paths) {
-          const row = document.createElement('div');
-          row.className = 'companion-folder-row';
-          const pathSpan = document.createElement('span');
-          pathSpan.className = 'companion-folder-path';
-          pathSpan.textContent = p;
-          const removeBtn = document.createElement('button');
-          removeBtn.className = 'companion-folder-remove';
-          removeBtn.textContent = '✕';
-          removeBtn.title = 'Remove folder';
-          removeBtn.addEventListener('click', async () => {
-            try { await removeWatchedPath(p); await refreshFolders(); }
-            catch (err) { toast('Remove failed: ' + err.message); }
-          });
-          row.append(pathSpan, removeBtn);
-          foldersList.appendChild(row);
-        }
-      }
-    } catch {
-      foldersList.innerHTML = '<span class="companion-folders-empty">Could not load (companion offline?).</span>';
-    }
-  }
-
-  const addRow = document.createElement('div');
-  addRow.className = 'companion-add-row';
-  const addInput = document.createElement('input');
-  addInput.type = 'text';
-  addInput.className = 'companion-add-input';
-  addInput.placeholder = '/absolute/path';
-  const addBtn = document.createElement('button');
-  addBtn.className = 'btn small';
-  addBtn.textContent = '+ Add';
-  addBtn.addEventListener('click', async () => {
-    const p = addInput.value.trim();
-    if (!p) return;
-    try { await addWatchedPath(p); addInput.value = ''; await refreshFolders(); }
-    catch (err) { toast('Add failed: ' + err.message); }
-  });
-  addInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); } });
-  // Native folder picker — works only with the desktop (Tauri) companion; falls back to the typed
-  // field on the standalone server.
-  const pickBtn = document.createElement('button');
-  pickBtn.className = 'btn small';
-  pickBtn.textContent = '📁 Pick…';
-  pickBtn.title = 'Choose a folder with the native dialog (desktop companion)';
-  pickBtn.addEventListener('click', async () => {
-    pickBtn.disabled = true;
-    try {
-      const res = await pickFolder();
-      if (res === null) { toast('Native picker needs the desktop companion app — type a path instead.'); return; }
-      if (res.ok) await refreshFolders();   // res.ok === false means the user cancelled
-    } catch (err) { toast('Pick failed: ' + err.message); }
-    finally { pickBtn.disabled = false; }
-  });
-  addRow.append(addInput, addBtn, pickBtn);
-  panel.appendChild(addRow);
-
-  appendCompanionDownloadPanel(panel);
-
-  container.prepend(panel);
-
-  if (companionAvailable) refreshFolders();
-  else foldersList.innerHTML = '<span class="companion-folders-empty">Start the Companion app to manage folders.</span>';
 }
 
 // Poll /ping every 30s so a companion that was closed (or started) mid-session is reflected in the

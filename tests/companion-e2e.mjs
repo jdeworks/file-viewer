@@ -141,6 +141,26 @@ async function main() {
     if (cleanAfter === false) pass('editor marked clean after save (markClean) — no false unsaved-changes guard');
     else fail('markClean did not clear the dirty state after save: ' + JSON.stringify(cleanAfter));
 
+    // Item 3 (create-unknown-file, backend): saveFile to a path that does NOT exist yet must create
+    // it inside the watched folder (server validate_path_for_write parent-dir check).
+    const createdAbs = join(watched, 'created-by-e2e.txt');
+    await page.evaluate(async (p) => {
+      const m = await import('/core/companion.js');
+      await m.saveFile(p, new TextEncoder().encode('CREATED'));
+    }, createdAbs);
+    if (existsSync(createdAbs) && readFileSync(createdAbs, 'utf8') === 'CREATED') pass('saveFile creates a brand-new file in a watched folder (create-flow backend)');
+    else fail('create did not produce the new file: ' + (existsSync(createdAbs) ? readFileSync(createdAbs, 'utf8') : 'missing'));
+
+    // Item 3 (folder browser backend) + Item B: listFiles lists the watched folder's entries.
+    const listed = await page.evaluate(async (p) => (await import('/core/companion.js')).listFiles(p), watched);
+    if (Array.isArray(listed) && listed.some((e) => e.name === 'created-by-e2e.txt')) pass('listFiles returns watched-folder entries (folder-browser backend)');
+    else fail('listFiles wrong: ' + JSON.stringify(listed));
+
+    // Item B (log viewer backend): getLogs returns filtered activity, incl. our create.
+    const logs = await page.evaluate(async () => (await import('/core/companion.js')).getLogs({ q: 'created-by-e2e' }));
+    if (Array.isArray(logs) && logs.some((e) => (e.msg || '').includes('created-by-e2e') && e.ts && e.level)) pass('getLogs returns timestamped, filtered activity entries (log-viewer backend)');
+    else fail('getLogs wrong: ' + JSON.stringify(logs));
+
     // Delete it on disk via the client; assert it's gone.
     await page.evaluate(async (p) => {
       const m = await import('/core/companion.js');

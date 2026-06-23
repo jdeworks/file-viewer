@@ -120,6 +120,17 @@ fn main() {
     println!("  token: {token}  (also written to {})", token_file.display());
     logging::info(format!("companion (desktop) started on 127.0.0.1:{PORT}"));
 
+    // Values surfaced by the tray menu (Show session token / Open logs folder). The token is also
+    // auto-delivered to the viewer via /ping, but the tray makes it discoverable without a console.
+    let menu_token = token.clone();
+    let menu_token_file = token_file.display().to_string();
+    let menu_logs_dir = config_path()
+        .parent()
+        .map(|p| p.join("logs"))
+        .unwrap_or_else(|| std::path::PathBuf::from("logs"))
+        .display()
+        .to_string();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_autostart::init(
@@ -165,12 +176,17 @@ fn main() {
                 .build(app)?;
             let open = MenuItemBuilder::with_id("open", "Open File Viewer").build(app)?;
             let addpath = MenuItemBuilder::with_id("addpath", "Add watched folder…").build(app)?;
+            let showtoken = MenuItemBuilder::with_id("token", "Show session token").build(app)?;
+            let openlogs = MenuItemBuilder::with_id("logs", "Open logs folder").build(app)?;
             let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
             let menu = MenuBuilder::new(app)
-                .items(&[&status, &open, &addpath, &quit])
+                .items(&[&status, &open, &addpath, &showtoken, &openlogs, &quit])
                 .build()?;
 
             let wp = Arc::clone(&watched_paths);
+            let tok = menu_token.clone();
+            let tokf = menu_token_file.clone();
+            let logsd = menu_logs_dir.clone();
             let icon = Image::from_bytes(include_bytes!("../icons/32x32.png"))?;
             TrayIconBuilder::with_id("main")
                 .icon(icon)
@@ -178,6 +194,15 @@ fn main() {
                 .menu(&menu)
                 .on_menu_event(move |app, event| match event.id().as_ref() {
                     "open" => open_url(VIEWER_URL),
+                    "token" => {
+                        app.dialog()
+                            .message(format!(
+                                "Session token:\n\n{tok}\n\nThe viewer picks this up automatically via /ping — you normally don't need to copy it. It is also saved at:\n{tokf}"
+                            ))
+                            .title("File Viewer Companion — session token")
+                            .show(|_| {});
+                    }
+                    "logs" => open_url(&logsd),
                     "addpath" => {
                         let wp2 = Arc::clone(&wp);
                         app.dialog().file().pick_folder(move |folder| {

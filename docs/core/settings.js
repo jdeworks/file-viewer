@@ -163,6 +163,7 @@ export function renderSettings(container, model, { onChange, toast }) {
   presetRow.className = 'set-row';
   const presetLabel = document.createElement('label'); presetLabel.textContent = 'Preset';
   const presetSel = document.createElement('select');
+  presetSel.className = 'set-preset';   // stable hook (other panels may inject their own <select>s)
   for (const p of model.presets) presetSel.add(new Option(p.label, p.id));
   presetSel.add(new Option('Custom', 'custom'));
   presetSel.value = model.selectedPresetId;

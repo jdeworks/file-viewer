@@ -170,6 +170,54 @@ async fn test_post_and_get_file() {
     assert_eq!(&bytes[..], b"new content");
 }
 
+// --- create a NOT-yet-existing file in a watched dir (the "create unknown file" flow) ---
+
+#[tokio::test]
+async fn test_create_new_file_in_watched_dir() {
+    let tmp = TempDir::new().unwrap();
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let new_path = tmp.path().join("brand-new.txt");
+    assert!(!new_path.exists(), "precondition: file must not exist yet");
+
+    let path_str = new_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::from("created!"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert!(new_path.exists(), "the new file should have been created");
+    assert_eq!(fs::read_to_string(&new_path).unwrap(), "created!");
+}
+
+#[tokio::test]
+async fn test_create_new_file_outside_watched_returns_403() {
+    let tmp = TempDir::new().unwrap();
+    let other = TempDir::new().unwrap();
+    let app = build_app("secret", vec![tmp.path().to_path_buf()]);
+    let new_path = other.path().join("nope.txt"); // parent dir is not watched
+    let path_str = new_path.to_str().unwrap().to_string();
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .method(Method::POST)
+                .uri(format!("/file?path={}", urlencoding::encode(&path_str)))
+                .header("X-Companion-Token", "secret")
+                .body(Body::from("x"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+    assert!(!new_path.exists(), "must not create a file outside watched dirs");
+}
+
 // --- 403 on out-of-watched-path access ---
 
 #[tokio::test]

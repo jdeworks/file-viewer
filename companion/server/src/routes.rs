@@ -19,7 +19,7 @@ use crate::{
     config::save_config,
     finder::{find_file, find_folder},
     logging,
-    paths::validate_path,
+    paths::{validate_path, validate_path_for_write},
     AppState,
 };
 
@@ -253,7 +253,10 @@ pub async fn post_file(
 ) -> Response {
     let watched = state.watched_paths.lock().unwrap().clone();
     let pb = PathBuf::from(&q.path);
-    match validate_path(&pb, &watched) {
+    // validate_path_for_write also permits a not-yet-existing file (the "create" flow), as long as
+    // its parent dir resolves inside a watched folder. An existing file goes through the stricter
+    // canonicalize path.
+    match validate_path_for_write(&pb, &watched) {
         Err(e) => {
             logging::warn(format!("save refused (outside watched folders): {}", q.path));
             (
@@ -263,6 +266,7 @@ pub async fn post_file(
                 .into_response()
         }
         Ok(canonical) => {
+            let is_create = !canonical.exists();
             let tmp_path = format!("{}.companion_tmp", canonical.display());
             let byte_count = body.len();
             if let Err(e) = tokio::fs::write(&tmp_path, &body).await {
@@ -281,7 +285,12 @@ pub async fn post_file(
                 )
                     .into_response();
             }
-            logging::info(format!("saved {} ({} bytes)", canonical.display(), byte_count));
+            logging::info(format!(
+                "{} {} ({} bytes)",
+                if is_create { "created" } else { "saved" },
+                canonical.display(),
+                byte_count
+            ));
             (
                 StatusCode::OK,
                 Json(serde_json::json!({ "ok": true, "bytes": byte_count })),
