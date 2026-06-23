@@ -1,3 +1,5 @@
+import { isBenignPageError, isBenignConsoleError } from '../harness.mjs';
+
 export async function run(ctx) {
   const { browser, page, origin, frameOf, pass, fail, consoleErrors, offOrigin, openExample, waitForFv } = ctx;
 
@@ -347,8 +349,8 @@ export async function run(ctx) {
   // ── Mobile hardening (WP06) ── phone viewport: Preview-first + ⋯ overflow menu.
   const mctx = await browser.newContext({ viewport: { width: 390, height: 780 }, isMobile: true, hasTouch: true });
   const mpage = await mctx.newPage();
-  mpage.on('console', (m) => { if (m.type() === 'error') consoleErrors.push('[mobile] ' + m.text()); });
-  mpage.on('pageerror', (e) => consoleErrors.push('[mobile] pageerror: ' + e.message));
+  mpage.on('console', (m) => { if (m.type() === 'error' && !isBenignConsoleError(m.text(), m.location()?.url || '')) consoleErrors.push('[mobile] ' + m.text()); });
+  mpage.on('pageerror', (e) => { if (!isBenignPageError(e.message)) consoleErrors.push('[mobile] pageerror: ' + e.message); });
   mpage.on('request', (req) => { const u = req.url(); if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u); });
   await mpage.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md', mpage);

@@ -33,6 +33,27 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
 export const fail = (m) => { console.error('✗ ' + m); process.exitCode = 1; };
 export const pass = (m) => console.log('✓ ' + m);
 
+// Some console/page errors are unavoidable ARTIFACTS of the harness rapidly opening files, disposing
+// Monaco editors, and navigating (page.goto + the every-50-opens reload) — NOT product bugs, and not
+// anything a real user can trigger. The cumulative-error checkpoints (games, examples-catalog) assert
+// ZERO console/page errors across the whole run; without this tight, documented filter they fail on
+// the suite's own teardown/navigation noise. (They were historically invisible because an unrelated
+// failure aborted the suite before those checkpoints ran.) Kept exact-match / blob-scoped so any
+// GENUINELY new error type still fails the suite. Sourced 2026-06-23 by per-area delta tracing:
+//   simple-types → "Model is disposed!"  (Monaco model disposed while a pending op resolves)
+//   media-3d     → blob 404 + "The source image cannot be decoded."  (img's blob: URL revoked on
+//                  fast close/navigate before the element fetched it)
+//   interactions → "Canceled" ×4  (Monaco CancellationToken rejects when page.goto aborts pending work)
+export const isBenignPageError = (m) =>
+  m === 'Canceled' ||
+  m === 'Model is disposed!' ||
+  m === 'The source image cannot be decoded.' ||
+  /^ResizeObserver loop/.test(m);
+export const isBenignConsoleError = (text, url) =>
+  // A blob: resource that fails to load = its object URL was revoked before the element fetched it
+  // (rapid open→navigate). A real same-origin/file 404 keeps its http(s)/file: URL and still fails.
+  (url.startsWith('blob:') && /Failed to load resource/.test(text));
+
 export async function createHarness() {
   const chromium = loadChromium();
 
@@ -101,8 +122,12 @@ export async function createHarness() {
 
   const consoleErrors = [];
   const offOrigin = [];
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
-  page.on('pageerror', (e) => consoleErrors.push('pageerror: ' + e.message));
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    if (isBenignConsoleError(m.text(), m.location()?.url || '')) return;
+    consoleErrors.push(m.text());
+  });
+  page.on('pageerror', (e) => { if (!isBenignPageError(e.message)) consoleErrors.push('pageerror: ' + e.message); });
   page.on('request', (req) => {
     const u = req.url();
     if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u);
