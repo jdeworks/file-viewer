@@ -260,6 +260,8 @@ export async function run(ctx) {
   if (mem0.score === 0 && mem0.round === 1 && mem0.cards === 12 && mem0.matched === 0 && pairIdx)
     pass('Memory: clean start, 6-pair board');
   else fail('Memory start: ' + JSON.stringify({ mem0, pairIdx }));
+  const memFaceW = await page.$eval('.memory-card .memory-back', (el) => Math.round(el.getBoundingClientRect().width));
+  if (memFaceW > 24) pass('Memory: card faces render at full size'); else fail('Memory faces collapsed: ' + memFaceW);
   await page.click('.memory-card[data-idx="' + pairIdx[0] + '"]');
   await page.click('.memory-card[data-idx="' + pairIdx[1] + '"]');
   const memM = await page.$eval('.memory-wrap', (w) => w.__memory.state());

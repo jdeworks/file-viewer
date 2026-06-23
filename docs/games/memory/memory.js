@@ -12,7 +12,7 @@ const colsFor = (pairs) => (pairs <= 6 ? 4 : pairs <= 8 ? 4 : pairs <= 10 ? 5 : 
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
 const STYLE = '.memory-card{perspective:600px;background:transparent;border:0;padding:0;width:48px;height:48px;cursor:pointer}'
-  + '.memory-inner{position:relative;width:100%;height:100%;transition:transform .34s;transform-style:preserve-3d}'
+  + '.memory-inner{position:relative;display:block;width:100%;height:100%;transition:transform .34s;transform-style:preserve-3d}'
   + '.memory-card.flipped .memory-inner{transform:rotateY(180deg)}'
   + '.memory-card.matched{opacity:.5;pointer-events:none}'
   + '.memory-face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;'
