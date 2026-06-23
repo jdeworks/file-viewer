@@ -58,6 +58,20 @@ function splitNode(node, rng, minLeaf) {
   splitNode(node.right, rng, minLeaf);
 }
 
+// Scatter isolated wall pylons inside a room so big rooms aren't empty boxes. Confined to a 2-tile
+// interior margin, so the room's perimeter stays open and the room is always navigable.
+function addPylons(grid, room, rng) {
+  if (room.w < 9 || room.h < 9) return;
+  const count = Math.floor((room.w * room.h) / 50);
+  for (let i = 0; i < count; i += 1) {
+    const pw = rng.chance(0.4) ? 2 : 1;
+    const ph = rng.chance(0.4) ? 2 : 1;
+    const px = rng.int(room.x + 2, room.x + room.w - 2 - pw);
+    const py = rng.int(room.y + 2, room.y + room.h - 2 - ph);
+    for (let yy = py; yy < py + ph; yy += 1) for (let xx = px; xx < px + pw; xx += 1) grid[yy][xx] = '#';
+  }
+}
+
 // Carve a room in every leaf (filling ~70–95% of the partition), then connect sibling subtrees.
 function carveAndConnect(node, grid, rng, rooms, minRoom) {
   if (!node.left) {
@@ -69,6 +83,8 @@ function carveAndConnect(node, grid, rng, rooms, minRoom) {
     const ry = node.y + 1 + rng.int(0, Math.max(0, node.h - rh - 2));
     const room = { x: rx, y: ry, w: rw, h: rh, cx: rx + (rw >> 1), cy: ry + (rh >> 1) };
     carveRoom(grid, room);
+    addPylons(grid, room, rng);
+    grid[room.cy][room.cx] = '.'; // keep the centre (corridor hookup + spawn point) clear of pylons
     rooms.push(room);
     node.room = room;
     return room;

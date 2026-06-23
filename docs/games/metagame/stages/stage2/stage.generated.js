@@ -256,6 +256,17 @@ function splitNode(node, rng, minLeaf) {
   splitNode(node.left, rng, minLeaf);
   splitNode(node.right, rng, minLeaf);
 }
+function addPylons(grid, room, rng) {
+  if (room.w < 9 || room.h < 9) return;
+  const count = Math.floor(room.w * room.h / 50);
+  for (let i = 0; i < count; i += 1) {
+    const pw = rng.chance(0.4) ? 2 : 1;
+    const ph = rng.chance(0.4) ? 2 : 1;
+    const px = rng.int(room.x + 2, room.x + room.w - 2 - pw);
+    const py = rng.int(room.y + 2, room.y + room.h - 2 - ph);
+    for (let yy = py; yy < py + ph; yy += 1) for (let xx = px; xx < px + pw; xx += 1) grid[yy][xx] = "#";
+  }
+}
 function carveAndConnect(node, grid, rng, rooms, minRoom) {
   if (!node.left) {
     const maxW = Math.max(minRoom, node.w - 2);
@@ -266,6 +277,8 @@ function carveAndConnect(node, grid, rng, rooms, minRoom) {
     const ry = node.y + 1 + rng.int(0, Math.max(0, node.h - rh - 2));
     const room = { x: rx, y: ry, w: rw, h: rh, cx: rx + (rw >> 1), cy: ry + (rh >> 1) };
     carveRoom(grid, room);
+    addPylons(grid, room, rng);
+    grid[room.cy][room.cx] = ".";
     rooms.push(room);
     node.room = room;
     return room;
