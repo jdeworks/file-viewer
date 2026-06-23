@@ -219,6 +219,25 @@ export async function run(ctx) {
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
+  // Breakout — clean start, escalating ball speed, launch on Space
+  await page.click('.games-card[data-game="breakout"]');
+  await page.waitForSelector('.breakout-canvas', { timeout: 8000 });
+  pass('Breakout launches');
+  const bo = await page.$eval('.breakout-wrap', (w) => {
+    const s = w.__breakout.state();
+    return { score: s.score, lives: s.lives, level: s.level, dead: s.dead, stuck: s.stuck,
+      bricks: s.bricks, sp0: w.__breakout.speedAt(0), spFast: w.__breakout.speedAt(5) };
+  });
+  if (bo.score === 0 && bo.lives === 3 && bo.level === 0 && !bo.dead && bo.stuck && bo.bricks > 0 && bo.spFast > bo.sp0)
+    pass('Breakout: clean start + ball speed escalates with level');
+  else fail('Breakout start/escalation: ' + JSON.stringify(bo));
+  await page.keyboard.press('Space');                       // launch the ball
+  const boLaunched = await page.$eval('.breakout-wrap', (w) => w.__breakout.state());
+  if (!boLaunched.stuck && !boLaunched.dead) pass('Breakout: ball launches on Space');
+  else fail('Breakout launch: ' + JSON.stringify(boLaunched));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.mg-v3', { timeout: 8000 });
   await page.waitForSelector('.mg-s1', { timeout: 8000 });

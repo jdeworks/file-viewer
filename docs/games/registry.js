@@ -35,6 +35,13 @@ export const GAMES = [
     load: () => import('./tetris/tetris.js'),
   },
   {
+    id: 'breakout',
+    title: 'Breakout',
+    emoji: '🧱',
+    blurb: 'Bounce the ball, smash every brick. ← → or drag. Each board gets faster.',
+    load: () => import('./breakout/breakout.js'),
+  },
+  {
     id: 'metagame',
     title: 'Bit Foundry',
     emoji: '⚙️',
