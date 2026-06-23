@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 
 use crate::{
     config::save_config,
@@ -26,6 +26,26 @@ use crate::{
 // Log "viewer connected" only once per process (ping is polled periodically by the browser, so we
 // don't want a line every 30s). Reset implicitly by a server restart.
 static CONNECTED_LOGGED: AtomicBool = AtomicBool::new(false);
+
+// Epoch-seconds of the most recent /ping. The viewer polls /ping every ~30s while open, so the tray
+// can show a green/red connection dot: "connected" = a ping within the last ~45s.
+static LAST_PING_EPOCH: AtomicI64 = AtomicI64::new(0);
+
+fn now_epoch_secs() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
+/// Seconds since the last viewer /ping (i64::MAX if none yet). The tray polls this for the status dot.
+pub fn seconds_since_last_ping() -> i64 {
+    let last = LAST_PING_EPOCH.load(Ordering::Relaxed);
+    if last == 0 {
+        return i64::MAX;
+    }
+    now_epoch_secs() - last
+}
 
 // ---------------------------------------------------------------------------
 // GET /ping
@@ -43,6 +63,7 @@ pub struct PingResponse {
 }
 
 pub async fn ping(State(state): State<AppState>) -> Json<PingResponse> {
+    LAST_PING_EPOCH.store(now_epoch_secs(), Ordering::Relaxed);
     if !CONNECTED_LOGGED.swap(true, Ordering::Relaxed) {
         logging::info("viewer connected");
     }

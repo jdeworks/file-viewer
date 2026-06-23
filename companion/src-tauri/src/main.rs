@@ -18,7 +18,6 @@ use file_viewer_companion::{
 use serde_json::json;
 use std::sync::{Arc, Mutex};
 use tauri::{
-    image::Image,
     menu::{MenuBuilder, MenuItemBuilder},
     tray::TrayIconBuilder,
     Manager,
@@ -31,6 +30,51 @@ const PAGES_ORIGIN: &str = "https://jdeworks.github.io";
 
 // Keeps the file watcher alive for the whole app lifetime (dropping it stops fs events).
 struct WatcherGuard(#[allow(dead_code)] Option<FileWatcher>);
+
+// Build the tray icon as a 32×32 RGBA: a brand-blue disc with a status dot in the corner — green
+// when a viewer is connected (recent /ping), red when idle. Synthesized in code so there's no image
+// dependency and no asset to ship.
+fn status_icon(connected: bool) -> tauri::image::Image<'static> {
+    const S: i32 = 32;
+    let mut buf = vec![0u8; (S * S * 4) as usize];
+    let mut px = |x: i32, y: i32, c: [u8; 4]| {
+        if x < 0 || y < 0 || x >= S || y >= S {
+            return;
+        }
+        let i = ((y * S + x) * 4) as usize;
+        buf[i] = c[0];
+        buf[i + 1] = c[1];
+        buf[i + 2] = c[2];
+        buf[i + 3] = c[3];
+    };
+    // Base disc.
+    let (cx, cy, r) = (16.0f32, 16.0f32, 14.0f32);
+    for y in 0..S {
+        for x in 0..S {
+            let dx = x as f32 + 0.5 - cx;
+            let dy = y as f32 + 0.5 - cy;
+            if dx * dx + dy * dy <= r * r {
+                px(x, y, [0x15, 0x65, 0xc0, 0xff]);
+            }
+        }
+    }
+    // Status dot (bottom-right) with a white ring so it reads on any background.
+    let (sx, sy, sr) = (24.0f32, 24.0f32, 7.0f32);
+    let dot = if connected { [0x2f, 0x9e, 0x44, 0xff] } else { [0xd9, 0x36, 0x2b, 0xff] };
+    for y in 0..S {
+        for x in 0..S {
+            let dx = x as f32 + 0.5 - sx;
+            let dy = y as f32 + 0.5 - sy;
+            let d2 = dx * dx + dy * dy;
+            if d2 <= sr * sr {
+                px(x, y, dot);
+            } else if d2 <= (sr + 1.6) * (sr + 1.6) {
+                px(x, y, [0xff, 0xff, 0xff, 0xff]);
+            }
+        }
+    }
+    tauri::image::Image::new_owned(buf, S as u32, S as u32)
+}
 
 fn open_url(url: &str) {
     #[cfg(target_os = "linux")]
@@ -190,10 +234,9 @@ fn main() {
             let tok = menu_token.clone();
             let tokf = menu_token_file.clone();
             let logsd = menu_logs_dir.clone();
-            let icon = Image::from_bytes(include_bytes!("../icons/32x32.png"))?;
             TrayIconBuilder::with_id("main")
-                .icon(icon)
-                .tooltip("File Viewer Companion")
+                .icon(status_icon(false))
+                .tooltip("File Viewer Companion — idle (no viewer connected)")
                 .menu(&menu)
                 .on_menu_event(move |app, event| match event.id().as_ref() {
                     "open" => open_url(VIEWER_URL),
@@ -221,6 +264,32 @@ fn main() {
                     _ => {}
                 })
                 .build(app)?;
+
+            // Poll the connection state every 3s and reflect it in the tray icon's status dot
+            // (green = a viewer pinged within ~45s, red = idle). Updates only run on a state change.
+            let status_handle = app.handle().clone();
+            std::thread::spawn(move || {
+                let mut last: Option<bool> = None;
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(3));
+                    let connected = file_viewer_companion::routes::seconds_since_last_ping() < 45;
+                    if Some(connected) == last {
+                        continue;
+                    }
+                    last = Some(connected);
+                    let h = status_handle.clone();
+                    let _ = status_handle.run_on_main_thread(move || {
+                        if let Some(tray) = h.tray_by_id("main") {
+                            let _ = tray.set_icon(Some(status_icon(connected)));
+                            let _ = tray.set_tooltip(Some(if connected {
+                                "File Viewer Companion — viewer connected"
+                            } else {
+                                "File Viewer Companion — idle (no viewer connected)"
+                            }));
+                        }
+                    });
+                }
+            });
             Ok(())
         })
         .build(tauri::generate_context!())
