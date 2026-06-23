@@ -22,7 +22,7 @@ const LUNGE_OUT = 130;
 const CELL_CLASS = {
   "#": "s2-c-wall", ".": "s2-c-floor", " ": "s2-c-void",
   "/": "s2-c-item", "[": "s2-c-item", "]": "s2-c-item",
-  "%": "s2-c-glyph", "?": "s2-c-glyph", ">": "s2-c-exit"
+  "%": "s2-c-glyph", "?": "s2-c-glyph", "!": "s2-c-potion", ">": "s2-c-exit"
 };
 
 const HEAVY_FOES = new Set(["L", "O"]);
@@ -43,7 +43,7 @@ export function renderHpBar(el, cur, max, width) {
   el.innerHTML =
     `<span class="s2-hpb-fill">${"#".repeat(filled)}</span>` +
     `<span class="s2-hpb-empty">${".".repeat(empty)}</span>`;
-  el.classList.toggle("s2-hp-low", max > 0 && cur / max <= 0.25 && cur > 0);
+  el.classList.toggle("s2-hp-low", max > 0 && cur / max <= 0.4 && cur > 0);
 }
 
 export function createView(screenEl) {
@@ -67,6 +67,7 @@ export function createView(screenEl) {
   const playerEl = makeSprite("@", "s2-c-player");
   sprites.append(playerEl);
   const mobEls = new Map(); // foe index -> { el, glyph, hp }
+  const itemEls = new Map(); // item id ("exit"/"w0"/"g1"/"p2") -> sprite element
 
   function measure() {
     const r = ruler.getBoundingClientRect();
@@ -74,65 +75,109 @@ export function createView(screenEl) {
     if (r.height > 0) chH = r.height / 2;
   }
   measure();
-  const onResize = () => { measure(); };
-  window.addEventListener("resize", onResize);
+  // The stage's styles.css is injected as an async <link>, so the first measure() above can run
+  // BEFORE it applies — when the ruler is an unstyled full-width block and chW is wildly wrong,
+  // flinging every sprite off the map. Re-measure and re-project whenever the ruler's box changes
+  // (stylesheet load, font swap, font-size media query), which is exactly when chW/chH go valid.
+  let lastWorld = null;
+  const observer = typeof ResizeObserver === "function" ? new ResizeObserver(() => {
+    const pw = chW, ph = chH;
+    measure();
+    if ((Math.abs(chW - pw) > 0.01 || Math.abs(chH - ph) > 0.01) && lastWorld) paintExplore(lastWorld);
+  }) : null;
+  if (observer) observer.observe(ruler);
 
   function pos(el, cx, cy, ms) {
+    const tf = `translate(${ORIGIN + (cx - cam.x) * chW}px, ${ORIGIN + (cy - cam.y) * chH}px)`;
+    if (el._tf === tf) return; // unchanged on-screen position — skip the style write (per-tick guard)
+    el._tf = tf;
     el.style.transition = ms ? `transform ${ms}ms ease-out` : "none";
-    el.style.transform = `translate(${ORIGIN + (cx - cam.x) * chW}px, ${ORIGIN + (cy - cam.y) * chH}px)`;
+    el.style.transform = tf;
   }
 
-  // ── Boss arena: hand-authored art, no camera/sprites ──────────────────────────────────────
+  // ── Boss arena: hand-authored art (still colorized per-cell — it's a tiny fixed grid) ─────────
   function paintArena(lines) {
+    lastWorld = null;
     sprites.replaceChildren();
     mobEls.clear();
+    itemEls.clear();
     map.innerHTML = colorize(lines);
   }
 
-  // ── Exploration: terrain slice + reconciled sprites ───────────────────────────────────────
+  // ── Exploration ──────────────────────────────────────────────────────────────────────────────
+  // Terrain (walls/floor) is just a PLAIN-TEXT <pre> in one global colour — no per-cell spans, so a
+  // move only sets a string. Everything coloured (items, stairs, monsters, @) is a positioned
+  // sprite. Collision is on world.grid in the engine, never the DOM, so the terrain needs no markup.
   function paintExplore(world) {
+    lastWorld = world;
     sprites.append(playerEl);
     cam.x = clamp(world.pos.x - (VIEW_W >> 1), 0, Math.max(0, world.width - VIEW_W));
     cam.y = clamp(world.pos.y - (VIEW_H >> 1), 0, Math.max(0, world.grid.length - VIEW_H));
-    map.innerHTML = colorize(terrainSlice(world));
+    map.textContent = terrainText(world);
+    reconcileItems(world);
     reconcileSprites(world);
   }
 
-  function terrainSlice(world) {
-    const items = new Set();
-    for (const g of world.glyphs) if (!g.taken) items.add(key(g.x, g.y) + ":%");
-    for (const w of world.weapons) if (!w.taken) items.add(key(w.x, w.y) + ":/");
-    const overlay = new Map();
-    for (const it of items) { const [k, ch] = it.split(":"); overlay.set(k, ch); }
-    overlay.set(key(world.exit.x, world.exit.y), ">");
+  function terrainText(world) {
     const rows = [];
     for (let vy = 0; vy < VIEW_H; vy += 1) {
       const gy = cam.y + vy;
       let line = "";
       for (let vx = 0; vx < VIEW_W; vx += 1) {
         const gx = cam.x + vx;
-        if (gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width) { line += " "; continue; }
-        line += overlay.get(key(gx, gy)) || world.grid[gy][gx];
+        line += (gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width) ? " " : world.grid[gy][gx];
       }
       rows.push(line);
     }
-    return rows;
+    return rows.join("\n");
   }
 
-  function reconcileSprites(world) {
+  // Items & stairs as sprites — only reconciled on a camera move / pickup (not on monster ticks,
+  // since they don't move). Keyed by a stable id so a taken item just drops its element.
+  function reconcileItems(world) {
+    const live = new Set();
+    const place = (id, x, y, ch, cls) => {
+      if (!inView(x, y)) return;
+      live.add(id);
+      let el = itemEls.get(id);
+      if (!el) { el = makeSprite(ch, cls); itemEls.set(id, el); sprites.append(el); }
+      pos(el, x, y);
+    };
+    place("exit", world.exit.x, world.exit.y, ">", "s2-c-exit");
+    world.weapons.forEach((w, i) => { if (!w.taken) place("w" + i, w.x, w.y, "/", "s2-c-item"); });
+    world.glyphs.forEach((g, i) => { if (!g.taken) place("g" + i, g.x, g.y, "%", "s2-c-glyph"); });
+    if (world.potions) world.potions.forEach((p, i) => { if (!p.taken) place("p" + i, p.x, p.y, "!", "s2-c-potion"); });
+    // Secret doors: a '#' in a slightly-off wall colour over the terrain (findable, not obvious).
+    if (world.hidden) world.hidden.forEach((h, i) => { if (!h.revealed) place("h" + i, h.entrance.x, h.entrance.y, "#", "s2-c-secret"); });
+    for (const id of [...itemEls.keys()]) if (!live.has(id)) { itemEls.get(id).remove(); itemEls.delete(id); }
+  }
+
+  // Reposition all sprites. `mobMs` glides monsters into place (used by the real-time monster
+  // clocks); newly-appeared sprites always snap so they don't fly in from the origin.
+  function reconcileSprites(world, mobMs) {
     pos(playerEl, world.pos.x, world.pos.y);
     const live = new Set();
     world.monsters.forEach((m, i) => {
       if (!m.alive || !inView(m.x, m.y)) { dropMob(i); return; }
       live.add(i);
       let s = mobEls.get(i);
-      if (!s) { s = makeMob(m); mobEls.set(i, s); sprites.append(s.el); }
-      s.glyph.textContent = m.glyph;
-      s.el.className = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
-      if (m.hp < m.maxHp) { s.hp.hidden = false; renderHpBar(s.hp, m.hp, m.maxHp, 5); } else s.hp.hidden = true;
-      pos(s.el, m.x, m.y);
+      let fresh = false;
+      if (!s) { s = makeMob(m); mobEls.set(i, s); sprites.append(s.el); fresh = true; }
+      if (s.glyph.textContent !== m.glyph) s.glyph.textContent = m.glyph;
+      const cls = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
+      if (s.el.className !== cls) s.el.className = cls;
+      if (m.hp < m.maxHp) {
+        if (s.hp.hidden) s.hp.hidden = false;
+        if (s.lastHp !== m.hp || s.lastMaxHp !== m.maxHp) { renderHpBar(s.hp, m.hp, m.maxHp, 5); s.lastHp = m.hp; s.lastMaxHp = m.maxHp; }
+      } else if (!s.hp.hidden) { s.hp.hidden = true; }
+      pos(s.el, m.x, m.y, fresh ? 0 : mobMs);
     });
     for (const i of [...mobEls.keys()]) if (!live.has(i)) dropMob(i);
+  }
+
+  // Sprite-only refresh after a real-time monster clock fires (terrain/camera are unchanged).
+  function tickMonsters(world) {
+    reconcileSprites(world, 200);
   }
 
   function dropMob(i) {
@@ -177,15 +222,76 @@ export function createView(screenEl) {
     }, LUNGE_IN + 10);
   }
 
-  function destroy() {
-    window.removeEventListener("resize", onResize);
+  // Dev "zoom out": a non-interactive minimap of the WHOLE floor (terrain + entity dots) so we can
+  // eyeball generation/tuning. Terrain is drawn 1px/cell on an offscreen canvas then scaled.
+  let fullMap = null;
+  function toggleFullMap(world) {
+    if (fullMap) { fullMap.remove(); fullMap = null; return; }
+    if (!world || !world.grid) return;
+    fullMap = document.createElement("div");
+    fullMap.className = "s2-fullmap";
+    const cap = document.createElement("div");
+    cap.className = "s2-fullmap-cap";
+    cap.textContent = `FULL MAP (dev) — ${world.width}×${world.grid.length}, ${world.monsters.filter((m) => m.alive).length} foes · click to close`;
+    const canvas = document.createElement("canvas");
+    drawFullMap(canvas, world);
+    fullMap.append(cap, canvas);
+    fullMap.addEventListener("click", () => { if (fullMap) { fullMap.remove(); fullMap = null; } });
+    screenEl.appendChild(fullMap);
   }
 
-  return { mapEl: map, flashEl: flash, screenEl, paintExplore, paintArena, applyMove, measure, destroy };
+  function drawFullMap(canvas, world) {
+    const W = world.width;
+    const H = world.grid.length;
+    const scale = Math.min(640 / W, 440 / H, 4);
+    const dispW = Math.max(1, Math.round(W * scale));
+    const dispH = Math.max(1, Math.round(H * scale));
+    canvas.width = dispW;
+    canvas.height = dispH;
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    const off = document.createElement("canvas");
+    off.width = W; off.height = H;
+    const octx = off.getContext("2d");
+    const img = octx.createImageData(W, H);
+    const d = img.data;
+    for (let y = 0; y < H; y += 1) {
+      const row = world.grid[y];
+      for (let x = 0; x < W; x += 1) {
+        const i = (y * W + x) * 4;
+        const wall = row[x] === "#";
+        d[i] = wall ? 18 : 60; d[i + 1] = wall ? 14 : 46; d[i + 2] = wall ? 10 : 28; d[i + 3] = 255;
+      }
+    }
+    octx.putImageData(img, 0, 0);
+    ctx.drawImage(off, 0, 0, W, H, 0, 0, dispW, dispH);
+    // Hidden rooms (dev): purple = sealed, teal = already opened; pink dot marks the secret door.
+    if (world.hidden) for (const h of world.hidden) {
+      ctx.fillStyle = h.revealed ? "rgba(110,255,166,0.30)" : "rgba(216,139,255,0.55)";
+      ctx.fillRect(Math.round(h.x * scale), Math.round(h.y * scale), Math.max(2, Math.round(h.w * scale)), Math.max(2, Math.round(h.h * scale)));
+    }
+    const dot = (x, y, color, sz) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(x * scale) - (sz >> 1), Math.round(y * scale) - (sz >> 1), sz, sz);
+    };
+    if (world.hidden) for (const h of world.hidden) if (!h.revealed) dot(h.entrance.x, h.entrance.y, "#ff36c0", 4);
+    for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
+    if (world.potions) for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);
+    for (const g of world.glyphs) if (!g.taken) dot(g.x, g.y, "#d78bff", 3);
+    dot(world.exit.x, world.exit.y, "#7fe07f", 4);
+    for (const m of world.monsters) if (m.alive) dot(m.x, m.y, HEAVY_FOES.has(m.glyph) ? "#ff2bd0" : "#ff5a4a", 3);
+    dot(world.pos.x, world.pos.y, "#79f0ff", 5);
+  }
+
+  function destroy() {
+    if (observer) observer.disconnect();
+    if (fullMap) { fullMap.remove(); fullMap = null; }
+  }
+
+  return { mapEl: map, flashEl: flash, screenEl, paintExplore, paintArena, applyMove, tickMonsters, toggleFullMap, measure, destroy };
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────────────────────
-function key(x, y) { return x + "," + y; }
 
 function makeSprite(glyph, cls) {
   const el = document.createElement("span");

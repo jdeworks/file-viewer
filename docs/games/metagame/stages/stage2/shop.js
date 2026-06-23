@@ -19,7 +19,7 @@ export function buildShopPanel({ state, save, onClose }) {
     return `<div class="s2-shop-row">
       <div class="s2-shop-info">
         <strong>${up.name}</strong> <span class="s2-shop-lv">Lv ${lvl}/${up.max}</span>
-        <div class="s2-shop-desc">${up.desc} per level</div>
+        <div class="s2-shop-desc">${up.desc}</div>
       </div>
       <button type="button" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${label}</button>
     </div>`;

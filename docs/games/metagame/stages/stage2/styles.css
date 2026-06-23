@@ -8,6 +8,9 @@
   color: var(--s2-fg);
   display: grid;
   gap: 10px;
+  /* Shrink each row to its content and centre the whole game zone (cf. stage 9) rather than
+     letting it grow flush-left across the full width. */
+  justify-items: center;
   min-height: 100%;
   padding: 14px;
   font: 14px/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
@@ -17,12 +20,47 @@
   box-sizing: border-box;
 }
 
-.s2-hud,
-.s2-controls {
+/* Single centred column sized to the game zone; everything inside shares its left edge so the
+   HUD / objective / log line up with the map instead of each centring independently (jagged). */
+.s2-board {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 100%;
+}
+
+.s2-hud {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 8px 14px;
+}
+
+/* Play area: the dungeon screen + legend on the left, action buttons stacked to the right. */
+.s2-play {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+}
+
+.s2-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.s2-controls {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* On-screen movement pad — touch only; desktop uses the arrow/WASD keys. */
+.s2-dpad {
+  display: none;
 }
 
 .s2-hud {
@@ -39,10 +77,38 @@
   position: relative;
 }
 
+/* Dev "zoom out" — full-floor minimap overlay (click to dismiss). */
+.s2-fullmap {
+  align-items: center;
+  background: rgba(7, 6, 5, 0.97);
+  border: 1px solid #ffc46f;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  inset: 0;
+  justify-content: center;
+  padding: 8px;
+  position: absolute;
+  z-index: 40;
+}
+
+.s2-fullmap canvas {
+  border: 1px solid var(--s2-border);
+  image-rendering: pixelated;
+  max-width: 100%;
+}
+
+.s2-fullmap-cap {
+  color: #ffd186;
+  font-size: 0.8em;
+}
+
 .s2-grid {
   background: #070605;
+  /* Terrain is one global colour now (walls #, floor . — no per-cell spans); sprites pop over it. */
+  color: #6b5026;
   border: 1px solid var(--s2-border);
-  color: var(--s2-fg);
   line-height: 1.25;
   margin: 0;
   min-height: 0;
@@ -130,8 +196,12 @@
 .s2-c-foe { color: #ff5a4a; font-weight: 700; }
 .s2-c-foe2 { color: #ff2bd0; font-weight: 700; }
 .s2-c-item { color: #ffd54a; }
+.s2-c-potion { color: #6effa6; font-weight: 700; }
 .s2-c-glyph { color: #d78bff; }
 .s2-c-exit { color: #7fe07f; font-weight: 700; }
+
+.s2-compass { color: #79f0ff; font-weight: 700; }
+.s2-c-secret { color: #9a7838; } /* secret-door wall — a hair brighter than terrain (#6b5026) */
 
 .s2-legend {
   color: var(--s2-dim);
@@ -173,22 +243,6 @@
   .s2-flash-on { animation-duration: 0.12s; }
 }
 
-.s2-boss-panel {
-  background: var(--s2-panel);
-  border: 1px solid var(--s2-border);
-  padding: 10px;
-}
-
-.s2-boss-title {
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.s2-hint {
-  color: #ffd186;
-  margin-top: 6px;
-}
-
 .s2-log {
   border-left: 2px solid var(--s2-border);
   color: #f5bf66;
@@ -205,6 +259,9 @@
   font: inherit;
   min-height: 34px;
   padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+  width: 100%;
 }
 
 .s2-controls button:hover,
@@ -212,36 +269,6 @@
   border-color: #ffc46f;
   outline: 1px solid #ffc46f;
 }
-
-/* On-screen d-pad for touch (keyboard arrows/WASD also work). */
-.s2-dpad {
-  display: grid;
-  gap: 3px;
-  grid-template-areas: ". up ." "left down right";
-  grid-template-columns: repeat(3, 38px);
-}
-
-.s2-dpad button {
-  background: #21180d;
-  border: 1px solid var(--s2-border);
-  color: var(--s2-fg);
-  cursor: pointer;
-  font: inherit;
-  min-height: 38px;
-  padding: 4px;
-  user-select: none;
-}
-
-.s2-dpad button:hover,
-.s2-dpad button:focus-visible {
-  border-color: #ffc46f;
-  outline: 1px solid #ffc46f;
-}
-
-.s2-dpad [data-move="up"] { grid-area: up; }
-.s2-dpad [data-move="left"] { grid-area: left; }
-.s2-dpad [data-move="down"] { grid-area: down; }
-.s2-dpad [data-move="right"] { grid-area: right; }
 
 /* Glyph shop — an overlay panel above the dungeon screen. */
 .s2-shop {
@@ -252,9 +279,9 @@
   max-width: 94%;
   padding: 12px 14px;
   position: absolute;
-  top: 8px;
-  transform: translateX(-50%);
-  width: 380px;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
   z-index: 30;
 }
 
@@ -328,9 +355,9 @@
   overflow: auto;
   padding: 12px 14px;
   position: absolute;
-  top: 8px;
-  transform: translateX(-50%);
-  width: 400px;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 340px;
   z-index: 30;
 }
 
@@ -379,7 +406,39 @@
     font-size: 11px;
   }
 
+  /* Stack the buttons below the map on narrow screens. */
+  .s2-play {
+    flex-direction: column;
+  }
+
+  .s2-controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
   .s2-controls button {
     flex: 1 1 42%;
+    text-align: center;
+    width: auto;
   }
+
+  /* Touch movement pad — full-width row below the action buttons. */
+  .s2-dpad {
+    display: grid;
+    flex: 1 1 100%;
+    gap: 4px;
+    grid-template-areas: ". up ." "left down right";
+    grid-template-columns: repeat(3, 1fr);
+    margin-top: 4px;
+  }
+
+  .s2-dpad button {
+    min-height: 48px;
+    width: auto;
+  }
+
+  .s2-dpad [data-move="up"] { grid-area: up; }
+  .s2-dpad [data-move="left"] { grid-area: left; }
+  .s2-dpad [data-move="down"] { grid-area: down; }
+  .s2-dpad [data-move="right"] { grid-area: right; }
 }

@@ -8,7 +8,15 @@ export const stageMeta = {
   slug: "glyph-dungeon",
   name: "Glyph Dungeon",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: [
+    { id: "heal", label: "Full HP" },
+    { id: "atk", label: "+5 ATK" },
+    { id: "lvl", label: "+1 LVL" },
+    { id: "glyphs", label: "+1k glyphs" },
+    { id: "map", label: "Zoom out (full map)" }
+  ]
 };
 
 export function defaultState(context) {
@@ -41,6 +49,8 @@ export function mountStage(ctx) {
   view = renderStage2({ ...ctx, state });
 
   return {
+    devControls: stageMeta.devControls,
+    dev(id) { if (view && typeof view.dev === "function") view.dev(id); },
     destroy() {
       unsubscribe();
       if (view && typeof view.destroy === "function") view.destroy();
