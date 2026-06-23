@@ -120,6 +120,27 @@ async function main() {
       .then(() => pass('opening a watched file reveals the Save-to-disk button'))
       .catch(() => fail('Save button did not appear for an opened watched file'));
 
+    // UI-driven save (onSaveClick): edit in the editor, click the Save button, and assert BOTH the
+    // disk write AND that the editor is marked clean afterward (rawview.markClean) — so a later
+    // navigation does NOT fire a false "unsaved changes" guard. This exercises the companion-ui
+    // save path that the low-level saveFile() call above bypasses.
+    const dirtyBefore = await page.evaluate(async () => {
+      const { state } = await import('/core/state.js');
+      if (!state.rawview) return null;
+      state.rawview.setValue('EDITED IN EDITOR');
+      return state.rawview.isDirty();
+    });
+    if (dirtyBefore === true) pass('editing the opened file marks the editor dirty');
+    else fail('editor not dirty after edit (rawview missing?): ' + JSON.stringify(dirtyBefore));
+    await page.click('#saveBtn');                       // triggers onSaveClick; confirm auto-accepted
+    let uiSaved = false;
+    for (let i = 0; i < 40 && !uiSaved; i++) { uiSaved = readFileSync(filePath, 'utf8') === 'EDITED IN EDITOR'; if (!uiSaved) await new Promise((r) => setTimeout(r, 250)); }
+    if (uiSaved) pass('Save button writes the editor content to disk (onSaveClick path)');
+    else fail('UI save did not hit disk: ' + JSON.stringify(readFileSync(filePath, 'utf8')));
+    const cleanAfter = await page.evaluate(async () => (await import('/core/state.js')).state.rawview.isDirty());
+    if (cleanAfter === false) pass('editor marked clean after save (markClean) — no false unsaved-changes guard');
+    else fail('markClean did not clear the dirty state after save: ' + JSON.stringify(cleanAfter));
+
     // Delete it on disk via the client; assert it's gone.
     await page.evaluate(async (p) => {
       const m = await import('/core/companion.js');

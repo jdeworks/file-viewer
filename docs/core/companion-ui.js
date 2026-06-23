@@ -8,6 +8,22 @@ let companionLinkedPath = null;
 let companionFolderRoot = null;
 let loadIntakeCallback = null;
 let _watchCleanup = null;
+let _healthTimer = null;
+// Paths we just wrote ourselves → suppress the "changed on disk" banner for our OWN save (the
+// watcher fires a modify event for it). Map of absolute path → expiry timestamp (ms).
+const _selfSaved = new Map();
+const SELF_SAVE_WINDOW_MS = 4000;
+
+function markSelfSaved(absPath) {
+  _selfSaved.set(absPath, Date.now() + SELF_SAVE_WINDOW_MS);
+}
+function wasSelfSaved(absPath) {
+  const expiry = _selfSaved.get(absPath);
+  if (expiry == null) return false;
+  if (Date.now() > expiry) { _selfSaved.delete(absPath); return false; }
+  _selfSaved.delete(absPath); // one banner suppressed per save
+  return true;
+}
 
 export function initCompanionUi({ loadIntake }) {
   loadIntakeCallback = loadIntake;
@@ -102,6 +118,8 @@ export function setCompanionLinked(absPath) {
 export function startWatching(absolutePath) {
   stopWatching();
   _watchCleanup = watchFile(absolutePath, (event) => {
+    // Don't prompt "changed on disk" for the write WE just made (our save fires a modify event).
+    if (event.kind !== 'remove' && wasSelfSaved(absolutePath)) return;
     showReloadBanner(absolutePath, event.kind);
   });
 }
@@ -217,6 +235,7 @@ export async function onSaveClick() {
       : (state.rawview ? new TextEncoder().encode(state.rawview.getValue()) : (state.intake.bytes || new TextEncoder().encode(state.intake.text || '')));
     try {
       await saveFile(absPath, bytes);
+      markSelfSaved(absPath);            // suppress our own "changed on disk" banner
       if (!state.currentFolderPath) setCompanionLinked(absPath);
       if (isBinaryEdit) state.binaryEdit.dirty = false;
       if (state.sessionEdits.has(state.intake.filename)) {
@@ -224,6 +243,15 @@ export async function onSaveClick() {
         state.sessionEdits.delete(state.intake.filename);
         state.treeApi?.setEdited?.(state.intake.filename, false);
       }
+      // A folder-tree file's edit is stashed in folderEdits keyed by its path — clear it so the
+      // saved file no longer counts as unsaved work (hasUnsavedWork checks folderEdits.size).
+      if (state.currentFolderPath && state.folderEdits.has(state.currentFolderPath)) {
+        state.folderEdits.delete(state.currentFolderPath);
+        state.treeApi?.setEdited?.(state.currentFolderPath, false);
+      }
+      // Adopt the saved content as the editor's clean baseline so isDirty() → false and a page
+      // reload / re-open won't falsely warn about unsaved changes.
+      state.rawview?.markClean?.();
       state.downloadedSinceEdit = true;
       syncSaveBtn();
       toast('Saved to disk: ' + absPath);
@@ -537,6 +565,28 @@ export function renderCompanionSettings(container) {
   else foldersList.innerHTML = '<span class="companion-folders-empty">Start the Companion app to manage folders.</span>';
 }
 
+// Poll /ping every 30s so a companion that was closed (or started) mid-session is reflected in the
+// UI without a manual "Test connection". Only runs while the companion is ENABLED — so a user who
+// hasn't opted in still makes ZERO off-origin requests. Idempotent.
+const HEALTH_INTERVAL_MS = 30000;
+export function startHealthCheck() {
+  if (_healthTimer) return;
+  _healthTimer = setInterval(async () => {
+    if (!companionEnabled()) return;            // disabled → no fetch (zero off-origin)
+    let ok = false;
+    try { ok = await detectCompanion(); } catch { ok = false; }
+    if (ok === companionAvailable) return;       // unchanged
+    companionAvailable = ok;
+    document.body.classList.toggle('companion-active', ok);
+    if (!ok) { stopWatching(); toast('Companion disconnected — is it still running on :7700?'); }
+    else { showCompanionIndicator(); }
+    syncSaveBtn();
+  }, HEALTH_INTERVAL_MS);
+}
+export function stopHealthCheck() {
+  if (_healthTimer) { clearInterval(_healthTimer); _healthTimer = null; }
+}
+
 export function detectCompanionOnStartup() {
   if (!companionEnabled()) return;
   detectCompanion().then((ok) => {
@@ -546,5 +596,6 @@ export function detectCompanionOnStartup() {
       showCompanionIndicator();
       syncSaveBtn();
     }
+    startHealthCheck();   // keep watching liveness whether or not it's up right now
   });
 }
