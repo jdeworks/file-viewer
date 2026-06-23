@@ -412,6 +412,80 @@ pub async fn get_files(State(state): State<AppState>, Query(q): Query<FileQuery>
 }
 
 // ---------------------------------------------------------------------------
+// GET /tree?path=  — recursive file listing under a folder (for the sidebar refresh).
+// Returns every file's path RELATIVE to the requested dir ('/'-separated) plus its size.
+// Path-restricted to watched folders; capped so a huge tree can't hang the request.
+// ---------------------------------------------------------------------------
+
+const TREE_MAX_FILES: usize = 5000;
+
+#[derive(Serialize)]
+pub struct TreeFile {
+    pub path: String,
+    pub size: u64,
+}
+
+#[derive(Serialize)]
+pub struct TreeResponse {
+    pub files: Vec<TreeFile>,
+    pub truncated: bool,
+}
+
+fn walk_tree(root: &std::path::Path, dir: &std::path::Path, out: &mut Vec<TreeFile>, truncated: &mut bool) {
+    if *truncated {
+        return;
+    }
+    let rd = match std::fs::read_dir(dir) {
+        Ok(r) => r,
+        Err(_) => return,
+    };
+    for entry in rd.flatten() {
+        if out.len() >= TREE_MAX_FILES {
+            *truncated = true;
+            return;
+        }
+        let path = entry.path();
+        let meta = match entry.metadata() {
+            Ok(m) => m,
+            Err(_) => continue,
+        };
+        if meta.is_dir() {
+            walk_tree(root, &path, out, truncated);
+            if *truncated {
+                return;
+            }
+        } else if meta.is_file() {
+            if let Ok(rel) = path.strip_prefix(root) {
+                out.push(TreeFile {
+                    path: rel.to_string_lossy().replace('\\', "/"),
+                    size: meta.len(),
+                });
+            }
+        }
+    }
+}
+
+pub async fn get_tree(State(state): State<AppState>, Query(q): Query<FileQuery>) -> Response {
+    let watched = state.watched_paths.lock().unwrap().clone();
+    let pb = PathBuf::from(&q.path);
+    match validate_path(&pb, &watched) {
+        Err(e) => (StatusCode::FORBIDDEN, Json(serde_json::json!({ "error": e }))).into_response(),
+        Ok(canonical) => {
+            let mut files = Vec::new();
+            let mut truncated = false;
+            walk_tree(&canonical, &canonical, &mut files, &mut truncated);
+            logging::info(format!(
+                "tree {} → {} file(s){}",
+                canonical.display(),
+                files.len(),
+                if truncated { " (truncated)" } else { "" }
+            ));
+            (StatusCode::OK, Json(TreeResponse { files, truncated })).into_response()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // GET /watch  — Server-Sent Events stream for file change notifications.
 // No auth required: it only emits paths of files already inside watched dirs.
 // ---------------------------------------------------------------------------

@@ -61,6 +61,7 @@ pub fn router_with(state: AppState, pages_origin: String, extra: Router<AppState
         .route("/find-folder", get(routes::get_find_folder))
         .route("/file", get(routes::get_file))
         .route("/files", get(routes::get_files))
+        .route("/tree", get(routes::get_tree))
         .route("/watch", get(routes::watch_sse))
         .route("/logs", get(routes::get_logs))
         .merge(protected)

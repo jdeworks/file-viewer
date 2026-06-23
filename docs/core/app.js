@@ -385,7 +385,7 @@ const META_BTN_MSGS = [
 /* ─────────────────────────── Wire up ─────────────────────────── */
 
 function init() {
-  initCompanionUi({ loadIntake });
+  initCompanionUi({ loadIntake, loadFolder });
   initSessionTree({ loadIntake });
   initViewerOpen({ loadIntake });
   // Inject the core-flow callbacks the folder module needs (one-way: app imports folder, folder

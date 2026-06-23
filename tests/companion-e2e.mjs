@@ -167,6 +167,11 @@ async function main() {
     if (Array.isArray(listed) && listed.some((e) => e.name === 'created-by-e2e.txt')) pass('listFiles returns watched-folder entries (folder-browser backend)');
     else fail('listFiles wrong: ' + JSON.stringify(listed));
 
+    // Folder refresh backend: getTree lists files recursively (relative paths) for tree rebuild.
+    const tree = await page.evaluate(async (p) => (await import('/core/companion.js')).getTree(p), watched);
+    if (tree && Array.isArray(tree.files) && tree.files.some((f) => f.path === 'created-by-e2e.txt' && typeof f.size === 'number')) pass('getTree lists files recursively for folder refresh');
+    else fail('getTree wrong: ' + JSON.stringify(tree));
+
     // Item B (log viewer backend): getLogs returns filtered activity, incl. our create.
     const logs = await page.evaluate(async () => (await import('/core/companion.js')).getLogs({ q: 'created-by-e2e' }));
     if (Array.isArray(logs) && logs.some((e) => (e.msg || '').includes('created-by-e2e') && e.ts && e.level)) pass('getLogs returns timestamped, filtered activity entries (log-viewer backend)');

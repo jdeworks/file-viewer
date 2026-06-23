@@ -85,6 +85,39 @@ export async function listFiles(path) {
   return (await res.json()).entries;
 }
 
+// Recursive file listing under a folder: { files: [{ path, size }], truncated } where path is
+// relative to `absRoot` ('/'-separated). Used to refresh the folder tree from disk.
+export async function getTree(absRoot) {
+  const res = await fetch(`${BASE}/tree?path=${encodeURIComponent(absRoot)}`);
+  if (!res.ok) throw new Error(`tree failed: ${res.status}`);
+  return res.json();
+}
+
+// Fetch a single file's bytes as a Blob (for rebuilding the in-memory folder on refresh).
+export async function fetchFileBlob(absPath) {
+  const res = await fetch(`${BASE}/file?path=${encodeURIComponent(absPath)}`);
+  if (!res.ok) throw new Error(`read failed: ${res.status}`);
+  return res.blob();
+}
+
+// Watch a whole FOLDER subtree via SSE: fire `onChange(event)` for any create/modify/remove whose
+// path is under `rootAbs`. Returns a cleanup fn. Only opens when the companion is enabled.
+export function watchFolder(rootAbs, onChange) {
+  if (!isEnabled() || !rootAbs) return () => {};
+  const es = new EventSource(`${BASE}/watch`);
+  const norm = (p) => (p || '').replace(/\\/g, '/');
+  const root = norm(rootAbs).replace(/\/+$/, '');
+  es.onmessage = (e) => {
+    try {
+      const ev = JSON.parse(e.data);
+      if (ev.kind === 'other') return;
+      if (norm(ev.path).startsWith(root)) onChange(ev);
+    } catch { /* ignore */ }
+  };
+  es.onerror = () => { /* EventSource auto-reconnects */ };
+  return () => es.close();
+}
+
 // Fetch recent companion activity-log entries ({ ts, level, msg }[]), filtered server-side by
 // minimum level ("info"|"warn"|"error"), a case-insensitive substring `q`, and an RFC3339 `since`
 // cutoff. Used by the in-settings log viewer.

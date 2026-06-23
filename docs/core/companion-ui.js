@@ -3,7 +3,9 @@ import { layoutTopbar } from './layout.js';
 import { $, state, toast, escapeHtml } from './state.js';
 import { detectCompanion, findFile, findFolder, saveFile, deleteFile, pickFolder, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
 import { browseForFolder, joinPath } from './companion-browse.js';
+import { setupFolderRefresh, onFolderRootResolved, onFolderRootCleared } from './companion-folder.js';
 export { renderCompanionSettings } from './companion-settings.js';
+export { refreshFolderFromDisk } from './companion-folder.js';
 
 let companionAvailable = false;
 let companionLinkedPath = null;
@@ -27,8 +29,9 @@ function wasSelfSaved(absPath) {
   return true;
 }
 
-export function initCompanionUi({ loadIntake }) {
+export function initCompanionUi({ loadIntake, loadFolder }) {
   loadIntakeCallback = loadIntake;
+  setupFolderRefresh({ loadFolder, getFolderRoot: () => companionFolderRoot });
 }
 
 export function isCompanionAvailable() {
@@ -47,6 +50,7 @@ export function hasCompanionFolderRoot() {
 
 export function resetCompanionFolderRoot() {
   companionFolderRoot = null;
+  onFolderRootCleared();
 }
 
 export function showCompanionIndicator() {
@@ -99,6 +103,7 @@ export async function resolveDroppedFolderRoot(entries) {
   companionFolderRoot = root;
   if (root) {
     syncSaveBtn();
+    onFolderRootResolved();   // reveal the ⟳ Refresh / auto controls + start the folder watch
     const currentAbsPath = absolutePathForFile(state.currentFolderPath);
     if (currentAbsPath && state.currentFolderPath) startWatching(currentAbsPath);
   }
