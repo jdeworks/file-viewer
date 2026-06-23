@@ -29,8 +29,9 @@ export function floorDims(runSeed, floorNum) {
   const g = Math.pow(GROWTH, floorNum - 1);
   const width = Math.min(900, Math.round(baseW * g));
   const height = Math.min(900, Math.round(baseH * g));
-  const maxRooms = Math.round((width * height) / 950);
-  return { width, height, maxRooms, minRoom: 4, maxRoom: 9 };
+  // BSP leaf size scales with the map so rooms stay proportionally large at every depth.
+  const minLeaf = Math.max(16, Math.min(70, Math.round(width / 9)));
+  return { width, height, minLeaf, minRoom: 6 };
 }
 
 // Deterministic terrain only (grid + rooms) from `${runSeed}:${floor}`. buildFloor continues
@@ -84,7 +85,9 @@ export function buildFloor(runSeed, floorNum) {
     return null;
   };
 
-  const monsterCount = Math.max(8, Math.min(280, Math.round(dims.maxRooms * 0.7)));
+  // Counts scale with the number of rooms (one room per BSP leaf), so density tracks the map.
+  const roomN = rooms.length;
+  const monsterCount = Math.max(16, Math.min(400, Math.round(roomN * 2.4)));
   const monsters = [];
   for (let i = 0; i < monsterCount; i += 1) {
     const c = take();
@@ -93,21 +96,29 @@ export function buildFloor(runSeed, floorNum) {
     m.x = c.x; m.y = c.y; m.home = { x: c.x, y: c.y };
     monsters.push(m);
   }
-  const weaponTier = Math.min(WEAPONS.length - 1, Math.floor(floorNum / 2) + 1);
+  // Scatter several weapons of mixed tiers (deeper floors skew toward better gear).
+  const maxTier = Math.min(WEAPONS.length - 1, Math.floor(floorNum / 2) + 1);
   const weapons = [];
-  const weaponCount = 1 + Math.floor(floorNum / 2);
+  const weaponCount = Math.max(2, Math.min(24, Math.round(roomN * 0.18)));
   for (let i = 0; i < weaponCount; i += 1) {
     const wc = take();
-    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[weaponTier], taken: false });
+    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
+  }
+  // Health potions scattered through the floor.
+  const potions = [];
+  const potionCount = Math.max(3, Math.min(30, Math.round(roomN * 0.22)));
+  for (let i = 0; i < potionCount; i += 1) {
+    const c = take();
+    if (c) potions.push({ x: c.x, y: c.y, taken: false });
   }
   const glyphs = [];
-  const glyphCount = Math.max(4, Math.round(dims.maxRooms * 0.25));
+  const glyphCount = Math.max(6, Math.min(60, Math.round(roomN * 0.3)));
   for (let i = 0; i < glyphCount; i += 1) {
     const c = take();
     if (!c) break;
     glyphs.push({ x: c.x, y: c.y, taken: false });
   }
-  const world = { floor: floorNum, width, height, pos: { ...start }, exit, monsters, weapons, glyphs };
+  const world = { floor: floorNum, width, height, pos: { ...start }, exit, monsters, weapons, potions, glyphs };
   defineGrid(world, grid);
   return world;
 }
@@ -124,8 +135,9 @@ function awardXp(player, amount, events) {
   while (player.xp >= xpForLevel(player.level)) {
     player.xp -= xpForLevel(player.level);
     player.level += 1;
-    player.maxHp += 5;
-    player.atk += 1;
+    player.maxHp += 5 + Number(player.hpPerLevel || 0);     // Cell Growth shop upgrade
+    player.atk += 1 + Number(player.atkPerLevel || 0);       // Adaptive Edge
+    player.def += Number(player.defPerLevel || 0);           // Tempered Types
     player.hp = Math.min(player.maxHp, player.hp + 3);
     events.log.push(`LVL ${player.level}. ATK ${player.atk}, HP ${player.hp}/${player.maxHp}.`);
   }
@@ -193,6 +205,14 @@ export function step(world, player, dir) {
     const got = gainGlyphs(player, 3);
     events.pickup = events.pickup || "glyph";
     events.log.push(`glyph shard recovered. +${got} glyphs.`);
+  }
+  const potion = world.potions && world.potions.find((p) => !p.taken && p.x === nx && p.y === ny);
+  if (potion && player.hp < player.maxHp) {
+    potion.taken = true;
+    const heal = Math.max(8, Math.round(player.maxHp * 0.35));
+    player.hp = Math.min(player.maxHp, player.hp + heal);
+    events.pickup = events.pickup || "potion";
+    events.log.push(`parse potion. +${heal} HP.`);
   }
   if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
   return events;

@@ -195,8 +195,11 @@
 .s2-c-foe { color: #ff5a4a; font-weight: 700; }
 .s2-c-foe2 { color: #ff2bd0; font-weight: 700; }
 .s2-c-item { color: #ffd54a; }
+.s2-c-potion { color: #6effa6; font-weight: 700; }
 .s2-c-glyph { color: #d78bff; }
 .s2-c-exit { color: #7fe07f; font-weight: 700; }
+
+.s2-compass { color: #79f0ff; font-weight: 700; }
 
 .s2-legend {
   color: var(--s2-dim);

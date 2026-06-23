@@ -22,7 +22,7 @@ const LUNGE_OUT = 130;
 const CELL_CLASS = {
   "#": "s2-c-wall", ".": "s2-c-floor", " ": "s2-c-void",
   "/": "s2-c-item", "[": "s2-c-item", "]": "s2-c-item",
-  "%": "s2-c-glyph", "?": "s2-c-glyph", ">": "s2-c-exit"
+  "%": "s2-c-glyph", "?": "s2-c-glyph", "!": "s2-c-potion", ">": "s2-c-exit"
 };
 
 const HEAVY_FOES = new Set(["L", "O"]);
@@ -43,7 +43,7 @@ export function renderHpBar(el, cur, max, width) {
   el.innerHTML =
     `<span class="s2-hpb-fill">${"#".repeat(filled)}</span>` +
     `<span class="s2-hpb-empty">${".".repeat(empty)}</span>`;
-  el.classList.toggle("s2-hp-low", max > 0 && cur / max <= 0.25 && cur > 0);
+  el.classList.toggle("s2-hp-low", max > 0 && cur / max <= 0.4 && cur > 0);
 }
 
 export function createView(screenEl) {
@@ -87,8 +87,11 @@ export function createView(screenEl) {
   if (observer) observer.observe(ruler);
 
   function pos(el, cx, cy, ms) {
+    const tf = `translate(${ORIGIN + (cx - cam.x) * chW}px, ${ORIGIN + (cy - cam.y) * chH}px)`;
+    if (el._tf === tf) return; // unchanged on-screen position — skip the style write (per-tick guard)
+    el._tf = tf;
     el.style.transition = ms ? `transform ${ms}ms ease-out` : "none";
-    el.style.transform = `translate(${ORIGIN + (cx - cam.x) * chW}px, ${ORIGIN + (cy - cam.y) * chH}px)`;
+    el.style.transform = tf;
   }
 
   // ── Boss arena: hand-authored art, no camera/sprites ──────────────────────────────────────
@@ -110,11 +113,10 @@ export function createView(screenEl) {
   }
 
   function terrainSlice(world) {
-    const items = new Set();
-    for (const g of world.glyphs) if (!g.taken) items.add(key(g.x, g.y) + ":%");
-    for (const w of world.weapons) if (!w.taken) items.add(key(w.x, w.y) + ":/");
     const overlay = new Map();
-    for (const it of items) { const [k, ch] = it.split(":"); overlay.set(k, ch); }
+    for (const g of world.glyphs) if (!g.taken) overlay.set(key(g.x, g.y), "%");
+    for (const w of world.weapons) if (!w.taken) overlay.set(key(w.x, w.y), "/");
+    if (world.potions) for (const p of world.potions) if (!p.taken) overlay.set(key(p.x, p.y), "!");
     overlay.set(key(world.exit.x, world.exit.y), ">");
     const rows = [];
     for (let vy = 0; vy < VIEW_H; vy += 1) {
@@ -141,9 +143,13 @@ export function createView(screenEl) {
       let s = mobEls.get(i);
       let fresh = false;
       if (!s) { s = makeMob(m); mobEls.set(i, s); sprites.append(s.el); fresh = true; }
-      s.glyph.textContent = m.glyph;
-      s.el.className = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
-      if (m.hp < m.maxHp) { s.hp.hidden = false; renderHpBar(s.hp, m.hp, m.maxHp, 5); } else s.hp.hidden = true;
+      if (s.glyph.textContent !== m.glyph) s.glyph.textContent = m.glyph;
+      const cls = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
+      if (s.el.className !== cls) s.el.className = cls;
+      if (m.hp < m.maxHp) {
+        if (s.hp.hidden) s.hp.hidden = false;
+        if (s.lastHp !== m.hp || s.lastMaxHp !== m.maxHp) { renderHpBar(s.hp, m.hp, m.maxHp, 5); s.lastHp = m.hp; s.lastMaxHp = m.maxHp; }
+      } else if (!s.hp.hidden) { s.hp.hidden = true; }
       pos(s.el, m.x, m.y, fresh ? 0 : mobMs);
     });
     for (const i of [...mobEls.keys()]) if (!live.has(i)) dropMob(i);
@@ -244,6 +250,7 @@ export function createView(screenEl) {
       ctx.fillRect(Math.round(x * scale) - (sz >> 1), Math.round(y * scale) - (sz >> 1), sz, sz);
     };
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
+    if (world.potions) for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);
     for (const g of world.glyphs) if (!g.taken) dot(g.x, g.y, "#d78bff", 3);
     dot(world.exit.x, world.exit.y, "#7fe07f", 4);
     for (const m of world.monsters) if (m.alive) dot(m.x, m.y, HEAVY_FOES.has(m.glyph) ? "#ff2bd0" : "#ff5a4a", 3);

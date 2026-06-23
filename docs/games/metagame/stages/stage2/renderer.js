@@ -34,6 +34,7 @@ export function renderStage2({
       <div>ATK <span data-field="atk"></span></div>
       <div>DEF <span data-field="def"></span></div>
       <div>GLYPHS <span data-field="glyphs"></span></div>
+      <div class="s2-compass" data-field="compass" hidden></div>
     </header>
     <div class="s2-objective" data-field="objective"></div>
     <div class="s2-play">
@@ -43,6 +44,7 @@ export function renderStage2({
           <span class="s2-c-player">@</span> you
           <span class="s2-c-foe">s</span> foe
           <span class="s2-c-item">/</span> weapon
+          <span class="s2-c-potion">!</span> potion
           <span class="s2-c-glyph">%</span> glyph
           <span class="s2-c-exit">&gt;</span> stairs
         </div>
@@ -74,6 +76,16 @@ export function renderStage2({
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
   const view = createView(root.querySelector(".s2-screen"));
   const log = root.querySelector(".s2-log");
+  // React-style write guards: paintHud runs on every monster-clock tick (~9/s), so only touch the
+  // DOM for values that actually changed (the rest is a no-op). Same lesson as Bit Foundry.
+  const setText = (el, v) => { const s = String(v); if (el.textContent !== s) el.textContent = s; };
+  const setHidden = (el, h) => { if (el.hidden !== h) el.hidden = h; };
+  const searchBtn = root.querySelector('[data-action="search"]');
+  const bossBtn = root.querySelector('[data-action="boss"]');
+  const btsBtn = root.querySelector('[data-action="bts"]');
+  let lastHp = -1;
+  let lastMaxHp = -1;
+  let lastLogSig = "";
   let flashTimer = null;
   let overlay = null; // { el } for the open shop/help panel, or null
   let monsterClocks = []; // the 5 real-time monster-movement intervals
@@ -84,37 +96,56 @@ export function renderStage2({
 
   ensureWorld(state);
 
-  // HUD + log + boss panel — everything outside the dungeon screen.
+  // HUD + log — everything outside the dungeon screen. Every write is guarded (see setText).
   function paintHud() {
-    const entity = state.run.entity;
+    const e = state.run.entity;
     const lock = getBossLockState({ actions, state });
-    fields.floor.textContent = String(state.run.floor);
-    fields.hp.textContent = String(entity.hp);
-    fields.maxHp.textContent = String(entity.maxHp);
-    renderHpBar(fields.hpbar, entity.hp, entity.maxHp, 10);
-    fields.level.textContent = String(entity.level);
-    fields.xp.textContent = String(entity.xp || 0);
-    fields.atk.textContent = String(entity.atk);
-    fields.def.textContent = String(entity.def);
-    fields.glyphs.textContent = `${state.meta.glyphsBanked} +${entity.glyphsThisRun}`;
-    fields.bossStatus.textContent = state.run.boss.defeated
+    setText(fields.floor, state.run.floor);
+    setText(fields.hp, e.hp);
+    setText(fields.maxHp, e.maxHp);
+    if (e.hp !== lastHp || e.maxHp !== lastMaxHp) {
+      renderHpBar(fields.hpbar, e.hp, e.maxHp, 10); // rebuilds spans only on an actual HP change;
+      lastHp = e.hp; lastMaxHp = e.maxHp;           // the low-HP pulse is a CSS class, not a redraw.
+    }
+    setText(fields.level, e.level);
+    setText(fields.xp, e.xp || 0);
+    setText(fields.atk, e.atk);
+    setText(fields.def, e.def);
+    setText(fields.glyphs, `${state.meta.glyphsBanked} +${e.glyphsThisRun}`);
+    setText(fields.bossStatus, state.run.boss.defeated
       ? "defeated. BTS trace available."
-      : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`;
-    fields.hint.textContent = lock.hint;
-    fields.objective.textContent = state.run.boss.reached
+      : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`);
+    setText(fields.hint, lock.hint);
+    setText(fields.objective, state.run.boss.reached
       ? (lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way.")
-      : `reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`;
-    log.replaceChildren(...state.run.combatLog.slice(-4).map((line) => {
-      const item = document.createElement("li");
-      item.textContent = line;
-      return item;
-    }));
-    // The cipher.txt + challenge-boss actions only appear once you've reached the final floor
-    // (boss.reached); the trace.bts link only after the boss falls.
+      : `reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
+    updateCompass();
+    const sig = state.run.combatLog.slice(-4).join("\n");
+    if (sig !== lastLogSig) {
+      lastLogSig = sig;
+      log.replaceChildren(...state.run.combatLog.slice(-4).map((line) => {
+        const item = document.createElement("li");
+        item.textContent = line;
+        return item;
+      }));
+    }
+    // The cipher.txt + challenge-boss actions only appear at the final floor; trace.bts after defeat.
     const atBoss = state.run.boss.reached && !state.run.boss.defeated;
-    root.querySelector('[data-action="search"]').hidden = !atBoss;
-    root.querySelector('[data-action="boss"]').hidden = !atBoss;
-    root.querySelector('[data-action="bts"]').hidden = !state.run.boss.defeated;
+    setHidden(searchBtn, !atBoss);
+    setHidden(bossBtn, !atBoss);
+    setHidden(btsBtn, !state.run.boss.defeated);
+  }
+
+  // Stairs compass — a HUD arrow + tile distance to the exit, unlocked once by the glyph-shop
+  // "Stairwell Sense" purchase. Guarded writes, so it only updates as you actually move.
+  function updateCompass() {
+    const owned = Number((state.meta.shopUpgrades || {}).compass || 0) > 0;
+    const w = state.run.world;
+    if (!owned || !w || state.run.boss.reached) { setHidden(fields.compass, true); return; }
+    const dx = w.exit.x - w.pos.x;
+    const dy = w.exit.y - w.pos.y;
+    setHidden(fields.compass, false);
+    setText(fields.compass, `⇲ stairs ${compassArrow(dx, dy)} ${Math.abs(dx) + Math.abs(dy)}`);
   }
 
   // The dungeon screen — boss arena art, or the camera-following exploration view.
@@ -339,6 +370,16 @@ function resetRun(state, { banked, death }) {
 }
 
 // ── Rendering helpers ─────────────────────────────────────────────────────────────────────────
+// 8-way arrow pointing from @ toward the stairs (for the Stairwell Sense compass).
+function compassArrow(dx, dy) {
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+  if (ax < ay / 2) return dy < 0 ? "↑" : "↓";
+  if (ay < ax / 2) return dx < 0 ? "←" : "→";
+  if (dx < 0) return dy < 0 ? "↖" : "↙";
+  return dy < 0 ? "↗" : "↘";
+}
+
 const NOISE_CHARS = "╳✕X#▓░*/\\";
 function damageNoise(fatal) {
   const rows = fatal ? 7 : 4;

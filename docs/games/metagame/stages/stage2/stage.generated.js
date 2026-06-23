@@ -237,30 +237,51 @@ function connect(grid, a, b, rng) {
     carveH(grid, a.cx, b.cx, b.cy);
   }
 }
-function overlaps(a, b, margin) {
-  return a.x - margin < b.x + b.w && a.x + a.w + margin > b.x && a.y - margin < b.y + b.h && a.y + a.h + margin > b.y;
+function splitNode(node, rng, minLeaf) {
+  const canV = node.w >= 2 * minLeaf;
+  const canH = node.h >= 2 * minLeaf;
+  if (!canV && !canH) return;
+  let vertical;
+  if (canV && canH) vertical = node.w > node.h * 1.25 ? true : node.h > node.w * 1.25 ? false : rng.chance(0.5);
+  else vertical = canV;
+  if (vertical) {
+    const cut = rng.int(minLeaf, node.w - minLeaf);
+    node.left = { x: node.x, y: node.y, w: cut, h: node.h };
+    node.right = { x: node.x + cut, y: node.y, w: node.w - cut, h: node.h };
+  } else {
+    const cut = rng.int(minLeaf, node.h - minLeaf);
+    node.left = { x: node.x, y: node.y, w: node.w, h: cut };
+    node.right = { x: node.x, y: node.y + cut, w: node.w, h: node.h - cut };
+  }
+  splitNode(node.left, rng, minLeaf);
+  splitNode(node.right, rng, minLeaf);
 }
-function generate(rng, { width, height, maxRooms, minRoom, maxRoom }) {
-  const grid = Array.from({ length: height }, () => Array(width).fill("#"));
-  const rooms = [];
-  const attempts = maxRooms * 4;
-  for (let i = 0; i < attempts && rooms.length < maxRooms; i += 1) {
-    const w = rng.int(minRoom, maxRoom);
-    const h = rng.int(minRoom, maxRoom);
-    const x = rng.int(1, Math.max(1, width - w - 2));
-    const y = rng.int(1, Math.max(1, height - h - 2));
-    const room = { x, y, w, h, cx: x + (w >> 1), cy: y + (h >> 1) };
-    if (rooms.some((r) => overlaps(r, room, 1))) continue;
+function carveAndConnect(node, grid, rng, rooms, minRoom) {
+  if (!node.left) {
+    const maxW = Math.max(minRoom, node.w - 2);
+    const maxH = Math.max(minRoom, node.h - 2);
+    const rw = Math.min(maxW, Math.max(minRoom, rng.int(Math.floor(maxW * 0.7), maxW)));
+    const rh = Math.min(maxH, Math.max(minRoom, rng.int(Math.floor(maxH * 0.7), maxH)));
+    const rx = node.x + 1 + rng.int(0, Math.max(0, node.w - rw - 2));
+    const ry = node.y + 1 + rng.int(0, Math.max(0, node.h - rh - 2));
+    const room = { x: rx, y: ry, w: rw, h: rh, cx: rx + (rw >> 1), cy: ry + (rh >> 1) };
     carveRoom(grid, room);
-    if (rooms.length > 0) connect(grid, rooms[rooms.length - 1], room, rng);
     rooms.push(room);
+    node.room = room;
+    return room;
   }
-  const extraLoops = Math.min(rooms.length - 1, 2 + Math.floor(rooms.length / 3));
-  for (let i = 0; i < extraLoops; i += 1) {
-    const a = rng.pick(rooms);
-    const b = rng.pick(rooms);
-    if (a !== b) connect(grid, a, b, rng);
-  }
+  const a = carveAndConnect(node.left, grid, rng, rooms, minRoom);
+  const b = carveAndConnect(node.right, grid, rng, rooms, minRoom);
+  if (a && b) connect(grid, a, b, rng);
+  node.room = a || b;
+  return node.room;
+}
+function generate(rng, { width, height, minLeaf = 18, minRoom = 5 }) {
+  const grid = Array.from({ length: height }, () => Array(width).fill("#"));
+  const root = { x: 1, y: 1, w: width - 2, h: height - 2 };
+  splitNode(root, rng, Math.max(minRoom + 2, minLeaf));
+  const rooms = [];
+  carveAndConnect(root, grid, rng, rooms, minRoom);
   return { grid: grid.map((row) => row.join("")), rooms };
 }
 function floodDistances(gridRows, start) {
@@ -316,22 +337,33 @@ var WEAPONS = [
   { name: "kernel_scythe", atk: 12 }
 ];
 var SHOP_UPGRADES = [
-  { id: "vitality", name: "Vitality", desc: "+8 max HP", max: 8, apply: (s, n) => {
+  { id: "vitality", name: "Vitality", desc: "+8 starting max HP", max: 8, apply: (s, n) => {
     s.maxHp += 8 * n;
     s.hp = s.maxHp;
   } },
-  { id: "edge", name: "Sharper Cursor", desc: "+1 ATK", max: 8, apply: (s, n) => {
+  { id: "hp_level", name: "Cell Growth", desc: "+2 max HP per level", max: 5, apply: (s, n) => {
+    s.hpPerLevel = 2 * n;
+  } },
+  { id: "edge", name: "Sharper Cursor", desc: "+1 starting ATK", max: 8, apply: (s, n) => {
     s.atk += n;
   } },
-  { id: "guard", name: "Hardened Types", desc: "+1 DEF", max: 6, apply: (s, n) => {
+  { id: "atk_level", name: "Adaptive Edge", desc: "+1 ATK per level", max: 4, apply: (s, n) => {
+    s.atkPerLevel = n;
+  } },
+  { id: "guard", name: "Hardened Types", desc: "+1 starting DEF", max: 6, apply: (s, n) => {
     s.def += n;
+  } },
+  { id: "def_level", name: "Tempered Types", desc: "+1 DEF per level", max: 4, apply: (s, n) => {
+    s.defPerLevel = n;
   } },
   { id: "greed", name: "Glyph Magnet", desc: "+25% glyphs", max: 4, apply: (s, n) => {
     s.glyphMult = 1 + 0.25 * n;
+  } },
+  { id: "compass", name: "Stairwell Sense", desc: "reveals the way to the stairs (HUD compass)", max: 1, apply: () => {
   } }
 ];
-var SHOP_BASE = { vitality: 8, edge: 12, guard: 10, greed: 15 };
-var SHOP_GROWTH = { vitality: 1.6, edge: 1.7, guard: 1.7, greed: 1.9 };
+var SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, compass: 1e3 };
+var SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, compass: 1 };
 function upgradeCost(id, level) {
   return Math.round((SHOP_BASE[id] || 10) * (SHOP_GROWTH[id] || 1.7) ** level);
 }
@@ -389,8 +421,8 @@ function floorDims(runSeed, floorNum) {
   const g = Math.pow(GROWTH, floorNum - 1);
   const width = Math.min(900, Math.round(baseW * g));
   const height = Math.min(900, Math.round(baseH * g));
-  const maxRooms = Math.round(width * height / 950);
-  return { width, height, maxRooms, minRoom: 4, maxRoom: 9 };
+  const minLeaf = Math.max(16, Math.min(70, Math.round(width / 9)));
+  return { width, height, minLeaf, minRoom: 6 };
 }
 function buildGrid(runSeed, floorNum) {
   const dims = floorDims(runSeed, floorNum);
@@ -437,7 +469,8 @@ function buildFloor(runSeed, floorNum) {
     }
     return null;
   };
-  const monsterCount = Math.max(8, Math.min(280, Math.round(dims.maxRooms * 0.7)));
+  const roomN = rooms.length;
+  const monsterCount = Math.max(16, Math.min(400, Math.round(roomN * 2.4)));
   const monsters = [];
   for (let i = 0; i < monsterCount; i += 1) {
     const c = take();
@@ -448,21 +481,27 @@ function buildFloor(runSeed, floorNum) {
     m.home = { x: c.x, y: c.y };
     monsters.push(m);
   }
-  const weaponTier = Math.min(WEAPONS.length - 1, Math.floor(floorNum / 2) + 1);
+  const maxTier = Math.min(WEAPONS.length - 1, Math.floor(floorNum / 2) + 1);
   const weapons = [];
-  const weaponCount = 1 + Math.floor(floorNum / 2);
+  const weaponCount = Math.max(2, Math.min(24, Math.round(roomN * 0.18)));
   for (let i = 0; i < weaponCount; i += 1) {
     const wc = take();
-    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[weaponTier], taken: false });
+    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
+  }
+  const potions = [];
+  const potionCount = Math.max(3, Math.min(30, Math.round(roomN * 0.22)));
+  for (let i = 0; i < potionCount; i += 1) {
+    const c = take();
+    if (c) potions.push({ x: c.x, y: c.y, taken: false });
   }
   const glyphs = [];
-  const glyphCount = Math.max(4, Math.round(dims.maxRooms * 0.25));
+  const glyphCount = Math.max(6, Math.min(60, Math.round(roomN * 0.3)));
   for (let i = 0; i < glyphCount; i += 1) {
     const c = take();
     if (!c) break;
     glyphs.push({ x: c.x, y: c.y, taken: false });
   }
-  const world = { floor: floorNum, width, height, pos: { ...start }, exit, monsters, weapons, glyphs };
+  const world = { floor: floorNum, width, height, pos: { ...start }, exit, monsters, weapons, potions, glyphs };
   defineGrid(world, grid);
   return world;
 }
@@ -477,8 +516,9 @@ function awardXp(player, amount, events) {
   while (player.xp >= xpForLevel(player.level)) {
     player.xp -= xpForLevel(player.level);
     player.level += 1;
-    player.maxHp += 5;
-    player.atk += 1;
+    player.maxHp += 5 + Number(player.hpPerLevel || 0);
+    player.atk += 1 + Number(player.atkPerLevel || 0);
+    player.def += Number(player.defPerLevel || 0);
     player.hp = Math.min(player.maxHp, player.hp + 3);
     events.log.push(`LVL ${player.level}. ATK ${player.atk}, HP ${player.hp}/${player.maxHp}.`);
   }
@@ -536,6 +576,14 @@ function step(world, player, dir) {
     const got = gainGlyphs(player, 3);
     events.pickup = events.pickup || "glyph";
     events.log.push(`glyph shard recovered. +${got} glyphs.`);
+  }
+  const potion = world.potions && world.potions.find((p) => !p.taken && p.x === nx && p.y === ny);
+  if (potion && player.hp < player.maxHp) {
+    potion.taken = true;
+    const heal = Math.max(8, Math.round(player.maxHp * 0.35));
+    player.hp = Math.min(player.maxHp, player.hp + heal);
+    events.pickup = events.pickup || "potion";
+    events.log.push(`parse potion. +${heal} HP.`);
   }
   if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
   return events;
@@ -643,7 +691,7 @@ function buildShopPanel({ state, save, onClose }) {
     return `<div class="s2-shop-row">
       <div class="s2-shop-info">
         <strong>${up.name}</strong> <span class="s2-shop-lv">Lv ${lvl}/${up.max}</span>
-        <div class="s2-shop-desc">${up.desc} per level</div>
+        <div class="s2-shop-desc">${up.desc}</div>
       </div>
       <button type="button" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${label}</button>
     </div>`;
@@ -720,6 +768,7 @@ var CELL_CLASS = {
   "]": "s2-c-item",
   "%": "s2-c-glyph",
   "?": "s2-c-glyph",
+  "!": "s2-c-potion",
   ">": "s2-c-exit"
 };
 var HEAVY_FOES = /* @__PURE__ */ new Set(["L", "O"]);
@@ -734,7 +783,7 @@ function hpBar(cur, max, width) {
 function renderHpBar(el, cur, max, width) {
   const { filled, empty } = hpBar(cur, max, width);
   el.innerHTML = `<span class="s2-hpb-fill">${"#".repeat(filled)}</span><span class="s2-hpb-empty">${".".repeat(empty)}</span>`;
-  el.classList.toggle("s2-hp-low", max > 0 && cur / max <= 0.25 && cur > 0);
+  el.classList.toggle("s2-hp-low", max > 0 && cur / max <= 0.4 && cur > 0);
 }
 function createView(screenEl) {
   const map = document.createElement("pre");
@@ -770,8 +819,11 @@ function createView(screenEl) {
   }) : null;
   if (observer) observer.observe(ruler);
   function pos(el, cx, cy, ms) {
+    const tf = `translate(${ORIGIN + (cx - cam.x) * chW}px, ${ORIGIN + (cy - cam.y) * chH}px)`;
+    if (el._tf === tf) return;
+    el._tf = tf;
     el.style.transition = ms ? `transform ${ms}ms ease-out` : "none";
-    el.style.transform = `translate(${ORIGIN + (cx - cam.x) * chW}px, ${ORIGIN + (cy - cam.y) * chH}px)`;
+    el.style.transform = tf;
   }
   function paintArena(lines) {
     lastWorld = null;
@@ -788,13 +840,11 @@ function createView(screenEl) {
     reconcileSprites(world);
   }
   function terrainSlice(world) {
-    const items = /* @__PURE__ */ new Set();
-    for (const g of world.glyphs) if (!g.taken) items.add(key(g.x, g.y) + ":%");
-    for (const w of world.weapons) if (!w.taken) items.add(key(w.x, w.y) + ":/");
     const overlay = /* @__PURE__ */ new Map();
-    for (const it of items) {
-      const [k, ch] = it.split(":");
-      overlay.set(k, ch);
+    for (const g of world.glyphs) if (!g.taken) overlay.set(key(g.x, g.y), "%");
+    for (const w of world.weapons) if (!w.taken) overlay.set(key(w.x, w.y), "/");
+    if (world.potions) {
+      for (const p of world.potions) if (!p.taken) overlay.set(key(p.x, p.y), "!");
     }
     overlay.set(key(world.exit.x, world.exit.y), ">");
     const rows = [];
@@ -830,12 +880,19 @@ function createView(screenEl) {
         sprites.append(s.el);
         fresh = true;
       }
-      s.glyph.textContent = m.glyph;
-      s.el.className = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
+      if (s.glyph.textContent !== m.glyph) s.glyph.textContent = m.glyph;
+      const cls = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
+      if (s.el.className !== cls) s.el.className = cls;
       if (m.hp < m.maxHp) {
-        s.hp.hidden = false;
-        renderHpBar(s.hp, m.hp, m.maxHp, 5);
-      } else s.hp.hidden = true;
+        if (s.hp.hidden) s.hp.hidden = false;
+        if (s.lastHp !== m.hp || s.lastMaxHp !== m.maxHp) {
+          renderHpBar(s.hp, m.hp, m.maxHp, 5);
+          s.lastHp = m.hp;
+          s.lastMaxHp = m.maxHp;
+        }
+      } else if (!s.hp.hidden) {
+        s.hp.hidden = true;
+      }
       pos(s.el, m.x, m.y, fresh ? 0 : mobMs);
     });
     for (const i of [...mobEls.keys()]) if (!live.has(i)) dropMob(i);
@@ -943,6 +1000,9 @@ function createView(screenEl) {
       ctx.fillRect(Math.round(x * scale) - (sz >> 1), Math.round(y * scale) - (sz >> 1), sz, sz);
     };
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
+    if (world.potions) {
+      for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);
+    }
     for (const g of world.glyphs) if (!g.taken) dot(g.x, g.y, "#d78bff", 3);
     dot(world.exit.x, world.exit.y, "#7fe07f", 4);
     for (const m of world.monsters) if (m.alive) dot(m.x, m.y, HEAVY_FOES.has(m.glyph) ? "#ff2bd0" : "#ff5a4a", 3);
@@ -1027,6 +1087,7 @@ function renderStage2({
       <div>ATK <span data-field="atk"></span></div>
       <div>DEF <span data-field="def"></span></div>
       <div>GLYPHS <span data-field="glyphs"></span></div>
+      <div class="s2-compass" data-field="compass" hidden></div>
     </header>
     <div class="s2-objective" data-field="objective"></div>
     <div class="s2-play">
@@ -1036,6 +1097,7 @@ function renderStage2({
           <span class="s2-c-player">@</span> you
           <span class="s2-c-foe">s</span> foe
           <span class="s2-c-item">/</span> weapon
+          <span class="s2-c-potion">!</span> potion
           <span class="s2-c-glyph">%</span> glyph
           <span class="s2-c-exit">&gt;</span> stairs
         </div>
@@ -1065,6 +1127,19 @@ function renderStage2({
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
   const view = createView(root.querySelector(".s2-screen"));
   const log = root.querySelector(".s2-log");
+  const setText = (el, v) => {
+    const s = String(v);
+    if (el.textContent !== s) el.textContent = s;
+  };
+  const setHidden = (el, h) => {
+    if (el.hidden !== h) el.hidden = h;
+  };
+  const searchBtn = root.querySelector('[data-action="search"]');
+  const bossBtn = root.querySelector('[data-action="boss"]');
+  const btsBtn = root.querySelector('[data-action="bts"]');
+  let lastHp = -1;
+  let lastMaxHp = -1;
+  let lastLogSig = "";
   let flashTimer = null;
   let overlay = null;
   let monsterClocks = [];
@@ -1073,29 +1148,50 @@ function renderStage2({
   });
   ensureWorld(state);
   function paintHud() {
-    const entity = state.run.entity;
+    const e = state.run.entity;
     const lock = getBossLockState({ actions, state });
-    fields.floor.textContent = String(state.run.floor);
-    fields.hp.textContent = String(entity.hp);
-    fields.maxHp.textContent = String(entity.maxHp);
-    renderHpBar(fields.hpbar, entity.hp, entity.maxHp, 10);
-    fields.level.textContent = String(entity.level);
-    fields.xp.textContent = String(entity.xp || 0);
-    fields.atk.textContent = String(entity.atk);
-    fields.def.textContent = String(entity.def);
-    fields.glyphs.textContent = `${state.meta.glyphsBanked} +${entity.glyphsThisRun}`;
-    fields.bossStatus.textContent = state.run.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`;
-    fields.hint.textContent = lock.hint;
-    fields.objective.textContent = state.run.boss.reached ? lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way." : `reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`;
-    log.replaceChildren(...state.run.combatLog.slice(-4).map((line) => {
-      const item = document.createElement("li");
-      item.textContent = line;
-      return item;
-    }));
+    setText(fields.floor, state.run.floor);
+    setText(fields.hp, e.hp);
+    setText(fields.maxHp, e.maxHp);
+    if (e.hp !== lastHp || e.maxHp !== lastMaxHp) {
+      renderHpBar(fields.hpbar, e.hp, e.maxHp, 10);
+      lastHp = e.hp;
+      lastMaxHp = e.maxHp;
+    }
+    setText(fields.level, e.level);
+    setText(fields.xp, e.xp || 0);
+    setText(fields.atk, e.atk);
+    setText(fields.def, e.def);
+    setText(fields.glyphs, `${state.meta.glyphsBanked} +${e.glyphsThisRun}`);
+    setText(fields.bossStatus, state.run.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`);
+    setText(fields.hint, lock.hint);
+    setText(fields.objective, state.run.boss.reached ? lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way." : `reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
+    updateCompass();
+    const sig = state.run.combatLog.slice(-4).join("\n");
+    if (sig !== lastLogSig) {
+      lastLogSig = sig;
+      log.replaceChildren(...state.run.combatLog.slice(-4).map((line) => {
+        const item = document.createElement("li");
+        item.textContent = line;
+        return item;
+      }));
+    }
     const atBoss = state.run.boss.reached && !state.run.boss.defeated;
-    root.querySelector('[data-action="search"]').hidden = !atBoss;
-    root.querySelector('[data-action="boss"]').hidden = !atBoss;
-    root.querySelector('[data-action="bts"]').hidden = !state.run.boss.defeated;
+    setHidden(searchBtn, !atBoss);
+    setHidden(bossBtn, !atBoss);
+    setHidden(btsBtn, !state.run.boss.defeated);
+  }
+  function updateCompass() {
+    const owned = Number((state.meta.shopUpgrades || {}).compass || 0) > 0;
+    const w = state.run.world;
+    if (!owned || !w || state.run.boss.reached) {
+      setHidden(fields.compass, true);
+      return;
+    }
+    const dx = w.exit.x - w.pos.x;
+    const dy = w.exit.y - w.pos.y;
+    setHidden(fields.compass, false);
+    setText(fields.compass, `⇲ stairs ${compassArrow(dx, dy)} ${Math.abs(dx) + Math.abs(dy)}`);
   }
   function paintWorld() {
     if (state.run.boss.reached) {
@@ -1310,6 +1406,14 @@ function resetRun(state, { banked, death }) {
   run.active = false;
   run.boss.reached = false;
   run.world = buildFloor(run.seed, 1);
+}
+function compassArrow(dx, dy) {
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+  if (ax < ay / 2) return dy < 0 ? "↑" : "↓";
+  if (ay < ax / 2) return dx < 0 ? "←" : "→";
+  if (dx < 0) return dy < 0 ? "↖" : "↙";
+  return dy < 0 ? "↗" : "↘";
 }
 var NOISE_CHARS = "╳✕X#▓░*/\\";
 function damageNoise(fatal) {

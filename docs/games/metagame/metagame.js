@@ -264,14 +264,18 @@ export function mount(host, { onExit } = {}) {
     const activeDevRow = activeCtrls.length
       ? `<div class="mg-dev-row"><span>Stage ${saveData.currentStage}:</span>${activeCtrls.map((c) => `<button type="button" data-dev="stagedev" data-id="${c.id}">${c.label}</button>`).join('')}</div>`
       : '';
-    box.innerHTML = `
-      <div class="mg-dev">
-        <div class="mg-dev-title">🛠 Dev menu <button type="button" data-dev="close" class="mg-dev-x">✕</button></div>
-        <div class="mg-dev-row"><span>Stage 1 bits:</span>
+    // Only the active stage's controls are shown: stage 1 → bits seeds, others → their devControls.
+    const bitsRow = Number(saveData.currentStage) === 1
+      ? `<div class="mg-dev-row"><span>Stage 1 bits:</span>
           <button type="button" data-dev="bits" data-e="6">1M</button>
           <button type="button" data-dev="bits" data-e="9">1B</button>
           <button type="button" data-dev="bits" data-e="12">1T</button>
-          <button type="button" data-dev="bits" data-e="93">1ba</button></div>
+          <button type="button" data-dev="bits" data-e="93">1ba</button></div>`
+      : '';
+    box.innerHTML = `
+      <div class="mg-dev">
+        <div class="mg-dev-title">🛠 Dev menu <button type="button" data-dev="close" class="mg-dev-x">✕</button></div>
+        ${bitsRow}
         ${activeDevRow}
         <div class="mg-dev-row"><span>Jump to stage:</span>${stageBtns}</div>
         <div class="mg-dev-row"><span>Jump to boss:</span>${bossBtns}</div>

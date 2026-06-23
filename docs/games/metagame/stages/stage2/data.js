@@ -27,15 +27,22 @@ export const WEAPONS = [
 // Permanent (meta) upgrades bought with banked glyphs — roguelite progression that
 // persists across deaths. `cost(level)` is the price of the NEXT level. `apply(stats, n)`
 // mutates the run's starting stats. Levels are stored in state.meta.shopUpgrades[id].
+// Permanent (meta) upgrades. `apply(stats,n)` mutates the run's STARTING stats; the *_level
+// upgrades instead set a per-level field that awardXp() reads on each level-up. `compass` is a
+// one-time unlock (max 1) read by the renderer (the stairs HUD compass), so its apply is a no-op.
 export const SHOP_UPGRADES = [
-  { id: 'vitality', name: 'Vitality', desc: '+8 max HP', max: 8, apply: (s, n) => { s.maxHp += 8 * n; s.hp = s.maxHp; } },
-  { id: 'edge', name: 'Sharper Cursor', desc: '+1 ATK', max: 8, apply: (s, n) => { s.atk += n; } },
-  { id: 'guard', name: 'Hardened Types', desc: '+1 DEF', max: 6, apply: (s, n) => { s.def += n; } },
-  { id: 'greed', name: 'Glyph Magnet', desc: '+25% glyphs', max: 4, apply: (s, n) => { s.glyphMult = 1 + 0.25 * n; } }
+  { id: 'vitality', name: 'Vitality', desc: '+8 starting max HP', max: 8, apply: (s, n) => { s.maxHp += 8 * n; s.hp = s.maxHp; } },
+  { id: 'hp_level', name: 'Cell Growth', desc: '+2 max HP per level', max: 5, apply: (s, n) => { s.hpPerLevel = 2 * n; } },
+  { id: 'edge', name: 'Sharper Cursor', desc: '+1 starting ATK', max: 8, apply: (s, n) => { s.atk += n; } },
+  { id: 'atk_level', name: 'Adaptive Edge', desc: '+1 ATK per level', max: 4, apply: (s, n) => { s.atkPerLevel = n; } },
+  { id: 'guard', name: 'Hardened Types', desc: '+1 starting DEF', max: 6, apply: (s, n) => { s.def += n; } },
+  { id: 'def_level', name: 'Tempered Types', desc: '+1 DEF per level', max: 4, apply: (s, n) => { s.defPerLevel = n; } },
+  { id: 'greed', name: 'Glyph Magnet', desc: '+25% glyphs', max: 4, apply: (s, n) => { s.glyphMult = 1 + 0.25 * n; } },
+  { id: 'compass', name: 'Stairwell Sense', desc: 'reveals the way to the stairs (HUD compass)', max: 1, apply: () => {} }
 ];
 
-const SHOP_BASE = { vitality: 8, edge: 12, guard: 10, greed: 15 };
-const SHOP_GROWTH = { vitality: 1.6, edge: 1.7, guard: 1.7, greed: 1.9 };
+const SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, compass: 1000 };
+const SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, compass: 1 };
 
 export function upgradeCost(id, level) {
   return Math.round((SHOP_BASE[id] || 10) * (SHOP_GROWTH[id] || 1.7) ** level);

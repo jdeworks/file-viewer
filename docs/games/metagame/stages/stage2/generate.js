@@ -1,10 +1,10 @@
-// Procedural dungeon generator — classic "rooms and corridors" (the Rogue method).
+// Procedural dungeon generator — Binary Space Partitioning (BSP).
 //
-// Place non-overlapping rectangular rooms, carve each to floor, then connect every new
-// room to the previous one with an L-shaped corridor. Connecting room i→i-1 for all i
-// yields a connected chain, so every floor cell (and the stairs) is reachable from spawn —
-// no flood-fill repair needed. Driven entirely by a seeded RNG (see rng.js) so a floor
-// regenerates identically from `${runSeed}:${floor}`.
+// Recursively split the interior into partitions until each is near `minLeaf`, fit a room that
+// fills most of each leaf, then connect sibling subtrees bottom-up. Because every leaf gets a
+// room sized to its partition, rooms scale to the available space (no tiny rooms lost in a sea
+// of wall), and corridors are short, sensible links between neighbours rather than long L-runs
+// across the whole map. Fully seeded so a floor regenerates identically from `${runSeed}:${floor}`.
 
 function carveRoom(grid, room) {
   for (let y = room.y; y < room.y + room.h; y += 1) {
@@ -36,38 +36,57 @@ function connect(grid, a, b, rng) {
   }
 }
 
-function overlaps(a, b, margin) {
-  return (
-    a.x - margin < b.x + b.w &&
-    a.x + a.w + margin > b.x &&
-    a.y - margin < b.y + b.h &&
-    a.y + a.h + margin > b.y
-  );
+// Recursively split a partition until both axes are below 2×minLeaf. Splits the longer axis
+// (with a little randomness when square-ish) so partitions stay reasonably square.
+function splitNode(node, rng, minLeaf) {
+  const canV = node.w >= 2 * minLeaf; // can split into left/right
+  const canH = node.h >= 2 * minLeaf; // can split into top/bottom
+  if (!canV && !canH) return; // leaf
+  let vertical;
+  if (canV && canH) vertical = node.w > node.h * 1.25 ? true : node.h > node.w * 1.25 ? false : rng.chance(0.5);
+  else vertical = canV;
+  if (vertical) {
+    const cut = rng.int(minLeaf, node.w - minLeaf);
+    node.left = { x: node.x, y: node.y, w: cut, h: node.h };
+    node.right = { x: node.x + cut, y: node.y, w: node.w - cut, h: node.h };
+  } else {
+    const cut = rng.int(minLeaf, node.h - minLeaf);
+    node.left = { x: node.x, y: node.y, w: node.w, h: cut };
+    node.right = { x: node.x, y: node.y + cut, w: node.w, h: node.h - cut };
+  }
+  splitNode(node.left, rng, minLeaf);
+  splitNode(node.right, rng, minLeaf);
 }
 
-// Build a #/. grid of `width`×`height` with up to `maxRooms` rooms.
-export function generate(rng, { width, height, maxRooms, minRoom, maxRoom }) {
-  const grid = Array.from({ length: height }, () => Array(width).fill('#'));
-  const rooms = [];
-  const attempts = maxRooms * 4;
-  for (let i = 0; i < attempts && rooms.length < maxRooms; i += 1) {
-    const w = rng.int(minRoom, maxRoom);
-    const h = rng.int(minRoom, maxRoom);
-    const x = rng.int(1, Math.max(1, width - w - 2));
-    const y = rng.int(1, Math.max(1, height - h - 2));
-    const room = { x, y, w, h, cx: x + (w >> 1), cy: y + (h >> 1) };
-    if (rooms.some((r) => overlaps(r, room, 1))) continue;
+// Carve a room in every leaf (filling ~70–95% of the partition), then connect sibling subtrees.
+function carveAndConnect(node, grid, rng, rooms, minRoom) {
+  if (!node.left) {
+    const maxW = Math.max(minRoom, node.w - 2);
+    const maxH = Math.max(minRoom, node.h - 2);
+    const rw = Math.min(maxW, Math.max(minRoom, rng.int(Math.floor(maxW * 0.7), maxW)));
+    const rh = Math.min(maxH, Math.max(minRoom, rng.int(Math.floor(maxH * 0.7), maxH)));
+    const rx = node.x + 1 + rng.int(0, Math.max(0, node.w - rw - 2));
+    const ry = node.y + 1 + rng.int(0, Math.max(0, node.h - rh - 2));
+    const room = { x: rx, y: ry, w: rw, h: rh, cx: rx + (rw >> 1), cy: ry + (rh >> 1) };
     carveRoom(grid, room);
-    if (rooms.length > 0) connect(grid, rooms[rooms.length - 1], room, rng);
     rooms.push(room);
+    node.room = room;
+    return room;
   }
-  // Extra corridors between random rooms create loops (less tree-like, more explorable).
-  const extraLoops = Math.min(rooms.length - 1, 2 + Math.floor(rooms.length / 3));
-  for (let i = 0; i < extraLoops; i += 1) {
-    const a = rng.pick(rooms);
-    const b = rng.pick(rooms);
-    if (a !== b) connect(grid, a, b, rng);
-  }
+  const a = carveAndConnect(node.left, grid, rng, rooms, minRoom);
+  const b = carveAndConnect(node.right, grid, rng, rooms, minRoom);
+  if (a && b) connect(grid, a, b, rng);
+  node.room = a || b;
+  return node.room;
+}
+
+// Build a #/. grid of `width`×`height`; rooms scale to `minLeaf` partitions.
+export function generate(rng, { width, height, minLeaf = 18, minRoom = 5 }) {
+  const grid = Array.from({ length: height }, () => Array(width).fill('#'));
+  const root = { x: 1, y: 1, w: width - 2, h: height - 2 };
+  splitNode(root, rng, Math.max(minRoom + 2, minLeaf));
+  const rooms = [];
+  carveAndConnect(root, grid, rng, rooms, minRoom);
   return { grid: grid.map((row) => row.join('')), rooms };
 }
 
