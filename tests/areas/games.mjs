@@ -206,11 +206,11 @@ export async function run(ctx) {
   pass('Tetris launches');
   const tet = await page.$eval('.tetris-wrap', (w) => {
     const s = w.__tetris.state();
-    return { score: s.score, level: s.level, lines: s.lines, dead: s.dead,
-      ms0: w.__tetris.speedAt(0), msFast: w.__tetris.speedAt(6) };
+    return { score: s.score, level: s.level, lines: s.lines, dead: s.dead, hasNext: s.hasNext,
+      preview: !!document.querySelector('.tetris-next'), ms0: w.__tetris.speedAt(0), msFast: w.__tetris.speedAt(6) };
   });
-  if (tet.score === 0 && tet.level === 0 && tet.lines === 0 && !tet.dead && tet.ms0 === 800 && tet.msFast < tet.ms0)
-    pass('Tetris: clean start + gravity escalates with level');
+  if (tet.score === 0 && tet.level === 0 && tet.lines === 0 && !tet.dead && tet.hasNext && tet.preview && tet.ms0 === 800 && tet.msFast < tet.ms0)
+    pass('Tetris: clean start + next preview + gravity escalates with level');
   else fail('Tetris start/escalation: ' + JSON.stringify(tet));
   await page.keyboard.press('Space');                       // hard drop the first piece
   const tetDrop = await page.$eval('.tetris-wrap', (w) => w.__tetris.state());

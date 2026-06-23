@@ -1,13 +1,14 @@
 // Tetris — falling-block puzzle. Self-contained canvas game, keyboard + touch (swipe + on-screen
 // pad). Difficulty ESCALATES: gravity speeds up every 10 cleared lines. Scoring RAMPS: line clears
-// pay 40/100/300/1200 × (level+1), plus soft/hard-drop bonuses — so deeper, faster play is worth
-// disproportionately more. Contract: mount(host, { onScore, onExit }) => { destroy() }.
+// pay 40/100/300/1200 × (level+1), plus soft/hard-drop bonuses. Shows a next-piece preview and brief
+// flashes on hard drop and line clears. Contract: mount(host, { onScore, onExit }) => { destroy() }.
 import { swipe, dpad } from '../controls.js';
 
-const COLS = 10, ROWS = 20, CELL = 22;            // logical board; canvas scales to fit via CSS
-const LINE_SCORES = [0, 40, 100, 300, 1200];      // by lines cleared at once (Nintendo scoring)
+const COLS = 10, ROWS = 20, CELL = 22, PCELL = 15;          // board + preview cell sizes
+const LINE_SCORES = [0, 40, 100, 300, 1200];               // by lines cleared at once
 const LINES_PER_LEVEL = 10;
-const dropMs = (lvl) => Math.max(80, 800 - lvl * 65);   // gravity cadence — escalates with level
+const FX_MS = 180;                                          // flash fade duration
+const dropMs = (lvl) => Math.max(80, 800 - lvl * 65);       // gravity cadence — escalates with level
 
 // Tetrominoes as cells in an N×N box ([row, col]); rotation is computed, not stored.
 const PIECES = [
@@ -31,6 +32,7 @@ export function mount(host, { onScore, onExit } = {}) {
     + '<div class="tetris-hud" style="display:flex;gap:16px;font-size:14px;font-weight:600">'
     + '<span class="tetris-score">Score: 0</span><span class="tetris-level">Lv 1</span>'
     + '<span class="tetris-lines">Lines: 0</span></div>'
+    + '<div style="display:flex;gap:10px;align-items:flex-start">'
     + '<div style="position:relative">'
     + '<canvas class="tetris-canvas" width="' + COLS * CELL + '" height="' + ROWS * CELL + '" '
     + 'style="display:block;max-width:100%;height:auto;border-radius:8px;background:#10131a;touch-action:none"></canvas>'
@@ -39,19 +41,27 @@ export function mount(host, { onScore, onExit } = {}) {
     + '<div class="tetris-over-msg" style="font-size:18px;font-weight:700"></div>'
     + '<div><button class="tetris-restart">Play again</button> <button class="tetris-quit">Back</button></div></div>'
     + '</div>'
+    + '<div style="display:flex;flex-direction:column;align-items:center;gap:4px">'
+    + '<span style="font-size:12px;opacity:.7">Next</span>'
+    + '<canvas class="tetris-next" width="' + 4 * PCELL + '" height="' + 4 * PCELL + '" '
+    + 'style="border-radius:6px;background:#10131a"></canvas></div>'
+    + '</div>'
     + '<div class="tetris-hint" style="font-size:12px;opacity:.7">← → move · ↑ rotate · ↓ soft · Space hard drop · swipe/tap on touch</div>'
     + '</div>';
 
   const wrap = host.querySelector('.tetris-wrap');
   const canvas = host.querySelector('.tetris-canvas');
   const ctx = canvas.getContext('2d');
+  const nextCanvas = host.querySelector('.tetris-next');
+  const pctx = nextCanvas.getContext('2d');
   const scoreEl = host.querySelector('.tetris-score');
   const levelEl = host.querySelector('.tetris-level');
   const linesEl = host.querySelector('.tetris-lines');
   const overEl = host.querySelector('.tetris-over');
   const overMsg = host.querySelector('.tetris-over-msg');
 
-  let grid, cur, score, lines, level, dead, timer, curMs;
+  let grid, cur, next, score, lines, level, dead, timer, curMs, busy;
+  let fx, fxRaf;
 
   const abs = (p) => p.cells.map(([r, c]) => [p.y + r, p.x + c]);
   function collides(p) {
@@ -62,14 +72,17 @@ export function mount(host, { onScore, onExit } = {}) {
 
   function reset() {
     grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
-    cur = randPiece();
-    score = 0; lines = 0; level = 0; dead = false;
-    overEl.hidden = true;
-    syncHud();
-    curMs = null;
-    if (timer) clearInterval(timer);
-    setSpeed(dropMs(0));
+    score = 0; lines = 0; level = 0; dead = false; busy = false; fx = [];
+    next = randPiece(); spawnPiece();
+    overEl.hidden = true; syncHud();
+    curMs = null; if (timer) clearInterval(timer); setSpeed(dropMs(0));
     draw();
+  }
+
+  function spawnPiece() {
+    cur = next; cur.x = Math.floor((COLS - cur.n) / 2); cur.y = 0;
+    next = randPiece(); drawNext();
+    if (collides(cur)) return gameOver();
   }
 
   function syncHud() {
@@ -78,27 +91,44 @@ export function mount(host, { onScore, onExit } = {}) {
     linesEl.textContent = 'Lines: ' + lines;
   }
 
+  // ── flash effects (rAF fade; the game itself is interval-driven) ──
+  function addFx(cells, color) { fx.push({ cells, color, t: 1 }); if (fxRaf == null) fxRaf = requestAnimationFrame(fxStep); }
+  let fxLast = null;
+  function fxStep(ts) {
+    const dt = fxLast == null ? 0 : (ts - fxLast) / 1000; fxLast = ts;
+    for (const f of fx) f.t -= dt / (FX_MS / 1000);
+    fx = fx.filter((f) => f.t > 0);
+    draw();
+    if (fx.length) fxRaf = requestAnimationFrame(fxStep); else { fxRaf = null; fxLast = null; }
+  }
+
   function lock() {
-    for (const [r, c] of abs(cur)) { if (r < 0) { return gameOver(); } grid[r][c] = cur.c; }
-    // clear full rows
-    let cleared = 0;
-    for (let r = ROWS - 1; r >= 0; r--) {
-      if (grid[r].every(Boolean)) { grid.splice(r, 1); grid.unshift(Array(COLS).fill(null)); cleared++; r++; }
+    for (const [r, c] of abs(cur)) { if (r < 0) return gameOver(); grid[r][c] = cur.c; }
+    cur = null;
+    const full = [];
+    for (let r = 0; r < ROWS; r++) if (grid[r].every(Boolean)) full.push(r);
+    if (full.length) {
+      busy = true;
+      addFx(full.flatMap((r) => Array.from({ length: COLS }, (_, c) => [r, c])), '#ffffff');   // line-clear flash
+      draw();
+      setTimeout(() => {
+        const fullSet = new Set(full);
+        const kept = grid.filter((_, r) => !fullSet.has(r));
+        while (kept.length < ROWS) kept.unshift(Array(COLS).fill(null));
+        grid = kept;
+        const cleared = full.length;
+        score += LINE_SCORES[cleared] * (level + 1);     // RAMP: clear value scales with level
+        lines += cleared; level = Math.floor(lines / LINES_PER_LEVEL);
+        setSpeed(dropMs(level)); onScore?.(score); syncHud();
+        busy = false; spawnPiece(); draw();
+      }, FX_MS - 20);
+    } else {
+      spawnPiece();
     }
-    if (cleared) {
-      score += LINE_SCORES[cleared] * (level + 1);     // RAMP: clear value scales with level
-      lines += cleared;
-      level = Math.floor(lines / LINES_PER_LEVEL);
-      setSpeed(dropMs(level));
-      onScore?.(score);
-    }
-    syncHud();
-    cur = randPiece();
-    if (collides(cur)) return gameOver();
   }
 
   function move(dx, dy) {
-    if (dead) return false;
+    if (dead || busy || !cur) return false;
     cur.x += dx; cur.y += dy;
     if (collides(cur)) { cur.x -= dx; cur.y -= dy; return false; }
     draw();
@@ -106,50 +136,59 @@ export function mount(host, { onScore, onExit } = {}) {
   }
 
   function softDrop() {
-    if (dead) return;
-    if (move(0, 1)) { score += 1; syncHud(); onScore?.(score); }   // small ramp incentive to push down
+    if (dead || busy || !cur) return;
+    if (move(0, 1)) { score += 1; syncHud(); onScore?.(score); }
     else lock();
   }
 
   function hardDrop() {
-    if (dead) return;
+    if (dead || busy || !cur) return;
     let d = 0;
     while (move(0, 1)) d++;
     score += d * 2; syncHud(); onScore?.(score);
-    lock(); draw();
+    addFx(abs(cur), '#9be7ff');                          // hard-drop flash on the landing cells
+    lock();
   }
 
   function rotate() {
-    if (dead) return;
+    if (dead || busy || !cur) return;
     const rc = rotateCW(cur.cells, cur.n);
     const test = { ...cur, cells: rc };
-    for (const kick of [0, -1, 1, -2, 2]) {            // simple wall-kick: nudge horizontally
+    for (const kick of [0, -1, 1, -2, 2]) {
       test.x = cur.x + kick;
       if (!collides(test)) { cur.cells = rc; cur.x = test.x; draw(); return; }
     }
   }
 
-  function gravity() { if (!dead && !move(0, 1)) lock(); }
+  function gravity() { if (dead || busy || !cur) return; if (!move(0, 1)) lock(); }
 
   function gameOver() {
-    dead = true;
+    dead = true; busy = false;
     if (timer) clearInterval(timer); timer = null;
     overMsg.textContent = 'Game over — score ' + score;
     overEl.hidden = false;
   }
 
-  function drawCell(r, c, color) {
-    if (r < 0) return;
-    ctx.fillStyle = color;
-    ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
-  }
+  function drawCell(r, c, color) { if (r < 0) return; ctx.fillStyle = color; ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2); }
   function draw() {
-    ctx.fillStyle = '#10131a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#10131a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = 'rgba(255,255,255,.04)';
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) ctx.strokeRect(c * CELL, r * CELL, CELL, CELL);
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (grid[r][c]) drawCell(r, c, grid[r][c]);
-    for (const [r, c] of abs(cur)) drawCell(r, c, cur.c);
+    if (cur) for (const [r, c] of abs(cur)) drawCell(r, c, cur.c);
+    for (const f of fx) {
+      ctx.globalAlpha = Math.max(0, Math.min(1, f.t));
+      ctx.fillStyle = f.color;
+      for (const [r, c] of f.cells) if (r >= 0) ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
+      ctx.globalAlpha = 1;
+    }
+  }
+  function drawNext() {
+    pctx.fillStyle = '#10131a'; pctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+    if (!next) return;
+    const off = (4 - next.n) / 2;
+    pctx.fillStyle = next.c;
+    for (const [r, c] of next.cells) pctx.fillRect((c + off) * PCELL + 1, (r + off) * PCELL + 1, PCELL - 2, PCELL - 2);
   }
 
   function onKey(e) {
@@ -181,14 +220,14 @@ export function mount(host, { onScore, onExit } = {}) {
   host.querySelector('.tetris-restart').addEventListener('click', reset);
   host.querySelector('.tetris-quit').addEventListener('click', () => onExit?.());
 
-  // Test/debug hook.
-  wrap.__tetris = { state: () => ({ score, lines, level, dead, ms: curMs }), speedAt: (lvl) => dropMs(lvl) };
+  wrap.__tetris = { state: () => ({ score, lines, level, dead, ms: curMs, hasNext: !!next }), speedAt: (lvl) => dropMs(lvl) };
 
   reset();
 
   return {
     destroy() {
       if (timer) clearInterval(timer);
+      if (fxRaf != null) cancelAnimationFrame(fxRaf);
       window.removeEventListener('keydown', onKey);
       detachSwipe(); pad.destroy();
       host.innerHTML = '';
