@@ -103,10 +103,15 @@ export async function resolveDroppedFolderRoot(files) {
 
 export function absolutePathForFile(file) {
   if (!companionFolderRoot || !file?.webkitRelativePath) return null;
-  const relParts = file.webkitRelativePath.split('/');
-  const relFromRoot = relParts.slice(1).join('/');
-  if (!relFromRoot) return null;
-  return `${companionFolderRoot}/${relFromRoot}`;
+  // webkitRelativePath always uses '/'; its first segment is the dropped folder's own name (which
+  // companionFolderRoot already includes), so drop it. Build the path with the ROOT's own separator
+  // so Windows paths stay all-backslash — otherwise the mixed-separator result won't match the
+  // watcher's native event paths (breaking the change-on-disk banner).
+  const relFromRoot = file.webkitRelativePath.split('/').slice(1);
+  if (!relFromRoot.length) return null;
+  const sep = (companionFolderRoot.includes('\\') && !companionFolderRoot.includes('/')) ? '\\' : '/';
+  const base = companionFolderRoot.endsWith(sep) ? companionFolderRoot.slice(0, -1) : companionFolderRoot;
+  return base + sep + relFromRoot.join(sep);
 }
 
 // On opening a single file, silently associate it with its on-disk path when exactly one watched
