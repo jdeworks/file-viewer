@@ -296,6 +296,22 @@ export async function run(ctx) {
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
+  // Asteroids — clean start, escalating waves, Space fires a bullet
+  await page.click('.games-card[data-game="asteroids"]');
+  await page.waitForSelector('.asteroids-canvas', { timeout: 8000 });
+  pass('Asteroids launches');
+  const as0 = await page.$eval('.asteroids-wrap', (w) => ({ ...w.__asteroids.state(),
+    r1: w.__asteroids.rocksInWave(1), r5: w.__asteroids.rocksInWave(5) }));
+  if (as0.score === 0 && as0.lives === 3 && as0.wave === 1 && !as0.dead && as0.rocks === 4 && as0.bullets === 0 && as0.r5 > as0.r1)
+    pass('Asteroids: clean start + waves escalate');
+  else fail('Asteroids start/escalation: ' + JSON.stringify(as0));
+  await page.keyboard.press('Space');                      // fire
+  const as1 = await page.$eval('.asteroids-wrap', (w) => w.__asteroids.state());
+  if (as1.bullets >= 1 && !as1.dead) pass('Asteroids: Space fires a bullet');
+  else fail('Asteroids fire: ' + JSON.stringify(as1));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.mg-v3', { timeout: 8000 });
   await page.waitForSelector('.mg-s1', { timeout: 8000 });

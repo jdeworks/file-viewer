@@ -63,6 +63,13 @@ export const GAMES = [
     load: () => import('./sokoban/sokoban.js'),
   },
   {
+    id: 'asteroids',
+    title: 'Asteroids',
+    emoji: '🚀',
+    blurb: 'Rotate, thrust, and blast the rocks. Keys or d-pad. Each wave gets fiercer.',
+    load: () => import('./asteroids/asteroids.js'),
+  },
+  {
     id: 'metagame',
     title: 'Bit Foundry',
     emoji: '⚙️',
