@@ -312,6 +312,40 @@ export async function run(ctx) {
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
+  // Simon — clean start, escalating tempo, repeating the sequence scores
+  await page.click('.games-card[data-game="simon"]');
+  await page.waitForSelector('.simon-board', { timeout: 8000 });
+  pass('Simon launches');
+  const si0 = await page.$eval('.simon-wrap', (w) => ({ ...w.__simon.state(),
+    t1: w.__simon.tempoAt(1), t8: w.__simon.tempoAt(8) }));
+  if (si0.score === 0 && si0.round === 1 && !si0.dead && si0.seqLen === 1 && si0.t8 < si0.t1)
+    pass('Simon: clean start + tempo escalates');
+  else fail('Simon start/escalation: ' + JSON.stringify(si0));
+  const siR = await page.$eval('.simon-wrap', (w) => { w.__simon.forceAccept(); w.__simon.tap(w.__simon.seq()[0]); return w.__simon.state(); });
+  if (siR.round >= 2 && siR.score > 0 && !siR.dead) pass('Simon: repeating the sequence scores (ramped by round)');
+  else fail('Simon repeat: ' + JSON.stringify(siR));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
+  // Pong — clean start, escalating ball speed, ball in play
+  await page.click('.games-card[data-game="pong"]');
+  await page.waitForSelector('.pong-canvas', { timeout: 8000 });
+  pass('Pong launches');
+  const pg0 = await page.$eval('.pong-wrap', (w) => ({ ...w.__pong.state(), s0: w.__pong.speedAt(0), s5: w.__pong.speedAt(5) }));
+  if (pg0.score === 0 && pg0.lives === 3 && pg0.level === 0 && !pg0.dead && pg0.s5 > pg0.s0)
+    pass('Pong: clean start + ball speed escalates');
+  else fail('Pong start/escalation: ' + JSON.stringify(pg0));
+  const pgMoving = await page.evaluate(async () => {
+    const w = document.querySelector('.pong-wrap');
+    const a = w.__pong.state().ballX;
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    return w.__pong.state().ballX !== a;
+  });
+  if (pgMoving) pass('Pong: ball is in play (loop running)');
+  else fail('Pong: ball not moving');
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.mg-v3', { timeout: 8000 });
   await page.waitForSelector('.mg-s1', { timeout: 8000 });

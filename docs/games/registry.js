@@ -70,6 +70,20 @@ export const GAMES = [
     load: () => import('./asteroids/asteroids.js'),
   },
   {
+    id: 'simon',
+    title: 'Simon',
+    emoji: '🎵',
+    blurb: 'Watch the colour/tone sequence, then repeat it. Tap to play. It grows each round.',
+    load: () => import('./simon/simon.js'),
+  },
+  {
+    id: 'pong',
+    title: 'Pong',
+    emoji: '🏓',
+    blurb: 'You vs the AI. ↑ ↓ / W S or drag. The ball and AI get faster as you score.',
+    load: () => import('./pong/pong.js'),
+  },
+  {
     id: 'metagame',
     title: 'Bit Foundry',
     emoji: '⚙️',
