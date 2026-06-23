@@ -289,13 +289,73 @@ function carveAndConnect(node, grid, rng, rooms, minRoom) {
   node.room = a || b;
   return node.room;
 }
+function findEntrance(grid, room) {
+  const inRoom = (x, y) => x >= room.x && x < room.x + room.w && y >= room.y && y < room.y + room.h;
+  for (let y = room.y; y < room.y + room.h; y += 1) {
+    for (let x = room.x; x < room.x + room.w; x += 1) {
+      if (x !== room.x && x !== room.x + room.w - 1 && y !== room.y && y !== room.y + room.h - 1) continue;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (inRoom(nx, ny)) continue;
+        if (grid[ny] && grid[ny][nx] === ".") return { x, y };
+      }
+    }
+  }
+  return null;
+}
+function hideRooms(grid, rooms, rng) {
+  if (rooms.length < 4) return [];
+  const start = rooms[0];
+  const want = Math.min(4, 1 + Math.floor(rooms.length / 18));
+  const candidates = rng.shuffle(rooms.slice(1).filter((r) => r.w >= 6 && r.h >= 6));
+  const hidden = [];
+  let baseReach = floodDistances(grid, { x: start.cx, y: start.cy }).count;
+  for (const room of candidates) {
+    if (hidden.length >= want) break;
+    const cells = [];
+    for (let y = room.y; y < room.y + room.h; y += 1) for (let x = room.x; x < room.x + room.w; x += 1) cells.push([x, y]);
+    let floorRemoved = 0;
+    const saved = cells.map(([x, y]) => {
+      if (grid[y][x] === ".") floorRemoved += 1;
+      const v = grid[y][x];
+      grid[y][x] = "#";
+      return v;
+    });
+    const entrance = findEntrance(grid, room);
+    const reach = floodDistances(grid, { x: start.cx, y: start.cy }).count;
+    if (!entrance || baseReach - reach > floorRemoved + 2) {
+      cells.forEach(([x, y], i) => {
+        grid[y][x] = saved[i];
+      });
+      continue;
+    }
+    baseReach = reach;
+    hidden.push({ x: room.x, y: room.y, w: room.w, h: room.h, entrance, type: rng.pick(["treasure", "trap", "teleport"]), revealed: false });
+  }
+  return hidden;
+}
+function carveHiddenRoom(grid, h) {
+  for (let y = h.y; y < h.y + h.h && y < grid.length; y += 1) {
+    let arr = null;
+    const row = grid[y];
+    for (let x = h.x; x < h.x + h.w && x < row.length; x += 1) if (row[x] !== ".") {
+      arr = arr || row.split("");
+      arr[x] = ".";
+    }
+    if (arr) grid[y] = arr.join("");
+  }
+  const e = h.entrance;
+  if (grid[e.y] && grid[e.y][e.x] !== ".") grid[e.y] = grid[e.y].slice(0, e.x) + "." + grid[e.y].slice(e.x + 1);
+}
 function generate(rng, { width, height, minLeaf = 18, minRoom = 5 }) {
   const grid = Array.from({ length: height }, () => Array(width).fill("#"));
   const root = { x: 1, y: 1, w: width - 2, h: height - 2 };
   splitNode(root, rng, Math.max(minRoom + 2, minLeaf));
   const rooms = [];
   carveAndConnect(root, grid, rng, rooms, minRoom);
-  return { grid: grid.map((row) => row.join("")), rooms };
+  const hidden = hideRooms(grid, rooms, rng);
+  return { grid: grid.map((row) => row.join("")), rooms, hidden };
 }
 function floodDistances(gridRows, start) {
   const height = gridRows.length;
@@ -440,18 +500,22 @@ function floorDims(runSeed, floorNum) {
 function buildGrid(runSeed, floorNum) {
   const dims = floorDims(runSeed, floorNum);
   const rng = makeRng(`${runSeed}:${floorNum}`);
-  const { grid, rooms } = generate(rng, dims);
-  return { grid, rooms, dims, rng };
+  const { grid, rooms, hidden } = generate(rng, dims);
+  return { grid, rooms, hidden, dims, rng };
 }
 function defineGrid(world, grid) {
   Object.defineProperty(world, "grid", { value: grid, enumerable: false, writable: true, configurable: true });
 }
 function attachGrid(world, runSeed, floorNum) {
-  defineGrid(world, buildGrid(runSeed, floorNum).grid);
+  const grid = buildGrid(runSeed, floorNum).grid;
+  if (Array.isArray(world.hidden)) {
+    for (const h of world.hidden) if (h.revealed) carveHiddenRoom(grid, h);
+  }
+  defineGrid(world, grid);
   return world;
 }
 function buildFloor(runSeed, floorNum) {
-  const { grid, rooms, dims, rng } = buildGrid(runSeed, floorNum);
+  const { grid, rooms, hidden, dims, rng } = buildGrid(runSeed, floorNum);
   const width = dims.width;
   const height = dims.height;
   const start = { x: rooms[0].cx, y: rooms[0].cy };
@@ -514,7 +578,7 @@ function buildFloor(runSeed, floorNum) {
     if (!c) break;
     glyphs.push({ x: c.x, y: c.y, taken: false });
   }
-  const world = { floor: floorNum, width, height, pos: { ...start }, exit, monsters, weapons, potions, glyphs };
+  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden };
   defineGrid(world, grid);
   return world;
 }
@@ -550,7 +614,11 @@ function step(world, player, dir) {
   const nx = world.pos.x + move.dx;
   const ny = world.pos.y + move.dy;
   if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= world.width) return events;
-  if (world.grid[ny][nx] === "#") return events;
+  if (world.grid[ny][nx] === "#") {
+    const door = world.hidden && world.hidden.find((h) => !h.revealed && h.entrance.x === nx && h.entrance.y === ny);
+    if (door) revealHidden(world, player, door, events);
+    return events;
+  }
   const foeIndex = world.monsters.findIndex((m) => m.alive && m.x === nx && m.y === ny);
   const foe = foeIndex >= 0 ? world.monsters[foeIndex] : null;
   if (foe) {
@@ -600,6 +668,58 @@ function step(world, player, dir) {
   }
   if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
   return events;
+}
+function revealHidden(world, player, h, events) {
+  h.revealed = true;
+  carveHiddenRoom(world.grid, h);
+  const rng = makeRng(`${world.seed}:reveal:${h.entrance.x},${h.entrance.y}`);
+  const open = [];
+  for (let y = h.y; y < h.y + h.h; y += 1) for (let x = h.x; x < h.x + h.w; x += 1) if (world.grid[y] && world.grid[y][x] === ".") open.push({ x, y });
+  const cells = rng.shuffle(open);
+  let ci = 0;
+  const take = () => ci < cells.length ? cells[ci++] : { x: h.entrance.x, y: h.entrance.y };
+  events.reveal = h.type;
+  if (h.type === "treasure") {
+    for (let i = 0; i < 3; i += 1) {
+      const c = take();
+      world.potions.push({ x: c.x, y: c.y, taken: false });
+    }
+    const ng = rng.int(3, 7);
+    for (let i = 0; i < ng; i += 1) {
+      const c = take();
+      world.glyphs.push({ x: c.x, y: c.y, taken: false });
+    }
+    const nw = rng.int(2, 5);
+    const maxTier = Math.min(WEAPONS.length - 1, Math.floor(world.floor / 2) + 1);
+    for (let i = 0; i < nw; i += 1) {
+      const c = take();
+      world.weapons.push({ x: c.x, y: c.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
+    }
+    events.log.push("hidden cache! potions, glyphs and weapons spill out.");
+  } else if (h.type === "trap") {
+    const n = rng.int(3, 5);
+    for (let i = 0; i < n; i += 1) {
+      const c = take();
+      const m = spawnMonster(rng, world.floor, world.monsters.length + i);
+      m.x = c.x;
+      m.y = c.y;
+      m.home = { x: c.x, y: c.y };
+      m.chasing = true;
+      world.monsters.push(m);
+    }
+    events.log.push(`ambush! ${n} foes pour out of the dark.`);
+  } else {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0, 0]]) {
+      const tx = world.exit.x + dx;
+      const ty = world.exit.y + dy;
+      if (world.grid[ty] && world.grid[ty][tx] === ".") {
+        world.pos = { x: tx, y: ty };
+        break;
+      }
+    }
+    events.moved = true;
+    events.log.push("a teleport sigil! flung straight to the stairwell.");
+  }
 }
 var DIR_LIST = ["up", "down", "left", "right"];
 function isOpen(world, x, y) {
@@ -891,6 +1011,9 @@ function createView(screenEl) {
     if (world.potions) world.potions.forEach((p, i) => {
       if (!p.taken) place("p" + i, p.x, p.y, "!", "s2-c-potion");
     });
+    if (world.hidden) world.hidden.forEach((h, i) => {
+      if (!h.revealed) place("h" + i, h.entrance.x, h.entrance.y, "#", "s2-c-secret");
+    });
     for (const id of [...itemEls.keys()]) if (!live.has(id)) {
       itemEls.get(id).remove();
       itemEls.delete(id);
@@ -1028,10 +1151,17 @@ function createView(screenEl) {
     }
     octx.putImageData(img, 0, 0);
     ctx.drawImage(off, 0, 0, W, H, 0, 0, dispW, dispH);
+    if (world.hidden) for (const h of world.hidden) {
+      ctx.fillStyle = h.revealed ? "rgba(110,255,166,0.30)" : "rgba(216,139,255,0.55)";
+      ctx.fillRect(Math.round(h.x * scale), Math.round(h.y * scale), Math.max(2, Math.round(h.w * scale)), Math.max(2, Math.round(h.h * scale)));
+    }
     const dot = (x, y, color, sz) => {
       ctx.fillStyle = color;
       ctx.fillRect(Math.round(x * scale) - (sz >> 1), Math.round(y * scale) - (sz >> 1), sz, sz);
     };
+    if (world.hidden) {
+      for (const h of world.hidden) if (!h.revealed) dot(h.entrance.x, h.entrance.y, "#ff36c0", 4);
+    }
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
     if (world.potions) {
       for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);
@@ -1256,8 +1386,11 @@ function renderStage2({
       persistAndPaint();
       return;
     }
-    if (typeof save === "function") save();
-    view.applyMove(state.run.world, events);
+    const changed = events.moved || events.attack || events.reveal;
+    if (changed) {
+      if (typeof save === "function") save();
+      view.applyMove(state.run.world, events);
+    }
     paintHud();
   }
   function flashDamage(fatal) {

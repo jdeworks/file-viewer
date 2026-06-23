@@ -185,9 +185,13 @@ export function renderStage2({
       persistAndPaint();
       return;
     }
-    // Normal walk / bump-attack — animate the sprite layer, repaint only the HUD.
-    if (typeof save === "function") save();
-    view.applyMove(state.run.world, events);
+    // Walk / bump-attack / opened a hidden room — repaint the screen + HUD. A plain wall bump
+    // changes nothing, so skip the screen repaint (paintHud is guarded and stays a no-op).
+    const changed = events.moved || events.attack || events.reveal;
+    if (changed) {
+      if (typeof save === "function") save();
+      view.applyMove(state.run.world, events);
+    }
     paintHud();
   }
 

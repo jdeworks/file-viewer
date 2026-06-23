@@ -147,6 +147,8 @@ export function createView(screenEl) {
     world.weapons.forEach((w, i) => { if (!w.taken) place("w" + i, w.x, w.y, "/", "s2-c-item"); });
     world.glyphs.forEach((g, i) => { if (!g.taken) place("g" + i, g.x, g.y, "%", "s2-c-glyph"); });
     if (world.potions) world.potions.forEach((p, i) => { if (!p.taken) place("p" + i, p.x, p.y, "!", "s2-c-potion"); });
+    // Secret doors: a '#' in a slightly-off wall colour over the terrain (findable, not obvious).
+    if (world.hidden) world.hidden.forEach((h, i) => { if (!h.revealed) place("h" + i, h.entrance.x, h.entrance.y, "#", "s2-c-secret"); });
     for (const id of [...itemEls.keys()]) if (!live.has(id)) { itemEls.get(id).remove(); itemEls.delete(id); }
   }
 
@@ -263,10 +265,16 @@ export function createView(screenEl) {
     }
     octx.putImageData(img, 0, 0);
     ctx.drawImage(off, 0, 0, W, H, 0, 0, dispW, dispH);
+    // Hidden rooms (dev): purple = sealed, teal = already opened; pink dot marks the secret door.
+    if (world.hidden) for (const h of world.hidden) {
+      ctx.fillStyle = h.revealed ? "rgba(110,255,166,0.30)" : "rgba(216,139,255,0.55)";
+      ctx.fillRect(Math.round(h.x * scale), Math.round(h.y * scale), Math.max(2, Math.round(h.w * scale)), Math.max(2, Math.round(h.h * scale)));
+    }
     const dot = (x, y, color, sz) => {
       ctx.fillStyle = color;
       ctx.fillRect(Math.round(x * scale) - (sz >> 1), Math.round(y * scale) - (sz >> 1), sz, sz);
     };
+    if (world.hidden) for (const h of world.hidden) if (!h.revealed) dot(h.entrance.x, h.entrance.y, "#ff36c0", 4);
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
     if (world.potions) for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);
     for (const g of world.glyphs) if (!g.taken) dot(g.x, g.y, "#d78bff", 3);

@@ -201,6 +201,7 @@
 .s2-c-exit { color: #7fe07f; font-weight: 700; }
 
 .s2-compass { color: #79f0ff; font-weight: 700; }
+.s2-c-secret { color: #9a7838; } /* secret-door wall — a hair brighter than terrain (#6b5026) */
 
 .s2-legend {
   color: var(--s2-dim);
