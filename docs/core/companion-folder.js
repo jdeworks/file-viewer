@@ -95,6 +95,7 @@ export function onFolderRootResolved() {
   ensureButtons();
   if (_refreshBtn) _refreshBtn.hidden = false;
   if (_autoBtn) _autoBtn.hidden = false;
+  document.body.classList.add('companion-folder-active'); // reveals per-row 🗑 in the tree
   if (autoRefresh) startWatch();
 }
 
@@ -102,6 +103,7 @@ export function onFolderRootCleared() {
   stopWatch();
   if (_refreshBtn) _refreshBtn.hidden = true;
   if (_autoBtn) _autoBtn.hidden = true;
+  document.body.classList.remove('companion-folder-active');
 }
 
 export async function refreshFolderFromDisk({ manual = false, silent = false } = {}) {
@@ -124,7 +126,9 @@ export async function refreshFolderFromDisk({ manual = false, silent = false } =
     const sep = (root.includes('\\') && !root.includes('/')) ? '\\' : '/';
     const baseNoTrail = root.endsWith(sep) ? root.slice(0, -1) : root;
     const rootName = baseNoTrail.split(/[\\/]/).pop() || 'Folder';
+    // Preserve what's open so a refresh doesn't collapse the tree or jump off the current file.
     const prevActive = state.currentFolderPath;
+    const prevOpen = state.treeApi?.getOpenFolders?.() || [];
 
     const entries = [];
     for (const f of files) {
@@ -136,8 +140,7 @@ export async function refreshFolderFromDisk({ manual = false, silent = false } =
     if (!entries.length) { if (!silent) toast('Folder is empty or unreadable.'); return; }
 
     state._skipDiscardGuard = true;   // we already guard unsaved edits before auto-refresh
-    await loadFolderCb(entries);
-    if (prevActive && entries.some((e) => e.path === prevActive)) state.treeApi?.setActive?.(prevActive);
+    await loadFolderCb(entries, { openPath: prevActive, openFolders: prevOpen });
     if (!silent) toast('Folder refreshed from disk (' + entries.length + ' files)');
   } finally {
     _busy = false;

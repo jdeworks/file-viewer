@@ -329,12 +329,33 @@ pub async fn delete_file(State(state): State<AppState>, Query(q): Query<FileQuer
             .into_response(),
         Ok(canonical) => {
             if canonical.is_dir() {
-                logging::warn(format!("delete refused (is a directory): {}", canonical.display()));
-                return (
-                    StatusCode::BAD_REQUEST,
-                    Json(serde_json::json!({ "error": "refusing to delete a directory" })),
-                )
-                    .into_response();
+                // A subfolder can be deleted (recursively), but NEVER a watched root itself — that
+                // would wipe the whole folder the user configured.
+                let is_root = watched.iter().any(|w| {
+                    std::fs::canonicalize(w).map(|cw| cw == canonical).unwrap_or(false)
+                });
+                if is_root {
+                    logging::warn(format!("delete refused (watched root): {}", canonical.display()));
+                    return (
+                        StatusCode::BAD_REQUEST,
+                        Json(serde_json::json!({ "error": "refusing to delete a watched folder root" })),
+                    )
+                        .into_response();
+                }
+                return match tokio::fs::remove_dir_all(&canonical).await {
+                    Err(e) => {
+                        logging::error(format!("delete failed ({}): {e}", canonical.display()));
+                        (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            Json(serde_json::json!({ "error": e.to_string() })),
+                        )
+                            .into_response()
+                    }
+                    Ok(()) => {
+                        logging::info(format!("deleted folder {}", canonical.display()));
+                        (StatusCode::OK, Json(serde_json::json!({ "ok": true, "folder": true }))).into_response()
+                    }
+                };
             }
             match tokio::fs::remove_file(&canonical).await {
                 Err(e) => {

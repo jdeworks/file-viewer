@@ -1,6 +1,6 @@
 use file_viewer_companion::{
     config::{config_path, load_config},
-    logging, router,
+    kill_other_companion_processes, logging, router,
     watcher::FileWatcher,
     AppState,
 };
@@ -17,6 +17,10 @@ async fn main() {
     // Logging writes to stdout + a daily file next to config.json (logs/companion-YYYY-MM-DD.log),
     // kept for 7 days. Always on — running the bare server now shows live activity.
     logging::init(Some(config_path()));
+
+    // Reclaim the port from any leftover/other companion so we can actually start after a restart.
+    kill_other_companion_processes();
+    std::thread::sleep(std::time::Duration::from_millis(400)); // let the OS release :7700
 
     let token =
         std::env::var("COMPANION_TOKEN").unwrap_or_else(|_| uuid::Uuid::new_v4().to_string());

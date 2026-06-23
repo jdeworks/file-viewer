@@ -133,3 +133,10 @@ body.fv-dark .companion-download code { background: #2a2a2d; }
 .ft-auto.ft-auto-on { opacity: 1; color: #2f9e44; }
 #ftRefreshBtn.ft-spin { animation: ft-spin .7s linear infinite; }
 @keyframes ft-spin { to { transform: rotate(360deg); } }
+
+/* Per-row delete (shown on row hover, only while a companion folder is linked). */
+.ft-del { display: none; margin-left: 4px; border: 0; background: transparent; cursor: pointer;
+  font-size: 12px; line-height: 1; padding: 0 4px; opacity: .65; flex: none; }
+.ft-del:hover { opacity: 1; }
+body.companion-folder-active .ft-row:hover .ft-del,
+body.companion-folder-active .ft-row:focus-within .ft-del { display: inline-flex; align-items: center; }

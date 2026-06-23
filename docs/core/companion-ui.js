@@ -3,7 +3,7 @@ import { layoutTopbar } from './layout.js';
 import { $, state, toast, escapeHtml } from './state.js';
 import { detectCompanion, findFile, findFolder, saveFile, deleteFile, pickFolder, getToken, setToken, isEnabled as companionEnabled, setEnabled as setCompanionEnabled, getWatchedPaths, addWatchedPath, removeWatchedPath, watchFile } from './companion.js';
 import { browseForFolder, joinPath } from './companion-browse.js';
-import { setupFolderRefresh, onFolderRootResolved, onFolderRootCleared } from './companion-folder.js';
+import { setupFolderRefresh, onFolderRootResolved, onFolderRootCleared, refreshFolderFromDisk } from './companion-folder.js';
 export { renderCompanionSettings } from './companion-settings.js';
 export { refreshFolderFromDisk } from './companion-folder.js';
 
@@ -324,7 +324,7 @@ export async function onDeleteClick() {
       if (!absPath) return;
     }
     // Destructive — explicit confirm. The file stays open in the viewer and Download still works.
-    if (!confirm(`Delete this file from disk?\n\n${absPath}\n\nThis permanently removes the original on disk. The file stays open here and the Download button still works.`)) return;
+    if (!confirm(`Delete "${filename}" from disk?\n\n${absPath}\n\nThis permanently deletes the file and cannot be undone. (It stays open here, so you can still re-download this copy.)`)) return;
     try {
       await deleteFile(absPath);
       setCompanionLinked(null);   // no longer on disk → drop the link + stop watching
@@ -335,6 +335,27 @@ export async function onDeleteClick() {
     }
   } finally {
     if (btn) btn.disabled = false;
+  }
+}
+
+// Delete a file OR folder straight from the tree row — no need to open it first. Resolves the disk
+// path from the relative tree path, confirms (permanent + irreversible wording), deletes via the
+// companion, then re-syncs the tree from disk.
+export async function deleteTreePath({ path, isFolder, name }) {
+  if (!companionAvailable || !companionFolderRoot) { toast('Companion folder not linked.'); return; }
+  const absPath = absolutePathForFile(path);
+  if (!absPath) { toast('Could not resolve that path on disk.'); return; }
+  const msg = isFolder
+    ? `Delete the folder "${name}" and everything inside it from disk?\n\n${absPath}\n\nThis permanently deletes the folder and all its contents and cannot be undone.`
+    : `Delete "${name}" from disk?\n\n${absPath}\n\nThis permanently deletes the file and cannot be undone.`;
+  if (!confirm(msg)) return;
+  try {
+    await deleteFile(absPath);
+    if (companionLinkedPath === absPath) setCompanionLinked(null);
+    toast((isFolder ? 'Folder deleted: ' : 'Deleted: ') + absPath);
+    refreshFolderFromDisk({ silent: true });   // reflect the removal in the sidebar
+  } catch (err) {
+    toast('Delete failed: ' + err.message);
   }
 }
 

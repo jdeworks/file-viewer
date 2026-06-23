@@ -17,10 +17,12 @@ import { recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
 let loadIntake = () => {};
 let confirmDiscard = () => true;
 let onFolderFileOpened = null; // optional callback(node) called after a tree file opens
+let onTreeDelete = null;       // optional callback({path,isFolder,name}) for per-row delete-on-disk
 export function initFolder(deps) {
   loadIntake = deps.loadIntake;
   confirmDiscard = deps.confirmDiscard;
   onFolderFileOpened = deps.onFolderFileOpened || null;
+  onTreeDelete = deps.onTreeDelete || null;
 }
 
 // Track whether the one-time move disclaimer toast has been shown this folder session.
@@ -73,7 +75,7 @@ export function recordMove(src, dest) {
 // Module-level re-entrant onMove handler so it can reference itself after a tree rebuild.
 let _onMove = null;
 
-export async function loadFolder(entries, { repoWalkLimit } = {}) {
+export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders } = {}) {
   if (!confirmDiscard()) return;               // guard unsaved work before swapping folders
   // A .git dir makes this a repository: hide git internals from the tree, surface a
   // branch/commit browser, and default to it instead of opening a file.
@@ -107,6 +109,7 @@ export async function loadFolder(entries, { repoWalkLimit } = {}) {
     state.treeApi = renderTree($('ftBody'), buildTree(state.treeEntries), {
       onOpen: (node) => openTreeFile(node),
       onMove: _onMove,
+      onDelete: (t) => onTreeDelete?.(t),
       initialOpenDepth: 0,
     });
     for (const movedDest of state.folderMoves.values()) state.treeApi.setMoved(movedDest, movedDest);
@@ -132,7 +135,9 @@ export async function loadFolder(entries, { repoWalkLimit } = {}) {
   showFolderLoading('Building file tree…', { progress: 0.45, detail: display.length.toLocaleString() + ' visible file' + (display.length === 1 ? '' : 's') });
   await nextFrame();
   const tree = buildTree(display);
-  state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node), onMove: _onMove, initialOpenDepth: 0 });
+  state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node), onMove: _onMove, onDelete: (t) => onTreeDelete?.(t), initialOpenDepth: 0 });
+  // Restore previously-expanded folders (e.g. across a refresh) so the tree doesn't collapse.
+  if (openFolders && openFolders.length) state.treeApi.openPaths(openFolders);
 
   try {
     showFolderLoading(git ? 'Reading git metadata…' : 'Opening default file…', { progress: 0.75 });
@@ -140,7 +145,9 @@ export async function loadFolder(entries, { repoWalkLimit } = {}) {
     if (git) {
       await openRepoView({ auto: true, walkLimit: repoWalkLimit });  // default to the commit/branch view
     } else {
-      const pick = display.find((e) => /(^|\/)(readme|index)\.\w+$/i.test(e.path)) || display[0];
+      // Prefer the explicitly-requested file (refresh re-opens what was open); else readme/index.
+      const pick = (openPath && display.find((e) => e.path === openPath))
+        || display.find((e) => /(^|\/)(readme|index)\.\w+$/i.test(e.path)) || display[0];
       if (pick) { state._skipDiscardGuard = true; await openTreeFile({ file: pick.file, path: pick.path }); state.treeApi.setActive(pick.path); }
     }
   } finally {

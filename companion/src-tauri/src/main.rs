@@ -11,7 +11,7 @@ use axum::{extract::State, middleware, routing::post, Json, Router};
 use file_viewer_companion::{
     auth::require_token,
     config::{config_path, load_config, save_config},
-    logging, router_with,
+    kill_other_companion_processes, logging, router_with,
     watcher::FileWatcher,
     AppState,
 };
@@ -31,52 +31,6 @@ const PAGES_ORIGIN: &str = "https://jdeworks.github.io";
 
 // Keeps the file watcher alive for the whole app lifetime (dropping it stops fs events).
 struct WatcherGuard(#[allow(dead_code)] Option<FileWatcher>);
-
-// On startup, terminate any OTHER running instances of this same tray binary. Without this, an old
-// build left in the tray keeps holding 127.0.0.1:7700, so the new instance can't bind its server
-// (and you end up with several stale tray icons). We match by our own executable's file name and
-// skip our own PID. Dependency-free (taskkill / pgrep+kill) so the offline + cross-compile builds
-// keep working. Best-effort: failures are logged, never fatal.
-fn kill_other_instances() {
-    let self_pid = std::process::id();
-    let exe_name = match std::env::current_exe()
-        .ok()
-        .and_then(|p| p.file_name().map(|n| n.to_string_lossy().into_owned()))
-    {
-        Some(n) => n,
-        None => return,
-    };
-
-    #[cfg(target_os = "windows")]
-    {
-        // /F force-kill, /T also kills child processes; exclude our own PID via the filter.
-        let _ = std::process::Command::new("taskkill")
-            .args([
-                "/F",
-                "/T",
-                "/IM",
-                &exe_name,
-                "/FI",
-                &format!("PID ne {self_pid}"),
-            ])
-            .output();
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        if let Ok(out) = std::process::Command::new("pgrep").args(["-f", &exe_name]).output() {
-            for line in String::from_utf8_lossy(&out.stdout).lines() {
-                if let Ok(pid) = line.trim().parse::<u32>() {
-                    if pid != self_pid {
-                        let _ = std::process::Command::new("kill").arg(pid.to_string()).output();
-                    }
-                }
-            }
-        }
-    }
-    logging::info("checked for and terminated any previous companion instances");
-    // Give the OS a moment to release port 7700 from the killed process before we bind it.
-    std::thread::sleep(std::time::Duration::from_millis(400));
-}
 
 fn open_url(url: &str) {
     #[cfg(target_os = "linux")]
@@ -132,8 +86,9 @@ async fn path_picker(handle: tauri::AppHandle, state: AppState) -> Json<serde_js
 
 fn main() {
     logging::init(Some(config_path()));
-    // Take over from any old instance still sitting in the tray (frees port 7700 for our server).
-    kill_other_instances();
+    // Take over from any old instance still sitting in the tray, or a console server (frees :7700).
+    kill_other_companion_processes();
+    std::thread::sleep(std::time::Duration::from_millis(400));
     let token =
         std::env::var("COMPANION_TOKEN").unwrap_or_else(|_| uuid::Uuid::new_v4().to_string());
     let watched_paths = Arc::new(Mutex::new(load_config()));
