@@ -28,6 +28,13 @@ export const GAMES = [
     load: () => import('./flappybird/flappybird.js'),
   },
   {
+    id: 'tetris',
+    title: 'Tetris',
+    emoji: '🟦',
+    blurb: 'Stack falling blocks, clear lines. Arrows + Space, or swipe/tap. Speeds up as you go.',
+    load: () => import('./tetris/tetris.js'),
+  },
+  {
     id: 'metagame',
     title: 'Bit Foundry',
     emoji: '⚙️',
