@@ -96,6 +96,32 @@ export function goalDistances(b) {
   return dist;
 }
 
+// One push-distance map PER goal (vs goalDistances' nearest-goal collapse): maps[k][cell] = fewest
+// pushes to move a lone box from cell to goalCells[k] (-1 = can't reach that goal). Feeds the min-cost
+// box→goal matching heuristic, which ranks states by an actual one-box-per-goal assignment instead of
+// letting every box claim the same nearest goal.
+export function goalDistanceMaps(b) {
+  const { w, h, walls, goals } = b;
+  const goalCells = [];
+  for (let i = 0; i < w * h; i++) if (goals[i]) goalCells.push(i);
+  const maps = goalCells.map((g) => {
+    const d = new Int32Array(w * h).fill(-1);
+    const q = [g]; d[g] = 0; let head = 0;
+    while (head < q.length) {
+      const c = q[head++]; const x = c % w, y = (c / w) | 0;
+      for (const dir of DIRS) {
+        const bx = x + dir.dx, by = y + dir.dy, px = x + 2 * dir.dx, py = y + 2 * dir.dy;
+        if (bx < 0 || by < 0 || bx >= w || by >= h || px < 0 || py < 0 || px >= w || py >= h) continue;
+        const bi = by * w + bx, pi = py * w + px;
+        if (walls[bi] || walls[pi] || d[bi] >= 0) continue;
+        d[bi] = d[c] + 1; q.push(bi);
+      }
+    }
+    return d;
+  });
+  return { goalCells, maps };
+}
+
 // Flood-fill the cells the player can currently reach (blocked by walls and boxes), starting at `start`.
 // `boxAt` is a Uint8Array bitset (1 = box). Returns the reachable mask and `norm` = the smallest cell
 // index in the region — a canonical id for the player's position (any two states with the same boxes and

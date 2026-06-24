@@ -6,14 +6,16 @@
 // a too-narrow beam can miss the solution — so the driver widens the beam on failure.
 import { DIRS, parse, step, goalDistances, reachable, walkPath } from './board.mjs';
 import { isFreezeDeadlock } from './deadlock.mjs';
+import { matchingHeuristic } from './matching.mjs';
 import { behind, allOnGoals, withPush } from './solve.mjs';
 
-export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight = 3, maxVisited = 6_000_000 } = {}) {
+export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight = 3, maxVisited = 6_000_000, matching = false } = {}) {
   const b = typeof level === 'string' ? parse(level) : level;
   if (b.player < 0 || b.boxes.size !== b.goalCount) return null;
   const N = b.w * b.h;
-  const dist = goalDistances(b);
-  const hOf = (boxList) => { let s = 0; for (const i of boxList) s += dist[i]; return s; };
+  const dist = goalDistances(b);                           // for dead-square + freeze pruning
+  const sumH = (boxList) => { let s = 0; for (const i of boxList) s += dist[i]; return s; };
+  const hOf = matching ? matchingHeuristic(b) : sumH;      // ranking heuristic (matching = packing-aware)
   const boxAt = new Uint8Array(N), seenScratch = new Uint8Array(N);
 
   const startBoxList = Int32Array.from(b.boxes).sort();
