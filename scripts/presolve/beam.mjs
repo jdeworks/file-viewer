@@ -48,10 +48,15 @@ export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight =
           const boxList = withPush(node.boxList, bx, target);
           const key = boxList.join(',') + '|' + norm;
           if (came.has(key)) continue;                     // already seen — loop / transposition
-          came.set(key, { parentKey: node.key, bx, di });
           const g = node.g + 1;
-          if (allOnGoals(b, boxList)) { goalKey = key; break; }
-          succ.push({ boxList, player: bx, key, g, f: g + weight * hOf(boxList) });
+          if (allOnGoals(b, boxList)) { came.set(key, { parentKey: node.key, bx, di }); goalKey = key; break; }
+          const h = hOf(boxList);
+          // matching infeasibility = bipartite/Hall deadlock: no box→goal assignment over REACHABLE pairs
+          // exists (static maps ignore box-blocking, which only worsens reachability) ⇒ truly dead. Sound,
+          // and free here because matching mode already computed h. (Sum mode never reaches UNREACH.)
+          if (h >= 1e6) continue;
+          came.set(key, { parentKey: node.key, bx, di });
+          succ.push({ boxList, player: bx, key, g, f: g + weight * h });
         }
         if (goalKey) break;
       }
