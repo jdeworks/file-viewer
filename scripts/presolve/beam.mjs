@@ -6,10 +6,11 @@
 // a too-narrow beam can miss the solution — so the driver widens the beam on failure.
 import { DIRS, parse, step, goalDistances, reachable, walkPath } from './board.mjs';
 import { isFreezeDeadlock, isCorralDeadlock } from './deadlock.mjs';
+import { isPiCorralDeadlock } from './picorral.mjs';
 import { matchingHeuristic } from './matching.mjs';
 import { behind, allOnGoals, withPush } from './solve.mjs';
 
-export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight = 3, maxVisited = 6_000_000, matching = false, corral = false } = {}) {
+export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight = 3, maxVisited = 6_000_000, matching = false, corral = false, picorral = false } = {}) {
   const b = typeof level === 'string' ? parse(level) : level;
   if (b.player < 0 || b.boxes.size !== b.goalCount) return null;
   const N = b.w * b.h;
@@ -47,6 +48,7 @@ export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight =
             const r = reachable(b, boxAt, bx, seenScratch);
             norm = r.norm;
             if (corral && isCorralDeadlock(b, boxAt, dist, r.seen, target)) dead = true;
+            else if (picorral && isPiCorralDeadlock(b, boxAt, dist, r.seen, target, bx)) dead = true;
           }
           boxAt[bx] = 1; boxAt[target] = 0;
           if (dead) continue;
