@@ -148,6 +148,12 @@ Progress:
   - Validation passed: `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
   - Caveat: `renderer.js` and `tests/areas/media-3d.mjs` are now further over the LOC advisory threshold;
     the next polish pass should extract audio workspace/mode helpers and split media smoke coverage.
+- Visual QA after `77d5c981`:
+  - Captured desktop and mobile screenshots for `Sample.wav` at `/tmp/media-workspace-shots/`.
+  - Geometry check passed: visible waveform, stable task-mode buttons, and no horizontal overflow at
+    1280x900 or 390x844.
+  - Remaining polish issue: both desktop and mobile still show too much blank space above the audio
+    workspace, so P0 should not be marked complete until the first-viewport vertical rhythm is tightened.
 
 ### P1 — Video Workspace Polish Gate
 
