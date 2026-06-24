@@ -26,8 +26,8 @@ export const SETS = [
   { id: 'microban2', name: 'Microban II', levels: mb2Levels, solutions: mb2Solutions },
   { id: 'microban3', name: 'Microban III', levels: mb3Levels, solutions: mb3Solutions },
   { id: 'microban4', name: 'Microban IV', levels: mb4Levels, solutions: mb4Solutions },
-  // Aymeric du Peloux "Cosmos" family — smaller, gentler puzzles. Microcosmos #39 ships pending
-  // (sneezingtiger's layout differs from joriswit's solved version), within the maxPending budget.
+  // Aymeric du Peloux "Cosmos" family — smaller, gentler puzzles. Microcosmos #39's solution is from
+  // our own clean-room solver (joriswit's #39 is for a different layout); every set is fully solved.
   { id: 'minicosmos', name: 'Minicosmos', levels: miniLevels, solutions: miniSolutions },
   { id: 'microcosmos', name: 'Microcosmos', levels: microLevels, solutions: microSolutions },
   { id: 'nabokosmos', name: 'Nabokosmos', levels: naboLevels, solutions: naboSolutions },
