@@ -46,7 +46,7 @@ export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight =
           if (!dead) {
             const r = reachable(b, boxAt, bx, seenScratch);
             norm = r.norm;
-            if (corral && isCorralDeadlock(b, boxAt, dist, r.seen, goalCells)) dead = true;
+            if (corral && isCorralDeadlock(b, boxAt, dist, r.seen, target)) dead = true;
           }
           boxAt[bx] = 1; boxAt[target] = 0;
           if (dead) continue;

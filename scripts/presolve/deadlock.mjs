@@ -56,14 +56,21 @@ export const isFrozenBox = (b, boxAt, dist, c) => isFrozen(b, boxAt, dist, c, ne
 // whose every bordering box is FROZEN, can never be filled — the player can't enter and no box can be
 // pushed in (frozen boxes never move) ⇒ dead. `region` is the player's reachable mask for THIS state.
 // Sound: it only fires when the seal is provably permanent (all boundary boxes immovable forever).
-export function isCorralDeadlock(b, boxAt, dist, region, goalCells) {
-  const { w, h, walls } = b;
-  for (const g of goalCells) {
-    if (boxAt[g] || region[g]) continue;               // only unfilled, player-unreachable goals
-    const seen = new Uint8Array(w * h); seen[g] = 1;
-    const stack = [g]; const boundary = []; let touchesRegion = false;
-    while (stack.length) {                              // flood the goal's floor pocket; collect bordering boxes
+export function isCorralDeadlock(b, boxAt, dist, region, pushed) {
+  const { w, h, walls, goals } = b;
+  // A NEW seal must have the just-pushed box on its boundary, so only flood the pocket(s) that box borders
+  // (cheap + sound — any pre-existing sealed pocket was caught when ITS sealing box was pushed).
+  const px = pushed % w, py = (pushed / w) | 0;
+  const seen = new Uint8Array(w * h);
+  for (const sd of DIRS) {
+    const sx = px + sd.dx, sy = py + sd.dy;
+    if (sx < 0 || sy < 0 || sx >= w || sy >= h) continue;
+    const seed = sy * w + sx;
+    if (walls[seed] || boxAt[seed] || region[seed] || seen[seed]) continue;   // only unreachable floor pockets
+    const stack = [seed]; seen[seed] = 1; const boundary = []; let touchesRegion = false, unfilledGoal = false;
+    while (stack.length) {
       const c = stack.pop(), x = c % w, y = (c / w) | 0;
+      if (goals[c] && !boxAt[c]) unfilledGoal = true;
       for (const d of DIRS) {
         const nx = x + d.dx, ny = y + d.dy;
         if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
@@ -74,10 +81,10 @@ export function isCorralDeadlock(b, boxAt, dist, region, goalCells) {
         if (!seen[ni]) { seen[ni] = 1; stack.push(ni); }
       }
     }
-    if (touchesRegion || boundary.length === 0) continue;
+    if (touchesRegion || !unfilledGoal || boundary.length === 0) continue;
     let allFrozen = true;
     for (const bx of boundary) if (!isFrozenBox(b, boxAt, dist, bx)) { allFrozen = false; break; }
-    if (allFrozen) return true;                        // sealed pocket, unfillable goal ⇒ deadlock
+    if (allFrozen) return true;                        // sealed pocket with an unfillable goal ⇒ deadlock
   }
   return false;
 }
