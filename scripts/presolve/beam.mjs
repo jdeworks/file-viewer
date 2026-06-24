@@ -9,6 +9,7 @@ import { isFreezeDeadlock, isCorralDeadlock } from './deadlock.mjs';
 import { isPiCorralDeadlock } from './picorral.mjs';
 import { matchingHeuristic } from './matching.mjs';
 import { behind, allOnGoals, withPush } from './solve.mjs';
+import { ShardedMap } from './shardedmap.mjs';
 
 export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight = 3, maxVisited = 6_000_000, matching = false, corral = false, picorral = false } = {}) {
   const b = typeof level === 'string' ? parse(level) : level;
@@ -30,7 +31,7 @@ export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight =
   for (const i of startBoxList) boxAt[i] = 1;
   const startKey = keyOf(startBoxList, reachable(b, boxAt, b.player).norm);
 
-  const came = new Map();                                  // key -> { parentKey, bx, di } (loop detection + reconstruction)
+  const came = new ShardedMap(16);                         // key -> { parentKey, bx, di }; sharded to beat V8's 16.77M/Map cap
   came.set(startKey, null);
   let frontier = [{ boxList: startBoxList, player: b.player, key: startKey, g: 0 }];
   let goalKey = null;
