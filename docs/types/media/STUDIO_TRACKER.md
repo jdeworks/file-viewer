@@ -74,7 +74,7 @@ These are implemented and tested as capabilities, but the audio UI is not yet pr
 
 ### P-Start — Checkpoint Current Verified Work
 
-Status: open.
+Status: committed.
 
 Before beginning the workspace redesign, checkpoint the already-verified maintenance work:
 
@@ -83,6 +83,8 @@ Before beginning the workspace redesign, checkpoint the already-verified mainten
 - Commit the done/uncommitted M1 + M2 work and tracker/doc updates with a short imperative subject.
 - Record the commit subject/hash in this tracker.
 - Do not push or pull.
+- Checkpoint commit: `cb94adcb` — `Checkpoint media studio M1/M2 work`.
+- Validation before checkpoint: `./scripts/check.sh --fast` passed.
 
 ### P0 — Audio Workspace Polish Gate
 
@@ -161,7 +163,7 @@ Implementation order:
 
 ### M1 — Video Trim Correctness
 
-Status: done, uncommitted.
+Status: committed.
 
 - Make video timeline trim handles clamp so start/end cannot cross.
 - Add a visible `Trim selected range` action to the video timeline.
@@ -170,10 +172,11 @@ Status: done, uncommitted.
 - Add smoke/pure checks for trim clamping and generated trim params without requiring a heavy encode.
 - Changed paths: `timeline.js`, `video-filters.js`, `tests/areas/media-3d.mjs`.
 - Validation passed: `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+- Committed in `cb94adcb` — `Checkpoint media studio M1/M2 work`.
 
 ### M2 — Playback And Parser Polish
 
-Status: done, uncommitted.
+Status: committed.
 
 - Handle `requestPictureInPicture()` promise rejection without unhandled errors.
 - Add focused subtitle parser tests for malformed/complex cue timing.
@@ -182,6 +185,7 @@ Status: done, uncommitted.
 - Changed paths: `playback-extras.js`, `subtitles.js`, `id3.js`, `tests/media-parsers.test.mjs`, `scripts/check.sh`.
 - Targeted validation passed: `node tests/media-parsers.test.mjs`, `node tests/movediff.test.mjs`.
 - Full lane validation passed: `./scripts/check.sh --fast`.
+- Committed in `cb94adcb` — `Checkpoint media studio M1/M2 work`.
 
 ### M3 — ACX And Export Semantics
 
