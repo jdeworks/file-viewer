@@ -11,7 +11,7 @@ import { matchingHeuristic } from './matching.mjs';
 import { behind, allOnGoals, withPush } from './solve.mjs';
 import { ShardedMap } from './shardedmap.mjs';
 
-export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight = 3, maxVisited = 6_000_000, matching = false, corral = false, picorral = false } = {}) {
+export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight = 3, maxVisited = 6_000_000, matching = false, corral = false, picorral = false, lazyVisited = false } = {}) {
   const b = typeof level === 'string' ? parse(level) : level;
   if (b.player < 0 || b.boxes.size !== b.goalCount) return null;
   const N = b.w * b.h;
@@ -42,6 +42,12 @@ export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight =
     lastLayer = layer;
     if (DEBUG && layer % 25 === 0) console.error(`layer ${layer} frontier ${frontier.length} visited ${came.size} bestH ${bestH}`);
     const succ = [];
+    // lazyVisited: mark a state "visited" only once it is KEPT (expanded), not when merely generated.
+    // The default beam marks every generated successor — so a state evicted by the width cut still blocks
+    // all later re-entry though it was never explored, which seals the search into a dead basin (Microban
+    // #154 collapses identically at layer 222 for any width). Deferring the mark lets evicted states get a
+    // second chance from a later parent. `layerSeen` dedups within the layer (came holds only kept states).
+    const layerSeen = lazyVisited ? new Set() : null;
     for (const node of frontier) {
       boxAt.fill(0); for (const i of node.boxList) boxAt[i] = 1;
       const region = reachable(b, boxAt, node.player).seen;
@@ -65,6 +71,7 @@ export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight =
           const boxList = withPush(node.boxList, bx, target);
           const key = keyOf(boxList, norm);
           if (came.has(key)) continue;                     // already seen — loop / transposition
+          if (lazyVisited) { if (layerSeen.has(key)) continue; layerSeen.add(key); }
           const g = node.g + 1;
           if (allOnGoals(b, boxList)) { came.set(key, { parentKey: node.key, bx, di }); goalKey = key; break; }
           const h = hOf(boxList);
@@ -72,8 +79,8 @@ export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight =
           // exists (static maps ignore box-blocking, which only worsens reachability) ⇒ truly dead. Sound,
           // and free here because matching mode already computed h. (Sum mode never reaches UNREACH.)
           if (h >= 1e6) continue;
-          came.set(key, { parentKey: node.key, bx, di });
-          succ.push({ boxList, player: bx, key, g, f: g + weight * h });
+          if (!lazyVisited) came.set(key, { parentKey: node.key, bx, di });
+          succ.push({ boxList, player: bx, key, g, f: g + weight * h, pk: node.key, pbx: bx, pdi: di });
         }
         if (goalKey) break;
       }
@@ -83,6 +90,7 @@ export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight =
     succ.sort((p, q) => p.f - q.f);                        // keep the best `beamWidth` for the next layer
     if (DEBUG && succ.length) bestH = Math.min(...succ.slice(0, 200).map(s => (s.f - s.g) / weight | 0));  // lowest h in beam
     frontier = succ.length > beamWidth ? succ.slice(0, beamWidth) : succ;
+    if (lazyVisited) for (const s of frontier) if (!came.has(s.key)) came.set(s.key, { parentKey: s.pk, bx: s.pbx, di: s.pdi });
   }
   if (DEBUG) console.error(`STOP layer ${lastLayer} visited ${came.size} frontier ${frontier.length} goal ${goalKey != null} reason ${goalKey != null ? 'GOAL' : lastLayer + 1 >= maxLayers ? 'maxLayers' : came.size >= maxVisited ? 'maxVisited' : 'emptyFrontier'}`);
   if (goalKey == null) return null;

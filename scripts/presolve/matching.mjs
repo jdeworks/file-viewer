@@ -36,10 +36,12 @@ function hungarian(cost) {
   return res;
 }
 
-// Build h(boxList) for a board: returns a function that computes the matching cost for a set of boxes.
-export function matchingHeuristic(b) {
-  const { goalCells, maps } = goalDistanceMaps(b);
-  const n = goalCells.length;
+// Generic matching heuristic over a set of target cells and their per-target distance maps
+// (maps[j][cell] = box-move distance from `cell` to target j, < 0 = unreachable). Returns h(boxList) =
+// cheapest one-box-per-target assignment. Used both forward (targets = goals) and backward (targets =
+// the level's start box cells, so the pull-search is guided toward reconstructing the start config).
+export function matchingHeuristicFor(targetCells, maps) {
+  const n = targetCells.length;
   return (boxList) => {
     const cost = [];
     for (let i = 0; i < n; i++) {
@@ -50,4 +52,10 @@ export function matchingHeuristic(b) {
     }
     return hungarian(cost);
   };
+}
+
+// Build h(boxList) for a board's GOALS: returns a function that computes the matching cost for a set of boxes.
+export function matchingHeuristic(b) {
+  const { goalCells, maps } = goalDistanceMaps(b);
+  return matchingHeuristicFor(goalCells, maps);
 }

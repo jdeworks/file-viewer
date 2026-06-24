@@ -100,6 +100,53 @@ export function goalDistances(b) {
 // pushes to move a lone box from cell to goalCells[k] (-1 = can't reach that goal). Feeds the min-cost
 // box→goal matching heuristic, which ranks states by an actual one-box-per-goal assignment instead of
 // letting every box claim the same nearest goal.
+// Per-cell box-move distance maps rooted at an arbitrary set of cells (same pull-BFS as goalDistanceMaps,
+// but the roots are given). maps[k][cell] = fewest box moves to relocate a lone box from `cell` to
+// rootCells[k] (-1 = unreachable). Used by the backward solver to root the heuristic at the START cells.
+export function distanceMapsFrom(b, rootCells) {
+  const { w, h, walls } = b;
+  const maps = rootCells.map((g) => {
+    const d = new Int32Array(w * h).fill(-1);
+    const q = [g]; d[g] = 0; let head = 0;
+    while (head < q.length) {
+      const c = q[head++]; const x = c % w, y = (c / w) | 0;
+      for (const dir of DIRS) {
+        const bx = x + dir.dx, by = y + dir.dy, px = x + 2 * dir.dx, py = y + 2 * dir.dy;
+        if (bx < 0 || by < 0 || bx >= w || by >= h || px < 0 || py < 0 || px >= w || py >= h) continue;
+        const bi = by * w + bx, pi = py * w + px;
+        if (walls[bi] || walls[pi] || d[bi] >= 0) continue;
+        d[bi] = d[c] + 1; q.push(bi);
+      }
+    }
+    return d;
+  });
+  return maps;
+}
+
+// Per-cell GRID distance maps rooted at given cells: maps[k][cell] = fewest 4-connected steps over
+// non-wall cells from cell to rootCells[k] (-1 only if truly disconnected). This is a looser lower bound
+// than the pull-rule maps (it ignores the clear-behind requirement), but it never returns a spurious -1
+// for cells that are physically connected — so the backward solver's matching heuristic doesn't wrongly
+// prune a reachable predecessor. Used to guide the backward (pull) search toward the start configuration.
+export function gridDistanceMaps(b, rootCells) {
+  const { w, h, walls } = b;
+  return rootCells.map((g) => {
+    const d = new Int32Array(w * h).fill(-1);
+    const q = [g]; d[g] = 0; let head = 0;
+    while (head < q.length) {
+      const c = q[head++]; const x = c % w, y = (c / w) | 0;
+      for (const dir of DIRS) {
+        const nx = x + dir.dx, ny = y + dir.dy;
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        const ni = ny * w + nx;
+        if (walls[ni] || d[ni] >= 0) continue;
+        d[ni] = d[c] + 1; q.push(ni);
+      }
+    }
+    return d;
+  });
+}
+
 export function goalDistanceMaps(b) {
   const { w, h, walls, goals } = b;
   const goalCells = [];
