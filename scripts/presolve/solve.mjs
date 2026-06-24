@@ -31,14 +31,14 @@ class Heap {
   }
 }
 
-const behind = (b, c, d) => {              // cell the player stands on to push a box at c in dir d (c - d)
+export const behind = (b, c, d) => {       // cell the player stands on to push a box at c in dir d (c - d)
   const x = c % b.w, y = (c / b.w) | 0, px = x - d.dx, py = y - d.dy;
   return (px < 0 || py < 0 || px >= b.w || py >= b.h) ? -1 : py * b.w + px;
 };
-const allOnGoals = (b, boxList) => { for (const i of boxList) if (!b.goals[i]) return false; return true; };
+export const allOnGoals = (b, boxList) => { for (const i of boxList) if (!b.goals[i]) return false; return true; };
 
 // boxList (sorted) with bx removed and target inserted, keeping it sorted — no Set, no full re-sort.
-function withPush(boxList, bx, target) {
+export function withPush(boxList, bx, target) {
   const out = new Int32Array(boxList.length);
   let j = 0, inserted = false;
   for (let i = 0; i < boxList.length; i++) {
