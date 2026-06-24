@@ -75,6 +75,8 @@
    sandbox — bytes can't execute). Styled here in the parent, not the iframe template. */
 .preview-host .media-doc { display: flex; flex-direction: column; align-items: center; gap: 12px;
   padding: 16px; min-height: 100%; box-sizing: border-box; justify-content: center; }
+.preview-host .media-audio.media-doc { justify-content: flex-start; align-items: stretch;
+  padding-top: clamp(8px, 2vw, 16px); }
 .preview-host .media-name { font-size: 13px; color: var(--fg-2); word-break: break-all; text-align: center; }
 .preview-host .media-workspace { width: min(720px, 100%); display: flex; flex-direction: column; gap: 8px; }
 .preview-host .media-audio-workspace { margin: 0 auto; width: min(720px, 100%); }

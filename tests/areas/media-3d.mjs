@@ -936,6 +936,71 @@ export async function run(ctx) {
   await page.click('#previewHost .media-extras .media-speed-btn[data-rate="1"]');   // restore
   const audioWorkspace = await page.$('#previewHost .media-audio-workspace');
   if (audioWorkspace) pass('audio workspace: top-level audio workspace exists'); else fail('media-audio-workspace missing');
+  const assertAudioTopViewport = async (label) => {
+    const geometry = await page.$eval('#previewHost .media-doc.media-audio', (host) => {
+      const workspace = host.querySelector('.media-audio-workspace');
+      const modeTabs = host.querySelector('.media-mode-tabs');
+      const media = host.querySelector('.media-audio-surface audio.media-view');
+      const title = host.querySelector('.media-workspace-title');
+      const time = host.querySelector('.media-workspace-time');
+      const waveform = host.querySelector('.media-waveform-surface');
+      if (!workspace || !modeTabs || !media || !title || !time || !waveform) return null;
+      const hostRect = host.getBoundingClientRect();
+      const workspaceRect = workspace.getBoundingClientRect();
+      const modeRect = modeTabs.getBoundingClientRect();
+      const waveformRect = waveform.getBoundingClientRect();
+      const mediaRect = media.getBoundingClientRect();
+      const docEl = document.documentElement;
+      return {
+        topInset: Math.round(workspaceRect.top - hostRect.top),
+        viewportW: window.innerWidth,
+        viewportH: window.innerHeight,
+        hostLeft: Math.round(hostRect.left),
+        hostRight: Math.round(hostRect.right),
+        workspaceLeft: Math.round(workspaceRect.left),
+        workspaceRight: Math.round(workspaceRect.right),
+        overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
+        titleVisible: title.textContent.trim().length > 0 && title.getBoundingClientRect().height > 0,
+        timeVisible: time.textContent.trim().length > 0 && time.getBoundingClientRect().height > 0,
+        mediaControlVisible: mediaRect.height > 0 && getComputedStyle(media).display !== 'none',
+        waveformVisible: waveformRect.height > 0,
+        modeTabsVisible: modeRect.height > 0 && getComputedStyle(modeTabs).display !== 'none',
+      };
+    });
+    if (!geometry) return fail('audio first-viewport geometry unavailable (' + label + ')');
+    const topLimit = Math.min(72, Math.floor(geometry.viewportH * 0.2));
+    if (geometry.titleVisible && geometry.timeVisible && geometry.mediaControlVisible && geometry.waveformVisible && geometry.modeTabsVisible) pass('audio first-viewport core surfaces are visible (' + label + ')');
+    else fail('audio first-viewport core surface missing (' + label + '): ' + JSON.stringify({
+      titleVisible: geometry.titleVisible,
+      timeVisible: geometry.timeVisible,
+      mediaControlVisible: geometry.mediaControlVisible,
+      waveformVisible: geometry.waveformVisible,
+      modeTabsVisible: geometry.modeTabsVisible,
+    }));
+    if (geometry.topInset >= 0 && geometry.topInset <= topLimit) pass('audio first viewport begins near top (workspace inset ' + geometry.topInset + 'px <= ' + topLimit + 'px)');
+    else fail('audio first-viewport top inset too large (' + geometry.topInset + 'px > ' + topLimit + 'px) for ' + label);
+    if (geometry.overflowX === 0 && geometry.workspaceLeft >= geometry.hostLeft - 1 && geometry.workspaceRight <= geometry.hostRight + 1)
+      pass('audio first-viewport has no horizontal overflow (' + label + ')');
+    else fail('audio first-viewport overflow/width issue (' + label + '): ' + JSON.stringify(geometry));
+  };
+  await assertAudioTopViewport('desktop');
+  const desktopViewport = page.viewportSize();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.wav');
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await assertAudioTopViewport('mobile');
+  if (desktopViewport) {
+    await page.setViewportSize(desktopViewport);
+    await page.goto(origin, { waitUntil: 'load' });
+    await openExample('Sample.wav');
+    await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  } else {
+    await page.setViewportSize({ width: 1100, height: 800 });
+    await page.goto(origin, { waitUntil: 'load' });
+    await openExample('Sample.wav');
+    await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  }
   const waveformSurface = await page.$eval('#previewHost .media-waveform-surface', (el) => {
     const r = el.getBoundingClientRect();
     return { tag: el.tagName.toLowerCase(), w: r.width, h: r.height, displayed: getComputedStyle(el).display !== 'none' };
