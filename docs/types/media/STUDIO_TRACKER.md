@@ -139,6 +139,15 @@ Progress:
   - Validation passed: `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
   - Caveat: waveform canvas still mounts with the existing fallback intrinsic width before layout;
     CSS scales it correctly, but exact post-layout canvas sizing remains a follow-up polish item.
+- `77d5c981` — `Add audio task mode tabs`.
+  - Added explicit `Listen`, `Tune`, `QC`, `Export`, and `Mix` mode tabs for audio.
+  - Listen now owns everyday controls; Tune, QC, and Mix mount only when selected and tear down when
+    leaving the mode; Export owns the existing processed-export panel or a clear ffmpeg-disabled hint.
+  - Updated media smoke coverage to assert mode structure, default Listen mode, mode-scoped export/QC/mix
+    behavior, and teardown/remount of CPU-heavy Tune/QC/Mix surfaces.
+  - Validation passed: `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+  - Caveat: `renderer.js` and `tests/areas/media-3d.mjs` are now further over the LOC advisory threshold;
+    the next polish pass should extract audio workspace/mode helpers and split media smoke coverage.
 
 ### P1 — Video Workspace Polish Gate
 
