@@ -5,11 +5,11 @@
 // f = g + W·h (greedy when W is large), so it follows the heuristic gradient deep. It is incomplete —
 // a too-narrow beam can miss the solution — so the driver widens the beam on failure.
 import { DIRS, parse, step, goalDistances, reachable, walkPath } from './board.mjs';
-import { isFreezeDeadlock } from './deadlock.mjs';
+import { isFreezeDeadlock, isCorralDeadlock } from './deadlock.mjs';
 import { matchingHeuristic } from './matching.mjs';
 import { behind, allOnGoals, withPush } from './solve.mjs';
 
-export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight = 3, maxVisited = 6_000_000, matching = false } = {}) {
+export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight = 3, maxVisited = 6_000_000, matching = false, corral = false } = {}) {
   const b = typeof level === 'string' ? parse(level) : level;
   if (b.player < 0 || b.boxes.size !== b.goalCount) return null;
   const N = b.w * b.h;
@@ -41,8 +41,12 @@ export function solveBeam(level, { beamWidth = 30000, maxLayers = 5000, weight =
           const target = step(b, bx, d);
           if (target < 0 || b.walls[target] || boxAt[target] || dist[target] < 0) continue;
           boxAt[bx] = 0; boxAt[target] = 1;
-          const dead = isFreezeDeadlock(b, boxAt, dist, target);
-          const norm = dead ? -1 : reachable(b, boxAt, bx, seenScratch).norm;
+          let dead = isFreezeDeadlock(b, boxAt, dist, target), norm = -1;
+          if (!dead) {
+            const r = reachable(b, boxAt, bx, seenScratch);
+            norm = r.norm;
+            if (corral && isCorralDeadlock(b, boxAt, dist, r.seen)) dead = true;
+          }
           boxAt[bx] = 1; boxAt[target] = 0;
           if (dead) continue;
           const boxList = withPush(node.boxList, bx, target);
