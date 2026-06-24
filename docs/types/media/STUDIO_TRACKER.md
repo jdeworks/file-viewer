@@ -88,7 +88,7 @@ Before beginning the workspace redesign, checkpoint the already-verified mainten
 
 ### P0 — Audio Workspace Polish Gate
 
-Status: open.
+Status: in progress.
 
 Goal: make `Sample.mp3` / `Sample.wav` feel like a coherent media workspace before adding
 more broad media features.
@@ -128,6 +128,17 @@ Implementation order:
    rather than the old `media-wv-toggle` stack.
 9. Capture desktop and mobile screenshots during validation; sample audio should no longer look
    blank when collapsed or chaotic when expanded.
+
+Progress:
+
+- `888bf1ff` — `Add audio workspace shell`.
+  - Added compact audio workspace header/time row and always-visible waveform surface for audio files.
+  - Moved the existing Spectrum/EQ, Dynamics, Audiobook QC, and Multi-track mixer lazy toggles out
+    of the waveform wrapper into a dedicated audio mode panel area. Full task-mode tabs are still pending.
+  - Updated media smoke assertions away from collapsed-by-default waveform behavior.
+  - Validation passed: `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+  - Caveat: waveform canvas still mounts with the existing fallback intrinsic width before layout;
+    CSS scales it correctly, but exact post-layout canvas sizing remains a follow-up polish item.
 
 ### P1 — Video Workspace Polish Gate
 
