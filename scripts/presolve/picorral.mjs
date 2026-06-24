@@ -20,6 +20,9 @@
 import { DIRS } from './board.mjs';
 import { isFrozenBox } from './deadlock.mjs';
 
+// Dev diagnostics (zero cost when unused): counts WHY the test exits, to tune caps. Reset before a run.
+export const piStats = { calls: 0, noCorral: 0, tooBig: 0, notPI: 0, capBail: 0, fired: 0, resolved: 0 };
+
 // Identify the sealed corral bordering the just-pushed box. Returns {cells, goalCells, boundary, corral}
 // or null when the box does not border an unreachable, goal-bearing pocket. `region` = player's
 // reachable mask in the CURRENT (post-push) state.
@@ -69,10 +72,11 @@ function findCorral(b, boxAt, region, pushed) {
 // reachable mask, `playerFrom` = the player's cell (the just-pushed box's old square). Bounded by `cap`
 // search nodes and `maxCorral` cells; over either, returns false (inconclusive ⇒ never a false prune).
 export function isPiCorralDeadlock(b, boxAt, dist, region, pushed, playerFrom, { cap = 4000, maxCorral = 40, maxBoundary = 7 } = {}) {
+  piStats.calls++;
   const info = findCorral(b, boxAt, region, pushed);
-  if (!info) return false;
+  if (!info) { piStats.noCorral++; return false; }
   const { cells, goalCells, boundary, corral } = info;
-  if (boundary.length === 0 || boundary.length > maxBoundary || cells.length > maxCorral) return false;
+  if (boundary.length === 0 || boundary.length > maxBoundary || cells.length > maxCorral) { piStats.tooBig++; return false; }
   const { w, h, walls } = b;
   const N = w * h;
 
@@ -96,9 +100,9 @@ export function isPiCorralDeadlock(b, boxAt, dist, region, pushed, playerFrom, {
     }
     if (legal === 0) {
       if (isFrozenBox(b, boxAt, dist, bx)) continue;             // permanent wall — leave it in `base`
-      return false;                                              // inaccessible but not frozen ⇒ not PI
+      piStats.notPI++; return false;                             // inaccessible but not frozen ⇒ not PI
     }
-    if (outward) return false;                                   // can push out/along ⇒ not a PI-corral
+    if (outward) { piStats.notPI++; return false; }              // can push out/along ⇒ not a PI-corral
     movable.push(bx);
   }
 
@@ -138,11 +142,11 @@ export function isPiCorralDeadlock(b, boxAt, dist, region, pushed, playerFrom, {
   const queue = [{ pos: start, player: playerFrom }];
   let nodes = 0;
   while (queue.length) {
-    if (++nodes > cap) return false;                             // budget hit ⇒ inconclusive
+    if (++nodes > cap) { piStats.capBail++; return false; }      // budget hit ⇒ inconclusive
     const cur = queue.pop();
     occ.fill(0); for (const p of cur.pos) occ[p] = 1;
     flood(cur.player, seen);                                     // current region → `seen` (stable below)
-    if (resolved()) return false;
+    if (resolved()) { piStats.resolved++; return false; }
     for (let bi = 0; bi < cur.pos.length; bi++) {
       const box = cur.pos[bi], x = box % w, y = (box / w) | 0;
       for (const d of DIRS) {
@@ -161,5 +165,6 @@ export function isPiCorralDeadlock(b, boxAt, dist, region, pushed, playerFrom, {
       }
     }
   }
+  piStats.fired++;
   return true;                                                   // exhausted, never resolved ⇒ DEAD
 }
