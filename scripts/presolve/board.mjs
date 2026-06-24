@@ -69,6 +69,33 @@ export function liveSquares(b) {
   return live;
 }
 
+// Per-cell push-distance to the NEAREST goal: the fewest pushes to move a lone box from that cell to
+// some goal, ignoring other boxes and player reachability. Computed by a BFS of box pulls outward from
+// all goals (a box can be pulled from c to neighbour n in dir d iff n and the cell beyond n are both
+// non-wall). dist[c] = -1 means no goal is reachable (a dead square). This is an ADMISSIBLE lower bound
+// per box, so Σ over boxes of dist[box] never overestimates the remaining pushes → safe for A*.
+export function goalDistances(b) {
+  const { w, h, walls, goals } = b;
+  const dist = new Int32Array(w * h).fill(-1);
+  const q = [];
+  let head = 0;
+  for (let i = 0; i < w * h; i++) if (goals[i]) { dist[i] = 0; q.push(i); }
+  while (head < q.length) {
+    const c = q[head++];
+    const x = c % w, y = (c / w) | 0;
+    for (const d of DIRS) {
+      const bx = x + d.dx, by = y + d.dy;
+      const px = x + 2 * d.dx, py = y + 2 * d.dy;
+      if (bx < 0 || by < 0 || bx >= w || by >= h) continue;
+      if (px < 0 || py < 0 || px >= w || py >= h) continue;
+      const bi = by * w + bx, pi = py * w + px;
+      if (walls[bi] || walls[pi] || dist[bi] >= 0) continue;
+      dist[bi] = dist[c] + 1; q.push(bi);
+    }
+  }
+  return dist;
+}
+
 // Flood-fill the cells the player can currently reach (blocked by walls and boxes), starting at `start`.
 // Returns the reachable mask and `norm` = the smallest cell index in the region — a canonical id for the
 // player's position (any two states with the same boxes and same reachable region are equivalent).
