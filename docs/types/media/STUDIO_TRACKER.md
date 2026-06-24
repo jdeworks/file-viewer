@@ -154,6 +154,15 @@ Progress:
     1280x900 or 390x844.
   - Remaining polish issue: both desktop and mobile still show too much blank space above the audio
     workspace, so P0 should not be marked complete until the first-viewport vertical rhythm is tightened.
+- `6e1a33ba` — `Tighten audio workspace first viewport`.
+  - Added audio-only top alignment so the workspace no longer inherits the shared vertically centered
+    media layout used by video.
+  - Added desktop and mobile smoke geometry assertions for visible title/status, native audio control,
+    waveform, task tabs, compact top inset, and no horizontal overflow.
+  - Captured updated desktop and mobile screenshots at `/tmp/media-workspace-shots/audio-workspace-desktop-tight.png`
+    and `/tmp/media-workspace-shots/audio-workspace-mobile-tight.png`; desktop workspace top is 64px from the
+    viewport and mobile workspace top is 56px, both with no horizontal overflow.
+  - Validation passed: `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
 
 ### P1 — Video Workspace Polish Gate
 
