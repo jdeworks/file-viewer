@@ -14,7 +14,7 @@ import { DIRS } from './board.mjs';
 //  3) a box on either side that is itself frozen blocks it (recursive; the current box, held in
 //     `visiting`, is treated as a wall to terminate mutual recursion).
 // `dist` is board.goalDistances: dist[cell] < 0 marks a dead square (no goal reachable).
-function blockedAxis(b, boxes, dist, c, visiting, horizontal) {
+function blockedAxis(b, boxAt, dist, c, visiting, horizontal) {
   const d1 = horizontal ? DIRS[2] : DIRS[0];   // L or U
   const d2 = horizontal ? DIRS[3] : DIRS[1];   // R or D
   const x = c % b.w, y = (c / b.w) | 0;
@@ -30,9 +30,9 @@ function blockedAxis(b, boxes, dist, c, visiting, horizontal) {
   // rule 3: a frozen box on either side
   for (const n of [n1, n2]) {
     if (visiting.has(n)) return true;                 // assumed-immovable (treated as wall)
-    if (boxes.has(n)) {
+    if (boxAt[n]) {
       visiting.add(c);
-      const f = isFrozen(b, boxes, dist, n, visiting);
+      const f = isFrozen(b, boxAt, dist, n, visiting);
       visiting.delete(c);
       if (f) return true;
     }
@@ -40,12 +40,12 @@ function blockedAxis(b, boxes, dist, c, visiting, horizontal) {
   return false;
 }
 
-function isFrozen(b, boxes, dist, c, visiting) {
-  return blockedAxis(b, boxes, dist, c, visiting, true) && blockedAxis(b, boxes, dist, c, visiting, false);
+function isFrozen(b, boxAt, dist, c, visiting) {
+  return blockedAxis(b, boxAt, dist, c, visiting, true) && blockedAxis(b, boxAt, dist, c, visiting, false);
 }
 
 // Does the box just pushed to cell `c` create a freeze deadlock? Frozen + off-goal ⇒ dead.
-export function isFreezeDeadlock(b, boxes, dist, c) {
+export function isFreezeDeadlock(b, boxAt, dist, c) {
   if (b.goals[c]) return false;                       // a box settled on a goal is fine even if frozen
-  return isFrozen(b, boxes, dist, c, new Set());
+  return isFrozen(b, boxAt, dist, c, new Set());
 }

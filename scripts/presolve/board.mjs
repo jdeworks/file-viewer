@@ -97,11 +97,13 @@ export function goalDistances(b) {
 }
 
 // Flood-fill the cells the player can currently reach (blocked by walls and boxes), starting at `start`.
-// Returns the reachable mask and `norm` = the smallest cell index in the region — a canonical id for the
-// player's position (any two states with the same boxes and same reachable region are equivalent).
-export function reachable(b, boxes, start) {
+// `boxAt` is a Uint8Array bitset (1 = box). Returns the reachable mask and `norm` = the smallest cell
+// index in the region — a canonical id for the player's position (any two states with the same boxes and
+// the same reachable region are equivalent). `seen` is an optional caller-supplied scratch Uint8Array
+// (cleared here) to avoid per-call allocation in the hot loop.
+export function reachable(b, boxAt, start, seen) {
   const { w, h, walls } = b;
-  const seen = new Uint8Array(w * h);
+  if (seen) seen.fill(0); else seen = new Uint8Array(w * h);
   const stack = [start];
   seen[start] = 1;
   let norm = start;
@@ -113,16 +115,16 @@ export function reachable(b, boxes, start) {
       const nx = x + d.dx, ny = y + d.dy;
       if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
       const ni = ny * w + nx;
-      if (seen[ni] || walls[ni] || boxes.has(ni)) continue;
+      if (seen[ni] || walls[ni] || boxAt[ni]) continue;
       seen[ni] = 1; stack.push(ni);
     }
   }
   return { seen, norm };
 }
 
-// Shortest player walk (no pushing) from `start` to `target` over non-wall, non-box cells, returned as a
-// U/D/L/R move string. Returns null if unreachable. Used only during solution reconstruction.
-export function walkPath(b, boxes, start, target) {
+// Shortest player walk (no pushing) from `start` to `target` over non-wall, non-box cells (`boxAt` =
+// box bitset), returned as a U/D/L/R move string. Returns null if unreachable. Reconstruction only.
+export function walkPath(b, boxAt, start, target) {
   if (start === target) return '';
   const { w, h, walls } = b;
   const prev = new Int32Array(w * h).fill(-1);
@@ -138,7 +140,7 @@ export function walkPath(b, boxes, start, target) {
       const nx = x + d.dx, ny = y + d.dy;
       if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
       const ni = ny * w + nx;
-      if (seen[ni] || walls[ni] || boxes.has(ni)) continue;
+      if (seen[ni] || walls[ni] || boxAt[ni]) continue;
       seen[ni] = 1; prev[ni] = c; prevDir[ni] = di;
       if (ni === target) {
         const moves = [];

@@ -1,13 +1,12 @@
 // Offline Sokoban solver — A* push search. Clean-room (see board.mjs header). Searches canonical states
-// (box multiset + player's reachable region) expanded by legal PUSHES, ordered by f = g + W·h where g =
-// pushes so far and h = Σ over boxes of the box's push-distance to its nearest goal (admissible lower
-// bound, from board.goalDistances). With W=1 this is optimal in pushes; W>1 trades optimality for speed
-// (we only need a VALID, replayable solution, not an optimal one). Dead-square + freeze pruning prune
-// hopeless branches. Walk moves between pushes are filled by shortest player paths at reconstruction.
+// (box multiset + player's reachable region) expanded by legal PUSHES, ordered by f = g + W·h (or by h
+// alone when greedy), where g = pushes so far and h = Σ over boxes of the box's push-distance to its
+// nearest goal (admissible lower bound, board.goalDistances). W=1 is optimal in pushes; W>1 / greedy
+// trade optimality for speed. Dead-square + freeze pruning cut hopeless branches; `upperBound` prunes
+// any path that can't beat the best solution length found so far (used by the anytime driver below).
+// State is a sorted Int32Array of box cells plus a reused box-bitset, so the hot loop allocates little.
 import { DIRS, parse, step, goalDistances, reachable, walkPath } from './board.mjs';
 import { isFreezeDeadlock } from './deadlock.mjs';
-
-const boxesKey = (boxes) => Int32Array.from(boxes).sort().join(',');
 
 // Min-heap on `.f` (binary heap; ties arbitrary — fine, h is just a guide).
 class Heap {
@@ -32,22 +31,54 @@ class Heap {
   }
 }
 
-// Cell behind c relative to direction d (c - d) — where the player stands to push a box at c in dir d.
-function behind(b, c, d) {
-  const x = c % b.w, y = (c / b.w) | 0;
-  const px = x - d.dx, py = y - d.dy;
-  if (px < 0 || py < 0 || px >= b.w || py >= b.h) return -1;
-  return py * b.w + px;
+const behind = (b, c, d) => {              // cell the player stands on to push a box at c in dir d (c - d)
+  const x = c % b.w, y = (c / b.w) | 0, px = x - d.dx, py = y - d.dy;
+  return (px < 0 || py < 0 || px >= b.w || py >= b.h) ? -1 : py * b.w + px;
+};
+const allOnGoals = (b, boxList) => { for (const i of boxList) if (!b.goals[i]) return false; return true; };
+
+// boxList (sorted) with bx removed and target inserted, keeping it sorted — no Set, no full re-sort.
+function withPush(boxList, bx, target) {
+  const out = new Int32Array(boxList.length);
+  let j = 0, inserted = false;
+  for (let i = 0; i < boxList.length; i++) {
+    const v = boxList[i];
+    if (v === bx) continue;
+    if (!inserted && target < v) { out[j++] = target; inserted = true; }
+    out[j++] = v;
+  }
+  if (!inserted) out[j] = target;
+  return out;
 }
 
-function allOnGoals(b, boxes) {
-  for (const i of boxes) if (!b.goals[i]) return false;
-  return true;
+// Anytime driver (the recommended entry point): a greedy dive finds ANY solution fast and seeds an
+// upper bound, then progressively less-greedy A* passes tighten it, each pruned by the current bound,
+// until the budget is spent. Returns the shortest solution found, or null.
+export function solveAnytime(level, { maxStates = 2_000_000, weights = [3, 1] } = {}) {
+  const b = typeof level === 'string' ? parse(level) : level;
+  let best = solve(b, { maxStates, greedy: true, weight: 1 });   // fast dive for an initial bound
+  for (const weight of weights) {
+    if (best == null) { const g = solve(b, { maxStates, weight }); if (g) best = g; continue; }
+    const tighter = solve(b, { maxStates, weight, upperBound: countPushes(b, best) });
+    if (tighter && countPushes(b, tighter) < countPushes(b, best)) best = tighter;
+  }
+  return best;
 }
 
-// Generator entry point: try increasingly greedy weights until solved within the per-attempt budget,
-// returning the FIRST success (lowest weight ⇒ shortest solution we can afford). W=1 is push-optimal
-// but slow on deep levels; higher W dives toward goals far faster. Returns null if all attempts fail.
+// Pushes in a move string = moves where a box sits directly ahead of the player.
+function countPushes(level, moves) {
+  const b = typeof level === 'string' ? parse(level) : level;
+  const boxAt = new Uint8Array(b.w * b.h); for (const i of b.boxes) boxAt[i] = 1;
+  let p = b.player, n = 0;
+  for (const ch of moves) {
+    const d = DIRS.find((q) => q.ch === ch); const np = step(b, p, d);
+    if (np >= 0 && boxAt[np]) { boxAt[np] = 0; boxAt[step(b, np, d)] = 1; n++; }
+    p = np;
+  }
+  return n;
+}
+
+// Try increasingly greedy fixed weights until solved (kept for generation/back-compat).
 export function solveBest(level, { weights = [1, 2, 3, 5, 8, 13], maxStates = 1_500_000 } = {}) {
   for (const weight of weights) {
     const moves = solve(level, { maxStates, weight });
@@ -56,45 +87,54 @@ export function solveBest(level, { weights = [1, 2, 3, 5, 8, 13], maxStates = 1_
   return null;
 }
 
-export function solve(level, { maxStates = 3_000_000, weight = 1 } = {}) {
+export function solve(level, { maxStates = 3_000_000, weight = 1, greedy = false, upperBound = Infinity } = {}) {
   const b = typeof level === 'string' ? parse(level) : level;
   if (b.player < 0 || b.boxes.size !== b.goalCount) return null;
+  const N = b.w * b.h;
   const dist = goalDistances(b);                  // dist[c] < 0 ⇒ dead square
-  const hOf = (boxes) => { let s = 0; for (const i of boxes) s += dist[i]; return s; };
+  const hOf = (boxList) => { let s = 0; for (const i of boxList) s += dist[i]; return s; };
+  const prio = (g, h) => (greedy ? weight * h : g + weight * h);
 
-  const startBoxes = new Set(b.boxes);
-  if (allOnGoals(b, startBoxes)) return '';
-  const startNorm = reachable(b, startBoxes, b.player).norm;
-  const startKey = boxesKey(startBoxes) + '|' + startNorm;
+  const startBoxList = Int32Array.from(b.boxes).sort();
+  if (allOnGoals(b, startBoxList)) return '';
+  const boxAt = new Uint8Array(N);                // scratch bitset, rebuilt per popped node
+  const seenScratch = new Uint8Array(N);          // scratch for successor norm flood-fills
+  for (const i of startBoxList) boxAt[i] = 1;
+  const startKey = startBoxList.join(',') + '|' + reachable(b, boxAt, b.player).norm;
 
   const came = new Map();                          // key -> { parentKey, bx, di, g }
   came.set(startKey, { parentKey: null, bx: -1, di: -1, g: 0 });
   const heap = new Heap();
-  heap.push({ f: weight * hOf(startBoxes), g: 0, boxes: startBoxes, player: b.player, key: startKey });
+  heap.push({ f: prio(0, hOf(startBoxList)), g: 0, boxList: startBoxList, player: b.player, key: startKey });
   let goalKey = null;
 
   while (heap.size && came.size < maxStates) {
     const node = heap.pop();
-    if (node.g > came.get(node.key).g) continue;   // stale heap entry (a better path was found)
-    const region = reachable(b, node.boxes, node.player).seen;
-    for (const bx of node.boxes) {
+    if (node.g > came.get(node.key).g) continue;   // stale heap entry
+    boxAt.fill(0); for (const i of node.boxList) boxAt[i] = 1;
+    const region = reachable(b, boxAt, node.player).seen;
+    for (const bx of node.boxList) {
       for (let di = 0; di < 4; di++) {
         const d = DIRS[di];
         const stand = behind(b, bx, d);
         if (stand < 0 || !region[stand]) continue;
         const target = step(b, bx, d);
-        if (target < 0 || b.walls[target] || node.boxes.has(target)) continue;
+        if (target < 0 || b.walls[target] || boxAt[target]) continue;
         if (dist[target] < 0) continue;            // dead square
-        const boxes = new Set(node.boxes);
-        boxes.delete(bx); boxes.add(target);
-        if (isFreezeDeadlock(b, boxes, dist, target)) continue;
         const g = node.g + 1;
-        const key = boxesKey(boxes) + '|' + reachable(b, boxes, bx).norm;
+        if (g >= upperBound) continue;
+        boxAt[bx] = 0; boxAt[target] = 1;           // mutate to the successor configuration…
+        const dead = isFreezeDeadlock(b, boxAt, dist, target);
+        const norm = dead ? -1 : reachable(b, boxAt, bx, seenScratch).norm;
+        boxAt[bx] = 1; boxAt[target] = 0;           // …and revert
+        if (dead) continue;
+        const boxList = withPush(node.boxList, bx, target);
+        const key = boxList.join(',') + '|' + norm;
         const prev = came.get(key);
         if (prev && prev.g <= g) continue;
         came.set(key, { parentKey: node.key, bx, di, g });
-        if (allOnGoals(b, boxes)) { goalKey = key; heap.a.length = 0; break; }
-        heap.push({ f: g + weight * hOf(boxes), g, boxes, player: bx, key });
+        if (allOnGoals(b, boxList)) { goalKey = key; heap.a.length = 0; break; }
+        heap.push({ f: prio(g, hOf(boxList)), g, boxList, player: bx, key });
       }
       if (goalKey) break;
     }
@@ -109,16 +149,15 @@ export function solve(level, { maxStates = 3_000_000, weight = 1 } = {}) {
     pushes.push({ bx, di });
   }
   pushes.reverse();
-
+  boxAt.fill(0); for (const i of b.boxes) boxAt[i] = 1;
   let player = b.player;
-  const boxes = new Set(b.boxes);
   let moves = '';
   for (const { bx, di } of pushes) {
     const d = DIRS[di];
-    const walk = walkPath(b, boxes, player, behind(b, bx, d));
+    const walk = walkPath(b, boxAt, player, behind(b, bx, d));
     if (walk == null) return null;
     moves += walk + d.ch;
-    boxes.delete(bx); boxes.add(step(b, bx, d));
+    boxAt[bx] = 0; boxAt[step(b, bx, d)] = 1;
     player = bx;
   }
   return moves;
