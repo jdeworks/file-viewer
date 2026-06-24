@@ -350,7 +350,7 @@ export async function run(ctx) {
     hasPicker: !!w.querySelector('.sokoban-set'), count: w.__sokoban.state().setCount,
     options: [...w.querySelectorAll('.sokoban-set option')].map((o) => o.value),
   }));
-  if (skSets.hasPicker && skSets.count === 8 && ['microban2', 'microban4', 'minicosmos', 'picokosmos'].every((id) => skSets.options.includes(id)))
+  if (skSets.hasPicker && skSets.count === 9 && ['microban2', 'microban4', 'minicosmos', 'picokosmos', 'yoshio'].every((id) => skSets.options.includes(id)))
     pass('Sokoban: set picker lists all ' + skSets.count + ' sets');
   else fail('Sokoban picker: ' + JSON.stringify(skSets));
   const skSwitch = await page.$eval('.sokoban-wrap', (w) => {
