@@ -23,7 +23,7 @@ export function mount(host, { onScore, onExit } = {}) {
     + '<div class="pong-over-msg" style="font-size:18px;font-weight:700"></div>'
     + '<div><button class="pong-restart">Play again</button> <button class="pong-quit">Back</button></div></div>'
     + '</div>'
-    + '<div style="font-size:12px;opacity:.7">P1: ↑ ↓ or drag · press W/S to join as P2</div></div>';
+    + '<div style="font-size:12px;opacity:.7">P1: ↑ ↓, drag, or slide anywhere on touch · press W/S to join as P2</div></div>';
 
   const wrap = host.querySelector('.pong-wrap');
   const canvas = host.querySelector('.pong-canvas');
@@ -155,19 +155,39 @@ export function mount(host, { onScore, onExit } = {}) {
     const rect = canvas.getBoundingClientRect();
     leftY = Math.max(0, Math.min(H - PH, (clientY - rect.top) * (H / rect.height) - PH / 2));
   }
-  function onPointerMove(e) { if (e.buttons || e.pointerType === 'touch') pointAt(e.clientY); }
-  function onPointerDown(e) { pointAt(e.clientY); }
+  // Desktop: absolute drag on the canvas (mouse only — touch is handled relatively below).
+  function onPointerMove(e) { if (e.pointerType !== 'touch' && e.buttons) pointAt(e.clientY); }
+  function onPointerDown(e) { if (e.pointerType !== 'touch') pointAt(e.clientY); }
+  // Touch: slide up/down ANYWHERE in the game area to nudge the paddle by the finger delta — no need
+  // to grab the (small, on-canvas) paddle. Relative so the paddle doesn't jump to wherever you tap.
+  let lastTouchY = null;
+  function moveBy(dyScreen) {
+    const rect = canvas.getBoundingClientRect();
+    leftY = Math.max(0, Math.min(H - PH, leftY + dyScreen * (H / rect.height)));
+  }
+  function onTouchStart(e) { lastTouchY = e.touches[0].clientY; }
+  function onTouchMove(e) {
+    if (lastTouchY == null) return;
+    const y = e.touches[0].clientY;
+    moveBy(y - lastTouchY); lastTouchY = y;
+    e.preventDefault();                                     // stop the page scrolling while sliding
+  }
+  function onTouchEnd() { lastTouchY = null; }
 
   window.addEventListener('keydown', onKey);
   window.addEventListener('keyup', onKeyUp);
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerdown', onPointerDown);
+  wrap.addEventListener('touchstart', onTouchStart, { passive: true });
+  wrap.addEventListener('touchmove', onTouchMove, { passive: false });
+  wrap.addEventListener('touchend', onTouchEnd, { passive: true });
+  wrap.addEventListener('touchcancel', onTouchEnd, { passive: true });
   host.querySelector('.pong-restart').addEventListener('click', reset);
   host.querySelector('.pong-quit').addEventListener('click', () => onExit?.());
 
   wrap.__pong = {
-    state: () => ({ score, lives, level, dead, ballX: ball.x, mode, p1pts, p2pts }),
-    speedAt: (lvl) => ballSpeed(lvl),
+    state: () => ({ score, lives, level, dead, ballX: ball.x, mode, p1pts, p2pts, leftY }),
+    speedAt: (lvl) => ballSpeed(lvl), moveBy,
   };
 
   reset();
@@ -179,6 +199,10 @@ export function mount(host, { onScore, onExit } = {}) {
       window.removeEventListener('keyup', onKeyUp);
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerdown', onPointerDown);
+      wrap.removeEventListener('touchstart', onTouchStart);
+      wrap.removeEventListener('touchmove', onTouchMove);
+      wrap.removeEventListener('touchend', onTouchEnd);
+      wrap.removeEventListener('touchcancel', onTouchEnd);
       host.innerHTML = '';
     },
   };

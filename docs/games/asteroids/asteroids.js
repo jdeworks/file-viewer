@@ -25,7 +25,7 @@ export function mount(host, { onScore, onExit } = {}) {
     + '<div class="asteroids-over-msg" style="font-size:18px;font-weight:700"></div>'
     + '<div><button class="asteroids-restart">Play again</button> <button class="asteroids-quit">Back</button></div></div>'
     + '</div>'
-    + '<div style="font-size:12px;opacity:.7">← → rotate · ↑ thrust · Space fire · d-pad on touch</div></div>';
+    + '<div style="font-size:12px;opacity:.7">← → rotate · ↑ thrust · Space fire · d-pad on touch · 🔒 locks auto-fire</div></div>';
 
   const wrap_ = host.querySelector('.asteroids-wrap');
   const canvas = host.querySelector('.asteroids-canvas');
@@ -36,7 +36,7 @@ export function mount(host, { onScore, onExit } = {}) {
   const overEl = host.querySelector('.asteroids-over');
   const overMsg = host.querySelector('.asteroids-over-msg');
 
-  let ship, bullets, rocks, score, lives, wave, dead, raf, last, fireCd;
+  let ship, bullets, rocks, score, lives, wave, dead, raf, last, fireCd, lockFire;
   const keys = { l: false, r: false, thrust: false, fire: false };
 
   function syncHud() {
@@ -54,6 +54,7 @@ export function mount(host, { onScore, onExit } = {}) {
   function reset() {
     ship = newShip(); bullets = []; score = 0; lives = 3; wave = 1; dead = false; fireCd = 0;
     keys.l = keys.r = keys.thrust = keys.fire = false;
+    setLock(false);
     startWave();
     overEl.hidden = true; syncHud();
     last = null; cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
@@ -155,11 +156,13 @@ export function mount(host, { onScore, onExit } = {}) {
     else if (k === ' ') keys.fire = false;
   }
 
-  // Touch: discrete impulses per press (the d-pad repeats while held).
+  // Touch: discrete impulses per press (the d-pad repeats while held). 'lock' toggles continuous
+  // auto-fire so a phone player doesn't have to keep tapping ⦿ — the step() loop fires while keys.fire.
   const pad = dpad(wrap_, [
     { id: 'l', label: '◀', hold: true }, { id: 'thr', label: '🔥', hold: true },
-    { id: 'r', label: '▶', hold: true }, { id: 'fire', label: '⦿' },
+    { id: 'r', label: '▶', hold: true }, { id: 'fire', label: '⦿' }, { id: 'lock', label: '🔒' },
   ], (id) => {
+    if (id === 'lock') { setLock(!lockFire); return; }     // toggle works even when dead → ready for restart
     if (dead) return;
     if (id === 'l') ship.angle -= 0.32;
     else if (id === 'r') ship.angle += 0.32;
@@ -167,14 +170,23 @@ export function mount(host, { onScore, onExit } = {}) {
     else if (id === 'fire') fire();
   }, { repeatMs: 80 });
 
+  const lockBtn = pad.el.querySelector('[data-id="lock"]');
+  function setLock(on) {
+    lockFire = on; keys.fire = on;                          // continuous fire while locked
+    if (lockBtn) {
+      lockBtn.textContent = on ? '🔓' : '🔒';
+      lockBtn.style.background = on ? 'rgba(77,210,255,.35)' : 'rgba(128,128,128,.12)';
+    }
+  }
+
   window.addEventListener('keydown', onKey);
   window.addEventListener('keyup', onKeyUp);
   host.querySelector('.asteroids-restart').addEventListener('click', reset);
   host.querySelector('.asteroids-quit').addEventListener('click', () => onExit?.());
 
   wrap_.__asteroids = {
-    state: () => ({ score, lives, wave, dead, rocks: rocks.length, bullets: bullets.length }),
-    rocksInWave: (w) => rocksInWave(w), fire,
+    state: () => ({ score, lives, wave, dead, rocks: rocks.length, bullets: bullets.length, lockFire }),
+    rocksInWave: (w) => rocksInWave(w), fire, toggleLock: () => setLock(!lockFire),
   };
 
   reset();

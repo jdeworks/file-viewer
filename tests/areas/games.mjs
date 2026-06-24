@@ -339,6 +339,13 @@ export async function run(ctx) {
   const as1 = await page.$eval('.asteroids-wrap', (w) => w.__asteroids.state());
   if (as1.bullets >= 1 && !as1.dead) pass('Asteroids: Space fires a bullet');
   else fail('Asteroids fire: ' + JSON.stringify(as1));
+  const asL = await page.$eval('.asteroids-wrap', (w) => {
+    const on = (w.__asteroids.toggleLock(), w.__asteroids.state().lockFire);
+    const off = (w.__asteroids.toggleLock(), w.__asteroids.state().lockFire);
+    return { on, off };
+  });
+  if (asL.on === true && asL.off === false) pass('Asteroids: lock toggles continuous auto-fire');
+  else fail('Asteroids lock: ' + JSON.stringify(asL));
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
@@ -383,6 +390,12 @@ export async function run(ctx) {
   });
   if (pgMoving) pass('Pong: ball is in play (loop running)');
   else fail('Pong: ball not moving');
+  const pgSlide = await page.$eval('.pong-wrap', (w) => {
+    const y0 = w.__pong.state().leftY; w.__pong.moveBy(40);
+    return { y0, y1: w.__pong.state().leftY };
+  });
+  if (pgSlide.y1 > pgSlide.y0) pass('Pong: relative slide moves the paddle');
+  else fail('Pong slide: ' + JSON.stringify(pgSlide));
   await page.keyboard.press('w');                          // W/S brings in player 2
   const pg2 = await page.$eval('.pong-wrap', (w) => w.__pong.state());
   if (pg2.mode === '2p') pass('Pong: W/S activates 2-player mode');
