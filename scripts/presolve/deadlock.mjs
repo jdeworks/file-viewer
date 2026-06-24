@@ -56,10 +56,10 @@ export const isFrozenBox = (b, boxAt, dist, c) => isFrozen(b, boxAt, dist, c, ne
 // whose every bordering box is FROZEN, can never be filled — the player can't enter and no box can be
 // pushed in (frozen boxes never move) ⇒ dead. `region` is the player's reachable mask for THIS state.
 // Sound: it only fires when the seal is provably permanent (all boundary boxes immovable forever).
-export function isCorralDeadlock(b, boxAt, dist, region) {
-  const { w, h, walls, goals } = b;
-  for (let g = 0; g < w * h; g++) {
-    if (!goals[g] || boxAt[g] || region[g]) continue;  // only unfilled, player-unreachable goals
+export function isCorralDeadlock(b, boxAt, dist, region, goalCells) {
+  const { w, h, walls } = b;
+  for (const g of goalCells) {
+    if (boxAt[g] || region[g]) continue;               // only unfilled, player-unreachable goals
     const seen = new Uint8Array(w * h); seen[g] = 1;
     const stack = [g]; const boundary = []; let touchesRegion = false;
     while (stack.length) {                              // flood the goal's floor pocket; collect bordering boxes
