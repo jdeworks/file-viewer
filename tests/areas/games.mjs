@@ -345,6 +345,27 @@ export async function run(ctx) {
   const sk1 = await page.$eval('.sokoban-wrap', (w) => w.__sokoban.state());
   if (sk1.solved >= 1 && sk1.score > 0) pass('Sokoban: pushing the box onto the goal solves + scores');
   else fail('Sokoban solve: ' + JSON.stringify(sk1));
+  // Set picker: lists every set, and choosing one restarts from that set's level 1 with its own solutions.
+  const skSets = await page.$eval('.sokoban-wrap', (w) => ({
+    hasPicker: !!w.querySelector('.sokoban-set'), count: w.__sokoban.state().setCount,
+    options: [...w.querySelectorAll('.sokoban-set option')].map((o) => o.value),
+  }));
+  if (skSets.hasPicker && skSets.count === 4 && ['microban2', 'microban3', 'microban4'].every((id) => skSets.options.includes(id)))
+    pass('Sokoban: set picker lists all ' + skSets.count + ' sets');
+  else fail('Sokoban picker: ' + JSON.stringify(skSets));
+  const skSwitch = await page.$eval('.sokoban-wrap', (w) => {
+    const sel = w.querySelector('.sokoban-set');
+    sel.value = 'microban2'; sel.dispatchEvent(new Event('change'));
+    const st = w.__sokoban.state();
+    const plan = w.__sokoban.solution();
+    const out = { setId: st.setId, total: st.total, levelIndex: st.levelIndex, solved: st.solved, score: st.score,
+      hasSol: typeof plan === 'string' && plan.length > 0 };
+    sel.value = 'microban'; sel.dispatchEvent(new Event('change'));   // restore default so persisted state stays microban
+    return out;
+  });
+  if (skSwitch.setId === 'microban2' && skSwitch.total === 135 && skSwitch.levelIndex === 0 && skSwitch.solved === 0 && skSwitch.score === 0 && skSwitch.hasSol)
+    pass('Sokoban: choosing Microban II switches set (135 levels, fresh start, stored solution)');
+  else fail('Sokoban set switch: ' + JSON.stringify(skSwitch));
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 

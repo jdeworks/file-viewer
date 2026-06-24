@@ -1,28 +1,34 @@
-// Validates the embedded Sokoban levels + their precomputed solutions. For every level: STRUCTURAL
-// checks (exactly one player, equal boxes & goals, ≥1 box). For every level WITH a stored solution, a
-// REPLAY confirms the move string actually solves it — a broken solution fails the build. A small,
-// bounded number of the very hardest Microban levels may ship without a precomputed solution yet
-// (the Solve demo shows a notice for those); MAX_PENDING caps how many are allowed so a regression
-// that drops solutions still fails.
-import { LEVELS } from '../docs/games/sokoban/sokoban-levels.js';
-import { SOLUTIONS } from '../docs/games/sokoban/sokoban-solutions.js';
+// Validates EVERY Sokoban level set in the registry + their precomputed solutions. For each set, for
+// every level: STRUCTURAL checks (exactly one player, equal boxes & goals, ≥1 box). For every level
+// WITH a stored solution, a REPLAY confirms the move string actually solves it — a broken solution
+// fails the build. A set's `solutions` array may be shorter than its `levels` (missing/empty entries
+// are "pending" — the Solve demo shows a notice); each set declares a `maxPending` budget (default 2)
+// so a regression that silently drops solutions still fails.
+import { SETS } from '../docs/games/sokoban/sets.js';
 import { parseLevel, replay } from '../docs/games/sokoban/solve.js';
 
-const MAX_PENDING = 2;
-let fails = 0, solved = 0, pending = 0;
-if (SOLUTIONS.length !== LEVELS.length) { console.error('SOLUTIONS length ' + SOLUTIONS.length + ' != LEVELS ' + LEVELS.length); fails++; }
-LEVELS.forEach((lvl, i) => {
-  const p = parseLevel(lvl);
-  if (p.players !== 1 || p.boxes.size < 1 || p.boxes.size !== p.goals.size) {
-    console.error('  Level ' + (i + 1) + ': MALFORMED (players=' + p.players + ', boxes=' + p.boxes.size + ', goals=' + p.goals.size + ')');
-    fails++; return;
+let fails = 0;
+for (const set of SETS) {
+  const { levels, solutions = [], maxPending = 2 } = set;
+  let solved = 0, pending = 0, bad = 0;
+  if (solutions.length > levels.length) {
+    console.error(set.id + ': solutions length ' + solutions.length + ' > levels ' + levels.length); bad++;
   }
-  const sol = SOLUTIONS[i];
-  if (typeof sol !== 'string') { console.error('  Level ' + (i + 1) + ': solution not a string'); fails++; return; }
-  if (!sol.length) { pending++; return; }                 // not yet solved — allowed up to MAX_PENDING
-  if (!replay(lvl, sol)) { console.error('  Level ' + (i + 1) + ': stored solution does NOT solve it'); fails++; return; }
-  solved++;
-});
-console.log('✓ ' + LEVELS.length + ' sokoban levels: ' + solved + ' solved+verified, ' + pending + ' pending, ' + fails + ' bad');
-if (pending > MAX_PENDING) { console.error('FAIL: ' + pending + ' levels without a solution (max ' + MAX_PENDING + ')'); fails++; }
-if (fails) { console.error('FAIL: ' + fails + ' problem(s)'); process.exit(1); }
+  levels.forEach((lvl, i) => {
+    const p = parseLevel(lvl);
+    if (p.players !== 1 || p.boxes.size < 1 || p.boxes.size !== p.goals.size) {
+      console.error('  ' + set.id + ' L' + (i + 1) + ': MALFORMED (players=' + p.players + ', boxes=' + p.boxes.size + ', goals=' + p.goals.size + ')');
+      bad++; return;
+    }
+    const sol = solutions[i];
+    if (sol == null || sol === '') { pending++; return; }   // not yet solved — allowed up to maxPending
+    if (typeof sol !== 'string') { console.error('  ' + set.id + ' L' + (i + 1) + ': solution not a string'); bad++; return; }
+    if (!replay(lvl, sol)) { console.error('  ' + set.id + ' L' + (i + 1) + ': stored solution does NOT solve it'); bad++; return; }
+    solved++;
+  });
+  if (pending > maxPending) { console.error(set.id + ': ' + pending + ' levels without a solution (max ' + maxPending + ')'); bad++; }
+  console.log((bad ? '✗' : '✓') + ' ' + set.name + ' (' + set.id + '): ' + levels.length + ' levels, ' + solved + ' solved+verified, ' + pending + ' pending, ' + bad + ' bad');
+  fails += bad;
+}
+if (fails) { console.error('FAIL: ' + fails + ' problem(s) across ' + SETS.length + ' set(s)'); process.exit(1); }
+console.log('✓ all ' + SETS.length + ' sokoban set(s) valid');
