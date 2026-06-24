@@ -2,12 +2,17 @@
 // so tap/click works identically on phone and desktop. Cards do a real 3D flip (CSS rotateY) — built
 // once per round and toggled by class so the transition isn't destroyed by re-rendering. Difficulty
 // ESCALATES: each cleared round adds a pair (6 → 8 → 10 → 12, capped). Scoring RAMPS: a match pays
-// 10 × round and the round-clear bonus rewards efficiency × round.
+// 10 × round and the round-clear bonus rewards leftover moves × round.
+// MOVES BUDGET: each turn (a second flip, match OR miss) spends one move. The budget is
+// `pairs*2 + 2` = winnable + 2 — winnable being the perfect-memory worst case: `pairs` matches you
+// must make plus up to `pairs` exploration turns. The +2 is grace for a couple of "should've known"
+// misses; run out before clearing the board and you lose.
 // Contract: mount(host, { onScore, onExit }) => { destroy() }.
 const ICONS = ['📄', '📁', '🖼️', '🎵', '🎬', '📦', '🗜️', '🔑', '📜', '⚙️', '🧾', '💾', '📊', '🔢', '🅿️', '🔣'];
 const MAX_PAIRS = 12;
 const FLIP_BACK_MS = 760;
 const pairsForRound = (round) => Math.min(MAX_PAIRS, 4 + round * 2);   // round 1 → 6 pairs
+const movesBudget = (pairs) => pairs * 2 + 2;                         // winnable (pairs + pairs) + 2 grace
 const colsFor = (pairs) => (pairs <= 6 ? 4 : pairs <= 8 ? 4 : pairs <= 10 ? 5 : 6);
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
@@ -26,7 +31,7 @@ export function mount(host, { onScore, onExit } = {}) {
     + '<div class="memory-wrap" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px;max-width:100%">'
     + '<div class="memory-hud" style="display:flex;gap:16px;font-size:14px;font-weight:600">'
     + '<span class="memory-score">Score: 0</span><span class="memory-round">Round 1</span>'
-    + '<span class="memory-moves">Moves: 0</span></div>'
+    + '<span class="memory-moves">Moves left: 0</span></div>'
     + '<div class="memory-grid" style="display:grid;gap:8px;justify-content:center"></div>'
     + '<div class="memory-over" hidden style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:4px">'
     + '<div class="memory-over-msg" style="font-size:16px;font-weight:700"></div>'
@@ -40,12 +45,12 @@ export function mount(host, { onScore, onExit } = {}) {
   const movesEl = host.querySelector('.memory-moves');
   const overEl = host.querySelector('.memory-over');
 
-  let deck, round, score, moves, matched, first, busy, flipTimer;
+  let deck, round, score, moves, movesLeft, matched, first, busy, flipTimer;
 
   function syncHud() {
     scoreEl.textContent = 'Score: ' + score;
     roundEl.textContent = 'Round ' + round;
-    movesEl.textContent = 'Moves: ' + moves;
+    movesEl.textContent = 'Moves left: ' + Math.max(0, movesLeft);
   }
 
   const cardEl = (i) => gridEl.querySelector('.memory-card[data-idx="' + i + '"]');
@@ -60,7 +65,7 @@ export function mount(host, { onScore, onExit } = {}) {
     const pairs = pairsForRound(round);
     const chosen = shuffle(ICONS.slice()).slice(0, pairs);
     deck = shuffle(chosen.concat(chosen).map((emoji) => ({ emoji, flipped: false, matched: false })));
-    matched = 0; first = -1; busy = false;
+    matched = 0; first = -1; busy = false; movesLeft = movesBudget(pairs);
     gridEl.style.gridTemplateColumns = 'repeat(' + colsFor(pairs) + ', minmax(0, 1fr))';
     gridEl.innerHTML = deck.map((c, i) =>
       '<button class="memory-card" data-idx="' + i + '"><span class="memory-inner">'
@@ -75,31 +80,37 @@ export function mount(host, { onScore, onExit } = {}) {
     card.flipped = true; paint(idx);
     if (first === -1) { first = idx; return; }
 
-    moves++; syncHud();
+    moves++; movesLeft--; syncHud();                       // every turn (match or miss) spends a move
     if (deck[first].emoji === card.emoji) {
       deck[first].matched = card.matched = true;
       matched++; const a = first; first = -1;
       score += 10 * round;                                 // RAMP: match value × round
       syncHud(); onScore?.(score);
       paint(a); paint(idx);
-      if (matched === deck.length / 2) roundComplete();
+      if (matched === deck.length / 2) return roundComplete();   // cleared on this move = win (before the budget check)
+      if (movesLeft <= 0) gameOver();                      // matched but no moves left to finish the board
     } else {
       busy = true;
       const a = first, b = idx; first = -1;
       flipTimer = setTimeout(() => {
         deck[a].flipped = deck[b].flipped = false;
         paint(a); paint(b); busy = false;
+        if (movesLeft <= 0) gameOver();                    // out of moves after this miss
       }, FLIP_BACK_MS);
     }
   }
 
   function roundComplete() {
-    const pairs = deck.length / 2;
-    const efficiency = Math.max(0, pairs * 2 - moves);     // 0 if sloppy; up to ~pairs if near-perfect
-    score += (50 + efficiency * 5) * round;                // RAMP: round-clear bonus scales with round
+    score += (50 + Math.max(0, movesLeft) * 5) * round;    // RAMP: round-clear bonus scales with leftover moves × round
     syncHud(); onScore?.(score);
     round++; moves = 0;
     setTimeout(() => { if (gridEl.isConnected) { buildRound(); syncHud(); } }, 480);
+  }
+
+  function gameOver() {
+    busy = true; clearTimeout(flipTimer);
+    overEl.querySelector('.memory-over-msg').textContent = 'Out of moves — score ' + score;
+    overEl.hidden = false;
   }
 
   function reset() {
@@ -120,7 +131,7 @@ export function mount(host, { onScore, onExit } = {}) {
   host.querySelector('.memory-quit').addEventListener('click', () => onExit?.());
 
   wrap.__memory = {
-    state: () => ({ score, round, moves, matched, cards: deck.length }),
+    state: () => ({ score, round, moves, movesLeft, matched, cards: deck.length, over: !overEl.hidden }),
     deck: () => deck.map((c) => c.emoji),
   };
 

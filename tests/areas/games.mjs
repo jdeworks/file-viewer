@@ -257,16 +257,38 @@ export async function run(ctx) {
     for (let i = 0; i < d.length; i++) for (let j = i + 1; j < d.length; j++) if (d[i] === d[j]) return [i, j];
     return null;
   });
-  if (mem0.score === 0 && mem0.round === 1 && mem0.cards === 12 && mem0.matched === 0 && pairIdx)
-    pass('Memory: clean start, 6-pair board');
+  if (mem0.score === 0 && mem0.round === 1 && mem0.cards === 12 && mem0.matched === 0 && mem0.movesLeft === 14 && !mem0.over && pairIdx)
+    pass('Memory: clean start, 6-pair board, moves budget = pairs*2+2');   // 6*2+2
   else fail('Memory start: ' + JSON.stringify({ mem0, pairIdx }));
   const memFaceW = await page.$eval('.memory-card .memory-back', (el) => Math.round(el.getBoundingClientRect().width));
   if (memFaceW > 24) pass('Memory: card faces render at full size'); else fail('Memory faces collapsed: ' + memFaceW);
   await page.click('.memory-card[data-idx="' + pairIdx[0] + '"]');
   await page.click('.memory-card[data-idx="' + pairIdx[1] + '"]');
   const memM = await page.$eval('.memory-wrap', (w) => w.__memory.state());
-  if (memM.matched >= 1 && memM.score > 0) pass('Memory: matching a pair scores (ramped by round)');
+  if (memM.matched >= 1 && memM.score > 0 && memM.movesLeft === 13) pass('Memory: matching a pair scores (ramped) + spends one move');
   else fail('Memory match: ' + JSON.stringify(memM));
+  await page.click('.games-back');
+  await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
+  // Fresh board: deliberately miss every turn → running out of moves ends the game.
+  await page.click('.games-card[data-game="memory"]');
+  await page.waitForSelector('.memory-grid', { timeout: 8000 });
+  const memLoss = await page.evaluate(async (flipBack) => {
+    const w = document.querySelector('.memory-wrap');
+    const grid = w.querySelector('.memory-grid');
+    const deck = w.__memory.deck();
+    let a = 0, b = -1;                                      // a fixed mismatching index pair (different emoji → never matches)
+    for (let j = 1; j < deck.length; j++) if (deck[j] !== deck[a]) { b = j; break; }
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    let guard = 0;
+    while (!w.__memory.state().over && guard++ < 30) {
+      grid.querySelector('.memory-card[data-idx="' + a + '"]').click();
+      grid.querySelector('.memory-card[data-idx="' + b + '"]').click();
+      await sleep(flipBack + 90);                           // let the mismatch flip back (busy clears)
+    }
+    return w.__memory.state();
+  }, 760);
+  if (memLoss.over && memLoss.movesLeft <= 0 && memLoss.matched === 0) pass('Memory: running out of moves ends the game');
+  else fail('Memory loss: ' + JSON.stringify(memLoss));
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
