@@ -45,6 +45,17 @@ function allOnGoals(b, boxes) {
   return true;
 }
 
+// Generator entry point: try increasingly greedy weights until solved within the per-attempt budget,
+// returning the FIRST success (lowest weight ⇒ shortest solution we can afford). W=1 is push-optimal
+// but slow on deep levels; higher W dives toward goals far faster. Returns null if all attempts fail.
+export function solveBest(level, { weights = [1, 2, 3, 5, 8, 13], maxStates = 1_500_000 } = {}) {
+  for (const weight of weights) {
+    const moves = solve(level, { maxStates, weight });
+    if (moves != null) return { moves, weight };
+  }
+  return null;
+}
+
 export function solve(level, { maxStates = 3_000_000, weight = 1 } = {}) {
   const b = typeof level === 'string' ? parse(level) : level;
   if (b.player < 0 || b.boxes.size !== b.goalCount) return null;
