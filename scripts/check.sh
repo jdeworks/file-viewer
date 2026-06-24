@@ -73,6 +73,7 @@ echo "→ LOC housekeeping report (advisory)…"
 ./scripts/loc-check.sh || true
 
 echo "→ unit tests (move-aware diff + parsers + metadata)…"
+node tests/media-parsers.test.mjs
 node tests/movediff.test.mjs
 node tests/markdown-edit-actions.test.mjs
 node tests/image-fill.test.mjs

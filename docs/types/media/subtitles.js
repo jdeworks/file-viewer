@@ -7,7 +7,7 @@
 
 // Parse "HH:MM:SS,mmm" / "HH:MM:SS.mmm" / "MM:SS.mmm" → seconds. Returns NaN on garbage.
 export function parseTimestamp(s) {
-  const m = /^(?:(\d+):)?(\d{1,2}):(\d{2})[.,](\d{1,3})$/.exec(s.trim());
+  const m = /^(?:(\d+):)?(\d{1,2}):(\d{1,2})[.,](\d{1,3})$/.exec(s.trim());
   if (!m) return NaN;
   const [, h, mm, ss, ms] = m;
   return (h ? +h * 3600 : 0) + +mm * 60 + +ss + +(ms.padEnd(3, '0')) / 1000;
@@ -21,13 +21,13 @@ export function parseSubtitles(raw) {
   for (const block of text.split(/\n\n+/)) {
     const lines = block.split('\n').filter((l) => l.trim() !== '');
     if (!lines.length) continue;
-    // A leading numeric cue id (SRT) is optional; the timing line has " --> ".
-    let i = /-->/.test(lines[0]) ? 0 : 1;
-    if (!lines[i] || !/-->/.test(lines[i])) continue;
+    // Optional cue id and cue settings may precede timing.
+    const i = lines.findIndex((line) => line.includes('-->'));
+    if (i < 0) continue;
     const [a, b] = lines[i].split('-->');
     const start = parseTimestamp((a || '').trim());
     const end = parseTimestamp((b || '').trim().split(/\s+/)[0]);
-    if (Number.isNaN(start) || Number.isNaN(end)) continue;
+    if (Number.isNaN(start) || Number.isNaN(end) || end < start) continue;
     const body = lines.slice(i + 1).join('\n').trim();
     if (body) cues.push({ start, end, text: body });
   }

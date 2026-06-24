@@ -92,3 +92,40 @@ export function trimRange(start, end) {
     end: isFinite(e) && e > s ? round(e) : null,
   };
 }
+
+// Clamp and normalize a trim range to non-crossing values. start/end are seconds.
+// If `duration` is finite, end defaults to it (till end) when end is omitted/falsy.
+// Returns { start, end } where both are rounded seconds and never cross.
+export function clampTrimRange(start, end, duration, minGap = 0.01) {
+  const d = Number(duration);
+  const max = isFinite(d) && d > 0 ? d : 0;
+  const gap = Math.max(0.01, Number(minGap) || 0.01);
+
+  let safeStart = clamp(Number(start) || 0);
+  let safeEnd = Number(end);
+
+  if (!isFinite(safeEnd) || safeEnd <= 0) {
+    safeEnd = max;
+  } else {
+    safeEnd = clamp(safeEnd);
+  }
+
+  if (max > 0 && safeEnd <= safeStart) {
+    if (safeStart >= max) {
+      safeStart = Math.max(0, max - gap);
+      safeEnd = max;
+    } else {
+      safeEnd = Math.min(max, safeStart + gap);
+    }
+  }
+
+  return {
+    start: round(safeStart),
+    end: isFinite(max) && max > 0 ? round(safeEnd) : (isFinite(safeEnd) ? round(safeEnd) : round(safeStart)),
+  };
+
+  function clamp(v) {
+    if (!isFinite(v)) return 0;
+    return max > 0 ? Math.max(0, Math.min(v, max)) : Math.max(0, v);
+  }
+}

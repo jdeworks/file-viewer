@@ -1419,12 +1419,16 @@ export async function run(ctx) {
     const transOpts = await page.$$eval('#previewHost .tl-trans-sel option', (els) => els.map((e) => e.value));
     if (transOpts.includes('fade') && transOpts.includes('fadeblack') && transOpts.includes('wipeleft')) pass('P6: transition selector offers fade/fadeblack/wipe'); else fail('transition opts: ' + transOpts.join(','));
     const acts = await page.evaluate(() => ({
+      trim: !!document.querySelector('#previewHost .tl-act-trim'),
       fade: !!document.querySelector('#previewHost .tl-act-fade'),
       xfade: !!document.querySelector('#previewHost .tl-act-xfade'),
       across: !!document.querySelector('#previewHost .tl-act-across'),
       mux: !!document.querySelector('#previewHost .tl-act-mux'),
     }));
-    if (acts.fade && acts.xfade && acts.across && acts.mux) pass('P6: fade/xfade/acrossfade/mux action buttons present'); else fail('timeline actions: ' + JSON.stringify(acts));
+    if (acts.trim && acts.fade && acts.xfade && acts.across && acts.mux)
+      pass('P6: trim + fade/xfade/acrossfade/mux action buttons present'); else fail('timeline actions: ' + JSON.stringify(acts));
+    const trimBtnText = await page.$eval('#previewHost .tl-act-trim', (e) => e.textContent);
+    if (trimBtnText.includes('Trim selected range')) pass('P6: trim action has visible label'); else fail('trim button text: ' + trimBtnText);
     // Cross-clip actions disabled until a second clip is dropped.
     const xfadeDisabled = await page.$eval('#previewHost .tl-act-xfade', (e) => e.disabled);
     if (xfadeDisabled) pass('P6: dissolve disabled until a 2nd clip is added'); else fail('xfade not gated on 2nd clip');
@@ -1443,6 +1447,7 @@ export async function run(ctx) {
       across: m.buildAcrossfadeArgs('input.mp3', 'secondary.mp3', 'out.m4a', { duration: 2 }).join(' '),
       mux: m.buildMuxMusicArgs('input.mp4', 'secondary.mp3', 'out.mp4', { musicGain: 0.35 }).join(' '),
       badTrans: m.normalizeTransition('nonsense'),
+      trimClamped: m.clampTrimRange(12, 8, 10),
     };
   });
   if (tlArgs.offset === 9) pass('P6: xfadeOffset(10,1) = 9 (durationA − transition)'); else fail('xfade offset: ' + tlArgs.offset);
@@ -1450,6 +1455,9 @@ export async function run(ctx) {
   if (/\[0:a\]\[1:a\]acrossfade=d=2\[a\]/.test(tlArgs.across)) pass('P6: acrossfade args build d=2 audio crossfade'); else fail('acrossfade args: ' + tlArgs.across);
   if (/volume=0\.35/.test(tlArgs.mux) && /amix=inputs=2:duration=first/.test(tlArgs.mux) && /-c:v copy/.test(tlArgs.mux)) pass('P6: mux-music args duck the bed + amix under the video audio'); else fail('mux args: ' + tlArgs.mux);
   if (tlArgs.badTrans === 'fade') pass('P6: unknown transition normalizes to fade'); else fail('bad transition: ' + tlArgs.badTrans);
+  if (tlArgs.trimClamped.start < tlArgs.trimClamped.end && tlArgs.trimClamped.end === 10)
+    pass('P6: pure trim clamp keeps in/out from crossing within duration');
+  else fail('trim clamp: ' + JSON.stringify(tlArgs.trimClamped));
 
   // Reset settings so we don't leak ffmpeg-on into later areas sharing the page.
   await page.evaluate(() => localStorage.removeItem('fv:settings:global'));

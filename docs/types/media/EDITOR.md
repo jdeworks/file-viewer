@@ -1,5 +1,8 @@
 # Editor Roadmap — Audio & Video
 
+> Status note: this is now a historical/editor design document. The active
+> work tracker is `STUDIO_TRACKER.md`.
+
 ---
 
 ## Audio

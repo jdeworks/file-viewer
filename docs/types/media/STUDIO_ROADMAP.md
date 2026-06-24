@@ -1,5 +1,9 @@
 # Media Studio — Tiered Feature Roadmap (Audio + Video)
 
+> Status note: this roadmap is design history and still useful for intent, but
+> some item statuses are stale. Use `STUDIO_TRACKER.md` as the active multi-day
+> queue and update it as increments land.
+
 Benchmarked, tier-assigned build checklist for the viewer's audio/video "media studio".
 Each feature cluster below is hand-off-ready for a build agent. Companion doc:
 [STUDIO_AUDIOBOOK_QC.md](./STUDIO_AUDIOBOOK_QC.md) (narratu / auto-audiobook gap detail).

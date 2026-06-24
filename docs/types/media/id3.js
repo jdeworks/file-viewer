@@ -6,6 +6,14 @@
 // player can show album art and a clickable chapter list — all parsed from the same head slice.
 
 const synchsafe = (b, o) => (b[o] << 21) | (b[o + 1] << 14) | (b[o + 2] << 7) | b[o + 3];
+const u32 = (b, o) => ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0;
+
+function normImageMime(v) {
+  const s = (v || '').trim().toLowerCase();
+  if (!s) return 'image/jpeg';
+  if (!s.includes('/')) return s === 'jpg' ? 'image/jpeg' : 'image/' + s;
+  return s;
+}
 
 function decodeText(data) {
   if (!data.length) return '';
@@ -40,8 +48,14 @@ function parseApic(frame, v22) {
   if (!frame.length) return null;
   const enc = frame[0];
   let o = 1, mime;
-  if (v22) { mime = 'image/' + String.fromCharCode(frame[1], frame[2], frame[3]).toLowerCase().replace('jpg', 'jpeg'); o = 4; }
-  else { let e = o; while (e < frame.length && frame[e] !== 0) e++; mime = String.fromCharCode(...frame.subarray(o, e)).trim() || 'image/jpeg'; o = e + 1; }
+  if (v22) { mime = normImageMime(String.fromCharCode(frame[1], frame[2], frame[3])); o = 4; }
+  else {
+    let e = o;
+    while (e < frame.length && frame[e] !== 0) e++;
+    if (e >= frame.length) return null;
+    mime = normImageMime(String.fromCharCode(...frame.subarray(o, e)));
+    o = e + 1;
+  }
   o += 1;                                       // picture type byte
   const desc = readStr(frame, o, frame.length, enc);
   o = desc.next;
@@ -54,16 +68,16 @@ function parseApic(frame, v22) {
 function parseChap(frame) {
   let o = 0;
   while (o < frame.length && frame[o] !== 0) o++;
+  if (o >= frame.length) return null;
   o += 1;                                        // skip element-id + terminator
   if (o + 16 > frame.length) return null;
-  const be = (i) => ((frame[i] << 24) | (frame[i + 1] << 16) | (frame[i + 2] << 8) | frame[i + 3]) >>> 0;
-  const startMs = be(o);
+  const startMs = u32(frame, o);
   o += 16;                                        // start/end time + start/end offset
   let title = '';
   while (o + 10 <= frame.length) {                // embedded sub-frames (10-byte headers)
     const id = String.fromCharCode(...frame.subarray(o, o + 4));
     if (!/^[A-Z0-9]{4}$/.test(id)) break;
-    const size = ((frame[o + 4] << 24) | (frame[o + 5] << 16) | (frame[o + 6] << 8) | frame[o + 7]) >>> 0;
+    const size = u32(frame, o + 4);
     o += 10;
     if (size <= 0 || o + size > frame.length) break;
     if (id === 'TIT2') title = decodeText(frame.subarray(o, o + size));

@@ -57,8 +57,10 @@ export function buildVideoExtras(el) {
 
 function togglePip(el) {
   try {
-    if (document.pictureInPictureElement) document.exitPictureInPicture();
-    else el.requestPictureInPicture?.();
+    const pending = document.pictureInPictureElement
+      ? document.exitPictureInPicture?.()
+      : el.requestPictureInPicture?.();
+    Promise.resolve(pending).catch(() => {});
   } catch { /* gesture / unsupported */ }
 }
 

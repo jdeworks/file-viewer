@@ -1,5 +1,9 @@
 # Media Editor Plan (ffmpeg.wasm)
 
+> Historical note: this document describes the original ffmpeg editor plan. The
+> current active status and next work queue live in
+> `docs/types/media/STUDIO_TRACKER.md`.
+
 Built on top of the existing ffmpeg.wasm v0.11.6 single-threaded integration in
 `docs/types/media/`. The transcoder already loads, runs, and reports progress.
 Phase 1 (download button) is already shipped.

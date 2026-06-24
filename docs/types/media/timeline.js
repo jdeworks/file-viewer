@@ -13,6 +13,7 @@
 // DOM + interaction only; all ffmpeg arg math lives in video-filters.js (PURE) + transcoder.
 
 import { loadFfmpeg, runOperation } from './transcoder.js';
+import { clampTrimRange } from './video-filters.js';
 import { buildSecondaryDropZone } from './editor-advanced.js';
 
 function mkBtn(text, cls) {
@@ -30,6 +31,7 @@ function hms(t) {
   const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = Math.floor(t % 60);
   return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':');
 }
+function clamp01(v) { return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0; }
 
 // Mount the timeline into `container` for the primary `intake` video + its `mediaEl`.
 // onNewUrl(url) lets the caller swap the player to a baked result. Returns { destroy() }.
@@ -97,11 +99,12 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
   // ── Action buttons ──
   const actions = document.createElement('div');
   actions.className = 'tl-actions';
+  const trimBtn = mkBtn('Trim selected range', 'tl-act tl-act-trim');
   const fadeBtn = mkBtn('Fade to/from black', 'tl-act tl-act-fade');
   const xfadeBtn = mkBtn('Dissolve 2 clips (video)', 'tl-act tl-act-xfade');
   const acrossBtn = mkBtn('Crossfade audio (2 clips)', 'tl-act tl-act-across');
   const muxBtn = mkBtn('Mux music under video', 'tl-act tl-act-mux');
-  actions.append(fadeBtn, xfadeBtn, acrossBtn, muxBtn);
+  actions.append(trimBtn, fadeBtn, xfadeBtn, acrossBtn, muxBtn);
 
   // ── Status / result ──
   const status = document.createElement('div');
@@ -114,6 +117,30 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
 
   // ── Trim handle drag → trimIn / trimOut (seconds, mapped off strip width vs duration) ──
   function dur() { return isFinite(mediaEl.duration) && mediaEl.duration > 0 ? mediaEl.duration : 0; }
+  function clampTrim() {
+    const d = dur();
+    if (!d) {
+      trimIn = 0;
+      trimOut = 0;
+      return;
+    }
+    const out = trimOut > 0 ? trimOut : d;
+    const v = clampTrimRange(trimIn, out, d, 0.01);
+    trimIn = v.start;
+    trimOut = (v.end === d ? 0 : v.end);
+  }
+  function syncTrimHandles() {
+    const d = dur();
+    if (!d) {
+      handleIn.style.left = '0%';
+      handleOut.style.right = '0%';
+      return;
+    }
+    const out = trimOut > 0 ? trimOut : d;
+    handleIn.style.left = ((trimIn / d) * 100) + '%';
+    handleOut.style.right = ((1 - out / d) * 100) + '%';
+  }
+  function syncTrim() { clampTrim(); syncTrimHandles(); updateTrimLabel(); }
   function updateTrimLabel() {
     const d = dur();
     const outV = trimOut > 0 ? trimOut : d;
@@ -125,13 +152,22 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
     handle.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       const rect = strip.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
       handle.setPointerCapture(e.pointerId);
       const move = (ev) => {
-        const frac = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+        const frac = clamp01((ev.clientX - rect.left) / rect.width);
         const d = dur();
-        if (isIn) { trimIn = frac * d; handle.style.left = (frac * 100) + '%'; }
-        else { trimOut = frac * d; handle.style.right = ((1 - frac) * 100) + '%'; }
-        updateTrimLabel();
+        const px = frac * d;
+        const out = trimOut > 0 ? trimOut : d;
+        if (isIn) {
+          trimIn = px;
+          if (trimIn >= out) trimIn = Math.max(0, out - 0.01);
+        } else {
+          trimOut = px >= d - 0.01 ? 0 : px;
+          const finalOut = trimOut > 0 ? trimOut : d;
+          if (finalOut <= trimIn) trimIn = Math.max(0, finalOut - 0.01);
+        }
+        syncTrim();
       };
       const up = () => {
         handle.removeEventListener('pointermove', move);
@@ -143,8 +179,8 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
   }
   wireHandle(handleIn, true);
   wireHandle(handleOut, false);
-  mediaEl.addEventListener('loadedmetadata', updateTrimLabel);
-  updateTrimLabel();
+  mediaEl.addEventListener('loadedmetadata', syncTrim);
+  syncTrim();
 
   // ── Thumbnails (lazy: only fetch ffmpeg + a thumbstrip when asked) ──
   thumbBtn.addEventListener('click', async () => {
@@ -180,7 +216,7 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
 
   async function runOp(opId, extra) {
     status.textContent = 'Loading ffmpeg…';
-    [fadeBtn, xfadeBtn, acrossBtn, muxBtn].forEach((b) => { b.disabled = true; });
+    [trimBtn, fadeBtn, xfadeBtn, acrossBtn, muxBtn].forEach((b) => { b.disabled = true; });
     try {
       const ff = await loadFfmpeg(({ ratio }) => {
         status.textContent = 'Encoding… ' + Math.round((ratio || 0) * 100) + '%';
@@ -197,9 +233,20 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
     } finally {
       ffInstance = null;
       syncActions();
-      fadeBtn.disabled = false;
+      [trimBtn, fadeBtn, xfadeBtn, acrossBtn, muxBtn].forEach((b) => { b.disabled = false; });
+      syncActions();
     }
   }
+
+  trimBtn.addEventListener('click', () => {
+    const d = dur();
+    const t = clampTrimRange(trimIn, trimOut > 0 ? trimOut : d, d, 0.01);
+    runOp('trim', {
+      start: hms(t.start),
+      end: hms(t.end || d),
+      precise: false,
+    });
+  });
 
   // Fade-to-black uses the existing single-clip 'videofade' op (in = trimIn? no — fade is at
   // clip edges). We pass a default 1s in/out so the button is one-click meaningful.
@@ -222,7 +269,11 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
       wrap.remove();
     },
     // Exposed for callers that want to read the visual-trim region (in HH:MM:SS) — wires
-    // into the existing 'trim' op contract. trimOut=0 → omitted (till end).
-    getTrim() { return { start: hms(trimIn), end: trimOut > 0 ? hms(trimOut) : null }; },
+    // into the existing 'trim' op contract. trimOut=0 → end-of-file.
+    getTrim() {
+      const d = dur();
+      const t = clampTrimRange(trimIn, trimOut > 0 ? trimOut : d, d, 0.01);
+      return { start: hms(t.start), end: hms(t.end || d) };
+    },
   };
 }
