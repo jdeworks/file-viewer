@@ -96,7 +96,9 @@ export async function render(intake, ctx = {}) {
   let audioWorkspace = null;
   let waveformSurface = null;
   let audioModes = null;
+  let modeTabs = null;
   let modePanelWrap = null;
+  const audioModeStates = new Map();
   let coverEl = null;
   if (info.kind === 'audio') {
     workspaceTime = document.createElement('div');
@@ -124,9 +126,11 @@ export async function render(intake, ctx = {}) {
 
     audioModes = document.createElement('div');
     audioModes.className = 'media-audio-modes';
+    modeTabs = document.createElement('div');
+    modeTabs.className = 'media-mode-tabs';
     modePanelWrap = document.createElement('div');
-    modePanelWrap.className = 'media-audio-mode-panels media-wv-wrap';
-    audioModes.append(modePanelWrap);
+    modePanelWrap.className = 'media-mode-panels';
+    audioModes.append(modeTabs, modePanelWrap);
   }
 
   // Resolve ffmpeg setting early so video controls and the pill can reference it.
@@ -330,39 +334,147 @@ export async function render(intake, ctx = {}) {
     timelineWrap = tp.wrap; panels.push(tp);
   }
 
+  let audioListenMode = null;
+  let activeAudioMode = null;
   if (info.kind === 'audio') {
     const { mountWaveform } = await import('./waveform.js');
     const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
     const wv = await mountWaveform(waveformSurface, file);
     if (wv) panels.push({ destroy() { wv.destroy(); } });
 
-    const sp = makeTogglePanel({
-      label: 'Spectrum & EQ', panelClass: 'media-sp-panel',
-      mount: async (panel) => (await import('./spectrum.js')).mountSpectrumPanel(panel, el),
-    });
-    modePanelWrap.append(sp.wrap); panels.push(sp);
+    const registerAudioMode = (id, label, mount) => {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'media-mode-tab';
+      tab.textContent = label;
+      tab.dataset.mode = id;
 
-    // ── P4: Dynamics — compressor + limiter live; gate + de-noise baked on export.
-    const dyn = makeTogglePanel({
-      label: 'Dynamics', panelClass: 'media-dyn-panel',
-      mount: async (panel) => (await import('./dynamics.js')).mountDynamicsPanel(panel, el),
-    });
-    modePanelWrap.append(dyn.wrap); panels.push(dyn);
+      const panel = document.createElement('div');
+      panel.className = 'media-mode-panel';
+      panel.dataset.mode = id;
+      panel.hidden = true;
 
-    // ── P8: Audiobook QC (ACX) — read-only pass/fail card + one-click ACX export.
-    // CPU-lazy: nothing decodes / loads ffmpeg until Run QC / Export for ACX is clicked.
-    const qc = makeTogglePanel({
-      label: 'Audiobook QC (ACX)', panelClass: 'media-qc-toggle-panel',
-      mount: async (panel) => (await import('./qc-ui.js')).mountAcxQcPanel(panel, intake, el),
-    });
-    modePanelWrap.append(qc.wrap); panels.push(qc);
+      const entry = {
+        id,
+        tab,
+        panel,
+        mount,
+        mounted: false,
+        controller: null,
+        mountInProgress: false,
+        mountToken: 0,
+      };
+      modeTabs.append(tab);
+      modePanelWrap.append(panel);
+      audioModeStates.set(id, entry);
+      tab.addEventListener('click', () => { void setAudioMode(id); });
+      return entry;
+    };
 
-    // ── Multi-track mixer ("swim lanes") — decode + transport only on first open.
-    const mx = makeTogglePanel({
-      label: 'Multi-track mixer', panelClass: 'media-mx-panel',
-      mount: async (panel) => (await import('./mixer-ui.js')).mountMixer(panel, intake),
+    const releaseModeController = (entry) => {
+      const controller = entry?.controller;
+      if (!controller) return;
+      const idx = panels.indexOf(controller);
+      if (idx >= 0) panels.splice(idx, 1);
+    };
+
+    const unmountAudioMode = (entry) => {
+      if (!entry || entry.id === 'listen' || entry.id === 'export') return;
+      if (!entry.mounted) return;
+      const previous = entry.controller;
+      releaseModeController(entry);
+      if (previous && typeof previous.destroy === 'function') previous.destroy();
+      entry.controller = null;
+      entry.mounted = false;
+      entry.mountInProgress = false;
+      entry.panel.innerHTML = '';
+      entry.panel.hidden = true;
+      return;
+    };
+
+    const setAudioMode = async (id) => {
+      const next = audioModeStates.get(id);
+      if (!next) return;
+      activeAudioMode = id;
+      for (const s of audioModeStates.values()) {
+        const on = s.id === id;
+        s.tab.classList.toggle('active', on);
+        s.panel.hidden = !on;
+        if (!on && s.id !== 'listen' && s.mounted) {
+          unmountAudioMode(s);
+        }
+      }
+
+      if (next.mount && !next.mounted && !next.mountInProgress) {
+        next.mountInProgress = true;
+        const mountToken = ++next.mountToken;
+        try {
+          const ctl = await next.mount(next.panel);
+          if (next.mountToken !== mountToken || activeAudioMode !== id) {
+            next.panel.innerHTML = '';
+            next.panel.hidden = true;
+            if (ctl && typeof ctl.destroy === 'function') ctl.destroy();
+            next.controller = null;
+            next.mounted = false;
+            next.mountInProgress = false;
+            releaseModeController(next);
+            return;
+          }
+          if (ctl) {
+            if (!panels.includes(ctl)) panels.push(ctl);
+            next.controller = ctl;
+          }
+          next.mounted = true;
+        } finally {
+          next.mountInProgress = false;
+        }
+      }
+      if (!next.mount) next.mounted = true;
+    };
+    registerAudioMode('listen', 'Listen');
+    registerAudioMode('tune', 'Tune', async (panel) => {
+      const sp = makeTogglePanel({
+        label: 'Spectrum & EQ',
+        panelClass: 'media-sp-panel',
+        mount: async (innerPanel) => (await import('./spectrum.js')).mountSpectrumPanel(innerPanel, el),
+      });
+      const dyn = makeTogglePanel({
+        label: 'Dynamics',
+        panelClass: 'media-dyn-panel',
+        mount: async (innerPanel) => (await import('./dynamics.js')).mountDynamicsPanel(innerPanel, el),
+      });
+      const tuneDestroy = {
+        destroy() { sp.destroy(); dyn.destroy(); },
+      };
+      panel.append(sp.wrap, dyn.wrap);
+      return tuneDestroy;
     });
-    modePanelWrap.append(mx.wrap); panels.push(mx);
+    registerAudioMode('qc', 'QC', async (panel) => {
+      const { mountAcxQcPanel } = await import('./qc-ui.js');
+      return mountAcxQcPanel(panel, intake, el);
+    });
+    registerAudioMode('export', 'Export', async (panel) => {
+      if (!enableFfmpeg) {
+        const note = document.createElement('div');
+        note.className = 'media-ed-note';
+        note.innerHTML = 'Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> '
+          + 'to unlock audio export and related audio post-processing.';
+        panel.appendChild(note);
+        return null;
+      }
+      if (exportPanel) {
+        panel.appendChild(exportPanel);
+      }
+      return null;
+    });
+    registerAudioMode('mix', 'Mix', async (panel) => {
+      const { mountMixer } = await import('./mixer-ui.js');
+      return mountMixer(panel, intake);
+    });
+    audioListenMode = audioModeStates.get('listen');
+    audioListenMode.panel.append(tools);
+    if (trackListEl) audioListenMode.panel.append(trackListEl);
+    void setAudioMode('listen');
   }
 
   // ── P7: Tier-1 playback quick wins (no lib, live only) ──
@@ -392,17 +504,17 @@ export async function render(intake, ctx = {}) {
 
   if (info.kind === 'audio') {
     if (coverEl) audioWorkspace.querySelector('.media-workspace-head')?.prepend(coverEl);
-    host.append(audioWorkspace, tools, extras, audioModes);
+    if (audioListenMode) audioListenMode.panel.append(extras);
+    if (chapterList && audioListenMode) audioListenMode.panel.append(chapterList);
+    host.append(audioWorkspace, audioModes);
   } else {
     host.append(el, name, tools, extras);
   }
-  if (chapterList) host.append(chapterList);
+  if (exportPanel && info.kind === 'video') host.append(exportPanel);
   if (videoStudio) host.append(videoStudio.mixer);
   if (timelineWrap) host.append(timelineWrap);
   host.append(hintPanel);
   if (editorPanel) host.append(editorPanel);
-  if (exportPanel) host.append(exportPanel);
-  if (trackListEl) host.append(trackListEl);
 
   // ── Resume position ──
   const saved = loadState(intake);

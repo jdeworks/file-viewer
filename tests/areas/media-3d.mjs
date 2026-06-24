@@ -951,9 +951,16 @@ export async function run(ctx) {
   if (waveformDrawn.width > 0 && waveformDrawn.height > 0 && waveformDrawn.painted > 20)
     pass('audio waveform: visible workspace canvas paints by default');
   else fail('waveform canvas: ' + JSON.stringify(waveformDrawn));
+  const modeTabs = await page.$$eval('#previewHost .media-mode-tab', (els) => els.map((e) => e.textContent.trim()));
+  if (modeTabs.join('|') === 'Listen|Tune|QC|Export|Mix') pass('audio mode tabs exist and are ordered');
+  else fail('audio mode tabs: ' + modeTabs.join(','));
+  const modeListen = await page.$('#previewHost .media-mode-tab[data-mode="listen"]');
+  const isListenActive = await modeListen?.evaluate((b) => b.classList.contains('active')) || false;
+  if (isListenActive) pass('audio mode tabs default to Listen'); else fail('default mode tab not active');
+  await page.click('#previewHost .media-mode-tab[data-mode="tune"]');
+  await page.waitForSelector('#previewHost .media-mode-panel[data-mode="tune"]');
   // Spectrum & EQ panel — toggle opens, 9-band EQ + canvas present; CPU-lazy (no RAF until play).
-  // The spectrum toggle is the button inside the nested .media-wv-wrap inside the outer waveform wrap.
-  const spBtn = await page.$('#previewHost .media-wv-wrap .media-wv-wrap .media-wv-toggle');
+  const spBtn = await page.$('#previewHost .media-mode-panel[data-mode="tune"] .media-wv-wrap .media-wv-toggle');
   if (spBtn) {
     const spBtnText = await spBtn.evaluate((e) => e.textContent);
     if (/Spectrum/.test(spBtnText)) pass('audio spectrum: Spectrum & EQ toggle button present'); else fail('sp btn text: ' + spBtnText);
@@ -984,7 +991,8 @@ export async function run(ctx) {
   // ── P4 Dynamics panel ── compressor/limiter (live) + gate/de-noise (bake-only).
   // The Dynamics toggle sits between Spectrum and Mixer; CPU-lazy (no panel DOM until opened).
   const dynToggleHandle = await page.evaluateHandle(() =>
-    [...document.querySelectorAll('#previewHost .media-wv-toggle')].find((b) => /Dynamics/.test(b.textContent)) || null);
+    [...document.querySelectorAll('#previewHost .media-mode-panel[data-mode="tune"] .media-wv-toggle')]
+      .find((b) => /Dynamics/.test(b.textContent)) || null);
   const dynToggleExists = await dynToggleHandle.evaluate((e) => !!e);
   if (dynToggleExists) {
     pass('audio dynamics: Dynamics toggle button present');
@@ -1015,56 +1023,90 @@ export async function run(ctx) {
     await dynToggleHandle.asElement().click();
     await page.waitForSelector('#previewHost .media-dyn-panel[hidden]', { state: 'attached', timeout: 3000 });
     pass('audio dynamics: panel collapses');
+    await page.click('#previewHost .media-mode-tab[data-mode="listen"]');
+    await page.waitForFunction(() => {
+      const tunePanel = document.querySelector('#previewHost .media-mode-panel[data-mode="tune"]');
+      return tunePanel && tunePanel.hidden;
+    }, null, { timeout: 3000 });
+    const tuneNodes = await page.$$eval(
+      '#previewHost .media-mode-panel[data-mode="tune"] .media-wv-wrap, #previewHost .media-mode-panel[data-mode="tune"] .dyn-wrap',
+      (els) => els.length,
+    );
+    if (tuneNodes === 0) pass('audio tune: switching away from Tune removes Spectrum/Dynamics panel DOM');
+    else fail('tune panel nodes after leaving Tune: ' + tuneNodes);
+    await page.click('#previewHost .media-mode-tab[data-mode="tune"]');
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="tune"] .media-wv-wrap', { state: 'attached', timeout: 6000 });
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="tune"] .media-dyn-panel', { state: 'attached', timeout: 6000 });
+    pass('audio tune: remounting Tune rebuilds Spectrum/Dynamics');
+    await page.click('#previewHost .media-mode-tab[data-mode="listen"]');
+    await page.waitForFunction(() => {
+      const tunePanel = document.querySelector('#previewHost .media-mode-panel[data-mode="tune"]');
+      return tunePanel && tunePanel.hidden;
+    }, null, { timeout: 3000 });
   } else fail('dynamics toggle button not found');
 
   // ── P5 Multi-track mixer ("swim lanes") ── opt-in panel; decode-lazy; OfflineAudioContext mixdown → WAV.
-  const mxBtn = await page.$('#previewHost .media-mx-panel');
-  // The mixer toggle is the LAST .media-wv-toggle (waveform, spectrum, mixer order).
-  const mxToggle = (await page.$$('#previewHost .media-wv-toggle')).slice(-1)[0];
-  if (mxToggle) {
-    const mxText = await mxToggle.evaluate((e) => e.textContent);
-    if (/Multi-track mixer/.test(mxText)) pass('audio mixer: toggle button present (collapsed)'); else fail('mixer btn text: ' + mxText);
-    // CPU-lazy: panel hidden + no mixer DOM until opened.
-    const preOpen = await page.$('#previewHost .mx-wrap');
+  const mixTab = await page.$('#previewHost .media-mode-tab[data-mode="mix"]');
+  if (mixTab) {
+    const mxTextMode = await mixTab.evaluate((e) => e.textContent);
+    if (/Mix/i.test(mxTextMode)) pass('audio mixer: mix mode tab exists'); else fail('mix tab text: ' + mxTextMode);
+    const preOpen = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap');
     if (!preOpen) pass('audio mixer: CPU-lazy (no transport/decode until opened)'); else fail('mixer mounted before open');
-    await mxToggle.click();
-    await page.waitForSelector('#previewHost .mx-wrap', { timeout: 12000 });
-    // Lane 1 seeds from the loaded clip (decoded). Wait for it to appear.
-    await page.waitForSelector('#previewHost .mx-lane', { timeout: 12000 });
-    const lane1Count = await page.$$eval('#previewHost .mx-lane', (els) => els.length);
-    if (lane1Count >= 1) pass('audio mixer: opens with the loaded clip as lane 1'); else fail('mixer lanes after open: ' + lane1Count);
-    // Transport + master controls present.
-    const hasTransport = await page.$('#previewHost .mx-play') && await page.$('#previewHost .mx-master-slider');
+    await page.click('#previewHost .media-mode-tab[data-mode="mix"]');
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', { timeout: 12000 });
+    const mixBtnText = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-mix-btn', (e) => e.textContent).catch(() => '');
+    if (/Mixdown/i.test(mixBtnText)) pass('audio mixer: mix mode mounts multi-track mixer'); else fail('mixer panel button text: ' + mixBtnText);
+    const laneCount = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane', (els) => els.length);
+    if (laneCount === 0) pass('audio mixer: panel opens with no lane until async decode completes');
+    else pass('audio mixer: panel mounts with lane(s) already loaded');
+    const hasTransport = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mx-play')
+      && await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mx-master-slider');
     if (hasTransport) pass('audio mixer: transport (play/stop) + master gain present'); else fail('mixer transport controls missing');
-    // Per-lane: gain + mute + solo + fade handles.
-    const laneCtrls = await page.evaluate(() => ({
-      gain: !!document.querySelector('#previewHost .mx-lane-gain'),
-      mute: !!document.querySelector('#previewHost .mx-mute'),
-      solo: !!document.querySelector('#previewHost .mx-solo'),
-      fadeIn: !!document.querySelector('#previewHost .mx-fade-in'),
-      fadeOut: !!document.querySelector('#previewHost .mx-fade-out'),
+    let laneCtrls = await page.evaluate(() => ({
+      gain: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane-gain'),
+      mute: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-mute'),
+      solo: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-solo'),
+      fadeIn: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-fade-in'),
+      fadeOut: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-fade-out'),
     }));
     if (laneCtrls.gain && laneCtrls.mute && laneCtrls.solo && laneCtrls.fadeIn && laneCtrls.fadeOut)
       pass('audio mixer: per-lane gain/mute/solo + fade handles present');
     else fail('mixer lane controls: ' + JSON.stringify(laneCtrls));
+    // Wait for the auto-decoded primary lane.
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane', { timeout: 12000 });
+    const lane1Count = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane', (els) => els.length);
+    if (lane1Count >= 1) pass('audio mixer: opens with the loaded clip as lane 1'); else fail('mixer lanes after open: ' + lane1Count);
+    laneCtrls = await page.evaluate(() => ({
+      gain: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane-gain'),
+      mute: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-mute'),
+      solo: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-solo'),
+      fadeIn: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-fade-in'),
+      fadeOut: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-fade-out'),
+    }));
+    if (laneCtrls.gain && laneCtrls.mute && laneCtrls.solo && laneCtrls.fadeIn && laneCtrls.fadeOut)
+      pass('audio mixer: per-lane gain/mute/solo + fade handles present');
+    else fail('mixer lane controls after open: ' + JSON.stringify(laneCtrls));
     // Add a generator lane → a second lane appears (≥2 clips).
-    await page.click('#previewHost .mx-add-btn');   // first add button = +440 Hz tone
-    await page.waitForFunction(() => document.querySelectorAll('#previewHost .mx-lane').length >= 2, null, { timeout: 6000 });
-    const lane2Count = await page.$$eval('#previewHost .mx-lane', (els) => els.length);
+    await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mx-add-btn');   // first add button = +440 Hz tone
+    await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane').length >= 2, null, { timeout: 6000 });
+    const lane2Count = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane', (els) => els.length);
     if (lane2Count >= 2) pass('audio mixer: a second lane can be added (generator tone)'); else fail('mixer lanes after add: ' + lane2Count);
     // Mixdown → WAV produces a downloadable file (OfflineAudioContext render → WAV worker/header).
-    const mixBtn = await page.$('#previewHost .mx-mix-btn');   // first mix button = Mixdown → WAV
+    const mixBtn = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mx-mix-btn');   // first mix button = Mixdown → WAV
     const [wavDownload] = await Promise.all([
       page.waitForEvent('download', { timeout: 30000 }),
       mixBtn.click(),
     ]);
     const wavName = wavDownload.suggestedFilename();
     if (/\.wav$/.test(wavName)) pass('audio mixer: mixdown → WAV downloaded (' + wavName + ')'); else fail('mixer WAV download name: ' + wavName);
-    // Close the panel → mixer torn down.
-    await mxToggle.click();
-    await page.waitForSelector('#previewHost .mx-wrap', { state: 'detached', timeout: 4000 });
-    pass('audio mixer: panel collapses + tears down transport');
-  } else fail('mixer panel not found');
+    await page.click('#previewHost .media-mode-tab[data-mode="listen"]');
+    const mixDetached = await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', {
+      state: 'detached',
+      timeout: 4000,
+    }).then(() => true).catch(() => false);
+    if (mixDetached) pass('audio mixer: switching to Listen detaches the mix markup');
+    else fail('audio mix panel still mounted after switching to Listen');
+  } else fail('mixer tab not found');
 
   // Folder playlist: load a 2-track folder via the seam → prev/next + position + shuffle appear.
   await page.evaluate(async () => {
@@ -1133,6 +1175,20 @@ export async function run(ctx) {
   if (txPanel) pass('transcoding panel present for AVI'); else fail('no transcoding panel for AVI');
   const txText = txPanel ? await page.$eval('#previewHost .media-tx-panel .media-tx-msg', (e) => e.textContent) : '';
   if (/Advanced/i.test(txText)) pass('transcoding hint points to Advanced settings'); else fail('transcoding msg: ' + txText.slice(0, 80));
+
+  // Export mode is explicit even when transcoding is disabled: it should show a clear
+  // hint (not an empty surface).
+  await openExample('Sample.wav');
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await page.click('#previewHost .media-mode-tab[data-mode="export"]');
+  await page.waitForSelector('#previewHost .media-mode-panel[data-mode="export"]:not([hidden])', { timeout: 8000 });
+  const exportHint = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-ed-note', (el) => el.textContent).catch(() => '');
+  if (/Settings → Advanced/i.test(exportHint) && /media transcoding/i.test(exportHint)) pass('audio export mode shows clear disabled/ffmpeg-off hint'); else fail('audio export hint: ' + exportHint.slice(0, 120));
+
+  await page.goto(origin, { waitUntil: 'load' });
+  await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
+  await page.evaluate(() => window.__fv.openExampleByLabel('Sample.avi'));
+  await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
 
   // ── Video studio ── the video branch builds the extended filter panel + an audio
   // mixer (the movie's audio routed through the shared EQ/spectrum graph). These are
@@ -1209,47 +1265,49 @@ export async function run(ctx) {
   await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
   await page.evaluate(() => window.__fv.openExampleByLabel('Sample.wav'));
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await page.click('#previewHost .media-mode-tab[data-mode="export"]');
+  await page.waitForSelector('#previewHost .media-mode-panel[data-mode="export"] .media-export-panel', { timeout: 8000 });
 
-  const exportPanel = await page.$('#previewHost .media-export-panel');
+  const exportPanel = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-panel');
   if (exportPanel) pass('P1: export panel present when ffmpeg enabled'); else fail('export panel missing with ffmpeg on');
-  const exportHeader = exportPanel ? await page.$eval('#previewHost .media-export-panel .media-ed-header', (e) => e.textContent) : '';
+  const exportHeader = exportPanel ? await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-panel .media-ed-header', (e) => e.textContent) : '';
   if (/Export processed audio/i.test(exportHeader)) pass('P1: "Export processed audio" header present'); else fail('export header: ' + exportHeader);
-  const exportRunText = exportPanel ? await page.$eval('#previewHost .media-export-run', (e) => e.textContent) : '';
+  const exportRunText = exportPanel ? await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-run', (e) => e.textContent) : '';
   if (/Export processed audio/i.test(exportRunText)) pass('P1: export button labelled'); else fail('export run btn: ' + exportRunText);
-  const exportFmts = await page.$$eval('#previewHost .media-export-fmt option', (els) => els.map((e) => e.value));
+  const exportFmts = await page.$$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-fmt option', (els) => els.map((e) => e.value));
   if (['source', 'mp3', 'wav', 'm4a', 'ogg'].every((f) => exportFmts.includes(f))) pass('P1: export format options (source/mp3/wav/m4a/ogg)'); else fail('export fmts: ' + exportFmts.join(','));
-  const fadeInPresent = await page.$('#previewHost .media-ed-fade-in');
-  const fadeOutPresent = await page.$('#previewHost .media-ed-fade-out');
+  const fadeInPresent = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-ed-fade-in');
+  const fadeOutPresent = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-ed-fade-out');
   if (fadeInPresent && fadeOutPresent) pass('P3: audio fade-in / fade-out controls present'); else fail('fade controls: in=' + !!fadeInPresent + ' out=' + !!fadeOutPresent);
   // P6 WIRED: the audio cross-clip line now points at the (built) Multi-track mixer
   // rather than the old "needs timeline — coming" stub.
-  const stubText = await page.$eval('#previewHost .media-export-stub', (e) => e.textContent).catch(() => '');
+  const stubText = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-stub', (e) => e.textContent).catch(() => '');
   if (/Crossfade.*mixer/i.test(stubText)) pass('P6: audio crossfade points to the multi-track mixer (wired)'); else fail('crossfade stub: ' + stubText.slice(0, 80));
   // The live-EQ summary updates with the fade duration (proves settings are read live).
-  await page.fill('#previewHost .media-ed-fade-in', '2');
-  await page.evaluate(() => document.querySelector('#previewHost .media-ed-fade-in').dispatchEvent(new Event('input', { bubbles: true })));
-  const summaryText = await page.$eval('#previewHost .media-export-summary', (e) => e.textContent).catch(() => '');
+  await page.fill('#previewHost .media-mode-panel[data-mode="export"] .media-ed-fade-in', '2');
+  await page.evaluate(() => document.querySelector('#previewHost .media-mode-panel[data-mode="export"] .media-ed-fade-in').dispatchEvent(new Event('input', { bubbles: true })));
+  const summaryText = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
   if (/fade-in 2/.test(summaryText)) pass('P1: live export summary reflects fade-in setting'); else fail('export summary: ' + summaryText.slice(0, 100));
 
   // ── P2: export presets + advanced overrides ────────────────────────────────
   // The flat format picker is now a preset <select> (Podcast / ACX / Custom …).
-  const presetSel = await page.$('#previewHost .media-export-preset');
+  const presetSel = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset');
   if (presetSel) pass('P2: export preset selector present'); else fail('export preset selector missing');
-  const presetOpts = await page.$$eval('#previewHost .media-export-preset option', (els) => els.map((e) => e.value));
+  const presetOpts = await page.$$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset option', (els) => els.map((e) => e.value));
   if (['custom', 'podcast-mp3', 'acx-mp3'].every((v) => presetOpts.includes(v))) pass('P2: presets include Podcast + Audiobook(ACX) + Custom'); else fail('preset opts: ' + presetOpts.join(','));
   // Advanced overrides hidden until "Custom"; default preset is Podcast.
-  const advHiddenDefault = await page.$eval('#previewHost .media-export-adv', (e) => e.hidden).catch(() => null);
+  const advHiddenDefault = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-adv', (e) => e.hidden).catch(() => null);
   if (advHiddenDefault === true) pass('P2: advanced overrides hidden under a concrete preset'); else fail('adv hidden default: ' + advHiddenDefault);
   // Switch to Audiobook (ACX): summary must reflect mono / 192k CBR / −20 LUFS.
-  await page.selectOption('#previewHost .media-export-preset', 'acx-mp3');
-  const acxSummary = await page.$eval('#previewHost .media-export-summary', (e) => e.textContent).catch(() => '');
+  await page.selectOption('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset', 'acx-mp3');
+  const acxSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
   if (/mono/i.test(acxSummary) && /192k CBR/.test(acxSummary) && /-20 LUFS/.test(acxSummary)) pass('P2: ACX preset summary shows mono, 192k CBR, normalize -20 LUFS'); else fail('acx summary: ' + acxSummary.slice(0, 140));
   // Switching to Custom reveals the override fields (container/bitrate/sr/channels/loudness).
-  await page.selectOption('#previewHost .media-export-preset', 'custom');
-  const advShown = await page.$eval('#previewHost .media-export-adv', (e) => e.hidden).catch(() => null);
-  const hasContainer = await page.$('#previewHost .media-export-container');
-  const hasBitrate = await page.$('#previewHost .media-export-bitrate');
-  const hasLufs = await page.$('#previewHost .media-export-lufs');
+  await page.selectOption('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset', 'custom');
+  const advShown = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-adv', (e) => e.hidden).catch(() => null);
+  const hasContainer = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-container');
+  const hasBitrate = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-bitrate');
+  const hasLufs = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-lufs');
   if (advShown === false && hasContainer && hasBitrate && hasLufs) pass('P2: Custom reveals container/bitrate/loudness overrides'); else fail('custom adv: shown=' + advShown + ' c=' + !!hasContainer + ' b=' + !!hasBitrate + ' l=' + !!hasLufs);
   // Verify the PURE preset/codec layer (no ffmpeg load): ACX → mono CBR mp3 args.
   const presetParams = await page.evaluate(async () => {
@@ -1263,37 +1321,40 @@ export async function run(ctx) {
   });
   if (presetParams.channels === 1 && presetParams.sampleRate === 44100 && presetParams.lufs === -20 && /libmp3lame -b:a 192k/.test(presetParams.encArgs)) pass('P2: ACX resolves to mono/44.1k/-20 LUFS + CBR 192k mp3 args'); else fail('acx params: ' + JSON.stringify(presetParams));
   // Restore the Podcast preset so the rest of the area sees a stable state.
-  await page.selectOption('#previewHost .media-export-preset', 'podcast-mp3');
+  await page.selectOption('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset', 'podcast-mp3');
 
   // ── P8: Audiobook QC (ACX) — pass/fail report card + one-click ACX export ─────
-  // The QC toggle sits in the audio panel stack (after the mixer). CPU-lazy: no
-  // decode / ffmpeg until a button is clicked.
-  const qcToggle = await page.evaluateHandle(() =>
-    [...document.querySelectorAll('#previewHost .media-wv-toggle')].find((b) => /Audiobook QC/.test(b.textContent)) || null);
-  const qcToggleExists = await qcToggle.evaluate((e) => !!e);
-  if (qcToggleExists) {
-    pass('P8: Audiobook QC (ACX) toggle button present');
-    const preQc = await page.$('#previewHost .media-qc-run');
+  // QC now lives in a dedicated mode tab. CPU-lazy: no decode / ffmpeg until Run is clicked.
+  const qcTab = await page.$('#previewHost .media-mode-tab[data-mode="qc"]');
+  if (qcTab) {
+    pass('P8: Audiobook QC (ACX) mode tab present');
+    const preQc = await page.$('#previewHost .media-mode-panel[data-mode="qc"] .media-qc-run');
     if (!preQc) pass('P8: QC panel CPU-lazy (no decode/ffmpeg until opened)'); else fail('QC panel mounted before open');
-    await qcToggle.asElement().click();
-    await page.waitForSelector('#previewHost .media-qc-run', { timeout: 6000 });
+    await page.click('#previewHost .media-mode-tab[data-mode="qc"]');
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="qc"] .media-qc-run', { timeout: 6000 });
     // Run QC → decode the sample WAV + render the per-metric card.
-    await page.click('#previewHost .media-qc-run');
-    await page.waitForSelector('#previewHost .media-qc-table .media-qc-row', { timeout: 15000 });
-    const qcMetrics = await page.$$eval('#previewHost .media-qc-row', (els) => els.map((e) => e.dataset.metric));
+    await page.click('#previewHost .media-mode-panel[data-mode="qc"] .media-qc-run');
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="qc"] .media-qc-table .media-qc-row', { timeout: 15000 });
+    const qcMetrics = await page.$$eval('#previewHost .media-mode-panel[data-mode="qc"] .media-qc-row', (els) => els.map((e) => e.dataset.metric));
     if (['rms', 'peak', 'noise', 'sr', 'ch', 'head', 'tail'].every((k) => qcMetrics.includes(k)))
       pass('P8b: QC card shows all 7 ACX metric rows (RMS/peak/noise/sr/ch/head/tail)');
     else fail('qc metrics: ' + qcMetrics.join(','));
-    const qcVerdict = await page.$('#previewHost .media-qc-verdict');
+    const qcVerdict = await page.$('#previewHost .media-mode-panel[data-mode="qc"] .media-qc-verdict');
     if (qcVerdict) pass('P8b: QC card shows an overall pass/fail verdict'); else fail('qc verdict missing');
     // The "Export for ACX" one-click button mounts alongside.
-    const acxBtn = await page.$('#previewHost .media-qc-export');
+    const acxBtn = await page.$('#previewHost .media-mode-panel[data-mode="qc"] .media-qc-export');
     const acxBtnText = acxBtn ? await acxBtn.evaluate((e) => e.textContent) : '';
     if (/Export for ACX/i.test(acxBtnText)) pass('P8e: "Export for ACX" one-click button mounts'); else fail('acx export btn: ' + acxBtnText);
-    await qcToggle.asElement().click();
-    await page.waitForSelector('#previewHost .media-qc-toggle-panel[hidden]', { state: 'attached', timeout: 3000 });
+    await page.click('#previewHost .media-mode-tab[data-mode="listen"]');
+    await page.waitForFunction(() => {
+      const panel = document.querySelector('#previewHost .media-mode-panel[data-mode="qc"]');
+      return panel && panel.hidden;
+    }, null, { timeout: 3000 });
     pass('P8: QC panel collapses');
-  } else fail('Audiobook QC toggle not found');
+    await page.click('#previewHost .media-mode-tab[data-mode="qc"]');
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="qc"] .media-qc-run', { timeout: 6000 });
+    pass('P8: QC remounts after leaving to Listen');
+  } else fail('Audiobook QC mode tab not found');
 
   // ── P8a: PURE BS.1770 integrated LUFS on a synthesized buffer (no ffmpeg/decode) ──
   // A 1 kHz sine targeted to −23 dB RMS should read ≈ −23 LUFS (K-weighting is near-flat
