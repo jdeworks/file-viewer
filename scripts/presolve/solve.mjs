@@ -4,6 +4,7 @@
 // by shortest player paths at reconstruction time. Returns a U/D/L/R move string (replayable by the
 // game's solve.js) or null if unsolved within the state budget.
 import { DIRS, parse, step, liveSquares, reachable, walkPath } from './board.mjs';
+import { isFreezeDeadlock } from './deadlock.mjs';
 
 const boxesKey = (boxes) => Int32Array.from(boxes).sort().join(',');
 
@@ -51,6 +52,8 @@ export function solve(level, { maxStates = 3_000_000 } = {}) {
           if (!live[target]) continue;                    // dead square → skip (deadlock)
           const boxes = new Set(node.boxes);
           boxes.delete(bx); boxes.add(target);
+          if (isFreezeDeadlock(b, boxes, live, target)) continue;   // box frozen off-goal → dead
+
           const key = boxesKey(boxes) + '|' + reachable(b, boxes, bx).norm;
           if (seen.has(key)) continue;
           seen.set(key, { parentKey: node.key, bx, di });
