@@ -58,6 +58,19 @@ function buildPlaylist(intake, folder) {
   return { items, index };
 }
 
+function fmtTimeValue(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return null;
+  const total = Math.floor(seconds);
+  const minutes = Math.floor(total / 60);
+  const secs = total % 60;
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const mm = String(minutes % 60).padStart(2, '0');
+    return `${hours}:${mm}:${String(secs).padStart(2, '0')}`;
+  }
+  return `${minutes}:${String(secs).padStart(2, '0')}`;
+}
+
 export async function render(intake, ctx = {}) {
   const info = mediaInfo(intake);
   const playlist = buildPlaylist(intake, ctx.folder);
@@ -76,8 +89,45 @@ export async function render(intake, ctx = {}) {
   if (info.kind === 'video') el.setAttribute('playsinline', '');
 
   const name = document.createElement('div');
-  name.className = 'media-name';
+  name.className = info.kind === 'audio' ? 'media-workspace-title' : 'media-name';
   name.textContent = intake.filename;
+
+  let workspaceTime = null;
+  let audioWorkspace = null;
+  let waveformSurface = null;
+  let audioModes = null;
+  let modePanelWrap = null;
+  let coverEl = null;
+  if (info.kind === 'audio') {
+    workspaceTime = document.createElement('div');
+    workspaceTime.className = 'media-workspace-time';
+    workspaceTime.textContent = '0:00 / --:--';
+
+    const workspaceHead = document.createElement('div');
+    workspaceHead.className = 'media-workspace-head';
+    workspaceHead.append(name, workspaceTime);
+
+    const mediaSurface = document.createElement('div');
+    mediaSurface.className = 'media-audio-surface';
+    mediaSurface.append(el);
+
+    waveformSurface = document.createElement('div');
+    waveformSurface.className = 'media-waveform-surface';
+
+    const workspaceBody = document.createElement('div');
+    workspaceBody.className = 'media-workspace-body';
+    workspaceBody.append(mediaSurface, waveformSurface);
+
+    audioWorkspace = document.createElement('div');
+    audioWorkspace.className = 'media-workspace media-audio-workspace';
+    audioWorkspace.append(workspaceHead, workspaceBody);
+
+    audioModes = document.createElement('div');
+    audioModes.className = 'media-audio-modes';
+    modePanelWrap = document.createElement('div');
+    modePanelWrap.className = 'media-audio-mode-panels media-wv-wrap';
+    audioModes.append(modePanelWrap);
+  }
 
   // Resolve ffmpeg setting early so video controls and the pill can reference it.
   const enableFfmpeg = !!ctx.settings?.enableFfmpeg;
@@ -252,9 +302,15 @@ export async function render(intake, ctx = {}) {
     exportRevoke = exp.revoke;
   }
 
-  let waveformWrap = null;
   let timelineWrap = null;
   const panels = [];      // toggle-panel controllers to tear down on revoke
+
+  const setWorkspaceTime = () => {
+    if (!workspaceTime) return;
+    const now = fmtTimeValue(el.currentTime) || '0:00';
+    const dur = fmtTimeValue(el.duration) || '--:--';
+    workspaceTime.textContent = `${now} / ${dur}`;
+  };
 
   // ── P6: Video timeline (2-lane) + transitions + visual trim ──
   // Video-only, opt-in (ffmpeg). CPU-lazy: mounts on first toggle; no ffmpeg/thumbnail
@@ -275,28 +331,23 @@ export async function render(intake, ctx = {}) {
   }
 
   if (info.kind === 'audio') {
-    const wv = makeTogglePanel({
-      label: 'Show waveform', panelClass: 'media-wv-panel',
-      mount: async (panel) => {
-        const { mountWaveform } = await import('./waveform.js');
-        const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
-        return mountWaveform(panel, file);
-      },
-    });
-    waveformWrap = wv.wrap; panels.push(wv);
+    const { mountWaveform } = await import('./waveform.js');
+    const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
+    const wv = await mountWaveform(waveformSurface, file);
+    if (wv) panels.push({ destroy() { wv.destroy(); } });
 
     const sp = makeTogglePanel({
       label: 'Spectrum & EQ', panelClass: 'media-sp-panel',
       mount: async (panel) => (await import('./spectrum.js')).mountSpectrumPanel(panel, el),
     });
-    wv.wrap.append(sp.wrap); panels.push(sp);
+    modePanelWrap.append(sp.wrap); panels.push(sp);
 
     // ── P4: Dynamics — compressor + limiter live; gate + de-noise baked on export.
     const dyn = makeTogglePanel({
       label: 'Dynamics', panelClass: 'media-dyn-panel',
       mount: async (panel) => (await import('./dynamics.js')).mountDynamicsPanel(panel, el),
     });
-    wv.wrap.append(dyn.wrap); panels.push(dyn);
+    modePanelWrap.append(dyn.wrap); panels.push(dyn);
 
     // ── P8: Audiobook QC (ACX) — read-only pass/fail card + one-click ACX export.
     // CPU-lazy: nothing decodes / loads ffmpeg until Run QC / Export for ACX is clicked.
@@ -304,14 +355,14 @@ export async function render(intake, ctx = {}) {
       label: 'Audiobook QC (ACX)', panelClass: 'media-qc-toggle-panel',
       mount: async (panel) => (await import('./qc-ui.js')).mountAcxQcPanel(panel, intake, el),
     });
-    wv.wrap.append(qc.wrap); panels.push(qc);
+    modePanelWrap.append(qc.wrap); panels.push(qc);
 
     // ── Multi-track mixer ("swim lanes") — decode + transport only on first open.
     const mx = makeTogglePanel({
       label: 'Multi-track mixer', panelClass: 'media-mx-panel',
       mount: async (panel) => (await import('./mixer-ui.js')).mountMixer(panel, intake),
     });
-    wv.wrap.append(mx.wrap); panels.push(mx);
+    modePanelWrap.append(mx.wrap); panels.push(mx);
   }
 
   // ── P7: Tier-1 playback quick wins (no lib, live only) ──
@@ -334,13 +385,17 @@ export async function render(intake, ctx = {}) {
     try {
       const head = new Uint8Array(await intake.file.slice(0, 512 * 1024).arrayBuffer());
       const tags = parseId3(head);
-      if (tags?.cover) { const c = buildCoverArt(tags.cover); if (c) { name.before(c.el); coverRevoke = c.revoke; } }
+      if (tags?.cover) { const c = buildCoverArt(tags.cover); if (c) { coverEl = c.el; coverRevoke = c.revoke; } }
       if (tags?.chapters) chapterList = buildChapterList(tags.chapters, el);
     } catch { /* tag-less / unreadable — skip */ }
   }
 
-  if (info.kind === 'audio') host.append(name, el, waveformWrap, tools, extras);
-  else host.append(el, name, tools, extras);
+  if (info.kind === 'audio') {
+    if (coverEl) audioWorkspace.querySelector('.media-workspace-head')?.prepend(coverEl);
+    host.append(audioWorkspace, tools, extras, audioModes);
+  } else {
+    host.append(el, name, tools, extras);
+  }
   if (chapterList) host.append(chapterList);
   if (videoStudio) host.append(videoStudio.mixer);
   if (timelineWrap) host.append(timelineWrap);
@@ -352,6 +407,7 @@ export async function render(intake, ctx = {}) {
   // ── Resume position ──
   const saved = loadState(intake);
   el.addEventListener('loadedmetadata', () => {
+    setWorkspaceTime();
     if (saved && saved.kind === 'media' && saved.time > 0 && saved.time < el.duration - 2) {
       el.currentTime = saved.time;
     }
@@ -360,6 +416,7 @@ export async function render(intake, ctx = {}) {
   let lastPlaybackTime = null;
   let continuousPlaybackMs = 0;
   el.addEventListener('timeupdate', () => {
+    setWorkspaceTime();
     const now = el.currentTime;
     if (lastPlaybackTime !== null && !el.paused && !el.seeking) {
       const delta = Math.max(0, Math.min(1.5, now - lastPlaybackTime));

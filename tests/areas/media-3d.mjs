@@ -934,13 +934,14 @@ export async function run(ctx) {
   const rate15 = await page.$eval('#previewHost audio.media-view', (e) => e.playbackRate);
   if (Math.abs(rate15 - 1.5) < 0.001) pass('P7 audio: speed preset sets playbackRate (1.5×)'); else fail('playbackRate after 1.5×: ' + rate15);
   await page.click('#previewHost .media-extras .media-speed-btn[data-rate="1"]');   // restore
-  const waveformCollapsed = await page.$eval('#previewHost .media-wv-panel', (e) => e.hidden);
-  const waveformBtn = await page.$eval('#previewHost .media-wv-toggle', (e) => e.textContent);
-  if (waveformCollapsed && /Show waveform/.test(waveformBtn)) pass('audio waveform: collapsed by default'); else fail('waveform collapsed=' + waveformCollapsed + ' btn=' + waveformBtn);
-  await page.click('#previewHost .media-wv-toggle');
-  await page.waitForSelector('#previewHost .media-wv-panel:not([hidden]) canvas.media-wv-canvas', { timeout: 12000 });
-  await page.waitForTimeout(500);
-  const waveformDrawn = await page.$eval('#previewHost canvas.media-wv-canvas', (canvas) => {
+  const audioWorkspace = await page.$('#previewHost .media-audio-workspace');
+  if (audioWorkspace) pass('audio workspace: top-level audio workspace exists'); else fail('media-audio-workspace missing');
+  const waveformSurface = await page.$eval('#previewHost .media-waveform-surface', (el) => {
+    const r = el.getBoundingClientRect();
+    return { tag: el.tagName.toLowerCase(), w: r.width, h: r.height, displayed: getComputedStyle(el).display !== 'none' };
+  });
+  if (waveformSurface.w > 0 && waveformSurface.h > 0 && waveformSurface.displayed) pass('audio waveform surface is visible by default'); else fail('waveform surface: ' + JSON.stringify(waveformSurface));
+  const waveformDrawn = await page.$eval('#previewHost .media-waveform-surface canvas.media-wv-canvas', (canvas) => {
     const ctx = canvas.getContext('2d');
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     let painted = 0;
@@ -948,11 +949,8 @@ export async function run(ctx) {
     return { width: canvas.width, height: canvas.height, painted };
   });
   if (waveformDrawn.width > 0 && waveformDrawn.height > 0 && waveformDrawn.painted > 20)
-    pass('audio waveform: expands and paints canvas');
+    pass('audio waveform: visible workspace canvas paints by default');
   else fail('waveform canvas: ' + JSON.stringify(waveformDrawn));
-  await page.click('#previewHost .media-wv-toggle');
-  const waveformHidden = await page.$eval('#previewHost .media-wv-panel', (e) => e.hidden && !e.querySelector('canvas'));
-  if (waveformHidden) pass('audio waveform: collapse destroys canvas'); else fail('waveform did not destroy on collapse');
   // Spectrum & EQ panel — toggle opens, 9-band EQ + canvas present; CPU-lazy (no RAF until play).
   // The spectrum toggle is the button inside the nested .media-wv-wrap inside the outer waveform wrap.
   const spBtn = await page.$('#previewHost .media-wv-wrap .media-wv-wrap .media-wv-toggle');
