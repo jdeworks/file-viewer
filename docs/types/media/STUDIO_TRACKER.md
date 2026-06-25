@@ -486,6 +486,29 @@ Status: first slice committed; measured true-peak and staged compare remain open
 - Remaining R1 work: measured/ffmpeg-backed true-peak pass, raw -> tuned -> dynamics ->
   master-bus compare polish, and any additional copy needed after true-peak is real.
 
+### R1 — Estimated True Peak And Metric Copy
+
+Status: committed; staged compare remains open.
+
+- Added `estimatedTruePeak()` in `qc.js`: deterministic browser-only 4x cubic oversampling
+  over the mono mix. It is explicitly labeled as an estimate, not a certified BS.1770
+  broadcast true-peak meter.
+- `analyzeMetrics()` now returns separate `peak` sample peak and `truePeak` estimated
+  true-peak values.
+- ACX QC now renders distinct rows for RMS loudness, Integrated LUFS, Sample peak level,
+  Estimated true peak, Noise floor, Sample rate, Channels, Head silence, and Tail silence.
+- QC/export copy now separates ACX RMS acceptance, export `loudnorm` LUFS target, sample
+  peak dBFS, estimated true peak dBTP, and ffmpeg TP target language.
+- Changed paths: `qc.js`, `qc-ui.js`, `tests/media-parsers.test.mjs`,
+  `tests/areas/media-studio.mjs`, `docs/asset-manifest.json`, `docs/sw.js`.
+- Validation passed: `node --check docs/types/media/qc.js docs/types/media/qc-ui.js tests/media-parsers.test.mjs tests/areas/media-studio.mjs`,
+  `node tests/media-parsers.test.mjs`, `node tests/smoke-area.mjs media-studio`,
+  `./scripts/check.sh --fast`.
+- Fast aggregate timing evidence: `media-3d` 17.526s, `media-studio` 8.275s,
+  `ebook-git` 70.704s, `examples-catalog` 118.170s, smoke total 316s.
+- Committed in `3725ea8f` — `Add estimated true peak QC metric`.
+- Remaining R1 work: raw -> tuned -> dynamics -> master-bus compare polish.
+
 ## Tracking Rules
 
 - Mark each item `open`, `in progress`, `blocked`, `done`, or `committed`.
