@@ -25,6 +25,8 @@ import {
   classifyShiftedSections,
   computeOverlapWindow,
   describeShiftedComparison,
+  diffAudioSummaries,
+  summarizeAudioWindow,
 } from '../docs/types/media/compare-math.js';
 import {
   classifyFfmpegError,
@@ -67,6 +69,22 @@ const enc = new TextEncoder();
   });
   assert.equal(disjoint.hasOverlap, false, 'compare math: disjoint ranges report no overlap');
   assert.equal(disjoint.sections.length, 2, 'compare math: disjoint ranges become two missing sections');
+
+  const samples = Float32Array.from([0, 0.5, -1, 0.25, 0, -0.25, 0.75, -0.5]);
+  const summary = summarizeAudioWindow(samples, 4, { start: 0, end: 2 }, 4);
+  assert.equal(summary.columns, 4, 'compare math: audio summary returns requested columns');
+  assert.deepEqual(
+    [...summary.peaks].map((n) => Number(n.toFixed(3))),
+    [0.5, 1, 0.25, 0.75],
+    'compare math: audio summary stores per-column peaks',
+  );
+  assert.equal(Number(summary.peak.toFixed(3)), 1, 'compare math: audio summary tracks lane peak');
+
+  const softer = summarizeAudioWindow(Float32Array.from(samples, (n) => n * 0.5), 4, { start: 0, end: 2 }, 4);
+  const rawDiff = diffAudioSummaries(summary, softer, { normalize: false });
+  const normDiff = diffAudioSummaries(summary, softer, { normalize: true });
+  assert(rawDiff.averageEnergy > 0.05, 'compare math: raw audio diff reports amplitude differences');
+  assert(normDiff.averageEnergy < rawDiff.averageEnergy, 'compare math: explicit normalize reduces pure level difference');
 }
 
 function u32(n) {

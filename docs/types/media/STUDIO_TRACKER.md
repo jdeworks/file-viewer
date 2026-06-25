@@ -649,7 +649,8 @@ Status: implemented; no remaining R3 work identified.
 
 ### R4 — Audio/Video Overlap Diff Compare
 
-Status: newly scoped in `STUDIO_ROADMAP.md`; not started.
+Status: partial. Foundation is committed in `05aabcf5` / `6e6d489e`; the next audio
+compare slice is implemented in this worktree. Video compare remains placeholder-only.
 
 - This is distinct from R1/R3 processing-chain compare. R1/R3 explain how one source changes
   through Tune/Dynamics/Master Bus; R4 compares two source media files or two partial ranges.
@@ -659,6 +660,18 @@ Status: newly scoped in `STUDIO_ROADMAP.md`; not started.
   overlay opacity, and difference visualization that separates shifted content from changed content.
 - Keep implementation static-client only. Do not add backend alignment, ASR/NLP matching, or hidden
   gain/resampling; any normalization must be an explicit compare mode.
+- Current audio evidence:
+  - Added an explicit `Analyze selected audio` action that decodes only after click, with file-size
+    and selected-duration caps.
+  - Renders per-lane selected-range waveform canvases from downsampled peak/RMS columns.
+  - Renders an aligned overlap difference strip and reports average diff energy plus high-diff
+    columns; the normalize toggle is labeled compare-only and does not affect playback/export.
+  - Keeps video Compare on the decode-on-demand placeholder surface with no audio analysis control.
+- Changed paths for this slice: `compare-ui.js`, `compare-math.js`, `preview-media.css`,
+  `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`, `STUDIO_ROADMAP.md`,
+  `STUDIO_TRACKER.md`, plus generated cache files.
+- Remaining R4 work: real video frame strips/content-difference reporting, richer audio alignment
+  polish, and any longer-file strategy beyond capped browser decode.
 
 ## Tracking Rules
 

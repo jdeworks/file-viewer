@@ -151,13 +151,14 @@ Needed:
 - Partial: in/out inputs and visible range handles exist per lane so users can define short
   compare windows without full-file decode.
 - Partial: audio view has stacked lane strips, explicit user-chosen normalization toggle
-  (off by default), and translucent overlap/missing placeholders. Real waveform energy and
-  normalized difference rendering are still pending.
+  (off by default), translucent overlap/missing placeholders, and an explicit
+  `Analyze selected audio` action that lazily decodes capped selected ranges into waveform
+  and measured difference canvases. Broader audio compare polish remains pending.
 - Partial: video view has aligned lane/frame-strip placeholders, overlay opacity state, and
   offset/overlap readouts. Real thumbnail/frame preview remains pending and should stay
   behind an explicit action.
-- Partial: UI copy distinguishes shifted/missing ranges from overlapping ranges, but does
-  not yet classify actual content changes inside the overlap.
+- Partial: UI copy distinguishes shifted/missing ranges from measured overlap differences
+  after audio analysis. Video content-difference reporting remains pending.
 - Static-client implementation only: no backend alignment service, no ASR/NLP matching, no
   hidden resampling/gain unless the user chooses a compare normalization mode.
 
@@ -167,6 +168,9 @@ Validation target:
 - Done for foundation: smoke coverage for lazy Compare mount, layout controls, lane offset
   changes, range inputs/handles, overlay opacity, explicit audio normalization state, video
   grammar, and no horizontal overflow on desktop/mobile.
+- Done for audio slice: pure waveform/difference math coverage plus media-studio smoke for
+  explicit audio analysis, painted lane/diff canvases, measured difference readout,
+  compare-only normalization labeling, and video placeholder-only controls.
 - Heavy decode/rendering stays lazy and scoped to selected ranges.
 
 ### R5 — Video Export Depth

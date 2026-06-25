@@ -84,6 +84,51 @@ export async function run(ctx) {
     const dropExists = await page.$(`${panelSel} .media-compare-drop .media-ed-file-input`);
     if (dropExists) pass(`${kind} compare: second-file drop/browse control exists`);
     else fail(`${kind} compare second-file picker missing`);
+    const analyzeExists = await page.$(`${panelSel} .media-compare-analyze`);
+    if (kind === 'audio') {
+      if (analyzeExists) pass('audio compare: explicit analyze button exists');
+      else fail('audio compare analyze button missing');
+      await page.fill(`${panelSel} .media-compare-offset-input[data-lane="A"]`, '0');
+      await page.fill(`${panelSel} .media-compare-offset-input[data-lane="B"]`, '0.1');
+      await page.fill(`${panelSel} .media-compare-in-input[data-lane="A"]`, '0');
+      await page.fill(`${panelSel} .media-compare-out-input[data-lane="A"]`, '0.4');
+      await page.fill(`${panelSel} .media-compare-in-input[data-lane="B"]`, '0');
+      await page.fill(`${panelSel} .media-compare-out-input[data-lane="B"]`, '0.4');
+      await page.setInputFiles(`${panelSel} .media-compare-drop .media-ed-file-input`, new URL('../../docs/examples/sample.wav', import.meta.url).pathname);
+      await page.click(`${panelSel} .media-compare-analyze`);
+      await page.waitForFunction(() => /Analyzed selected audio range/i.test(document.querySelector('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-analysis-status')?.textContent || ''), null, { timeout: 12000 });
+      const analysisPaint = await page.$$eval(`${panelSel} .media-compare-waveform-canvas, ${panelSel} .media-compare-diff-canvas`, (canvases) => canvases.map((canvas) => {
+        const ctx = canvas.getContext('2d');
+        const { width, height } = canvas;
+        const data = ctx.getImageData(0, 0, width, height).data;
+        const first = [data[0], data[1], data[2], data[3]];
+        let varied = 0;
+        for (let i = 0; i < data.length; i += 16) {
+          if (data[i] !== first[0] || data[i + 1] !== first[1] || data[i + 2] !== first[2] || data[i + 3] !== first[3]) varied++;
+        }
+        return { cls: canvas.className, width, height, hidden: canvas.hidden, varied };
+      }));
+      if (analysisPaint.length >= 3 && analysisPaint.every((row) => row.width > 0 && row.height > 0 && !row.hidden && row.varied > 8))
+        pass('audio compare: analysis paints lane waveforms and difference canvas');
+      else fail('audio compare canvas paint: ' + JSON.stringify(analysisPaint));
+      const diffReadout = await page.$eval(`${panelSel} .media-compare-copy`, (el) => el.textContent);
+      if (/Measured overlap: average diff energy/i.test(diffReadout) && /Raw amplitude compare/i.test(diffReadout))
+        pass('audio compare: measured difference readout distinguishes overlap energy');
+      else fail('audio compare diff readout: ' + diffReadout);
+      await page.click(`${panelSel} .media-compare-normalize-input`);
+      const normReadout = await page.$eval(`${panelSel} .media-compare-copy`, (el) => el.textContent);
+      const normLabel = await page.$eval(`${panelSel} .media-compare-normalize`, (el) => ({
+        checked: el.querySelector('input')?.checked || false,
+        text: el.textContent,
+      }));
+      if (normLabel.checked && /user chosen/i.test(normLabel.text) && /normalization is on for compare only/i.test(normReadout))
+        pass('audio compare: normalize toggle updates compare-only label/state');
+      else fail('audio compare normalize after analysis: ' + JSON.stringify({ normLabel, normReadout }));
+    } else if (!analyzeExists) {
+      pass('video compare: audio analysis controls are absent');
+    } else {
+      fail('video compare should not show audio analysis controls');
+    }
     await assertCompareNoOverflow(kind, 'desktop');
     const priorViewport = page.viewportSize();
     await page.setViewportSize(MEDIA_MOBILE_VIEWPORT);

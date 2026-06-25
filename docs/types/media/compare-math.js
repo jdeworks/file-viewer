@@ -98,3 +98,59 @@ export function describeShiftedComparison(result) {
     : 'Selected ranges fully overlap.';
   return `${shiftText} ${overlapText} ${missingText}`;
 }
+
+export function summarizeAudioWindow(channelData, sampleRate, range = {}, columnCount = 320) {
+  const data = channelData || new Float32Array();
+  const rate = Math.max(1, finiteNumber(sampleRate, 1));
+  const cols = Math.max(1, Math.floor(finiteNumber(columnCount, 320)));
+  const startFrame = Math.max(0, Math.min(data.length, Math.floor(finiteNumber(range.start, 0) * rate)));
+  const endFrame = Math.max(startFrame, Math.min(data.length, Math.ceil(finiteNumber(range.end, data.length / rate) * rate)));
+  const frameSpan = Math.max(1, endFrame - startFrame);
+  const peaks = new Float32Array(cols);
+  const rms = new Float32Array(cols);
+  let peak = 0;
+
+  for (let col = 0; col < cols; col++) {
+    const from = startFrame + Math.floor((col / cols) * frameSpan);
+    const to = startFrame + Math.max(1, Math.floor(((col + 1) / cols) * frameSpan));
+    let localPeak = 0;
+    let sumSq = 0;
+    let count = 0;
+    for (let i = from; i < to && i < endFrame; i++) {
+      const amp = Math.abs(finiteNumber(data[i], 0));
+      localPeak = Math.max(localPeak, amp);
+      sumSq += amp * amp;
+      count++;
+    }
+    peaks[col] = localPeak;
+    rms[col] = count ? Math.sqrt(sumSq / count) : 0;
+    peak = Math.max(peak, localPeak);
+  }
+
+  return { peaks, rms, peak, columns: cols, duration: frameSpan / rate };
+}
+
+export function diffAudioSummaries(a, b, { normalize = false, highThreshold = 0.28 } = {}) {
+  const count = Math.max(0, Math.min(a?.rms?.length || 0, b?.rms?.length || 0));
+  const diff = new Float32Array(count);
+  const scaleA = normalize && a?.peak > 0 ? 1 / a.peak : 1;
+  const scaleB = normalize && b?.peak > 0 ? 1 / b.peak : 1;
+  let energy = 0;
+  let highColumns = 0;
+
+  for (let i = 0; i < count; i++) {
+    const d = Math.abs(finiteNumber(a.rms[i], 0) * scaleA - finiteNumber(b.rms[i], 0) * scaleB);
+    diff[i] = d;
+    energy += d;
+    if (d >= highThreshold) highColumns++;
+  }
+
+  return {
+    diff,
+    columns: count,
+    averageEnergy: count ? energy / count : 0,
+    highColumns,
+    highRatio: count ? highColumns / count : 0,
+    normalized: !!normalize,
+  };
+}

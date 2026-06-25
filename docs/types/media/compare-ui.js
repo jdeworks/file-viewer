@@ -1,12 +1,17 @@
 import {
   classifyShiftedSections,
   describeShiftedComparison,
+  diffAudioSummaries,
   formatCompareSeconds,
+  summarizeAudioWindow,
 } from './compare-math.js';
 import { buildSecondaryDropZone } from './editor-advanced.js';
 
 const FALLBACK_DURATION = 60;
 const PX_PER_SEC = 9;
+const AUDIO_COMPARE_MAX_BYTES = 24 * 1024 * 1024;
+const AUDIO_COMPARE_MAX_RANGE_SECONDS = 90;
+const AUDIO_COMPARE_COLUMNS = 360;
 
 function durationOf(mediaEl) {
   return Number.isFinite(mediaEl?.duration) && mediaEl.duration > 0 ? mediaEl.duration : FALLBACK_DURATION;
@@ -14,6 +19,15 @@ function durationOf(mediaEl) {
 
 function labelOf(intake) {
   return intake?.filename || intake?.file?.name || 'Open media';
+}
+
+function audioSourceFromIntake(intake) {
+  if (intake?.file) return intake.file;
+  if (intake?.bytes) {
+    const type = intake?.mime || intake?.type || '';
+    return new Blob([intake.bytes], { type });
+  }
+  return null;
 }
 
 function makeButton(label, value, groupName) {
@@ -51,6 +65,11 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       A: { label: labelOf(intake), offset: 0, in: 0, out: durationOf(mediaEl) },
       B: { label: 'Choose a second file', offset: 1.5, in: 0, out: durationOf(mediaEl) },
     },
+    files: {
+      A: audioSourceFromIntake(intake),
+      B: null,
+    },
+    analysis: null,
   };
   const listeners = [];
   const addListener = (el, type, fn, options) => {
@@ -108,11 +127,25 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
   normalizeLabel.append(normalizeInput, normalizeMode);
   controls.append(layoutGroup, opacityLabel, normalizeLabel);
 
+  const analyzeButton = document.createElement('button');
+  analyzeButton.type = 'button';
+  analyzeButton.className = 'media-compare-analyze';
+  analyzeButton.textContent = 'Analyze selected audio';
+  const analysisStatus = document.createElement('span');
+  analysisStatus.className = 'media-compare-analysis-status';
+  analysisStatus.textContent = 'Not analyzed';
+  const analysisControls = document.createElement('div');
+  analysisControls.className = 'media-compare-analysis-controls';
+  analysisControls.append(analyzeButton, analysisStatus);
+  if (kind === 'audio') controls.append(analysisControls);
+
   const drop = buildSecondaryDropZone({
     accept: kind === 'video' ? 'video/*' : 'audio/*',
     hint: `Drop a second ${kind} file for compare`,
   }, (file) => {
     state.lanes.B.label = file.name || 'Second file';
+    state.files.B = file;
+    state.analysis = null;
     state.durationB = Number.isFinite(file.duration) ? file.duration : state.durationB;
     state.lanes.B.out = Math.max(state.lanes.B.in, Math.min(state.lanes.B.out, state.durationB));
     render();
@@ -151,6 +184,11 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     const body = document.createElement('div');
     body.className = 'media-compare-lane-body';
     body.dataset.lane = laneId;
+    const canvas = document.createElement('canvas');
+    canvas.className = 'media-compare-waveform-canvas';
+    canvas.dataset.lane = laneId;
+    canvas.width = AUDIO_COMPARE_COLUMNS;
+    canvas.height = 72;
     const selection = document.createElement('div');
     selection.className = 'media-compare-selection';
     const handle = document.createElement('div');
@@ -163,7 +201,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     markerIn.className = 'media-compare-range-handle media-compare-range-in';
     const markerOut = document.createElement('div');
     markerOut.className = 'media-compare-range-handle media-compare-range-out';
-    track.append(body, selection, markerIn, markerOut, handle);
+    track.append(body, canvas, selection, markerIn, markerOut, handle);
 
     lane.append(label, track, range, offset);
 
@@ -209,7 +247,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       e.preventDefault();
     });
 
-    laneEls.set(laneId, { lane, label, offset, inInput, outInput, selection, handle, markerIn, markerOut });
+    laneEls.set(laneId, { lane, label, offset, inInput, outInput, selection, handle, markerIn, markerOut, canvas });
     return lane;
   }
 
@@ -219,11 +257,15 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
 
   const band = document.createElement('div');
   band.className = 'media-compare-overlap-band';
+  const diffCanvas = document.createElement('canvas');
+  diffCanvas.className = 'media-compare-diff-canvas';
+  diffCanvas.width = AUDIO_COMPARE_COLUMNS;
+  diffCanvas.height = 36;
   const missingA = document.createElement('div');
   missingA.className = 'media-compare-missing media-compare-missing--a';
   const missingB = document.createElement('div');
   missingB.className = 'media-compare-missing media-compare-missing--b';
-  visual.append(lanes, band, missingA, missingB);
+  visual.append(lanes, band, missingA, missingB, diffCanvas);
 
   const placeholder = document.createElement('div');
   placeholder.className = `media-compare-placeholder media-compare-placeholder--${kind}`;
@@ -238,6 +280,8 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
   container.append(wrap);
 
   function render() {
+    state.lanes.A.in = clamp(state.lanes.A.in, 0, state.durationA);
+    state.lanes.B.in = clamp(state.lanes.B.in, 0, state.durationB);
     state.lanes.A.out = clamp(state.lanes.A.out, state.lanes.A.in, state.durationA);
     state.lanes.B.out = clamp(state.lanes.B.out, state.lanes.B.in, state.durationB);
     const result = classifyShiftedSections({
@@ -262,6 +306,9 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     normalizeLabel.hidden = kind !== 'audio';
     readout.textContent = `${state.layout.replace('-', ' ')} · ${formatCompareSeconds(result.overlap.duration)} overlap`;
     foot.textContent = describeShiftedComparison(result);
+    analysisControls.hidden = kind !== 'audio';
+    analyzeButton.disabled = kind !== 'audio';
+    renderAnalysis(result);
 
     for (const laneId of ['A', 'B']) {
       const laneState = state.lanes[laneId];
@@ -317,8 +364,193 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
   });
   addListener(normalizeInput, 'change', () => {
     state.normalize = normalizeInput.checked;
+    if (state.analysis) state.analysis.stale = true;
     render();
   });
+
+  addListener(analyzeButton, 'click', () => {
+    analyzeSelectedAudio().catch((err) => {
+      state.analysis = null;
+      analysisStatus.textContent = err?.message || 'Audio analysis failed.';
+      render();
+    });
+  });
+
+  function readFirstChannel(buffer) {
+    if (!buffer || buffer.numberOfChannels < 1) return new Float32Array();
+    return buffer.getChannelData(0);
+  }
+
+  async function decodeFile(file) {
+    if (!file) return null;
+    if (file.size > AUDIO_COMPARE_MAX_BYTES) {
+      throw new Error(`${file.name || 'Audio file'} is too large for compare analysis (${(file.size / 1048576).toFixed(1)} MB; limit 24 MB).`);
+    }
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) throw new Error('Audio analysis is not available in this browser.');
+    const ctx = new AudioContextCtor();
+    try {
+      const bytes = await file.arrayBuffer();
+      return await ctx.decodeAudioData(bytes.slice(0));
+    } finally {
+      ctx.close?.();
+    }
+  }
+
+  async function analyzeSelectedAudio() {
+    if (kind !== 'audio') return;
+    const rangeA = state.lanes.A.out - state.lanes.A.in;
+    const rangeB = state.lanes.B.out - state.lanes.B.in;
+    const selected = Math.max(rangeA, state.files.B ? rangeB : 0);
+    if (selected > AUDIO_COMPARE_MAX_RANGE_SECONDS) {
+      analysisStatus.textContent = `Selected range is ${formatCompareSeconds(selected)}; choose ${formatCompareSeconds(AUDIO_COMPARE_MAX_RANGE_SECONDS)} or less.`;
+      state.analysis = null;
+      render();
+      return;
+    }
+
+    analyzeButton.disabled = true;
+    analysisStatus.textContent = 'Decoding selected audio on demand...';
+    const fileA = state.files.A || audioSourceFromIntake(intake);
+    if (!fileA) {
+      analysisStatus.textContent = 'Open-file bytes are unavailable for audio analysis.';
+      analyzeButton.disabled = false;
+      return;
+    }
+
+    try {
+      const [bufferA, bufferB] = await Promise.all([
+        decodeFile(fileA),
+        state.files.B ? decodeFile(state.files.B) : Promise.resolve(null),
+      ]);
+      state.durationA = bufferA.duration || state.durationA;
+      state.lanes.A.out = Math.min(state.lanes.A.out, state.durationA);
+      if (bufferB) {
+        state.durationB = bufferB.duration || state.durationB;
+        state.lanes.B.out = Math.min(state.lanes.B.out, state.durationB);
+      }
+      state.analysis = {
+        channelA: readFirstChannel(bufferA),
+        rateA: bufferA.sampleRate,
+        channelB: bufferB ? readFirstChannel(bufferB) : null,
+        rateB: bufferB?.sampleRate || 0,
+        hasB: !!bufferB,
+        stale: false,
+      };
+      analysisStatus.textContent = bufferB
+        ? 'Analyzed selected audio range.'
+        : 'Analyzed A. Add a second audio file for difference.';
+    } catch (err) {
+      state.analysis = null;
+      analysisStatus.textContent = err?.message || 'Audio decode failed; compare controls remain available.';
+    } finally {
+      analyzeButton.disabled = false;
+      render();
+    }
+  }
+
+  function ensureCanvasSize(canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const width = Math.max(1, Math.round(rect.width * dpr));
+    const height = Math.max(1, Math.round(rect.height * dpr));
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    return { width, height, dpr };
+  }
+
+  function drawWave(canvas, summary, accent = '#2f7de1') {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const { width, height } = ensureCanvasSize(canvas);
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--bg') || '#fff';
+    ctx.fillRect(0, 0, width, height);
+    if (!summary?.peaks?.length) return;
+    const cols = summary.peaks.length;
+    const mid = height / 2;
+    ctx.fillStyle = accent;
+    for (let i = 0; i < cols; i++) {
+      const x = Math.floor((i / cols) * width);
+      const nextX = Math.max(x + 1, Math.floor(((i + 1) / cols) * width));
+      const peak = Math.min(1, summary.peaks[i]);
+      const rms = Math.min(1, summary.rms[i]);
+      ctx.globalAlpha = 0.28;
+      ctx.fillRect(x, mid - peak * mid, nextX - x, Math.max(1, peak * height));
+      ctx.globalAlpha = 0.78;
+      ctx.fillRect(x, mid - rms * mid, nextX - x, Math.max(1, rms * height));
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawDiff(canvas, diff) {
+    if (!canvas) return;
+    canvas.hidden = !diff?.diff?.length;
+    if (!diff?.diff?.length) return;
+    const ctx = canvas.getContext('2d');
+    const { width, height } = ensureCanvasSize(canvas);
+    ctx.clearRect(0, 0, width, height);
+    const cols = diff.diff.length;
+    for (let i = 0; i < cols; i++) {
+      const x = Math.floor((i / cols) * width);
+      const nextX = Math.max(x + 1, Math.floor(((i + 1) / cols) * width));
+      const v = Math.max(0, Math.min(1, diff.diff[i]));
+      ctx.fillStyle = `rgba(215, 58, 73, ${0.12 + v * 0.78})`;
+      ctx.fillRect(x, 0, nextX - x, height);
+    }
+  }
+
+  function renderAnalysis(result) {
+    if (kind !== 'audio') {
+      diffCanvas.hidden = true;
+      return;
+    }
+    const analysis = state.analysis;
+    const aCanvas = laneEls.get('A')?.canvas;
+    const bCanvas = laneEls.get('B')?.canvas;
+    if (!analysis) {
+      drawWave(aCanvas, null);
+      drawWave(bCanvas, null);
+      drawDiff(diffCanvas, null);
+      return;
+    }
+
+    const summaryA = summarizeAudioWindow(analysis.channelA, analysis.rateA, result.a.source, AUDIO_COMPARE_COLUMNS);
+    const summaryB = analysis.hasB
+      ? summarizeAudioWindow(analysis.channelB, analysis.rateB, result.b.source, AUDIO_COMPARE_COLUMNS)
+      : null;
+    const accent = getComputedStyle(wrap).getPropertyValue('--accent').trim() || '#2f7de1';
+    drawWave(aCanvas, summaryA, accent);
+    drawWave(bCanvas, summaryB, '#9a6700');
+    if (!summaryB) {
+      drawDiff(diffCanvas, null);
+      foot.textContent = `${describeShiftedComparison(result)} Measured waveform for A only; choose a second audio file for difference.`;
+      return;
+    }
+    if (!result.hasOverlap) {
+      drawDiff(diffCanvas, null);
+      foot.textContent = `${describeShiftedComparison(result)} No measured difference because the shifted selections do not overlap.`;
+      return;
+    }
+    const overlapRangeA = {
+      start: result.overlap.start - result.a.offset,
+      end: result.overlap.end - result.a.offset,
+    };
+    const overlapRangeB = {
+      start: result.overlap.start - result.b.offset,
+      end: result.overlap.end - result.b.offset,
+    };
+    const overlapA = summarizeAudioWindow(analysis.channelA, analysis.rateA, overlapRangeA, AUDIO_COMPARE_COLUMNS);
+    const overlapB = summarizeAudioWindow(analysis.channelB, analysis.rateB, overlapRangeB, AUDIO_COMPARE_COLUMNS);
+    const diff = diffAudioSummaries(overlapA, overlapB, { normalize: state.normalize });
+    drawDiff(diffCanvas, diff);
+    const normText = state.normalize
+      ? 'Per-lane peak normalization is on for compare only.'
+      : 'Raw amplitude compare; normalization is off.';
+    foot.textContent = `${describeShiftedComparison(result)} Measured overlap: average diff energy ${diff.averageEnergy.toFixed(3)}, high-diff columns ${diff.highColumns}/${diff.columns}. ${normText}`;
+  }
 
   layoutButtons[0].setAttribute('aria-pressed', 'true');
   render();
