@@ -691,8 +691,8 @@ polish and general compressed-audio longer-file strategy work.
 
 ### R5 — Video Export Depth
 
-Status: partial. Subtitle burn-in UI/op is implemented; R5 remains open for crop/rotate/
-LUT-style export presets and user-facing music-bed ducking controls.
+Status: partial. Subtitle burn-in UI/op is committed in `c70853ec`; R5 remains open for
+crop/rotate/LUT-style export presets and user-facing music-bed ducking controls.
 
 - Added a Video Export-only subtitle burn-in control with `.srt/.vtt` input, concise status,
   and a separate `Burn in subtitles` action.
