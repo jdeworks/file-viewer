@@ -618,6 +618,7 @@ Status: implemented; no remaining R3 work identified.
   `STUDIO_ROADMAP.md`, `STUDIO_TRACKER.md`, `docs/asset-manifest.json`, `docs/sw.js`.
 - Validation passed: `node --check docs/types/media/mastering-stages.js tests/areas/media-studio.mjs`,
   `node tests/smoke-area.mjs media-studio`, `./scripts/check.sh --fast`.
+- Committed in `6eb968f7` — `Polish media mastering compare`.
 
 ### R4 — Audio/Video Overlap Diff Compare
 
