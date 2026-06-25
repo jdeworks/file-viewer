@@ -859,6 +859,22 @@ body.fv-dragging .intake::after {
 .pw-btn-primary:hover { background: var(--accent, #0969da); filter: brightness(0.9); }
 .pw-btn-secondary { padding: 7px 16px; background: transparent; border: 1px solid var(--border, #e0e0e0); border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--fg-2, #888); }
 .pw-btn-secondary:hover { background: var(--bg-3, #f0f0f0); }
+.pw-btn-primary:disabled, .pw-btn-secondary:disabled { opacity: .5; cursor: default; filter: none; }
+.zip-unlock { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100%; gap: 10px; padding: 28px 18px; text-align: center; overflow: auto; box-sizing: border-box; }
+.zip-guess { width: min(520px, 100%); border: 1px solid var(--border, #e0e0e0); border-radius: 6px; padding: 8px 10px; text-align: left; background: var(--bg, #fff); box-sizing: border-box; }
+.zip-guess summary { cursor: pointer; font: 600 13px system-ui, sans-serif; color: var(--fg, #24292f); }
+.zip-candidates { width: 100%; min-height: 96px; margin: 8px 0; padding: 8px 10px; border: 1px solid var(--border, #e0e0e0); border-radius: 6px; resize: vertical; background: var(--bg, #fff); color: var(--fg, #24292f); box-sizing: border-box; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.zip-guess-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; color: var(--fg-2, #888); font: 12px system-ui, sans-serif; }
+.zip-set-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; margin-top: 8px; color: var(--fg, #24292f); font: 12px system-ui, sans-serif; }
+.zip-len { width: 58px; margin-left: 4px; padding: 4px 6px; border: 1px solid var(--border, #e0e0e0); border-radius: 4px; background: var(--bg, #fff); color: var(--fg, #24292f); }
+.zip-estimate, .zip-guess-status { color: var(--fg-2, #888); font: 12px system-ui, sans-serif; }
+.zip-estimate { margin-top: 8px; }
+.zip-guess-status { width: min(520px, 100%); text-align: left; }
+.zip-progress-wrap { width: min(520px, 100%); display: flex; align-items: center; gap: 10px; text-align: left; }
+.zip-spinner { width: 16px; height: 16px; border: 2px solid var(--border, #e0e0e0); border-top-color: var(--accent, #0969da); border-radius: 50%; animation: zip-spin .8s linear infinite; flex: 0 0 auto; }
+.zip-progress-meta { flex: 1; color: var(--fg-2, #888); font: 12px system-ui, sans-serif; }
+.zip-progress { width: 100%; height: 8px; display: block; margin-bottom: 4px; accent-color: var(--accent, #0969da); }
+@keyframes zip-spin { to { transform: rotate(360deg); } }
 
 /* ── Inline .env form editor ── */
 /* #envFormHost shares the .editor-host class so all banner-offset rules apply automatically */

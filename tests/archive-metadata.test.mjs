@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-import { imageEntryCount, listCentralDirectory } from '../docs/types/zip/ziplib.js';
+import { imageEntryCount, listCentralDirectory, verifyZipCryptoPassword } from '../docs/types/zip/ziplib.js';
 import { inspectArchive } from '../docs/types/archive/metadata.js';
 import { riskyArchiveEntries } from '../docs/types/zip/metadata.js';
 import { parseHeader } from '../docs/types/sqlite/sqlitelib.js';
@@ -47,6 +47,7 @@ const locked = listCentralDirectory(await readFile(new URL('sample-locked.zip', 
 assert.equal(locked.encrypted.size, 1);
 assert.equal(locked.files.find((f) => f.name === 'secret.txt')?.encryption, 'zipcrypto');
 assert.equal(locked.files.find((f) => f.name === 'readme.txt')?.encrypted, false);
+assert.equal(verifyZipCryptoPassword(await readFile(new URL('sample-locked.zip', root)), locked.files.find((f) => f.name === 'secret.txt'), 'wrong'), false);
 
 const risky = riskyArchiveEntries([
   { name: 'docs/readme.txt' },
