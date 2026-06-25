@@ -651,7 +651,8 @@ Status: implemented; no remaining R3 work identified.
 
 Status: partial. Foundation is committed in `05aabcf5` / `6e6d489e`; the first audio
 analysis slice is committed in `fbe6c057`; the first video analysis slice is committed
-in `937ab522`. R4 still needs polish and longer-file strategy work.
+in `937ab522`; selected-range WAV compare is committed in `34a2d601`. R4 still needs
+polish and general compressed-audio longer-file strategy work.
 
 - This is distinct from R1/R3 processing-chain compare. R1/R3 explain how one source changes
   through Tune/Dynamics/Master Bus; R4 compares two source media files or two partial ranges.
