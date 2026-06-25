@@ -13,6 +13,16 @@
 
 const round = (n) => Math.round(n * 100) / 100;
 
+function escapeSubtitleFilterName(name) {
+  return String(name || 'subtitle.srt')
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/:/g, '\\:')
+    .replace(/,/g, '\\,')
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]');
+}
+
 // Sanitize a transition name to the xfade vocabulary we expose. Falls back to 'fade'.
 const XFADE_TRANSITIONS = new Set(['fade', 'dissolve', 'fadeblack', 'fadewhite', 'wipeleft', 'wiperight', 'slideleft', 'slideright']);
 export function normalizeTransition(name) {
@@ -79,6 +89,22 @@ export function buildMuxMusicArgs(inVideo, inMusic, out, opts = {}) {
     '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart',
     out,
+  ];
+}
+
+// Build args for subtitle burn-in. Unlike MP4 mov_text embedding, this renders cue text
+// into pixels via libass/subtitles, so video must be re-encoded. Audio is encoded to AAC
+// for MP4 compatibility across source containers.
+export function buildSubtitleBurnArgs(inputName, subtitleName, outputName, opts = {}) {
+  const ext = String(opts.ext || subtitleName.split('.').pop() || 'srt').toLowerCase();
+  const sub = escapeSubtitleFilterName(subtitleName);
+  return [
+    '-i', inputName,
+    '-vf', 'subtitles=' + sub,
+    '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
+    '-c:a', 'aac', '-b:a', '192k',
+    '-movflags', '+faststart',
+    outputName || ('out_' + ext + '.mp4'),
   ];
 }
 

@@ -224,6 +224,51 @@ export function buildExportPanel(intake, mediaEl, kind, options = {}) {
   }
 
   // ── Action row ──
+  let subtitleBurnFile = null;
+  let subtitleBurnBtn = null;
+  let subtitleBurnStatus = null;
+  if (!isAudio) {
+    const burnCard = document.createElement('div');
+    burnCard.className = 'media-export-subtitle-card';
+    const burnCopy = document.createElement('div');
+    burnCopy.className = 'media-export-subtitle-copy';
+    const burnTitle = document.createElement('div');
+    burnTitle.className = 'media-export-subtitle-title';
+    burnTitle.textContent = 'Subtitle burn-in';
+    subtitleBurnStatus = document.createElement('div');
+    subtitleBurnStatus.className = 'media-export-subtitle-status';
+    subtitleBurnStatus.textContent = 'Choose .srt or .vtt; export starts on burn-in.';
+    burnCopy.append(burnTitle, subtitleBurnStatus);
+    const burnInput = document.createElement('input');
+    burnInput.type = 'file';
+    burnInput.accept = '.srt,.vtt,text/vtt,application/x-subrip';
+    burnInput.className = 'media-ed-file-input media-export-subtitle-input';
+    subtitleBurnBtn = mkBtn('Burn in subtitles', 'media-ed-run media-export-subtitle-run');
+    burnCard.append(burnCopy, burnInput, subtitleBurnBtn);
+    panel.appendChild(burnCard);
+    burnInput.addEventListener('change', async () => {
+      const file = burnInput.files && burnInput.files[0];
+      subtitleBurnFile = null;
+      if (!file) {
+        subtitleBurnStatus.textContent = 'Choose .srt or .vtt; export starts on burn-in.';
+        return;
+      }
+      const ext = (file.name.includes('.') ? file.name.split('.').pop() : '').toLowerCase();
+      if (ext !== 'srt' && ext !== 'vtt') {
+        subtitleBurnStatus.textContent = 'Use an .srt or .vtt subtitle file.';
+        return;
+      }
+      try {
+        const text = await file.text();
+        subtitleBurnFile = file;
+        const lines = text.split(/\r?\n/).filter((line) => /-->/.test(line)).length;
+        subtitleBurnStatus.textContent = file.name + (lines ? ` loaded (${lines} cue${lines === 1 ? '' : 's'}).` : ' loaded.');
+      } catch {
+        subtitleBurnStatus.textContent = 'Could not read subtitle file.';
+      }
+    });
+  }
+
   const actionRow = document.createElement('div');
   actionRow.className = 'media-ed-actions';
   const runBtn = mkBtn(kind === 'video' ? 'Export video' : 'Export processed audio', 'media-ed-run media-export-run');
@@ -365,6 +410,7 @@ Provenance = -af "${chain || 'none'}"`;
 
   function setRunning(running) {
     runBtn.disabled = running;
+    if (subtitleBurnBtn) subtitleBurnBtn.disabled = running;
     runBtn.hidden = running;
     cancelBtn.hidden = !running;
     progressArea.hidden = !running;
@@ -474,6 +520,39 @@ Provenance = -af "${chain || 'none'}"`;
     }
   }
 
+  async function runSubtitleBurn() {
+    if (!subtitleBurnFile) {
+      if (subtitleBurnStatus) subtitleBurnStatus.textContent = 'Choose an SRT or VTT subtitle file first.';
+      showError('Choose an SRT or VTT subtitle file first.');
+      return;
+    }
+    setRunning(true);
+    resultArea.hidden = true;
+    resultArea.innerHTML = '';
+    try {
+      const ff = await loadFfmpeg(({ ratio }) => {
+        const pct = Math.round((ratio || 0) * 100);
+        progressBar.value = pct;
+        progressPct.textContent = pct + '%';
+        progressMsg.textContent = 'Burning subtitles…';
+      });
+      ffInstance = ff;
+      progressMsg.textContent = 'Burning subtitles…';
+      const result = await runOperation(ff, 'subtitleBurn', { secondary: subtitleBurnFile }, intake);
+      blobUrls.push(result.url);
+      if (subtitleBurnStatus) subtitleBurnStatus.textContent = 'Burn-in complete.';
+      showResult(result.url, result.filename, result.bytes);
+    } catch (err) {
+      if (subtitleBurnStatus) subtitleBurnStatus.textContent = 'Burn-in failed.';
+      showError(formatFfmpegError(err));
+    } finally {
+      ffInstance = null;
+      setRunning(false);
+      runBtn.hidden = false;
+      cancelBtn.hidden = true;
+    }
+  }
+
   async function runChapterZip() {
     if (!chaptersReady()) {
       syncChapterExport();
@@ -537,6 +616,7 @@ Provenance = -af "${chain || 'none'}"`;
   }
 
   runBtn.addEventListener('click', run);
+  subtitleBurnBtn?.addEventListener('click', runSubtitleBurn);
   chapterBtn?.addEventListener('click', runChapterZip);
   cancelBtn.addEventListener('click', cancel);
 

@@ -21,7 +21,8 @@ export { buildAudioFilterChain, audioEncodeArgs } from './audio-filters.js';
 export { buildAcxFilterChain, buildAcxExportArgs, buildAcxChapterExportArgs, silenceRemoveFilter, roomTonePadFilter } from './audio-filters.js';
 // P6 — PURE timeline transition arg builders (xfade / acrossfade / mux music). Kept in
 // video-filters.js so they stay unit-testable and this file stays under the LOC cap.
-import { buildXfadeArgs, buildAcrossfadeArgs, buildMuxMusicArgs } from './video-filters.js';
+import { buildXfadeArgs, buildAcrossfadeArgs, buildMuxMusicArgs, buildSubtitleBurnArgs } from './video-filters.js';
+export { buildSubtitleBurnArgs } from './video-filters.js';
 
 let ffmpegInstance = null;
 const CORE_JS = vendor('ffmpeg/ffmpeg-core.js');
@@ -403,6 +404,30 @@ export async function runOperation(ff, opId, params, intake) {
         const subResult = ff.FS('readFile', outputName);
         const subBlob = new Blob([subResult.buffer], { type: 'video/mp4' });
         return { url: URL.createObjectURL(subBlob), filename: outBase + '.mp4', bytes: subResult.byteLength };
+      }
+
+      case 'subtitleBurn': {
+        if (!params.secondary) throw new Error('Choose an SRT or VTT subtitle file first.');
+        const burnFile = params.secondary;
+        const burnExt = (burnFile.name.includes('.') ? burnFile.name.split('.').pop() : 'srt').toLowerCase();
+        if (burnExt !== 'srt' && burnExt !== 'vtt') throw new Error('Subtitle burn-in supports .srt and .vtt files.');
+        const burnName = 'subtitle.' + burnExt;
+        ff.FS('writeFile', burnName, new Uint8Array(await burnFile.arrayBuffer()));
+        outputName = 'out.mp4'; outBase = base + '_sub_burned';
+        args = buildSubtitleBurnArgs(inputName, burnName, outputName, { ext: burnExt });
+        try {
+          await ff.run(...args);
+        } catch (err) {
+          throw new Error('Subtitle burn-in needs a decodable video and valid SRT/VTT cues.\n\n' + (err.message || String(err)));
+        } finally {
+          try { ff.FS('unlink', burnName); } catch { /* ignore */ }
+        }
+        const burnResult = ff.FS('readFile', outputName);
+        return {
+          url: URL.createObjectURL(new Blob([burnResult.buffer], { type: 'video/mp4' })),
+          filename: outBase + '.mp4',
+          bytes: burnResult.byteLength,
+        };
       }
 
       case 'concat': {

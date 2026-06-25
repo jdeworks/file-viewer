@@ -689,6 +689,25 @@ polish and general compressed-audio longer-file strategy work.
 - Remaining R4 work: richer audio/video alignment polish and any longer-file strategy beyond
   capped browser decode.
 
+### R5 — Video Export Depth
+
+Status: partial. Subtitle burn-in UI/op is implemented; R5 remains open for crop/rotate/
+LUT-style export presets and user-facing music-bed ducking controls.
+
+- Added a Video Export-only subtitle burn-in control with `.srt/.vtt` input, concise status,
+  and a separate `Burn in subtitles` action.
+- The sidecar read path only reads subtitle text for status; ffmpeg is still loaded lazily only
+  when the burn-in action is clicked.
+- Added a distinct `subtitleBurn` ffmpeg operation that writes the subtitle sidecar to MEMFS and
+  uses a pure `buildSubtitleBurnArgs()` helper to render subtitles into pixels with video
+  re-encoding. Existing display subtitles and MP4 `mov_text` embedding remain separate.
+- Smoke/unit evidence covers audio export absence, Video Export burn-in controls, SRT status
+  update, and pure args containing a subtitles filter plus H.264/AAC re-encode semantics without
+  running heavy ffmpeg.
+- Changed paths for this slice: `studio-export.js`, `transcoder.js`, `video-filters.js`,
+  `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`, `STUDIO_ROADMAP.md`,
+  `STUDIO_TRACKER.md`, plus generated cache files if validation refreshes them.
+
 ## Tracking Rules
 
 - Mark each item `open`, `in progress`, `blocked`, `done`, or `committed`.

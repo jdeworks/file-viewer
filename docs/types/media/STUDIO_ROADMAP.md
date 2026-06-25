@@ -183,11 +183,12 @@ Validation target:
 
 ### R5 — Video Export Depth
 
-Status: useful after audio/mastering depth is stable.
+Status: in progress; first subtitle burn-in slice is implemented.
 
 Needed:
 
-- Subtitle burn-in UI under Video Export.
+- Done: Subtitle burn-in UI under Video Export with lazy ffmpeg execution on the burn-in
+  action, separate from display-only sidecars and mov_text embedding.
 - Crop/rotate/LUT-style export presets if they fit the same Adjust/Export grammar.
 - Audio ducking controls for music-bed mux workflows.
 - Variable speed ramp only if it can be exposed clearly without turning the static viewer

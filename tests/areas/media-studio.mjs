@@ -853,6 +853,9 @@ export async function run(ctx) {
   if (/Export processed audio/i.test(exportHeader)) pass('P1: "Export processed audio" header present'); else fail('export header: ' + exportHeader);
   const exportStatus = exportPanel ? await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-panel .media-export-head-status', (e) => e.textContent) : '';
   if (/Profile: Podcast MP3/i.test(exportStatus)) pass('P1: export profile status initialized to Podcast'); else fail('export status: ' + exportStatus);
+  const audioBurnCard = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-subtitle-card');
+  if (!audioBurnCard) pass('R5: subtitle burn-in controls stay hidden for audio export');
+  else fail('audio export should not show subtitle burn-in controls');
   const presetCards = await page.$$eval(
     '#previewHost .media-mode-panel[data-mode="export"] .media-export-panel .media-export-preset-card',
     (els) => els.map((e) => ({
@@ -1146,6 +1149,35 @@ export async function run(ctx) {
   if (/Export & Fades \(video\)/i.test(vidExportHeader)) pass('P3: video export panel offers fade-to-black'); else fail('video export header: ' + vidExportHeader);
   const vidFadeIn = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-panel .media-ed-fade-in');
   if (vidFadeIn) pass('P3: video fade-to/from-black duration controls present'); else fail('video fade controls missing');
+  const burnUi = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-subtitle-card', (card) => ({
+    title: card.querySelector('.media-export-subtitle-title')?.textContent || '',
+    status: card.querySelector('.media-export-subtitle-status')?.textContent || '',
+    accept: card.querySelector('.media-export-subtitle-input')?.getAttribute('accept') || '',
+    button: card.querySelector('.media-export-subtitle-run')?.textContent || '',
+  })).catch(() => null);
+  if (burnUi && /Subtitle burn-in/i.test(burnUi.title) && /\.srt,.vtt/.test(burnUi.accept) && /Burn in subtitles/i.test(burnUi.button))
+    pass('R5: video export shows compact subtitle burn-in controls');
+  else fail('video subtitle burn-in UI: ' + JSON.stringify(burnUi));
+  const burnStatus = await page.evaluate(async () => {
+    const file = new File(['1\n00:00:00,000 --> 00:00:01,000\nBurned line\n'], 'burn.srt', { type: 'application/x-subrip' });
+    const input = document.querySelector('#previewHost .media-mode-panel[data-mode="export"] .media-export-subtitle-input');
+    const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 100));
+    return document.querySelector('#previewHost .media-mode-panel[data-mode="export"] .media-export-subtitle-status')?.textContent || '';
+  });
+  if (/burn\.srt loaded \(1 cue\)/i.test(burnStatus)) pass('R5: loading SRT updates burn-in status without ffmpeg run');
+  else fail('subtitle burn status: ' + burnStatus);
+  const burnArgs = await page.evaluate(async () => {
+    const { buildSubtitleBurnArgs } = await import('./types/media/transcoder.js');
+    return buildSubtitleBurnArgs('input.avi', 'subtitle.srt', 'out.mp4', { ext: 'srt' });
+  });
+  if (burnArgs.includes('-vf') && burnArgs.includes('subtitles=subtitle.srt')
+    && burnArgs[burnArgs.indexOf('-c:v') + 1] === 'libx264'
+    && !burnArgs.includes('-c')
+    && burnArgs[burnArgs.indexOf('-c:a') + 1] === 'aac')
+    pass('R5: pure subtitle burn args include subtitles filter and re-encode semantics');
+  else fail('subtitle burn args: ' + JSON.stringify(burnArgs));
 
   // ── P6: Video timeline (2-lane) + transitions + visual trim ───────────────────
   // Built for video when ffmpeg is enabled; CPU-lazy (no timeline DOM until opened).

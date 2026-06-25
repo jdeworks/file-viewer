@@ -38,6 +38,7 @@ import {
   classifyFfmpegError,
   cancelFfmpeg,
   formatFfmpegError,
+  buildSubtitleBurnArgs,
   __getFfmpegInstanceForTest,
   __setFfmpegInstanceForTest,
 } from '../docs/types/media/transcoder.js';
@@ -250,6 +251,14 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
 }
 
 {
+  const args = buildSubtitleBurnArgs('input.avi', 'subtitle.srt', 'out.mp4', { ext: 'srt' });
+  assert.deepEqual(args.slice(0, 4), ['-i', 'input.avi', '-vf', 'subtitles=subtitle.srt'], 'subtitle burn: uses subtitles video filter');
+  assert.equal(args.includes('-c:v'), true, 'subtitle burn: sets video codec explicitly');
+  assert.equal(args[args.indexOf('-c:v') + 1], 'libx264', 'subtitle burn: re-encodes video to H.264');
+  assert.equal(args.includes('-c'), false, 'subtitle burn: does not stream-copy all streams');
+  assert.equal(args[args.indexOf('-c:a') + 1], 'aac', 'subtitle burn: encodes MP4-compatible AAC audio');
+  assert.equal(args.at(-1), 'out.mp4', 'subtitle burn: writes requested MP4 output');
+
   assert.equal(parseTimestamp('0:00:02.500'), 2.5, 'timestamp: minute-only HH:SS variant');
   assert.equal(parseTimestamp('01:02:03,004'), 3723.004, 'timestamp: comma ms variant');
   const raw = [
