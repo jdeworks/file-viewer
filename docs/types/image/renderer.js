@@ -178,7 +178,7 @@ export async function render(intake, ctx = {}) {
     syncOverlay: () => drawCtl?.syncOverlay(),
     getOverlayEl: () => drawCtl?.getOverlayEl(),
     getAdv: () => advController,
-    isEditModeActive: () => (drawCtl?.isDrawMode()) || editTools.some((t) => t.isActive && t.isActive()),
+    isEditModeActive: () => advActive || (drawCtl?.isDrawMode()) || editTools.some((t) => t.isActive && t.isActive()),
     isAscii: () => asciiMode,
   });
   // Local aliases so the rest of render() reads unchanged.

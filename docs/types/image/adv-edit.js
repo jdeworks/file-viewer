@@ -1,12 +1,10 @@
-// Advanced (vector) editing — the Adv Edit mode. A Konva stage overlays the image
-// with re-editable TEXT objects (drag/resize/rotate, font/size/colour, background
-// colour + opacity, multiple, Cancel-safe). The overlay is non-destructive: it's
-// flattened onto the pixel base only for output (export/ASCII) or when the user
-// leaves to a pixel mode. See ADV_EDIT.md for the full model.
-//
-// Konva is vendored (docs/vendor/konva/konva.min.js, MIT, UMD) and lazy-loaded the
-// first time Adv Edit is entered — View/Edit/ASCII never fetch it.
 import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { cloneNode, installAdvKeys, nodeName, normalizeTransform, readSize, rgbToHex, writeSize } from './adv-edit-actions.js';
+import { mountAdvLayersPanel } from './adv-edit-layers.js';
+import { mountAdvPrecision } from './adv-edit-precision.js';
+import { mountAdvPointEditor } from './adv-edit-points.js';
+import { installTextControls, syncTextControls } from './adv-edit-text.js';
+import { DEFAULTS, advToolbarHtml } from './adv-edit-toolbar.js';
 
 let konvaPromise = null;
 export function loadKonva() {
@@ -14,24 +12,17 @@ export function loadKonva() {
   return konvaPromise;
 }
 
-const DEFAULTS = { text: 'Text', fontFamily: 'system-ui, sans-serif', fontSize: 48, fill: '#ffffff', bg: '#000000', bgOpacity: 0.5 };
-
-// mountAdvEdit builds the stage over `.imgv-stage` sized to the displayed image,
-// plus an editing toolbar appended to `.imgv-bar`. Returns the controller the
-// renderer drives (flatten / interactive / dirty / destroy).
 export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   const Konva = await loadKonva();
   const stageHost = host.querySelector('.imgv-stage');
   let naturalW = img.naturalWidth || 1, naturalH = img.naturalHeight || 1;
-  // Stage matches the DISPLAYED image box; flatten scales back up to natural res.
-  // (let, not const — rebaseline() updates them after a base-resizing geometry op.)
   const rect = img.getBoundingClientRect();
   let stageW = Math.max(1, Math.round(rect.width)), stageH = Math.max(1, Math.round(rect.height));
 
   const container = document.createElement('div');
   container.className = 'imgv-adv-stage';
+  container.tabIndex = 0;
   container.style.cssText = `position:absolute;left:0;top:0;width:${stageW}px;height:${stageH}px;z-index:6;`;
-  // Centre the stage over the image within the (possibly larger) stage host.
   const hostRect = stageHost.getBoundingClientRect();
   container.style.left = Math.round(rect.left - hostRect.left) + 'px';
   container.style.top = Math.round(rect.top - hostRect.top) + 'px';
@@ -41,87 +32,128 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   const stage = new Konva.Stage({ container, width: stageW, height: stageH });
   const layer = new Konva.Layer();
   stage.add(layer);
-  const tr = new Konva.Transformer({ rotateEnabled: true, keepRatio: false, enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right'] });
+  const tr = new Konva.Transformer({
+    rotateEnabled: true,
+    keepRatio: false,
+    centeredScaling: false,
+    flipEnabled: true,
+    rotationSnaps: [0, 45, 90, 135, 180, 225, 270, 315],
+    rotationSnapTolerance: 5,
+    enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right'],
+    boundBoxFunc: (oldBox, newBox) => (newBox.width < 8 || newBox.height < 8 ? oldBox : newBox),
+  });
   layer.add(tr);
 
   let interactive = true;
-  let selected = null;
+  let selected = [];
   const markDirty = () => onDirty?.();
-  // Vector edits push onto the SHARED editor-core history (one unified Ctrl+Z across
-  // pixel + vector); the renderer injects core.pushUndo. snap() is called BEFORE a
-  // mutation so the entry captures the pre-change overlay (via the overlay hooks).
   const snap = () => pushUndo?.();
+  const objects = () => layer.getChildren().filter((n) => n.hasName?.('obj'));
+  const precision = mountAdvPrecision({ Konva, stage, tr, getObjects: objects, getSelected: () => selected, snap, markDirty, refreshLayers: () => refreshLayers(), stageW: () => stageW, stageH: () => stageH });
+  const pointEdit = mountAdvPointEditor({ Konva, stage, tr, getSelected: () => selected, markDirty, refreshLayers: () => refreshLayers() });
 
-  // The selected-object toolbar (only meaningful while one label is selected).
   const bar = host.querySelector('.imgv-bar');
   const tb = document.createElement('span');
   tb.className = 'imgv-adv-bar';
   tb.hidden = true;
   tb.style.cssText = 'display:none;flex-basis:100%;flex-wrap:wrap;gap:6px;align-items:center;';
-  tb.innerHTML = `
-    <button class="imgv-adv-add">+ Text</button>
-    <button class="imgv-adv-rect" title="Add rectangle">▭</button>
-    <button class="imgv-adv-ellipse" title="Add ellipse">◯</button>
-    <button class="imgv-adv-line" title="Add line">╱</button>
-    <button class="imgv-adv-arrow" title="Add arrow">➤</button>
-    <button class="imgv-adv-poly" title="Add polygon">⬠</button>
-    <button class="imgv-adv-star" title="Add star">★</button>
-    <span class="imgv-sep"></span>
-    <input class="imgv-adv-text imgv-adv-txtctl" type="text" placeholder="Selected text" style="min-width:120px">
-    <label class="imgv-adv-txtctl" style="font-size:.8em">Size <input class="imgv-adv-size" type="number" min="6" max="400" value="${DEFAULTS.fontSize}" style="width:56px"></label>
-    <select class="imgv-adv-font imgv-adv-txtctl" title="Font"><option value="system-ui, sans-serif">Sans</option><option value="Georgia, serif">Serif</option><option value="monospace">Mono</option><option value="Impact, sans-serif">Impact</option><option value="cursive">Cursive</option></select>
-    <label style="font-size:.8em">Fill <input class="imgv-adv-fill" type="color" value="${DEFAULTS.fill}"></label>
-    <label class="imgv-adv-txtctl" style="font-size:.8em">BG <input class="imgv-adv-bg" type="color" value="${DEFAULTS.bg}"></label>
-    <label class="imgv-adv-txtctl" style="font-size:.8em">BG opacity <input class="imgv-adv-bgop" type="range" min="0" max="100" value="${DEFAULTS.bgOpacity * 100}" style="width:70px"></label>
-    <label class="imgv-adv-shpctl" style="font-size:.8em">Stroke <input class="imgv-adv-stroke" type="color" value="#1144aa"></label>
-    <label class="imgv-adv-shpctl" style="font-size:.8em">Width <input class="imgv-adv-strokew" type="number" min="0" max="80" value="2" style="width:48px"></label>
-    <label class="imgv-adv-anyctl" style="font-size:.8em" title="How this object blends with the objects BEHIND it in the overlay (not the base image)">Blend
-      <select class="imgv-adv-blend"><option value="source-over">Normal</option><option value="multiply">Multiply</option><option value="screen">Screen</option><option value="overlay">Overlay</option><option value="darken">Darken</option><option value="lighten">Lighten</option><option value="color-dodge">Dodge</option><option value="color-burn">Burn</option><option value="hard-light">Hard light</option><option value="soft-light">Soft light</option><option value="difference">Difference</option><option value="exclusion">Exclusion</option></select></label>
-    <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
+  tb.innerHTML = advToolbarHtml();
   bar.appendChild(tb);
   const $ = (s) => tb.querySelector(s);
 
   function textNodeOf(label) { return label.findOne('Text'); }
   function tagNodeOf(label) { return label.findOne('Tag'); }
+  const isGroup = (n) => n instanceof Konva.Group || n?.getClassName?.() === 'Group';
+  const isLocked = (n) => !!n?.getAttr?.('locked');
 
+  const primary = () => selected[selected.length - 1] || null;
   function syncToolbar() {
-    const has = !!selected, label = isLabel(selected);
+    const node = primary();
+    const has = !!node, label = isLabel(node), multi = selected.length > 1;
+    const cls = node?.getClassName?.();
+    const shape = has && !label && !isGroup(node);
     tb.querySelectorAll('.imgv-adv-txtctl').forEach((el) => { el.style.display = label ? '' : 'none'; });
-    tb.querySelectorAll('.imgv-adv-shpctl').forEach((el) => { el.style.display = (has && !label) ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-shpctl').forEach((el) => { el.style.display = shape ? '' : 'none'; });
+    const line = ['Line', 'Arrow'].includes(cls);
+    const arc = ['Ring', 'Wedge', 'Arc'].includes(cls);
     tb.querySelectorAll('.imgv-adv-anyctl').forEach((el) => { el.style.display = has ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-sizectl').forEach((el) => { el.style.display = (has && !label && !['Line', 'Arrow'].includes(cls)) ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-linectl').forEach((el) => { el.style.display = line ? '' : 'none'; });
+    $('.imgv-adv-pointedit').classList.toggle('active', pointEdit.isEnabled());
+    tb.querySelectorAll('.imgv-adv-lineonlyctl').forEach((el) => { el.style.display = cls === 'Line' ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-arrowctl').forEach((el) => { el.style.display = cls === 'Arrow' ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-radctl').forEach((el) => { el.style.display = ['Circle', 'Wedge', 'RegularPolygon'].includes(cls) ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-arcctl').forEach((el) => { el.style.display = arc ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-xformctl').forEach((el) => { el.style.display = has ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-rectctl').forEach((el) => { el.style.display = cls === 'Rect' ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-polyctl').forEach((el) => { el.style.display = cls === 'RegularPolygon' ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-starctl').forEach((el) => { el.style.display = cls === 'Star' ? '' : 'none'; });
+    tb.querySelectorAll('.imgv-adv-innerctl').forEach((el) => { el.style.display = ['Star', 'Ring', 'Arc'].includes(cls) ? '' : 'none'; });
     $('.imgv-adv-del').disabled = !has;
-    $('.imgv-adv-fill').disabled = !has;
+    $('.imgv-adv-fill').disabled = !has || isGroup(node);
+    $('.imgv-adv-group').disabled = selected.length < 2;
+    $('.imgv-adv-ungroup').disabled = !selected.some(isGroup);
     if (!has) return;
-    $('.imgv-adv-blend').value = selected.globalCompositeOperation() || 'source-over';
+    $('.imgv-adv-blend').value = node.globalCompositeOperation() || 'source-over';
+    $('.imgv-adv-opacity').value = Math.round((node.opacity() ?? 1) * 100);
+    $('.imgv-adv-x').value = Math.round(node.x());
+    $('.imgv-adv-y').value = Math.round(node.y());
+    $('.imgv-adv-rot').value = Math.round(node.rotation() || 0);
+    const sz = readSize(node); $('.imgv-adv-w').value = sz.w; $('.imgv-adv-h').value = sz.h;
+    if (cls === 'Rect') $('.imgv-adv-corner').value = Math.round(node.cornerRadius() || 0);
+    if (['Circle', 'Wedge'].includes(cls)) $('.imgv-adv-radius').value = Math.round(node.radius());
+    if (arc) $('.imgv-adv-angle').value = Math.round(node.angle());
+    if (cls === 'RegularPolygon') { $('.imgv-adv-sides').value = node.sides(); $('.imgv-adv-radius').value = Math.round(node.radius()); }
+    if (cls === 'Star') { $('.imgv-adv-points').value = node.numPoints(); $('.imgv-adv-inner').value = Math.round(node.innerRadius()); }
+    if (['Ring', 'Arc'].includes(cls)) $('.imgv-adv-inner').value = Math.round(node.innerRadius());
     if (label) {
-      const t = textNodeOf(selected), tag = tagNodeOf(selected);
-      $('.imgv-adv-text').value = t.text();
-      $('.imgv-adv-size').value = Math.round(t.fontSize());
-      $('.imgv-adv-font').value = t.fontFamily();
-      $('.imgv-adv-fill').value = rgbToHex(t.fill());
-      $('.imgv-adv-bg').value = rgbToHex(tag.fill());
-      $('.imgv-adv-bgop').value = Math.round((tag.opacity() ?? 1) * 100);
-    } else {
-      $('.imgv-adv-fill').value = rgbToHex(selected.fill() || '#3388ff');
-      $('.imgv-adv-stroke').value = rgbToHex(selected.stroke() || '#1144aa');
-      $('.imgv-adv-strokew').value = Math.round(selected.strokeWidth() || 0);
+      syncTextControls($, node, { multi, textNodeOf, tagNodeOf, rgbToHex });
+    } else if (shape) {
+      $('.imgv-adv-fill').value = rgbToHex(node.fill() || '#3388ff');
+      $('.imgv-adv-stroke').value = rgbToHex(node.stroke() || '#1144aa');
+      $('.imgv-adv-strokew').value = Math.round(node.strokeWidth() || 0);
+      $('.imgv-adv-dash').value = (node.dash?.() || []).join(',');
+      $('.imgv-adv-shadow').value = Math.round(node.shadowBlur?.() || 0);
+      $('.imgv-adv-shadowc').value = rgbToHex(node.shadowColor?.() || '#000000');
+      if (line) { $('.imgv-adv-cap').value = node.lineCap() || 'butt'; $('.imgv-adv-join').value = node.lineJoin() || 'miter'; $('.imgv-adv-tension').value = node.tension?.() || 0; }
+      if (cls === 'Line') $('.imgv-adv-closed').checked = !!node.closed();
+      if (cls === 'Arrow') { $('.imgv-adv-head').value = Math.round(node.pointerLength()); $('.imgv-adv-headstart').checked = !!node.pointerAtBeginning(); }
     }
   }
 
-  function select(label) {
-    selected = label;
-    tr.nodes(label ? [label] : []);
+  function select(nodes, opts = {}) {
+    const incoming = Array.isArray(nodes) ? nodes.filter(Boolean) : (nodes ? [nodes] : []);
+    if (opts.toggle && incoming.length === 1) {
+      selected = selected.includes(incoming[0]) ? selected.filter((n) => n !== incoming[0]) : [...selected, incoming[0]];
+    } else if (opts.add) {
+      selected = [...new Set([...selected, ...incoming])];
+    } else {
+      selected = incoming;
+    }
+    container.dataset.selectedCount = String(selected.length);
+    tr.nodes(selected.filter((n) => !isLocked(n)));
+    if (interactive && selected.length) container.focus({ preventScroll: true });
     layer.draw();
     syncToolbar();
     refreshLayers();
+    pointEdit.refresh();
   }
 
-  // Wire an object (text or shape) for selection + undo-on-change, then select it.
-  function placeObject(node) {
+  function wireObject(node) {
     node.name('obj');
-    node.on('click tap', (e) => { e.cancelBubble = true; if (interactive) select(node); });
+    node.on('click tap', (e) => {
+      e.cancelBubble = true;
+      if (interactive) select(node, { toggle: e.evt?.shiftKey || e.evt?.ctrlKey || e.evt?.metaKey });
+    });
+    node.on('dblclick dbltap', (e) => { e.cancelBubble = true; if (interactive && isLabel(node)) editLabelText(node); });
     node.on('dragstart transformstart', () => snap());   // snapshot the PRE-drag state
-    node.on('transformend dragend', () => markDirty());
+    node.on('dragmove', () => precision.snapDrag(node));
+    node.on('transformend', () => { selected.forEach(normalizeTransform); layer.draw(); markDirty(); syncToolbar(); });
+    node.on('dragend', () => { precision.clearGuides(); markDirty(); });
+  }
+
+  function placeObject(node) {
+    wireObject(node);
     layer.add(node);
     select(node);
     markDirty();
@@ -133,7 +165,11 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     const common = { x: cx - 60, y: cy - 40, draggable: true, fill: '#3388ff', stroke: '#1144aa', strokeWidth: 2 };
     let node;
     if (type === 'rect') node = new Konva.Rect({ ...common, width: 120, height: 80, cornerRadius: 4 });
+    else if (type === 'circle') node = new Konva.Circle({ x: cx, y: cy, radius: 56, draggable: true, fill: '#3388ff', stroke: '#1144aa', strokeWidth: 2 });
     else if (type === 'ellipse') node = new Konva.Ellipse({ x: cx, y: cy, radiusX: 60, radiusY: 40, draggable: true, fill: '#3388ff', stroke: '#1144aa', strokeWidth: 2 });
+    else if (type === 'ring') node = new Konva.Ring({ x: cx, y: cy, innerRadius: 28, outerRadius: 56, draggable: true, fill: '#3388ff', stroke: '#1144aa', strokeWidth: 2 });
+    else if (type === 'wedge') node = new Konva.Wedge({ x: cx, y: cy, radius: 64, angle: 120, draggable: true, fill: '#3388ff', stroke: '#1144aa', strokeWidth: 2 });
+    else if (type === 'arc') node = new Konva.Arc({ x: cx, y: cy, innerRadius: 36, outerRadius: 62, angle: 180, draggable: true, fill: '#3388ff', stroke: '#1144aa', strokeWidth: 2 });
     else if (type === 'line') node = new Konva.Line({ points: [cx - 60, cy, cx + 60, cy], stroke: '#1144aa', strokeWidth: 4, hitStrokeWidth: 14, draggable: true });
     else if (type === 'arrow') node = new Konva.Arrow({ points: [cx - 60, cy, cx + 60, cy], stroke: '#1144aa', strokeWidth: 4, fill: '#1144aa', pointerLength: 12, pointerWidth: 12, hitStrokeWidth: 14, draggable: true });
     else if (type === 'poly') node = new Konva.RegularPolygon({ x: cx, y: cy, sides: 5, radius: 56, draggable: true, fill: '#3388ff', stroke: '#1144aa', strokeWidth: 2 });
@@ -150,8 +186,58 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   }
   const isLabel = (n) => n && n.getClassName && n.getClassName() === 'Label';
 
-  // Click empty stage → deselect.
-  stage.on('click tap', (e) => { if (e.target === stage && interactive) select(null); });
+  function editLabelText(label) {
+    const text = textNodeOf(label);
+    if (!text) return;
+    select(label);
+    const box = text.getClientRect({ relativeTo: stage });
+    const ta = document.createElement('textarea');
+    ta.className = 'imgv-adv-textarea';
+    ta.value = text.text();
+    ta.style.cssText = `position:absolute;z-index:9;left:${container.offsetLeft + box.x}px;top:${container.offsetTop + box.y}px;width:${Math.max(80, box.width)}px;height:${Math.max(32, box.height)}px;font:${text.fontSize()}px ${text.fontFamily()};line-height:1.15;color:${text.fill()};background:var(--bg,#fff);border:1px solid var(--accent,#2563eb);padding:4px;resize:both;`;
+    stageHost.appendChild(ta);
+    tr.nodes([]);
+    text.hide(); layer.draw();
+    const done = (commit) => {
+      if (!ta.isConnected) return;
+      if (commit) { snap(); text.text(ta.value); markDirty(); }
+      ta.remove(); text.show(); select(label); layer.draw(); refreshLayers();
+    };
+    ta.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); done(false); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); done(true); }
+    });
+    ta.addEventListener('blur', () => done(true));
+    ta.focus(); ta.select();
+  }
+
+  // Empty-stage drag creates marquee selection; click clears.
+  let marquee = null, marqueeStart = null, suppressClick = false;
+  stage.on('mousedown touchstart', (e) => {
+    if (!interactive || e.target !== stage) return;
+    marqueeStart = stage.getPointerPosition();
+    marquee = new Konva.Rect({ x: marqueeStart.x, y: marqueeStart.y, width: 0, height: 0, fill: 'rgba(76,154,255,.16)', stroke: '#4c9aff', dash: [4, 3], listening: false });
+    layer.add(marquee); marquee.moveToTop(); tr.moveToTop();
+  });
+  stage.on('mousemove touchmove', () => {
+    if (!marquee || !marqueeStart) return;
+    const p = stage.getPointerPosition(); if (!p) return;
+    const x = Math.min(p.x, marqueeStart.x), y = Math.min(p.y, marqueeStart.y);
+    marquee.setAttrs({ x, y, width: Math.abs(p.x - marqueeStart.x), height: Math.abs(p.y - marqueeStart.y) });
+    layer.batchDraw();
+  });
+  stage.on('mouseup touchend', () => {
+    if (!marquee || !marqueeStart) return;
+    const box = marquee.getClientRect();
+    const moved = box.width > 4 || box.height > 4;
+    const hits = moved ? objects().filter((n) => Konva.Util.haveIntersection(box, n.getClientRect())) : [];
+    marquee.destroy(); marquee = null; marqueeStart = null;
+    if (moved) { suppressClick = true; select(hits); }
+  });
+  stage.on('click tap', (e) => {
+    if (suppressClick) { suppressClick = false; return; }
+    if (e.target === stage && interactive) select(null);
+  });
 
   $('.imgv-adv-add').addEventListener('click', addText);
   $('.imgv-adv-rect').addEventListener('click', () => addShape('rect'));
@@ -160,76 +246,153 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   $('.imgv-adv-arrow').addEventListener('click', () => addShape('arrow'));
   $('.imgv-adv-poly').addEventListener('click', () => addShape('poly'));
   $('.imgv-adv-star').addEventListener('click', () => addShape('star'));
-  $('.imgv-adv-del').addEventListener('click', () => { if (!selected) return; snap(); selected.destroy(); select(null); markDirty(); });
-  $('.imgv-adv-text').addEventListener('input', () => { if (isLabel(selected)) { textNodeOf(selected).text($('.imgv-adv-text').value); layer.draw(); refreshLayers(); markDirty(); } });
-  $('.imgv-adv-size').addEventListener('input', () => { if (isLabel(selected)) { textNodeOf(selected).fontSize(parseInt($('.imgv-adv-size').value, 10) || DEFAULTS.fontSize); layer.draw(); markDirty(); } });
-  $('.imgv-adv-font').addEventListener('change', () => { if (isLabel(selected)) { textNodeOf(selected).fontFamily($('.imgv-adv-font').value); layer.draw(); markDirty(); } });
-  $('.imgv-adv-fill').addEventListener('input', () => { if (!selected) return; (isLabel(selected) ? textNodeOf(selected) : selected).fill($('.imgv-adv-fill').value); layer.draw(); markDirty(); });
-  $('.imgv-adv-bg').addEventListener('input', () => { if (isLabel(selected)) { tagNodeOf(selected).fill($('.imgv-adv-bg').value); layer.draw(); markDirty(); } });
-  $('.imgv-adv-bgop').addEventListener('input', () => { if (isLabel(selected)) { tagNodeOf(selected).opacity((parseInt($('.imgv-adv-bgop').value, 10) || 0) / 100); layer.draw(); markDirty(); } });
-  $('.imgv-adv-stroke').addEventListener('input', () => { if (selected && !isLabel(selected)) { selected.stroke($('.imgv-adv-stroke').value); layer.draw(); markDirty(); } });
-  $('.imgv-adv-strokew').addEventListener('input', () => { if (selected && !isLabel(selected)) { selected.strokeWidth(parseInt($('.imgv-adv-strokew').value, 10) || 0); layer.draw(); markDirty(); } });
-  // Per-object blend mode — Konva globalCompositeOperation composites this object against the ones
-  // BEHIND it in the overlay stage (NOT the base <img>); honoured by flattenToCanvas on export.
-  $('.imgv-adv-blend').addEventListener('change', () => { if (selected) { snap(); selected.globalCompositeOperation($('.imgv-adv-blend').value); layer.draw(); markDirty(); } });
+  $('.imgv-adv-more').addEventListener('click', () => {
+    const next = ['circle', 'ring', 'wedge', 'arc'][$('.imgv-adv-more').dataset.next || 0];
+    $('.imgv-adv-more').dataset.next = String((Number($('.imgv-adv-more').dataset.next || 0) + 1) % 4);
+    addShape(next);
+  });
+  function deleteSelection() { if (!selected.length) return; snap(); const doomed = selected.slice(); tr.nodes([]); selected = []; doomed.forEach((n) => n.destroy()); select(null); markDirty(); }
+  function duplicateSelection() {
+    if (!selected.length) return;
+    snap();
+    const clones = selected.map((n) => cloneNode(n, stageW, stageH));
+    clones.forEach((n) => placeObject(n));
+    select(clones);
+  }
+  function nudgeSelection(dx, dy) {
+    if (!selected.length) return;
+    snap();
+    selected.forEach((n) => n.move({ x: dx, y: dy }));
+    layer.draw(); refreshLayers(); markDirty();
+  }
+  function groupSelection() {
+    if (selected.length < 2) return;
+    snap();
+    const group = new Konva.Group({ draggable: true });
+    wireObject(group);
+    layer.add(group);
+    selected.slice().forEach((n) => {
+      const pos = n.getAbsolutePosition();
+      n.name('group-child');
+      n.moveTo(group);
+      n.absolutePosition(pos);
+    });
+    select(group);
+    refreshLayers(); syncToolbar(); markDirty();
+  }
+  function ungroupSelection() {
+    const groups = selected.filter(isGroup);
+    if (!groups.length) return;
+    snap();
+    const kids = [];
+    groups.forEach((group) => {
+      group.getChildren().slice().forEach((child) => {
+        const pos = child.getAbsolutePosition();
+        child.off('click tap dblclick dbltap dragstart transformstart dragmove transformend dragend');
+        wireObject(child);
+        child.moveTo(layer);
+        child.absolutePosition(pos);
+        kids.push(child);
+      });
+      group.destroy();
+    });
+    layer.add(tr);
+    select(kids);
+    refreshLayers(); markDirty();
+  }
+  $('.imgv-adv-del').addEventListener('click', deleteSelection);
+  $('.imgv-adv-fill').addEventListener('input', () => { selected.forEach((n) => (isLabel(n) ? textNodeOf(n) : n).fill($('.imgv-adv-fill').value)); layer.draw(); markDirty(); });
+  $('.imgv-adv-stroke').addEventListener('input', () => { selected.filter((n) => !isLabel(n)).forEach((n) => n.stroke($('.imgv-adv-stroke').value)); layer.draw(); markDirty(); });
+  $('.imgv-adv-strokew').addEventListener('input', () => { selected.filter((n) => !isLabel(n)).forEach((n) => n.strokeWidth(parseInt($('.imgv-adv-strokew').value, 10) || 0)); layer.draw(); markDirty(); });
+  $('.imgv-adv-dash').addEventListener('change', () => { selected.filter((n) => !isLabel(n)).forEach((n) => n.dash?.($('.imgv-adv-dash').value ? $('.imgv-adv-dash').value.split(',').map(Number) : [])); layer.draw(); markDirty(); });
+  $('.imgv-adv-cap').addEventListener('change', () => { selected.forEach((n) => n.lineCap?.($('.imgv-adv-cap').value)); layer.draw(); markDirty(); });
+  $('.imgv-adv-join').addEventListener('change', () => { selected.forEach((n) => n.lineJoin?.($('.imgv-adv-join').value)); layer.draw(); markDirty(); });
+  $('.imgv-adv-opacity').addEventListener('input', () => { selected.forEach((n) => n.opacity((parseInt($('.imgv-adv-opacity').value, 10) || 0) / 100)); layer.draw(); markDirty(); });
+  $('.imgv-adv-x').addEventListener('change', () => { const n = primary(); if (n) { n.x(parseFloat($('.imgv-adv-x').value) || 0); layer.draw(); refreshLayers(); markDirty(); } });
+  $('.imgv-adv-y').addEventListener('change', () => { const n = primary(); if (n) { n.y(parseFloat($('.imgv-adv-y').value) || 0); layer.draw(); refreshLayers(); markDirty(); } });
+  $('.imgv-adv-rot').addEventListener('change', () => { selected.forEach((n) => n.rotation(parseFloat($('.imgv-adv-rot').value) || 0)); layer.draw(); markDirty(); });
+  function applySizeInputs() { const w = parseFloat($('.imgv-adv-w').value) || 1, h = parseFloat($('.imgv-adv-h').value) || 1; selected.forEach((n) => writeSize(n, w, h)); layer.draw(); markDirty(); syncToolbar(); }
+  $('.imgv-adv-w').addEventListener('change', applySizeInputs);
+  $('.imgv-adv-h').addEventListener('change', applySizeInputs);
+  $('.imgv-adv-corner').addEventListener('input', () => { selected.filter((n) => n.getClassName?.() === 'Rect').forEach((n) => n.cornerRadius(parseInt($('.imgv-adv-corner').value, 10) || 0)); layer.draw(); markDirty(); });
+  $('.imgv-adv-sides').addEventListener('change', () => { selected.filter((n) => n.getClassName?.() === 'RegularPolygon').forEach((n) => n.sides(Math.max(3, parseInt($('.imgv-adv-sides').value, 10) || 5))); layer.draw(); refreshLayers(); markDirty(); });
+  $('.imgv-adv-points').addEventListener('change', () => { selected.filter((n) => n.getClassName?.() === 'Star').forEach((n) => n.numPoints(Math.max(3, parseInt($('.imgv-adv-points').value, 10) || 5))); layer.draw(); markDirty(); });
+  $('.imgv-adv-inner').addEventListener('change', () => { selected.filter((n) => ['Star', 'Ring', 'Arc'].includes(n.getClassName?.())).forEach((n) => n.innerRadius(Math.max(1, parseInt($('.imgv-adv-inner').value, 10) || 1))); layer.draw(); markDirty(); });
+  $('.imgv-adv-radius').addEventListener('change', () => { selected.forEach((n) => { const v = Math.max(1, parseInt($('.imgv-adv-radius').value, 10) || 1); if (['Circle', 'Wedge', 'RegularPolygon'].includes(n.getClassName?.())) n.radius(v); }); layer.draw(); markDirty(); });
+  $('.imgv-adv-angle').addEventListener('change', () => { selected.forEach((n) => { if (['Ring', 'Wedge', 'Arc'].includes(n.getClassName?.())) n.angle(Math.max(1, Math.min(360, parseInt($('.imgv-adv-angle').value, 10) || 1))); }); layer.draw(); markDirty(); });
+  $('.imgv-adv-head').addEventListener('change', () => { selected.filter((n) => n.getClassName?.() === 'Arrow').forEach((n) => { const v = Math.max(1, parseInt($('.imgv-adv-head').value, 10) || 1); n.pointerLength(v); n.pointerWidth(v); }); layer.draw(); markDirty(); });
+  $('.imgv-adv-headstart').addEventListener('change', () => { selected.filter((n) => n.getClassName?.() === 'Arrow').forEach((n) => n.pointerAtBeginning($('.imgv-adv-headstart').checked)); layer.draw(); markDirty(); });
+  $('.imgv-adv-tension').addEventListener('change', () => { selected.forEach((n) => n.tension?.(Math.max(0, Math.min(1, parseFloat($('.imgv-adv-tension').value) || 0)))); layer.draw(); markDirty(); });
+  $('.imgv-adv-closed').addEventListener('change', () => { selected.filter((n) => n.getClassName?.() === 'Line').forEach((n) => n.closed($('.imgv-adv-closed').checked)); layer.draw(); markDirty(); });
+  $('.imgv-adv-shadow').addEventListener('input', () => { selected.filter((n) => !isLabel(n)).forEach((n) => { n.shadowBlur(parseInt($('.imgv-adv-shadow').value, 10) || 0); n.shadowOpacity(n.shadowBlur() ? 0.45 : 0); n.shadowOffset({ x: 2, y: 2 }); }); layer.draw(); markDirty(); });
+  $('.imgv-adv-shadowc').addEventListener('input', () => { selected.filter((n) => !isLabel(n)).forEach((n) => n.shadowColor($('.imgv-adv-shadowc').value)); layer.draw(); markDirty(); });
+  $('.imgv-adv-ratio').addEventListener('change', () => tr.keepRatio($('.imgv-adv-ratio').checked));
+  $('.imgv-adv-center').addEventListener('change', () => tr.centeredScaling($('.imgv-adv-center').checked));
+  $('.imgv-adv-flip').addEventListener('change', () => tr.flipEnabled($('.imgv-adv-flip').checked));
+  // Blend is overlay-object-relative; flatten draws the whole overlay over the base.
+  $('.imgv-adv-blend').addEventListener('change', () => { if (selected.length) { snap(); selected.forEach((n) => n.globalCompositeOperation($('.imgv-adv-blend').value)); layer.draw(); markDirty(); } });
+  $('.imgv-adv-front').addEventListener('click', () => { if (!selected.length) return; snap(); selected.forEach((n) => n.moveToTop()); tr.moveToTop(); layer.draw(); refreshLayers(); markDirty(); });
+  $('.imgv-adv-back').addEventListener('click', () => { if (!selected.length) return; snap(); selected.forEach((n) => n.moveToBottom()); tr.moveToTop(); layer.draw(); refreshLayers(); markDirty(); });
+  tb.querySelectorAll('.imgv-adv-align').forEach((b) => b.addEventListener('click', () => precision.align(b.dataset.align)));
+  tb.querySelectorAll('.imgv-adv-dist').forEach((b) => b.addEventListener('click', () => precision.distribute(b.dataset.axis)));
+  tb.addEventListener('click', (e) => {
+    if (e.target.closest('.imgv-adv-group')) groupSelection();
+    if (e.target.closest('.imgv-adv-ungroup')) ungroupSelection();
+    if (e.target.closest('.imgv-adv-pointedit')) pointEdit.setEnabled(!pointEdit.isEnabled());
+  });
+  $('.imgv-adv-grid').addEventListener('change', () => precision.setGrid($('.imgv-adv-grid').checked));
   syncToolbar();
-
-  // ── Layers panel ── one row per object, docked top-right of the stage host:
-  // select, eye-toggle visibility, reorder (z-order), delete. The Transformer is
-  // kept on top after any reorder so its handles never get buried.
-  const panel = document.createElement('div');
-  panel.className = 'imgv-adv-layers';
-  panel.hidden = true;
-  panel.style.cssText = 'position:absolute;top:8px;right:8px;z-index:7;width:172px;max-height:60%;overflow:auto;background:var(--bg-2,#222);color:var(--fg,#eee);border:1px solid var(--border,#444);border-radius:6px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.3);';
-  stageHost.appendChild(panel);
+  const uninstallKeys = installAdvKeys({
+    ownerDocument: host.ownerDocument,
+    keyTarget: container,
+    isActive: () => interactive && host.isConnected,
+    getSelection: () => selected.slice(),
+    deleteSelection,
+    duplicateSelection,
+    nudgeSelection,
+    clearSelection: () => select(null),
+  });
+  const onContainerDelete = (e) => {
+    if ((e.key === 'Delete' || e.key === 'Backspace' || e.code === 'Delete' || e.code === 'Backspace' || e.keyCode === 46 || e.keyCode === 8) && selected.length) {
+      e.preventDefault();
+      e.stopPropagation();
+      deleteSelection();
+    }
+  };
+  container.addEventListener('keydown', onContainerDelete, true);
+  container.addEventListener('keyup', onContainerDelete, true);
+  container.onkeydown = onContainerDelete;
+  container.onkeyup = onContainerDelete;
 
   function labelName(node) {
-    if (isLabel(node)) { const t = textNodeOf(node)?.text?.(); if (t && t.trim()) return t.trim().slice(0, 18); }
-    return ({ Rect: 'Rectangle', Ellipse: 'Ellipse', Line: 'Line', Arrow: 'Arrow', RegularPolygon: 'Polygon', Star: 'Star', Label: 'Text' })[node.getClassName?.()] || 'Layer';
+    return nodeName(node, isLabel, textNodeOf);
   }
+  const layersPanel = mountAdvLayersPanel({ stageHost, layer, tr, getObjects: objects, getSelected: () => selected, select, snap, markDirty, cloneNode, placeObject, labelName, stageW: () => stageW, stageH: () => stageH });
+  const panel = layersPanel.panel;
+  const refreshLayers = layersPanel.refresh;
+  installTextControls({ $, selectedLabels: () => selected.filter(isLabel), textNodeOf, tagNodeOf, layer, markDirty, refreshLayers });
 
-  function refreshLayers() {
-    const labels = layer.find('.obj').slice().reverse();   // top-most first
-    panel.innerHTML = `<div style="padding:5px 8px;font-weight:600;border-bottom:1px solid var(--border,#444)">Layers (${labels.length})</div>`;
-    labels.forEach((label) => {
-      const row = document.createElement('div');
-      row.style.cssText = `display:flex;align-items:center;gap:4px;padding:3px 6px;cursor:pointer;${label === selected ? 'background:var(--accent,#2563eb);color:#fff;' : ''}`;
-      const eye = document.createElement('button');
-      eye.textContent = label.visible() ? '👁' : '🚫';
-      eye.title = 'Show / hide'; eye.style.cssText = 'background:none;border:none;cursor:pointer;font-size:12px;padding:0';
-      eye.addEventListener('click', (e) => { e.stopPropagation(); snap(); label.visible(!label.visible()); if (!label.visible() && selected === label) select(null); layer.draw(); refreshLayers(); markDirty(); });
-      const name = document.createElement('span');
-      name.textContent = labelName(label); name.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-      const up = mkMini('↑', 'Bring forward', (e) => { e.stopPropagation(); snap(); label.moveUp(); tr.moveToTop(); layer.draw(); refreshLayers(); markDirty(); });
-      const dn = mkMini('↓', 'Send backward', (e) => { e.stopPropagation(); snap(); label.moveDown(); tr.moveToTop(); layer.draw(); refreshLayers(); markDirty(); });
-      const del = mkMini('🗑', 'Delete', (e) => { e.stopPropagation(); snap(); if (selected === label) select(null); label.destroy(); layer.draw(); refreshLayers(); markDirty(); });
-      row.append(eye, name, up, dn, del);
-      row.addEventListener('click', () => { if (label.visible()) select(label); });
-      panel.appendChild(row);
-    });
-  }
-  function mkMini(txt, title, fn) { const b = document.createElement('button'); b.textContent = txt; b.title = title; b.style.cssText = 'background:none;border:none;color:inherit;cursor:pointer;font-size:11px;padding:0 1px'; b.addEventListener('click', fn); return b; }
-
-  // Flatten the base image + the vector overlay into a fresh natural-res canvas.
-  // Transformer handles are hidden first so they don't bake in. Reads the CURRENT
-  // image dimensions (the base may have been re-encoded by a non-geometry pixel edit).
+  // Flatten a copy for export/ASCII without baking the editor state.
   function flattenToCanvas() {
-    const wasSel = selected; select(null);
+    const wasSel = selected.slice(); select(null);
     const nW = img.naturalWidth || naturalW, nH = img.naturalHeight || naturalH;
     const canvas = document.createElement('canvas');
     canvas.width = nW; canvas.height = nH;
     const g = canvas.getContext('2d');
     g.drawImage(img, 0, 0, nW, nH);
+    const precisionWasVisible = precision.layer.visible();
+    const pointsWasVisible = pointEdit.layer.visible();
+    precision.layer.visible(false);
+    pointEdit.layer.visible(false);
     const overlay = stage.toCanvas({ pixelRatio: nW / stageW });
+    precision.layer.visible(precisionWasVisible);
+    pointEdit.layer.visible(pointsWasVisible);
     g.drawImage(overlay, 0, 0, nW, nH);
-    if (wasSel) select(wasSel);
+    if (wasSel.length) select(wasSel);
     return canvas;
   }
 
-  // Keep the overlay container glued to the displayed image box as the view changes
-  // (fit/zoom/pan). The Konva stage keeps its mount-time pixel coords; a CSS scale on
-  // the container tracks zoom so objects stay registered to the image without touching
-  // their coordinates. The renderer calls this from its apply()/applyPan().
+  // Keep overlay registered to the displayed image during fit/zoom/pan.
   function relayout() {
     const hostR = stageHost.getBoundingClientRect();
     const r = img.getBoundingClientRect();
@@ -240,10 +403,7 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     container.style.transform = Math.abs(s - 1) < 1e-3 ? '' : `scale(${s})`;
   }
 
-  // Re-baseline the (empty) stage onto the CURRENT base image — display size + natural
-  // res — after a geometry op resized the base while the overlay was away. Only valid
-  // with no objects (it resets the coordinate frame); the renderer calls it on Adv
-  // entry when the overlay is empty.
+  // Re-baseline an empty stage after base geometry changes.
   function rebaseline() {
     naturalW = img.naturalWidth || naturalW; naturalH = img.naturalHeight || naturalH;
     const r = img.getBoundingClientRect();
@@ -251,28 +411,22 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     stage.width(stageW); stage.height(stageH);
     container.style.width = stageW + 'px'; container.style.height = stageH + 'px';
     container.style.transform = '';
+    precision.relayout();
     relayout();
   }
 
-  // Transform every object by a base-geometry op (rotate/flip/crop/resize/expand) so it
-  // stays registered to the image AND editable — the alternative to baking it in. `affine`
-  // is [a,b,c,d,e,f] in OLD-natural → NEW-natural space (geometry-affine.js). The base has
-  // ALREADY been re-encoded + re-displayed at the new size when this runs.
-  //
-  // Objects live in stage(display) coords; the op is in natural coords. So each object's
-  // new transform = (naturalNew→stageNew) ∘ affine ∘ (stageOld→naturalOld) ∘ oldTransform,
-  // composed with Konva's Transform and decomposed back to x/y/rotation/scale/skew.
+  // Transform top-level objects by the same natural-space geometry affine as the base.
   function applyGeometry(affine) {
     const oldK = naturalW / stageW;                          // stageOld → naturalOld scale
-    const objs = layer.find('.obj');
+    const objs = objects();
     const olds = objs.map((n) => n.getTransform().copy());   // local → stageOld, captured before resize
-    // Adopt the new base geometry (objects make this safe — we re-place them below).
     naturalW = img.naturalWidth || naturalW; naturalH = img.naturalHeight || naturalH;
     const r = img.getBoundingClientRect();
     stageW = Math.max(1, Math.round(r.width)); stageH = Math.max(1, Math.round(r.height));
     stage.width(stageW); stage.height(stageH);
     container.style.width = stageW + 'px'; container.style.height = stageH + 'px';
     container.style.transform = '';
+    precision.relayout();
     const newK = naturalW / stageW;                          // naturalNew → stageNew = 1/newK
     const Sk = new Konva.Transform([oldK, 0, 0, oldK, 0, 0]);
     const A = new Konva.Transform(affine);
@@ -286,27 +440,25 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     layer.draw(); refreshLayers(); markDirty();
   }
 
-  // Remove every object (used on Reset, or when the overlay is flattened into the base).
-  // The stage itself stays mounted.
+  // Remove every object while keeping the stage mounted.
   function clear() {
-    layer.find('.obj').forEach((n) => n.destroy());
+    objects().forEach((n) => n.destroy());
     select(null); layer.draw(); refreshLayers(); markDirty();
   }
 
   return {
     addText,
-    isEmpty: () => layer.find('.obj').length === 0,
-    objectCount: () => layer.find('.obj').length,
+    isEmpty: () => objects().length === 0,
+    objectCount: () => objects().length,
     setInteractive(on) {
       interactive = on;
+      if (!on) pointEdit.setEnabled(false);
       tb.hidden = !on; tb.style.display = on ? 'flex' : 'none';
       panel.hidden = !on; panel.style.display = on ? 'block' : 'none';
       container.style.pointerEvents = on ? 'auto' : 'none';
       if (on) refreshLayers(); else select(null);
     },
-    // Overlay history bridge for editor-core's unified undo: serialize the current
-    // objects to JSON, and restore a snapshot (null/empty → clear). restore must NOT
-    // push its own undo entry (editor-core owns the stack) — rebuild/clear don't.
+    // Overlay history bridge for editor-core's unified undo.
     serialize: () => layer.toJSON(),
     restore: (json) => { if (json) rebuild(json); else clear(); },
     flattenToCanvas,
@@ -314,32 +466,20 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     rebaseline,
     applyGeometry,
     clear,
-    destroy() { tr.destroy(); stage.destroy(); container.remove(); tb.remove(); panel.remove(); },
+    destroy() { uninstallKeys(); container.removeEventListener('keydown', onContainerDelete, true); container.removeEventListener('keyup', onContainerDelete, true); container.onkeydown = null; container.onkeyup = null; pointEdit.destroy(); precision.destroy(); tr.destroy(); stage.destroy(); container.remove(); tb.remove(); layersPanel.destroy(); },
   };
 
-  // Rebuild the layer from a saved JSON snapshot (re-wires events + transformer).
   function rebuild(json) {
     layer.destroyChildren();
     const tmp = Konva.Node.create(json);
     tmp.find('.obj').forEach((src) => {
       const node = src.clone();
       node.draggable(true);
-      node.on('click tap', (e) => { e.cancelBubble = true; if (interactive) select(node); });
-      node.on('dragstart transformstart', () => snap());
-      node.on('transformend dragend', () => markDirty());
+      wireObject(node);
       layer.add(node);
     });
     layer.add(tr);
     select(null);
     markDirty();
   }
-}
-
-// Konva returns colours as the string we set, but normalise to #rrggbb for inputs.
-function rgbToHex(c) {
-  if (typeof c !== 'string') return '#000000';
-  if (c[0] === '#') return c.length === 7 ? c : c;
-  const m = c.match(/\d+/g);
-  if (!m) return '#000000';
-  return '#' + m.slice(0, 3).map((n) => (+n).toString(16).padStart(2, '0')).join('');
 }

@@ -630,6 +630,11 @@ export async function run(ctx) {
   const toolsHidden = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display === 'none');
   await page.click('#previewHost .imgv-tools-btn');   // restore for later steps
   if (toolsVisInit && toolsHidden) pass('image editing tools collapse behind the 🛠 toggle'); else fail('tools toggle: ' + JSON.stringify({ toolsVisInit, toolsHidden }));
+  const modeRow = await page.evaluate(() => {
+    const boxes = [...document.querySelectorAll('#previewHost .imgv-mode-col button:not([hidden])')].map((b) => b.getBoundingClientRect());
+    return { count: boxes.length, sameRow: boxes.length === 3 && Math.max(...boxes.map((b) => b.top)) - Math.min(...boxes.map((b) => b.top)) < 6 };
+  });
+  if (modeRow.count === 3 && modeRow.sameRow) pass('image mode buttons ASCII/Edit/Adv sit on one row'); else fail('mode buttons: ' + JSON.stringify(modeRow));
   // Resize in PERCENT: the ⊡ button lives in Common and jumps to the Size tab where
   // the W/H panel lives; 50% should halve the natural width.
   await openTab('common');
@@ -709,14 +714,14 @@ export async function run(ctx) {
   await page.click('#previewHost .imgv-adv-star');
   const advPolyStar = await page.evaluate(() => {
     const rows = [...document.querySelectorAll('#previewHost .imgv-adv-layers > div')];
-    const names = rows.map((r) => r.querySelector('span')?.textContent || '').join('|');
+    const names = rows.map((r) => r.querySelector('span[title="Double-click to rename"]')?.textContent || '').join('|');
     return { count: rows.length, hasPoly: names.includes('Polygon'), hasStar: names.includes('Star') };
   });
   if (advPolyStar.count === 5 && advPolyStar.hasPoly && advPolyStar.hasStar) pass('Adv Edit: polygon + star shapes added (named in layers panel)'); else fail('adv poly/star: ' + JSON.stringify(advPolyStar));
   // Per-object blend mode: set the (selected) star to Multiply; selecting Polygon then Star again shows
   // the blend select reflects each object's own value (per-object, persisted on the Konva node).
   const clickAdvRow = (n) => page.evaluate((name) => {
-    const row = [...document.querySelectorAll('#previewHost .imgv-adv-layers > div')].find((r) => r.querySelector('span')?.textContent === name);
+    const row = [...document.querySelectorAll('#previewHost .imgv-adv-layers > div')].find((r) => r.querySelector('span[title="Double-click to rename"]')?.textContent === name);
     row?.click(); return !!row;
   }, n);
   await page.selectOption('#previewHost .imgv-adv-blend', 'multiply');   // star is the active selection
@@ -725,6 +730,215 @@ export async function run(ctx) {
   await clickAdvRow('Star');
   const starBlend = await page.$eval('#previewHost .imgv-adv-blend', (e) => e.value);
   if (polyBlend === 'source-over' && starBlend === 'multiply') pass('Adv Edit: per-object blend mode persists on the node (poly=Normal, star=Multiply)'); else fail('adv blend: ' + JSON.stringify({ polyBlend, starBlend }));
+  await clickAdvRow('Layer A');
+  const richText = await page.evaluate(async () => {
+    const stage = window.Konva?.stages?.[0];
+    const visible = (sel) => getComputedStyle(document.querySelector(sel).closest('label')).display !== 'none';
+    const setCheck = (sel, on) => { const el = document.querySelector(sel); el.checked = on; el.dispatchEvent(new Event('change', { bubbles: true })); };
+    const setValue = (sel, value, event = 'change') => { const el = document.querySelector(sel); el.value = value; el.dispatchEvent(new Event(event, { bubbles: true })); };
+    setCheck('#previewHost .imgv-adv-bold', true);
+    setCheck('#previewHost .imgv-adv-italic', true);
+    setCheck('#previewHost .imgv-adv-underline', true);
+    setCheck('#previewHost .imgv-adv-strike', true);
+    setValue('#previewHost .imgv-adv-talign', 'center');
+    setValue('#previewHost .imgv-adv-valign', 'middle');
+    setValue('#previewHost .imgv-adv-lineh', '1.4');
+    setValue('#previewHost .imgv-adv-wrap', 'char');
+    setValue('#previewHost .imgv-adv-tw', '96');
+    setValue('#previewHost .imgv-adv-th', '88');
+    setValue('#previewHost .imgv-adv-pad', '12');
+    setValue('#previewHost .imgv-adv-tstroke', '#ff00aa', 'input');
+    setValue('#previewHost .imgv-adv-tstrokew', '3');
+    setValue('#previewHost .imgv-adv-tshadow', '8', 'input');
+    setValue('#previewHost .imgv-adv-tshadowc', '#0033ff', 'input');
+    await new Promise((r) => setTimeout(r, 0));
+    const label = stage.find('.obj').find((n) => n.getClassName() === 'Label' && n.findOne('Text')?.text() === 'Layer A');
+    const t = label?.findOne('Text');
+    return {
+      visible: visible('#previewHost .imgv-adv-bold') && visible('#previewHost .imgv-adv-talign') && visible('#previewHost .imgv-adv-tstroke'),
+      shapeHidden: getComputedStyle(document.querySelector('#previewHost .imgv-adv-stroke').closest('label')).display === 'none',
+      style: t?.fontStyle?.(),
+      deco: t?.textDecoration?.(),
+      align: t?.align?.(),
+      valign: t?.verticalAlign?.(),
+      lineHeight: t?.lineHeight?.(),
+      wrap: t?.wrap?.(),
+      width: Math.round(t?.width?.() || 0),
+      height: Math.round(t?.height?.() || 0),
+      padding: Math.round(t?.padding?.() || 0),
+      stroke: t?.stroke?.(),
+      strokeWidth: t?.strokeWidth?.(),
+      shadowBlur: t?.shadowBlur?.(),
+      shadowColor: t?.shadowColor?.(),
+    };
+  });
+  if (richText.visible && richText.shapeHidden && /\bbold\b/.test(richText.style) && /\bitalic\b/.test(richText.style) && /\bunderline\b/.test(richText.deco) && /\bline-through\b/.test(richText.deco) && richText.align === 'center' && richText.valign === 'middle' && richText.lineHeight === 1.4 && richText.wrap === 'char' && richText.width === 96 && richText.height === 88 && richText.padding === 12 && richText.stroke === '#ff00aa' && richText.strokeWidth === 3 && richText.shadowBlur === 8 && richText.shadowColor === '#0033ff')
+    pass('Adv Edit: rich text controls style, align, wrap, pad, stroke, and shadow selected text');
+  else fail('adv rich text controls: ' + JSON.stringify(richText));
+  await clickAdvRow('Star');
+  const advControls = await page.evaluate(() => ({
+    opacity: !!document.querySelector('#previewHost .imgv-adv-opacity'),
+    starPointsVisible: getComputedStyle(document.querySelector('#previewHost .imgv-adv-points').closest('label')).display !== 'none',
+    innerVisible: getComputedStyle(document.querySelector('#previewHost .imgv-adv-inner').closest('label')).display !== 'none',
+  }));
+  if (advControls.opacity && advControls.starPointsVisible && advControls.innerVisible) pass('Adv Edit: advanced shape controls are exposed for the selected star'); else fail('adv controls: ' + JSON.stringify(advControls));
+  await page.click('#previewHost .imgv-adv-more');   // circle, selected
+  const deeperControls = await page.evaluate(() => ({
+    radius: getComputedStyle(document.querySelector('#previewHost .imgv-adv-radius').closest('label')).display !== 'none',
+    dash: !!document.querySelector('#previewHost .imgv-adv-dash'),
+    shadow: !!document.querySelector('#previewHost .imgv-adv-shadow'),
+    ratio: !!document.querySelector('#previewHost .imgv-adv-ratio'),
+  }));
+  if (deeperControls.radius && deeperControls.dash && deeperControls.shadow && deeperControls.ratio) pass('Adv Edit: deeper Konva shape/style/transform controls are exposed'); else fail('adv deeper controls: ' + JSON.stringify(deeperControls));
+  const layerPolish = await page.evaluate(async () => {
+    const rows = () => [...document.querySelectorAll('#previewHost .imgv-adv-layers > div')];
+    const rowByName = (name) => rows().find((r) => r.querySelector('span[title="Double-click to rename"]')?.textContent === name);
+    const circle = rowByName('Circle');
+    const name = circle?.querySelector('span[title="Double-click to rename"]');
+    name?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    const input = circle?.querySelector('input');
+    if (input) {
+      input.value = 'Temp Circle';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    }
+    const renamed = rowByName('Temp Circle');
+    renamed?.querySelector('button[title="Lock"]')?.click();
+    const locked = rowByName('Temp Circle');
+    locked?.querySelector('button[title="Unlock"]')?.click();
+    rowByName('Temp Circle')?.querySelector('button[title="Duplicate"]')?.click();
+    await new Promise((r) => setTimeout(r, 0));
+    const afterDup = rows().length;
+    document.querySelector('#previewHost .imgv-adv-del')?.click();   // delete selected duplicate
+    await new Promise((r) => setTimeout(r, 0));
+    rowByName('Temp Circle')?.click();
+    document.querySelector('#previewHost .imgv-adv-del')?.click();   // delete original temporary circle
+    await new Promise((r) => setTimeout(r, 0));
+    return {
+      renamed: !!renamed,
+      hadLock: !!locked?.querySelector('button[title="Unlock"]'),
+      duplicateRows: afterDup,
+      restoredRows: rows().length,
+      typeIcon: !!renamed?.textContent?.includes('C'),
+      selectedRows: rows().filter((r) => r.dataset.selected === '1').length,
+    };
+  });
+  if (layerPolish.renamed && layerPolish.hadLock && layerPolish.duplicateRows === 7 && layerPolish.restoredRows === 5 && layerPolish.typeIcon)
+    pass('Adv Edit: layer panel supports rename, lock/unlock, duplicate, type icons, and selected state');
+  else fail('adv layer polish: ' + JSON.stringify(layerPolish));
+  const precisionTools = await page.evaluate(async () => {
+    const stage = window.Konva?.stages?.[0];
+    const rows = () => [...document.querySelectorAll('#previewHost .imgv-adv-layers > div')];
+    const rowByName = (name) => rows().find((r) => r.querySelector('span[title="Double-click to rename"]')?.textContent === name);
+    const clickRow = (name, shift = false) => rowByName(name)?.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: shift }));
+    document.querySelector('#previewHost .imgv-adv-grid').click();
+    await new Promise((r) => setTimeout(r, 0));
+    const gridCount = stage.find('.grid').length;
+    const objCountWithGrid = stage.find('.obj').length;
+    clickRow('Polygon'); clickRow('Star', true);
+    document.querySelector('#previewHost .imgv-adv-align[data-align="left"]').click();
+    await new Promise((r) => setTimeout(r, 0));
+    const pair = stage.find('.obj').filter((n) => ['RegularPolygon', 'Star'].includes(n.getClassName()));
+    const lefts = pair.map((n) => Math.round(n.getClientRect({ skipShadow: true }).x));
+    clickRow('Layer A'); clickRow('Text', true); clickRow('Polygon', true); clickRow('Star', true);
+    document.querySelector('#previewHost .imgv-adv-dist[data-axis="x"]').click();
+    await new Promise((r) => setTimeout(r, 0));
+    const tr = stage.find('Transformer')[0];
+    const selectedNodes = tr?.nodes?.() || [];
+    const centers = selectedNodes.map((n) => {
+      const b = n.getClientRect({ skipShadow: true });
+      return Math.round(b.x + b.width / 2);
+    }).sort((a, b) => a - b);
+    const gaps = centers.slice(1).map((c, i) => c - centers[i]);
+    return {
+      gridCount,
+      objCountWithGrid,
+      objectCount: stage.find('.obj').length,
+      precisionLayers: stage.getLayers().filter((l) => l.hasName('precision')).length,
+      aligned: lefts.length === 2 && Math.abs(lefts[0] - lefts[1]) <= 1,
+      selectedForDistribute: selectedNodes.length,
+      gaps,
+      distributed: gaps.length >= 3 && Math.max(...gaps) - Math.min(...gaps) <= 1,
+    };
+  });
+  if (precisionTools.gridCount > 0 && precisionTools.objCountWithGrid === precisionTools.objectCount && precisionTools.precisionLayers === 1 && precisionTools.aligned && precisionTools.distributed)
+    pass('Adv Edit: precision tools provide grid, visible helper layer, align, and distribute');
+  else fail('adv precision tools: ' + JSON.stringify(precisionTools));
+  await page.click('#previewHost .imgv-adv-line');
+  const pointStart = await page.evaluate(async () => {
+    document.querySelector('#previewHost .imgv-adv-pointedit').click();
+    await new Promise((r) => setTimeout(r, 0));
+    const stage = window.Konva?.stages?.[0];
+    const mid = stage.find('.point-mid')[0]?.position();
+    const first = stage.find('.point-handle')[0]?.position();
+    const line = stage.find('.obj').find((n) => n.getClassName() === 'Line');
+    return {
+      pointLayers: stage.getLayers().filter((l) => l.hasName('point-edit')).length,
+      objectCount: stage.find('.obj').length,
+      pointObjects: stage.find('.obj').filter((n) => /^point-/.test(n.name())).length,
+      handles: stage.find('.point-handle').length,
+      mids: stage.find('.point-mid').length,
+      points: line?.points?.().slice(),
+      mid, first,
+    };
+  });
+  const advBox = await page.$eval('#previewHost .imgv-adv-stage', (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y }; });
+  if (pointStart.mid) {
+    await page.mouse.move(advBox.x + pointStart.mid.x, advBox.y + pointStart.mid.y);
+    await page.mouse.down();
+    await page.mouse.move(advBox.x + pointStart.mid.x, advBox.y + pointStart.mid.y + 28, { steps: 4 });
+    await page.mouse.up();
+  }
+  const pointAfterMid = await page.evaluate(() => {
+    const stage = window.Konva?.stages?.[0];
+    const line = stage.find('.obj').find((n) => n.getClassName() === 'Line');
+    const first = stage.find('.point-handle')[0]?.position();
+    return { points: line?.points?.().slice(), handles: stage.find('.point-handle').length, mids: stage.find('.point-mid').length, first };
+  });
+  if (pointAfterMid.first) {
+    await page.mouse.move(advBox.x + pointAfterMid.first.x, advBox.y + pointAfterMid.first.y);
+    await page.mouse.down();
+    await page.mouse.move(advBox.x + pointAfterMid.first.x - 18, advBox.y + pointAfterMid.first.y - 10, { steps: 4 });
+    await page.mouse.up();
+  }
+  const pointEdit = await page.evaluate((startPoints) => {
+    const stage = window.Konva?.stages?.[0];
+    const line = stage.find('.obj').find((n) => n.getClassName() === 'Line');
+    const pts = line?.points?.().slice() || [];
+    return {
+      pointLayers: stage.getLayers().filter((l) => l.hasName('point-edit')).length,
+      objectCount: stage.find('.obj').length,
+      pointObjects: stage.find('.obj').filter((n) => /^point-/.test(n.name())).length,
+      inserted: pts.length === 6,
+      endpointMoved: startPoints && Math.abs(pts[0] - startPoints[0]) > 1,
+      handles: stage.find('.point-handle').length,
+      mids: stage.find('.point-mid').length,
+    };
+  }, pointStart.points);
+  if (pointStart.pointLayers === 1 && pointStart.handles === 2 && pointStart.mids === 1 && pointStart.pointObjects === 0 && pointEdit.inserted && pointEdit.endpointMoved && pointEdit.handles === 3 && pointEdit.mids === 2 && pointEdit.objectCount === pointStart.objectCount)
+    pass('Adv Edit: line point mode edits endpoints and inserts midpoint handles without serializing helpers');
+  else fail('adv point edit: ' + JSON.stringify({ pointStart, pointAfterMid, pointEdit }));
+  await page.evaluate(async () => {
+    document.querySelector('#previewHost .imgv-adv-pointedit.active')?.click();
+    const rows = () => [...document.querySelectorAll('#previewHost .imgv-adv-layers > div')];
+    const line = rows().find((r) => r.querySelector('span[title="Double-click to rename"]')?.textContent === 'Line');
+    line?.click();
+    document.querySelector('#previewHost .imgv-adv-del')?.click();
+    await new Promise((r) => setTimeout(r, 0));
+  });
+  await clickAdvRow('Star');
+  await page.keyboard.press('Control+d');
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .imgv-adv-layers > div').length === 6, null, { timeout: 5000 }).catch(() => {});
+  await page.evaluate(() => {
+    const ev = new KeyboardEvent('keydown', { key: 'Delete', code: 'Delete', keyCode: 46, bubbles: true, cancelable: true });
+    document.querySelector('#previewHost .imgv-adv-stage')?.onkeydown?.(ev);
+  });
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .imgv-adv-layers > div').length === 5, null, { timeout: 5000 }).catch(() => {});
+  const keyState = await page.evaluate(() => ({
+    rows: document.querySelectorAll('#previewHost .imgv-adv-layers > div').length,
+    selected: document.querySelector('#previewHost .imgv-adv-stage')?.dataset.selectedCount,
+    active: document.activeElement?.className || document.activeElement?.tagName,
+  }));
+  if (keyState.rows === 5) pass('Adv Edit: Ctrl+D duplicates and Delete removes selected vector objects'); else fail('adv keyboard duplicate/delete: ' + JSON.stringify(keyState));
   // Persistent overlay: leaving Adv makes the stage non-interactive but KEEPS it
   // mounted (non-destructive). The doc is dirty and getBytes() flattens base+overlay
   // ON DEMAND — the overlay is never baked onto the base just for leaving Adv.
@@ -789,6 +1003,12 @@ export async function run(ctx) {
     return { display: getComputedStyle(el).display, sameRow: Math.abs(name.top - row.top) < 14, sideBySide: row.left > name.left + 20 };
   });
   if (ctlRow.display === 'grid' && ctlRow.sameRow && ctlRow.sideBySide) pass('ASCII settings use an aligned row layout (label | control)'); else fail('settings row layout: ' + JSON.stringify(ctlRow));
+  const floatPanel = await page.$eval('#previewHost .asx-panel', (el) => ({
+    position: getComputedStyle(el).position,
+    resize: getComputedStyle(el).resize,
+    handle: !!el.querySelector('.asx-float-head'),
+  }));
+  if (floatPanel.position === 'fixed' && /both/.test(floatPanel.resize) && floatPanel.handle) pass('ASCII settings panel is floating, draggable, and resizable'); else fail('settings floating panel: ' + JSON.stringify(floatPanel));
   // Settings is a toggleable drawer — the ⚙ button hides/shows the panel.
   const panelVisInit = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display !== 'none');
   await page.click('#previewHost .asx-settings-btn');
@@ -825,6 +1045,34 @@ export async function run(ctx) {
   });
   if (camUi.transforms === 4 && camUi.barScoped && camUi.imageRotHidden && camUi.backVisible) pass('camera mode: own flip/rotate toolbar + image buttons hidden'); else fail('camera ui: ' + JSON.stringify(camUi));
   if (camUi.startFlash && camUi.startPlay) pass('camera Start button flashes + shows ▶ until started'); else fail('start button: ' + JSON.stringify({ startFlash: camUi.startFlash, startPlay: camUi.startPlay }));
+  const recProbe = await page.evaluate(async () => {
+    const oldCap = HTMLCanvasElement.prototype.captureStream;
+    const oldMR = window.MediaRecorder;
+    const oldGum = navigator.mediaDevices?.getUserMedia;
+    const canvasTrack = { kind: 'video', stop() {} };
+    const audioTrack = { kind: 'audio', stop() {} };
+    const stream = { tag: 'ascii-canvas', tracks: [canvasTrack], addTrack(t) { this.tracks.push(t); }, getTracks() { return this.tracks; } };
+    const seen = { captureFps: null, recorderStream: null, gum: [] };
+    HTMLCanvasElement.prototype.captureStream = function(fps) { seen.captureFps = fps; return stream; };
+    navigator.mediaDevices.getUserMedia = async (opts) => { seen.gum.push(opts); return { getAudioTracks: () => [audioTrack], getTracks: () => [audioTrack] }; };
+    window.MediaRecorder = class {
+      static isTypeSupported() { return true; }
+      constructor(s) { seen.recorderStream = s; this.state = 'inactive'; }
+      start() { this.state = 'recording'; }
+      stop() { this.state = 'inactive'; }
+    };
+    document.querySelector('#previewHost .cam-audio').checked = true;
+    document.querySelector('#previewHost .cam-rec').click();
+    await new Promise((r) => setTimeout(r, 0));
+    document.querySelector('#previewHost .cam-rec').click();
+    HTMLCanvasElement.prototype.captureStream = oldCap;
+    window.MediaRecorder = oldMR;
+    navigator.mediaDevices.getUserMedia = oldGum;
+    return { captureFps: seen.captureFps, sameStream: seen.recorderStream === stream, tracks: stream.tracks.map((t) => t.kind).join(','), gum: seen.gum };
+  });
+  if (recProbe.captureFps === 20 && recProbe.sameStream && /video,audio/.test(recProbe.tracks) && recProbe.gum.length === 1 && recProbe.gum[0].audio === true && recProbe.gum[0].video === false)
+    pass('camera recording captures ASCII canvas stream and optionally merges microphone audio');
+  else fail('camera recording stream: ' + JSON.stringify(recProbe));
   await page.click('#previewHost .asx-cam');   // back to image
   await page.waitForSelector('#previewHost .asx-out', { timeout: 5000 });
 

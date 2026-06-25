@@ -9,6 +9,7 @@ import { createAsciiEngine } from './engine.js';
 import { buildControls } from './studio-controls.js';
 import { PERFORMANCE_PRESETS, defaultOptions } from './state.js';
 import { downloadText, downloadHtml, downloadPng, copyText, copyHtml } from './render.js';
+import { makeFloatingPanel } from './floating-panel.js';
 
 let styleInjected = false;
 function injectStyle() {
@@ -153,7 +154,8 @@ export function mountAsciiStudio(host, opts = {}) {
   settingsBtn.addEventListener('click', () => setSettingsOpen(!host.classList.contains('asx-settings-open')));
   checkWidth();   // set initial open/narrow state from the actual studio width
 
-  const controls = buildControls(panel, engine.options, (key, value, dirty, displayOnly) => {
+  const floatingPanel = makeFloatingPanel(panel, { title: 'ASCII settings' });
+  const controls = buildControls(floatingPanel.body, engine.options, (key, value, dirty, displayOnly) => {
     engine.options[key] = value;
     // Background colour has no effect when the BG is transparent — disable it.
     if (key === 'transparentBackground' && controls?.inputs.backgroundColor) {
@@ -251,7 +253,7 @@ export function mountAsciiStudio(host, opts = {}) {
     setImage,
     isCameraActive: () => !!webcam,
     stopCamera: closeCamera,
-    destroy() { ro.disconnect(); webcam?.destroy(); host.classList.remove('asx-root'); host.innerHTML = ''; },
+    destroy() { ro.disconnect(); floatingPanel.destroy(); webcam?.destroy(); host.classList.remove('asx-root'); host.innerHTML = ''; },
   };
 }
 
