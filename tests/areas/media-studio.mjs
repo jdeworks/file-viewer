@@ -55,6 +55,10 @@ export async function run(ctx) {
       if (!normState.hidden && /off/i.test(normState.text) && !normState.checked)
         pass('audio compare: explicit normalization toggle is present and off by default');
       else fail('audio compare normalize state: ' + JSON.stringify(normState));
+    } else if (normState.hidden) {
+      pass('video compare: audio normalization control is absent');
+    } else {
+      fail('video compare should not show audio normalization controls: ' + JSON.stringify(normState));
     }
     const initialCopy = await page.$eval(`${panelSel} .media-compare-copy`, (el) => el.textContent);
     await page.fill(`${panelSel} .media-compare-offset-input[data-lane="B"]`, '4.0');
@@ -124,10 +128,47 @@ export async function run(ctx) {
       if (normLabel.checked && /user chosen/i.test(normLabel.text) && /normalization is on for compare only/i.test(normReadout))
         pass('audio compare: normalize toggle updates compare-only label/state');
       else fail('audio compare normalize after analysis: ' + JSON.stringify({ normLabel, normReadout }));
-    } else if (!analyzeExists) {
-      pass('video compare: audio analysis controls are absent');
     } else {
-      fail('video compare should not show audio analysis controls');
+      if (analyzeExists) pass('video compare: explicit video analyze button exists');
+      else fail('video compare analyze button missing');
+      const analyzeText = await page.$eval(`${panelSel} .media-compare-analyze`, (el) => el.textContent);
+      if (/Analyze selected video/i.test(analyzeText)) pass('video compare: no audio analyze control is shown');
+      else fail('video compare analyze label: ' + analyzeText);
+      await page.fill(`${panelSel} .media-compare-offset-input[data-lane="A"]`, '0');
+      await page.fill(`${panelSel} .media-compare-offset-input[data-lane="B"]`, '0.1');
+      await page.fill(`${panelSel} .media-compare-in-input[data-lane="A"]`, '0');
+      await page.fill(`${panelSel} .media-compare-out-input[data-lane="A"]`, '0.6');
+      await page.fill(`${panelSel} .media-compare-in-input[data-lane="B"]`, '0');
+      await page.fill(`${panelSel} .media-compare-out-input[data-lane="B"]`, '0.6');
+      await page.setInputFiles(`${panelSel} .media-compare-drop .media-ed-file-input`, new URL('../../docs/examples/sample.webm', import.meta.url).pathname);
+      await page.click(`${panelSel} .media-compare-analyze`);
+      await page.waitForFunction(() => /Analyzed \d+ video frame/i.test(document.querySelector('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-analysis-status')?.textContent || ''), null, { timeout: 15000 });
+      const videoPaint = await page.$$eval(`${panelSel} .media-compare-waveform-canvas, ${panelSel} .media-compare-overlay-canvas, ${panelSel} .media-compare-diff-canvas`, (canvases) => canvases.map((canvas) => {
+        const ctx = canvas.getContext('2d');
+        const { width, height } = canvas;
+        const data = ctx.getImageData(0, 0, width, height).data;
+        const first = [data[0], data[1], data[2], data[3]];
+        let varied = 0;
+        let ink = 0;
+        for (let i = 0; i < data.length; i += 16) {
+          if (data[i + 3] > 0) ink++;
+          if (data[i] !== first[0] || data[i + 1] !== first[1] || data[i + 2] !== first[2] || data[i + 3] !== first[3]) varied++;
+        }
+        return { cls: canvas.className, width, height, hidden: canvas.hidden, varied, ink };
+      }));
+      if (videoPaint.length >= 4 && videoPaint.every((row) => row.width > 0 && row.height > 0 && !row.hidden && row.ink > 8 && row.varied > 8))
+        pass('video compare: analysis paints frame strips, overlay preview, and diff canvas');
+      else fail('video compare canvas paint: ' + JSON.stringify(videoPaint));
+      const videoReadout = await page.$eval(`${panelSel} .media-compare-copy`, (el) => el.textContent);
+      if (/Measured video overlap: average visual difference/i.test(videoReadout) && /shifted\/missing ranges are separate from content differences/i.test(videoReadout))
+        pass('video compare: measured visual difference readout separates timeline gaps from content changes');
+      else fail('video compare diff readout: ' + videoReadout);
+      await page.fill(`${panelSel} .media-compare-opacity-input`, '75');
+      const videoOpacityReadout = await page.$eval(`${panelSel} .media-compare-copy`, (el) => el.textContent);
+      const videoOpacityState = await page.$eval(`${panelSel} .media-compare`, (el) => el.dataset.overlayOpacity);
+      if (videoOpacityState === '75' && /75% B opacity/i.test(videoOpacityReadout))
+        pass('video compare: overlay opacity updates preview/readout state after analysis');
+      else fail('video compare opacity after analysis: ' + JSON.stringify({ videoOpacityState, videoOpacityReadout }));
     }
     await assertCompareNoOverflow(kind, 'desktop');
     const priorViewport = page.viewportSize();
@@ -613,6 +654,8 @@ export async function run(ctx) {
   if (videoDesktopViewport) {
     await reloadExampleAtViewport(ctx, videoDesktopViewport, 'Sample.avi', '#previewHost video.media-view');
   }
+  await openExample('Sample.webm');
+  await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
   await exerciseCompare('video');
   const videoCompareGrammar = await page.$eval('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-copy', (el) => el.textContent);
   if (/shifted|Overlap|Missing\/extra/.test(videoCompareGrammar)) pass('video Compare has equivalent overlay/offset grammar');

@@ -154,3 +154,80 @@ export function diffAudioSummaries(a, b, { normalize = false, highThreshold = 0.
     normalized: !!normalize,
   };
 }
+
+export function sampleVideoTimes(range = {}, maxFrames = 8) {
+  const start = Math.max(0, finiteNumber(range.start, 0));
+  const end = Math.max(start, finiteNumber(range.end, start));
+  const duration = Math.max(0, end - start);
+  if (duration <= 0) return [];
+  const cap = Math.max(1, Math.floor(finiteNumber(maxFrames, 8)));
+  const count = Math.min(cap, Math.max(1, Math.ceil(duration * 3)));
+  const step = duration / count;
+  return Array.from({ length: count }, (_, i) => start + step * (i + 0.5));
+}
+
+export function diffVideoFrames(aFrames = [], bFrames = [], {
+  highPixelThreshold = 0.22,
+  highFrameThreshold = 0.12,
+  highColumnThreshold = 0.16,
+} = {}) {
+  const frameCount = Math.max(0, Math.min(aFrames.length || 0, bFrames.length || 0));
+  const frameDiffs = new Float32Array(frameCount);
+  let totalDiff = 0;
+  let totalPixels = 0;
+  let highPixels = 0;
+  let highFrames = 0;
+  let totalColumns = 0;
+  let highColumns = 0;
+  const columns = [];
+
+  for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+    const a = aFrames[frameIndex]?.data;
+    const b = bFrames[frameIndex]?.data;
+    const width = Math.max(0, Math.min(aFrames[frameIndex]?.width || 0, bFrames[frameIndex]?.width || 0));
+    const height = Math.max(0, Math.min(aFrames[frameIndex]?.height || 0, bFrames[frameIndex]?.height || 0));
+    if (!a || !b || !width || !height) continue;
+    let frameTotal = 0;
+    const columnTotals = new Float32Array(width);
+    const columnCounts = new Uint32Array(width);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = (y * width + x) * 4;
+        const d = (
+          Math.abs(finiteNumber(a[i], 0) - finiteNumber(b[i], 0)) +
+          Math.abs(finiteNumber(a[i + 1], 0) - finiteNumber(b[i + 1], 0)) +
+          Math.abs(finiteNumber(a[i + 2], 0) - finiteNumber(b[i + 2], 0))
+        ) / (255 * 3);
+        frameTotal += d;
+        totalDiff += d;
+        totalPixels++;
+        if (d >= highPixelThreshold) highPixels++;
+        columnTotals[x] += d;
+        columnCounts[x]++;
+      }
+    }
+
+    const frameAverage = frameTotal / (width * height);
+    frameDiffs[frameIndex] = frameAverage;
+    if (frameAverage >= highFrameThreshold) highFrames++;
+    for (let x = 0; x < width; x++) {
+      const value = columnCounts[x] ? columnTotals[x] / columnCounts[x] : 0;
+      columns.push(value);
+      totalColumns++;
+      if (value >= highColumnThreshold) highColumns++;
+    }
+  }
+
+  return {
+    frameDiffs,
+    columnDiffs: Float32Array.from(columns),
+    frames: frameCount,
+    averageDifference: totalPixels ? totalDiff / totalPixels : 0,
+    highFrames,
+    highPixels,
+    totalPixels,
+    highColumns,
+    totalColumns,
+  };
+}

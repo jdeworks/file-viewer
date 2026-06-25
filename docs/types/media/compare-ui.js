@@ -2,7 +2,9 @@ import {
   classifyShiftedSections,
   describeShiftedComparison,
   diffAudioSummaries,
+  diffVideoFrames,
   formatCompareSeconds,
+  sampleVideoTimes,
   summarizeAudioWindow,
 } from './compare-math.js';
 import { buildSecondaryDropZone } from './editor-advanced.js';
@@ -12,6 +14,11 @@ const PX_PER_SEC = 9;
 const AUDIO_COMPARE_MAX_BYTES = 24 * 1024 * 1024;
 const AUDIO_COMPARE_MAX_RANGE_SECONDS = 90;
 const AUDIO_COMPARE_COLUMNS = 360;
+const VIDEO_COMPARE_MAX_BYTES = 32 * 1024 * 1024;
+const VIDEO_COMPARE_MAX_RANGE_SECONDS = 12;
+const VIDEO_COMPARE_MAX_FRAMES = 8;
+const VIDEO_COMPARE_WIDTH = 128;
+const VIDEO_COMPARE_HEIGHT = 72;
 
 function durationOf(mediaEl) {
   return Number.isFinite(mediaEl?.duration) && mediaEl.duration > 0 ? mediaEl.duration : FALLBACK_DURATION;
@@ -21,7 +28,7 @@ function labelOf(intake) {
   return intake?.filename || intake?.file?.name || 'Open media';
 }
 
-function audioSourceFromIntake(intake) {
+function mediaSourceFromIntake(intake) {
   if (intake?.file) return intake.file;
   if (intake?.bytes) {
     const type = intake?.mime || intake?.type || '';
@@ -66,7 +73,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       B: { label: 'Choose a second file', offset: 1.5, in: 0, out: durationOf(mediaEl) },
     },
     files: {
-      A: audioSourceFromIntake(intake),
+      A: mediaSourceFromIntake(intake),
       B: null,
     },
     analysis: null,
@@ -130,14 +137,14 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
   const analyzeButton = document.createElement('button');
   analyzeButton.type = 'button';
   analyzeButton.className = 'media-compare-analyze';
-  analyzeButton.textContent = 'Analyze selected audio';
+  analyzeButton.textContent = kind === 'video' ? 'Analyze selected video' : 'Analyze selected audio';
   const analysisStatus = document.createElement('span');
   analysisStatus.className = 'media-compare-analysis-status';
   analysisStatus.textContent = 'Not analyzed';
   const analysisControls = document.createElement('div');
   analysisControls.className = 'media-compare-analysis-controls';
   analysisControls.append(analyzeButton, analysisStatus);
-  if (kind === 'audio') controls.append(analysisControls);
+  controls.append(analysisControls);
 
   const drop = buildSecondaryDropZone({
     accept: kind === 'video' ? 'video/*' : 'audio/*',
@@ -146,6 +153,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     state.lanes.B.label = file.name || 'Second file';
     state.files.B = file;
     state.analysis = null;
+    analysisStatus.textContent = 'Not analyzed';
     state.durationB = Number.isFinite(file.duration) ? file.duration : state.durationB;
     state.lanes.B.out = Math.max(state.lanes.B.in, Math.min(state.lanes.B.out, state.durationB));
     render();
@@ -210,10 +218,12 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       const duration = laneId === 'A' ? state.durationA : state.durationB;
       laneState.in = clamp(Number(inInput.value) || 0, 0, duration);
       laneState.out = clamp(Number(outInput.value) || duration, laneState.in, duration);
+      clearVideoAnalysis();
       render();
     };
     addListener(offset, 'input', () => {
       state.lanes[laneId].offset = Number(offset.value) || 0;
+      clearVideoAnalysis();
       render();
     });
     addListener(inInput, 'input', syncRangeInput);
@@ -232,6 +242,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     const moveDrag = (e) => {
       if (!dragging) return;
       state.lanes[laneId].offset = startOffset + ((e.clientX - startX) / PX_PER_SEC);
+      clearVideoAnalysis();
       render();
     };
     const endDrag = () => { dragging = false; };
@@ -243,6 +254,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       const step = e.shiftKey ? 1 : 0.1;
       state.lanes[laneId].offset += e.key === 'ArrowLeft' ? -step : step;
+      clearVideoAnalysis();
       render();
       e.preventDefault();
     });
@@ -261,11 +273,16 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
   diffCanvas.className = 'media-compare-diff-canvas';
   diffCanvas.width = AUDIO_COMPARE_COLUMNS;
   diffCanvas.height = 36;
+  const overlayCanvas = document.createElement('canvas');
+  overlayCanvas.className = 'media-compare-overlay-canvas';
+  overlayCanvas.width = VIDEO_COMPARE_WIDTH;
+  overlayCanvas.height = VIDEO_COMPARE_HEIGHT;
+  overlayCanvas.hidden = true;
   const missingA = document.createElement('div');
   missingA.className = 'media-compare-missing media-compare-missing--a';
   const missingB = document.createElement('div');
   missingB.className = 'media-compare-missing media-compare-missing--b';
-  visual.append(lanes, band, missingA, missingB, diffCanvas);
+  visual.append(lanes, band, missingA, missingB, overlayCanvas, diffCanvas);
 
   const placeholder = document.createElement('div');
   placeholder.className = `media-compare-placeholder media-compare-placeholder--${kind}`;
@@ -306,8 +323,6 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     normalizeLabel.hidden = kind !== 'audio';
     readout.textContent = `${state.layout.replace('-', ' ')} · ${formatCompareSeconds(result.overlap.duration)} overlap`;
     foot.textContent = describeShiftedComparison(result);
-    analysisControls.hidden = kind !== 'audio';
-    analyzeButton.disabled = kind !== 'audio';
     renderAnalysis(result);
 
     for (const laneId of ['A', 'B']) {
@@ -369,12 +384,19 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
   });
 
   addListener(analyzeButton, 'click', () => {
-    analyzeSelectedAudio().catch((err) => {
+    const work = kind === 'video' ? analyzeSelectedVideo() : analyzeSelectedAudio();
+    work.catch((err) => {
       state.analysis = null;
-      analysisStatus.textContent = err?.message || 'Audio analysis failed.';
+      analysisStatus.textContent = err?.message || `${kind === 'video' ? 'Video' : 'Audio'} analysis failed.`;
       render();
     });
   });
+
+  function clearVideoAnalysis() {
+    if (kind !== 'video' || !state.analysis) return;
+    state.analysis = null;
+    analysisStatus.textContent = 'Selection changed; analyze selected video again.';
+  }
 
   function readFirstChannel(buffer) {
     if (!buffer || buffer.numberOfChannels < 1) return new Float32Array();
@@ -411,7 +433,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
 
     analyzeButton.disabled = true;
     analysisStatus.textContent = 'Decoding selected audio on demand...';
-    const fileA = state.files.A || audioSourceFromIntake(intake);
+    const fileA = state.files.A || mediaSourceFromIntake(intake);
     if (!fileA) {
       analysisStatus.textContent = 'Open-file bytes are unavailable for audio analysis.';
       analyzeButton.disabled = false;
@@ -502,11 +524,232 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     }
   }
 
-  function renderAnalysis(result) {
-    if (kind !== 'audio') {
-      diffCanvas.hidden = true;
+  function drawVideoDiff(canvas, diff) {
+    if (!canvas) return;
+    canvas.hidden = !diff?.columnDiffs?.length;
+    if (!diff?.columnDiffs?.length) return;
+    const ctx = canvas.getContext('2d');
+    const { width, height } = ensureCanvasSize(canvas);
+    ctx.clearRect(0, 0, width, height);
+    const cols = diff.columnDiffs.length;
+    for (let i = 0; i < cols; i++) {
+      const x = Math.floor((i / cols) * width);
+      const nextX = Math.max(x + 1, Math.floor(((i + 1) / cols) * width));
+      const v = Math.max(0, Math.min(1, diff.columnDiffs[i]));
+      ctx.fillStyle = `rgba(215, 58, 73, ${0.12 + v * 0.82})`;
+      ctx.fillRect(x, 0, nextX - x, height);
+    }
+  }
+
+  function drawFrameStrip(canvas, frames) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const { width, height } = ensureCanvasSize(canvas);
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--bg') || '#fff';
+    ctx.fillRect(0, 0, width, height);
+    if (!frames?.length) return;
+    const scratch = document.createElement('canvas');
+    const scratchCtx = scratch.getContext('2d');
+    const gap = 2;
+    const tileWidth = Math.max(1, Math.floor((width - gap * (frames.length - 1)) / frames.length));
+    for (let i = 0; i < frames.length; i++) {
+      const frame = frames[i];
+      scratch.width = frame.width;
+      scratch.height = frame.height;
+      scratchCtx.putImageData(new ImageData(frame.data, frame.width, frame.height), 0, 0);
+      const x = i * (tileWidth + gap);
+      ctx.drawImage(scratch, x, 0, tileWidth, height);
+    }
+  }
+
+  function drawOverlayPreview(analysis) {
+    overlayCanvas.hidden = !analysis?.framesA?.length || !analysis?.framesB?.length;
+    if (overlayCanvas.hidden) return;
+    const ctx = overlayCanvas.getContext('2d');
+    const { width, height } = ensureCanvasSize(overlayCanvas);
+    const a = analysis.framesA[0];
+    const b = analysis.framesB[0];
+    const scratch = document.createElement('canvas');
+    const scratchCtx = scratch.getContext('2d');
+    ctx.clearRect(0, 0, width, height);
+    scratch.width = a.width;
+    scratch.height = a.height;
+    scratchCtx.putImageData(new ImageData(a.data, a.width, a.height), 0, 0);
+    ctx.drawImage(scratch, 0, 0, width, height);
+    scratch.width = b.width;
+    scratch.height = b.height;
+    scratchCtx.putImageData(new ImageData(b.data, b.width, b.height), 0, 0);
+    ctx.globalAlpha = state.opacity / 100;
+    ctx.drawImage(scratch, 0, 0, width, height);
+    ctx.globalAlpha = 1;
+  }
+
+  function loadVideoMetadata(file) {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      const url = URL.createObjectURL(file);
+      const cleanup = () => {
+        video.removeAttribute('src');
+        video.load?.();
+        URL.revokeObjectURL(url);
+      };
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      video.addEventListener('loadedmetadata', () => {
+        const duration = Number.isFinite(video.duration) ? video.duration : 0;
+        cleanup();
+        resolve(duration);
+      }, { once: true });
+      video.addEventListener('error', () => {
+        cleanup();
+        reject(new Error(`${file.name || 'Video file'} could not be opened for metadata.`));
+      }, { once: true });
+      video.src = url;
+      video.load();
+    });
+  }
+
+  async function sampleVideoFrames(file, times) {
+    if (!file) return [];
+    if (file.size > VIDEO_COMPARE_MAX_BYTES) {
+      throw new Error(`${file.name || 'Video file'} is too large for compare analysis (${(file.size / 1048576).toFixed(1)} MB; limit 32 MB).`);
+    }
+    const video = document.createElement('video');
+    const url = URL.createObjectURL(file);
+    const canvas = document.createElement('canvas');
+    canvas.width = VIDEO_COMPARE_WIDTH;
+    canvas.height = VIDEO_COMPARE_HEIGHT;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const waitFor = (event) => new Promise((resolve, reject) => {
+      const onOk = () => { cleanup(); resolve(); };
+      const onError = () => { cleanup(); reject(new Error(`${file.name || 'Video file'} could not be decoded.`)); };
+      const cleanup = () => {
+        video.removeEventListener(event, onOk);
+        video.removeEventListener('error', onError);
+      };
+      video.addEventListener(event, onOk, { once: true });
+      video.addEventListener('error', onError, { once: true });
+    });
+    try {
+      video.preload = 'auto';
+      video.muted = true;
+      video.playsInline = true;
+      video.src = url;
+      video.load();
+      await waitFor('loadedmetadata');
+      const duration = Number.isFinite(video.duration) ? video.duration : 0;
+      const frames = [];
+      for (const rawTime of times.slice(0, VIDEO_COMPARE_MAX_FRAMES)) {
+        const t = clamp(rawTime, 0, Math.max(0, duration - 0.02));
+        video.currentTime = t;
+        await waitFor('seeked');
+        ctx.drawImage(video, 0, 0, VIDEO_COMPARE_WIDTH, VIDEO_COMPARE_HEIGHT);
+        const image = ctx.getImageData(0, 0, VIDEO_COMPARE_WIDTH, VIDEO_COMPARE_HEIGHT);
+        frames.push({
+          data: new Uint8ClampedArray(image.data),
+          width: VIDEO_COMPARE_WIDTH,
+          height: VIDEO_COMPARE_HEIGHT,
+          time: t,
+        });
+      }
+      return frames;
+    } finally {
+      video.removeAttribute('src');
+      video.load?.();
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  async function analyzeSelectedVideo() {
+    if (kind !== 'video') return;
+    const fileA = state.files.A || mediaSourceFromIntake(intake);
+    const fileB = state.files.B;
+    if (!fileA) {
+      analysisStatus.textContent = 'Open-file bytes are unavailable for video analysis.';
       return;
     }
+    if (!fileB) {
+      analysisStatus.textContent = 'Choose a second video file before analysis.';
+      return;
+    }
+    if (fileA.size > VIDEO_COMPARE_MAX_BYTES || fileB.size > VIDEO_COMPARE_MAX_BYTES) {
+      analysisStatus.textContent = `Video compare is capped at ${(VIDEO_COMPARE_MAX_BYTES / 1048576).toFixed(0)} MB per file.`;
+      state.analysis = null;
+      render();
+      return;
+    }
+
+    analyzeButton.disabled = true;
+    analysisStatus.textContent = 'Decoding selected video frames on demand...';
+    try {
+      const [durationA, durationB] = await Promise.all([loadVideoMetadata(fileA), loadVideoMetadata(fileB)]);
+      if (durationA > 0) {
+        state.durationA = durationA;
+        state.lanes.A.out = Math.min(state.lanes.A.out, state.durationA);
+      }
+      if (durationB > 0) {
+        state.durationB = durationB;
+        state.lanes.B.out = Math.min(state.lanes.B.out, state.durationB);
+      }
+      const result = classifyShiftedSections({
+        a: { offset: state.lanes.A.offset, range: { start: state.lanes.A.in, end: state.lanes.A.out } },
+        b: { offset: state.lanes.B.offset, range: { start: state.lanes.B.in, end: state.lanes.B.out } },
+        durationA: state.durationA,
+        durationB: state.durationB,
+      });
+      if (!result.hasOverlap) {
+        state.analysis = null;
+        analysisStatus.textContent = 'No shifted overlap to sample; adjust offsets or ranges.';
+        render();
+        return;
+      }
+      if (result.overlap.duration > VIDEO_COMPARE_MAX_RANGE_SECONDS) {
+        state.analysis = null;
+        analysisStatus.textContent = `Selected overlap is ${formatCompareSeconds(result.overlap.duration)}; choose ${formatCompareSeconds(VIDEO_COMPARE_MAX_RANGE_SECONDS)} or less.`;
+        render();
+        return;
+      }
+      const compareTimes = sampleVideoTimes(result.overlap, VIDEO_COMPARE_MAX_FRAMES);
+      const timesA = compareTimes.map((time) => time - result.a.offset);
+      const timesB = compareTimes.map((time) => time - result.b.offset);
+      const [framesA, framesB] = await Promise.all([
+        sampleVideoFrames(fileA, timesA),
+        sampleVideoFrames(fileB, timesB),
+      ]);
+      const diff = diffVideoFrames(framesA, framesB);
+      state.analysis = { kind: 'video', framesA, framesB, diff, compareTimes };
+      analysisStatus.textContent = `Analyzed ${diff.frames} video frame${diff.frames === 1 ? '' : 's'}.`;
+    } catch (err) {
+      state.analysis = null;
+      analysisStatus.textContent = err?.message || 'Video decode failed; compare controls remain available.';
+    } finally {
+      analyzeButton.disabled = false;
+      render();
+    }
+  }
+
+  function renderAnalysis(result) {
+    if (kind !== 'audio') {
+      const analysis = state.analysis;
+      const aCanvas = laneEls.get('A')?.canvas;
+      const bCanvas = laneEls.get('B')?.canvas;
+      if (!analysis) {
+        drawFrameStrip(aCanvas, null);
+        drawFrameStrip(bCanvas, null);
+        overlayCanvas.hidden = true;
+        drawVideoDiff(diffCanvas, null);
+        return;
+      }
+      drawFrameStrip(aCanvas, analysis.framesA);
+      drawFrameStrip(bCanvas, analysis.framesB);
+      drawOverlayPreview(analysis);
+      drawVideoDiff(diffCanvas, analysis.diff);
+      foot.textContent = `${describeShiftedComparison(result)} Measured video overlap: average visual difference ${analysis.diff.averageDifference.toFixed(3)}, high-diff frames ${analysis.diff.highFrames}/${analysis.diff.frames}, high-diff pixels ${analysis.diff.highPixels}/${analysis.diff.totalPixels}, high-diff columns ${analysis.diff.highColumns}/${analysis.diff.totalColumns}. Overlay preview uses ${state.opacity}% B opacity; shifted/missing ranges are separate from content differences.`;
+      return;
+    }
+    overlayCanvas.hidden = true;
     const analysis = state.analysis;
     const aCanvas = laneEls.get('A')?.canvas;
     const bCanvas = laneEls.get('B')?.canvas;

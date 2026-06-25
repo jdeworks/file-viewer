@@ -154,11 +154,12 @@ Needed:
   (off by default), translucent overlap/missing placeholders, and an explicit
   `Analyze selected audio` action that lazily decodes capped selected ranges into waveform
   and measured difference canvases. Broader audio compare polish remains pending.
-- Partial: video view has aligned lane/frame-strip placeholders, overlay opacity state, and
-  offset/overlap readouts. Real thumbnail/frame preview remains pending and should stay
-  behind an explicit action.
+- Partial: video view has aligned lanes, overlay opacity state, offset/overlap readouts,
+  and an explicit `Analyze selected video` action that lazily samples capped selected
+  overlap frames into real lane strips, overlay preview, visual diff strip, and measured
+  visual difference copy.
 - Partial: UI copy distinguishes shifted/missing ranges from measured overlap differences
-  after audio analysis. Video content-difference reporting remains pending.
+  after audio and video analysis.
 - Static-client implementation only: no backend alignment service, no ASR/NLP matching, no
   hidden resampling/gain unless the user chooses a compare normalization mode.
 
@@ -170,7 +171,11 @@ Validation target:
   grammar, and no horizontal overflow on desktop/mobile.
 - Done for audio slice: pure waveform/difference math coverage plus media-studio smoke for
   explicit audio analysis, painted lane/diff canvases, measured difference readout,
-  compare-only normalization labeling, and video placeholder-only controls.
+  and compare-only normalization labeling.
+- Done for video slice: pure video sample/difference math coverage plus media-studio smoke
+  for explicit video analysis, second WebM fixture loading, painted frame/overlay/diff
+  canvases, measured visual difference copy, overlay opacity readout updates, and absence
+  of audio-only controls.
 - Heavy decode/rendering stays lazy and scoped to selected ranges.
 
 ### R5 — Video Export Depth

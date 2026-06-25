@@ -26,6 +26,8 @@ import {
   computeOverlapWindow,
   describeShiftedComparison,
   diffAudioSummaries,
+  diffVideoFrames,
+  sampleVideoTimes,
   summarizeAudioWindow,
 } from '../docs/types/media/compare-math.js';
 import {
@@ -85,6 +87,28 @@ const enc = new TextEncoder();
   const normDiff = diffAudioSummaries(summary, softer, { normalize: true });
   assert(rawDiff.averageEnergy > 0.05, 'compare math: raw audio diff reports amplitude differences');
   assert(normDiff.averageEnergy < rawDiff.averageEnergy, 'compare math: explicit normalize reduces pure level difference');
+
+  assert.deepEqual(
+    sampleVideoTimes({ start: 2, end: 3 }, 8).map((n) => Number(n.toFixed(3))),
+    [2.167, 2.5, 2.833],
+    'compare math: video sample times are deterministic midpoints',
+  );
+  assert.equal(sampleVideoTimes({ start: 0, end: 10 }, 4).length, 4, 'compare math: video samples respect cap');
+
+  const black = new Uint8ClampedArray(2 * 1 * 4);
+  black.set([0, 0, 0, 255, 0, 0, 0, 255]);
+  const changed = new Uint8ClampedArray(2 * 1 * 4);
+  changed.set([255, 255, 255, 255, 0, 0, 0, 255]);
+  const videoDiff = diffVideoFrames(
+    [{ data: black, width: 2, height: 1 }],
+    [{ data: changed, width: 2, height: 1 }],
+    { highPixelThreshold: 0.5, highFrameThreshold: 0.2, highColumnThreshold: 0.5 },
+  );
+  assert.equal(videoDiff.frames, 1, 'compare math: video diff counts paired frames');
+  assert.equal(Number(videoDiff.averageDifference.toFixed(3)), 0.5, 'compare math: video diff averages RGB deltas');
+  assert.equal(videoDiff.highFrames, 1, 'compare math: video diff reports high-diff frames');
+  assert.equal(videoDiff.highPixels, 1, 'compare math: video diff reports high-diff pixels');
+  assert.equal(videoDiff.highColumns, 1, 'compare math: video diff reports high-diff columns');
 }
 
 function u32(n) {

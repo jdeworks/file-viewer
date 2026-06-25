@@ -650,7 +650,8 @@ Status: implemented; no remaining R3 work identified.
 ### R4 — Audio/Video Overlap Diff Compare
 
 Status: partial. Foundation is committed in `05aabcf5` / `6e6d489e`; the first audio
-analysis slice is committed in `fbe6c057`. Video compare remains placeholder-only.
+analysis slice is committed in `fbe6c057`; the video analysis slice is now implemented
+but R4 still needs polish and longer-file strategy work.
 
 - This is distinct from R1/R3 processing-chain compare. R1/R3 explain how one source changes
   through Tune/Dynamics/Master Bus; R4 compares two source media files or two partial ranges.
@@ -666,12 +667,22 @@ analysis slice is committed in `fbe6c057`. Video compare remains placeholder-onl
   - Renders per-lane selected-range waveform canvases from downsampled peak/RMS columns.
   - Renders an aligned overlap difference strip and reports average diff energy plus high-diff
     columns; the normalize toggle is labeled compare-only and does not affect playback/export.
-  - Keeps video Compare on the decode-on-demand placeholder surface with no audio analysis control.
+  - Keeps audio analysis decode-on-demand and capped.
+- Current video evidence:
+  - Added an explicit `Analyze selected video` action with no audio normalize controls.
+  - Uses opened File/Blob lane A plus dropped/browsed lane B, clears stale analysis when
+    ranges/offsets or the secondary file change, and caps file size, selected overlap duration,
+    and sampled frame count.
+  - Uses browser-native `HTMLVideoElement` plus canvas `drawImage`; no ffmpeg, backend, or ML path.
+  - Renders real lane frame strips, an overlay preview respecting overlay opacity, and a visual
+    diff strip with average visual difference plus high-diff frame/pixel/column counts.
+  - Smoke uses `docs/examples/sample.webm` as the second small video fixture and verifies painted
+    frame/overlay/diff canvases and measured copy.
 - Changed paths for this slice: `compare-ui.js`, `compare-math.js`, `preview-media.css`,
   `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`, `STUDIO_ROADMAP.md`,
   `STUDIO_TRACKER.md`, plus generated cache files.
-- Remaining R4 work: real video frame strips/content-difference reporting, richer audio alignment
-  polish, and any longer-file strategy beyond capped browser decode.
+- Remaining R4 work: richer audio/video alignment polish and any longer-file strategy beyond
+  capped browser decode.
 
 ## Tracking Rules
 
