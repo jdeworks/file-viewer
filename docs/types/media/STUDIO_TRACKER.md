@@ -329,11 +329,22 @@ Status: committed.
 
 ### M3 — ACX And Export Semantics
 
-Status: open.
+Status: committed.
 
 - Decide one behavior for `acx-mp3`: either format/loudness preset only, or route to the dedicated ACX chain with silence cut and room-tone padding.
 - Update UI wording so sample peak is not described as true peak unless oversampling is implemented.
 - Add pure tests for ACX filter args, `evaluateAcx`, and preset resolution outside the large smoke suite.
+- Decision: `acx-mp3` now routes through the dedicated ACX export chain, including loudnorm,
+  silence trimming, and room-tone padding, instead of behaving as a format-only preset.
+- UI copy now describes QC peak checks as sample peak / dBFS, avoiding true-peak wording until
+  oversampled true-peak measurement exists.
+- Added focused parser-suite coverage for ACX preset resolution, ACX export args, ACX filter-chain
+  generation, and `evaluateAcx` sample-peak verdict/fix behavior.
+- Changed paths: `export-presets.js`, `studio-export.js`, `qc.js`, `qc-ui.js`,
+  `tests/media-parsers.test.mjs`.
+- Validation passed: `node --check docs/types/media/export-presets.js docs/types/media/studio-export.js docs/types/media/qc.js docs/types/media/qc-ui.js tests/media-parsers.test.mjs`,
+  `node tests/media-parsers.test.mjs`, `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+- Committed in `695db451` — `Route ACX preset through dedicated export chain`.
 
 ### M4 — Narratu / Auto-Audiobook Parity Pass
 
