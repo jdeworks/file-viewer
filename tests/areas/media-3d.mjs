@@ -1445,29 +1445,75 @@ export async function run(ctx) {
     await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
   }
 
-  // ── Video studio ── the video branch builds the extended filter panel + an audio
-  // mixer (the movie's audio routed through the shared EQ/spectrum graph). These are
-  // built regardless of native playability, so they're present even for the AVI.
+  // ── Video studio ── Adjust now uses an intent-first look card plus raw advanced
+  // sliders, and a dedicated movie-audio Spectrum & EQ sub-surface.
   await page.click('#previewHost .media-mode-tab[data-mode="adjust"]');
   await page.waitForSelector('#previewHost .media-mode-panel[data-mode="adjust"]:not([hidden])', { timeout: 5000 });
+  const adjustSel = '#previewHost .media-mode-panel[data-mode="adjust"]';
+
+  const vidLookPanel = await page.$(`${adjustSel} .media-video-filters .media-tune-intent-card`);
+  if (vidLookPanel) pass('video studio: quick look surface present in Adjust'); else fail('video look card missing');
+  const vidLookBtns = await page.$$eval(
+    `${adjustSel} .media-video-filters .media-tune-intent-btn`,
+    (els) => els.map((el) => ({ id: el.dataset.intent, text: el.textContent.trim() })),
+  );
+  if (vidLookBtns.length >= 5) pass('video studio: quick intent presets surface present');
+  else fail('video look presets: ' + JSON.stringify(vidLookBtns));
+
   const vidFilterSliders = await page.$$eval(
-    '#previewHost .media-mode-panel[data-mode="adjust"] .media-filter-panel .media-filter-row input[type="range"]',
+    `${adjustSel} .media-filter-panel .media-filter-row input[type="range"]`,
     (els) => els.map((e) => e.dataset.filter),
   );
   if (['brightness', 'contrast', 'saturate', 'hue', 'blur', 'grayscale', 'invert'].every((f) => vidFilterSliders.includes(f)))
-    pass('video studio: extended CSS filters present (incl. hue/blur/grayscale/invert)');
+    pass('video studio: advanced raw sliders still present (incl. hue/blur/grayscale)');
   else fail('video filters: ' + vidFilterSliders.join(','));
-  // Audio mixer toggle: opens a Spectrum & EQ panel routed through the video's audio.
-  const mixerBtn = await page.$('#previewHost .media-mode-panel[data-mode="adjust"] .media-vid-mixer .media-wv-toggle');
+
+  // Quick preset should change style and mark active status.
+  let intentButton = await page.$(`${adjustSel} .media-tune-intent-btn[data-intent="cinema"]`);
+  if (!intentButton) {
+    intentButton = await page.$(`${adjustSel} .media-tune-intent-btn[data-intent]:not([data-intent="neutral"]):not([data-intent="custom"])`);
+  }
+  if (!intentButton) fail('video preset: cinema button not found');
+  else {
+    const intent = await intentButton.evaluate((el) => ({
+      id: el.dataset.intent,
+      label: el.textContent?.trim(),
+    }));
+    const activeSelector = `${adjustSel} .media-tune-intent-btn[data-intent="${intent.id}"]`;
+    await intentButton.click();
+    const vidFilter = await page.$eval('#previewHost video.media-view', (video) => video.style.filter);
+    const presetActive = await page.$eval(activeSelector, (btn) =>
+      btn.classList.contains('media-tune-intent-btn--active') || btn.getAttribute('aria-pressed') === 'true',
+    );
+    const presetStatus = await page.$eval(`${adjustSel} .media-tune-intent-status`, (el) => el.textContent);
+    if (vidFilter && presetActive && presetStatus.includes(intent.label)) pass('video studio: quick preset applies filters and marks active/status');
+    else fail('video preset failed: filter=' + vidFilter + ' active=' + presetActive + ' status=' + presetStatus);
+
+    const resetBtn = await page.$(`${adjustSel} .media-video-filters > .media-filter-reset`);
+    if (!resetBtn) fail('video preset reset button missing');
+    else {
+      await resetBtn.click();
+      const resetFilter = await page.$eval('#previewHost video.media-view', (video) => video.style.filter);
+      if (resetFilter === '') pass('video studio: reset clears filter');
+      else fail('video reset failed: filter=' + resetFilter);
+    }
+  }
+
+  // Audio sub-surface should be clearer and still CPU-lazy.
+  const audioSubsurface = await page.$(`${adjustSel} .media-video-audio-wrap .media-tune-intent-card`);
+  if (audioSubsurface) pass('video studio: movie-audio sub-surface exists'); else fail('video audio sub-surface missing');
+  const mixerBtn = await page.$(`${adjustSel} .media-vid-mixer .media-wv-toggle`);
   if (mixerBtn) {
     const mixerText = await mixerBtn.evaluate((e) => e.textContent);
-    if (/mixer/i.test(mixerText)) pass('video studio: audio mixer toggle present'); else fail('mixer btn: ' + mixerText);
+    if (/Spectrum/.test(mixerText)) pass('video studio: Spectrum & EQ toggle present'); else fail('mixer btn: ' + mixerText);
+    const preMounted = await page.$(`${adjustSel} .media-vid-mixer .media-sp-panel:not([hidden])`);
+    if (!preMounted) pass('video studio: movie audio Spectrum & EQ lazy mount'); else fail('mixer pre-mounted before open');
     await mixerBtn.click();
-    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="adjust"] .media-vid-mixer .media-sp-panel:not([hidden])', { timeout: 5000 });
-    const mixerSliders = await page.$$('#previewHost .media-mode-panel[data-mode="adjust"] .media-vid-mixer .sp-eq-slider');
-    const mixerLegend = await page.$('#previewHost .media-mode-panel[data-mode="adjust"] .media-vid-mixer .sp-legend');
-    if (mixerSliders.length === 9) pass('video studio: audio mixer mounts the 9-band EQ on the movie audio'); else fail('mixer sliders: ' + mixerSliders.length);
-    if (mixerLegend) pass('video studio: audio mixer shows the overlaid-spectrum legend'); else fail('mixer legend missing');
+    await page.waitForSelector(`${adjustSel} .media-vid-mixer .media-sp-panel:not([hidden])`, { timeout: 5000 });
+    const mixerSliders = await page.$$(`${adjustSel} .media-vid-mixer .sp-eq-slider`);
+    const mixerLegend = await page.$(`${adjustSel} .media-vid-mixer .sp-legend`);
+    if (mixerSliders.length === 9) pass('video studio: mixer mounts 9-band EQ on movie audio'); else fail('mixer sliders: ' + mixerSliders.length);
+    if (mixerLegend) pass('video studio: Spectrum & EQ legend present'); else fail('mixer legend missing');
   } else fail('video studio: audio mixer toggle not found');
 
   // ── P7 Tier-1 video quick wins ── speed presets + frame-step + (gated) PiP + subtitle drop.
