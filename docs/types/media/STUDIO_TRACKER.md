@@ -654,7 +654,7 @@ Status: implemented.
 Committed history: foundation in `05aabcf5` / `6e6d489e`; first audio analysis slice in
 `fbe6c057`; first video analysis slice in `937ab522`; selected-range WAV compare in
 `34a2d601`; shifted-overlap measurement in `5352a78b`; ffmpeg-backed selected-overlap
-extraction in `0ce96afe`.
+extraction in `0ce96afe`; ffmpeg core entrypoint compatibility in `e9baba6f`.
 
 - This is distinct from R1/R3 processing-chain compare. R1/R3 explain how one source changes
   through Tune/Dynamics/Master Bus; R4 compares two source media files or two partial ranges.
@@ -692,6 +692,8 @@ extraction in `0ce96afe`.
   and decode fallback summarizes only overlap subsections. For compressed longer files, ffmpeg-on
   sessions now extract the shifted-overlap range to WAV in MEMFS first and then reuse the same
   selected-range pipeline; this path is capped and does not silently read giant inputs.
+  A real browser-side smoke verified `sample.mp3` extraction to a parseable WAV after the
+  ffmpeg `mainName: 'main'` loader compatibility fix.
 - Changed paths for this slice: `compare-audio.js`, `compare-ui.js`,
   `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`, `STUDIO_ROADMAP.md`,
   `STUDIO_TRACKER.md`, plus generated cache files if validation refreshes them.
