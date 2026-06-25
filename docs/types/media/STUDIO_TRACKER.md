@@ -88,7 +88,7 @@ Before beginning the workspace redesign, checkpoint the already-verified mainten
 
 ### P0 — Audio Workspace Polish Gate
 
-Status: in progress.
+Status: committed.
 
 Goal: make `Sample.mp3` / `Sample.wav` feel like a coherent media workspace before adding
 more broad media features.
@@ -200,6 +200,17 @@ Progress:
   - Caveat: `mixer-ui.js`, `preview-chrome.css`, and `tests/areas/media-3d.mjs` are all over the
     LOC advisory/hard thresholds; before P1 grows the shared media surface further, split mixer UI
     helpers/styles/tests or extract shared workspace grammar.
+- `5552e4c3` — `Finish audio workspace visual polish`.
+  - Final visual QA captured `Sample.wav` across Listen, Tune, QC, Export, and Mix at desktop
+    and mobile sizes in `/tmp/media-workspace-shots/final-audio-p0-host/`.
+  - Geometry evidence: core workspace, waveform, task tabs, and active mode panels are in the
+    first viewport; desktop and mobile mode captures all report zero horizontal overflow.
+  - Fixed the enabled Export preset-card order so Podcast and ACX lead before Custom, preserving
+    the intent-first surface and keeping Custom as the manual path.
+  - Normalized Tune heading letter spacing to `0` to match frontend constraints.
+  - Validation passed: `node --check docs/types/media/studio-export.js`,
+    `node --check docs/types/media/mixer-ui.js`, `node tests/smoke-area.mjs media-3d`,
+    `./scripts/check.sh --fast`.
 
 ### P1 — Video Workspace Polish Gate
 
