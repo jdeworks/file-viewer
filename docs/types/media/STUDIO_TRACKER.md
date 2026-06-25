@@ -98,6 +98,7 @@ Remaining before R4 can be called complete:
 - Real video frame strips/overlay preview gated behind explicit decode actions.
 - Content-difference reporting inside overlapping ranges; current copy only covers shifted,
   missing, and overlapping timeline regions.
+- Committed in `05aabcf5` — `Add media overlap compare foundation`.
 
 ### P-Start — Checkpoint Current Verified Work
 
