@@ -25,6 +25,8 @@ export function mountSpectrumPanel(container, mediaEl) {
   }
 
   let gains = graph.getGains();
+  const currentHpf = graph.getHpf();
+  const currentLpf = graph.getLpf();
   let rafId = 0;
   let abSlot = null;          // stored A-slot gains
   let lufsTarget = null;      // current LUFS normalization target (or null)
@@ -76,10 +78,11 @@ export function mountSpectrumPanel(container, mediaEl) {
   eqRow.className = 'sp-eq-row';
   const sliders = EQ_FREQS.map((freq, i) => {
     const col = document.createElement('div'); col.className = 'sp-eq-col';
-    const val = document.createElement('span'); val.className = 'sp-eq-val'; val.textContent = '0';
+    const g = Number(gains[i] || 0);
+    const val = document.createElement('span'); val.className = 'sp-eq-val'; val.textContent = g > 0 ? '+' + g : String(g);
     const slider = document.createElement('input');
     slider.type = 'range'; slider.min = '-15'; slider.max = '15'; slider.step = '0.5';
-    slider.value = '0'; slider.className = 'sp-eq-slider';
+    slider.value = String(g); slider.className = 'sp-eq-slider';
     const lbl = document.createElement('span'); lbl.className = 'sp-eq-lbl'; lbl.textContent = EQ_LABELS[i];
     slider.addEventListener('input', () => {
       const g = parseFloat(slider.value);
@@ -120,6 +123,12 @@ export function mountSpectrumPanel(container, mediaEl) {
   const presetSel = document.createElement('select');
   presetSel.className = 'sp-preset-sel';
   PRESETS.forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.name; presetSel.append(o); });
+  const currentPreset = PRESETS.find((p) => {
+    if (p.hpf !== currentHpf || p.lpf !== currentLpf) return false;
+    if (p.gains.length !== gains.length) return false;
+    return p.gains.every((g, i) => Math.abs((gains[i] || 0) - g) <= 0.0001);
+  });
+  if (currentPreset) presetSel.value = currentPreset.id;
   presetSel.addEventListener('change', () => applyPreset(PRESETS.find(p => p.id === presetSel.value)));
 
   const storeABtn = mkBtn('Store A');
@@ -133,6 +142,11 @@ export function mountSpectrumPanel(container, mediaEl) {
   const resetBtn = mkBtn('Flat');
   resetBtn.addEventListener('click', () => { applyPreset(PRESETS[0]); presetSel.value = 'flat'; });
   presetRow.append(presetSel, storeABtn, recallABtn, resetBtn);
+
+  hpfInput.value = String(currentHpf);
+  hpfVal.textContent = `${currentHpf}Hz`;
+  lpfInput.value = String(currentLpf);
+  lpfVal.textContent = currentLpf >= 1000 ? Math.round(currentLpf / 100) / 10 + 'kHz' : `${currentLpf}Hz`;
 
   wrap.append(specCanvas, legend, bandCanvas, lufsRow, eqRow, filterRow, presetRow);
   container.append(wrap);

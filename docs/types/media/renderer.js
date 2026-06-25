@@ -433,6 +433,109 @@ export async function render(intake, ctx = {}) {
     };
     registerAudioMode('listen', 'Listen');
     registerAudioMode('tune', 'Tune', async (panel) => {
+      const { PRESETS } = await import('./spectrum-draw.js');
+      const { getGraph } = await import('./audio-graph.js');
+      const graph = getGraph(el);
+      const presetById = new Map(PRESETS.map((p) => [p.id, p]));
+      const intentPresets = [
+        { presetId: 'flat', label: 'Flat' },
+        { presetId: 'broadcast', label: 'Clean speech' },
+        { presetId: 'podcast', label: 'Podcast' },
+        { presetId: 'warmth', label: 'Warmth' },
+        { presetId: 'air', label: 'Presence/Air' },
+        { presetId: 'deess-m', label: 'De-ess' },
+        { presetId: 'bass-cut', label: 'Bass rolloff' },
+      ];
+
+      const formatLpf = (f) => (f >= 1000 ? `${Math.round(f / 100) / 10}kHz` : `${f}Hz`);
+      const matchesPreset = (p) => {
+        if (!p) return false;
+        const gains = graph.getGains();
+        return gains.length === p.gains.length
+          && gains.every((v, i) => Math.abs(v - p.gains[i]) <= 0.0001)
+          && graph.getHpf() === p.hpf
+          && graph.getLpf() === p.lpf;
+      };
+
+      if (!graph) {
+        const note = document.createElement('div');
+        note.className = 'media-tune-note';
+        note.textContent = 'Audio processing unavailable for this media.';
+        panel.appendChild(note);
+        return {
+          destroy() {
+            note.remove();
+          },
+        };
+      }
+
+      const tuneWrap = document.createElement('div');
+      tuneWrap.className = 'media-tune-wrap';
+
+      const intentCard = document.createElement('div');
+      intentCard.className = 'media-tune-intent-card';
+
+      const intentHeading = document.createElement('div');
+      intentHeading.className = 'media-tune-intent-heading';
+      intentHeading.textContent = 'Quick intent tuning';
+
+      const intentStatus = document.createElement('div');
+      intentStatus.className = 'media-tune-intent-status';
+
+      const intentRow = document.createElement('div');
+      intentRow.className = 'media-tune-intent-row';
+
+      const setActiveIntent = (id) => {
+        intentRow.querySelectorAll('.media-tune-intent-btn').forEach((btn) => {
+          const isActive = btn.dataset.intent === id;
+          btn.classList.toggle('media-tune-intent-btn--active', isActive);
+          btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+      };
+
+      const reflectIntent = (preset, id) => {
+        const hpf = preset?.hpf ?? graph.getHpf();
+        const lpf = preset?.lpf ?? graph.getLpf();
+        const label = preset?.name || 'Custom';
+        intentStatus.textContent = `Intent: ${label} · HPF ${hpf}Hz · LPF ${formatLpf(lpf)}`;
+        setActiveIntent(id);
+      };
+
+      const applyPresetIntent = (id) => {
+        const preset = presetById.get(id) || PRESETS.find((p) => p.id === 'flat');
+        if (!preset) return;
+        graph.setAllGains(preset.gains);
+        graph.setHpf(preset.hpf);
+        graph.setLpf(preset.lpf);
+        reflectIntent(preset, id);
+      };
+
+      let initialIntent = 'flat';
+      const initialPreset = PRESETS.find((p) => matchesPreset(p));
+      if (initialPreset) initialIntent = initialPreset.id;
+      else initialIntent = null;
+
+      for (const intent of intentPresets) {
+        const preset = presetById.get(intent.presetId);
+        if (!preset) continue;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'media-tune-intent-btn';
+        btn.dataset.intent = intent.presetId;
+        btn.textContent = intent.label;
+        btn.title = `${intent.label} preset`;
+        btn.addEventListener('click', () => applyPresetIntent(intent.presetId));
+        intentRow.append(btn);
+      }
+      const initialPresetState = initialIntent ? PRESETS.find((p) => p.id === initialIntent) : null;
+      reflectIntent(initialPresetState, initialIntent);
+
+      const advWrap = document.createElement('div');
+      advWrap.className = 'media-tune-advanced';
+      const advHeading = document.createElement('div');
+      advHeading.className = 'media-tune-advanced-heading';
+      advHeading.textContent = 'Advanced controls';
+
       const sp = makeTogglePanel({
         label: 'Spectrum & EQ',
         panelClass: 'media-sp-panel',
@@ -443,10 +546,18 @@ export async function render(intake, ctx = {}) {
         panelClass: 'media-dyn-panel',
         mount: async (innerPanel) => (await import('./dynamics.js')).mountDynamicsPanel(innerPanel, el),
       });
+      advWrap.append(advHeading, sp.wrap, dyn.wrap);
+      intentCard.append(intentHeading, intentStatus, intentRow);
+      tuneWrap.append(intentCard, advWrap);
+
+      if (initialIntent) setActiveIntent(initialIntent);
+      panel.append(tuneWrap);
       const tuneDestroy = {
-        destroy() { sp.destroy(); dyn.destroy(); },
+        destroy() {
+          sp.destroy();
+          dyn.destroy();
+        },
       };
-      panel.append(sp.wrap, dyn.wrap);
       return tuneDestroy;
     });
     registerAudioMode('qc', 'QC', async (panel) => {
