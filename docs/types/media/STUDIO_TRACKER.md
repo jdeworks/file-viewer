@@ -742,6 +742,31 @@ deferred as full-NLE scope creep unless a later goal finds a compact, clear gram
   `preview-media.css`, `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`,
   `STUDIO_ROADMAP.md`, `STUDIO_TRACKER.md`, plus generated cache files if validation refreshes them.
 
+### Media Studio LOC Housekeeping
+
+Status: committed.
+
+- Split the largest touched media studio files and remaining over-threshold media JS modules into
+  focused helpers without changing user-facing behavior or public entrypoints.
+- `compare-ui.js` is now a mount/orchestration module under the hard advisory threshold, with
+  extracted compare constants, controls, media analysis, canvas drawing, analysis actions, and
+  render helpers.
+- `studio-export.js` is now under the hard advisory threshold, with extracted video controls,
+  preset cards, progress/result rendering, summary formatting, and chapter ZIP helpers.
+- `renderer.js`, `mixer-ui.js`, and `transcoder.js` are now under the hard advisory threshold
+  after extracting renderer workspace/mode helpers, mixer control/lane/export helpers, and
+  ffmpeg intake/operation helpers.
+- `tests/areas/media-studio.mjs` is now a small sequencer over focused smoke-area helpers for
+  listen/chapters, tune/dynamics, mixer/playlist, export, QC, chain checks, compare, video
+  studio, and video export/timeline.
+- Current line-count evidence for touched files: `compare-ui.js` 337 lines,
+  `studio-export.js` 477 lines, `renderer.js` 416 lines, `mixer-ui.js` 403 lines,
+  `transcoder.js` 229 lines, `tests/areas/media-studio.mjs` 21 lines; extracted helpers are all
+  below the hard advisory threshold.
+- Validation evidence for this cleanup: `node --check` on touched media modules and media-studio
+  smoke modules, `node tests/media-parsers.test.mjs`, `node tests/smoke-area.mjs media-studio`,
+  and `./scripts/check.sh --fast`.
+
 ## Tracking Rules
 
 - Mark each item `open`, `in progress`, `blocked`, `done`, or `committed`.

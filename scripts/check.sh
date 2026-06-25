@@ -275,7 +275,7 @@ run_fast_unit_tests() {
 
     non_neutral_path_count=$((non_neutral_path_count + 1))
     case "$path" in
-      docs/types/media/*|docs/assets/preview-media.css|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-helpers.mjs)
+      docs/types/media/*|docs/assets/preview-media.css|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-*.mjs)
         add_unit_test tests/media-parsers.test.mjs
         ;;
       docs/types/ebook/*|tests/areas/ebook-git.mjs|tests/movediff.test.mjs)
@@ -411,7 +411,7 @@ run_smoke_core() {
 
     non_neutral_path_count=$((non_neutral_path_count + 1))
     case "$path" in
-      docs/types/media/*|docs/assets/preview-media.css|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-helpers.mjs)
+      docs/types/media/*|docs/assets/preview-media.css|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-*.mjs)
         add_smoke_area media-studio
         ;;
       tests/areas/media-3d.mjs|docs/types/3d/*|docs/types/image/*|docs/types/binary/midi/*|docs/types/binary/gamerom/*)
