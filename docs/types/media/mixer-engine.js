@@ -19,6 +19,8 @@
 //     fadeIn:Number(s), fadeOut:Number(s),
 //     duration:Number(s) }            // derived (buffer length or a default for generators)
 
+import { computeWaveformSummary } from './waveform-data.js';
+
 const DEFAULT_GEN_DURATION = 5;   // generators have no intrinsic length; default 5s region.
 
 let _idSeq = 0;
@@ -59,6 +61,7 @@ export function makeClipLane(name, buffer) {
   return {
     id: nextLaneId(), kind: 'clip', name,
     buffer, freq: 0, noiseColor: 'pink',
+    waveform: buffer ? computeWaveformSummary(buffer) : null,
     offset: 0, gain: 1, muted: false, solo: false,
     fadeIn: 0, fadeOut: 0,
     duration: buffer ? buffer.duration : 0,
@@ -104,6 +107,8 @@ export class MixerTransport {
     if (this.master) this.master.connect(this.ac.destination);
     this.nodes = [];          // active source nodes (for stop)
     this.gainNodes = [];      // per-lane gain nodes (for stop / destroy cleanup)
+    this.laneGainNodes = new Map();
+    this.lanes = [];
     this.playing = false;
     this.startedAt = 0;       // ac.currentTime at play()
     this.startOffset = 0;     // timeline position playback began from (s)
@@ -111,6 +116,13 @@ export class MixerTransport {
   }
 
   setMasterGain(v) { if (this.master) this.master.gain.value = v; }
+  updateLane(lane) {
+    const gainNode = this.laneGainNodes.get(lane.id);
+    if (!gainNode || !this.ac) return;
+    const anySolo = this.lanes.some((l) => l.solo);
+    const g = effectiveGain(lane, anySolo);
+    applyFadeEnvelope(this.ac, gainNode, lane, g, this.position(), this.ac.currentTime);
+  }
 
   // Current playhead position on the shared timeline (seconds).
   position() {
@@ -128,6 +140,7 @@ export class MixerTransport {
     this.startedAt = ac.currentTime;
     this.startOffset = from;
     this._onEnded = onEnded || null;
+    this.lanes = lanes;
     const anySolo = lanes.some((l) => l.solo);
     const total = timelineDuration(lanes);
     const t0 = ac.currentTime;
@@ -142,6 +155,7 @@ export class MixerTransport {
       node.connect(gainNode);
       gainNode.connect(this.master);
       this.gainNodes.push(gainNode);
+      this.laneGainNodes.set(lane.id, gainNode);
 
       // When does this lane's region start, relative to the playhead?
       const laneStart = Math.max(0, lane.offset - from);
@@ -192,7 +206,9 @@ export class MixerTransport {
     for (const n of this.gainNodes) { try { n.disconnect(); } catch {} }
     this.nodes = [];
     this.gainNodes = [];
+    this.laneGainNodes.clear();
     this.playing = false;
+    if (!keepOffset) this.lanes = [];
     if (!keepOffset) this.startOffset = 0;
   }
 

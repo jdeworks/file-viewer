@@ -1,5 +1,6 @@
 // Audio waveform renderer + Web Audio gain helper.
 import { getGraph } from './audio-graph.js';
+import { computeWaveformSummary, drawWaveformSummary } from './waveform-data.js';
 // Module-level AudioContext singleton (created lazily, reused across renders).
 let _ac = null;
 const _gainProxies = new WeakMap(); // audio element → { gain: { value } } proxy
@@ -43,11 +44,14 @@ async function drawWaveform(canvas, file, { ownContext = false } = {}) {
   const W = canvas.width;
   const H = canvas.height;
 
-  // Slice first ~60s (60s × 256kbps ≈ 1.8 MB) to avoid decoding entire large files.
+  // Prefer full-file decode for editor-quality waveforms. For very large files,
+  // fall back to a leading slice rather than blocking the surface indefinitely.
   const SLICE = 60 * 256 * 128;
+  const MAX_FULL_DECODE = 96 * 1024 * 1024;
   let buf;
   try {
-    buf = await file.slice(0, SLICE).arrayBuffer();
+    const source = file.size && file.size <= MAX_FULL_DECODE ? file : file.slice(0, SLICE);
+    buf = await source.arrayBuffer();
   } catch { return null; }
 
   let ac = null;
@@ -60,35 +64,14 @@ async function drawWaveform(canvas, file, { ownContext = false } = {}) {
     audioBuffer = await ac.decodeAudioData(buf.slice(0));
   } catch { return null; }
 
-  // Downsample to one peak per pixel column.
-  const ch = audioBuffer.getChannelData(0);
-  const step = Math.max(1, Math.floor(ch.length / W));
-  const peaks = new Float32Array(W);
-  for (let i = 0; i < W; i++) {
-    let max = 0;
-    for (let j = 0; j < step; j++) {
-      const v = Math.abs(ch[i * step + j] || 0);
-      if (v > max) max = v;
-    }
-    peaks[i] = max;
-  }
+  const summary = computeWaveformSummary(audioBuffer);
+  if (!summary) return null;
 
   const style = getComputedStyle(document.documentElement);
   const accent = style.getPropertyValue('--accent').trim() || '#4c9aff';
 
   function draw(currentTime = 0, duration = 0) {
-    ctx2d.clearRect(0, 0, W, H);
-    const mid = H / 2;
-    ctx2d.fillStyle = accent + '55';
-    for (let i = 0; i < W; i++) {
-      const h = Math.max(1, peaks[i] * mid * 0.9);
-      ctx2d.fillRect(i, mid - h, 1, h * 2);
-    }
-    if (duration > 0) {
-      const x = Math.min(W - 2, Math.round((currentTime / duration) * W));
-      ctx2d.fillStyle = '#e5534b';
-      ctx2d.fillRect(x, 0, 2, H);
-    }
+    drawWaveformSummary(canvas, summary, { color: accent, currentTime, duration });
   }
 
   draw();

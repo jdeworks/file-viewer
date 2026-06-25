@@ -109,9 +109,6 @@ export function renderCompareLayout(state, ui) {
       const isLoaded = !!state.files[laneId];
       refs.layer.hidden = !isLoaded && laneId === 'B';
       refs.layer.dataset.foreground = state.videoForeground === laneId ? 'true' : 'false';
-      refs.layer.style.zIndex = state.layout === 'overlay'
-        ? (state.videoForeground === laneId ? '2' : '1')
-        : '';
       refs.label.textContent = `Lane ${laneId}: ${laneState.label}`;
       refs.video.style.opacity = String((laneId === 'A' ? state.videoOpacityA : state.videoOpacityB) / 100);
     }

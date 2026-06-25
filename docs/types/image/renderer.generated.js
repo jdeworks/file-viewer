@@ -3249,6 +3249,12 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     enabledAnchors: ["top-left", "top-right", "bottom-left", "bottom-right", "middle-left", "middle-right"],
     boundBoxFunc: (oldBox, newBox) => newBox.width < 8 || newBox.height < 8 ? oldBox : newBox
   });
+  if (typeof tr._batchChangeChild === "function") {
+    tr._batchChangeChild = (selector, attrs) => {
+      const child = tr.findOne(selector);
+      if (child) child.setAttrs(attrs);
+    };
+  }
   layer.add(tr);
   let interactive = true;
   let selected = [];

@@ -138,7 +138,13 @@ export function mountMixer(container, intake) {
     }
   }
 
-  function renderLanes() {
+  function renderLanes(opts = {}) {
+    if (opts.liveOnly && opts.lane) {
+      transport?.updateLane?.(opts.lane);
+      updatePlayhead(timelineTotalSeconds());
+      updateTimeLabel(timelineTotalSeconds());
+      return;
+    }
     resolveSelection();
     const total = timelineTotalSeconds();
     const solo = anySolo();
@@ -240,6 +246,22 @@ export function mountMixer(container, intake) {
     updateTimeLabel(timelineTotalSeconds());
     refreshContext(timelineTotalSeconds());
   }
+  function seekTo(seconds) {
+    const total = timelineTotalSeconds();
+    const target = Math.max(0, Math.min(Number(seconds) || 0, total));
+    const t = ensureTransport();
+    const wasPlaying = t.playing;
+    if (wasPlaying) t.play(lanes, target, () => {
+      updatePlayBtn();
+      updateTimeLabel(timelineTotalSeconds());
+      updatePlayhead(timelineTotalSeconds());
+    });
+    else t.startOffset = target;
+    updatePlayBtn();
+    updatePlayhead(total);
+    updateTimeLabel(total);
+    if (wasPlaying) startRaf();
+  }
 
   playBtn.addEventListener('click', () => {
     const t = ensureTransport();
@@ -266,6 +288,16 @@ export function mountMixer(container, intake) {
     updatePlayBtn();
     updateTimeLabel(timelineTotalSeconds());
     updatePlayhead(timelineTotalSeconds());
+  });
+  ruler.addEventListener('pointerdown', (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    const rect = ruler.getBoundingClientRect();
+    seekTo((e.clientX - rect.left + timeline.scrollLeft) / pxPerSec);
+  });
+  laneList.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.mx-region, .mx-fade, input, button')) return;
+    const rect = laneList.getBoundingClientRect();
+    seekTo((e.clientX - rect.left + timeline.scrollLeft) / pxPerSec);
   });
 
   // ── Generators ──
@@ -319,9 +351,13 @@ export function mountMixer(container, intake) {
   timeline.addEventListener('wheel', (e) => {
     if (!e.ctrlKey) return;
     e.preventDefault();
+    const rect = timeline.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left + timeline.scrollLeft;
+    const mouseSec = mouseX / pxPerSec;
     const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
     pxPerSec = Math.max(8, Math.min(400, pxPerSec * factor));
     renderLanes();
+    timeline.scrollLeft = Math.max(0, (mouseSec * pxPerSec) - (e.clientX - rect.left));
   }, { passive: false });
 
   // ── Mixdown / export ──

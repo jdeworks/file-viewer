@@ -55,6 +55,7 @@ export function buildLaneRow({
   gain.title = 'Lane volume';
   gain.addEventListener('input', () => {
     lane.gain = parseInt(gain.value, 10) / 100;
+    onRender({ liveOnly: true, lane });
   });
   ctrls.append(name, btnRow, gain);
 
@@ -73,7 +74,7 @@ export function buildLaneRow({
   canvas.height = laneHeight;
   canvas.width = Math.max(8, Math.round(lane.duration * pxPerSec));
   region.appendChild(canvas);
-  requestAnimationFrame(() => drawLaneWaveform(canvas, lane));
+  requestAnimationFrame(() => drawLaneWaveform(canvas, lane, { effectiveGain: effectiveGainValue(lane, isAnySolo) }));
 
   // Fade handles (in + out) at region edges.
   const fadeIn = document.createElement('div');
@@ -152,8 +153,8 @@ export function wireFadeDrag(handle, lane, key, region, pxPerSec, handlers) {
     const up = () => {
       handle.removeEventListener('pointermove', move);
       handle.removeEventListener('pointerup', up);
-      drawLaneWaveform(region.querySelector('canvas'), lane);
-      onRender();
+      drawLaneWaveform(region.querySelector('canvas'), lane, { effectiveGain: lane.gain });
+      onRender({ liveOnly: true, lane });
     };
     handle.addEventListener('pointermove', move);
     handle.addEventListener('pointerup', up);

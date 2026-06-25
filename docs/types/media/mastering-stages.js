@@ -40,7 +40,7 @@ function dynamicsSummary(settings = {}) {
   const bits = [];
   if (dyn.comp?.enabled) bits.push('compressor live');
   if (dyn.limiter?.enabled) bits.push('limiter live');
-  if (dyn.gate?.enabled) bits.push('gate export-only');
+  if (dyn.gate?.enabled) bits.push('gate live');
   if (dyn.denoise?.enabled) bits.push('de-noise export-only');
   return { active: bits.length > 0, detail: bits.join(', ') || 'No compressor, limiter, gate, or de-noise enabled.' };
 }

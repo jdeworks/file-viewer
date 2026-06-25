@@ -86,28 +86,48 @@ export function getGraph(mediaEl) {
   dynOut.connect(postAnalyser);             // measure the audible signal
   dynOut.connect(ctx.destination);          // and play it
 
-  // ── P4: lazily-built live dynamics (compressor + limiter) ──────────────────
-  // The live gate is a light bake-only effect (a true zero-latency gate needs a
-  // gain follower that's costly per-sample); de-noise has no real-time WebAudio
-  // analog. Both are serialized in getSettings() and applied on export only.
+  // ── P4: lazily-built live dynamics ─────────────────────────────────────────
+  // Compressor, makeup, limiter, and gate preview live. De-noise remains an
+  // export/proof effect because WebAudio has no deterministic broadband denoiser.
   let compNode = null;     // DynamicsCompressorNode for the compressor (live)
+  let compMakeupNode = null;
+  let gateGainNode = null;
+  let gateProbeNode = null;
+  let gateProbeSink = null;
   let limNode = null;      // DynamicsCompressorNode configured as a brickwall limiter
   const comp = { enabled: false, threshold: -24, ratio: 4, attack: 0.003, release: 0.25, knee: 30, makeup: 0 };
   const limiter = { enabled: false, ceiling: -1 };
   const gate = { enabled: false, threshold: -50, ratio: 2, attack: 0.001, release: 0.1 };
   const denoise = { enabled: false, strength: 12 };
 
-  // Re-splice makeupGain → [comp] → [limiter] → dynOut based on which live nodes
+  // Re-splice makeupGain → [comp] → [gate] → [limiter] → dynOut based on which live nodes
   // are enabled. Called whenever a live dynamics enable/bypass toggles.
   function rewireDynamics() {
     try { makeupGain.disconnect(); } catch { /* ignore */ }
     if (compNode) { try { compNode.disconnect(); } catch { /* ignore */ } }
+    if (compMakeupNode) { try { compMakeupNode.disconnect(); } catch { /* ignore */ } }
+    if (gateGainNode) { try { gateGainNode.disconnect(); } catch { /* ignore */ } }
+    if (gateProbeNode) { try { gateProbeNode.disconnect(); } catch { /* ignore */ } }
     if (limNode) { try { limNode.disconnect(); } catch { /* ignore */ } }
     const chain = [];
     if (comp.enabled) {
       if (!compNode) compNode = ctx.createDynamicsCompressor();
+      if (!compMakeupNode) compMakeupNode = ctx.createGain();
       applyCompParams();
-      chain.push(compNode);
+      chain.push(compNode, compMakeupNode);
+    }
+    if (gate.enabled) {
+      if (!gateGainNode) gateGainNode = ctx.createGain();
+      if (!gateProbeNode) {
+        gateProbeNode = ctx.createScriptProcessor(512, 1, 1);
+        gateProbeNode.onaudioprocess = updateGateEnvelope;
+        gateProbeSink = ctx.createGain();
+        gateProbeSink.gain.value = 0;
+      }
+      try { gateProbeNode.connect(gateProbeSink); } catch { /* already connected */ }
+      try { gateProbeSink.connect(ctx.destination); } catch { /* already connected */ }
+      applyGateParams();
+      chain.push(gateGainNode);
     }
     if (limiter.enabled) {
       if (!limNode) limNode = ctx.createDynamicsCompressor();
@@ -115,7 +135,13 @@ export function getGraph(mediaEl) {
       chain.push(limNode);
     }
     let prev = makeupGain;
-    for (const node of chain) { prev.connect(node); prev = node; }
+    for (const node of chain) {
+      prev.connect(node);
+      if (node === gateGainNode && gateProbeNode) {
+        try { prev.connect(gateProbeNode); } catch { /* ignore */ }
+      }
+      prev = node;
+    }
     prev.connect(dynOut);
   }
   function applyCompParams() {
@@ -125,6 +151,7 @@ export function getGraph(mediaEl) {
     compNode.attack.value = clamp(comp.attack, 0, 1);
     compNode.release.value = clamp(comp.release, 0, 1);
     compNode.knee.value = clamp(comp.knee, 0, 40);
+    if (compMakeupNode) compMakeupNode.gain.value = Math.pow(10, clamp(comp.makeup, -24, 24) / 20);
   }
   function applyLimParams() {
     if (!limNode) return;
@@ -134,6 +161,23 @@ export function getGraph(mediaEl) {
     limNode.attack.value = 0.001;
     limNode.release.value = 0.05;
     limNode.knee.value = 0;
+  }
+  function applyGateParams() {
+    if (gateGainNode) gateGainNode.gain.value = gate.enabled ? 1 : 1;
+  }
+  function updateGateEnvelope(event) {
+    if (!gate.enabled || !gateGainNode) return;
+    const input = event.inputBuffer.getChannelData(0);
+    let sumSq = 0;
+    for (let i = 0; i < input.length; i += 1) sumSq += input[i] * input[i];
+    const rms = Math.sqrt(sumSq / Math.max(1, input.length));
+    const db = 20 * Math.log10(Math.max(rms, 1e-8));
+    const threshold = clamp(gate.threshold, -100, 0);
+    const ratio = clamp(gate.ratio, 1, 20);
+    const closed = Math.pow(10, -Math.min(60, (ratio - 1) * 6) / 20);
+    const target = db >= threshold ? 1 : closed;
+    const tau = target > gateGainNode.gain.value ? clamp(gate.attack, 0.001, 1) : clamp(gate.release, 0.01, 2);
+    gateGainNode.gain.setTargetAtTime(target, ctx.currentTime, tau);
   }
   function clamp(v, lo, hi) { const n = Number(v); return isFinite(n) ? Math.max(lo, Math.min(hi, n)) : lo; }
 
@@ -177,23 +221,22 @@ export function getGraph(mediaEl) {
         dynamics: {
           comp: { ...comp },
           limiter: { ...limiter },
-          gate: { ...gate },     // bake-only (applied on export)
+          gate: { ...gate },
           denoise: { ...denoise }, // bake-only (applied on export)
         },
       };
     },
 
     // ── P4 dynamics API ──────────────────────────────────────────────────────
-    // Compressor + limiter are LIVE (WebAudio); gate + de-noise are bake-only and
-    // just store their params here so getSettings() can serialize them for ffmpeg.
+    // Compressor + limiter + gate are LIVE (WebAudio); de-noise is serialized for export.
     getDynamics() {
       return { comp: { ...comp }, limiter: { ...limiter }, gate: { ...gate }, denoise: { ...denoise } };
     },
     // patch is a partial { enabled?, ... } merged into the named section. Live
-    // sections (comp/limiter) re-splice the graph; bake-only ones just record.
+    // sections (comp/limiter/gate) re-splice the graph; denoise just records.
     setComp(patch) { Object.assign(comp, patch); if (compNode) applyCompParams(); rewireDynamics(); emitChange(); },
     setLimiter(patch) { Object.assign(limiter, patch); if (limNode) applyLimParams(); rewireDynamics(); emitChange(); },
-    setGate(patch) { Object.assign(gate, patch); emitChange(); },
+    setGate(patch) { Object.assign(gate, patch); applyGateParams(); rewireDynamics(); emitChange(); },
     setDenoise(patch) { Object.assign(denoise, patch); emitChange(); },
     // The mixer gain (per-track volume, 0–2 etc). Multiplies with the LUFS makeup.
     getGainNode() { return makeupGain; },

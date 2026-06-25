@@ -192,31 +192,89 @@ export async function exerciseCompare(ctx, kind) {
     await page.fill(`${panelSel} .media-compare-video-opacity-a`, '80');
     await page.fill(`${panelSel} .media-compare-video-opacity-b`, '30');
     const livePreview = await page.$eval(`${panelSel} .media-compare`, (el) => {
-      const layerA = el.querySelector('.media-compare-video-layer--a');
-      const layerB = el.querySelector('.media-compare-video-layer--b');
-      const videoA = layerA?.querySelector('video');
-      const videoB = layerB?.querySelector('video');
       const visualKids = Array.from(el.querySelector('.media-compare-visual')?.children || []).map((node) => node.className);
+      const preview = el.querySelector('.media-compare-video-preview');
+      const canvas = preview?.querySelector('.media-compare-video-canvas');
+      const canvasCtx = canvas?.getContext('2d');
+      const layerA = preview?.querySelector('.media-compare-video-layer--a');
+      const layerB = preview?.querySelector('.media-compare-video-layer--b');
+      const sampleCanvas = () => {
+        if (!canvas || !canvasCtx) return null;
+        const { width, height } = canvas;
+        if (!width || !height) return null;
+        const data = canvasCtx.getImageData(0, 0, width, height).data;
+        const first = [data[0], data[1], data[2], data[3]];
+        let varied = 0;
+        let ink = 0;
+        for (let i = 0; i < data.length; i += 16) {
+          if (data[i + 3] > 0) ink++;
+          if (data[i] !== first[0] || data[i + 1] !== first[1] || data[i + 2] !== first[2] || data[i + 3] !== first[3]) varied++;
+        }
+        return {
+          width,
+          height,
+          ink,
+          varied,
+          first,
+        };
+      };
+      const layerInfo = (layer) => {
+        const video = layer?.querySelector('video');
+        if (!video) return null;
+        const rect = video.getBoundingClientRect();
+        const style = getComputedStyle(video);
+        const isInViewport = rect.width > 0.5 && rect.height > 0.5
+          && rect.left >= 0 && rect.right <= window.innerWidth && rect.top >= 0 && rect.bottom <= window.innerHeight;
+        const isInvisible = layer?.hidden
+          || style.display === 'none'
+          || style.visibility === 'hidden'
+          || Number(style.opacity) <= 0
+          || !isInViewport;
+        return {
+          lane: layer?.dataset?.lane || '',
+          hidden: !!layer?.hidden,
+          styleOpacity: style.opacity,
+          display: style.display,
+          controls: !!video.controls,
+          src: video.currentSrc || video.src || '',
+          visible: !isInvisible,
+          rect: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height },
+        };
+      };
       return {
         layout: el.dataset.layout,
         foreground: el.dataset.videoForeground,
-        stageFirst: visualKids[0] === 'media-compare-video-preview',
-        srcA: videoA?.currentSrc || videoA?.src || '',
-        srcB: videoB?.currentSrc || videoB?.src || '',
-        hiddenA: !!layerA?.hidden,
-        hiddenB: !!layerB?.hidden,
-        opacityA: videoA?.style.opacity || '',
-        opacityB: videoB?.style.opacity || '',
-        controlsA: !!videoA?.controls,
-        controlsB: !!videoB?.controls,
+        stageFirst: typeof visualKids[0] === 'string'
+          && visualKids[0].split(' ').includes('media-compare-video-preview'),
+        previewKids: visualKids,
+        canvas: sampleCanvas(),
+        layers: [
+          layerInfo(layerA),
+          layerInfo(layerB),
+        ],
       };
     });
-    if (livePreview.layout === 'overlay' && livePreview.srcA.startsWith('blob:')
-      && livePreview.srcB.startsWith('blob:') && !livePreview.hiddenA && !livePreview.hiddenB
-      && livePreview.opacityA === '0.8' && livePreview.opacityB === '0.3'
-      && livePreview.stageFirst && !livePreview.controlsA && !livePreview.controlsB)
-      pass('video compare: dropped lane B is visible in the live overlay preview');
+    const allSourcesAreBlobs = livePreview.layers.every((row) => typeof row?.src === 'string' && row.src.startsWith('blob:'));
+    const videosHidden = livePreview.layers.every((row) => row && row.visible === false);
+    const canvasPainted = !!livePreview.canvas && livePreview.canvas.width > 0 && livePreview.canvas.height > 0
+      && livePreview.canvas.varied > 8 && livePreview.canvas.ink > 8;
+    const hasPreviewSurface = livePreview.previewKids.some((row) => String(row).includes('media-compare-video-preview'));
+    if (livePreview.layout === 'overlay' && livePreview.foreground === 'A' && livePreview.stageFirst
+      && hasPreviewSurface
+      && allSourcesAreBlobs && videosHidden && canvasPainted)
+      pass('video compare: overlay live preview renders via hidden video decode sources + canvas compositor');
     else fail('video compare live preview: ' + JSON.stringify(livePreview));
+
+    const frameBefore = await page.$eval(`${panelSel} .media-compare-video-canvas`, (canvas) => {
+      if (!canvas) return null;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      const { width, height } = canvas;
+      const data = ctx.getImageData(0, 0, width, height).data;
+      let checksum = 0;
+      for (let i = 0; i < data.length; i += 24) checksum = (checksum + data[i] * 3 + data[i + 1] * 5 + data[i + 2] * 7 + data[i + 3] * 11) % 2147483647;
+      return { width, height, checksum };
+    });
     const dragBefore = await page.$eval(`${panelSel} .media-compare`, (el) => ({
       offset: Number(el.querySelector('.media-compare-offset-input[data-lane="B"]')?.value || 0),
       left: el.querySelector('.media-compare-lane[data-lane="B"] .media-compare-selection')?.style.left || '',
@@ -245,8 +303,19 @@ export async function exerciseCompare(ctx, kind) {
       playheadLeft: el.querySelector('.media-compare-playhead')?.style.left || '',
     }));
     await page.click(`${panelSel} .media-compare-stop`);
+    const frameAfter = await page.$eval(`${panelSel} .media-compare-video-canvas`, (canvas) => {
+      if (!canvas) return null;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      const { width, height } = canvas;
+      const data = ctx.getImageData(0, 0, width, height).data;
+      let checksum = 0;
+      for (let i = 0; i < data.length; i += 24) checksum = (checksum + data[i] * 3 + data[i + 1] * 5 + data[i + 2] * 7 + data[i + 3] * 11) % 2147483647;
+      return { width, height, checksum };
+    });
     if (playState.playing === 'true' && /0:0[0-9.]+ \//.test(playState.time)
-      && playState.playheadLeft && playState.playheadLeft !== '0%')
+      && playState.playheadLeft && playState.playheadLeft !== '0%'
+      && frameBefore && frameAfter && (frameBefore.checksum !== frameAfter.checksum || frameBefore.width !== frameAfter.width || frameBefore.height !== frameAfter.height))
       pass('video compare: shared transport advances the red playhead and syncs top preview');
     else fail('video compare transport: ' + JSON.stringify(playState));
     await page.fill(`${panelSel} .media-compare-offset-input[data-lane="A"]`, '0');

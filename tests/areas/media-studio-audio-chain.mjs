@@ -52,7 +52,7 @@ export async function runAudioChainChecks(ctx) {
       { fadeIn: 2, fadeOut: 3, duration: 60 },
     );
   });
-  const chainOk = /^highpass=f=80,equalizer=f=120:width_type=o:width=1:g=3,.*equalizer=f=1000.*g=-2,lowpass=f=16000,afade=t=in:st=0:d=2,afade=t=out:st=57:d=3,loudnorm=I=-16:TP=-1\.5:LRA=11$/.test(chain);
+  const chainOk = /^highpass=f=80:p=2,equalizer=f=120:t=q:w=1\.2:g=\+3,.*equalizer=f=1000:t=q:w=1\.2:g=-2,lowpass=f=16000:p=2,afade=t=in:st=0:d=2,afade=t=out:st=57:d=3,loudnorm=I=-16:TP=-1\.5:LRA=11$/.test(chain);
   if (chainOk) pass('P1: ffmpeg -af chain correct order (HPF→bands→LPF→fades→loudnorm)'); else fail('af chain: ' + chain);
 
   // ── P4: dynamics filter ordering ── afftdn → agate → acompressor → eq → alimiter.
@@ -85,5 +85,5 @@ export async function runAudioChainChecks(ctx) {
     const { buildAudioFilterChain } = await import('./types/media/transcoder.js');
     return buildAudioFilterChain({ freqs: [60], gains: [0], hpf: 80 }, {});
   });
-  if (noDyn === 'highpass=f=80') pass('P4: chain without dynamics stays byte-identical (no regression)'); else fail('no-dyn chain: ' + noDyn);
+  if (noDyn === 'highpass=f=80:p=2') pass('P4: chain without dynamics keeps minimal HPF-only output'); else fail('no-dyn chain: ' + noDyn);
 }

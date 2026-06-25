@@ -176,7 +176,7 @@ export async function runAudioTuneAndDynamics(ctx) {
     pass('audio spectrum: panel collapses');
   } else fail('spectrum & EQ toggle button not found');
 
-  // ── P4 Dynamics panel ── compressor/limiter (live) + gate/de-noise (bake-only).
+  // ── P4 Dynamics panel ── compressor/limiter/gate (live) + de-noise (export-only).
   // The Dynamics toggle sits between Spectrum and Mixer; CPU-lazy (no panel DOM until opened).
   const dynToggleHandle = await page.evaluateHandle(() =>
       [...document.querySelectorAll('#previewHost .media-mode-panel[data-mode="tune"] .media-wv-toggle')]
@@ -195,7 +195,7 @@ export async function runAudioTuneAndDynamics(ctx) {
     if (dynFloating.position === 'fixed' && dynFloating.resize === 'both')
       pass('audio dynamics: settings panel is fixed and resizable');
     else fail('dynamics floating state: ' + JSON.stringify(dynFloating));
-    // Four effect sections: compressor + limiter (live), gate + de-noise (on export).
+    // Four effect sections: compressor + limiter + gate (live), de-noise (on export).
     const dynSecs = await page.$$eval(`${tunePanelSel} .dyn-sec .dyn-title`, (els) => els.map((e) => e.textContent));
     if (dynSecs.some((t) => /Compressor/.test(t)) && dynSecs.some((t) => /Limiter/.test(t))
       && dynSecs.some((t) => /gate/i.test(t)) && dynSecs.some((t) => /De-noise/.test(t)))
@@ -205,9 +205,11 @@ export async function runAudioTuneAndDynamics(ctx) {
     const dynSliders = await page.$$( `${tunePanelSel} .dyn-slider`);
     if (dynEnables.length === 4) pass('audio dynamics: each section has an enable/bypass toggle'); else fail('dyn enables: ' + dynEnables.length);
     if (dynSliders.length >= 4) pass('audio dynamics: parameter sliders mounted (' + dynSliders.length + ')'); else fail('dyn sliders: ' + dynSliders.length);
-    // Bake-only sections (gate + de-noise) are labelled "on export".
+    // Gate is live; broadband de-noise remains labelled "on export".
     const dynBadges = await page.$$eval(`${tunePanelSel} .dyn-badge`, (els) => els.map((e) => e.textContent));
-    if (dynBadges.filter((t) => /on export/i.test(t)).length === 2) pass('audio dynamics: gate + de-noise labelled "on export"'); else fail('dyn badges: ' + dynBadges.join(','));
+    if (dynBadges.filter((t) => /live/i.test(t)).length >= 3 && dynBadges.filter((t) => /on export/i.test(t)).length === 1)
+      pass('audio dynamics: compressor + limiter + gate live; de-noise export-only');
+    else fail('dyn badges: ' + dynBadges.join(','));
     // Enabling the live compressor must not throw (lazily allocates the node).
     await page.evaluate(() => {
       const cb = document.querySelector('#previewHost .dyn-sec .dyn-enable');

@@ -3,7 +3,7 @@
 // decoded AudioBuffer — no re-decode), a flat band for generator lanes, and shades
 // the fade-in / fade-out triangles so the envelope is visible.
 
-export function drawLaneWaveform(canvas, lane) {
+export function drawLaneWaveform(canvas, lane, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -13,19 +13,32 @@ export function drawLaneWaveform(canvas, lane) {
   const style = getComputedStyle(document.documentElement);
   const accent = style.getPropertyValue('--accent').trim() || '#4c9aff';
 
-  if (lane.kind === 'clip' && lane.buffer) {
-    const ch = lane.buffer.getChannelData(0);
-    const step = Math.max(1, Math.floor(ch.length / W));
-    ctx.fillStyle = accent + '66';
+  const audibleGain = Math.max(0, Number.isFinite(options.effectiveGain) ? options.effectiveGain : lane.gain || 0);
+
+  if (lane.kind === 'clip' && lane.waveform) {
+    const summary = lane.waveform;
+    ctx.fillStyle = accent + (audibleGain <= 0 ? '22' : '66');
     for (let i = 0; i < W; i++) {
-      let max = 0;
-      const base = i * step;
-      for (let j = 0; j < step; j++) {
-        const v = Math.abs(ch[base + j] || 0);
-        if (v > max) max = v;
+      const a = Math.floor((i / W) * summary.buckets);
+      const b = Math.max(a + 1, Math.floor(((i + 1) / W) * summary.buckets));
+      let lo = 0;
+      let hi = 0;
+      let rms = 0;
+      let n = 0;
+      for (let j = a; j < Math.min(summary.buckets, b); j += 1) {
+        lo = Math.min(lo, summary.min[j] || 0);
+        hi = Math.max(hi, summary.max[j] || 0);
+        rms += summary.rms[j] || 0;
+        n += 1;
       }
-      const h = Math.max(1, max * mid * 0.9);
-      ctx.fillRect(i, mid - h, 1, h * 2);
+      const amp = Math.min(2, audibleGain);
+      const top = mid - Math.max(1, hi * mid * 0.9 * amp);
+      const bottom = mid - Math.min(-1, lo * mid * 0.9 * amp);
+      ctx.fillRect(i, top, 1, Math.max(1, bottom - top));
+      const rh = Math.max(1, (n ? rms / n : 0) * mid * 0.9 * amp);
+      ctx.fillStyle = accent + (audibleGain <= 0 ? '33' : 'aa');
+      ctx.fillRect(i, mid - rh, 1, rh * 2);
+      ctx.fillStyle = accent + (audibleGain <= 0 ? '22' : '66');
     }
   } else {
     // Generator lane: a flat band (tone) or a noisy band (noise).

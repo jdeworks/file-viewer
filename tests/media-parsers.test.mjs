@@ -700,9 +700,9 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.ok(cleanupOnly.includes('dynaudnorm=f=500:g=15:p=0.9:m=8'), 'cleanup chain: leveler uses conservative dynaudnorm');
 
   const chain = buildAudioFilterChain(chainSettings, {});
-  assert.ok(chain.includes('equalizer=f=4000:width_type=o:width=1:g=1.5'), 'cleanup preset: live EQ still follows cleanup');
+  assert.ok(chain.includes('equalizer=f=4000:t=q:w=1.2:g=+1.5'), 'cleanup preset: live EQ still follows cleanup');
   assert.ok(
-    chain.indexOf('dynaudnorm=f=500:g=15:p=0.9:m=8') < chain.indexOf('equalizer=f=4000:width_type=o:width=1:g=1.5'),
+    chain.indexOf('dynaudnorm=f=500:g=15:p=0.9:m=8') < chain.indexOf('equalizer=f=4000:t=q:w=1.2:g=+1.5'),
     'cleanup preset: dynaudnorm happens before EQ',
   );
   assert.ok(

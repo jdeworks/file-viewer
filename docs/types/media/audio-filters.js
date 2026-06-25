@@ -58,7 +58,7 @@ export function dehumFilter(dh) {
   if (!dh || !dh.enabled) return '';
   const out = [];
   const hpf = Number(dh.hpf);
-  if (isFinite(hpf) && hpf > 20) out.push('highpass=f=' + Math.round(hpf));
+  if (isFinite(hpf) && hpf > 20) out.push('highpass=f=' + Math.round(hpf) + ':p=2');
 
   const base = Number(dh.freq);
   const width = isFinite(Number(dh.width)) ? Math.max(1, Number(dh.width)) : 8;
@@ -81,7 +81,7 @@ export function deplosiveFilter(dp) {
   if (!dp || !dp.enabled) return '';
   const out = [];
   const hpf = Number(dp.hpf);
-  if (isFinite(hpf) && hpf > 20) out.push('highpass=f=' + Math.round(hpf));
+  if (isFinite(hpf) && hpf > 20) out.push('highpass=f=' + Math.round(hpf) + ':p=2');
 
   const freq = Number(dp.freq);
   const gain = Number(dp.gain);
@@ -243,7 +243,7 @@ export function buildAudioFilterChain(settings = {}, fades = {}) {
   const r = round;
 
   const hpf = Number(settings.hpf);
-  if (isFinite(hpf) && hpf > 20) out.push('highpass=f=' + Math.round(hpf));
+  if (isFinite(hpf) && hpf > 20) out.push('highpass=f=' + Math.round(hpf) + ':p=2');
 
   const dyn = settings.dynamics || {};
   const cleanup = buildMasteringCleanupFilter(settings.cleanupChain);
@@ -258,11 +258,18 @@ export function buildAudioFilterChain(settings = {}, fades = {}) {
     const gain = Number(g);
     const freq = Number(freqs[i]);
     if (!isFinite(gain) || !isFinite(freq) || Math.abs(gain) < 0.1) return;
-    out.push('equalizer=f=' + Math.round(freq) + ':width_type=o:width=1:g=' + r(gain));
+    const gainText = `${gain > 0 ? '+' : ''}${r(gain)}`;
+    if (freq <= 80) {
+      out.push('bass=g=' + gainText + ':f=' + Math.round(freq) + ':w=0.7');
+    } else if (freq >= 10000) {
+      out.push('treble=g=' + gainText + ':f=' + Math.round(freq) + ':w=0.5');
+    } else {
+      out.push('equalizer=f=' + Math.round(freq) + ':t=q:w=1.2:g=' + gainText);
+    }
   });
 
   const lpf = Number(settings.lpf);
-  if (isFinite(lpf) && lpf < 20000) out.push('lowpass=f=' + Math.round(lpf));
+  if (isFinite(lpf) && lpf < 20000) out.push('lowpass=f=' + Math.round(lpf) + ':p=2');
 
   const masterBus = settings.masterBus;
   if (masterBus) {

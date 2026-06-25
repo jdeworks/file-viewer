@@ -1,11 +1,8 @@
 // P4 — Dynamics panel UI (compressor / limiter / noise gate / de-noise).
 //
 // Mirrors the spectrum-panel.js pattern: vanilla DOM, mounts into a container,
-// pushes values into the shared WebAudio graph (audio-graph.js). The compressor
-// and limiter are LIVE (DynamicsCompressorNode in the graph, zero-latency); the
-// noise gate and de-noise are BAKE-ONLY (no good real-time WebAudio analog), so
-// their controls are clearly labelled "applied on export" — they only feed the
-// ffmpeg `-af` chain via getSettings().
+// pushes values into the shared WebAudio graph (audio-graph.js). Compressor,
+// limiter, and gate preview live; broadband de-noise is export/proof-only.
 //
 // CPU policy: no AudioContext / compressor node is allocated until the user
 // actually enables the compressor or limiter (the graph builds those nodes lazily
@@ -79,8 +76,8 @@ export function mountDynamicsPanel(container, mediaEl) {
   lim.cb.checked = !!d.limiter.enabled;
   lim.cb.addEventListener('change', () => graph.setLimiter({ enabled: lim.cb.checked }));
 
-  // ── Noise gate (BAKE-ONLY) ──
-  const gate = section('Noise gate', 'on export');
+  // ── Noise gate (LIVE) ──
+  const gate = section('Noise gate', 'live');
   const g = d.gate;
   gate.body.append(
     ctrlRow('Threshold', { min: -80, max: 0, step: 1, value: g.threshold, unit: ' dB' }, (v) => graph.setGate({ threshold: v })).row,
@@ -101,7 +98,7 @@ export function mountDynamicsPanel(container, mediaEl) {
 
   const hint = document.createElement('p');
   hint.className = 'dyn-hint';
-  hint.textContent = 'Compressor + limiter preview live. Noise gate + de-noise are applied on export.';
+  hint.textContent = 'Compressor, limiter, and gate preview live. Broadband de-noise is applied on export.';
 
   wrap.append(comp.sec, lim.sec, gate.sec, dn.sec, hint);
   container.append(wrap);
