@@ -649,8 +649,8 @@ Status: implemented; no remaining R3 work identified.
 
 ### R4 — Audio/Video Overlap Diff Compare
 
-Status: partial. Foundation is committed in `05aabcf5` / `6e6d489e`; the next audio
-compare slice is implemented in this worktree. Video compare remains placeholder-only.
+Status: partial. Foundation is committed in `05aabcf5` / `6e6d489e`; the first audio
+analysis slice is committed in `fbe6c057`. Video compare remains placeholder-only.
 
 - This is distinct from R1/R3 processing-chain compare. R1/R3 explain how one source changes
   through Tune/Dynamics/Master Bus; R4 compares two source media files or two partial ranges.
