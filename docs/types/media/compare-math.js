@@ -69,6 +69,35 @@ export function classifyShiftedSections({ a = {}, b = {}, durationA = 0, duratio
   };
 }
 
+function clampWithinRange(range = {}, sourceRange = {}) {
+  const sourceStart = finiteNumber(sourceRange.start, 0);
+  const sourceEnd = Math.max(sourceStart, finiteNumber(sourceRange.end, sourceStart));
+  const start = Math.max(sourceStart, Math.min(sourceEnd, finiteNumber(range.start, sourceStart)));
+  const end = Math.max(sourceStart, Math.min(sourceEnd, finiteNumber(range.end, sourceStart)));
+  if (end <= start) return { start: 0, end: 0 };
+  return { start, end };
+}
+
+export function overlapSourceRanges(result = {}) {
+  const r = result || classifyShiftedSections();
+  const overlap = r.overlap || { start: 0, end: 0, duration: 0 };
+  const hasOverlap = overlap.duration > 0;
+  if (!hasOverlap) return {
+    hasOverlap: false,
+    overlap,
+    a: { start: 0, end: 0 },
+    b: { start: 0, end: 0 },
+  };
+  const offsetA = finiteNumber(r.a?.offset, 0);
+  const offsetB = finiteNumber(r.b?.offset, 0);
+  return {
+    hasOverlap: true,
+    overlap,
+    a: clampWithinRange({ start: overlap.start - offsetA, end: overlap.end - offsetA }, r.a?.source),
+    b: clampWithinRange({ start: overlap.start - offsetB, end: overlap.end - offsetB }, r.b?.source),
+  };
+}
+
 export function formatCompareSeconds(seconds) {
   const value = Math.max(0, finiteNumber(seconds, 0));
   if (value >= 60) {

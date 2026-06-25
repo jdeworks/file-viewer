@@ -152,15 +152,18 @@ Needed:
   compare windows without full-file decode.
 - Partial: audio view has stacked lane strips, explicit user-chosen normalization toggle
   (off by default), translucent overlap/missing placeholders, and an explicit
-  `Analyze selected audio` action. Common PCM WAV compares now read capped selected
-  source windows with `Blob.slice`; compressed/unsupported audio keeps the capped
-  browser-decode fallback. Broader audio compare polish remains pending.
+  `Analyze selected audio` action. Common PCM WAV compares now read capped *shifted
+  overlap* source windows with `Blob.slice`; compressed/unsupported audio keeps the capped
+  browser-decode fallback and now summarizes only the shifted-overlap subsection. Broader
+  audio compare polish remains pending.
 - Partial: video view has aligned lanes, overlay opacity state, offset/overlap readouts,
-  and an explicit `Analyze selected video` action that lazily samples capped selected
-  overlap frames into real lane strips, overlay preview, visual diff strip, and measured
-  visual difference copy.
-- Partial: UI copy distinguishes shifted/missing ranges from measured overlap differences
-  after audio and video analysis.
+  and an explicit `Analyze selected video` action that lazily samples capped shifted
+  overlap source frames into real lane strips, overlay preview, visual diff strip, and
+  measured visual difference copy.
+- Done for this polish slice: shifted overlap is now the measured window for both
+  audio and video analysis (selected/WAV and decoded fallback), so copy can state that
+  measured differences are from the shifted-overlap window. Remaining long-file strategy for
+  compressed sources is still unresolved.
 - Static-client implementation only: no backend alignment service, no ASR/NLP matching, no
   hidden resampling/gain unless the user chooses a compare normalization mode.
 

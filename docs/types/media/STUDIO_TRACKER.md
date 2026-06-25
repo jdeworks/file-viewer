@@ -681,8 +681,13 @@ polish and general compressed-audio longer-file strategy work.
   - Uses browser-native `HTMLVideoElement` plus canvas `drawImage`; no ffmpeg, backend, or ML path.
   - Renders real lane frame strips, an overlay preview respecting overlay opacity, and a visual
     diff strip with average visual difference plus high-diff frame/pixel/column counts.
+  - Video sample times now come from shifted-overlap source ranges so measured content checks are
+    aligned to real overlapped source windows.
   - Smoke uses `docs/examples/sample.webm` as the second small video fixture and verifies painted
     frame/overlay/diff canvases and measured copy.
+- Current R4 polish: shifted-overlap source windows are now the only measured region for both
+  audio/video; when WAV compare can use direct `Blob.slice`, it reads shifted-overlap windows,
+  and decode fallback summarizes only overlap subsections.
 - Changed paths for this slice: `compare-audio.js`, `compare-ui.js`,
   `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`, `STUDIO_ROADMAP.md`,
   `STUDIO_TRACKER.md`, plus generated cache files if validation refreshes them.

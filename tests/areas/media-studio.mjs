@@ -100,9 +100,9 @@ export async function run(ctx) {
       await page.fill(`${panelSel} .media-compare-out-input[data-lane="B"]`, '0.4');
       await page.setInputFiles(`${panelSel} .media-compare-drop .media-ed-file-input`, new URL('../../docs/examples/sample.wav', import.meta.url).pathname);
       await page.click(`${panelSel} .media-compare-analyze`);
-      await page.waitForFunction(() => /Analyzed selected WAV range/i.test(document.querySelector('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-analysis-status')?.textContent || ''), null, { timeout: 12000 });
+      await page.waitForFunction(() => /Analyzed shifted overlap WAV range/i.test(document.querySelector('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-analysis-status')?.textContent || ''), null, { timeout: 12000 });
       const analysisStatus = await page.$eval(`${panelSel} .media-compare-analysis-status`, (el) => el.textContent.trim());
-      if (/Analyzed selected WAV range/i.test(analysisStatus)) pass('audio compare: sample WAV uses selected-range analysis path');
+      if (/Analyzed shifted overlap WAV range/i.test(analysisStatus)) pass('audio compare: sample WAV uses shifted-overlap WAV analysis path');
       else fail('audio compare WAV range status: ' + analysisStatus);
       const analysisPaint = await page.$$eval(`${panelSel} .media-compare-waveform-canvas, ${panelSel} .media-compare-diff-canvas`, (canvases) => canvases.map((canvas) => {
         const ctx = canvas.getContext('2d');
@@ -119,7 +119,7 @@ export async function run(ctx) {
         pass('audio compare: analysis paints lane waveforms and difference canvas');
       else fail('audio compare canvas paint: ' + JSON.stringify(analysisPaint));
       const diffReadout = await page.$eval(`${panelSel} .media-compare-copy`, (el) => el.textContent);
-      if (/Measured overlap: average diff energy/i.test(diffReadout) && /Raw amplitude compare/i.test(diffReadout))
+      if (/Measured shifted overlap: average diff energy/i.test(diffReadout) && /Raw amplitude compare/i.test(diffReadout))
         pass('audio compare: measured difference readout distinguishes overlap energy');
       else fail('audio compare diff readout: ' + diffReadout);
       await page.click(`${panelSel} .media-compare-normalize-input`);
@@ -131,10 +131,10 @@ export async function run(ctx) {
       if (normLabel.checked && /user chosen/i.test(normLabel.text) && /normalization is on for compare only/i.test(normReadout))
         pass('audio compare: normalize toggle updates compare-only label/state');
       else fail('audio compare normalize after analysis: ' + JSON.stringify({ normLabel, normReadout }));
-      await page.fill(`${panelSel} .media-compare-out-input[data-lane="A"]`, '0.3');
+      await page.fill(`${panelSel} .media-compare-offset-input[data-lane="B"]`, '0.2');
       const staleStatus = await page.$eval(`${panelSel} .media-compare-analysis-status`, (el) => el.textContent);
-      if (/analyze selected WAV range again/i.test(staleStatus))
-        pass('audio compare: selected-range WAV analysis clears after range edits');
+      if (/analyze shifted overlap WAV range again/i.test(staleStatus))
+        pass('audio compare: shifted-overlap WAV analysis clears after offset edits');
       else fail('audio compare stale WAV status: ' + staleStatus);
     } else {
       if (analyzeExists) pass('video compare: explicit video analyze button exists');
@@ -150,7 +150,7 @@ export async function run(ctx) {
       await page.fill(`${panelSel} .media-compare-out-input[data-lane="B"]`, '0.6');
       await page.setInputFiles(`${panelSel} .media-compare-drop .media-ed-file-input`, new URL('../../docs/examples/sample.webm', import.meta.url).pathname);
       await page.click(`${panelSel} .media-compare-analyze`);
-      await page.waitForFunction(() => /Analyzed \d+ video frame/i.test(document.querySelector('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-analysis-status')?.textContent || ''), null, { timeout: 15000 });
+      await page.waitForFunction(() => /Analyzed \d+ shifted-overlap video frame/i.test(document.querySelector('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-analysis-status')?.textContent || ''), null, { timeout: 15000 });
       const videoPaint = await page.$$eval(`${panelSel} .media-compare-waveform-canvas, ${panelSel} .media-compare-overlay-canvas, ${panelSel} .media-compare-diff-canvas`, (canvases) => canvases.map((canvas) => {
         const ctx = canvas.getContext('2d');
         const { width, height } = canvas;
@@ -168,7 +168,7 @@ export async function run(ctx) {
         pass('video compare: analysis paints frame strips, overlay preview, and diff canvas');
       else fail('video compare canvas paint: ' + JSON.stringify(videoPaint));
       const videoReadout = await page.$eval(`${panelSel} .media-compare-copy`, (el) => el.textContent);
-      if (/Measured video overlap: average visual difference/i.test(videoReadout) && /shifted\/missing ranges are separate from content differences/i.test(videoReadout))
+      if (/Measured shifted overlap: average visual difference/i.test(videoReadout) && /shifted\/missing ranges are separate from content differences/i.test(videoReadout))
         pass('video compare: measured visual difference readout separates timeline gaps from content changes');
       else fail('video compare diff readout: ' + videoReadout);
       await page.fill(`${panelSel} .media-compare-opacity-input`, '75');

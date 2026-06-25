@@ -24,6 +24,7 @@ import {
   clampRange,
   classifyShiftedSections,
   computeOverlapWindow,
+  overlapSourceRanges,
   describeShiftedComparison,
   diffAudioSummaries,
   diffVideoFrames,
@@ -103,6 +104,31 @@ function makePcm16Wav({ sampleRate = 4, channels = 2, frames = [] } = {}) {
   );
   assert.match(describeShiftedComparison(shifted), /B is shifted \+3\.00s/, 'compare math: copy reports signed shift');
   assert.match(describeShiftedComparison(shifted), /Overlap 6\.0s/, 'compare math: copy reports overlap duration');
+
+  const shiftedSourceRanges = overlapSourceRanges({
+    a: { offset: 1.5, source: { start: 1, end: 6 }, shifted: { start: 2.5, end: 7.5 } },
+    b: { offset: -1, source: { start: 0, end: 5 }, shifted: { start: -1, end: 4 } },
+    overlap: { start: 2.5, end: 4, duration: 1.5 },
+  });
+  assert.deepEqual(
+    shiftedSourceRanges,
+    {
+      hasOverlap: true,
+      overlap: { start: 2.5, end: 4, duration: 1.5 },
+      a: { start: 1, end: 2.5 },
+      b: { start: 3.5, end: 5 },
+    },
+    'compare math: overlap source ranges map shifted overlap back to lane source',
+  );
+
+  const negativeOnly = overlapSourceRanges({
+    a: { offset: 0, source: { start: 0, end: 2 }, shifted: { start: 0, end: 2 } },
+    b: { offset: -5, source: { start: 0, end: 2 }, shifted: { start: -5, end: -3 } },
+    overlap: { start: 0, end: 0, duration: 0 },
+  });
+  assert.equal(negativeOnly.hasOverlap, false, 'compare math: no-overlap is reported');
+  assert.deepEqual(negativeOnly.a, { start: 0, end: 0 }, 'compare math: no-overlap returns zero A source range');
+  assert.deepEqual(negativeOnly.b, { start: 0, end: 0 }, 'compare math: no-overlap returns zero B source range');
 
   const disjoint = classifyShiftedSections({
     a: { offset: 0, range: { start: 0, end: 2 } },

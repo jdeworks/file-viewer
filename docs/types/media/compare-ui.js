@@ -3,6 +3,7 @@ import {
   describeShiftedComparison,
   diffAudioSummaries,
   diffVideoFrames,
+  overlapSourceRanges,
   formatCompareSeconds,
   sampleVideoTimes,
   summarizeAudioWindow,
@@ -225,6 +226,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     };
     addListener(offset, 'input', () => {
       state.lanes[laneId].offset = Number(offset.value) || 0;
+      clearAudioRangeAnalysis();
       clearVideoAnalysis();
       render();
     });
@@ -244,6 +246,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     const moveDrag = (e) => {
       if (!dragging) return;
       state.lanes[laneId].offset = startOffset + ((e.clientX - startX) / PX_PER_SEC);
+      clearAudioRangeAnalysis();
       clearVideoAnalysis();
       render();
     };
@@ -256,6 +259,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       const step = e.shiftKey ? 1 : 0.1;
       state.lanes[laneId].offset += e.key === 'ArrowLeft' ? -step : step;
+      clearAudioRangeAnalysis();
       clearVideoAnalysis();
       render();
       e.preventDefault();
@@ -397,13 +401,13 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
   function clearVideoAnalysis() {
     if (kind !== 'video' || !state.analysis) return;
     state.analysis = null;
-    analysisStatus.textContent = 'Selection changed; analyze selected video again.';
+    analysisStatus.textContent = 'Selection changed; analyze shifted overlap video again.';
   }
 
   function clearAudioRangeAnalysis() {
     if (kind !== 'audio' || state.analysis?.source !== 'wav-range') return;
     state.analysis = null;
-    analysisStatus.textContent = 'Selection changed; analyze selected WAV range again.';
+    analysisStatus.textContent = 'Selection changed; analyze shifted overlap WAV range again.';
   }
 
   function readFirstChannel(buffer) {
@@ -428,7 +432,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     });
   }
 
-  function toAudioAnalysisFromRange(rangeA, rangeB = null) {
+  function toAudioAnalysisFromRange(rangeA, rangeB = null, overlapRanges = null) {
     return {
       channelA: rangeA.channel,
       rateA: rangeA.sampleRate,
@@ -437,12 +441,13 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       rateB: rangeB?.sampleRate || 0,
       rangeStartB: rangeB?.rangeStart || 0,
       hasB: !!rangeB,
+      overlapRanges,
       source: 'wav-range',
       stale: false,
     };
   }
 
-  function toAudioAnalysisFromBuffers(bufferA, bufferB = null) {
+  function toAudioAnalysisFromBuffers(bufferA, bufferB = null, overlapRanges = null) {
     return {
       channelA: readFirstChannel(bufferA),
       rateA: bufferA.sampleRate,
@@ -451,6 +456,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       rateB: bufferB?.sampleRate || 0,
       rangeStartB: 0,
       hasB: !!bufferB,
+      overlapRanges,
       source: 'browser-decode',
       stale: false,
     };
@@ -475,17 +481,31 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
   async function analyzeSelectedAudio() {
     if (kind !== 'audio') return;
     const rangeA = state.lanes.A.out - state.lanes.A.in;
-    const rangeB = state.lanes.B.out - state.lanes.B.in;
-    const selected = Math.max(rangeA, state.files.B ? rangeB : 0);
-    if (selected > AUDIO_COMPARE_MAX_RANGE_SECONDS) {
+    const current = audioCompareResult();
+    const overlapRanges = overlapSourceRanges(current);
+    const hasSecond = !!state.files.B;
+    const selected = hasSecond ? overlapRanges.overlap.duration : rangeA;
+    if (!hasSecond && selected > AUDIO_COMPARE_MAX_RANGE_SECONDS) {
       analysisStatus.textContent = `Selected range is ${formatCompareSeconds(selected)}; choose ${formatCompareSeconds(AUDIO_COMPARE_MAX_RANGE_SECONDS)} or less.`;
       state.analysis = null;
       render();
       return;
     }
+    if (hasSecond && !overlapRanges.hasOverlap) {
+      state.analysis = null;
+      analysisStatus.textContent = 'No shifted overlap to analyze; adjust offsets or ranges.';
+      render();
+      return;
+    }
+    if (hasSecond && overlapRanges.overlap.duration > AUDIO_COMPARE_MAX_RANGE_SECONDS) {
+      state.analysis = null;
+      analysisStatus.textContent = `Shifted overlap is ${formatCompareSeconds(overlapRanges.overlap.duration)}; choose ${formatCompareSeconds(AUDIO_COMPARE_MAX_RANGE_SECONDS)} or less.`;
+      render();
+      return;
+    }
 
     analyzeButton.disabled = true;
-    analysisStatus.textContent = 'Analyzing selected audio on demand...';
+    analysisStatus.textContent = 'Analyzing shifted overlap audio on demand...';
     const fileA = state.files.A || mediaSourceFromIntake(intake);
     if (!fileA) {
       analysisStatus.textContent = 'Open-file bytes are unavailable for audio analysis.';
@@ -494,28 +514,40 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     }
 
     try {
-      const current = audioCompareResult();
+      const sourceRangeA = overlapRanges.a;
+      const sourceRangeB = overlapRanges.b;
+      const sampleRangeA = hasSecond ? sourceRangeA : current.a.source;
       const [wavA, wavB] = await Promise.all([
-        readSelectedWavRange(fileA, current.a.source, 'Lane A selected WAV range'),
-        state.files.B ? readSelectedWavRange(state.files.B, current.b.source, 'Lane B selected WAV range') : Promise.resolve(null),
+        readSelectedWavRange(fileA, sampleRangeA, 'Lane A shifted-overlap WAV range'),
+        hasSecond ? readSelectedWavRange(state.files.B, sourceRangeB, 'Lane B shifted-overlap WAV range') : Promise.resolve(null),
       ]);
-      const canUseWavRange = !!wavA && (!state.files.B || !!wavB);
+      const canUseWavRange = !!wavA && (!hasSecond || !!wavB);
 
       if (canUseWavRange) {
         state.durationA = wavA.duration || state.durationA;
         state.lanes.A.out = Math.min(state.lanes.A.out, state.durationA);
-        if (wavB) {
+        if (hasSecond && wavB) {
           state.durationB = wavB.duration || state.durationB;
           state.lanes.B.out = Math.min(state.lanes.B.out, state.durationB);
         }
-        state.analysis = toAudioAnalysisFromRange(wavA, wavB);
-        analysisStatus.textContent = wavB
-          ? 'Analyzed selected WAV range.'
-          : 'Analyzed A WAV range. Add a second audio file.';
+        const overlapForAnalysis = {
+          hasOverlap: hasSecond ? overlapRanges.hasOverlap : true,
+          overlap: hasSecond ? overlapRanges.overlap : current.a.source,
+          a: hasSecond ? overlapRanges.a : current.a.source,
+          b: hasSecond ? overlapRanges.b : { start: 0, end: 0 },
+        };
+        state.analysis = toAudioAnalysisFromRange(
+          wavA,
+          wavB,
+          overlapForAnalysis,
+        );
+        analysisStatus.textContent = hasSecond
+          ? 'Analyzed shifted overlap WAV range.'
+          : 'Analyzed A shifted-overlap WAV range. Add a second audio file.';
       } else {
         const [bufferA, bufferB] = await Promise.all([
           decodeFile(fileA),
-          state.files.B ? decodeFile(state.files.B) : Promise.resolve(null),
+          hasSecond ? decodeFile(state.files.B) : Promise.resolve(null),
         ]);
         state.durationA = bufferA.duration || state.durationA;
         state.lanes.A.out = Math.min(state.lanes.A.out, state.durationA);
@@ -524,13 +556,15 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
           state.lanes.B.out = Math.min(state.lanes.B.out, state.durationB);
         }
         state.analysis = toAudioAnalysisFromBuffers(bufferA, bufferB);
-        analysisStatus.textContent = bufferB
-          ? 'Analyzed selected audio range (browser decode).'
-          : 'Analyzed A. Add a second audio file for difference.';
+        analysisStatus.textContent = hasSecond
+          ? 'Analyzed shifted overlap audio range (browser decode).'
+          : 'Analyzed A shifted-overlap audio range (browser decode). Add a second audio file.';
       }
-      if (!state.analysis.hasB) analysisStatus.textContent = state.analysis.source === 'wav-range'
-        ? 'Analyzed A WAV range. Add a second audio file.'
-        : 'Analyzed A. Add a second audio file for difference.';
+      if (!state.analysis.hasB && hasSecond) {
+        analysisStatus.textContent = state.analysis.source === 'wav-range'
+          ? 'Analyzed shifted overlap WAV range. Add a second audio file.'
+          : 'Analyzed shifted-overlap audio range (browser decode). Add a second audio file.';
+      }
     } catch (err) {
       state.analysis = null;
       analysisStatus.textContent = err?.message || 'Audio decode failed; compare controls remain available.';
@@ -751,7 +785,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     }
 
     analyzeButton.disabled = true;
-    analysisStatus.textContent = 'Decoding selected video frames on demand...';
+    analysisStatus.textContent = 'Decoding shifted overlap video frames on demand...';
     try {
       const [durationA, durationB] = await Promise.all([loadVideoMetadata(fileA), loadVideoMetadata(fileB)]);
       if (durationA > 0) {
@@ -768,28 +802,28 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
         durationA: state.durationA,
         durationB: state.durationB,
       });
-      if (!result.hasOverlap) {
+      const overlapRanges = overlapSourceRanges(result);
+      if (!overlapRanges.hasOverlap) {
         state.analysis = null;
         analysisStatus.textContent = 'No shifted overlap to sample; adjust offsets or ranges.';
         render();
         return;
       }
-      if (result.overlap.duration > VIDEO_COMPARE_MAX_RANGE_SECONDS) {
+      if (overlapRanges.overlap.duration > VIDEO_COMPARE_MAX_RANGE_SECONDS) {
         state.analysis = null;
-        analysisStatus.textContent = `Selected overlap is ${formatCompareSeconds(result.overlap.duration)}; choose ${formatCompareSeconds(VIDEO_COMPARE_MAX_RANGE_SECONDS)} or less.`;
+        analysisStatus.textContent = `Shifted overlap is ${formatCompareSeconds(overlapRanges.overlap.duration)}; choose ${formatCompareSeconds(VIDEO_COMPARE_MAX_RANGE_SECONDS)} or less.`;
         render();
         return;
       }
-      const compareTimes = sampleVideoTimes(result.overlap, VIDEO_COMPARE_MAX_FRAMES);
-      const timesA = compareTimes.map((time) => time - result.a.offset);
-      const timesB = compareTimes.map((time) => time - result.b.offset);
+      const compareTimesA = sampleVideoTimes(overlapRanges.a, VIDEO_COMPARE_MAX_FRAMES);
+      const compareTimesB = sampleVideoTimes(overlapRanges.b, VIDEO_COMPARE_MAX_FRAMES);
       const [framesA, framesB] = await Promise.all([
-        sampleVideoFrames(fileA, timesA),
-        sampleVideoFrames(fileB, timesB),
+        sampleVideoFrames(fileA, compareTimesA),
+        sampleVideoFrames(fileB, compareTimesB),
       ]);
       const diff = diffVideoFrames(framesA, framesB);
-      state.analysis = { kind: 'video', framesA, framesB, diff, compareTimes };
-      analysisStatus.textContent = `Analyzed ${diff.frames} video frame${diff.frames === 1 ? '' : 's'}.`;
+      state.analysis = { kind: 'video', framesA, framesB, diff, compareTimes: compareTimesA, overlapRanges };
+      analysisStatus.textContent = `Analyzed ${diff.frames} shifted-overlap video frame${diff.frames === 1 ? '' : 's'}.`;
     } catch (err) {
       state.analysis = null;
       analysisStatus.textContent = err?.message || 'Video decode failed; compare controls remain available.';
@@ -815,7 +849,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       drawFrameStrip(bCanvas, analysis.framesB);
       drawOverlayPreview(analysis);
       drawVideoDiff(diffCanvas, analysis.diff);
-      foot.textContent = `${describeShiftedComparison(result)} Measured video overlap: average visual difference ${analysis.diff.averageDifference.toFixed(3)}, high-diff frames ${analysis.diff.highFrames}/${analysis.diff.frames}, high-diff pixels ${analysis.diff.highPixels}/${analysis.diff.totalPixels}, high-diff columns ${analysis.diff.highColumns}/${analysis.diff.totalColumns}. Overlay preview uses ${state.opacity}% B opacity; shifted/missing ranges are separate from content differences.`;
+      foot.textContent = `${describeShiftedComparison(result)} Measured shifted overlap: average visual difference ${analysis.diff.averageDifference.toFixed(3)}, high-diff frames ${analysis.diff.highFrames}/${analysis.diff.frames}, high-diff pixels ${analysis.diff.highPixels}/${analysis.diff.totalPixels}, high-diff columns ${analysis.diff.highColumns}/${analysis.diff.totalColumns}. Overlay preview uses ${state.opacity}% B opacity; shifted/missing ranges are separate from content differences.`;
       return;
     }
     overlayCanvas.hidden = true;
@@ -837,9 +871,24 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       start: Math.max(0, range.start - (analysis.rangeStartB || 0)),
       end: Math.max(0, range.end - (analysis.rangeStartB || 0)),
     });
-    const summaryA = summarizeAudioWindow(analysis.channelA, analysis.rateA, localRangeA(result.a.source), AUDIO_COMPARE_COLUMNS);
+    const overlapRanges = analysis.source === 'browser-decode'
+      ? (analysis.hasB
+        ? overlapSourceRanges(result)
+        : { hasOverlap: false, overlap: result.a.source, a: result.a.source, b: { start: 0, end: 0 } })
+      : (analysis.overlapRanges || overlapSourceRanges(result));
+    const summaryA = summarizeAudioWindow(
+      analysis.channelA,
+      analysis.rateA,
+      localRangeA(overlapRanges.a),
+      AUDIO_COMPARE_COLUMNS,
+    );
     const summaryB = analysis.hasB
-      ? summarizeAudioWindow(analysis.channelB, analysis.rateB, localRangeB(result.b.source), AUDIO_COMPARE_COLUMNS)
+      ? summarizeAudioWindow(
+        analysis.channelB,
+        analysis.rateB,
+        localRangeB(overlapRanges.b),
+        AUDIO_COMPARE_COLUMNS,
+      )
       : null;
     const accent = getComputedStyle(wrap).getPropertyValue('--accent').trim() || '#2f7de1';
     drawWave(aCanvas, summaryA, accent);
@@ -854,22 +903,24 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       foot.textContent = `${describeShiftedComparison(result)} No measured difference because the shifted selections do not overlap.`;
       return;
     }
-    const overlapRangeA = {
-      start: result.overlap.start - result.a.offset,
-      end: result.overlap.end - result.a.offset,
-    };
-    const overlapRangeB = {
-      start: result.overlap.start - result.b.offset,
-      end: result.overlap.end - result.b.offset,
-    };
-    const overlapA = summarizeAudioWindow(analysis.channelA, analysis.rateA, localRangeA(overlapRangeA), AUDIO_COMPARE_COLUMNS);
-    const overlapB = summarizeAudioWindow(analysis.channelB, analysis.rateB, localRangeB(overlapRangeB), AUDIO_COMPARE_COLUMNS);
+    const overlapA = summarizeAudioWindow(
+      analysis.channelA,
+      analysis.rateA,
+      localRangeA(overlapRanges.a),
+      AUDIO_COMPARE_COLUMNS,
+    );
+    const overlapB = summarizeAudioWindow(
+      analysis.channelB,
+      analysis.rateB,
+      localRangeB(overlapRanges.b),
+      AUDIO_COMPARE_COLUMNS,
+    );
     const diff = diffAudioSummaries(overlapA, overlapB, { normalize: state.normalize });
     drawDiff(diffCanvas, diff);
     const normText = state.normalize
       ? 'Per-lane peak normalization is on for compare only.'
       : 'Raw amplitude compare; normalization is off.';
-    foot.textContent = `${describeShiftedComparison(result)} Measured overlap: average diff energy ${diff.averageEnergy.toFixed(3)}, high-diff columns ${diff.highColumns}/${diff.columns}. ${normText}`;
+    foot.textContent = `${describeShiftedComparison(result)} Measured shifted overlap: average diff energy ${diff.averageEnergy.toFixed(3)}, high-diff columns ${diff.highColumns}/${diff.columns}. ${normText}`;
   }
 
   layoutButtons[0].setAttribute('aria-pressed', 'true');
