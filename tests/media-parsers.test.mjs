@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 
 import { parseSubtitles, parseTimestamp } from '../docs/types/media/subtitles.js';
 import { parseId3 } from '../docs/types/media/id3.js';
+import { buildAcxExportArgs, buildAcxFilterChain } from '../docs/types/media/audio-filters.js';
+import { evaluateAcx } from '../docs/types/media/qc.js';
+import { presetById, resolveExportParams } from '../docs/types/media/export-presets.js';
 
 const enc = new TextEncoder();
 
@@ -106,4 +109,51 @@ function chapFrame({ id = 'ch', startMs = 0, endMs = 1000, title = 'Chapter' }) 
   assert.equal(out.chapters[0].title, 'Prologue', 'parseId3: CHAP title preserved');
   assert.equal(out.chapters[0].start, 1, 'parseId3: CHAP start converted to seconds');
   assert.equal(out.chapters[1].start, 3.4, 'parseId3: CHAP ordering normalized by start');
+}
+
+{
+  const p = resolveExportParams(presetById('acx-mp3'), {}, 'mp3');
+  assert.equal(p.acxChain, true, 'acx preset: resolved params carry ACX chain marker');
+  assert.equal(p.lufsTarget, -20, 'acx preset: lufsTarget is −20');
+  assert.equal(p.truePeak, -3, 'acx preset: truePeak is −3');
+  assert.equal(p.channels, 1, 'acx preset: mono channel target');
+  assert.equal(p.sampleRate, 44100, 'acx preset: 44.1k sample-rate target');
+  assert.equal(p.cbr, true, 'acx preset: CBR encoding');
+
+  const args = buildAcxExportArgs('in.mp3', 'out.mp3');
+  const chain = buildAcxFilterChain();
+  const chainText = args.join(' ');
+  assert.ok(/-ac\s+1/.test(chainText), 'acx args: include explicit mono channel');
+  assert.ok(chainText.includes('-ar 44100'), 'acx args: include 44.1 kHz sample-rate');
+  assert.ok(chainText.includes('-b:a 192k'), 'acx args: include 192 kbps bitrate');
+  assert.ok(chain.includes('loudnorm=I=-20:TP=-3:LRA=11'), 'acx filter chain: includes loudnorm −20 / −3 defaults');
+  assert.ok(chain.includes('silenceremove='), 'acx filter chain: includes silenceremove');
+  assert.ok(chain.includes('apad=pad_dur='), 'acx filter chain: includes room-tone pad');
+}
+
+{
+  const base = {
+    rms: -20,
+    peak: -3.5,
+    noiseFloor: -62,
+    sampleRate: 44100,
+    channels: 1,
+    headSilence: 0.75,
+    tailSilence: 2,
+  };
+
+  const pass = evaluateAcx(base);
+  const passMap = new Map(pass.map((row) => [row.key, row]));
+  assert.equal(passMap.get('peak').status, 'pass', 'evaluateAcx: sample peak pass condition');
+  assert.ok(!/true-peak/i.test(passMap.get('peak').fix), 'evaluateAcx: peak fix text does not mention true-peak');
+
+  const warn = evaluateAcx({ ...base, peak: -2.5 });
+  const warnMap = new Map(warn.map((row) => [row.key, row]));
+  assert.equal(warnMap.get('peak').status, 'warn', 'evaluateAcx: sample peak borderline maps to warn');
+  assert.ok(!/true-peak/i.test(warnMap.get('peak').fix), 'evaluateAcx: warn copy still avoids true-peak wording');
+
+  const fail = evaluateAcx({ ...base, peak: -1.2 });
+  const failMap = new Map(fail.map((row) => [row.key, row]));
+  assert.equal(failMap.get('peak').status, 'fail', 'evaluateAcx: sample peak over limit maps to fail');
+  assert.ok(!/true-peak/i.test(failMap.get('peak').fix), 'evaluateAcx: fail copy still avoids true-peak wording');
 }

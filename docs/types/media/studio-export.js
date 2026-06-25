@@ -14,7 +14,7 @@
 // so neither file sprawls past the LOC cap.
 
 import { getGraph } from './audio-graph.js';
-import { loadFfmpeg, runOperation, buildAudioFilterChain } from './transcoder.js';
+import { loadFfmpeg, runOperation, buildAudioFilterChain, buildAcxFilterChain } from './transcoder.js';
 import { describeDynamics } from './audio-filters.js';
 import {
   EXPORT_PRESETS, presetById, resolveExportParams, describeParams, buildAdvancedOverrides,
@@ -52,6 +52,7 @@ function formatKhz(rate) {
 
 function describePresetTarget(preset) {
   const bits = [];
+  if (preset.acxChain) bits.push('ACX chain (trim + room-tone pad)');
   bits.push(`container ${preset.container || 'source'}`);
   if (preset.channels) bits.push(preset.channels === 1 ? 'mono' : `${preset.channels} ch`);
   if (preset.sampleRate) bits.push(formatKhz(preset.sampleRate));
@@ -73,6 +74,15 @@ function describeLiveSummary(settings, fades) {
   if (fades.fadeIn > 0) bits.push('fade-in ' + fades.fadeIn + 's');
   if (fades.fadeOut > 0) bits.push('fade-out ' + fades.fadeOut + 's');
   return bits;
+}
+
+function acxChainOptions(p) {
+  return {
+    lufs: p.lufsTarget,
+    truePeak: p.truePeak,
+    silence: { thresholdDb: -50, minSilenceSec: 0.4 },
+    pad: { headSec: 0.75, tailSec: 2 },
+  };
 }
 
 // Read the live studio settings off the shared graph for `mediaEl`. Returns null when
@@ -270,12 +280,15 @@ export function buildExportPanel(intake, mediaEl, kind) {
     const fades = collectFades();
     const eqSettings = (p.lufsTarget !== null && p.lufsTarget !== undefined)
       ? { ...s, lufsTarget: p.lufsTarget, truePeak: p.truePeak } : s;
-    const chain = buildAudioFilterChain(eqSettings, fades);
+    const chain = p.acxChain
+      ? buildAcxFilterChain(acxChainOptions(p))
+      : buildAudioFilterChain(eqSettings, fades);
     if (isAudio) {
       const liveBits = describeLiveSummary(s, fades);
       const targetBits = describePresetTarget(p);
       const presetName = formatPresetName(preset);
-      summary.textContent = `Profile ${presetName}: live chain = ${liveBits.join(', ') || 'flat'}
+      const processLabel = p.acxChain ? 'dedicated ACX chain' : (liveBits.join(', ') || 'flat');
+      summary.textContent = `Profile ${presetName}: live chain = ${processLabel}
 Output = ${targetBits}
 Provenance = -af "${chain || 'none'}"`;
     } else {
@@ -383,6 +396,8 @@ Provenance = -af "${chain || 'none'}"`;
           bitrate: p.bitrate, sampleRate: p.sampleRate, channels: p.channels,
           lufsTarget: p.lufsTarget, truePeak: p.truePeak,
         }, intake);
+      } else if (p.acxChain) {
+        result = await runOperation(ff, 'acxExport', acxChainOptions(p), intake);
       } else {
         result = await runOperation(ff, 'bakeAudio', {
           settings, fades, container: p.container, format: p.container,

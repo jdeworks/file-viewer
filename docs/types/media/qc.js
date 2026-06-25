@@ -35,8 +35,8 @@ export function integratedRms(mono) {
   return dbfs(Math.sqrt(sum / mono.length));
 }
 
-// Sample peak (dBFS). True-peak is approximated (sample peak + a small inter-sample
-// guard); we annotate the report that it is an approximation, not 4× oversampled.
+// Sample peak (dBFS). This is sample-domain only (no 4× oversampled true-peak path),
+// and we call it out in copy so the wording matches current behavior.
 export function samplePeak(mono) {
   let pk = 0;
   for (let i = 0; i < mono.length; i++) { const a = Math.abs(mono[i]); if (a > pk) pk = a; }
@@ -106,8 +106,8 @@ export function evaluateAcx(m) {
     'Target −23…−18 dB RMS — normalize (the ACX export hits −20 LUFS ≈ −20 dB RMS).');
 
   // Peak ≤ −3 dBFS.
-  add('peak', 'Peak level', m.peak <= -3 ? 'pass' : (m.peak <= -2 ? 'warn' : 'fail'),
-    f1(m.peak) + ' dBFS', 'Must be ≤ −3 dBFS — apply a −3 dB true-peak limit on export.');
+  add('peak', 'Sample peak level', m.peak <= -3 ? 'pass' : (m.peak <= -2 ? 'warn' : 'fail'),
+    f1(m.peak) + ' dBFS', 'Must be ≤ −3 dBFS — apply export limiting/ceiling (−3 dB).');
 
   // Noise floor ≤ −60 dBFS — the #1 rejection reason.
   add('noise', 'Noise floor', m.noiseFloor <= -60 ? 'pass' : (m.noiseFloor <= -55 ? 'warn' : 'fail'),

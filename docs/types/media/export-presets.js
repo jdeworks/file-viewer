@@ -9,10 +9,11 @@
 //      (container / bitrate / sample-rate / channels / loudness) that compose ON TOP
 //      of the live-EQ `-af` chain. Revealed when the "Custom" preset is chosen.
 //
-// The params shape consumed by transcoder.js bakeAudio / the video ops is:
+// The params shape consumed by transcoder.js bakeAudio / webvideo / acxExport is:
 //   { kind, container, bitrate, sampleRate, channels, lufsTarget, truePeak, video }
 // where bitrate is an ffmpeg `-b:a` value (e.g. '192k') or null for VBR/default,
-// lufsTarget is a number (LUFS) or null (no loudnorm), truePeak is the loudnorm TP dB.
+// lufsTarget is a number (LUFS) or null (no loudnorm), truePeak is the loudnorm TP dB,
+// and acxChain marks presets that must use the dedicated ACX export op.
 
 // ── Preset table ─────────────────────────────────────────────────────────────
 // kind: 'audio' presets apply to both audio & video sources (extract/encode audio);
@@ -32,6 +33,7 @@ export const EXPORT_PRESETS = [
     id: 'acx-mp3', label: 'Audiobook ACX MP3 (mono, 44.1k, 192k CBR, −20 LUFS)', kind: 'audio',
     container: 'mp3', bitrate: '192k', sampleRate: 44100, channels: 1,
     lufsTarget: -20, truePeak: -3, cbr: true,
+    acxChain: true,
   },
   {
     id: 'web-mp4-720p', label: 'Web video (MP4 720p)', kind: 'video',
@@ -72,6 +74,7 @@ export function resolveExportParams(preset, overrides, srcExt) {
       lufsTarget: preset.lufsTarget === undefined ? null : preset.lufsTarget,
       truePeak: preset.truePeak === undefined ? -1.5 : preset.truePeak,
       cbr: !!preset.cbr,
+      acxChain: !!preset.acxChain,
       video: preset.video || null,
     };
   }
@@ -90,13 +93,16 @@ export function resolveExportParams(preset, overrides, srcExt) {
       ? null : Number(overrides.lufsTarget),
     truePeak: -1.5,
     cbr: false,
+    acxChain: false,
     video: null,
   };
 }
 
-// Human-readable params summary fragment ("mono, 44.1k, 192k CBR, normalize −20 LUFS").
+// Human-readable params summary fragment ("ACX chain, mono, 44.1k, 192k CBR,
+// normalize −20 LUFS").
 export function describeParams(p) {
   const bits = [];
+  if (p.acxChain) bits.push('ACX chain');
   if (p.video) {
     if (p.video.scale) bits.push(p.video.scale.split(':').pop() + 'p');
     bits.push((p.video.codec || 'video').replace('lib', ''));

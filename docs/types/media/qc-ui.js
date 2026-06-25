@@ -179,7 +179,7 @@ export function mountAcxQcPanel(panel, intake) {
 
   const exportHint = document.createElement('div');
   exportHint.className = 'media-qc-export-hint';
-  exportHint.textContent = 'Export target: mono 44.1 kHz MP3 192k CBR (ACX chain)';
+  exportHint.textContent = 'Export target: mono 44.1 kHz MP3 192k CBR (dedicated ACX chain: loudnorm + trim/pad)';
 
   const status = document.createElement('div');
   status.className = 'media-ed-msg media-qc-status';
