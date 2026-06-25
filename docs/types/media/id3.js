@@ -63,30 +63,103 @@ function parseApic(frame, v22) {
   return data.length ? { mime, bytes: data.slice() } : null;
 }
 
-// CHAP (v2.3/2.4 only): element-id\0, start/end ms (4 bytes BE each), start/end byte offsets,
-// then optional sub-frames (a TIT2 title is the useful one). Returns { start, end, title } or null.
-function parseChap(frame) {
-  let o = 0;
-  while (o < frame.length && frame[o] !== 0) o++;
-  if (o >= frame.length) return null;
-  o += 1;                                        // skip element-id + terminator
-  if (o + 16 > frame.length) return null;
-  const startMs = u32(frame, o);
-  const endMs = u32(frame, o + 4);
-  o += 16;                                        // start/end time + start/end offset
-  let title = '';
-  while (o + 10 <= frame.length) {                // embedded sub-frames (10-byte headers)
+function parseSubFrames(frame, offset) {
+  const out = {};
+  let o = offset;
+  while (o + 10 <= frame.length) {
     const id = String.fromCharCode(...frame.subarray(o, o + 4));
     if (!/^[A-Z0-9]{4}$/.test(id)) break;
     const size = u32(frame, o + 4);
     o += 10;
     if (size <= 0 || o + size > frame.length) break;
-    if (id === 'TIT2') title = decodeText(frame.subarray(o, o + size));
+    if (id === 'TIT2') out.title = decodeText(frame.subarray(o, o + size));
     o += size;
   }
-  const chapter = { start: startMs / 1000, title };
+  return out;
+}
+
+// CHAP (v2.3/2.4 only): element-id\0, start/end ms (4 bytes BE each), start/end byte offsets,
+// then optional sub-frames (a TIT2 title is the useful one). Returns { id, start, end, title }.
+function parseChap(frame) {
+  let o = 0;
+  while (o < frame.length && frame[o] !== 0) o++;
+  if (o >= frame.length) return null;
+  const elementId = new TextDecoder('utf-8').decode(frame.subarray(0, o)).trim();
+  o += 1;                                        // skip element-id terminator
+  if (o + 16 > frame.length) return null;
+  const startMs = u32(frame, o);
+  const endMs = u32(frame, o + 4);
+  o += 16;                                        // start/end time + start/end offset
+  const sub = parseSubFrames(frame, o);
+  const chapter = { id: elementId, start: startMs / 1000, title: sub.title || '' };
   if (endMs > startMs) chapter.end = endMs / 1000;
   return chapter;
+}
+
+// CTOC: element-id\0, flags, child count, child element ids, then optional TIT2 title sub-frame.
+function parseCtoc(frame) {
+  let o = 0;
+  while (o < frame.length && frame[o] !== 0) o++;
+  if (o >= frame.length) return null;
+  const id = new TextDecoder('utf-8').decode(frame.subarray(0, o)).trim();
+  o += 1;
+  if (o + 2 > frame.length) return null;
+  const flags = frame[o++];
+  const childCount = frame[o++];
+  const children = [];
+  for (let i = 0; i < childCount && o < frame.length; i += 1) {
+    const start = o;
+    while (o < frame.length && frame[o] !== 0) o++;
+    if (o >= frame.length) return null;
+    const child = new TextDecoder('utf-8').decode(frame.subarray(start, o)).trim();
+    o += 1;
+    if (child) children.push(child);
+  }
+  const sub = parseSubFrames(frame, o);
+  return {
+    id,
+    children,
+    title: sub.title || '',
+    topLevel: !!(flags & 0x02),
+    ordered: !!(flags & 0x01),
+  };
+}
+
+function orderChaptersWithCtoc(chapters, ctocs) {
+  if (!chapters.length || !ctocs.length) return chapters.sort((a, b) => a.start - b.start);
+  const byId = new Map(chapters.filter((chapter) => chapter.id).map((chapter) => [chapter.id, chapter]));
+  const tocById = new Map(ctocs.filter((toc) => toc.id).map((toc) => [toc.id, toc]));
+  const seenToc = new Set();
+
+  const flatten = (id, groupTitle = '') => {
+    if (byId.has(id)) {
+      const chapter = byId.get(id);
+      if (!chapter.title && groupTitle) chapter.tocTitle = groupTitle;
+      return [chapter];
+    }
+    const toc = tocById.get(id);
+    if (!toc || seenToc.has(id)) return [];
+    seenToc.add(id);
+    const title = toc.title || groupTitle;
+    const list = toc.children.flatMap((child) => flatten(child, title));
+    seenToc.delete(id);
+    return list;
+  };
+
+  const roots = ctocs
+    .filter((toc) => toc.topLevel || toc.ordered)
+    .sort((a, b) => Number(b.topLevel) - Number(a.topLevel) || Number(b.ordered) - Number(a.ordered));
+  const candidates = roots.length ? roots : ctocs;
+  let ordered = [];
+  for (const toc of candidates) {
+    const list = toc.children.flatMap((child) => flatten(child, toc.title || ''));
+    if (list.length > ordered.length) ordered = list;
+  }
+  if (ordered.length < 2) return chapters.sort((a, b) => a.start - b.start);
+
+  const used = new Set(ordered);
+  const rest = chapters.filter((chapter) => !used.has(chapter)).sort((a, b) => a.start - b.start);
+  return [...ordered, ...rest];
 }
 
 export function parseId3(bytes) {
@@ -104,6 +177,7 @@ export function parseId3(bytes) {
 
   const out = {};
   const chapters = [];
+  const ctocs = [];
   let o = 10;
   while (o + headLen <= end) {
     const id = String.fromCharCode(...bytes.subarray(o, o + idLen));
@@ -119,8 +193,14 @@ export function parseId3(bytes) {
     if (key) { const v = decodeText(frame); if (v) out[key] = v; }
     else if (id === picId && !out.cover) { const pic = parseApic(frame, v22); if (pic) out.cover = pic; }
     else if (id === 'CHAP') { const c = parseChap(frame); if (c) chapters.push(c); }
+    else if (id === 'CTOC') { const t = parseCtoc(frame); if (t) ctocs.push(t); }
     o += size;
   }
-  if (chapters.length) out.chapters = chapters.sort((a, b) => a.start - b.start);
+  if (chapters.length) {
+    out.chapters = orderChaptersWithCtoc(chapters, ctocs).map((chapter) => ({
+      ...chapter,
+      title: chapter.title || chapter.tocTitle || chapter.id || '',
+    }));
+  }
   return Object.keys(out).length ? out : null;
 }

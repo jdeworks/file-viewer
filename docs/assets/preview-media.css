@@ -698,6 +698,8 @@
 .preview-host .media-chapters { display: flex; flex-direction: column; gap: 2px;
   max-width: min(420px, 100%); margin: 0 auto; }
 .preview-host .media-chapters-head { font-size: 12px; color: var(--fg-2); margin: 4px 0 2px; }
+.preview-host .media-chapters-source { max-width: min(420px, 100%); margin: 2px auto 0;
+  color: var(--fg-2); font-size: 11px; text-align: center; word-break: break-word; }
 .preview-host .media-chapter { display: flex; align-items: center; gap: 10px; text-align: left;
   padding: 4px 8px; border-radius: 6px; border: 1px solid transparent; background: var(--bg-2);
   color: var(--fg); cursor: pointer; font-size: 12px; }

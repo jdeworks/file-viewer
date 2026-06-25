@@ -78,6 +78,75 @@ export async function run(ctx) {
   if (chapterMarkers.length === 3 && chapterMarkers.every((m) => m.visible && /%$/.test(m.left)) && chapterMarkers.some((m) => /Prologue/.test(m.title)))
     pass('R2: chapter markers render on the audio waveform');
   else fail('chapter markers: ' + JSON.stringify(chapterMarkers));
+  const chapterSource = await page.$eval('#previewHost .media-chapters-source', (el) => el.textContent.trim()).catch(() => '');
+  if (/Chapters: test fixture/.test(chapterSource)) pass('R2: chapter source status appears in Listen mode');
+  else fail('chapter source status: ' + chapterSource);
+  await page.evaluate(async () => {
+    delete window.__fvMediaTestChapters;
+    const sampleRate = 8000;
+    const seconds = 1;
+    const samples = sampleRate * seconds;
+    const dataBytes = samples * 2;
+    const bytes = new Uint8Array(44 + dataBytes);
+    const view = new DataView(bytes.buffer);
+    const write = (offset, text) => {
+      for (let i = 0; i < text.length; i += 1) bytes[offset + i] = text.charCodeAt(i);
+    };
+    write(0, 'RIFF');
+    view.setUint32(4, 36 + dataBytes, true);
+    write(8, 'WAVE');
+    write(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    write(36, 'data');
+    view.setUint32(40, dataBytes, true);
+    const audio = new File([bytes], '01-intro.wav', { type: 'audio/wav' });
+    const chapters = new File([
+      [
+        'WEBVTT',
+        '',
+        '00:00:00.000 --> 00:00:00.250',
+        'Sidecar Prologue',
+        '',
+        '00:00:00.250 --> 00:00:00.750',
+        'Sidecar Chapter One',
+        '',
+      ].join('\n'),
+    ], '01-intro.chapters.vtt', { type: 'text/vtt' });
+    window.__fv.state._skipDiscardGuard = true;
+    await window.__fv.loadFolder([
+      { file: audio, path: 'Sidecar/01-intro.wav' },
+      { file: chapters, path: 'Sidecar/01-intro.chapters.vtt' },
+    ]);
+  });
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-waveform-surface .media-wv-chapter-marker').length >= 2, null, { timeout: 6000 });
+  const sidecarChapters = await page.evaluate(() => ({
+    source: document.querySelector('#previewHost .media-chapters-source')?.textContent.trim() || '',
+    markers: [...document.querySelectorAll('#previewHost .media-waveform-surface .media-wv-chapter-marker')]
+      .map((el) => el.getAttribute('title') || ''),
+    list: [...document.querySelectorAll('#previewHost .media-chapter-label')].map((el) => el.textContent.trim()),
+  }));
+  if (/01-intro\.chapters\.vtt/.test(sidecarChapters.source)
+    && sidecarChapters.markers.includes('Sidecar Prologue')
+    && sidecarChapters.markers.includes('Sidecar Chapter One')
+    && sidecarChapters.list.join('|') === 'Sidecar Prologue|Sidecar Chapter One')
+    pass('R2: folder sidecar chapters reach markers, list, and source status');
+  else fail('folder sidecar chapters: ' + JSON.stringify(sidecarChapters));
+  await page.evaluate(() => {
+    window.__fvMediaTestChapters = [
+      { start: 0, end: 0.2, title: 'Prologue' },
+      { start: 0.2, end: 0.4, title: 'Chapter One' },
+      { start: 0.4, end: 0.6, title: 'Chapter Two' },
+    ];
+  });
+  await openExample('Sample.wav');
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
   const modeTabs = await page.$$eval('#previewHost .media-mode-tab', (els) => els.map((e) => e.textContent.trim()));
   if (modeTabs.join('|') === 'Listen|Tune|QC|Export|Mix') pass('audio mode tabs exist and are ordered');
   else fail('audio mode tabs: ' + modeTabs.join(','));

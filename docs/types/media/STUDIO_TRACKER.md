@@ -532,7 +532,25 @@ Status: committed.
   above addresses that path. Because `scripts/check.sh` itself is now changed, a fresh fast run
   would conservatively select aggregate by design.
 - Committed in `3b80f930` — `Add chapterized ACX audiobook export`.
-- Remaining R2 work: sidecar chapter formats and deeper CTOC hierarchy handling.
+- Follow-up patch:
+  - Added pure sidecar chapter parsing for WebVTT cues, ffmetadata `[CHAPTER]` sections,
+    and simple timestamp text/Markdown lines.
+  - Added same-folder sidecar discovery for explicit same-basename files and generic
+    chapter-ish names, with renderer reads capped at 1 MiB.
+  - Sidecar chapters now override embedded ID3 CHAP chapters; embedded chapters remain the
+    fallback and still provide cover art from the same head slice.
+  - ID3 parsing now preserves CHAP element IDs, parses CTOC child IDs/title, and orders chapters
+    by CTOC child order when useful.
+  - Added a compact Listen-mode chapter source note and focused parser/smoke coverage.
+  - Changed paths: `chapters.js`, `id3.js`, `renderer.js`, `preview-media.css`,
+    `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`,
+    `docs/asset-manifest.json`, `docs/sw.js`.
+  - Validation passed: `node --check` on changed JS/MJS files,
+    `node tests/media-parsers.test.mjs`, `node tests/smoke-area.mjs media-studio`,
+    `git diff --check`, `./scripts/check.sh --fast`.
+  - Fast selector evidence: selected `tests/media-parsers.test.mjs` and `media-studio`;
+    no aggregate smoke, ebook/MOBI, known-file, binary, or exhaustive Sokoban suites ran.
+- Remaining R2 work: none currently identified.
 
 ### R1 — Estimated True Peak And Metric Copy
 

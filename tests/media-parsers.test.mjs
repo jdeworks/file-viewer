@@ -2,7 +2,15 @@ import assert from 'node:assert/strict';
 
 import { parseSubtitles, parseTimestamp } from '../docs/types/media/subtitles.js';
 import { parseId3 } from '../docs/types/media/id3.js';
-import { chapterFilename, normalizeChapters } from '../docs/types/media/chapters.js';
+import {
+  findChapterSidecars,
+  chapterFilename,
+  normalizeChapters,
+  parseChapterSidecar,
+  parseFfmetadataChapters,
+  parseTextChapterLines,
+  parseWebVttChapters,
+} from '../docs/types/media/chapters.js';
 import { buildAcxChapterExportArgs, buildAcxExportArgs, buildAcxFilterChain, buildAudioFilterChain, buildMasteringCleanupFilter } from '../docs/types/media/audio-filters.js';
 import { analyzeMetrics, estimatedTruePeak, evaluateAcx, samplePeak } from '../docs/types/media/qc.js';
 import {
@@ -65,9 +73,22 @@ function chapFrame({ id = 'ch', startMs = 0, endMs = 1000, title = 'Chapter' }) 
   body.push(...enc.encode(id), 0x00);
   body.push(...u32(startMs), ...u32(endMs), ...u32(0), ...u32(0));
 
-  const titlePayload = concatBytes([0x03], enc.encode(title));
-  body.push(...enc.encode('TIT2'), ...u32(titlePayload.length), 0x00, 0x00, ...titlePayload);
+  if (title !== null) {
+    const titlePayload = concatBytes([0x03], enc.encode(title));
+    body.push(...enc.encode('TIT2'), ...u32(titlePayload.length), 0x00, 0x00, ...titlePayload);
+  }
   return id3Frame('CHAP', new Uint8Array(body));
+}
+
+function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03 }) {
+  const body = [];
+  body.push(...enc.encode(id), 0x00, flags, children.length);
+  for (const child of children) body.push(...enc.encode(child), 0x00);
+  if (title !== null) {
+    const titlePayload = concatBytes([0x03], enc.encode(title));
+    body.push(...enc.encode('TIT2'), ...u32(titlePayload.length), 0x00, 0x00, ...titlePayload);
+  }
+  return id3Frame('CTOC', new Uint8Array(body));
 }
 
 {
@@ -140,6 +161,86 @@ function chapFrame({ id = 'ch', startMs = 0, endMs = 1000, title = 'Chapter' }) 
     'weird_12_Chapter_12.mp3',
     'chapters: filename helper supplies fallback chapter title',
   );
+
+  const vttChapters = parseWebVttChapters([
+    'WEBVTT',
+    '',
+    '00:00:00.000 --> 00:01:20.000',
+    'Prologue',
+    '',
+    'c2',
+    '00:01:20.000 --> 00:03:00.000',
+    '<b>Chapter One</b>',
+    '',
+  ].join('\n'));
+  assert.deepEqual(
+    vttChapters,
+    [
+      { start: 0, end: 80, title: 'Prologue' },
+      { start: 80, end: 180, title: 'Chapter One' },
+    ],
+    'chapters: WebVTT cues become chapter titles and ranges',
+  );
+
+  const ffmetadata = parseFfmetadataChapters([
+    ';FFMETADATA1',
+    '[CHAPTER]',
+    'TIMEBASE=1/1000',
+    'START=0',
+    'END=80000',
+    'title=Prologue',
+    '[CHAPTER]',
+    'TIMEBASE=1/1',
+    'START=80',
+    'END=180',
+    'title=Chapter One',
+  ].join('\n'));
+  assert.deepEqual(
+    ffmetadata,
+    [
+      { start: 0, end: 80, title: 'Prologue' },
+      { start: 80, end: 180, title: 'Chapter One' },
+    ],
+    'chapters: ffmetadata chapter sections honor TIMEBASE, START, END, and title',
+  );
+
+  const textChapters = parseTextChapterLines([
+    '# 00:00 Prologue',
+    '00:01:20 Chapter 1',
+    '1:02:03 - Long chapter',
+    '* 125.5 Bonus',
+    'not a chapter',
+  ].join('\n'));
+  assert.deepEqual(
+    textChapters,
+    [
+      { start: 0, title: 'Prologue' },
+      { start: 80, title: 'Chapter 1' },
+      { start: 3723, title: 'Long chapter' },
+      { start: 125.5, title: 'Bonus' },
+    ],
+    'chapters: text timestamp lines support mm:ss, hh:mm:ss, separators, and markdown bullets',
+  );
+
+  assert.deepEqual(
+    parseChapterSidecar('00:00 Intro\n00:10 Chapter', 'book.chapters.txt').map((c) => c.title),
+    ['Intro', 'Chapter'],
+    'chapters: parseChapterSidecar falls back to timestamp text',
+  );
+
+  const sidecars = findChapterSidecars([
+    { path: 'Book/book.mp3', file: { name: 'book.mp3', size: 10 } },
+    { path: 'Book/chapters.vtt', file: { name: 'chapters.vtt', size: 10 } },
+    { path: 'Book/book.chapters.txt', file: { name: 'book.chapters.txt', size: 10 } },
+    { path: 'Book/book.vtt', file: { name: 'book.vtt', size: 10 } },
+    { path: 'Other/book.vtt', file: { name: 'book.vtt', size: 10 } },
+    { path: 'Book/book.srt', file: { name: 'book.srt', size: 10 } },
+  ], 'Book/book.mp3', null);
+  assert.deepEqual(
+    sidecars.map((s) => s.path),
+    ['Book/book.vtt', 'Book/book.chapters.txt', 'Book/chapters.vtt'],
+    'chapters: sidecar discovery prefers same basename and same directory chapter-ish files',
+  );
 }
 
 {
@@ -164,6 +265,22 @@ function chapFrame({ id = 'ch', startMs = 0, endMs = 1000, title = 'Chapter' }) 
   assert.equal(out.chapters[0].start, 1, 'parseId3: CHAP start converted to seconds');
   assert.equal(out.chapters[0].end, 3.2, 'parseId3: CHAP end converted to seconds when present');
   assert.equal(out.chapters[1].start, 3.4, 'parseId3: CHAP ordering normalized by start');
+}
+
+{
+  const tag = id3TagFromFrames([
+    chapFrame({ id: 'alpha', startMs: 10000, endMs: 19000, title: 'Alpha' }),
+    chapFrame({ id: 'beta', startMs: 20000, endMs: 28000, title: 'Beta' }),
+    chapFrame({ id: 'untitled', startMs: 30000, endMs: 38000, title: null }),
+    ctocFrame({ id: 'root', children: ['beta', 'alpha', 'untitled'], title: 'Main contents' }),
+  ]);
+  const out = parseId3(tag);
+  assert.deepEqual(
+    out.chapters.map((chapter) => chapter.id),
+    ['beta', 'alpha', 'untitled'],
+    'parseId3: CTOC child order takes precedence when present',
+  );
+  assert.equal(out.chapters[2].title, 'Main contents', 'parseId3: CTOC title can provide low-risk fallback title');
 }
 
 {

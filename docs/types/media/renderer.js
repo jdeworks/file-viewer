@@ -12,7 +12,12 @@ import { mediaInfo, blobUrl } from './medialib.js';
 import { loadState, saveState, clearState } from '../../core/persistence.js';
 import { showIosAudioHint, hideIosAudioHint } from '../../core/ios-audio.js';
 import { parseId3 } from './id3.js';
-import { normalizeChapters } from './chapters.js';
+import {
+  CHAPTER_SIDECAR_MAX_BYTES,
+  findChapterSidecars,
+  normalizeChapters,
+  parseChapterSidecar,
+} from './chapters.js';
 import { likelyNeedsTranscode, transcode } from './transcoder.js';
 import { recordStage5MediaPlayback } from '../../games/metagame/viewer-actions.js';
 import { makeTogglePanel } from './panel-toggle.js';
@@ -58,6 +63,30 @@ function buildPlaylist(intake, folder) {
     || (f.file && f.file.name === intake.filename && f.file.size === intake.size));
   if (index < 0) return null;
   return { items, index };
+}
+
+function currentFolderPath(intake, folder) {
+  const files = Array.isArray(folder?.files) ? folder.files : [];
+  const match = files.find((f) => f.file === intake.file
+    || (f.file && f.file.name === intake.filename && f.file.size === intake.size));
+  return match?.path || intake.filename || '';
+}
+
+async function readSidecarChapters(intake, folder) {
+  const candidates = findChapterSidecars(folder?.files, currentFolderPath(intake, folder), intake.file);
+  for (const candidate of candidates) {
+    const file = candidate.file;
+    if (!file || typeof file.slice !== 'function') continue;
+    if (Number.isFinite(file.size) && file.size > CHAPTER_SIDECAR_MAX_BYTES) continue;
+    try {
+      const bytes = new Uint8Array(await file.slice(0, CHAPTER_SIDECAR_MAX_BYTES + 1).arrayBuffer());
+      if (bytes.length > CHAPTER_SIDECAR_MAX_BYTES) continue;
+      const text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+      const chapters = parseChapterSidecar(text, candidate.path || file.name);
+      if (chapters.length) return { chapters, source: candidate.path || file.name };
+    } catch { /* unreadable sidecar — try the next candidate */ }
+  }
+  return null;
 }
 
 function fmtTimeValue(seconds) {
@@ -175,6 +204,7 @@ export async function render(intake, ctx = {}) {
   // One-time ID3 read (audio) -> cover art + chapters. CPU-cheap head-slice parse,
   // done before waveform/export mount so every surface shares the same chapter set.
   let rawChapters = [];
+  let chapterSource = '';
   let normalizedChapters = [];
   let chapterList = null;
   const refreshChapters = () => {
@@ -186,11 +216,17 @@ export async function render(intake, ctx = {}) {
       const head = new Uint8Array(await intake.file.slice(0, 512 * 1024).arrayBuffer());
       const tags = parseId3(head);
       if (tags?.cover) { const c = buildCoverArt(tags.cover); if (c) { coverEl = c.el; coverRevoke = c.revoke; } }
-      if (tags?.chapters) rawChapters = tags.chapters;
+      if (tags?.chapters) { rawChapters = tags.chapters; chapterSource = 'embedded ID3'; }
     } catch { /* tag-less / unreadable — skip */ }
+    const sidecar = await readSidecarChapters(intake, ctx.folder);
+    if (sidecar?.chapters?.length) {
+      rawChapters = sidecar.chapters;
+      chapterSource = sidecar.source;
+    }
   }
   if (Array.isArray(globalThis.__fvMediaTestChapters) && globalThis.__fvMediaTestChapters.length) {
     rawChapters = globalThis.__fvMediaTestChapters;
+    chapterSource = 'test fixture';
   }
   refreshChapters();
 
@@ -665,10 +701,17 @@ export async function render(intake, ctx = {}) {
   host.tabIndex = 0;
   const detachKeys = attachShortcuts(host, el, { kind: info.kind });
   if (normalizedChapters.length) chapterList = buildChapterList(normalizedChapters, el);
+  let chapterSourceEl = null;
+  if (normalizedChapters.length && chapterSource) {
+    chapterSourceEl = document.createElement('div');
+    chapterSourceEl.className = 'media-chapters-source';
+    chapterSourceEl.textContent = 'Chapters: ' + chapterSource;
+  }
 
   if (info.kind === 'audio') {
     if (coverEl) audioWorkspace.querySelector('.media-workspace-head')?.prepend(coverEl);
     if (audioListenMode) audioListenMode.panel.append(extras);
+    if (chapterSourceEl && audioListenMode) audioListenMode.panel.append(chapterSourceEl);
     if (chapterList && audioListenMode) audioListenMode.panel.append(chapterList);
     host.append(audioWorkspace, audioModes);
   } else {

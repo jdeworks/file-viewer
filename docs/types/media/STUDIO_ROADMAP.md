@@ -103,7 +103,7 @@ Those require backend/model work and remain out of scope for this static viewer.
 
 ### R2 — Chapterized Audiobook Export
 
-Status: core implemented; sidecar/CTOC polish remains.
+Status: implemented; core chapter export plus sidecar/CTOC polish are in place.
 
 Needed:
 
@@ -113,7 +113,11 @@ Needed:
 - Done: export per-chapter ACX-formatted MP3 files and package them as a vendored JSZip ZIP,
   loaded only when the chapter export action is clicked.
 - Done: synthesize ACX head/tail padding per chapter through the existing ACX filter chain.
-- Remaining: practical sidecar chapter formats and CTOC hierarchy/deeper navigation polish.
+- Done: parse practical chapter sidecars: WebVTT chapter cues, ffmetadata `[CHAPTER]`
+  sections, and simple timestamp text/Markdown lines.
+- Done: discover likely same-folder chapter sidecars lazily, cap reads defensively, and prefer
+  sidecar chapters over embedded ID3 CHAP frames.
+- Done: preserve ID3 CHAP element IDs and use CTOC child order/title fallback when present.
 
 This builds on the existing ACX QC/export chain rather than replacing it.
 
