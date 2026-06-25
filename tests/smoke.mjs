@@ -21,22 +21,56 @@ import * as examplesCatalog from './areas/examples-catalog.mjs';
 // runs in its own fresh process via smoke-binary.mjs (like known-files via smoke-known.mjs) so
 // those heavy renderers don't accumulate in the shared browser after 14 prior areas.
 
+const shouldTimeAreas = process.env.FV_SMOKE_TIMING === '1';
+
+const areaStamp = () => {
+  const now = new Date();
+  const to2 = (n) => String(n).padStart(2, '0');
+  return `${to2(now.getHours())}:${to2(now.getMinutes())}:${to2(now.getSeconds())}`;
+};
+
+const runArea = async (name, fn) => {
+  const startMs = Date.now();
+  console.log(`[${areaStamp()}] ${name} start`);
+  await fn();
+  const elapsedMs = Date.now() - startMs;
+  const seconds = (elapsedMs / 1000).toFixed(3);
+  console.log(`[${areaStamp()}] ${name} end, elapsed ${seconds}s`);
+};
+
 const ctx = await createHarness();
 try {
-  await coreUi.run(ctx);
-  await diff.run(ctx);
-  await tabularOffice.run(ctx);
-  await structuredTypes.run(ctx);
-  await simpleTypes.run(ctx);
-  await exports.run(ctx);
-  await emailArchives.run(ctx);
-  await media3d.run(ctx);
-  await ebookGit.run(ctx);
-  await git.run(ctx);
-  await interactions.run(ctx);
-  await games.run(ctx);
-  await treeDrag.run(ctx);
-  await examplesCatalog.run(ctx);
+  if (shouldTimeAreas) {
+    await runArea('core-ui', () => coreUi.run(ctx));
+    await runArea('diff', () => diff.run(ctx));
+    await runArea('tabular-office', () => tabularOffice.run(ctx));
+    await runArea('structured-types', () => structuredTypes.run(ctx));
+    await runArea('simple-types', () => simpleTypes.run(ctx));
+    await runArea('exports', () => exports.run(ctx));
+    await runArea('email-archives', () => emailArchives.run(ctx));
+    await runArea('media-3d', () => media3d.run(ctx));
+    await runArea('ebook-git', () => ebookGit.run(ctx));
+    await runArea('git', () => git.run(ctx));
+    await runArea('interactions', () => interactions.run(ctx));
+    await runArea('games', () => games.run(ctx));
+    await runArea('tree-drag', () => treeDrag.run(ctx));
+    await runArea('examples-catalog', () => examplesCatalog.run(ctx));
+  } else {
+    await coreUi.run(ctx);
+    await diff.run(ctx);
+    await tabularOffice.run(ctx);
+    await structuredTypes.run(ctx);
+    await simpleTypes.run(ctx);
+    await exports.run(ctx);
+    await emailArchives.run(ctx);
+    await media3d.run(ctx);
+    await ebookGit.run(ctx);
+    await git.run(ctx);
+    await interactions.run(ctx);
+    await games.run(ctx);
+    await treeDrag.run(ctx);
+    await examplesCatalog.run(ctx);
+  }
 } catch (e) {
   ctx.fail('exception: ' + e.message);
 } finally {

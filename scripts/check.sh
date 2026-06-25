@@ -41,57 +41,130 @@ stale() {  # $1 = message, $2.. = paths to diff
   fi
 }
 
-echo "→ regenerating settings defaults (must be committed fresh)…"
-node scripts/gen-settings-defaults.mjs >/dev/null
-stale "settings-defaults.generated.json changed" docs/core/settings-defaults.generated.json
+_now_seconds() {
+  date +%s
+}
 
-echo "→ regenerating runtime registry (must be committed fresh)…"
-node scripts/gen-registry-runtime.mjs >/dev/null
-stale "runtime registry changed" docs/core/registry-runtime.generated.js docs/core/registry-detect.generated.*.js
+_now_timestamp() {
+  date +%H:%M:%S
+}
 
-echo "→ regenerating bundled known-file registry (must be committed fresh)…"
-node scripts/gen-known-runtime.mjs >/dev/null
-stale "known/registry.generated.js changed (known plugins changed since last regen)" docs/known/registry.generated.js
+run_phase() {
+  local label="$1"
+  shift
+  local start
+  local start_ts
+  local end
+  local end_ts
+  local elapsed
 
-echo "→ regenerating bundled image renderer (must be committed fresh)…"
-node scripts/gen-image-renderer.mjs >/dev/null
-stale "image renderer.generated.js changed (renderer source changed since last regen)" docs/types/image/renderer.generated.js
+  start_ts=$(_now_timestamp)
+  start=$(_now_seconds)
+  if [ "$FAST" = 1 ]; then
+    echo "→ [${start_ts}] $label"
+  else
+    echo "→ $label"
+  fi
+  "$@"
+  end=$(_now_seconds)
+  end_ts=$(_now_timestamp)
+  elapsed=$((end - start))
+  if [ "$FAST" = 1 ]; then
+    echo "  ✓ ${label} in ${elapsed}s at [${end_ts}]"
+  fi
+}
 
-echo "→ regenerating metagame stage bundles (must be committed fresh)…"
-node scripts/gen-metagame-bundles.mjs >/dev/null
-stale "metagame stage bundle(s) changed (a stage's source modules changed since last regen)" 'docs/games/metagame/stages/*/stage.generated.js'
+run_phase_settings_defaults() {
+  node scripts/gen-settings-defaults.mjs >/dev/null
+  stale "settings-defaults.generated.json changed" docs/core/settings-defaults.generated.json
+}
 
-echo "→ running compatibility matrix generator…"
-node scripts/gen-example-compatibility.mjs
+run_phase "regenerating settings defaults (must be committed fresh)…" \
+  run_phase_settings_defaults
 
-echo "→ regenerating asset-manifest.json (must be committed fresh)…"
-node scripts/gen-asset-manifest.mjs >/dev/null
-if ! git diff --quiet -- docs/asset-manifest.json; then
-  echo "  asset-manifest.json changed — stage it (docs files changed since last regen)."
-fi
+run_phase_runtime_registry() {
+  node scripts/gen-registry-runtime.mjs >/dev/null
+  stale "runtime registry changed" docs/core/registry-runtime.generated.js docs/core/registry-detect.generated.*.js
+}
 
-echo "→ LOC housekeeping report (advisory)…"
-./scripts/loc-check.sh || true
+run_phase "regenerating runtime registry (must be committed fresh)…" \
+  run_phase_runtime_registry
 
-echo "→ unit tests (move-aware diff + parsers + metadata)…"
-node tests/media-parsers.test.mjs
-node tests/movediff.test.mjs
-node tests/markdown-edit-actions.test.mjs
-node tests/image-fill.test.mjs
-node tests/image-geometry.test.mjs
-node tests/image-levels.test.mjs
-node tests/image-curves.test.mjs
-node tests/image-convolve.test.mjs
-node tests/image-gif.test.mjs
-node tests/settings-defaults.test.mjs
-node tests/registry-runtime.test.mjs
-node tests/example-compatibility.test.mjs
-node tests/type-info.test.mjs
-node tests/metadata-normalize.test.mjs
-node tests/metadata-owned.test.mjs
+run_phase_known_runtime() {
+  node scripts/gen-known-runtime.mjs >/dev/null
+  stale "known/registry.generated.js changed (known plugins changed since last regen)" docs/known/registry.generated.js
+}
 
-echo "→ smoke test: core areas (headless Chromium, zero off-origin)…"
-node tests/smoke.mjs
+run_phase "regenerating bundled known-file registry (must be committed fresh)…" \
+  run_phase_known_runtime
+
+run_phase_image_renderer() {
+  node scripts/gen-image-renderer.mjs >/dev/null
+  stale "image renderer.generated.js changed (renderer source changed since last regen)" docs/types/image/renderer.generated.js
+}
+
+run_phase "regenerating bundled image renderer (must be committed fresh)…" \
+  run_phase_image_renderer
+
+run_phase_metagame_bundles() {
+  node scripts/gen-metagame-bundles.mjs >/dev/null
+  stale "metagame stage bundle(s) changed (a stage's source modules changed since last regen)" 'docs/games/metagame/stages/*/stage.generated.js'
+}
+
+run_phase "regenerating metagame stage bundles (must be committed fresh)…" \
+  run_phase_metagame_bundles
+
+run_phase "running compatibility matrix generator…" \
+  node scripts/gen-example-compatibility.mjs
+
+run_phase_asset_manifest() {
+  node scripts/gen-asset-manifest.mjs >/dev/null
+  if ! git diff --quiet -- docs/asset-manifest.json; then
+    echo "  asset-manifest.json changed — stage it (docs files changed since last regen)."
+  fi
+}
+
+run_phase "regenerating asset-manifest.json (must be committed fresh)…" \
+  run_phase_asset_manifest
+
+run_loc_check() {
+  ./scripts/loc-check.sh || true
+}
+
+run_phase_unit_tests() {
+  node tests/media-parsers.test.mjs
+  node tests/movediff.test.mjs
+  node tests/markdown-edit-actions.test.mjs
+  node tests/image-fill.test.mjs
+  node tests/image-geometry.test.mjs
+  node tests/image-levels.test.mjs
+  node tests/image-curves.test.mjs
+  node tests/image-convolve.test.mjs
+  node tests/image-gif.test.mjs
+  node tests/settings-defaults.test.mjs
+  node tests/registry-runtime.test.mjs
+  node tests/example-compatibility.test.mjs
+  node tests/type-info.test.mjs
+  node tests/metadata-normalize.test.mjs
+  node tests/metadata-owned.test.mjs
+}
+
+run_smoke_core() {
+  if [ "$FAST" = 1 ]; then
+    FV_SMOKE_TIMING=1 node tests/smoke.mjs
+  else
+    node tests/smoke.mjs
+  fi
+}
+
+run_phase "LOC housekeeping report (advisory)…" \
+  run_loc_check
+
+run_phase "unit tests (move-aware diff + parsers + metadata)…" \
+  run_phase_unit_tests
+
+run_phase "smoke test: core areas (headless Chromium, zero off-origin)…" \
+  run_smoke_core
 
 if [ "$FAST" = 1 ]; then
   echo "→ fast mode: SKIPPING known-file + binary smoke suites + exhaustive Sokoban replay suite (the heaviest)."
@@ -100,13 +173,13 @@ if [ "$FAST" = 1 ]; then
   exit 0
 fi
 
-echo "→ running exhaustive Sokoban solution replay unit suite…"
-node tests/sokoban-levels.test.mjs
+run_phase "running exhaustive Sokoban solution replay unit suite…" \
+  node tests/sokoban-levels.test.mjs
 
-echo "→ smoke test: known-file viewers (fresh browser process, avoids WSL2 OOM)…"
-node tests/smoke-known.mjs
+run_phase "smoke test: known-file viewers (fresh browser process, avoids WSL2 OOM)…" \
+  node tests/smoke-known.mjs
 
-echo "→ smoke test: binary/container types (fresh browser process, ~45 heavy WebGL/wasm opens)…"
-node tests/smoke-binary.mjs
+run_phase "smoke test: binary/container types (fresh browser process, ~45 heavy WebGL/wasm opens)…" \
+  node tests/smoke-binary.mjs
 
 echo "✓ all checks passed"
