@@ -9,7 +9,9 @@ import { analyzeMetrics, evaluateAcx, acxVerdict } from './qc.js';
 
 const CHECKS = [
   { key: 'rms', label: 'RMS' },
+  { key: 'lufs', label: 'Integrated LUFS' },
   { key: 'peak', label: 'Sample peak' },
+  { key: 'truePeak', label: 'Estimated true peak' },
   { key: 'noise', label: 'Noise floor' },
   { key: 'sr', label: 'Sample rate' },
   { key: 'ch', label: 'Channels' },
@@ -179,7 +181,7 @@ export function mountAcxQcPanel(panel, intake) {
 
   const exportHint = document.createElement('div');
   exportHint.className = 'media-qc-export-hint';
-  exportHint.textContent = 'Export target: mono 44.1 kHz MP3 192k CBR (dedicated ACX chain: loudnorm + trim/pad)';
+  exportHint.textContent = 'Export target: mono 44.1 kHz MP3 192k CBR, loudnorm −20 LUFS / TP −3 dBTP (QC true peak is estimated)';
 
   const status = document.createElement('div');
   status.className = 'media-ed-msg media-qc-status';

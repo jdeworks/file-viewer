@@ -689,8 +689,8 @@ export async function run(ctx) {
     if (noIntro) pass('P8b: QC shell renders as a report card instead of prose-heavy intro text'); else fail('qc intro paragraph still present');
     const checklist = await page.$$eval(qcPanelSel + ' .media-qc-checklist-item .media-qc-checklist-label',
       (els) => els.map((e) => e.textContent.trim().toLowerCase()));
-    if (['rms', 'sample peak', 'noise floor', 'sample rate', 'channels', 'head silence', 'tail silence']
-      .every((n) => checklist.includes(n))) pass('P8b: QC pre-run shows the full 7-item check checklist');
+    if (['rms', 'integrated lufs', 'sample peak', 'estimated true peak', 'noise floor', 'sample rate', 'channels', 'head silence', 'tail silence']
+      .every((n) => checklist.includes(n))) pass('P8b: QC pre-run shows the full 9-item check checklist');
     else fail('qc checklist labels: ' + checklist.join(','));
     const qcActions = await page.$eval(qcPanelSel, (el) => {
       const run = el.querySelector('.media-qc-run');
@@ -709,8 +709,8 @@ export async function run(ctx) {
     await page.click(qcPanelSel + ' .media-qc-run');
     await page.waitForSelector(qcPanelSel + ' .media-qc-table .media-qc-row', { timeout: 15000 });
     const qcMetrics = await page.$$eval(qcPanelSel + ' .media-qc-row', (els) => els.map((e) => e.dataset.metric));
-    if (['rms', 'peak', 'noise', 'sr', 'ch', 'head', 'tail'].every((k) => qcMetrics.includes(k)))
-      pass('P8b: QC card shows all 7 ACX metric rows (RMS/peak/noise/sr/ch/head/tail)');
+    if (['rms', 'lufs', 'peak', 'truePeak', 'noise', 'sr', 'ch', 'head', 'tail'].every((k) => qcMetrics.includes(k)))
+      pass('P8b: QC card shows all 9 ACX metric rows (RMS/LUFS/sample peak/estimated true peak/noise/sr/ch/head/tail)');
     else fail('qc metrics: ' + qcMetrics.join(','));
     const qcVerdict = await page.$(qcPanelSel + ' .media-qc-verdict');
     if (qcVerdict) pass('P8b: QC card shows an overall pass/fail verdict'); else fail('qc verdict missing');
@@ -734,7 +734,7 @@ export async function run(ctx) {
   // at 1 kHz; tolerance ±1 LU). Also verify the noise-floor/RMS math.
   const lufs = await page.evaluate(async () => {
     const { integratedLufs } = await import('./types/media/loudness.js');
-    const { integratedRms, samplePeak, noiseFloor, edgeSilence } = await import('./types/media/qc.js');
+    const { integratedRms, samplePeak, estimatedTruePeak, noiseFloor, edgeSilence } = await import('./types/media/qc.js');
     const fs = 48000, n = fs * 4;
     const amp = Math.pow(10, (-23 + 3.0103) / 20);   // 1 kHz sine at −23 dB RMS
     const sine = new Float32Array(n);
@@ -746,12 +746,13 @@ export async function run(ctx) {
     const es = edgeSilence(gapped, fs);
     return {
       lufs: integratedLufs([sine], fs),
-      rms: integratedRms(sine), peak: samplePeak(sine),
+      rms: integratedRms(sine), peak: samplePeak(sine), truePeak: estimatedTruePeak(sine),
       floorDb: nf.db, head: es.head,
     };
   });
   if (Math.abs(lufs.lufs - (-23)) <= 1) pass('P8a: BS.1770 LUFS on −23 dB sine ≈ −23 LUFS (' + lufs.lufs.toFixed(2) + ', ±1 LU)'); else fail('lufs: ' + lufs.lufs);
   if (Math.abs(lufs.rms - (-23)) < 0.1 && Math.abs(lufs.peak - (-20)) < 0.2) pass('P8b: RMS/peak math correct on synthesized sine'); else fail('rms/peak: ' + JSON.stringify(lufs));
+  if (lufs.truePeak >= lufs.peak && Math.abs(lufs.truePeak - lufs.peak) < 0.2) pass('P8b: estimated true peak stays near sample peak on aligned sine'); else fail('truePeak: ' + JSON.stringify(lufs));
   if (lufs.floorDb === -Infinity || lufs.floorDb < -100) pass('P8b: noise floor finds the silent window (−∞ for true silence)'); else fail('noise floor: ' + lufs.floorDb);
   if (Math.abs(lufs.head - 1) < 0.05) pass('P8b: edge-silence detects the 1 s leading gap'); else fail('head silence: ' + lufs.head);
 

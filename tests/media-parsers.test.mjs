@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { parseSubtitles, parseTimestamp } from '../docs/types/media/subtitles.js';
 import { parseId3 } from '../docs/types/media/id3.js';
 import { buildAcxExportArgs, buildAcxFilterChain, buildAudioFilterChain, buildMasteringCleanupFilter } from '../docs/types/media/audio-filters.js';
-import { evaluateAcx } from '../docs/types/media/qc.js';
+import { analyzeMetrics, estimatedTruePeak, evaluateAcx, samplePeak } from '../docs/types/media/qc.js';
 import {
   presetById,
   describeParams,
@@ -289,9 +289,29 @@ function chapFrame({ id = 'ch', startMs = 0, endMs = 1000, title = 'Chapter' }) 
 }
 
 {
+  const intersample = new Float32Array([-0.5, 0.9, 0.9, -0.5]);
+  const sample = samplePeak(intersample);
+  const estimated = estimatedTruePeak(intersample);
+  assert.ok(estimated > sample, 'estimatedTruePeak: 4x interpolation can catch inter-sample overs');
+  assert.ok(estimated > 0 && estimated < 1, 'estimatedTruePeak: reports the expected dBTP range for the synthetic over');
+  assert.equal(estimatedTruePeak(new Float32Array()), -Infinity, 'estimatedTruePeak: empty buffers return −Infinity');
+
+  const fs = 48000;
+  const n = fs * 4;
+  const tone = new Float32Array(n);
+  const amp = Math.pow(10, -20 / 20);
+  for (let i = 0; i < n; i++) tone[i] = amp * Math.sin(2 * Math.PI * 1000 * i / fs);
+  const metrics = analyzeMetrics([tone], fs, { sampleRate: 44100, channels: 1, duration: n / fs });
+  assert.equal(typeof metrics.truePeak, 'number', 'analyzeMetrics: includes estimated truePeak metric');
+  assert.ok(metrics.truePeak >= metrics.peak, 'analyzeMetrics: estimated truePeak is not below sample peak');
+}
+
+{
   const base = {
     rms: -20,
+    lufs: -20,
     peak: -3.5,
+    truePeak: -3.4,
     noiseFloor: -62,
     sampleRate: 44100,
     channels: 1,
@@ -301,16 +321,35 @@ function chapFrame({ id = 'ch', startMs = 0, endMs = 1000, title = 'Chapter' }) 
 
   const pass = evaluateAcx(base);
   const passMap = new Map(pass.map((row) => [row.key, row]));
+  assert.deepEqual(
+    pass.map((row) => row.key),
+    ['rms', 'lufs', 'peak', 'truePeak', 'noise', 'sr', 'ch', 'head', 'tail'],
+    'evaluateAcx: row order separates RMS, LUFS, sample peak, and estimated true peak',
+  );
+  assert.equal(passMap.get('lufs').label, 'Integrated LUFS', 'evaluateAcx: LUFS row is distinct from RMS');
+  assert.equal(passMap.get('truePeak').label, 'Estimated true peak', 'evaluateAcx: true peak row is labelled as estimated');
+  assert.match(passMap.get('truePeak').value, /dBTP$/, 'evaluateAcx: true peak value uses dBTP');
+  assert.match(passMap.get('truePeak').fix, /Estimated 4× oversampled peak/, 'evaluateAcx: true peak copy is honest about estimate');
+  assert.match(passMap.get('truePeak').fix, /TP −3/, 'evaluateAcx: true peak copy names the export TP target');
   assert.equal(passMap.get('peak').status, 'pass', 'evaluateAcx: sample peak pass condition');
   assert.ok(!/true-peak/i.test(passMap.get('peak').fix), 'evaluateAcx: peak fix text does not mention true-peak');
+  assert.equal(passMap.get('truePeak').status, 'pass', 'evaluateAcx: estimated true peak pass condition');
 
   const warn = evaluateAcx({ ...base, peak: -2.5 });
   const warnMap = new Map(warn.map((row) => [row.key, row]));
   assert.equal(warnMap.get('peak').status, 'warn', 'evaluateAcx: sample peak borderline maps to warn');
   assert.ok(!/true-peak/i.test(warnMap.get('peak').fix), 'evaluateAcx: warn copy still avoids true-peak wording');
 
+  const truePeakWarn = evaluateAcx({ ...base, truePeak: -2.5 });
+  const truePeakWarnMap = new Map(truePeakWarn.map((row) => [row.key, row]));
+  assert.equal(truePeakWarnMap.get('truePeak').status, 'warn', 'evaluateAcx: estimated true peak borderline maps to warn');
+
   const fail = evaluateAcx({ ...base, peak: -1.2 });
   const failMap = new Map(fail.map((row) => [row.key, row]));
   assert.equal(failMap.get('peak').status, 'fail', 'evaluateAcx: sample peak over limit maps to fail');
   assert.ok(!/true-peak/i.test(failMap.get('peak').fix), 'evaluateAcx: fail copy still avoids true-peak wording');
+
+  const truePeakFail = evaluateAcx({ ...base, truePeak: -1.2 });
+  const truePeakFailMap = new Map(truePeakFail.map((row) => [row.key, row]));
+  assert.equal(truePeakFailMap.get('truePeak').status, 'fail', 'evaluateAcx: estimated true peak over limit maps to fail');
 }

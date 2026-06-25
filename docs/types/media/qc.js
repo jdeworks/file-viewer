@@ -6,7 +6,7 @@
 // is unit-testable in isolation.
 //
 // ACX spec (see STUDIO_AUDIOBOOK_QC.md §2):
-//   RMS −23…−18 dB · peak ≤ −3 dBFS · noise floor ≤ −60 dBFS ·
+//   RMS −23…−18 dB · sample peak ≤ −3 dBFS · noise floor ≤ −60 dBFS ·
 //   44.1 kHz · mono · head 0.5–1 s · tail 1–5 s.
 
 import { integratedLufs } from './loudness.js';
@@ -35,11 +35,45 @@ export function integratedRms(mono) {
   return dbfs(Math.sqrt(sum / mono.length));
 }
 
-// Sample peak (dBFS). This is sample-domain only (no 4× oversampled true-peak path),
-// and we call it out in copy so the wording matches current behavior.
+// Sample peak (dBFS). This is sample-domain only.
 export function samplePeak(mono) {
   let pk = 0;
   for (let i = 0; i < mono.length; i++) { const a = Math.abs(mono[i]); if (a > pk) pk = a; }
+  return dbfs(pk);
+}
+
+function cubicSample(mono, i, t) {
+  const y0 = mono[Math.max(0, i - 1)] || 0;
+  const y1 = mono[i] || 0;
+  const y2 = mono[Math.min(mono.length - 1, i + 1)] || 0;
+  const y3 = mono[Math.min(mono.length - 1, i + 2)] || 0;
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return 0.5 * (
+    (2 * y1)
+    + (-y0 + y2) * t
+    + (2 * y0 - 5 * y1 + 4 * y2 - y3) * t2
+    + (-y0 + 3 * y1 - 3 * y2 + y3) * t3
+  );
+}
+
+// Estimated true peak (dBTP). This is a deterministic browser-only approximation:
+// it 4× oversamples the mono mix with cubic interpolation and scans the interpolated
+// points plus original samples. It is useful for catching likely inter-sample peaks,
+// but it is not a certified BS.1770 true-peak meter.
+export function estimatedTruePeak(mono, oversample = 4) {
+  if (!mono.length) return -Infinity;
+  const factor = Math.max(1, Math.round(oversample));
+  let pk = 0;
+  for (let i = 0; i < mono.length; i++) {
+    const a = Math.abs(mono[i]);
+    if (a > pk) pk = a;
+    if (factor <= 1 || i >= mono.length - 1) continue;
+    for (let step = 1; step < factor; step++) {
+      const v = Math.abs(cubicSample(mono, i, step / factor));
+      if (v > pk) pk = v;
+    }
+  }
   return dbfs(pk);
 }
 
@@ -80,6 +114,7 @@ export function analyzeMetrics(channels, fs, meta = {}) {
   return {
     rms: integratedRms(mono),
     peak: samplePeak(mono),
+    truePeak: estimatedTruePeak(mono),
     lufs: integratedLufs(channels, fs),
     noiseFloor: nf.db,
     noiseFloorAt: nf.atSec,
@@ -105,9 +140,21 @@ export function evaluateAcx(m) {
   add('rms', 'RMS loudness', rmsStatus, f1(m.rms) + ' dB',
     'Target −23…−18 dB RMS — normalize (the ACX export hits −20 LUFS ≈ −20 dB RMS).');
 
+  // Integrated LUFS is not the ACX loudness rule, but the export chain targets it.
+  const lufsStatus = (m.lufs >= -21 && m.lufs <= -19) ? 'pass'
+    : ((m.lufs >= -23 && m.lufs <= -18) ? 'warn' : 'fail');
+  add('lufs', 'Integrated LUFS', lufsStatus, f1(m.lufs) + ' LUFS',
+    'Export target is −20 LUFS via loudnorm; ACX acceptance still uses the RMS row.');
+
   // Peak ≤ −3 dBFS.
   add('peak', 'Sample peak level', m.peak <= -3 ? 'pass' : (m.peak <= -2 ? 'warn' : 'fail'),
-    f1(m.peak) + ' dBFS', 'Must be ≤ −3 dBFS — apply export limiting/ceiling (−3 dB).');
+    f1(m.peak) + ' dBFS', 'ACX sample peak must be ≤ −3 dBFS — reduce gain or export with a −3 dB ceiling.');
+
+  // Estimated true peak ≤ −3 dBTP. This mirrors the export loudnorm TP target, but
+  // remains labelled as an estimate because the browser path is not a certified meter.
+  const tp = Number.isFinite(m.truePeak) ? m.truePeak : m.peak;
+  add('truePeak', 'Estimated true peak', tp <= -3 ? 'pass' : (tp <= -2 ? 'warn' : 'fail'),
+    f1(tp) + ' dBTP', 'Estimated 4× oversampled peak should be ≤ −3 dBTP — export loudnorm/limiting targets TP −3.');
 
   // Noise floor ≤ −60 dBFS — the #1 rejection reason.
   add('noise', 'Noise floor', m.noiseFloor <= -60 ? 'pass' : (m.noiseFloor <= -55 ? 'warn' : 'fail'),
