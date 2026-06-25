@@ -2,7 +2,7 @@
 //
 // Builds the lane strips (waveform + gain + mute/solo + draggable fade handles +
 // region drag), the shared-timeline transport, Ctrl+scroll zoom, drag-drop to add
-// audio lanes, generator lanes (test tone / pink noise), and the OfflineAudioContext
+// audio lanes, generator lanes (test tone / pink noise), and OfflineAudioContext
 // → WAV (and optional ffmpeg MP3) mixdown/export. All audio math lives in
 // mixer-engine.js; this file is DOM + interaction only.
 //
@@ -18,6 +18,7 @@ import { drawLaneWaveform } from './mixer-draw.js';
 
 const PX_PER_SEC_DEFAULT = 40;   // timeline zoom baseline
 const LANE_H = 64;
+const MIN_TIMELINE_PX = 360;
 
 // Mount the mixer into `container` for the primary `intake` audio file.
 // Returns { destroy() }. Self-contained; no dependency on the EQ graph.
@@ -27,6 +28,8 @@ export function mountMixer(container, intake) {
   let transport = null;
   let rafId = 0;
   const blobUrls = [];
+  let selectedLaneId = null;
+  let timelinePx = MIN_TIMELINE_PX;
 
   const wrap = document.createElement('div');
   wrap.className = 'mx-wrap';
@@ -37,12 +40,18 @@ export function mountMixer(container, intake) {
   const playBtn = mkBtn('▶ Play', 'mx-play');
   const stopBtn = mkBtn('⏹ Stop', 'mx-stop');
   const timeLbl = document.createElement('span');
-  timeLbl.className = 'mx-time'; timeLbl.textContent = '0:00 / 0:00';
+  timeLbl.className = 'mx-time';
+  timeLbl.textContent = '0:00 / 0:00';
+
+  const context = document.createElement('div');
+  context.className = 'mx-context';
+
   const masterLbl = document.createElement('label');
   masterLbl.className = 'mx-master';
   const masterSlider = range(0, 150, 100, 'mx-master-slider');
   masterLbl.append(document.createTextNode('Master '), masterSlider);
-  bar.append(playBtn, stopBtn, timeLbl, masterLbl);
+
+  bar.append(playBtn, stopBtn, timeLbl, masterLbl, context);
 
   // ── Add-lane controls ──
   const addBar = document.createElement('div');
@@ -55,11 +64,36 @@ export function mountMixer(container, intake) {
   dropHint.textContent = 'or drag-drop audio files here to add lanes';
   addBar.append(toneBtn, tone1kBtn, noiseBtn, dropHint);
 
-  // ── Lane list (the swim lanes) ──
+  // ── Timeline surface (ruler + lane list + playhead marker) ──
+  const timeline = document.createElement('div');
+  timeline.className = 'mx-timeline';
+
+  const laneHead = document.createElement('div');
+  laneHead.className = 'mx-lane-head';
+  const laneHeadIdx = document.createElement('div');
+  laneHeadIdx.className = 'mx-lane-head-idx';
+  laneHeadIdx.textContent = '#';
+  const laneHeadCtrl = document.createElement('div');
+  laneHeadCtrl.className = 'mx-lane-head-ctrl';
+  laneHeadCtrl.textContent = 'Lane';
+  const laneHeadTimeline = document.createElement('div');
+  laneHeadTimeline.className = 'mx-lane-head-timeline';
+  laneHeadTimeline.textContent = 'Timeline';
+  laneHead.append(laneHeadIdx, laneHeadCtrl, laneHeadTimeline);
+
+  const ruler = document.createElement('div');
+  ruler.className = 'mx-ruler';
+  const playhead = document.createElement('div');
+  playhead.className = 'mx-playhead';
+  const playheadTime = document.createElement('span');
+  playheadTime.className = 'mx-playhead-time';
+  playhead.append(playheadTime);
+
   const laneList = document.createElement('div');
   laneList.className = 'mx-lanes';
+  timeline.append(laneHead, ruler, laneList, playhead);
 
-  // ── Export bar ──
+  // ── Lane export bar ──
   const exportBar = document.createElement('div');
   exportBar.className = 'mx-export';
   const mixWavBtn = mkBtn('⬇ Mixdown → WAV', 'mx-mix-btn');
@@ -70,53 +104,159 @@ export function mountMixer(container, intake) {
   exportResult.className = 'mx-export-result';
   exportBar.append(mixWavBtn, mixMp3Btn, exportMsg, exportResult);
 
-  wrap.append(bar, addBar, laneList, exportBar);
+  wrap.append(bar, addBar, timeline, exportBar);
   container.append(wrap);
 
   // ── Lane rendering ─────────────────────────────────────────────────────────
   function anySolo() { return lanes.some((l) => l.solo); }
-
-  function renderLanes() {
-    laneList.textContent = '';
-    const solo = anySolo();
-    const total = Math.max(timelineDuration(lanes), 1);
-    for (const lane of lanes) buildLaneRow(lane, solo, total);
-    updateTime();
+  function getSelectedLane() {
+    if (!selectedLaneId) return null;
+    return lanes.find((l) => l.id === selectedLaneId) || null;
+  }
+  function resolveSelection() {
+    if (lanes.length === 0) {
+      selectedLaneId = null;
+      return;
+    }
+    if (!getSelectedLane()) selectedLaneId = lanes[0].id;
   }
 
-  function buildLaneRow(lane, solo, total) {
+  function timelineTotalSeconds() {
+    return Math.max(timelineDuration(lanes), 0);
+  }
+  function timelineWidthPx() {
+    return Math.max(MIN_TIMELINE_PX, Math.round(timelineTotalSeconds() * pxPerSec));
+  }
+
+  function updateLaneStripDims() {
+    timelinePx = timelineWidthPx();
+    const total = timelineTotalSeconds();
+    const pxWidth = `${timelinePx}px`;
+
+    laneHead.style.minWidth = pxWidth;
+    laneHead.style.width = pxWidth;
+    ruler.style.width = pxWidth;
+    laneList.style.width = pxWidth;
+    buildRuler(total, timelinePx);
+    const rows = laneList.querySelectorAll('.mx-lane');
+    rows.forEach((row) => {
+      const strip = row.querySelector('.mx-lane-strip');
+      if (strip) strip.style.width = pxWidth;
+    });
+  }
+
+  function buildRuler(totalSeconds, pxWidth) {
+    ruler.innerHTML = '';
+    if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) {
+      const tick = document.createElement('div');
+      tick.className = 'mx-ruler-tick';
+      tick.style.left = '0px';
+      tick.appendChild(document.createTextNode('0:00'));
+      ruler.appendChild(tick);
+      return;
+    }
+
+    const baseTick = pxPerSec >= 28 ? 1 : pxPerSec >= 14 ? 2 : 5;
+    const labelEvery = Math.max(5, baseTick * 2);
+    const labelPxLimit = 48;
+
+    const tickCount = Math.ceil(totalSeconds / baseTick);
+    for (let i = 0; i <= tickCount; i += 1) {
+      const sec = Math.min(totalSeconds, i * baseTick);
+      const x = Math.max(0, Math.min(pxWidth, Math.round(sec * pxPerSec)));
+      const tick = document.createElement('div');
+      tick.className = 'mx-ruler-tick';
+      tick.style.left = x + 'px';
+      if (i % Math.round(labelEvery / baseTick) === 0 || sec === totalSeconds) {
+        const label = document.createElement('span');
+        label.className = 'mx-ruler-label';
+        label.style.left = `${Math.max(0, Math.min(pxWidth - labelPxLimit, x - 14))}px`;
+        label.textContent = fmt(sec);
+        tick.append(label);
+        tick.classList.add('with-label');
+      }
+      ruler.appendChild(tick);
+    }
+  }
+
+  function refreshContext(totalSeconds) {
+    const sel = getSelectedLane();
+    const idx = sel ? lanes.findIndex((l) => l.id === sel.id) : -1;
+    const base = sel ? `Lane ${idx + 1}: ${sel.name}` : 'Master output';
+    const state = transport?.playing ? 'playing' : 'ready';
+    context.textContent = `Context: ${base} (${state})`;
+    updateTimeLabel(totalSeconds);
+  }
+
+  function updateSelectionClasses() {
+    for (const row of laneList.querySelectorAll('.mx-lane')) {
+      row.classList.toggle('mx-lane--active', row.dataset.id === selectedLaneId);
+    }
+  }
+
+  function renderLanes() {
+    resolveSelection();
+    const total = timelineTotalSeconds();
+    const solo = anySolo();
+    laneList.textContent = '';
+    lanes.forEach((lane, idx) => buildLaneRow(lane, idx, solo));
+    updateLaneStripDims();
+    updateSelectionClasses();
+    updatePlayhead(total);
+    refreshContext(total);
+  }
+
+  function buildLaneRow(lane, index, solo) {
     const row = document.createElement('div');
     row.className = 'mx-lane' + (effectiveGain(lane, solo) <= 0 ? ' mx-lane--silent' : '');
     row.dataset.id = lane.id;
 
-    // Left: name + controls.
+    const laneIndex = document.createElement('div');
+    laneIndex.className = 'mx-lane-index';
+    laneIndex.textContent = String(index + 1);
+
+    // Left: fixed controls.
     const ctrls = document.createElement('div');
     ctrls.className = 'mx-lane-ctrls';
     const name = document.createElement('div');
-    name.className = 'mx-lane-name'; name.textContent = lane.name;
+    name.className = 'mx-lane-name';
+    name.textContent = lane.name;
     const btnRow = document.createElement('div');
     btnRow.className = 'mx-lane-btns';
     const muteBtn = mkBtn('M', 'mx-mute' + (lane.muted ? ' active' : ''));
     muteBtn.title = 'Mute';
     const soloBtn = mkBtn('S', 'mx-solo' + (lane.solo ? ' active' : ''));
     soloBtn.title = 'Solo';
-    const delBtn = mkBtn('✕', 'mx-del'); delBtn.title = 'Remove lane';
-    muteBtn.addEventListener('click', () => { lane.muted = !lane.muted; renderLanes(); });
-    soloBtn.addEventListener('click', () => { lane.solo = !lane.solo; renderLanes(); });
-    delBtn.addEventListener('click', () => { removeLane(lane.id); });
+    const delBtn = mkBtn('✕', 'mx-del');
+    delBtn.title = 'Remove lane';
+    muteBtn.addEventListener('click', () => {
+      lane.muted = !lane.muted;
+      renderLanes();
+    });
+    soloBtn.addEventListener('click', () => {
+      lane.solo = !lane.solo;
+      renderLanes();
+    });
+    delBtn.addEventListener('click', () => {
+      removeLane(lane.id);
+    });
     btnRow.append(muteBtn, soloBtn, delBtn);
+
     const gain = range(0, 200, Math.round(lane.gain * 100), 'mx-lane-gain');
     gain.title = 'Lane volume';
-    gain.addEventListener('input', () => { lane.gain = parseInt(gain.value, 10) / 100; });
+    gain.addEventListener('input', () => {
+      lane.gain = parseInt(gain.value, 10) / 100;
+    });
     ctrls.append(name, btnRow, gain);
 
-    // Right: the timeline strip (waveform + fade handles), positioned by offset.
+    // Right: timeline strip (waveform + fade handles), positioned by offset.
     const strip = document.createElement('div');
     strip.className = 'mx-lane-strip';
-    strip.style.width = Math.round(total * pxPerSec) + 'px';
+    strip.style.width = `${timelinePx}px`;
+
     const region = document.createElement('div');
     region.className = 'mx-region mx-region--' + lane.kind;
-    region.style.left = Math.round(lane.offset * pxPerSec) + 'px';
+    region.style.left = Math.max(0, Math.round(lane.offset * pxPerSec)) + 'px';
     region.style.width = Math.max(8, Math.round(lane.duration * pxPerSec)) + 'px';
 
     const canvas = document.createElement('canvas');
@@ -126,7 +266,7 @@ export function mountMixer(container, intake) {
     region.appendChild(canvas);
     requestAnimationFrame(() => drawLaneWaveform(canvas, lane));
 
-    // Fade handles (in + out) at the region edges.
+    // Fade handles (in + out) at region edges.
     const fadeIn = document.createElement('div');
     fadeIn.className = 'mx-fade mx-fade-in';
     fadeIn.style.left = Math.round((lane.fadeIn || 0) * pxPerSec) + 'px';
@@ -135,15 +275,40 @@ export function mountMixer(container, intake) {
     fadeOut.className = 'mx-fade mx-fade-out';
     fadeOut.style.right = Math.round((lane.fadeOut || 0) * pxPerSec) + 'px';
     fadeOut.title = 'Drag: fade-out';
-    region.append(fadeIn, fadeOut);
-
     wireRegionDrag(region, strip, lane);
     wireFadeDrag(fadeIn, lane, 'fadeIn', region);
     wireFadeDrag(fadeOut, lane, 'fadeOut', region);
 
-    strip.appendChild(region);
-    row.append(ctrls, strip);
+    region.append(fadeIn, fadeOut);
+    strip.append(region);
+    row.append(laneIndex, ctrls, strip);
     laneList.appendChild(row);
+
+    row.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.mx-mute, .mx-solo, .mx-del, .mx-lane-gain, .mx-region, .mx-fade, input, button')) return;
+      setSelectedLane(lane.id);
+    });
+  }
+
+  function setSelectedLane(id) {
+    selectedLaneId = id;
+    resolveSelection();
+    updateSelectionClasses();
+    refreshContext(timelineTotalSeconds());
+  }
+
+  function updatePlayhead(totalSeconds) {
+    const total = totalSeconds || timelineTotalSeconds();
+    const rawPos = transport && transport.playing ? transport.position() : (transport?.startOffset || 0);
+    const clamped = total > 0 ? Math.max(0, Math.min(rawPos, total)) : 0;
+    playhead.style.left = `${Math.max(0, Math.min(timelinePx - 1, Math.round(clamped * pxPerSec)))}px`;
+    playheadTime.textContent = fmt(clamped);
+  }
+
+  function updateTimeLabel(totalSeconds) {
+    const total = totalSeconds || 0;
+    const pos = transport && transport.playing ? transport.position() : (transport?.startOffset || 0);
+    timeLbl.textContent = fmt(Math.max(0, Math.min(pos, total || 0))) + ' / ' + fmt(total);
   }
 
   // Drag the whole region horizontally → change lane.offset (timeline position).
@@ -151,6 +316,7 @@ export function mountMixer(container, intake) {
     region.addEventListener('pointerdown', (e) => {
       if (e.target.classList.contains('mx-fade')) return;   // fades handle their own drag
       e.preventDefault();
+      setSelectedLane(lane.id);
       const startX = e.clientX;
       const startOffset = lane.offset;
       region.setPointerCapture(e.pointerId);
@@ -173,6 +339,7 @@ export function mountMixer(container, intake) {
   function wireFadeDrag(handle, lane, key, region) {
     handle.addEventListener('pointerdown', (e) => {
       e.preventDefault(); e.stopPropagation();
+      setSelectedLane(lane.id);
       const startX = e.clientX;
       const startVal = lane[key] || 0;
       handle.setPointerCapture(e.pointerId);
@@ -200,7 +367,11 @@ export function mountMixer(container, intake) {
     renderLanes();
   }
 
-  function addLane(lane) { lanes.push(lane); renderLanes(); }
+  function addLane(lane) {
+    lanes.push(lane);
+    if (!selectedLaneId) selectedLaneId = lane.id;
+    renderLanes();
+  }
 
   // ── Transport ────────────────────────────────────────────────────────────
   function ensureTransport() {
@@ -210,35 +381,58 @@ export function mountMixer(container, intake) {
   }
   masterSlider.addEventListener('input', () => { transport?.setMasterGain(parseInt(masterSlider.value, 10) / 100); });
 
+  function startRaf() {
+    if (rafId) return;
+    const loop = () => {
+      const total = timelineTotalSeconds();
+      updatePlayhead(total);
+      updateTimeLabel(total);
+      if (transport && transport.playing) rafId = requestAnimationFrame(loop);
+      else {
+        rafId = 0;
+        updatePlayBtn();
+      }
+    };
+    rafId = requestAnimationFrame(loop);
+  }
+
   function fmt(t) {
     if (!isFinite(t)) t = 0;
     const m = Math.floor(t / 60), s = Math.floor(t % 60);
     return m + ':' + String(s).padStart(2, '0');
   }
-  function updateTime() {
-    const total = timelineDuration(lanes);
-    const pos = transport && transport.playing ? transport.position() : (transport?.startOffset || 0);
-    timeLbl.textContent = fmt(pos) + ' / ' + fmt(total);
+  function updatePlayBtn() {
+    playBtn.textContent = transport && transport.playing ? '⏸ Pause' : '▶ Play';
+    updateTimeLabel(timelineTotalSeconds());
+    refreshContext(timelineTotalSeconds());
   }
-  function startRaf() {
-    if (rafId) return;
-    const loop = () => {
-      updateTime();
-      if (transport && transport.playing) rafId = requestAnimationFrame(loop);
-      else { rafId = 0; updatePlayBtn(); }
-    };
-    rafId = requestAnimationFrame(loop);
-  }
-  function updatePlayBtn() { playBtn.textContent = transport && transport.playing ? '⏸ Pause' : '▶ Play'; }
 
   playBtn.addEventListener('click', () => {
     const t = ensureTransport();
-    if (t.playing) { t.pause(); updatePlayBtn(); return; }
-    if (!lanes.length) { exportMsg.textContent = 'Add a lane first.'; return; }
-    t.play(lanes, t.startOffset || 0, () => { updatePlayBtn(); updateTime(); });
-    updatePlayBtn(); startRaf();
+    if (t.playing) {
+      t.pause();
+      updatePlayBtn();
+      return;
+    }
+    if (!lanes.length) {
+      exportMsg.textContent = 'Add a lane first.';
+      return;
+    }
+    t.play(lanes, t.startOffset || 0, () => {
+      updatePlayBtn();
+      updateTimeLabel(timelineTotalSeconds());
+      updatePlayhead(timelineTotalSeconds());
+    });
+    updatePlayBtn();
+    startRaf();
   });
-  stopBtn.addEventListener('click', () => { transport?.stop(); updatePlayBtn(); updateTime(); });
+
+  stopBtn.addEventListener('click', () => {
+    transport?.stop();
+    updatePlayBtn();
+    updateTimeLabel(timelineTotalSeconds());
+    updatePlayhead(timelineTotalSeconds());
+  });
 
   // ── Generators ──
   toneBtn.addEventListener('click', () => addLane(makeGeneratorLane('tone', { freq: 440 })));
@@ -247,7 +441,8 @@ export function mountMixer(container, intake) {
 
   // ── Drag-drop audio files → new clip lanes ──
   ['dragover', 'dragenter'].forEach((ev) => wrap.addEventListener(ev, (e) => {
-    e.preventDefault(); wrap.classList.add('mx-dragover');
+    e.preventDefault();
+    wrap.classList.add('mx-dragover');
   }));
   ['dragleave', 'drop'].forEach((ev) => wrap.addEventListener(ev, (e) => {
     if (ev === 'dragleave' && wrap.contains(e.relatedTarget)) return;
@@ -256,7 +451,10 @@ export function mountMixer(container, intake) {
   wrap.addEventListener('drop', async (e) => {
     e.preventDefault();
     const files = [...(e.dataTransfer?.files || [])].filter((f) => /^audio\//.test(f.type) || /\.(mp3|wav|ogg|m4a|aac|flac|opus|oga|weba)$/i.test(f.name));
-    if (!files.length) { exportMsg.textContent = 'Drop audio files only.'; return; }
+    if (!files.length) {
+      exportMsg.textContent = 'Drop audio files only.';
+      return;
+    }
     exportMsg.textContent = 'Decoding ' + files.length + ' file(s)…';
     for (const f of files) {
       const buf = await decodeFile(f);
@@ -266,7 +464,7 @@ export function mountMixer(container, intake) {
   });
 
   // ── Ctrl+scroll zoom ──
-  laneList.addEventListener('wheel', (e) => {
+  timeline.addEventListener('wheel', (e) => {
     if (!e.ctrlKey) return;
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
@@ -276,22 +474,29 @@ export function mountMixer(container, intake) {
 
   // ── Mixdown / export ──
   async function doMixdown(format) {
-    if (!lanes.length) { exportMsg.textContent = 'Add a lane first.'; return; }
-    transport?.stop(); updatePlayBtn();
-    exportMsg.textContent = 'Rendering mixdown…'; exportResult.textContent = '';
+    if (!lanes.length) {
+      exportMsg.textContent = 'Add a lane first.';
+      return;
+    }
+    transport?.stop();
+    updatePlayBtn();
+    exportMsg.textContent = 'Rendering mixdown…';
+    exportResult.textContent = '';
     mixWavBtn.disabled = mixMp3Btn.disabled = true;
     try {
       const buffer = await mixdown(lanes);
       if (format === 'wav') {
         const blob = await encodeWav(buffer);
         offerDownload(blob, 'mixdown.wav');
-        exportMsg.textContent = 'WAV ready — ' + (blob.size / 1048576).toFixed(2) + ' MB';
+        const mb = blob.size / 1048576;
+        exportMsg.textContent = 'WAV ready — ' + (mb < 1 ? `${Math.round(mb * 1000)} KB` : `${mb.toFixed(2)} MB`);
       } else {
         exportMsg.textContent = 'Encoding MP3 (ffmpeg)…';
         const wav = await encodeWav(buffer);
         const mp3 = await encodeMp3ViaFfmpeg(wav);
         offerDownload(mp3, 'mixdown.mp3');
-        exportMsg.textContent = 'MP3 ready — ' + (mp3.size / 1048576).toFixed(2) + ' MB';
+        const mb = mp3.size / 1048576;
+        exportMsg.textContent = 'MP3 ready — ' + (mb < 1 ? `${Math.round(mb * 1000)} KB` : `${mb.toFixed(2)} MB`);
       }
     } catch (err) {
       exportMsg.textContent = 'Mixdown failed: ' + (err.message || err);
@@ -300,11 +505,15 @@ export function mountMixer(container, intake) {
     }
   }
   function offerDownload(blob, filename) {
-    const url = URL.createObjectURL(blob); blobUrls.push(url);
+    const url = URL.createObjectURL(blob);
+    blobUrls.push(url);
     const a = document.createElement('a');
-    a.href = url; a.download = filename; a.className = 'media-tx-download';
+    a.href = url;
+    a.download = filename;
+    a.className = 'media-tx-download';
     a.textContent = 'Download ' + filename;
-    exportResult.textContent = ''; exportResult.appendChild(a);
+    exportResult.textContent = '';
+    exportResult.appendChild(a);
     a.click();   // auto-trigger; link stays for re-download
   }
   mixWavBtn.addEventListener('click', () => doMixdown('wav'));
@@ -331,15 +540,23 @@ export function mountMixer(container, intake) {
     exportMsg.textContent = 'Decoding loaded audio…';
     const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
     const buf = await decodeFile(file);
-    if (buf) addLane(makeClipLane(intake.filename || 'Lane 1', buf));
-    else { addLane(makeGeneratorLane('tone', { freq: 440 })); exportMsg.textContent = 'Could not decode the loaded file — added a test tone instead.'; }
-    if (buf) exportMsg.textContent = '';
+    if (buf) {
+      addLane(makeClipLane(intake.filename || 'Lane 1', buf));
+      exportMsg.textContent = '';
+    } else {
+      addLane(makeGeneratorLane('tone', { freq: 440 }));
+      exportMsg.textContent = 'Could not decode the loaded file — added a test tone instead.';
+    }
+    updateTimeLabel(0);
+    updatePlayBtn();
+    updateLaneStripDims();
   })();
 
   return {
     destroy() {
       if (rafId) cancelAnimationFrame(rafId);
-      transport?.destroy(); transport = null;
+      transport?.destroy();
+      transport = null;
       for (const u of blobUrls) { try { URL.revokeObjectURL(u); } catch {} }
       wrap.remove();
     },
@@ -348,12 +565,17 @@ export function mountMixer(container, intake) {
 
 function mkBtn(text, cls) {
   const b = document.createElement('button');
-  b.type = 'button'; b.textContent = text; b.className = cls || 'media-ed-btn';
+  b.type = 'button';
+  b.textContent = text;
+  b.className = cls || 'media-ed-btn';
   return b;
 }
 function range(min, max, val, cls) {
   const r = document.createElement('input');
-  r.type = 'range'; r.min = String(min); r.max = String(max); r.value = String(val);
+  r.type = 'range';
+  r.min = String(min);
+  r.max = String(max);
+  r.value = String(val);
   r.className = cls;
   return r;
 }

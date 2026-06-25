@@ -1173,6 +1173,16 @@ export async function run(ctx) {
     const hasTransport = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mx-play')
       && await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mx-master-slider');
     if (hasTransport) pass('audio mixer: transport (play/stop) + master gain present'); else fail('mixer transport controls missing');
+    const mixGrammar = await page.evaluate(() => ({
+      hasRuler: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-ruler'),
+      hasPlayhead: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-playhead'),
+      hasContext: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-context'),
+      hasLaneIdx: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane-index'),
+      hasContextText: !!(document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-context')?.textContent || '').trim(),
+    }));
+    if (mixGrammar.hasRuler && mixGrammar.hasPlayhead && mixGrammar.hasContext && mixGrammar.hasLaneIdx && mixGrammar.hasContextText)
+      pass('audio mixer: timeline grammar visible (ruler/playhead/context/index)');
+    else fail('mixer timeline grammar: ' + JSON.stringify(mixGrammar));
     let laneCtrls = await page.evaluate(() => ({
       gain: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane-gain'),
       mute: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-mute'),
@@ -1202,14 +1212,78 @@ export async function run(ctx) {
     await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane').length >= 2, null, { timeout: 6000 });
     const lane2Count = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane', (els) => els.length);
     if (lane2Count >= 2) pass('audio mixer: a second lane can be added (generator tone)'); else fail('mixer lanes after add: ' + lane2Count);
+    const assertMixViewport = async (label) => {
+      const geometry = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', (el) => {
+        const host = document.querySelector('#previewHost');
+        const hostRect = host?.getBoundingClientRect();
+        const wrapRect = el.getBoundingClientRect();
+        const ruler = el.querySelector('.mx-ruler');
+        const playhead = el.querySelector('.mx-playhead');
+        const lanes = el.querySelector('.mx-lanes');
+        const timeline = el.querySelector('.mx-timeline');
+        const context = el.querySelector('.mx-context');
+        if (!hostRect || !ruler || !playhead || !lanes || !timeline || !context) return null;
+        const docEl = document.documentElement;
+        const rulerRect = ruler.getBoundingClientRect();
+        const playheadRect = playhead.getBoundingClientRect();
+        return {
+          wrapLeft: Math.round(wrapRect.left),
+          wrapRight: Math.round(wrapRect.right),
+          hostLeft: Math.round(hostRect.left),
+          hostRight: Math.round(hostRect.right),
+          overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
+          rulerVisible: rulerRect.height > 0 && rulerRect.width > 0,
+          playheadVisible: playheadRect.height > 0 && playheadRect.width > 0,
+          lanesVisible: lanes.getBoundingClientRect().height > 0,
+          timelineScroll: timeline.scrollWidth > Math.round(timeline.clientWidth),
+          contextVisible: getComputedStyle(context).display !== 'none' && context.textContent.includes('Context'),
+          activeViewportW: window.innerWidth,
+        };
+      });
+      if (!geometry) return fail('audio mixer geometry unavailable (' + label + ')');
+      if (geometry.rulerVisible && geometry.playheadVisible && geometry.lanesVisible && geometry.contextVisible)
+        pass('audio mixer: timeline grammar visible in mix panel (' + label + ')');
+      else fail('audio mixer geometry visibility (' + label + '): ' + JSON.stringify({
+        rulerVisible: geometry?.rulerVisible,
+        playheadVisible: geometry?.playheadVisible,
+        lanesVisible: geometry?.lanesVisible,
+        contextVisible: geometry?.contextVisible,
+      }));
+      if (geometry.timelineScroll) pass('audio mixer: timeline is horizontally scrollable when needed');
+      if (geometry.overflowX === 0) pass('audio mixer: no horizontal overflow in mix (' + label + ')');
+      else fail('audio mixer: horizontal overflow while in mix (' + label + '): ' + geometry.overflowX);
+      if (geometry.wrapLeft >= geometry.hostLeft - 1 && geometry.wrapRight <= geometry.hostRight + 1)
+        pass('audio mixer: mix workspace fits host width (' + label + ')');
+      else fail('audio mixer workspace width issue (' + label + '): ' + JSON.stringify({
+        wrapLeft: geometry.wrapLeft,
+        wrapRight: geometry.wrapRight,
+        hostLeft: geometry.hostLeft,
+        hostRight: geometry.hostRight,
+      }));
+    };
     // Mixdown → WAV produces a downloadable file (OfflineAudioContext render → WAV worker/header).
     const mixBtn = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mx-mix-btn');   // first mix button = Mixdown → WAV
+    await assertMixViewport('desktop');
     const [wavDownload] = await Promise.all([
       page.waitForEvent('download', { timeout: 30000 }),
       mixBtn.click(),
     ]);
     const wavName = wavDownload.suggestedFilename();
     if (/\.wav$/.test(wavName)) pass('audio mixer: mixdown → WAV downloaded (' + wavName + ')'); else fail('mixer WAV download name: ' + wavName);
+    const desktopViewport = page.viewportSize();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(origin, { waitUntil: 'load' });
+    await openExample('Sample.wav');
+    await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+    await page.click('#previewHost .media-mode-tab[data-mode="mix"]');
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', { timeout: 12000 });
+    await assertMixViewport('mobile');
+    if (desktopViewport) {
+      await page.setViewportSize(desktopViewport);
+      await page.goto(origin, { waitUntil: 'load' });
+      await openExample('Sample.wav');
+      await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+    }
     await page.click('#previewHost .media-mode-tab[data-mode="listen"]');
     const mixDetached = await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', {
       state: 'detached',
