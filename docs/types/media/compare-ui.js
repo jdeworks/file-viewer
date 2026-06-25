@@ -43,9 +43,16 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
     analysis: null,
   };
   const listeners = [];
+  const objectUrls = new Set();
   const addListener = (el, type, fn, options) => {
     el.addEventListener(type, fn, options);
     listeners.push(() => el.removeEventListener(type, fn, options));
+  };
+  const makeObjectUrl = (file) => {
+    if (!file) return '';
+    const url = URL.createObjectURL(file);
+    objectUrls.add(url);
+    return url;
   };
 
   const wrap = document.createElement('div');
@@ -154,6 +161,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
     analysisStatus.textContent = 'Not analyzed';
     state.durationB = Number.isFinite(file.duration) ? file.duration : state.durationB;
     state.lanes.B.out = Math.max(state.lanes.B.in, Math.min(state.lanes.B.out, state.durationB));
+    updateVideoPreviewSource('B');
     render();
   });
   drop.el.classList.add('media-compare-drop');
@@ -161,6 +169,47 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   const visual = document.createElement('div');
   visual.className = 'media-compare-visual';
   visual.style.setProperty('--compare-opacity', String(state.opacity / 100));
+
+  const videoPreview = document.createElement('div');
+  videoPreview.className = 'media-compare-video-preview';
+  videoPreview.hidden = kind !== 'video';
+  const videoPreviewEls = new Map();
+  const videoUrls = { A: '', B: '' };
+  function buildVideoPreviewLayer(laneId) {
+    const layer = document.createElement('div');
+    layer.className = `media-compare-video-layer media-compare-video-layer--${laneId.toLowerCase()}`;
+    layer.dataset.lane = laneId;
+    const label = document.createElement('div');
+    label.className = 'media-compare-video-layer-label';
+    const video = document.createElement('video');
+    video.className = 'media-compare-video-el';
+    video.controls = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+    layer.append(video, label);
+    videoPreviewEls.set(laneId, { layer, label, video });
+    return layer;
+  }
+  videoPreview.append(buildVideoPreviewLayer('A'), buildVideoPreviewLayer('B'));
+  function updateVideoPreviewSource(laneId) {
+    if (kind !== 'video') return;
+    const refs = videoPreviewEls.get(laneId);
+    if (!refs) return;
+    const prior = videoUrls[laneId];
+    if (prior) {
+      URL.revokeObjectURL(prior);
+      objectUrls.delete(prior);
+    }
+    videoUrls[laneId] = makeObjectUrl(state.files[laneId]);
+    if (videoUrls[laneId]) {
+      refs.video.src = videoUrls[laneId];
+      refs.video.load?.();
+    } else {
+      refs.video.removeAttribute('src');
+      refs.video.load?.();
+    }
+  }
 
   const laneEls = new Map();
   function buildLane(laneId) {
@@ -284,7 +333,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   missingA.className = 'media-compare-missing media-compare-missing--a';
   const missingB = document.createElement('div');
   missingB.className = 'media-compare-missing media-compare-missing--b';
-  visual.append(lanes, band, missingA, missingB, overlayCanvas, diffCanvas);
+  visual.append(videoPreview, lanes, band, missingA, missingB, overlayCanvas, diffCanvas);
 
   const placeholder = document.createElement('div');
   placeholder.className = `media-compare-placeholder media-compare-placeholder--${kind}`;
@@ -316,6 +365,8 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
     missingA,
     missingB,
     visual,
+    videoPreview,
+    videoPreviewEls,
     overlayCanvas,
     diffCanvas,
   };
@@ -380,11 +431,14 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   });
 
   layoutButtons[0].setAttribute('aria-pressed', 'true');
+  updateVideoPreviewSource('A');
   render();
 
   return {
     destroy() {
       for (const remove of listeners.splice(0)) remove();
+      for (const url of objectUrls) URL.revokeObjectURL(url);
+      objectUrls.clear();
       wrap.remove();
     },
   };

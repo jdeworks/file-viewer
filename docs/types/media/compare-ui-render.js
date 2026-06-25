@@ -51,6 +51,8 @@ export function renderCompareLayout(state, ui) {
     missingA,
     missingB,
     visual,
+    videoPreview,
+    videoPreviewEls,
   } = ui;
 
   const result = getCurrentCompareResult(state);
@@ -89,6 +91,20 @@ export function renderCompareLayout(state, ui) {
   normalizeLabel.hidden = kind !== 'audio';
   readout.textContent = `${state.layout.replace('-', ' ')} · ${formatCompareSeconds(result.overlap.duration)} overlap`;
   foot.textContent = describeShiftedComparison(result);
+  if (videoPreview) {
+    videoPreview.hidden = kind !== 'video';
+    videoPreview.dataset.foreground = state.videoForeground || 'B';
+    for (const laneId of ['A', 'B']) {
+      const refs = videoPreviewEls.get(laneId);
+      const laneState = state.lanes[laneId];
+      if (!refs) continue;
+      const isLoaded = !!state.files[laneId];
+      refs.layer.hidden = !isLoaded && laneId === 'B';
+      refs.layer.dataset.foreground = state.videoForeground === laneId ? 'true' : 'false';
+      refs.label.textContent = `Lane ${laneId}: ${laneState.label}`;
+      refs.video.style.opacity = String((laneId === 'A' ? state.videoOpacityA : state.videoOpacityB) / 100);
+    }
+  }
 
   for (const laneId of ['A', 'B']) {
     const laneState = state.lanes[laneId];

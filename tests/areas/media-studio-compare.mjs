@@ -187,6 +187,31 @@ export async function exerciseCompare(ctx, kind) {
     if (sidebarDrop.current === 'SidebarDropMain.webm' && /SidebarDropCmp\.webm/.test(sidebarDrop.laneB))
       pass('video compare: sidebar drop fills lane B without opening as main file');
     else fail('video compare sidebar drop: ' + JSON.stringify(sidebarDrop));
+    await page.click(`${panelSel} .media-compare-layout-btn[data-layout="overlay"]`);
+    await page.selectOption(`${panelSel} .media-compare-foreground-select`, 'A');
+    await page.fill(`${panelSel} .media-compare-video-opacity-a`, '80');
+    await page.fill(`${panelSel} .media-compare-video-opacity-b`, '30');
+    const livePreview = await page.$eval(`${panelSel} .media-compare`, (el) => {
+      const layerA = el.querySelector('.media-compare-video-layer--a');
+      const layerB = el.querySelector('.media-compare-video-layer--b');
+      const videoA = layerA?.querySelector('video');
+      const videoB = layerB?.querySelector('video');
+      return {
+        layout: el.dataset.layout,
+        foreground: el.dataset.videoForeground,
+        srcA: videoA?.currentSrc || videoA?.src || '',
+        srcB: videoB?.currentSrc || videoB?.src || '',
+        hiddenA: !!layerA?.hidden,
+        hiddenB: !!layerB?.hidden,
+        opacityA: videoA?.style.opacity || '',
+        opacityB: videoB?.style.opacity || '',
+      };
+    });
+    if (livePreview.layout === 'overlay' && livePreview.srcA.startsWith('blob:')
+      && livePreview.srcB.startsWith('blob:') && !livePreview.hiddenA && !livePreview.hiddenB
+      && livePreview.opacityA === '0.8' && livePreview.opacityB === '0.3')
+      pass('video compare: dropped lane B is visible in the live overlay preview');
+    else fail('video compare live preview: ' + JSON.stringify(livePreview));
     await page.fill(`${panelSel} .media-compare-offset-input[data-lane="A"]`, '0');
     await page.fill(`${panelSel} .media-compare-offset-input[data-lane="B"]`, '0.1');
     await page.fill(`${panelSel} .media-compare-in-input[data-lane="A"]`, '0');

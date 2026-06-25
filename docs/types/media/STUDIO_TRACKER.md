@@ -664,6 +664,8 @@ extraction in `0ce96afe`; ffmpeg core entrypoint compatibility in `e9baba6f`.
   - Renders real lane frame strips, an overlay preview with explicit A/B foreground selection
     plus independent A/B opacity controls, and a visual diff strip with average visual difference
     plus high-diff frame/pixel/column counts.
+  - Video compare also shows a live A/B video preview stack as soon as lane B is dropped/browsed,
+    so users can inspect side-by-side, top-bottom, or true overlay before running measured analysis.
   - Video sample times now come from shifted-overlap source ranges so measured content checks are
     aligned to real overlapped source windows.
   - Secondary compare drop zones accept sidebar tree drags without opening the dragged item as the
