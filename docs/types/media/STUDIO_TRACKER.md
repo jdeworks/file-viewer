@@ -214,7 +214,7 @@ Progress:
 
 ### P1 — Video Workspace Polish Gate
 
-Status: open.
+Status: in progress.
 
 Goal: make the video branch feel like the same studio family as audio while preserving its
 video-specific workflows.
@@ -243,6 +243,24 @@ Implementation order:
 7. Update smoke coverage to assert mode structure and timeline geometry, not just that
    individual old controls exist.
 8. Capture desktop and mobile screenshots for a sample video after the redesign.
+
+Progress:
+
+- `8b67ecbf` — `Add video workspace mode shell`.
+  - Added the video workspace shell with compact title/time row, top-aligned video surface,
+    and explicit `Watch`, `Adjust`, `Timeline`, `Subtitles`, and `Export` task modes.
+  - Moved everyday playback tools into Watch, CSS filters plus the movie-audio EQ/meter
+    surface into Adjust, subtitle sidecar loading into Subtitles, ffmpeg export/fades plus
+    the legacy media editor into Export, and the lazy video timeline toggle into Timeline.
+  - Removed the old loose video editor, mixer, timeline, and transcoding-hint stack from
+    below the player; video-only heavy panels remain lazy and mode-scoped.
+  - Updated media smoke coverage for mode ordering/defaults, desktop/mobile first viewport,
+    no horizontal overflow, scoped Adjust/Subtitles/Export controls, and Timeline lazy mount.
+  - Captured visual QA screenshots at `/tmp/media-workspace-shots/video-p1-shell/`.
+  - Validation passed: `node --check docs/types/media/renderer.js`,
+    `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+  - Caveat: P1 still needs the deeper Adjust and Timeline polish passes; this checkpoint only
+    establishes the shared video workspace/mode grammar.
 
 ### M1 — Video Trim Correctness
 
