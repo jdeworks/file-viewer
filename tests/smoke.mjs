@@ -11,6 +11,7 @@ import * as simpleTypes from './areas/simple-types.mjs';
 import * as exports from './areas/exports.mjs';
 import * as emailArchives from './areas/email-archives.mjs';
 import * as media3d from './areas/media-3d.mjs';
+import * as mediaStudio from './areas/media-studio.mjs';
 import * as ebookGit from './areas/ebook-git.mjs';
 import * as git from './areas/git.mjs';
 import * as interactions from './areas/interactions.mjs';
@@ -19,7 +20,7 @@ import * as treeDrag from './areas/tree-drag.mjs';
 import * as examplesCatalog from './areas/examples-catalog.mjs';
 // binary-types is NOT run here — it's the heavy WebGL/wasm area (45 per-test page.goto opens) and
 // runs in its own fresh process via smoke-binary.mjs (like known-files via smoke-known.mjs) so
-// those heavy renderers don't accumulate in the shared browser after 14 prior areas.
+// those heavy renderers don't accumulate in the shared browser after 15 prior areas.
 
 const shouldTimeAreas = process.env.FV_SMOKE_TIMING === '1';
 
@@ -49,6 +50,7 @@ try {
     await runArea('exports', () => exports.run(ctx));
     await runArea('email-archives', () => emailArchives.run(ctx));
     await runArea('media-3d', () => media3d.run(ctx));
+    await runArea('media-studio', () => mediaStudio.run(ctx));
     await runArea('ebook-git', () => ebookGit.run(ctx));
     await runArea('git', () => git.run(ctx));
     await runArea('interactions', () => interactions.run(ctx));
@@ -64,6 +66,7 @@ try {
     await exports.run(ctx);
     await emailArchives.run(ctx);
     await media3d.run(ctx);
+    await mediaStudio.run(ctx);
     await ebookGit.run(ctx);
     await git.run(ctx);
     await interactions.run(ctx);

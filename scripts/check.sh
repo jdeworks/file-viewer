@@ -3,7 +3,7 @@
 # before pushing instead of paying for GitHub Actions. Run --fast before every commit/push.
 #
 #   ./scripts/check.sh           full gate — recommended before a release/tag (adds heavy suites)
-#   ./scripts/check.sh --fast    DEFAULT pre-push gate: generators + unit tests + CORE smoke only
+#   ./scripts/check.sh --fast    DEFAULT pre-push gate: generators + unit tests + scoped smoke
 #
 # Does: (1) regenerate the asset manifest and fail if it was stale (the smoke test also asserts
 # this, but failing early is clearer); (2) the move-diff unit tests; (3) the headless smoke test
@@ -14,9 +14,11 @@
 # viewers (smoke-known.mjs, ~812 page.goto reloads, each re-parsing Monaco's 13 MB bundle) and
 # binary/container types (smoke-binary.mjs, ~45 heavy WebGL/wasm opens) — and the exhaustive
 # Sokoban solution replay unit suite (sokoban-levels.test.mjs). These together dominate the gate's
-# cost. It still regenerates every bundle (all generators total ~2s) so core smoke runs against fresh
+# cost. It still regenerates every bundle (all generators total ~2s) so smoke runs against fresh
 # artifacts, but it does NOT hard-fail on an unstaged regen (that staleness gate is a pre-push concern).
-# --fast is the default before every push; run the full gate before a release/tag.
+# When changes are owned by a smoke area, --fast runs just those areas through the shared zero-off-origin
+# harness; shared/global changes fall back to the aggregate smoke. --fast is the default before every push;
+# run the full gate before a release/tag.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -149,11 +151,124 @@ run_phase_unit_tests() {
   node tests/metadata-owned.test.mjs
 }
 
+collect_changed_paths() {
+  {
+    git diff --name-only HEAD --
+    git ls-files --others --exclude-standard
+  } | LC_ALL=C sort -u
+}
+
+print_fast_smoke_changed_paths() {
+  local total="$1"
+  shift
+  local shown=0
+  local limit=30
+  local path
+
+  echo "  changed paths considered (${total}):"
+  for path in "$@"; do
+    if [ "$shown" -ge "$limit" ]; then
+      echo "    ... ($((total - shown)) more)"
+      break
+    fi
+    echo "    $path"
+    shown=$((shown + 1))
+  done
+}
+
 run_smoke_core() {
-  if [ "$FAST" = 1 ]; then
+  if [ "$FAST" != 1 ]; then
+    node tests/smoke.mjs
+    return
+  fi
+
+  local changed_paths=()
+  local collected_path
+  while IFS= read -r collected_path; do
+    changed_paths+=("$collected_path")
+  done < <(collect_changed_paths)
+
+  local smoke_areas=()
+  local area
+  local full_reason=""
+  local path
+
+  add_smoke_area() {
+    local selected="$1"
+    local existing
+    for existing in "${smoke_areas[@]}"; do
+      if [ "$existing" = "$selected" ]; then
+        return
+      fi
+    done
+    smoke_areas+=("$selected")
+  }
+
+  require_full_smoke() {
+    local reason="$1"
+    if [ -z "$full_reason" ]; then
+      full_reason="$reason"
+    fi
+  }
+
+  for path in "${changed_paths[@]}"; do
+    case "$path" in
+      docs/types/media/*|tests/areas/media-studio.mjs)
+        add_smoke_area media-studio
+        ;;
+      tests/areas/media-3d.mjs|docs/types/3d/*|docs/types/image/*|docs/types/binary/midi/*|docs/types/binary/gamerom/*)
+        add_smoke_area media-3d
+        ;;
+      docs/types/ebook/*)
+        add_smoke_area ebook-git
+        ;;
+      docs/types/git/*|docs/core/git.js)
+        add_smoke_area git
+        ;;
+      docs/games/*)
+        add_smoke_area games
+        ;;
+      tests/areas/*.mjs)
+        area="${path#tests/areas/}"
+        area="${area%.mjs}"
+        add_smoke_area "$area"
+        ;;
+      tests/smoke.mjs|tests/smoke-area.mjs|tests/harness.mjs|scripts/check.sh)
+        require_full_smoke "$path is shared smoke/check infrastructure"
+        ;;
+      docs/core/*|docs/assets/*.css|docs/index.html)
+        require_full_smoke "$path is shared app shell"
+        ;;
+      docs/asset-manifest.json|docs/sw.js|docs/core/registry-runtime.generated.js|docs/core/registry-detect.generated.*|docs/core/settings-defaults.generated.json|docs/known/registry.generated.js|docs/types/image/renderer.generated.js)
+        require_full_smoke "$path is generated shared runtime/cache state"
+        ;;
+      package.json|package-lock.json|npm-shrinkwrap.json|pnpm-lock.yaml|yarn.lock|docs/vendor/*|vendor/*)
+        require_full_smoke "$path affects package/vendor runtime"
+        ;;
+      examples/index.json|docs/examples/index.json|docs/examples/*)
+        require_full_smoke "$path affects the examples catalog"
+        ;;
+      *)
+        require_full_smoke "$path has no smoke-area owner"
+        ;;
+    esac
+  done
+
+  echo "→ fast smoke selection"
+  print_fast_smoke_changed_paths "${#changed_paths[@]}" "${changed_paths[@]}"
+
+  if [ "${#changed_paths[@]}" -eq 0 ]; then
+    echo "  selected smoke: aggregate (no changed paths detected after generators)"
+    FV_SMOKE_TIMING=1 node tests/smoke.mjs
+  elif [ -n "$full_reason" ]; then
+    echo "  selected smoke: aggregate ($full_reason)"
+    FV_SMOKE_TIMING=1 node tests/smoke.mjs
+  elif [ "${#smoke_areas[@]}" -eq 0 ]; then
+    echo "  selected smoke: aggregate (no smoke areas determined)"
     FV_SMOKE_TIMING=1 node tests/smoke.mjs
   else
-    node tests/smoke.mjs
+    echo "  selected smoke areas: ${smoke_areas[*]}"
+    node tests/smoke-area.mjs "${smoke_areas[@]}"
   fi
 }
 

@@ -19,6 +19,7 @@ const AREAS = {
   'exports':           () => import('./areas/exports.mjs'),
   'email-archives':    () => import('./areas/email-archives.mjs'),
   'media-3d':          () => import('./areas/media-3d.mjs'),
+  'media-studio':      () => import('./areas/media-studio.mjs'),
   'ebook-git':         () => import('./areas/ebook-git.mjs'),
   'git':               () => import('./areas/git.mjs'),
   'interactions':      () => import('./areas/interactions.mjs'),
