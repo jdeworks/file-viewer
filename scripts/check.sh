@@ -12,10 +12,11 @@
 #
 # --fast trades coverage for CPU/time: it SKIPS the two heaviest Chromium suites — known-file
 # viewers (smoke-known.mjs, ~812 page.goto reloads, each re-parsing Monaco's 13 MB bundle) and
-# binary/container types (smoke-binary.mjs, ~45 heavy WebGL/wasm opens) — which together dominate
-# the gate's cost. It still regenerates every bundle (all generators total ~2s) so core smoke runs
-# against fresh artifacts, but it does NOT hard-fail on an unstaged regen (that staleness gate is a
-# pre-push concern). --fast is the default before every push; run the full gate before a release/tag.
+# binary/container types (smoke-binary.mjs, ~45 heavy WebGL/wasm opens) — and the exhaustive
+# Sokoban solution replay unit suite (sokoban-levels.test.mjs). These together dominate the gate's
+# cost. It still regenerates every bundle (all generators total ~2s) so core smoke runs against fresh
+# artifacts, but it does NOT hard-fail on an unstaged regen (that staleness gate is a pre-push concern).
+# --fast is the default before every push; run the full gate before a release/tag.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -88,17 +89,19 @@ node tests/example-compatibility.test.mjs
 node tests/type-info.test.mjs
 node tests/metadata-normalize.test.mjs
 node tests/metadata-owned.test.mjs
-node tests/sokoban-levels.test.mjs
 
 echo "→ smoke test: core areas (headless Chromium, zero off-origin)…"
 node tests/smoke.mjs
 
 if [ "$FAST" = 1 ]; then
-  echo "→ fast mode: SKIPPING known-file + binary smoke suites (the two heaviest)."
+  echo "→ fast mode: SKIPPING known-file + binary smoke suites + exhaustive Sokoban replay suite (the heaviest)."
   echo "  This is the default pre-push gate. Run the full gate before a release:  ./scripts/check.sh"
-  echo "✓ fast checks passed (known + binary suites skipped)"
+  echo "✓ fast checks passed (known + binary + sokoban suites skipped)"
   exit 0
 fi
+
+echo "→ running exhaustive Sokoban solution replay unit suite…"
+node tests/sokoban-levels.test.mjs
 
 echo "→ smoke test: known-file viewers (fresh browser process, avoids WSL2 OOM)…"
 node tests/smoke-known.mjs
