@@ -77,21 +77,26 @@
   padding: 16px; min-height: 100%; box-sizing: border-box; justify-content: center; }
 .preview-host .media-audio.media-doc { justify-content: flex-start; align-items: stretch;
   padding-top: clamp(8px, 2vw, 16px); }
+.preview-host .media-video.media-doc { justify-content: flex-start; align-items: stretch;
+  padding-top: clamp(10px, 2.4vw, 18px); position: relative; }
 .preview-host .media-name { font-size: 13px; color: var(--fg-2); word-break: break-all; text-align: center; }
 .preview-host .media-workspace { width: min(720px, 100%); display: flex; flex-direction: column; gap: 8px; }
 .preview-host .media-audio-workspace { margin: 0 auto; width: min(720px, 100%); }
+.preview-host .media-video-workspace { margin: 0 auto; width: min(980px, 100%); max-width: 100%; }
 .preview-host .media-workspace-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--fg-2); }
 .preview-host .media-workspace-title { font-size: 14px; font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1 1 auto; }
 .preview-host .media-workspace-time { font-size: 11px; font-variant-numeric: tabular-nums; flex: 0 0 auto; color: var(--fg-2); }
 .preview-host .media-workspace-body { display: grid; gap: 8px; width: 100%; }
 .preview-host .media-audio-surface { width: 100%; }
+.preview-host .media-video-surface { width: 100%; }
 .preview-host .media-waveform-surface { width: 100%; border: 1px solid var(--border);
   border-radius: 8px; overflow: hidden; background: var(--bg-2); min-height: 120px; }
 .preview-host .media-waveform-surface .media-wv-canvas { display: block; width: 100%; height: 120px; }
 .preview-host .media-audio .media-view { width: min(520px, 100%); }
-.preview-host .media-video .media-view { max-width: 100%; max-height: 100%; border-radius: 8px;
+.preview-host .media-video .media-view { width: 100%; max-width: 100%; max-height: 100%; border-radius: 8px;
   box-shadow: 0 1px 12px rgba(0,0,0,.35); background: #000; }
 .preview-host .media-audio-modes { width: min(720px, 100%); margin: 0 auto; }
+.preview-host .media-video-modes { width: min(980px, 100%); margin: 0 auto; }
 .preview-host .media-mode-tabs { display: flex; align-items: stretch; gap: 6px; flex-wrap: wrap;
   margin-bottom: 10px; }
 .preview-host .media-mode-tab { flex: 1 1 0; min-width: 90px; padding: 7px 10px; border-radius: 8px;
@@ -118,7 +123,9 @@
 @media (max-width: 760px) {
   .preview-host .media-workspace { width: 100%; }
   .preview-host .media-audio-workspace,
-  .preview-host .media-audio-modes { width: 100%; }
+  .preview-host .media-video-workspace,
+  .preview-host .media-audio-modes,
+  .preview-host .media-video-modes { width: 100%; }
   .preview-host .media-workspace-head { align-items: flex-start; gap: 6px; flex-wrap: wrap; }
   .preview-host .media-workspace-title { width: 100%; }
   .preview-host .media-waveform-surface { min-height: 108px; }

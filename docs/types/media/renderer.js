@@ -89,17 +89,22 @@ export async function render(intake, ctx = {}) {
   if (info.kind === 'video') el.setAttribute('playsinline', '');
 
   const name = document.createElement('div');
-  name.className = info.kind === 'audio' ? 'media-workspace-title' : 'media-name';
+  name.className = info.kind === 'audio' ? 'media-workspace-title' : 'media-workspace-title media-name';
   name.textContent = intake.filename;
 
   let workspaceTime = null;
   let audioWorkspace = null;
+  let videoWorkspace = null;
   let waveformSurface = null;
   let audioModes = null;
+  let videoModes = null;
   let modeTabs = null;
   let modePanelWrap = null;
   const audioModeStates = new Map();
+  const videoModeStates = new Map();
   let coverEl = null;
+  let videoWorkspaceBody = null;
+  let subtitleLoader = null;
   if (info.kind === 'audio') {
     workspaceTime = document.createElement('div');
     workspaceTime.className = 'media-workspace-time';
@@ -132,6 +137,35 @@ export async function render(intake, ctx = {}) {
     modePanelWrap.className = 'media-mode-panels';
     audioModes.append(modeTabs, modePanelWrap);
   }
+  if (info.kind === 'video') {
+    workspaceTime = document.createElement('div');
+    workspaceTime.className = 'media-workspace-time';
+    workspaceTime.textContent = '0:00 / --:--';
+
+    const workspaceHead = document.createElement('div');
+    workspaceHead.className = 'media-workspace-head';
+    workspaceHead.append(name, workspaceTime);
+
+    const mediaSurface = document.createElement('div');
+    mediaSurface.className = 'media-video-surface';
+    mediaSurface.append(el);
+
+    videoWorkspaceBody = document.createElement('div');
+    videoWorkspaceBody.className = 'media-workspace-body';
+    videoWorkspaceBody.append(mediaSurface);
+
+    videoWorkspace = document.createElement('div');
+    videoWorkspace.className = 'media-workspace media-video-workspace';
+    videoWorkspace.append(workspaceHead, videoWorkspaceBody);
+
+    videoModes = document.createElement('div');
+    videoModes.className = 'media-video-modes';
+    modeTabs = document.createElement('div');
+    modeTabs.className = 'media-mode-tabs';
+    modePanelWrap = document.createElement('div');
+    modePanelWrap.className = 'media-mode-panels';
+    videoModes.append(modeTabs, modePanelWrap);
+  }
 
   // Resolve ffmpeg setting early so video controls and the pill can reference it.
   const enableFfmpeg = !!ctx.settings?.enableFfmpeg;
@@ -161,7 +195,6 @@ export async function render(intake, ctx = {}) {
   if (info.kind === 'video') {
     const { buildVideoStudio } = await import('./video-studio.js');
     videoStudio = buildVideoStudio(el);
-    tools.appendChild(videoStudio.controls);
   }
 
   // ── FFmpeg status pill ──
@@ -306,7 +339,6 @@ export async function render(intake, ctx = {}) {
     exportRevoke = exp.revoke;
   }
 
-  let timelineWrap = null;
   const panels = [];      // toggle-panel controllers to tear down on revoke
 
   const setWorkspaceTime = () => {
@@ -316,26 +348,28 @@ export async function render(intake, ctx = {}) {
     workspaceTime.textContent = `${now} / ${dur}`;
   };
 
-  // ── P6: Video timeline (2-lane) + transitions + visual trim ──
-  // Video-only, opt-in (ffmpeg). CPU-lazy: mounts on first toggle; no ffmpeg/thumbnail
-  // work until a transition / "Thumbnails" runs. Closing the panel tears it down.
-  if (info.kind === 'video' && enableFfmpeg) {
-    const tp = makeTogglePanel({
-      label: 'Video timeline', panelClass: 'media-tl-panel',
-      mount: async (panel) => {
-        const { mountTimeline } = await import('./timeline.js');
-        return mountTimeline(panel, intake, el, (newUrl) => {
-          if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
-          transcodedUrl = newUrl; el.src = newUrl; el.load();
-          el.play().catch(() => { /* autoplay blocked */ });
-        });
-      },
-    });
-    timelineWrap = tp.wrap; panels.push(tp);
+  const releaseModeController = (entry) => {
+    const controller = entry?.controller;
+    if (!controller) return;
+    const idx = panels.indexOf(controller);
+    if (idx >= 0) panels.splice(idx, 1);
+  };
+
+  let subCtl = null;
+  let coverRevoke = null;
+  // ── P7: Tier-1 playback quick wins (no lib, live only) ──
+  // Speed presets (both); PiP + frame-step (video); cover art + chapter list from ID3.
+  const extras = document.createElement('div');
+  extras.className = 'media-extras';
+  extras.appendChild(buildSpeedPresets(el));
+  if (info.kind === 'video') {
+    extras.appendChild(buildVideoExtras(el));
+    subCtl = mountSubtitles(host, el);
   }
 
   let audioListenMode = null;
   let activeAudioMode = null;
+  let activeVideoMode = null;
   if (info.kind === 'audio') {
     const { mountWaveform } = await import('./waveform.js');
     const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
@@ -369,13 +403,6 @@ export async function render(intake, ctx = {}) {
       audioModeStates.set(id, entry);
       tab.addEventListener('click', () => { void setAudioMode(id); });
       return entry;
-    };
-
-    const releaseModeController = (entry) => {
-      const controller = entry?.controller;
-      if (!controller) return;
-      const idx = panels.indexOf(controller);
-      if (idx >= 0) panels.splice(idx, 1);
     };
 
     const unmountAudioMode = (entry) => {
@@ -588,17 +615,168 @@ export async function render(intake, ctx = {}) {
     void setAudioMode('listen');
   }
 
-  // ── P7: Tier-1 playback quick wins (no lib, live only) ──
-  // Speed presets (both); PiP + frame-step (video); cover art + chapter list from ID3.
-  const extras = document.createElement('div');
-  extras.className = 'media-extras';
-  extras.appendChild(buildSpeedPresets(el));
-  let subCtl = null, coverRevoke = null;
   if (info.kind === 'video') {
-    extras.appendChild(buildVideoExtras(el));
-    subCtl = mountSubtitles(host, el);
-    extras.appendChild(buildSubtitleLoader(subCtl));
+    const registerVideoMode = (id, label, mount) => {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'media-mode-tab';
+      tab.textContent = label;
+      tab.dataset.mode = id;
+
+      const panel = document.createElement('div');
+      panel.className = 'media-mode-panel';
+      panel.dataset.mode = id;
+      panel.hidden = true;
+
+      const entry = {
+        id,
+        tab,
+        panel,
+        mount,
+        mounted: false,
+        controller: null,
+        mountInProgress: false,
+        mountToken: 0,
+      };
+
+      modeTabs.append(tab);
+      modePanelWrap.append(panel);
+      videoModeStates.set(id, entry);
+      tab.addEventListener('click', () => { void setVideoMode(id); });
+      return entry;
+    };
+
+    const unmountVideoMode = (entry) => {
+      if (!entry || entry.id === 'watch' || entry.id === 'export') return;
+      if (!entry.mounted) return;
+      const previous = entry.controller;
+      releaseModeController(entry);
+      if (previous && typeof previous.destroy === 'function') previous.destroy();
+      entry.controller = null;
+      entry.mounted = false;
+      entry.mountInProgress = false;
+      entry.panel.innerHTML = '';
+      entry.panel.hidden = true;
+    };
+
+    const setVideoMode = async (id) => {
+      const next = videoModeStates.get(id);
+      if (!next) return;
+      activeVideoMode = id;
+      for (const s of videoModeStates.values()) {
+        const on = s.id === id;
+        s.tab.classList.toggle('active', on);
+        s.panel.hidden = !on;
+        if (!on && s.id !== 'watch' && s.id !== 'export' && s.mounted) {
+          unmountVideoMode(s);
+        }
+      }
+
+      if (next.mount && !next.mounted && !next.mountInProgress) {
+        next.mountInProgress = true;
+        const mountToken = ++next.mountToken;
+        try {
+          const ctl = await next.mount(next.panel);
+          if (next.mountToken !== mountToken || activeVideoMode !== id) {
+            next.panel.innerHTML = '';
+            next.panel.hidden = true;
+            if (ctl && typeof ctl.destroy === 'function') ctl.destroy();
+            next.controller = null;
+            next.mounted = false;
+            next.mountInProgress = false;
+            releaseModeController(next);
+            return;
+          }
+          if (ctl) {
+            if (!panels.includes(ctl)) panels.push(ctl);
+            next.controller = ctl;
+          }
+          next.mounted = true;
+        } finally {
+          next.mountInProgress = false;
+        }
+      }
+      if (!next.mount) next.mounted = true;
+    };
+
+    const buildFfNotEnabledHint = (message = 'Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> '
+      + 'to unlock this feature.') => {
+      const note = document.createElement('div');
+      note.className = 'media-ed-note';
+      note.innerHTML = message;
+      return note;
+    };
+
+    const videoWatchMode = registerVideoMode('watch', 'Watch');
+    registerVideoMode('adjust', 'Adjust', async (panel) => {
+      if (videoStudio) {
+        panel.append(videoStudio.controls);
+        panel.append(videoStudio.mixer);
+        return {
+          destroy() {
+            videoStudio?.destroy();
+          },
+        };
+      }
+      return null;
+    });
+    registerVideoMode('timeline', 'Timeline', async (panel) => {
+      if (!enableFfmpeg) {
+        panel.append(buildFfNotEnabledHint(
+          'Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> to unlock the timeline tools.',
+        ));
+        return null;
+      }
+      const timelineToggle = makeTogglePanel({
+        label: 'Video timeline',
+        panelClass: 'media-tl-panel',
+        mount: async (innerPanel) => {
+          const { mountTimeline } = await import('./timeline.js');
+          return mountTimeline(innerPanel, intake, el, (newUrl) => {
+            if (transcodedUrl) URL.revokeObjectURL(transcodedUrl);
+            transcodedUrl = newUrl;
+            el.src = newUrl;
+            el.load();
+            el.play().catch(() => { /* autoplay blocked */ });
+          });
+        },
+      });
+      panel.append(timelineToggle.wrap);
+      return timelineToggle;
+    });
+    registerVideoMode('subtitles', 'Subtitles', async (panel) => {
+      if (!subtitleLoader) {
+        if (!subCtl) subCtl = mountSubtitles(host, el);
+        if (subCtl) {
+          subtitleLoader = buildSubtitleLoader(subCtl);
+        }
+      }
+      if (subtitleLoader) {
+        panel.append(subtitleLoader);
+      } else {
+        panel.append(buildFfNotEnabledHint('Subtitle loader unavailable for this environment.'));
+      }
+      return null;
+    });
+    registerVideoMode('export', 'Export', async (panel) => {
+      if (!enableFfmpeg || !exportPanel) {
+        panel.append(buildFfNotEnabledHint('Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> to unlock video export and fades.'));
+        return null;
+      }
+      panel.append(exportPanel);
+      if (editorPanel) panel.append(editorPanel);
+      return null;
+    });
+
+    if (videoWatchMode) {
+      videoWatchMode.panel.append(tools);
+      videoWatchMode.panel.append(extras);
+      videoWatchMode.panel.append(hintPanel);
+    }
+
+    void setVideoMode('watch');
   }
+
   // Keyboard shortcuts scoped to the (focusable) host; removed on teardown.
   host.tabIndex = 0;
   const detachKeys = attachShortcuts(host, el, { kind: info.kind });
@@ -619,13 +797,12 @@ export async function render(intake, ctx = {}) {
     if (chapterList && audioListenMode) audioListenMode.panel.append(chapterList);
     host.append(audioWorkspace, audioModes);
   } else {
-    host.append(el, name, tools, extras);
+    host.append(videoWorkspace, videoModes);
   }
-  if (exportPanel && info.kind === 'video') host.append(exportPanel);
-  if (videoStudio) host.append(videoStudio.mixer);
-  if (timelineWrap) host.append(timelineWrap);
-  host.append(hintPanel);
-  if (editorPanel) host.append(editorPanel);
+  if (info.kind !== 'video') {
+    host.append(hintPanel);
+    if (editorPanel) host.append(editorPanel);
+  }
 
   // ── Resume position ──
   const saved = loadState(intake);

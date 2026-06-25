@@ -1270,7 +1270,7 @@ export async function run(ctx) {
     ]);
     const wavName = wavDownload.suggestedFilename();
     if (/\.wav$/.test(wavName)) pass('audio mixer: mixdown → WAV downloaded (' + wavName + ')'); else fail('mixer WAV download name: ' + wavName);
-    const desktopViewport = page.viewportSize();
+    const audioMixDesktopViewport = page.viewportSize();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(origin, { waitUntil: 'load' });
     await openExample('Sample.wav');
@@ -1278,8 +1278,8 @@ export async function run(ctx) {
     await page.click('#previewHost .media-mode-tab[data-mode="mix"]');
     await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', { timeout: 12000 });
     await assertMixViewport('mobile');
-    if (desktopViewport) {
-      await page.setViewportSize(desktopViewport);
+    if (audioMixDesktopViewport) {
+      await page.setViewportSize(audioMixDesktopViewport);
       await page.goto(origin, { waitUntil: 'load' });
       await openExample('Sample.wav');
       await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
@@ -1375,25 +1375,97 @@ export async function run(ctx) {
   await page.evaluate(() => window.__fv.openExampleByLabel('Sample.avi'));
   await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
 
+  // ── Video task-mode shell + default mode ──
+  const videoModeNames = await page.$$eval('#previewHost .media-mode-tab', (els) => els.map((e) => e.textContent.trim()));
+  if (videoModeNames.join('|') === 'Watch|Adjust|Timeline|Subtitles|Export') pass('video shell has ordered task tabs: Watch/Adjust/Timeline/Subtitles/Export');
+  else fail('video tabs order: ' + videoModeNames.join('|'));
+  const videoWatchActive = await page.$eval('#previewHost .media-mode-tab[data-mode="watch"]', (el) => el.classList.contains('active'))
+    .catch(() => false);
+  if (videoWatchActive) pass('video default mode is Watch'); else fail('video default mode tab is not Watch');
+
+  const assertVideoTopViewport = async (label) => {
+    const geometry = await page.$eval('#previewHost .media-doc.media-video', (host) => {
+      const workspace = host.querySelector('.media-video-workspace');
+      const modeTabs = host.querySelector('.media-mode-tabs');
+      const media = host.querySelector('.media-video-surface video.media-view');
+      const title = host.querySelector('.media-workspace-title');
+      const time = host.querySelector('.media-workspace-time');
+      const watchPanel = host.querySelector('.media-mode-panel[data-mode="watch"]');
+      const panelVisible = watchPanel && getComputedStyle(watchPanel).display !== 'none' && !watchPanel.hidden;
+      if (!workspace || !modeTabs || !media || !title || !time || !watchPanel) return null;
+      const hostRect = host.getBoundingClientRect();
+      const workspaceRect = workspace.getBoundingClientRect();
+      const mediaRect = media.getBoundingClientRect();
+      const docEl = document.documentElement;
+      return {
+        topInset: Math.round(workspaceRect.top - hostRect.top),
+        viewportW: window.innerWidth,
+        viewportH: window.innerHeight,
+        hostLeft: Math.round(hostRect.left),
+        hostRight: Math.round(hostRect.right),
+        workspaceLeft: Math.round(workspaceRect.left),
+        workspaceRight: Math.round(workspaceRect.right),
+        overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
+        titleVisible: title.textContent.trim().length > 0 && title.getBoundingClientRect().height > 0,
+        timeVisible: time.textContent.trim().length > 0 && time.getBoundingClientRect().height > 0,
+        mediaVisible: mediaRect.height > 0 && getComputedStyle(media).display !== 'none',
+        modeTabsVisible: modeTabs.getBoundingClientRect().height > 0 && getComputedStyle(modeTabs).display !== 'none',
+        watchModeVisible: panelVisible,
+      };
+    });
+    if (!geometry) return fail('video first-viewport geometry unavailable (' + label + ')');
+    const topLimit = Math.min(72, Math.floor(geometry.viewportH * 0.2));
+    if (geometry.titleVisible && geometry.timeVisible && geometry.mediaVisible && geometry.modeTabsVisible && geometry.watchModeVisible)
+      pass('video first-viewport core surfaces are visible (' + label + ')');
+    else fail('video first-viewport core surface missing (' + label + '): ' + JSON.stringify({
+      titleVisible: geometry.titleVisible,
+      timeVisible: geometry.timeVisible,
+      mediaVisible: geometry.mediaVisible,
+      modeTabsVisible: geometry.modeTabsVisible,
+      watchModeVisible: geometry.watchModeVisible,
+    }));
+    if (geometry.topInset >= 0 && geometry.topInset <= topLimit)
+      pass('video first-viewport begins near top (workspace inset ' + geometry.topInset + 'px <= ' + topLimit + 'px)');
+    else fail('video first viewport top inset too large (' + geometry.topInset + 'px > ' + topLimit + 'px) for ' + label);
+    if (geometry.overflowX === 0 && geometry.workspaceLeft >= geometry.hostLeft - 1 && geometry.workspaceRight <= geometry.hostRight + 1)
+      pass('video first-viewport has no horizontal overflow (' + label + ')');
+    else fail('video first-viewport overflow/width issue (' + label + '): ' + JSON.stringify(geometry));
+  };
+  await assertVideoTopViewport('desktop');
+  const videoDesktopViewport = page.viewportSize();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('Sample.avi');
+  await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
+  await assertVideoTopViewport('mobile');
+  if (videoDesktopViewport) {
+    await page.setViewportSize(videoDesktopViewport);
+    await page.goto(origin, { waitUntil: 'load' });
+    await openExample('Sample.avi');
+    await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
+  }
+
   // ── Video studio ── the video branch builds the extended filter panel + an audio
   // mixer (the movie's audio routed through the shared EQ/spectrum graph). These are
   // built regardless of native playability, so they're present even for the AVI.
+  await page.click('#previewHost .media-mode-tab[data-mode="adjust"]');
+  await page.waitForSelector('#previewHost .media-mode-panel[data-mode="adjust"]:not([hidden])', { timeout: 5000 });
   const vidFilterSliders = await page.$$eval(
-    '#previewHost .media-filter-panel .media-filter-row input[type="range"]',
+    '#previewHost .media-mode-panel[data-mode="adjust"] .media-filter-panel .media-filter-row input[type="range"]',
     (els) => els.map((e) => e.dataset.filter),
   );
   if (['brightness', 'contrast', 'saturate', 'hue', 'blur', 'grayscale', 'invert'].every((f) => vidFilterSliders.includes(f)))
     pass('video studio: extended CSS filters present (incl. hue/blur/grayscale/invert)');
   else fail('video filters: ' + vidFilterSliders.join(','));
   // Audio mixer toggle: opens a Spectrum & EQ panel routed through the video's audio.
-  const mixerBtn = await page.$('#previewHost .media-vid-mixer .media-wv-toggle');
+  const mixerBtn = await page.$('#previewHost .media-mode-panel[data-mode="adjust"] .media-vid-mixer .media-wv-toggle');
   if (mixerBtn) {
     const mixerText = await mixerBtn.evaluate((e) => e.textContent);
     if (/mixer/i.test(mixerText)) pass('video studio: audio mixer toggle present'); else fail('mixer btn: ' + mixerText);
     await mixerBtn.click();
-    await page.waitForSelector('#previewHost .media-vid-mixer .media-sp-panel:not([hidden])', { timeout: 5000 });
-    const mixerSliders = await page.$$('#previewHost .media-vid-mixer .sp-eq-slider');
-    const mixerLegend = await page.$('#previewHost .media-vid-mixer .sp-legend');
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="adjust"] .media-vid-mixer .media-sp-panel:not([hidden])', { timeout: 5000 });
+    const mixerSliders = await page.$$('#previewHost .media-mode-panel[data-mode="adjust"] .media-vid-mixer .sp-eq-slider');
+    const mixerLegend = await page.$('#previewHost .media-mode-panel[data-mode="adjust"] .media-vid-mixer .sp-legend');
     if (mixerSliders.length === 9) pass('video studio: audio mixer mounts the 9-band EQ on the movie audio'); else fail('mixer sliders: ' + mixerSliders.length);
     if (mixerLegend) pass('video studio: audio mixer shows the overlaid-spectrum legend'); else fail('mixer legend missing');
   } else fail('video studio: audio mixer toggle not found');
@@ -1413,18 +1485,23 @@ export async function run(ctx) {
   }));
   if (pipState.btn === pipState.enabled) pass('P7 video: PiP button feature-gated (present iff supported)'); else fail('pip gate mismatch: ' + JSON.stringify(pipState));
   // Subtitle sidecar loader mounts; loading an SRT through it adds timed overlay cues.
-  const subLoader = await page.$('#previewHost .media-sub-loader');
+  await page.click('#previewHost .media-mode-tab[data-mode="subtitles"]');
+  await page.waitForSelector('#previewHost .media-mode-panel[data-mode="subtitles"]:not([hidden])', { timeout: 5000 });
+  const subLoader = await page.$('#previewHost .media-mode-panel[data-mode="subtitles"] .media-sub-loader');
   if (subLoader) pass('P7 video: subtitle (.srt/.vtt) drop/browse control mounts'); else fail('subtitle loader missing');
   const srt = '1\n00:00:00,000 --> 00:00:02,000\nHello world\n\n2\n00:00:02,500 --> 00:00:04,000\nSecond line';
   const subLoaded = await page.evaluate(async (text) => {
     const file = new File([text], 'cap.srt', { type: 'application/x-subrip' });
-    const input = document.querySelector('#previewHost .media-sub-loader input[type=file]');
+    const input = document.querySelector('#previewHost .media-mode-panel[data-mode="subtitles"] .media-sub-loader input[type=file]');
     const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
     input.dispatchEvent(new Event('change', { bubbles: true }));
     await new Promise((r) => setTimeout(r, 100));
-    return document.querySelector('#previewHost .media-sub-note')?.textContent || '';
+    return document.querySelector('#previewHost .media-mode-panel[data-mode="subtitles"] .media-sub-note')?.textContent || '';
   }, srt);
   if (/2 cues/.test(subLoaded)) pass('P7 video: SRT sidecar parses to 2 cues + mounts overlay'); else fail('subtitle load note: ' + subLoaded);
+
+  // Switch back to Watch after Subtitle mode assertions.
+  await page.click('#previewHost .media-mode-tab[data-mode="watch"]');
 
   // PURE SRT/VTT parser unit check (no DOM) — 2-cue SRT → correct timings + text.
   const parsed = await page.evaluate(async () => {
@@ -1694,58 +1771,77 @@ export async function run(ctx) {
   // ── P3: video fade — the export panel on a video reads "video" and renders fade-to-black.
   await page.evaluate(() => window.__fv.openExampleByLabel('Sample.avi'));
   await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
-  const vidExportHeader = await page.$eval('#previewHost .media-export-panel .media-ed-header', (e) => e.textContent).catch(() => '');
+  await page.click('#previewHost .media-mode-tab[data-mode="export"]');
+  await page.waitForSelector('#previewHost .media-mode-panel[data-mode="export"] .media-export-panel', { timeout: 8000 });
+  const vidExportHeader = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-panel .media-ed-header',
+    (e) => e.textContent).catch(() => '');
   if (/Export & Fades \(video\)/i.test(vidExportHeader)) pass('P3: video export panel offers fade-to-black'); else fail('video export header: ' + vidExportHeader);
-  const vidFadeIn = await page.$('#previewHost .media-export-panel .media-ed-fade-in');
+  const vidFadeIn = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-panel .media-ed-fade-in');
   if (vidFadeIn) pass('P3: video fade-to/from-black duration controls present'); else fail('video fade controls missing');
 
   // ── P6: Video timeline (2-lane) + transitions + visual trim ───────────────────
   // Built for video when ffmpeg is enabled; CPU-lazy (no timeline DOM until opened).
-  const tlToggle = await page.evaluateHandle(() =>
-    [...document.querySelectorAll('#previewHost .media-wv-toggle')].find((b) => /Video timeline/.test(b.textContent)) || null);
+  const tlModeSel = '#previewHost .media-mode-panel[data-mode="timeline"]';
+  await page.click('#previewHost .media-mode-tab[data-mode="timeline"]');
+  await page.waitForSelector(tlModeSel + ':not([hidden])', { timeout: 5000 });
+  const tlToggle = await page.evaluateHandle((sel) =>
+    [...document.querySelectorAll(sel + ' .media-wv-toggle')].find((b) => /Video timeline/.test(b.textContent)) || null, tlModeSel);
   const tlToggleExists = await tlToggle.evaluate((e) => !!e);
   if (tlToggleExists) {
     pass('P6: video timeline toggle button present');
-    const preTl = await page.$('#previewHost .tl-wrap');
+    const preTl = await page.$(tlModeSel + ' .tl-wrap');
     if (!preTl) pass('P6: video timeline CPU-lazy (no DOM until opened)'); else fail('timeline mounted before open');
     await tlToggle.asElement().click();
-    await page.waitForSelector('#previewHost .tl-wrap', { timeout: 12000 });
+    await page.waitForSelector(tlModeSel + ' .tl-wrap', { timeout: 12000 });
     // 2 lanes: video lane (clip A) + second/music lane.
-    const lanes = await page.$$eval('#previewHost .tl-lane', (els) => els.length);
+    const lanes = await page.$$eval(tlModeSel + ' .tl-lane', (els) => els.length);
     if (lanes === 2) pass('P6: timeline mounts 2 lanes (video + second/music)'); else fail('timeline lanes: ' + lanes);
     // Thumbnail strip with a load-on-demand button + trim handles (in/out).
-    const tlBits = await page.evaluate(() => ({
-      strip: !!document.querySelector('#previewHost .tl-strip'),
-      thumbBtn: !!document.querySelector('#previewHost .tl-thumb-btn'),
-      handleIn: !!document.querySelector('#previewHost .tl-handle-in'),
-      handleOut: !!document.querySelector('#previewHost .tl-handle-out'),
-      drop: !!document.querySelector('#previewHost .tl-lane--b .media-ed-drop-zone'),
-    }));
+    const tlBits = await page.evaluate((sel) => {
+      const root = document.querySelector(sel);
+      if (!root) return null;
+      return {
+        strip: !!root.querySelector('.tl-strip'),
+        thumbBtn: !!root.querySelector('.tl-thumb-btn'),
+        handleIn: !!root.querySelector('.tl-handle-in'),
+        handleOut: !!root.querySelector('.tl-handle-out'),
+        drop: !!root.querySelector('.tl-lane--b .media-ed-drop-zone'),
+      };
+    }, tlModeSel);
+    if (!tlBits) fail('P6: cannot find timeline mode panel root');
     if (tlBits.strip && tlBits.thumbBtn) pass('P6: thumbnail strip + on-demand thumbnail button present'); else fail('thumb strip: ' + JSON.stringify(tlBits));
     if (tlBits.handleIn && tlBits.handleOut) pass('P6: visual trim handles (in/out) present'); else fail('trim handles: ' + JSON.stringify(tlBits));
     if (tlBits.drop) pass('P6: second-clip / music drop zone present'); else fail('timeline drop zone missing');
     // Transition controls: dissolve/xfade selector + length + the four action buttons.
-    const transOpts = await page.$$eval('#previewHost .tl-trans-sel option', (els) => els.map((e) => e.value));
+    const transOpts = await page.$$eval(tlModeSel + ' .tl-trans-sel option', (els) => els.map((e) => e.value));
     if (transOpts.includes('fade') && transOpts.includes('fadeblack') && transOpts.includes('wipeleft')) pass('P6: transition selector offers fade/fadeblack/wipe'); else fail('transition opts: ' + transOpts.join(','));
-    const acts = await page.evaluate(() => ({
-      trim: !!document.querySelector('#previewHost .tl-act-trim'),
-      fade: !!document.querySelector('#previewHost .tl-act-fade'),
-      xfade: !!document.querySelector('#previewHost .tl-act-xfade'),
-      across: !!document.querySelector('#previewHost .tl-act-across'),
-      mux: !!document.querySelector('#previewHost .tl-act-mux'),
-    }));
-    if (acts.trim && acts.fade && acts.xfade && acts.across && acts.mux)
+    const acts = await page.evaluate((sel) => {
+      const root = document.querySelector(sel);
+      if (!root) return null;
+      return {
+        trim: !!root.querySelector('.tl-act-trim'),
+        fade: !!root.querySelector('.tl-act-fade'),
+        xfade: !!root.querySelector('.tl-act-xfade'),
+        across: !!root.querySelector('.tl-act-across'),
+        mux: !!root.querySelector('.tl-act-mux'),
+      };
+    }, tlModeSel);
+    if (acts && acts.trim && acts.fade && acts.xfade && acts.across && acts.mux)
       pass('P6: trim + fade/xfade/acrossfade/mux action buttons present'); else fail('timeline actions: ' + JSON.stringify(acts));
-    const trimBtnText = await page.$eval('#previewHost .tl-act-trim', (e) => e.textContent);
+    const trimBtnText = await page.$eval(tlModeSel + ' .tl-act-trim', (e) => e.textContent);
     if (trimBtnText.includes('Trim selected range')) pass('P6: trim action has visible label'); else fail('trim button text: ' + trimBtnText);
     // Cross-clip actions disabled until a second clip is dropped.
-    const xfadeDisabled = await page.$eval('#previewHost .tl-act-xfade', (e) => e.disabled);
+    const xfadeDisabled = await page.$eval(tlModeSel + ' .tl-act-xfade', (e) => e.disabled);
     if (xfadeDisabled) pass('P6: dissolve disabled until a 2nd clip is added'); else fail('xfade not gated on 2nd clip');
     // Close → torn down.
     await tlToggle.asElement().click();
-    await page.waitForSelector('#previewHost .tl-wrap', { state: 'detached', timeout: 4000 });
+    await page.waitForSelector(tlModeSel + ' .tl-wrap', { state: 'detached', timeout: 4000 });
     pass('P6: video timeline panel collapses + tears down');
-  } else fail('P6 video timeline toggle not found');
+    await page.click('#previewHost .media-mode-tab[data-mode="watch"]');
+  } else {
+    fail('P6 video timeline toggle not found');
+  }
+  
 
   // PURE arg-builder unit checks (no ffmpeg load): xfade offset math + acrossfade/mux args.
   const tlArgs = await page.evaluate(async () => {
