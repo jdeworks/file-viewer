@@ -127,6 +127,7 @@ function toCallback(opts) {
 export async function mountWaveform(container, file, options = {}) {
   container.textContent = '';
   const onRegionSelect = toCallback(options);
+  const chapters = Array.isArray(options.chapters) ? options.chapters : [];
   const canvas = document.createElement('canvas');
   canvas.className = 'media-wv-canvas';
   canvas.height = 120;
@@ -143,6 +144,22 @@ export async function mountWaveform(container, file, options = {}) {
   region.hidden = true;
   container.appendChild(region);
 
+  const markerLayer = document.createElement('div');
+  markerLayer.className = 'media-wv-chapter-layer';
+  container.appendChild(markerLayer);
+  const markers = chapters.map((chapter, index) => {
+    const marker = document.createElement('div');
+    marker.className = 'media-wv-chapter-marker';
+    marker.title = chapter.title || `Chapter ${index + 1}`;
+    marker.dataset.chapter = String(index + 1);
+    const label = document.createElement('span');
+    label.className = 'media-wv-chapter-label';
+    label.textContent = marker.title;
+    marker.appendChild(label);
+    markerLayer.appendChild(marker);
+    return { marker, chapter };
+  });
+
   let regionPx = null;
   let startPx = 0;
   let selecting = false;
@@ -150,6 +167,30 @@ export async function mountWaveform(container, file, options = {}) {
 
   const controller = await drawWaveform(canvas, file, { ownContext: true });
   const getAudioEl = () => container.closest('.media-doc')?.querySelector('audio.media-view');
+
+  const updateMarkers = () => {
+    if (!markers.length) return;
+    const mediaDuration = Number(getAudioEl()?.duration);
+    const chapterDuration = Math.max(...markers.map(({ chapter }) => {
+      const end = Number(chapter.end);
+      const start = Number(chapter.start);
+      if (Number.isFinite(end)) return end;
+      return Number.isFinite(start) ? start : 0;
+    }));
+    const duration = Number.isFinite(mediaDuration) && mediaDuration > 0 ? mediaDuration : chapterDuration;
+    const width = canvas.clientWidth || markerLayer.clientWidth || 0;
+    const ready = Number.isFinite(duration) && duration > 0 && width > 0;
+    markerLayer.hidden = false;
+    if (!ready) {
+      const step = markers.length > 1 ? 100 / Math.max(1, markers.length - 1) : 0;
+      markers.forEach(({ marker }, index) => { marker.style.left = `${Math.min(100, index * step)}%`; });
+      return;
+    }
+    markers.forEach(({ marker, chapter }) => {
+      const start = clamp(Number(chapter.start), 0, duration);
+      marker.style.left = `${(start / duration) * 100}%`;
+    });
+  };
 
   const updateSelectionStatus = (start, end, duration) => {
     if (!Number.isFinite(start) || !Number.isFinite(end) || !Number.isFinite(duration) || duration <= 0) {
@@ -256,6 +297,11 @@ export async function mountWaveform(container, file, options = {}) {
   }
 
   if (controller) controller.update(getAudioEl());
+  const audioEl = getAudioEl();
+  audioEl?.addEventListener('loadedmetadata', updateMarkers);
+  audioEl?.addEventListener('durationchange', updateMarkers);
+  window.addEventListener('resize', updateMarkers);
+  updateMarkers();
   return {
     destroy() {
       if (onRegionSelect) {
@@ -267,10 +313,14 @@ export async function mountWaveform(container, file, options = {}) {
         clearRegion();
         status.hidden = true;
       }
+      audioEl?.removeEventListener('loadedmetadata', updateMarkers);
+      audioEl?.removeEventListener('durationchange', updateMarkers);
+      window.removeEventListener('resize', updateMarkers);
       controller?.destroy();
       canvas.remove();
       status.remove();
       region.remove();
+      markerLayer.remove();
     },
   };
 }

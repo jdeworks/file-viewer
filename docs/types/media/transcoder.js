@@ -14,11 +14,11 @@ import { loadGlobal, vendor } from '../../core/script-loader.js';
 // PURE filter-string builders live in audio-filters.js (extracted to keep this
 // file under the LOC cap after P4 dynamics). Re-exported so existing importers
 // (studio-export.js, tests) keep importing them from transcoder.js unchanged.
-import { buildAudioFilterChain, audioEncodeArgs, buildAcxExportArgs } from './audio-filters.js';
+import { buildAudioFilterChain, audioEncodeArgs, buildAcxExportArgs, buildAcxChapterExportArgs } from './audio-filters.js';
 export { buildAudioFilterChain, audioEncodeArgs } from './audio-filters.js';
 // P8c/P8e — PURE ACX arg builders (silence-cut, room-tone pad, one-click compliant
 // export). Re-exported so the export panel + tests import them from here unchanged.
-export { buildAcxFilterChain, buildAcxExportArgs, silenceRemoveFilter, roomTonePadFilter } from './audio-filters.js';
+export { buildAcxFilterChain, buildAcxExportArgs, buildAcxChapterExportArgs, silenceRemoveFilter, roomTonePadFilter } from './audio-filters.js';
 // P6 — PURE timeline transition arg builders (xfade / acrossfade / mux music). Kept in
 // video-filters.js so they stay unit-testable and this file stays under the LOC cap.
 import { buildXfadeArgs, buildAcrossfadeArgs, buildMuxMusicArgs } from './video-filters.js';
@@ -510,5 +510,32 @@ export async function runOperation(ff, opId, params, intake) {
   } finally {
     try { ff.FS('unlink', inputName); } catch { /* ignore */ }
     if (outputName) { try { ff.FS('unlink', outputName); } catch { /* ignore */ } }
+  }
+}
+
+export async function runAcxChapterExports(ff, intake, chapters, options = {}) {
+  const srcName = intake.filename || 'input';
+  const srcExt  = (srcName.includes('.') ? srcName.split('.').pop() : 'bin').toLowerCase();
+  const inputName = 'chapter_input.' + srcExt;
+  const data = await readIntake(intake);
+  ff.FS('writeFile', inputName, data);
+
+  const files = [];
+  try {
+    for (let i = 0; i < chapters.length; i += 1) {
+      const outputName = 'chapter_' + String(i + 1).padStart(3, '0') + '.mp3';
+      const args = buildAcxChapterExportArgs(inputName, outputName, chapters[i], options);
+      try {
+        if (typeof options.onChapterStart === 'function') options.onChapterStart(i, chapters[i]);
+        await ff.run(...args);
+        const result = ff.FS('readFile', outputName);
+        files.push({ index: i, bytes: new Uint8Array(result), size: result.byteLength });
+      } finally {
+        try { ff.FS('unlink', outputName); } catch { /* ignore */ }
+      }
+    }
+    return files;
+  } finally {
+    try { ff.FS('unlink', inputName); } catch { /* ignore */ }
   }
 }

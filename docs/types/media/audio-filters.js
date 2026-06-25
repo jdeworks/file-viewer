@@ -378,3 +378,19 @@ export function buildAcxExportArgs(inputName, outputName, opts = {}) {
     outputName,
   ];
 }
+
+export function buildAcxChapterExportArgs(inputName, outputName, chapter, opts = {}) {
+  const start = Number(chapter?.start);
+  const end = Number(chapter?.end);
+  if (!isFinite(start) || start < 0 || !isFinite(end) || end <= start) {
+    throw new Error('Chapter export requires a finite start and end.');
+  }
+  return [
+    '-ss', String(round(start)), '-t', String(round(end - start)),
+    '-i', inputName, '-vn',
+    '-af', buildAcxFilterChain(opts),
+    '-ac', '1', '-ar', '44100',
+    '-c:a', 'libmp3lame', '-b:a', '192k',
+    outputName,
+  ];
+}

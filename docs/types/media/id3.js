@@ -64,7 +64,7 @@ function parseApic(frame, v22) {
 }
 
 // CHAP (v2.3/2.4 only): element-id\0, start/end ms (4 bytes BE each), start/end byte offsets,
-// then optional sub-frames (a TIT2 title is the useful one). Returns { start, title } or null.
+// then optional sub-frames (a TIT2 title is the useful one). Returns { start, end, title } or null.
 function parseChap(frame) {
   let o = 0;
   while (o < frame.length && frame[o] !== 0) o++;
@@ -72,6 +72,7 @@ function parseChap(frame) {
   o += 1;                                        // skip element-id + terminator
   if (o + 16 > frame.length) return null;
   const startMs = u32(frame, o);
+  const endMs = u32(frame, o + 4);
   o += 16;                                        // start/end time + start/end offset
   let title = '';
   while (o + 10 <= frame.length) {                // embedded sub-frames (10-byte headers)
@@ -83,7 +84,9 @@ function parseChap(frame) {
     if (id === 'TIT2') title = decodeText(frame.subarray(o, o + size));
     o += size;
   }
-  return { start: startMs / 1000, title };
+  const chapter = { start: startMs / 1000, title };
+  if (endMs > startMs) chapter.end = endMs / 1000;
+  return chapter;
 }
 
 export function parseId3(bytes) {

@@ -15,6 +15,13 @@ export async function run(ctx) {
   const { browser, page, origin, pass, fail, openExample } = ctx;
 
   // ── Audio/Video (media) ── native player rendered in the pane via a blob: URL.
+  await page.addInitScript(() => {
+    window.__fvMediaTestChapters = [
+      { start: 0, end: 0.2, title: 'Prologue' },
+      { start: 0.2, end: 0.4, title: 'Chapter One' },
+      { start: 0.4, end: 0.6, title: 'Chapter Two' },
+    ];
+  });
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.wav');
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
@@ -62,6 +69,15 @@ export async function run(ctx) {
   if (waveformDrawn.width > 0 && waveformDrawn.height > 0 && waveformDrawn.painted > 20)
     pass('audio waveform: visible workspace canvas paints by default');
   else fail('waveform canvas: ' + JSON.stringify(waveformDrawn));
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-waveform-surface .media-wv-chapter-marker').length >= 3, null, { timeout: 6000 });
+  const chapterMarkers = await page.$$eval('#previewHost .media-waveform-surface .media-wv-chapter-marker', (els) => els.map((el) => ({
+    left: el.style.left,
+    title: el.getAttribute('title') || '',
+    visible: !el.closest('.media-wv-chapter-layer')?.hidden,
+  })));
+  if (chapterMarkers.length === 3 && chapterMarkers.every((m) => m.visible && /%$/.test(m.left)) && chapterMarkers.some((m) => /Prologue/.test(m.title)))
+    pass('R2: chapter markers render on the audio waveform');
+  else fail('chapter markers: ' + JSON.stringify(chapterMarkers));
   const modeTabs = await page.$$eval('#previewHost .media-mode-tab', (els) => els.map((e) => e.textContent.trim()));
   if (modeTabs.join('|') === 'Listen|Tune|QC|Export|Mix') pass('audio mode tabs exist and are ordered');
   else fail('audio mode tabs: ' + modeTabs.join(','));
@@ -605,6 +621,19 @@ export async function run(ctx) {
 
   const exportRunText = exportPanel ? await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-run', (e) => e.textContent) : '';
   if (/Export processed audio/i.test(exportRunText)) pass('P1: export button labelled'); else fail('export run btn: ' + exportRunText);
+  const chapterZip = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-chapter-card', (card) => {
+    const btn = card.querySelector('.media-export-chapter-run');
+    const status = card.querySelector('.media-export-chapter-status');
+    return {
+      hidden: card.hidden,
+      text: btn?.textContent || '',
+      disabled: !!btn?.disabled,
+      status: status?.textContent || '',
+    };
+  }).catch(() => null);
+  if (chapterZip && !chapterZip.hidden && /Chapter ACX ZIP/i.test(chapterZip.text) && !chapterZip.disabled && /mono 44\.1 kHz MP3 192k CBR/i.test(chapterZip.status))
+    pass('R2: export panel shows enabled Chapter ACX ZIP action when chapters exist');
+  else fail('chapter zip action: ' + JSON.stringify(chapterZip));
   const exportSummary = exportPanel ? await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent) : '';
   if (/live chain =/.test(exportSummary) && /Output =/.test(exportSummary) && /Provenance = -af "/.test(exportSummary)) pass('P1: provenance-style export summary rendered'); else fail('export summary: ' + exportSummary.slice(0, 120));
   const exportStages = await page.$$eval(

@@ -411,7 +411,7 @@ run_smoke_core() {
 
     non_neutral_path_count=$((non_neutral_path_count + 1))
     case "$path" in
-      docs/types/media/*|docs/assets/preview-media.css|tests/areas/media-studio.mjs)
+      docs/types/media/*|docs/assets/preview-media.css|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-helpers.mjs)
         add_smoke_area media-studio
         ;;
       tests/areas/media-3d.mjs|docs/types/3d/*|docs/types/image/*|docs/types/binary/midi/*|docs/types/binary/gamerom/*)

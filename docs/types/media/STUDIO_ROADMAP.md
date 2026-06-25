@@ -103,15 +103,17 @@ Those require backend/model work and remain out of scope for this static viewer.
 
 ### R2 — Chapterized Audiobook Export
 
-Status: needed for "fully implemented" ACX/audiobook workflow.
+Status: partially implemented.
 
 Needed:
 
-- Read chapter markers from ID3 CHAP/CTOC and practical sidecar formats where available.
-- Show chapter markers on the audio waveform/timeline.
-- Export per-chapter ACX-formatted MP3 files.
-- Preserve or synthesize head/tail room tone per chapter.
-- Package chapter exports as a zip without off-origin dependencies.
+- Done: normalize existing ID3 CHAP starts into sorted chapter ranges with deterministic
+  ACX-safe filenames.
+- Done: show chapter markers on the audio waveform without triggering extra decode work.
+- Done: export per-chapter ACX-formatted MP3 files and package them as a vendored JSZip ZIP,
+  loaded only when the chapter export action is clicked.
+- Done: synthesize ACX head/tail padding per chapter through the existing ACX filter chain.
+- Remaining: practical sidecar chapter formats and CTOC hierarchy/deeper navigation polish.
 
 This builds on the existing ACX QC/export chain rather than replacing it.
 

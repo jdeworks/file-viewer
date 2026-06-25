@@ -501,7 +501,37 @@ Status: committed.
 - Fast aggregate timing evidence: `media-3d` 18.373s, `media-studio` 10.252s,
   `ebook-git` 73.422s, `examples-catalog` 129.536s, smoke total 345s.
 - Committed in `995aa90b` — `Add media cleanup mastering preset`.
-- Remaining R1 work: none currently identified; chapterized audiobook export is the next roadmap item.
+- Remaining R1 work: none currently identified.
+
+### R2 — Chapterized Audiobook Export
+
+Status: core implementation ready for checkpoint.
+
+- Added pure chapter normalization and deterministic safe ACX chapter filenames in
+  `chapters.js`.
+- Moved audio chapter discovery earlier in `renderer.js`, feeding the Listen chapter list,
+  waveform markers, and Export panel from one normalized chapter set.
+- Added lightweight DOM chapter markers to `waveform.js`; marker positioning waits for media
+  duration and does not decode the full file.
+- Added an Export mode `Chapter ACX ZIP` action for chapterized audio when ffmpeg is enabled.
+  The click path lazily loads ffmpeg and vendored JSZip, encodes each chapter through the
+  existing ACX chain, and downloads one ZIP.
+- Added focused unit/smoke coverage for chapter normalization, filenames, ACX chapter args,
+  waveform markers, and the chapter ZIP action.
+- Tightened `./scripts/check.sh --fast` smoke selection so `tests/media-parsers.test.mjs`
+  maps to `media-studio` instead of forcing aggregate smoke for media-only batches.
+- Changed paths: `chapters.js`, `id3.js`, `audio-filters.js`, `transcoder.js`,
+  `renderer.js`, `waveform.js`, `studio-export.js`, `preview-media.css`,
+  `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`, `scripts/check.sh`,
+  `docs/asset-manifest.json`, `docs/sw.js`.
+- Validation passed: `node --check` on changed JS/MJS files,
+  `node tests/media-parsers.test.mjs`, `node tests/smoke-area.mjs media-studio`,
+  `bash -n scripts/check.sh`, `git diff --check`.
+- `./scripts/check.sh --fast` was intentionally interrupted after the old selector chose
+  aggregate smoke because `tests/media-parsers.test.mjs` had no smoke owner; the selector fix
+  above addresses that path. Because `scripts/check.sh` itself is now changed, a fresh fast run
+  would conservatively select aggregate by design.
+- Remaining R2 work: sidecar chapter formats and deeper CTOC hierarchy handling.
 
 ### R1 — Estimated True Peak And Metric Copy
 

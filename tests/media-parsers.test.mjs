@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 
 import { parseSubtitles, parseTimestamp } from '../docs/types/media/subtitles.js';
 import { parseId3 } from '../docs/types/media/id3.js';
-import { buildAcxExportArgs, buildAcxFilterChain, buildAudioFilterChain, buildMasteringCleanupFilter } from '../docs/types/media/audio-filters.js';
+import { chapterFilename, normalizeChapters } from '../docs/types/media/chapters.js';
+import { buildAcxChapterExportArgs, buildAcxExportArgs, buildAcxFilterChain, buildAudioFilterChain, buildMasteringCleanupFilter } from '../docs/types/media/audio-filters.js';
 import { analyzeMetrics, estimatedTruePeak, evaluateAcx, samplePeak } from '../docs/types/media/qc.js';
 import {
   presetById,
@@ -102,6 +103,46 @@ function chapFrame({ id = 'ch', startMs = 0, endMs = 1000, title = 'Chapter' }) 
 }
 
 {
+  const chapters = normalizeChapters([
+    { start: 32, title: 'Second' },
+    { start: -4, title: '' },
+    { start: 32.0004, title: 'Duplicate start' },
+    { start: 90, title: 'Past end' },
+    { start: Number.NaN, title: 'Bad' },
+  ], 60);
+  assert.deepEqual(
+    chapters.map((c) => ({ start: c.start, end: c.end, title: c.title })),
+    [
+      { start: 0, end: 32, title: 'Chapter 1' },
+      { start: 32, end: 60, title: 'Second' },
+      { start: 60, end: 60, title: 'Past end' },
+    ],
+    'chapters: normalize sorts, clamps, drops duplicate starts, and synthesizes ends',
+  );
+
+  const unknownDuration = normalizeChapters([
+    { start: 5, end: 9, title: 'Only' },
+  ]);
+  assert.equal(unknownDuration[0].end, 9, 'chapters: unknown duration can use an explicit final end');
+  assert.equal(
+    normalizeChapters([{ start: 5, title: 'Open' }])[0].end,
+    null,
+    'chapters: unknown duration leaves final chapter open without an explicit end',
+  );
+
+  assert.equal(
+    chapterFilename('Book.mp3', { title: 'Prologue: A/B?' }, 0),
+    'Book_01_Prologue_A_B.mp3',
+    'chapters: filenames are deterministic and safe',
+  );
+  assert.equal(
+    chapterFilename('.. weird.m4b', { title: '' }, 11),
+    'weird_12_Chapter_12.mp3',
+    'chapters: filename helper supplies fallback chapter title',
+  );
+}
+
+{
   const cover = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   const tag = id3TagFromFrames([
     id3Frame('TIT2', concatBytes([0x03], enc.encode('Polish Title'))),
@@ -121,6 +162,7 @@ function chapFrame({ id = 'ch', startMs = 0, endMs = 1000, title = 'Chapter' }) 
   assert.equal(out.chapters.length, 2, 'parseId3: two chapters parsed');
   assert.equal(out.chapters[0].title, 'Prologue', 'parseId3: CHAP title preserved');
   assert.equal(out.chapters[0].start, 1, 'parseId3: CHAP start converted to seconds');
+  assert.equal(out.chapters[0].end, 3.2, 'parseId3: CHAP end converted to seconds when present');
   assert.equal(out.chapters[1].start, 3.4, 'parseId3: CHAP ordering normalized by start');
 }
 
@@ -142,6 +184,15 @@ function chapFrame({ id = 'ch', startMs = 0, endMs = 1000, title = 'Chapter' }) 
   assert.ok(chain.includes('loudnorm=I=-20:TP=-3:LRA=11'), 'acx filter chain: includes loudnorm −20 / −3 defaults');
   assert.ok(chain.includes('silenceremove='), 'acx filter chain: includes silenceremove');
   assert.ok(chain.includes('apad=pad_dur='), 'acx filter chain: includes room-tone pad');
+
+  const chapterArgs = buildAcxChapterExportArgs('in.m4b', 'ch01.mp3', { start: 1.25, end: 13.75 }).join(' ');
+  assert.ok(/^-ss 1\.25 -t 12\.5 -i in\.m4b/.test(chapterArgs), 'acx chapter args: seek and duration are range-scoped before input');
+  assert.ok(/-ac 1 -ar 44100 -c:a libmp3lame -b:a 192k/.test(chapterArgs), 'acx chapter args: force ACX mono/44.1k/192k CBR');
+  assert.throws(
+    () => buildAcxChapterExportArgs('in.mp3', 'bad.mp3', { start: 3, end: null }),
+    /finite start and end/,
+    'acx chapter args: reject open-ended ranges',
+  );
 }
 
 {

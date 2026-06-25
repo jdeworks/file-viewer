@@ -13,8 +13,10 @@
 // (buildAudioFilterChain + the bakeAudio / videofade ops). Kept separate from editor.js
 // so neither file sprawls past the LOC cap.
 
+import { loadGlobal, vendor } from '../../core/script-loader.js';
 import { getGraph } from './audio-graph.js';
-import { cancelFfmpeg, formatFfmpegError, loadFfmpeg, runOperation, buildAudioFilterChain, buildAcxFilterChain } from './transcoder.js';
+import { cancelFfmpeg, formatFfmpegError, loadFfmpeg, runOperation, runAcxChapterExports, buildAudioFilterChain, buildAcxFilterChain } from './transcoder.js';
+import { chapterFilename } from './chapters.js';
 import { describeDynamics } from './audio-filters.js';
 import {
   EXPORT_PRESETS, presetById, resolveExportParams, resolveExportAudioSettings, describeParams, buildAdvancedOverrides,
@@ -90,6 +92,10 @@ function acxChainOptions(p) {
   };
 }
 
+function zipFilename(base) {
+  return String(base || 'audio').replace(/\.[^.]+$/, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '') + '_ACX_chapters.zip';
+}
+
 // Read the live studio settings off the shared graph for `mediaEl`. Returns null when
 // no WebAudio graph exists (e.g. WebAudio unavailable) → caller falls back to a flat bake.
 function readLiveSettings(mediaEl) {
@@ -100,10 +106,11 @@ function readLiveSettings(mediaEl) {
 // Build the Export + Fades panel. `kind` is 'audio' | 'video'.
 // `intake` is the file descriptor; `mediaEl` the native element (for live settings + duration).
 // Returns { el, revoke() }.
-export function buildExportPanel(intake, mediaEl, kind) {
+export function buildExportPanel(intake, mediaEl, kind, options = {}) {
   const blobUrls = [];
   let ffInstance = null;
   const isAudio = kind === 'audio';
+  let chapters = Array.isArray(options.chapters) ? options.chapters : [];
 
   const panel = document.createElement('div');
   panel.className = 'media-ed-panel media-export-panel';
@@ -224,6 +231,28 @@ export function buildExportPanel(intake, mediaEl, kind) {
   cancelBtn.hidden = true;
   actionRow.append(runBtn, cancelBtn);
   panel.appendChild(actionRow);
+
+  let chapterWrap = null;
+  let chapterBtn = null;
+  let chapterStatus = null;
+  if (isAudio) {
+    chapterWrap = document.createElement('div');
+    chapterWrap.className = 'media-export-chapter-card';
+    const chapterCopy = document.createElement('div');
+    chapterCopy.className = 'media-export-chapter-copy';
+    const chapterTitle = document.createElement('div');
+    chapterTitle.className = 'media-export-chapter-title';
+    chapterTitle.textContent = 'Chapter ACX ZIP';
+    const chapterDetail = document.createElement('div');
+    chapterDetail.className = 'media-export-chapter-detail';
+    chapterDetail.textContent = 'Exports one ACX MP3 per chapter and packages them as a ZIP.';
+    chapterCopy.append(chapterTitle, chapterDetail);
+    chapterBtn = mkBtn('Export chapter ACX ZIP', 'media-ed-run media-export-chapter-run');
+    chapterStatus = document.createElement('div');
+    chapterStatus.className = 'media-export-chapter-status';
+    chapterWrap.append(chapterCopy, chapterBtn, chapterStatus);
+    panel.appendChild(chapterWrap);
+  }
 
   // Cross-clip transitions are now WIRED (P6 video timeline / P5 audio mixer). This line is
   // no longer a "coming" stub — it points the user at the panel that does the cross-clip work.
@@ -362,6 +391,25 @@ Provenance = -af "${chain || 'none'}"`;
     dl.click();
   }
 
+  function chaptersReady() {
+    return chapters.length > 0
+      && chapters.every((chapter) => Number.isFinite(Number(chapter.start))
+        && Number.isFinite(Number(chapter.end))
+        && Number(chapter.end) > Number(chapter.start));
+  }
+
+  function syncChapterExport() {
+    if (!chapterWrap || !chapterBtn || !chapterStatus) return;
+    const count = chapters.length;
+    chapterWrap.hidden = count === 0;
+    if (!count) return;
+    const ready = chaptersReady();
+    chapterBtn.disabled = !ready;
+    chapterStatus.textContent = ready
+      ? `${count} chapter${count === 1 ? '' : 's'} ready; output is mono 44.1 kHz MP3 192k CBR.`
+      : 'Waiting for media duration before chapter ZIP export.';
+  }
+
   function showError(msg) {
     resultArea.innerHTML = '';
     const lines = String(msg).split('\n');
@@ -426,6 +474,57 @@ Provenance = -af "${chain || 'none'}"`;
     }
   }
 
+  async function runChapterZip() {
+    if (!chaptersReady()) {
+      syncChapterExport();
+      return;
+    }
+    setRunning(true);
+    if (chapterBtn) chapterBtn.disabled = true;
+    resultArea.hidden = true;
+    resultArea.innerHTML = '';
+    try {
+      const p = resolveExportParams(presetById('acx-mp3'), {}, 'mp3');
+      let currentChapter = 0;
+      const ff = await loadFfmpeg(({ ratio }) => {
+        const pct = Math.round((((currentChapter + (ratio || 0)) / Math.max(1, chapters.length))) * 100);
+        progressBar.value = Math.min(100, pct);
+        progressPct.textContent = progressBar.value + '%';
+        progressMsg.textContent = `Encoding chapter ${Math.min(currentChapter + 1, chapters.length)} / ${chapters.length}…`;
+      });
+      ffInstance = ff;
+      const files = await runAcxChapterExports(ff, intake, chapters, {
+        ...acxChainOptions(p),
+        onChapterStart(index) {
+          currentChapter = index;
+          progressMsg.textContent = `Encoding chapter ${index + 1} / ${chapters.length}…`;
+        },
+      });
+      progressMsg.textContent = 'Packaging ZIP…';
+      const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
+      const zip = new JSZip();
+      files.forEach((file) => {
+        zip.file(chapterFilename(intake.filename || 'audio', chapters[file.index], file.index), file.bytes);
+      });
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }, (meta) => {
+        const pct = Math.round(95 + ((meta.percent || 0) * 0.05));
+        progressBar.value = Math.min(100, pct);
+        progressPct.textContent = progressBar.value + '%';
+      });
+      const url = URL.createObjectURL(blob);
+      blobUrls.push(url);
+      showResult(url, zipFilename(intake.filename), blob.size);
+    } catch (err) {
+      showError(formatFfmpegError(err));
+    } finally {
+      ffInstance = null;
+      setRunning(false);
+      runBtn.hidden = false;
+      cancelBtn.hidden = true;
+      syncChapterExport();
+    }
+  }
+
   async function cancel() {
     if (ffInstance) {
       try { cancelFfmpeg(ffInstance); } catch { /* ignore */ }
@@ -438,16 +537,22 @@ Provenance = -af "${chain || 'none'}"`;
   }
 
   runBtn.addEventListener('click', run);
+  chapterBtn?.addEventListener('click', runChapterZip);
   cancelBtn.addEventListener('click', cancel);
 
   // Keep the summary fresh when the panel is shown (EQ may have changed since build).
   panel.addEventListener('pointerenter', refreshSummary);
   mediaEl.addEventListener('media-graph-change', refreshSummary);
   syncAdvancedVisibility();
+  syncChapterExport();
   refreshSummary();
 
   return {
     el: panel,
+    updateChapters(nextChapters) {
+      chapters = Array.isArray(nextChapters) ? nextChapters : [];
+      syncChapterExport();
+    },
     revoke() {
       for (const u of blobUrls) {
         try { URL.revokeObjectURL(u); } catch { /* ignore */ }

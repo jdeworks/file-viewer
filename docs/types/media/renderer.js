@@ -12,6 +12,7 @@ import { mediaInfo, blobUrl } from './medialib.js';
 import { loadState, saveState, clearState } from '../../core/persistence.js';
 import { showIosAudioHint, hideIosAudioHint } from '../../core/ios-audio.js';
 import { parseId3 } from './id3.js';
+import { normalizeChapters } from './chapters.js';
 import { likelyNeedsTranscode, transcode } from './transcoder.js';
 import { recordStage5MediaPlayback } from '../../games/metagame/viewer-actions.js';
 import { makeTogglePanel } from './panel-toggle.js';
@@ -102,6 +103,7 @@ export async function render(intake, ctx = {}) {
   let modeTabs = null;
   let modePanelWrap = null;
   let coverEl = null;
+  let coverRevoke = null;
   let videoWorkspaceBody = null;
   let subtitleLoader = null;
   if (info.kind === 'audio') {
@@ -168,6 +170,29 @@ export async function render(intake, ctx = {}) {
 
   // Resolve ffmpeg setting early so video controls and the pill can reference it.
   const enableFfmpeg = !!ctx.settings?.enableFfmpeg;
+  let exportPanel = null;       // P1/P3 export + fades panel
+
+  // One-time ID3 read (audio) -> cover art + chapters. CPU-cheap head-slice parse,
+  // done before waveform/export mount so every surface shares the same chapter set.
+  let rawChapters = [];
+  let normalizedChapters = [];
+  let chapterList = null;
+  const refreshChapters = () => {
+    normalizedChapters = normalizeChapters(rawChapters, Number.isFinite(el.duration) ? el.duration : undefined);
+    exportPanel?.updateChapters?.(normalizedChapters);
+  };
+  if (info.kind === 'audio' && intake.file && typeof intake.file.slice === 'function') {
+    try {
+      const head = new Uint8Array(await intake.file.slice(0, 512 * 1024).arrayBuffer());
+      const tags = parseId3(head);
+      if (tags?.cover) { const c = buildCoverArt(tags.cover); if (c) { coverEl = c.el; coverRevoke = c.revoke; } }
+      if (tags?.chapters) rawChapters = tags.chapters;
+    } catch { /* tag-less / unreadable — skip */ }
+  }
+  if (Array.isArray(globalThis.__fvMediaTestChapters) && globalThis.__fvMediaTestChapters.length) {
+    rawChapters = globalThis.__fvMediaTestChapters;
+  }
+  refreshChapters();
 
   // ── Sleep timer control ──
   const tools = document.createElement('div');
@@ -316,7 +341,6 @@ export async function render(intake, ctx = {}) {
   let editorPanel = null;
   let editorController = null;
   let editorRevoke = null;
-  let exportPanel = null;       // P1/P3 export + fades panel
   let exportRevoke = null;
   let transcodedUrl = null;  // revoked on cleanup
 
@@ -335,9 +359,10 @@ export async function render(intake, ctx = {}) {
 
     // P1 (export processed/EQ'd audio) + P3 (baked fades). Reads the live EQ graph.
     const { buildExportPanel } = await import('./studio-export.js');
-    const exp = buildExportPanel(intake, el, info.kind);
+    const exp = buildExportPanel(intake, el, info.kind, { chapters: normalizedChapters });
     exportPanel = exp.el;
     exportRevoke = exp.revoke;
+    refreshChapters();
   }
 
   const panels = [];      // toggle-panel controllers to tear down on revoke
@@ -359,7 +384,6 @@ export async function render(intake, ctx = {}) {
   };
 
   let subCtl = null;
-  let coverRevoke = null;
   // ── P7: Tier-1 playback quick wins (no lib, live only) ──
   // Speed presets (both); PiP + frame-step (video); cover art + chapter list from ID3.
   const extras = document.createElement('div');
@@ -375,6 +399,7 @@ export async function render(intake, ctx = {}) {
     const { mountWaveform } = await import('./waveform.js');
     const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
     const wv = await mountWaveform(waveformSurface, file, {
+      chapters: normalizedChapters,
       onRegionSelect: editorController?.prefillTrim ? ({ start, end }) => {
         editorController.prefillTrim({ start, end });
       } : null,
@@ -639,16 +664,7 @@ export async function render(intake, ctx = {}) {
   // Keyboard shortcuts scoped to the (focusable) host; removed on teardown.
   host.tabIndex = 0;
   const detachKeys = attachShortcuts(host, el, { kind: info.kind });
-  // One-time ID3 read (audio) → cover art + chapters. CPU-cheap head-slice parse.
-  let chapterList = null;
-  if (info.kind === 'audio' && intake.file && typeof intake.file.slice === 'function') {
-    try {
-      const head = new Uint8Array(await intake.file.slice(0, 512 * 1024).arrayBuffer());
-      const tags = parseId3(head);
-      if (tags?.cover) { const c = buildCoverArt(tags.cover); if (c) { coverEl = c.el; coverRevoke = c.revoke; } }
-      if (tags?.chapters) chapterList = buildChapterList(tags.chapters, el);
-    } catch { /* tag-less / unreadable — skip */ }
-  }
+  if (normalizedChapters.length) chapterList = buildChapterList(normalizedChapters, el);
 
   if (info.kind === 'audio') {
     if (coverEl) audioWorkspace.querySelector('.media-workspace-head')?.prepend(coverEl);
@@ -667,6 +683,7 @@ export async function render(intake, ctx = {}) {
   const saved = loadState(intake);
   el.addEventListener('loadedmetadata', () => {
     setWorkspaceTime();
+    refreshChapters();
     if (saved && saved.kind === 'media' && saved.time > 0 && saved.time < el.duration - 2) {
       el.currentTime = saved.time;
     }
