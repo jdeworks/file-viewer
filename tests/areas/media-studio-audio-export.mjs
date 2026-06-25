@@ -14,7 +14,7 @@ export async function runAudioExportAndPresetChecks(ctx) {
   await page.goto(ctx.origin, { waitUntil: 'load' });
   await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
   await page.evaluate(() => window.__fv.openExampleByLabel('Sample.wav'));
-  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
   await page.waitForFunction(() => {
     const d = document.querySelector('#previewHost audio.media-view')?.duration;
     return Number.isFinite(d) && d > 0;

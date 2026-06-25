@@ -1,4 +1,4 @@
-export function buildMediaWorkspace(intake, info, mediaElement) {
+export function buildMediaWorkspace(intake, info, mediaElement, options = {}) {
   const host = document.createElement('div');
   host.className = 'media-doc media-' + (info.kind || 'audio');
   const name = document.createElement('div');
@@ -27,6 +27,7 @@ export function buildMediaWorkspace(intake, info, mediaElement) {
     const mediaSurface = document.createElement('div');
     mediaSurface.className = 'media-audio-surface';
     mediaSurface.append(mediaElement);
+    if (options.audioListenSurface) mediaSurface.append(options.audioListenSurface);
 
     waveformSurface = document.createElement('div');
     waveformSurface.className = 'media-waveform-surface';

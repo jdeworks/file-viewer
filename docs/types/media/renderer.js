@@ -24,6 +24,7 @@ import { attachShortcuts, buildChapterList, buildCoverArt } from './playback-ext
 import { buildMediaWorkspace } from './renderer-workspace.js';
 import { buildMediaTools, buildPlaybackExtras } from './renderer-tools.js';
 import { mountAudioModePanels, mountVideoModePanels } from './renderer-mode-panels.js';
+import { buildAudioListenSurface } from './audio-listen-surface.js';
 
 // Lazily import editor.js (and its transcoder.js dep) only when ffmpeg is enabled.
 // This prevents a stale SW-cached transcoder.js from breaking the entire preview.
@@ -100,12 +101,13 @@ export async function render(intake, ctx = {}) {
   const url = blobUrl(intake, info.mime);
   const el = document.createElement(info.kind === 'video' ? 'video' : 'audio');
   el.className = 'media-view';
-  el.controls = true;
+  el.controls = info.kind === 'video';
   el.preload = 'metadata';
   el.src = url;
   if (info.kind === 'video') el.setAttribute('playsinline', '');
 
-  const workspace = buildMediaWorkspace(intake, info, el);
+  const listenSurface = info.kind === 'audio' ? buildAudioListenSurface(el, intake) : null;
+  const workspace = buildMediaWorkspace(intake, info, el, { audioListenSurface: listenSurface?.el });
   const {
     host,
     workspaceTime,
@@ -232,6 +234,7 @@ export async function render(intake, ctx = {}) {
 
   const extras = buildPlaybackExtras(el, info.kind);
   const panels = [];
+  if (listenSurface) panels.push(listenSurface);
   const registerModeController = (controller) => {
     if (!panels.includes(controller)) panels.push(controller);
   };

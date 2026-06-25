@@ -143,7 +143,7 @@ export async function runAudioMixerAndPlaylist(ctx) {
     const ip = await ictx.newPage();
     await ip.goto(origin, { waitUntil: 'load' });
     await openExample('Sample.wav', ip);
-    await ip.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+    await ip.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
     const shown = await ip.waitForSelector('#iosAudioHint:not([hidden])', { timeout: 8000 }).catch(() => null);
     const hintText = shown ? await ip.$eval('#iosAudioHint', (e) => e.textContent) : '';
     if (shown && /Add to Home Screen/i.test(hintText)) pass('iOS: background-audio Add-to-Home-Screen hint shown for audio'); else fail('iOS hint missing/wrong: ' + hintText.slice(0, 60));

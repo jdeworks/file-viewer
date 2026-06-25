@@ -17,11 +17,31 @@ export async function runAudioListenAndChapters(ctx) {
   });
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.wav');
-  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
   const mediaType = await page.$eval('#typeSelect', (s) => s.value);
   if (mediaType === 'media') pass('.wav detected as Audio / Video'); else fail('media type: ' + mediaType);
   const audioSrc = await page.$eval('#previewHost audio.media-view', (e) => e.getAttribute('src') || '');
   if (audioSrc.startsWith('blob:')) pass('audio served from in-page blob URL (streamed, no size ceiling)'); else fail('audio src: ' + audioSrc.slice(0, 30));
+  const audioChrome = await page.$eval('#previewHost audio.media-view', (el) => {
+    const r = el.getBoundingClientRect();
+    const style = getComputedStyle(el);
+    return { controls: el.controls, w: r.width, h: r.height, opacity: style.opacity, pointerEvents: style.pointerEvents };
+  });
+  if (!audioChrome.controls && audioChrome.w <= 2 && audioChrome.h <= 2 && audioChrome.opacity === '0')
+    pass('audio listen: native audio element is hidden decode source, not visible player');
+  else fail('native audio chrome still visible: ' + JSON.stringify(audioChrome));
+  const listenSurface = await page.$eval('#previewHost .media-listen-surface', (el) => {
+    const r = el.getBoundingClientRect();
+    return {
+      w: r.width,
+      h: r.height,
+      buttons: [...el.querySelectorAll('.media-listen-btn')].map((btn) => btn.textContent.trim()),
+      progress: !!el.querySelector('.media-listen-progress'),
+    };
+  });
+  if (listenSurface.w > 0 && listenSurface.h > 0 && listenSurface.buttons.includes('Play') && listenSurface.progress)
+    pass('audio listen: custom lane transport replaces native controls');
+  else fail('custom listen surface: ' + JSON.stringify(listenSurface));
 
   // Streaming: the File handle is retained on the intake (blob built from the File = disk-backed,
   // never reads a multi-GB file into memory).
@@ -125,7 +145,7 @@ export async function runAudioListenAndChapters(ctx) {
       { file: chapters, path: 'Sidecar/01-intro.chapters.vtt' },
     ]);
   });
-  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
   await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-waveform-surface .media-wv-chapter-marker').length >= 2, null, { timeout: 6000 });
   const sidecarChapters = await page.evaluate(() => ({
     source: document.querySelector('#previewHost .media-chapters-source')?.textContent.trim() || '',

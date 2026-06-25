@@ -22,7 +22,7 @@ export async function runVideoStudioChecks(ctx) {
 
   // Export mode is explicit even when transcoding is disabled: it should show a clear hint (not an empty surface).
   await openExample('Sample.wav');
-  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
   await page.click('#previewHost .media-mode-tab[data-mode="export"]');
   await page.waitForSelector('#previewHost .media-mode-panel[data-mode="export"]:not([hidden])', { timeout: 8000 });
   const exportHint = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-ed-note', (el) => el.textContent).catch(() => '');

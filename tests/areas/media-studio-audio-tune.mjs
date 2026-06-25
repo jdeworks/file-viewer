@@ -11,7 +11,7 @@ export async function runAudioTuneAndDynamics(ctx) {
     ];
   });
   await openExample('Sample.wav');
-  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
   await page.waitForFunction(() => Number.isFinite(document.querySelector('#previewHost audio.media-view')?.duration), null, { timeout: 8000 });
   const waveformSeek = page.locator('#previewHost .media-waveform-surface .media-wv-canvas');
   const waveformBox = await waveformSeek.boundingBox();

@@ -128,7 +128,7 @@ export async function run(ctx) {
 
   // ── ID3 metadata ── an MP3's tags surface in the info drawer. ──
   await openExample('Sample.mp3');
-  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
   await page.click('#metaBtn');
   await page.waitForSelector('#metaDrawer:not([hidden]) #metaBody', { timeout: 6000 });
   await page.waitForFunction(() => /Demo Artist/.test(document.querySelector('#metaBody')?.textContent || ''), null, { timeout: 6000 }).catch(() => {});

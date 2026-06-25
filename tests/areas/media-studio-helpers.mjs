@@ -5,7 +5,8 @@ export async function reloadExampleAtViewport({ page, origin, openExample }, vie
   await page.setViewportSize(viewport);
   await page.goto(origin, { waitUntil: 'load' });
   await openExample(exampleName);
-  await page.waitForSelector(readySelector, { timeout: 12000 });
+  const waitState = readySelector.includes('audio.media-view') ? 'attached' : 'visible';
+  await page.waitForSelector(readySelector, { timeout: 12000, state: waitState });
 }
 
 export async function enableFfmpegForMedia(page) {
@@ -28,7 +29,7 @@ export async function assertAudioTopViewport({ page, pass, fail }, label) {
   const geometry = await page.$eval('#previewHost .media-doc.media-audio', (host) => {
     const workspace = host.querySelector('.media-audio-workspace');
     const modeTabs = host.querySelector('.media-mode-tabs');
-    const media = host.querySelector('.media-audio-surface audio.media-view');
+    const media = host.querySelector('.media-audio-surface .media-listen-surface');
     const title = host.querySelector('.media-workspace-title');
     const time = host.querySelector('.media-workspace-time');
     const waveform = host.querySelector('.media-waveform-surface');
