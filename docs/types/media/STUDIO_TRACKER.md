@@ -666,6 +666,9 @@ extraction in `0ce96afe`; ffmpeg core entrypoint compatibility in `e9baba6f`.
     plus high-diff frame/pixel/column counts.
   - Video compare also shows a live A/B video preview stack as soon as lane B is dropped/browsed,
     so users can inspect side-by-side, top-bottom, or true overlay before running measured analysis.
+  - The live preview now has a shared Play/Stop transport, synchronized A/B video playback, a red
+    timeline playhead, and draggable independent lane clip boxes for aligning short additions
+    before checking actual pixel differences.
   - Video sample times now come from shifted-overlap source ranges so measured content checks are
     aligned to real overlapped source windows.
   - Secondary compare drop zones accept sidebar tree drags without opening the dragged item as the
@@ -678,9 +681,10 @@ extraction in `0ce96afe`; ffmpeg core entrypoint compatibility in `e9baba6f`.
   sessions now extract the shifted-overlap range to WAV in MEMFS first and then reuse the same
   selected-range pipeline; this path is capped and does not silently read giant inputs.
   A real browser-side smoke verified `sample.mp3` extraction to a parseable WAV after the
-  ffmpeg `mainName: 'main'` loader compatibility fix.
-- Changed paths for this slice: `compare-audio.js`, `compare-ui.js`,
-  `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`, `STUDIO_ROADMAP.md`,
+  ffmpeg `mainName: 'main'` loader compatibility fix. Latest video compare polish adds the
+  synchronized preview transport, lane clip dragging, and live overlay coverage.
+- Changed paths for this slice: `compare-ui.js`, `compare-ui-video.js`,
+  `compare-ui-render.js`, `preview-media.css`, `tests/areas/media-studio-compare.mjs`,
   `STUDIO_TRACKER.md`, plus generated cache files if validation refreshes them.
 - R4 is bounded by explicit selected ranges, byte caps, and opt-in ffmpeg extraction for longer
   compressed audio; no backend/ASR/ML alignment or uncapped full-file analysis is planned.
@@ -744,7 +748,8 @@ Status: committed.
 - `tests/areas/media-studio.mjs` is now a small sequencer over focused smoke-area helpers for
   listen/chapters, tune/dynamics, mixer/playlist, export, QC, chain checks, compare, video
   studio, and video export/timeline.
-- Current line-count evidence for touched files: `compare-ui.js` 391 lines,
+- Current line-count evidence for touched files: `compare-ui.js` 468 lines,
+  `compare-ui-video.js` 180 lines, `compare-ui-render.js` 269 lines,
   `studio-export.js` 477 lines, `renderer.js` 416 lines, `mixer-ui.js` 403 lines,
   `transcoder.js` 229 lines, `tests/areas/media-studio.mjs` 21 lines; extracted helpers are all
   below the hard advisory threshold.

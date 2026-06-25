@@ -20,6 +20,7 @@ import {
   renderCompareAnalysis,
   renderCompareLayout,
 } from './compare-ui-render.js';
+import { createVideoCompareController } from './compare-ui-video.js';
 
 export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', options = {}) {
   const { enableFfmpeg = false } = typeof options === 'object' && options ? options : {};
@@ -40,6 +41,8 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
       A: mediaSourceFromIntake(intake),
       B: null,
     },
+    playhead: 0,
+    playing: false,
     analysis: null,
   };
   const listeners = [];
@@ -53,6 +56,11 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
     const url = URL.createObjectURL(file);
     objectUrls.add(url);
     return url;
+  };
+  const releaseObjectUrl = (url) => {
+    if (!url) return;
+    URL.revokeObjectURL(url);
+    objectUrls.delete(url);
   };
 
   const wrap = document.createElement('div');
@@ -151,6 +159,16 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   analysisControls.append(analyzeButton, analysisStatus);
   controls.append(analysisControls);
 
+  let render = () => {};
+  const videoController = createVideoCompareController({
+    kind,
+    state,
+    addListener,
+    makeObjectUrl,
+    releaseObjectUrl,
+    render: () => render(),
+  });
+
   const drop = buildSecondaryDropZone({
     accept: kind === 'video' ? 'video/*' : 'audio/*',
     hint: `Drop a second ${kind} file for compare`,
@@ -161,7 +179,8 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
     analysisStatus.textContent = 'Not analyzed';
     state.durationB = Number.isFinite(file.duration) ? file.duration : state.durationB;
     state.lanes.B.out = Math.max(state.lanes.B.in, Math.min(state.lanes.B.out, state.durationB));
-    updateVideoPreviewSource('B');
+    videoController.updateVideoPreviewSource('B');
+    videoController.syncVideoPreviewToPlayhead();
     render();
   });
   drop.el.classList.add('media-compare-drop');
@@ -169,47 +188,6 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   const visual = document.createElement('div');
   visual.className = 'media-compare-visual';
   visual.style.setProperty('--compare-opacity', String(state.opacity / 100));
-
-  const videoPreview = document.createElement('div');
-  videoPreview.className = 'media-compare-video-preview';
-  videoPreview.hidden = kind !== 'video';
-  const videoPreviewEls = new Map();
-  const videoUrls = { A: '', B: '' };
-  function buildVideoPreviewLayer(laneId) {
-    const layer = document.createElement('div');
-    layer.className = `media-compare-video-layer media-compare-video-layer--${laneId.toLowerCase()}`;
-    layer.dataset.lane = laneId;
-    const label = document.createElement('div');
-    label.className = 'media-compare-video-layer-label';
-    const video = document.createElement('video');
-    video.className = 'media-compare-video-el';
-    video.controls = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.preload = 'metadata';
-    layer.append(video, label);
-    videoPreviewEls.set(laneId, { layer, label, video });
-    return layer;
-  }
-  videoPreview.append(buildVideoPreviewLayer('A'), buildVideoPreviewLayer('B'));
-  function updateVideoPreviewSource(laneId) {
-    if (kind !== 'video') return;
-    const refs = videoPreviewEls.get(laneId);
-    if (!refs) return;
-    const prior = videoUrls[laneId];
-    if (prior) {
-      URL.revokeObjectURL(prior);
-      objectUrls.delete(prior);
-    }
-    videoUrls[laneId] = makeObjectUrl(state.files[laneId]);
-    if (videoUrls[laneId]) {
-      refs.video.src = videoUrls[laneId];
-      refs.video.load?.();
-    } else {
-      refs.video.removeAttribute('src');
-      refs.video.load?.();
-    }
-  }
 
   const laneEls = new Map();
   function buildLane(laneId) {
@@ -246,6 +224,9 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
     canvas.height = 72;
     const selection = document.createElement('div');
     selection.className = 'media-compare-selection';
+    const clipLabel = document.createElement('div');
+    clipLabel.className = 'media-compare-clip-label';
+    selection.append(clipLabel);
     const handle = document.createElement('div');
     handle.className = 'media-compare-offset-handle';
     handle.setAttribute('role', 'slider');
@@ -267,12 +248,14 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
       laneState.out = clamp(Number(outInput.value) || duration, laneState.in, duration);
       clearAudioRangeAnalysis(state, kind, analysisStatus);
       clearVideoAnalysis(state, kind, analysisStatus);
+      videoController.syncVideoPreviewToPlayhead();
       render();
     };
     addListener(offset, 'input', () => {
       state.lanes[laneId].offset = Number(offset.value) || 0;
       clearAudioRangeAnalysis(state, kind, analysisStatus);
       clearVideoAnalysis(state, kind, analysisStatus);
+      videoController.syncVideoPreviewToPlayhead();
       render();
     });
     addListener(inInput, 'input', syncRangeInput);
@@ -281,36 +264,59 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
     let dragging = false;
     let startX = 0;
     let startOffset = 0;
+    const endDrag = () => {
+      dragging = false;
+      window.removeEventListener('pointermove', moveDrag);
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
+    };
+    const moveDrag = (e) => {
+      if (!dragging) return;
+      state.lanes[laneId].offset = Math.max(0, startOffset + ((e.clientX - startX) / PX_PER_SEC));
+      clearAudioRangeAnalysis(state, kind, analysisStatus);
+      clearVideoAnalysis(state, kind, analysisStatus);
+      videoController.syncVideoPreviewToPlayhead();
+      render();
+    };
     const beginDrag = (e) => {
       dragging = true;
       startX = e.clientX;
       startOffset = state.lanes[laneId].offset;
-      handle.setPointerCapture?.(e.pointerId);
+      e.currentTarget?.setPointerCapture?.(e.pointerId);
+      window.addEventListener('pointermove', moveDrag);
+      window.addEventListener('pointerup', endDrag);
+      window.addEventListener('pointercancel', endDrag);
       e.preventDefault();
     };
-    const moveDrag = (e) => {
-      if (!dragging) return;
-      state.lanes[laneId].offset = startOffset + ((e.clientX - startX) / PX_PER_SEC);
-      clearAudioRangeAnalysis(state, kind, analysisStatus);
-      clearVideoAnalysis(state, kind, analysisStatus);
-      render();
+    const endMouseDrag = () => {
+      dragging = false;
+      window.removeEventListener('mousemove', moveDrag);
+      window.removeEventListener('mouseup', endMouseDrag);
     };
-    const endDrag = () => { dragging = false; };
+    const beginMouseDrag = (e) => {
+      dragging = true;
+      startX = e.clientX;
+      startOffset = state.lanes[laneId].offset;
+      window.addEventListener('mousemove', moveDrag);
+      window.addEventListener('mouseup', endMouseDrag);
+      e.preventDefault();
+    };
     addListener(handle, 'pointerdown', beginDrag);
-    addListener(handle, 'pointermove', moveDrag);
-    addListener(handle, 'pointerup', endDrag);
-    addListener(handle, 'pointercancel', endDrag);
+    addListener(selection, 'pointerdown', beginDrag);
+    addListener(handle, 'mousedown', beginMouseDrag);
+    addListener(selection, 'mousedown', beginMouseDrag);
     addListener(handle, 'keydown', (e) => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       const step = e.shiftKey ? 1 : 0.1;
-      state.lanes[laneId].offset += e.key === 'ArrowLeft' ? -step : step;
+      state.lanes[laneId].offset = Math.max(0, state.lanes[laneId].offset + (e.key === 'ArrowLeft' ? -step : step));
       clearAudioRangeAnalysis(state, kind, analysisStatus);
       clearVideoAnalysis(state, kind, analysisStatus);
+      videoController.syncVideoPreviewToPlayhead();
       render();
       e.preventDefault();
     });
 
-    laneEls.set(laneId, { lane, label, offset, inInput, outInput, selection, handle, markerIn, markerOut, canvas });
+    laneEls.set(laneId, { lane, label, offset, inInput, outInput, selection, clipLabel, handle, markerIn, markerOut, canvas });
     return lane;
   }
 
@@ -320,6 +326,11 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
 
   const band = document.createElement('div');
   band.className = 'media-compare-overlap-band';
+  const playhead = document.createElement('div');
+  playhead.className = 'media-compare-playhead';
+  const playheadLabel = document.createElement('span');
+  playheadLabel.className = 'media-compare-playhead-time';
+  playhead.append(playheadLabel);
   const diffCanvas = document.createElement('canvas');
   diffCanvas.className = 'media-compare-diff-canvas';
   diffCanvas.width = AUDIO_COMPARE_COLUMNS;
@@ -333,7 +344,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   missingA.className = 'media-compare-missing media-compare-missing--a';
   const missingB = document.createElement('div');
   missingB.className = 'media-compare-missing media-compare-missing--b';
-  visual.append(videoPreview, lanes, band, missingA, missingB, overlayCanvas, diffCanvas);
+  visual.append(videoController.videoPreview, lanes, band, missingA, missingB, playhead, overlayCanvas, diffCanvas);
 
   const placeholder = document.createElement('div');
   placeholder.className = `media-compare-placeholder media-compare-placeholder--${kind}`;
@@ -344,7 +355,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   const foot = document.createElement('div');
   foot.className = 'media-compare-copy';
 
-  wrap.append(head, controls, drop.el, visual, placeholder, foot);
+  wrap.append(head, controls, videoController.transport, drop.el, visual, placeholder, foot);
   container.append(wrap);
 
   const renderRefs = {
@@ -364,13 +375,19 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
     band,
     missingA,
     missingB,
+    playhead,
+    playheadLabel,
     visual,
-    videoPreview,
-    videoPreviewEls,
+    videoPreview: videoController.videoPreview,
+    videoPreviewEls: videoController.videoPreviewEls,
+    compareTimelineEnd: videoController.compareTimelineEnd,
+    fmt: videoController.fmt,
+    playButton: videoController.playButton,
+    timeReadout: videoController.timeReadout,
     overlayCanvas,
     diffCanvas,
   };
-  const render = () => {
+  render = () => {
     const result = renderCompareLayout(state, renderRefs);
     renderCompareAnalysis(state, result, renderRefs);
   };
@@ -379,6 +396,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
     addListener(btn, 'click', () => {
       state.layout = btn.dataset.layout;
       for (const other of layoutButtons) other.setAttribute('aria-pressed', other === btn ? 'true' : 'false');
+      videoController.syncVideoPreviewToPlayhead();
       render();
     });
   }
@@ -388,14 +406,17 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   });
   addListener(foregroundSelect, 'change', () => {
     state.videoForeground = foregroundSelect.value === 'A' ? 'A' : 'B';
+    videoController.syncVideoPreviewToPlayhead();
     render();
   });
   addListener(videoOpacityA.input, 'input', () => {
     state.videoOpacityA = Number(videoOpacityA.input.value) || 0;
+    videoController.syncVideoPreviewToPlayhead();
     render();
   });
   addListener(videoOpacityB.input, 'input', () => {
     state.videoOpacityB = Number(videoOpacityB.input.value) || 0;
+    videoController.syncVideoPreviewToPlayhead();
     render();
   });
   addListener(normalizeInput, 'change', () => {
@@ -431,12 +452,14 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   });
 
   layoutButtons[0].setAttribute('aria-pressed', 'true');
-  updateVideoPreviewSource('A');
+  videoController.updateVideoPreviewSource('A');
+  videoController.syncVideoPreviewToPlayhead();
   render();
 
   return {
     destroy() {
       for (const remove of listeners.splice(0)) remove();
+      videoController.stopComparePlayback();
       for (const url of objectUrls) URL.revokeObjectURL(url);
       objectUrls.clear();
       wrap.remove();

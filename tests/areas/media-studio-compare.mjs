@@ -196,22 +196,59 @@ export async function exerciseCompare(ctx, kind) {
       const layerB = el.querySelector('.media-compare-video-layer--b');
       const videoA = layerA?.querySelector('video');
       const videoB = layerB?.querySelector('video');
+      const visualKids = Array.from(el.querySelector('.media-compare-visual')?.children || []).map((node) => node.className);
       return {
         layout: el.dataset.layout,
         foreground: el.dataset.videoForeground,
+        stageFirst: visualKids[0] === 'media-compare-video-preview',
         srcA: videoA?.currentSrc || videoA?.src || '',
         srcB: videoB?.currentSrc || videoB?.src || '',
         hiddenA: !!layerA?.hidden,
         hiddenB: !!layerB?.hidden,
         opacityA: videoA?.style.opacity || '',
         opacityB: videoB?.style.opacity || '',
+        controlsA: !!videoA?.controls,
+        controlsB: !!videoB?.controls,
       };
     });
     if (livePreview.layout === 'overlay' && livePreview.srcA.startsWith('blob:')
       && livePreview.srcB.startsWith('blob:') && !livePreview.hiddenA && !livePreview.hiddenB
-      && livePreview.opacityA === '0.8' && livePreview.opacityB === '0.3')
+      && livePreview.opacityA === '0.8' && livePreview.opacityB === '0.3'
+      && livePreview.stageFirst && !livePreview.controlsA && !livePreview.controlsB)
       pass('video compare: dropped lane B is visible in the live overlay preview');
     else fail('video compare live preview: ' + JSON.stringify(livePreview));
+    const dragBefore = await page.$eval(`${panelSel} .media-compare`, (el) => ({
+      offset: Number(el.querySelector('.media-compare-offset-input[data-lane="B"]')?.value || 0),
+      left: el.querySelector('.media-compare-lane[data-lane="B"] .media-compare-selection')?.style.left || '',
+    }));
+    const clipLocator = page.locator(`${panelSel} .media-compare-lane[data-lane="B"] .media-compare-selection`);
+    await clipLocator.scrollIntoViewIfNeeded();
+    const clipBox = await clipLocator.boundingBox();
+    if (clipBox) {
+      await page.mouse.move(clipBox.x + Math.min(24, clipBox.width / 2), clipBox.y + clipBox.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(clipBox.x + Math.min(24, clipBox.width / 2) + 60, clipBox.y + clipBox.height / 2);
+      await page.mouse.up();
+    }
+    const dragAfter = await page.$eval(`${panelSel} .media-compare`, (el) => ({
+      offset: Number(el.querySelector('.media-compare-offset-input[data-lane="B"]')?.value || 0),
+      left: el.querySelector('.media-compare-lane[data-lane="B"] .media-compare-selection')?.style.left || '',
+    }));
+    if (clipBox && dragAfter.offset > dragBefore.offset && dragAfter.left !== dragBefore.left)
+      pass('video compare: lane clip box drags independently on the shared timeline');
+    else fail('video compare clip drag: ' + JSON.stringify({ clipBox: !!clipBox, dragBefore, dragAfter }));
+    await page.click(`${panelSel} .media-compare-play`);
+    await page.waitForTimeout(350);
+    const playState = await page.$eval(`${panelSel} .media-compare`, (el) => ({
+      playing: el.dataset.playing,
+      time: el.querySelector('.media-compare-time')?.textContent || '',
+      playheadLeft: el.querySelector('.media-compare-playhead')?.style.left || '',
+    }));
+    await page.click(`${panelSel} .media-compare-stop`);
+    if (playState.playing === 'true' && /0:0[0-9.]+ \//.test(playState.time)
+      && playState.playheadLeft && playState.playheadLeft !== '0%')
+      pass('video compare: shared transport advances the red playhead and syncs top preview');
+    else fail('video compare transport: ' + JSON.stringify(playState));
     await page.fill(`${panelSel} .media-compare-offset-input[data-lane="A"]`, '0');
     await page.fill(`${panelSel} .media-compare-offset-input[data-lane="B"]`, '0.1');
     await page.fill(`${panelSel} .media-compare-in-input[data-lane="A"]`, '0');

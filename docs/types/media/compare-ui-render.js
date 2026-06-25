@@ -47,12 +47,18 @@ export function renderCompareLayout(state, ui) {
     normalizeMode,
     normalizeLabel,
     laneEls,
+    playButton,
+    timeReadout,
     band,
     missingA,
     missingB,
+    playhead,
+    playheadLabel,
     visual,
     videoPreview,
     videoPreviewEls,
+    compareTimelineEnd,
+    fmt,
   } = ui;
 
   const result = getCurrentCompareResult(state);
@@ -65,9 +71,11 @@ export function renderCompareLayout(state, ui) {
   const timelineEnd = Math.max(result.a.shifted.end, result.b.shifted.end, 1);
   const span = Math.max(1, timelineEnd - timelineStart);
   const pct = (value) => `${((value - timelineStart) / span) * 100}%`;
+  const playheadTime = Math.max(timelineStart, Math.min(state.playhead || 0, timelineEnd));
 
   wrap.dataset.layout = state.layout;
   wrap.dataset.normalize = state.normalize ? 'on' : 'off';
+  wrap.dataset.playing = state.playing ? 'true' : 'false';
   wrap.dataset.overlayOpacity = String(kind === 'video' ? state.videoOpacityB : state.opacity);
   wrap.dataset.videoForeground = state.videoForeground || 'B';
   wrap.dataset.videoOpacityA = String(state.videoOpacityA);
@@ -101,9 +109,17 @@ export function renderCompareLayout(state, ui) {
       const isLoaded = !!state.files[laneId];
       refs.layer.hidden = !isLoaded && laneId === 'B';
       refs.layer.dataset.foreground = state.videoForeground === laneId ? 'true' : 'false';
+      refs.layer.style.zIndex = state.layout === 'overlay'
+        ? (state.videoForeground === laneId ? '2' : '1')
+        : '';
       refs.label.textContent = `Lane ${laneId}: ${laneState.label}`;
       refs.video.style.opacity = String((laneId === 'A' ? state.videoOpacityA : state.videoOpacityB) / 100);
     }
+  }
+  if (playButton) playButton.textContent = state.playing ? 'Pause' : 'Play';
+  if (timeReadout) {
+    const total = typeof compareTimelineEnd === 'function' ? compareTimelineEnd() : timelineEnd;
+    timeReadout.textContent = `${fmt ? fmt(state.playhead || 0) : formatCompareSeconds(state.playhead || 0)} / ${fmt ? fmt(total) : formatCompareSeconds(total)}`;
   }
 
   for (const laneId of ['A', 'B']) {
@@ -116,6 +132,7 @@ export function renderCompareLayout(state, ui) {
     els.outInput.value = laneState.out.toFixed(1);
     els.selection.style.left = pct(shifted.start);
     els.selection.style.width = `${Math.max(0.75, ((shifted.end - shifted.start) / span) * 100)}%`;
+    if (els.clipLabel) els.clipLabel.textContent = laneState.label;
     els.handle.style.left = pct(shifted.start);
     els.handle.setAttribute('aria-valuenow', laneState.offset.toFixed(2));
     els.markerIn.style.left = pct(shifted.start);
@@ -145,6 +162,11 @@ export function renderCompareLayout(state, ui) {
   };
   paintMissing(missingA, missingInA);
   paintMissing(missingB, missingInB);
+  if (playhead) {
+    playhead.hidden = kind !== 'video';
+    playhead.style.left = pct(playheadTime);
+    if (playheadLabel) playheadLabel.textContent = fmt ? fmt(playheadTime) : formatCompareSeconds(playheadTime);
+  }
 
   return result;
 }
