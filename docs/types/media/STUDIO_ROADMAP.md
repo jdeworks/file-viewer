@@ -183,7 +183,7 @@ Validation target:
 
 ### R5 — Video Export Depth
 
-Status: in progress; subtitle burn-in and music-bed ducking control slices are implemented.
+Status: in progress; subtitle burn-in, music-bed ducking, and compact export transforms are implemented.
 
 Needed:
 
@@ -191,9 +191,10 @@ Needed:
   action, separate from display-only sidecars and mov_text embedding.
 - Done: User-facing music-bed ducking controls in Video Timeline; mux keeps original video
   audio unchanged and applies the selected gain only to the music bed.
-- Crop/rotate/LUT-style export presets if they fit the same Adjust/Export grammar.
-- Variable speed ramp only if it can be exposed clearly without turning the static viewer
-  into a full NLE.
+- Done: Compact Video Export transform/look presets for crop, rotate, and LUT-style looks
+  using ffmpeg-native `-vf` filters composed with the existing web-video scale preset.
+- Deferred: variable speed ramp unless it can be exposed clearly without turning the static
+  viewer into a full NLE.
 
 ## Success Criteria
 

@@ -856,6 +856,9 @@ export async function run(ctx) {
   const audioBurnCard = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-subtitle-card');
   if (!audioBurnCard) pass('R5: subtitle burn-in controls stay hidden for audio export');
   else fail('audio export should not show subtitle burn-in controls');
+  const audioTransformControls = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-transform-row');
+  if (!audioTransformControls) pass('R5: video export transform controls stay hidden for audio export');
+  else fail('audio export should not show video transform controls');
   const presetCards = await page.$$eval(
     '#previewHost .media-mode-panel[data-mode="export"] .media-export-panel .media-export-preset-card',
     (els) => els.map((e) => ({
@@ -1149,6 +1152,23 @@ export async function run(ctx) {
   if (/Export & Fades \(video\)/i.test(vidExportHeader)) pass('P3: video export panel offers fade-to-black'); else fail('video export header: ' + vidExportHeader);
   const vidFadeIn = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-panel .media-ed-fade-in');
   if (vidFadeIn) pass('P3: video fade-to/from-black duration controls present'); else fail('video fade controls missing');
+  const transformUi = await page.evaluate(() => {
+    const root = document.querySelector('#previewHost .media-mode-panel[data-mode="export"]');
+    return {
+      transforms: [...root.querySelectorAll('.media-export-transform option')].map((o) => o.textContent.trim()),
+      looks: [...root.querySelectorAll('.media-export-look option')].map((o) => o.textContent.trim()),
+    };
+  });
+  if (transformUi.transforms.includes('Center square crop') && transformUi.transforms.includes('Rotate 90° clockwise')
+    && transformUi.looks.includes('Cinema') && transformUi.looks.includes('Monochrome'))
+    pass('R5: video export shows compact transform/look controls');
+  else fail('video transform controls: ' + JSON.stringify(transformUi));
+  await page.selectOption('#previewHost .media-mode-panel[data-mode="export"] .media-export-transform', 'vertical');
+  await page.selectOption('#previewHost .media-mode-panel[data-mode="export"] .media-export-look', 'contrast');
+  const transformSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
+  if (/Vertical 9:16 crop/.test(transformSummary) && /High contrast/.test(transformSummary) && /-vf "crop=trunc/.test(transformSummary) && /scale=-2:720/.test(transformSummary))
+    pass('R5: transform/look selections update video export summary and -vf provenance');
+  else fail('video transform summary: ' + transformSummary);
   const burnUi = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-subtitle-card', (card) => ({
     title: card.querySelector('.media-export-subtitle-title')?.textContent || '',
     status: card.querySelector('.media-export-subtitle-status')?.textContent || '',
@@ -1178,6 +1198,19 @@ export async function run(ctx) {
     && burnArgs[burnArgs.indexOf('-c:a') + 1] === 'aac')
     pass('R5: pure subtitle burn args include subtitles filter and re-encode semantics');
   else fail('subtitle burn args: ' + JSON.stringify(burnArgs));
+  const exportVf = await page.evaluate(async () => {
+    const { buildVideoExportFilterChain } = await import('./types/media/transcoder.js');
+    return {
+      defaultMp4: buildVideoExportFilterChain({ scale: '-2:720' }, {}),
+      composed: buildVideoExportFilterChain({ scale: '-2:720' }, { transform: 'rotate_ccw', look: 'mono' }),
+      noFilter: buildVideoExportFilterChain({}, { transform: 'none', look: 'source' }),
+    };
+  });
+  if (exportVf.defaultMp4 === 'scale=-2:720'
+    && exportVf.composed === 'transpose=2,hue=s=0,scale=-2:720'
+    && exportVf.noFilter === '')
+    pass('R5: pure webvideo -vf builder composes transform/look/scale without ffmpeg');
+  else fail('video export vf builder: ' + JSON.stringify(exportVf));
 
   // ── P6: Video timeline (2-lane) + transitions + visual trim ───────────────────
   // Built for video when ffmpeg is enabled; CPU-lazy (no timeline DOM until opened).

@@ -15,7 +15,7 @@
 
 import { loadGlobal, vendor } from '../../core/script-loader.js';
 import { getGraph } from './audio-graph.js';
-import { cancelFfmpeg, formatFfmpegError, loadFfmpeg, runOperation, runAcxChapterExports, buildAudioFilterChain, buildAcxFilterChain } from './transcoder.js';
+import { cancelFfmpeg, formatFfmpegError, loadFfmpeg, runOperation, runAcxChapterExports, buildAudioFilterChain, buildAcxFilterChain, buildVideoExportFilterChain } from './transcoder.js';
 import { chapterFilename } from './chapters.js';
 import { describeDynamics } from './audio-filters.js';
 import {
@@ -51,6 +51,25 @@ function formatKhz(rate) {
   const n = Number(rate);
   if (!isFinite(n)) return '';
   return n >= 1000 ? `${n / 1000}k` : `${n} Hz`;
+}
+
+const VIDEO_TRANSFORMS = [
+  ['none', 'None'],
+  ['square', 'Center square crop'],
+  ['vertical', 'Vertical 9:16 crop'],
+  ['rotate_cw', 'Rotate 90° clockwise'],
+  ['rotate_ccw', 'Rotate 90° counterclockwise'],
+];
+
+const VIDEO_LOOKS = [
+  ['source', 'Source look'],
+  ['cinema', 'Cinema'],
+  ['contrast', 'High contrast'],
+  ['mono', 'Monochrome'],
+];
+
+function optionLabel(options, value) {
+  return (options.find((row) => row[0] === value) || options[0])[1];
 }
 
 function describePresetTarget(preset) {
@@ -185,6 +204,34 @@ export function buildExportPanel(intake, mediaEl, kind, options = {}) {
   fadeOutLabel.append(document.createTextNode('Fade out (s) '), fadeOutInput);
   fadeRow.append(fadeInLabel, fadeOutLabel);
   panel.appendChild(fadeRow);
+
+  let transformSel = null;
+  let lookSel = null;
+  if (!isAudio) {
+    const transformRow = document.createElement('div');
+    transformRow.className = 'media-ed-radio-row media-export-transform-row';
+    transformSel = document.createElement('select');
+    transformSel.className = 'sp-preset-sel media-export-transform';
+    for (const [value, label] of VIDEO_TRANSFORMS) {
+      const o = document.createElement('option');
+      o.value = value;
+      o.textContent = label;
+      transformSel.append(o);
+    }
+    lookSel = document.createElement('select');
+    lookSel.className = 'sp-preset-sel media-export-look';
+    for (const [value, label] of VIDEO_LOOKS) {
+      const o = document.createElement('option');
+      o.value = value;
+      o.textContent = label;
+      lookSel.append(o);
+    }
+    transformRow.append(
+      document.createTextNode('Transform '), transformSel,
+      document.createTextNode(' Look '), lookSel,
+    );
+    panel.appendChild(transformRow);
+  }
 
   // ── Advanced overrides (still advanced/custom) ──
   const advanced = buildAdvancedOverrides();
@@ -377,6 +424,9 @@ Provenance = -af "${chain || 'none'}"`;
       const bits = [];
       const desc = describeParams(p);
       if (desc) bits.push(desc);
+      const transform = collectVideoTransform();
+      if (transform.transform !== 'none') bits.push('transform ' + optionLabel(VIDEO_TRANSFORMS, transform.transform));
+      if (transform.look !== 'source') bits.push('look ' + optionLabel(VIDEO_LOOKS, transform.look));
       const active = (s.gains || []).filter((g) => Math.abs(g) >= 0.1).length;
       if (active) bits.push(active + ' EQ band' + (active === 1 ? '' : 's'));
       if (s.hpf > 20) bits.push('HPF ' + Math.round(s.hpf) + 'Hz');
@@ -386,14 +436,20 @@ Provenance = -af "${chain || 'none'}"`;
       if (fades.fadeIn > 0) bits.push('fade-in ' + fades.fadeIn + 's');
       if (fades.fadeOut > 0) bits.push('fade-out ' + fades.fadeOut + 's');
       const label = preset.id === 'custom' ? 'Custom' : preset.label.split(' (')[0];
+      const vf = buildVideoExportFilterChain(p.video || {}, transform);
+      const provenance = [];
+      if (vf) provenance.push('-vf "' + vf + '"');
+      if (chain) provenance.push('-af "' + chain + '"');
       summary.textContent = 'Will bake: ' + label
         + (bits.length ? ' — ' + bits.join(', ') : '')
-        + (chain ? '  —  -af "' + chain + '"' : '');
+        + (provenance.length ? '  —  Provenance = ' + provenance.join('; ') : '');
     }
   }
 
   fadeInInput.addEventListener('input', refreshSummary);
   fadeOutInput.addEventListener('input', refreshSummary);
+  transformSel?.addEventListener('change', refreshSummary);
+  lookSel?.addEventListener('change', refreshSummary);
   presetSel.addEventListener('change', () => {
     syncAdvancedVisibility();
     refreshSummary();
@@ -405,6 +461,13 @@ Provenance = -af "${chain || 'none'}"`;
       fadeIn: Math.max(0, parseFloat(fadeInInput.value) || 0),
       fadeOut: Math.max(0, parseFloat(fadeOutInput.value) || 0),
       duration: isFinite(mediaEl.duration) ? mediaEl.duration : 0,
+    };
+  }
+
+  function collectVideoTransform() {
+    return {
+      transform: transformSel?.value || 'none',
+      look: lookSel?.value || 'source',
     };
   }
 
@@ -497,7 +560,7 @@ Provenance = -af "${chain || 'none'}"`;
         result = await runOperation(ff, 'webvideo', {
           settings: chainSettings, fades, video: p.video, container: p.container,
           bitrate: p.bitrate, sampleRate: p.sampleRate, channels: p.channels,
-          lufsTarget: p.lufsTarget, truePeak: p.truePeak,
+          lufsTarget: p.lufsTarget, truePeak: p.truePeak, transform: collectVideoTransform(),
         }, intake);
       } else if (p.acxChain) {
         result = await runOperation(ff, 'acxExport', acxChainOptions(p), intake);

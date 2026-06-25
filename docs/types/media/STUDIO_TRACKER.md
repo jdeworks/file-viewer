@@ -692,8 +692,9 @@ polish and general compressed-audio longer-file strategy work.
 ### R5 — Video Export Depth
 
 Status: partial. Subtitle burn-in UI/op is committed in `c70853ec`; user-facing music-bed
-ducking controls are committed in `ff2b4fbe`. R5 remains open for crop/rotate/
-LUT-style export presets and variable speed ramp only if it can stay clear and compact.
+ducking controls are committed in `ff2b4fbe`. Compact crop/rotate/look export transforms
+are implemented in the current worktree. R5 remains open only for variable speed ramp if it
+can stay clear and compact; otherwise defer it as full-NLE scope creep.
 
 - Added a Video Export-only subtitle burn-in control with `.srt/.vtt` input, concise status,
   and a separate `Burn in subtitles` action.
@@ -717,6 +718,18 @@ LUT-style export presets and variable speed ramp only if it can stay clear and c
 - Changed paths for this slice: `timeline.js`, `preview-media.css`,
   `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`, `STUDIO_ROADMAP.md`,
   `STUDIO_TRACKER.md`, plus generated cache files if validation refreshes them.
+- Added Video Export-only transform/look selects for none, square crop, vertical crop,
+  90-degree rotation, source look, cinema, high contrast, and monochrome.
+- `webvideo` now composes a pure `buildVideoExportFilterChain()` helper into `-vf`, preserving
+  scale-only output for the MP4 720p default and emitting no `-vf` when a preset has no filters.
+- Export summary now names active transform/look selections and shows the generated `-vf`
+  provenance while keeping ffmpeg lazy until Export video is clicked.
+- Smoke/unit evidence covers hidden controls on audio export, visible controls on video export,
+  summary/provenance updates, default scale-only chain, crop+scale order, rotate+look+scale order,
+  and the no-filter case without running heavy ffmpeg.
+- Changed paths for this slice: `studio-export.js`, `transcoder.js`, `video-filters.js`,
+  `preview-media.css`, `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`,
+  `STUDIO_ROADMAP.md`, `STUDIO_TRACKER.md`, plus generated cache files if validation refreshes them.
 
 ## Tracking Rules
 

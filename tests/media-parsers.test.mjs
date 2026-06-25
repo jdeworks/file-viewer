@@ -34,7 +34,7 @@ import {
   parsePcmWavHeader,
   readPcmWavFirstChannelRange,
 } from '../docs/types/media/compare-audio.js';
-import { buildMuxMusicArgs } from '../docs/types/media/video-filters.js';
+import { buildMuxMusicArgs, buildVideoExportFilterChain } from '../docs/types/media/video-filters.js';
 import {
   classifyFfmpegError,
   cancelFfmpeg,
@@ -252,6 +252,27 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
 }
 
 {
+  assert.equal(
+    buildVideoExportFilterChain({ scale: '-2:720' }, {}),
+    'scale=-2:720',
+    'video export filters: default MP4 720p keeps scale-only chain',
+  );
+  assert.equal(
+    buildVideoExportFilterChain({ scale: '-2:720' }, { transform: 'square', look: 'source' }),
+    'crop=trunc(min(iw\\,ih)/2)*2:trunc(min(iw\\,ih)/2)*2:(iw-ow)/2:(ih-oh)/2,scale=-2:720',
+    'video export filters: crop composes before scale',
+  );
+  assert.equal(
+    buildVideoExportFilterChain({ scale: '-2:720' }, { transform: 'rotate_cw', look: 'cinema' }),
+    'transpose=1,eq=contrast=1.08:saturation=1.12:brightness=-0.02,scale=-2:720',
+    'video export filters: rotate and look compose before scale',
+  );
+  assert.equal(
+    buildVideoExportFilterChain({}, { transform: 'none', look: 'source' }),
+    '',
+    'video export filters: no preset filters emits no -vf chain',
+  );
+
   const args = buildSubtitleBurnArgs('input.avi', 'subtitle.srt', 'out.mp4', { ext: 'srt' });
   assert.deepEqual(args.slice(0, 4), ['-i', 'input.avi', '-vf', 'subtitles=subtitle.srt'], 'subtitle burn: uses subtitles video filter');
   assert.equal(args.includes('-c:v'), true, 'subtitle burn: sets video codec explicitly');

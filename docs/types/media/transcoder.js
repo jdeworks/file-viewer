@@ -21,8 +21,8 @@ export { buildAudioFilterChain, audioEncodeArgs } from './audio-filters.js';
 export { buildAcxFilterChain, buildAcxExportArgs, buildAcxChapterExportArgs, silenceRemoveFilter, roomTonePadFilter } from './audio-filters.js';
 // P6 — PURE timeline transition arg builders (xfade / acrossfade / mux music). Kept in
 // video-filters.js so they stay unit-testable and this file stays under the LOC cap.
-import { buildXfadeArgs, buildAcrossfadeArgs, buildMuxMusicArgs, buildSubtitleBurnArgs } from './video-filters.js';
-export { buildSubtitleBurnArgs } from './video-filters.js';
+import { buildXfadeArgs, buildAcrossfadeArgs, buildMuxMusicArgs, buildSubtitleBurnArgs, buildVideoExportFilterChain } from './video-filters.js';
+export { buildSubtitleBurnArgs, buildVideoExportFilterChain } from './video-filters.js';
 
 let ffmpegInstance = null;
 const CORE_JS = vendor('ffmpeg/ffmpeg-core.js');
@@ -343,10 +343,11 @@ export async function runOperation(ff, opId, params, intake) {
       // still apply to the audio track.
       case 'webvideo': {
         const v = params.video || {};
+        const vf = buildVideoExportFilterChain(v, params.transform || {});
         const ext = params.container || 'mp4';
         outputName = 'out.' + ext; outBase = base + '_' + (v.scale ? v.scale.split(':').pop() + 'p' : 'web');
         args = ['-i', inputName];
-        if (v.scale) args.push('-vf', 'scale=' + v.scale);
+        if (vf) args.push('-vf', vf);
         args.push('-c:v', v.codec || 'libx264');
         if (v.preset) args.push('-preset', v.preset);
         if (v.codec === 'libvpx-vp9') args.push('-crf', '33', '-b:v', '0');

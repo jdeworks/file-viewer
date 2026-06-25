@@ -108,6 +108,31 @@ export function buildSubtitleBurnArgs(inputName, subtitleName, outputName, opts 
   ];
 }
 
+const EXPORT_TRANSFORMS = {
+  square: 'crop=trunc(min(iw\\,ih)/2)*2:trunc(min(iw\\,ih)/2)*2:(iw-ow)/2:(ih-oh)/2',
+  vertical: 'crop=trunc(min(iw\\,ih*9/16)/2)*2:trunc(min(ih\\,iw*16/9)/2)*2:(iw-ow)/2:(ih-oh)/2',
+  rotate_cw: 'transpose=1',
+  rotate_ccw: 'transpose=2',
+};
+
+const EXPORT_LOOKS = {
+  cinema: 'eq=contrast=1.08:saturation=1.12:brightness=-0.02',
+  contrast: 'eq=contrast=1.22:saturation=1.08',
+  mono: 'hue=s=0',
+};
+
+// Build the single-clip Video Export -vf chain. Transform and look presets are intentionally
+// small ffmpeg-native filters; scale remains last so crops/rotates settle before output sizing.
+export function buildVideoExportFilterChain(videoPreset = {}, transformOpts = {}) {
+  const filters = [];
+  const transform = String(transformOpts.transform || 'none');
+  const look = String(transformOpts.look || 'source');
+  if (EXPORT_TRANSFORMS[transform]) filters.push(EXPORT_TRANSFORMS[transform]);
+  if (EXPORT_LOOKS[look]) filters.push(EXPORT_LOOKS[look]);
+  if (videoPreset?.scale) filters.push('scale=' + videoPreset.scale);
+  return filters.join(',');
+}
+
 // Normalize a single-clip visual trim from the timeline handles. start/end are seconds;
 // returns { start, end } where end is null when not set / invalid. PURE helper.
 export function trimRange(start, end) {
