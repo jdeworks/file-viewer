@@ -1833,60 +1833,181 @@ export async function run(ctx) {
   const tlToggle = await page.evaluateHandle((sel) =>
     [...document.querySelectorAll(sel + ' .media-wv-toggle')].find((b) => /Video timeline/.test(b.textContent)) || null, tlModeSel);
   const tlToggleExists = await tlToggle.evaluate((e) => !!e);
-  if (tlToggleExists) {
-    pass('P6: video timeline toggle button present');
-    const preTl = await page.$(tlModeSel + ' .tl-wrap');
-    if (!preTl) pass('P6: video timeline CPU-lazy (no DOM until opened)'); else fail('timeline mounted before open');
-    await tlToggle.asElement().click();
-    await page.waitForSelector(tlModeSel + ' .tl-wrap', { timeout: 12000 });
-    // 2 lanes: video lane (clip A) + second/music lane.
-    const lanes = await page.$$eval(tlModeSel + ' .tl-lane', (els) => els.length);
-    if (lanes === 2) pass('P6: timeline mounts 2 lanes (video + second/music)'); else fail('timeline lanes: ' + lanes);
-    // Thumbnail strip with a load-on-demand button + trim handles (in/out).
-    const tlBits = await page.evaluate((sel) => {
-      const root = document.querySelector(sel);
-      if (!root) return null;
-      return {
-        strip: !!root.querySelector('.tl-strip'),
-        thumbBtn: !!root.querySelector('.tl-thumb-btn'),
-        handleIn: !!root.querySelector('.tl-handle-in'),
-        handleOut: !!root.querySelector('.tl-handle-out'),
-        drop: !!root.querySelector('.tl-lane--b .media-ed-drop-zone'),
+    if (tlToggleExists) {
+      pass('P6: video timeline toggle button present');
+      const preTl = await page.$(tlModeSel + ' .tl-wrap');
+      if (!preTl) pass('P6: video timeline CPU-lazy (no DOM until opened)'); else fail('timeline mounted before open');
+      await tlToggle.asElement().click();
+      await page.waitForSelector(tlModeSel + ' .tl-wrap', { timeout: 12000 });
+      const assertTimelineViewport = async (label) => {
+        const geometry = await page.$eval(tlModeSel + ' .tl-wrap', (root) => {
+          const host = document.querySelector('#previewHost');
+          const hostRect = host?.getBoundingClientRect();
+          const wrapRect = root.getBoundingClientRect();
+          const timeline = root.querySelector('.tl-timeline');
+          const ruler = root.querySelector('.tl-ruler');
+          const playhead = root.querySelector('.tl-playhead');
+          const ctx = root.querySelector('.tl-context');
+          const lanes = root.querySelector('.tl-lane-view');
+          if (!hostRect || !timeline || !ruler || !playhead || !ctx || !lanes) return null;
+          const docEl = document.documentElement;
+          return {
+            wrapLeft: Math.round(wrapRect.left),
+            wrapRight: Math.round(wrapRect.right),
+            hostLeft: Math.round(hostRect.left),
+            hostRight: Math.round(hostRect.right),
+            overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
+            rulerVisible: ruler.getBoundingClientRect().width > 0 && ruler.getBoundingClientRect().height > 0,
+            playheadVisible: playhead.getBoundingClientRect().width > 0 && playhead.getBoundingClientRect().height > 0,
+            contextVisible: ctx.getBoundingClientRect().height > 0 && getComputedStyle(ctx).display !== 'none',
+            lanesScrollable: lanes.scrollWidth > Math.round(lanes.clientWidth),
+            timelineScrollable: timeline.scrollWidth > Math.round(timeline.clientWidth),
+            activeViewportW: window.innerWidth,
+          };
+        });
+        if (!geometry) return fail('video timeline geometry unavailable (' + label + ')');
+        if (geometry.rulerVisible && geometry.playheadVisible && geometry.contextVisible)
+          pass('P6: timeline grammar visible in timeline mode (' + label + ')');
+        else fail('timeline grammar visibility (' + label + '): ' + JSON.stringify({
+          rulerVisible: geometry?.rulerVisible,
+          playheadVisible: geometry?.playheadVisible,
+          contextVisible: geometry?.contextVisible,
+        }));
+        if (geometry.timelineScrollable) pass('P6: timeline can scroll horizontally when dense (' + label + ')');
+        if (geometry.overflowX === 0)
+          pass('P6: timeline mode has no horizontal page overflow (' + label + ')');
+        else fail('timeline mode horizontal overflow issue (' + label + '): ' + geometry.overflowX);
+        if (geometry.wrapLeft >= geometry.hostLeft - 1 && geometry.wrapRight <= geometry.hostRight + 1)
+          pass('P6: timeline workspace fits host width (' + label + ')');
+        else fail('timeline workspace width issue (' + label + '): ' + JSON.stringify(geometry));
       };
-    }, tlModeSel);
-    if (!tlBits) fail('P6: cannot find timeline mode panel root');
-    if (tlBits.strip && tlBits.thumbBtn) pass('P6: thumbnail strip + on-demand thumbnail button present'); else fail('thumb strip: ' + JSON.stringify(tlBits));
-    if (tlBits.handleIn && tlBits.handleOut) pass('P6: visual trim handles (in/out) present'); else fail('trim handles: ' + JSON.stringify(tlBits));
-    if (tlBits.drop) pass('P6: second-clip / music drop zone present'); else fail('timeline drop zone missing');
-    // Transition controls: dissolve/xfade selector + length + the four action buttons.
-    const transOpts = await page.$$eval(tlModeSel + ' .tl-trans-sel option', (els) => els.map((e) => e.value));
-    if (transOpts.includes('fade') && transOpts.includes('fadeblack') && transOpts.includes('wipeleft')) pass('P6: transition selector offers fade/fadeblack/wipe'); else fail('transition opts: ' + transOpts.join(','));
-    const acts = await page.evaluate((sel) => {
-      const root = document.querySelector(sel);
-      if (!root) return null;
-      return {
-        trim: !!root.querySelector('.tl-act-trim'),
-        fade: !!root.querySelector('.tl-act-fade'),
-        xfade: !!root.querySelector('.tl-act-xfade'),
-        across: !!root.querySelector('.tl-act-across'),
-        mux: !!root.querySelector('.tl-act-mux'),
-      };
-    }, tlModeSel);
-    if (acts && acts.trim && acts.fade && acts.xfade && acts.across && acts.mux)
-      pass('P6: trim + fade/xfade/acrossfade/mux action buttons present'); else fail('timeline actions: ' + JSON.stringify(acts));
-    const trimBtnText = await page.$eval(tlModeSel + ' .tl-act-trim', (e) => e.textContent);
-    if (trimBtnText.includes('Trim selected range')) pass('P6: trim action has visible label'); else fail('trim button text: ' + trimBtnText);
-    // Cross-clip actions disabled until a second clip is dropped.
-    const xfadeDisabled = await page.$eval(tlModeSel + ' .tl-act-xfade', (e) => e.disabled);
-    if (xfadeDisabled) pass('P6: dissolve disabled until a 2nd clip is added'); else fail('xfade not gated on 2nd clip');
-    // Close → torn down.
-    await tlToggle.asElement().click();
-    await page.waitForSelector(tlModeSel + ' .tl-wrap', { state: 'detached', timeout: 4000 });
-    pass('P6: video timeline panel collapses + tears down');
-    await page.click('#previewHost .media-mode-tab[data-mode="watch"]');
-  } else {
-    fail('P6 video timeline toggle not found');
-  }
+
+      // 2 lanes: video lane (clip A) + second/music lane.
+      const lanes = await page.$$eval(tlModeSel + ' .tl-lane', (els) => els.length);
+      if (lanes === 2) pass('P6: timeline mounts 2 lanes (video + second/music)'); else fail('timeline lanes: ' + lanes);
+      const tlHeader = await page.evaluate((sel) => {
+        const root = document.querySelector(sel);
+        if (!root) return null;
+        const title = root.querySelector('.tl-head-title');
+        const status = root.querySelector('.tl-head-status');
+        const context = root.querySelector('.tl-context');
+        const ruler = root.querySelector('.tl-ruler');
+        const playhead = root.querySelector('.tl-playhead');
+        const lanesWrap = root.querySelector('.tl-lane-view');
+        return {
+          title: title?.textContent?.trim() || '',
+          statusText: status?.textContent?.trim() || '',
+          contextText: context?.textContent?.trim() || '',
+          ruler: !!ruler,
+          playhead: !!playhead,
+          lanesWrap: !!lanesWrap,
+          viewportStatus: root.getBoundingClientRect()?.width > 0,
+        };
+      }, tlModeSel);
+      if (tlHeader && /Timeline/.test(tlHeader.title)) pass('P6: timeline intent/workspace header title present'); else fail('timeline header: ' + JSON.stringify(tlHeader));
+      if (/Trim:/.test(tlHeader.statusText)) pass('P6: timeline header status includes trim status');
+      else fail('timeline header status: ' + (tlHeader?.statusText || ''));
+      if (tlHeader?.contextText) pass('P6: timeline workspace context present');
+      else fail('timeline header context: ' + JSON.stringify(tlHeader));
+      if (tlHeader?.ruler && tlHeader?.playhead && tlHeader?.lanesWrap) pass('P6: timeline grammar includes ruler + playhead + lanes');
+      else fail('timeline grammar: ' + JSON.stringify(tlHeader));
+      if (tlHeader?.viewportStatus) pass('P6: timeline workspace has positive viewport width');
+      else fail('timeline workspace geometry: ' + JSON.stringify(tlHeader));
+      // Thumbnail strip with a load-on-demand button + trim handles (in/out).
+      const tlBits = await page.evaluate((sel) => {
+        const root = document.querySelector(sel);
+        if (!root) return null;
+        return {
+          strip: !!root.querySelector('.tl-strip'),
+          thumbBtn: !!root.querySelector('.tl-thumb-btn'),
+          handleIn: !!root.querySelector('.tl-handle-in'),
+          handleOut: !!root.querySelector('.tl-handle-out'),
+          drop: !!root.querySelector('.tl-lane--b .media-ed-drop-zone'),
+        };
+      }, tlModeSel);
+      if (!tlBits) fail('P6: cannot find timeline mode panel root');
+      if (tlBits.strip && tlBits.thumbBtn) pass('P6: thumbnail strip + on-demand thumbnail button present'); else fail('thumb strip: ' + JSON.stringify(tlBits));
+      if (tlBits.handleIn && tlBits.handleOut) pass('P6: visual trim handles (in/out) present'); else fail('trim handles: ' + JSON.stringify(tlBits));
+      if (tlBits.drop) pass('P6: second-clip / music drop zone present'); else fail('timeline drop zone missing');
+      const tlGroups = await page.evaluate((sel) => {
+        const root = document.querySelector(sel);
+        if (!root) return null;
+        const actionGroups = [...root.querySelectorAll('.tl-action-group')].map((g) => ({
+          buttons: [...g.querySelectorAll('button')].map((b) => b.className),
+        }));
+        const trim = root.querySelector('.tl-lane--video .tl-trim-label');
+        return {
+          groups: actionGroups,
+          trimLabel: trim?.textContent || '',
+        };
+      }, tlModeSel);
+      if (tlGroups && tlGroups.groups.length === 2) {
+        const single = tlGroups.groups[0]?.buttons || [];
+        const dual = tlGroups.groups[1]?.buttons || [];
+        if (single.includes('tl-act tl-act-trim') && single.includes('tl-act tl-act-fade')
+          && dual.includes('tl-act tl-act-xfade') && dual.includes('tl-act tl-act-across') && dual.includes('tl-act tl-act-mux'))
+          pass('P6: action groups separate single-clip and two-clip actions');
+        else fail('timeline action grouping: ' + JSON.stringify(tlGroups.groups));
+      } else {
+        fail('timeline action groups: ' + JSON.stringify(tlGroups));
+      }
+      if (tlGroups?.trimLabel && /Trim:/.test(tlGroups.trimLabel)) pass('P6: trim label present in timeline lane');
+      else fail('timeline trim label: ' + JSON.stringify(tlGroups));
+      // Transition controls: dissolve/xfade selector + length + the four action buttons.
+      const transOpts = await page.$$eval(tlModeSel + ' .tl-trans-sel option', (els) => els.map((e) => e.value));
+      if (transOpts.includes('fade') && transOpts.includes('fadeblack') && transOpts.includes('wipeleft')) pass('P6: transition selector offers fade/fadeblack/wipe'); else fail('transition opts: ' + transOpts.join(','));
+      const acts = await page.evaluate((sel) => {
+        const root = document.querySelector(sel);
+        if (!root) return null;
+        return {
+          trim: !!root.querySelector('.tl-act-trim'),
+          fade: !!root.querySelector('.tl-act-fade'),
+          xfade: !!root.querySelector('.tl-act-xfade'),
+          across: !!root.querySelector('.tl-act-across'),
+          mux: !!root.querySelector('.tl-act-mux'),
+        };
+      }, tlModeSel);
+      if (acts && acts.trim && acts.fade && acts.xfade && acts.across && acts.mux)
+        pass('P6: trim + fade/xfade/acrossfade/mux action buttons present'); else fail('timeline actions: ' + JSON.stringify(acts));
+      const trimBtnText = await page.$eval(tlModeSel + ' .tl-act-trim', (e) => e.textContent);
+      if (trimBtnText.includes('Trim selected range')) pass('P6: trim action has visible label'); else fail('trim button text: ' + trimBtnText);
+      // Cross-clip actions disabled until a second clip is dropped.
+      const xfadeDisabled = await page.$eval(tlModeSel + ' .tl-act-xfade', (e) => e.disabled);
+      if (xfadeDisabled) pass('P6: dissolve disabled until a 2nd clip is added'); else fail('xfade not gated on 2nd clip');
+      await assertTimelineViewport('desktop');
+
+      const tlViewDesktop = page.viewportSize();
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(origin, { waitUntil: 'load' });
+      await openExample('Sample.avi');
+      await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
+      await page.click('#previewHost .media-mode-tab[data-mode="timeline"]');
+      await page.waitForSelector(tlModeSel + ':not([hidden])', { timeout: 5000 });
+      const mobileToggle = await page.evaluateHandle((sel) =>
+        [...document.querySelectorAll(sel + ' .media-wv-toggle')]
+          .find((b) => /Video timeline/.test(b.textContent)) || null, tlModeSel);
+      const mobileToggleExists = await mobileToggle.evaluate((e) => !!e);
+      if (mobileToggleExists) {
+        await mobileToggle.asElement().click();
+        await page.waitForSelector(tlModeSel + ' .tl-wrap', { timeout: 12000 });
+        await assertTimelineViewport('mobile');
+        await mobileToggle.asElement().click();
+        await page.waitForSelector(tlModeSel + ' .tl-wrap', { state: 'detached', timeout: 4000 });
+      } else {
+        fail('P6 mobile: video timeline toggle not found after viewport change');
+      }
+      if (tlViewDesktop) {
+        await page.setViewportSize(tlViewDesktop);
+      } else {
+        await page.setViewportSize({ width: 1100, height: 800 });
+      }
+      await page.goto(origin, { waitUntil: 'load' });
+      await openExample('Sample.avi');
+      await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
+      pass('P6: video timeline panel collapses + tears down');
+    } else {
+      fail('P6 video timeline toggle not found');
+    }
   
 
   // PURE arg-builder unit checks (no ffmpeg load): xfade offset math + acrossfade/mux args.

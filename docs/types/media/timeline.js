@@ -2,7 +2,7 @@
 //
 // A VIDEO lane (the open clip) with a thumbnail strip + drag trim handles (in/out), and a
 // SECOND lane fed by a drop zone (reuses buildSecondaryDropZone) to bring in a second video
-// (dissolve / xfade) or a music bed (mux under). Transitions bake through ffmpeg:
+// (dissolve / xfade) or a music bed (mux) here. Transitions bake through ffmpeg:
 //   • Fade to/from black (single clip)  → 'videofade' op
 //   • Dissolve / crossfade (2 clips)    → 'xfade' op   (video) + acrossfade audio
 //   • Audio crossfade (2 clips)         → 'acrossfade' op
@@ -15,6 +15,9 @@
 import { loadFfmpeg, runOperation } from './transcoder.js';
 import { clampTrimRange } from './video-filters.js';
 import { buildSecondaryDropZone } from './editor-advanced.js';
+
+const TL_PX_PER_SEC = 32;
+const TL_MIN_PX = 360;
 
 function mkBtn(text, cls) {
   const b = document.createElement('button');
@@ -40,15 +43,46 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
   let ffInstance = null;
   let secondZone = null;     // { el, getFile() } — second clip / music bed
   let trimIn = 0, trimOut = 0; // seconds (out=0 means "till end")
+  let operating = false;
 
   const wrap = document.createElement('div');
   wrap.className = 'tl-wrap';
+
+  const head = document.createElement('div');
+  head.className = 'tl-head';
+  const headTitle = document.createElement('div');
+  headTitle.className = 'tl-head-title';
+  headTitle.textContent = 'Timeline';
+  const headStatus = document.createElement('div');
+  headStatus.className = 'tl-head-status';
+  head.append(headTitle, headStatus);
+
+  const context = document.createElement('div');
+  context.className = 'tl-context';
+
+  // Shared grammar: ruler, lanes and playhead.
+  const timeline = document.createElement('div');
+  timeline.className = 'tl-timeline';
+  const ruler = document.createElement('div');
+  ruler.className = 'tl-ruler';
+  const playhead = document.createElement('div');
+  playhead.className = 'tl-playhead';
+  const playheadTime = document.createElement('span');
+  playheadTime.className = 'tl-playhead-time';
+  playhead.append(playheadTime);
+
+  const laneView = document.createElement('div');
+  laneView.className = 'tl-lane-view';
+  const lanes = document.createElement('div');
+  lanes.className = 'tl-lane-track';
 
   // ── Video lane (clip A) ──
   const vLane = document.createElement('div');
   vLane.className = 'tl-lane tl-lane--video';
   const vName = document.createElement('div');
   vName.className = 'tl-lane-name'; vName.textContent = intake.filename || 'Clip A';
+  const vTrack = document.createElement('div');
+  vTrack.className = 'tl-lane-track-row';
   const strip = document.createElement('div');
   strip.className = 'tl-strip';
   const thumbRow = document.createElement('div');
@@ -67,16 +101,20 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
   const trimLabel = document.createElement('div');
   trimLabel.className = 'tl-trim-label'; trimLabel.textContent = 'Trim: full clip';
   strip.append(thumbRow, handleIn, handleOut);
-  vLane.append(vName, strip, trimLabel);
+  vTrack.append(strip, trimLabel);
+  vLane.append(vName, vTrack);
 
   // ── Music / second lane (clip B) ──
   const bLane = document.createElement('div');
   bLane.className = 'tl-lane tl-lane--b';
   const bName = document.createElement('div');
   bName.className = 'tl-lane-name'; bName.textContent = 'Second clip / music';
+  const bTrack = document.createElement('div');
+  bTrack.className = 'tl-lane-track-row';
   const dropDef = { accept: 'video/*,audio/*', hint: 'Drop a 2nd video (dissolve) or music bed (mux) here' };
-  secondZone = buildSecondaryDropZone(dropDef, () => { syncActions(); });
-  bLane.append(bName, secondZone.el);
+  secondZone = buildSecondaryDropZone(dropDef, () => { syncActions(); syncStatusLine(); });
+  bTrack.appendChild(secondZone.el);
+  bLane.append(bName, bTrack);
 
   // ── Transition controls ──
   const ctrls = document.createElement('div');
@@ -104,7 +142,13 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
   const xfadeBtn = mkBtn('Dissolve 2 clips (video)', 'tl-act tl-act-xfade');
   const acrossBtn = mkBtn('Crossfade audio (2 clips)', 'tl-act tl-act-across');
   const muxBtn = mkBtn('Mux music under video', 'tl-act tl-act-mux');
-  actions.append(trimBtn, fadeBtn, xfadeBtn, acrossBtn, muxBtn);
+  const singleActions = document.createElement('div');
+  singleActions.className = 'tl-action-group';
+  singleActions.append(trimBtn, fadeBtn);
+  const dualActions = document.createElement('div');
+  dualActions.className = 'tl-action-group';
+  dualActions.append(xfadeBtn, acrossBtn, muxBtn);
+  actions.append(singleActions, dualActions);
 
   // ── Status / result ──
   const status = document.createElement('div');
@@ -112,11 +156,108 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
   const result = document.createElement('div');
   result.className = 'tl-result'; result.hidden = true;
 
-  wrap.append(vLane, bLane, ctrls, actions, status, result);
+  lanes.append(vLane, bLane);
+  laneView.append(lanes);
+  timeline.append(ruler, laneView, playhead);
+  wrap.append(head, context, timeline, ctrls, actions, status, result);
   container.append(wrap);
+
+  function onWindowResize() { syncTrackDims(); refreshPlayhead(); }
 
   // ── Trim handle drag → trimIn / trimOut (seconds, mapped off strip width vs duration) ──
   function dur() { return isFinite(mediaEl.duration) && mediaEl.duration > 0 ? mediaEl.duration : 0; }
+  function secondLabel() {
+    const f = secondZone?.getFile();
+    return f ? `Second clip: ${f.name}` : 'Second clip/music: add one';
+  }
+  function selectedTrim() {
+    const d = dur();
+    const out = trimOut > 0 ? trimOut : d;
+    const source = d ? fmt(d) : 'loading';
+    if (!d) {
+      return {
+        trimText: 'Trim: full clip',
+        totalText: source,
+      };
+    }
+    if (trimIn <= 0 && trimOut <= 0) return { trimText: `Trim: 0:00 → ${fmt(d)} (full)`, totalText: source };
+    return { trimText: `Trim: ${fmt(trimIn)} → ${fmt(out)}`, totalText: source };
+  }
+  function syncStatusLine() {
+    const t = selectedTrim();
+    headStatus.textContent = `${t.trimText} • ${t.totalText}`;
+    context.textContent = `${secondLabel()} • ${intake.filename || 'video'}`;
+    if (!operating) {
+      status.textContent = `${t.trimText} ${secondZone?.getFile() ? '• 2-clip actions enabled' : '• add a second clip/music to unlock dissolve / crossfade / mux'}`;
+    }
+  }
+
+  function timelinePx() {
+    const d = dur();
+    return Math.max(TL_MIN_PX, Math.round(Math.max(1, d) * TL_PX_PER_SEC));
+  }
+
+  function buildRuler(totalSeconds, pxWidth) {
+    ruler.innerHTML = '';
+    if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) {
+      const tick = document.createElement('div');
+      tick.className = 'tl-ruler-tick';
+      tick.style.left = '0px';
+      const label = document.createElement('span');
+      label.className = 'tl-ruler-label';
+      label.textContent = '0:00';
+      tick.append(label);
+      ruler.appendChild(tick);
+      return;
+    }
+
+    const baseTick = TL_PX_PER_SEC >= 28 ? 1 : TL_PX_PER_SEC >= 14 ? 2 : 5;
+    const labelEvery = Math.max(5, baseTick * 2);
+    const labelPxLimit = 40;
+    const tickCount = Math.ceil(totalSeconds / baseTick);
+    for (let i = 0; i <= tickCount; i += 1) {
+      const sec = Math.min(totalSeconds, i * baseTick);
+      const x = Math.max(0, Math.min(pxWidth, Math.round((sec / totalSeconds) * pxWidth)));
+      const tick = document.createElement('div');
+      tick.className = 'tl-ruler-tick';
+      tick.style.left = x + 'px';
+      if (i % Math.round(labelEvery / baseTick) === 0 || sec === totalSeconds) {
+        const label = document.createElement('span');
+        label.className = 'tl-ruler-label';
+        label.style.left = sec === totalSeconds ? `-${labelPxLimit - 8}px` : '-14px';
+        label.textContent = fmt(sec);
+        tick.append(label);
+        tick.classList.add('with-label');
+      }
+      ruler.appendChild(tick);
+    }
+  }
+
+  function syncTrackDims() {
+    const pxWidth = timelinePx();
+    const width = `${pxWidth}px`;
+    vTrack.style.width = width;
+    bTrack.style.width = width;
+    ruler.style.width = width;
+    lanes.style.width = width;
+    buildRuler(dur(), pxWidth);
+    refreshPlayhead();
+  }
+
+  function refreshPlayhead() {
+    const d = dur();
+    const pxWidth = timelinePx();
+    if (!d) {
+      playhead.style.left = '0px';
+      playheadTime.textContent = '0:00';
+      return;
+    }
+    const t = Math.max(0, Math.min(mediaEl.currentTime || 0, d));
+    const x = Math.round((t / d) * pxWidth);
+    playhead.style.left = `${Math.max(0, Math.min(pxWidth - 2, x))}px`;
+    playheadTime.textContent = fmt(t);
+  }
+
   function clampTrim() {
     const d = dur();
     if (!d) {
@@ -129,6 +270,7 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
     trimIn = v.start;
     trimOut = (v.end === d ? 0 : v.end);
   }
+
   function syncTrimHandles() {
     const d = dur();
     if (!d) {
@@ -140,7 +282,15 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
     handleIn.style.left = ((trimIn / d) * 100) + '%';
     handleOut.style.right = ((1 - out / d) * 100) + '%';
   }
-  function syncTrim() { clampTrim(); syncTrimHandles(); updateTrimLabel(); }
+
+  function syncTrim() {
+    clampTrim();
+    syncTrimHandles();
+    updateTrimLabel();
+    syncTrackDims();
+    syncStatusLine();
+  }
+
   function updateTrimLabel() {
     const d = dur();
     const outV = trimOut > 0 ? trimOut : d;
@@ -148,6 +298,7 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
       ? 'Trim: full clip' + (d ? ' (' + fmt(d) + ')' : '')
       : 'Trim: ' + fmt(trimIn) + ' → ' + fmt(outV);
   }
+
   function wireHandle(handle, isIn) {
     handle.addEventListener('pointerdown', (e) => {
       e.preventDefault();
@@ -177,9 +328,22 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
       handle.addEventListener('pointerup', up);
     });
   }
+
   wireHandle(handleIn, true);
   wireHandle(handleOut, false);
-  mediaEl.addEventListener('loadedmetadata', syncTrim);
+
+  const syncFromMetadata = () => {
+    syncTrim();
+    syncTrackDims();
+    refreshPlayhead();
+  };
+  const syncFromPlayhead = () => {
+    refreshPlayhead();
+  };
+  mediaEl.addEventListener('loadedmetadata', syncFromMetadata);
+  mediaEl.addEventListener('timeupdate', syncFromPlayhead);
+  mediaEl.addEventListener('seeked', syncFromPlayhead);
+  window.addEventListener('resize', onWindowResize);
   syncTrim();
 
   // ── Thumbnails (lazy: only fetch ffmpeg + a thumbstrip when asked) ──
@@ -202,7 +366,6 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
   function syncActions() {
     const has2 = !!secondZone.getFile();
     xfadeBtn.disabled = acrossBtn.disabled = muxBtn.disabled = !has2;
-    status.textContent = has2 ? '' : 'Drop a second clip / music bed to enable dissolve / crossfade / mux.';
   }
 
   function showResult(r) {
@@ -215,6 +378,7 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
   }
 
   async function runOp(opId, extra) {
+    operating = true;
     status.textContent = 'Loading ffmpeg…';
     [trimBtn, fadeBtn, xfadeBtn, acrossBtn, muxBtn].forEach((b) => { b.disabled = true; });
     try {
@@ -232,9 +396,11 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
       status.textContent = 'Error: ' + (err.message || String(err)).split('\n')[0];
     } finally {
       ffInstance = null;
+      operating = false;
       syncActions();
       [trimBtn, fadeBtn, xfadeBtn, acrossBtn, muxBtn].forEach((b) => { b.disabled = false; });
       syncActions();
+      syncStatusLine();
     }
   }
 
@@ -259,11 +425,18 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
   muxBtn.addEventListener('click', () => runOp('muxmusic',
     { secondary: secondZone.getFile(), musicGain: 0.35 }));
 
+  syncTrackDims();
+  syncStatusLine();
   syncActions();
 
   return {
     destroy() {
+      operating = false;
       if (ffInstance) { try { ffInstance.exit(); } catch { /* ignore */ } ffInstance = null; }
+      mediaEl.removeEventListener('loadedmetadata', syncFromMetadata);
+      mediaEl.removeEventListener('timeupdate', syncFromPlayhead);
+      mediaEl.removeEventListener('seeked', syncFromPlayhead);
+      window.removeEventListener('resize', onWindowResize);
       for (const u of blobUrls) { try { URL.revokeObjectURL(u); } catch { /* ignore */ } }
       blobUrls.length = 0;
       wrap.remove();
