@@ -33,10 +33,15 @@
 .asx-peek figcaption { font: 10px ui-monospace, monospace; color: #9ab; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
 .asx-peek canvas { display: block; max-width: 260px; border-radius: 3px; image-rendering: auto; background: #000; }
 
-/* Control panel — a toggleable drawer (the ⚙ button flips .asx-settings-open on the
-   root). Hidden by default; shown as a side column on wide screens. */
-.asx-panel { width: clamp(300px, 40%, 520px); flex: none; display: none; flex-direction: column; gap: 8px; overflow: auto; }
+/* Floating control panel — the settings button toggles it; the header drags it
+   and the browser resize handle lets users grow/shrink it where useful. */
+.asx-panel { position: fixed; z-index: 40; min-width: 280px; min-height: 180px; max-width: min(92vw, 680px); max-height: min(84vh, 760px);
+  display: none; flex-direction: column; gap: 0; overflow: auto; resize: both; background: rgba(13,13,13,.98);
+  border: 1px solid #2a2a2a; border-radius: 6px; box-shadow: 0 12px 34px rgba(0,0,0,.62); }
 .asx-root.asx-settings-open .asx-panel { display: flex; }
+.asx-float-head { flex: 0 0 auto; cursor: move; user-select: none; padding: 8px 10px; border-bottom: 1px solid #2a2a2a;
+  color: #9ab; font: 11px ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0; background: #151515; }
+.asx-float-body { display: flex; flex-direction: column; gap: 8px; padding: 10px; min-height: 0; overflow: auto; }
 .asx-group { border: 1px solid #2a2a2a; border-radius: 6px; padding: 0 10px; }
 .asx-group[open] { padding-bottom: 10px; }
 .asx-group summary { font: 11px ui-monospace, monospace; color: #9ab; text-transform: uppercase; letter-spacing: .06em;
@@ -90,19 +95,8 @@
 .cam-orig-peek figcaption { font: 10px ui-monospace, monospace; color: #9ab; text-transform: uppercase; margin-bottom: 4px; }
 .cam-orig-peek canvas { display: block; max-width: 260px; border-radius: 3px; background: #111; }
 
-/* full settings panel, overlaid from the top behind the ⚙ button */
-.cam-settings { position: absolute; top: 0; left: 0; right: 0; z-index: 5; max-height: 80%; overflow: auto;
-  display: none; flex-direction: column; gap: 8px; padding: 12px;
-  background: rgba(13,13,13,.97); border-bottom: 1px solid #2a2a2a; box-shadow: 0 8px 24px rgba(0,0,0,.6); }
+.cam-settings { position: fixed; z-index: 40; min-width: 280px; min-height: 180px; max-width: min(92vw, 680px); max-height: min(84vh, 760px);
+  overflow: auto; resize: both; display: none; flex-direction: column; background: rgba(13,13,13,.98);
+  border: 1px solid #2a2a2a; border-radius: 6px; box-shadow: 0 12px 34px rgba(0,0,0,.62); }
 .cam-settings:not([hidden]) { display: flex; }
 .asx-cam .cam-gear.active { color: #6ab0ff; border-color: #3a5a8a; }
-
-/* When the studio itself is narrow (.asx-narrow, set by a ResizeObserver — NOT a
-   viewport media query, since the preview pane can be narrow on a wide screen) the
-   open panel overlays the stage from the right as a drawer instead of pushing it,
-   so the converter stays usable. */
-.asx-root.asx-narrow.asx-settings-open .asx-panel {
-  position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 92%); z-index: 6;
-  padding: 12px; background: rgba(13,13,13,.98); border-left: 1px solid #2a2a2a;
-  box-shadow: -8px 0 24px rgba(0,0,0,.6);
-}

@@ -8,7 +8,7 @@ Covers: PNG, JPG, WebP, BMP, AVIF, GIF, TIFF, HEIF/HEIC, ICO/CUR, SVG, Procreate
 
 `docs/types/image/renderer.js` is the shared raster editor (split across sibling modules — see "Shared toolbar / modular note"). `EDITABLE_MIME` is now **PNG, JPEG, WebP, AVIF, BMP, GIF** (BMP/GIF re-encode to PNG; GIF edits the first frame). JXL decodes to a PNG canvas via `jxl-decode.js` and is editable through that; **TIFF** likewise decodes via `tiff/decode-tiff.js` (vendored UTIF) and delegates to this editor. Other raster types (HEIF, ICO, Procreate, Sketch, layered) are **view-only** sub-renderers.
 
-Opens in plain **view mode**; the editing toolbar is hidden until you press **Edit**. ASCII + Edit are stacked toggle buttons anchored left by the zoom controls (`doc.html` `.imgv-mode-col`). The toolbar is grouped into **tabs** (`edit-tabs.js`): Common / Draw / Text / Adjust / Size / Background — each tool's button is in Common AND (linked via `data-link` proxy) its own tab, which holds the fine-tuning.
+Opens in plain **view mode**; the editing toolbar is hidden until you press **Edit**. ASCII / Edit / Adv are compact same-row mode buttons anchored left by the zoom controls (`doc.html` `.imgv-mode-col`). The toolbar is grouped into **tabs** (`edit-tabs.js`): Common / Draw / Text / Adjust / Size / Background — each tool's button is in Common AND (linked via `data-link` proxy) its own tab, which holds the fine-tuning.
 
 **Editing tools shipped (the full `EDITABLE_MIME` set):**
 - Pencil / eraser free-draw (colour + size); overlay canvas committed on stroke end

@@ -18,10 +18,9 @@ const CSS = `
 .imgv-tab-hint{animation:imgv-tab-blink .7s ease-in-out 3;}
 @keyframes imgv-tab-blink{0%,100%{background:transparent;color:var(--fg);}50%{background:var(--accent);color:var(--bg);}}
 @media (prefers-reduced-motion: reduce){.imgv-tab-hint{animation:none;}}
-/* ASCII + Edit stacked vertically, anchored next to the zoom controls; the edit
-   toolbar drops to its own full-width row below so its changing length never
-   nudges the view controls. */
-.imgv-mode-col{display:inline-flex;flex-direction:column;gap:3px;align-self:center;}
+/* Mode buttons stay together as one compact row; the edit toolbar drops to its
+   own full-width row below so its changing length never nudges view controls. */
+.imgv-mode-col{display:inline-flex;flex-direction:row;flex-wrap:nowrap;gap:4px;align-self:center;}
 .imgv-mode-col button{white-space:nowrap;}
 .imgv-edit-tools{flex-basis:100%;}
 /* Checkerboard behind the image so transparent pixels read as transparent. */

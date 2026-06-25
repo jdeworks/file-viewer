@@ -11,6 +11,7 @@ import { createAsciiEngine } from './engine.js';
 import { buildControls } from './studio-controls.js';
 import { PERFORMANCE_PRESETS, defaultOptions } from './state.js';
 import { downloadText, downloadHtml, downloadPng, copyText, copyHtml } from './render.js';
+import { makeFloatingPanel } from './floating-panel.js';
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : 0);
 const BTN = (cls, label, title) => `<button class="asx-btn ${cls}" title="${title}">${label}</button>`;
@@ -24,7 +25,7 @@ export function mountAsciiWebcam(host, opts = {}) {
       <div class="asx-bar">
         ${BTN('cam-start cam-flash', '▶ Start camera', 'Start the webcam')}
         ${BTN('cam-pause', '⏸ Pause', 'Freeze the current frame')}
-        ${BTN('cam-rec', '● Record', 'Record the raw webcam to a video (max 2 min)')}
+        ${BTN('cam-rec', '● Record', 'Record the ASCII output to a video (max 2 min)')}
         <label class="cam-audio-lbl" title="Include microphone audio in the recording"><input type="checkbox" class="cam-audio"> Audio</label>
         ${BTN('cam-full', '⛶ Fullscreen', 'Fullscreen the ASCII result')}
         ${BTN('cam-rot-l', '↺', 'Rotate 90° left')}
@@ -144,7 +145,8 @@ export function mountAsciiWebcam(host, opts = {}) {
   }
 
   // ── controls (full panel, shown on demand) ──
-  const controls = buildControls(settings, engine.options, (key, value, dirty, displayOnly) => {
+  const floatingSettings = makeFloatingPanel(settings, { title: 'Camera ASCII settings' });
+  const controls = buildControls(floatingSettings.body, engine.options, (key, value, dirty, displayOnly) => {
     engine.options[key] = value;
     if (key === 'transparentBackground' && controls?.inputs.backgroundColor) controls.inputs.backgroundColor.disabled = !!value;
     if (displayOnly) { if (key === 'zoom') applyFit(); else if (!running || paused) renderOnce(); return; }
@@ -156,18 +158,29 @@ export function mountAsciiWebcam(host, opts = {}) {
   const ro = new ResizeObserver(() => applyFit());
   ro.observe(stage);
 
-  // ── recording (raw webcam → .webm, for the video studio) ──
+  // ── recording (ASCII canvas → .webm, for the video studio) ──
   // Capped at 2 min to bound memory (MediaRecorder buffers encoded chunks ~2.5
-  // Mbit/s ≈ ~37 MB for the full cap). Records a DEDICATED stream so audio can be
-  // included independently of the (video-only) preview feed.
+  // Mbit/s ≈ ~37 MB for the full cap). Records what the user sees; optional mic
+  // tracks are merged onto the canvas video stream.
   const MAX_REC_MS = 120000;
-  let recorder = null, recChunks = [], recStream = null, recTimer = null, recStart = 0;
+  let recorder = null, recChunks = [], recStream = null, audioStream = null, recTimer = null, recStart = 0;
   const fmt = (ms) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
   async function startRec() {
     const wantAudio = !!q('.cam-audio').checked;
-    try { recStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: wantAudio }); }
-    catch (e) { stats.textContent = 'Recording denied: ' + (e.message || e); return; }
+    if (!out.captureStream) { stats.textContent = 'Recording is not supported by this browser.'; return; }
+    try {
+      recStream = out.captureStream(targetFps);
+      if (wantAudio) {
+        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        audioStream.getAudioTracks().forEach((track) => recStream.addTrack(track));
+      }
+    } catch (e) {
+      stats.textContent = 'Recording denied: ' + (e.message || e);
+      recStream?.getTracks().forEach((t) => t.stop());
+      recStream = null; audioStream = null;
+      return;
+    }
     const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
       .find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || 'video/webm';
     recChunks = [];
@@ -176,6 +189,7 @@ export function mountAsciiWebcam(host, opts = {}) {
     recorder.onstop = () => {
       const blob = new Blob(recChunks, { type: mime }); recChunks = [];
       if (recStream) { recStream.getTracks().forEach((t) => t.stop()); recStream = null; }
+      if (audioStream) { audioStream.getTracks().forEach((t) => t.stop()); audioStream = null; }
       clearInterval(recTimer); recTimer = null;
       const rb = q('.cam-rec'); rb.classList.remove('active'); rb.textContent = '● Record';
       // If the host wired a handler (file viewer → open in the media/video studio),
@@ -246,5 +260,5 @@ export function mountAsciiWebcam(host, opts = {}) {
   });
 
   return { engine, start, stop, isRunning: () => running,
-    destroy() { stopRec(); stop(); ro.disconnect(); document.removeEventListener('fullscreenchange', applyFit); host.innerHTML = ''; } };
+    destroy() { stopRec(); stop(); ro.disconnect(); floatingSettings.destroy(); document.removeEventListener('fullscreenchange', applyFit); host.innerHTML = ''; } };
 }
