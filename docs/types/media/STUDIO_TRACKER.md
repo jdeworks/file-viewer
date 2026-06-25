@@ -601,6 +601,24 @@ Status: committed.
   itself changed.
 - Committed in `0c24adc1` — `Add media mastering stage compare`.
 
+### R3 — Narratu-Grade Compare Polish
+
+Status: implemented; no remaining R3 work identified.
+
+- Enriched the existing Tune/Export staged compare, instead of creating a separate compare
+  workflow, so the visible chain now reads as `Processing chain` with `Active path:
+  Raw source -> Tune/EQ -> Dynamics -> Master bus`.
+- Added pure stage metadata in `mastering-stages.js`: stage number, status badge
+  (`Always`, `Active`, `Bypassed`, `Export`), purpose copy, and the existing detail summary.
+- Kept the surface intent-first: Tune still shows the strip only inside the Spectrum disclosure,
+  Export shows it inside the existing export panel, and no new decode/ffmpeg work was added.
+- Smoke coverage now asserts the R3 explanation in both Tune and Export, including status badges,
+  path summary, and generic speech/mastering purpose text.
+- Changed paths: `mastering-stages.js`, `preview-media.css`, `tests/areas/media-studio.mjs`,
+  `STUDIO_ROADMAP.md`, `STUDIO_TRACKER.md`, `docs/asset-manifest.json`, `docs/sw.js`.
+- Validation passed: `node --check docs/types/media/mastering-stages.js tests/areas/media-studio.mjs`,
+  `node tests/smoke-area.mjs media-studio`, `./scripts/check.sh --fast`.
+
 ### R4 — Audio/Video Overlap Diff Compare
 
 Status: newly scoped in `STUDIO_ROADMAP.md`; not started.

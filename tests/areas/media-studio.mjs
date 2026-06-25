@@ -221,6 +221,13 @@ export async function run(ctx) {
     if (['Raw source', 'Tune/EQ', 'Dynamics', 'Master bus'].every((label) => tuneStages.includes(label)))
       pass('R1: Tune staged compare shows raw/tune/dynamics/master-bus labels');
     else fail('tune stages: ' + tuneStages.join(','));
+    const tuneStageText = await page.$eval(`${tunePanelSel} .sp-stage-compare`, (e) => e.textContent).catch(() => '');
+    if (/Processing chain/.test(tuneStageText)
+      && /Active path: Raw source -> Tune\/EQ -> Dynamics -> Master bus/.test(tuneStageText)
+      && /Always/.test(tuneStageText) && /Active/.test(tuneStageText) && /Bypassed/.test(tuneStageText)
+      && /Quick intent and tonal EQ/.test(tuneStageText) && /Final export target/.test(tuneStageText))
+      pass('R3: Tune staged compare explains path, active/bypassed state, and purpose');
+    else fail('tune R3 stage text: ' + tuneStageText.slice(0, 260));
     // LUFS normalization: a target selector offers the streaming/broadcast presets.
     const normOpts = await page.$$eval(`${tunePanelSel} .sp-lufs-row option`, (els) => els.map((e) => e.textContent));
     if (normOpts.some((t) => /-14/.test(t)) && normOpts.some((t) => /-23/.test(t)) && normOpts.includes('Off'))
@@ -712,6 +719,16 @@ export async function run(ctx) {
   if (['Raw source', 'Tune/EQ', 'Dynamics', 'Master bus'].every((label) => exportStages.includes(label)))
     pass('R1: Export staged compare shows raw/tune/dynamics/master-bus labels');
   else fail('export stages: ' + exportStages.join(','));
+  const exportStageText = await page.$eval(
+    '#previewHost .media-mode-panel[data-mode="export"] .media-export-stage-compare',
+    (e) => e.textContent,
+  ).catch(() => '');
+  if (/Processing chain/.test(exportStageText)
+    && /Active path: Raw source -> Tune\/EQ -> Dynamics -> Master bus/.test(exportStageText)
+    && /Always/.test(exportStageText) && /Active/.test(exportStageText) && /Bypassed/.test(exportStageText) && /Export/.test(exportStageText)
+    && /Quick intent and tonal EQ/.test(exportStageText) && /Level control and cleanup/.test(exportStageText) && /Final export target/.test(exportStageText))
+    pass('R3: Export staged compare explains path, active/bypassed/export state, and purpose');
+  else fail('export R3 stage text: ' + exportStageText.slice(0, 260));
   const exportFmts = await page.$$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-fmt option', (els) => els.map((e) => e.value));
   if (['source', 'mp3', 'wav', 'm4a', 'ogg'].every((f) => exportFmts.includes(f))) pass('P1: export format options (source/mp3/wav/m4a/ogg)'); else fail('export fmts: ' + exportFmts.join(','));
   const fadeInPresent = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-ed-fade-in');

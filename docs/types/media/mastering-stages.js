@@ -74,26 +74,92 @@ export function summarizeMasteringStages(settings = {}, params = null) {
   const tune = tuneSummary(settings);
   const dynamics = dynamicsSummary(settings);
   const master = params ? outputSummary(params) : outputSummary(null);
-  return [
-    { id: 'raw', label: 'Raw source', active: true, detail: 'Unchanged source signal.' },
-    { id: 'tune', label: 'Tune/EQ', active: tune.active, detail: tune.detail },
-    { id: 'dynamics', label: 'Dynamics', active: dynamics.active, detail: dynamics.detail },
-    { id: 'master', label: 'Master bus', active: master.active, detail: master.detail },
+  const stages = [
+    {
+      id: 'raw',
+      label: 'Raw source',
+      number: 1,
+      active: true,
+      status: 'Always',
+      purpose: 'Reference input',
+      detail: 'Unchanged source signal.',
+    },
+    {
+      id: 'tune',
+      label: 'Tune/EQ',
+      number: 2,
+      active: tune.active,
+      status: tune.active ? 'Active' : 'Bypassed',
+      purpose: 'Quick intent and tonal EQ',
+      detail: tune.detail,
+    },
+    {
+      id: 'dynamics',
+      label: 'Dynamics',
+      number: 3,
+      active: dynamics.active,
+      status: dynamics.active ? 'Active' : 'Bypassed',
+      purpose: 'Level control and cleanup',
+      detail: dynamics.detail,
+    },
+    {
+      id: 'master',
+      label: 'Master bus',
+      number: 4,
+      active: master.active,
+      status: params ? 'Export' : (master.active ? 'Active' : 'Bypassed'),
+      purpose: 'Final export target',
+      detail: master.detail,
+    },
   ];
+  const activePath = stages
+    .map((stage) => stage.label)
+    .join(' -> ');
+  return {
+    title: 'Processing chain',
+    activePath,
+    stages,
+  };
 }
 
-export function renderStageCompare(el, stages) {
+export function renderStageCompare(el, summary) {
   if (!el) return;
-  el.replaceChildren(...stages.map((stage) => {
+  const stages = Array.isArray(summary) ? summary : (summary?.stages || []);
+  const header = document.createElement('div');
+  header.className = 'sp-stage-head';
+  const title = document.createElement('div');
+  title.className = 'sp-stage-title';
+  title.textContent = summary?.title || 'Processing chain';
+  const path = document.createElement('div');
+  path.className = 'sp-stage-path';
+  path.textContent = 'Active path: ' + (summary?.activePath || stages.map((stage) => stage.label).join(' -> '));
+  header.append(title, path);
+
+  const grid = document.createElement('div');
+  grid.className = 'sp-stage-grid';
+  grid.append(...stages.map((stage) => {
     const item = document.createElement('div');
     item.className = 'sp-stage' + (stage.active ? ' sp-stage--active' : '');
+    const meta = document.createElement('div');
+    meta.className = 'sp-stage-meta';
+    const number = document.createElement('span');
+    number.className = 'sp-stage-num';
+    number.textContent = String(stage.number || '');
+    const status = document.createElement('span');
+    status.className = 'sp-stage-status';
+    status.textContent = stage.status || (stage.active ? 'Active' : 'Bypassed');
+    meta.append(number, status);
     const label = document.createElement('div');
     label.className = 'sp-stage-label';
     label.textContent = stage.label;
+    const purpose = document.createElement('div');
+    purpose.className = 'sp-stage-purpose';
+    purpose.textContent = stage.purpose || '';
     const detail = document.createElement('div');
     detail.className = 'sp-stage-detail';
     detail.textContent = stage.detail;
-    item.append(label, detail);
+    item.append(meta, label, purpose, detail);
     return item;
   }));
+  el.replaceChildren(header, grid);
 }

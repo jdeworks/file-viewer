@@ -123,16 +123,16 @@ This builds on the existing ACX QC/export chain rather than replacing it.
 
 ### R3 — Narratu-Grade Compare Polish
 
-Status: polish/depth, after R1.
+Status: implemented; no remaining R3 work identified.
 
 Needed:
 
-- Make comparison visually explain the processing chain:
+- Done: make comparison visually explain the processing chain:
   raw -> quick intent/EQ -> dynamics -> export master bus.
-- Keep compare controls in Tune/Export, not as a separate competing workflow.
-- Preserve the current intent-first surface; raw charts remain behind disclosure.
-- Port only generic speech/mastering presets. Avoid story/character-specific presets unless
-  clearly labeled as examples.
+- Done: keep compare controls in Tune/Export, not as a separate competing workflow.
+- Done: preserve the current intent-first surface; raw charts remain behind disclosure.
+- Done: use only generic speech/mastering vocabulary; no character/story-specific presets
+  were added.
 
 ### R4 — Audio/Video Overlap Diff Compare
 
