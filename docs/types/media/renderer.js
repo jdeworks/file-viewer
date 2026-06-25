@@ -17,6 +17,7 @@ import { recordStage5MediaPlayback } from '../../games/metagame/viewer-actions.j
 import { makeTogglePanel } from './panel-toggle.js';
 import { buildSpeedPresets, buildVideoExtras, attachShortcuts, buildCoverArt, buildChapterList } from './playback-extras.js';
 import { mountSubtitles, buildSubtitleLoader } from './subtitles.js';
+import { createWorkspaceModes } from './workspace-modes.js';
 
 // Lazily import editor.js (and its transcoder.js dep) only when ffmpeg is enabled.
 // This prevents a stale SW-cached transcoder.js from breaking the entire preview.
@@ -100,8 +101,6 @@ export async function render(intake, ctx = {}) {
   let videoModes = null;
   let modeTabs = null;
   let modePanelWrap = null;
-  const audioModeStates = new Map();
-  const videoModeStates = new Map();
   let coverEl = null;
   let videoWorkspaceBody = null;
   let subtitleLoader = null;
@@ -343,18 +342,20 @@ export async function render(intake, ctx = {}) {
 
   const panels = [];      // toggle-panel controllers to tear down on revoke
 
+  const registerModeController = (controller) => {
+    if (!panels.includes(controller)) panels.push(controller);
+  };
+
+  const releaseModeController = (controller) => {
+    const idx = panels.indexOf(controller);
+    if (idx >= 0) panels.splice(idx, 1);
+  };
+
   const setWorkspaceTime = () => {
     if (!workspaceTime) return;
     const now = fmtTimeValue(el.currentTime) || '0:00';
     const dur = fmtTimeValue(el.duration) || '--:--';
     workspaceTime.textContent = `${now} / ${dur}`;
-  };
-
-  const releaseModeController = (entry) => {
-    const controller = entry?.controller;
-    if (!controller) return;
-    const idx = panels.indexOf(controller);
-    if (idx >= 0) panels.splice(idx, 1);
   };
 
   let subCtl = null;
@@ -370,8 +371,6 @@ export async function render(intake, ctx = {}) {
   }
 
   let audioListenMode = null;
-  let activeAudioMode = null;
-  let activeVideoMode = null;
   if (info.kind === 'audio') {
     const { mountWaveform } = await import('./waveform.js');
     const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
@@ -382,88 +381,14 @@ export async function render(intake, ctx = {}) {
     });
     if (wv) panels.push({ destroy() { wv.destroy(); } });
 
-    const registerAudioMode = (id, label, mount) => {
-      const tab = document.createElement('button');
-      tab.type = 'button';
-      tab.className = 'media-mode-tab';
-      tab.textContent = label;
-      tab.dataset.mode = id;
-
-      const panel = document.createElement('div');
-      panel.className = 'media-mode-panel';
-      panel.dataset.mode = id;
-      panel.hidden = true;
-
-      const entry = {
-        id,
-        tab,
-        panel,
-        mount,
-        mounted: false,
-        controller: null,
-        mountInProgress: false,
-        mountToken: 0,
-      };
-      modeTabs.append(tab);
-      modePanelWrap.append(panel);
-      audioModeStates.set(id, entry);
-      tab.addEventListener('click', () => { void setAudioMode(id); });
-      return entry;
-    };
-
-    const unmountAudioMode = (entry) => {
-      if (!entry || entry.id === 'listen' || entry.id === 'export') return;
-      if (!entry.mounted) return;
-      const previous = entry.controller;
-      releaseModeController(entry);
-      if (previous && typeof previous.destroy === 'function') previous.destroy();
-      entry.controller = null;
-      entry.mounted = false;
-      entry.mountInProgress = false;
-      entry.panel.innerHTML = '';
-      entry.panel.hidden = true;
-      return;
-    };
-
-    const setAudioMode = async (id) => {
-      const next = audioModeStates.get(id);
-      if (!next) return;
-      activeAudioMode = id;
-      for (const s of audioModeStates.values()) {
-        const on = s.id === id;
-        s.tab.classList.toggle('active', on);
-        s.panel.hidden = !on;
-        if (!on && s.id !== 'listen' && s.mounted) {
-          unmountAudioMode(s);
-        }
-      }
-
-      if (next.mount && !next.mounted && !next.mountInProgress) {
-        next.mountInProgress = true;
-        const mountToken = ++next.mountToken;
-        try {
-          const ctl = await next.mount(next.panel);
-          if (next.mountToken !== mountToken || activeAudioMode !== id) {
-            next.panel.innerHTML = '';
-            next.panel.hidden = true;
-            if (ctl && typeof ctl.destroy === 'function') ctl.destroy();
-            next.controller = null;
-            next.mounted = false;
-            next.mountInProgress = false;
-            releaseModeController(next);
-            return;
-          }
-          if (ctl) {
-            if (!panels.includes(ctl)) panels.push(ctl);
-            next.controller = ctl;
-          }
-          next.mounted = true;
-        } finally {
-          next.mountInProgress = false;
-        }
-      }
-      if (!next.mount) next.mounted = true;
-    };
+    const audioWorkspaceModes = createWorkspaceModes({
+      tabWrap: modeTabs,
+      panelWrap: modePanelWrap,
+      stickyModes: ['listen', 'export'],
+      onRegisterController: registerModeController,
+      onReleaseController: releaseModeController,
+    });
+    const { registerMode: registerAudioMode, setMode: setAudioMode } = audioWorkspaceModes;
     registerAudioMode('listen', 'Listen');
     registerAudioMode('tune', 'Tune', async (panel) => {
       const { PRESETS } = await import('./spectrum-draw.js');
@@ -617,95 +542,21 @@ export async function render(intake, ctx = {}) {
       const { mountMixer } = await import('./mixer-ui.js');
       return mountMixer(panel, intake);
     });
-    audioListenMode = audioModeStates.get('listen');
+    audioListenMode = audioWorkspaceModes.states.get('listen');
     audioListenMode.panel.append(tools);
     if (trackListEl) audioListenMode.panel.append(trackListEl);
     void setAudioMode('listen');
   }
 
   if (info.kind === 'video') {
-    const registerVideoMode = (id, label, mount) => {
-      const tab = document.createElement('button');
-      tab.type = 'button';
-      tab.className = 'media-mode-tab';
-      tab.textContent = label;
-      tab.dataset.mode = id;
-
-      const panel = document.createElement('div');
-      panel.className = 'media-mode-panel';
-      panel.dataset.mode = id;
-      panel.hidden = true;
-
-      const entry = {
-        id,
-        tab,
-        panel,
-        mount,
-        mounted: false,
-        controller: null,
-        mountInProgress: false,
-        mountToken: 0,
-      };
-
-      modeTabs.append(tab);
-      modePanelWrap.append(panel);
-      videoModeStates.set(id, entry);
-      tab.addEventListener('click', () => { void setVideoMode(id); });
-      return entry;
-    };
-
-    const unmountVideoMode = (entry) => {
-      if (!entry || entry.id === 'watch' || entry.id === 'export') return;
-      if (!entry.mounted) return;
-      const previous = entry.controller;
-      releaseModeController(entry);
-      if (previous && typeof previous.destroy === 'function') previous.destroy();
-      entry.controller = null;
-      entry.mounted = false;
-      entry.mountInProgress = false;
-      entry.panel.innerHTML = '';
-      entry.panel.hidden = true;
-    };
-
-    const setVideoMode = async (id) => {
-      const next = videoModeStates.get(id);
-      if (!next) return;
-      activeVideoMode = id;
-      for (const s of videoModeStates.values()) {
-        const on = s.id === id;
-        s.tab.classList.toggle('active', on);
-        s.panel.hidden = !on;
-        if (!on && s.id !== 'watch' && s.id !== 'export' && s.mounted) {
-          unmountVideoMode(s);
-        }
-      }
-
-      if (next.mount && !next.mounted && !next.mountInProgress) {
-        next.mountInProgress = true;
-        const mountToken = ++next.mountToken;
-        try {
-          const ctl = await next.mount(next.panel);
-          if (next.mountToken !== mountToken || activeVideoMode !== id) {
-            next.panel.innerHTML = '';
-            next.panel.hidden = true;
-            if (ctl && typeof ctl.destroy === 'function') ctl.destroy();
-            next.controller = null;
-            next.mounted = false;
-            next.mountInProgress = false;
-            releaseModeController(next);
-            return;
-          }
-          if (ctl) {
-            if (!panels.includes(ctl)) panels.push(ctl);
-            next.controller = ctl;
-          }
-          next.mounted = true;
-        } finally {
-          next.mountInProgress = false;
-        }
-      }
-      if (!next.mount) next.mounted = true;
-    };
+    const videoWorkspaceModes = createWorkspaceModes({
+      tabWrap: modeTabs,
+      panelWrap: modePanelWrap,
+      stickyModes: ['watch', 'export'],
+      onRegisterController: registerModeController,
+      onReleaseController: releaseModeController,
+    });
+    const { registerMode: registerVideoMode, setMode: setVideoMode } = videoWorkspaceModes;
 
     const buildFfNotEnabledHint = (message = 'Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> '
       + 'to unlock this feature.') => {

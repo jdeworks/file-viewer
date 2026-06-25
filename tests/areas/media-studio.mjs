@@ -1,3 +1,16 @@
+import {
+  MEDIA_DEFAULT_DESKTOP_VIEWPORT,
+  MEDIA_MOBILE_VIEWPORT,
+  assertAudioTopViewport,
+  assertMixViewport,
+  assertTimelineViewport,
+  assertVideoTopViewport,
+  enableFfmpegForMedia,
+  hhmmssToSeconds,
+  reloadExampleAtViewport,
+  resetMediaSettings,
+} from './media-studio-helpers.mjs';
+
 export async function run(ctx) {
   const { browser, page, origin, pass, fail, openExample } = ctx;
 
@@ -25,70 +38,14 @@ export async function run(ctx) {
   await page.click('#previewHost .media-extras .media-speed-btn[data-rate="1"]');   // restore
   const audioWorkspace = await page.$('#previewHost .media-audio-workspace');
   if (audioWorkspace) pass('audio workspace: top-level audio workspace exists'); else fail('media-audio-workspace missing');
-  const assertAudioTopViewport = async (label) => {
-    const geometry = await page.$eval('#previewHost .media-doc.media-audio', (host) => {
-      const workspace = host.querySelector('.media-audio-workspace');
-      const modeTabs = host.querySelector('.media-mode-tabs');
-      const media = host.querySelector('.media-audio-surface audio.media-view');
-      const title = host.querySelector('.media-workspace-title');
-      const time = host.querySelector('.media-workspace-time');
-      const waveform = host.querySelector('.media-waveform-surface');
-      if (!workspace || !modeTabs || !media || !title || !time || !waveform) return null;
-      const hostRect = host.getBoundingClientRect();
-      const workspaceRect = workspace.getBoundingClientRect();
-      const modeRect = modeTabs.getBoundingClientRect();
-      const waveformRect = waveform.getBoundingClientRect();
-      const mediaRect = media.getBoundingClientRect();
-      const docEl = document.documentElement;
-      return {
-        topInset: Math.round(workspaceRect.top - hostRect.top),
-        viewportW: window.innerWidth,
-        viewportH: window.innerHeight,
-        hostLeft: Math.round(hostRect.left),
-        hostRight: Math.round(hostRect.right),
-        workspaceLeft: Math.round(workspaceRect.left),
-        workspaceRight: Math.round(workspaceRect.right),
-        overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
-        titleVisible: title.textContent.trim().length > 0 && title.getBoundingClientRect().height > 0,
-        timeVisible: time.textContent.trim().length > 0 && time.getBoundingClientRect().height > 0,
-        mediaControlVisible: mediaRect.height > 0 && getComputedStyle(media).display !== 'none',
-        waveformVisible: waveformRect.height > 0,
-        modeTabsVisible: modeRect.height > 0 && getComputedStyle(modeTabs).display !== 'none',
-      };
-    });
-    if (!geometry) return fail('audio first-viewport geometry unavailable (' + label + ')');
-    const topLimit = Math.min(72, Math.floor(geometry.viewportH * 0.2));
-    if (geometry.titleVisible && geometry.timeVisible && geometry.mediaControlVisible && geometry.waveformVisible && geometry.modeTabsVisible) pass('audio first-viewport core surfaces are visible (' + label + ')');
-    else fail('audio first-viewport core surface missing (' + label + '): ' + JSON.stringify({
-      titleVisible: geometry.titleVisible,
-      timeVisible: geometry.timeVisible,
-      mediaControlVisible: geometry.mediaControlVisible,
-      waveformVisible: geometry.waveformVisible,
-      modeTabsVisible: geometry.modeTabsVisible,
-    }));
-    if (geometry.topInset >= 0 && geometry.topInset <= topLimit) pass('audio first viewport begins near top (workspace inset ' + geometry.topInset + 'px <= ' + topLimit + 'px)');
-    else fail('audio first-viewport top inset too large (' + geometry.topInset + 'px > ' + topLimit + 'px) for ' + label);
-    if (geometry.overflowX === 0 && geometry.workspaceLeft >= geometry.hostLeft - 1 && geometry.workspaceRight <= geometry.hostRight + 1)
-      pass('audio first-viewport has no horizontal overflow (' + label + ')');
-    else fail('audio first-viewport overflow/width issue (' + label + '): ' + JSON.stringify(geometry));
-  };
-  await assertAudioTopViewport('desktop');
+  await assertAudioTopViewport(ctx, 'desktop');
   const desktopViewport = page.viewportSize();
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(origin, { waitUntil: 'load' });
-  await openExample('Sample.wav');
-  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
-  await assertAudioTopViewport('mobile');
+  await reloadExampleAtViewport(ctx, MEDIA_MOBILE_VIEWPORT, 'Sample.wav', '#previewHost audio.media-view');
+  await assertAudioTopViewport(ctx, 'mobile');
   if (desktopViewport) {
-    await page.setViewportSize(desktopViewport);
-    await page.goto(origin, { waitUntil: 'load' });
-    await openExample('Sample.wav');
-    await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+    await reloadExampleAtViewport(ctx, desktopViewport, 'Sample.wav', '#previewHost audio.media-view');
   } else {
-    await page.setViewportSize({ width: 1100, height: 800 });
-    await page.goto(origin, { waitUntil: 'load' });
-    await openExample('Sample.wav');
-    await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+    await reloadExampleAtViewport(ctx, MEDIA_DEFAULT_DESKTOP_VIEWPORT, 'Sample.wav', '#previewHost audio.media-view');
   }
   const waveformSurface = await page.$eval('#previewHost .media-waveform-surface', (el) => {
     const r = el.getBoundingClientRect();
@@ -301,58 +258,9 @@ export async function run(ctx) {
     await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane').length >= 2, null, { timeout: 6000 });
     const lane2Count = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane', (els) => els.length);
     if (lane2Count >= 2) pass('audio mixer: a second lane can be added (generator tone)'); else fail('mixer lanes after add: ' + lane2Count);
-    const assertMixViewport = async (label) => {
-      const geometry = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', (el) => {
-        const host = document.querySelector('#previewHost');
-        const hostRect = host?.getBoundingClientRect();
-        const wrapRect = el.getBoundingClientRect();
-        const ruler = el.querySelector('.mx-ruler');
-        const playhead = el.querySelector('.mx-playhead');
-        const lanes = el.querySelector('.mx-lanes');
-        const timeline = el.querySelector('.mx-timeline');
-        const context = el.querySelector('.mx-context');
-        if (!hostRect || !ruler || !playhead || !lanes || !timeline || !context) return null;
-        const docEl = document.documentElement;
-        const rulerRect = ruler.getBoundingClientRect();
-        const playheadRect = playhead.getBoundingClientRect();
-        return {
-          wrapLeft: Math.round(wrapRect.left),
-          wrapRight: Math.round(wrapRect.right),
-          hostLeft: Math.round(hostRect.left),
-          hostRight: Math.round(hostRect.right),
-          overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
-          rulerVisible: rulerRect.height > 0 && rulerRect.width > 0,
-          playheadVisible: playheadRect.height > 0 && playheadRect.width > 0,
-          lanesVisible: lanes.getBoundingClientRect().height > 0,
-          timelineScroll: timeline.scrollWidth > Math.round(timeline.clientWidth),
-          contextVisible: getComputedStyle(context).display !== 'none' && context.textContent.includes('Context'),
-          activeViewportW: window.innerWidth,
-        };
-      });
-      if (!geometry) return fail('audio mixer geometry unavailable (' + label + ')');
-      if (geometry.rulerVisible && geometry.playheadVisible && geometry.lanesVisible && geometry.contextVisible)
-        pass('audio mixer: timeline grammar visible in mix panel (' + label + ')');
-      else fail('audio mixer geometry visibility (' + label + '): ' + JSON.stringify({
-        rulerVisible: geometry?.rulerVisible,
-        playheadVisible: geometry?.playheadVisible,
-        lanesVisible: geometry?.lanesVisible,
-        contextVisible: geometry?.contextVisible,
-      }));
-      if (geometry.timelineScroll) pass('audio mixer: timeline is horizontally scrollable when needed');
-      if (geometry.overflowX === 0) pass('audio mixer: no horizontal overflow in mix (' + label + ')');
-      else fail('audio mixer: horizontal overflow while in mix (' + label + '): ' + geometry.overflowX);
-      if (geometry.wrapLeft >= geometry.hostLeft - 1 && geometry.wrapRight <= geometry.hostRight + 1)
-        pass('audio mixer: mix workspace fits host width (' + label + ')');
-      else fail('audio mixer workspace width issue (' + label + '): ' + JSON.stringify({
-        wrapLeft: geometry.wrapLeft,
-        wrapRight: geometry.wrapRight,
-        hostLeft: geometry.hostLeft,
-        hostRight: geometry.hostRight,
-      }));
-    };
     // Mixdown → WAV produces a downloadable file (OfflineAudioContext render → WAV worker/header).
     const mixBtn = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mx-mix-btn');   // first mix button = Mixdown → WAV
-    await assertMixViewport('desktop');
+    await assertMixViewport(ctx, 'desktop');
     const [wavDownload] = await Promise.all([
       page.waitForEvent('download', { timeout: 30000 }),
       mixBtn.click(),
@@ -360,18 +268,12 @@ export async function run(ctx) {
     const wavName = wavDownload.suggestedFilename();
     if (/\.wav$/.test(wavName)) pass('audio mixer: mixdown → WAV downloaded (' + wavName + ')'); else fail('mixer WAV download name: ' + wavName);
     const audioMixDesktopViewport = page.viewportSize();
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(origin, { waitUntil: 'load' });
-    await openExample('Sample.wav');
-    await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+    await reloadExampleAtViewport(ctx, MEDIA_MOBILE_VIEWPORT, 'Sample.wav', '#previewHost audio.media-view');
     await page.click('#previewHost .media-mode-tab[data-mode="mix"]');
     await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', { timeout: 12000 });
-    await assertMixViewport('mobile');
+    await assertMixViewport(ctx, 'mobile');
     if (audioMixDesktopViewport) {
-      await page.setViewportSize(audioMixDesktopViewport);
-      await page.goto(origin, { waitUntil: 'load' });
-      await openExample('Sample.wav');
-      await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+      await reloadExampleAtViewport(ctx, audioMixDesktopViewport, 'Sample.wav', '#previewHost audio.media-view');
     }
     await page.click('#previewHost .media-mode-tab[data-mode="listen"]');
     const mixDetached = await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', {
@@ -482,66 +384,12 @@ export async function run(ctx) {
     .catch(() => false);
   if (videoWatchActive) pass('video default mode is Watch'); else fail('video default mode tab is not Watch');
 
-  const assertVideoTopViewport = async (label) => {
-    const geometry = await page.$eval('#previewHost .media-doc.media-video', (host) => {
-      const workspace = host.querySelector('.media-video-workspace');
-      const modeTabs = host.querySelector('.media-mode-tabs');
-      const media = host.querySelector('.media-video-surface video.media-view');
-      const title = host.querySelector('.media-workspace-title');
-      const time = host.querySelector('.media-workspace-time');
-      const watchPanel = host.querySelector('.media-mode-panel[data-mode="watch"]');
-      const panelVisible = watchPanel && getComputedStyle(watchPanel).display !== 'none' && !watchPanel.hidden;
-      if (!workspace || !modeTabs || !media || !title || !time || !watchPanel) return null;
-      const hostRect = host.getBoundingClientRect();
-      const workspaceRect = workspace.getBoundingClientRect();
-      const mediaRect = media.getBoundingClientRect();
-      const docEl = document.documentElement;
-      return {
-        topInset: Math.round(workspaceRect.top - hostRect.top),
-        viewportW: window.innerWidth,
-        viewportH: window.innerHeight,
-        hostLeft: Math.round(hostRect.left),
-        hostRight: Math.round(hostRect.right),
-        workspaceLeft: Math.round(workspaceRect.left),
-        workspaceRight: Math.round(workspaceRect.right),
-        overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
-        titleVisible: title.textContent.trim().length > 0 && title.getBoundingClientRect().height > 0,
-        timeVisible: time.textContent.trim().length > 0 && time.getBoundingClientRect().height > 0,
-        mediaVisible: mediaRect.height > 0 && getComputedStyle(media).display !== 'none',
-        modeTabsVisible: modeTabs.getBoundingClientRect().height > 0 && getComputedStyle(modeTabs).display !== 'none',
-        watchModeVisible: panelVisible,
-      };
-    });
-    if (!geometry) return fail('video first-viewport geometry unavailable (' + label + ')');
-    const topLimit = Math.min(72, Math.floor(geometry.viewportH * 0.2));
-    if (geometry.titleVisible && geometry.timeVisible && geometry.mediaVisible && geometry.modeTabsVisible && geometry.watchModeVisible)
-      pass('video first-viewport core surfaces are visible (' + label + ')');
-    else fail('video first-viewport core surface missing (' + label + '): ' + JSON.stringify({
-      titleVisible: geometry.titleVisible,
-      timeVisible: geometry.timeVisible,
-      mediaVisible: geometry.mediaVisible,
-      modeTabsVisible: geometry.modeTabsVisible,
-      watchModeVisible: geometry.watchModeVisible,
-    }));
-    if (geometry.topInset >= 0 && geometry.topInset <= topLimit)
-      pass('video first-viewport begins near top (workspace inset ' + geometry.topInset + 'px <= ' + topLimit + 'px)');
-    else fail('video first viewport top inset too large (' + geometry.topInset + 'px > ' + topLimit + 'px) for ' + label);
-    if (geometry.overflowX === 0 && geometry.workspaceLeft >= geometry.hostLeft - 1 && geometry.workspaceRight <= geometry.hostRight + 1)
-      pass('video first-viewport has no horizontal overflow (' + label + ')');
-    else fail('video first-viewport overflow/width issue (' + label + '): ' + JSON.stringify(geometry));
-  };
-  await assertVideoTopViewport('desktop');
+  await assertVideoTopViewport(ctx, 'desktop');
   const videoDesktopViewport = page.viewportSize();
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(origin, { waitUntil: 'load' });
-  await openExample('Sample.avi');
-  await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
-  await assertVideoTopViewport('mobile');
+  await reloadExampleAtViewport(ctx, MEDIA_MOBILE_VIEWPORT, 'Sample.avi', '#previewHost video.media-view');
+  await assertVideoTopViewport(ctx, 'mobile');
   if (videoDesktopViewport) {
-    await page.setViewportSize(videoDesktopViewport);
-    await page.goto(origin, { waitUntil: 'load' });
-    await openExample('Sample.avi');
-    await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
+    await reloadExampleAtViewport(ctx, videoDesktopViewport, 'Sample.avi', '#previewHost video.media-view');
   }
 
   // ── Video studio ── Adjust now uses an intent-first look card plus raw advanced
@@ -665,9 +513,7 @@ export async function run(ctx) {
   // UI is present + wired, and verify the ffmpeg filter chain via the pure builder.)
   await page.goto(origin, { waitUntil: 'load' });
   await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
-  await page.evaluate(() => {
-    localStorage.setItem('fv:settings:global', JSON.stringify({ version: 1, values: { enableFfmpeg: true } }));
-  });
+  await enableFfmpegForMedia(page);
   await page.goto(origin, { waitUntil: 'load' });
   await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
   await page.evaluate(() => window.__fv.openExampleByLabel('Sample.wav'));
@@ -713,13 +559,8 @@ export async function run(ctx) {
       end: inputs[1]?.value?.trim() || '',
     };
   });
-  const trimToSec = (t) => {
-    const p = (t || '').split(':').map((n) => Number(n));
-    if (p.length !== 3 || p.some((n) => Number.isNaN(n))) return null;
-    return p[0] * 3600 + p[1] * 60 + p[2];
-  };
-  const trimStartSec = trimToSec(trimValues.start);
-  const trimEndSec = trimToSec(trimValues.end);
+  const trimStartSec = hhmmssToSeconds(trimValues.start);
+  const trimEndSec = hhmmssToSeconds(trimValues.end);
   if (trimStartSec !== null && trimEndSec !== null && trimEndSec > trimStartSec) pass('audio Trim prefill: start/end HH:MM:SS values present and ordered');
   else fail('audio Trim prefill values invalid: ' + JSON.stringify(trimValues));
 
@@ -989,48 +830,6 @@ export async function run(ctx) {
       if (!preTl) pass('P6: video timeline CPU-lazy (no DOM until opened)'); else fail('timeline mounted before open');
       await tlToggle.asElement().click();
       await page.waitForSelector(tlModeSel + ' .tl-wrap', { timeout: 12000 });
-      const assertTimelineViewport = async (label) => {
-        const geometry = await page.$eval(tlModeSel + ' .tl-wrap', (root) => {
-          const host = document.querySelector('#previewHost');
-          const hostRect = host?.getBoundingClientRect();
-          const wrapRect = root.getBoundingClientRect();
-          const timeline = root.querySelector('.tl-timeline');
-          const ruler = root.querySelector('.tl-ruler');
-          const playhead = root.querySelector('.tl-playhead');
-          const ctx = root.querySelector('.tl-context');
-          const lanes = root.querySelector('.tl-lane-view');
-          if (!hostRect || !timeline || !ruler || !playhead || !ctx || !lanes) return null;
-          const docEl = document.documentElement;
-          return {
-            wrapLeft: Math.round(wrapRect.left),
-            wrapRight: Math.round(wrapRect.right),
-            hostLeft: Math.round(hostRect.left),
-            hostRight: Math.round(hostRect.right),
-            overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
-            rulerVisible: ruler.getBoundingClientRect().width > 0 && ruler.getBoundingClientRect().height > 0,
-            playheadVisible: playhead.getBoundingClientRect().width > 0 && playhead.getBoundingClientRect().height > 0,
-            contextVisible: ctx.getBoundingClientRect().height > 0 && getComputedStyle(ctx).display !== 'none',
-            lanesScrollable: lanes.scrollWidth > Math.round(lanes.clientWidth),
-            timelineScrollable: timeline.scrollWidth > Math.round(timeline.clientWidth),
-            activeViewportW: window.innerWidth,
-          };
-        });
-        if (!geometry) return fail('video timeline geometry unavailable (' + label + ')');
-        if (geometry.rulerVisible && geometry.playheadVisible && geometry.contextVisible)
-          pass('P6: timeline grammar visible in timeline mode (' + label + ')');
-        else fail('timeline grammar visibility (' + label + '): ' + JSON.stringify({
-          rulerVisible: geometry?.rulerVisible,
-          playheadVisible: geometry?.playheadVisible,
-          contextVisible: geometry?.contextVisible,
-        }));
-        if (geometry.timelineScrollable) pass('P6: timeline can scroll horizontally when dense (' + label + ')');
-        if (geometry.overflowX === 0)
-          pass('P6: timeline mode has no horizontal page overflow (' + label + ')');
-        else fail('timeline mode horizontal overflow issue (' + label + '): ' + geometry.overflowX);
-        if (geometry.wrapLeft >= geometry.hostLeft - 1 && geometry.wrapRight <= geometry.hostRight + 1)
-          pass('P6: timeline workspace fits host width (' + label + ')');
-        else fail('timeline workspace width issue (' + label + '): ' + JSON.stringify(geometry));
-      };
 
       // 2 lanes: video lane (clip A) + second/music lane.
       const lanes = await page.$$eval(tlModeSel + ' .tl-lane', (els) => els.length);
@@ -1124,13 +923,10 @@ export async function run(ctx) {
       // Cross-clip actions disabled until a second clip is dropped.
       const xfadeDisabled = await page.$eval(tlModeSel + ' .tl-act-xfade', (e) => e.disabled);
       if (xfadeDisabled) pass('P6: dissolve disabled until a 2nd clip is added'); else fail('xfade not gated on 2nd clip');
-      await assertTimelineViewport('desktop');
+      await assertTimelineViewport(ctx, tlModeSel, 'desktop');
 
       const tlViewDesktop = page.viewportSize();
-      await page.setViewportSize({ width: 390, height: 844 });
-      await page.goto(origin, { waitUntil: 'load' });
-      await openExample('Sample.avi');
-      await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
+      await reloadExampleAtViewport(ctx, MEDIA_MOBILE_VIEWPORT, 'Sample.avi', '#previewHost video.media-view');
       await page.click('#previewHost .media-mode-tab[data-mode="timeline"]');
       await page.waitForSelector(tlModeSel + ':not([hidden])', { timeout: 5000 });
       const mobileToggle = await page.evaluateHandle((sel) =>
@@ -1140,7 +936,7 @@ export async function run(ctx) {
       if (mobileToggleExists) {
         await mobileToggle.asElement().click();
         await page.waitForSelector(tlModeSel + ' .tl-wrap', { timeout: 12000 });
-        await assertTimelineViewport('mobile');
+        await assertTimelineViewport(ctx, tlModeSel, 'mobile');
         await mobileToggle.asElement().click();
         await page.waitForSelector(tlModeSel + ' .tl-wrap', { state: 'detached', timeout: 4000 });
       } else {
@@ -1149,7 +945,7 @@ export async function run(ctx) {
       if (tlViewDesktop) {
         await page.setViewportSize(tlViewDesktop);
       } else {
-        await page.setViewportSize({ width: 1100, height: 800 });
+        await page.setViewportSize(MEDIA_DEFAULT_DESKTOP_VIEWPORT);
       }
       await page.goto(origin, { waitUntil: 'load' });
       await openExample('Sample.avi');
@@ -1182,5 +978,5 @@ export async function run(ctx) {
   else fail('trim clamp: ' + JSON.stringify(tlArgs.trimClamped));
 
   // Reset settings so we don't leak ffmpeg-on into later areas sharing the page.
-  await page.evaluate(() => localStorage.removeItem('fv:settings:global'));
+  await resetMediaSettings(page);
 }
