@@ -460,6 +460,32 @@ Status: committed.
   `media-studio` 9.382s, `ebook-git` 71.771s, `examples-catalog` 151.002s, smoke total 361s.
 - Committed in `ede82ebf` — `Extract media workspace helpers`.
 
+### R1 — Cleanup Mastering Preset
+
+Status: first slice committed; measured true-peak and staged compare remain open.
+
+- Added a pure export-only mastering cleanup chain in `audio-filters.js`:
+  de-hum highpass + 60/120 Hz notch filters, `afftdn` de-noise, heuristic de-plosive
+  low-frequency containment, and conservative `dynaudnorm` leveling.
+- Added `Podcast Cleanup MP3`, a visible Export preset that preserves source sample rate and
+  channel count while applying cleanup, MP3 192k encoding, and `loudnorm` target −16 LUFS /
+  TP target −1.5 dBTP.
+- Export summaries now describe `loudnorm target` and `loudnorm TP target` so the UI does not
+  imply QC has measured true peak; QC still names its current metric `Sample peak`.
+- Smoke coverage now asserts the cleanup card appears before Custom, shows source-preserving
+  output copy, and includes the cleanup `-af` provenance with `afftdn` and `dynaudnorm`.
+- Changed paths: `audio-filters.js`, `export-presets.js`, `studio-export.js`,
+  `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`,
+  `docs/asset-manifest.json`, `docs/sw.js`.
+- Validation passed: `node --check docs/types/media/audio-filters.js docs/types/media/export-presets.js docs/types/media/studio-export.js tests/media-parsers.test.mjs tests/areas/media-studio.mjs`,
+  `node tests/media-parsers.test.mjs`, `node tests/smoke-area.mjs media-studio`,
+  `./scripts/check.sh --fast`.
+- Fast aggregate timing evidence: `media-3d` 18.373s, `media-studio` 10.252s,
+  `ebook-git` 73.422s, `examples-catalog` 129.536s, smoke total 345s.
+- Committed in `995aa90b` — `Add media cleanup mastering preset`.
+- Remaining R1 work: measured/ffmpeg-backed true-peak pass, raw -> tuned -> dynamics ->
+  master-bus compare polish, and any additional copy needed after true-peak is real.
+
 ## Tracking Rules
 
 - Mark each item `open`, `in progress`, `blocked`, `done`, or `committed`.

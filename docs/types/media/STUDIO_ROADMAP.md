@@ -70,7 +70,8 @@ Validation target:
 
 ### R1 — Complete The Mastering Chain
 
-Status: highest-value remaining client-side product work.
+Status: in progress; export cleanup/leveling preset is committed, true-peak measurement
+and staged compare polish remain.
 
 Goal: make Export/QC feel like a real offline audiobook/podcast mastering path, not just a
 collection of useful presets.
@@ -78,11 +79,14 @@ collection of useful presets.
 Needed:
 
 - True-peak or oversampled peak measurement, or an explicit ffmpeg-backed true-peak pass.
-- De-hum and de-noise presets based on ffmpeg filters (`afftdn`, `anlmdn`, notch/highpass).
-- De-plosive helper or preset path; keep it honest if it is only a heuristic.
-- Adaptive leveling approximation via client-side ffmpeg (`dynaudnorm`) where practical.
+- Done: de-hum and de-noise export preset based on ffmpeg filters (`afftdn`,
+  notch/highpass).
+- Done: de-plosive helper path, labeled as heuristic low-frequency containment.
+- Done: adaptive leveling approximation via client-side ffmpeg (`dynaudnorm`) in the
+  cleanup export chain.
 - Stronger master-bus preview/export comparison: raw -> tuned -> dynamics -> master bus.
-- Clear copy distinguishing sample peak, true peak, RMS, and LUFS.
+- Partial: export copy distinguishes QC sample-peak measurement from ffmpeg `loudnorm`
+  LUFS and true-peak target. A measured true-peak pass still remains.
 
 Do not add:
 
