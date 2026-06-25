@@ -549,7 +549,7 @@ Status: committed.
   299s, `media-3d` 16.812s, `media-studio` 7.473s, `ebook-git` 69.739s,
   `examples-catalog` 109.871s. The aggregate path was selected only because `scripts/check.sh`
   itself changed.
-- Committed in `43c06b28` — `Add media mastering stage compare`.
+- Committed in `0c24adc1` — `Add media mastering stage compare`.
 
 ### R4 — Audio/Video Overlap Diff Compare
 
