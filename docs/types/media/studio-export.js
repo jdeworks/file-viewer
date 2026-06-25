@@ -125,7 +125,8 @@ export function buildExportPanel(intake, mediaEl, kind) {
     const cardWrap = document.createElement('div');
     cardWrap.className = 'media-export-preset-cards';
     const workflowPresetIds = ['podcast-mp3', 'acx-mp3', 'custom'];
-    for (const p of availablePresets.filter((preset) => workflowPresetIds.includes(preset.id))) {
+    const workflowPresets = workflowPresetIds.map((id) => availablePresets.find((preset) => preset.id === id)).filter(Boolean);
+    for (const p of workflowPresets) {
       const card = document.createElement('button');
       card.type = 'button';
       card.className = 'media-export-preset-card';

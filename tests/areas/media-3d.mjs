@@ -1476,6 +1476,9 @@ export async function run(ctx) {
     && presetCards.some((c) => /ACX/i.test(c.title))
     && presetCards.some((c) => /custom/i.test(c.title));
   if (presetHasCards) pass('P1: visible export preset cards show Podcast/ACX/Custom affordances'); else fail('export cards: ' + JSON.stringify(presetCards));
+  const presetCardOrder = presetCards.map((c) => c.preset).join(',');
+  if (/^podcast-mp3,acx-mp3,custom/.test(presetCardOrder)) pass('P1: export preset cards keep intent presets before Custom');
+  else fail('export card order: ' + presetCardOrder);
   const defaultCard = presetCards.find((c) => c.preset === 'podcast-mp3');
   if (defaultCard?.active) pass('P1: default export card state is Podcast');
   else fail('export default card active state: ' + JSON.stringify(defaultCard));
