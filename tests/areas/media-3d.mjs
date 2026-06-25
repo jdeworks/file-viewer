@@ -1383,8 +1383,33 @@ export async function run(ctx) {
   if (exportPanel) pass('P1: export panel present when ffmpeg enabled'); else fail('export panel missing with ffmpeg on');
   const exportHeader = exportPanel ? await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-panel .media-ed-header', (e) => e.textContent) : '';
   if (/Export processed audio/i.test(exportHeader)) pass('P1: "Export processed audio" header present'); else fail('export header: ' + exportHeader);
+  const exportStatus = exportPanel ? await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-panel .media-export-head-status', (e) => e.textContent) : '';
+  if (/Profile: Podcast MP3/i.test(exportStatus)) pass('P1: export profile status initialized to Podcast'); else fail('export status: ' + exportStatus);
+  const presetCards = await page.$$eval(
+    '#previewHost .media-mode-panel[data-mode="export"] .media-export-panel .media-export-preset-card',
+    (els) => els.map((e) => ({
+      preset: e.dataset.preset || '',
+      title: e.querySelector('.media-export-preset-title')?.textContent || '',
+      detail: e.querySelector('.media-export-preset-detail')?.textContent || '',
+      active: e.getAttribute('aria-pressed') === 'true',
+    })),
+  );
+  const presetHasCards = presetCards.length >= 3
+    && presetCards.some((c) => c.preset === 'podcast-mp3')
+    && presetCards.some((c) => c.preset === 'acx-mp3')
+    && presetCards.some((c) => c.preset === 'custom')
+    && presetCards.some((c) => /Podcast/i.test(c.title))
+    && presetCards.some((c) => /ACX/i.test(c.title))
+    && presetCards.some((c) => /custom/i.test(c.title));
+  if (presetHasCards) pass('P1: visible export preset cards show Podcast/ACX/Custom affordances'); else fail('export cards: ' + JSON.stringify(presetCards));
+  const defaultCard = presetCards.find((c) => c.preset === 'podcast-mp3');
+  if (defaultCard?.active) pass('P1: default export card state is Podcast');
+  else fail('export default card active state: ' + JSON.stringify(defaultCard));
+
   const exportRunText = exportPanel ? await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-run', (e) => e.textContent) : '';
   if (/Export processed audio/i.test(exportRunText)) pass('P1: export button labelled'); else fail('export run btn: ' + exportRunText);
+  const exportSummary = exportPanel ? await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent) : '';
+  if (/live chain =/.test(exportSummary) && /Output =/.test(exportSummary) && /Provenance = -af "/.test(exportSummary)) pass('P1: provenance-style export summary rendered'); else fail('export summary: ' + exportSummary.slice(0, 120));
   const exportFmts = await page.$$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-fmt option', (els) => els.map((e) => e.value));
   if (['source', 'mp3', 'wav', 'm4a', 'ogg'].every((f) => exportFmts.includes(f))) pass('P1: export format options (source/mp3/wav/m4a/ogg)'); else fail('export fmts: ' + exportFmts.join(','));
   const fadeInPresent = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-ed-fade-in');
@@ -1397,8 +1422,8 @@ export async function run(ctx) {
   // The live-EQ summary updates with the fade duration (proves settings are read live).
   await page.fill('#previewHost .media-mode-panel[data-mode="export"] .media-ed-fade-in', '2');
   await page.evaluate(() => document.querySelector('#previewHost .media-mode-panel[data-mode="export"] .media-ed-fade-in').dispatchEvent(new Event('input', { bubbles: true })));
-  const summaryText = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
-  if (/fade-in 2/.test(summaryText)) pass('P1: live export summary reflects fade-in setting'); else fail('export summary: ' + summaryText.slice(0, 100));
+  const fadeSummaryText = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
+  if (/fade-in 2s/.test(fadeSummaryText) && /Output =/.test(fadeSummaryText)) pass('P1: live export summary reflects fade-in setting'); else fail('export summary: ' + fadeSummaryText.slice(0, 120));
 
   // ── P2: export presets + advanced overrides ────────────────────────────────
   // The flat format picker is now a preset <select> (Podcast / ACX / Custom …).
@@ -1412,14 +1437,30 @@ export async function run(ctx) {
   // Switch to Audiobook (ACX): summary must reflect mono / 192k CBR / −20 LUFS.
   await page.selectOption('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset', 'acx-mp3');
   const acxSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
-  if (/mono/i.test(acxSummary) && /192k CBR/.test(acxSummary) && /-20 LUFS/.test(acxSummary)) pass('P2: ACX preset summary shows mono, 192k CBR, normalize -20 LUFS'); else fail('acx summary: ' + acxSummary.slice(0, 140));
+  if (/Profile Audiobook ACX MP3/.test(acxSummary) && /mono/.test(acxSummary)
+    && /192k CBR/.test(acxSummary) && /-20 LUFS/.test(acxSummary) && /TP -3 dBTP/.test(acxSummary))
+    pass('P2: ACX preset summary shows mono, 192k CBR, normalize -20 LUFS, TP -3');
+  else fail('acx summary: ' + acxSummary.slice(0, 180));
+  await page.click('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset-card[data-preset="podcast-mp3"]');
+  const podcastSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
+  if (/Profile Podcast MP3/.test(podcastSummary) && /-16 LUFS/.test(podcastSummary) && /192k/.test(podcastSummary) && /TP -1\.5 dBTP/.test(podcastSummary))
+    pass('P2: Podcast preset summary reflects -16 LUFS / 192k / 44.1 kHz / TP -1.5');
+  else fail('podcast summary: ' + podcastSummary.slice(0, 180));
   // Switching to Custom reveals the override fields (container/bitrate/sr/channels/loudness).
   await page.selectOption('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset', 'custom');
   const advShown = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-adv', (e) => e.hidden).catch(() => null);
   const hasContainer = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-container');
   const hasBitrate = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-bitrate');
   const hasLufs = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-lufs');
-  if (advShown === false && hasContainer && hasBitrate && hasLufs) pass('P2: Custom reveals container/bitrate/loudness overrides'); else fail('custom adv: shown=' + advShown + ' c=' + !!hasContainer + ' b=' + !!hasBitrate + ' l=' + !!hasLufs);
+  const customNote = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-adv-note', (e) => e.textContent).catch(() => '');
+  if (advShown === false && hasContainer && hasBitrate && hasLufs && /manual container|manual sample/.test((customNote || '').toLowerCase()))
+    pass('P2: Custom reveals manual path controls with explicit guidance');
+  else fail('custom adv: shown=' + advShown + ' c=' + !!hasContainer + ' b=' + !!hasBitrate + ' l=' + !!hasLufs + ' note=' + customNote);
+  await page.click('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset-card[data-preset="acx-mp3"]');
+  const acxCardSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
+  if (/Profile Audiobook ACX MP3/.test(acxCardSummary) && /Output =/.test(acxCardSummary))
+    pass('P2: ACX card path reselect keeps summary visible');
+  else fail('acx card select: ' + acxCardSummary.slice(0, 120));
   // Verify the PURE preset/codec layer (no ffmpeg load): ACX → mono CBR mp3 args.
   const presetParams = await page.evaluate(async () => {
     const { presetById, resolveExportParams, audioEncodeArgs: enc } = {

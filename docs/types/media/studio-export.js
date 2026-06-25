@@ -22,15 +22,57 @@ import {
 
 function mkBtn(text, cls) {
   const b = document.createElement('button');
-  b.type = 'button'; b.textContent = text; b.className = cls || 'media-ed-btn';
+  b.type = 'button';
+  b.textContent = text;
+  b.className = cls || 'media-ed-btn';
   return b;
 }
 
 function numInput(value, cls) {
   const el = document.createElement('input');
-  el.type = 'number'; el.min = '0'; el.max = '60'; el.step = '0.5';
-  el.value = String(value); el.className = cls || 'media-ed-fade-input';
+  el.type = 'number';
+  el.min = '0';
+  el.max = '60';
+  el.step = '0.5';
+  el.value = String(value);
+  el.className = cls || 'media-ed-fade-input';
   return el;
+}
+
+function formatPresetName(preset) {
+  if (!preset?.label) return '';
+  return preset.label.split(' (')[0];
+}
+
+function formatKhz(rate) {
+  const n = Number(rate);
+  if (!isFinite(n)) return '';
+  return n >= 1000 ? `${n / 1000}k` : `${n} Hz`;
+}
+
+function describePresetTarget(preset) {
+  const bits = [];
+  bits.push(`container ${preset.container || 'source'}`);
+  if (preset.channels) bits.push(preset.channels === 1 ? 'mono' : `${preset.channels} ch`);
+  if (preset.sampleRate) bits.push(formatKhz(preset.sampleRate));
+  if (preset.bitrate) bits.push(preset.cbr ? `${preset.bitrate} CBR` : preset.bitrate);
+  else bits.push('VBR');
+  if (preset.lufsTarget !== null && preset.lufsTarget !== undefined) bits.push(`${preset.lufsTarget} LUFS`);
+  if (preset.truePeak !== null && preset.truePeak !== undefined) bits.push(`TP ${preset.truePeak} dBTP`);
+  return bits.join(', ');
+}
+
+function describeLiveSummary(settings, fades) {
+  const bits = [];
+  const activeBands = (settings.gains || []).filter((g) => Math.abs(g) >= 0.1).length;
+  if (activeBands) bits.push(`${activeBands} EQ band${activeBands === 1 ? '' : 's'}`);
+  if (settings.hpf > 20) bits.push('HPF ' + Math.round(settings.hpf) + 'Hz');
+  if (settings.lpf < 20000) bits.push('LPF ' + Math.round(settings.lpf) + 'Hz');
+  const dyn = describeDynamics(settings.dynamics);
+  if (dyn) bits.push(dyn);
+  if (fades.fadeIn > 0) bits.push('fade-in ' + fades.fadeIn + 's');
+  if (fades.fadeOut > 0) bits.push('fade-out ' + fades.fadeOut + 's');
+  return bits;
 }
 
 // Read the live studio settings off the shared graph for `mediaEl`. Returns null when
@@ -46,14 +88,68 @@ function readLiveSettings(mediaEl) {
 export function buildExportPanel(intake, mediaEl, kind) {
   const blobUrls = [];
   let ffInstance = null;
+  const isAudio = kind === 'audio';
 
   const panel = document.createElement('div');
   panel.className = 'media-ed-panel media-export-panel';
 
+  const head = document.createElement('div');
+  head.className = 'media-export-headline';
   const header = document.createElement('div');
   header.className = 'media-ed-header';
   header.textContent = kind === 'video' ? 'Export & Fades (video)' : 'Export processed audio';
-  panel.appendChild(header);
+  const headStatus = document.createElement('div');
+  headStatus.className = 'media-export-head-status';
+  headStatus.textContent = isAudio ? 'Profile: Podcast MP3' : 'Video export profile';
+  head.append(header, headStatus);
+  panel.appendChild(head);
+
+  // ── Export-preset picker + workflow cards (audio only) ──
+  const presetSel = document.createElement('select');
+  presetSel.className = 'sp-preset-sel media-export-preset';
+  const availablePresets = EXPORT_PRESETS.filter((p) => p.kind !== 'video' || kind === 'video');
+  for (const p of availablePresets) {
+    const o = document.createElement('option');
+    o.value = p.id;
+    o.textContent = p.label;
+    presetSel.append(o);
+  }
+  presetSel.value = kind === 'video' ? 'web-mp4-720p' : 'podcast-mp3';
+
+  const presetRow = document.createElement('div');
+  presetRow.className = 'media-ed-radio-row media-export-select-row';
+  presetRow.append(document.createTextNode('Preset '), presetSel);
+
+  const presetCards = [];
+  if (isAudio) {
+    const cardWrap = document.createElement('div');
+    cardWrap.className = 'media-export-preset-cards';
+    const workflowPresetIds = ['podcast-mp3', 'acx-mp3', 'custom'];
+    for (const p of availablePresets.filter((preset) => workflowPresetIds.includes(preset.id))) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'media-export-preset-card';
+      card.dataset.preset = p.id;
+      const title = document.createElement('div');
+      title.className = 'media-export-preset-title';
+      title.textContent = formatPresetName(p);
+      const detail = document.createElement('div');
+      detail.className = 'media-export-preset-detail';
+      detail.textContent = p.id === 'custom'
+        ? 'Manual container / bitrate / sample rate / channels / loudness.'
+        : (describeParams(p) || formatPresetName(p));
+      card.append(title, detail);
+      card.addEventListener('click', () => {
+        if (presetSel.value === p.id) return;
+        presetSel.value = p.id;
+        presetSel.dispatchEvent(new Event('change'));
+      });
+      presetCards.push(card);
+      cardWrap.append(card);
+    }
+    panel.appendChild(cardWrap);
+  }
+  panel.appendChild(presetRow);
 
   // ── Fade controls (shared by audio + video) ──
   const fadeRow = document.createElement('div');
@@ -67,32 +163,38 @@ export function buildExportPanel(intake, mediaEl, kind) {
   fadeRow.append(fadeInLabel, fadeOutLabel);
   panel.appendChild(fadeRow);
 
-  // ── P2: export-preset picker + advanced overrides + the live-EQ summary ──
-  // Presets relevant to this source: audio sources get the audio presets; video sources
-  // also get the video presets (MP4 720p / WebM). "Custom" reveals the override controls.
-  const presetSel = document.createElement('select');
-  presetSel.className = 'sp-preset-sel media-export-preset';
-  EXPORT_PRESETS
-    .filter((p) => p.kind !== 'video' || kind === 'video')
-    .forEach((p) => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.label; presetSel.append(o); });
-  presetSel.value = kind === 'video' ? 'web-mp4-720p' : 'podcast-mp3';
-
-  const presetRow = document.createElement('div');
-  presetRow.className = 'media-ed-radio-row';
-  presetRow.append(document.createTextNode('Preset '), presetSel);
-  panel.appendChild(presetRow);
-
-  // Advanced overrides — shown only when "Custom" is selected (always built; just hidden).
+  // ── Advanced overrides (still advanced/custom) ──
   const advanced = buildAdvancedOverrides();
-  panel.appendChild(advanced.el);
+  const advWrap = document.createElement('div');
+  advWrap.className = 'media-export-adv-wrap';
+  const advNote = document.createElement('div');
+  advNote.className = 'media-export-adv-note';
+  advNote.textContent = 'Custom mode: manual container, bitrate, sample-rate, channel, and loudness settings.';
+  advWrap.append(advNote, advanced.el);
+  panel.appendChild(advWrap);
 
   const summary = document.createElement('div');
   summary.className = 'media-export-summary';
   panel.appendChild(summary);
 
   function currentPreset() { return presetById(presetSel.value); }
+  function syncPresetCards() {
+    const preset = currentPreset();
+    const label = formatPresetName(preset);
+    for (const card of presetCards) {
+      const active = card.dataset.preset === preset.id;
+      card.classList.toggle('media-export-preset-card--active', active);
+      card.setAttribute('aria-pressed', active ? 'true' : 'false');
+    }
+    if (isAudio) headStatus.textContent = `Profile: ${label}`;
+  }
+
   function syncAdvancedVisibility() {
-    advanced.el.hidden = currentPreset().id !== 'custom';
+    const preset = currentPreset();
+    const isCustom = preset.id === 'custom';
+    advanced.el.hidden = !isCustom;
+    advNote.hidden = !isCustom;
+    syncPresetCards();
   }
 
   // ── Action row ──
@@ -113,7 +215,9 @@ export function buildExportPanel(intake, mediaEl, kind) {
   if (kind === 'video') {
     stub.append(document.createTextNode('Dissolve / crossfade (xfade) between two clips lives in the '));
     const lnk = document.createElement('button');
-    lnk.type = 'button'; lnk.className = 'media-tl-open'; lnk.textContent = 'Video timeline';
+    lnk.type = 'button';
+    lnk.className = 'media-tl-open';
+    lnk.textContent = 'Video timeline';
     lnk.addEventListener('click', () => {
       const wrap = panel.closest('.media-doc')?.querySelector('.media-tl-panel');
       const toggle = wrap?.previousElementSibling;
@@ -128,16 +232,24 @@ export function buildExportPanel(intake, mediaEl, kind) {
 
   // ── Progress + result ──
   const progressArea = document.createElement('div');
-  progressArea.className = 'media-ed-progress-area'; progressArea.hidden = true;
+  progressArea.className = 'media-ed-progress-area';
+  progressArea.hidden = true;
   const progressBar = document.createElement('progress');
-  progressBar.max = 100; progressBar.value = 0; progressBar.className = 'media-ed-progress';
-  const progressPct = document.createElement('span'); progressPct.className = 'media-ed-pct'; progressPct.textContent = '0%';
-  const progressMsg = document.createElement('span'); progressMsg.className = 'media-ed-msg'; progressMsg.textContent = 'Working…';
+  progressBar.max = 100;
+  progressBar.value = 0;
+  progressBar.className = 'media-ed-progress';
+  const progressPct = document.createElement('span');
+  progressPct.className = 'media-ed-pct';
+  progressPct.textContent = '0%';
+  const progressMsg = document.createElement('span');
+  progressMsg.className = 'media-ed-msg';
+  progressMsg.textContent = 'Working…';
   progressArea.append(progressBar, progressPct, progressMsg);
   panel.appendChild(progressArea);
 
   const resultArea = document.createElement('div');
-  resultArea.className = 'media-ed-result'; resultArea.hidden = true;
+  resultArea.className = 'media-ed-result';
+  resultArea.hidden = true;
   panel.appendChild(resultArea);
 
   // Resolve the chosen preset + (when Custom) the override controls into concrete
@@ -147,37 +259,49 @@ export function buildExportPanel(intake, mediaEl, kind) {
     return resolveExportParams(currentPreset(), advanced.read(), ext);
   }
 
-  // Refresh the summary so the user sees exactly what will be baked — preset/overrides
-  // (container/bitrate/sr/channels/loudness) ON TOP of the live-EQ `-af` chain.
+  // Refresh the summary so the user sees what is baked:
+  // live tune chain fragments (EQ/HPF/LPF/dynamics/fades) + resolved preset target.
   function refreshSummary() {
     if (!summary) return;
     const preset = currentPreset();
     const p = resolveParams();
     const s = readLiveSettings(mediaEl) || {};
     const fades = collectFades();
-    // Merge the preset's loudness target so the chain preview matches what bakeAudio emits.
     const eqSettings = (p.lufsTarget !== null && p.lufsTarget !== undefined)
       ? { ...s, lufsTarget: p.lufsTarget, truePeak: p.truePeak } : s;
     const chain = buildAudioFilterChain(eqSettings, fades);
-    const bits = [];
-    const desc = describeParams(p);
-    if (desc) bits.push(desc);
-    const active = (s.gains || []).filter((g) => Math.abs(g) >= 0.1).length;
-    if (active) bits.push(active + ' EQ band' + (active === 1 ? '' : 's'));
-    if (s.hpf > 20) bits.push('HPF ' + Math.round(s.hpf) + 'Hz');
-    if (s.lpf < 20000) bits.push('LPF ' + Math.round(s.lpf) + 'Hz');
-    const dyn = describeDynamics(s.dynamics);
-    if (dyn) bits.push(dyn);
-    if (fades.fadeIn > 0) bits.push('fade-in ' + fades.fadeIn + 's');
-    if (fades.fadeOut > 0) bits.push('fade-out ' + fades.fadeOut + 's');
-    const label = preset.id === 'custom' ? 'Custom' : preset.label.split(' (')[0];
-    summary.textContent = 'Will bake: ' + label
-      + (bits.length ? ' — ' + bits.join(', ') : '')
-      + (chain ? '  —  -af "' + chain + '"' : '');
+    if (isAudio) {
+      const liveBits = describeLiveSummary(s, fades);
+      const targetBits = describePresetTarget(p);
+      const presetName = formatPresetName(preset);
+      summary.textContent = `Profile ${presetName}: live chain = ${liveBits.join(', ') || 'flat'}
+Output = ${targetBits}
+Provenance = -af "${chain || 'none'}"`;
+    } else {
+      const bits = [];
+      const desc = describeParams(p);
+      if (desc) bits.push(desc);
+      const active = (s.gains || []).filter((g) => Math.abs(g) >= 0.1).length;
+      if (active) bits.push(active + ' EQ band' + (active === 1 ? '' : 's'));
+      if (s.hpf > 20) bits.push('HPF ' + Math.round(s.hpf) + 'Hz');
+      if (s.lpf < 20000) bits.push('LPF ' + Math.round(s.lpf) + 'Hz');
+      const dyn = describeDynamics(s.dynamics);
+      if (dyn) bits.push(dyn);
+      if (fades.fadeIn > 0) bits.push('fade-in ' + fades.fadeIn + 's');
+      if (fades.fadeOut > 0) bits.push('fade-out ' + fades.fadeOut + 's');
+      const label = preset.id === 'custom' ? 'Custom' : preset.label.split(' (')[0];
+      summary.textContent = 'Will bake: ' + label
+        + (bits.length ? ' — ' + bits.join(', ') : '')
+        + (chain ? '  —  -af "' + chain + '"' : '');
+    }
   }
+
   fadeInInput.addEventListener('input', refreshSummary);
   fadeOutInput.addEventListener('input', refreshSummary);
-  presetSel.addEventListener('change', () => { syncAdvancedVisibility(); refreshSummary(); });
+  presetSel.addEventListener('change', () => {
+    syncAdvancedVisibility();
+    refreshSummary();
+  });
   advanced.onChange(refreshSummary);
 
   function collectFades() {
@@ -189,9 +313,15 @@ export function buildExportPanel(intake, mediaEl, kind) {
   }
 
   function setRunning(running) {
-    runBtn.disabled = running; runBtn.hidden = running;
-    cancelBtn.hidden = !running; progressArea.hidden = !running;
-    if (running) { progressBar.value = 0; progressPct.textContent = '0%'; progressMsg.textContent = 'Loading ffmpeg…'; }
+    runBtn.disabled = running;
+    runBtn.hidden = running;
+    cancelBtn.hidden = !running;
+    progressArea.hidden = !running;
+    if (running) {
+      progressBar.value = 0;
+      progressPct.textContent = '0%';
+      progressMsg.textContent = 'Loading ffmpeg…';
+    }
   }
 
   function showResult(url, filename, sizeBytes) {
@@ -200,7 +330,9 @@ export function buildExportPanel(intake, mediaEl, kind) {
     msg.className = 'media-ed-done';
     msg.textContent = 'Done — ' + (sizeBytes / 1048576).toFixed(1) + ' MB';
     const dl = document.createElement('a');
-    dl.href = url; dl.download = filename; dl.className = 'media-tx-download';
+    dl.href = url;
+    dl.download = filename;
+    dl.className = 'media-tx-download';
     dl.textContent = 'Download ' + filename;
     resultArea.append(msg, dl);
     resultArea.hidden = false;
@@ -212,20 +344,29 @@ export function buildExportPanel(intake, mediaEl, kind) {
     resultArea.innerHTML = '';
     const lines = String(msg).split('\n');
     const err = document.createElement('span');
-    err.className = 'media-ed-error'; err.textContent = 'Error: ' + lines[0];
+    err.className = 'media-ed-error';
+    err.textContent = 'Error: ' + lines[0];
     resultArea.appendChild(err);
     const detail = lines.slice(1).join('\n').trim();
-    if (detail) { const pre = document.createElement('pre'); pre.className = 'media-ed-error-detail'; pre.textContent = detail; resultArea.appendChild(pre); }
+    if (detail) {
+      const pre = document.createElement('pre');
+      pre.className = 'media-ed-error-detail';
+      pre.textContent = detail;
+      resultArea.append(pre);
+    }
     resultArea.hidden = false;
   }
 
   async function run() {
     setRunning(true);
-    resultArea.hidden = true; resultArea.innerHTML = '';
+    resultArea.hidden = true;
+    resultArea.innerHTML = '';
     try {
       const ff = await loadFfmpeg(({ ratio }) => {
         const pct = Math.round((ratio || 0) * 100);
-        progressBar.value = pct; progressPct.textContent = pct + '%'; progressMsg.textContent = 'Encoding…';
+        progressBar.value = pct;
+        progressPct.textContent = pct + '%';
+        progressMsg.textContent = 'Encoding…';
       });
       ffInstance = ff;
       progressMsg.textContent = 'Encoding…';
@@ -236,8 +377,6 @@ export function buildExportPanel(intake, mediaEl, kind) {
 
       let result;
       if (p.kind === 'video' && p.video) {
-        // P2: web-video preset (MP4 720p / WebM) — re-encode video + audio with the
-        // live-EQ chain + fades applied to the audio track.
         result = await runOperation(ff, 'webvideo', {
           settings, fades, video: p.video, container: p.container,
           bitrate: p.bitrate, sampleRate: p.sampleRate, channels: p.channels,
@@ -258,18 +397,25 @@ export function buildExportPanel(intake, mediaEl, kind) {
     } finally {
       ffInstance = null;
       setRunning(false);
-      runBtn.hidden = false; cancelBtn.hidden = true;
+      runBtn.hidden = false;
+      cancelBtn.hidden = true;
     }
   }
 
   async function cancel() {
-    if (ffInstance) { try { ffInstance.exit(); } catch { /* ignore */ } ffInstance = null; }
-    setRunning(false); runBtn.hidden = false; cancelBtn.hidden = true;
+    if (ffInstance) {
+      try { ffInstance.exit(); } catch { /* ignore */ }
+      ffInstance = null;
+    }
+    setRunning(false);
+    runBtn.hidden = false;
+    cancelBtn.hidden = true;
     progressMsg.textContent = 'Cancelled.';
   }
 
   runBtn.addEventListener('click', run);
   cancelBtn.addEventListener('click', cancel);
+
   // Keep the summary fresh when the panel is shown (EQ may have changed since build).
   panel.addEventListener('pointerenter', refreshSummary);
   syncAdvancedVisibility();
@@ -278,7 +424,9 @@ export function buildExportPanel(intake, mediaEl, kind) {
   return {
     el: panel,
     revoke() {
-      for (const u of blobUrls) { try { URL.revokeObjectURL(u); } catch { /* ignore */ } }
+      for (const u of blobUrls) {
+        try { URL.revokeObjectURL(u); } catch { /* ignore */ }
+      }
       blobUrls.length = 0;
     },
   };
