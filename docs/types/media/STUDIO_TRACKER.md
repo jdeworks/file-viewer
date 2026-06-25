@@ -261,6 +261,21 @@ Progress:
     `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
   - Caveat: P1 still needs the deeper Adjust and Timeline polish passes; this checkpoint only
     establishes the shared video workspace/mode grammar.
+- `12cbab33` — `Polish video adjust workspace`.
+  - Adjust mode now opens with quick look presets before raw CSS filter sliders: Neutral,
+    Brighter, Cinema, High contrast, Soft / Blur, Monochrome, and Custom.
+  - Presets apply real `video.style.filter` values, update an active/status line with the
+    selected look and changed filter values, and expose a visible Reset action before Advanced.
+  - Raw brightness/contrast/color/hue/blur/grayscale/invert sliders remain under an Advanced
+    disclosure and still drive the same live filter pipeline.
+  - Movie audio is now presented as a dedicated Adjust sub-surface with Spectrum & EQ kept
+    CPU-lazy; opening it still mounts the shared 9-band EQ and overlaid-spectrum legend.
+  - Captured desktop and mobile Adjust/Cinema screenshots at
+    `/tmp/media-workspace-shots/video-p1-adjust/`; both reported zero horizontal overflow.
+  - Validation passed: `node --check docs/types/media/video-studio.js`,
+    `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+  - Caveat: P1 still needs Timeline workspace polish and a final video all-modes visual pass
+    before the Video Workspace Polish Gate should be marked committed.
 
 ### M1 — Video Trim Correctness
 
