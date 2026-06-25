@@ -7,6 +7,7 @@ import {
   sampleVideoTimes,
   summarizeAudioWindow,
 } from './compare-math.js';
+import { readPcmWavFirstChannelRange } from './compare-audio.js';
 import { buildSecondaryDropZone } from './editor-advanced.js';
 
 const FALLBACK_DURATION = 60;
@@ -218,6 +219,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       const duration = laneId === 'A' ? state.durationA : state.durationB;
       laneState.in = clamp(Number(inInput.value) || 0, 0, duration);
       laneState.out = clamp(Number(outInput.value) || duration, laneState.in, duration);
+      clearAudioRangeAnalysis();
       clearVideoAnalysis();
       render();
     };
@@ -398,9 +400,60 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     analysisStatus.textContent = 'Selection changed; analyze selected video again.';
   }
 
+  function clearAudioRangeAnalysis() {
+    if (kind !== 'audio' || state.analysis?.source !== 'wav-range') return;
+    state.analysis = null;
+    analysisStatus.textContent = 'Selection changed; analyze selected WAV range again.';
+  }
+
   function readFirstChannel(buffer) {
     if (!buffer || buffer.numberOfChannels < 1) return new Float32Array();
     return buffer.getChannelData(0);
+  }
+
+  function audioCompareResult() {
+    return classifyShiftedSections({
+      a: { offset: state.lanes.A.offset, range: { start: state.lanes.A.in, end: state.lanes.A.out } },
+      b: { offset: state.lanes.B.offset, range: { start: state.lanes.B.in, end: state.lanes.B.out } },
+      durationA: state.durationA,
+      durationB: state.durationB,
+    });
+  }
+
+  async function readSelectedWavRange(file, sourceRange, label) {
+    if (!file) return null;
+    return readPcmWavFirstChannelRange(file, sourceRange, {
+      label,
+      maxBytes: AUDIO_COMPARE_MAX_BYTES,
+    });
+  }
+
+  function toAudioAnalysisFromRange(rangeA, rangeB = null) {
+    return {
+      channelA: rangeA.channel,
+      rateA: rangeA.sampleRate,
+      rangeStartA: rangeA.rangeStart,
+      channelB: rangeB ? rangeB.channel : null,
+      rateB: rangeB?.sampleRate || 0,
+      rangeStartB: rangeB?.rangeStart || 0,
+      hasB: !!rangeB,
+      source: 'wav-range',
+      stale: false,
+    };
+  }
+
+  function toAudioAnalysisFromBuffers(bufferA, bufferB = null) {
+    return {
+      channelA: readFirstChannel(bufferA),
+      rateA: bufferA.sampleRate,
+      rangeStartA: 0,
+      channelB: bufferB ? readFirstChannel(bufferB) : null,
+      rateB: bufferB?.sampleRate || 0,
+      rangeStartB: 0,
+      hasB: !!bufferB,
+      source: 'browser-decode',
+      stale: false,
+    };
   }
 
   async function decodeFile(file) {
@@ -432,7 +485,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     }
 
     analyzeButton.disabled = true;
-    analysisStatus.textContent = 'Decoding selected audio on demand...';
+    analysisStatus.textContent = 'Analyzing selected audio on demand...';
     const fileA = state.files.A || mediaSourceFromIntake(intake);
     if (!fileA) {
       analysisStatus.textContent = 'Open-file bytes are unavailable for audio analysis.';
@@ -441,26 +494,42 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     }
 
     try {
-      const [bufferA, bufferB] = await Promise.all([
-        decodeFile(fileA),
-        state.files.B ? decodeFile(state.files.B) : Promise.resolve(null),
+      const current = audioCompareResult();
+      const [wavA, wavB] = await Promise.all([
+        readSelectedWavRange(fileA, current.a.source, 'Lane A selected WAV range'),
+        state.files.B ? readSelectedWavRange(state.files.B, current.b.source, 'Lane B selected WAV range') : Promise.resolve(null),
       ]);
-      state.durationA = bufferA.duration || state.durationA;
-      state.lanes.A.out = Math.min(state.lanes.A.out, state.durationA);
-      if (bufferB) {
-        state.durationB = bufferB.duration || state.durationB;
-        state.lanes.B.out = Math.min(state.lanes.B.out, state.durationB);
+      const canUseWavRange = !!wavA && (!state.files.B || !!wavB);
+
+      if (canUseWavRange) {
+        state.durationA = wavA.duration || state.durationA;
+        state.lanes.A.out = Math.min(state.lanes.A.out, state.durationA);
+        if (wavB) {
+          state.durationB = wavB.duration || state.durationB;
+          state.lanes.B.out = Math.min(state.lanes.B.out, state.durationB);
+        }
+        state.analysis = toAudioAnalysisFromRange(wavA, wavB);
+        analysisStatus.textContent = wavB
+          ? 'Analyzed selected WAV range.'
+          : 'Analyzed A WAV range. Add a second audio file.';
+      } else {
+        const [bufferA, bufferB] = await Promise.all([
+          decodeFile(fileA),
+          state.files.B ? decodeFile(state.files.B) : Promise.resolve(null),
+        ]);
+        state.durationA = bufferA.duration || state.durationA;
+        state.lanes.A.out = Math.min(state.lanes.A.out, state.durationA);
+        if (bufferB) {
+          state.durationB = bufferB.duration || state.durationB;
+          state.lanes.B.out = Math.min(state.lanes.B.out, state.durationB);
+        }
+        state.analysis = toAudioAnalysisFromBuffers(bufferA, bufferB);
+        analysisStatus.textContent = bufferB
+          ? 'Analyzed selected audio range (browser decode).'
+          : 'Analyzed A. Add a second audio file for difference.';
       }
-      state.analysis = {
-        channelA: readFirstChannel(bufferA),
-        rateA: bufferA.sampleRate,
-        channelB: bufferB ? readFirstChannel(bufferB) : null,
-        rateB: bufferB?.sampleRate || 0,
-        hasB: !!bufferB,
-        stale: false,
-      };
-      analysisStatus.textContent = bufferB
-        ? 'Analyzed selected audio range.'
+      if (!state.analysis.hasB) analysisStatus.textContent = state.analysis.source === 'wav-range'
+        ? 'Analyzed A WAV range. Add a second audio file.'
         : 'Analyzed A. Add a second audio file for difference.';
     } catch (err) {
       state.analysis = null;
@@ -760,9 +829,17 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       return;
     }
 
-    const summaryA = summarizeAudioWindow(analysis.channelA, analysis.rateA, result.a.source, AUDIO_COMPARE_COLUMNS);
+    const localRangeA = (range) => ({
+      start: Math.max(0, range.start - (analysis.rangeStartA || 0)),
+      end: Math.max(0, range.end - (analysis.rangeStartA || 0)),
+    });
+    const localRangeB = (range) => ({
+      start: Math.max(0, range.start - (analysis.rangeStartB || 0)),
+      end: Math.max(0, range.end - (analysis.rangeStartB || 0)),
+    });
+    const summaryA = summarizeAudioWindow(analysis.channelA, analysis.rateA, localRangeA(result.a.source), AUDIO_COMPARE_COLUMNS);
     const summaryB = analysis.hasB
-      ? summarizeAudioWindow(analysis.channelB, analysis.rateB, result.b.source, AUDIO_COMPARE_COLUMNS)
+      ? summarizeAudioWindow(analysis.channelB, analysis.rateB, localRangeB(result.b.source), AUDIO_COMPARE_COLUMNS)
       : null;
     const accent = getComputedStyle(wrap).getPropertyValue('--accent').trim() || '#2f7de1';
     drawWave(aCanvas, summaryA, accent);
@@ -785,8 +862,8 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       start: result.overlap.start - result.b.offset,
       end: result.overlap.end - result.b.offset,
     };
-    const overlapA = summarizeAudioWindow(analysis.channelA, analysis.rateA, overlapRangeA, AUDIO_COMPARE_COLUMNS);
-    const overlapB = summarizeAudioWindow(analysis.channelB, analysis.rateB, overlapRangeB, AUDIO_COMPARE_COLUMNS);
+    const overlapA = summarizeAudioWindow(analysis.channelA, analysis.rateA, localRangeA(overlapRangeA), AUDIO_COMPARE_COLUMNS);
+    const overlapB = summarizeAudioWindow(analysis.channelB, analysis.rateB, localRangeB(overlapRangeB), AUDIO_COMPARE_COLUMNS);
     const diff = diffAudioSummaries(overlapA, overlapB, { normalize: state.normalize });
     drawDiff(diffCanvas, diff);
     const normText = state.normalize

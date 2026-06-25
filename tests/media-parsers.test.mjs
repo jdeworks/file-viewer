@@ -31,6 +31,10 @@ import {
   summarizeAudioWindow,
 } from '../docs/types/media/compare-math.js';
 import {
+  parsePcmWavHeader,
+  readPcmWavFirstChannelRange,
+} from '../docs/types/media/compare-audio.js';
+import {
   classifyFfmpegError,
   cancelFfmpeg,
   formatFfmpegError,
@@ -40,6 +44,41 @@ import {
 import { PRESETS } from '../docs/types/media/spectrum-draw.js';
 
 const enc = new TextEncoder();
+
+function le16(n) {
+  return [n & 255, (n >>> 8) & 255];
+}
+
+function le32(n) {
+  return [n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255];
+}
+
+function makePcm16Wav({ sampleRate = 4, channels = 2, frames = [] } = {}) {
+  const blockAlign = channels * 2;
+  const dataBytes = frames.length * blockAlign;
+  const bytes = [
+    ...enc.encode('RIFF'),
+    ...le32(36 + dataBytes),
+    ...enc.encode('WAVE'),
+    ...enc.encode('fmt '),
+    ...le32(16),
+    ...le16(1),
+    ...le16(channels),
+    ...le32(sampleRate),
+    ...le32(sampleRate * blockAlign),
+    ...le16(blockAlign),
+    ...le16(16),
+    ...enc.encode('data'),
+    ...le32(dataBytes),
+  ];
+  for (const frame of frames) {
+    for (let ch = 0; ch < channels; ch++) {
+      const sample = Math.max(-32768, Math.min(32767, frame[ch] || 0));
+      bytes.push(sample & 255, (sample >> 8) & 255);
+    }
+  }
+  return new Blob([new Uint8Array(bytes)], { type: 'audio/wav' });
+}
 
 {
   assert.deepEqual(clampRange({ start: -4, end: 12 }, 10), { start: 0, end: 10 }, 'compare math: clampRange bounds to duration');
@@ -109,6 +148,44 @@ const enc = new TextEncoder();
   assert.equal(videoDiff.highFrames, 1, 'compare math: video diff reports high-diff frames');
   assert.equal(videoDiff.highPixels, 1, 'compare math: video diff reports high-diff pixels');
   assert.equal(videoDiff.highColumns, 1, 'compare math: video diff reports high-diff columns');
+}
+
+{
+  const wav = makePcm16Wav({
+    sampleRate: 4,
+    frames: [
+      [0, 32000],
+      [8192, 31000],
+      [-16384, 30000],
+      [32767, 29000],
+      [-32768, 28000],
+      [4096, 27000],
+    ],
+  });
+  const header = await parsePcmWavHeader(wav);
+  assert.equal(header?.sampleRate, 4, 'compare audio: parses PCM WAV sample rate from header');
+  assert.equal(header?.channels, 2, 'compare audio: parses PCM WAV channel count');
+  assert.equal(header?.bitsPerSample, 16, 'compare audio: supports 16-bit PCM');
+  assert.equal(header?.frameCount, 6, 'compare audio: computes frame count from data chunk');
+
+  const selected = await readPcmWavFirstChannelRange(wav, { start: 0.25, end: 1.0 }, { maxBytes: 1024 });
+  assert.equal(selected?.sampleRate, 4, 'compare audio: selected WAV range keeps sample rate');
+  assert.equal(selected?.rangeStart, 0.25, 'compare audio: selected WAV range aligns start to frames');
+  assert.equal(selected?.rangeEnd, 1, 'compare audio: selected WAV range aligns end to frames');
+  assert.equal(selected?.bytesRead, 12, 'compare audio: selected WAV range reads only requested frames');
+  assert.deepEqual(
+    [...selected.channel].map((n) => Number(n.toFixed(3))),
+    [0.25, -0.5, 1],
+    'compare audio: selected WAV range extracts first channel only',
+  );
+
+  const unsupported = new Blob([enc.encode('ID3not wav')], { type: 'audio/mpeg' });
+  assert.equal(await parsePcmWavHeader(unsupported), null, 'compare audio: unsupported audio returns null for fallback');
+  await assert.rejects(
+    () => readPcmWavFirstChannelRange(wav, { start: 0, end: 1.5 }, { maxBytes: 4, label: 'Tiny cap' }),
+    /Tiny cap is too large/,
+    'compare audio: selected WAV range enforces byte cap before slice decode',
+  );
 }
 
 function u32(n) {

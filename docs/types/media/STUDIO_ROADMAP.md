@@ -152,8 +152,9 @@ Needed:
   compare windows without full-file decode.
 - Partial: audio view has stacked lane strips, explicit user-chosen normalization toggle
   (off by default), translucent overlap/missing placeholders, and an explicit
-  `Analyze selected audio` action that lazily decodes capped selected ranges into waveform
-  and measured difference canvases. Broader audio compare polish remains pending.
+  `Analyze selected audio` action. Common PCM WAV compares now read capped selected
+  source windows with `Blob.slice`; compressed/unsupported audio keeps the capped
+  browser-decode fallback. Broader audio compare polish remains pending.
 - Partial: video view has aligned lanes, overlay opacity state, offset/overlap readouts,
   and an explicit `Analyze selected video` action that lazily samples capped selected
   overlap frames into real lane strips, overlay preview, visual diff strip, and measured
@@ -172,6 +173,8 @@ Validation target:
 - Done for audio slice: pure waveform/difference math coverage plus media-studio smoke for
   explicit audio analysis, painted lane/diff canvases, measured difference readout,
   and compare-only normalization labeling.
+- Done for audio polish: PCM WAV header/range helper coverage plus media-studio smoke proving
+  `sample.wav` uses the selected-range WAV path.
 - Done for video slice: pure video sample/difference math coverage plus media-studio smoke
   for explicit video analysis, second WebM fixture loading, painted frame/overlay/diff
   canvases, measured visual difference copy, overlay opacity readout updates, and absence

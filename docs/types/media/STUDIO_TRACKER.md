@@ -664,6 +664,10 @@ in `937ab522`. R4 still needs polish and longer-file strategy work.
 - Current audio evidence:
   - Added an explicit `Analyze selected audio` action that decodes only after click, with file-size
     and selected-duration caps.
+  - Added a selected-range PCM WAV path for common RIFF/WAVE PCM sources: the compare action
+    parses early chunks, reads only capped selected source windows via `Blob.slice`, and extracts
+    first-channel samples for the existing waveform/diff summary path.
+  - Keeps the existing full-file `decodeAudioData` fallback for compressed or unsupported audio.
   - Renders per-lane selected-range waveform canvases from downsampled peak/RMS columns.
   - Renders an aligned overlap difference strip and reports average diff energy plus high-diff
     columns; the normalize toggle is labeled compare-only and does not affect playback/export.
@@ -678,9 +682,9 @@ in `937ab522`. R4 still needs polish and longer-file strategy work.
     diff strip with average visual difference plus high-diff frame/pixel/column counts.
   - Smoke uses `docs/examples/sample.webm` as the second small video fixture and verifies painted
     frame/overlay/diff canvases and measured copy.
-- Changed paths for this slice: `compare-ui.js`, `compare-math.js`, `preview-media.css`,
+- Changed paths for this slice: `compare-audio.js`, `compare-ui.js`,
   `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`, `STUDIO_ROADMAP.md`,
-  `STUDIO_TRACKER.md`, plus generated cache files.
+  `STUDIO_TRACKER.md`, plus generated cache files if validation refreshes them.
 - Remaining R4 work: richer audio/video alignment polish and any longer-file strategy beyond
   capped browser decode.
 

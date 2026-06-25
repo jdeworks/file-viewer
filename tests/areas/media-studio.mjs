@@ -100,7 +100,10 @@ export async function run(ctx) {
       await page.fill(`${panelSel} .media-compare-out-input[data-lane="B"]`, '0.4');
       await page.setInputFiles(`${panelSel} .media-compare-drop .media-ed-file-input`, new URL('../../docs/examples/sample.wav', import.meta.url).pathname);
       await page.click(`${panelSel} .media-compare-analyze`);
-      await page.waitForFunction(() => /Analyzed selected audio range/i.test(document.querySelector('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-analysis-status')?.textContent || ''), null, { timeout: 12000 });
+      await page.waitForFunction(() => /Analyzed selected WAV range/i.test(document.querySelector('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-analysis-status')?.textContent || ''), null, { timeout: 12000 });
+      const analysisStatus = await page.$eval(`${panelSel} .media-compare-analysis-status`, (el) => el.textContent.trim());
+      if (/Analyzed selected WAV range/i.test(analysisStatus)) pass('audio compare: sample WAV uses selected-range analysis path');
+      else fail('audio compare WAV range status: ' + analysisStatus);
       const analysisPaint = await page.$$eval(`${panelSel} .media-compare-waveform-canvas, ${panelSel} .media-compare-diff-canvas`, (canvases) => canvases.map((canvas) => {
         const ctx = canvas.getContext('2d');
         const { width, height } = canvas;
@@ -128,6 +131,11 @@ export async function run(ctx) {
       if (normLabel.checked && /user chosen/i.test(normLabel.text) && /normalization is on for compare only/i.test(normReadout))
         pass('audio compare: normalize toggle updates compare-only label/state');
       else fail('audio compare normalize after analysis: ' + JSON.stringify({ normLabel, normReadout }));
+      await page.fill(`${panelSel} .media-compare-out-input[data-lane="A"]`, '0.3');
+      const staleStatus = await page.$eval(`${panelSel} .media-compare-analysis-status`, (el) => el.textContent);
+      if (/analyze selected WAV range again/i.test(staleStatus))
+        pass('audio compare: selected-range WAV analysis clears after range edits');
+      else fail('audio compare stale WAV status: ' + staleStatus);
     } else {
       if (analyzeExists) pass('video compare: explicit video analyze button exists');
       else fail('video compare analyze button missing');
