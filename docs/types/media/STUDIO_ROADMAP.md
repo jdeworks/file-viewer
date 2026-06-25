@@ -53,6 +53,8 @@ R1 without further growing the previous hotspots.
   `tests/areas/media-studio.mjs`.
 - Done: make `./scripts/check.sh --fast` choose touched smoke areas when ownership is clear
   and fall back to aggregate smoke for shared/global/generated paths.
+- Done: make `./scripts/check.sh --fast` choose touched unit tests when ownership is clear
+  and fall back to the full existing unit set for shared/global/generated paths.
 - Done: extract shared audio/video mode lifecycle from `renderer.js` into
   `workspace-modes.js`.
 - Done: split media-specific preview styles from `preview-chrome.css` into
@@ -125,7 +127,36 @@ Needed:
 - Port only generic speech/mastering presets. Avoid story/character-specific presets unless
   clearly labeled as examples.
 
-### R4 — Video Export Depth
+### R4 — Audio/Video Overlap Diff Compare
+
+Status: needed; this is separate from the R1/R3 processing-chain compare.
+
+Goal: compare two source media files, or two partial ranges, when their timelines do not
+line up perfectly because one file has an added/missing section.
+
+Needed:
+
+- A dedicated compare surface for both audio and video with side-by-side/top-bottom and
+  overlay modes.
+- Draggable timeline lanes so each input can be nudged by offset before comparing.
+- In/out range handles per lane so short sections can be compared without decoding or
+  rendering full files unnecessarily.
+- Audio view: stacked waveforms plus translucent overlap/difference energy, with gain-normalized
+  and raw modes clearly separated.
+- Video view: aligned frame strips and overlay/scrub preview, with opacity control and
+  frame/time offset readout.
+- Partial-difference reporting that distinguishes "content changed" from "content shifted".
+- Static-client implementation only: no backend alignment service, no ASR/NLP matching, no
+  hidden resampling/gain unless the user chooses a compare normalization mode.
+
+Validation target:
+
+- Pure offset/range math for shifted media segments.
+- Smoke coverage for draggable lane offsets, side-by-side/top-bottom layout, overlay opacity,
+  and no horizontal overflow on desktop/mobile.
+- Heavy decode/rendering stays lazy and scoped to selected ranges.
+
+### R5 — Video Export Depth
 
 Status: useful after audio/mastering depth is stable.
 
@@ -147,6 +178,8 @@ The media roadmap is fully implemented when:
 - Heavy analysis/export remains lazy and explicit.
 - Narratu/auto-audiobook lessons are visible in the product: speech-first presets,
   provenance, no hidden source changes, mixer/timeline grammar, QC-backed export.
+- Audio/video compare can align shifted inputs, inspect partial ranges, and show both
+  side-by-side/top-bottom and overlay differences without forcing full-file work.
 - ACX/podcast export can be trusted from QC through final generated files, including
   chapter workflows.
 - The fast gate is either actually fast or split clearly enough that developers know which

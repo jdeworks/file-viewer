@@ -8,7 +8,8 @@ status notes are stale.
 
 - Run `git status --short` and preserve any user/worker changes.
 - Re-read this tracker and pick one coherent increment.
-- Prefer `gpt-5.3-codex-spark` worker subagents for bounded code changes with disjoint write scopes.
+- Prefer inherited/main-model worker subagents for bounded code changes with disjoint write scopes
+  unless the user explicitly asks for a different model.
 - Do not push or pull `dev` unless the user asks.
 - Use small local checkpoint commits after coherent, validated increments so the lane can be
   reverted if a later autonomous change goes wrong. Do not leave multi-day successful work only
@@ -459,6 +460,17 @@ Status: committed.
 - Fast aggregate timing evidence after code-shape split: `media-3d` 18.822s,
   `media-studio` 9.382s, `ebook-git` 71.771s, `examples-catalog` 151.002s, smoke total 361s.
 - Committed in `ede82ebf` — `Extract media workspace helpers`.
+- Follow-up fast selector update: `./scripts/check.sh --fast` now also selects unit tests by
+  changed-path ownership. Media-only changes run `tests/media-parsers.test.mjs`; ebook/MOBI
+  changes run the mixed `tests/movediff.test.mjs`; image changes run image unit tests; metagame
+  changes run the non-exhaustive metagame unit tests. Shared/global/generated/vendor/test-runner
+  paths still fall back to the full existing unit set.
+- Validation for the fast selector update passed: `bash -n scripts/check.sh`, `git diff --check -- scripts/check.sh`,
+  `./scripts/check.sh --fast`. Because `scripts/check.sh` itself changed, the fast run correctly
+  selected the conservative full existing unit set and aggregate smoke.
+- Timing evidence from that conservative run: unit tests 1s, aggregate smoke 304s,
+  `media-3d` 16.924s, `media-studio` 7.702s, `ebook-git` 69.793s,
+  `examples-catalog` 112.129s.
 
 ### R1 — Cleanup Mastering Preset
 
@@ -508,6 +520,19 @@ Status: committed; staged compare remains open.
   `ebook-git` 70.704s, `examples-catalog` 118.170s, smoke total 316s.
 - Committed in `3725ea8f` — `Add estimated true peak QC metric`.
 - Remaining R1 work: raw -> tuned -> dynamics -> master-bus compare polish.
+
+### R4 — Audio/Video Overlap Diff Compare
+
+Status: newly scoped in `STUDIO_ROADMAP.md`; not started.
+
+- This is distinct from R1/R3 processing-chain compare. R1/R3 explain how one source changes
+  through Tune/Dynamics/Master Bus; R4 compares two source media files or two partial ranges.
+- Required grammar: side-by-side/top-bottom and overlay modes for audio and video, with draggable
+  per-input lane offsets so shifted content can be lined up before judging actual differences.
+- Required partial workflow: per-lane in/out handles, scoped decode/rendering, offset readout,
+  overlay opacity, and difference visualization that separates shifted content from changed content.
+- Keep implementation static-client only. Do not add backend alignment, ASR/NLP matching, or hidden
+  gain/resampling; any normalization must be an explicit compare mode.
 
 ## Tracking Rules
 

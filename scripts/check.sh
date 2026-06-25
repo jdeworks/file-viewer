@@ -134,22 +134,43 @@ run_loc_check() {
 }
 
 run_phase_unit_tests() {
-  node tests/media-parsers.test.mjs
-  node tests/movediff.test.mjs
-  node tests/markdown-edit-actions.test.mjs
-  node tests/image-fill.test.mjs
-  node tests/image-geometry.test.mjs
-  node tests/image-levels.test.mjs
-  node tests/image-curves.test.mjs
-  node tests/image-convolve.test.mjs
-  node tests/image-gif.test.mjs
-  node tests/settings-defaults.test.mjs
-  node tests/registry-runtime.test.mjs
-  node tests/example-compatibility.test.mjs
-  node tests/type-info.test.mjs
-  node tests/metadata-normalize.test.mjs
-  node tests/metadata-owned.test.mjs
+  local test_file
+  for test_file in "${FULL_UNIT_TESTS[@]}"; do
+    node "$test_file"
+  done
 }
+
+FULL_UNIT_TESTS=(
+  tests/media-parsers.test.mjs
+  tests/movediff.test.mjs
+  tests/markdown-edit-actions.test.mjs
+  tests/image-fill.test.mjs
+  tests/image-geometry.test.mjs
+  tests/image-levels.test.mjs
+  tests/image-curves.test.mjs
+  tests/image-convolve.test.mjs
+  tests/image-gif.test.mjs
+  tests/settings-defaults.test.mjs
+  tests/registry-runtime.test.mjs
+  tests/example-compatibility.test.mjs
+  tests/type-info.test.mjs
+  tests/metadata-normalize.test.mjs
+  tests/metadata-owned.test.mjs
+)
+
+IMAGE_UNIT_TESTS=(
+  tests/image-fill.test.mjs
+  tests/image-geometry.test.mjs
+  tests/image-levels.test.mjs
+  tests/image-curves.test.mjs
+  tests/image-convolve.test.mjs
+  tests/image-gif.test.mjs
+)
+
+FAST_GAME_UNIT_TESTS=(
+  tests/metagame-platform.test.mjs
+  tests/metagame-viewer-actions.test.mjs
+)
 
 collect_changed_paths() {
   {
@@ -174,6 +195,145 @@ print_fast_smoke_changed_paths() {
     echo "    $path"
     shown=$((shown + 1))
   done
+}
+
+print_fast_changed_paths() {
+  print_fast_smoke_changed_paths "$@"
+}
+
+run_fast_unit_tests() {
+  local changed_paths=()
+  local collected_path
+  while IFS= read -r collected_path; do
+    changed_paths+=("$collected_path")
+  done < <(collect_changed_paths)
+
+  local unit_tests=()
+  local unit_notes=()
+  local full_reason=""
+  local path
+
+  add_unit_test() {
+    local selected="$1"
+    local existing
+    for existing in "${unit_tests[@]}"; do
+      if [ "$existing" = "$selected" ]; then
+        return
+      fi
+    done
+    unit_tests+=("$selected")
+  }
+
+  add_image_unit_tests() {
+    local image_test
+    for image_test in "${IMAGE_UNIT_TESTS[@]}"; do
+      add_unit_test "$image_test"
+    done
+  }
+
+  add_fast_game_unit_tests() {
+    local game_test
+    for game_test in "${FAST_GAME_UNIT_TESTS[@]}"; do
+      add_unit_test "$game_test"
+    done
+  }
+
+  require_full_units() {
+    local reason="$1"
+    if [ -z "$full_reason" ]; then
+      full_reason="$reason"
+    fi
+  }
+
+  add_unit_note() {
+    unit_notes+=("$1")
+  }
+
+  for path in "${changed_paths[@]}"; do
+    case "$path" in
+      docs/types/media/*|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-helpers.mjs)
+        add_unit_test tests/media-parsers.test.mjs
+        ;;
+      docs/types/ebook/*|tests/areas/ebook-git.mjs|tests/movediff.test.mjs)
+        add_unit_test tests/movediff.test.mjs
+        ;;
+      docs/types/image/*|tests/image-*.test.mjs|tests/areas/media-3d.mjs)
+        add_image_unit_tests
+        ;;
+      docs/games/metagame/*|docs/examples/metagame/*|tests/metagame-platform.test.mjs|tests/metagame-viewer-actions.test.mjs)
+        add_fast_game_unit_tests
+        ;;
+      docs/games/*|tests/areas/games.mjs)
+        add_unit_note "no non-exhaustive unit owner for $path; game smoke selection still applies"
+        ;;
+      tests/sokoban-levels.test.mjs)
+        add_unit_note "skipping exhaustive Sokoban replay unit suite for $path"
+        ;;
+      tests/markdown-edit-actions.test.mjs|docs/types/markdown/edit-actions.js)
+        add_unit_test tests/markdown-edit-actions.test.mjs
+        ;;
+      tests/settings-defaults.test.mjs)
+        add_unit_test tests/settings-defaults.test.mjs
+        ;;
+      tests/registry-runtime.test.mjs)
+        add_unit_test tests/registry-runtime.test.mjs
+        ;;
+      tests/example-compatibility.test.mjs)
+        add_unit_test tests/example-compatibility.test.mjs
+        ;;
+      tests/type-info.test.mjs)
+        add_unit_test tests/type-info.test.mjs
+        ;;
+      tests/metadata-normalize.test.mjs)
+        add_unit_test tests/metadata-normalize.test.mjs
+        ;;
+      tests/metadata-owned.test.mjs)
+        add_unit_test tests/metadata-owned.test.mjs
+        ;;
+      tests/*.test.mjs)
+        require_full_units "$path is an unowned unit test"
+        ;;
+      tests/smoke.mjs|tests/smoke-area.mjs|tests/harness.mjs|scripts/check.sh)
+        require_full_units "$path is shared test/check infrastructure"
+        ;;
+      docs/core/*|docs/assets/*.css|docs/index.html)
+        require_full_units "$path is shared app shell"
+        ;;
+      docs/asset-manifest.json|docs/sw.js|docs/core/registry-runtime.generated.js|docs/core/registry-detect.generated.*|docs/core/settings-defaults.generated.json|docs/known/registry.generated.js|docs/types/image/renderer.generated.js)
+        require_full_units "$path is generated shared runtime/cache state"
+        ;;
+      package.json|package-lock.json|npm-shrinkwrap.json|pnpm-lock.yaml|yarn.lock|docs/vendor/*|vendor/*|tests/package.json|tests/package-lock.json)
+        require_full_units "$path affects package/vendor/test runtime"
+        ;;
+      scripts/*|docs/known/*|docs/examples/*|examples/index.json|docs/examples/index.json)
+        require_full_units "$path affects generators, known files, or examples"
+        ;;
+      *)
+        require_full_units "$path has no unit-test owner"
+        ;;
+    esac
+  done
+
+  echo "→ fast unit selection"
+  print_fast_changed_paths "${#changed_paths[@]}" "${changed_paths[@]}"
+  for path in "${unit_notes[@]}"; do
+    echo "  (fast) $path"
+  done
+
+  if [ "${#changed_paths[@]}" -eq 0 ]; then
+    echo "  selected unit tests: full existing unit set (no changed paths detected after generators)"
+    run_phase_unit_tests
+  elif [ -n "$full_reason" ]; then
+    echo "  selected unit tests: full existing unit set ($full_reason)"
+    run_phase_unit_tests
+  elif [ "${#unit_tests[@]}" -eq 0 ]; then
+    echo "  selected unit tests: none (changed paths only map to smoke or skipped exhaustive suites)"
+  else
+    echo "  selected unit tests: ${unit_tests[*]}"
+    for path in "${unit_tests[@]}"; do
+      node "$path"
+    done
+  fi
 }
 
 run_smoke_core() {
@@ -275,8 +435,13 @@ run_smoke_core() {
 run_phase "LOC housekeeping report (advisory)…" \
   run_loc_check
 
-run_phase "unit tests (move-aware diff + parsers + metadata)…" \
-  run_phase_unit_tests
+if [ "$FAST" = 1 ]; then
+  run_phase "unit tests (fast selected by changed paths)…" \
+    run_fast_unit_tests
+else
+  run_phase "unit tests (move-aware diff + parsers + metadata)…" \
+    run_phase_unit_tests
+fi
 
 run_phase "smoke test: core areas (headless Chromium, zero off-origin)…" \
   run_smoke_core
