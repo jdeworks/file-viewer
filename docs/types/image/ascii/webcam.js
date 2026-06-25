@@ -26,6 +26,7 @@ export function mountAsciiWebcam(host, opts = {}) {
         ${BTN('cam-start cam-flash', '▶ Start camera', 'Start the webcam')}
         ${BTN('cam-pause', '⏸ Pause', 'Freeze the current frame')}
         ${BTN('cam-rec', '● Record', 'Record the ASCII output to a video (max 2 min)')}
+        ${BTN('cam-rec-dl', '↓ Video', 'Download the last recorded ASCII video')}
         <label class="cam-audio-lbl" title="Include microphone audio in the recording"><input type="checkbox" class="cam-audio"> Audio</label>
         ${BTN('cam-full', '⛶ Fullscreen', 'Fullscreen the ASCII result')}
         ${BTN('cam-rot-l', '↺', 'Rotate 90° left')}
@@ -58,6 +59,9 @@ export function mountAsciiWebcam(host, opts = {}) {
   const peek = q('.cam-orig-peek');
   const peekCanvas = peek.querySelector('canvas');
   const settings = q('.cam-settings');
+  const recDownload = q('.cam-rec-dl');
+  recDownload.hidden = true;
+  recDownload.disabled = true;
 
   const engine = createAsciiEngine(startOpts);
   let stream = null, running = false, paused = false, eyeOn = false;
@@ -164,11 +168,18 @@ export function mountAsciiWebcam(host, opts = {}) {
   // tracks are merged onto the canvas video stream.
   const MAX_REC_MS = 120000;
   let recorder = null, recChunks = [], recStream = null, audioStream = null, recTimer = null, recStart = 0;
+  let lastRecording = null;
   const fmt = (ms) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+  function setLastRecording(blob) {
+    lastRecording = blob;
+    recDownload.hidden = !blob;
+    recDownload.disabled = !blob;
+  }
   async function startRec() {
     const wantAudio = !!q('.cam-audio').checked;
     if (!out.captureStream) { stats.textContent = 'Recording is not supported by this browser.'; return; }
+    setLastRecording(null);
     try {
       recStream = out.captureStream(targetFps);
       if (wantAudio) {
@@ -188,6 +199,7 @@ export function mountAsciiWebcam(host, opts = {}) {
     recorder.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
     recorder.onstop = () => {
       const blob = new Blob(recChunks, { type: mime }); recChunks = [];
+      setLastRecording(blob);
       if (recStream) { recStream.getTracks().forEach((t) => t.stop()); recStream = null; }
       if (audioStream) { audioStream.getTracks().forEach((t) => t.stop()); audioStream = null; }
       clearInterval(recTimer); recTimer = null;
@@ -210,6 +222,7 @@ export function mountAsciiWebcam(host, opts = {}) {
 
   // ── wiring ──
   q('.cam-rec').addEventListener('click', () => (recorder && recorder.state !== 'inactive' ? stopRec() : startRec()));
+  recDownload.addEventListener('click', () => lastRecording && dl(lastRecording, 'webcam-recording.webm'));
   q('.cam-start').addEventListener('click', () => (running ? stop() : start()));
   q('.cam-pause').addEventListener('click', () => {
     if (!running) return;

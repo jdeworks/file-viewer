@@ -1049,29 +1049,52 @@ export async function run(ctx) {
     const oldCap = HTMLCanvasElement.prototype.captureStream;
     const oldMR = window.MediaRecorder;
     const oldGum = navigator.mediaDevices?.getUserMedia;
+    const oldAnchorClick = HTMLAnchorElement.prototype.click;
+    const oldOpenBlobFile = window.__fv?.openBlobFile;
     const canvasTrack = { kind: 'video', stop() {} };
     const audioTrack = { kind: 'audio', stop() {} };
     const stream = { tag: 'ascii-canvas', tracks: [canvasTrack], addTrack(t) { this.tracks.push(t); }, getTracks() { return this.tracks; } };
-    const seen = { captureFps: null, recorderStream: null, gum: [] };
+    const seen = { captureFps: null, recorderStream: null, gum: [], downloadName: '', downloadHref: '', openedBlob: null };
     HTMLCanvasElement.prototype.captureStream = function(fps) { seen.captureFps = fps; return stream; };
     navigator.mediaDevices.getUserMedia = async (opts) => { seen.gum.push(opts); return { getAudioTracks: () => [audioTrack], getTracks: () => [audioTrack] }; };
+    if (window.__fv) window.__fv.openBlobFile = (blob, name) => { seen.openedBlob = { name, type: blob.type, size: blob.size }; };
+    HTMLAnchorElement.prototype.click = function() { seen.downloadName = this.download; seen.downloadHref = this.href; };
     window.MediaRecorder = class {
       static isTypeSupported() { return true; }
-      constructor(s) { seen.recorderStream = s; this.state = 'inactive'; }
+      constructor(s) { seen.recorderStream = s; this.state = 'inactive'; this.ondataavailable = null; this.onstop = null; }
       start() { this.state = 'recording'; }
-      stop() { this.state = 'inactive'; }
+      stop() {
+        this.state = 'inactive';
+        this.ondataavailable?.({ data: new Blob(['ascii-webm'], { type: 'video/webm' }) });
+        this.onstop?.();
+      }
     };
     document.querySelector('#previewHost .cam-audio').checked = true;
     document.querySelector('#previewHost .cam-rec').click();
     await new Promise((r) => setTimeout(r, 0));
     document.querySelector('#previewHost .cam-rec').click();
+    const dlBtn = document.querySelector('#previewHost .cam-rec-dl');
+    const downloadReady = !!dlBtn && !dlBtn.hidden && !dlBtn.disabled;
+    dlBtn?.click();
     HTMLCanvasElement.prototype.captureStream = oldCap;
     window.MediaRecorder = oldMR;
     navigator.mediaDevices.getUserMedia = oldGum;
-    return { captureFps: seen.captureFps, sameStream: seen.recorderStream === stream, tracks: stream.tracks.map((t) => t.kind).join(','), gum: seen.gum };
+    HTMLAnchorElement.prototype.click = oldAnchorClick;
+    if (window.__fv) window.__fv.openBlobFile = oldOpenBlobFile;
+    return {
+      captureFps: seen.captureFps,
+      sameStream: seen.recorderStream === stream,
+      tracks: stream.tracks.map((t) => t.kind).join(','),
+      gum: seen.gum,
+      downloadReady,
+      downloadName: seen.downloadName,
+      downloadHref: seen.downloadHref,
+      openedBlob: seen.openedBlob,
+    };
   });
-  if (recProbe.captureFps === 20 && recProbe.sameStream && /video,audio/.test(recProbe.tracks) && recProbe.gum.length === 1 && recProbe.gum[0].audio === true && recProbe.gum[0].video === false)
-    pass('camera recording captures ASCII canvas stream and optionally merges microphone audio');
+  if (recProbe.captureFps === 20 && recProbe.sameStream && /video,audio/.test(recProbe.tracks) && recProbe.gum.length === 1 && recProbe.gum[0].audio === true && recProbe.gum[0].video === false
+    && recProbe.downloadReady && recProbe.downloadName === 'webcam-recording.webm' && /^blob:/.test(recProbe.downloadHref) && recProbe.openedBlob?.name === 'webcam-recording.webm')
+    pass('camera recording captures ASCII canvas stream, merges microphone audio, and exposes video download');
   else fail('camera recording stream: ' + JSON.stringify(recProbe));
   await page.click('#previewHost .asx-cam');   // back to image
   await page.waitForSelector('#previewHost .asx-out', { timeout: 5000 });
