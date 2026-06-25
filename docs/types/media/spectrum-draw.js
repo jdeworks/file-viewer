@@ -4,14 +4,28 @@
 
 // ── EQ presets ───────────────────────────────────────────────────────────────
 export const PRESETS = [
-  { id: 'flat',      name: 'Flat',         gains: [0,0,0,0,0,0,0,0,0],          hpf: 20,  lpf: 20000 },
-  { id: 'broadcast', name: 'Broadcast',    gains: [0,0,1,-2,0,2,3,1,-1],        hpf: 80,  lpf: 20000 },
-  { id: 'warmth',    name: 'Warmth',       gains: [0,2,1,-1,0,0,-1,0,0],        hpf: 60,  lpf: 20000 },
-  { id: 'deess-m',   name: 'De-ess (M)',   gains: [0,1,1,0,0,1,2,-3,-1],        hpf: 80,  lpf: 20000 },
-  { id: 'deess-f',   name: 'De-ess (F)',   gains: [0,0,1,0,0,2,2,-2,-3],        hpf: 80,  lpf: 20000 },
-  { id: 'bass-cut',  name: 'Bass rolloff', gains: [0,0,0,0,0,0,0,0,0],          hpf: 100, lpf: 20000 },
-  { id: 'air',       name: 'Presence+Air', gains: [0,0,-1,-1,0,2,2,3,1],        hpf: 80,  lpf: 20000 },
-  { id: 'podcast',   name: 'Podcast',      gains: [0,0,1,-1,0,1,2,1,0],         hpf: 80,  lpf: 18000 },
+  { id: 'flat',             name: 'Flat',                gains: [0,0,0,0,0,0,0,0,0],            hpf: 20,  lpf: 20000 },
+  { id: 'acx-standard',     name: 'ACX Standard',        gains: [0,0,0,0,0,0,0,0,0],            hpf: 80,  lpf: 16000, category: 'audiobook', note: 'Audible/Amazon compliant.' },
+  { id: 'findaway',         name: 'Findaway Voices',      gains: [0,0,0,0,0,1,2,0,0],            hpf: 80,  lpf: 20000, category: 'audiobook', note: 'Gentle presence lift.' },
+  { id: 'intimate-audiobook', name: 'Intimate Audiobook', gains: [0,2,3,0,-1,1,2,0,-2],          hpf: 60,  lpf: 20000, category: 'audiobook', note: 'Warm narrator with bass body.' },
+  { id: 'audacity-rolloff',  name: 'Audacity Low Rolloff',gains: [-6,-2,0,0,0,0,0,0,0],         hpf: 80,  lpf: 20000, category: 'audiobook', note: 'Classic speech cleanup.' },
+  { id: 'deep-male',        name: 'Deep Male Narrator',  gains: [1,2,1,-2,0,1,3,1,0],          hpf: 80,  lpf: 20000, category: 'male', note: 'Rich baritone with clarity.' },
+  { id: 'proximity-fix',    name: 'Proximity Fix',       gains: [-3,-4,-2,0,0,1,2,0,0],        hpf: 100, lpf: 20000, category: 'male', note: 'Close-mic bass reduction.' },
+  { id: 'boomy-cleanup',    name: 'Boomy Voice Cleanup', gains: [-2,-3,-3,-1,0,2,3,1,0],        hpf: 100, lpf: 20000, category: 'male', note: 'Aggressive low-end cut.' },
+  { id: 'female-clarity',   name: 'Female Clarity',      gains: [0,0,1,-1,0,2,3,2,2],          hpf: 100, lpf: 20000, category: 'female', note: 'Bright articulate presence.' },
+  { id: 'thin-body-fix',    name: 'Thin Voice Body Fix', gains: [1,3,3,1,0,0,1,0,0],           hpf: 60,  lpf: 20000, category: 'female', note: 'Adds chest resonance warmth.' },
+  { id: 'bbc-broadcast',    name: 'BBC Broadcast',       gains: [0,0,1,-2,0,2,3,1,-1],         hpf: 80,  lpf: 20000, category: 'broadcast', note: 'British broadcast standard.' },
+  { id: 'npr-spoken',       name: 'NPR Spoken Word',     gains: [0,0,1,-1,0,1,2,1,0],          hpf: 80,  lpf: 20000, category: 'broadcast', note: 'Clean intimate speech.' },
+  { id: 'rode-podcast',     name: 'RODE Podcast',        gains: [0,1,-1,-1,0,2,2,3,1],         hpf: 80,  lpf: 20000, category: 'broadcast', note: 'Warmth + sparkle.' },
+  { id: 'radio-drama',      name: 'Radio Drama',         gains: [0,1,2,0,-1,2,3,2,1],          hpf: 80,  lpf: 20000, category: 'broadcast', note: 'Theatrical warmth + clarity.' },
+  { id: 'youtube-streaming', name: 'YouTube/Streaming',   gains: [0,0,-2,-2,0,2,3,2,1],         hpf: 80,  lpf: 18000, category: 'broadcast', note: 'Optimized for small speakers.' },
+  { id: 'broadcast',        name: 'Broadcast',           gains: [0,0,1,-2,0,2,3,1,-1],         hpf: 80,  lpf: 20000 },
+  { id: 'warmth',           name: 'Warmth',              gains: [0,2,1,-1,0,0,-1,0,0],         hpf: 60,  lpf: 20000 },
+  { id: 'deess-m',          name: 'De-ess (M)',          gains: [0,1,1,0,0,1,2,-3,-1],         hpf: 80,  lpf: 20000 },
+  { id: 'deess-f',          name: 'De-ess (F)',          gains: [0,0,1,0,0,2,2,-2,-3],         hpf: 80,  lpf: 20000 },
+  { id: 'bass-cut',         name: 'Bass rolloff',         gains: [0,0,0,0,0,0,0,0,0],           hpf: 100, lpf: 20000 },
+  { id: 'air',              name: 'Presence+Air',        gains: [0,0,-1,-1,0,2,2,3,1],         hpf: 80,  lpf: 20000 },
+  { id: 'podcast',          name: 'Podcast',             gains: [0,0,1,-1,0,1,2,1,0],          hpf: 80,  lpf: 18000 },
 ];
 
 // LUFS normalization targets (streaming/broadcast standards).

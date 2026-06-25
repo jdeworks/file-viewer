@@ -14,6 +14,10 @@
 // where bitrate is an ffmpeg `-b:a` value (e.g. '192k') or null for VBR/default,
 // lufsTarget is a number (LUFS) or null (no loudnorm), truePeak is the loudnorm TP dB,
 // and acxChain marks presets that must use the dedicated ACX export op.
+//
+// masterBus is an opt-in mastering stage flag:
+// - false / undefined -> no master-bus processing
+// - true -> default master-bus preset in audio-filters.js
 
 // ── Preset table ─────────────────────────────────────────────────────────────
 // kind: 'audio' presets apply to both audio & video sources (extract/encode audio);
@@ -28,6 +32,11 @@ export const EXPORT_PRESETS = [
     id: 'podcast-mp3', label: 'Podcast MP3 (−16 LUFS, 44.1k, 192k)', kind: 'audio',
     container: 'mp3', bitrate: '192k', sampleRate: 44100, channels: 2,
     lufsTarget: -16, truePeak: -1.5,
+  },
+  {
+    id: 'podcast-mp3-master-bus', label: 'Podcast MP3 + Master Bus (−16 LUFS, 44.1k, 192k)', kind: 'audio',
+    container: 'mp3', bitrate: '192k', sampleRate: 44100, channels: 2,
+    lufsTarget: -16, truePeak: -1.5, masterBus: true,
   },
   {
     id: 'acx-mp3', label: 'Audiobook ACX MP3 (mono, 44.1k, 192k CBR, −20 LUFS)', kind: 'audio',
@@ -75,6 +84,7 @@ export function resolveExportParams(preset, overrides, srcExt) {
       truePeak: preset.truePeak === undefined ? -1.5 : preset.truePeak,
       cbr: !!preset.cbr,
       acxChain: !!preset.acxChain,
+      masterBus: !!preset.masterBus,
       video: preset.video || null,
     };
   }
@@ -92,10 +102,23 @@ export function resolveExportParams(preset, overrides, srcExt) {
     lufsTarget: (overrides.lufsTarget === '' || overrides.lufsTarget === 'off' || overrides.lufsTarget == null)
       ? null : Number(overrides.lufsTarget),
     truePeak: -1.5,
+    masterBus: false,
     cbr: false,
     acxChain: false,
     video: null,
   };
+}
+
+// Build audio settings that feed ffmpeg filter-chain builders from resolved export params
+// and the live graph settings. This stays pure for unit tests.
+export function resolveExportAudioSettings(p, settings = {}) {
+  const chainSettings = { ...settings };
+  if (p.lufsTarget !== null && p.lufsTarget !== undefined) {
+    chainSettings.lufsTarget = p.lufsTarget;
+    chainSettings.truePeak = p.truePeak;
+  }
+  if (p.masterBus) chainSettings.masterBus = true;
+  return chainSettings;
 }
 
 // Human-readable params summary fragment ("ACX chain, mono, 44.1k, 192k CBR,
@@ -103,6 +126,7 @@ export function resolveExportParams(preset, overrides, srcExt) {
 export function describeParams(p) {
   const bits = [];
   if (p.acxChain) bits.push('ACX chain');
+  if (p.masterBus) bits.push('master bus');
   if (p.video) {
     if (p.video.scale) bits.push(p.video.scale.split(':').pop() + 'p');
     bits.push((p.video.codec || 'video').replace('lib', ''));

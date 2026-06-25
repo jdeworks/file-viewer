@@ -17,7 +17,7 @@ import { getGraph } from './audio-graph.js';
 import { loadFfmpeg, runOperation, buildAudioFilterChain, buildAcxFilterChain } from './transcoder.js';
 import { describeDynamics } from './audio-filters.js';
 import {
-  EXPORT_PRESETS, presetById, resolveExportParams, describeParams, buildAdvancedOverrides,
+  EXPORT_PRESETS, presetById, resolveExportParams, resolveExportAudioSettings, describeParams, buildAdvancedOverrides,
 } from './export-presets.js';
 
 function mkBtn(text, cls) {
@@ -55,11 +55,14 @@ function describePresetTarget(preset) {
   if (preset.acxChain) bits.push('ACX chain (trim + room-tone pad)');
   bits.push(`container ${preset.container || 'source'}`);
   if (preset.channels) bits.push(preset.channels === 1 ? 'mono' : `${preset.channels} ch`);
+  else bits.push('channels match source');
   if (preset.sampleRate) bits.push(formatKhz(preset.sampleRate));
+  else bits.push('sample rate match source');
   if (preset.bitrate) bits.push(preset.cbr ? `${preset.bitrate} CBR` : preset.bitrate);
   else bits.push('VBR');
   if (preset.lufsTarget !== null && preset.lufsTarget !== undefined) bits.push(`${preset.lufsTarget} LUFS`);
   if (preset.truePeak !== null && preset.truePeak !== undefined) bits.push(`TP ${preset.truePeak} dBTP`);
+  if (preset.masterBus) bits.push('master bus');
   return bits.join(', ');
 }
 
@@ -278,8 +281,7 @@ export function buildExportPanel(intake, mediaEl, kind) {
     const p = resolveParams();
     const s = readLiveSettings(mediaEl) || {};
     const fades = collectFades();
-    const eqSettings = (p.lufsTarget !== null && p.lufsTarget !== undefined)
-      ? { ...s, lufsTarget: p.lufsTarget, truePeak: p.truePeak } : s;
+    const eqSettings = resolveExportAudioSettings(p, s);
     const chain = p.acxChain
       ? buildAcxFilterChain(acxChainOptions(p))
       : buildAudioFilterChain(eqSettings, fades);
@@ -388,11 +390,12 @@ Provenance = -af "${chain || 'none'}"`;
       const settings = readLiveSettings(mediaEl) || {};
       const fades = collectFades();
       const p = resolveParams();
+      const chainSettings = resolveExportAudioSettings(p, settings);
 
       let result;
       if (p.kind === 'video' && p.video) {
         result = await runOperation(ff, 'webvideo', {
-          settings, fades, video: p.video, container: p.container,
+          settings: chainSettings, fades, video: p.video, container: p.container,
           bitrate: p.bitrate, sampleRate: p.sampleRate, channels: p.channels,
           lufsTarget: p.lufsTarget, truePeak: p.truePeak,
         }, intake);
@@ -400,7 +403,7 @@ Provenance = -af "${chain || 'none'}"`;
         result = await runOperation(ff, 'acxExport', acxChainOptions(p), intake);
       } else {
         result = await runOperation(ff, 'bakeAudio', {
-          settings, fades, container: p.container, format: p.container,
+          settings: chainSettings, fades, container: p.container, format: p.container,
           bitrate: p.bitrate, sampleRate: p.sampleRate, channels: p.channels,
           lufsTarget: p.lufsTarget, truePeak: p.truePeak, cbr: p.cbr,
         }, intake);

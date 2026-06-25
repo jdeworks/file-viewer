@@ -467,7 +467,9 @@ export async function render(intake, ctx = {}) {
       const intentPresets = [
         { presetId: 'flat', label: 'Flat' },
         { presetId: 'broadcast', label: 'Clean speech' },
+        { presetId: 'acx-standard', label: 'ACX standard' },
         { presetId: 'podcast', label: 'Podcast' },
+        { presetId: 'findaway', label: 'Findaway' },
         { presetId: 'warmth', label: 'Warmth' },
         { presetId: 'air', label: 'Presence/Air' },
         { presetId: 'deess-m', label: 'De-ess' },

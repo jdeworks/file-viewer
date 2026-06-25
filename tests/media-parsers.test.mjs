@@ -2,9 +2,14 @@ import assert from 'node:assert/strict';
 
 import { parseSubtitles, parseTimestamp } from '../docs/types/media/subtitles.js';
 import { parseId3 } from '../docs/types/media/id3.js';
-import { buildAcxExportArgs, buildAcxFilterChain } from '../docs/types/media/audio-filters.js';
+import { buildAcxExportArgs, buildAcxFilterChain, buildAudioFilterChain } from '../docs/types/media/audio-filters.js';
 import { evaluateAcx } from '../docs/types/media/qc.js';
-import { presetById, resolveExportParams } from '../docs/types/media/export-presets.js';
+import {
+  presetById,
+  resolveExportAudioSettings,
+  resolveExportParams,
+} from '../docs/types/media/export-presets.js';
+import { PRESETS } from '../docs/types/media/spectrum-draw.js';
 
 const enc = new TextEncoder();
 
@@ -129,6 +134,80 @@ function chapFrame({ id = 'ch', startMs = 0, endMs = 1000, title = 'Chapter' }) 
   assert.ok(chain.includes('loudnorm=I=-20:TP=-3:LRA=11'), 'acx filter chain: includes loudnorm −20 / −3 defaults');
   assert.ok(chain.includes('silenceremove='), 'acx filter chain: includes silenceremove');
   assert.ok(chain.includes('apad=pad_dur='), 'acx filter chain: includes room-tone pad');
+}
+
+{
+  const ids = PRESETS.map((p) => p.id);
+  const requiredGeneric = [
+    'acx-standard',
+    'findaway',
+    'intimate-audiobook',
+    'audacity-rolloff',
+    'deep-male',
+    'proximity-fix',
+    'boomy-cleanup',
+    'female-clarity',
+    'thin-body-fix',
+    'bbc-broadcast',
+    'npr-spoken',
+    'rode-podcast',
+    'radio-drama',
+    'youtube-streaming',
+    'flat',
+  ];
+  for (const id of requiredGeneric) {
+    assert.equal(ids.includes(id), true, `preset availability: includes ${id}`);
+  }
+  const unexpectedCharacterPresets = ids.filter((id) => id.startsWith('char-'));
+  assert.equal(unexpectedCharacterPresets.length, 0, 'preset availability: excludes character presets');
+}
+
+{
+  const p = resolveExportParams(presetById('podcast-mp3-master-bus'), {}, 'mp3');
+  assert.equal(p.masterBus, true, 'master-bus preset resolves with masterBus flag');
+  assert.equal(p.sampleRate, 44100, 'master-bus preset keeps explicit 44.1k sample-rate');
+  assert.equal(p.channels, 2, 'master-bus preset keeps explicit stereo channels');
+
+  const chain = buildAudioFilterChain(
+    { freqs: [60, 120, 250, 500, 1000, 2000, 4000, 8000, 12000], gains: [0, 0, 0, 0, 0, 0, 0, 0, 0], hpf: 80, lpf: 20000, masterBus: true },
+    {},
+  );
+  assert.ok(chain.includes('highpass=f=65:p=2'), 'master-bus: uses 65Hz pre-cut');
+  assert.ok(chain.includes('equalizer=f=120:t=q:w=0.5:g=-1.5'), 'master-bus: applies low- shelf-like cut at 120 Hz');
+  assert.ok(chain.includes('equalizer=f=3200:t=q:w=0.8:g=-1'), 'master-bus: applies 3.2kHz containment');
+  assert.ok(chain.includes('treble=g=+1:f=8000:w=0.5'), 'master-bus: applies high-shelf lift at 8kHz');
+  assert.ok(chain.includes('acompressor=threshold=-20dB'), 'master-bus: applies compressor threshold in dB');
+  assert.ok(/acompressor=.*attack=15:release=250/.test(chain), 'master-bus: applies compressor timing in milliseconds');
+}
+
+{
+  const p = resolveExportParams(presetById('podcast-mp3-master-bus'), {}, 'mp3');
+  const chainSettings = resolveExportAudioSettings(p, {
+    freqs: [100, 200, 300],
+    gains: [1, 2, 3],
+    hpf: 20,
+    lpf: 20000,
+    lufsTarget: -9,
+    truePeak: -2,
+  });
+  assert.equal(chainSettings.masterBus, true, 'master-bus export settings carry masterBus flag');
+  assert.equal(chainSettings.lufsTarget, -16, 'master-bus preset lufs target overrides live value');
+  assert.equal(chainSettings.truePeak, -1.5, 'master-bus preset truePeak overrides live value');
+}
+
+{
+  const customMatch = resolveExportParams(presetById('custom'), { container: 'source', bitrate: '', sampleRate: '', channels: '' }, 'flac');
+  assert.equal(customMatch.sampleRate, null, 'custom preset without explicit sample-rate keeps source rate');
+  assert.equal(customMatch.channels, null, 'custom preset without explicit channels keeps source channels');
+  assert.equal(customMatch.bitrate, null, 'custom preset without explicit bitrate keeps VBR default');
+
+  const customExplicit = resolveExportParams(
+    presetById('custom'),
+    { container: 'source', bitrate: '', sampleRate: '48000', channels: '1' },
+    'flac',
+  );
+  assert.equal(customExplicit.sampleRate, 48000, 'custom preset explicitly maps sample-rate override');
+  assert.equal(customExplicit.channels, 1, 'custom preset explicitly maps channel override');
 }
 
 {

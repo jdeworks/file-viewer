@@ -5,6 +5,23 @@
 
 const round = (n) => Math.round(n * 100) / 100;
 
+const DEFAULT_MASTER_BUS = {
+  hpfFreq: 65,
+  bands: [
+    { freq: 120, gain: -1.5, q: 0.5, type: 'peaking' },
+    { freq: 3200, gain: -1, q: 0.8, type: 'peaking' },
+    { freq: 8000, gain: 1, q: 0.5, type: 'highshelf' },
+  ],
+  compressor: {
+    threshold: -20,
+    ratio: 2,
+    attack: 0.015,
+    release: 0.25,
+    knee: 6,
+    makeup: 1,
+  },
+};
+
 // ── P4: dynamics filter-string helpers ───────────────────────────────────────
 //
 // Each takes a (possibly absent) sub-settings object and returns an ffmpeg filter
@@ -60,11 +77,69 @@ export function limiterFilter(l) {
   return 'alimiter=limit=' + round(dbToLin(ceilDb));
 }
 
+// ── Master bus filter builder ────────────────────────────────────────────────
+//
+// Added for M4 parity: lightweight HPF + 3-shape bus + compressor that applies
+// after the main EQ stage. This is export-only in this viewer (no live graph
+// gain change outside ffmpeg exports).
+export function buildMasterBusFilter(config = {}) {
+  const preset = config === true ? DEFAULT_MASTER_BUS : config || {};
+  const out = [];
+
+  const hpf = Number(preset.hpfFreq);
+  if (isFinite(hpf) && hpf > 20) out.push('highpass=f=' + Math.round(hpf) + ':p=2');
+
+  const bands = Array.isArray(preset.bands) ? preset.bands : [];
+  for (const band of bands) {
+    const freq = Number(band.freq);
+    const gain = Number(band.gain);
+    const q = Number(band.q);
+    if (!isFinite(freq) || !isFinite(gain) || !isFinite(q) || gain === 0) continue;
+
+    const gainText = `${gain > 0 ? '+' : ''}${round(gain)}`;
+    if (band.type === 'highshelf') {
+      out.push('treble=g=' + gainText + ':f=' + Math.round(freq) + ':w=' + round(q));
+    } else if (band.type === 'lowshelf') {
+      out.push('bass=g=' + gainText + ':f=' + Math.round(freq) + ':w=' + round(q));
+    } else {
+      out.push('equalizer=f=' + Math.round(freq) + ':t=q:w=' + round(q) + ':g=' + gainText);
+    }
+  }
+
+  const comp = preset.compressor || {};
+  const compFilter = buildMasterCompressorFilter({
+    enabled: comp.enabled !== false,
+    threshold: Number(comp.threshold),
+    ratio: Number(comp.ratio),
+    attack: Number(comp.attack),
+    release: Number(comp.release),
+    knee: Number(comp.knee),
+    makeup: Number(comp.makeup),
+  });
+  if (compFilter) out.push(compFilter);
+
+  return out.join(',');
+}
+
+function buildMasterCompressorFilter(c = {}) {
+  if (!c || !c.enabled) return '';
+  const parts = [];
+  const thDb = Number(c.threshold);
+  if (isFinite(thDb)) parts.push('threshold=' + round(thDb) + 'dB');
+  if (isFinite(Number(c.ratio))) parts.push('ratio=' + round(Number(c.ratio)));
+  if (isFinite(Number(c.attack))) parts.push('attack=' + Math.round(Number(c.attack) * 1000));
+  if (isFinite(Number(c.release))) parts.push('release=' + Math.round(Number(c.release) * 1000));
+  if (isFinite(Number(c.knee))) parts.push('knee=' + round(Number(c.knee)));
+  if (isFinite(Number(c.makeup))) parts.push('makeup=' + round(Number(c.makeup)));
+  return parts.length ? 'acompressor=' + parts.join(':') : 'acompressor';
+}
+
 // ── Canonical audio filter chain ──────────────────────────────────────────────
 //
 // Builds the audio filter list in the mastering order the roadmap specifies:
 //   highpass → afftdn (de-noise) → agate (gate) → acompressor (comp)
-//     → equalizer bands → lowpass → alimiter (limiter) → fade-in → fade-out → loudnorm
+//     → equalizer bands → lowpass → [master-bus] → alimiter (limiter)
+//     → fade-in → fade-out → loudnorm
 //
 // settings: { freqs, gains(dB), hpf, lpf, lufsTarget, truePeak,
 //             dynamics:{ comp?, limiter?, gate?, denoise? } }
@@ -99,6 +174,13 @@ export function buildAudioFilterChain(settings = {}, fades = {}) {
 
   const lpf = Number(settings.lpf);
   if (isFinite(lpf) && lpf < 20000) out.push('lowpass=f=' + Math.round(lpf));
+
+  const masterBus = settings.masterBus;
+  if (masterBus) {
+    const profile = masterBus === true ? DEFAULT_MASTER_BUS : masterBus;
+    const masterChain = buildMasterBusFilter(profile);
+    if (masterChain) out.push(masterChain);
+  }
 
   const lim = limiterFilter(dyn.limiter); if (lim) out.push(lim);
 
