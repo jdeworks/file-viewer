@@ -1045,6 +1045,39 @@ export async function run(ctx) {
   });
   if (camUi.transforms === 4 && camUi.barScoped && camUi.imageRotHidden && camUi.backVisible) pass('camera mode: own flip/rotate toolbar + image buttons hidden'); else fail('camera ui: ' + JSON.stringify(camUi));
   if (camUi.startFlash && camUi.startPlay) pass('camera Start button flashes + shows ▶ until started'); else fail('start button: ' + JSON.stringify({ startFlash: camUi.startFlash, startPlay: camUi.startPlay }));
+  const camStartProbe = await page.evaluate(async () => {
+    const video = document.querySelector('#previewHost .cam-video');
+    const oldGum = navigator.mediaDevices?.getUserMedia;
+    const oldPlay = HTMLMediaElement.prototype.play;
+    const oldRVFC = HTMLVideoElement.prototype.requestVideoFrameCallback;
+    const oldSrcObject = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'srcObject');
+    const seen = { gum: [], stopped: false };
+    Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
+      configurable: true,
+      get() { return this.__fvSrcObject || null; },
+      set(v) { this.__fvSrcObject = v; },
+    });
+    HTMLMediaElement.prototype.play = async function() {};
+    HTMLVideoElement.prototype.requestVideoFrameCallback = function() {};
+    navigator.mediaDevices.getUserMedia = async (opts) => {
+      seen.gum.push(opts);
+      return { getTracks: () => [{ stop() { seen.stopped = true; } }] };
+    };
+    document.querySelector('#previewHost .cam-start').click();
+    await new Promise((r) => setTimeout(r, 0));
+    const running = video.srcObject != null;
+    document.querySelector('#previewHost .cam-start').click();
+    navigator.mediaDevices.getUserMedia = oldGum;
+    HTMLMediaElement.prototype.play = oldPlay;
+    if (oldRVFC) HTMLVideoElement.prototype.requestVideoFrameCallback = oldRVFC;
+    else delete HTMLVideoElement.prototype.requestVideoFrameCallback;
+    if (oldSrcObject) Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', oldSrcObject);
+    else delete HTMLMediaElement.prototype.srcObject;
+    return { running, stopped: seen.stopped, gum: seen.gum };
+  });
+  if (camStartProbe.running && camStartProbe.stopped && camStartProbe.gum[0]?.video?.frameRate?.ideal === 30 && camStartProbe.gum[0]?.video?.facingMode === 'user')
+    pass('camera Start requests a 30fps webcam stream for smoother preview');
+  else fail('camera start constraints: ' + JSON.stringify(camStartProbe));
   const recProbe = await page.evaluate(async () => {
     const oldCap = HTMLCanvasElement.prototype.captureStream;
     const oldMR = window.MediaRecorder;

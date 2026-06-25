@@ -1,6 +1,7 @@
 // Live webcam → ASCII, the third consumer of the shared engine. Renders to a
-// <canvas> (not <pre>) so we never build thousands of DOM nodes per frame, and
-// throttles to a target FPS via requestVideoFrameCallback when available.
+// <canvas> (not <pre>) so we never build thousands of DOM nodes per frame. With
+// requestVideoFrameCallback, preview FPS follows the camera's delivered frames;
+// the RAF fallback is throttled to the target FPS.
 //
 // Mirrors image mode: it inherits the studio's current settings, exposes the
 // SAME full control panel (as a top overlay behind a ⚙ button), shows the
@@ -135,11 +136,17 @@ export function mountAsciiWebcam(host, opts = {}) {
   }
   function loopRVFC() { if (!running) return; if (!paused) renderFrame(); video.requestVideoFrameCallback(loopRVFC); }
   function loopRAF(ts) { if (!running) return; if (!paused && ts - last >= minInterval) { last = ts; renderFrame(); } requestAnimationFrame(loopRAF); }
+  function cameraConstraints() {
+    return {
+      facingMode: opts.facingMode || 'user',
+      frameRate: { ideal: targetFps },
+    };
+  }
 
   async function start() {
     if (running) return;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: opts.facingMode || 'user' }, audio: false });
+      stream = await navigator.mediaDevices.getUserMedia({ video: cameraConstraints(), audio: false });
     } catch (e) { stats.textContent = 'Camera access denied: ' + (e.message || e); return; }
     video.srcObject = stream;
     await video.play();
