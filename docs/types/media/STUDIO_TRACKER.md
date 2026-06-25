@@ -654,7 +654,7 @@ Status: implemented.
 Committed history: foundation in `05aabcf5` / `6e6d489e`; first audio analysis slice in
 `fbe6c057`; first video analysis slice in `937ab522`; selected-range WAV compare in
 `34a2d601`; shifted-overlap measurement in `5352a78b`; ffmpeg-backed selected-overlap
-extraction in this slice.
+extraction in `0ce96afe`.
 
 - This is distinct from R1/R3 processing-chain compare. R1/R3 explain how one source changes
   through Tune/Dynamics/Master Bus; R4 compares two source media files or two partial ranges.
