@@ -10,6 +10,7 @@ import { replay } from '../../docs/games/sokoban/solve.js';
 import { solve } from './solve.mjs';
 
 const maxStates = process.argv[2] ? parseInt(process.argv[2], 10) : 500_000;
+const picorral = process.env.PICORRAL === '1';           // toggle the PI-corral prune for soundness checks
 const t0 = Date.now();
 let total = 0, solved = 0;
 const unsolved = [];
@@ -17,7 +18,7 @@ for (const set of SETS) {
   let s = 0;
   set.levels.forEach((lvl, i) => {
     total++;
-    const m = solve(lvl, { greedy: true, maxStates });   // fast greedy dive — same config baseline vs change
+    const m = solve(lvl, { greedy: true, maxStates, picorral });   // fast greedy dive — same config baseline vs change
     if (m != null && replay(lvl, m)) { s++; solved++; } else unsolved.push(set.id + '#' + (i + 1));
   });
   console.log(`${set.id}: ${s}/${set.levels.length}`);

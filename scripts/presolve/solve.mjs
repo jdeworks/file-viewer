@@ -7,6 +7,7 @@
 // State is a sorted Int32Array of box cells plus a reused box-bitset, so the hot loop allocates little.
 import { DIRS, parse, step, goalDistances, reachable, walkPath } from './board.mjs';
 import { isFreezeDeadlock } from './deadlock.mjs';
+import { isPiCorralDeadlock } from './picorral.mjs';
 
 // Min-heap on `.f` (binary heap; ties arbitrary — fine, h is just a guide).
 class Heap {
@@ -87,7 +88,7 @@ export function solveBest(level, { weights = [1, 2, 3, 5, 8, 13], maxStates = 1_
   return null;
 }
 
-export function solve(level, { maxStates = 3_000_000, weight = 1, greedy = false, upperBound = Infinity } = {}) {
+export function solve(level, { maxStates = 3_000_000, weight = 1, greedy = false, upperBound = Infinity, picorral = false } = {}) {
   const b = typeof level === 'string' ? parse(level) : level;
   if (b.player < 0 || b.boxes.size !== b.goalCount) return null;
   const N = b.w * b.h;
@@ -124,8 +125,12 @@ export function solve(level, { maxStates = 3_000_000, weight = 1, greedy = false
         const g = node.g + 1;
         if (g >= upperBound) continue;
         boxAt[bx] = 0; boxAt[target] = 1;           // mutate to the successor configuration…
-        const dead = isFreezeDeadlock(b, boxAt, dist, target);
-        const norm = dead ? -1 : reachable(b, boxAt, bx, seenScratch).norm;
+        let dead = isFreezeDeadlock(b, boxAt, dist, target), norm = -1;
+        if (!dead) {
+          const r = reachable(b, boxAt, bx, seenScratch);
+          norm = r.norm;
+          if (picorral && isPiCorralDeadlock(b, boxAt, dist, r.seen, target, bx)) dead = true;
+        }
         boxAt[bx] = 1; boxAt[target] = 0;           // …and revert
         if (dead) continue;
         const boxList = withPush(node.boxList, bx, target);
