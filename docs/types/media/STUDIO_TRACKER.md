@@ -179,6 +179,15 @@ Progress:
     and preserving fix guidance on non-pass rows.
   - Export linkage is visible in the QC surface as a concise mono 44.1 kHz MP3 192k CBR ACX-chain target.
   - Validation passed: `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+- `07e2df4c` — `Polish audio export workflow`.
+  - Export mode now opens with visible Podcast, ACX, and Custom preset cards while preserving the
+    existing preset select, advanced override controls, and lazy ffmpeg load-on-export behavior.
+  - The summary now shows the selected profile, live processing chain, output target, and generated
+    `-af` provenance so Tune/QC changes have a clear path into exported audio.
+  - Custom mode keeps manual container, bitrate, sample-rate, channel, and loudness controls behind
+    the advanced path instead of front-loading raw export parameters.
+  - Validation passed: `node --check docs/types/media/studio-export.js`,
+    `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
 
 ### P1 — Video Workspace Polish Gate
 
