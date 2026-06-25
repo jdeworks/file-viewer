@@ -706,6 +706,11 @@
   font-size: 12px; }
 .preview-host .tl-dur-input { width: 60px; padding: 2px 6px; border-radius: 6px;
   border: 1px solid var(--border); background: var(--bg); color: var(--fg); }
+.preview-host .tl-music-level { display: inline-flex; align-items: center; gap: 7px;
+  min-width: 240px; max-width: 100%; }
+.preview-host .tl-music-gain { width: 92px; accent-color: var(--accent); cursor: pointer; }
+.preview-host .tl-music-readout { min-width: 118px; color: var(--fg-2);
+  font-variant-numeric: tabular-nums; white-space: nowrap; }
 .preview-host .tl-actions { display: flex; flex-direction: column; gap: 8px; }
 .preview-host .tl-action-group { display: flex; gap: 8px; flex-wrap: wrap; }
 .preview-host .tl-act { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--accent);
@@ -726,6 +731,8 @@
   .preview-host .tl-lane-track-row { gap: 5px; }
   .preview-host .tl-lane-track { gap: 8px; }
   .preview-host .tl-ctrls { gap: 8px; }
+  .preview-host .tl-music-level { min-width: min(100%, 260px); }
+  .preview-host .tl-music-readout { min-width: 112px; }
 }
 
 /* ── Video controls (seek, fullscreen, filters) ── */

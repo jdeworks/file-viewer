@@ -18,6 +18,7 @@ import { buildSecondaryDropZone } from './editor-advanced.js';
 
 const TL_PX_PER_SEC = 32;
 const TL_MIN_PX = 360;
+const DEFAULT_MUSIC_GAIN = 0.35;
 
 function mkBtn(text, cls) {
   const b = document.createElement('button');
@@ -35,6 +36,10 @@ function hms(t) {
   return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':');
 }
 function clamp01(v) { return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0; }
+function readMusicGain(input) {
+  const v = Number(input?.value);
+  return Number.isFinite(v) ? Math.max(0, Math.round(v * 100) / 100) : DEFAULT_MUSIC_GAIN;
+}
 
 // Mount the timeline into `container` for the primary `intake` video + its `mediaEl`.
 // onNewUrl(url) lets the caller swap the player to a baked result. Returns { destroy() }.
@@ -132,7 +137,23 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
   durLabel.append(document.createTextNode('Length (s) '), durInput);
   const transLabel = document.createElement('label');
   transLabel.append(document.createTextNode('Transition '), transSel);
-  ctrls.append(transLabel, durLabel);
+  const musicLevel = document.createElement('label');
+  musicLevel.className = 'tl-music-level';
+  const musicLevelText = document.createElement('span');
+  musicLevelText.textContent = 'Music bed';
+  const musicGain = document.createElement('input');
+  musicGain.type = 'range';
+  musicGain.min = '0';
+  musicGain.max = '1';
+  musicGain.step = '0.05';
+  musicGain.value = String(DEFAULT_MUSIC_GAIN);
+  musicGain.className = 'tl-music-gain';
+  musicGain.setAttribute('aria-label', 'Music bed level under original video audio');
+  musicGain.title = 'Music bed level; original video audio stays unchanged';
+  const musicReadout = document.createElement('span');
+  musicReadout.className = 'tl-music-readout';
+  musicLevel.append(musicLevelText, musicGain, musicReadout);
+  ctrls.append(transLabel, durLabel, musicLevel);
 
   // ── Action buttons ──
   const actions = document.createElement('div');
@@ -291,6 +312,10 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
     syncStatusLine();
   }
 
+  function syncMusicGain() {
+    musicReadout.textContent = Math.round(readMusicGain(musicGain) * 100) + '% under video audio';
+  }
+
   function updateTrimLabel() {
     const d = dur();
     const outV = trimOut > 0 ? trimOut : d;
@@ -331,6 +356,7 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
 
   wireHandle(handleIn, true);
   wireHandle(handleOut, false);
+  musicGain.addEventListener('input', syncMusicGain);
 
   const syncFromMetadata = () => {
     syncTrim();
@@ -425,9 +451,10 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
   acrossBtn.addEventListener('click', () => runOp('acrossfade',
     { secondary: secondZone.getFile(), duration: Number(durInput.value) || 1 }));
   muxBtn.addEventListener('click', () => runOp('muxmusic',
-    { secondary: secondZone.getFile(), musicGain: 0.35 }));
+    { secondary: secondZone.getFile(), musicGain: readMusicGain(musicGain) }));
 
   syncTrackDims();
+  syncMusicGain();
   syncStatusLine();
   syncActions();
 

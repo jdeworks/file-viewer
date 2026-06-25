@@ -34,6 +34,7 @@ import {
   parsePcmWavHeader,
   readPcmWavFirstChannelRange,
 } from '../docs/types/media/compare-audio.js';
+import { buildMuxMusicArgs } from '../docs/types/media/video-filters.js';
 import {
   classifyFfmpegError,
   cancelFfmpeg,
@@ -288,6 +289,19 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.equal(cues[0].text, '<v Voice>Styled <b>cue</b>\nSecond line', 'parseSubtitles: preserves cue text body');
   assert.equal(cues[1].start, 2.25, 'parseSubtitles: second cue start');
   assert.equal(cues[1].text, 'Second cue', 'parseSubtitles: complex cue timing block parsed');
+}
+
+{
+  const defaultMux = buildMuxMusicArgs('video.mp4', 'music.mp3', 'out.mp4').join(' ');
+  assert.match(defaultMux, /volume=0\.35/, 'mux music: defaults music bed to 35%');
+  assert.match(defaultMux, /amix=inputs=2:duration=first/, 'mux music: mixes bed under original video audio duration');
+  assert.match(defaultMux, /-map 0:v -map \[a\] -c:v copy/, 'mux music: keeps original video stream copied');
+
+  const chosenMux = buildMuxMusicArgs('video.mp4', 'music.mp3', 'out.mp4', { musicGain: 0.625 }).join(' ');
+  assert.match(chosenMux, /volume=0\.63/, 'mux music: rounds representative user gain to two decimals');
+
+  const clampedMux = buildMuxMusicArgs('video.mp4', 'music.mp3', 'out.mp4', { musicGain: -0.4 }).join(' ');
+  assert.match(clampedMux, /volume=0(?:\.0)?\[/, 'mux music: clamps negative user gain to silence');
 }
 
 {

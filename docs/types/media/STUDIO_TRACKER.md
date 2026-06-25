@@ -691,8 +691,9 @@ polish and general compressed-audio longer-file strategy work.
 
 ### R5 — Video Export Depth
 
-Status: partial. Subtitle burn-in UI/op is committed in `c70853ec`; R5 remains open for
-crop/rotate/LUT-style export presets and user-facing music-bed ducking controls.
+Status: partial. Subtitle burn-in UI/op is committed in `c70853ec`; user-facing music-bed
+ducking controls are implemented in the current slice. R5 remains open for crop/rotate/
+LUT-style export presets and variable speed ramp only if it can stay clear and compact.
 
 - Added a Video Export-only subtitle burn-in control with `.srt/.vtt` input, concise status,
   and a separate `Burn in subtitles` action.
@@ -705,6 +706,15 @@ crop/rotate/LUT-style export presets and user-facing music-bed ducking controls.
   update, and pure args containing a subtitles filter plus H.264/AAC re-encode semantics without
   running heavy ffmpeg.
 - Changed paths for this slice: `studio-export.js`, `transcoder.js`, `video-filters.js`,
+  `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`, `STUDIO_ROADMAP.md`,
+  `STUDIO_TRACKER.md`, plus generated cache files if validation refreshes them.
+- Added compact Video Timeline music-bed controls with a 35% default, visible readout, and copy
+  stating the bed sits under unchanged original video audio.
+- `Mux music under video` now passes the selected gain to the existing `muxmusic` operation;
+  ffmpeg remains lazy and only runs after the action click.
+- Smoke/unit evidence covers the timeline control, default/change readout, selected mux gain,
+  default gain, rounding, clamping, `amix=duration=first`, and video stream copy semantics.
+- Changed paths for this slice: `timeline.js`, `preview-media.css`,
   `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`, `STUDIO_ROADMAP.md`,
   `STUDIO_TRACKER.md`, plus generated cache files if validation refreshes them.
 

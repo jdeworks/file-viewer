@@ -1268,6 +1268,28 @@ export async function run(ctx) {
       // Transition controls: dissolve/xfade selector + length + the four action buttons.
       const transOpts = await page.$$eval(tlModeSel + ' .tl-trans-sel option', (els) => els.map((e) => e.value));
       if (transOpts.includes('fade') && transOpts.includes('fadeblack') && transOpts.includes('wipeleft')) pass('P6: transition selector offers fade/fadeblack/wipe'); else fail('transition opts: ' + transOpts.join(','));
+      const musicBed = await page.evaluate((sel) => {
+        const root = document.querySelector(sel);
+        const gain = root?.querySelector('.tl-music-gain');
+        const readout = root?.querySelector('.tl-music-readout');
+        if (!gain || !readout) return null;
+        const before = { value: gain.value, readout: readout.textContent || '', title: gain.title || '' };
+        gain.value = '0.6';
+        gain.dispatchEvent(new Event('input', { bubbles: true }));
+        return {
+          before,
+          after: { value: gain.value, readout: readout.textContent || '' },
+        };
+      }, tlModeSel);
+      if (musicBed && musicBed.before.value === '0.35' && /35% under video audio/.test(musicBed.before.readout))
+        pass('R5: music-bed ducking control defaults to 35% under video audio');
+      else fail('music-bed default: ' + JSON.stringify(musicBed));
+      if (musicBed && musicBed.after.value === '0.6' && /60% under video audio/.test(musicBed.after.readout))
+        pass('R5: music-bed ducking control updates readout when changed');
+      else fail('music-bed changed: ' + JSON.stringify(musicBed));
+      if (musicBed && /original video audio stays unchanged/i.test(musicBed.before.title))
+        pass('R5: music-bed control states original video audio is unchanged');
+      else fail('music-bed title: ' + JSON.stringify(musicBed));
       const acts = await page.evaluate((sel) => {
         const root = document.querySelector(sel);
         if (!root) return null;
@@ -1327,6 +1349,7 @@ export async function run(ctx) {
       xfade: m.buildXfadeArgs('input.mp4', 'secondary.mp4', 'out.mp4', { durationA: 10, transition: 'fade', duration: 1 }).join(' '),
       across: m.buildAcrossfadeArgs('input.mp3', 'secondary.mp3', 'out.m4a', { duration: 2 }).join(' '),
       mux: m.buildMuxMusicArgs('input.mp4', 'secondary.mp3', 'out.mp4', { musicGain: 0.35 }).join(' '),
+      muxChosen: m.buildMuxMusicArgs('input.mp4', 'secondary.mp3', 'out.mp4', { musicGain: 0.6 }).join(' '),
       badTrans: m.normalizeTransition('nonsense'),
       trimClamped: m.clampTrimRange(12, 8, 10),
     };
@@ -1335,6 +1358,7 @@ export async function run(ctx) {
   if (/xfade=transition=fade:duration=1:offset=9/.test(tlArgs.xfade) && /\[0:a\]\[1:a\]acrossfade=d=1\[a\]/.test(tlArgs.xfade) && /libx264/.test(tlArgs.xfade)) pass('P6: xfade args build dissolve + aligned audio acrossfade'); else fail('xfade args: ' + tlArgs.xfade);
   if (/\[0:a\]\[1:a\]acrossfade=d=2\[a\]/.test(tlArgs.across)) pass('P6: acrossfade args build d=2 audio crossfade'); else fail('acrossfade args: ' + tlArgs.across);
   if (/volume=0\.35/.test(tlArgs.mux) && /amix=inputs=2:duration=first/.test(tlArgs.mux) && /-c:v copy/.test(tlArgs.mux)) pass('P6: mux-music args duck the bed + amix under the video audio'); else fail('mux args: ' + tlArgs.mux);
+  if (/volume=0\.6/.test(tlArgs.muxChosen) && /-map 0:v/.test(tlArgs.muxChosen)) pass('R5: mux-music args reflect chosen music-bed gain and preserve video stream copy'); else fail('mux chosen args: ' + tlArgs.muxChosen);
   if (tlArgs.badTrans === 'fade') pass('P6: unknown transition normalizes to fade'); else fail('bad transition: ' + tlArgs.badTrans);
   if (tlArgs.trimClamped.start < tlArgs.trimClamped.end && tlArgs.trimClamped.end === 10)
     pass('P6: pure trim clamp keeps in/out from crossing within duration');
