@@ -21,12 +21,21 @@ function fmtTime(sec) {
   const s = Math.floor(sec % 60);
   return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
+function toTrimTime(sec) {
+  if (!Number.isFinite(sec) || sec < 0) return null;
+  return fmtTime(sec);
+}
 
 // Validate and normalise an HH:MM:SS string; returns null on bad input.
 function parseTimestamp(s) {
   const m = (s || '').trim().match(/^(\d{2}):(\d{2}):(\d{2})$/);
   if (!m) return null;
   return m[1] + ':' + m[2] + ':' + m[3];
+}
+function parseTrimInputText(s) {
+  const m = (s || '').trim().match(/^(\d+):(\d{2}):(\d{2})$/);
+  if (!m) return null;
+  return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]);
 }
 
 function makeInput(placeholder, cls) {
@@ -344,6 +353,20 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
     }
   }
 
+  function prefillTrim({ start, end } = {}) {
+    selectOp('trim');
+    if (!currentCtx) return;
+    const inputs = currentCtx.querySelectorAll('input[type="text"]');
+    if (!inputs.length) return;
+
+    const startSecs = Number.isFinite(start) ? start : parseTrimInputText(start);
+    const endSecs = Number.isFinite(end) ? end : parseTrimInputText(end);
+    const startVal = toTrimTime(startSecs);
+    const endVal = toTrimTime(endSecs);
+    if (startVal) inputs[0].value = startVal;
+    if (endVal) inputs[1].value = endVal;
+  }
+
   function showResult(url, filename, sizeBytes) {
     const sizeMB = (sizeBytes / 1048576).toFixed(1);
     resultArea.innerHTML = '';
@@ -465,6 +488,7 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
 
   return {
     el: panel,
+    prefillTrim,
     revoke() {
       for (const u of blobUrls) { try { URL.revokeObjectURL(u); } catch { /* ignore */ } }
       blobUrls.length = 0;

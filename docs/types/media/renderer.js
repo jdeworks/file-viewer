@@ -315,6 +315,7 @@ export async function render(intake, ctx = {}) {
 
   // Full editor panel (Phase 2) — always built when ffmpeg is enabled.
   let editorPanel = null;
+  let editorController = null;
   let editorRevoke = null;
   let exportPanel = null;       // P1/P3 export + fades panel
   let exportRevoke = null;
@@ -329,6 +330,7 @@ export async function render(intake, ctx = {}) {
       el.load();
       el.play().catch(() => { /* autoplay blocked */ });
     });
+    editorController = editor;
     editorPanel = editor.el;
     editorRevoke = editor.revoke;
 
@@ -373,7 +375,11 @@ export async function render(intake, ctx = {}) {
   if (info.kind === 'audio') {
     const { mountWaveform } = await import('./waveform.js');
     const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
-    const wv = await mountWaveform(waveformSurface, file);
+    const wv = await mountWaveform(waveformSurface, file, {
+      onRegionSelect: editorController?.prefillTrim ? ({ start, end }) => {
+        editorController.prefillTrim({ start, end });
+      } : null,
+    });
     if (wv) panels.push({ destroy() { wv.destroy(); } });
 
     const registerAudioMode = (id, label, mount) => {

@@ -11,6 +11,18 @@ function getAC() {
   return _ac;
 }
 
+function hms(t) {
+  if (!Number.isFinite(t)) t = 0;
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const s = Math.floor(t % 60);
+  return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':');
+}
+
+function clamp(v, min, max) {
+  return Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : min;
+}
+
 // Connect el through the shared media graph's mixer gain. createMediaElementSource
 // can only be called ONCE per element, so the mixer gain must live in the same graph
 // as the Spectrum & EQ panel (audio-graph.js owns the single source). This returns a
@@ -83,11 +95,14 @@ async function drawWaveform(canvas, file, { ownContext = false } = {}) {
 
   let rafId = null;
   let audioEl = null;
+  let destroyed = false;
 
   function update(el) {
+    if (destroyed) return;
     audioEl = el;
     if (!rafId) {
       (function loop() {
+        if (destroyed) return;
         if (audioEl) draw(audioEl.currentTime, audioEl.duration || 0);
         rafId = requestAnimationFrame(loop);
       })();
@@ -95,27 +110,167 @@ async function drawWaveform(canvas, file, { ownContext = false } = {}) {
   }
 
   function destroy() {
+    destroyed = true;
     if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    audioEl = null;
     if (ownContext) ac.close().catch(() => {});
   }
 
   return { update, destroy };
 }
 
-export async function mountWaveform(container, file) {
+function toCallback(opts) {
+  if (typeof opts === 'function') return opts;
+  return opts && typeof opts.onRegionSelect === 'function' ? opts.onRegionSelect : null;
+}
+
+export async function mountWaveform(container, file, options = {}) {
   container.textContent = '';
+  const onRegionSelect = toCallback(options);
   const canvas = document.createElement('canvas');
   canvas.className = 'media-wv-canvas';
   canvas.height = 120;
   canvas.width = Math.max(320, Math.round(container.clientWidth || container.getBoundingClientRect().width || 400));
   container.appendChild(canvas);
+
+  const status = document.createElement('div');
+  status.className = 'media-wv-status';
+  status.hidden = true;
+  container.appendChild(status);
+
+  const region = document.createElement('div');
+  region.className = 'media-wv-region';
+  region.hidden = true;
+  container.appendChild(region);
+
+  let regionPx = null;
+  let startPx = 0;
+  let selecting = false;
+  let lastClientX = null;
+
   const controller = await drawWaveform(canvas, file, { ownContext: true });
-  const audioEl = container.closest('.media-doc')?.querySelector('audio.media-view');
-  if (controller && audioEl) controller.update(audioEl);
+  const getAudioEl = () => container.closest('.media-doc')?.querySelector('audio.media-view');
+
+  const updateSelectionStatus = (start, end, duration) => {
+    if (!Number.isFinite(start) || !Number.isFinite(end) || !Number.isFinite(duration) || duration <= 0) {
+      status.textContent = '';
+      status.hidden = true;
+      return;
+    }
+    status.textContent = 'Trim ' + hms(start) + ' → ' + hms(end);
+    status.hidden = false;
+  };
+
+  const setRegion = (left, right) => {
+    if (!onRegionSelect) return;
+    const W = canvas.clientWidth;
+    if (!W) return;
+    regionPx = { left: clamp(Math.min(left, right), 0, W), right: clamp(Math.max(left, right), 0, W) };
+    const regionWidth = Math.max(1, regionPx.right - regionPx.left);
+    region.hidden = false;
+    region.style.left = regionPx.left + 'px';
+    region.style.width = regionWidth + 'px';
+  };
+
+  const toClientX = (ev) => {
+    const v = typeof ev === 'number' ? ev : ev?.clientX;
+    return Number.isFinite(v) ? v : null;
+  };
+
+  const selectRegion = (ev) => {
+    const r = canvas.getBoundingClientRect();
+    const width = r.width;
+    if (!width) return null;
+    const x = toClientX(ev);
+    if (x === null) return null;
+    const px = clamp(x - r.left, 0, width);
+    return px;
+  };
+
+  const clearRegion = () => {
+    regionPx = null;
+    region.style.left = '0px';
+    region.style.width = '0px';
+    region.hidden = true;
+  };
+
+  const pixelToSeconds = (px, duration) => {
+    const w = canvas.clientWidth || 1;
+    const clamped = clamp(px, 0, w);
+    return duration > 0 ? (clamped / w) * duration : 0;
+  };
+
+  const onDown = (event) => {
+    if (!onRegionSelect) return;
+    if (event.button !== undefined && event.button !== 0) return;
+    selecting = true;
+    startPx = selectRegion(event) || 0;
+    lastClientX = toClientX(event);
+    setRegion(startPx, startPx);
+    status.textContent = '';
+    status.hidden = true;
+    try { canvas.setPointerCapture(event.pointerId); } catch { /* ignore */ }
+  };
+
+  const onMove = (event) => {
+    if (!selecting || !onRegionSelect) return;
+    const curr = selectRegion(event);
+    if (curr === null) return;
+    const x = toClientX(event);
+    if (x !== null) lastClientX = x;
+    setRegion(startPx, curr);
+  };
+
+  const onUp = (event) => {
+    if (!selecting || !onRegionSelect) {
+      selecting = false;
+      return;
+    }
+    selecting = false;
+    const curr = selectRegion(event) ?? selectRegion(lastClientX);
+    const audioEl = getAudioEl();
+    const duration = Number(audioEl?.duration) || 0;
+    const start = pixelToSeconds(Math.min(startPx, curr ?? startPx), duration);
+    const end = pixelToSeconds(Math.max(startPx, curr ?? startPx), duration);
+    if (Number.isFinite(start) && Number.isFinite(end) && start <= end) {
+      const finalEnd = end < start ? start : end;
+      const nextStart = clamp(start, 0, duration);
+      const nextEnd = clamp(finalEnd, 0, duration);
+      updateSelectionStatus(nextStart, nextEnd, duration);
+      onRegionSelect({
+        start: clamp(nextStart, 0, duration),
+        end: clamp(nextEnd, 0, duration),
+      });
+    }
+    if (regionPx && regionPx.right - regionPx.left < 2) {
+      clearRegion();
+    }
+  };
+
+  if (onRegionSelect) {
+    canvas.addEventListener('pointerdown', onDown);
+    canvas.addEventListener('pointermove', onMove);
+    canvas.addEventListener('pointerup', onUp);
+    canvas.addEventListener('pointercancel', onUp);
+    canvas.addEventListener('lostpointercapture', onUp);
+  }
+
+  if (controller) controller.update(getAudioEl());
   return {
     destroy() {
+      if (onRegionSelect) {
+        canvas.removeEventListener('pointerdown', onDown);
+        canvas.removeEventListener('pointermove', onMove);
+        canvas.removeEventListener('pointerup', onUp);
+        canvas.removeEventListener('pointercancel', onUp);
+        canvas.removeEventListener('lostpointercapture', onUp);
+        clearRegion();
+        status.hidden = true;
+      }
       controller?.destroy();
       canvas.remove();
+      status.remove();
+      region.remove();
     },
   };
 }

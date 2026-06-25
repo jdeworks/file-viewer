@@ -12,7 +12,7 @@
 
 import {
   MixerTransport, decodeFile, makeClipLane, makeGeneratorLane,
-  effectiveGain, timelineDuration, mixdown, encodeWav,
+  effectiveGain, timelineDuration, mixdown, encodeWav, releaseMixerAC,
 } from './mixer-engine.js';
 import { drawLaneWaveform } from './mixer-draw.js';
 
@@ -24,6 +24,8 @@ const MIN_TIMELINE_PX = 360;
 // Returns { destroy() }. Self-contained; no dependency on the EQ graph.
 export function mountMixer(container, intake) {
   const lanes = [];
+  let destroyed = false;
+  let decodeEpoch = 0;
   let pxPerSec = PX_PER_SEC_DEFAULT;
   let transport = null;
   let rafId = 0;
@@ -113,6 +115,8 @@ export function mountMixer(container, intake) {
     if (!selectedLaneId) return null;
     return lanes.find((l) => l.id === selectedLaneId) || null;
   }
+  function nextDecodeEpoch() { return ++decodeEpoch; }
+  function isCurrentDecode(token) { return !destroyed && token === decodeEpoch; }
   function resolveSelection() {
     if (lanes.length === 0) {
       selectedLaneId = null;
@@ -439,6 +443,21 @@ export function mountMixer(container, intake) {
   tone1kBtn.addEventListener('click', () => addLane(makeGeneratorLane('tone', { freq: 1000 })));
   noiseBtn.addEventListener('click', () => addLane(makeGeneratorLane('noise')));
 
+  async function decodeAndAdd(file, epoch, onFailureMessage) {
+    const buf = await decodeFile(file);
+    if (!isCurrentDecode(epoch)) return null;
+    if (buf) {
+      if (destroyed) return null;
+      const lane = makeClipLane(file?.name || 'Lane', buf);
+      addLane(lane);
+      return lane;
+    }
+    if (onFailureMessage) {
+      exportMsg.textContent = onFailureMessage;
+    }
+    return null;
+  }
+
   // ── Drag-drop audio files → new clip lanes ──
   ['dragover', 'dragenter'].forEach((ev) => wrap.addEventListener(ev, (e) => {
     e.preventDefault();
@@ -455,12 +474,15 @@ export function mountMixer(container, intake) {
       exportMsg.textContent = 'Drop audio files only.';
       return;
     }
+    if (destroyed) return;
+    const epoch = nextDecodeEpoch();
     exportMsg.textContent = 'Decoding ' + files.length + ' file(s)…';
     for (const f of files) {
-      const buf = await decodeFile(f);
-      if (buf) addLane(makeClipLane(f.name, buf));
+      const lane = await decodeAndAdd(f, epoch);
+      if (destroyed || !isCurrentDecode(epoch)) break;
+      if (!lane && !isCurrentDecode(epoch)) break;
     }
-    exportMsg.textContent = '';
+    if (isCurrentDecode(epoch)) exportMsg.textContent = '';
   });
 
   // ── Ctrl+scroll zoom ──
@@ -537,16 +559,21 @@ export function mountMixer(container, intake) {
 
   // ── Seed lane 1 from the loaded file (decoded lazily, here on open) ──
   (async () => {
+    if (destroyed) return;
+    const epoch = nextDecodeEpoch();
     exportMsg.textContent = 'Decoding loaded audio…';
     const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
     const buf = await decodeFile(file);
+    if (!isCurrentDecode(epoch)) return;
+    if (destroyed) return;
     if (buf) {
       addLane(makeClipLane(intake.filename || 'Lane 1', buf));
-      exportMsg.textContent = '';
+      if (isCurrentDecode(epoch)) exportMsg.textContent = '';
     } else {
       addLane(makeGeneratorLane('tone', { freq: 440 }));
       exportMsg.textContent = 'Could not decode the loaded file — added a test tone instead.';
     }
+    if (!isCurrentDecode(epoch) || destroyed) return;
     updateTimeLabel(0);
     updatePlayBtn();
     updateLaneStripDims();
@@ -554,11 +581,21 @@ export function mountMixer(container, intake) {
 
   return {
     destroy() {
+      if (destroyed) {
+        return;
+      }
+      destroyed = true;
+      nextDecodeEpoch();
       if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
       transport?.destroy();
       transport = null;
       for (const u of blobUrls) { try { URL.revokeObjectURL(u); } catch {} }
+      blobUrls.length = 0;
+      lanes.length = 0;
+      selectedLaneId = null;
       wrap.remove();
+      releaseMixerAC();
     },
   };
 }

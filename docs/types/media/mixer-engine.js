@@ -32,6 +32,16 @@ export function getMixerAC() {
   }
   return _ac;
 }
+export function getMixerACState() {
+  if (!_ac) return { hasContext: false, state: null };
+  return { hasContext: true, state: _ac.state };
+}
+export async function releaseMixerAC() {
+  if (!_ac) return;
+  const ac = _ac;
+  _ac = null;
+  try { await ac.close(); } catch { /* already closed or unavailable */ }
+}
 
 // Decode an audio File/Blob into an AudioBuffer (full decode — the mixer needs
 // the whole clip to mix it). Uses the shared AC; returns null on failure.
@@ -93,6 +103,7 @@ export class MixerTransport {
     this.master = this.ac ? this.ac.createGain() : null;
     if (this.master) this.master.connect(this.ac.destination);
     this.nodes = [];          // active source nodes (for stop)
+    this.gainNodes = [];      // per-lane gain nodes (for stop / destroy cleanup)
     this.playing = false;
     this.startedAt = 0;       // ac.currentTime at play()
     this.startOffset = 0;     // timeline position playback began from (s)
@@ -130,6 +141,7 @@ export class MixerTransport {
       applyFadeEnvelope(ac, gainNode, lane, g, from, t0);
       node.connect(gainNode);
       gainNode.connect(this.master);
+      this.gainNodes.push(gainNode);
 
       // When does this lane's region start, relative to the playhead?
       const laneStart = Math.max(0, lane.offset - from);
@@ -177,7 +189,9 @@ export class MixerTransport {
   stop(keepOffset = false) {
     if (this._endTimer) { clearTimeout(this._endTimer); this._endTimer = null; }
     for (const n of this.nodes) { try { n.stop(); } catch { /* already stopped */ } try { n.disconnect(); } catch {} }
+    for (const n of this.gainNodes) { try { n.disconnect(); } catch {} }
     this.nodes = [];
+    this.gainNodes = [];
     this.playing = false;
     if (!keepOffset) this.startOffset = 0;
   }

@@ -1291,6 +1291,16 @@ export async function run(ctx) {
     }).then(() => true).catch(() => false);
     if (mixDetached) pass('audio mixer: switching to Listen detaches the mix markup');
     else fail('audio mix panel still mounted after switching to Listen');
+
+    const mixAcAfterClose = await page.evaluate(async () => {
+      const { getMixerACState } = await import('./types/media/mixer-engine.js');
+      return getMixerACState();
+    });
+    if (!mixAcAfterClose.hasContext || mixAcAfterClose.state === 'closed') {
+      pass('audio mixer: leaving mix mode releases shared mixer AudioContext');
+    } else {
+      fail('audio mixer AC not released after leaving mix mode: ' + JSON.stringify(mixAcAfterClose));
+    }
   } else fail('mixer tab not found');
 
   // Folder playlist: load a 2-track folder via the seam → prev/next + position + shuffle appear.
@@ -1573,6 +1583,57 @@ export async function run(ctx) {
   await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 10000 });
   await page.evaluate(() => window.__fv.openExampleByLabel('Sample.wav'));
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await page.waitForFunction(() => {
+    const d = document.querySelector('#previewHost audio.media-view')?.duration;
+    return Number.isFinite(d) && d > 0;
+  }, null, { timeout: 8000 });
+  await page.click('#previewHost .media-mode-tab[data-mode="listen"]');
+  const trimReadyEl = await page.waitForSelector('#previewHost .media-ed-op[data-op="trim"]', { timeout: 8000 });
+  if (trimReadyEl) pass('P6: audio editor Trim button exists when ffmpeg is on');
+  else fail('audio editor trim button missing with ffmpeg on');
+
+  // Waveform drag selection pre-fills existing Trim HH:MM:SS inputs.
+  const waveRect = await page.$eval('#previewHost .media-waveform-surface canvas.media-wv-canvas', (canvas) => {
+    const r = canvas.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  const trimStartX = waveRect.x + waveRect.w * 0.2;
+  const trimEndX = waveRect.x + waveRect.w * 0.6;
+  const trimY = waveRect.y + waveRect.h * 0.5;
+  await page.mouse.move(trimStartX, trimY);
+  await page.mouse.down();
+  await page.mouse.move(trimEndX, trimY);
+  await page.mouse.up();
+  const trimFilled = await page.waitForFunction(() => {
+    const trimBtn = document.querySelector('#previewHost .media-ed-op[data-op="trim"]');
+    if (!trimBtn || !trimBtn.classList.contains('active')) return false;
+    const ctx = document.querySelector('#previewHost .media-ed-ctx[data-op="trim"]');
+    if (!ctx) return false;
+    const inputs = ctx.querySelectorAll('input[type="text"]');
+    if (inputs.length < 2) return false;
+    const start = inputs[0].value.trim();
+    const end = inputs[1].value.trim();
+    return /^\d{2}:\d{2}:\d{2}$/.test(start) && /^\d{2}:\d{2}:\d{2}$/.test(end) && start !== end;
+  }, null, { timeout: 5000 }).catch(() => null);
+  if (trimFilled) pass('audio waveform selection wires to existing Trim op and pre-fills values');
+  else fail('audio waveform selection did not prefill trim inputs');
+  const trimValues = await page.$eval('#previewHost .media-ed-ctx[data-op="trim"]', (ctx) => {
+    const inputs = ctx.querySelectorAll('input[type="text"]');
+    return {
+      start: inputs[0]?.value?.trim() || '',
+      end: inputs[1]?.value?.trim() || '',
+    };
+  });
+  const trimToSec = (t) => {
+    const p = (t || '').split(':').map((n) => Number(n));
+    if (p.length !== 3 || p.some((n) => Number.isNaN(n))) return null;
+    return p[0] * 3600 + p[1] * 60 + p[2];
+  };
+  const trimStartSec = trimToSec(trimValues.start);
+  const trimEndSec = trimToSec(trimValues.end);
+  if (trimStartSec !== null && trimEndSec !== null && trimEndSec > trimStartSec) pass('audio Trim prefill: start/end HH:MM:SS values present and ordered');
+  else fail('audio Trim prefill values invalid: ' + JSON.stringify(trimValues));
+
   await page.click('#previewHost .media-mode-tab[data-mode="export"]');
   await page.waitForSelector('#previewHost .media-mode-panel[data-mode="export"] .media-export-panel', { timeout: 8000 });
 
