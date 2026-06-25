@@ -188,6 +188,18 @@ Progress:
     the advanced path instead of front-loading raw export parameters.
   - Validation passed: `node --check docs/types/media/studio-export.js`,
     `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+- `d850b8a5` — `Polish audio mix workspace`.
+  - Mix mode now uses an explicit timeline/lane grammar with a ruler, playhead, lane indexes,
+    fixed lane controls, selected-lane context, and compact master/output controls.
+  - Existing lazy mount/teardown, lane gain/mute/solo/fade behavior, generator lane add, drag-drop
+    audio add, and WAV/MP3 mixdown paths are preserved.
+  - Smoke coverage now asserts ruler/playhead/context/index affordances plus desktop and mobile
+    no-horizontal-overflow behavior while keeping the legacy `.mx-*` contract intact.
+  - Validation passed: `node --check docs/types/media/mixer-ui.js`,
+    `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+  - Caveat: `mixer-ui.js`, `preview-chrome.css`, and `tests/areas/media-3d.mjs` are all over the
+    LOC advisory/hard thresholds; before P1 grows the shared media surface further, split mixer UI
+    helpers/styles/tests or extract shared workspace grammar.
 
 ### P1 — Video Workspace Polish Gate
 
