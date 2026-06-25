@@ -26,6 +26,9 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   const state = {
     layout: 'side-by-side',
     opacity: 55,
+    videoOpacityA: 100,
+    videoOpacityB: 55,
+    videoForeground: 'B',
     normalize: false,
     durationA: durationOf(mediaEl),
     durationB: durationOf(mediaEl),
@@ -85,6 +88,40 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   opacityInput.className = 'media-compare-opacity-input';
   opacityLabel.append(document.createTextNode('Overlay opacity '), opacityInput, opacityValue);
 
+  const videoLayerControls = document.createElement('div');
+  videoLayerControls.className = 'media-compare-video-layers';
+  videoLayerControls.hidden = kind !== 'video';
+  const foregroundLabel = document.createElement('label');
+  foregroundLabel.className = 'media-compare-layer-field';
+  const foregroundSelect = document.createElement('select');
+  foregroundSelect.className = 'media-compare-foreground-select';
+  for (const [value, label] of [['B', 'B over A'], ['A', 'A over B']]) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    foregroundSelect.append(option);
+  }
+  foregroundSelect.value = state.videoForeground;
+  foregroundLabel.append(document.createTextNode('Foreground '), foregroundSelect);
+  const makeVideoOpacity = (laneId, value) => {
+    const label = document.createElement('label');
+    label.className = 'media-compare-layer-field';
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = '0';
+    input.max = '100';
+    input.step = '1';
+    input.value = String(value);
+    input.className = `media-compare-video-opacity media-compare-video-opacity-${laneId.toLowerCase()}`;
+    const readoutEl = document.createElement('span');
+    readoutEl.className = `media-compare-video-opacity-value media-compare-video-opacity-value-${laneId.toLowerCase()}`;
+    label.append(document.createTextNode(`${laneId} opacity `), input, readoutEl);
+    return { label, input, readout: readoutEl };
+  };
+  const videoOpacityA = makeVideoOpacity('A', state.videoOpacityA);
+  const videoOpacityB = makeVideoOpacity('B', state.videoOpacityB);
+  videoLayerControls.append(foregroundLabel, videoOpacityA.label, videoOpacityB.label);
+
   const normalizeLabel = document.createElement('label');
   normalizeLabel.className = 'media-compare-normalize';
   const normalizeInput = document.createElement('input');
@@ -93,7 +130,7 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   const normalizeMode = document.createElement('span');
   normalizeMode.className = 'media-compare-normalize-label';
   normalizeLabel.append(normalizeInput, normalizeMode);
-  controls.append(layoutGroup, opacityLabel, normalizeLabel);
+  controls.append(layoutGroup, opacityLabel, videoLayerControls, normalizeLabel);
 
   const analyzeButton = document.createElement('button');
   analyzeButton.type = 'button';
@@ -267,6 +304,11 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
     readout,
     foot,
     opacityValue,
+    opacityLabel,
+    videoLayerControls,
+    foregroundSelect,
+    videoOpacityA,
+    videoOpacityB,
     normalizeMode,
     normalizeLabel,
     laneEls,
@@ -291,6 +333,18 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', op
   }
   addListener(opacityInput, 'input', () => {
     state.opacity = Number(opacityInput.value) || 0;
+    render();
+  });
+  addListener(foregroundSelect, 'change', () => {
+    state.videoForeground = foregroundSelect.value === 'A' ? 'A' : 'B';
+    render();
+  });
+  addListener(videoOpacityA.input, 'input', () => {
+    state.videoOpacityA = Number(videoOpacityA.input.value) || 0;
+    render();
+  });
+  addListener(videoOpacityB.input, 'input', () => {
+    state.videoOpacityB = Number(videoOpacityB.input.value) || 0;
     render();
   });
   addListener(normalizeInput, 'change', () => {

@@ -39,6 +39,11 @@ export function renderCompareLayout(state, ui) {
     readout,
     foot,
     opacityValue,
+    opacityLabel,
+    videoLayerControls,
+    foregroundSelect,
+    videoOpacityA,
+    videoOpacityB,
     normalizeMode,
     normalizeLabel,
     laneEls,
@@ -61,9 +66,23 @@ export function renderCompareLayout(state, ui) {
 
   wrap.dataset.layout = state.layout;
   wrap.dataset.normalize = state.normalize ? 'on' : 'off';
-  wrap.dataset.overlayOpacity = String(state.opacity);
+  wrap.dataset.overlayOpacity = String(kind === 'video' ? state.videoOpacityB : state.opacity);
+  wrap.dataset.videoForeground = state.videoForeground || 'B';
+  wrap.dataset.videoOpacityA = String(state.videoOpacityA);
+  wrap.dataset.videoOpacityB = String(state.videoOpacityB);
   visual.style.setProperty('--compare-opacity', String(state.opacity / 100));
+  visual.style.setProperty('--compare-video-opacity-a', String(state.videoOpacityA / 100));
+  visual.style.setProperty('--compare-video-opacity-b', String(state.videoOpacityB / 100));
   opacityValue.textContent = `${state.opacity}%`;
+  opacityLabel.hidden = kind === 'video';
+  if (videoLayerControls) {
+    videoLayerControls.hidden = kind !== 'video';
+    foregroundSelect.value = state.videoForeground || 'B';
+    videoOpacityA.input.value = String(state.videoOpacityA);
+    videoOpacityA.readout.textContent = `${state.videoOpacityA}%`;
+    videoOpacityB.input.value = String(state.videoOpacityB);
+    videoOpacityB.readout.textContent = `${state.videoOpacityB}%`;
+  }
   normalizeMode.textContent = state.normalize
     ? 'Audio normalize: on (user chosen)'
     : 'Audio normalize: off';
@@ -129,9 +148,14 @@ export function renderCompareAnalysis(state, result, ui) {
     }
     drawFrameStrip(aCanvas, analysis.framesA);
     drawFrameStrip(bCanvas, analysis.framesB);
-    drawOverlayPreview(analysis, overlayCanvas, state.opacity);
+    drawOverlayPreview(analysis, overlayCanvas, {
+      opacityA: state.videoOpacityA,
+      opacityB: state.videoOpacityB,
+      foreground: state.videoForeground || 'B',
+    });
     drawVideoDiff(diffCanvas, analysis.diff);
-    foot.textContent = `${describeShiftedComparison(result)} Measured shifted overlap: average visual difference ${analysis.diff.averageDifference.toFixed(3)}, high-diff frames ${analysis.diff.highFrames}/${analysis.diff.frames}, high-diff pixels ${analysis.diff.highPixels}/${analysis.diff.totalPixels}, high-diff columns ${analysis.diff.highColumns}/${analysis.diff.totalColumns}. Overlay preview uses ${state.opacity}% B opacity; shifted/missing ranges are separate from content differences.`;
+    const foreground = state.videoForeground === 'A' ? 'A over B' : 'B over A';
+    foot.textContent = `${describeShiftedComparison(result)} Measured shifted overlap: average visual difference ${analysis.diff.averageDifference.toFixed(3)}, high-diff frames ${analysis.diff.highFrames}/${analysis.diff.frames}, high-diff pixels ${analysis.diff.highPixels}/${analysis.diff.totalPixels}, high-diff columns ${analysis.diff.highColumns}/${analysis.diff.totalColumns}. Overlay preview uses ${foreground}, A opacity ${state.videoOpacityA}%, B opacity ${state.videoOpacityB}%; shifted/missing ranges are separate from content differences.`;
     return;
   }
 

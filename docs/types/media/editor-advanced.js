@@ -2,6 +2,8 @@
 // Exports multi-file operation descriptors and the secondary drop-zone builder.
 // Imported by editor.js; keep this file to UI concerns only (no ffmpeg calls).
 
+import { TREE_DRAG_TYPE, getDraggedTreeNode } from '../../core/filetree.js';
+
 // Phase 3 single-file operations (appended to the OPERATIONS list in editor.js).
 export const ADVANCED_SINGLE_OPS = [
   { id: 'normalize',  label: 'Loudness Normalize' },
@@ -147,14 +149,46 @@ export function buildSecondaryDropZone(opDef, onFile) {
     onFile(file);
   }
 
-  // Drag and drop
-  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => { zone.classList.remove('drag-over'); });
-  zone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    zone.classList.remove('drag-over');
+  function hasSidebarTreeDrag(e) {
+    return Array.from(e.dataTransfer?.types || []).includes(TREE_DRAG_TYPE);
+  }
+
+  function hasNativeFileDrag(e) {
+    return Array.from(e.dataTransfer?.types || []).includes('Files');
+  }
+
+  function resolveDropFile(e) {
     const file = e.dataTransfer?.files?.[0];
-    if (file) accept(file);
+    if (file) return file;
+    if (!hasSidebarTreeDrag(e)) return null;
+    return getDraggedTreeNode()?.file || null;
+  }
+
+  // Drag and drop
+  zone.addEventListener('dragover', (e) => {
+    if (!hasNativeFileDrag(e) && !hasSidebarTreeDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    zone.classList.add('drag-over');
+  });
+  zone.addEventListener('dragenter', (e) => {
+    if (!hasNativeFileDrag(e) && !hasSidebarTreeDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    zone.classList.add('drag-over');
+  });
+  zone.addEventListener('dragleave', (e) => {
+    if (zone.contains(e.relatedTarget)) return;
+    zone.classList.remove('drag-over');
+  });
+  zone.addEventListener('drop', (e) => {
+    const file = resolveDropFile(e);
+    if (!file) return;
+    e.preventDefault();
+    e.stopPropagation();
+    zone.classList.remove('drag-over');
+    accept(file);
   });
 
   // File input browse
