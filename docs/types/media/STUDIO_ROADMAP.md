@@ -44,6 +44,43 @@ Reference alignment:
 
 ## Remaining Work
 
+### R0a — Auto-Audiobook-Grade Default Audio Lane
+
+Status: open.
+
+The current audio `Listen` surface is a custom transport over a hidden decode element, but it
+is not yet the target default MP3 workflow. Do not build this redesign on the current
+file-viewer `Mix` or `Compare` lane implementations; they are prototype surfaces and should
+be replaced. The target is the `auto-audiobook` mixer grammar applied to one open track by
+default.
+
+Needed:
+
+- Replace the simple Listen transport row with an auto-audiobook-style waveform editor:
+  ruler, waveform canvas, red seek cursor, click-to-seek, draggable region/timing, and
+  lane controls.
+- Move ordinary single-track edits into that default lane: start offset / later start,
+  in/out trim range, fade in, fade out, gain, and play/stop.
+- Add pink-noise/room-tone behavior using auto-audiobook semantics: gap/noise drawing and
+  subtle `-52 dB` style bed/fill behavior, not the current generic generator lane.
+- Rebuild `Mix` from the auto-audiobook semantic track model rather than reusing the
+  current arbitrary file-viewer mixer lanes.
+- Rebuild `Compare` from the same auto-audiobook lane model with exactly two independently
+  movable waveform lanes; overlay mode must draw the two waveforms over each other, not
+  only place controls next to each other.
+
+Reference alignment:
+
+- `auto-audiobook/src/components/AudioMixerView.tsx`: timeline container, ruler, tracks,
+  scroll/zoom and cursor model.
+- `auto-audiobook/src/components/MixerTrack.tsx`: track drawing, drag-to-adjust timing,
+  cursor, region selection, keyboard nudging, drop handling.
+- `auto-audiobook/src/stores/mixer-store.ts`: lane/region state shape with offset,
+  duration, fades, volume and selection.
+- `auto-audiobook/src/utils/mixer-playback.ts`: scheduled playback from cursor with
+  per-region gain/fade.
+- `auto-audiobook/src/engine/audio-processor.ts`: fade/early-stop/pink-noise semantics.
+
 ### R0 — Roadmap Hygiene And Code Shape
 
 Status: committed; enough validation and shared workspace code shape is in place to start

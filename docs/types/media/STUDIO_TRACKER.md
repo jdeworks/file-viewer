@@ -74,7 +74,32 @@ These are implemented and tested as capabilities, but the audio UI is not yet pr
 
 ## Active Queue
 
-No active implementation queue is currently open in this lane.
+### A1 — Auto-Audiobook-Grade Default Audio Lane
+
+Status: open.
+
+The visible native audio player has been removed, but default `Listen` is still not yet
+aligned with `auto-audiobook`. Do not extend the current file-viewer `Mix` or `Compare`
+lane implementations for this work; they are only temporary prototype coverage and are not
+the target interaction model. Opening a single MP3/WAV must use the `auto-audiobook`
+mixer grammar, reduced to the relevant one-track/default case:
+
+- Default audio should be waveform-first: a ruler, waveform canvas, red seek cursor,
+  click-to-seek, and play/pause integrated around the waveform.
+- Single-track edit controls must match the auto-audiobook region model: start, end,
+  duration, volume/gain, loop where applicable, fade in, fade out, and later start/offset.
+- Pink-noise/room-tone support follows the auto-audiobook gap/noise model, not the current
+  generic generator lane. Noise is part of the audio timeline semantics and should be drawn
+  as such.
+- `Mix` should be rebuilt as the multi-track expansion of the auto-audiobook semantic lanes
+  (`Speakers`/primary audio, `Noise`, `Music`, `SFX` or file-viewer equivalents), not as the
+  current arbitrary-lane UI.
+- `Compare` should be rebuilt as a two-track specialization of the same auto-audiobook lane
+  model: two independently movable waveform lanes stacked vertically, with overlay mode
+  drawing the two waveforms over each other so differences are visible.
+- Reference source: `repos/auto-audiobook/src/components/AudioMixerView.tsx`,
+  `MixerTrack.tsx`, `MixerToolbar.tsx`, `stores/mixer-store.ts`,
+  `utils/mixer-playback.ts`, and `engine/audio-processor.ts`.
 
 The latest roadmap items R0-R5 are recorded below as committed or implemented. In particular,
 the earlier R4 foundation note is superseded by the implemented R4 section later in this file
