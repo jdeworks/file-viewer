@@ -26,6 +26,58 @@ import { buildXfadeArgs, buildAcrossfadeArgs, buildMuxMusicArgs } from './video-
 let ffmpegInstance = null;
 const CORE_JS = vendor('ffmpeg/ffmpeg-core.js');
 
+const FF_MSG_CANCELLED = 'Operation cancelled.';
+const FFMSG_ERROR_CANCELLED = /ffmpeg exit/i;
+const FFMSG_ERROR_UNSUPPORTED = /(unsupported .*?(?:codec|format|container)|unknown (?:decoder|encoder)|could not find .*?(?:codec|encoder|decoder)|no (?:decoder|encoder) for stream|codec.*not supported)/i;
+const FFMSG_ERROR_DECODE = /(invalid data found when processing input|moov atom not found|non-increasing dts|error while decoding|could not decode|stream.*not found|invalid codec parameters|corrupt data|broken pipe)/i;
+
+function ffErrorMessage(err) {
+  return err == null ? '' : String(err?.message || err);
+}
+
+function ffErrorLines(message) {
+  const lines = message.replace(/\r/g, '').split('\n');
+  const first = (lines[0] || '').trim() || 'FFmpeg operation failed.';
+  const detail = lines.slice(1).join('\n').trim();
+  return { first, detail };
+}
+
+export function classifyFfmpegError(error) {
+  const message = ffErrorMessage(error);
+  if (!message) return { headline: 'FFmpeg operation failed.' };
+  if (FFMSG_ERROR_CANCELLED.test(message)) return { headline: FF_MSG_CANCELLED };
+  if (FFMSG_ERROR_UNSUPPORTED.test(message)) {
+    return { headline: 'Unsupported codec or container for this operation.', detail: message };
+  }
+  if (FFMSG_ERROR_DECODE.test(message)) {
+    return { headline: 'Could not decode this media for that operation.', detail: message };
+  }
+  return ffErrorLines(message);
+}
+
+export function formatFfmpegError(error) {
+  const { headline, detail } = classifyFfmpegError(error);
+  return detail ? `${headline}\n\n${detail}` : headline;
+}
+
+// Cancel/reload helper: clear cached ffmpeg instance so `loadFfmpeg()` won't
+// return a terminated wrapper after a manual cancel.
+export async function cancelFfmpeg(ff) {
+  ffmpegInstance = null;
+  if (!ff?.exit) return;
+  try {
+    await ff.exit();
+  } catch { /* ignore */ }
+}
+
+export function __setFfmpegInstanceForTest(instance) {
+  ffmpegInstance = instance;
+}
+
+export function __getFfmpegInstanceForTest() {
+  return ffmpegInstance;
+}
+
 // Formats that browsers typically cannot play natively. Extension-based check only;
 // the renderer falls back here after a native error event too.
 export const TRANSCODE_EXTS = new Set([

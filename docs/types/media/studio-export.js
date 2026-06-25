@@ -14,7 +14,7 @@
 // so neither file sprawls past the LOC cap.
 
 import { getGraph } from './audio-graph.js';
-import { loadFfmpeg, runOperation, buildAudioFilterChain, buildAcxFilterChain } from './transcoder.js';
+import { cancelFfmpeg, formatFfmpegError, loadFfmpeg, runOperation, buildAudioFilterChain, buildAcxFilterChain } from './transcoder.js';
 import { describeDynamics } from './audio-filters.js';
 import {
   EXPORT_PRESETS, presetById, resolveExportParams, resolveExportAudioSettings, describeParams, buildAdvancedOverrides,
@@ -411,8 +411,7 @@ Provenance = -af "${chain || 'none'}"`;
       blobUrls.push(result.url);
       showResult(result.url, result.filename, result.bytes);
     } catch (err) {
-      if (err?.message?.includes('ffmpeg exit')) showError('Operation cancelled.');
-      else showError(err.message || String(err));
+      showError(formatFfmpegError(err));
     } finally {
       ffInstance = null;
       setRunning(false);
@@ -423,7 +422,7 @@ Provenance = -af "${chain || 'none'}"`;
 
   async function cancel() {
     if (ffInstance) {
-      try { ffInstance.exit(); } catch { /* ignore */ }
+      try { cancelFfmpeg(ffInstance); } catch { /* ignore */ }
       ffInstance = null;
     }
     setRunning(false);

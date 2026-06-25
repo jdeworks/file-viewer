@@ -8,7 +8,7 @@
 //              Embed Subtitles, Concatenate, Replace Audio
 // All ffmpeg args are delegated to runOperation() in transcoder.js.
 
-import { loadFfmpeg, runOperation } from './transcoder.js';
+import { cancelFfmpeg, formatFfmpegError, loadFfmpeg, runOperation } from './transcoder.js';
 import {
   ADVANCED_SINGLE_OPS, MULTI_FILE_OPS, MULTI_FILE_OP_IDS,
   buildAdvancedInputsFor, collectAdvancedParams, buildSecondaryDropZone,
@@ -440,11 +440,7 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
 
       showResult(url, filename, bytes);
     } catch (err) {
-      if (err?.message?.includes('ffmpeg exit')) {
-        showError('Operation cancelled.');
-      } else {
-        showErrorWithDetail(err.message || String(err));
-      }
+      showErrorWithDetail(formatFfmpegError(err));
     } finally {
       ffInstance = null;
       setRunning(false);
@@ -455,7 +451,7 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
 
   async function cancel() {
     if (ffInstance) {
-      try { ffInstance.exit(); } catch { /* ignore */ }
+      try { cancelFfmpeg(ffInstance); } catch { /* ignore */ }
       ffInstance = null;
     }
     setRunning(false);

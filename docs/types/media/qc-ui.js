@@ -234,7 +234,7 @@ export function mountAcxQcPanel(panel, intake) {
     result.innerHTML = '';
     setStatus('Loading ffmpeg + encoding (mono 44.1 k MP3 192 k CBR)…');
     try {
-      const { loadFfmpeg, runOperation } = await import('./transcoder.js');
+      const { classifyFfmpegError, loadFfmpeg, runOperation } = await import('./transcoder.js');
       const ff = await loadFfmpeg(({ ratio }) => {
         if (ratio) setStatus('Encoding… ' + Math.round(ratio * 100) + '%');
       });
@@ -266,9 +266,10 @@ export function mountAcxQcPanel(panel, intake) {
       dl.click();
     } catch (err) {
       const m = err.message || String(err);
+      const { headline } = classifyFfmpegError(err);
       setStatus(/loadGlobal|ffmpeg|FFmpeg|vendor/.test(m)
         ? 'Enable the media editor (Settings → Advanced) to run the ACX export.'
-        : 'Export failed: ' + m);
+        : 'Export failed: ' + (headline || m));
     } finally {
       runBtn.disabled = false;
       exportBtn.disabled = false;

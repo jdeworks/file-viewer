@@ -12,7 +12,7 @@
 // action / clicks "Thumbnails". The trim handles drive the existing 'trim' op contract.
 // DOM + interaction only; all ffmpeg arg math lives in video-filters.js (PURE) + transcoder.
 
-import { loadFfmpeg, runOperation } from './transcoder.js';
+import { cancelFfmpeg, classifyFfmpegError, loadFfmpeg, runOperation } from './transcoder.js';
 import { clampTrimRange } from './video-filters.js';
 import { buildSecondaryDropZone } from './editor-advanced.js';
 
@@ -357,7 +357,8 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
       img.className = 'tl-thumb-img'; img.src = r.url; img.alt = 'frame thumbnails';
       thumbRow.innerHTML = ''; thumbRow.appendChild(img);
     } catch (err) {
-      thumbHint.textContent = 'Thumbnails failed: ' + (err.message || err).split('\n')[0];
+      const { headline } = classifyFfmpegError(err);
+      thumbHint.textContent = 'Thumbnails failed: ' + headline;
       thumbBtn.disabled = false;
     }
   });
@@ -393,7 +394,8 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
       showResult(r);
       if (onNewUrl && /\.(mp4|m4a)$/.test(r.filename)) onNewUrl(r.url);
     } catch (err) {
-      status.textContent = 'Error: ' + (err.message || String(err)).split('\n')[0];
+      const { headline } = classifyFfmpegError(err);
+      status.textContent = 'Error: ' + headline;
     } finally {
       ffInstance = null;
       operating = false;
@@ -432,7 +434,7 @@ export function mountTimeline(container, intake, mediaEl, onNewUrl) {
   return {
     destroy() {
       operating = false;
-      if (ffInstance) { try { ffInstance.exit(); } catch { /* ignore */ } ffInstance = null; }
+      if (ffInstance) { try { cancelFfmpeg(ffInstance); } catch { /* ignore */ } ffInstance = null; }
       mediaEl.removeEventListener('loadedmetadata', syncFromMetadata);
       mediaEl.removeEventListener('timeupdate', syncFromPlayhead);
       mediaEl.removeEventListener('seeked', syncFromPlayhead);

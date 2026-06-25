@@ -9,6 +9,13 @@ import {
   resolveExportAudioSettings,
   resolveExportParams,
 } from '../docs/types/media/export-presets.js';
+import {
+  classifyFfmpegError,
+  cancelFfmpeg,
+  formatFfmpegError,
+  __getFfmpegInstanceForTest,
+  __setFfmpegInstanceForTest,
+} from '../docs/types/media/transcoder.js';
 import { PRESETS } from '../docs/types/media/spectrum-draw.js';
 
 const enc = new TextEncoder();
@@ -134,6 +141,36 @@ function chapFrame({ id = 'ch', startMs = 0, endMs = 1000, title = 'Chapter' }) 
   assert.ok(chain.includes('loudnorm=I=-20:TP=-3:LRA=11'), 'acx filter chain: includes loudnorm −20 / −3 defaults');
   assert.ok(chain.includes('silenceremove='), 'acx filter chain: includes silenceremove');
   assert.ok(chain.includes('apad=pad_dur='), 'acx filter chain: includes room-tone pad');
+}
+
+{
+  const fake = {
+    exitCalls: 0,
+    exit() {
+      this.exitCalls += 1;
+      return Promise.resolve();
+    },
+  };
+  __setFfmpegInstanceForTest(fake);
+  assert.equal(__getFfmpegInstanceForTest(), fake, 'transcoder test hook: sets cached ffmpeg instance');
+  await cancelFfmpeg(fake);
+  assert.equal(fake.exitCalls, 1, 'transcoder cancel helper: exits cached ffmpeg instance');
+  assert.equal(__getFfmpegInstanceForTest(), null, 'transcoder cancel helper: clears cached instance for reload');
+  __setFfmpegInstanceForTest(null);
+}
+
+{
+  const cancelled = classifyFfmpegError('error: ffmpeg exit (killed)');
+  assert.equal(cancelled.headline, 'Operation cancelled.', 'ffmpeg error classification: cancel message');
+  const unsupported = classifyFfmpegError('Error: Unknown encoder: libx265');
+  assert.equal(unsupported.headline, 'Unsupported codec or container for this operation.', 'ffmpeg error classification: unsupported codec');
+  assert.ok(/Unknown encoder/.test(unsupported.detail || ''), 'ffmpeg error classification: preserves unsupported raw detail');
+  const decode = classifyFfmpegError('Invalid data found when processing input: maybe corrupt data');
+  assert.equal(decode.headline, 'Could not decode this media for that operation.', 'ffmpeg error classification: decode-style');
+  const decodeFormatted = formatFfmpegError('Invalid data found when processing input: maybe corrupt data');
+  assert.ok(decodeFormatted.includes('Could not decode this media for that operation.'), 'ffmpeg error formatting: keeps decode-friendly headline');
+  assert.ok(decodeFormatted.includes('Invalid data found when processing input'), 'ffmpeg error formatting: preserves decode raw detail');
+  assert.equal(formatFfmpegError('error: ffmpeg exit'), 'Operation cancelled.', 'ffmpeg error formatting: cancellation keeps neutral message');
 }
 
 {
