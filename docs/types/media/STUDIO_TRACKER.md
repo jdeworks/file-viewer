@@ -691,10 +691,10 @@ polish and general compressed-audio longer-file strategy work.
 
 ### R5 — Video Export Depth
 
-Status: partial. Subtitle burn-in UI/op is committed in `c70853ec`; user-facing music-bed
-ducking controls are committed in `ff2b4fbe`. Compact crop/rotate/look export transforms
-are implemented in the current worktree. R5 remains open only for variable speed ramp if it
-can stay clear and compact; otherwise defer it as full-NLE scope creep.
+Status: committed for the compact roadmap scope. Subtitle burn-in UI/op is committed in
+`c70853ec`; user-facing music-bed ducking controls are committed in `ff2b4fbe`; compact
+crop/rotate/look export transforms are committed in `e7fad475`. Variable speed ramp is
+deferred as full-NLE scope creep unless a later goal finds a compact, clear grammar for it.
 
 - Added a Video Export-only subtitle burn-in control with `.srt/.vtt` input, concise status,
   and a separate `Burn in subtitles` action.

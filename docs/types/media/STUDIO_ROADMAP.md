@@ -183,7 +183,8 @@ Validation target:
 
 ### R5 — Video Export Depth
 
-Status: in progress; subtitle burn-in, music-bed ducking, and compact export transforms are implemented.
+Status: done for the compact roadmap scope; subtitle burn-in, music-bed ducking, and compact
+export transforms are implemented.
 
 Needed:
 
