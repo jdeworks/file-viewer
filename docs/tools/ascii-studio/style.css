@@ -21,6 +21,7 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .asx-cam { display: flex; flex-direction: column; height: 100%; }
 .asx-cam .asx-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px 16px; border-bottom: 1px solid #222; }
 .asx-cam label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.asx-cam .cam-rec-fps { font-size: 12px; padding: 3px 5px; border-radius: 6px; border: 1px solid #333; background: #1b1b1b; color: #ddd; }
 .asx-cam .asx-btn { background: #1b1b1b; color: #ddd; border: 1px solid #333; border-radius: 6px; padding: 5px 12px; cursor: pointer; }
 .asx-cam .asx-btn:disabled { opacity: .5; cursor: default; }
 .cam-stats { color: #8f8; font: 12px ui-monospace, monospace; }

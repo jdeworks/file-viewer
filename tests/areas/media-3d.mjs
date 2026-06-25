@@ -1069,6 +1069,11 @@ export async function run(ctx) {
         this.onstop?.();
       }
     };
+    const fpsSelect = document.querySelector('#previewHost .cam-rec-fps');
+    const fpsOptions = [...fpsSelect.options].map((o) => o.value).join(',');
+    const defaultFps = fpsSelect.value;
+    fpsSelect.value = '60';
+    fpsSelect.dispatchEvent(new Event('change', { bubbles: true }));
     document.querySelector('#previewHost .cam-audio').checked = true;
     document.querySelector('#previewHost .cam-rec').click();
     await new Promise((r) => setTimeout(r, 0));
@@ -1086,15 +1091,17 @@ export async function run(ctx) {
       sameStream: seen.recorderStream === stream,
       tracks: stream.tracks.map((t) => t.kind).join(','),
       gum: seen.gum,
+      fpsOptions,
+      defaultFps,
       downloadReady,
       downloadName: seen.downloadName,
       downloadHref: seen.downloadHref,
       openedBlob: seen.openedBlob,
     };
   });
-  if (recProbe.captureFps === 20 && recProbe.sameStream && /video,audio/.test(recProbe.tracks) && recProbe.gum.length === 1 && recProbe.gum[0].audio === true && recProbe.gum[0].video === false
+  if (recProbe.captureFps === 60 && recProbe.defaultFps === '30' && recProbe.fpsOptions === '15,20,30,60' && recProbe.sameStream && /video,audio/.test(recProbe.tracks) && recProbe.gum.length === 1 && recProbe.gum[0].audio === true && recProbe.gum[0].video === false
     && recProbe.downloadReady && recProbe.downloadName === 'webcam-recording.webm' && /^blob:/.test(recProbe.downloadHref) && recProbe.openedBlob?.name === 'webcam-recording.webm')
-    pass('camera recording captures ASCII canvas stream, merges microphone audio, and exposes video download');
+    pass('camera recording captures ASCII canvas stream at selected FPS, merges microphone audio, and exposes video download');
   else fail('camera recording stream: ' + JSON.stringify(recProbe));
   await page.click('#previewHost .asx-cam');   // back to image
   await page.waitForSelector('#previewHost .asx-out', { timeout: 5000 });

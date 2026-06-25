@@ -71,7 +71,8 @@
 .asx-cam { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .asx-cam .asx-bar { gap: 6px; }
 .asx-cam .cam-stats { color: #8f8; font: 12px ui-monospace, monospace; margin-left: auto; }
-.asx-cam .cam-audio-lbl { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #cfcfcf; }
+.asx-cam .cam-audio-lbl, .asx-cam .cam-rec-fps-lbl { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #cfcfcf; }
+.asx-cam .cam-rec-fps { font-size: 12px; padding: 3px 5px; border-radius: 6px; border: 1px solid #3a3a3a; background: #1b1b1b; color: #ddd; }
 .asx-cam .cam-rec.active { color: #ff5555; border-color: #aa3333; }
 /* Pulse the Start button until the camera is started, so it's obvious the feed
    needs a tap to begin (camera can't auto-start — it needs a user gesture). */

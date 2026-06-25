@@ -27,6 +27,9 @@ export function mountAsciiWebcam(host, opts = {}) {
         ${BTN('cam-pause', '⏸ Pause', 'Freeze the current frame')}
         ${BTN('cam-rec', '● Record', 'Record the ASCII output to a video (max 2 min)')}
         ${BTN('cam-rec-dl', '↓ Video', 'Download the last recorded ASCII video')}
+        <label class="cam-rec-fps-lbl" title="Frame rate for recorded ASCII video">Rec FPS <select class="cam-rec-fps">
+          <option value="15">15</option><option value="20">20</option><option value="30" selected>30</option><option value="60">60</option>
+        </select></label>
         <label class="cam-audio-lbl" title="Include microphone audio in the recording"><input type="checkbox" class="cam-audio"> Audio</label>
         ${BTN('cam-full', '⛶ Fullscreen', 'Fullscreen the ASCII result')}
         ${BTN('cam-rot-l', '↺', 'Rotate 90° left')}
@@ -66,8 +69,9 @@ export function mountAsciiWebcam(host, opts = {}) {
   const engine = createAsciiEngine(startOpts);
   let stream = null, running = false, paused = false, eyeOn = false;
   let last = 0, frames = 0, fpsClock = now();
-  const targetFps = opts.targetFps || 20;
+  const targetFps = opts.targetFps || 30;
   const minInterval = 1000 / targetFps;
+  q('.cam-rec-fps').value = String(opts.recordFps || targetFps);
 
   // Fit the ASCII canvas to the available stage (contain), then apply zoom — so
   // the feed always fills the space and the column count changes DETAIL, not the
@@ -171,6 +175,10 @@ export function mountAsciiWebcam(host, opts = {}) {
   let lastRecording = null;
   const fmt = (ms) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+  function recordFps() {
+    const fps = Number(q('.cam-rec-fps').value);
+    return [15, 20, 30, 60].includes(fps) ? fps : targetFps;
+  }
   function setLastRecording(blob) {
     lastRecording = blob;
     recDownload.hidden = !blob;
@@ -181,7 +189,7 @@ export function mountAsciiWebcam(host, opts = {}) {
     if (!out.captureStream) { stats.textContent = 'Recording is not supported by this browser.'; return; }
     setLastRecording(null);
     try {
-      recStream = out.captureStream(targetFps);
+      recStream = out.captureStream(recordFps());
       if (wantAudio) {
         audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         audioStream.getAudioTracks().forEach((track) => recStream.addTrack(track));
