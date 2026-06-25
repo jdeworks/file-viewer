@@ -661,12 +661,15 @@ extraction in `0ce96afe`; ffmpeg core entrypoint compatibility in `e9baba6f`.
     ranges/offsets or the secondary file change, and caps file size, selected overlap duration,
     and sampled frame count.
   - Uses browser-native `HTMLVideoElement` plus canvas `drawImage`; no ffmpeg, backend, or ML path.
-  - Renders real lane frame strips, an overlay preview respecting overlay opacity, and a visual
-    diff strip with average visual difference plus high-diff frame/pixel/column counts.
+  - Renders real lane frame strips, an overlay preview with explicit A/B foreground selection
+    plus independent A/B opacity controls, and a visual diff strip with average visual difference
+    plus high-diff frame/pixel/column counts.
   - Video sample times now come from shifted-overlap source ranges so measured content checks are
     aligned to real overlapped source windows.
+  - Secondary compare drop zones accept sidebar tree drags without opening the dragged item as the
+    main file, so folder workflows can fill lane B directly.
   - Smoke uses `docs/examples/sample.webm` as the second small video fixture and verifies painted
-    frame/overlay/diff canvases and measured copy.
+    frame/overlay/diff canvases, measured copy, sidebar lane-B drops, and A/B overlay controls.
 - Current R4 polish: shifted-overlap source windows are now the only measured region for both
   audio/video; when WAV compare can use direct `Blob.slice`, it reads shifted-overlap windows,
   and decode fallback summarizes only overlap subsections. For compressed longer files, ffmpeg-on
@@ -739,7 +742,7 @@ Status: committed.
 - `tests/areas/media-studio.mjs` is now a small sequencer over focused smoke-area helpers for
   listen/chapters, tune/dynamics, mixer/playlist, export, QC, chain checks, compare, video
   studio, and video export/timeline.
-- Current line-count evidence for touched files: `compare-ui.js` 337 lines,
+- Current line-count evidence for touched files: `compare-ui.js` 391 lines,
   `studio-export.js` 477 lines, `renderer.js` 416 lines, `mixer-ui.js` 403 lines,
   `transcoder.js` 229 lines, `tests/areas/media-studio.mjs` 21 lines; extracted helpers are all
   below the hard advisory threshold.

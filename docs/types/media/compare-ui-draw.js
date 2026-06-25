@@ -90,7 +90,15 @@ export function drawFrameStrip(canvas, frames) {
   }
 }
 
-export function drawOverlayPreview(analysis, overlayCanvas, opacityPercent) {
+function drawFrame(ctx, scratch, scratchCtx, frame, width, height, opacity) {
+  scratch.width = frame.width;
+  scratch.height = frame.height;
+  scratchCtx.putImageData(new ImageData(frame.data, frame.width, frame.height), 0, 0);
+  ctx.globalAlpha = Math.max(0, Math.min(1, opacity / 100));
+  ctx.drawImage(scratch, 0, 0, width, height);
+}
+
+export function drawOverlayPreview(analysis, overlayCanvas, options = {}) {
   overlayCanvas.hidden = !analysis?.framesA?.length || !analysis?.framesB?.length;
   if (overlayCanvas.hidden) return;
   const ctx = overlayCanvas.getContext('2d');
@@ -99,15 +107,17 @@ export function drawOverlayPreview(analysis, overlayCanvas, opacityPercent) {
   const b = analysis.framesB[0];
   const scratch = document.createElement('canvas');
   const scratchCtx = scratch.getContext('2d');
+  const foreground = options.foreground === 'A' ? 'A' : 'B';
+  const opacityA = Number.isFinite(options.opacityA) ? options.opacityA : 100;
+  const opacityB = Number.isFinite(options.opacityB) ? options.opacityB : 55;
+  const first = foreground === 'A'
+    ? { frame: b, opacity: opacityB }
+    : { frame: a, opacity: opacityA };
+  const second = foreground === 'A'
+    ? { frame: a, opacity: opacityA }
+    : { frame: b, opacity: opacityB };
   ctx.clearRect(0, 0, width, height);
-  scratch.width = a.width;
-  scratch.height = a.height;
-  scratchCtx.putImageData(new ImageData(a.data, a.width, a.height), 0, 0);
-  ctx.drawImage(scratch, 0, 0, width, height);
-  scratch.width = b.width;
-  scratch.height = b.height;
-  scratchCtx.putImageData(new ImageData(b.data, b.width, b.height), 0, 0);
-  ctx.globalAlpha = opacityPercent / 100;
-  ctx.drawImage(scratch, 0, 0, width, height);
+  drawFrame(ctx, scratch, scratchCtx, first.frame, width, height, first.opacity);
+  drawFrame(ctx, scratch, scratchCtx, second.frame, width, height, second.opacity);
   ctx.globalAlpha = 1;
 }

@@ -65,15 +65,38 @@ export async function exerciseCompare(ctx, kind) {
     pass(`${kind} compare: range inputs/handles exist and update partial range copy`);
   else fail(`${kind} compare range state: inputs=${rangeInputs} handles=${rangeHandles} copy=${rangeCopy}`);
   await page.click(`${panelSel} .media-compare-layout-btn[data-layout="overlay"]`);
-  await page.fill(`${panelSel} .media-compare-opacity-input`, '30');
-  const overlayState = await page.$eval(`${panelSel} .media-compare`, (el) => ({
-    layout: el.dataset.layout,
-    opacity: el.dataset.overlayOpacity,
-    css: getComputedStyle(el.querySelector('.media-compare-visual')).getPropertyValue('--compare-opacity').trim(),
-  }));
-  if (overlayState.layout === 'overlay' && overlayState.opacity === '30' && overlayState.css === '0.3')
-    pass(`${kind} compare: overlay opacity control affects UI state`);
-  else fail(`${kind} compare overlay state: ` + JSON.stringify(overlayState));
+  if (kind === 'audio') {
+    await page.fill(`${panelSel} .media-compare-opacity-input`, '30');
+    const overlayState = await page.$eval(`${panelSel} .media-compare`, (el) => ({
+      layout: el.dataset.layout,
+      opacity: el.dataset.overlayOpacity,
+      css: getComputedStyle(el.querySelector('.media-compare-visual')).getPropertyValue('--compare-opacity').trim(),
+    }));
+    if (overlayState.layout === 'overlay' && overlayState.opacity === '30' && overlayState.css === '0.3')
+      pass(`${kind} compare: overlay opacity control affects UI state`);
+    else fail(`${kind} compare overlay state: ` + JSON.stringify(overlayState));
+  } else {
+    await page.selectOption(`${panelSel} .media-compare-foreground-select`, 'A');
+    await page.fill(`${panelSel} .media-compare-video-opacity-a`, '80');
+    await page.fill(`${panelSel} .media-compare-video-opacity-b`, '30');
+    const overlayState = await page.$eval(`${panelSel} .media-compare`, (el) => {
+      const visual = el.querySelector('.media-compare-visual');
+      const style = getComputedStyle(visual);
+      return {
+        layout: el.dataset.layout,
+        foreground: el.dataset.videoForeground,
+        opacityA: el.dataset.videoOpacityA,
+        opacityB: el.dataset.videoOpacityB,
+        cssA: style.getPropertyValue('--compare-video-opacity-a').trim(),
+        cssB: style.getPropertyValue('--compare-video-opacity-b').trim(),
+      };
+    });
+    if (overlayState.layout === 'overlay' && overlayState.foreground === 'A'
+      && overlayState.opacityA === '80' && overlayState.opacityB === '30'
+      && overlayState.cssA === '0.8' && overlayState.cssB === '0.3')
+      pass('video compare: overlay controls expose foreground plus A/B opacity');
+    else fail('video compare overlay state: ' + JSON.stringify(overlayState));
+  }
   const dropExists = await page.$(`${panelSel} .media-compare-drop .media-ed-file-input`);
   if (dropExists) pass(`${kind} compare: second-file drop/browse control exists`);
   else fail(`${kind} compare second-file picker missing`);
@@ -131,6 +154,39 @@ export async function exerciseCompare(ctx, kind) {
     const analyzeText = await page.$eval(`${panelSel} .media-compare-analyze`, (el) => el.textContent);
     if (/Analyze selected video/i.test(analyzeText)) pass('video compare: no audio analyze control is shown');
     else fail('video compare analyze label: ' + analyzeText);
+    await page.evaluate(async () => {
+      const bytes = await fetch('/examples/sample.webm').then((res) => res.arrayBuffer());
+      const main = new File([bytes], 'SidebarDropMain.webm', { type: 'video/webm' });
+      const cmp = new File([bytes], 'SidebarDropCmp.webm', { type: 'video/webm' });
+      window.__fv.state._skipDiscardGuard = true;
+      await window.__fv.loadFolder([
+        { file: main, path: 'Videos/SidebarDropMain.webm' },
+        { file: cmp, path: 'Videos/SidebarDropCmp.webm' },
+      ]);
+    });
+    await page.click('[data-path="Videos/SidebarDropMain.webm"]');
+    await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'SidebarDropMain.webm', null, { timeout: 8000 });
+    await page.click('#previewHost .media-mode-tab[data-mode="compare"]');
+    await page.waitForSelector(`${panelSel} .media-compare`, { timeout: 5000 });
+    const sidebarDrop = await page.evaluate(async () => {
+      const src = document.querySelector('[data-path="Videos/SidebarDropCmp.webm"]');
+      const dropZone = document.querySelector('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-drop .media-ed-drop-zone');
+      if (!src || !dropZone) return { src: !!src, dropZone: !!dropZone };
+      const dt = new DataTransfer();
+      src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+      dropZone.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+      dropZone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+      src.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt }));
+      return {
+        src: true,
+        dropZone: true,
+        current: window.__fv?.state?.intake?.filename || '',
+        laneB: document.querySelector('#previewHost .media-compare-lane[data-lane="B"] .media-compare-lane-label')?.textContent || '',
+      };
+    });
+    if (sidebarDrop.current === 'SidebarDropMain.webm' && /SidebarDropCmp\.webm/.test(sidebarDrop.laneB))
+      pass('video compare: sidebar drop fills lane B without opening as main file');
+    else fail('video compare sidebar drop: ' + JSON.stringify(sidebarDrop));
     await page.fill(`${panelSel} .media-compare-offset-input[data-lane="A"]`, '0');
     await page.fill(`${panelSel} .media-compare-offset-input[data-lane="B"]`, '0.1');
     await page.fill(`${panelSel} .media-compare-in-input[data-lane="A"]`, '0');
@@ -160,11 +216,19 @@ export async function exerciseCompare(ctx, kind) {
     if (/Measured shifted overlap: average visual difference/i.test(videoReadout) && /shifted\/missing ranges are separate from content differences/i.test(videoReadout))
       pass('video compare: measured visual difference readout separates timeline gaps from content changes');
     else fail('video compare diff readout: ' + videoReadout);
-    await page.fill(`${panelSel} .media-compare-opacity-input`, '75');
+    await page.selectOption(`${panelSel} .media-compare-foreground-select`, 'B');
+    await page.fill(`${panelSel} .media-compare-video-opacity-a`, '90');
+    await page.fill(`${panelSel} .media-compare-video-opacity-b`, '75');
     const videoOpacityReadout = await page.$eval(`${panelSel} .media-compare-copy`, (el) => el.textContent);
-    const videoOpacityState = await page.$eval(`${panelSel} .media-compare`, (el) => el.dataset.overlayOpacity);
-    if (videoOpacityState === '75' && /75% B opacity/i.test(videoOpacityReadout))
-      pass('video compare: overlay opacity updates preview/readout state after analysis');
+    const videoOpacityState = await page.$eval(`${panelSel} .media-compare`, (el) => ({
+      foreground: el.dataset.videoForeground,
+      opacityA: el.dataset.videoOpacityA,
+      opacityB: el.dataset.videoOpacityB,
+    }));
+    if (videoOpacityState.foreground === 'B' && videoOpacityState.opacityA === '90'
+      && videoOpacityState.opacityB === '75' && /B over A/i.test(videoOpacityReadout)
+      && /A opacity 90%/i.test(videoOpacityReadout) && /B opacity 75%/i.test(videoOpacityReadout))
+      pass('video compare: overlay A/B opacity and foreground update preview/readout state after analysis');
     else fail('video compare opacity after analysis: ' + JSON.stringify({ videoOpacityState, videoOpacityReadout }));
   }
   await assertCompareNoOverflow(ctx, kind, 'desktop');
