@@ -374,11 +374,24 @@ Status: committed.
 
 ### M5 — ffmpeg Failure And Recovery
 
-Status: open.
+Status: committed.
 
 - Verify cancel/reload after `ff.exit()`.
 - Cover failed ffmpeg operations and unsupported codec messages.
 - Keep heavy ffmpeg execution out of the fast gate unless the fixture is tiny and deterministic.
+- Added shared ffmpeg recovery/error helpers in `transcoder.js`: cancellation now clears the cached
+  ffmpeg instance before calling `exit()`, so later exports/transcodes reload instead of reusing a
+  terminated wrapper.
+- Routed editor, export, timeline, and ACX QC ffmpeg failures through shared classification so
+  cancellation remains `Operation cancelled.` and unsupported/decode failures get friendly first-line
+  messages while preserving raw detail where the UI supports it.
+- Added pure/fake-instance tests for cancel cache reset, cancellation formatting, unsupported codec
+  classification, and decode-style classification. No heavy ffmpeg execution was added to the gate.
+- Changed paths: `transcoder.js`, `editor.js`, `studio-export.js`, `timeline.js`, `qc-ui.js`,
+  `tests/media-parsers.test.mjs`.
+- Validation passed: `node --check docs/types/media/transcoder.js docs/types/media/editor.js docs/types/media/studio-export.js docs/types/media/timeline.js docs/types/media/qc-ui.js tests/media-parsers.test.mjs`,
+  `node tests/media-parsers.test.mjs`, `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+- Committed in `2c587df3` — `Recover ffmpeg after cancelled media jobs`.
 
 ### M6 — Mixer Lifecycle And Audio Trim
 
