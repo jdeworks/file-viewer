@@ -163,6 +163,14 @@ Progress:
     and `/tmp/media-workspace-shots/audio-workspace-mobile-tight.png`; desktop workspace top is 64px from the
     viewport and mobile workspace top is 56px, both with no horizontal overflow.
   - Validation passed: `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+- `77ae2fa4` — `Add audio tune intent controls`.
+  - Tune mode now opens with quick intent buttons before raw controls: Flat, Clean speech, Podcast,
+    Warmth, Presence/Air, De-ess, and Bass rolloff.
+  - Intent buttons apply real shared-graph EQ/HPF/LPF settings without mounting the Spectrum or Dynamics
+    heavy DOM; advanced Spectrum & EQ and Dynamics remain lazy and are still torn down when leaving Tune.
+  - Spectrum & EQ now hydrates its slider/filter UI from current graph state, so opening it after a quick
+    intent reflects the active preset instead of resetting visible controls to flat.
+  - Validation passed: `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
 
 ### P1 — Video Workspace Polish Gate
 
