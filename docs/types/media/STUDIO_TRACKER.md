@@ -276,6 +276,22 @@ Progress:
     `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
   - Caveat: P1 still needs Timeline workspace polish and a final video all-modes visual pass
     before the Video Workspace Polish Gate should be marked committed.
+- `a6d4ad32` — `Polish video timeline workspace`.
+  - Timeline mode now opens as a workspace surface with header/status/context, a ruler,
+    playhead marker, stable lane track, and separated single-clip versus two-clip action groups.
+  - Existing ffmpeg behavior is preserved: thumbnails stay load-on-demand, trim/fade/xfade/
+    acrossfade/mux actions keep their operation IDs and params, and two-clip actions remain
+    disabled until a secondary clip or music bed is dropped.
+  - Timeline status now summarizes selected trim range and second-lane readiness without
+    replacing the existing trim label or result download flow.
+  - Smoke coverage now asserts the timeline grammar, action grouping, desktop/mobile
+    geometry, no horizontal page overflow, and mobile internal timeline scrolling.
+  - Captured desktop and mobile open Timeline screenshots at
+    `/tmp/media-workspace-shots/video-p1-timeline/`; both reported zero horizontal overflow.
+  - Validation passed: `node --check docs/types/media/timeline.js`,
+    `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+  - Caveat: P1 still needs a final all-video-mode visual pass before marking the Video
+    Workspace Polish Gate committed.
 
 ### M1 — Video Trim Correctness
 
