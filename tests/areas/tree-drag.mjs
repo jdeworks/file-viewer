@@ -12,10 +12,10 @@ export async function run(ctx) {
   await openExample('Welcome.md');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 20000 });
 
-  // Confirm no tree is visible yet (single file, no sidebar).
+  // Single files now participate in the append-only sidebar too.
   const treeHiddenBefore = await page.$eval('#fileTree', (el) => el.hidden);
-  if (treeHiddenBefore) pass('tree-drag: no sidebar before drag (single file open)');
-  else fail('tree-drag: sidebar unexpectedly visible before drag');
+  if (!treeHiddenBefore) pass('tree-drag: single file opens a sidebar root before drag');
+  else fail('tree-drag: sidebar hidden before drag');
 
   // Simulate a drag from a tree file item to the workspace.
   // We synthesize the drag by: (1) setting up a File and node object via page.evaluate,
@@ -123,9 +123,9 @@ export async function run(ctx) {
     ]);
   });
   await page.click('#ftExpandBtn');
-  await page.waitForSelector('#fileTree .ft-file[data-path="proj/src/a.txt"]', { timeout: 8000 });
+  await page.waitForSelector('#fileTree .ft-file[data-path="src/a.txt"]', { timeout: 8000 });
   await page.evaluate(() => {
-    const src = document.querySelector('#fileTree .ft-file[data-path="proj/src/a.txt"]');
+    const src = document.querySelector('#fileTree .ft-file[data-path="src/a.txt"]');
     const folders = [...document.querySelectorAll('#fileTree .ft-folder')];
     const dest = folders.find((row) => row.textContent.includes('dest'));
     const dt = new DataTransfer();
@@ -133,12 +133,12 @@ export async function run(ctx) {
     dest.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
     dest.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
   });
-  await page.waitForSelector('#fileTree .ft-file[data-path="proj/dest/a.txt"].ft-moved', { timeout: 8000 });
+  await page.waitForSelector('#fileTree .ft-file[data-path="dest/a.txt"].ft-moved', { timeout: 8000 });
   const movedState = await page.evaluate(() => ({
-    move: window.__fv.state.folderMoves.get('proj/src/a.txt'),
-    indicator: document.querySelector('#fileTree .ft-file[data-path="proj/dest/a.txt"] .ft-move-dest')?.textContent || '',
+    move: window.__fv.state.folderMoves.get('src/a.txt'),
+    indicator: document.querySelector('#fileTree .ft-file[data-path="dest/a.txt"] .ft-move-dest')?.textContent || '',
   }));
-  if (movedState.move === 'proj/dest/a.txt' && /proj\/dest\/a\.txt/.test(movedState.indicator))
+  if (movedState.move === 'dest/a.txt' && /dest\/a\.txt/.test(movedState.indicator))
     pass('tree-drag: folder drop records virtual move + destination indicator');
   else fail('tree-drag: move=' + movedState.move + ' indicator=' + movedState.indicator);
 
@@ -151,12 +151,12 @@ export async function run(ctx) {
     const zip = await window.JSZip.loadAsync(await blob.arrayBuffer());
     return {
       count,
-      hasMoved: !!zip.file('proj/dest/a.txt'),
-      hasOriginal: !!zip.file('proj/src/a.txt'),
+      hasMoved: !!zip.file('dest/a.txt'),
+      hasOriginal: !!zip.file('src/a.txt'),
       movesScript: await zip.file('_moves.sh').async('string'),
     };
   });
-  if (movedZip.count === 1 && movedZip.hasMoved && !movedZip.hasOriginal && /mv 'proj\/src\/a\.txt' 'proj\/dest\/a\.txt'/.test(movedZip.movesScript))
+  if (movedZip.count === 1 && movedZip.hasMoved && !movedZip.hasOriginal && /mv 'src\/a\.txt' 'dest\/a\.txt'/.test(movedZip.movesScript))
     pass('tree-drag: moved files export at resolved path with _moves.sh');
   else fail('tree-drag: moved zip=' + JSON.stringify(movedZip));
 }

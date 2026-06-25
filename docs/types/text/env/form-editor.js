@@ -232,8 +232,12 @@ export class EnvFormEditor {
       row.addEventListener('dragleave', () => row.classList.remove('env-dragover'));
       row.addEventListener('drop', (e) => {
         e.preventDefault(); row.classList.remove('env-dragover');
-        const from = this._dragFrom;
-        if (from != null) this._moveEntry(from, i);
+        const from = this._dragFrom ?? Number(e.dataTransfer.getData('text/plain'));
+        if (Number.isFinite(from)) {
+          // Dropping downward onto a row should place the dragged line after that row;
+          // dropping upward places it before. This makes adjacent row drags visibly swap.
+          this._moveEntry(from, from < i ? i + 1 : i);
+        }
       });
       row.prepend(handle, check);
     };

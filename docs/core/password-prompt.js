@@ -6,7 +6,7 @@
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-export function showPasswordPrompt(container, { filename = '', hint = '' } = {}) {
+export function showPasswordPrompt(container, { filename = '', hint = '', error = '' } = {}) {
   return new Promise((resolve) => {
     container.innerHTML = `
       <div class="pw-prompt">
@@ -14,7 +14,7 @@ export function showPasswordPrompt(container, { filename = '', hint = '' } = {})
         <div class="pw-title">Password protected</div>
         <div class="pw-sub">${esc(filename || 'This file')} requires a password to open.</div>
         ${hint ? `<div class="pw-hint">${esc(hint)}</div>` : ''}
-        <div class="pw-error" id="pwError" hidden></div>
+        <div class="pw-error" id="pwError" ${error ? '' : 'hidden'}>${esc(error)}</div>
         <div class="pw-field">
           <input type="password" id="pwInput" class="pw-input" placeholder="Enter password" autocomplete="current-password" />
         </div>

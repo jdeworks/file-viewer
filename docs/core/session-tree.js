@@ -2,6 +2,7 @@ import { intakeFromFile, intakeFromText } from './intake.js';
 import { buildTree, renderTree } from './filetree.js';
 import { $, state } from './state.js';
 import { setTree, flushFolderEdit } from './folder.js';
+import { addFileRoot } from './sidebar-roots.js';
 
 let loadIntakeCallback = null;
 
@@ -9,7 +10,13 @@ export function initSessionTree({ loadIntake }) {
   loadIntakeCallback = loadIntake;
 }
 
-export function updateSessionTree(intake) {
+export function updateSessionTree(intake, { skipSidebarRoot = false } = {}) {
+  if (state.skipNextFileSidebarRoot) {
+    state.skipNextFileSidebarRoot = false;
+    return;
+  }
+  if (!skipSidebarRoot) addFileRoot(intake);
+  if (state.sidebarRoots?.length) return;
   if (state.treeEntries && !state.sessionTree) return;
 
   const alreadyTracked = state.sessionIntakes.has(intake.filename);

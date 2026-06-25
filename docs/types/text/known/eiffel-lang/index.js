@@ -5,10 +5,22 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.e')) return true;
+    // Eiffel keywords like "feature", "create", "class", "ensure", and "do" are common in
+    // documentation prose. Only content-match unlabeled/bare files, not Markdown or other known
+    // foreign extensions.
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
+    if (ext && ext !== 'e') return false;
     const text = intake.text || '';
-    const kws = ['class ', 'feature', 'create', 'inherit', 'deferred', 'do', 'ensure', 'require'];
-    const matched = kws.filter((k) => text.toLowerCase().includes(k.toLowerCase()));
-    return matched.length >= 4;
+    const hits = [
+      /^\s*(deferred\s+)?class\s+[A-Z][A-Z0-9_]*\b/im.test(text),
+      /^\s*feature(?:\s|$)/im.test(text),
+      /^\s*create\s+[A-Za-z_][\w, ]*$/im.test(text),
+      /^\s*inherit\s+[A-Z][A-Z0-9_]*\b/im.test(text),
+      /^\s*(require|ensure)\b/im.test(text),
+      /^\s*do\s*$/im.test(text),
+      /^\s*end\s*(?:--.*)?$/im.test(text),
+    ].filter(Boolean).length;
+    return hits >= 4;
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

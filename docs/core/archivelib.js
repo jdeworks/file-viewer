@@ -49,10 +49,11 @@ function intakeToFile(intake) {
 }
 
 // List an archive's contents. Returns { files: [{name, size, isDir}], totalFiles, totalSize }.
-export async function listArchive(intake) {
+export async function listArchive(intake, { password = null } = {}) {
   const { Archive } = await loadLib();
   const file = intakeToFile(intake);
   const arch = await Archive.open(file);
+  if (password != null) await arch.usePassword(password);
   const arr = await arch.getFilesArray();
   await arch.close();
 
@@ -68,10 +69,11 @@ export async function listArchive(intake) {
 }
 
 // Extract a single file entry by path from an archive. Returns Uint8Array.
-export async function extractFile(intake, entryPath) {
+export async function extractFile(intake, entryPath, { password = null } = {}) {
   const { Archive } = await loadLib();
   const file = intakeToFile(intake);
   const arch = await Archive.open(file);
+  if (password != null) await arch.usePassword(password);
   const result = await arch.extractSingleFile(entryPath);
   await arch.close();
   return new Uint8Array(await result.arrayBuffer());

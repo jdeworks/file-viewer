@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { REGISTRY as FULL } from '../docs/core/registry.js';
 import { REGISTRY as RUNTIME, FALLBACK_TYPE, getType } from '../docs/core/registry-runtime.generated.js';
+import { matchKnown } from '../docs/known/registry.generated.js';
 
 const fullIds = FULL.map((t) => t.id);
 const runtimeIds = RUNTIME.map((t) => t.id);
@@ -76,5 +77,14 @@ for (const sample of samples) {
 
 assert.equal(winner(RUNTIME, samples.at(-1))[0], 'raw', '.txt with a comment-like heading stays Plain text');
 assert.equal(winner(RUNTIME, intake('notes.txt', { text: '# Heading\n\n- item\n' }))[0], 'markdown', '.txt with stronger Markdown structure can still rank as Markdown');
+
+const markdownProse = intake('guide.md', {
+  text: '# API Guide\n\nThis feature can create a class. Requirements ensure users do the setup.\n',
+});
+assert.equal(winner(RUNTIME, markdownProse)[0], 'markdown', '.md prose stays Markdown');
+assert.notEqual(matchKnown(markdownProse, getType('markdown'))?.id, 'eiffel-lang', '.md prose must not be enhanced as Eiffel');
+assert.equal(matchKnown(intake('sample.e', {
+  text: 'class HELLO\nfeature\n  make\n    do\n    end\nend\n',
+}), getType('code'))?.id, 'eiffel-lang', '.e files still match Eiffel');
 
 console.log('registry runtime: ok');

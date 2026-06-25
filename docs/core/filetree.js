@@ -58,7 +58,7 @@ export function buildTree(entries) {
       const last = i === parts.length - 1;
       const name = parts[i];
       if (last) {
-        node.children.set(name, { name, dir: false, file: e.file, path: e.path, originalPath: e.originalPath || e.path });
+        node.children.set(name, { ...e, name, dir: false, file: e.file, path: e.path, originalPath: e.originalPath || e.path });
       } else {
         if (!node.children.has(name)) node.children.set(name, { name, dir: true, children: new Map() });
         node = node.children.get(name);
@@ -200,7 +200,7 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, ini
         else openFolders.add(item.folderPath);
         buildFlat();
       });
-      appendRowActions(row, { path: item.folderPath, isFolder: true, name: item.node.name });
+      appendRowActions(row, { path: item.folderPath, isFolder: true, name: item.node.name, root: item.depth === 0 });
       // Drop target: accept dragged tree files → move into this folder.
       if (onMove) {
         row.addEventListener('dragover', (e) => {
@@ -222,7 +222,9 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, ini
         });
       }
     } else {
-      row.dataset.path = item.node.path;
+      const visiblePath = item.node.sidebarInnerPath || item.node.path;
+      row.dataset.path = visiblePath;
+      row.dataset.fullPath = item.node.path;
       row.tabIndex = 0;
       row.draggable = true;
       const id = quickType(item.node.name);
@@ -237,9 +239,9 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, ini
       if (movedPaths.has(item.node.path)) row.classList.add('ft-moved');
       if (state.sessionTree) row.classList.add('ft-session');
       row.addEventListener('click', () => { setActive(item.node.path); onOpen(item.node); });
-      appendRowActions(row, { path: item.node.path, isFolder: false, name: item.node.name });
+      appendRowActions(row, { path: item.node.path, isFolder: false, name: item.node.name, root: item.node.sidebarRoot || item.depth === 0 });
       row.addEventListener('dragstart', (e) => {
-        _dragNode = item.node;
+        _dragNode = item.node.sidebarInnerPath ? { ...item.node, path: item.node.sidebarInnerPath } : item.node;
         e.dataTransfer.setData(TREE_DRAG_TYPE, item.node.path);
         e.dataTransfer.effectAllowed = 'move';
       });
@@ -285,7 +287,7 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, ini
       activeNode = items.find((it) => !it.isFolder && it.node.path === path)?.node || null;
     }
 
-    const newRow = inner.querySelector('[data-path="' + cssEscape(path) + '"]');
+    const newRow = inner.querySelector('[data-full-path="' + cssEscape(path) + '"], [data-path="' + cssEscape(path) + '"]');
     if (newRow) { newRow.classList.add('active'); startMarquee(newRow); }
 
     // Scroll item into view if needed.
@@ -299,13 +301,13 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, ini
 
   function setEdited(path, on = true) {
     if (on) editedPaths.add(path); else editedPaths.delete(path);
-    const row = inner.querySelector('[data-path="' + cssEscape(path) + '"]');
+    const row = inner.querySelector('[data-full-path="' + cssEscape(path) + '"], [data-path="' + cssEscape(path) + '"]');
     if (row) row.classList.toggle('ft-edited', on !== false);
   }
 
   function setMoved(path, on = true) {
     if (on) movedPaths.set(path, typeof on === 'string' ? on : path); else movedPaths.delete(path);
-    const row = inner.querySelector('[data-path="' + cssEscape(path) + '"]');
+    const row = inner.querySelector('[data-full-path="' + cssEscape(path) + '"], [data-path="' + cssEscape(path) + '"]');
     if (row) {
       row.classList.toggle('ft-moved', on !== false);
       const size = row.querySelector('.ft-size');

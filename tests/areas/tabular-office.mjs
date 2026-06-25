@@ -7,6 +7,12 @@ export async function run(ctx) {
   await openExample('Sample.pdf');
   await page.waitForSelector('#previewHost img.pdf-page', { timeout: 20000 });
   pass('PDF rendered to image pages');
+  await page.click('#previewHost .pdf-viewmode');
+  await page.waitForFunction(() => document.querySelector('#previewHost .pdf-doc')?.classList.contains('pdf-single-on'), null, { timeout: 4000 });
+  const pdfSingleVisible = await page.$$eval('#previewHost .pdf-page-wrap', (els) => els.filter((el) => !el.hidden).length);
+  if (pdfSingleVisible === 1) pass('PDF view mode: single page shows one page'); else fail('pdf single visible pages: ' + pdfSingleVisible);
+  await page.click('#previewHost .pdf-viewmode');
+  await page.waitForFunction(() => !document.querySelector('#previewHost .pdf-doc')?.classList.contains('pdf-single-on'), null, { timeout: 4000 });
   const hasEditor = await page.$('#editor .monaco-editor');
   if (!hasEditor) pass('PDF is preview-only (no raw editor)'); else fail('raw editor present for PDF');
 
@@ -15,6 +21,15 @@ export async function run(ctx) {
   await openExample('Sample (3 pages).pdf');
   await page.waitForFunction(() => document.querySelectorAll('#previewHost img.pdf-page').length === 3, null, { timeout: 20000 });
   pass('PDF: multi-page document rendered (3 pages)');
+  await page.click('#previewHost .pdf-viewmode');
+  await page.focus('#previewHost .pdf-doc');
+  await page.keyboard.press('ArrowRight');
+  let pdfPageStatus = await page.$eval('#previewHost .pdf-page-status', (e) => e.textContent.trim());
+  if (pdfPageStatus === '2 / 3') pass('PDF view mode: keyboard advances single page'); else fail('pdf key next status: ' + pdfPageStatus);
+  await page.keyboard.press('ArrowLeft');
+  pdfPageStatus = await page.$eval('#previewHost .pdf-page-status', (e) => e.textContent.trim());
+  if (pdfPageStatus === '1 / 3') pass('PDF view mode: keyboard goes to previous page'); else fail('pdf key prev status: ' + pdfPageStatus);
+  await page.click('#previewHost .pdf-viewmode');
   await page.click('#previewHost .pdf-edit');                         // enter edit mode
   await page.waitForSelector('#previewHost .pdf-pagectl', { timeout: 8000 });
   // Delete the first page → 2 pages remain + "modified" + download enabled.
@@ -208,13 +223,34 @@ export async function run(ctx) {
   const odtItems = await odtf.$$eval('.odf-doc li', (els) => els.map((e) => e.textContent.trim()));
   if (odtItems.some((t) => /First item/.test(t)) && odtItems.length === 2) pass('ODT list rendered (' + odtItems.length + ' items)'); else fail('odt list: ' + odtItems.join(','));
 
-  // ── PowerPoint module (WP19) ── pptxviewjs renders slides to images in the iframe.
+  // ── PowerPoint module (WP19) ── pptxviewjs renders slides to parent-pane images.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.pptx');
-  const ppframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 25000 });
-  const ppf = await frameOf('iframe.fv-preview-frame');
-  await ppf.waitForSelector('img.pptx-slide', { timeout: 25000 });
-  const slideDims = await ppf.$$eval('img.pptx-slide', (els) => els.map((e) => e.naturalWidth));
+  await page.waitForSelector('#previewHost img.pptx-slide', { timeout: 25000 });
+  const slideDims = await page.$$eval('#previewHost img.pptx-slide', (els) => els.map((e) => e.naturalWidth));
   if (slideDims.length === 2 && slideDims.every((w) => w > 100)) pass('PPTX: ' + slideDims.length + ' slides rendered to images'); else fail('pptx slides: ' + JSON.stringify(slideDims));
+  await page.click('#previewHost .pptx-viewmode');
+  await page.waitForFunction(() => document.querySelector('#previewHost .pptx-doc')?.classList.contains('pptx-single-on'), null, { timeout: 4000 });
+  const pptxSingleVisible = await page.$$eval('#previewHost .pptx-slide-wrap', (els) => els.filter((el) => !el.hidden).length);
+  if (pptxSingleVisible === 1) pass('PPTX view mode: single slide shows one slide'); else fail('pptx single visible slides: ' + pptxSingleVisible);
+  await page.click('#previewHost .pptx-slide-next');
+  const pptxStatus = await page.$eval('#previewHost .pptx-slide-status', (e) => e.textContent.trim());
+  if (pptxStatus === '2 / 2') pass('PPTX view mode: next slide navigation works'); else fail('pptx status: ' + pptxStatus);
+  await page.focus('#previewHost .pptx-doc');
+  await page.keyboard.press('ArrowLeft');
+  const pptxKeyStatus = await page.$eval('#previewHost .pptx-slide-status', (e) => e.textContent.trim());
+  if (pptxKeyStatus === '1 / 2') pass('PPTX view mode: keyboard goes to previous slide'); else fail('pptx key status: ' + pptxKeyStatus);
+  await page.evaluate(async () => {
+    await window.__fv.loadFolder([
+      { file: new File(['folder note'], 'note.txt', { type: 'text/plain' }), path: 'Project/note.txt' },
+    ]);
+  });
+  await page.waitForSelector('#previewHost .md-body, iframe.fv-preview-frame', { timeout: 8000 });
+  await page.$eval('#ftBody', (el) => { el.scrollTop = el.scrollHeight; });
+  await page.waitForSelector('#ftBody .ft-file[data-path="sample.pptx"]', { timeout: 8000 });
+  await page.click('#ftBody .ft-file[data-path="sample.pptx"]');
+  await page.waitForSelector('#previewHost img.pptx-slide', { timeout: 25000 });
+  const reopenedSlides = await page.$$eval('#previewHost img.pptx-slide', (els) => els.length);
+  if (reopenedSlides === 2) pass('PPTX sidebar root reopens after loading a folder'); else fail('pptx reopen slides: ' + reopenedSlides);
 
 }

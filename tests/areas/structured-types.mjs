@@ -433,6 +433,26 @@ export async function run(ctx) {
   if (utilBits.checks > 0 && utilBits.handles > 0) pass('.env form rows have selection checkboxes + drag handles'); else fail('env form check/handle missing: ' + JSON.stringify(utilBits));
   if (utilBits.draggable) pass('.env form var rows are draggable'); else fail('env form rows not draggable');
 
+  const dragOrder = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#envFormHost .env-var-row')];
+    const before = [...document.querySelectorAll('#envFormHost .env-key')].map((i) => i.value);
+    const src = rows[0], dest = rows[1];
+    if (!src || !dest) return { before, after: [], missing: true };
+    const dt = new DataTransfer();
+    src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    dest.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    dest.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    src.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    const after = [...document.querySelectorAll('#envFormHost .env-key')].map((i) => i.value);
+    return { before, after, missing: false };
+  });
+  if (!dragOrder.missing && dragOrder.after[0] === dragOrder.before[1] && dragOrder.after[1] === dragOrder.before[0]) {
+    pass('.env form drag/drop reorders adjacent variable rows');
+  } else {
+    fail('env drag reorder: ' + JSON.stringify(dragOrder));
+  }
+  await page.evaluate(() => document.querySelector('#envFormHost .env-btn[title^="Undo"]').click());
+
   // Sort ALL keys (no selection) — keys should come back in ascending order.
   const keysBefore = await page.$$eval('#envFormHost .env-key', (e) => e.map((i) => i.value));
   await page.evaluate(() => document.querySelector('#envFormHost .env-btn[title^="Sort"]').click());

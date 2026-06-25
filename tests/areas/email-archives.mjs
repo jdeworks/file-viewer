@@ -65,17 +65,43 @@ export async function run(ctx) {
   });
   if (ctxOpened) pass('archive folderContext opens sibling entries through archive tree'); else fail('archive folderContext sibling open failed');
 
-  // ── Password-protected zip ── JSZip refuses it; we still list via our own central-dir parse + 🔒. ──
+  await page.evaluate(async () => {
+    const blob = new Blob(['# Welcome\n\nSidebar root check.\n'], { type: 'text/markdown' });
+    await window.__fv.openBlobFile(blob, 'Welcome.md', { mime: 'text/markdown' });
+  });
+  await page.waitForFunction(() => document.getElementById('fileName')?.textContent === 'Welcome.md', null, { timeout: 12000 });
+  const sidebarFolders = await page.$$eval('#ftBody .ft-folder', (els) => els.map((e) => e.querySelector('.ft-name')?.textContent || ''));
+  const sidebarFiles = await page.$$eval('#ftBody .ft-file', (els) => els.map((e) => e.querySelector('.ft-name')?.textContent || ''));
+  if (sidebarFolders.some((name) => /sample\.zip/i.test(name)) && sidebarFiles.some((name) => /Welcome\.md/i.test(name))) {
+    pass('sidebar roots: opening a file keeps the archive root');
+  } else {
+    fail('sidebar roots after file open folders=' + sidebarFolders.join(',') + ' files=' + sidebarFiles.join(','));
+  }
+  const removedRoot = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#ftBody .ft-file')];
+    const row = rows.find((el) => /Welcome\.md/i.test(el.querySelector('.ft-name')?.textContent || ''));
+    row?.click();
+    document.getElementById('ftRemoveRootBtn')?.click();
+    return !!row && !document.getElementById('ftRemoveRootBtn')?.hidden;
+  });
+  const foldersAfterRemove = await page.$$eval('#ftBody .ft-folder', (els) => els.map((e) => e.querySelector('.ft-name')?.textContent || ''));
+  const filesAfterRemove = await page.$$eval('#ftBody .ft-file', (els) => els.map((e) => e.querySelector('.ft-name')?.textContent || ''));
+  if (removedRoot && foldersAfterRemove.some((name) => /sample\.zip/i.test(name)) && !filesAfterRemove.some((name) => /Welcome\.md/i.test(name))) {
+    pass('sidebar roots: remove button only removes that root');
+  } else {
+    fail('sidebar roots after remove folders=' + foldersAfterRemove.join(',') + ' files=' + filesAfterRemove.join(','));
+  }
+
+  // ── Password-protected zip ── list via the central-dir parser; supported entries can unlock. ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Locked.zip');
-  const lzframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 15000 });
-  const lzf = await frameOf('iframe.fv-preview-frame');
-  await lzf.waitForSelector('.zip-table tbody tr', { timeout: 12000 });
-  const lzNames = await lzf.$$eval('.zip-table .z-name', (els) => els.map((e) => e.textContent));
+  await page.waitForSelector('#previewHost .zip-table tbody tr', { timeout: 12000 });
+  const lzNames = await page.$$eval('#previewHost .zip-table .z-name', (els) => els.map((e) => e.textContent));
   if (lzNames.some((n) => /secret\.txt/.test(n)) && lzNames.some((n) => /readme\.txt/.test(n))) pass('encrypted zip still lists entries (fallback parser)'); else fail('locked zip names: ' + lzNames.join(','));
-  const lockBadge = await lzf.$$eval('.zip-table .z-lock', (els) => els.length);
-  const lockBanner = await lzf.$eval('.zip-locked', (e) => e.textContent).catch(() => '');
-  if (lockBadge === 1 && /password-protected/.test(lockBanner)) pass('password-protected entry flagged (lock badge + banner)'); else fail('lock badge=' + lockBadge + ' banner=' + lockBanner.slice(0, 50));
+  const lockBadge = await page.$$eval('#previewHost .zip-table .z-lock', (els) => els.length);
+  const lockBanner = await page.$eval('#previewHost .zip-locked', (e) => e.textContent).catch(() => '');
+  const lockedOpenable = await page.$$eval('#previewHost .zip-table .z-open', (els) => els.map((e) => e.getAttribute('data-fv-open')));
+  if (lockBadge === 1 && /unlock/i.test(lockBanner) && lockedOpenable.includes('secret.txt')) pass('password-protected entry flagged and unlockable'); else fail('lock badge=' + lockBadge + ' banner=' + lockBanner.slice(0, 80) + ' openable=' + lockedOpenable.join(','));
 
   // ── Archive repack ── edit a zip entry in memory, download the modified archive ──
   await page.goto(origin, { waitUntil: 'load' });

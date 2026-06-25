@@ -2,8 +2,11 @@ import { buildTree, renderTree } from './filetree.js';
 import { flushFolderEdit, setTree } from './folder.js';
 import { intakeFromText } from './intake.js';
 import { $, isMobile, state, toast } from './state.js';
+import { addArchiveRoot, captureActiveSidebarRoot } from './sidebar-roots.js';
 
 export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) {
+  state.skipNextFileSidebarRoot = true;
+  captureActiveSidebarRoot();
   const entries = (archive.entries || [])
     .filter((entry) => entry?.name && !entry.dir)
     .map((entry) => ({
@@ -17,7 +20,6 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
     }));
   if (!entries.length) return;
 
-  state.treeApi?.stop?.();
   state.treeEntries = entries;
   state.folderEdits = new Map();
   state.folderMoves = new Map();
@@ -66,6 +68,7 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
         return;
       }
       state._skipDiscardGuard = true;
+      state._skipSidebarRoot = true;
       await loadIntake(intake);
       state.currentFolderPath = node.path;
       state.treeApi?.setActive?.(node.path);
@@ -81,6 +84,15 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
     onOpen: openArchiveNode,
     onMove: null,
   });
+  const root = addArchiveRoot({
+    label: rootName,
+    entries,
+    openNode: (entry, path) => openArchiveNode(path || entry.path),
+    archiveIntake,
+    alreadyCaptured: true,
+  });
+  root.archiveOpenNode = openArchiveNode;
+  state.archiveOpenNode = openArchiveNode;
   if (archiveIntake) mountDeletePanel(entries);
   setTree(true);
 }
@@ -136,15 +148,15 @@ function mountDeletePanel(entries) {
   host.parentNode?.insertBefore(panel, host.nextSibling);
 }
 
-export function clearArchiveTree() {
+export function clearArchiveTree({ keepRoot = false } = {}) {
   if (!state.archiveTree) return;
   state.treeApi?.stop?.();
-  state.treeEntries = null;
+  if (!keepRoot) state.treeEntries = null;
   state.archiveTree = false;
   state.archiveOpenNode = null;
   state.archiveIntake = null;
   state.binaryEdits = null;
   state.archiveDeletes = null;
   document.querySelector('.arc-del-panel')?.remove();
-  setTree(false);
+  if (!keepRoot) setTree(false);
 }

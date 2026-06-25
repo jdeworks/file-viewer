@@ -9,7 +9,7 @@ export default {
     preview: true,
     diff: false,
     magicSelector: false,
-    screenshot: true,
+    screenshot: false,   // parent-pane viewer with live navigation, no static screenshot body
   },
   syntaxLanguage: null,
   loadRenderer: () => import('./renderer.js'),

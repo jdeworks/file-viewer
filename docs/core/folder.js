@@ -12,6 +12,7 @@ import { exportFolderZip } from './folder-export.js';
 import { downloadBlob } from './exports.js';
 import { repackZipWithDeletions } from './repack.js';
 import { recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
+import { addFolderRoot, captureActiveSidebarRoot, renderSidebarRoots } from './sidebar-roots.js';
 
 // Injected core-flow callbacks (set once by app.js init()).
 let loadIntake = () => {};
@@ -79,6 +80,7 @@ let _onMove = null;
 
 export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders } = {}) {
   if (!confirmDiscard()) return;               // guard unsaved work before swapping folders
+  captureActiveSidebarRoot();
   // A .git dir makes this a repository: hide git internals from the tree, surface a
   // branch/commit browser, and default to it instead of opening a file.
   const git = findGitDir(entries);
@@ -95,7 +97,7 @@ export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders
   state.folderEdits = new Map();               // fresh folder → no tracked edits yet
   state.folderMoves = new Map();               // fresh folder → no in-memory moves yet
   state.currentFolderPath = null;
-  state.sessionTree = false; state.archiveTree = false; state.archiveOpenNode = null; state.sessionIntakes = new Map(); state.sessionEdits = new Map(); // real folder takes over sidebar
+  state.sessionTree = false; state.archiveTree = false; state.archiveOpenNode = null; // active folder takes over folder actions
   state.folderExported = false;
   _moveNoticed = false;
 
@@ -107,13 +109,7 @@ export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders
     recordMove(src, dest);
     const entry = state.treeEntries.find((e) => e.path === src);
     if (entry) entry.path = dest;
-    if (state.treeApi) state.treeApi.stop();
-    state.treeApi = renderTree($('ftBody'), buildTree(state.treeEntries), {
-      onOpen: (node) => openTreeFile(node),
-      onMove: _onMove,
-      onDelete: (t) => onTreeDelete?.(t), onReveal: (t) => onTreeReveal?.(t),
-      initialOpenDepth: 0,
-    });
+    renderSidebarRoots(state.sidebarRoots?.find((root) => root.id === state.activeSidebarRootId), dest);
     for (const movedDest of state.folderMoves.values()) state.treeApi.setMoved(movedDest, movedDest);
     state.treeApi.setActive(dest);
     toast('Moved to ' + dest);
@@ -138,6 +134,16 @@ export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders
   await nextFrame();
   const tree = buildTree(display);
   state.treeApi = renderTree($('ftBody'), tree, { onOpen: (node) => openTreeFile(node), onMove: _onMove, onDelete: (t) => onTreeDelete?.(t), onReveal: (t) => onTreeReveal?.(t), initialOpenDepth: 0 });
+  const folderRoot = addFolderRoot({
+    label: rootName,
+    entries: display,
+    git: !!git,
+    openNode: (entry, path) => openTreeFile({ file: entry.file, path }),
+    alreadyCaptured: true,
+  });
+  folderRoot.onMove = _onMove;
+  display = folderRoot.treeEntries;
+  state.treeEntries = display;
   // Restore previously-expanded folders (e.g. across a refresh) so the tree doesn't collapse.
   if (openFolders && openFolders.length) state.treeApi.openPaths(openFolders);
 
@@ -148,7 +154,8 @@ export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders
       await openRepoView({ auto: true, walkLimit: repoWalkLimit });  // default to the commit/branch view
     } else {
       // Prefer the explicitly-requested file (refresh re-opens what was open); else readme/index.
-      const pick = (openPath && display.find((e) => e.path === openPath))
+      const normalizedOpenPath = openPath && openPath.startsWith(rootName + '/') ? openPath.slice(rootName.length + 1) : openPath;
+      const pick = (normalizedOpenPath && display.find((e) => e.path === normalizedOpenPath))
         || display.find((e) => /(^|\/)(readme|index)\.\w+$/i.test(e.path)) || display[0];
       if (pick) { state._skipDiscardGuard = true; await openTreeFile({ file: pick.file, path: pick.path }); state.treeApi.setActive(pick.path); }
     }
@@ -212,6 +219,7 @@ async function openTreeFile(node) {
       ? intakeFromText(stashed, node.path.split('/').pop())
       : await intakeFromFile(node.file);
     state._skipDiscardGuard = true;    // folder edits are preserved in folderEdits — no discard prompt
+    state._skipSidebarRoot = true;
     await loadIntake(intake);
     state.currentFolderPath = node.path;   // mark this as a folder file (loadIntake cleared it)
     onFolderFileOpened?.(node);        // notify app.js so it can start per-file watch
@@ -322,6 +330,7 @@ export function folderContext() {
         return;
       }
       state._skipDiscardGuard = true;                 // media playback advance: nothing unsaved
+      state._skipSidebarRoot = true;
       await loadIntake(await intakeFromFile(file));
       state.treeApi?.setActive?.(node.path);
     },

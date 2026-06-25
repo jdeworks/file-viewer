@@ -48,6 +48,12 @@ export async function render(intake, ctx) {
     + '<span class="pdf-zoom-pct">150%</span>'
     + '<button class="pdf-zoom-in" title="Zoom in">+</button>'
     + '</span>'
+    + '<button class="pdf-viewmode" title="Switch between continuous and single-page view">Single page</button>'
+    + '<span class="pdf-page-nav" hidden>'
+    + '<button class="pdf-page-prev" title="Previous page">‹</button>'
+    + '<span class="pdf-page-status">1 / 1</span>'
+    + '<button class="pdf-page-next" title="Next page">›</button>'
+    + '</span>'
     + '<button class="pdf-spread" title="Two-page spread (book mode)">⊞ Spread</button>'
     + '<button class="pdf-edit" title="Edit pages">Edit</button>'
     + '<button class="pdf-addimg" hidden title="Add an image as a new page">+ Image page</button>'
@@ -90,6 +96,31 @@ export async function render(intake, ctx) {
   let unlockPassword = null;
 
   let editor = null, editing = false, dirty = false, currentBytes = intake.bytes;
+  let viewMode = 'continuous', currentPage = 0, renderedPageCount = 0;
+
+  function updatePageMode() {
+    currentPage = Math.min(Math.max(currentPage, 0), Math.max(renderedPageCount - 1, 0));
+    const single = viewMode === 'single';
+    host.classList.toggle('pdf-single-on', single);
+    host.querySelector('.pdf-viewmode').classList.toggle('active', single);
+    host.querySelector('.pdf-viewmode').textContent = single ? 'Continuous' : 'Single page';
+    host.querySelector('.pdf-page-nav').hidden = !single || renderedPageCount <= 1;
+    host.querySelector('.pdf-page-prev').disabled = currentPage <= 0;
+    host.querySelector('.pdf-page-next').disabled = currentPage >= renderedPageCount - 1;
+    host.querySelector('.pdf-page-status').textContent = (currentPage + 1) + ' / ' + Math.max(renderedPageCount, 1);
+    pagesEl.querySelectorAll('.pdf-page-wrap').forEach((wrap, index) => {
+      wrap.hidden = single && index !== currentPage;
+    });
+  }
+
+  function goToPage(delta) {
+    if (viewMode !== 'single') return false;
+    const next = Math.min(Math.max(currentPage + delta, 0), Math.max(renderedPageCount - 1, 0));
+    if (next === currentPage) return false;
+    currentPage = next;
+    updatePageMode();
+    return true;
+  }
 
   async function renderPages(bytes) {
     const lib = await loadPdfjs();
@@ -127,6 +158,7 @@ export async function render(intake, ctx) {
     }
     try {
       const max = Math.min(doc.numPages, MAX_PAGES);
+      renderedPageCount = max;
       pagesEl.innerHTML = '';
       for (let i = 1; i <= max; i++) {
         const page = await doc.getPage(i);
@@ -136,6 +168,7 @@ export async function render(intake, ctx) {
         await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
         const wrap = document.createElement('div');
         wrap.className = 'pdf-page-wrap';
+        wrap.dataset.pageIndex = String(i - 1);
         const img = document.createElement('img');
         img.className = 'pdf-page'; img.alt = 'Page ' + i; img.src = canvas.toDataURL('image/png');
         canvas.width = canvas.height = 0;
@@ -145,6 +178,7 @@ export async function render(intake, ctx) {
         pagesEl.appendChild(wrap);
       }
       if (doc.numPages > max) { const n = document.createElement('p'); n.className = 'pdf-note'; n.textContent = 'Showing first ' + max + ' of ' + doc.numPages + ' pages.'; pagesEl.appendChild(n); }
+      updatePageMode();
       infoEl.textContent = doc.numPages + ' page' + (doc.numPages === 1 ? '' : 's') + (editing ? ' · editing' : '') + (dirty ? ' · modified' : '');
     } finally {
       // pdf.js holds a worker + buffers per document; every edit/merge re-renders, so destroy the
@@ -226,6 +260,46 @@ export async function render(intake, ctx) {
     const on = host.classList.toggle('pdf-spread-on');
     e.currentTarget.classList.toggle('active', on);
   });
+
+  host.querySelector('.pdf-viewmode').addEventListener('click', () => {
+    viewMode = viewMode === 'single' ? 'continuous' : 'single';
+    if (viewMode === 'single') {
+      host.classList.remove('pdf-spread-on');
+      host.querySelector('.pdf-spread').classList.remove('active');
+    }
+    updatePageMode();
+  });
+  host.querySelector('.pdf-page-prev').addEventListener('click', () => {
+    goToPage(-1);
+  });
+  host.querySelector('.pdf-page-next').addEventListener('click', () => {
+    goToPage(1);
+  });
+  host.tabIndex = 0;
+  host.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented || viewMode !== 'single') return;
+    const tag = e.target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      if (goToPage(-1)) e.preventDefault();
+    } else if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+      if (goToPage(1)) e.preventDefault();
+    }
+  });
+  let touchStartX = null, touchStartY = null;
+  pagesEl.addEventListener('touchstart', (e) => {
+    if (viewMode !== 'single' || e.touches.length !== 1) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  pagesEl.addEventListener('touchend', (e) => {
+    if (viewMode !== 'single' || touchStartX == null || !e.changedTouches.length) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    touchStartX = touchStartY = null;
+    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    goToPage(dx < 0 ? 1 : -1);
+  }, { passive: true });
 
   // Inline zoom controls — re-render pages at the new scale.
   function updateZoomPct() {

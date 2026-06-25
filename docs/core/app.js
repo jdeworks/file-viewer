@@ -29,14 +29,17 @@ import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompa
 import { initSessionTree, updateSessionTree, createNewFile, onTreeFileDrop, flushSessionEdit } from './session-tree.js';
 import { populateTypeSelect } from './type-select.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
+import { initSidebarRoots, removeActiveSidebarRoot } from './sidebar-roots.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
 async function loadIntake(intake) {
   // Guard unsaved work — unless loadFolder already asked for this same action.
   const fromTree = state._skipDiscardGuard;
+  const skipSidebarRoot = state._skipSidebarRoot;
   if (fromTree) flushSessionEdit();
   if (state._skipDiscardGuard) state._skipDiscardGuard = false;
+  if (state._skipSidebarRoot) state._skipSidebarRoot = false;
   else {
     const retainedSessionEdit = flushSessionEdit();
     const onlyRetainedSessionEdits = state.sessionEdits.size > 0
@@ -49,7 +52,7 @@ async function loadIntake(intake) {
   // old folderEdits don't trigger a false "unsaved changes" prompt on the next open.
   if (!fromTree) {
     state.folderEdits = new Map(); state.folderMoves = new Map(); state.folderExported = false;
-    clearArchiveTree();
+    clearArchiveTree({ keepRoot: true });
   }
   if (intake.truncated) {
     const mb = (intake.size / 1048576).toFixed(0);
@@ -77,7 +80,7 @@ async function loadIntake(intake) {
     const total = (intake.size / 1048576).toFixed(0);
     toast(`Large file: showing the first ${shown} MB of ${total} MB.`, 6000);
   }
-  updateSessionTree(intake);
+  updateSessionTree(intake, { skipSidebarRoot });
   // Silently link a single opened file to its on-disk match (recursive in watched folders, incl.
   // subfolders) so Save-to-existing and Delete light up without a manual save first.
   if (!fromTree) tryAutoLink();
@@ -191,6 +194,12 @@ async function renderPreview() {
         state.downloadedSinceEdit = !edit?.dirty;
         syncSaveBtn();
       },
+      openIntake: async (innerIntake, activePath = null) => {
+        state._skipDiscardGuard = true;
+        await loadIntake(innerIntake);
+        if (activePath) state.treeApi?.setActive?.(activePath);
+      },
+      toast,
     };
     if (type.id === 'html') ctx.allowScripts = state.htmlAllowScripts;
     rendered = await mod.render(state.intake, ctx);
@@ -216,6 +225,7 @@ async function renderPreview() {
   if (rendered.parentNode) {
     clearPreview();
     $('previewHost').appendChild(rendered.parentNode);
+    if (rendered.archiveTree) mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake, state.intake);
     // Live-node previews aren't screenshot-able via the sanitized-body path UNLESS the renderer
     // also supplies a static bodyHtml (e.g. structured trees that add a live query panel but keep
     // a screenshot-able HTML tree).
@@ -387,6 +397,7 @@ const META_BTN_MSGS = [
 function init() {
   initCompanionUi({ loadIntake });
   initSessionTree({ loadIntake });
+  initSidebarRoots({ loadIntake });
   initViewerOpen({ loadIntake });
   // Inject the core-flow callbacks the folder module needs (one-way: app imports folder, folder
   // gets these via init — no circular import).
@@ -438,6 +449,7 @@ function init() {
   });
   $('treeBtn').addEventListener('click', () => setTree($('fileTree').hidden));
   $('treeCloseBtn').addEventListener('click', () => setTree(false));
+  $('ftRemoveRootBtn').addEventListener('click', removeActiveSidebarRoot);
   $('fileTree').addEventListener('keydown', onTreeKey);
   $('repoBtn').addEventListener('click', openRepoView);
   $('ftExportBtn').addEventListener('click', () => exportFolder(false));

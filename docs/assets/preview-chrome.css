@@ -89,19 +89,24 @@
 }
 /* PDF viewer + lite editor (parent pane). */
 .preview-host .pdf-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
-.pdf-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); }
+.preview-host .pdf-doc:focus { outline: none; }
+.pdf-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); flex-wrap: wrap; }
 .pdf-info { font-size: 12px; color: var(--fg-2); }
 .pdf-bar button { font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
 .pdf-bar button:disabled { opacity: 0.4; cursor: default; }
 .pdf-zoom-ctl { display: flex; align-items: center; gap: 2px; }
 .pdf-zoom-out, .pdf-zoom-in { padding: 4px 9px !important; }
 .pdf-zoom-pct { font-size: 12px; color: var(--fg-2); min-width: 36px; text-align: center; }
+.pdf-page-nav { display: flex; align-items: center; gap: 2px; }
+.pdf-page-prev, .pdf-page-next { padding: 4px 9px !important; }
+.pdf-page-status { font-size: 12px; color: var(--fg-2); min-width: 42px; text-align: center; }
 .pdf-bar .pdf-edit { margin-left: auto; }
-.pdf-bar .pdf-edit.active { border-color: var(--accent); color: var(--accent); }
+.pdf-bar .pdf-edit.active, .pdf-bar .pdf-viewmode.active { border-color: var(--accent); color: var(--accent); }
 .pdf-bar .pdf-addimg, .pdf-bar .pdf-merge { margin-left: 8px; }
 .pdf-bar .pdf-addimg[hidden], .pdf-bar .pdf-merge[hidden] { display: none; }
 .pdf-bar .pdf-download { margin-left: 8px; background: var(--accent); color: var(--accent-fg); border-color: transparent; }
 .pdf-pages { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.pdf-doc.pdf-single-on .pdf-pages { justify-content: flex-start; }
 .pdf-bar .pdf-spread.active { border-color: var(--accent); color: var(--accent); }
 /* Book mode: two pages per row, centered, like an open book. Wide screens only. */
 @media (min-width: 761px) {
@@ -117,6 +122,21 @@
 .pdf-note { color: var(--fg-2); font-size: 12px; }
 .pdf-changes { padding: 6px 12px; font-size: 12px; color: var(--fg-2); background: var(--bg-2); border-bottom: 1px solid var(--border); }
 .pdf-changes strong { color: var(--accent); }
+
+/* PowerPoint viewer (parent pane). */
+.preview-host .pptx-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
+.preview-host .pptx-doc:focus { outline: none; }
+.pptx-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); flex-wrap: wrap; }
+.pptx-info { font-size: 12px; color: var(--fg-2); margin-right: auto; }
+.pptx-bar button { font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
+.pptx-bar button:disabled { opacity: 0.4; cursor: default; }
+.pptx-bar .pptx-viewmode.active { border-color: var(--accent); color: var(--accent); }
+.pptx-slide-nav { display: flex; align-items: center; gap: 2px; }
+.pptx-slide-prev, .pptx-slide-next { padding: 4px 9px !important; }
+.pptx-slide-status { font-size: 12px; color: var(--fg-2); min-width: 42px; text-align: center; }
+.pptx-slides { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.pptx-slide-wrap { max-width: 100%; }
+.pptx-slide { display: block; max-width: 100%; height: auto; box-shadow: 0 1px 10px rgba(0,0,0,.25); background: #fff; }
 
 /* STL 3D viewer (parent pane): canvas + drag-to-orbit. */
 .preview-host .stl-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }

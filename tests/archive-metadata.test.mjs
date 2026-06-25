@@ -45,6 +45,8 @@ assert.equal(imageEntryCount(cbz.files), 3);
 
 const locked = listCentralDirectory(await readFile(new URL('sample-locked.zip', root)));
 assert.equal(locked.encrypted.size, 1);
+assert.equal(locked.files.find((f) => f.name === 'secret.txt')?.encryption, 'zipcrypto');
+assert.equal(locked.files.find((f) => f.name === 'readme.txt')?.encrypted, false);
 
 const risky = riskyArchiveEntries([
   { name: 'docs/readme.txt' },

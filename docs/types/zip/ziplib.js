@@ -1,5 +1,6 @@
 // Shared zip helpers (vendored JSZip — no extraction, just the central-directory listing).
 import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { extractFile as extractArchiveFile } from '../../core/archivelib.js';
 
 export function fmtSize(n) {
   if (n == null) return '';
@@ -15,6 +16,7 @@ const METHOD_NAMES = {
   12: 'BZIP2',
   14: 'LZMA',
   98: 'PPMd',
+  99: 'AES',
 };
 
 export function compressionMethodName(method) {
@@ -44,6 +46,26 @@ export async function extractEntry(zip, name) {
   return entry.async('uint8array');
 }
 
+export async function extractEncryptedEntry(intake, name, password) {
+  return extractArchiveFile(intake, name, { password });
+}
+
+function hasAesExtra(bytes, start, length) {
+  let p = start;
+  const end = start + length;
+  if (end > bytes.length) return false;
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  while (p + 4 <= end) {
+    const id = dv.getUint16(p, true);
+    const size = dv.getUint16(p + 2, true);
+    p += 4;
+    if (p + size > end) break;
+    if (id === 0x9901) return true;
+    p += size;
+  }
+  return false;
+}
+
 // List the zip from its central directory WITHOUT JSZip — so it works even for password-protected
 // archives (JSZip throws "Encrypted zip are not supported" at load). Reads name, sizes, date, the
 // directory flag, and the encrypted flag (general-purpose bit-flag bit 0). No decryption.
@@ -71,7 +93,19 @@ export function listCentralDirectory(bytes) {
     const name = dec.decode(bytes.subarray(p + 46, p + 46 + fnLen));
     let date = null;
     if (md) date = new Date(1980 + ((md >> 9) & 0x7f), ((md >> 5) & 0xf) - 1, md & 0x1f, (mt >> 11) & 0x1f, (mt >> 5) & 0x3f, (mt & 0x1f) * 2);
-    const entry = { name, uncompressedSize, compressedSize, date, encrypted: !!(gp & 1), dir: name.endsWith('/'), method };
+    const aes = method === 99 || hasAesExtra(bytes, p + 46 + fnLen, exLen);
+    const encrypted = !!(gp & 1);
+    const entry = {
+      name,
+      uncompressedSize,
+      compressedSize,
+      date,
+      encrypted,
+      encryption: encrypted ? (aes ? 'aes' : 'zipcrypto') : null,
+      encryptionLabel: encrypted ? (aes ? 'AES' : 'ZipCrypto') : '',
+      dir: name.endsWith('/'),
+      method,
+    };
     if (entry.dir) folders.push(entry); else { files.push(entry); totalU += uncompressedSize; totalC += compressedSize; }
     methods.set(method, (methods.get(method) || 0) + 1);
     p += 46 + fnLen + exLen + cmLen;
