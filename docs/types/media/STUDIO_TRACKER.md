@@ -69,36 +69,16 @@ These are implemented and tested as capabilities, but the audio UI is not yet pr
 - Video studio: live CSS filters and video audio routed into the shared EQ/spectrum graph.
 - Subtitles: SRT/VTT sidecar loader and overlay.
 - Video timeline: thumbnail strip, second clip/music drop zone, fade-to-black, xfade/acrossfade/mux-music arg wiring.
-- Smoke coverage exists in `tests/areas/media-3d.mjs` for most capability behavior, but it currently pins the old toggle-stack UI in places.
+- Smoke coverage is split between `tests/areas/media-studio.mjs` for the media workspace and
+  `tests/areas/media-3d.mjs` for the remaining 3D/image/MIDI/gamerom area.
 
 ## Active Queue
 
-### R4 — Audio/Video Overlap Diff Compare Foundation
+No active implementation queue is currently open in this lane.
 
-Status: in progress / partial.
-
-Current foundation slice:
-
-- Added pure compare math for clamping ranges, applying lane offsets, computing overlap
-  windows, classifying missing/overlap sections, and producing user-facing shifted-range copy.
-- Added lazy Compare modes for both audio and video, separate from the R1/R3 mastering-chain
-  compare surfaces.
-- Added side-by-side/top-bottom/overlay layout controls, overlay opacity, explicit audio
-  normalization toggle off by default, A/B lanes with offset readouts, range inputs/handles,
-  second-file drop/browse affordance, and placeholder overlap/missing visuals.
-- Preserved static-client constraints: no backend, no ASR/NLP, no ffmpeg load, no eager
-  waveform/frame decode, no hidden gain or resampling.
-- Evidence to keep current before marking complete: unit coverage in `tests/media-parsers.test.mjs`
-  and smoke coverage in `tests/areas/media-studio.mjs`.
-
-Remaining before R4 can be called complete:
-
-- Real audio waveform/difference rendering for selected ranges, with raw vs user-normalized
-  modes clearly separated.
-- Real video frame strips/overlay preview gated behind explicit decode actions.
-- Content-difference reporting inside overlapping ranges; current copy only covers shifted,
-  missing, and overlapping timeline regions.
-- Committed in `05aabcf5` — `Add media overlap compare foundation`.
+The latest roadmap items R0-R5 are recorded below as committed or implemented. In particular,
+the earlier R4 foundation note is superseded by the implemented R4 section later in this file
+and by `STUDIO_ROADMAP.md`.
 
 ### P-Start — Checkpoint Current Verified Work
 
