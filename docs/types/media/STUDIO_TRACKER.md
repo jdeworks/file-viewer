@@ -395,11 +395,23 @@ Status: committed.
 
 ### M6 — Mixer Lifecycle And Audio Trim
 
-Status: open.
+Status: committed.
 
 - Tighten mixer audio resource teardown.
 - Add audio waveform region selection only after video trim is correct.
 - If audio region selection lands, it should prefill the existing editor Trim operation, not create a second trim system.
+- Mixer teardown now tracks/disconnects per-lane gain nodes, guards pending decode/drop work after
+  panel destroy, clears lane/blob state, and releases the shared mixer `AudioContext` on mode close.
+- Audio waveform selection is optional and only enabled when the ffmpeg editor controller exists.
+  Dragging a waveform region draws a concise overlay/status and forwards start/end seconds to the
+  existing Media Editor Trim operation via `prefillTrim`; no second trim/export path was introduced.
+- Smoke coverage asserts both mixer context release after leaving Mix and waveform selection
+  pre-filling the existing Trim HH:MM:SS inputs without running a heavy ffmpeg trim.
+- Changed paths: `preview-chrome.css`, `editor.js`, `mixer-engine.js`, `mixer-ui.js`,
+  `renderer.js`, `waveform.js`, `tests/areas/media-3d.mjs`, `docs/asset-manifest.json`, `docs/sw.js`.
+- Validation passed: `node --check docs/types/media/mixer-engine.js docs/types/media/mixer-ui.js docs/types/media/waveform.js docs/types/media/editor.js docs/types/media/renderer.js tests/areas/media-3d.mjs`,
+  `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+- Committed in `3e35165e` — `Tighten media mixer teardown and audio trim selection`.
 
 ## Tracking Rules
 
