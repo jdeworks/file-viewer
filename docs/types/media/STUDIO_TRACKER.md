@@ -550,6 +550,7 @@ Status: committed.
     `git diff --check`, `./scripts/check.sh --fast`.
   - Fast selector evidence: selected `tests/media-parsers.test.mjs` and `media-studio`;
     no aggregate smoke, ebook/MOBI, known-file, binary, or exhaustive Sokoban suites ran.
+  - Committed in `bca47f26` — `Add media chapter sidecar support`.
 - Remaining R2 work: none currently identified.
 
 ### R1 — Estimated True Peak And Metric Copy
