@@ -649,11 +649,12 @@ Status: implemented; no remaining R3 work identified.
 
 ### R4 — Audio/Video Overlap Diff Compare
 
-Status: partial. Foundation is committed in `05aabcf5` / `6e6d489e`; the first audio
-analysis slice is committed in `fbe6c057`; the first video analysis slice is committed
-in `937ab522`; selected-range WAV compare is committed in `34a2d601`; shifted-overlap
-measurement is committed in `5352a78b`. R4 still needs general compressed-audio longer-file
-strategy work.
+Status: implemented.
+
+Committed history: foundation in `05aabcf5` / `6e6d489e`; first audio analysis slice in
+`fbe6c057`; first video analysis slice in `937ab522`; selected-range WAV compare in
+`34a2d601`; shifted-overlap measurement in `5352a78b`; ffmpeg-backed selected-overlap
+extraction in this slice.
 
 - This is distinct from R1/R3 processing-chain compare. R1/R3 explain how one source changes
   through Tune/Dynamics/Master Bus; R4 compares two source media files or two partial ranges.
@@ -688,12 +689,14 @@ strategy work.
     frame/overlay/diff canvases and measured copy.
 - Current R4 polish: shifted-overlap source windows are now the only measured region for both
   audio/video; when WAV compare can use direct `Blob.slice`, it reads shifted-overlap windows,
-  and decode fallback summarizes only overlap subsections.
+  and decode fallback summarizes only overlap subsections. For compressed longer files, ffmpeg-on
+  sessions now extract the shifted-overlap range to WAV in MEMFS first and then reuse the same
+  selected-range pipeline; this path is capped and does not silently read giant inputs.
 - Changed paths for this slice: `compare-audio.js`, `compare-ui.js`,
   `tests/media-parsers.test.mjs`, `tests/areas/media-studio.mjs`, `STUDIO_ROADMAP.md`,
   `STUDIO_TRACKER.md`, plus generated cache files if validation refreshes them.
-- Remaining R4 work: richer audio/video alignment polish and any longer-file strategy beyond
-  capped browser decode.
+- R4 is bounded by explicit selected ranges, byte caps, and opt-in ffmpeg extraction for longer
+  compressed audio; no backend/ASR/ML alignment or uncapped full-file analysis is planned.
 
 ### R5 — Video Export Depth
 

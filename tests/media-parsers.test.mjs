@@ -34,6 +34,7 @@ import {
 import {
   parsePcmWavHeader,
   readPcmWavFirstChannelRange,
+  buildAudioCompareExtractArgs,
 } from '../docs/types/media/compare-audio.js';
 import { buildMuxMusicArgs, buildVideoExportFilterChain } from '../docs/types/media/video-filters.js';
 import {
@@ -214,6 +215,28 @@ function makePcm16Wav({ sampleRate = 4, channels = 2, frames = [] } = {}) {
     /Tiny cap is too large/,
     'compare audio: selected WAV range enforces byte cap before slice decode',
   );
+
+  {
+    const range = { start: 1.5, end: 3.0 };
+    const args = buildAudioCompareExtractArgs('compressed.mp3', 'out.wav', range);
+    assert.deepEqual(args, [
+      '-ss', '1.5',
+      '-t', '1.5',
+      '-i', 'compressed.mp3',
+      '-map', '0:a:0',
+      '-vn',
+      '-c:a', 'pcm_s16le',
+      'out.wav',
+    ], 'compare audio: ffmpeg compare extraction args preserve source range timing and mapping');
+    assert.equal(args.includes('-ar'), false, 'compare audio: ffmpeg compare args do not force sample-rate');
+    assert.equal(args.includes('-ac'), false, 'compare audio: ffmpeg compare args do not force channel count');
+  }
+
+  {
+    const args = buildAudioCompareExtractArgs('input.wav', 'extracted.wav', { start: 10.2, end: 4.7 });
+    assert.equal(args[1], '10.2', 'compare audio: compare args clamp reversed range starts to source start');
+    assert.equal(args[3], '0', 'compare audio: compare args clamp reversed ranges to zero duration');
+  }
 }
 
 function u32(n) {

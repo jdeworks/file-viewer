@@ -601,7 +601,7 @@ export async function render(intake, ctx = {}) {
     });
     registerAudioMode('compare', 'Compare', async (panel) => {
       const { mountMediaCompare } = await import('./compare-ui.js');
-      return mountMediaCompare(panel, intake, el, 'audio');
+      return mountMediaCompare(panel, intake, el, 'audio', { enableFfmpeg });
     });
     registerAudioMode('mix', 'Mix', async (panel) => {
       const { mountMixer } = await import('./mixer-ui.js');
@@ -693,7 +693,7 @@ export async function render(intake, ctx = {}) {
     });
     registerVideoMode('compare', 'Compare', async (panel) => {
       const { mountMediaCompare } = await import('./compare-ui.js');
-      return mountMediaCompare(panel, intake, el, 'video');
+      return mountMediaCompare(panel, intake, el, 'video', { enableFfmpeg });
     });
 
     if (videoWatchMode) {

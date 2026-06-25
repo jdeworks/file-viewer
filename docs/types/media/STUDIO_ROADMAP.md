@@ -136,34 +136,35 @@ Needed:
 
 ### R4 — Audio/Video Overlap Diff Compare
 
-Status: in progress / foundation slice implemented; this is separate from the R1/R3
-processing-chain compare.
+Status: implemented; this is separate from the R1/R3 processing-chain compare.
 
 Goal: compare two source media files, or two partial ranges, when their timelines do not
 line up perfectly because one file has an added/missing section.
 
 Needed:
 
-- Partial: dedicated Compare mode surfaces exist for both audio and video with
+- Done: dedicated Compare mode surfaces exist for both audio and video with
   side-by-side/top-bottom/overlay layout controls.
-- Partial: lane offsets can be typed or nudged by draggable offset handles, and the pure
+- Done: lane offsets can be typed or nudged by draggable offset handles, and the pure
   range math computes shifted overlap/missing sections.
-- Partial: in/out inputs and visible range handles exist per lane so users can define short
+- Done: in/out inputs and visible range handles exist per lane so users can define short
   compare windows without full-file decode.
-- Partial: audio view has stacked lane strips, explicit user-chosen normalization toggle
+- Done for this slice: audio view has stacked lane strips, explicit user-chosen normalization toggle
   (off by default), translucent overlap/missing placeholders, and an explicit
   `Analyze selected audio` action. Common PCM WAV compares now read capped *shifted
   overlap* source windows with `Blob.slice`; compressed/unsupported audio keeps the capped
-  browser-decode fallback and now summarizes only the shifted-overlap subsection. Broader
-  audio compare polish remains pending.
-- Partial: video view has aligned lanes, overlay opacity state, offset/overlap readouts,
+  browser-decode fallback and now summarizes only the shifted-overlap subsection. Added ffmpeg-backed
+  selected-overlap extraction for longer compressed files when enabled, with an explicit input-byte cap
+  so giant files are not silently read.
+- Done: video view has aligned lanes, overlay opacity state, offset/overlap readouts,
   and an explicit `Analyze selected video` action that lazily samples capped shifted
   overlap source frames into real lane strips, overlay preview, visual diff strip, and
   measured visual difference copy.
 - Done for this polish slice: shifted overlap is now the measured window for both
   audio and video analysis (selected/WAV and decoded fallback), so copy can state that
-  measured differences are from the shifted-overlap window. Remaining long-file strategy for
-  compressed sources is still unresolved.
+  measured differences are from the shifted-overlap window. Remaining longer-file behavior
+  is now handled via ffmpeg-backed selected-overlap extraction when enabled, otherwise via
+  the existing capped browser-decode fallback.
 - Static-client implementation only: no backend alignment service, no ASR/NLP matching, no
   hidden resampling/gain unless the user chooses a compare normalization mode.
 

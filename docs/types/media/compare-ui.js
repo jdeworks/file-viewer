@@ -63,7 +63,8 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
+export function mountMediaCompare(container, intake, mediaEl, kind = 'audio', options = {}) {
+  const { enableFfmpeg = false } = typeof options === 'object' && options ? options : {};
   const state = {
     layout: 'side-by-side',
     opacity: 55,
@@ -410,6 +411,10 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     analysisStatus.textContent = 'Selection changed; analyze shifted overlap WAV range again.';
   }
 
+  function canDecodeByBrowser(file) {
+    return !file || file.size <= AUDIO_COMPARE_MAX_BYTES;
+  }
+
   function readFirstChannel(buffer) {
     if (!buffer || buffer.numberOfChannels < 1) return new Float32Array();
     return buffer.getChannelData(0);
@@ -424,11 +429,11 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
     });
   }
 
-  async function readSelectedWavRange(file, sourceRange, label) {
+  async function readSelectedWavRange(file, sourceRange, label, maxBytes = AUDIO_COMPARE_MAX_BYTES) {
     if (!file) return null;
     return readPcmWavFirstChannelRange(file, sourceRange, {
       label,
-      maxBytes: AUDIO_COMPARE_MAX_BYTES,
+      maxBytes,
     });
   }
 
@@ -517,13 +522,71 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
       const sourceRangeA = overlapRanges.a;
       const sourceRangeB = overlapRanges.b;
       const sampleRangeA = hasSecond ? sourceRangeA : current.a.source;
-      const [wavA, wavB] = await Promise.all([
-        readSelectedWavRange(fileA, sampleRangeA, 'Lane A shifted-overlap WAV range'),
-        hasSecond ? readSelectedWavRange(state.files.B, sourceRangeB, 'Lane B shifted-overlap WAV range') : Promise.resolve(null),
-      ]);
-      const canUseWavRange = !!wavA && (!hasSecond || !!wavB);
+      const fileB = state.files.B;
 
-      if (canUseWavRange) {
+      const attemptA = readSelectedWavRange(fileA, sampleRangeA, 'Lane A shifted-overlap WAV range');
+      const attemptB = hasSecond
+        ? readSelectedWavRange(fileB, sourceRangeB, 'Lane B shifted-overlap WAV range')
+        : Promise.resolve(null);
+      const directReads = await Promise.allSettled([attemptA, attemptB]);
+
+      let wavA = directReads[0]?.status === 'fulfilled' ? directReads[0].value : null;
+      let wavB = hasSecond && directReads[1]?.status === 'fulfilled' ? directReads[1].value : null;
+      const canUseDirectWavRange = !!wavA && (!hasSecond || !!wavB);
+      let usedFfmpegExtract = false;
+
+      const directWasIncomplete = hasSecond && !canUseDirectWavRange;
+      if (!canUseDirectWavRange && hasSecond && enableFfmpeg) {
+        const ffModule = await import('./compare-ffmpeg.js');
+        const {
+          extractAudioRangeToWav: extractAudioRangeToWavFromModule,
+          AUDIO_COMPARE_MAX_EXTRACT_BYTES,
+          formatMb,
+        } = ffModule;
+        const extractA = wavA ? Promise.resolve(wavA) : extractAudioRangeToWavFromModule(fileA, sourceRangeA, 'Lane A');
+        const extractB = wavB ? Promise.resolve(wavB) : (hasSecond && fileB
+          ? extractAudioRangeToWavFromModule(fileB, sourceRangeB, 'Lane B')
+          : Promise.resolve(null));
+        try {
+          const extracted = await Promise.all([extractA, extractB]);
+          wavA = wavA || (await readSelectedWavRange(
+            extracted[0],
+            { start: 0, end: Number.MAX_VALUE },
+            'Lane A ffmpeg extracted WAV range',
+            AUDIO_COMPARE_MAX_EXTRACT_BYTES,
+          ));
+          wavB = wavB || (hasSecond
+            ? await readSelectedWavRange(
+              extracted[1],
+              { start: 0, end: Number.MAX_VALUE },
+              'Lane B ffmpeg extracted WAV range',
+              AUDIO_COMPARE_MAX_EXTRACT_BYTES,
+            )
+            : null);
+          usedFfmpegExtract = directWasIncomplete && (wavA && (!hasSecond || wavB));
+        } catch (err) {
+          if (!canDecodeByBrowser(fileA) || !canDecodeByBrowser(fileB)) {
+            const reason = (err && err.message) || '';
+            const hint = 'Compressed audio needs ffmpeg extraction and is not analyzable under compare caps. '
+              + `ffmpeg extract cap is ${formatMb(AUDIO_COMPARE_MAX_EXTRACT_BYTES)} and browser decode cap is ${formatMb(AUDIO_COMPARE_MAX_BYTES)}.`;
+            throw new Error(reason ? `${reason} ${hint}` : hint);
+          }
+          const [bufferA, bufferB] = await Promise.all([decodeFile(fileA), decodeFile(fileB)]);
+          state.durationA = bufferA.duration || state.durationA;
+          state.lanes.A.out = Math.min(state.lanes.A.out, state.durationA);
+          if (bufferB) {
+            state.durationB = bufferB.duration || state.durationB;
+            state.lanes.B.out = Math.min(state.lanes.B.out, state.durationB);
+          }
+          state.analysis = toAudioAnalysisFromBuffers(bufferA, bufferB);
+          analysisStatus.textContent = hasSecond
+            ? 'Analyzed shifted overlap audio range (browser decode).'
+            : 'Analyzed A shifted-overlap audio range (browser decode). Add a second audio file.';
+          return;
+        }
+      }
+
+      if (wavA && (!hasSecond || wavB)) {
         state.durationA = wavA.duration || state.durationA;
         state.lanes.A.out = Math.min(state.lanes.A.out, state.durationA);
         if (hasSecond && wavB) {
@@ -542,7 +605,9 @@ export function mountMediaCompare(container, intake, mediaEl, kind = 'audio') {
           overlapForAnalysis,
         );
         analysisStatus.textContent = hasSecond
-          ? 'Analyzed shifted overlap WAV range.'
+          ? (usedFfmpegExtract
+            ? 'Analyzed shifted overlap audio range (ffmpeg extract).'
+            : 'Analyzed shifted overlap WAV range.')
           : 'Analyzed A shifted-overlap WAV range. Add a second audio file.';
       } else {
         const [bufferA, bufferB] = await Promise.all([

@@ -18,6 +18,18 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function normalizePcmArg(n) {
+  return Number(Number(n).toFixed(6)).toString();
+}
+
+export function buildAudioCompareExtractArgs(inputName, outputName, range = {}) {
+  const start = clamp(finiteNumber(range.start, 0), 0, Number.MAX_VALUE);
+  const end = clamp(finiteNumber(range.end, start), start, Number.MAX_VALUE);
+  const duration = Math.max(0, end - start);
+  return ['-ss', normalizePcmArg(start), '-t', normalizePcmArg(duration), '-i', inputName,
+    '-map', '0:a:0', '-vn', '-c:a', 'pcm_s16le', outputName];
+}
+
 export async function parsePcmWavHeader(blob) {
   if (!blob || blob.size < 44 || typeof blob.slice !== 'function') return null;
   const headerBytes = await blob.slice(0, Math.min(blob.size, WAV_HEADER_SCAN_BYTES)).arrayBuffer();

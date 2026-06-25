@@ -802,6 +802,22 @@ export async function run(ctx) {
     const d = document.querySelector('#previewHost audio.media-view')?.duration;
     return Number.isFinite(d) && d > 0;
   }, null, { timeout: 8000 });
+
+  const compareAudioFfmpegBuilder = await page.evaluate(async () => {
+    const { buildAudioCompareExtractArgs } = await import('./types/media/compare-audio.js');
+    const args = buildAudioCompareExtractArgs('in.mp3', 'out.wav', { start: 1, end: 2.5 });
+    return {
+      hasBuilder: typeof buildAudioCompareExtractArgs === 'function',
+      argsHasNoResampleOrChannels: !args.includes('-ar') && !args.includes('-ac'),
+      args,
+    };
+  });
+  if (
+    compareAudioFfmpegBuilder.hasBuilder && compareAudioFfmpegBuilder.argsHasNoResampleOrChannels
+    && compareAudioFfmpegBuilder.args.includes('-c:a')
+  ) pass('R4: compare audio ffmpeg builder is importable in-page and emits WAV extract args without hidden -ar/-ac');
+  else fail('R4: compare audio ffmpeg builder import/args: ' + JSON.stringify(compareAudioFfmpegBuilder));
+
   await page.click('#previewHost .media-mode-tab[data-mode="listen"]');
   const trimReadyEl = await page.waitForSelector('#previewHost .media-ed-op[data-op="trim"]', { timeout: 8000 });
   if (trimReadyEl) pass('P6: audio editor Trim button exists when ffmpeg is on');
