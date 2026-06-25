@@ -582,16 +582,18 @@ export async function run(ctx) {
       active: e.getAttribute('aria-pressed') === 'true',
     })),
   );
-  const presetHasCards = presetCards.length >= 3
+  const presetHasCards = presetCards.length >= 4
     && presetCards.some((c) => c.preset === 'podcast-mp3')
+    && presetCards.some((c) => c.preset === 'podcast-cleanup-mp3')
     && presetCards.some((c) => c.preset === 'acx-mp3')
     && presetCards.some((c) => c.preset === 'custom')
     && presetCards.some((c) => /Podcast/i.test(c.title))
+    && presetCards.some((c) => /Cleanup/i.test(c.title))
     && presetCards.some((c) => /ACX/i.test(c.title))
     && presetCards.some((c) => /custom/i.test(c.title));
-  if (presetHasCards) pass('P1: visible export preset cards show Podcast/ACX/Custom affordances'); else fail('export cards: ' + JSON.stringify(presetCards));
+  if (presetHasCards) pass('P1: visible export preset cards show Podcast/Cleanup/ACX/Custom affordances'); else fail('export cards: ' + JSON.stringify(presetCards));
   const presetCardOrder = presetCards.map((c) => c.preset).join(',');
-  if (/^podcast-mp3,acx-mp3,custom/.test(presetCardOrder)) pass('P1: export preset cards keep intent presets before Custom');
+  if (/^podcast-mp3,podcast-cleanup-mp3,acx-mp3,custom/.test(presetCardOrder)) pass('P1: export preset cards keep intent presets before Custom');
   else fail('export card order: ' + presetCardOrder);
   const defaultCard = presetCards.find((c) => c.preset === 'podcast-mp3');
   if (defaultCard?.active) pass('P1: default export card state is Podcast');
@@ -621,7 +623,7 @@ export async function run(ctx) {
   const presetSel = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset');
   if (presetSel) pass('P2: export preset selector present'); else fail('export preset selector missing');
   const presetOpts = await page.$$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset option', (els) => els.map((e) => e.value));
-  if (['custom', 'podcast-mp3', 'acx-mp3'].every((v) => presetOpts.includes(v))) pass('P2: presets include Podcast + Audiobook(ACX) + Custom'); else fail('preset opts: ' + presetOpts.join(','));
+  if (['custom', 'podcast-mp3', 'podcast-cleanup-mp3', 'acx-mp3'].every((v) => presetOpts.includes(v))) pass('P2: presets include Podcast + Cleanup + Audiobook(ACX) + Custom'); else fail('preset opts: ' + presetOpts.join(','));
   // Advanced overrides hidden until "Custom"; default preset is Podcast.
   const advHiddenDefault = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-adv', (e) => e.hidden).catch(() => null);
   if (advHiddenDefault === true) pass('P2: advanced overrides hidden under a concrete preset'); else fail('adv hidden default: ' + advHiddenDefault);
@@ -629,14 +631,21 @@ export async function run(ctx) {
   await page.selectOption('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset', 'acx-mp3');
   const acxSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
   if (/Profile Audiobook ACX MP3/.test(acxSummary) && /mono/.test(acxSummary)
-    && /192k CBR/.test(acxSummary) && /-20 LUFS/.test(acxSummary) && /TP -3 dBTP/.test(acxSummary))
-    pass('P2: ACX preset summary shows mono, 192k CBR, normalize -20 LUFS, TP -3');
+    && /192k CBR/.test(acxSummary) && /loudnorm target -20 LUFS/.test(acxSummary) && /loudnorm TP target -3 dBTP/.test(acxSummary))
+    pass('P2: ACX preset summary shows mono, 192k CBR, loudnorm -20 LUFS, TP target -3');
   else fail('acx summary: ' + acxSummary.slice(0, 180));
   await page.click('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset-card[data-preset="podcast-mp3"]');
   const podcastSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
-  if (/Profile Podcast MP3/.test(podcastSummary) && /-16 LUFS/.test(podcastSummary) && /192k/.test(podcastSummary) && /TP -1\.5 dBTP/.test(podcastSummary))
-    pass('P2: Podcast preset summary reflects -16 LUFS / 192k / 44.1 kHz / TP -1.5');
+  if (/Profile Podcast MP3/.test(podcastSummary) && /loudnorm target -16 LUFS/.test(podcastSummary) && /192k/.test(podcastSummary) && /loudnorm TP target -1\.5 dBTP/.test(podcastSummary))
+    pass('P2: Podcast preset summary reflects -16 LUFS / 192k / 44.1 kHz / TP target -1.5');
   else fail('podcast summary: ' + podcastSummary.slice(0, 180));
+  await page.click('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset-card[data-preset="podcast-cleanup-mp3"]');
+  const cleanupSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
+  if (/Profile Podcast Cleanup MP3/.test(cleanupSummary) && /export cleanup chain/.test(cleanupSummary)
+    && /sample rate match source/.test(cleanupSummary) && /channels match source/.test(cleanupSummary)
+    && /afftdn/.test(cleanupSummary) && /dynaudnorm/.test(cleanupSummary))
+    pass('P2: Cleanup preset summary shows source-preserving cleanup chain');
+  else fail('cleanup summary: ' + cleanupSummary.slice(0, 220));
   // Switching to Custom reveals the override fields (container/bitrate/sr/channels/loudness).
   await page.selectOption('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset', 'custom');
   const advShown = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-adv', (e) => e.hidden).catch(() => null);

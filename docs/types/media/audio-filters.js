@@ -22,6 +22,15 @@ const DEFAULT_MASTER_BUS = {
   },
 };
 
+export const MASTERING_CLEANUP_PRESETS = {
+  'spoken-cleanup': {
+    dehum: { enabled: true, hpf: 75, freq: 60, harmonics: [120], width: 8 },
+    denoise: { enabled: true, strength: 8 },
+    deplosive: { enabled: true, hpf: 90, freq: 120, gain: -2.5, q: 0.9 },
+    leveler: { enabled: true, frameMs: 500, gaussianSize: 15, peak: 0.9, maxGain: 8 },
+  },
+};
+
 // ── P4: dynamics filter-string helpers ───────────────────────────────────────
 //
 // Each takes a (possibly absent) sub-settings object and returns an ffmpeg filter
@@ -41,6 +50,84 @@ export function denoiseFilter(dn) {
   const nr = Number(dn.strength);
   if (!isFinite(nr) || nr <= 0) return 'afftdn';
   return 'afftdn=nr=' + round(Math.max(0.01, Math.min(97, nr)));
+}
+
+// De-hum → highpass + narrow 50/60 Hz notch filters. The default is US mains
+// hum (60 Hz) plus one harmonic (120 Hz); callers can override the base.
+export function dehumFilter(dh) {
+  if (!dh || !dh.enabled) return '';
+  const out = [];
+  const hpf = Number(dh.hpf);
+  if (isFinite(hpf) && hpf > 20) out.push('highpass=f=' + Math.round(hpf));
+
+  const base = Number(dh.freq);
+  const width = isFinite(Number(dh.width)) ? Math.max(1, Number(dh.width)) : 8;
+  const freqs = [];
+  if (isFinite(base) && base > 0) freqs.push(base);
+  const harmonics = Array.isArray(dh.harmonics) ? dh.harmonics : [];
+  for (const harmonic of harmonics) {
+    const freq = Number(harmonic);
+    if (isFinite(freq) && freq > 0) freqs.push(freq);
+  }
+  for (const freq of freqs) {
+    out.push('bandreject=f=' + Math.round(freq) + ':t=h:w=' + round(width));
+  }
+  return out.join(',');
+}
+
+// De-plosive helper → heuristic low-frequency containment only. It does not try
+// to detect plosives or separate speech; it just reduces low-frequency blasts.
+export function deplosiveFilter(dp) {
+  if (!dp || !dp.enabled) return '';
+  const out = [];
+  const hpf = Number(dp.hpf);
+  if (isFinite(hpf) && hpf > 20) out.push('highpass=f=' + Math.round(hpf));
+
+  const freq = Number(dp.freq);
+  const gain = Number(dp.gain);
+  const q = Number(dp.q);
+  if (isFinite(freq) && isFinite(gain) && isFinite(q) && gain < 0) {
+    out.push('equalizer=f=' + Math.round(freq) + ':t=q:w=' + round(q) + ':g=' + round(gain));
+  }
+  return out.join(',');
+}
+
+// Adaptive leveler → dynaudnorm with conservative caps. This is intentionally
+// explicit, not a hidden volume multiplier: peak/maxGain are visible parameters.
+export function levelerFilter(lv) {
+  if (!lv || !lv.enabled) return '';
+  const parts = [];
+  const frameMs = Number(lv.frameMs);
+  const gaussianSize = Number(lv.gaussianSize);
+  const peak = Number(lv.peak);
+  const maxGain = Number(lv.maxGain);
+  if (isFinite(frameMs)) parts.push('f=' + Math.round(Math.max(10, Math.min(8000, frameMs))));
+  if (isFinite(gaussianSize)) {
+    let g = Math.round(Math.max(3, Math.min(301, gaussianSize)));
+    if (g % 2 === 0) g += 1;
+    parts.push('g=' + g);
+  }
+  if (isFinite(peak)) parts.push('p=' + round(Math.max(0.1, Math.min(0.99, peak))));
+  if (isFinite(maxGain)) parts.push('m=' + round(Math.max(1, Math.min(30, maxGain))));
+  return parts.length ? 'dynaudnorm=' + parts.join(':') : 'dynaudnorm';
+}
+
+function resolveCleanupChainPreset(cleanup) {
+  if (!cleanup) return null;
+  if (typeof cleanup === 'string') return MASTERING_CLEANUP_PRESETS[cleanup] || null;
+  if (cleanup === true) return MASTERING_CLEANUP_PRESETS['spoken-cleanup'];
+  return cleanup;
+}
+
+export function buildMasteringCleanupFilter(cleanup) {
+  const preset = resolveCleanupChainPreset(cleanup);
+  if (!preset) return '';
+  const out = [];
+  const hum = dehumFilter(preset.dehum); if (hum) out.push(hum);
+  const dn = denoiseFilter(preset.denoise); if (dn) out.push(dn);
+  const plosive = deplosiveFilter(preset.deplosive); if (plosive) out.push(plosive);
+  const leveler = levelerFilter(preset.leveler); if (leveler) out.push(leveler);
+  return out.join(',');
 }
 
 // Noise gate → agate. threshold is in dB (converted to linear 0–1 for ffmpeg).
@@ -137,12 +224,12 @@ function buildMasterCompressorFilter(c = {}) {
 // ── Canonical audio filter chain ──────────────────────────────────────────────
 //
 // Builds the audio filter list in the mastering order the roadmap specifies:
-//   highpass → afftdn (de-noise) → agate (gate) → acompressor (comp)
-//     → equalizer bands → lowpass → [master-bus] → alimiter (limiter)
-//     → fade-in → fade-out → loudnorm
+//   live highpass → export cleanup (de-hum/de-noise/de-plosive/leveler)
+//     → live afftdn/gate/compressor → equalizer bands → lowpass → [master-bus]
+//     → alimiter (limiter) → fade-in → fade-out → loudnorm
 //
 // settings: { freqs, gains(dB), hpf, lpf, lufsTarget, truePeak,
-//             dynamics:{ comp?, limiter?, gate?, denoise? } }
+//             cleanupChain?, dynamics:{ comp?, limiter?, gate?, denoise? } }
 //           (the shape returned by audio-graph.js getSettings()). Any field may be absent.
 // fades:    { fadeIn, fadeOut, duration } — seconds.
 //
@@ -159,6 +246,8 @@ export function buildAudioFilterChain(settings = {}, fades = {}) {
   if (isFinite(hpf) && hpf > 20) out.push('highpass=f=' + Math.round(hpf));
 
   const dyn = settings.dynamics || {};
+  const cleanup = buildMasteringCleanupFilter(settings.cleanupChain);
+  if (cleanup) out.push(cleanup);
   const dn = denoiseFilter(dyn.denoise); if (dn) out.push(dn);
   const gate = gateFilter(dyn.gate); if (gate) out.push(gate);
   const comp = compressorFilter(dyn.comp); if (comp) out.push(comp);

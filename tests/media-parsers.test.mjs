@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 
 import { parseSubtitles, parseTimestamp } from '../docs/types/media/subtitles.js';
 import { parseId3 } from '../docs/types/media/id3.js';
-import { buildAcxExportArgs, buildAcxFilterChain, buildAudioFilterChain } from '../docs/types/media/audio-filters.js';
+import { buildAcxExportArgs, buildAcxFilterChain, buildAudioFilterChain, buildMasteringCleanupFilter } from '../docs/types/media/audio-filters.js';
 import { evaluateAcx } from '../docs/types/media/qc.js';
 import {
   presetById,
+  describeParams,
   resolveExportAudioSettings,
   resolveExportParams,
 } from '../docs/types/media/export-presets.js';
@@ -197,6 +198,46 @@ function chapFrame({ id = 'ch', startMs = 0, endMs = 1000, title = 'Chapter' }) 
   }
   const unexpectedCharacterPresets = ids.filter((id) => id.startsWith('char-'));
   assert.equal(unexpectedCharacterPresets.length, 0, 'preset availability: excludes character presets');
+}
+
+{
+  const p = resolveExportParams(presetById('podcast-cleanup-mp3'), {}, 'wav');
+  assert.equal(p.cleanupChain, 'spoken-cleanup', 'cleanup preset resolves cleanup chain marker');
+  assert.equal(p.sampleRate, null, 'cleanup preset keeps source sample-rate');
+  assert.equal(p.channels, null, 'cleanup preset keeps source channels');
+  assert.equal(p.lufsTarget, -16, 'cleanup preset carries podcast loudnorm target');
+  assert.equal(p.truePeak, -1.5, 'cleanup preset carries ffmpeg loudnorm TP target');
+
+  const desc = describeParams(p);
+  assert.ok(desc.includes('cleanup: de-hum, de-noise, de-plosive, leveler'), 'cleanup preset summary names cleanup stages');
+  assert.ok(desc.includes('loudnorm target -16 LUFS / TP -1.5 dBTP'), 'cleanup preset summary labels TP as loudnorm target');
+
+  const chainSettings = resolveExportAudioSettings(p, {
+    freqs: [120, 4000],
+    gains: [0, 1.5],
+    hpf: 20,
+    lpf: 20000,
+  });
+  assert.equal(chainSettings.cleanupChain, 'spoken-cleanup', 'cleanup export settings carry cleanup chain');
+  const cleanupOnly = buildMasteringCleanupFilter(chainSettings.cleanupChain);
+  assert.ok(cleanupOnly.includes('highpass=f=75'), 'cleanup chain: de-hum includes highpass cleanup');
+  assert.ok(cleanupOnly.includes('bandreject=f=60:t=h:w=8'), 'cleanup chain: de-hum includes 60 Hz notch');
+  assert.ok(cleanupOnly.includes('bandreject=f=120:t=h:w=8'), 'cleanup chain: de-hum includes 120 Hz harmonic notch');
+  assert.ok(cleanupOnly.includes('afftdn=nr=8'), 'cleanup chain: de-noise uses afftdn');
+  assert.ok(cleanupOnly.includes('highpass=f=90'), 'cleanup chain: de-plosive helper uses heuristic highpass');
+  assert.ok(cleanupOnly.includes('equalizer=f=120:t=q:w=0.9:g=-2.5'), 'cleanup chain: de-plosive helper uses low-frequency cut');
+  assert.ok(cleanupOnly.includes('dynaudnorm=f=500:g=15:p=0.9:m=8'), 'cleanup chain: leveler uses conservative dynaudnorm');
+
+  const chain = buildAudioFilterChain(chainSettings, {});
+  assert.ok(chain.includes('equalizer=f=4000:width_type=o:width=1:g=1.5'), 'cleanup preset: live EQ still follows cleanup');
+  assert.ok(
+    chain.indexOf('dynaudnorm=f=500:g=15:p=0.9:m=8') < chain.indexOf('equalizer=f=4000:width_type=o:width=1:g=1.5'),
+    'cleanup preset: dynaudnorm happens before EQ',
+  );
+  assert.ok(
+    chain.indexOf('dynaudnorm=f=500:g=15:p=0.9:m=8') < chain.indexOf('loudnorm=I=-16:TP=-1.5:LRA=11'),
+    'cleanup preset: dynaudnorm happens before final loudnorm',
+  );
 }
 
 {

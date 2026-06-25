@@ -13,7 +13,8 @@
 //   { kind, container, bitrate, sampleRate, channels, lufsTarget, truePeak, video }
 // where bitrate is an ffmpeg `-b:a` value (e.g. '192k') or null for VBR/default,
 // lufsTarget is a number (LUFS) or null (no loudnorm), truePeak is the loudnorm TP dB,
-// and acxChain marks presets that must use the dedicated ACX export op.
+// and acxChain marks presets that must use the dedicated ACX export op. cleanupChain
+// names an export-only ffmpeg mastering cleanup chain expanded by audio-filters.js.
 //
 // masterBus is an opt-in mastering stage flag:
 // - false / undefined -> no master-bus processing
@@ -37,6 +38,12 @@ export const EXPORT_PRESETS = [
     id: 'podcast-mp3-master-bus', label: 'Podcast MP3 + Master Bus (−16 LUFS, 44.1k, 192k)', kind: 'audio',
     container: 'mp3', bitrate: '192k', sampleRate: 44100, channels: 2,
     lufsTarget: -16, truePeak: -1.5, masterBus: true,
+  },
+  {
+    id: 'podcast-cleanup-mp3', label: 'Podcast Cleanup MP3 (source rate/ch, −16 LUFS, 192k)', kind: 'audio',
+    container: 'mp3', bitrate: '192k', sampleRate: null, channels: null,
+    lufsTarget: -16, truePeak: -1.5,
+    cleanupChain: 'spoken-cleanup',
   },
   {
     id: 'acx-mp3', label: 'Audiobook ACX MP3 (mono, 44.1k, 192k CBR, −20 LUFS)', kind: 'audio',
@@ -85,6 +92,7 @@ export function resolveExportParams(preset, overrides, srcExt) {
       cbr: !!preset.cbr,
       acxChain: !!preset.acxChain,
       masterBus: !!preset.masterBus,
+      cleanupChain: preset.cleanupChain || null,
       video: preset.video || null,
     };
   }
@@ -103,6 +111,7 @@ export function resolveExportParams(preset, overrides, srcExt) {
       ? null : Number(overrides.lufsTarget),
     truePeak: -1.5,
     masterBus: false,
+    cleanupChain: null,
     cbr: false,
     acxChain: false,
     video: null,
@@ -118,6 +127,7 @@ export function resolveExportAudioSettings(p, settings = {}) {
     chainSettings.truePeak = p.truePeak;
   }
   if (p.masterBus) chainSettings.masterBus = true;
+  if (p.cleanupChain) chainSettings.cleanupChain = p.cleanupChain;
   return chainSettings;
 }
 
@@ -126,6 +136,7 @@ export function resolveExportAudioSettings(p, settings = {}) {
 export function describeParams(p) {
   const bits = [];
   if (p.acxChain) bits.push('ACX chain');
+  if (p.cleanupChain) bits.push('cleanup: de-hum, de-noise, de-plosive, leveler');
   if (p.masterBus) bits.push('master bus');
   if (p.video) {
     if (p.video.scale) bits.push(p.video.scale.split(':').pop() + 'p');
@@ -135,7 +146,10 @@ export function describeParams(p) {
   else if (p.channels === 2) bits.push('stereo');
   if (p.sampleRate) bits.push((p.sampleRate / 1000) + 'k');
   if (p.bitrate) bits.push(p.bitrate + (p.cbr ? ' CBR' : ''));
-  if (p.lufsTarget !== null && p.lufsTarget !== undefined) bits.push('normalize ' + p.lufsTarget + ' LUFS');
+  if (p.lufsTarget !== null && p.lufsTarget !== undefined) {
+    bits.push('loudnorm target ' + p.lufsTarget + ' LUFS'
+      + (p.truePeak !== null && p.truePeak !== undefined ? ' / TP ' + p.truePeak + ' dBTP' : ''));
+  }
   return bits.join(', ');
 }
 

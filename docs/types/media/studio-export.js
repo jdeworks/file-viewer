@@ -60,8 +60,9 @@ function describePresetTarget(preset) {
   else bits.push('sample rate match source');
   if (preset.bitrate) bits.push(preset.cbr ? `${preset.bitrate} CBR` : preset.bitrate);
   else bits.push('VBR');
-  if (preset.lufsTarget !== null && preset.lufsTarget !== undefined) bits.push(`${preset.lufsTarget} LUFS`);
-  if (preset.truePeak !== null && preset.truePeak !== undefined) bits.push(`TP ${preset.truePeak} dBTP`);
+  if (preset.cleanupChain) bits.push('export cleanup chain');
+  if (preset.lufsTarget !== null && preset.lufsTarget !== undefined) bits.push(`loudnorm target ${preset.lufsTarget} LUFS`);
+  if (preset.truePeak !== null && preset.truePeak !== undefined) bits.push(`loudnorm TP target ${preset.truePeak} dBTP`);
   if (preset.masterBus) bits.push('master bus');
   return bits.join(', ');
 }
@@ -137,7 +138,7 @@ export function buildExportPanel(intake, mediaEl, kind) {
   if (isAudio) {
     const cardWrap = document.createElement('div');
     cardWrap.className = 'media-export-preset-cards';
-    const workflowPresetIds = ['podcast-mp3', 'acx-mp3', 'custom'];
+    const workflowPresetIds = ['podcast-mp3', 'podcast-cleanup-mp3', 'acx-mp3', 'custom'];
     const workflowPresets = workflowPresetIds.map((id) => availablePresets.find((preset) => preset.id === id)).filter(Boolean);
     for (const p of workflowPresets) {
       const card = document.createElement('button');
