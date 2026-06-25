@@ -41,6 +41,7 @@ import {
   classifyFfmpegError,
   cancelFfmpeg,
   formatFfmpegError,
+  loadFfmpeg,
   buildSubtitleBurnArgs,
   __getFfmpegInstanceForTest,
   __setFfmpegInstanceForTest,
@@ -577,6 +578,57 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.equal(fake.exitCalls, 1, 'transcoder cancel helper: exits cached ffmpeg instance');
   assert.equal(__getFfmpegInstanceForTest(), null, 'transcoder cancel helper: clears cached instance for reload');
   __setFfmpegInstanceForTest(null);
+}
+
+{
+  const savedWindow = globalThis.window;
+  const savedFetch = globalThis.fetch;
+  const ffmpegShim = `(function(){
+    window.__ffmpegSetProgressCalled = false;
+    window.__ffmpegLoadCalled = false;
+    window.__ffmpegCreateOptions = null;
+
+    window.FFmpeg = {
+      createFFmpeg: function (opts) {
+        window.__ffmpegCreateOptions = opts;
+        return {
+          setProgress: function (fn) {
+            window.__ffmpegSetProgressCalled = typeof fn === 'function';
+          },
+          load: async function () {
+            window.__ffmpegLoadCalled = true;
+          },
+        };
+      },
+    };
+  })();`;
+
+  globalThis.window = { __ffmpegCreateOptions: null };
+  globalThis.fetch = async function (url) {
+    if (String(url).endsWith('ffmpeg/ffmpeg.min.js')) {
+      return {
+        ok: true,
+        status: 200,
+        text: async () => ffmpegShim,
+      };
+    }
+    throw new Error('unexpected fetch: ' + url);
+  };
+
+  try {
+    __setFfmpegInstanceForTest(null);
+    await loadFfmpeg(() => {
+      return;
+    });
+    assert.equal(window.__ffmpegCreateOptions.mainName, 'main', 'transcoder load: createFFmpeg uses mainName=main');
+    assert.equal(window.__ffmpegCreateOptions.corePath.endsWith('ffmpeg-core.js'), true, 'transcoder load: createFFmpeg keeps bundled core path');
+    assert.equal(window.__ffmpegSetProgressCalled, true, 'transcoder load: createFFmpeg instance receives progress binding during setup');
+    assert.equal(window.__ffmpegLoadCalled, true, 'transcoder load: invokes ffmpeg load');
+    __setFfmpegInstanceForTest(null);
+  } finally {
+    globalThis.window = savedWindow;
+    globalThis.fetch = savedFetch;
+  }
 }
 
 {

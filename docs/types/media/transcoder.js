@@ -99,7 +99,7 @@ export async function loadFfmpeg(onProgress) {
     return ffmpegInstance;
   }
   const FFmpeg = await loadGlobal(vendor('ffmpeg/ffmpeg.min.js'), 'FFmpeg');
-  const ff = FFmpeg.createFFmpeg({ corePath: CORE_JS, log: false });
+  const ff = FFmpeg.createFFmpeg({ corePath: CORE_JS, log: false, mainName: 'main' });
   if (onProgress) ff.setProgress(onProgress);
   await ff.load();
   ffmpegInstance = ff;
