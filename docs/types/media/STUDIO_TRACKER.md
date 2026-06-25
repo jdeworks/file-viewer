@@ -171,6 +171,14 @@ Progress:
   - Spectrum & EQ now hydrates its slider/filter UI from current graph state, so opening it after a quick
     intent reflects the active preset instead of resetting visible controls to flat.
   - Validation passed: `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+- `72dac4e2` — `Polish audio QC report card`.
+  - QC mode now opens as a compact ACX report-card workflow instead of a prose-heavy intro.
+  - Added a pre-run checklist for RMS, sample peak, noise floor, sample rate, channels, head silence,
+    and tail silence, with Run QC and Export for ACX actions visible before analysis.
+  - Post-run rows keep the existing ACX metrics and verdict while adding a compact action/status column
+    and preserving fix guidance on non-pass rows.
+  - Export linkage is visible in the QC surface as a concise mono 44.1 kHz MP3 192k CBR ACX-chain target.
+  - Validation passed: `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
 
 ### P1 — Video Workspace Polish Gate
 
