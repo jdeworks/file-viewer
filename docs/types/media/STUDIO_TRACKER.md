@@ -348,12 +348,29 @@ Status: committed.
 
 ### M4 — Narratu / Auto-Audiobook Parity Pass
 
-Status: open.
+Status: committed.
 
 - Compare useful generic EQ presets against `narratu/apps/web/src/utils/eq-presets.ts`.
 - Add generic presets only; avoid story/character-specific presets unless clearly labeled as examples.
 - Consider a master-bus preset based on `narratu/packages/engine/src/audio/ffmpeg-filters.ts`.
 - Preserve auto-audiobook lessons: no hidden gain multipliers, preserve source sample rate unless a preset overrides it, and show export setting provenance clearly.
+- Added generic Narratu-derived EQ presets only: ACX Standard, Findaway Voices, Intimate Audiobook,
+  Audacity Low Rolloff, Deep Male Narrator, Proximity Fix, Boomy Voice Cleanup, Female Clarity,
+  Thin Voice Body Fix, BBC Broadcast, NPR Spoken Word, RODE Podcast, Radio Drama, and
+  YouTube/Streaming. No `char-*` presets were added.
+- Added an opt-in export-only master bus profile based on Narratu's default master bus:
+  65 Hz HPF, 120/3200/8000 Hz bus shaping, and 2:1 glue compressor. The live graph stays unchanged.
+- Added `Podcast MP3 + Master Bus` as an explicit preset and shared pure resolution helper so the
+  same chain settings feed export summary and actual ffmpeg execution.
+- Preserved source-match behavior for custom exports: sample rate and channel count remain `null`
+  unless a user or preset explicitly chooses them.
+- Export summaries now distinguish explicit output targets from source-matching channels/sample rate
+  and include master-bus provenance when selected.
+- Changed paths: `spectrum-draw.js`, `audio-filters.js`, `export-presets.js`, `studio-export.js`,
+  `renderer.js`, `tests/media-parsers.test.mjs`.
+- Validation passed: `node --check docs/types/media/spectrum-draw.js docs/types/media/renderer.js docs/types/media/audio-filters.js docs/types/media/studio-export.js docs/types/media/export-presets.js tests/media-parsers.test.mjs`,
+  `node tests/media-parsers.test.mjs`, `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+- Committed in `53f34891` — `Add media master bus parity presets`.
 
 ### M5 — ffmpeg Failure And Recovery
 
