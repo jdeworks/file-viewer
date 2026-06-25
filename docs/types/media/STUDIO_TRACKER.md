@@ -214,7 +214,7 @@ Progress:
 
 ### P1 — Video Workspace Polish Gate
 
-Status: in progress.
+Status: committed.
 
 Goal: make the video branch feel like the same studio family as audio while preserving its
 video-specific workflows.
@@ -292,6 +292,14 @@ Progress:
     `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
   - Caveat: P1 still needs a final all-video-mode visual pass before marking the Video
     Workspace Polish Gate committed.
+- Final P1 visual QA:
+  - Captured `Sample.avi` across Watch, Adjust, Timeline, Subtitles, and Export at desktop
+    and mobile sizes in `/tmp/media-workspace-shots/final-video-p1-host/`.
+  - Geometry evidence: every mode had active tabs, visible video workspace, visible mode
+    panel, compact first-viewport top inset, and zero horizontal overflow at 1280x900 and
+    390x844.
+  - P1 is now committed; remaining open M-items below are follow-up maintenance/parity work,
+    not blockers for the Video Workspace Polish Gate.
 
 ### M1 — Video Trim Correctness
 
