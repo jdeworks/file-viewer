@@ -465,6 +465,12 @@ Status: committed.
   changes run the mixed `tests/movediff.test.mjs`; image changes run image unit tests; metagame
   changes run the non-exhaustive metagame unit tests. Shared/global/generated/vendor/test-runner
   paths still fall back to the full existing unit set.
+- Follow-up selector tightening: generated cache artifacts `docs/asset-manifest.json` and
+  `docs/sw.js` are neutral when paired with another clearly owned path, and
+  `docs/assets/preview-media.css` is now media-owned. Media runtime/style changes with only those
+  generated cache files should select `tests/media-parsers.test.mjs` and `media-studio` instead of
+  aggregate smoke. Cache-only, unknown, shared app shell, package/vendor, and test-runner changes
+  remain conservative full/aggregate fallbacks.
 - Validation for the fast selector update passed: `bash -n scripts/check.sh`, `git diff --check -- scripts/check.sh`,
   `./scripts/check.sh --fast`. Because `scripts/check.sh` itself changed, the fast run correctly
   selected the conservative full existing unit set and aggregate smoke.
@@ -474,7 +480,7 @@ Status: committed.
 
 ### R1 — Cleanup Mastering Preset
 
-Status: first slice committed; measured true-peak and staged compare remain open.
+Status: committed.
 
 - Added a pure export-only mastering cleanup chain in `audio-filters.js`:
   de-hum highpass + 60/120 Hz notch filters, `afftdn` de-noise, heuristic de-plosive
@@ -495,12 +501,11 @@ Status: first slice committed; measured true-peak and staged compare remain open
 - Fast aggregate timing evidence: `media-3d` 18.373s, `media-studio` 10.252s,
   `ebook-git` 73.422s, `examples-catalog` 129.536s, smoke total 345s.
 - Committed in `995aa90b` — `Add media cleanup mastering preset`.
-- Remaining R1 work: measured/ffmpeg-backed true-peak pass, raw -> tuned -> dynamics ->
-  master-bus compare polish, and any additional copy needed after true-peak is real.
+- Remaining R1 work: none currently identified; chapterized audiobook export is the next roadmap item.
 
 ### R1 — Estimated True Peak And Metric Copy
 
-Status: committed; staged compare remains open.
+Status: committed.
 
 - Added `estimatedTruePeak()` in `qc.js`: deterministic browser-only 4x cubic oversampling
   over the mono mix. It is explicitly labeled as an estimate, not a certified BS.1770
@@ -519,7 +524,32 @@ Status: committed; staged compare remains open.
 - Fast aggregate timing evidence: `media-3d` 17.526s, `media-studio` 8.275s,
   `ebook-git` 70.704s, `examples-catalog` 118.170s, smoke total 316s.
 - Committed in `3725ea8f` — `Add estimated true peak QC metric`.
-- Remaining R1 work: raw -> tuned -> dynamics -> master-bus compare polish.
+- Follow-up R1 work: raw -> tuned -> dynamics -> master-bus compare polish committed below.
+
+### R1 — Staged Mastering Chain Compare
+
+Status: committed.
+
+- Added a pure `mastering-stages.js` helper that summarizes `Raw source`, `Tune/EQ`,
+  `Dynamics`, and `Master bus` stages from existing graph/export settings without extra decode
+  or ffmpeg work.
+- Tune Spectrum/EQ now shows a compact stage strip under the overlaid original/processed legend,
+  updating when EQ, filters, LUFS normalization, or dynamics settings change.
+- Export now shows the same stage strip with concrete preset/master-bus details for Podcast,
+  Cleanup, ACX, and Custom paths. The Custom/loudness-off path does not show a phantom TP target.
+- Smoke coverage asserts the stage labels in Tune/Export and verifies ACX/Cleanup master-bus
+  details plus the Custom no-phantom-TP case.
+- Changed paths: `mastering-stages.js`, `audio-graph.js`, `spectrum-panel.js`,
+  `studio-export.js`, `preview-media.css`, `tests/areas/media-studio.mjs`,
+  `docs/asset-manifest.json`, `docs/sw.js`, plus roadmap/tracker updates and `scripts/check.sh`
+  selector tightening.
+- Validation passed: `node --check docs/types/media/mastering-stages.js docs/types/media/audio-graph.js docs/types/media/spectrum-panel.js docs/types/media/studio-export.js tests/areas/media-studio.mjs`,
+  `git diff --check`, `node tests/smoke-area.mjs media-studio` (worker), `./scripts/check.sh --fast`.
+- Conservative fast-gate timing for this mixed script/media batch: unit tests 1s, aggregate smoke
+  299s, `media-3d` 16.812s, `media-studio` 7.473s, `ebook-git` 69.739s,
+  `examples-catalog` 109.871s. The aggregate path was selected only because `scripts/check.sh`
+  itself changed.
+- Committed in `43c06b28` — `Add media mastering stage compare`.
 
 ### R4 — Audio/Video Overlap Diff Compare
 

@@ -19,6 +19,7 @@ import { describeDynamics } from './audio-filters.js';
 import {
   EXPORT_PRESETS, presetById, resolveExportParams, resolveExportAudioSettings, describeParams, buildAdvancedOverrides,
 } from './export-presets.js';
+import { renderStageCompare, summarizeMasteringStages } from './mastering-stages.js';
 
 function mkBtn(text, cls) {
   const b = document.createElement('button');
@@ -190,6 +191,9 @@ export function buildExportPanel(intake, mediaEl, kind) {
 
   const summary = document.createElement('div');
   summary.className = 'media-export-summary';
+  const stageCompare = document.createElement('div');
+  stageCompare.className = 'sp-stage-compare media-export-stage-compare';
+  panel.appendChild(stageCompare);
   panel.appendChild(summary);
 
   function currentPreset() { return presetById(presetSel.value); }
@@ -283,6 +287,7 @@ export function buildExportPanel(intake, mediaEl, kind) {
     const s = readLiveSettings(mediaEl) || {};
     const fades = collectFades();
     const eqSettings = resolveExportAudioSettings(p, s);
+    renderStageCompare(stageCompare, summarizeMasteringStages(eqSettings, p));
     const chain = p.acxChain
       ? buildAcxFilterChain(acxChainOptions(p))
       : buildAudioFilterChain(eqSettings, fades);
@@ -437,6 +442,7 @@ Provenance = -af "${chain || 'none'}"`;
 
   // Keep the summary fresh when the panel is shown (EQ may have changed since build).
   panel.addEventListener('pointerenter', refreshSummary);
+  mediaEl.addEventListener('media-graph-change', refreshSummary);
   syncAdvancedVisibility();
   refreshSummary();
 
@@ -447,6 +453,7 @@ Provenance = -af "${chain || 'none'}"`;
         try { URL.revokeObjectURL(u); } catch { /* ignore */ }
       }
       blobUrls.length = 0;
+      mediaEl.removeEventListener('media-graph-change', refreshSummary);
     },
   };
 }

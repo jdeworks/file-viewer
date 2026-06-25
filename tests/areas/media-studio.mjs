@@ -132,6 +132,10 @@ export async function run(ctx) {
     if (spLegend.some((t) => /Original/.test(t)) && spLegend.some((t) => /Processed/.test(t)))
       pass('audio spectrum: overlaid original-vs-processed legend present');
     else fail('sp legend: ' + spLegend.join(','));
+    const tuneStages = await page.$$eval(`${tunePanelSel} .sp-stage-compare .sp-stage-label`, (els) => els.map((e) => e.textContent));
+    if (['Raw source', 'Tune/EQ', 'Dynamics', 'Master bus'].every((label) => tuneStages.includes(label)))
+      pass('R1: Tune staged compare shows raw/tune/dynamics/master-bus labels');
+    else fail('tune stages: ' + tuneStages.join(','));
     // LUFS normalization: a target selector offers the streaming/broadcast presets.
     const normOpts = await page.$$eval(`${tunePanelSel} .sp-lufs-row option`, (els) => els.map((e) => e.textContent));
     if (normOpts.some((t) => /-14/.test(t)) && normOpts.some((t) => /-23/.test(t)) && normOpts.includes('Off'))
@@ -603,6 +607,13 @@ export async function run(ctx) {
   if (/Export processed audio/i.test(exportRunText)) pass('P1: export button labelled'); else fail('export run btn: ' + exportRunText);
   const exportSummary = exportPanel ? await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent) : '';
   if (/live chain =/.test(exportSummary) && /Output =/.test(exportSummary) && /Provenance = -af "/.test(exportSummary)) pass('P1: provenance-style export summary rendered'); else fail('export summary: ' + exportSummary.slice(0, 120));
+  const exportStages = await page.$$eval(
+    '#previewHost .media-mode-panel[data-mode="export"] .media-export-stage-compare .sp-stage-label',
+    (els) => els.map((e) => e.textContent),
+  );
+  if (['Raw source', 'Tune/EQ', 'Dynamics', 'Master bus'].every((label) => exportStages.includes(label)))
+    pass('R1: Export staged compare shows raw/tune/dynamics/master-bus labels');
+  else fail('export stages: ' + exportStages.join(','));
   const exportFmts = await page.$$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-fmt option', (els) => els.map((e) => e.value));
   if (['source', 'mp3', 'wav', 'm4a', 'ogg'].every((f) => exportFmts.includes(f))) pass('P1: export format options (source/mp3/wav/m4a/ogg)'); else fail('export fmts: ' + exportFmts.join(','));
   const fadeInPresent = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-ed-fade-in');
@@ -630,10 +641,14 @@ export async function run(ctx) {
   // Switch to Audiobook (ACX): summary must reflect mono / 192k CBR / −20 LUFS.
   await page.selectOption('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset', 'acx-mp3');
   const acxSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
+  const acxStage = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-stage-compare', (e) => e.textContent).catch(() => '');
   if (/Profile Audiobook ACX MP3/.test(acxSummary) && /mono/.test(acxSummary)
     && /192k CBR/.test(acxSummary) && /loudnorm target -20 LUFS/.test(acxSummary) && /loudnorm TP target -3 dBTP/.test(acxSummary))
     pass('P2: ACX preset summary shows mono, 192k CBR, loudnorm -20 LUFS, TP target -3');
   else fail('acx summary: ' + acxSummary.slice(0, 180));
+  if (/Master bus/.test(acxStage) && /ACX chain/.test(acxStage) && /loudnorm -20 LUFS/.test(acxStage))
+    pass('R1: Export master-bus stage reflects ACX chain');
+  else fail('acx stage: ' + acxStage.slice(0, 220));
   await page.click('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset-card[data-preset="podcast-mp3"]');
   const podcastSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
   if (/Profile Podcast MP3/.test(podcastSummary) && /loudnorm target -16 LUFS/.test(podcastSummary) && /192k/.test(podcastSummary) && /loudnorm TP target -1\.5 dBTP/.test(podcastSummary))
@@ -641,11 +656,15 @@ export async function run(ctx) {
   else fail('podcast summary: ' + podcastSummary.slice(0, 180));
   await page.click('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset-card[data-preset="podcast-cleanup-mp3"]');
   const cleanupSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
+  const cleanupStage = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-stage-compare', (e) => e.textContent).catch(() => '');
   if (/Profile Podcast Cleanup MP3/.test(cleanupSummary) && /export cleanup chain/.test(cleanupSummary)
     && /sample rate match source/.test(cleanupSummary) && /channels match source/.test(cleanupSummary)
     && /afftdn/.test(cleanupSummary) && /dynaudnorm/.test(cleanupSummary))
     pass('P2: Cleanup preset summary shows source-preserving cleanup chain');
   else fail('cleanup summary: ' + cleanupSummary.slice(0, 220));
+  if (/Master bus/.test(cleanupStage) && /Cleanup chain/.test(cleanupStage) && /sample rate matches source/.test(cleanupStage) && /channels match source/.test(cleanupStage))
+    pass('R1: Export master-bus stage reflects Cleanup source-preserving chain');
+  else fail('cleanup stage: ' + cleanupStage.slice(0, 220));
   // Switching to Custom reveals the override fields (container/bitrate/sr/channels/loudness).
   await page.selectOption('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset', 'custom');
   const advShown = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-adv', (e) => e.hidden).catch(() => null);
@@ -653,9 +672,12 @@ export async function run(ctx) {
   const hasBitrate = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-bitrate');
   const hasLufs = await page.$('#previewHost .media-mode-panel[data-mode="export"] .media-export-lufs');
   const customNote = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-adv-note', (e) => e.textContent).catch(() => '');
+  const customStage = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-stage-compare', (e) => e.textContent).catch(() => '');
   if (advShown === false && hasContainer && hasBitrate && hasLufs && /manual container|manual sample/.test((customNote || '').toLowerCase()))
     pass('P2: Custom reveals manual path controls with explicit guidance');
   else fail('custom adv: shown=' + advShown + ' c=' + !!hasContainer + ' b=' + !!hasBitrate + ' l=' + !!hasLufs + ' note=' + customNote);
+  if (!/TP -1\.5 dBTP/.test(customStage)) pass('R1: Custom loudness-off stage does not show phantom TP target');
+  else fail('custom stage should not show TP with loudness off: ' + customStage.slice(0, 220));
   await page.click('#previewHost .media-mode-panel[data-mode="export"] .media-export-preset-card[data-preset="acx-mp3"]');
   const acxCardSummary = await page.$eval('#previewHost .media-mode-panel[data-mode="export"] .media-export-summary', (e) => e.textContent).catch(() => '');
   if (/Profile Audiobook ACX MP3/.test(acxCardSummary) && /Output =/.test(acxCardSummary))

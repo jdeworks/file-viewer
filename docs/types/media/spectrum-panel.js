@@ -10,6 +10,7 @@ import { getGraph, EQ_FREQS, EQ_LABELS } from './audio-graph.js';
 import {
   PRESETS, LUFS_TARGETS, drawSpectrum, drawBandEnergy, measureLufs, fmtLufsColor,
 } from './spectrum-draw.js';
+import { renderStageCompare, summarizeMasteringStages } from './mastering-stages.js';
 
 // Mount the panel into `container`, processing `mediaEl`'s audio. Returns
 // { destroy() }. Returns a no-op controller if WebAudio is unavailable or the
@@ -48,6 +49,9 @@ export function mountSpectrumPanel(container, mediaEl) {
     '<span class="sp-leg sp-leg-proc">▮ Processed</span>'
     + '<span class="sp-leg sp-leg-orig">— Original</span>'
     + '<span class="sp-leg sp-leg-eq">— EQ curve</span>';
+
+  const stageCompare = document.createElement('div');
+  stageCompare.className = 'sp-stage-compare';
 
   // LUFS row: measured value + normalization target selector.
   const lufsRow = document.createElement('div');
@@ -148,7 +152,7 @@ export function mountSpectrumPanel(container, mediaEl) {
   lpfInput.value = String(currentLpf);
   lpfVal.textContent = currentLpf >= 1000 ? Math.round(currentLpf / 100) / 10 + 'kHz' : `${currentLpf}Hz`;
 
-  wrap.append(specCanvas, legend, bandCanvas, lufsRow, eqRow, filterRow, presetRow);
+  wrap.append(specCanvas, legend, stageCompare, bandCanvas, lufsRow, eqRow, filterRow, presetRow);
   container.append(wrap);
 
   function mkBtn(text) {
@@ -171,6 +175,10 @@ export function mountSpectrumPanel(container, mediaEl) {
     lpfVal.textContent = p.lpf >= 1000 ? Math.round(p.lpf / 100) / 10 + 'kHz' : p.lpf + 'Hz';
     graph.setLpf(p.lpf);
   }
+  function refreshStages() {
+    renderStageCompare(stageCompare, summarizeMasteringStages(graph.getSettings()));
+  }
+  refreshStages();
 
   // ── RAF loop (dual analysers → overlaid spectrum; LUFS measure + normalize) ──
   let lufsTimer = 0;
@@ -211,6 +219,7 @@ export function mountSpectrumPanel(container, mediaEl) {
   mediaEl.addEventListener('play', start);
   mediaEl.addEventListener('pause', stop);
   mediaEl.addEventListener('ended', stop);
+  mediaEl.addEventListener('media-graph-change', refreshStages);
   if (!mediaEl.paused) start();
 
   return {
@@ -219,6 +228,7 @@ export function mountSpectrumPanel(container, mediaEl) {
       mediaEl.removeEventListener('play', start);
       mediaEl.removeEventListener('pause', stop);
       mediaEl.removeEventListener('ended', stop);
+      mediaEl.removeEventListener('media-graph-change', refreshStages);
       // Reset makeup so a later open doesn't inherit a stale normalization gain.
       // (The LUFS target is intentionally LEFT in the graph so the export panel can
       // still read the user's chosen normalization after they close the EQ panel.)

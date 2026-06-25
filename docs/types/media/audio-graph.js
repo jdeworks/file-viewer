@@ -144,6 +144,7 @@ export function getGraph(mediaEl) {
   let userGain = 1;       // mixer (per-track volume) component
   let makeup = 1;         // LUFS-normalization component
   function applyGain() { makeupGain.gain.value = userGain * makeup; }
+  function emitChange() { mediaEl.dispatchEvent(new CustomEvent('media-graph-change')); }
 
   if (ctx.state === 'suspended') ctx.resume();
 
@@ -154,16 +155,16 @@ export function getGraph(mediaEl) {
     preAnalyser, postAnalyser,
     // Backwards-compatible single-analyser accessor (the wet/processed one).
     getAnalyser() { return postAnalyser; },
-    setBandGain(i, g) { if (i >= 0 && i < eqNodes.length) { savedGains[i] = g; eqNodes[i].gain.value = g; } },
-    setAllGains(gains) { gains.forEach((g, i) => { savedGains[i] = g; if (eqNodes[i]) eqNodes[i].gain.value = g; }); },
+    setBandGain(i, g) { if (i >= 0 && i < eqNodes.length) { savedGains[i] = g; eqNodes[i].gain.value = g; emitChange(); } },
+    setAllGains(gains) { gains.forEach((g, i) => { savedGains[i] = g; if (eqNodes[i]) eqNodes[i].gain.value = g; }); emitChange(); },
     getGains() { return [...savedGains]; },
-    setHpf(f) { savedHpf = Math.max(20, Math.min(500, f)); hpf.frequency.value = savedHpf; },
-    setLpf(f) { savedLpf = Math.max(5000, Math.min(20000, f)); lpf.frequency.value = savedLpf; },
+    setHpf(f) { savedHpf = Math.max(20, Math.min(500, f)); hpf.frequency.value = savedHpf; emitChange(); },
+    setLpf(f) { savedLpf = Math.max(5000, Math.min(20000, f)); lpf.frequency.value = savedLpf; emitChange(); },
     getHpf() { return savedHpf; },
     getLpf() { return savedLpf; },
     // LUFS normalization target (dB) the EQ panel is converging the live makeup to.
     // Stored here (not just in the panel) so the offline export can read it.
-    setLufsTarget(t) { lufsTarget = (t === null || t === undefined) ? null : t; },
+    setLufsTarget(t) { lufsTarget = (t === null || t === undefined) ? null : t; emitChange(); },
     getLufsTarget() { return lufsTarget; },
     // Snapshot of the full processing chain for the offline (ffmpeg) bake.
     getSettings() {
@@ -190,10 +191,10 @@ export function getGraph(mediaEl) {
     },
     // patch is a partial { enabled?, ... } merged into the named section. Live
     // sections (comp/limiter) re-splice the graph; bake-only ones just record.
-    setComp(patch) { Object.assign(comp, patch); if (compNode) applyCompParams(); rewireDynamics(); },
-    setLimiter(patch) { Object.assign(limiter, patch); if (limNode) applyLimParams(); rewireDynamics(); },
-    setGate(patch) { Object.assign(gate, patch); },
-    setDenoise(patch) { Object.assign(denoise, patch); },
+    setComp(patch) { Object.assign(comp, patch); if (compNode) applyCompParams(); rewireDynamics(); emitChange(); },
+    setLimiter(patch) { Object.assign(limiter, patch); if (limNode) applyLimParams(); rewireDynamics(); emitChange(); },
+    setGate(patch) { Object.assign(gate, patch); emitChange(); },
+    setDenoise(patch) { Object.assign(denoise, patch); emitChange(); },
     // The mixer gain (per-track volume, 0–2 etc). Multiplies with the LUFS makeup.
     getGainNode() { return makeupGain; },
     setUserGain(g) { userGain = g; applyGain(); },

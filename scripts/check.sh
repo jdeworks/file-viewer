@@ -201,6 +201,22 @@ print_fast_changed_paths() {
   print_fast_smoke_changed_paths "$@"
 }
 
+is_generated_cache_artifact() {
+  case "$1" in
+    docs/asset-manifest.json|docs/sw.js) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+print_neutral_generated_cache_note() {
+  local path
+
+  echo "  (fast) ignoring generated cache artifact(s) for selection:"
+  for path in "$@"; do
+    echo "    $path"
+  done
+}
+
 run_fast_unit_tests() {
   local changed_paths=()
   local collected_path
@@ -210,6 +226,8 @@ run_fast_unit_tests() {
 
   local unit_tests=()
   local unit_notes=()
+  local neutral_generated_cache_artifacts=()
+  local non_neutral_path_count=0
   local full_reason=""
   local path
 
@@ -250,8 +268,14 @@ run_fast_unit_tests() {
   }
 
   for path in "${changed_paths[@]}"; do
+    if is_generated_cache_artifact "$path"; then
+      neutral_generated_cache_artifacts+=("$path")
+      continue
+    fi
+
+    non_neutral_path_count=$((non_neutral_path_count + 1))
     case "$path" in
-      docs/types/media/*|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-helpers.mjs)
+      docs/types/media/*|docs/assets/preview-media.css|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-helpers.mjs)
         add_unit_test tests/media-parsers.test.mjs
         ;;
       docs/types/ebook/*|tests/areas/ebook-git.mjs|tests/movediff.test.mjs)
@@ -299,7 +323,7 @@ run_fast_unit_tests() {
       docs/core/*|docs/assets/*.css|docs/index.html)
         require_full_units "$path is shared app shell"
         ;;
-      docs/asset-manifest.json|docs/sw.js|docs/core/registry-runtime.generated.js|docs/core/registry-detect.generated.*|docs/core/settings-defaults.generated.json|docs/known/registry.generated.js|docs/types/image/renderer.generated.js)
+      docs/core/registry-runtime.generated.js|docs/core/registry-detect.generated.*|docs/core/settings-defaults.generated.json|docs/known/registry.generated.js|docs/types/image/renderer.generated.js)
         require_full_units "$path is generated shared runtime/cache state"
         ;;
       package.json|package-lock.json|npm-shrinkwrap.json|pnpm-lock.yaml|yarn.lock|docs/vendor/*|vendor/*|tests/package.json|tests/package-lock.json)
@@ -319,12 +343,18 @@ run_fast_unit_tests() {
   for path in "${unit_notes[@]}"; do
     echo "  (fast) $path"
   done
+  if [ "${#neutral_generated_cache_artifacts[@]}" -gt 0 ] && [ "$non_neutral_path_count" -gt 0 ] && [ -z "$full_reason" ]; then
+    print_neutral_generated_cache_note "${neutral_generated_cache_artifacts[@]}"
+  fi
 
   if [ "${#changed_paths[@]}" -eq 0 ]; then
     echo "  selected unit tests: full existing unit set (no changed paths detected after generators)"
     run_phase_unit_tests
   elif [ -n "$full_reason" ]; then
     echo "  selected unit tests: full existing unit set ($full_reason)"
+    run_phase_unit_tests
+  elif [ "$non_neutral_path_count" -eq 0 ]; then
+    echo "  selected unit tests: full existing unit set (only generated cache artifacts changed)"
     run_phase_unit_tests
   elif [ "${#unit_tests[@]}" -eq 0 ]; then
     echo "  selected unit tests: none (changed paths only map to smoke or skipped exhaustive suites)"
@@ -350,6 +380,8 @@ run_smoke_core() {
 
   local smoke_areas=()
   local area
+  local neutral_generated_cache_artifacts=()
+  local non_neutral_path_count=0
   local full_reason=""
   local path
 
@@ -372,8 +404,14 @@ run_smoke_core() {
   }
 
   for path in "${changed_paths[@]}"; do
+    if is_generated_cache_artifact "$path"; then
+      neutral_generated_cache_artifacts+=("$path")
+      continue
+    fi
+
+    non_neutral_path_count=$((non_neutral_path_count + 1))
     case "$path" in
-      docs/types/media/*|tests/areas/media-studio.mjs)
+      docs/types/media/*|docs/assets/preview-media.css|tests/areas/media-studio.mjs)
         add_smoke_area media-studio
         ;;
       tests/areas/media-3d.mjs|docs/types/3d/*|docs/types/image/*|docs/types/binary/midi/*|docs/types/binary/gamerom/*)
@@ -399,7 +437,7 @@ run_smoke_core() {
       docs/core/*|docs/assets/*.css|docs/index.html)
         require_full_smoke "$path is shared app shell"
         ;;
-      docs/asset-manifest.json|docs/sw.js|docs/core/registry-runtime.generated.js|docs/core/registry-detect.generated.*|docs/core/settings-defaults.generated.json|docs/known/registry.generated.js|docs/types/image/renderer.generated.js)
+      docs/core/registry-runtime.generated.js|docs/core/registry-detect.generated.*|docs/core/settings-defaults.generated.json|docs/known/registry.generated.js|docs/types/image/renderer.generated.js)
         require_full_smoke "$path is generated shared runtime/cache state"
         ;;
       package.json|package-lock.json|npm-shrinkwrap.json|pnpm-lock.yaml|yarn.lock|docs/vendor/*|vendor/*)
@@ -416,12 +454,18 @@ run_smoke_core() {
 
   echo "→ fast smoke selection"
   print_fast_smoke_changed_paths "${#changed_paths[@]}" "${changed_paths[@]}"
+  if [ "${#neutral_generated_cache_artifacts[@]}" -gt 0 ] && [ "$non_neutral_path_count" -gt 0 ] && [ -z "$full_reason" ]; then
+    print_neutral_generated_cache_note "${neutral_generated_cache_artifacts[@]}"
+  fi
 
   if [ "${#changed_paths[@]}" -eq 0 ]; then
     echo "  selected smoke: aggregate (no changed paths detected after generators)"
     FV_SMOKE_TIMING=1 node tests/smoke.mjs
   elif [ -n "$full_reason" ]; then
     echo "  selected smoke: aggregate ($full_reason)"
+    FV_SMOKE_TIMING=1 node tests/smoke.mjs
+  elif [ "$non_neutral_path_count" -eq 0 ]; then
+    echo "  selected smoke: aggregate (only generated cache artifacts changed)"
     FV_SMOKE_TIMING=1 node tests/smoke.mjs
   elif [ "${#smoke_areas[@]}" -eq 0 ]; then
     echo "  selected smoke: aggregate (no smoke areas determined)"
