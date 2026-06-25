@@ -93,6 +93,7 @@ export function mountSpectrumPanel(container, mediaEl) {
       gains[i] = g;
       val.textContent = g > 0 ? '+' + g : String(g);
       graph.setBandGain(i, g);
+      paintFrame();
     });
     col.append(val, slider, lbl);
     return { slider, val, col };
@@ -109,6 +110,7 @@ export function mountSpectrumPanel(container, mediaEl) {
   const hpfVal = document.createElement('span'); hpfVal.className = 'sp-filter-val'; hpfVal.textContent = '20Hz';
   hpfInput.addEventListener('input', () => {
     const f = parseInt(hpfInput.value); graph.setHpf(f); hpfVal.textContent = f + 'Hz';
+    paintFrame();
   });
   const lpfLabel = document.createElement('label'); lpfLabel.textContent = 'LPF ';
   const lpfInput = document.createElement('input');
@@ -118,6 +120,7 @@ export function mountSpectrumPanel(container, mediaEl) {
   lpfInput.addEventListener('input', () => {
     const f = parseInt(lpfInput.value); graph.setLpf(f);
     lpfVal.textContent = f >= 1000 ? Math.round(f / 100) / 10 + 'kHz' : f + 'Hz';
+    paintFrame();
   });
   filterRow.append(hpfLabel, hpfInput, hpfVal, lpfLabel, lpfInput, lpfVal);
 
@@ -166,6 +169,7 @@ export function mountSpectrumPanel(container, mediaEl) {
       s.val.textContent = g[i] > 0 ? '+' + g[i] : String(g[i] || 0);
     });
     graph.setAllGains(gains);
+    paintFrame();
   }
   function applyPreset(p) {
     if (!p) return;
@@ -174,18 +178,24 @@ export function mountSpectrumPanel(container, mediaEl) {
     lpfInput.value = String(p.lpf);
     lpfVal.textContent = p.lpf >= 1000 ? Math.round(p.lpf / 100) / 10 + 'kHz' : p.lpf + 'Hz';
     graph.setLpf(p.lpf);
+    paintFrame();
   }
   function refreshStages() {
     renderStageCompare(stageCompare, summarizeMasteringStages(graph.getSettings()));
   }
   refreshStages();
+  function paintFrame() {
+    drawSpectrum(specCanvas, graph.postAnalyser, gains, graph.preAnalyser);
+    drawBandEnergy(bandCanvas, graph.postAnalyser);
+    refreshStages();
+  }
+  requestAnimationFrame(paintFrame);
 
   // ── RAF loop (dual analysers → overlaid spectrum; LUFS measure + normalize) ──
   let lufsTimer = 0;
   function tick() {
     rafId = requestAnimationFrame(tick);
-    drawSpectrum(specCanvas, graph.postAnalyser, gains, graph.preAnalyser);
-    drawBandEnergy(bandCanvas, graph.postAnalyser);
+    paintFrame();
 
     if (++lufsTimer % 15 === 0) {   // ~250ms
       // Measure the PRE-makeup (post-EQ) loudness so normalization converges to the
@@ -212,9 +222,13 @@ export function mountSpectrumPanel(container, mediaEl) {
   function start() {
     if (rafId) return;
     graph.resume();
+    paintFrame();
     tick();
   }
-  function stop() { if (rafId) { cancelAnimationFrame(rafId); rafId = 0; } }
+  function stop() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    paintFrame();
+  }
 
   mediaEl.addEventListener('play', start);
   mediaEl.addEventListener('pause', stop);

@@ -179,6 +179,17 @@ Progress:
   - Spectrum & EQ now hydrates its slider/filter UI from current graph state, so opening it after a quick
     intent reflects the active preset instead of resetting visible controls to flat.
   - Validation passed: `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
+- Current audio interaction polish:
+  - The always-visible waveform now has a real red seek/playhead overlay and supports click/drag
+    scrubbing across the full waveform. Tiny clicks seek; existing drag-region trim selection still
+    works when the ffmpeg trim controller is available.
+  - Tune `Spectrum & EQ` and `Dynamics` now open as fixed, movable, browser-resizable settings
+    panels using the same grammar as the ASCII settings overlays, while staying CPU-lazy and
+    tearing down on close/mode change.
+  - Spectrum/EQ draws immediately on open, pause, and slider/filter changes, so the EQ curve and
+    latest analyser view remain visible and react live even when playback is paused.
+  - Smoke coverage asserts waveform scrubbing, fixed/resizable/movable Spectrum, paused EQ repaint,
+    fixed/resizable Dynamics, and existing graph-control behavior.
 - `72dac4e2` — `Polish audio QC report card`.
   - QC mode now opens as a compact ACX report-card workflow instead of a prose-heavy intro.
   - Added a pre-run checklist for RMS, sample peak, noise floor, sample rate, channels, head silence,
@@ -750,9 +761,12 @@ Status: committed.
   studio, and video export/timeline.
 - Current line-count evidence for touched files: `compare-ui.js` 468 lines,
   `compare-ui-video.js` 180 lines, `compare-ui-render.js` 269 lines,
+  `waveform.js` 381 lines, `renderer-mode-panels.js` 319 lines,
+  `spectrum-panel.js` 253 lines, `panel-toggle.js` 92 lines,
   `studio-export.js` 477 lines, `renderer.js` 416 lines, `mixer-ui.js` 403 lines,
   `transcoder.js` 229 lines, `tests/areas/media-studio.mjs` 21 lines; extracted helpers are all
-  below the hard advisory threshold.
+  below the hard advisory threshold. `preview-media.css` remains an existing stylesheet split
+  candidate above the hard advisory threshold.
 - Validation evidence for this cleanup: `node --check` on touched media modules and media-studio
   smoke modules, `node tests/media-parsers.test.mjs`, `node tests/smoke-area.mjs media-studio`,
   and `./scripts/check.sh --fast`.

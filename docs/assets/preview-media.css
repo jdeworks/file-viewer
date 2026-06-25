@@ -31,6 +31,29 @@
   pointer-events: none;
   z-index: 2;
 }
+.preview-host .media-waveform-surface .media-wv-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #d73a31;
+  transform: translateX(-1px);
+  z-index: 4;
+  pointer-events: none;
+}
+.preview-host .media-waveform-surface .media-wv-playhead-label {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  border: 1px solid rgba(215,58,49,.5);
+  background: color-mix(in srgb, #d73a31 12%, var(--bg));
+  color: #d73a31;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .preview-host .media-waveform-surface .media-wv-status {
   position: absolute;
   left: 6px;
@@ -108,6 +131,52 @@
 .preview-host .media-mode-panel { width: 100%; display: flex; flex-direction: column; gap: 8px; }
 .preview-host .media-mode-panel[hidden] { display: none; }
 .preview-host .media-note { color: var(--fg-2); }
+.preview-host .media-floating-panel {
+  position: fixed;
+  z-index: 45;
+  min-width: 300px;
+  min-height: 220px;
+  max-width: min(92vw, 760px);
+  max-height: min(84vh, 780px);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  resize: both;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 34px rgba(0,0,0,.32);
+}
+.preview-host .media-floating-panel[hidden] { display: none; }
+.preview-host .media-floating-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  cursor: move;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-3);
+}
+.preview-host .media-floating-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.preview-host .media-floating-close {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 7px;
+  background: var(--bg);
+  color: var(--fg-2);
+  cursor: pointer;
+  font-size: 11px;
+}
+.preview-host .media-floating-close:hover { border-color: var(--accent); color: var(--fg); }
+.preview-host .media-floating-body { flex: 1 1 auto; min-height: 0; overflow: auto; background: var(--bg); }
 .preview-host .media-compare { display: flex; flex-direction: column; gap: 8px; width: 100%;
   max-width: 100%; overflow: hidden; color: var(--fg); font-size: 12px; }
 .preview-host .media-compare-head { display: flex; align-items: center; justify-content: space-between;

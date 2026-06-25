@@ -12,6 +12,25 @@ export async function runAudioTuneAndDynamics(ctx) {
   });
   await openExample('Sample.wav');
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
+  await page.waitForFunction(() => Number.isFinite(document.querySelector('#previewHost audio.media-view')?.duration), null, { timeout: 8000 });
+  const waveformSeek = page.locator('#previewHost .media-waveform-surface .media-wv-canvas');
+  const waveformBox = await waveformSeek.boundingBox();
+  if (waveformBox) {
+    await page.mouse.click(waveformBox.x + waveformBox.width * 0.55, waveformBox.y + waveformBox.height * 0.45);
+    await page.waitForTimeout(120);
+  }
+  const seekState = await page.$eval('#previewHost', (host) => {
+    const audio = host.querySelector('audio.media-view');
+    const playhead = host.querySelector('.media-waveform-surface .media-wv-playhead');
+    return {
+      currentTime: audio?.currentTime || 0,
+      left: playhead?.style.left || '',
+      label: playhead?.textContent || '',
+    };
+  });
+  if (waveformBox && seekState.currentTime > 0 && seekState.left && seekState.left !== '0%' && /\d\d:\d\d:\d\d/.test(seekState.label))
+    pass('audio waveform: full waveform seekbar scrubs native audio');
+  else fail('audio waveform seekbar: ' + JSON.stringify({ waveformBox: !!waveformBox, seekState }));
   const modeTabs = await page.$$eval('#previewHost .media-mode-tab', (els) => els.map((e) => e.textContent.trim()));
   if (modeTabs.join('|') === 'Listen|Tune|QC|Export|Compare|Mix') pass('audio mode tabs exist and are ordered');
   else fail('audio mode tabs: ' + modeTabs.join(','));
@@ -67,11 +86,38 @@ export async function runAudioTuneAndDynamics(ctx) {
     const spBtnText = await spBtn.evaluate((e) => e.textContent);
     if (/Spectrum/.test(spBtnText)) pass('audio spectrum: Spectrum & EQ toggle button present'); else fail('sp btn text: ' + spBtnText);
     await spBtn.asElement().click();
-    await page.waitForSelector(`${tunePanelSel} .media-sp-panel:not([hidden])`, { timeout: 5000 });
+    await page.waitForSelector(`${tunePanelSel} .media-sp-panel:not([hidden]) .sp-wrap`, { timeout: 5000 });
     const spCanvas = await page.$(`${tunePanelSel} .sp-canvas`);
     const spSliders = await page.$$eval(`${tunePanelSel} .sp-eq-slider`, (els) => els.map((el) => parseFloat(el.value)));
     if (spCanvas) pass('audio spectrum: spectrum canvas mounted'); else fail('sp canvas missing');
     if (spSliders.length === 9) pass('audio spectrum: 9-band EQ sliders'); else fail('sp sliders: ' + spSliders.length);
+    const spFloating = await page.$eval(`${tunePanelSel} .media-sp-panel:not([hidden])`, (panel) => {
+      const before = panel.getBoundingClientRect();
+      return {
+        position: getComputedStyle(panel).position,
+        resize: getComputedStyle(panel).resize,
+        left: Math.round(before.left),
+        top: Math.round(before.top),
+      };
+    });
+    if (spFloating.position === 'fixed' && spFloating.resize === 'both')
+      pass('audio spectrum: settings panel is fixed and resizable');
+    else fail('spectrum floating state: ' + JSON.stringify(spFloating));
+    const spHead = page.locator(`${tunePanelSel} .media-sp-panel:not([hidden]) .media-floating-head`);
+    const spHeadBox = await spHead.boundingBox();
+    if (spHeadBox) {
+      await page.mouse.move(spHeadBox.x + 30, spHeadBox.y + spHeadBox.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(spHeadBox.x + 80, spHeadBox.y + spHeadBox.height / 2 + 20);
+      await page.mouse.up();
+    }
+    const spMoved = await page.$eval(`${tunePanelSel} .media-sp-panel:not([hidden])`, (panel) => {
+      const rect = panel.getBoundingClientRect();
+      return { left: Math.round(rect.left), top: Math.round(rect.top) };
+    });
+    if (spHeadBox && (spMoved.left !== spFloating.left || spMoved.top !== spFloating.top))
+      pass('audio spectrum: settings panel can be moved while open');
+    else fail('spectrum floating drag: ' + JSON.stringify({ spHeadBox: !!spHeadBox, spFloating, spMoved }));
     // Opening Spectrum after a quick intent should hydrate from graph state, not default zeros.
     const spState = await page.$eval(`${tunePanelSel} .media-sp-panel:not([hidden])`, (panel) => {
       const presetEl = panel.querySelector('.sp-preset-sel');
@@ -86,6 +132,22 @@ export async function runAudioTuneAndDynamics(ctx) {
       && spState.eq.every((g, i) => Math.abs(g - podcastPresetGains[i]) <= 0.0001);
     if (podcastPresetMatch) pass('audio spectrum: preset intent reflected in eq/filter controls');
     else fail('spectrum state after intent: ' + JSON.stringify(spState));
+    const pausedEqPaint = await page.$eval(`${tunePanelSel} .media-sp-panel:not([hidden])`, (panel) => {
+      const audio = document.querySelector('#previewHost audio.media-view');
+      audio?.pause();
+      const canvas = panel.querySelector('.sp-canvas');
+      const before = canvas?.toDataURL() || '';
+      const slider = panel.querySelector('.sp-eq-slider');
+      if (slider) {
+        slider.value = String(Number(slider.value || 0) - 4);
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      const after = canvas?.toDataURL() || '';
+      return { paused: !!audio?.paused, changed: before !== after };
+    });
+    if (pausedEqPaint.paused && pausedEqPaint.changed)
+      pass('audio spectrum: EQ visualization updates while paused');
+    else fail('spectrum paused EQ paint: ' + JSON.stringify(pausedEqPaint));
 
     // Overlaid dual spectrum: legend names both the Original and Processed curves.
     const spLegend = await page.$$eval(`${tunePanelSel} .sp-legend .sp-leg`, (els) => els.map((e) => e.textContent));
@@ -126,6 +188,13 @@ export async function runAudioTuneAndDynamics(ctx) {
     if (!preDyn) pass('audio dynamics: CPU-lazy (no panel DOM until opened)'); else fail('dynamics mounted before open');
     await dynToggleHandle.asElement().click();
     await page.waitForSelector(`${tunePanelSel} .media-dyn-panel:not([hidden]) .dyn-wrap`, { timeout: 5000 });
+    const dynFloating = await page.$eval(`${tunePanelSel} .media-dyn-panel:not([hidden])`, (panel) => ({
+      position: getComputedStyle(panel).position,
+      resize: getComputedStyle(panel).resize,
+    }));
+    if (dynFloating.position === 'fixed' && dynFloating.resize === 'both')
+      pass('audio dynamics: settings panel is fixed and resizable');
+    else fail('dynamics floating state: ' + JSON.stringify(dynFloating));
     // Four effect sections: compressor + limiter (live), gate + de-noise (on export).
     const dynSecs = await page.$$eval(`${tunePanelSel} .dyn-sec .dyn-title`, (els) => els.map((e) => e.textContent));
     if (dynSecs.some((t) => /Compressor/.test(t)) && dynSecs.some((t) => /Limiter/.test(t))

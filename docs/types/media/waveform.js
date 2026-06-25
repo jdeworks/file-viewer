@@ -144,6 +144,13 @@ export async function mountWaveform(container, file, options = {}) {
   region.hidden = true;
   container.appendChild(region);
 
+  const playhead = document.createElement('div');
+  playhead.className = 'media-wv-playhead';
+  const playheadLabel = document.createElement('span');
+  playheadLabel.className = 'media-wv-playhead-label';
+  playhead.append(playheadLabel);
+  container.appendChild(playhead);
+
   const markerLayer = document.createElement('div');
   markerLayer.className = 'media-wv-chapter-layer';
   container.appendChild(markerLayer);
@@ -163,6 +170,7 @@ export async function mountWaveform(container, file, options = {}) {
   let regionPx = null;
   let startPx = 0;
   let selecting = false;
+  let seekScrubbing = false;
   let lastClientX = null;
 
   const controller = await drawWaveform(canvas, file, { ownContext: true });
@@ -200,6 +208,15 @@ export async function mountWaveform(container, file, options = {}) {
     }
     status.textContent = 'Trim ' + hms(start) + ' → ' + hms(end);
     status.hidden = false;
+  };
+
+  const updatePlayhead = () => {
+    const audioEl = getAudioEl();
+    const duration = Number(audioEl?.duration) || 0;
+    const current = Number(audioEl?.currentTime) || 0;
+    const pct = duration > 0 ? (clamp(current, 0, duration) / duration) * 100 : 0;
+    playhead.style.left = `${pct}%`;
+    playheadLabel.textContent = hms(current);
   };
 
   const setRegion = (left, right) => {
@@ -241,34 +258,61 @@ export async function mountWaveform(container, file, options = {}) {
     return duration > 0 ? (clamped / w) * duration : 0;
   };
 
+  const seekToPixel = (px) => {
+    const audioEl = getAudioEl();
+    const duration = Number(audioEl?.duration) || 0;
+    if (!audioEl || duration <= 0) return;
+    audioEl.currentTime = pixelToSeconds(px, duration);
+    updatePlayhead();
+    controller?.update(audioEl);
+  };
+
   const onDown = (event) => {
-    if (!onRegionSelect) return;
     if (event.button !== undefined && event.button !== 0) return;
-    selecting = true;
     startPx = selectRegion(event) || 0;
     lastClientX = toClientX(event);
-    setRegion(startPx, startPx);
-    status.textContent = '';
-    status.hidden = true;
+    selecting = !!onRegionSelect;
+    seekScrubbing = !selecting;
+    if (selecting) {
+      setRegion(startPx, startPx);
+      status.textContent = '';
+      status.hidden = true;
+    } else {
+      seekToPixel(startPx);
+    }
     try { canvas.setPointerCapture(event.pointerId); } catch { /* ignore */ }
   };
 
   const onMove = (event) => {
-    if (!selecting || !onRegionSelect) return;
+    if (!selecting && !seekScrubbing) return;
     const curr = selectRegion(event);
     if (curr === null) return;
     const x = toClientX(event);
     if (x !== null) lastClientX = x;
-    setRegion(startPx, curr);
+    if (selecting && onRegionSelect) setRegion(startPx, curr);
+    else if (seekScrubbing) seekToPixel(curr);
   };
 
   const onUp = (event) => {
+    if (seekScrubbing) {
+      const curr = selectRegion(event) ?? selectRegion(lastClientX) ?? startPx;
+      seekToPixel(curr);
+      seekScrubbing = false;
+      selecting = false;
+      return;
+    }
     if (!selecting || !onRegionSelect) {
       selecting = false;
       return;
     }
     selecting = false;
     const curr = selectRegion(event) ?? selectRegion(lastClientX);
+    if (Math.abs((curr ?? startPx) - startPx) < 3) {
+      seekToPixel(curr ?? startPx);
+      clearRegion();
+      status.hidden = true;
+      return;
+    }
     const audioEl = getAudioEl();
     const duration = Number(audioEl?.duration) || 0;
     const start = pixelToSeconds(Math.min(startPx, curr ?? startPx), duration);
@@ -288,38 +332,44 @@ export async function mountWaveform(container, file, options = {}) {
     }
   };
 
-  if (onRegionSelect) {
-    canvas.addEventListener('pointerdown', onDown);
-    canvas.addEventListener('pointermove', onMove);
-    canvas.addEventListener('pointerup', onUp);
-    canvas.addEventListener('pointercancel', onUp);
-    canvas.addEventListener('lostpointercapture', onUp);
-  }
+  canvas.addEventListener('pointerdown', onDown);
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('pointerup', onUp);
+  canvas.addEventListener('pointercancel', onUp);
+  canvas.addEventListener('lostpointercapture', onUp);
 
   if (controller) controller.update(getAudioEl());
   const audioEl = getAudioEl();
   audioEl?.addEventListener('loadedmetadata', updateMarkers);
   audioEl?.addEventListener('durationchange', updateMarkers);
+  audioEl?.addEventListener('loadedmetadata', updatePlayhead);
+  audioEl?.addEventListener('durationchange', updatePlayhead);
+  audioEl?.addEventListener('timeupdate', updatePlayhead);
+  audioEl?.addEventListener('seeked', updatePlayhead);
   window.addEventListener('resize', updateMarkers);
   updateMarkers();
+  updatePlayhead();
   return {
     destroy() {
-      if (onRegionSelect) {
-        canvas.removeEventListener('pointerdown', onDown);
-        canvas.removeEventListener('pointermove', onMove);
-        canvas.removeEventListener('pointerup', onUp);
-        canvas.removeEventListener('pointercancel', onUp);
-        canvas.removeEventListener('lostpointercapture', onUp);
-        clearRegion();
-        status.hidden = true;
-      }
+      canvas.removeEventListener('pointerdown', onDown);
+      canvas.removeEventListener('pointermove', onMove);
+      canvas.removeEventListener('pointerup', onUp);
+      canvas.removeEventListener('pointercancel', onUp);
+      canvas.removeEventListener('lostpointercapture', onUp);
+      clearRegion();
+      status.hidden = true;
       audioEl?.removeEventListener('loadedmetadata', updateMarkers);
       audioEl?.removeEventListener('durationchange', updateMarkers);
+      audioEl?.removeEventListener('loadedmetadata', updatePlayhead);
+      audioEl?.removeEventListener('durationchange', updatePlayhead);
+      audioEl?.removeEventListener('timeupdate', updatePlayhead);
+      audioEl?.removeEventListener('seeked', updatePlayhead);
       window.removeEventListener('resize', updateMarkers);
       controller?.destroy();
       canvas.remove();
       status.remove();
       region.remove();
+      playhead.remove();
       markerLayer.remove();
     },
   };

@@ -121,11 +121,15 @@ async function mountTuneMode(panel, mediaEl) {
   const spectrumPanel = makeTogglePanel({
     label: 'Spectrum & EQ',
     panelClass: 'media-sp-panel',
+    floating: true,
+    floatingTitle: 'Spectrum & EQ',
     mount: async (innerPanel) => (await import('./spectrum.js')).mountSpectrumPanel(innerPanel, mediaEl),
   });
   const dynamicsPanel = makeTogglePanel({
     label: 'Dynamics',
     panelClass: 'media-dyn-panel',
+    floating: true,
+    floatingTitle: 'Dynamics',
     mount: async (innerPanel) => (await import('./dynamics.js')).mountDynamicsPanel(innerPanel, mediaEl),
   });
   advWrap.append(advHeading, spectrumPanel.wrap, dynamicsPanel.wrap);
