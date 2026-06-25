@@ -413,6 +413,30 @@ Status: committed.
   `node tests/smoke-area.mjs media-3d`, `./scripts/check.sh --fast`.
 - Committed in `3e35165e` — `Tighten media mixer teardown and audio trim selection`.
 
+### R0 — Validation Scope And Media Smoke Split
+
+Status: validation split committed; shared media code/CSS shape remains open.
+
+- Split Audio/Video workspace smoke coverage out of `tests/areas/media-3d.mjs` into
+  `tests/areas/media-studio.mjs`, so future media studio work no longer inflates the 3D/image/MIDI
+  smoke area.
+- Registered `media-studio` in both aggregate smoke and `tests/smoke-area.mjs`.
+- Updated `./scripts/check.sh --fast` to inspect staged, unstaged, and untracked paths after
+  generator phases, run touched smoke areas when ownership is clear, and fall back to aggregate
+  smoke for shared app/runtime/test-runner/generated paths.
+- Scope examples: media runtime/studio changes select `media-studio`, 3D/image/MIDI/gamerom
+  changes select `media-3d`, ebook/MOBI changes select `ebook-git`, and `docs/core/**`,
+  smoke runners, manifests, service worker, packages, vendor, or unknown paths select aggregate.
+- Current aggregate timing evidence from `./scripts/check.sh --fast`: `media-3d` 18.086s,
+  `media-studio` 8.869s, `ebook-git` 72.152s, `examples-catalog` 119.379s, smoke total 326s.
+- Changed paths: `scripts/check.sh`, `tests/areas/media-3d.mjs`,
+  `tests/areas/media-studio.mjs`, `tests/smoke.mjs`, `tests/smoke-area.mjs`.
+- Validation passed: `bash -n scripts/check.sh`,
+  `node --check tests/areas/media-3d.mjs tests/areas/media-studio.mjs tests/smoke.mjs tests/smoke-area.mjs`,
+  `node tests/smoke-area.mjs media-studio`, `node tests/smoke-area.mjs media-3d`,
+  `./scripts/check.sh --fast`.
+- Committed in `2a9b5133` — `Split media studio smoke coverage`.
+
 ## Tracking Rules
 
 - Mark each item `open`, `in progress`, `blocked`, `done`, or `committed`.

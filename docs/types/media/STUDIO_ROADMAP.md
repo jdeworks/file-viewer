@@ -46,19 +46,23 @@ Reference alignment:
 
 ### R0 — Roadmap Hygiene And Code Shape
 
-Status: needed before major new media growth.
+Status: in progress; validation split/scoped fast gate committed, shared media code/CSS
+shape still remains before major R1-R4 growth.
 
-- Split oversized media smoke coverage so `./scripts/check.sh --fast` can become genuinely
-  fast again without dropping all confidence.
+- Done: split media studio coverage out of `tests/areas/media-3d.mjs` into
+  `tests/areas/media-studio.mjs`.
+- Done: make `./scripts/check.sh --fast` choose touched smoke areas when ownership is clear
+  and fall back to aggregate smoke for shared/global/generated paths.
 - Extract shared workspace helpers/styles from `renderer.js`, `preview-chrome.css`, and
-  `tests/areas/media-3d.mjs` as the next media changes touch those files.
+  media studio smoke helpers before extending R1-R4 features into those files.
 - Keep `STUDIO_TRACKER.md` as the active queue; update this roadmap only when scope changes.
 
 Validation target:
 
-- Focused area smoke for touched surfaces.
-- `./scripts/check.sh --fast` still passes.
-- Timing output should show where any remaining fast-gate cost lives.
+- Focused area smoke for touched surfaces: `media-studio` for media runtime/studio changes,
+  `media-3d` for 3D/image/MIDI/gamerom changes, `ebook-git` for ebook/MOBI changes.
+- `./scripts/check.sh --fast` still passes and prints changed paths plus the chosen smoke scope.
+- Timing output should show where any remaining aggregate fast-gate cost lives.
 
 ### R1 — Complete The Mastering Chain
 
