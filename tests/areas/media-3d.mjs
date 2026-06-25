@@ -1079,8 +1079,12 @@ export async function run(ctx) {
     await new Promise((r) => setTimeout(r, 0));
     document.querySelector('#previewHost .cam-rec').click();
     const dlBtn = document.querySelector('#previewHost .cam-rec-dl');
+    const studioBtn = document.querySelector('#previewHost .cam-rec-studio');
     const downloadReady = !!dlBtn && !dlBtn.hidden && !dlBtn.disabled;
+    const studioReady = !!studioBtn && !studioBtn.hidden && !studioBtn.disabled;
+    const openedBeforeStudioClick = !!seen.openedBlob;
     dlBtn?.click();
+    studioBtn?.click();
     HTMLCanvasElement.prototype.captureStream = oldCap;
     window.MediaRecorder = oldMR;
     navigator.mediaDevices.getUserMedia = oldGum;
@@ -1094,14 +1098,17 @@ export async function run(ctx) {
       fpsOptions,
       defaultFps,
       downloadReady,
+      studioReady,
+      openedBeforeStudioClick,
       downloadName: seen.downloadName,
       downloadHref: seen.downloadHref,
       openedBlob: seen.openedBlob,
     };
   });
   if (recProbe.captureFps === 60 && recProbe.defaultFps === '30' && recProbe.fpsOptions === '15,20,30,60' && recProbe.sameStream && /video,audio/.test(recProbe.tracks) && recProbe.gum.length === 1 && recProbe.gum[0].audio === true && recProbe.gum[0].video === false
-    && recProbe.downloadReady && recProbe.downloadName === 'webcam-recording.webm' && /^blob:/.test(recProbe.downloadHref) && recProbe.openedBlob?.name === 'webcam-recording.webm')
-    pass('camera recording captures ASCII canvas stream at selected FPS, merges microphone audio, and exposes video download');
+    && recProbe.downloadReady && recProbe.downloadName === 'webcam-recording.webm' && /^blob:/.test(recProbe.downloadHref) && recProbe.openedBlob?.name === 'webcam-recording.webm'
+    && recProbe.studioReady && !recProbe.openedBeforeStudioClick)
+    pass('camera recording captures ASCII canvas stream at selected FPS, then offers download and explicit Studio handoff');
   else fail('camera recording stream: ' + JSON.stringify(recProbe));
   await page.click('#previewHost .asx-cam');   // back to image
   await page.waitForSelector('#previewHost .asx-out', { timeout: 5000 });

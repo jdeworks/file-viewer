@@ -27,6 +27,7 @@ export function mountAsciiWebcam(host, opts = {}) {
         ${BTN('cam-pause', '⏸ Pause', 'Freeze the current frame')}
         ${BTN('cam-rec', '● Record', 'Record the ASCII output to a video (max 2 min)')}
         ${BTN('cam-rec-dl', '↓ Video', 'Download the last recorded ASCII video')}
+        ${BTN('cam-rec-studio', 'Studio', 'Open the last recorded ASCII video in the media studio')}
         <label class="cam-rec-fps-lbl" title="Frame rate for recorded ASCII video">Rec FPS <select class="cam-rec-fps">
           <option value="15">15</option><option value="20">20</option><option value="30" selected>30</option><option value="60">60</option>
         </select></label>
@@ -63,8 +64,11 @@ export function mountAsciiWebcam(host, opts = {}) {
   const peekCanvas = peek.querySelector('canvas');
   const settings = q('.cam-settings');
   const recDownload = q('.cam-rec-dl');
+  const recStudio = q('.cam-rec-studio');
   recDownload.hidden = true;
   recDownload.disabled = true;
+  recStudio.hidden = true;
+  recStudio.disabled = true;
 
   const engine = createAsciiEngine(startOpts);
   let stream = null, running = false, paused = false, eyeOn = false;
@@ -172,7 +176,7 @@ export function mountAsciiWebcam(host, opts = {}) {
   // tracks are merged onto the canvas video stream.
   const MAX_REC_MS = 120000;
   let recorder = null, recChunks = [], recStream = null, audioStream = null, recTimer = null, recStart = 0;
-  let lastRecording = null;
+  let lastRecording = null, lastRecordingMime = '';
   const fmt = (ms) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
   function recordFps() {
@@ -181,8 +185,11 @@ export function mountAsciiWebcam(host, opts = {}) {
   }
   function setLastRecording(blob) {
     lastRecording = blob;
+    lastRecordingMime = blob?.type || '';
     recDownload.hidden = !blob;
     recDownload.disabled = !blob;
+    recStudio.hidden = !(blob && opts.onRecorded);
+    recStudio.disabled = !(blob && opts.onRecorded);
   }
   async function startRec() {
     const wantAudio = !!q('.cam-audio').checked;
@@ -212,10 +219,9 @@ export function mountAsciiWebcam(host, opts = {}) {
       if (audioStream) { audioStream.getTracks().forEach((t) => t.stop()); audioStream = null; }
       clearInterval(recTimer); recTimer = null;
       const rb = q('.cam-rec'); rb.classList.remove('active'); rb.textContent = '● Record';
-      // If the host wired a handler (file viewer → open in the media/video studio),
-      // let it take the blob. Otherwise (standalone page) fall back to a download.
-      if (opts.onRecorded) opts.onRecorded(blob, mime);
-      else dl(blob, 'webcam-recording.webm');
+      // In the app, keep the user in webcam mode so they can download first, then
+      // choose Studio. Standalone mode has no studio bridge, so auto-download.
+      if (!opts.onRecorded) dl(blob, 'webcam-recording.webm');
     };
     recorder.start(1000);
     recStart = now();
@@ -231,6 +237,7 @@ export function mountAsciiWebcam(host, opts = {}) {
   // ── wiring ──
   q('.cam-rec').addEventListener('click', () => (recorder && recorder.state !== 'inactive' ? stopRec() : startRec()));
   recDownload.addEventListener('click', () => lastRecording && dl(lastRecording, 'webcam-recording.webm'));
+  recStudio.addEventListener('click', () => lastRecording && opts.onRecorded?.(lastRecording, lastRecordingMime || lastRecording.type || 'video/webm'));
   q('.cam-start').addEventListener('click', () => (running ? stop() : start()));
   q('.cam-pause').addEventListener('click', () => {
     if (!running) return;
