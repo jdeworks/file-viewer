@@ -599,6 +599,10 @@ export async function render(intake, ctx = {}) {
       }
       return null;
     });
+    registerAudioMode('compare', 'Compare', async (panel) => {
+      const { mountMediaCompare } = await import('./compare-ui.js');
+      return mountMediaCompare(panel, intake, el, 'audio');
+    });
     registerAudioMode('mix', 'Mix', async (panel) => {
       const { mountMixer } = await import('./mixer-ui.js');
       return mountMixer(panel, intake);
@@ -686,6 +690,10 @@ export async function render(intake, ctx = {}) {
       panel.append(exportPanel);
       if (editorPanel) panel.append(editorPanel);
       return null;
+    });
+    registerVideoMode('compare', 'Compare', async (panel) => {
+      const { mountMediaCompare } = await import('./compare-ui.js');
+      return mountMediaCompare(panel, intake, el, 'video');
     });
 
     if (videoWatchMode) {

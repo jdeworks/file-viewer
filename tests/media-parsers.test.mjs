@@ -20,6 +20,13 @@ import {
   resolveExportParams,
 } from '../docs/types/media/export-presets.js';
 import {
+  applyLaneOffset,
+  clampRange,
+  classifyShiftedSections,
+  computeOverlapWindow,
+  describeShiftedComparison,
+} from '../docs/types/media/compare-math.js';
+import {
   classifyFfmpegError,
   cancelFfmpeg,
   formatFfmpegError,
@@ -29,6 +36,38 @@ import {
 import { PRESETS } from '../docs/types/media/spectrum-draw.js';
 
 const enc = new TextEncoder();
+
+{
+  assert.deepEqual(clampRange({ start: -4, end: 12 }, 10), { start: 0, end: 10 }, 'compare math: clampRange bounds to duration');
+  assert.deepEqual(clampRange({ start: 8, end: 3 }, 10), { start: 8, end: 8 }, 'compare math: clampRange prevents inverted ranges');
+  assert.deepEqual(applyLaneOffset({ start: 2, end: 5 }, -1.5), { start: 0.5, end: 3.5 }, 'compare math: applyLaneOffset shifts both range ends');
+  assert.deepEqual(computeOverlapWindow({ start: 0, end: 4 }, { start: 3, end: 8 }), { start: 3, end: 4, duration: 1 }, 'compare math: overlap window intersects shifted ranges');
+
+  const shifted = classifyShiftedSections({
+    a: { offset: 0, range: { start: 0, end: 10 } },
+    b: { offset: 3, range: { start: 0, end: 6 } },
+    durationA: 10,
+    durationB: 8,
+  });
+  assert.equal(shifted.hasShift, true, 'compare math: detects shifted lanes');
+  assert.equal(shifted.overlap.duration, 6, 'compare math: shifted overlap duration');
+  assert.deepEqual(
+    shifted.sections.map((s) => `${s.lane}:${s.kind}:${s.start}-${s.end}`),
+    ['A:missing-in-b:0-3', 'A:overlap:3-9', 'A:missing-in-b:9-10', 'B:overlap:3-9'],
+    'compare math: classifies overlap and missing sections for UI copy',
+  );
+  assert.match(describeShiftedComparison(shifted), /B is shifted \+3\.00s/, 'compare math: copy reports signed shift');
+  assert.match(describeShiftedComparison(shifted), /Overlap 6\.0s/, 'compare math: copy reports overlap duration');
+
+  const disjoint = classifyShiftedSections({
+    a: { offset: 0, range: { start: 0, end: 2 } },
+    b: { offset: 5, range: { start: 0, end: 2 } },
+    durationA: 2,
+    durationB: 2,
+  });
+  assert.equal(disjoint.hasOverlap, false, 'compare math: disjoint ranges report no overlap');
+  assert.equal(disjoint.sections.length, 2, 'compare math: disjoint ranges become two missing sections');
+}
 
 function u32(n) {
   return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];

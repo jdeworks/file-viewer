@@ -136,31 +136,37 @@ Needed:
 
 ### R4 — Audio/Video Overlap Diff Compare
 
-Status: needed; this is separate from the R1/R3 processing-chain compare.
+Status: in progress / foundation slice implemented; this is separate from the R1/R3
+processing-chain compare.
 
 Goal: compare two source media files, or two partial ranges, when their timelines do not
 line up perfectly because one file has an added/missing section.
 
 Needed:
 
-- A dedicated compare surface for both audio and video with side-by-side/top-bottom and
-  overlay modes.
-- Draggable timeline lanes so each input can be nudged by offset before comparing.
-- In/out range handles per lane so short sections can be compared without decoding or
-  rendering full files unnecessarily.
-- Audio view: stacked waveforms plus translucent overlap/difference energy, with gain-normalized
-  and raw modes clearly separated.
-- Video view: aligned frame strips and overlay/scrub preview, with opacity control and
-  frame/time offset readout.
-- Partial-difference reporting that distinguishes "content changed" from "content shifted".
+- Partial: dedicated Compare mode surfaces exist for both audio and video with
+  side-by-side/top-bottom/overlay layout controls.
+- Partial: lane offsets can be typed or nudged by draggable offset handles, and the pure
+  range math computes shifted overlap/missing sections.
+- Partial: in/out inputs and visible range handles exist per lane so users can define short
+  compare windows without full-file decode.
+- Partial: audio view has stacked lane strips, explicit user-chosen normalization toggle
+  (off by default), and translucent overlap/missing placeholders. Real waveform energy and
+  normalized difference rendering are still pending.
+- Partial: video view has aligned lane/frame-strip placeholders, overlay opacity state, and
+  offset/overlap readouts. Real thumbnail/frame preview remains pending and should stay
+  behind an explicit action.
+- Partial: UI copy distinguishes shifted/missing ranges from overlapping ranges, but does
+  not yet classify actual content changes inside the overlap.
 - Static-client implementation only: no backend alignment service, no ASR/NLP matching, no
   hidden resampling/gain unless the user chooses a compare normalization mode.
 
 Validation target:
 
-- Pure offset/range math for shifted media segments.
-- Smoke coverage for draggable lane offsets, side-by-side/top-bottom layout, overlay opacity,
-  and no horizontal overflow on desktop/mobile.
+- Done for foundation: pure offset/range math for shifted media segments.
+- Done for foundation: smoke coverage for lazy Compare mount, layout controls, lane offset
+  changes, range inputs/handles, overlay opacity, explicit audio normalization state, video
+  grammar, and no horizontal overflow on desktop/mobile.
 - Heavy decode/rendering stays lazy and scoped to selected ranges.
 
 ### R5 — Video Export Depth

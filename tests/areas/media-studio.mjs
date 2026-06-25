@@ -13,6 +13,83 @@ import {
 
 export async function run(ctx) {
   const { browser, page, origin, pass, fail, openExample } = ctx;
+  async function assertCompareNoOverflow(kind, label) {
+    const geometry = await page.$eval('#previewHost .media-compare', (el) => {
+      const host = document.querySelector('#previewHost');
+      const hostRect = host?.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      const docEl = document.documentElement;
+      return {
+        left: Math.round(rect.left),
+        right: Math.round(rect.right),
+        hostLeft: Math.round(hostRect?.left || 0),
+        hostRight: Math.round(hostRect?.right || 0),
+        overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
+      };
+    });
+    if (geometry.overflowX === 0 && geometry.left >= geometry.hostLeft - 1 && geometry.right <= geometry.hostRight + 1)
+      pass(`${kind} compare: no horizontal overflow (${label})`);
+    else fail(`${kind} compare overflow (${label}): ` + JSON.stringify(geometry));
+  }
+
+  async function exerciseCompare(kind) {
+    const panelSel = '#previewHost .media-mode-panel[data-mode="compare"]';
+    const absentBefore = await page.$('#previewHost .media-compare');
+    if (!absentBefore) pass(`${kind} Compare mounts lazily`);
+    else fail(`${kind} Compare should not mount before tab selection`);
+    await page.click('#previewHost .media-mode-tab[data-mode="compare"]');
+    await page.waitForSelector(`${panelSel} .media-compare`, { timeout: 5000 });
+    const layouts = await page.$$eval(`${panelSel} .media-compare-layout-btn`, (els) => els.map((el) => ({
+      layout: el.dataset.layout,
+      text: el.textContent.trim(),
+    })));
+    if (['side-by-side', 'top-bottom', 'overlay'].every((layout) => layouts.some((row) => row.layout === layout)))
+      pass(`${kind} compare: layout controls include side-by-side/top-bottom/overlay`);
+    else fail(`${kind} compare layouts: ` + JSON.stringify(layouts));
+    const normState = await page.$eval(`${panelSel} .media-compare-normalize`, (el) => ({
+      hidden: el.hidden,
+      text: el.textContent.trim(),
+      checked: el.querySelector('input')?.checked || false,
+    }));
+    if (kind === 'audio') {
+      if (!normState.hidden && /off/i.test(normState.text) && !normState.checked)
+        pass('audio compare: explicit normalization toggle is present and off by default');
+      else fail('audio compare normalize state: ' + JSON.stringify(normState));
+    }
+    const initialCopy = await page.$eval(`${panelSel} .media-compare-copy`, (el) => el.textContent);
+    await page.fill(`${panelSel} .media-compare-offset-input[data-lane="B"]`, '4.0');
+    const offsetCopy = await page.$eval(`${panelSel} .media-compare-copy`, (el) => el.textContent);
+    const offsetLabel = await page.$eval(`${panelSel} .media-compare-lane[data-lane="B"] .media-compare-lane-label`, (el) => el.textContent);
+    if (offsetCopy !== initialCopy && /\+4\.00s/.test(offsetCopy) && /offset 4\.00s/.test(offsetLabel))
+      pass(`${kind} compare: changing lane offset updates offset and overlap readout`);
+    else fail(`${kind} compare offset copy: ${offsetCopy} / ${offsetLabel}`);
+    const rangeInputs = await page.$$eval(`${panelSel} .media-compare-in-input, ${panelSel} .media-compare-out-input`, (els) => els.length);
+    await page.fill(`${panelSel} .media-compare-in-input[data-lane="A"]`, '1.0');
+    await page.fill(`${panelSel} .media-compare-out-input[data-lane="A"]`, '5.0');
+    const rangeCopy = await page.$eval(`${panelSel} .media-compare-copy`, (el) => el.textContent);
+    const rangeHandles = await page.$$eval(`${panelSel} .media-compare-range-handle`, (els) => els.length);
+    if (rangeInputs === 4 && rangeHandles >= 4 && /Missing\/extra ranges/.test(rangeCopy))
+      pass(`${kind} compare: range inputs/handles exist and update partial range copy`);
+    else fail(`${kind} compare range state: inputs=${rangeInputs} handles=${rangeHandles} copy=${rangeCopy}`);
+    await page.click(`${panelSel} .media-compare-layout-btn[data-layout="overlay"]`);
+    await page.fill(`${panelSel} .media-compare-opacity-input`, '30');
+    const overlayState = await page.$eval(`${panelSel} .media-compare`, (el) => ({
+      layout: el.dataset.layout,
+      opacity: el.dataset.overlayOpacity,
+      css: getComputedStyle(el.querySelector('.media-compare-visual')).getPropertyValue('--compare-opacity').trim(),
+    }));
+    if (overlayState.layout === 'overlay' && overlayState.opacity === '30' && overlayState.css === '0.3')
+      pass(`${kind} compare: overlay opacity control affects UI state`);
+    else fail(`${kind} compare overlay state: ` + JSON.stringify(overlayState));
+    const dropExists = await page.$(`${panelSel} .media-compare-drop .media-ed-file-input`);
+    if (dropExists) pass(`${kind} compare: second-file drop/browse control exists`);
+    else fail(`${kind} compare second-file picker missing`);
+    await assertCompareNoOverflow(kind, 'desktop');
+    const priorViewport = page.viewportSize();
+    await page.setViewportSize(MEDIA_MOBILE_VIEWPORT);
+    await assertCompareNoOverflow(kind, 'mobile');
+    if (priorViewport) await page.setViewportSize(priorViewport);
+  }
 
   // ── Audio/Video (media) ── native player rendered in the pane via a blob: URL.
   await page.addInitScript(() => {
@@ -148,11 +225,15 @@ export async function run(ctx) {
   await openExample('Sample.wav');
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000 });
   const modeTabs = await page.$$eval('#previewHost .media-mode-tab', (els) => els.map((e) => e.textContent.trim()));
-  if (modeTabs.join('|') === 'Listen|Tune|QC|Export|Mix') pass('audio mode tabs exist and are ordered');
+  if (modeTabs.join('|') === 'Listen|Tune|QC|Export|Compare|Mix') pass('audio mode tabs exist and are ordered');
   else fail('audio mode tabs: ' + modeTabs.join(','));
   const modeListen = await page.$('#previewHost .media-mode-tab[data-mode="listen"]');
   const isListenActive = await modeListen?.evaluate((b) => b.classList.contains('active')) || false;
   if (isListenActive) pass('audio mode tabs default to Listen'); else fail('default mode tab not active');
+  await exerciseCompare('audio');
+  await page.click('#previewHost .media-mode-tab[data-mode="listen"]');
+  const compareUnmounted = await page.$('#previewHost .media-mode-panel[data-mode="compare"] .media-compare');
+  if (!compareUnmounted) pass('audio Compare tears down when leaving mode'); else fail('audio Compare stayed mounted after leaving mode');
   await page.click('#previewHost .media-mode-tab[data-mode="tune"]');
   await page.waitForSelector('#previewHost .media-mode-panel[data-mode="tune"]');
   const tunePanelSel = '#previewHost .media-mode-panel[data-mode="tune"]';
@@ -474,7 +555,7 @@ export async function run(ctx) {
 
   // ── Video task-mode shell + default mode ──
   const videoModeNames = await page.$$eval('#previewHost .media-mode-tab', (els) => els.map((e) => e.textContent.trim()));
-  if (videoModeNames.join('|') === 'Watch|Adjust|Timeline|Subtitles|Export') pass('video shell has ordered task tabs: Watch/Adjust/Timeline/Subtitles/Export');
+  if (videoModeNames.join('|') === 'Watch|Adjust|Timeline|Subtitles|Export|Compare') pass('video shell has ordered task tabs: Watch/Adjust/Timeline/Subtitles/Export/Compare');
   else fail('video tabs order: ' + videoModeNames.join('|'));
   const videoWatchActive = await page.$eval('#previewHost .media-mode-tab[data-mode="watch"]', (el) => el.classList.contains('active'))
     .catch(() => false);
@@ -487,6 +568,13 @@ export async function run(ctx) {
   if (videoDesktopViewport) {
     await reloadExampleAtViewport(ctx, videoDesktopViewport, 'Sample.avi', '#previewHost video.media-view');
   }
+  await exerciseCompare('video');
+  const videoCompareGrammar = await page.$eval('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-copy', (el) => el.textContent);
+  if (/shifted|Overlap|Missing\/extra/.test(videoCompareGrammar)) pass('video Compare has equivalent overlay/offset grammar');
+  else fail('video compare grammar copy: ' + videoCompareGrammar);
+  await page.click('#previewHost .media-mode-tab[data-mode="watch"]');
+  const videoCompareUnmounted = await page.$('#previewHost .media-mode-panel[data-mode="compare"] .media-compare');
+  if (!videoCompareUnmounted) pass('video Compare tears down when leaving mode'); else fail('video Compare stayed mounted after leaving mode');
 
   // ── Video studio ── Adjust now uses an intent-first look card plus raw advanced
   // sliders, and a dedicated movie-audio Spectrum & EQ sub-surface.

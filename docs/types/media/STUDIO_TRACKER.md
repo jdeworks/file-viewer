@@ -73,6 +73,32 @@ These are implemented and tested as capabilities, but the audio UI is not yet pr
 
 ## Active Queue
 
+### R4 — Audio/Video Overlap Diff Compare Foundation
+
+Status: in progress / partial.
+
+Current foundation slice:
+
+- Added pure compare math for clamping ranges, applying lane offsets, computing overlap
+  windows, classifying missing/overlap sections, and producing user-facing shifted-range copy.
+- Added lazy Compare modes for both audio and video, separate from the R1/R3 mastering-chain
+  compare surfaces.
+- Added side-by-side/top-bottom/overlay layout controls, overlay opacity, explicit audio
+  normalization toggle off by default, A/B lanes with offset readouts, range inputs/handles,
+  second-file drop/browse affordance, and placeholder overlap/missing visuals.
+- Preserved static-client constraints: no backend, no ASR/NLP, no ffmpeg load, no eager
+  waveform/frame decode, no hidden gain or resampling.
+- Evidence to keep current before marking complete: unit coverage in `tests/media-parsers.test.mjs`
+  and smoke coverage in `tests/areas/media-studio.mjs`.
+
+Remaining before R4 can be called complete:
+
+- Real audio waveform/difference rendering for selected ranges, with raw vs user-normalized
+  modes clearly separated.
+- Real video frame strips/overlay preview gated behind explicit decode actions.
+- Content-difference reporting inside overlapping ranges; current copy only covers shifted,
+  missing, and overlapping timeline regions.
+
 ### P-Start — Checkpoint Current Verified Work
 
 Status: committed.
