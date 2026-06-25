@@ -415,7 +415,7 @@ Status: committed.
 
 ### R0 — Validation Scope And Media Smoke Split
 
-Status: validation split committed; shared media code/CSS shape remains open.
+Status: committed.
 
 - Split Audio/Video workspace smoke coverage out of `tests/areas/media-3d.mjs` into
   `tests/areas/media-studio.mjs`, so future media studio work no longer inflates the 3D/image/MIDI
@@ -436,6 +436,29 @@ Status: validation split committed; shared media code/CSS shape remains open.
   `node tests/smoke-area.mjs media-studio`, `node tests/smoke-area.mjs media-3d`,
   `./scripts/check.sh --fast`.
 - Committed in `2a9b5133` — `Split media studio smoke coverage`.
+- Extracted shared audio/video mode tab and lazy-mount lifecycle from `renderer.js` into
+  `workspace-modes.js`, preserving sticky Listen/Watch/Export modes and inactive teardown for
+  Tune/QC/Mix/Adjust/Timeline/Subtitles.
+- Split media preview chrome out of `preview-chrome.css` into `preview-media.css`, linked after
+  `preview-chrome.css` in both normal and `noscript` stylesheet paths, and refreshed the offline
+  asset manifest/service worker stamp for the new asset.
+- Extracted media studio smoke geometry/settings helpers into `media-studio-helpers.mjs`, keeping
+  assertion labels and tested workspace grammar intact while reducing future growth in
+  `tests/areas/media-studio.mjs`.
+- Post-R0 line-count evidence: `renderer.js` 774 lines, `preview-chrome.css` 761 lines,
+  `preview-media.css` 694 lines, `tests/areas/media-studio.mjs` 982 lines,
+  `media-studio-helpers.mjs` 215 lines, `tests/areas/media-3d.mjs` 915 lines.
+- Changed paths: `docs/types/media/renderer.js`, `docs/types/media/workspace-modes.js`,
+  `docs/assets/preview-chrome.css`, `docs/assets/preview-media.css`, `docs/index.html`,
+  `tests/areas/media-studio.mjs`, `tests/areas/media-studio-helpers.mjs`,
+  `docs/asset-manifest.json`, `docs/sw.js`.
+- Validation passed: `node --check docs/types/media/renderer.js docs/types/media/workspace-modes.js tests/areas/media-studio.mjs tests/areas/media-studio-helpers.mjs tests/smoke.mjs tests/smoke-area.mjs`,
+  `node scripts/gen-asset-manifest.mjs >/dev/null`, `git diff --check`,
+  `node tests/smoke-area.mjs media-studio`, `node tests/smoke-area.mjs media-3d`,
+  `./scripts/check.sh --fast`.
+- Fast aggregate timing evidence after code-shape split: `media-3d` 18.822s,
+  `media-studio` 9.382s, `ebook-git` 71.771s, `examples-catalog` 151.002s, smoke total 361s.
+- Committed in `ede82ebf` — `Extract media workspace helpers`.
 
 ## Tracking Rules
 

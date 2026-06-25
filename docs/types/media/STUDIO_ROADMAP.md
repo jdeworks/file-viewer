@@ -46,15 +46,19 @@ Reference alignment:
 
 ### R0 — Roadmap Hygiene And Code Shape
 
-Status: in progress; validation split/scoped fast gate committed, shared media code/CSS
-shape still remains before major R1-R4 growth.
+Status: committed; enough validation and shared workspace code shape is in place to start
+R1 without further growing the previous hotspots.
 
 - Done: split media studio coverage out of `tests/areas/media-3d.mjs` into
   `tests/areas/media-studio.mjs`.
 - Done: make `./scripts/check.sh --fast` choose touched smoke areas when ownership is clear
   and fall back to aggregate smoke for shared/global/generated paths.
-- Extract shared workspace helpers/styles from `renderer.js`, `preview-chrome.css`, and
-  media studio smoke helpers before extending R1-R4 features into those files.
+- Done: extract shared audio/video mode lifecycle from `renderer.js` into
+  `workspace-modes.js`.
+- Done: split media-specific preview styles from `preview-chrome.css` into
+  `preview-media.css`.
+- Done: extract media studio smoke viewport/settings helpers into
+  `media-studio-helpers.mjs`.
 - Keep `STUDIO_TRACKER.md` as the active queue; update this roadmap only when scope changes.
 
 Validation target:
