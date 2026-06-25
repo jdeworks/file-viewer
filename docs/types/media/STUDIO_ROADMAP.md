@@ -103,7 +103,7 @@ Those require backend/model work and remain out of scope for this static viewer.
 
 ### R2 — Chapterized Audiobook Export
 
-Status: partially implemented.
+Status: core implemented; sidecar/CTOC polish remains.
 
 Needed:
 

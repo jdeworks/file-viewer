@@ -505,7 +505,7 @@ Status: committed.
 
 ### R2 — Chapterized Audiobook Export
 
-Status: core implementation ready for checkpoint.
+Status: committed.
 
 - Added pure chapter normalization and deterministic safe ACX chapter filenames in
   `chapters.js`.
@@ -531,6 +531,7 @@ Status: core implementation ready for checkpoint.
   aggregate smoke because `tests/media-parsers.test.mjs` had no smoke owner; the selector fix
   above addresses that path. Because `scripts/check.sh` itself is now changed, a fresh fast run
   would conservatively select aggregate by design.
+- Committed in `3b80f930` — `Add chapterized ACX audiobook export`.
 - Remaining R2 work: sidecar chapter formats and deeper CTOC hierarchy handling.
 
 ### R1 — Estimated True Peak And Metric Copy
