@@ -1,10 +1,12 @@
 import { buildSpeedPresets, buildVideoExtras } from './playback-extras.js';
 import { parseId3 } from './id3.js';
+import { downloadBlob } from '../../core/exports.js';
 
 const SLEEP_OPTIONS = [0, 5, 15, 30, 45, 60];
 
 // Build the common media toolbar (sleep timer, codec hint pill, and optional track list).
 export function buildMediaTools({
+  intake,
   playlist,
   mediaElement,
   enableFfmpeg,
@@ -42,6 +44,15 @@ export function buildMediaTools({
     onEditorPanelFocus?.();
   });
   tools.appendChild(ffmpegPill);
+
+  if (intake?.file || intake?.bytes) {
+    const downloadBtn = trackButton('↓ Download', 'Download this media file');
+    downloadBtn.classList.add('media-download-original');
+    downloadBtn.addEventListener('click', () => {
+      downloadBlob(intake.file || intake.bytes, intake.filename || 'media', intake.mime || intake.file?.type);
+    });
+    tools.appendChild(downloadBtn);
+  }
 
   let trackListEl = null;
   let shuffle = false;

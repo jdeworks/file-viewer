@@ -217,6 +217,7 @@ export async function render(intake, ctx = {}) {
   }
 
   const { tools, trackListEl, advanceTrack, cancelSleep } = buildMediaTools({
+    intake,
     playlist,
     mediaElement: el,
     enableFfmpeg,

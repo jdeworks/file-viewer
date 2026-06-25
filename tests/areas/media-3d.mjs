@@ -1106,6 +1106,19 @@ export async function run(ctx) {
   await page.click('#previewHost .asx-cam');   // back to image
   await page.waitForSelector('#previewHost .asx-out', { timeout: 5000 });
 
+  await page.evaluate(() => window.__fv.openBlobFile(new Blob([new Uint8Array([0x1a, 0x45, 0xdf, 0xa3])], { type: 'video/webm' }), 'webcam-recording.webm', { mime: 'video/webm' }));
+  await page.waitForSelector('#previewHost .media-doc video.media-view', { timeout: 8000 });
+  const mediaDownload = await page.evaluate(() => {
+    const oldClick = HTMLAnchorElement.prototype.click;
+    const seen = { name: '', href: '' };
+    HTMLAnchorElement.prototype.click = function() { seen.name = this.download; seen.href = this.href; };
+    document.querySelector('#previewHost .media-download-original')?.click();
+    HTMLAnchorElement.prototype.click = oldClick;
+    return seen;
+  });
+  if (mediaDownload.name === 'webcam-recording.webm' && /^blob:/.test(mediaDownload.href)) pass('video studio exposes direct download for opened webcam recording');
+  else fail('media download: ' + JSON.stringify(mediaDownload));
+
   // ── AVIF parity ── AVIF must expose the SAME editor toolbar as PNG/JPEG/WebP
   // (canEdit), not just fit/zoom + ASCII. Regression guard for EDITABLE_MIME.
   await page.goto(origin, { waitUntil: 'load' });
