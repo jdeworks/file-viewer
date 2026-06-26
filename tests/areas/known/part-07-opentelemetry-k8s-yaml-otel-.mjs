@@ -61,6 +61,15 @@ export async function run(ctx) {
   if (/my-service-account@/i.test(gcpText)) pass('gcp-service-account.json: client_email shown'); else fail('gcp-sa email: ' + gcpText.slice(0, 300));
   if (/REDACTED.*private key/i.test(gcpText)) pass('gcp-service-account.json: private key is redacted'); else fail('gcp-sa private key masking: ' + gcpText.slice(0, 300));
   if (/never commit/i.test(gcpText)) pass('gcp-service-account.json: security warning shown'); else fail('gcp-sa warning: ' + gcpText.slice(0, 300));
+  const gcpHtml = await page.$eval('#previewHost .gcp-doc', (e) => e.innerHTML);
+  if (/Key Review|Workload Identity|key fingerprint/i.test(gcpText)) pass('gcp-service-account.json: key review warnings shown'); else fail('gcp-sa review: ' + gcpText.slice(0, 400));
+  if (/Redacted source/i.test(gcpText) && !/EXAMPLE_KEY_ID_NOT_A_REAL_KEY/.test(gcpText + gcpHtml)) pass('gcp-service-account.json: source preview redacts key id'); else fail('gcp-sa source leak: ' + gcpText.slice(0, 400));
+  const gcpSourceCollapsed = await page.$eval('#previewHost .gcp-doc .kf-source-details', (e) => !e.open);
+  if (gcpSourceCollapsed) pass('gcp-service-account.json: redacted source is collapsed'); else fail('gcp-sa source unexpectedly expanded');
+  await page.click('#previewHost .gcp-doc [data-source-line]');
+  await page.waitForFunction(() => document.querySelector('#previewHost .gcp-doc .kf-source-details')?.open, null, { timeout: 3000 });
+  const gcpSourceOpened = await page.$eval('#previewHost .gcp-doc .kf-source-details', (e) => e.open && !!e.querySelector('#gcp-line-1'));
+  if (gcpSourceOpened) pass('gcp-service-account.json: source links open source preview'); else fail('gcp-sa source link did not open preview');
 
   // ── apisix.yaml viewer ──
   await openExample('apisix.yaml');
