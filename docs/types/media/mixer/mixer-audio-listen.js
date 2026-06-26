@@ -1,16 +1,14 @@
-import { computeWaveformSummary } from '../waveform-data.js';
-import {
-  createProjectFromAssetMetadata,
-  moveElement,
-  selectTarget,
-  trimElement,
-  updateElement,
-} from './mixer-model.js';
+import { moveElement, selectTarget, trimElement, updateElement } from './mixer-model.js';
 import { exportProjectSettingsJson, importProjectSettings } from './mixer-import-export.js';
 import { createMixerSnapshot, renderMixerShell } from './mixer-renderer.js';
 import { attachMixerInteractions } from './mixer-interactions.js';
 import { MIXER_LAYOUT } from './mixer-hit-test.js';
 import { ensureMixerStyles } from './mixer-ui.js';
+import {
+  attachSourceMoveDrag, aliasInput, buildProject, clamp, clampZoom,
+  createButton, decorateChapters, decorateRoomTone, decodeSummary, fmtTime,
+  mediaDuration, mergeDuration, selectFirstElement,
+} from './mixer-audio-listen-helpers.js';
 
 export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   ensureMixerStyles();
@@ -301,8 +299,8 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
       toolbar.querySelector('[data-action="zoom-in"]')?.classList.add('mmx-listen-zoom-in');
       const transport = document.createElement('div');
       transport.className = 'media-lane-transport';
-      const stop = button('Stop', 'Stop and rewind', 'media-listen-btn media-listen-stop');
-      const play = button(mediaEl.paused ? 'Play' : 'Pause', mediaEl.paused ? 'Play' : 'Pause', 'media-listen-btn media-listen-play');
+      const stop = createButton('Stop', 'Stop and rewind', 'media-listen-btn media-listen-stop');
+      const play = createButton(mediaEl.paused ? 'Play' : 'Pause', mediaEl.paused ? 'Play' : 'Pause', 'media-listen-btn media-listen-play');
       const time = document.createElement('span');
       time.className = 'media-listen-time media-lane-time';
       time.textContent = `${fmtTime(currentSec)} / ${durationSec() > 0 ? fmtTime(durationSec()) : '--:--'}`;
@@ -320,7 +318,7 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
       pan.addEventListener('input', () => dispatch({ type: 'pan', scrollLeft: Number(pan.value) }));
       toolbar.append(pan);
 
-      const exportBtn = button('Export settings', 'Export mixer settings', 'mmx-settings-export');
+      const exportBtn = createButton('Export settings', 'Export mixer settings', 'mmx-settings-export');
       exportBtn.addEventListener('click', exportSettings);
       toolbar.append(exportBtn);
 
@@ -332,12 +330,12 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
 
     const inspector = root.querySelector('.mmx-inspector');
     if (inspector) {
-      aliasInput('.mmx-inspector-start', 'media-lane-offset');
-      aliasInput('.mmx-inspector-source-in', 'media-lane-in');
-      aliasInput('.mmx-inspector-source-out', 'media-lane-out');
-      aliasInput('.mmx-inspector-gain', 'media-lane-gain');
-      aliasInput('.mmx-inspector-fade-in', 'media-lane-fade-in');
-      aliasInput('.mmx-inspector-fade-out', 'media-lane-fade-out');
+      aliasInput(root, '.mmx-inspector-start', 'media-lane-offset');
+      aliasInput(root, '.mmx-inspector-source-in', 'media-lane-in');
+      aliasInput(root, '.mmx-inspector-source-out', 'media-lane-out');
+      aliasInput(root, '.mmx-inspector-gain', 'media-lane-gain');
+      aliasInput(root, '.mmx-inspector-fade-in', 'media-lane-fade-in');
+      aliasInput(root, '.mmx-inspector-fade-out', 'media-lane-fade-out');
       const roomField = document.createElement('label');
       roomField.className = 'mmx-inspector-field media-lane-room-field';
       const room = document.createElement('input');
@@ -355,41 +353,8 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
     }
 
     decorateRoomTone(body, element);
-    decorateChapters(body);
+    decorateChapters(body, chapters, project.project.durationMs || 1000);
     updateTransportLabels();
-  }
-
-  function aliasInput(selector, className) {
-    const input = root.querySelector(selector);
-    if (input) input.classList.add(className);
-  }
-
-  function decorateRoomTone(body, element) {
-    if (!body) return;
-    const layer = document.createElement('div');
-    layer.className = 'media-lane-room-tone';
-    layer.hidden = !element?.audio?.roomTone;
-    body.append(layer);
-  }
-
-  function decorateChapters(body) {
-    if (!body) return;
-    const layer = document.createElement('div');
-    layer.className = 'media-wv-chapter-layer';
-    const totalMs = Math.max(1, project.project.durationMs || 1000);
-    for (const [index, chapter] of chapters.entries()) {
-      const marker = document.createElement('div');
-      marker.className = 'media-wv-chapter-marker';
-      marker.title = chapter.title || `Chapter ${index + 1}`;
-      marker.dataset.chapter = String(index + 1);
-      marker.style.left = `${(Math.max(0, Number(chapter.start) || 0) * 1000 / totalMs) * 100}%`;
-      const label = document.createElement('span');
-      label.className = 'media-wv-chapter-label';
-      label.textContent = marker.title;
-      marker.append(label);
-      layer.append(marker);
-    }
-    body.append(layer);
   }
 
   function updateTransportLabels() {
@@ -521,118 +486,6 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   }
 }
 
-function attachSourceMoveDrag(root, onMoveDelta) {
-  let active = null;
-  const onPointerDown = (event) => {
-    const region = event.target?.closest?.('.media-lane-trim');
-    const surface = root.querySelector('.media-waveform-surface');
-    if (!region || !surface || event.button !== 0) return;
-    active = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      width: Math.max(1, surface.getBoundingClientRect().width - MIXER_LAYOUT.gutterWidth),
-      duration: Number(root.dataset.mixerDurationSec) || 1,
-      lastDeltaSec: 0,
-    };
-    region.classList.add('mmx-source-moving');
-    try { region.setPointerCapture?.(event.pointerId); } catch { /* synthetic events may not capture */ }
-    event.preventDefault();
-    event.stopPropagation();
-  };
-  const onPointerMove = (event) => {
-    if (!active || event.pointerId !== active.pointerId) return;
-    const deltaSec = ((event.clientX - active.startX) / active.width) * active.duration;
-    const incremental = deltaSec - active.lastDeltaSec;
-    active.lastDeltaSec = deltaSec;
-    onMoveDelta(incremental);
-    event.preventDefault();
-    event.stopPropagation();
-  };
-  const finish = (event) => {
-    if (!active || event.pointerId !== active.pointerId) return;
-    root.querySelector('.media-lane-trim')?.classList.remove('mmx-source-moving');
-    active = null;
-    event.stopPropagation();
-  };
-  root.addEventListener('pointerdown', onPointerDown);
-  root.addEventListener('pointermove', onPointerMove);
-  root.addEventListener('pointerup', finish);
-  root.addEventListener('pointercancel', finish);
-  return () => {
-    root.removeEventListener('pointerdown', onPointerDown);
-    root.removeEventListener('pointermove', onPointerMove);
-    root.removeEventListener('pointerup', finish);
-    root.removeEventListener('pointercancel', finish);
-  };
-}
-
-async function decodeSummary(intake) {
-  const file = intake.file || (intake.bytes ? new File([intake.bytes], intake.filename || 'audio') : null);
-  if (!file) return null;
-  const maxDecode = 96 * 1024 * 1024;
-  const sliceBytes = 60 * 256 * 128;
-  const source = file.size && file.size <= maxDecode ? file : file.slice(0, sliceBytes);
-  const bytes = await source.arrayBuffer();
-  const ac = new AudioContext();
-  try {
-    const buffer = await ac.decodeAudioData(bytes.slice(0));
-    return computeWaveformSummary(buffer);
-  } finally {
-    ac.close().catch(() => {});
-  }
-}
-
-function buildProject(mediaEl, intake) {
-  const durationMs = Math.max(0, mediaDuration(mediaEl) * 1000);
-  return createProjectFromAssetMetadata({
-    id: 'asset-listen-source',
-    name: intake.filename || intake.file?.name || 'Audio source',
-    mime: intake.mime || intake.mimeType || intake.file?.type || '',
-    size: intake.size || intake.file?.size || 0,
-    lastModified: intake.file?.lastModified || null,
-    capabilities: { hasAudio: true, hasVideo: false, hasImage: false },
-    media: {
-      durationMs,
-      audioSampleRate: 0,
-      audioChannels: 0,
-    },
-  }, {
-    name: intake.filename || 'Audio listen',
-    laneLabel: 'Source',
-  });
-}
-
-function mergeDuration(project, durationMs) {
-  if (!Number.isFinite(durationMs) || durationMs <= 0) return project;
-  const id = project.elements[0]?.id;
-  const next = {
-    ...project,
-    project: { ...project.project, durationMs },
-  };
-  return id ? updateElement(next, id, (element) => ({
-    ...element,
-    durationMs,
-    rawDurationMs: durationMs,
-    timeline: {
-      ...element.timeline,
-      durationMs,
-      rawDurationMs: durationMs,
-      placementDurationMs: durationMs,
-      sourceOutMs: durationMs,
-    },
-  })) : next;
-}
-
-function selectFirstElement(project) {
-  const id = project.elements[0]?.id;
-  return id ? selectTarget(project, { type: 'element', id }, [{ type: 'element', id }]) : project;
-}
-
-function mediaDuration(mediaEl) {
-  const value = Number(mediaEl.duration);
-  return Number.isFinite(value) && value > 0 ? value : 0;
-}
-
 function button(text, label, className) {
   const node = document.createElement('button');
   node.type = 'button';
@@ -640,25 +493,4 @@ function button(text, label, className) {
   node.textContent = text;
   node.setAttribute('aria-label', label);
   return node;
-}
-
-function fmtTime(value) {
-  const total = Math.max(0, Math.floor(Number(value) || 0));
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const seconds = total % 60;
-  if (hours > 0) return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
-}
-
-function clamp(value, min, max) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return min;
-  return Math.max(min, Math.min(max, n));
-}
-
-function clampZoom(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return 0.08;
-  return Math.max(0.02, Math.min(0.8, n));
 }
