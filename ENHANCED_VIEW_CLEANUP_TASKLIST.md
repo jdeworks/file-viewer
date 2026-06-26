@@ -92,7 +92,7 @@ These should help users find broken structure and dependency/reference problems.
 
 These should prioritize risk, masking, source traceability, and relationship maps.
 
-- [ ] CI/CD configs: GitHub Actions, GitLab CI, CircleCI, Travis, CodeBuild, Woodpecker, Azure Pipelines.
+- [x] CI/CD configs: GitHub Actions, GitLab CI, CircleCI, Travis, CodeBuild, Woodpecker, Azure Pipelines.
 - [x] Azure Pipelines: source-linked triggers/pool/stages/jobs/variables, hosted image/dependency/deploy-step review findings, secret-like variable redaction, and collapsed redacted source.
 - [x] CircleCI: source-linked orbs/workflows/jobs, orb pinning and workflow requires review findings, secret-like environment redaction, and collapsed redacted source.
 - [x] AWS CodeBuild buildspec: source-linked phases/commands/runtime/artifacts/cache, runtime/deploy-command review findings, secret-like env redaction support, and collapsed redacted source.
@@ -101,8 +101,8 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] GitLab CI: source-linked stages/jobs/variables/includes, mutable image and needs graph review findings, secret-like variable redaction, and collapsed redacted source.
 - [x] Travis CI: source-linked runtime/services/env/script/branch filters, runtime/branch/secret review findings, secret-like env redaction, and collapsed redacted source.
 - [x] Woodpecker CI: source-linked steps/services/when/matrix/secrets/clone config, image/secret/deploy review findings, secret-like env redaction, and collapsed redacted source.
-- [ ] Add warnings for `pull_request_target`, broad permissions, unpinned actions, secret-like env values, shell download pipes.
-- [ ] Render CI job dependency graphs from `needs`/workflow equivalents.
+- [x] Add warnings for `pull_request_target`, broad permissions, unpinned actions, secret-like env values, shell download pipes.
+- [x] Render CI job dependency graphs from `needs`/workflow equivalents.
 - [ ] Container/orchestration: Docker Compose, Kubernetes, Helm, Flux, Nomad, Systemd, Quadlet.
 - [x] Kubernetes generic manifest: source-linked container/resource review, mutable images, privileged containers, host namespace/hostPort exposure, missing healthchecks, and secret-like env masking.
 - [x] Nomad job: source-linked jobs/groups/tasks/services, mutable image/health-check/exec-driver review findings, secret-like env redaction, and collapsed redacted source.
