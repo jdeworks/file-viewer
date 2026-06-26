@@ -428,6 +428,11 @@ Stage 7 project settings import/export UI has started:
   handles to MEMFS, runs the planned args, downloads the output, and cleans
   MEMFS. If ffmpeg is not enabled, the action remains a clear opt-in affordance
   instead of a broken render.
+- Added a browser ffmpeg render-budget guard to the modular video export plan.
+  The plan sums unique input asset sizes, records `renderBudget` provenance,
+  blocks runnable args when inputs exceed the configured cap, and the runtime
+  helper rechecks relinked local `File.size` values before reading bytes into
+  MEMFS.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
   media, exposes all three required reapply choices, applies the ask-per-
@@ -438,11 +443,11 @@ Stage 7 project settings import/export UI has started:
   asset and ffmpeg-gated final export provenance, and `tests/areas/media-studio-
   compare.mjs` proves it on modular Compare for audio and video. Parser unit
   coverage now also proves disabled/enabled video export plans, filter graph
-  layering, config-only provenance, and the fake-ffmpeg runtime execution
-  contract.
+  layering, config-only provenance, the fake-ffmpeg runtime execution contract,
+  and browser ffmpeg input-budget enforcement.
 - Stage 7 remaining work: expand filter coverage for additional
-  transitions/effects as those controls become user-facing, and harden real
-  browser ffmpeg renders against large client-side compositions.
+  transitions/effects as those controls become user-facing, and continue
+  hardening real browser ffmpeg renders against long/complex compositions.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

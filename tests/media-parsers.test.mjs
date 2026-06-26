@@ -345,6 +345,7 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
     id: 'asset-video-a',
     name: 'main.webm',
     mime: 'video/webm',
+    size: 300,
     capabilities: { hasAudio: true, hasVideo: true },
     media: { durationMs: 2000, videoWidth: 640, videoHeight: 360, frameRate: 24 },
   }, { name: 'Layered video export', fps: 24 });
@@ -363,6 +364,7 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
     id: 'asset-image-b',
     name: 'overlay.png',
     mime: 'image/png',
+    size: 200,
     capabilities: { hasImage: true },
     media: { durationMs: 0, videoWidth: 320, videoHeight: 180 },
   });
@@ -397,6 +399,12 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.ok(filterGraph.includes('[0:a]atrim=start=0.2:duration=1,asetpts=PTS-STARTPTS,adelay=500:all=1,afade=t=in:st=0:d=0.1,afade=t=out:st=0.8:d=0.2,volume=0.7'), 'modular video mix export: applies audio trim, delay, fades, and gain');
   assert.ok(filterGraph.includes('[a0]amix=inputs=1:duration=longest:dropout_transition=0,volume=0.8[aout]'), 'modular video mix export: applies master audio gain after mix');
   assert.equal(/blob:|data:|objectURL|frameCache|thumbnailCache/i.test(JSON.stringify(renderPlan)), false, 'modular video mix export: plan remains config-only');
+  const overBudgetPlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: true, ffmpegLoaded: true, maxInputBytes: 400 });
+  assert.equal(overBudgetPlan.canRender, false, 'modular video mix export: over-budget browser ffmpeg plan cannot render');
+  assert.equal(overBudgetPlan.args.length, 0, 'modular video mix export: over-budget plan has no runnable args');
+  assert.equal(overBudgetPlan.provenance.renderBudget.totalInputBytes, 500, 'modular video mix export: render budget sums unique input bytes');
+  assert.equal(overBudgetPlan.provenance.renderBudget.overBudget, true, 'modular video mix export: render budget records over-budget state');
+  assert.match(overBudgetPlan.warnings.join(' '), /browser ffmpeg limit/, 'modular video mix export: over-budget plan explains browser ffmpeg limit');
   const fakeFs = new Map();
   const fakeFfmpeg = {
     ran: null,
@@ -425,6 +433,15 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.equal(renderedMix.blob.type, 'video/mp4', 'modular video mix export: runtime returns an MP4 blob');
   assert.equal(renderedMix.bytes, 4, 'modular video mix export: runtime reports output byte count');
   assert.equal(fakeFs.size, 0, 'modular video mix export: runtime cleans MEMFS inputs and output');
+  const tightRuntimePlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: true, ffmpegLoaded: true, maxInputBytes: 1000 });
+  await assert.rejects(
+    () => renderVideoMixWithFfmpeg(fakeFfmpeg, tightRuntimePlan, new Map([
+      ['asset-video-a', new File(['x'.repeat(800)], 'main.webm', { type: 'video/webm' })],
+      ['asset-image-b', new File(['y'.repeat(300)], 'overlay.png', { type: 'image/png' })],
+    ])),
+    /browser ffmpeg limit/,
+    'modular video mix export: runtime rechecks relinked local file sizes before MEMFS writes',
+  );
   await assert.rejects(
     () => renderVideoMixWithFfmpeg(fakeFfmpeg, renderPlan, new Map([['asset-video-a', new File(['x'], 'main.webm')]])),
     /Missing local media for overlay\.png/,

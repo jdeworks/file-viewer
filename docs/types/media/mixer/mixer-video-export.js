@@ -1,4 +1,5 @@
 import { CAPABILITY_STATUS, evaluateMixerCapabilities } from './mixer-capabilities.js';
+import { MIXER_LIMITS } from './mixer-config.js';
 
 export function buildVideoMixExportPlan(project, options = {}) {
   const capabilities = evaluateMixerCapabilities({
@@ -9,6 +10,10 @@ export function buildVideoMixExportPlan(project, options = {}) {
   const status = capabilities.actions.finalVideoExport;
   const visualItems = collectElements(project, (element) => element.capabilities?.hasVideo || element.capabilities?.hasImage);
   const audioItems = collectElements(project, (element) => element.capabilities?.hasAudio);
+  const inputAssets = uniqueAssets([...visualItems, ...audioItems]);
+  const maxInputBytes = Math.max(0, Number(options.maxInputBytes ?? MIXER_LIMITS.ffmpegInputMaxBytes) || 0);
+  const totalInputBytes = inputAssets.reduce((sum, asset) => sum + Math.max(0, Number(asset.size) || 0), 0);
+  const inputBudgetExceeded = maxInputBytes > 0 && totalInputBytes > maxInputBytes;
   const durationMs = Math.max(
     project.project?.durationMs || 0,
     ...project.elements.map((element) => (element.timeline?.startMs || 0) + (element.timeline?.placementDurationMs || element.timeline?.durationMs || 0)),
@@ -20,8 +25,9 @@ export function buildVideoMixExportPlan(project, options = {}) {
   if (missingAssets.length) warnings.push(`${missingAssets.length} asset(s) must be relinked before final export.`);
   const proxyAssets = project.assets.filter((asset) => asset.status === 'needs-proxy' || asset.capabilities?.needsFfmpegForPreview);
   if (proxyAssets.length) warnings.push(`${proxyAssets.length} asset(s) need ffmpeg proxy/conversion for accurate preview/export.`);
-  const canRender = status.status === CAPABILITY_STATUS.AVAILABLE && visualItems.length > 0 && missingAssets.length === 0;
-  const renderPlan = buildFfmpegRenderPlan(project, visualItems, audioItems, options);
+  if (inputBudgetExceeded) warnings.push(`Input media totals ${formatBytes(totalInputBytes)}, above the browser ffmpeg limit of ${formatBytes(maxInputBytes)}.`);
+  const canRender = status.status === CAPABILITY_STATUS.AVAILABLE && visualItems.length > 0 && missingAssets.length === 0 && !inputBudgetExceeded;
+  const renderPlan = buildFfmpegRenderPlan(project, visualItems, audioItems, options, inputAssets);
   return {
     kind: 'video-mix',
     format: options.format || 'mp4',
@@ -41,6 +47,11 @@ export function buildVideoMixExportPlan(project, options = {}) {
       filterGraph: renderPlan.filterGraph,
       outputMaps: renderPlan.outputMaps,
       inputs: renderPlan.inputs,
+      renderBudget: {
+        totalInputBytes,
+        maxInputBytes,
+        overBudget: inputBudgetExceeded,
+      },
       master: {
         audioGain: project.master?.audio?.gain ?? 1,
         audioEqPreset: project.master?.audio?.eq?.presetId || 'flat',
@@ -91,8 +102,8 @@ function itemProvenance({ element, lane, asset }) {
   };
 }
 
-function buildFfmpegRenderPlan(project, visualItems, audioItems, options) {
-  const inputs = uniqueAssets([...visualItems, ...audioItems]);
+function buildFfmpegRenderPlan(project, visualItems, audioItems, options, inputAssets = null) {
+  const inputs = inputAssets || uniqueAssets([...visualItems, ...audioItems]);
   const inputIndex = new Map(inputs.map((asset, index) => [asset.id, index]));
   const duration = seconds(project.project?.durationMs || projectDuration(visualItems, audioItems));
   const graph = buildFilterGraph(project, visualItems, audioItems, inputIndex, duration);
@@ -101,6 +112,7 @@ function buildFfmpegRenderPlan(project, visualItems, audioItems, options) {
     id: asset.id,
     name: asset.name,
     inputName: safeMediaName(asset.name || `${asset.id}.media`, index),
+    size: Math.max(0, Number(asset.size) || 0),
     status: asset.status,
     kind: assetKind(asset),
   }));
@@ -128,6 +140,14 @@ export async function renderVideoMixWithFfmpeg(ff, plan, runtimeFiles) {
   if (!plan?.canRender) throw new Error(plan?.statusMessage || 'Final video export is not renderable yet.');
   const inputs = plan.provenance?.inputs || [];
   const outputName = plan.args?.at?.(-1) || 'output.mp4';
+  const budget = plan.provenance?.renderBudget || {};
+  const totalRuntimeBytes = inputs.reduce((sum, input) => {
+    const file = runtimeFiles?.get?.(input.id);
+    return sum + Math.max(0, Number(file?.size ?? input.size) || 0);
+  }, 0);
+  if (budget.maxInputBytes > 0 && totalRuntimeBytes > budget.maxInputBytes) {
+    throw new Error(`Input media totals ${formatBytes(totalRuntimeBytes)}, above the browser ffmpeg limit of ${formatBytes(budget.maxInputBytes)}.`);
+  }
   const written = [];
   for (const input of inputs) {
     const file = runtimeFiles?.get?.(input.id);
@@ -307,6 +327,13 @@ function mimeForFormat(format) {
   if (format === 'webm') return 'video/webm';
   if (format === 'mov') return 'video/quicktime';
   return 'video/mp4';
+}
+
+function formatBytes(bytes) {
+  const value = Math.max(0, Number(bytes) || 0);
+  if (value >= 1024 * 1024) return `${Math.round((value / 1048576) * 10) / 10} MB`;
+  if (value >= 1024) return `${Math.round((value / 1024) * 10) / 10} KB`;
+  return `${Math.round(value)} B`;
 }
 
 function seconds(ms) {
