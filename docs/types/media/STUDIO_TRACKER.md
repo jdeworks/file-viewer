@@ -282,9 +282,21 @@ Stage 5 video/image elements and seek-frame preview has started:
   proves active visual-element discovery at the cursor, frame-preview rendering,
   visual placeholders, and transform/opacity inspector edits feeding back into
   the seek-frame preview model.
+- Added `mixer-media-drop.js`, a reusable audio/image/video drop classifier and
+  shared-model intake helper. Mix now accepts visual files as image/video-capable
+  lanes in addition to audio lanes, keeps media bytes only in the runtime file
+  map, and exposes `addMediaFile()` while preserving the previous `addAudioFile`
+  compatibility entry point.
+- Focused smoke coverage in
+  `tests/areas/media-studio-mixer-audio-listen.mjs` now proves a dropped SVG
+  image becomes a shared-model image lane/element with visual controls and an
+  active seek-frame preview; pure audio proof helpers were split into
+  `tests/areas/media-studio-mixer-audio-proofs.mjs` to keep the browser smoke
+  under the line-count threshold.
 - Validation passed for this slice:
   - `node --check docs/types/media/mixer/mixer-visual-preview.js docs/types/media/mixer/mixer-renderer.js docs/types/media/mixer/mixer-ui.js docs/types/media/mixer/mixer-audio-multi-helpers.js tests/areas/media-studio-mixer-shell.mjs`
   - `node tests/smoke-area.mjs media-studio-mixer-shell`
+  - `node tests/smoke-area.mjs media-studio-mixer-audio-listen`
   - `node tests/media-mixer-model.test.mjs`
   - `node tests/media-mixer-import-export.test.mjs`
   - `node tests/media-mixer-capabilities.test.mjs`
@@ -292,9 +304,9 @@ Stage 5 video/image elements and seek-frame preview has started:
   - `node tests/media-parsers.test.mjs`
   - `node tests/smoke-area.mjs media-studio`
   - `./scripts/check.sh --fast`
-- Stage 5 remaining work: real visual file intake/drop paths, image thumbnail
-  extraction, video metadata/frame availability warnings, optional ffmpeg-backed
-  conversion paths, and then Compare rebuild on the same shared model.
+- Stage 5 remaining work: image thumbnail extraction, video metadata/frame
+  availability warnings, optional ffmpeg-backed conversion paths, and then
+  Compare rebuild on the same shared model.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

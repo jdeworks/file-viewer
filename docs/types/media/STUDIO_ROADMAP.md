@@ -129,10 +129,12 @@ same project snapshot as the timeline, renders a bounded orientation canvas, and
 exposes selected-element visual transform controls for position, scale,
 rotation, and opacity. This preview is deliberately lighter than realtime video
 playback; it gives enough frame-context grammar to place images/video elements
-while preserving client-side memory constraints. Remaining Stage 5 work is
-visual file intake/drop, thumbnails or metadata-backed frame availability,
-coherent reduced-mode warnings when ffmpeg/video decode is unavailable, and then
-Compare on top of the same selected-object model.
+while preserving client-side memory constraints. The first visual intake slice
+also classifies dropped audio/image/video files through a reusable helper, so Mix
+can create visual shared-model lanes without serializing media bytes. Remaining
+Stage 5 work is thumbnails or metadata-backed frame availability, coherent
+reduced-mode warnings when ffmpeg/video decode is unavailable, and then Compare
+on top of the same selected-object model.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

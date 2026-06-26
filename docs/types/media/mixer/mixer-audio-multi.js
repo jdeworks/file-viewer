@@ -1,6 +1,5 @@
 import {
   addElement,
-  addAsset,
   addLane,
   createAudioBufferCache,
   createGeneratedElement,
@@ -13,7 +12,6 @@ import {
   renderAudioMixToWav,
   selectTarget,
   summarizeReducedCapabilities,
-  updateAsset,
   updateElement,
   updateLane,
   updateMaster,
@@ -34,12 +32,16 @@ import {
 } from './mixer-audio-listen-helpers.js';
 import { MIXER_LAYOUT } from './mixer-hit-test.js';
 import {
-  hasAudioDrop,
-  isAudioFile,
   laneRange,
   downloadBlob,
   updateProjectElementField,
 } from './mixer-audio-multi-helpers.js';
+import {
+  addDroppedMediaFile,
+  applyDroppedAudioSummary,
+  hasMixerFileDrop,
+  isMixerDropFile,
+} from './mixer-media-drop.js';
 import { createMixerAudioPlayback } from './mixer-audio-playback.js';
 import { decorateMultiToolbar, reflectMultiPlaybackState } from './mixer-audio-multi-decorators.js';
 
@@ -237,7 +239,8 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       addGeneratedLane('tone', 'Tone', { kind: 'tone', frequency: 440, levelDb: -18 });
       render();
     },
-    addAudioFile,
+    addAudioFile: addDroppedFile,
+    addMediaFile: addDroppedFile,
   };
 
   render();
@@ -357,68 +360,24 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (elementId) project = selectTarget(project, { type: 'element', id: elementId }, [{ type: 'element', id: elementId }]);
   }
 
-  function addAudioFile(file, input = {}) {
-    if (!file || !isAudioFile(file)) return null;
-    const assetId = `asset-drop-${Date.now()}-${project.assets.length + 1}`;
-    const lane = createLane({
-      role: 'audio',
-      label: file.name || 'Dropped audio',
-      order: project.lanes.length,
-    });
-    project = addAsset(project, {
-      id: assetId,
-      name: file.name || 'Dropped audio',
-      mime: file.type || '',
-      size: file.size || 0,
-      lastModified: file.lastModified || null,
-      capabilities: { hasAudio: true },
-      media: { durationMs: 0, audioSampleRate: 0, audioChannels: 0 },
-      status: 'available',
-    });
-    runtimeFiles.set(assetId, file);
-    project = addLane(project, lane);
-    project = addElement(project, {
-      laneId: lane.id,
-      assetId,
-      capabilities: { hasAudio: true },
-      type: 'audio',
-      startMs: Math.max(0, Number(input.startMs ?? viewport.cursorMs) || 0),
-      durationMs: 1000,
-      rawDurationMs: 0,
-    });
-    const elementId = project.elements[project.elements.length - 1]?.id;
-    if (elementId) project = selectTarget(project, { type: 'element', id: elementId }, [{ type: 'element', id: elementId }]);
-    root.dataset.lastDroppedAudio = file.name || 'audio';
+  function addDroppedFile(file, input = {}) {
+    const result = addDroppedMediaFile(project, file, { startMs: input.startMs ?? viewport.cursorMs });
+    if (!result) return null;
+    project = result.project;
+    runtimeFiles.set(result.assetId, file);
+    if (result.elementId) project = selectTarget(project, { type: 'element', id: result.elementId }, [{ type: 'element', id: result.elementId }]);
+    root.dataset.lastDroppedKind = result.kind;
+    if (result.kind === 'audio') root.dataset.lastDroppedAudio = file.name || 'audio';
+    if (result.kind !== 'audio') root.dataset.lastDroppedVisual = file.name || result.kind;
     render();
-    decodeDroppedAudio(file, assetId, elementId);
-    return { assetId, laneId: lane.id, elementId };
+    if (result.kind === 'audio') decodeDroppedAudio(file, result.assetId, result.elementId);
+    return result;
   }
 
   function decodeDroppedAudio(file, assetId, elementId) {
     decodeSummary({ file, filename: file.name, mime: file.type, size: file.size }).then((summary) => {
       if (destroyed || !summary) return;
-      const durationMs = Math.max(1, Math.round((summary.duration || 0) * 1000));
-      project = updateAsset(project, assetId, (asset) => ({
-        ...asset,
-        media: {
-          ...asset.media,
-          durationMs,
-          audioSampleRate: summary.sampleRate || asset.media.audioSampleRate,
-        },
-      }));
-      project = updateElement(project, elementId, (element) => ({
-        ...element,
-        durationMs,
-        rawDurationMs: durationMs,
-        timeline: {
-          ...element.timeline,
-          durationMs,
-          rawDurationMs: durationMs,
-          placementDurationMs: durationMs,
-          sourceOutMs: durationMs,
-        },
-        analysis: { ...element.analysis, waveformSummary: summary },
-      }));
+      project = applyDroppedAudioSummary(project, assetId, elementId, summary);
       render();
     }).catch(() => {
       if (!destroyed) root.dataset.lastDropDecode = 'unavailable';
@@ -426,7 +385,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   }
 
   function onDragOver(event) {
-    if (!hasAudioDrop(event.dataTransfer)) return;
+    if (!hasMixerFileDrop(event.dataTransfer)) return;
     event.preventDefault();
     event.stopPropagation();
     root.classList.add('mx-drop-active');
@@ -437,12 +396,12 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   }
 
   function onDrop(event) {
-    const files = [...(event.dataTransfer?.files || [])].filter(isAudioFile);
+    const files = [...(event.dataTransfer?.files || [])].filter(isMixerDropFile);
     if (!files.length) return;
     event.preventDefault();
     event.stopPropagation();
     root.classList.remove('mx-drop-active');
-    for (const file of files) addAudioFile(file, { startMs: viewport.cursorMs });
+    for (const file of files) addDroppedFile(file, { startMs: viewport.cursorMs });
   }
 
   function downloadMixdown() {
@@ -491,7 +450,8 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     root.dataset.zoom = String(viewport.pxPerMs);
     root.dataset.hasPinkNoise = project.elements.some((element) => element.audio?.roomTone?.kind === 'pink-noise') ? 'true' : 'false';
     root.dataset.waveformBuckets = String(waveformSummary?.buckets || 0);
-    root.dataset.hasDroppedAudio = project.assets.some((asset) => asset.id.startsWith('asset-drop-')) ? 'true' : 'false';
+    root.dataset.hasDroppedAudio = project.assets.some((asset) => asset.id.startsWith('asset-drop-') && asset.capabilities?.hasAudio) ? 'true' : 'false';
+    root.dataset.hasDroppedVisual = project.assets.some((asset) => asset.id.startsWith('asset-drop-') && (asset.capabilities?.hasVideo || asset.capabilities?.hasImage)) ? 'true' : 'false';
     root.dataset.decodedCacheEntries = String(decodedAudioCache.stats().entryCount);
     root.dataset.decodedCacheBudgetBytes = String(decodedAudioCache.stats().budgetBytes);
     reflectMultiPlaybackState(root, playback.getState());
