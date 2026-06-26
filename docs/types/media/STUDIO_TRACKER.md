@@ -240,15 +240,23 @@ Stage 4 multi-lane audio has started:
   master bus. Mix owns a cache instance, exposes cache budget stats for runtime
   verification, and releases project cache entries on teardown; settings export
   remains config-only.
+- Added `mixer-audio-playback.js`, a shared-model WebAudio scheduler for Mix
+  preview. It builds a schedule from the project/lane/element timeline, respects
+  cursor offset, trim source ranges, lane mute/solo, element gain/fades, lane
+  gain, master gain, generated tone, and pink-noise room-tone elements. File
+  assets are decoded lazily through the runtime file map and decoded-audio cache;
+  generated sources are synthesized directly. The Mix Play/Stop controls now
+  drive this scheduler and the red cursor follows the AudioContext clock.
 - Validation passed:
   - `node --check docs/types/media/mixer/mixer-audio-multi.js`
   - `node --check docs/types/media/mixer/mixer-audio-cache.js`
+  - `node --check docs/types/media/mixer/mixer-audio-playback.js`
   - `node --check tests/areas/media-studio-mixer-audio-listen.mjs`
   - `node tests/media-mixer-model.test.mjs`
   - `node tests/smoke-area.mjs media-studio-mixer-audio-listen`
   - `node tests/smoke-area.mjs media-studio`
-- Remaining Stage 4 work: real WebAudio scheduled playback over the shared
-  timeline and final mix export/provenance derived from the same state.
+- Remaining Stage 4 work: final mix export/provenance derived from the same
+  shared timeline state.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

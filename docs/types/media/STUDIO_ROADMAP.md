@@ -113,7 +113,10 @@ decoded-audio cache module now provides explicit byte budgets, LRU eviction,
 per-project release, and processed cache keys that include the relevant lane,
 element, room-tone, EQ, placement, and master-bus settings; Mix exposes those
 runtime cache stats without serializing cache state into settings JSON.
-Remaining Stage 4 work is scheduled WebAudio timeline playback and final mix
+WebAudio Mix preview now schedules from the same shared timeline state, using
+cursor offsets, trims, mute/solo, lane gain, element gain/fades, master gain,
+generated tone, and pink-noise/room-tone elements, with file assets decoded
+lazily through the runtime cache. Remaining Stage 4 work is final mix
 export/provenance from the shared timeline state.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane

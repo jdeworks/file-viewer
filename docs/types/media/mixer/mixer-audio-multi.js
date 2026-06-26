@@ -38,6 +38,8 @@ import {
   laneRange,
   updateProjectElementField,
 } from './mixer-audio-multi-helpers.js';
+import { createMixerAudioPlayback } from './mixer-audio-playback.js';
+import { decorateMultiToolbar, reflectMultiPlaybackState } from './mixer-audio-multi-decorators.js';
 
 export function mountModularAudioMixer(panel, intake, mediaEl = null, options = {}) {
   ensureMixerStyles();
@@ -52,12 +54,26 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   let destroyed = false;
   let draggingElement = null;
   const decodedAudioCache = createAudioBufferCache({ budgetBytes: options.decodedAudioBudgetBytes });
+  const runtimeFiles = new Map();
+  if (intake?.file) runtimeFiles.set('asset-listen-source', intake.file);
   const runtime = {
     ffmpegEnabled: !!options.enableFfmpeg,
     ffmpegLoaded: false,
     canExportAudioMixBrowser: true,
   };
-  const render = () => {
+  const setCursorMs = (cursorMs) => {
+    viewport = { ...viewport, cursorMs: Math.max(0, Number(cursorMs) || 0) };
+  };
+  const playback = createMixerAudioPlayback({
+    getProject: () => project,
+    getViewport: () => viewport,
+    setCursorMs,
+    cache: decodedAudioCache,
+    runtimeFiles,
+    onState: (state) => reflectMultiPlaybackState(root, state),
+    onTick: render,
+  });
+  function render() {
     if (destroyed) return;
     viewport = { ...viewport, width: root.clientWidth || viewport.width || 960 };
     renderMixerShell(root, createMixerSnapshot(project), viewport, {
@@ -66,9 +82,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     });
     decorateShell();
     reflectState();
-  };
+  }
   const dispatch = (action) => {
-    if (action.type === 'seek') viewport = { ...viewport, cursorMs: Math.max(0, action.cursorMs || 0) };
+    if (action.type === 'seek') setCursorMs(action.cursorMs);
     if (action.type === 'zoom') viewport = { ...viewport, pxPerMs: clampZoom(action.pxPerMs) };
     if (action.type === 'zoom-relative') viewport = { ...viewport, pxPerMs: clampZoom(viewport.pxPerMs * action.factor) };
     if (action.type === 'pan') viewport = { ...viewport, scrollLeft: Math.max(0, Number(action.scrollLeft) || 0) };
@@ -128,6 +144,15 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (button.matches('.mx-mute, .mx-solo')) {
       const field = button.matches('.mx-mute') ? 'muted' : 'solo';
       project = updateLane(project, button.dataset.laneId, (lane) => ({ ...lane, [field]: !lane[field] }));
+      render();
+      return;
+    }
+    if (button.matches('.mx-play')) {
+      playback.play();
+      return;
+    }
+    if (button.matches('.mx-stop')) {
+      playback.stop({ resetCursor: true });
       render();
       return;
     }
@@ -198,6 +223,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     getViewport: () => viewport,
     exportSettings: () => exportProjectSettingsJson(project),
     getAudioCacheStats: () => decodedAudioCache.stats(),
+    getPlaybackState: () => playback.getState(),
     dispatch,
     addPinkNoise() {
       addGeneratedLane('room-tone', 'Pink noise bed', { kind: 'pink-noise', levelDb: -52 });
@@ -216,9 +242,11 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     getProject: () => project,
     getViewport: () => viewport,
     getAudioCacheStats: () => decodedAudioCache.stats(),
+    getPlaybackState: () => playback.getState(),
     dispatch,
     destroy() {
       destroyed = true;
+      playback.destroy();
       interactions.destroy();
       decodedAudioCache.releaseProject(project.project.id);
       root.removeEventListener('input', onInput);
@@ -242,37 +270,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     root.querySelector('.mmx-lanes')?.classList.add('mx-lanes');
     root.querySelector('.mmx-body')?.classList.add('mx-timeline');
     const toolbar = root.querySelector('.mmx-toolbar');
-    if (toolbar) decorateToolbar(toolbar);
+    if (toolbar) decorateMultiToolbar(toolbar, project);
     decorateLanes();
     decorateInspector();
-  }
-
-  function decorateToolbar(toolbar) {
-    toolbar.querySelector('.mmx-title').textContent = 'Mixer';
-    const controls = document.createElement('div');
-    controls.className = 'mx-controls';
-    const play = createButton('Play', 'Play mix preview', 'mx-play');
-    const stop = createButton('Stop', 'Stop mix preview', 'mx-stop');
-    const addTone = createButton('+ Tone', 'Add generated tone lane', 'mx-add-btn');
-    const addPink = createButton('+ Pink noise', 'Add pink-noise room-tone lane', 'mx-add-pink');
-    const mix = createButton('Mixdown → WAV', 'Download browser audio mixdown WAV', 'mx-mix-btn');
-    const drop = document.createElement('span');
-    drop.className = 'mx-drop-zone';
-    drop.textContent = 'Drop audio to add lane';
-    const master = document.createElement('label');
-    master.className = 'mx-master';
-    const masterText = document.createElement('span');
-    masterText.textContent = 'Master';
-    const masterSlider = document.createElement('input');
-    masterSlider.type = 'range';
-    masterSlider.className = 'mx-master-slider';
-    masterSlider.min = '0';
-    masterSlider.max = '2';
-    masterSlider.step = '0.01';
-    masterSlider.value = String(project.master?.audio?.gain ?? 1);
-    master.append(masterText, masterSlider);
-    controls.append(play, stop, addTone, addPink, master, mix, drop);
-    toolbar.append(controls);
   }
 
   function decorateLanes() {
@@ -370,6 +370,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       media: { durationMs: 0, audioSampleRate: 0, audioChannels: 0 },
       status: 'available',
     });
+    runtimeFiles.set(assetId, file);
     project = addLane(project, lane);
     project = addElement(project, {
       laneId: lane.id,
@@ -492,5 +493,6 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     root.dataset.hasDroppedAudio = project.assets.some((asset) => asset.id.startsWith('asset-drop-')) ? 'true' : 'false';
     root.dataset.decodedCacheEntries = String(decodedAudioCache.stats().entryCount);
     root.dataset.decodedCacheBudgetBytes = String(decodedAudioCache.stats().budgetBytes);
+    reflectMultiPlaybackState(root, playback.getState());
   }
 }

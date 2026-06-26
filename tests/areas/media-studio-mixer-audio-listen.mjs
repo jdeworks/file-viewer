@@ -1,10 +1,16 @@
 import {
+  addElement,
+  addLane,
   buildDecodedAudioCacheKey,
   buildProcessedAudioCacheKey,
+  buildSchedulePlan,
   createAudioBufferCache,
+  createGeneratedElement,
+  createLane,
   createProjectFromAssetMetadata,
   estimateAudioBufferBytes,
   moveElement,
+  trimElement,
   updateElement,
   updateLane,
   updateMaster,
@@ -16,6 +22,9 @@ export async function run(ctx) {
   const cacheProof = proveAudioCachePolicy();
   if (cacheProof.ok) pass('modular audio mix: decoded cache budget and processed cache keys are deterministic');
   else fail('modular audio mix cache policy mismatch: ' + JSON.stringify(cacheProof));
+  const scheduleProof = proveScheduleSemantics();
+  if (scheduleProof.ok) pass('modular audio mix: schedule plan respects offsets, trims, gains, mute/solo, and room tone');
+  else fail('modular audio mix schedule semantics mismatch: ' + JSON.stringify(scheduleProof));
 
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.wav');
@@ -209,6 +218,33 @@ export async function run(ctx) {
     pass('modular audio mix: lane controls plus track/master EQ and capability notes are represented');
   else fail('modular audio mix controls missing: ' + JSON.stringify(mixInitial));
 
+  const mixPlayback = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', async (el) => {
+    el.querySelector('.mx-add-btn').click();
+    const before = Number(el.dataset.cursorMs || 0);
+    el.querySelector('.mx-play').click();
+    await new Promise((resolve) => setTimeout(resolve, 180));
+    const playingState = el.__mediaMixerMulti.getPlaybackState();
+    const during = Number(el.dataset.cursorMs || 0);
+    el.querySelector('.mx-stop').click();
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    const stoppedState = el.__mediaMixerMulti.getPlaybackState();
+    return {
+      before,
+      during,
+      playing: el.dataset.playing,
+      scheduled: Number(el.dataset.scheduledCount || 0),
+      generated: Number(el.dataset.generatedScheduled || 0),
+      stateScheduled: playingState.scheduledCount,
+      stateGenerated: playingState.generatedCount,
+      stopped: el.dataset.playing,
+      stoppedScheduled: stoppedState.scheduledCount,
+      cursorAfterStop: Number(el.dataset.cursorMs || 0),
+    };
+  });
+  if (mixPlayback.during > mixPlayback.before && mixPlayback.scheduled > 0 && mixPlayback.generated > 0 && mixPlayback.stateScheduled > 0 && mixPlayback.stateGenerated > 0 && mixPlayback.stopped === 'false' && mixPlayback.cursorAfterStop === 0)
+    pass('modular audio mix: WebAudio scheduled playback advances cursor and stops cleanly');
+  else fail('modular audio mix playback mismatch: ' + JSON.stringify(mixPlayback));
+
   const mixLaneEdit = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
     const gain = el.querySelector('.mx-lane-gain');
     gain.value = '0.42';
@@ -325,5 +361,65 @@ function proveAudioCachePolicy() {
       && processedB !== processedC
       && processedC !== processedD
       && processedD !== processedE,
+  };
+}
+
+function proveScheduleSemantics() {
+  let project = createProjectFromAssetMetadata({
+    id: 'asset-audio',
+    name: 'voice.wav',
+    capabilities: { hasAudio: true },
+    media: { durationMs: 10000, audioSampleRate: 48000, audioChannels: 1 },
+  });
+  const sourceElementId = project.elements[0].id;
+  const sourceLaneId = project.lanes[0].id;
+  project = moveElement(project, sourceElementId, 1000);
+  project = trimElement(project, sourceElementId, { sourceInMs: 500, sourceOutMs: 4500 });
+  project = updateElement(project, sourceElementId, (element) => ({
+    ...element,
+    audio: { ...element.audio, gain: 0.5, fadeInMs: 120, fadeOutMs: 80 },
+  }));
+  project = updateLane(project, sourceLaneId, (lane) => ({
+    ...lane,
+    audio: { ...lane.audio, gain: 0.5 },
+  }));
+  project = updateMaster(project, (master) => ({
+    ...master,
+    audio: { ...master.audio, gain: 0.5 },
+  }));
+  const mutedLane = createLane({ id: 'lane-muted', role: 'audio', muted: true, order: 1 });
+  project = addLane(project, mutedLane);
+  project = addElement(project, {
+    id: 'element-muted',
+    laneId: mutedLane.id,
+    assetId: 'asset-muted',
+    capabilities: { hasAudio: true },
+    durationMs: 1000,
+    rawDurationMs: 1000,
+  });
+  const roomLane = createLane({ id: 'lane-room', role: 'room-tone', order: 2 });
+  project = addLane(project, roomLane);
+  project = addElement(project, createGeneratedElement({
+    id: 'element-room',
+    laneId: roomLane.id,
+    kind: 'pink-noise',
+    durationMs: 2000,
+    rawDurationMs: 2000,
+    startMs: 3000,
+    audio: { gain: 0.25, roomTone: { kind: 'pink-noise', levelDb: -52 } },
+  }));
+  const plan = buildSchedulePlan(project, 1500);
+  const source = plan.items.find((item) => item.element.id === sourceElementId);
+  const room = plan.items.find((item) => item.element.id === 'element-room');
+  return {
+    ok: plan.items.length === 2
+      && source?.delayMs === 0
+      && source?.sourceOffsetMs === 1000
+      && source?.durationMs === 3500
+      && Math.abs((source?.gain || 0) - 0.125) < 0.0001
+      && source?.element.audio.fadeInMs === 120
+      && room?.delayMs === 1500
+      && room?.element.audio.roomTone.kind === 'pink-noise'
+      && !plan.items.some((item) => item.element.id === 'element-muted'),
   };
 }
