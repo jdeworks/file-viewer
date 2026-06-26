@@ -115,6 +115,47 @@ export async function run(ctx) {
   const plkText = await page.$eval('#previewHost .plk-doc', (e) => e.textContent);
   if (/npm/i.test(plkText)) pass('package-lock.json: badge shown'); else fail('package-lock badge: ' + plkText.slice(0, 200));
   if (/lockfileVersion|v3|Total|packages/i.test(plkText)) pass('package-lock.json: stats shown'); else fail('package-lock stats: ' + plkText.slice(0, 200));
+  if (/Root Dependencies|Resolved Packages|express|integrity/i.test(plkText)) pass('package-lock.json: dependency rows shown'); else fail('package-lock rows: ' + plkText.slice(0, 300));
+  const plkSourceCollapsed = await page.$eval('#previewHost .plk-doc .kf-source-details', (e) => !e.open && /Source/.test(e.textContent));
+  if (plkSourceCollapsed) pass('package-lock.json: source collapsed'); else fail('package-lock source should start collapsed');
+  const plkSourceLine = await page.$eval('#previewHost .plk-doc .kf-source-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .plk-doc .kf-source-details');
+    return details?.open && document.getElementById(`plk-line-${line}`);
+  }, plkSourceLine, { timeout: 3000 });
+  pass('package-lock.json: source links open source');
+  const plkBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/json/known/package-lock/renderer.js');
+    const text = JSON.stringify({
+      name: 'risky-lock',
+      lockfileVersion: 3,
+      packages: {
+        '': {
+          dependencies: {
+            loose: '*',
+            custom: '^1.0.0',
+          },
+        },
+        'node_modules/loose': {
+          version: '1.0.0',
+          resolved: 'http://registry.example.test/loose-1.0.0.tgz',
+        },
+        'node_modules/custom': {
+          version: '1.0.0',
+          resolved: 'https://mirror.example.test/custom-1.0.0.tgz',
+          integrity: 'sha512-custom',
+        },
+      },
+    }, null, 2);
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Package Lock Review|broad range|missing integrity|plain HTTP|custom source|loose|custom/i.test(plkBad.out + plkBad.issues) && !plkBad.open) pass('package-lock.json: broad range and resolution diagnostics shown'); else fail('package-lock synthetic diagnostics: ' + JSON.stringify(plkBad).slice(0, 1000));
 
   // ── composer.lock viewer ──
   await openExample('composer.lock');
