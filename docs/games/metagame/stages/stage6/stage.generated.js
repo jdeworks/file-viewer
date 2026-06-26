@@ -180,8 +180,8 @@ function unlockAchievement(achievements, id, detail) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/cards.js
-var CARDS = [
+// ../../docs/games/metagame/stages/stage6/cards-signal.js
+var SIGNAL_CARDS = [
   {
     id: "SYN",
     type: "Signal",
@@ -192,14 +192,6 @@ var CARDS = [
       ctx.deal(8);
       if (ctx.playedThisTurn("ACK")) ctx.draw(2);
     }
-  },
-  {
-    id: "ACK",
-    type: "Protocol",
-    cost: 1,
-    rarity: "starter",
-    text: "Gain 10 block.",
-    effect: (ctx) => ctx.block(10)
   },
   {
     id: "RST",
@@ -219,14 +211,6 @@ var CARDS = [
     rarity: "common",
     text: "Deal 5 for each card played this turn.",
     effect: (ctx) => ctx.deal(5 * ctx.cardsPlayed)
-  },
-  {
-    id: "WINDOW",
-    type: "Protocol",
-    cost: 1,
-    rarity: "common",
-    text: "Draw 2 cards.",
-    effect: (ctx) => ctx.draw(2)
   },
   {
     id: "FRAGMENT",
@@ -259,14 +243,6 @@ var CARDS = [
     effect: (ctx) => {
       for (let i = 0; i < 4; i++) ctx.deal(4);
     }
-  },
-  {
-    id: "BUFFER",
-    type: "Protocol",
-    cost: 2,
-    rarity: "uncommon",
-    text: "Gain 4 block for each card in hand.",
-    effect: (ctx) => ctx.block(4 * ctx.handSize)
   },
   {
     id: "NULL_ROUTE",
@@ -317,6 +293,34 @@ var CARDS = [
       ctx.deal(30);
       ctx.applySelf("weak", 1);
     }
+  }
+];
+
+// ../../docs/games/metagame/stages/stage6/cards-protocol.js
+var PROTOCOL_CARDS = [
+  {
+    id: "ACK",
+    type: "Protocol",
+    cost: 1,
+    rarity: "starter",
+    text: "Gain 10 block.",
+    effect: (ctx) => ctx.block(10)
+  },
+  {
+    id: "WINDOW",
+    type: "Protocol",
+    cost: 1,
+    rarity: "common",
+    text: "Draw 2 cards.",
+    effect: (ctx) => ctx.draw(2)
+  },
+  {
+    id: "BUFFER",
+    type: "Protocol",
+    cost: 2,
+    rarity: "uncommon",
+    text: "Gain 4 block for each card in hand.",
+    effect: (ctx) => ctx.block(4 * ctx.handSize)
   },
   {
     id: "SEGMENT",
@@ -355,7 +359,11 @@ var CARDS = [
       ctx.clearSelfDebuffs();
       ctx.block(6);
     }
-  },
+  }
+];
+
+// ../../docs/games/metagame/stages/stage6/cards-layer.js
+var LAYER_CARDS = [
   {
     id: "CIPHER_LAYER",
     type: "Layer",
@@ -376,6 +384,9 @@ var CARDS = [
     effect: (ctx) => ctx.applySelf("strength", 2)
   }
 ];
+
+// ../../docs/games/metagame/stages/stage6/cards.js
+var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS];
 var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 function cardById(id) {
   return BY_ID.get(id) || null;

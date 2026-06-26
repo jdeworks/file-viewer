@@ -56,3 +56,8 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   GUARANTEED an elite (in a later middle layer), a shop, and an event, plus the existing all-rest
   pre-boss layer and all-combat start; everything else is combat (≥4 reps/act). Fully seeded. New
   mapgen.test.mjs asserts the invariants across 7 seeds + determinism.
+- C5a — Split cards.js by archetype: cards-signal.js (SYN-Flood), cards-protocol.js (Stateful Stack),
+  cards-layer.js (Layered Cipher); cards.js is now a thin aggregator (CARDS = concat, cardById,
+  registerCard, REWARD_POOL, STARTING_DECK). card-upgrades.js unchanged (resolves via the registry).
+  New cards.test.mjs: archetypes represented, ids unique, every card has a registered "+" upgrade.
+  (Pool still 20; C5b expands to ≥36.)
