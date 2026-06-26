@@ -216,7 +216,10 @@ helpers and toolbar summaries have been split into `mixer-video-source-helpers.j
 to keep the modular Timeline mount maintainable. Shared preview-proxy
 runtime/application logic now lives in `mixer-video-proxy-runtime.js`, so audio
 Mix and video Timeline use the same ffmpeg opt-in/progress/error behavior and
-config-safe proxy asset updates. Timeline mode now mounts only the
+config-safe proxy asset updates. Final video export planning also now has
+browser-side duration and composition-complexity budgets, with config-only
+provenance fields that explain why long or dense renders are withheld before
+ffmpeg starts. Timeline mode now mounts only the
 modular video-source mixer; the old `timeline.js` compatibility DOM helper and
 `.tl-*` stylesheet block have been removed while pure ffmpeg arg-builder
 coverage remains in `video-filters.js`. Audio and video Compare now also mount

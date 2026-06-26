@@ -7,6 +7,8 @@ export const MIXER_LIMITS = {
   decodedAudioCacheBytes: 200 * 1024 * 1024,
   waveformFullDecodeMaxBytes: 64 * 1024 * 1024,
   ffmpegInputMaxBytes: 512 * 1024 * 1024,
+  ffmpegRenderMaxDurationMs: 30 * 60 * 1000,
+  ffmpegRenderMaxCompositionItems: 48,
   defaultFps: 30,
   defaultSampleRate: 48000,
   defaultChannels: 2,
@@ -28,4 +30,3 @@ export function clampNumber(value, min, max, fallback = min) {
 export function nowIso() {
   return new Date().toISOString();
 }
-

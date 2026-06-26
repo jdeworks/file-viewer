@@ -420,6 +420,16 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.equal(overBudgetPlan.provenance.renderBudget.totalInputBytes, 500, 'modular video mix export: render budget sums unique input bytes');
   assert.equal(overBudgetPlan.provenance.renderBudget.overBudget, true, 'modular video mix export: render budget records over-budget state');
   assert.match(overBudgetPlan.warnings.join(' '), /browser ffmpeg limit/, 'modular video mix export: over-budget plan explains browser ffmpeg limit');
+  const longRenderPlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: true, ffmpegLoaded: true, maxRenderDurationMs: 2000 });
+  assert.equal(longRenderPlan.canRender, false, 'modular video mix export: long browser ffmpeg plan cannot render');
+  assert.equal(longRenderPlan.args.length, 0, 'modular video mix export: long render plan has no runnable args');
+  assert.equal(longRenderPlan.provenance.renderBudget.durationOverBudget, true, 'modular video mix export: duration budget records over-budget state');
+  assert.match(longRenderPlan.warnings.join(' '), /safe render limit/, 'modular video mix export: long render plan explains safe render limit');
+  const complexRenderPlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: true, ffmpegLoaded: true, maxCompositionItems: 3 });
+  assert.equal(complexRenderPlan.canRender, false, 'modular video mix export: complex browser ffmpeg plan cannot render');
+  assert.equal(complexRenderPlan.provenance.renderBudget.compositionItems, 5, 'modular video mix export: complexity budget counts visual, audio, effects, and transitions');
+  assert.equal(complexRenderPlan.provenance.renderBudget.complexityOverBudget, true, 'modular video mix export: complexity budget records over-budget state');
+  assert.match(complexRenderPlan.warnings.join(' '), /safe complexity limit/, 'modular video mix export: complex render plan explains safe complexity limit');
   const fakeFs = new Map();
   const fakeFfmpeg = {
     ran: null,

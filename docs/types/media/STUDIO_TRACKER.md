@@ -537,6 +537,11 @@ Stage 7 project settings import/export UI has started:
   `mixer-video-proxy-runtime.js`. Audio Mix and video Timeline now use the same
   ffmpeg opt-in/progress/error path and the same config-safe proxy asset update
   semantics instead of carrying duplicated controller-local implementations.
+- Hardened browser ffmpeg video render planning with duration and composition
+  complexity budgets. Final video plans now record duration, max duration,
+  composition item count, effect count, transition count, and over-budget flags
+  in config-only provenance, and they withhold runnable args with an explicit
+  warning before long or complex client-side renders can stall the browser.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

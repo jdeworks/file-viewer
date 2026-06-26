@@ -18,6 +18,11 @@ export function buildVideoMixExportPlan(project, options = {}) {
     project.project?.durationMs || 0,
     ...project.elements.map((element) => (element.timeline?.startMs || 0) + (element.timeline?.placementDurationMs || element.timeline?.durationMs || 0)),
   );
+  const maxRenderDurationMs = Math.max(0, Number(options.maxRenderDurationMs ?? MIXER_LIMITS.ffmpegRenderMaxDurationMs) || 0);
+  const durationBudgetExceeded = maxRenderDurationMs > 0 && durationMs > maxRenderDurationMs;
+  const maxCompositionItems = Math.max(0, Number(options.maxCompositionItems ?? MIXER_LIMITS.ffmpegRenderMaxCompositionItems) || 0);
+  const composition = summarizeComposition(project, visualItems, audioItems);
+  const complexityBudgetExceeded = maxCompositionItems > 0 && composition.totalItems > maxCompositionItems;
   const warnings = [];
   if (!visualItems.length) warnings.push('No visual elements are scheduled for final video export.');
   if (status.status !== CAPABILITY_STATUS.AVAILABLE) warnings.push(status.message);
@@ -26,7 +31,14 @@ export function buildVideoMixExportPlan(project, options = {}) {
   const proxyAssets = project.assets.filter((asset) => asset.status === 'needs-proxy' || asset.capabilities?.needsFfmpegForPreview);
   if (proxyAssets.length) warnings.push(`${proxyAssets.length} asset(s) need ffmpeg proxy/conversion for accurate preview/export.`);
   if (inputBudgetExceeded) warnings.push(`Input media totals ${formatBytes(totalInputBytes)}, above the browser ffmpeg limit of ${formatBytes(maxInputBytes)}.`);
-  const canRender = status.status === CAPABILITY_STATUS.AVAILABLE && visualItems.length > 0 && missingAssets.length === 0 && !inputBudgetExceeded;
+  if (durationBudgetExceeded) warnings.push(`Timeline duration ${formatDuration(durationMs)} is above the browser ffmpeg safe render limit of ${formatDuration(maxRenderDurationMs)}.`);
+  if (complexityBudgetExceeded) warnings.push(`Composition has ${composition.totalItems} render item(s), above the browser ffmpeg safe complexity limit of ${maxCompositionItems}.`);
+  const canRender = status.status === CAPABILITY_STATUS.AVAILABLE
+    && visualItems.length > 0
+    && missingAssets.length === 0
+    && !inputBudgetExceeded
+    && !durationBudgetExceeded
+    && !complexityBudgetExceeded;
   const renderPlan = buildFfmpegRenderPlan(project, visualItems, audioItems, options, inputAssets);
   return {
     kind: 'video-mix',
@@ -36,7 +48,7 @@ export function buildVideoMixExportPlan(project, options = {}) {
     requiresFfmpeg: true,
     canRender,
     status: status.status,
-    statusMessage: status.message,
+    statusMessage: canRender ? status.message : (warnings[0] || status.message),
     warnings,
     args: canRender ? renderPlan.args : [],
     provenance: {
@@ -51,6 +63,16 @@ export function buildVideoMixExportPlan(project, options = {}) {
         totalInputBytes,
         maxInputBytes,
         overBudget: inputBudgetExceeded,
+        durationMs,
+        maxDurationMs: maxRenderDurationMs,
+        durationOverBudget: durationBudgetExceeded,
+        maxCompositionItems,
+        compositionItems: composition.totalItems,
+        complexityOverBudget: complexityBudgetExceeded,
+        visualItemCount: composition.visualItemCount,
+        audioItemCount: composition.audioItemCount,
+        effectCount: composition.effectCount,
+        transitionCount: composition.transitionCount,
       },
       master: {
         audioGain: project.master?.audio?.gain ?? 1,
@@ -495,6 +517,21 @@ function uniqueAssets(items) {
   return out;
 }
 
+function summarizeComposition(project, visualItems, audioItems) {
+  const effectCount = (project.elements || [])
+    .reduce((sum, element) => sum + (element.effects || []).filter((effect) => effect.enabled !== false).length, 0);
+  const transitionCount = (project.transitions || []).filter((transition) => transition.enabled !== false).length;
+  const visualItemCount = visualItems.length;
+  const audioItemCount = audioItems.length;
+  return {
+    visualItemCount,
+    audioItemCount,
+    effectCount,
+    transitionCount,
+    totalItems: visualItemCount + audioItemCount + effectCount + transitionCount,
+  };
+}
+
 function safeName(name) {
   return String(name || 'media-mix').replace(/\.[^.]+$/, '').replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'media-mix';
 }
@@ -517,6 +554,12 @@ function formatBytes(bytes) {
   if (value >= 1024 * 1024) return `${Math.round((value / 1048576) * 10) / 10} MB`;
   if (value >= 1024) return `${Math.round((value / 1024) * 10) / 10} KB`;
   return `${Math.round(value)} B`;
+}
+
+function formatDuration(ms) {
+  const secondsValue = Math.max(0, Number(ms) || 0) / 1000;
+  if (secondsValue >= 60) return `${Math.round((secondsValue / 60) * 10) / 10} min`;
+  return `${Math.round(secondsValue * 10) / 10} sec`;
 }
 
 function seconds(ms) {
