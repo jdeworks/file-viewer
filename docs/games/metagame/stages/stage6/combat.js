@@ -12,6 +12,12 @@ import { cardById } from "./cards.js";
 const HAND_SIZE = 5;
 const START_ENERGY = 3;
 
+// Upgraded cards share their base id minus a trailing "+" (see card-upgrades.js). Combos that key
+// off a specific card (e.g. "ACK was played") match the base, so an upgrade never breaks a synergy.
+function baseId(id) {
+  return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
+}
+
 // Small seeded PRNG (mulberry32) so shuffles are deterministic for tests/replays.
 export function makeRng(seed) {
   let a = (Number(seed) >>> 0) || 1;
@@ -154,7 +160,8 @@ function makeCtx(combat, card) {
       return cleared;
     },
     skipEnemyNext: () => { combat.enemy.skipNext = true; },
-    playedThisTurn: (id) => combat.playedIdsThisTurn.includes(id),
+    // Base-id aware: an upgraded "ACK+" still counts as having played "ACK" this turn.
+    playedThisTurn: (id) => combat.playedIdsThisTurn.some((pid) => baseId(pid) === baseId(id)),
     get cardsPlayed() { return combat.cardsPlayedThisTurn; },
     get energySpent() { return combat.energySpentThisTurn; },
     get handSize() { return combat.hand.length; },

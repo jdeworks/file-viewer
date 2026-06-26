@@ -2,6 +2,7 @@
 // Pure views; renderer delegates clicks:
 //   [data-take="<cardId>"|"skip"]      pick a reward card / skip
 //   [data-rest="heal"]                 rest: restore HP
+//   [data-upgrade="<deckIndex>"]       rest: upgrade a card in place
 //   [data-remove="<deckIndex>"]        rest: thin a card from the deck
 //   [data-buy="<cardId>"]              shop: buy a card (price in data-price)
 //   [data-action="to-map"]             leave shop/event back to the map
@@ -9,6 +10,7 @@
 
 import { cardById } from "./cards.js";
 import { REWARD_POOL } from "./cards.js";
+import { canUpgrade, upgradeIdFor } from "./card-upgrades.js";
 import { makeRng } from "./combat.js";
 import { relicById } from "./relics.js";
 
@@ -37,11 +39,25 @@ export function restView(run) {
   const heal = Math.round(run.maxHp * 0.30);
   el.innerHTML = `
     <h2>Keepalive</h2>
-    <p>A quiet socket. Recover ${heal} HP, or thin your deck by removing one card.</p>
+    <p>A quiet socket. Choose ONE: recover ${heal} HP, upgrade a card, or thin your deck.</p>
     <div class="s6db-hub-actions">
       <button type="button" data-rest="heal">rest — heal ${heal} HP ▸</button>
     </div>
+    <div class="s6db-rest-upgrade"><h3>…or upgrade a card</h3></div>
     <div class="s6db-rest-thin"><h3>…or remove a card</h3></div>`;
+
+  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
+  const up = el.querySelector(".s6db-rest-upgrade");
+  if (upgradeable.length) {
+    const upList = document.createElement("div");
+    upList.className = "s6db-card-row";
+    // Show the UPGRADED face so the player sees what they get; data-upgrade carries the deck index.
+    upList.replaceChildren(...upgradeable.map(({ id, i }) => cardOption(upgradeIdFor(id), "upgrade", String(i))));
+    up.appendChild(upList);
+  } else {
+    up.insertAdjacentHTML("beforeend", `<p class="s6db-hint">Every card is already upgraded.</p>`);
+  }
+
   const thin = el.querySelector(".s6db-rest-thin");
   const list = document.createElement("div");
   list.className = "s6db-card-row";

@@ -24,15 +24,26 @@ export function isSignalCard(card) {
   return card?.type === "Signal";
 }
 
+// Upgraded cards keep their base id minus a trailing "+", so an upgraded SYN+/ACK+ still satisfies
+// the handshake (the negotiation cares about the protocol verb, not the card's tier).
+function baseId(id) {
+  return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
+}
+
 // acceptance(combat, card) — consulted by the engine only for Signal cards.
 // Returns false ⇒ that Signal deals 0 ("PROTOCOL MISMATCH").
 export function accepts(combat, card) {
   if (!isSignalCard(card)) return true;          // Protocol/Layer always resolve
   if (combat.bossLocked) return false;           // ch9 unread ⇒ permanent mismatch (B3)
   const phase = combat.bossPhase || 1;
-  if (phase === 1) return combat.playedIdsThisTurn[0] === "SYN";
-  if (phase === 2) return combat.playedIdsThisTurn.includes("ACK");
+  if (phase === 1) return baseId(combat.playedIdsThisTurn[0]) === "SYN";
+  if (phase === 2) return combat.playedIdsThisTurn.some((id) => baseId(id) === "ACK");
   return true;                                    // phase 3: always accepted
+}
+
+// Did the player play an ACK (or ACK+) this turn?
+function ackPlayed(combat) {
+  return combat.playedIdsThisTurn.some((id) => baseId(id) === "ACK");
 }
 
 // Wire the negotiation onto a freshly-created combat whose enemy is the-refused-connection.
@@ -54,7 +65,7 @@ export function wireBossCombat(combat, { locked = false } = {}) {
   };
   combat.onPlayerTurnEnd = (c) => {
     if ((c.bossPhase || 1) !== 3 || c.bossLocked) return;
-    if (!c.playedIdsThisTurn.includes("ACK")) {
+    if (!ackPlayed(c)) {
       c.log = [...(c.log || []), "no ACK — 8 ongoing damage."].slice(-10);
       dealToPlayer(c, ONGOING_DAMAGE);
       if (c.player.hp <= 0 && !c.over) { c.over = true; c.result = "lose"; }
@@ -79,7 +90,7 @@ export function autoNegotiate(combat, maxTurns = 80) {
 
 function playHandshakeTurn(combat) {
   // Lead correctly for the phase: SYN first in phase 1, an ACK/Protocol first in phase 2/3.
-  if ((combat.bossPhase || 1) === 1) playFirstMatch(combat, (c) => c.id === "SYN");
+  if ((combat.bossPhase || 1) === 1) playFirstMatch(combat, (c) => baseId(c.id) === "SYN");
   else playFirstMatch(combat, (c) => c.type === "Protocol");
   // Then spend remaining energy on anything affordable.
   let guard = 0;

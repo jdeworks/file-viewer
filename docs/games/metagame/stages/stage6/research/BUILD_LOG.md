@@ -31,3 +31,9 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   Smoke: after jumpToBoss (locked) an autoNegotiate(3) leaves boss HP at 60 and undefeated
   (PROTOCOL MISMATCH is load-bearing), THEN reading ch9 + autoNegotiate wins. (Caught + fixed an
   unbounded test loop: SYN draws 2 after an ACK, refilling the hand.)
+- C1 — Card upgrades (rest = heal / upgrade / remove): new card-upgrades.js with a sharpened "<ID>+"
+  form for all 20 cards (registered via cards.js `registerCard` so cardById resolves them). Upgrades
+  keep their base id, and the boss handshake + combo checks (`ctx.playedThisTurn`, acceptance) are now
+  base-aware so SYN+/ACK+ still satisfy the negotiation. run.js `rest(choice,payload)` + `upgradeDeckCard`
+  (in-place, one-of, failed upgrade doesn't spend the site); ui-rewards restView shows the upgraded face;
+  renderer handles `data-upgrade`. Unit tests: heal XOR upgrade, in-place upgrade, SYN+ deals 11 vs 8.

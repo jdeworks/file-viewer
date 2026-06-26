@@ -115,6 +115,12 @@ export function cardById(id) {
   return BY_ID.get(id) || null;
 }
 
+// Register additional card definitions at load (e.g. the upgraded "<ID>+" forms in card-upgrades.js)
+// so cardById resolves them everywhere without cards.js depending on the upgrade module.
+export function registerCard(card) {
+  if (card && card.id) BY_ID.set(card.id, card);
+}
+
 // Cards offered as combat rewards (not the starter-only cards).
 export const REWARD_POOL = CARDS.filter((card) => card.rarity !== "starter").map((card) => card.id);
 

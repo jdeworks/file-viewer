@@ -8,6 +8,7 @@
 import { generateRun, nodeById, enemyForNode } from "./mapgen.js";
 import { makeRng } from "./combat.js";
 import { STARTING_DECK, REWARD_POOL } from "./cards.js";
+import { upgradeIdFor } from "./card-upgrades.js";
 import { rollRelic, relicById } from "./relics.js";
 
 export const PLAYER_MAX_HP = 60;
@@ -105,14 +106,29 @@ export function takeReward(run, cardId) {
   return { ok: true };
 }
 
-export function rest(run, choice) {
+// A rest site grants exactly ONE of: heal, upgrade a card, or remove a card. `payload` is the deck
+// index for "upgrade". A failed upgrade does NOT spend the site (the player can pick again).
+export function rest(run, choice, payload) {
   const node = nodeById(run.map, run.currentNodeId);
   if (node?.type !== "rest") return { ok: false, reason: "not-rest" };
   if (choice === "heal") run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * REST_HEAL_FRACTION));
+  else if (choice === "upgrade") {
+    const r = upgradeDeckCard(run, Number(payload));
+    if (!r.ok) return r; // not spent
+  }
   // "remove" (deck thinning) handled by removeCard below; either way the site is spent.
   run.clearedIds.push(node.id);
   run.status = "map";
   return { ok: true, hp: run.hp };
+}
+
+// Replace deck[index] with its upgraded form, in place. Returns { ok, id } or a reason.
+export function upgradeDeckCard(run, index) {
+  if (index < 0 || index >= run.deck.length) return { ok: false, reason: "bad-index" };
+  const upgraded = upgradeIdFor(run.deck[index]);
+  if (!upgraded) return { ok: false, reason: "not-upgradable" };
+  run.deck[index] = upgraded;
+  return { ok: true, id: upgraded };
 }
 
 export function removeCard(run, index) {

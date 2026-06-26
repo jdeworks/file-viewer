@@ -182,6 +182,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     if (take) { takeReward(run, take.dataset.take === "skip" ? null : take.dataset.take); return true; }
     const remove = event.target.closest("[data-remove]");
     if (remove) { removeCard(run, Number(remove.dataset.remove)); rest(run, "remove"); return true; }
+    const upgrade = event.target.closest("[data-upgrade]");
+    if (upgrade) { rest(run, "upgrade", Number(upgrade.dataset.upgrade)); return true; }
     const restEl = event.target.closest("[data-rest]");
     if (restEl) { rest(run, restEl.dataset.rest); return true; }
     const buy = event.target.closest("[data-buy]");

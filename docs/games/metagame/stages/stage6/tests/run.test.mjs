@@ -14,7 +14,9 @@ import {
   takeReward,
   FINAL_BOSS_ACT
 } from "../run.js";
-import { makeRng } from "../combat.js";
+import { makeRng, createCombat, playCard } from "../combat.js";
+import { instantiateEnemy } from "../enemies.js";
+import { upgradeDeckCard } from "../run.js";
 import { STARTING_DECK } from "../cards.js";
 
 // ── mapgen: structure + full connectivity ────────────────────────────────────────────────────────
@@ -199,6 +201,64 @@ import { STARTING_DECK } from "../cards.js";
       assert.notEqual(enemy, "the-refused-connection", `act ${act} boss is a different mini-boss`);
     }
   }
+}
+
+// ── C1: rest = heal XOR upgrade; upgraded card resolves the stronger effect ────────────────────────
+{
+  const restNode = findNode(createRun({ seed: 1 }), (n) => n.type === "rest");
+  assert.ok(restNode, "the map has a rest node");
+
+  // heal: restores HP, spends the site, does not touch the deck.
+  const a = createRun({ seed: 1 });
+  a.currentNodeId = restNode.id; a.hp = 20;
+  const deckBefore = [...a.deck];
+  const rh = rest(a, "heal");
+  assert.ok(rh.ok && a.hp > 20, "rest heals");
+  assert.deepEqual(a.deck, deckBefore, "heal leaves the deck unchanged");
+  assert.equal(a.status, "map", "the site is spent");
+
+  // upgrade: replaces ONE card in place with its "+" form, spends the site, does not heal.
+  const b = createRun({ seed: 1 });
+  b.currentNodeId = restNode.id; b.hp = 20;
+  const idx = b.deck.indexOf("SYN");
+  const ru = rest(b, "upgrade", idx);
+  assert.ok(ru.ok, "upgrade succeeds");
+  assert.equal(b.deck[idx], "SYN+", "the card is upgraded in place");
+  assert.equal(b.hp, 20, "upgrade does not heal");
+
+  // a non-upgradable index is rejected and does NOT spend the site.
+  const c = createRun({ seed: 1 });
+  c.currentNodeId = restNode.id; c.status = "rest";
+  c.deck = ["SYN+"]; // already upgraded ⇒ cannot upgrade again
+  const bad = rest(c, "upgrade", 0);
+  assert.equal(bad.ok, false, "already-upgraded card cannot be upgraded");
+  assert.equal(c.status, "rest", "a failed upgrade does not spend the site");
+
+  assert.equal(upgradeDeckCard(c, 99).ok, false, "out-of-range index rejected");
+}
+{
+  // The upgraded SYN deals more than the base in real combat.
+  const base = playOneCard("SYN");
+  const up = playOneCard("SYN+");
+  assert.equal(base, 8, "base SYN deals 8");
+  assert.equal(up, 11, "upgraded SYN+ deals 11");
+  assert.ok(up > base, "the upgrade is stronger in combat");
+}
+
+function playOneCard(cardId) {
+  const c = createCombat({
+    deck: [cardId], player: { hp: 50, maxHp: 50 },
+    enemy: instantiateEnemy("corrupt-packet", 1), seed: 1
+  });
+  c.hand = [cardId]; c.player.energy = 5;
+  const before = c.enemy.hp;
+  playCard(c, 0);
+  return before - c.enemy.hp;
+}
+
+function findNode(run, pred) {
+  for (const act of run.map.acts) for (const layer of act.layers) for (const n of layer) if (pred(n)) return n;
+  return null;
 }
 
 function reaches(run, fromId, targetId) {

@@ -380,12 +380,18 @@ var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 function cardById(id) {
   return BY_ID.get(id) || null;
 }
+function registerCard(card) {
+  if (card && card.id) BY_ID.set(card.id, card);
+}
 var REWARD_POOL = CARDS.filter((card) => card.rarity !== "starter").map((card) => card.id);
 var STARTING_DECK = ["SYN", "SYN", "SYN", "SYN", "SYN", "ACK", "ACK", "ACK", "ACK", "RST"];
 
 // ../../docs/games/metagame/stages/stage6/combat.js
 var HAND_SIZE = 5;
 var START_ENERGY = 3;
+function baseId(id) {
+  return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
+}
 function makeRng(seed) {
   let a = Number(seed) >>> 0 || 1;
   return function rng() {
@@ -528,7 +534,8 @@ function makeCtx(combat, card) {
     skipEnemyNext: () => {
       combat.enemy.skipNext = true;
     },
-    playedThisTurn: (id) => combat.playedIdsThisTurn.includes(id),
+    // Base-id aware: an upgraded "ACK+" still counts as having played "ACK" this turn.
+    playedThisTurn: (id) => combat.playedIdsThisTurn.some((pid) => baseId(pid) === baseId(id)),
     get cardsPlayed() {
       return combat.cardsPlayedThisTurn;
     },
@@ -978,6 +985,77 @@ function enemyForNode(node, act = 1, rng) {
   return pool[Math.floor(rng() * pool.length)];
 }
 
+// ../../docs/games/metagame/stages/stage6/card-upgrades.js
+var UPGRADED_SUFFIX = "+";
+var SPECS = {
+  SYN: { text: "Deal 11. If ACK was played this turn, draw 2.", effect: (ctx) => {
+    ctx.deal(11);
+    if (ctx.playedThisTurn("ACK")) ctx.draw(2);
+  } },
+  ACK: { text: "Gain 13 block.", effect: (ctx) => ctx.block(13) },
+  RST: { text: "Deal 18. Interrupt the enemy's next action.", effect: (ctx) => {
+    ctx.deal(18);
+    ctx.skipEnemyNext();
+  } },
+  PUSH: { text: "Deal 7 for each card played this turn.", effect: (ctx) => ctx.deal(7 * ctx.cardsPlayed) },
+  WINDOW: { cost: 0, text: "Draw 2 cards. (cost 0)", effect: (ctx) => ctx.draw(2) },
+  FRAGMENT: { text: "Deal 5. Draw 1.", effect: (ctx) => {
+    ctx.deal(5);
+    ctx.draw(1);
+  } },
+  HANDSHAKE: { text: "Deal 10 and gain 12 block.", effect: (ctx) => {
+    ctx.deal(10);
+    ctx.block(12);
+  } },
+  FLOOD: { text: "Deal 5, four times.", effect: (ctx) => {
+    for (let i = 0; i < 4; i++) ctx.deal(5);
+  } },
+  BUFFER: { text: "Gain 5 block for each card in hand.", effect: (ctx) => ctx.block(5 * ctx.handSize) },
+  NULL_ROUTE: { text: "Apply 3 Vulnerable to the enemy.", effect: (ctx) => ctx.applyEnemy("vulnerable", 3) },
+  PROBE: { text: "Deal 8. Apply 1 Vulnerable.", effect: (ctx) => {
+    ctx.deal(8);
+    ctx.applyEnemy("vulnerable", 1);
+  } },
+  PRIORITY_PACKET: { text: "Deal 16.", effect: (ctx) => ctx.deal(16) },
+  ASYMMETRIC: { text: "Deal 8. If your block exceeds your HP, deal 16 more.", effect: (ctx) => {
+    ctx.deal(8);
+    if (ctx.blockNow > ctx.hp) ctx.deal(16);
+  } },
+  BURST_FRAME: { text: "Deal 40. Apply 1 Weak to yourself. Exhaust.", effect: (ctx) => {
+    ctx.deal(40);
+    ctx.applySelf("weak", 1);
+  } },
+  SEGMENT: { text: "Gain 8 block.", effect: (ctx) => ctx.block(8) },
+  KEEPALIVE: { text: "Gain 7 block. If ACK was played this turn, gain 10 more.", effect: (ctx) => {
+    ctx.block(7);
+    if (ctx.playedThisTurn("ACK")) ctx.block(10);
+  } },
+  THROTTLE: { text: "Apply 3 Weak to the enemy.", effect: (ctx) => ctx.applyEnemy("weak", 3) },
+  RENEGOTIATE: { text: "Remove your debuffs and gain 9 block.", effect: (ctx) => {
+    ctx.clearSelfDebuffs();
+    ctx.block(9);
+  } },
+  CIPHER_LAYER: { text: "Gain 1 Strength and 9 block.", effect: (ctx) => {
+    ctx.applySelf("strength", 1);
+    ctx.block(9);
+  } },
+  TCP_STACK: { cost: 1, text: "Gain 2 Strength. (cost 1)", effect: (ctx) => ctx.applySelf("strength", 2) }
+};
+function isUpgradedId(id) {
+  return typeof id === "string" && id.endsWith(UPGRADED_SUFFIX);
+}
+function canUpgrade(id) {
+  return Boolean(SPECS[id]) && !isUpgradedId(id);
+}
+function upgradeIdFor(id) {
+  return canUpgrade(id) ? id + UPGRADED_SUFFIX : null;
+}
+var UPGRADED_CARDS = Object.entries(SPECS).map(([baseId3, spec]) => {
+  const base = cardById(baseId3);
+  return { ...base, ...spec, id: baseId3 + UPGRADED_SUFFIX, base: baseId3, upgraded: true };
+});
+for (const card of UPGRADED_CARDS) registerCard(card);
+
 // ../../docs/games/metagame/stages/stage6/run.js
 var PLAYER_MAX_HP = 60;
 var REST_HEAL_FRACTION = 0.3;
@@ -1057,13 +1135,24 @@ function takeReward(run, cardId) {
   run.status = "map";
   return { ok: true };
 }
-function rest(run, choice) {
+function rest(run, choice, payload) {
   const node = nodeById(run.map, run.currentNodeId);
   if (node?.type !== "rest") return { ok: false, reason: "not-rest" };
   if (choice === "heal") run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * REST_HEAL_FRACTION));
+  else if (choice === "upgrade") {
+    const r = upgradeDeckCard(run, Number(payload));
+    if (!r.ok) return r;
+  }
   run.clearedIds.push(node.id);
   run.status = "map";
   return { ok: true, hp: run.hp };
+}
+function upgradeDeckCard(run, index) {
+  if (index < 0 || index >= run.deck.length) return { ok: false, reason: "bad-index" };
+  const upgraded = upgradeIdFor(run.deck[index]);
+  if (!upgraded) return { ok: false, reason: "not-upgradable" };
+  run.deck[index] = upgraded;
+  return { ok: true, id: upgraded };
 }
 function removeCard(run, index) {
   if (index < 0 || index >= run.deck.length) return { ok: false };
@@ -1140,13 +1229,19 @@ var ONGOING_DAMAGE = 8;
 function isSignalCard(card) {
   return card?.type === "Signal";
 }
+function baseId2(id) {
+  return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
+}
 function accepts(combat, card) {
   if (!isSignalCard(card)) return true;
   if (combat.bossLocked) return false;
   const phase = combat.bossPhase || 1;
-  if (phase === 1) return combat.playedIdsThisTurn[0] === "SYN";
-  if (phase === 2) return combat.playedIdsThisTurn.includes("ACK");
+  if (phase === 1) return baseId2(combat.playedIdsThisTurn[0]) === "SYN";
+  if (phase === 2) return combat.playedIdsThisTurn.some((id) => baseId2(id) === "ACK");
   return true;
+}
+function ackPlayed(combat) {
+  return combat.playedIdsThisTurn.some((id) => baseId2(id) === "ACK");
 }
 function wireBossCombat(combat, { locked = false } = {}) {
   combat.bossPhase = 1;
@@ -1165,7 +1260,7 @@ function wireBossCombat(combat, { locked = false } = {}) {
   };
   combat.onPlayerTurnEnd = (c) => {
     if ((c.bossPhase || 1) !== 3 || c.bossLocked) return;
-    if (!c.playedIdsThisTurn.includes("ACK")) {
+    if (!ackPlayed(c)) {
       c.log = [...c.log || [], "no ACK — 8 ongoing damage."].slice(-10);
       dealToPlayer(c, ONGOING_DAMAGE);
       if (c.player.hp <= 0 && !c.over) {
@@ -1186,7 +1281,7 @@ function autoNegotiate(combat, maxTurns = 80) {
   return combat;
 }
 function playHandshakeTurn(combat) {
-  if ((combat.bossPhase || 1) === 1) playFirstMatch(combat, (c) => c.id === "SYN");
+  if ((combat.bossPhase || 1) === 1) playFirstMatch(combat, (c) => baseId2(c.id) === "SYN");
   else playFirstMatch(combat, (c) => c.type === "Protocol");
   let guard = 0;
   while (guard++ < 20 && playFirstMatch(combat, () => true)) {
@@ -1497,11 +1592,22 @@ function restView(run) {
   const heal = Math.round(run.maxHp * 0.3);
   el.innerHTML = `
     <h2>Keepalive</h2>
-    <p>A quiet socket. Recover ${heal} HP, or thin your deck by removing one card.</p>
+    <p>A quiet socket. Choose ONE: recover ${heal} HP, upgrade a card, or thin your deck.</p>
     <div class="s6db-hub-actions">
       <button type="button" data-rest="heal">rest — heal ${heal} HP ▸</button>
     </div>
+    <div class="s6db-rest-upgrade"><h3>…or upgrade a card</h3></div>
     <div class="s6db-rest-thin"><h3>…or remove a card</h3></div>`;
+  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
+  const up = el.querySelector(".s6db-rest-upgrade");
+  if (upgradeable.length) {
+    const upList = document.createElement("div");
+    upList.className = "s6db-card-row";
+    upList.replaceChildren(...upgradeable.map(({ id, i }) => cardOption(upgradeIdFor(id), "upgrade", String(i))));
+    up.appendChild(upList);
+  } else {
+    up.insertAdjacentHTML("beforeend", `<p class="s6db-hint">Every card is already upgraded.</p>`);
+  }
   const thin = el.querySelector(".s6db-rest-thin");
   const list = document.createElement("div");
   list.className = "s6db-card-row";
@@ -1757,6 +1863,11 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     if (remove) {
       removeCard(run, Number(remove.dataset.remove));
       rest(run, "remove");
+      return true;
+    }
+    const upgrade = event.target.closest("[data-upgrade]");
+    if (upgrade) {
+      rest(run, "upgrade", Number(upgrade.dataset.upgrade));
       return true;
     }
     const restEl = event.target.closest("[data-rest]");
