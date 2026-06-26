@@ -123,6 +123,18 @@ export async function run(ctx) {
   const cciText = await page.$eval('#previewHost .circleciconfig-doc', (e) => e.textContent);
   if (/CircleCI/i.test(cciText)) pass('circleci.yml: badge shown'); else fail('circleci badge: ' + cciText.slice(0, 200));
   if (/build|test|deploy|job/i.test(cciText)) pass('circleci.yml: jobs shown'); else fail('circleci jobs: ' + cciText.slice(0, 200));
+  if (/CircleCI Review|orb version|requires graph/i.test(cciText)) pass('circleci.yml: review findings shown'); else fail('circleci review: ' + cciText.slice(0, 500));
+  if (/requires: build|requires: test/i.test(cciText)) pass('circleci.yml: workflow dependency graph shown'); else fail('circleci requires: ' + cciText.slice(0, 500));
+  const cciHelpTitle = await page.$eval('#previewHost .circleciconfig-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/CircleCI|Open line|source/i.test(cciHelpTitle)) pass('circleci.yml: hover explains source action'); else fail('circleci hover title: ' + cciHelpTitle);
+  const cciSourceCollapsed = await page.$eval('#previewHost .circleciconfig-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (cciSourceCollapsed) pass('circleci.yml: source starts collapsed'); else fail('circleci source was not collapsed');
+  const cciSourceLine = await page.$eval('#previewHost .circleciconfig-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .circleciconfig-doc .kf-source-details');
+    return details?.open && document.getElementById(`cci-line-${line}`);
+  }, cciSourceLine);
+  pass('circleci.yml: clicking item opens source line');
 
   // ── amplify.yml viewer ──
   await openExample('AWS Amplify config');

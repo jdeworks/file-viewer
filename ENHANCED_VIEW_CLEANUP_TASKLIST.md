@@ -93,6 +93,7 @@ These should help users find broken structure and dependency/reference problems.
 These should prioritize risk, masking, source traceability, and relationship maps.
 
 - [ ] CI/CD configs: GitHub Actions, GitLab CI, CircleCI, Travis, CodeBuild, Woodpecker, Azure Pipelines.
+- [x] CircleCI: source-linked orbs/workflows/jobs, orb pinning and workflow requires review findings, secret-like environment redaction, and collapsed redacted source.
 - [x] GitHub Actions: source-linked job graph, unpinned actions, broad permissions, risky triggers, shell download pipes, and secret-like env masking.
 - [x] GitLab CI: source-linked stages/jobs/variables/includes, mutable image and needs graph review findings, secret-like variable redaction, and collapsed redacted source.
 - [ ] Add warnings for `pull_request_target`, broad permissions, unpinned actions, secret-like env values, shell download pipes.
