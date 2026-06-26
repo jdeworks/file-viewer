@@ -66,6 +66,26 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const crateHrefs = await page.$$eval('#previewHost .pj-deps a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
   if (crateHrefs.some((h) => /crates\.io\/crates\/serde/.test(h))) pass('Cargo.toml: dependencies link to crates.io'); else fail('crate links: ' + crateHrefs.join(','));
+  const cargoSourceOpen = await page.$eval('#previewHost .pj-doc .kf-source-details', (e) => e.open);
+  if (!cargoSourceOpen) pass('Cargo.toml: source starts collapsed'); else fail('Cargo.toml source should start collapsed');
+  await page.click('#previewHost .pj-doc .pj-deps .kf-source-link');
+  const cargoJump = await page.$eval('#previewHost .pj-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (cargoJump.open && cargoJump.highlighted) pass('Cargo.toml: dependency click opens and highlights source'); else fail('cargo source jump: ' + JSON.stringify(cargoJump));
+  const cargoBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/toml/known/cargo-toml/render.js');
+    const text = '[package]\nname = "risky"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nserde = "*"\nshared = "1"\nlocal-lib = { path = "../local-lib" }\nremote-lib = { git = "https://example.com/remote-lib.git", branch = "main" }\n\n[dev-dependencies]\nshared = "1.0"\n';
+    const rendered = (await mod.render({ text, filename: 'Cargo.toml' })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Cargo Review|broad range|git dependency|path dependency|duplicate dependency|serde|shared|local-lib|remote-lib/i.test(cargoBad.out + cargoBad.issues) && !cargoBad.open) pass('Cargo.toml: broad, git, path, and duplicate dependency diagnostics shown'); else fail('cargo synthetic diagnostics: ' + JSON.stringify(cargoBad).slice(0, 1000));
 
   await openExample('tsconfig.json');
   await page.waitForSelector('#previewHost .ts-table', { timeout: 12000 });
