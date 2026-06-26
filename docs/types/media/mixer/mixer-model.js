@@ -241,6 +241,28 @@ export function updateMaster(project, updater) {
   return touch(recomputeDuration(next));
 }
 
+export function setElementTransition(project, elementId, patch = {}) {
+  const element = project.elements.find((item) => item.id === elementId);
+  if (!element) return cloneProject(project);
+  const next = cloneProject(project);
+  const durationMs = Math.max(0, finiteNumber(patch.durationMs, existingTransition(next, elementId)?.durationMs || 0));
+  const kind = patch.kind || existingTransition(next, elementId)?.kind || 'dissolve';
+  next.transitions = next.transitions.filter((transition) => transition.toElementId !== elementId);
+  if (durationMs > 0) {
+    next.transitions.push(normalizeTransition({
+      id: patch.id || existingTransition(project, elementId)?.id || `transition-${elementId}-in`,
+      kind,
+      enabled: patch.enabled !== false,
+      fromElementId: patch.fromElementId ?? findPreviousVisualElement(project, element)?.id ?? null,
+      toElementId: elementId,
+      durationMs,
+      offsetMs: finiteNumber(patch.offsetMs, 0),
+      params: patch.params || existingTransition(project, elementId)?.params || {},
+    }));
+  }
+  return touch(recomputeDuration(next));
+}
+
 export function moveElement(project, elementId, startMs, laneId) {
   return updateElement(project, elementId, (element) => ({
     ...element,
@@ -367,7 +389,7 @@ export function normalizeProject(project = {}) {
     lanes: Array.isArray(project.lanes) ? project.lanes.map(createLane) : [],
     elements: Array.isArray(project.elements) ? project.elements.map(createElement) : [],
     effects: Array.isArray(project.effects) ? clone(project.effects) : [],
-    transitions: Array.isArray(project.transitions) ? clone(project.transitions) : [],
+    transitions: Array.isArray(project.transitions) ? project.transitions.map(normalizeTransition) : [],
     markers: Array.isArray(project.markers) ? clone(project.markers) : [],
     selection: project.selection || base.selection,
     compare: { ...base.compare, ...(project.compare || {}) },
@@ -454,6 +476,31 @@ function normalizeElementEffects(effects = [], elementId = null) {
     params: clone(effect.params || {}),
     keyframes: Array.isArray(effect.keyframes) ? clone(effect.keyframes) : [],
   }));
+}
+
+function normalizeTransition(transition = {}) {
+  return {
+    id: transition.id || makeId('transition'),
+    kind: transition.kind || 'dissolve',
+    enabled: transition.enabled !== false,
+    fromElementId: transition.fromElementId || null,
+    toElementId: transition.toElementId || transition.targetId || null,
+    durationMs: Math.max(0, finiteNumber(transition.durationMs, 0)),
+    offsetMs: finiteNumber(transition.offsetMs, 0),
+    params: clone(transition.params || {}),
+  };
+}
+
+function existingTransition(project, elementId) {
+  return (project.transitions || []).find((transition) => transition.toElementId === elementId) || null;
+}
+
+function findPreviousVisualElement(project, element) {
+  const start = finiteNumber(element.timeline?.startMs, 0);
+  return (project.elements || [])
+    .filter((item) => item.id !== element.id && item.laneId === element.laneId && (item.capabilities?.hasVideo || item.capabilities?.hasImage))
+    .filter((item) => finiteNumber(item.timeline?.startMs, 0) <= start)
+    .sort((a, b) => finiteNumber(b.timeline?.startMs, 0) - finiteNumber(a.timeline?.startMs, 0))[0] || null;
 }
 
 function laneRoleForAsset(asset) {

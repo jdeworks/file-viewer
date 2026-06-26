@@ -65,6 +65,7 @@ export function buildVideoMixExportPlan(project, options = {}) {
         media: asset.media,
       })),
       visualItems: visualItems.map(itemProvenance),
+      transitions: (project.transitions || []).map(transitionProvenance),
       audioItems: audioItems.map(itemProvenance),
       warnings,
     },
@@ -99,6 +100,19 @@ function itemProvenance({ element, lane, asset }) {
     fadeInMs: element.audio?.fadeInMs || 0,
     fadeOutMs: element.audio?.fadeOutMs || 0,
     visual: element.visual || {},
+  };
+}
+
+function transitionProvenance(transition) {
+  return {
+    id: transition.id,
+    kind: transition.kind || 'dissolve',
+    enabled: transition.enabled !== false,
+    fromElementId: transition.fromElementId || null,
+    toElementId: transition.toElementId || null,
+    durationMs: Math.max(0, Number(transition.durationMs) || 0),
+    offsetMs: Number(transition.offsetMs) || 0,
+    params: transition.params || {},
   };
 }
 
@@ -196,10 +210,11 @@ function buildFilterGraph(project, visualItems, audioItems, inputIndex, duration
   visualItems.forEach((item, index) => {
     const input = inputIndex.get(item.asset?.id);
     if (input === undefined) return;
+    const transition = transitionFor(project, item.element);
     const label = `v${index}`;
     const placed = `vbase${index + 1}`;
-    filters.push(`${visualFilterChain(item, input)}[${label}]`);
-    filters.push(`[${previousVideo}][${label}]overlay=x=${overlayExpr(item.element.visual?.x || 0, 'x')}:y=${overlayExpr(item.element.visual?.y || 0, 'y')}:enable='between(t,${seconds(item.element.timeline?.startMs || 0)},${seconds(elementEndMs(item.element))})'[${placed}]`);
+    filters.push(`${visualFilterChain(item, input, transition)}[${label}]`);
+    filters.push(`[${previousVideo}][${label}]overlay=x=${overlayExpr(item.element.visual?.x || 0, 'x', item.element, transition)}:y=${overlayExpr(item.element.visual?.y || 0, 'y', item.element, transition)}:enable='between(t,${seconds(item.element.timeline?.startMs || 0)},${seconds(elementEndMs(item.element))})'[${placed}]`);
     previousVideo = placed;
   });
 
@@ -226,7 +241,11 @@ function buildFilterGraph(project, visualItems, audioItems, inputIndex, duration
   };
 }
 
-function visualFilterChain({ element }, input) {
+function transitionFor(project, element) {
+  return (project.transitions || []).find((transition) => transition.toElementId === element.id && transition.enabled !== false) || null;
+}
+
+function visualFilterChain({ element }, input, transition = null) {
   const timeline = element.timeline || {};
   const visual = element.visual || {};
   const sourceIn = seconds(timeline.sourceInMs || 0);
@@ -238,6 +257,10 @@ function visualFilterChain({ element }, input) {
   const rotation = finite(visual.rotation, 0);
   const fadeInMs = Math.max(0, finite(visual.fadeInMs, 0));
   const fadeOutMs = Math.max(0, finite(visual.fadeOutMs, 0));
+  const transitionInMs = transition && transition.enabled !== false && transition.kind === 'dissolve'
+    ? Math.max(0, finite(transition.durationMs, 0))
+    : 0;
+  const alphaFadeInMs = Math.max(fadeInMs, transitionInMs);
   const filter = videoFilterParams(element);
   const filters = [
     `[${input}:v]trim=start=${sourceIn}:duration=${duration}`,
@@ -246,7 +269,7 @@ function visualFilterChain({ element }, input) {
   ];
   if (rotation) filters.push(`rotate=${round((rotation * Math.PI) / 180)}:ow=rotw(iw):oh=roth(ih):c=none`);
   filters.push('format=rgba');
-  if (fadeInMs) filters.push(`fade=t=in:st=0:d=${seconds(fadeInMs)}:alpha=1`);
+  if (alphaFadeInMs) filters.push(`fade=t=in:st=0:d=${seconds(alphaFadeInMs)}:alpha=1`);
   if (fadeOutMs) filters.push(`fade=t=out:st=${seconds(Math.max(0, durationMs - fadeOutMs))}:d=${seconds(fadeOutMs)}:alpha=1`);
   if (opacity < 1) filters.push(`colorchannelmixer=aa=${round(opacity)}`);
   filters.push(...videoFilterChain(filter));
@@ -315,10 +338,18 @@ function outputSize(project) {
   };
 }
 
-function overlayExpr(value, axis) {
+function overlayExpr(value, axis, element = null, transition = null) {
   const number = finite(value, 0);
   const center = axis === 'y' ? '(H-h)/2' : '(W-w)/2';
-  return number === 0 ? center : `${center}${number > 0 ? '+' : ''}${round(number)}`;
+  const base = number === 0 ? center : `${center}${number > 0 ? '+' : ''}${round(number)}`;
+  const durationMs = Math.max(0, finite(transition?.durationMs, 0));
+  if (axis === 'x' && transition?.kind === 'wipe-left' && durationMs > 0) {
+    const start = seconds(element?.timeline?.startMs || 0);
+    const end = seconds((element?.timeline?.startMs || 0) + durationMs);
+    const duration = seconds(durationMs);
+    return `if(lt(t\\,${end})\\,-w+(${base}+w)*((t-${start})/${duration})\\,${base})`;
+  }
+  return base;
 }
 
 function safeColor(color) {

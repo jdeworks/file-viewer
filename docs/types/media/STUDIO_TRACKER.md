@@ -442,6 +442,11 @@ Stage 7 project settings import/export UI has started:
   shared inspector exposes brightness, contrast, saturation, blur, and
   grayscale controls, and final video export maps those params to ffmpeg
   `eq`, `hue`, and `boxblur` filters in the same per-layer chain.
+- Added incoming visual transition records to the shared model. Selected visual
+  elements now expose transition duration and kind controls in the shared
+  inspector, and final video export maps dissolve transitions to alpha fades and
+  wipe-left transitions to overlay expressions while recording config-only
+  transition provenance.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
   media, exposes all three required reapply choices, applies the ask-per-
@@ -454,11 +459,11 @@ Stage 7 project settings import/export UI has started:
   coverage now also proves disabled/enabled video export plans, filter graph
   layering, config-only provenance, the fake-ffmpeg runtime execution contract,
   browser ffmpeg input-budget enforcement, visual alpha-fade export filters,
-  normalized video-filter effects, and video-filter ffmpeg graph output.
+  normalized video-filter effects, video-filter ffmpeg graph output, and
+  incoming visual transition provenance/filter graph output.
 - Stage 7 remaining work: expand filter coverage for additional
-  transitions/effects beyond the first video-filter controls as those controls
-  become user-facing, and continue hardening real browser ffmpeg renders
-  against long/complex compositions.
+  transition/effect controls as those controls become user-facing, and continue
+  hardening real browser ffmpeg renders against long/complex compositions.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

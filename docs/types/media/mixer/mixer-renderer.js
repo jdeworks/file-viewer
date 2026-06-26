@@ -11,6 +11,7 @@ export function createMixerSnapshot(project = {}) {
     durationMs: project.project?.durationMs || 0,
     lanes,
     elements,
+    transitions: project.transitions || [],
     selection: project.selection || { primary: null, items: [] },
     compare: project.compare || {},
     capabilities: project.capabilities || null,
@@ -163,7 +164,7 @@ function renderInspector(snapshot) {
     el('h3', 'mmx-inspector-title', [title]),
   ];
   if (selectedElement) {
-    children.push(renderElementInspectorFields(selectedElement));
+    children.push(renderElementInspectorFields(selectedElement, snapshot));
   } else {
     children.push(el('p', 'mmx-inspector-body', [selectedLane
       ? `Lane ${selectedLane.role}`
@@ -175,7 +176,7 @@ function renderInspector(snapshot) {
   return inspector;
 }
 
-function renderElementInspectorFields(element) {
+function renderElementInspectorFields(element, snapshot = {}) {
   const group = el('div', 'mmx-inspector-grid');
   group.append(
     inspectorNumber('Start', 'start', element, (element.timeline?.startMs || 0) / 1000, { min: 0, step: 0.01 }),
@@ -186,6 +187,7 @@ function renderElementInspectorFields(element) {
     inspectorNumber('Fade out', 'fade-out', element, element.audio?.fadeOutMs ?? 0, { min: 0, step: 5 }),
   );
   if (element.capabilities?.hasVideo || element.capabilities?.hasImage) {
+    const transition = incomingTransition(snapshot, element);
     group.append(
       inspectorNumber('X', 'visual-x', element, element.visual?.x ?? 0, { step: 1 }),
       inspectorNumber('Y', 'visual-y', element, element.visual?.y ?? 0, { step: 1 }),
@@ -195,6 +197,11 @@ function renderElementInspectorFields(element) {
       inspectorNumber('Opacity', 'visual-opacity', element, element.visual?.opacity ?? 1, { min: 0, max: 1, step: 0.01 }),
       inspectorNumber('Visual fade in', 'visual-fade-in', element, element.visual?.fadeInMs ?? 0, { min: 0, step: 5 }),
       inspectorNumber('Visual fade out', 'visual-fade-out', element, element.visual?.fadeOutMs ?? 0, { min: 0, step: 5 }),
+      inspectorNumber('Transition in', 'transition-in', element, transition.durationMs, { min: 0, step: 25 }),
+      inspectorSelect('Transition kind', 'transition-kind', element, transition.kind, [
+        ['dissolve', 'Dissolve'],
+        ['wipe-left', 'Wipe left'],
+      ]),
     );
     const filter = videoFilterParams(element);
     group.append(
@@ -217,6 +224,14 @@ function videoFilterParams(element) {
     saturation: finite(params.saturation, 1),
     blur: finite(params.blur, 0),
     grayscale: finite(params.grayscale, 0),
+  };
+}
+
+function incomingTransition(snapshot, element) {
+  const transition = (snapshot.transitions || []).find((item) => item.toElementId === element.id && item.enabled !== false);
+  return {
+    durationMs: finite(transition?.durationMs, 0),
+    kind: transition?.kind || 'dissolve',
   };
 }
 
@@ -290,6 +305,26 @@ function inspectorNumber(labelText, field, element, value, attrs = {}) {
   input.dataset.field = field;
   input.value = String(Math.round(Number(value) * 1000) / 1000);
   for (const [key, attrValue] of Object.entries(attrs)) input.setAttribute(key, String(attrValue));
+  label.append(text, input);
+  return label;
+}
+
+function inspectorSelect(labelText, field, element, value, options = []) {
+  const label = el('label', 'mmx-inspector-field');
+  const text = el('span', '', [labelText]);
+  const input = document.createElement('select');
+  input.className = `mmx-inspector-${field}`;
+  input.dataset.action = 'update-element';
+  input.dataset.elementId = element.id;
+  input.dataset.field = field;
+  input.dataset.valueType = 'string';
+  for (const [optionValue, optionLabel] of options) {
+    const option = document.createElement('option');
+    option.value = optionValue;
+    option.textContent = optionLabel;
+    option.selected = optionValue === value;
+    input.append(option);
+  }
   label.append(text, input);
   return label;
 }

@@ -43,7 +43,7 @@ export function attachMixerInteractions(root, getState, dispatch) {
         type: 'update-element',
         elementId: event.target.dataset.elementId,
         field: event.target.dataset.field,
-        value: Number(event.target.value),
+        value: event.target.dataset.valueType === 'string' ? event.target.value : Number(event.target.value),
       });
     }
   };

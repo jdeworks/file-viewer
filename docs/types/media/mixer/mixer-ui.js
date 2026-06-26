@@ -1,6 +1,7 @@
 import {
   createProjectFromAssetMetadata,
   selectTarget,
+  setElementTransition,
   trimElement,
   updateElement,
 } from './mixer-model.js';
@@ -136,7 +137,14 @@ function clampZoom(value) {
 function updateProjectElementField(project, action) {
   const elementId = action.elementId;
   const value = Number(action.value);
-  if (!elementId || !Number.isFinite(value)) return project;
+  if (!elementId) return project;
+  if (action.field === 'transition-kind') {
+    return setElementTransition(project, elementId, { kind: String(action.value || 'dissolve') });
+  }
+  if (action.field === 'transition-in') {
+    return setElementTransition(project, elementId, { durationMs: Math.max(0, value) });
+  }
+  if (!Number.isFinite(value)) return project;
   if (action.field === 'start') {
     return updateElement(project, elementId, (element) => ({
       ...element,

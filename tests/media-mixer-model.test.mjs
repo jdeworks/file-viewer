@@ -10,6 +10,7 @@ import {
   createProjectFromAssetMetadata,
   getLaneDescriptor,
   moveElement,
+  setElementTransition,
   setElementPlacementDuration,
   splitElement,
   trimElement,
@@ -61,6 +62,13 @@ import {
   assert.equal(image.effects[0].targetId, 'element-image', 'model: image element normalizes effect target id');
   assert.equal(image.effects[0].enabled, true, 'model: image element normalizes effect enabled state');
   assert.equal(image.effects[0].params.brightness, 0.1, 'model: image element stores video filter effect params');
+  const withTransition = setElementTransition(withImage, 'element-image', { durationMs: 250, kind: 'wipe-left' });
+  assert.equal(withTransition.transitions.length, 1, 'model: visual element transition is stored at project level');
+  assert.equal(withTransition.transitions[0].toElementId, 'element-image', 'model: transition targets selected visual element');
+  assert.equal(withTransition.transitions[0].kind, 'wipe-left', 'model: transition kind is preserved');
+  assert.equal(withTransition.transitions[0].durationMs, 250, 'model: transition duration is preserved');
+  const withoutTransition = setElementTransition(withTransition, 'element-image', { durationMs: 0 });
+  assert.equal(withoutTransition.transitions.length, 0, 'model: zero-duration transition removes transition record');
 
   const imageProject = createProjectFromAssetMetadata({
     id: 'asset-image',
