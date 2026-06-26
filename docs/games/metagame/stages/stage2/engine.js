@@ -13,6 +13,7 @@ import { WEAPONS, spawnMonster, xpForLevel } from "./data.js";
 import { detonate } from "./monsters.js";
 import { applyStatus, tickStatuses } from "./status.js";
 import { placeHazards, hazardIndex, enterHazard } from "./hazards.js";
+import { placeTraps, trapIndex, springTrap } from "./traps.js";
 import { DIRS } from "./dirs.js";
 
 export { DIRS };
@@ -52,14 +53,15 @@ export function attachGrid(world, runSeed, floorNum) {
   const grid = buildGrid(runSeed, floorNum).grid; // hidden rooms come back sealed…
   if (Array.isArray(world.hidden)) for (const h of world.hidden) if (h.revealed) carveHiddenRoom(grid, h); // …re-open the ones already found
   defineGrid(world, grid);
-  defineHazards(world); // rebuild the O(1) hazard lookup from the saved hazards array
+  defineHazards(world); // rebuild the O(1) hazard + trap lookups from the saved arrays
   return world;
 }
 
-// Non-enumerable hazard lookup (built from the enumerable, saved world.hazards) — same pattern as
-// the grid: the data is serialised, the index is rebuilt in memory on load.
+// Non-enumerable hazard + trap lookups (built from the enumerable, saved arrays) — same pattern as
+// the grid: the data is serialised, the indexes are rebuilt in memory on load.
 function defineHazards(world) {
   Object.defineProperty(world, "hazardAt", { value: hazardIndex(world), enumerable: false, writable: true, configurable: true });
+  Object.defineProperty(world, "trapAt", { value: trapIndex(world), enumerable: false, writable: true, configurable: true });
 }
 
 // Generate one floor: layout + spawn + stairs + entities, all from `${runSeed}:${floor}`.
@@ -136,9 +138,10 @@ export function buildFloor(runSeed, floorNum) {
     else if (d.kind === "potion") potions.push({ x: d.x, y: d.y, taken: false });
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
-  // Hazards last, on the floor cells nothing else claimed (so a foe/loot never starts on lava).
+  // Hazards + traps last, on the floor cells nothing else claimed (unique via the shared `take`).
   const hazards = placeHazards(rng, floorNum, roomN, take);
-  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden, hazards };
+  const traps = placeTraps(rng, floorNum, roomN, take);
+  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden, hazards, traps };
   defineGrid(world, grid);
   defineHazards(world);
   return world;
@@ -281,6 +284,13 @@ export function step(world, player, dir) {
     enterHazard(world, player, hz, events);
     if (events.died) return events;
     if (events.descend) return events; // chasm fall — skip the rest of this floor's resolution
+  }
+  // Trap on-enter (B4): invisible until sprung — dart, alarm (wakes foes), blink, pit (hidden fall).
+  const tr = world.trapAt && world.trapAt(nx, ny);
+  if (tr && !tr.sprung) {
+    springTrap(world, player, tr, events);
+    if (events.died) return events;
+    if (events.descend) return events; // pit fall
   }
 
   const weapon = world.weapons.find((wp) => !wp.taken && wp.x === nx && wp.y === ny);

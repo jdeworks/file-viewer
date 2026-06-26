@@ -4,6 +4,7 @@ import { monsterTurn, detonate, hasLOS, pressureSpawn } from "../monsters.js";
 import { buildFloor, step } from "../engine.js";
 import { spawnMonster } from "../data.js";
 import { enterHazard, hazardIndex } from "../hazards.js";
+import { springTrap } from "../traps.js";
 import { makeRng } from "../rng.js";
 
 let failed = 0;
@@ -127,6 +128,24 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   ok(spawned > 0, "lingering on a floor spawns wanderers");
   const off = w.monsters.slice(before).every((m) => Math.abs(m.x - w.pos.x) > 26 || Math.abs(m.y - w.pos.y) > 13);
   ok(off, "wanderers appear off-camera");
+}
+
+// ── B4 traps: spring once, alarm wakes foes ──────────────────────────────────────────────────────
+{
+  const w = arena();
+  w.floor = 5;
+  const player = { hp: 100, def: 0, statuses: {} };
+  const dart = { x: 5, y: 1, type: "dart", sprung: false };
+  const ev = { log: [], damageTaken: 0, died: false };
+  springTrap(w, player, dart, ev);
+  ok(player.hp < 100 && dart.sprung === true && ev.trap === "dart", "dart trap fires and marks itself sprung");
+  const w2 = arena();
+  w2.floor = 5;
+  const sleeper = foe({ x: 3, y: 1, chasing: false });
+  w2.monsters = [sleeper];
+  w2.pos = { x: 5, y: 1 };
+  springTrap(w2, { hp: 100, def: 0, statuses: {} }, { x: 5, y: 1, type: "alarm", sprung: false }, { log: [], damageTaken: 0, died: false });
+  ok(sleeper.chasing === true, "alarm trap wakes nearby foes");
 }
 
 // ── B2 freed ally: hunts hostiles, never the player ──────────────────────────────────────────────

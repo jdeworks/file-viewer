@@ -1009,6 +1009,91 @@ function enterHazard(world, player, hz, events) {
   }
 }
 
+// ../../docs/games/metagame/stages/stage2/traps.js
+var TRAP_GLYPH = { dart: "˙", alarm: "¡", pit: "o", blink: "✶" };
+var TRAP_CLASS = "s2-c-trap";
+function trapPlan(floor) {
+  if (floor <= 2) return { types: ["dart"], density: 0.25 };
+  if (floor <= 4) return { types: ["dart", "alarm", "blink"], density: 0.5 };
+  if (floor <= 6) return { types: ["dart", "alarm", "blink", "pit"], density: 0.8 };
+  return { types: ["dart", "alarm", "pit", "blink"], density: 1.1 };
+}
+function placeTraps(rng, floor, roomN, takeCell) {
+  const plan = trapPlan(floor);
+  const count = Math.round(roomN * 0.35 * plan.density);
+  const traps = [];
+  for (let i = 0; i < count; i += 1) {
+    const c = takeCell();
+    if (!c) break;
+    traps.push({ x: c.x, y: c.y, type: rng.pick(plan.types), sprung: false });
+  }
+  return traps;
+}
+function trapIndex(world) {
+  const map = /* @__PURE__ */ new Map();
+  if (Array.isArray(world.traps)) for (const t of world.traps) map.set(t.y * world.width + t.x, t);
+  return (x, y) => map.get(y * world.width + x);
+}
+function blinkCell(world, rng, rad) {
+  for (let t = 0; t < 50; t += 1) {
+    const x = world.pos.x + rng.int(-rad, rad);
+    const y = world.pos.y + rng.int(-rad, rad);
+    if (isOpen(world, x, y) && !(world.hazardAt && world.hazardAt(x, y))) return { x, y };
+  }
+  return null;
+}
+function springTrap(world, player, trap, events) {
+  trap.sprung = true;
+  events.trap = trap.type;
+  if (trap.type === "dart") {
+    const dmg = 4 + world.floor;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    applyStatus(player, "bleed", 2, 1);
+    events.log.push(`a dart trap! ${dmg} damage — bleeding.`);
+    if (player.hp <= 0) events.died = true;
+  } else if (trap.type === "alarm") {
+    let woke = 0;
+    for (const m of world.monsters) {
+      if (m.alive && !m.ally && Math.abs(m.x - world.pos.x) + Math.abs(m.y - world.pos.y) <= 16) {
+        m.chasing = true;
+        if (m.ambush) {
+          m.hidden = false;
+        }
+        woke += 1;
+      }
+    }
+    events.log.push(`an alarm trap! ${woke} foes wake and converge.`);
+  } else if (trap.type === "blink") {
+    const rng = makeBlinkRng(world, trap);
+    const spot = blinkCell(world, rng, 8);
+    if (spot) {
+      world.pos = { x: spot.x, y: spot.y };
+      events.moved = true;
+      events.blinked = true;
+    }
+    events.log.push("a blink rune! you're flung across the floor.");
+  } else if (trap.type === "pit") {
+    const dmg = 4 + world.floor;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    if (player.hp <= 0) {
+      events.died = true;
+      return;
+    }
+    events.descend = true;
+    events.fell = true;
+    events.log.push(`a hidden pit — ${dmg} fall damage — you drop a floor.`);
+  }
+}
+function makeBlinkRng(world, trap) {
+  let h = trap.x * 73856093 ^ trap.y * 19349663 ^ (world.stepCount || 0);
+  return { int: (lo, hi) => {
+    h = h * 1103515245 + 12345 & 2147483647;
+    return lo + h % (hi - lo + 1);
+  } };
+}
+
 // ../../docs/games/metagame/stages/stage2/engine.js
 var GROWTH = 1.35;
 function floorDims(runSeed, floorNum) {
@@ -1041,6 +1126,7 @@ function attachGrid(world, runSeed, floorNum) {
 }
 function defineHazards(world) {
   Object.defineProperty(world, "hazardAt", { value: hazardIndex(world), enumerable: false, writable: true, configurable: true });
+  Object.defineProperty(world, "trapAt", { value: trapIndex(world), enumerable: false, writable: true, configurable: true });
 }
 function buildFloor(runSeed, floorNum) {
   const { grid, rooms, hidden, decor, dims, rng } = buildGrid(runSeed, floorNum);
@@ -1115,7 +1201,8 @@ function buildFloor(runSeed, floorNum) {
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
   const hazards = placeHazards(rng, floorNum, roomN, take);
-  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden, hazards };
+  const traps = placeTraps(rng, floorNum, roomN, take);
+  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden, hazards, traps };
   defineGrid(world, grid);
   defineHazards(world);
   return world;
@@ -1234,6 +1321,12 @@ function step(world, player, dir) {
   const hz = world.hazardAt && world.hazardAt(nx, ny);
   if (hz) {
     enterHazard(world, player, hz, events);
+    if (events.died) return events;
+    if (events.descend) return events;
+  }
+  const tr = world.trapAt && world.trapAt(nx, ny);
+  if (tr && !tr.sprung) {
+    springTrap(world, player, tr, events);
     if (events.died) return events;
     if (events.descend) return events;
   }
@@ -1440,6 +1533,7 @@ var SECTIONS = [
   ["Elites", "Gilded, glowing foes (a prefix like armored/venomous) hit harder but drop a guaranteed weapon + glyph cache. Worth the risk."],
   ["Status", "Poison ☣ / burn ♨ / bleed ✣ tick HP over time even while you stand still — keep moving and heal."],
   ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut)."],
+  ["Traps", "Invisible until you trip them: dart (damage), alarm (wakes the floor), blink (flings you), pit (drops you a floor). Once sprung they're marked — denser deeper."],
   ["Loot", "Step on / weapons to raise ATK and % glyph shards to earn glyphs. Kills drop glyphs and XP (level up = more HP & ATK)."],
   ["Secret rooms", "Bump a faint, off-colour wall to open a hidden room: a cache, an ambush, a teleport to the stairs, a shrine (trade HP for a buff), a vault (prime loot, elite guards) or a captive ally that fights for you."],
   ["Biomes", "Floors are grouped into bands — Warrens, Flooded Cisterns, Emberworks, the Overflow — each with its own look and rising danger."],
@@ -1580,6 +1674,9 @@ function createView(screenEl) {
     };
     place("exit", world.exit.x, world.exit.y, ">", "s2-c-exit");
     if (world.hazards) world.hazards.forEach((hz, i) => place("hz" + i, hz.x, hz.y, HAZARD_GLYPH[hz.type] || "^", HAZARD_CLASS[hz.type] || "s2-c-spikes"));
+    if (world.traps) world.traps.forEach((tr, i) => {
+      if (tr.sprung) place("tr" + i, tr.x, tr.y, TRAP_GLYPH[tr.type] || "˙", TRAP_CLASS);
+    });
     world.weapons.forEach((w, i) => {
       if (!w.taken) place("w" + i, w.x, w.y, "/", "s2-c-item");
     });
@@ -1746,6 +1843,7 @@ function createView(screenEl) {
     }
     const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0" };
     if (world.hazards) for (const hz of world.hazards) dot(hz.x, hz.y, HAZ_DOT[hz.type] || "#888", 2);
+    if (world.traps) for (const tr of world.traps) dot(tr.x, tr.y, tr.sprung ? "#c0563a" : "#7a3a2a", 2);
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
     if (world.potions) {
       for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);

@@ -9,6 +9,7 @@
 // shares the grid's font, so sprites sit exactly on their cells at any font-size.
 
 import { HAZARD_GLYPH, HAZARD_CLASS } from "./hazards.js";
+import { TRAP_GLYPH, TRAP_CLASS } from "./traps.js";
 
 // Fixed viewport in cells. Deeper floors are far bigger (see engine.buildFloor) so only this
 // chunk is ever visible — the rest has to be explored.
@@ -148,6 +149,8 @@ export function createView(screenEl) {
     place("exit", world.exit.x, world.exit.y, ">", "s2-c-exit");
     // Hazard tiles (A2) — sparse colored cells; static, so only reconciled on camera moves.
     if (world.hazards) world.hazards.forEach((hz, i) => place("hz" + i, hz.x, hz.y, HAZARD_GLYPH[hz.type] || "^", HAZARD_CLASS[hz.type] || "s2-c-spikes"));
+    // Sprung traps (B4) leave a marker; un-sprung traps stay invisible.
+    if (world.traps) world.traps.forEach((tr, i) => { if (tr.sprung) place("tr" + i, tr.x, tr.y, TRAP_GLYPH[tr.type] || "˙", TRAP_CLASS); });
     world.weapons.forEach((w, i) => { if (!w.taken) place("w" + i, w.x, w.y, "/", "s2-c-item"); });
     world.glyphs.forEach((g, i) => { if (!g.taken) place("g" + i, g.x, g.y, "%", "s2-c-glyph"); });
     if (world.potions) world.potions.forEach((p, i) => { if (!p.taken) place("p" + i, p.x, p.y, "!", "s2-c-potion"); });
@@ -286,6 +289,7 @@ export function createView(screenEl) {
     if (world.hidden) for (const h of world.hidden) if (!h.revealed) dot(h.entrance.x, h.entrance.y, "#ff36c0", 4);
     const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0" };
     if (world.hazards) for (const hz of world.hazards) dot(hz.x, hz.y, HAZ_DOT[hz.type] || "#888", 2);
+    if (world.traps) for (const tr of world.traps) dot(tr.x, tr.y, tr.sprung ? "#c0563a" : "#7a3a2a", 2); // dev: traps (dim=armed)
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
     if (world.potions) for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);
     for (const g of world.glyphs) if (!g.taken) dot(g.x, g.y, "#d78bff", 3);

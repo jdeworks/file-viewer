@@ -218,8 +218,9 @@
 .s2-c-spores { color: #7dd44a; }
 .s2-c-spikes { color: #9aa4ad; }
 .s2-c-chasm { color: #6a7bb0; }
+.s2-c-trap { color: #c0563a; } /* sprung trap marker */
 /* Layer order in the absolute sprite stack: hazards under loot under foes under @. */
-.s2-c-lava, .s2-c-spores, .s2-c-spikes, .s2-c-chasm { z-index: 0; }
+.s2-c-lava, .s2-c-spores, .s2-c-spikes, .s2-c-chasm, .s2-c-trap { z-index: 0; }
 .s2-c-foe, .s2-c-foe2, .s2-c-elite, .s2-c-ambush { z-index: 2; }
 .s2-c-player { z-index: 3; }
 .s2-c-item { color: #ffd54a; }
