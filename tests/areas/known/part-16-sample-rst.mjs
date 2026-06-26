@@ -253,6 +253,17 @@ export async function run(ctx) {
   if (/com\.example\.demo/.test(groovyText)) pass('sample.groovy: package shown'); else fail('groovy package: ' + groovyText.slice(0, 300));
   if (/MathUtils|Point|Circle|Shape/i.test(groovyText)) pass('sample.groovy: types listed'); else fail('groovy types: ' + groovyText.slice(0, 300));
   if (/factorial|mean|area|perimeter/i.test(groovyText)) pass('sample.groovy: methods listed'); else fail('groovy methods: ' + groovyText.slice(0, 300));
+  if (/returns double|arity 1|List<Number> values|@CompileStatic/i.test(groovyText)) pass('sample.groovy: signatures, params, and annotations shown'); else fail('groovy details: ' + groovyText.slice(0, 900));
+  const groovyAnnHint = await page.$eval('#previewHost .gr-doc .gr-ann', (e) => e.title);
+  if (/static type checking|annotation/i.test(groovyAnnHint)) pass('sample.groovy: annotation hover help present'); else fail('groovy annotation hint: ' + groovyAnnHint);
+  const groovySourceOpen = await page.$eval('#previewHost .gr-doc .kf-source-details', (e) => e.open);
+  if (!groovySourceOpen) pass('sample.groovy: source starts collapsed'); else fail('groovy source should start collapsed');
+  await page.click('#previewHost .gr-doc .kf-source-link');
+  const groovyJump = await page.$eval('#previewHost .gr-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (groovyJump.open && groovyJump.highlighted) pass('sample.groovy: item click opens and highlights source'); else fail('groovy source jump: ' + JSON.stringify(groovyJump));
 
   // ── sample.cr viewer (Crystal) ──
   await openExample('sample.cr');
