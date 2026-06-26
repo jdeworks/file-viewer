@@ -6,6 +6,7 @@
 import { ENEMY_TYPES, spawnEnemy } from "./enemies.js";
 import { TOWER_TYPES } from "./towers.js";
 import { waveComposition, SPAWN_INTERVAL_MS } from "./waves.js";
+import { applyExtractorIncome } from "./upgrades.js";
 
 // Populate the spawn queue for a wave and reset per-wave combat state. `pathTiles` is unused here
 // (kept for symmetry with tick/resolveDeath) — spawning reads positions in tick.
@@ -59,10 +60,7 @@ export function waveComplete(state) {
   if (!state.waveActive) return false;
   if ((state.spawnQueue?.length || 0) > 0 || state.enemies.length > 0) return false;
   state.waveActive = false;
-  for (const t of state.towers) {
-    const def = TOWER_TYPES[t.type];
-    if (def?.incomePerWave) state.cycles = (state.cycles || 0) + def.incomePerWave;
-  }
+  applyExtractorIncome(state); // cycle-extractor towers pay out on wave clear
   return true;
 }
 
