@@ -282,6 +282,20 @@ export async function run(ctx) {
   if (/systemd/i.test(sysdText)) pass('myapp.service: systemd badge shown'); else fail('systemd badge: ' + sysdText.slice(0, 200));
   if (/ExecStart/i.test(sysdText)) pass('myapp.service: ExecStart shown'); else fail('systemd ExecStart: ' + sysdText.slice(0, 300));
   if (/My Application Service/i.test(sysdText)) pass('myapp.service: description shown'); else fail('systemd description: ' + sysdText.slice(0, 300));
+  if (/systemd Review|ordering|restart|env file|hardening/i.test(sysdText)) pass('myapp.service: review findings shown'); else fail('systemd review: ' + sysdText.slice(0, 400));
+  const sysdHelpTitle = await page.$eval('#previewHost .sysd-doc .sysd-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/systemd|Open line|source/i.test(sysdHelpTitle)) pass('myapp.service: hover source help shown'); else fail('systemd source help title missing');
+  const sysdSourceCollapsed = await page.$eval('#previewHost .sysd-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Source'));
+  if (sysdSourceCollapsed) pass('myapp.service: source collapsed'); else fail('myapp.service: source not collapsed');
+  const sysdSourceLine = await page.$eval('#previewHost .sysd-doc .sysd-link[data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .sysd-doc .kf-source-details');
+    return details?.open && document.getElementById(`sysd-line-${line}`);
+  }, sysdSourceLine);
+  pass('myapp.service: source links open source');
 
   // ── crontab viewer ──
   await openExample('crontab (Cron Schedule)');
