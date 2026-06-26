@@ -293,8 +293,17 @@ Stage 5 video/image elements and seek-frame preview has started:
   active seek-frame preview; pure audio proof helpers were split into
   `tests/areas/media-studio-mixer-audio-proofs.mjs` to keep the browser smoke
   under the line-count threshold.
+- Dropped visual files now get bounded native metadata probing. Image drops
+  update shared asset dimensions, browser-playable video drops can update
+  duration/dimensions, and unsupported video keeps the `needs-proxy` state so
+  the preview/capability notes continue to explain the ffmpeg/proxy requirement
+  without loading ffmpeg.
+- Focused smoke coverage now proves the dropped SVG image records 64x40
+  metadata in the project model and an unsupported dropped AVI shows a
+  conversion/proxy warning while ffmpeg remains unloaded.
 - Validation passed for this slice:
   - `node --check docs/types/media/mixer/mixer-visual-preview.js docs/types/media/mixer/mixer-renderer.js docs/types/media/mixer/mixer-ui.js docs/types/media/mixer/mixer-audio-multi-helpers.js tests/areas/media-studio-mixer-shell.mjs`
+  - `node --check docs/types/media/mixer/mixer-media-drop.js docs/types/media/mixer/mixer-audio-multi.js tests/areas/media-studio-mixer-audio-listen.mjs`
   - `node tests/smoke-area.mjs media-studio-mixer-shell`
   - `node tests/smoke-area.mjs media-studio-mixer-audio-listen`
   - `node tests/media-mixer-model.test.mjs`
@@ -304,9 +313,9 @@ Stage 5 video/image elements and seek-frame preview has started:
   - `node tests/media-parsers.test.mjs`
   - `node tests/smoke-area.mjs media-studio`
   - `./scripts/check.sh --fast`
-- Stage 5 remaining work: image thumbnail extraction, video metadata/frame
-  availability warnings, optional ffmpeg-backed conversion paths, and then
-  Compare rebuild on the same shared model.
+- Stage 5 remaining work: thumbnail/frame extraction for visual previews,
+  optional ffmpeg-backed conversion paths, video opening through the modular
+  mixer project, and then Compare rebuild on the same shared model.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

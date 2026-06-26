@@ -131,10 +131,13 @@ rotation, and opacity. This preview is deliberately lighter than realtime video
 playback; it gives enough frame-context grammar to place images/video elements
 while preserving client-side memory constraints. The first visual intake slice
 also classifies dropped audio/image/video files through a reusable helper, so Mix
-can create visual shared-model lanes without serializing media bytes. Remaining
-Stage 5 work is thumbnails or metadata-backed frame availability, coherent
-reduced-mode warnings when ffmpeg/video decode is unavailable, and then Compare
-on top of the same selected-object model.
+can create visual shared-model lanes without serializing media bytes. Dropped
+visual files now perform bounded native metadata probing: image dimensions and
+browser video duration/dimensions can update the shared model, while unsupported
+video keeps a coherent `needs-proxy`/Media Transcoding warning. Remaining Stage
+5 work is thumbnail/frame extraction for visual previews, optional ffmpeg-backed
+conversion paths, video opening through the modular mixer project, and then
+Compare on top of the same selected-object model.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

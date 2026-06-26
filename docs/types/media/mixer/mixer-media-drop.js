@@ -97,6 +97,42 @@ export function applyDroppedAudioSummary(project, assetId, elementId, summary) {
   return next;
 }
 
+export function applyDroppedVisualMetadata(project, assetId, elementId, metadata = {}) {
+  const durationMs = metadata.durationMs > 0 ? Math.round(metadata.durationMs) : null;
+  let next = updateAsset(project, assetId, (asset) => ({
+    ...asset,
+    media: {
+      ...asset.media,
+      durationMs: durationMs ?? asset.media.durationMs,
+      videoWidth: Math.max(0, Math.round(metadata.width || asset.media.videoWidth || 0)),
+      videoHeight: Math.max(0, Math.round(metadata.height || asset.media.videoHeight || 0)),
+      frameRate: Math.max(0, Number(metadata.frameRate || asset.media.frameRate || 0)),
+    },
+    status: asset.capabilities?.needsFfmpegForPreview ? asset.status : (metadata.status || asset.status),
+  }));
+  if (durationMs) {
+    next = updateElement(next, elementId, (element) => ({
+      ...element,
+      durationMs,
+      rawDurationMs: durationMs,
+      timeline: {
+        ...element.timeline,
+        durationMs,
+        rawDurationMs: durationMs,
+        placementDurationMs: durationMs,
+        sourceOutMs: durationMs,
+      },
+    }));
+  }
+  return next;
+}
+
+export function probeDroppedVisualMetadata(file, kind) {
+  if (kind === 'image') return probeImageMetadata(file);
+  if (kind === 'video') return probeVideoMetadata(file);
+  return Promise.resolve(null);
+}
+
 function isMixerMime(mime = '') {
   return /^(audio|image|video)\//i.test(mime);
 }
@@ -110,4 +146,48 @@ function mediaDefaults(kind, durationMs) {
   if (kind === 'image') return { durationMs, videoWidth: 0, videoHeight: 0, frameRate: 0 };
   if (kind === 'video') return { durationMs: 0, videoWidth: 0, videoHeight: 0, frameRate: 0, audioSampleRate: 0, audioChannels: 0 };
   return { durationMs: 0, audioSampleRate: 0, audioChannels: 0 };
+}
+
+function probeImageMetadata(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    const cleanup = () => URL.revokeObjectURL(url);
+    img.onload = () => {
+      const width = img.naturalWidth || img.width || 0;
+      const height = img.naturalHeight || img.height || 0;
+      cleanup();
+      resolve({ width, height, status: width && height ? 'available' : 'metadata-unavailable' });
+    };
+    img.onerror = () => {
+      cleanup();
+      resolve({ status: 'metadata-unavailable' });
+    };
+    img.src = url;
+  });
+}
+
+function probeVideoMetadata(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    const done = (metadata) => {
+      URL.revokeObjectURL(url);
+      video.removeAttribute('src');
+      video.load?.();
+      resolve(metadata);
+    };
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    video.onloadedmetadata = () => done({
+      durationMs: Number.isFinite(video.duration) ? video.duration * 1000 : 0,
+      width: video.videoWidth || 0,
+      height: video.videoHeight || 0,
+      status: 'available',
+    });
+    video.onerror = () => done({ status: 'metadata-unavailable' });
+    video.src = url;
+    video.load();
+  });
 }

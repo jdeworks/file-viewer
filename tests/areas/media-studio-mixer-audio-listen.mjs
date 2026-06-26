@@ -296,7 +296,7 @@ export async function run(ctx) {
     dataTransfer.items.add(file);
     el.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer }));
     el.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
-    await new Promise((resolve) => requestAnimationFrame(resolve));
+    await new Promise((resolve) => setTimeout(resolve, 120));
     const root = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi');
     const project = root.__mediaMixerMulti.getProject();
     const asset = project.assets.find((item) => item.name === 'dropped-card.svg');
@@ -310,13 +310,16 @@ export async function run(ctx) {
       hasImage: element?.capabilities?.hasImage,
       hasAudio: !!element?.capabilities?.hasAudio,
       durationMs: element?.timeline?.durationMs,
+      width: asset?.media?.videoWidth,
+      height: asset?.media?.videoHeight,
+      metadataStatus: root.dataset.lastVisualMetadata,
       datasetDropped: root.dataset.hasDroppedVisual,
       visualBadge: !!root.querySelector('.mmx-element-visual'),
       framePreviewActive: Number(root.querySelector('.mmx-frame-preview')?.dataset.activeVisuals || 0),
       visualInspector: !!root.querySelector('.mmx-inspector-visual-opacity'),
     };
   });
-  if (droppedVisual.lanes === droppedVisual.beforeLanes + 1 && droppedVisual.assetName === 'dropped-card.svg' && droppedVisual.laneRole === 'image' && droppedVisual.type === 'image' && droppedVisual.hasImage && !droppedVisual.hasAudio && droppedVisual.durationMs === 5000 && droppedVisual.datasetDropped === 'true' && droppedVisual.visualBadge && droppedVisual.framePreviewActive >= 1 && droppedVisual.visualInspector)
+  if (droppedVisual.lanes === droppedVisual.beforeLanes + 1 && droppedVisual.assetName === 'dropped-card.svg' && droppedVisual.laneRole === 'image' && droppedVisual.type === 'image' && droppedVisual.hasImage && !droppedVisual.hasAudio && droppedVisual.durationMs === 5000 && droppedVisual.width === 64 && droppedVisual.height === 40 && droppedVisual.metadataStatus === 'available' && droppedVisual.datasetDropped === 'true' && droppedVisual.visualBadge && droppedVisual.framePreviewActive >= 1 && droppedVisual.visualInspector)
     pass('modular audio mix: dropped image becomes visual shared-model lane with seek-frame preview');
   else fail('modular audio mix dropped visual mismatch: ' + JSON.stringify(droppedVisual));
 
@@ -361,4 +364,28 @@ export async function run(ctx) {
   if (mixSettings.mixBytes > 44 && mixSettings.planItems >= 3 && mixSettings.scheduled >= 3 && mixSettings.renderPath === 'browser-offline-audio' && mixSettings.hasRoomTone && mixSettings.hasGain && mixSettings.lastMixdownPlanSafe && !mixSettings.error)
     pass('modular audio mix: browser WAV export includes shared-state provenance');
   else fail('modular audio mix WAV export/provenance mismatch: ' + JSON.stringify(mixSettings));
+
+  const unsupportedVideo = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', async (el) => {
+    const file = new File([new Uint8Array([0, 1, 2, 3])], 'needs-proxy.avi', { type: 'video/x-msvideo' });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    el.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer }));
+    el.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    const root = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi');
+    const project = root.__mediaMixerMulti.getProject();
+    const asset = project.assets.find((item) => item.name === 'needs-proxy.avi');
+    const element = project.elements.find((item) => item.assetId === asset?.id);
+    return {
+      hasVideo: !!element?.capabilities?.hasVideo,
+      needsProxy: !!asset?.capabilities?.needsFfmpegForPreview,
+      status: asset?.status,
+      warning: root.querySelector('.mmx-frame-preview-warning')?.textContent || '',
+      capabilityNote: root.querySelector('.mx-capability-note')?.textContent || '',
+      metadataStatus: root.dataset.lastVisualMetadata,
+    };
+  });
+  if (unsupportedVideo.hasVideo && unsupportedVideo.needsProxy && unsupportedVideo.status === 'needs-proxy' && /ffmpeg|proxy|conversion|Transcoding/i.test(`${unsupportedVideo.warning} ${unsupportedVideo.capabilityNote}`))
+    pass('modular audio mix: unsupported dropped video shows conversion/proxy warning without ffmpeg load');
+  else fail('modular audio mix unsupported video warning mismatch: ' + JSON.stringify(unsupportedVideo));
 }

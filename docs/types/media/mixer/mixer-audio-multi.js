@@ -39,8 +39,10 @@ import {
 import {
   addDroppedMediaFile,
   applyDroppedAudioSummary,
+  applyDroppedVisualMetadata,
   hasMixerFileDrop,
   isMixerDropFile,
+  probeDroppedVisualMetadata,
 } from './mixer-media-drop.js';
 import { createMixerAudioPlayback } from './mixer-audio-playback.js';
 import { decorateMultiToolbar, reflectMultiPlaybackState } from './mixer-audio-multi-decorators.js';
@@ -371,6 +373,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (result.kind !== 'audio') root.dataset.lastDroppedVisual = file.name || result.kind;
     render();
     if (result.kind === 'audio') decodeDroppedAudio(file, result.assetId, result.elementId);
+    if (result.kind === 'image' || result.kind === 'video') probeDroppedVisual(file, result);
     return result;
   }
 
@@ -381,6 +384,17 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       render();
     }).catch(() => {
       if (!destroyed) root.dataset.lastDropDecode = 'unavailable';
+    });
+  }
+
+  function probeDroppedVisual(file, drop) {
+    probeDroppedVisualMetadata(file, drop.kind).then((metadata) => {
+      if (destroyed || !metadata) return;
+      project = applyDroppedVisualMetadata(project, drop.assetId, drop.elementId, metadata);
+      root.dataset.lastVisualMetadata = metadata.status || 'available';
+      render();
+    }).catch(() => {
+      if (!destroyed) root.dataset.lastVisualMetadata = 'metadata-unavailable';
     });
   }
 
