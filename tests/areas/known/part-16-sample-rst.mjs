@@ -47,6 +47,27 @@ export async function run(ctx) {
   if (/Jane Developer/i.test(orgText)) pass('sample.org: author shown'); else fail('org author: ' + orgText.slice(0, 300));
   if (/TODO|DONE/i.test(orgText)) pass('sample.org: TODO/DONE items shown'); else fail('org todos: ' + orgText.slice(0, 300));
   if (/python|json/i.test(orgText)) pass('sample.org: code block languages shown'); else fail('org code langs: ' + orgText.slice(0, 300));
+  if (/TODO Distribution|Tags|Timestamps|Source Blocks|Links|file link/i.test(orgText)) pass('sample.org: enhanced Org sections shown'); else fail('org enhanced sections: ' + orgText.slice(0, 900));
+  const orgSourceOpen = await page.$eval('#previewHost .org-doc .kf-source-details', (e) => e.open);
+  if (!orgSourceOpen) pass('sample.org: source starts collapsed'); else fail('org source should start collapsed');
+  await page.click('#previewHost .org-doc .org-outline .kf-source-link');
+  const orgJump = await page.$eval('#previewHost .org-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (orgJump.open && orgJump.highlighted) pass('sample.org: outline click opens and highlights source'); else fail('org source jump: ' + JSON.stringify(orgJump));
+  const orgBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/org-mode/renderer.js');
+    const text = '#+TITLE: Demo\n\n* TODO Ship :release:\nSCHEDULED: <2026-07-01 Wed>\nDEADLINE: <2026-07-03 Fri>\n\n#+NAME: example\n#+BEGIN_SRC js :results output\nconsole.log(1)\n#+END_SRC\n#+RESULTS: example\n: 1\n\nSee [[missing-target][missing]] and [[file:notes.org][notes]].';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Tags|:release:|SCHEDULED|DEADLINE|named block|Results|broken link|file link/i.test(orgBad.out + orgBad.issues) && !orgBad.open) pass('sample.org: tags, dates, blocks, results, and link diagnostics shown'); else fail('org synthetic diagnostics: ' + JSON.stringify(orgBad).slice(0, 900));
 
   // ── sample.liquid viewer (Liquid Template) ──
   await openExample('sample.liquid');
