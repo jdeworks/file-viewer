@@ -161,6 +161,18 @@ export async function run(ctx) {
   const codText = await page.$eval('#previewHost .cod-doc', (e) => e.textContent);
   if (/CodeBuild/i.test(codText)) pass('buildspec.yml: badge shown'); else fail('codebuild badge: ' + codText.slice(0, 200));
   if (/install|build|npm/i.test(codText)) pass('buildspec.yml: phases shown'); else fail('codebuild phases: ' + codText.slice(0, 200));
+  if (/CodeBuild Review|runtime version|deploy command/i.test(codText)) pass('buildspec.yml: review findings shown'); else fail('codebuild review: ' + codText.slice(0, 500));
+  if (/Runtime versions|nodejs: 20|Artifacts|Cache paths/i.test(codText)) pass('buildspec.yml: runtime/artifact/cache details shown'); else fail('codebuild details: ' + codText.slice(0, 500));
+  const codHelpTitle = await page.$eval('#previewHost .cod-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/CodeBuild|Open line|source/i.test(codHelpTitle)) pass('buildspec.yml: hover explains source action'); else fail('codebuild hover title: ' + codHelpTitle);
+  const codSourceCollapsed = await page.$eval('#previewHost .cod-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (codSourceCollapsed) pass('buildspec.yml: source starts collapsed'); else fail('codebuild source was not collapsed');
+  const codSourceLine = await page.$eval('#previewHost .cod-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .cod-doc .kf-source-details');
+    return details?.open && document.getElementById(`cod-line-${line}`);
+  }, codSourceLine);
+  pass('buildspec.yml: clicking item opens source line');
 
   // ── jsconfig.json viewer ──
   await openExample('jsconfig.json');
