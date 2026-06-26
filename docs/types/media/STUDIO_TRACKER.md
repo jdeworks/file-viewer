@@ -374,9 +374,15 @@ Stage 6 Compare on the shared model has started:
   explicit off-by-default normalization toggle stored in `project.compare`,
   feeds that state into modular peak-delta analysis, and keeps the control
   absent for visual/video Compare.
-- Stage 6 remaining work: deepen modular analysis to replace the legacy
-  detailed diff/readout flows, and retire the old Compare UI once equivalent
-  coverage has moved to modular selectors.
+- Deepened modular analysis readouts. `analyzeCompareSelection()` now reports
+  shifted-overlap timing from the shared compare targets, including overlap,
+  A-only range, B-only range, union duration, and overlap ratio. The modular
+  analysis panel renders that timing summary, and focused media-studio smoke
+  proves the result without relying on the legacy Compare readout.
+- Stage 6 remaining work: continue replacing the legacy detailed diff/readout
+  flows where deeper audio/video analysis still depends on old modules, and
+  retire the old Compare UI once equivalent coverage has moved to modular
+  selectors.
 
 Stage 7 project settings import/export UI has started:
 

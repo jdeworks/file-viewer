@@ -385,13 +385,42 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     panel.dataset.overlapMs = String(Math.round(analysis.overlapMs || 0));
     panel.dataset.metric = analysis.metric || '';
     panel.dataset.value = String(analysis.value ?? '');
+    if (analysis.timing) {
+      panel.dataset.aOnlyMs = String(Math.round(analysis.timing.aOnlyMs || 0));
+      panel.dataset.bOnlyMs = String(Math.round(analysis.timing.bOnlyMs || 0));
+      panel.dataset.unionMs = String(Math.round(analysis.timing.unionMs || 0));
+      panel.dataset.overlapRatio = String(analysis.timing.overlapRatio || 0);
+    }
     const title = document.createElement('strong');
     title.textContent = analysis.kind === 'visual' ? 'Visual overlap analysis' : 'Audio overlap analysis';
     const message = document.createElement('span');
     message.className = 'mmx-compare-analysis-message';
     message.textContent = analysis.message;
     panel.append(title, message);
+    if (analysis.timing) panel.append(renderTimingDetails(analysis.timing));
     return panel;
+  }
+
+  function renderTimingDetails(timing) {
+    const list = document.createElement('dl');
+    list.className = 'mmx-compare-analysis-timing';
+    list.dataset.aOnlyMs = String(Math.round(timing.aOnlyMs || 0));
+    list.dataset.bOnlyMs = String(Math.round(timing.bOnlyMs || 0));
+    list.dataset.unionMs = String(Math.round(timing.unionMs || 0));
+    list.dataset.overlapRatio = String(timing.overlapRatio || 0);
+    appendTimingRow(list, 'Overlap', timing.overlapMs);
+    appendTimingRow(list, 'A only', timing.aOnlyMs);
+    appendTimingRow(list, 'B only', timing.bOnlyMs);
+    appendTimingRow(list, 'Union', timing.unionMs);
+    return list;
+  }
+
+  function appendTimingRow(list, labelText, valueMs) {
+    const term = document.createElement('dt');
+    term.textContent = labelText;
+    const value = document.createElement('dd');
+    value.textContent = `${((valueMs || 0) / 1000).toFixed(2)}s`;
+    list.append(term, value);
   }
 
   function replaceCompareBFile(file) {

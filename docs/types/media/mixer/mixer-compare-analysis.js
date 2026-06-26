@@ -77,11 +77,39 @@ function analyzeVisual(project, frames, overlap, a, b) {
 }
 
 function baseResult(kind, overlap, extra) {
+  const timing = timingSummary(overlap);
   return {
     kind,
     overlapMs: overlap.overlap.durationMs,
     offsetDeltaMs: overlap.offsetDeltaMs || 0,
+    timing,
     ...extra,
+  };
+}
+
+function timingSummary(overlap) {
+  const aStart = (overlap.a?.rangeStartMs || 0) + (overlap.a?.offsetMs || 0);
+  const aEnd = (overlap.a?.rangeEndMs || 0) + (overlap.a?.offsetMs || 0);
+  const bStart = (overlap.b?.rangeStartMs || 0) + (overlap.b?.offsetMs || 0);
+  const bEnd = (overlap.b?.rangeEndMs || 0) + (overlap.b?.offsetMs || 0);
+  const startMs = Math.min(aStart, bStart);
+  const endMs = Math.max(aEnd, bEnd);
+  const overlapMs = overlap.overlap.durationMs || 0;
+  const aOnlyMs = Math.max(0, aEnd - aStart - overlapMs);
+  const bOnlyMs = Math.max(0, bEnd - bStart - overlapMs);
+  const unionMs = Math.max(0, endMs - startMs);
+  return {
+    aStartMs: aStart,
+    aEndMs: aEnd,
+    bStartMs: bStart,
+    bEndMs: bEnd,
+    aRangeMs: Math.max(0, aEnd - aStart),
+    bRangeMs: Math.max(0, bEnd - bStart),
+    overlapMs,
+    aOnlyMs,
+    bOnlyMs,
+    unionMs,
+    overlapRatio: unionMs ? Number((overlapMs / unionMs).toFixed(4)) : 0,
   };
 }
 

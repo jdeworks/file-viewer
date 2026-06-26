@@ -169,8 +169,18 @@ export async function exerciseCompare(ctx, kind) {
       value: Number.isFinite(analysis?.value) ? analysis.value : null,
       normalized: !!analysis?.normalized,
       overlapMs: analysis?.overlapMs || 0,
+      timingOverlapMs: analysis?.timing?.overlapMs || 0,
+      timingAOnlyMs: analysis?.timing?.aOnlyMs || 0,
+      timingBOnlyMs: analysis?.timing?.bOnlyMs || 0,
+      timingUnionMs: analysis?.timing?.unionMs || 0,
+      timingRatio: analysis?.timing?.overlapRatio || 0,
       panelStatus: panel?.dataset.status || '',
       panelKind: panel?.dataset.kind || '',
+      panelAOnlyMs: Number(panel?.dataset.aOnlyMs || 0),
+      panelBOnlyMs: Number(panel?.dataset.bOnlyMs || 0),
+      panelUnionMs: Number(panel?.dataset.unionMs || 0),
+      timingRows: panel?.querySelectorAll('.mmx-compare-analysis-timing dt').length || 0,
+      timingText: panel?.querySelector('.mmx-compare-analysis-timing')?.textContent || '',
       message: panel?.textContent || '',
     };
   });
@@ -178,11 +188,19 @@ export async function exerciseCompare(ctx, kind) {
     && modularAnalysis.kind === expectedOverlayKind
     && modularAnalysis.metric
     && modularAnalysis.overlapMs > 0
+    && modularAnalysis.timingOverlapMs === modularAnalysis.overlapMs
+    && modularAnalysis.timingUnionMs >= modularAnalysis.timingOverlapMs
+    && modularAnalysis.timingAOnlyMs >= 0 && modularAnalysis.timingBOnlyMs >= 0
     && modularAnalysis.panelStatus === 'analyzed'
     && modularAnalysis.panelKind === expectedOverlayKind
+    && modularAnalysis.panelAOnlyMs === Math.round(modularAnalysis.timingAOnlyMs)
+    && modularAnalysis.panelBOnlyMs === Math.round(modularAnalysis.timingBOnlyMs)
+    && modularAnalysis.panelUnionMs === Math.round(modularAnalysis.timingUnionMs)
+    && modularAnalysis.timingRows === 4
     && (kind !== 'audio' || modularAnalysis.normalized)
-    && /Analyzed selected/i.test(modularAnalysis.message))
-    pass(`${kind} compare: modular explicit analyze hook reports selected overlap`);
+    && /Analyzed selected/i.test(modularAnalysis.message)
+    && /A only/i.test(modularAnalysis.timingText) && /B only/i.test(modularAnalysis.timingText))
+    pass(`${kind} compare: modular explicit analyze hook reports selected overlap and shifted ranges`);
   else fail(`${kind} modular compare analysis: ` + JSON.stringify(modularAnalysis));
   await page.setInputFiles(`${panelSel} .mmx-compare-source .mmx-compare-b-input`,
     new URL(kind === 'video' ? '../../docs/examples/sample.webm' : '../../docs/examples/sample.wav', import.meta.url).pathname);
