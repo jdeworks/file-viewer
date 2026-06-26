@@ -36,6 +36,17 @@ export async function run(ctx) {
   if (/Smart Contract|Interface|Library/i.test(solText)) pass('solidity-lang: badge shown'); else fail('solidity-lang badge: ' + solText.slice(0, 200));
   if (/pragma|solidity/i.test(solText)) pass('solidity-lang: pragma version shown'); else fail('solidity-lang pragma: ' + solText.slice(0, 300));
   if (/contract|interface|library/i.test(solText)) pass('solidity-lang: definitions listed'); else fail('solidity-lang defs: ' + solText.slice(0, 300));
+  if (/returns bool|address indexed from|InsufficientBalance|whenNotPaused|SimpleToken - A basic ERC-20-like token contract/i.test(solText)) pass('solidity-lang: ABI signatures, NatSpec, events, errors, and modifiers shown'); else fail('solidity-lang details: ' + solText.slice(0, 900));
+  const solEventHint = await page.$eval('#previewHost .sol-doc .sol-tag-event', (e) => e.title);
+  if (/Indexed log|off-chain/i.test(solEventHint)) pass('solidity-lang: event hover help present'); else fail('solidity event hint: ' + solEventHint);
+  const solSourceOpen = await page.$eval('#previewHost .sol-doc .kf-source-details', (e) => e.open);
+  if (!solSourceOpen) pass('solidity-lang: source starts collapsed'); else fail('solidity source should start collapsed');
+  await page.click('#previewHost .sol-doc .kf-source-link');
+  const solJump = await page.$eval('#previewHost .sol-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (solJump.open && solJump.highlighted) pass('solidity-lang: item click opens and highlights source'); else fail('solidity source jump: ' + JSON.stringify(solJump));
 
   // ── vhdl-lang: VHDL hardware description viewer ──
   await openExample('sample.vhd');
