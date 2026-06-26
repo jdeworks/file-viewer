@@ -245,9 +245,17 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .appsettings-doc', { timeout: 12000 });
   pass('appsettings.json: badge shown');
   const asText = await page.$eval('#previewHost .appsettings-doc', (e) => e.textContent);
+  const asHtml = await page.$eval('#previewHost .appsettings-doc', (e) => e.innerHTML);
   if (!asText.includes('DefaultConnection')) fail('appsettings.json: connection strings not shown'); else pass('appsettings.json: connection strings shown');
-  if (asText.includes('secret123') || asText.includes('super-secret-jwt')) fail('appsettings.json: secrets leaked'); else pass('appsettings.json: secrets masked');
+  if ((asText + asHtml).includes('secret123') || (asText + asHtml).includes('super-secret-jwt')) fail('appsettings.json: secrets leaked'); else pass('appsettings.json: secrets masked');
   if (/Information|Warning/i.test(asText)) pass('appsettings.json: log levels shown'); else fail('appsettings.json: log levels not shown: ' + asText.slice(0, 200));
+  if (/Appsettings Review|public hosts|connection secret|jwt signing/i.test(asText)) pass('appsettings.json: review warnings shown'); else fail('appsettings review: ' + asText.slice(0, 300));
+  const asSourceCollapsed = await page.$eval('#previewHost .appsettings-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
+  if (asSourceCollapsed) pass('appsettings.json: redacted source is collapsed'); else fail('appsettings source unexpectedly expanded');
+  await page.click('#previewHost .appsettings-doc [data-source-line]');
+  await page.waitForFunction(() => document.querySelector('#previewHost .appsettings-doc .kf-source-details')?.open, null, { timeout: 3000 });
+  const asSourceOpened = await page.$eval('#previewHost .appsettings-doc .kf-source-details', (e) => e.open && !!e.querySelector('#appsettings-line-1'));
+  if (asSourceOpened) pass('appsettings.json: source links open source preview'); else fail('appsettings source link did not open preview');
 
   // ── terragrunt.hcl viewer ──
   await openExample('terragrunt.hcl (Terragrunt)');
