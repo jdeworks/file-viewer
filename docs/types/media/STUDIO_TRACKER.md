@@ -509,14 +509,13 @@ Stage 7 project settings import/export UI has started:
 - Stage 7 remaining work: expand filter coverage for additional
   transition/effect controls as those controls become user-facing, and continue
   hardening real browser ffmpeg renders against long/complex compositions.
-- Stage 8 audit note: the remaining legacy Timeline helper is now mostly
-  compatibility coverage around one-shot ffmpeg wrapper buttons. The modular
-  video-source mixer owns second-media lanes, music-bed lanes, transition state,
-  trim/fade state, visual preview, settings import/export, and final export
-  planning. The source-project helpers, export-plan panel, selected-element
-  lookup, music-bed gain, and edit/transition summaries have been split into
-  `mixer-video-source-helpers.js` so the modular Timeline mount can keep
-  shrinking toward removal of the compatibility surface.
+- Stage 8 audit note: the modular video-source mixer now owns second-media
+  lanes, music-bed lanes, transition state, trim/fade state, visual preview,
+  settings import/export, and final export planning. The source-project
+  helpers, export-plan panel, selected-element lookup, music-bed gain, and
+  edit/transition summaries have been split into `mixer-video-source-helpers.js`
+  so the modular Timeline mount stays maintainable after removal of the
+  compatibility surface.
 - Removed the legacy video Timeline compatibility surface. Timeline mode now
   mounts only the modular video-source mixer; the old `timeline.js` DOM helper,
   `.tl-*` stylesheet block, and old Timeline viewport helper test have been
@@ -534,6 +533,10 @@ Stage 7 project settings import/export UI has started:
 - Replaced the remaining active mixer `.mx-*` compatibility aliases/selectors
   with direct `.mmx-*` modular contracts in Mix, video-source, and smoke
   coverage.
+- Split shared video preview-proxy runtime/application logic into
+  `mixer-video-proxy-runtime.js`. Audio Mix and video Timeline now use the same
+  ffmpeg opt-in/progress/error path and the same config-safe proxy asset update
+  semantics instead of carrying duplicated controller-local implementations.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

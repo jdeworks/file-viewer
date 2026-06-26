@@ -15,6 +15,7 @@ export * from './mixer-audio-cache.js';
 export * from './mixer-audio-playback.js';
 export * from './mixer-audio-export.js';
 export * from './mixer-video-export.js';
+export * from './mixer-video-proxy-runtime.js';
 export * from './mixer-ui.js';
 export * from './mixer-audio-listen.js';
 export * from './mixer-audio-multi.js';

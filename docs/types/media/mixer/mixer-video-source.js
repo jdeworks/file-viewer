@@ -1,15 +1,15 @@
 import {
   createMixerSnapshot,
+  applyVideoProxyResults,
   buildVideoMixExportPlan,
   buildVideoProxyPlan,
   exportProjectSettingsJson,
   moveElement,
   renderVideoMixWithFfmpeg,
-  renderVideoProxiesWithFfmpeg,
+  runVideoProxyRender,
   selectTarget,
   setElementTransition,
   trimElement,
-  updateAsset,
   updateElement,
 } from './index.js';
 import { renderMixerShell } from './mixer-renderer.js';
@@ -555,61 +555,18 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
   }
 
   async function renderPreviewProxies() {
-    lastProxyPlan = buildProxyPlan();
-    root.dataset.lastVideoProxyPlan = JSON.stringify(lastProxyPlan.provenance);
-    if (!runtime.ffmpegEnabled) {
-      root.dataset.videoProxyRunState = 'opt-in-required';
-      render();
-      return;
-    }
-    root.dataset.videoProxyRunState = 'loading';
-    root.dataset.videoProxyError = '';
-    render();
-    try {
-      const { loadFfmpeg } = await import('../transcoder.js');
-      const ff = await loadFfmpeg(({ ratio }) => {
-        root.dataset.videoProxyProgress = String(Math.round((ratio || 0) * 100));
-      });
-      runtime.ffmpegLoaded = true;
-      lastProxyPlan = buildProxyPlan();
-      root.dataset.lastVideoProxyPlan = JSON.stringify(lastProxyPlan.provenance);
-      root.dataset.videoProxyRunState = 'rendering';
-      render();
-      const result = await renderVideoProxiesWithFfmpeg(ff, lastProxyPlan, runtimeFiles);
-      applyProxyResults(result.proxies);
-      root.dataset.videoProxyRunState = 'complete';
-      root.dataset.lastVideoProxyCount = String(result.proxies.length);
-    } catch (error) {
-      const { formatFfmpegError } = await import('../transcoder.js').catch(() => ({ formatFfmpegError: (err) => err?.message || String(err) }));
-      root.dataset.videoProxyRunState = 'error';
-      root.dataset.videoProxyError = formatFfmpegError(error);
-    } finally {
-      render();
-    }
-  }
-
-  function applyProxyResults(proxies = []) {
-    for (const proxy of proxies) {
-      const file = new File([proxy.blob], proxy.filename, { type: 'video/mp4', lastModified: Date.now() });
-      runtimeFiles.set(proxy.assetId, file);
-      project = updateAsset(project, proxy.assetId, (asset) => ({
-        ...asset,
-        mime: 'video/mp4',
-        size: proxy.bytes,
-        status: 'available',
-        capabilities: {
-          ...asset.capabilities,
-          needsFfmpegForPreview: false,
-          proxyGenerated: true,
-        },
-        media: {
-          ...asset.media,
-          proxyName: proxy.filename,
-          proxyBytes: proxy.bytes,
-        },
-      }));
-    }
-    lastProxyPlan = buildProxyPlan();
+    await runVideoProxyRender({
+      root,
+      runtime,
+      runtimeFiles,
+      buildPlan: buildProxyPlan,
+      setPlan: (plan) => { lastProxyPlan = plan; },
+      applyProxies: (proxies) => {
+        project = applyVideoProxyResults(project, runtimeFiles, proxies);
+        lastProxyPlan = buildProxyPlan();
+      },
+      render,
+    });
   }
 
   function fitZoom() {

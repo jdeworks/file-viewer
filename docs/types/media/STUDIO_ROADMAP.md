@@ -209,12 +209,14 @@ lanes with config-only export provenance. Selected visual transition controls
 also now live on the modular Timeline toolbar and write dissolve/wipe-left
 records directly into shared project state. Selected clip trim/fade controls
 also now live on the modular Timeline toolbar and write source in/out plus
-audio/visual fade state into the shared model. The remaining legacy Timeline
-helper has been audited: the modular surface now owns second-media lanes,
-music-bed lanes, transitions, trim/fade state, visual preview, settings
-import/export, and final export planning, while source-project helpers and
-toolbar summaries have been split into `mixer-video-source-helpers.js` to keep
-the modular Timeline mount maintainable. Timeline mode now mounts only the
+audio/visual fade state into the shared model. The modular surface owns
+second-media lanes, music-bed lanes, transitions, trim/fade state, visual
+preview, settings import/export, and final export planning, while source-project
+helpers and toolbar summaries have been split into `mixer-video-source-helpers.js`
+to keep the modular Timeline mount maintainable. Shared preview-proxy
+runtime/application logic now lives in `mixer-video-proxy-runtime.js`, so audio
+Mix and video Timeline use the same ffmpeg opt-in/progress/error behavior and
+config-safe proxy asset updates. Timeline mode now mounts only the
 modular video-source mixer; the old `timeline.js` compatibility DOM helper and
 `.tl-*` stylesheet block have been removed while pure ffmpeg arg-builder
 coverage remains in `video-filters.js`. Audio and video Compare now also mount
