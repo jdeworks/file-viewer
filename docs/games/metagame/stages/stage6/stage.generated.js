@@ -1263,7 +1263,6 @@ function hubView(state, lock) {
     <div class="s6db-hub-actions">
       ${hasRun ? `<button type="button" data-action="continue-run">continue run ▸ act ${state.run.act}</button>
            <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>` : `<button type="button" data-action="begin-run">begin a run ▸</button>`}
-      <button type="button" data-action="confront">confront The Refused Connection</button>
       <button type="button" data-action="epub">open the codex</button>
       ${lock.defeated ? `<button type="button" data-action="bts">open trace.bts</button>` : ""}
     </div>
@@ -1582,7 +1581,6 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   } };
   function route() {
     const run = state.run;
-    if (state.ui.screen === "boss") return mount(bossView(state, lockState(), { fromRun: false }));
     if (state.ui.screen !== "run" || !run) {
       combat = null;
       return mount(hubView(state, lockState()));
@@ -1758,9 +1756,6 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
         combat = null;
         state.ui.screen = "hub";
         return true;
-      case "confront":
-        state.ui.screen = "boss";
-        return true;
       case "prestige":
         doPrestige();
         return true;
@@ -1867,7 +1862,7 @@ function normalizeState(state) {
   target.boss.turn = mergePlain(fresh.boss.turn, target.boss.turn);
   target.run = target.run && typeof target.run === "object" ? target.run : null;
   target.ui = mergePlain(fresh.ui, target.ui);
-  if (!["hub", "run", "boss"].includes(target.ui.screen)) target.ui.screen = "hub";
+  if (!["hub", "run"].includes(target.ui.screen)) target.ui.screen = "hub";
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   delete target.deck;
   return target;

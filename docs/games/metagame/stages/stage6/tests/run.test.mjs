@@ -185,6 +185,22 @@ import { STARTING_DECK } from "../cards.js";
   assert.deepEqual(known, ["SYN", "ACK", "Signal"], "deck swap copies, does not alias");
 }
 
+// ── B1: The Refused Connection is ONLY the act-4 boss (acts 1–3 are other mini-bosses) ────────────
+{
+  const run = createRun({ seed: 9 });
+  for (let act = 1; act <= FINAL_BOSS_ACT; act++) {
+    run.act = act;
+    const bossNode = run.map.acts[act - 1].layers.at(-1)[0];
+    run.currentNodeId = bossNode.id;
+    const enemy = enemyForCurrentNode(run, makeRng(act));
+    if (act === FINAL_BOSS_ACT) {
+      assert.equal(enemy, "the-refused-connection", "act 4 boss IS The Refused Connection");
+    } else {
+      assert.notEqual(enemy, "the-refused-connection", `act ${act} boss is a different mini-boss`);
+    }
+  }
+}
+
 function reaches(run, fromId, targetId) {
   const seen = new Set();
   const stack = [fromId];

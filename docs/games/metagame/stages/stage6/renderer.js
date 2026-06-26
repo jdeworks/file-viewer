@@ -59,7 +59,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   // ── routing ──────────────────────────────────────────────────────────────────────────────────
   function route() {
     const run = state.run;
-    if (state.ui.screen === "boss") return mount(bossView(state, lockState(), { fromRun: false }));
+    // The Refused Connection is reachable ONLY as the act-4 boss node of a run (see the
+    // run.status === "boss" case below) — there is no standalone hub-reachable boss screen.
     if (state.ui.screen !== "run" || !run) { combat = null; return mount(hubView(state, lockState())); }
     switch (run.status) {
       case "combat": return mountCombat(run);
@@ -193,7 +194,6 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       case "begin-run": case "new-run": beginRun(); return true;
       case "continue-run": state.ui.screen = "run"; return true;
       case "abandon": state.run = null; combat = null; state.ui.screen = "hub"; return true;
-      case "confront": state.ui.screen = "boss"; return true;
       case "prestige": doPrestige(); return true;
       case "to-hub": state.ui.screen = "hub"; return true;
       case "to-map": if (run) closeNode(run); return true;

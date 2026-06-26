@@ -1,7 +1,9 @@
 // ui-map.js — Stage 6 navigation screens: the hub, the act map, and run end-states.
 // Pure views (detached elements); the renderer handles clicks via delegation:
-//   [data-action="begin-run"|"continue-run"|"confront"|"epub"|"bts"|"new-run"|"abandon"]
+//   [data-action="begin-run"|"continue-run"|"epub"|"bts"|"new-run"|"abandon"]
 //   [data-node="<id>"]  move to an available map node.
+// NOTE: there is deliberately NO "confront" button — The Refused Connection is reachable ONLY
+// as the act-4 boss node of a full run (see renderer route). The run is mandatory.
 
 import { availableNodes, prestigeCost } from "./run.js";
 
@@ -29,7 +31,6 @@ export function hubView(state, lock) {
         ? `<button type="button" data-action="continue-run">continue run ▸ act ${state.run.act}</button>
            <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>`
         : `<button type="button" data-action="begin-run">begin a run ▸</button>`}
-      <button type="button" data-action="confront">confront The Refused Connection</button>
       <button type="button" data-action="epub">open the codex</button>
       ${lock.defeated ? `<button type="button" data-action="bts">open trace.bts</button>` : ""}
     </div>

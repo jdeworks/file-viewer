@@ -676,17 +676,21 @@ export async function run(ctx) {
   pass('Stage 5 calibration action unlocks and clears Signal Racer');
 
   await page.waitForSelector('.stage6-protocol-codex', { timeout: 8000 });
-  // The deck-builder hub is the entry point: a run can be begun, or the codex boss confronted.
+  // The deck-builder hub is the entry point: the ONLY way to the boss is a full run (no bypass).
   await page.waitForSelector('.s6db-hub [data-action="begin-run"]', { timeout: 4000 });
-  pass('Stage 6 Protocol Codex opens on the deck-builder hub');
-  // A run is the game body; verify the act-map loop is live, then return to the hub for the gate.
+  // Uniqueness guard: there is no "confront The Refused Connection" hub bypass anymore.
+  const hubHasConfront = await page.$('.s6db-hub [data-action="confront"]');
+  if (hubHasConfront) throw new Error('Stage 6 hub still exposes the confront bypass');
+  pass('Stage 6 Protocol Codex opens on the deck-builder hub (no boss bypass)');
+  // A run is the game body; verify the act-map loop is live.
   await page.click('.s6db-hub [data-action="begin-run"]');
   await page.waitForSelector('.s6db-map .s6db-node.is-available[data-node]', { timeout: 4000 });
   pass('Stage 6 run begins: act map offers routable nodes');
-  await page.click('.s6db-map [data-action="to-hub"]');
-  // Stage-clear gate (unchanged): read the codex, confront The Refused Connection, negotiate it.
-  await page.waitForSelector('.s6db-hub [data-action="epub"]', { timeout: 4000 });
-  await page.click('[data-action="epub"]');
+  // Reach the act-4 boss via the deterministic test hook (a real run would clear acts 1–3 first).
+  await page.evaluate(() => window.__fvStage6.jumpToBoss());
+  await page.waitForSelector('.s6db-boss', { timeout: 4000 });
+  // Stage-clear gate (un-cheat): read the codex, then negotiate The Refused Connection in-run.
+  await page.click('.s6db-boss [data-action="epub"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'protocols_of_the_entity.epub' && window.__fv.state.type.id === 'epub', null, { timeout: 5000 });
   await page.waitForFunction(() => {
     try {
@@ -694,7 +698,6 @@ export async function run(ctx) {
       return Boolean(save.actions?.['6.protocol_ch9_read'] && save.achievements?.['stage6.protocol_ch9_read']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  await page.click('[data-action="confront"]');
   await page.waitForSelector('.s6db-boss button[data-card="SYN"]:not([disabled])', { timeout: 4000 });
   for (const card of ['SYN', 'Signal', 'ACK', 'Signal', 'Signal', 'Signal', 'ACK', 'Signal', 'Signal']) {
     await page.click(`button[data-card="${card}"]`);
