@@ -29,7 +29,7 @@ import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompa
 import { initSessionTree, updateSessionTree, createNewFile, flushSessionEdit } from './session-tree.js';
 import { populateTypeSelect } from './type-select.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
-import { initSidebarRoots, removeActiveSidebarRoot } from './sidebar-roots.js';
+import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot } from './sidebar-roots.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -37,15 +37,17 @@ async function loadIntake(intake) {
   // Guard unsaved work — unless loadFolder already asked for this same action.
   const fromTree = state._skipDiscardGuard;
   const skipSidebarRoot = state._skipSidebarRoot;
-  if (fromTree) flushSessionEdit();
+  if (fromTree && !flushSessionEdit()) captureActiveSidebarRoot();
   if (state._skipDiscardGuard) state._skipDiscardGuard = false;
   if (state._skipSidebarRoot) state._skipSidebarRoot = false;
   else {
     const retainedSessionEdit = flushSessionEdit();
-    const onlyRetainedSessionEdits = state.sessionEdits.size > 0
+    const retainedSidebarEdit = retainedSessionEdit ? false : captureActiveSidebarRoot();
+    const retainedCurrentEdit = retainedSessionEdit || retainedSidebarEdit;
+    const onlyRetainedSessionEdits = (state.sessionEdits.size > 0 || retainedSidebarEdit)
       && state.folderEdits.size === 0
       && !state.binaryEdit?.dirty
-      && !(state.rawview?.isDirty() && !retainedSessionEdit);
+      && !(state.rawview?.isDirty() && !retainedCurrentEdit);
     if (!onlyRetainedSessionEdits && !confirmDiscard()) return;
   }
   // Leaving folder context for a fresh top-level file open: discard stale folder state so
