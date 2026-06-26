@@ -374,17 +374,27 @@ Stage 7 project settings import/export UI has started:
   possible, falls back to filename/size/mime/last-modified matching, stores
   `File` objects only in the runtime file map keyed by the imported asset id,
   and keeps exported settings free of media bytes and runtime caches.
+- Added `mixer-video-export.js`, a pure final-video export planner for modular
+  projects. It evaluates the shared capability matrix, keeps final render
+  ffmpeg-gated, reports opt-in/loaded status, blocks missing media, and records
+  config-only provenance for assets, visual items, audio items, trims, fades,
+  transforms, master settings, warnings, and the intended render path.
+- The opened video source surface now exposes a `Plan final export` action and
+  compact export status panel. With ffmpeg disabled, the surface remains usable
+  and shows the Media Transcoding opt-in note instead of loading ffmpeg or
+  presenting a broken render action.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
   media, exposes all three required reapply choices, and applies the ask-per-
   element choice without serializing media bytes. `tests/areas/media-studio-
   video-export-timeline.mjs` proves the same settings surface on opened video
-  source, including drag/drop relink for a missing imported video asset, and
-  `tests/areas/media-studio-compare.mjs` proves it on modular Compare for audio
-  and video.
-- Stage 7 remaining work: implement the final video export path behind
-  capability/ffmpeg gating, and move export provenance to the shared project
-  plan for all media kinds.
+  source, including drag/drop relink for a missing imported video asset and
+  ffmpeg-gated final export provenance, and `tests/areas/media-studio-compare.mjs`
+  proves it on modular Compare for audio and video. `tests/media-mixer-video-
+  export.test.mjs` covers the pure video export planner.
+- Stage 7 remaining work: connect the modular video export plan to lazy ffmpeg
+  execution and extend the shared provenance plan across multi-lane video/image
+  compositions.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

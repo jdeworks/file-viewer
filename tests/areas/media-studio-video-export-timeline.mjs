@@ -104,6 +104,10 @@ export async function runVideoExportAndTimelineChecks(ctx) {
       hasTransform: !!root.querySelector('.mmx-inspector-visual-opacity'),
       hasSettingsExport: !!root.querySelector('.mmx-settings-download'),
       hasSettingsImport: !!root.querySelector('.mmx-settings-import'),
+      hasVideoExportPlan: !!root.querySelector('.mmx-video-export-plan'),
+      exportStatus: root.querySelector('.mmx-video-export-status')?.dataset.status || '',
+      exportCanRender: root.querySelector('.mmx-video-export-status')?.dataset.canRender || '',
+      exportNote: root.querySelector('.mmx-video-export-note')?.textContent || '',
       hasMediaBytes: /objectURL|blob:|data:|waveformSummary|frameCache|thumbnailCache/i.test(settings || ''),
       hasVideo: !!element?.capabilities?.hasVideo,
       hasAudio: !!element?.capabilities?.hasAudio,
@@ -127,6 +131,28 @@ export async function runVideoExportAndTimelineChecks(ctx) {
   if (modularVideoSource.hasSettingsExport && modularVideoSource.hasSettingsImport)
     pass('P6: modular video source exposes project settings import/export controls');
   else fail('modular video source settings controls: ' + JSON.stringify(modularVideoSource));
+  if (modularVideoSource.hasVideoExportPlan && modularVideoSource.exportStatus === 'opt-in'
+    && modularVideoSource.exportCanRender === 'false'
+    && /Media Transcoding/i.test(modularVideoSource.exportNote))
+    pass('P6: modular video source shows ffmpeg-gated final export plan');
+  else fail('modular video source export plan state: ' + JSON.stringify(modularVideoSource));
+  const sourceExportPlan = await page.$eval(tlModeSel + ' .mmx-video-source', (root) => {
+    root.querySelector('.mmx-video-export-plan')?.click();
+    const plan = root.__mediaMixerVideoSource.getLastExportPlan();
+    return {
+      status: plan?.status || '',
+      canRender: !!plan?.canRender,
+      requiresFfmpeg: !!plan?.requiresFfmpeg,
+      visualItems: plan?.provenance?.visualItems?.length || 0,
+      audioItems: plan?.provenance?.audioItems?.length || 0,
+      hasBytes: /objectURL|blob:|data:|mediaBytes|frameCache|thumbnailCache/i.test(JSON.stringify(plan || {})),
+    };
+  });
+  if (sourceExportPlan.status === 'opt-in' && !sourceExportPlan.canRender
+    && sourceExportPlan.requiresFfmpeg && sourceExportPlan.visualItems >= 1
+    && sourceExportPlan.audioItems >= 1 && !sourceExportPlan.hasBytes)
+    pass('P6: modular video source final export provenance is config-only');
+  else fail('modular video source export provenance: ' + JSON.stringify(sourceExportPlan));
   const sourceSettingsImport = await page.$eval(tlModeSel + ' .mmx-video-source', async (root) => {
     const json = root.__mediaMixerVideoSource.exportSettings();
     const imported = root.__mediaMixerVideoSource.importSettings(json);

@@ -166,8 +166,11 @@ path and runtime local-asset evidence, so media bytes remain outside the
 exported project. Missing imported media can now be relinked from the same
 settings panel by browsing or dropping local files; the file objects stay in the
 runtime map while the project receives only matched identity/config metadata.
-The next Stage 7 work is final ffmpeg-gated video export and shared export
-provenance.
+The modular video source now also exposes a pure final-video export plan with
+ffmpeg opt-in gating and config-only provenance for assets, timeline items,
+transforms, trims, fades, master settings, warnings, and render path. The next
+Stage 7 work is connecting that plan to lazy ffmpeg execution and broadening it
+from opened one-source video to full multi-lane video/image compositions.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

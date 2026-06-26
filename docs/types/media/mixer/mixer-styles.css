@@ -60,7 +60,8 @@
 .mmx-settings-download,
 .mmx-settings-import-label,
 .mmx-relink-choice,
-.mmx-relink-drop {
+.mmx-relink-drop,
+.mmx-video-export-plan {
   min-height: 28px;
   padding: 5px 8px;
   border: 1px solid var(--mmx-border);
@@ -348,6 +349,23 @@
 .mmx-frame-preview-warning {
   font-size: 12px;
   color: var(--mmx-muted);
+}
+
+.mmx-video-export-status {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--mmx-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, canvas 92%, #4c78a8 8%);
+}
+
+.mmx-video-export-summary,
+.mmx-video-export-note {
+  margin: 0;
+  color: var(--mmx-muted);
+  font-size: 12px;
 }
 
 .mmx-audio-listen .media-waveform-surface {

@@ -1,6 +1,7 @@
 import {
   createMixerSnapshot,
   createProjectFromAssetMetadata,
+  buildVideoMixExportPlan,
   exportProjectSettingsJson,
   moveElement,
   selectTarget,
@@ -31,6 +32,11 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
   let viewport = { cursorMs: 0, scrollLeft: 0, pxPerMs: 0.06, width: 960 };
   let destroyed = false;
   let draggingElement = null;
+  let lastExportPlan = null;
+  const runtime = {
+    ffmpegEnabled: !!options.enableFfmpeg,
+    ffmpegLoaded: !!options.ffmpegLoaded,
+  };
   const runtimeFiles = new Map();
   if (intake?.file) runtimeFiles.set(SOURCE_ASSET_ID, intake.file);
   const visualRuntime = createMixerVisualRuntime({ runtimeFiles, onUpdate: render });
@@ -86,6 +92,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
   root.addEventListener('pointermove', onPointerMove);
   root.addEventListener('pointerup', onPointerUp);
   root.addEventListener('pointercancel', onPointerUp);
+  root.addEventListener('click', onClick, true);
   window.addEventListener('resize', render);
 
   const updateFromMedia = () => {
@@ -101,6 +108,8 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
   root.__mediaMixerVideoSource = {
     getProject: () => project,
     getViewport: () => viewport,
+    buildExportPlan,
+    getLastExportPlan: () => lastExportPlan,
     exportSettings: () => exportProjectSettingsJson(project),
     importSettings: settingsUi.importSettings,
     relinkFiles: settingsUi.relinkFiles,
@@ -122,6 +131,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       root.removeEventListener('pointermove', onPointerMove);
       root.removeEventListener('pointerup', onPointerUp);
       root.removeEventListener('pointercancel', onPointerUp);
+      root.removeEventListener('click', onClick, true);
       window.removeEventListener('resize', render);
       mediaEl?.removeEventListener?.('loadedmetadata', updateFromMedia);
       mediaEl?.removeEventListener?.('durationchange', updateFromMedia);
@@ -156,7 +166,9 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     root.dataset.laneCount = String(project.lanes.length);
     root.dataset.elementCount = String(project.elements.length);
     root.dataset.hasOpenedVideo = 'true';
-    root.dataset.ffmpegEnabled = options.enableFfmpeg ? 'true' : 'false';
+    root.dataset.ffmpegEnabled = runtime.ffmpegEnabled ? 'true' : 'false';
+    root.dataset.videoExportStatus = lastExportPlan?.status || '';
+    root.dataset.videoExportCanRender = lastExportPlan?.canRender ? 'true' : 'false';
     root.querySelector('.mmx-ruler')?.classList.add('mx-ruler');
     root.querySelector('.mmx-playhead')?.classList.add('mx-playhead');
     root.querySelector('.mmx-body')?.classList.add('mx-timeline');
@@ -164,11 +176,36 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     if (toolbar && !toolbar.querySelector('.mmx-video-source-note')) {
       const note = document.createElement('div');
       note.className = 'mmx-video-source-note';
-      note.textContent = options.enableFfmpeg
+      note.textContent = runtime.ffmpegEnabled
         ? 'Source video lane: visual transforms, trims, and frame preview are active.'
         : 'Source video lane: browser preview active; ffmpeg opt-in unlocks conversion and final video render.';
       toolbar.append(note);
     }
+    if (toolbar && !toolbar.querySelector('.mmx-video-export-plan')) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'mmx-video-export-plan';
+      button.textContent = 'Plan final export';
+      toolbar.append(button);
+    }
+    const inspector = root.querySelector('.mmx-inspector');
+    if (inspector) inspector.append(renderExportPlanPanel(lastExportPlan || buildExportPlan()));
+  }
+
+  function onClick(event) {
+    const button = event.target?.closest?.('.mmx-video-export-plan');
+    if (!button || !root.contains(button)) return;
+    lastExportPlan = buildExportPlan();
+    root.dataset.lastVideoExportPlan = JSON.stringify(lastExportPlan.provenance);
+    render();
+  }
+
+  function buildExportPlan() {
+    return buildVideoMixExportPlan(project, {
+      ffmpegEnabled: runtime.ffmpegEnabled,
+      ffmpegLoaded: runtime.ffmpegLoaded,
+      filename: `${(intake?.filename || 'video-source').replace(/\.[^.]+$/, '')}.mp4`,
+    });
   }
 
   function fitZoom() {
@@ -176,6 +213,23 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     const duration = Math.max(1000, project.project.durationMs || 1000);
     return clamp(width / duration, 0.02, 0.8);
   }
+}
+
+function renderExportPlanPanel(plan) {
+  const panel = document.createElement('section');
+  panel.className = 'mmx-video-export-status';
+  panel.dataset.status = plan.status;
+  panel.dataset.canRender = plan.canRender ? 'true' : 'false';
+  const title = document.createElement('strong');
+  title.textContent = plan.canRender ? 'Final video export ready' : 'Final video export needs Media Transcoding';
+  const summary = document.createElement('span');
+  summary.className = 'mmx-video-export-summary';
+  summary.textContent = `${plan.provenance.visualItems.length} visual · ${plan.provenance.audioItems.length} audio · ${Math.round(plan.durationMs)} ms`;
+  const note = document.createElement('p');
+  note.className = 'mmx-video-export-note';
+  note.textContent = plan.warnings[0] || plan.statusMessage || 'ffmpeg render planning is available for this project.';
+  panel.append(title, summary, note);
+  return panel;
 }
 
 function buildVideoProject(mediaEl, intake) {
