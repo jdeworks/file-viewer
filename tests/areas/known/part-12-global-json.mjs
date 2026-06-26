@@ -81,6 +81,17 @@ export async function run(ctx) {
   if (!railwayText.includes('Railway')) fail('railway.json: missing badge'); else pass('railway.json: badge shown');
   if (!railwayText.includes('web') && !railwayText.includes('worker')) fail('railway.json: services not shown'); else pass('railway.json: services shown');
   if (railwayText.includes('supersecret123') || railwayText.includes('tok_abc123') || railwayText.includes('s3cr3t')) fail('railway.json: secrets leaked'); else pass('railway.json: secrets masked');
+  if (/Railway Review|healthcheck|restart|reference|volume/i.test(railwayText)) pass('railway.json: review findings shown'); else fail('railway review: ' + railwayText.slice(0, 300));
+  const railwayHelpTitle = await page.$eval('#previewHost .railwayjson-doc .rwj2-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Railway|Open line|source/i.test(railwayHelpTitle)) pass('railway.json: hover source help shown'); else fail('railway hover help: ' + railwayHelpTitle);
+  const railwaySourceCollapsed = await page.$eval('#previewHost .railwayjson-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
+  if (railwaySourceCollapsed) pass('railway.json: source collapsed'); else fail('railway source should start collapsed');
+  const railwaySourceLine = await page.$eval('#previewHost .railwayjson-doc .rwj2-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .railwayjson-doc .kf-source-details');
+    return details?.open && document.getElementById(`railway-line-${line}`);
+  }, railwaySourceLine, { timeout: 3000 });
+  pass('railway.json: source links open source');
 
   // ── render.yaml (Render.com infrastructure-as-code) viewer ──
   await openExample('render.yaml');

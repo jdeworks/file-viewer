@@ -138,6 +138,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Vercel config: source-linked build/routes/headers/functions/env settings, broad rewrite/security-header/public-env/function-limit review findings, masking reasons, and collapsed redacted source.
 - [x] Netlify config: source-linked build/redirect/header/context/env/dev settings, broad rewrite/security-header review findings, masking reasons, and collapsed redacted source.
 - [x] Wrangler config: source-linked worker identity/routes/KV/durable-object/env settings, stale compatibility-date/wildcard-route/binding/secret review findings, masking support, and collapsed redacted source.
+- [x] Railway config: source-linked services/source/build/deploy/env/mount/network settings, healthcheck/restart/reference/volume/secret review findings, masking reasons, and collapsed redacted source.
 - [ ] Add schema/key validation, public env warnings, broad rewrites, missing security headers, stale compatibility dates.
 - [ ] Generic YAML/TOML: add JSONPath-style query parity, path breadcrumbs, duplicate key detection where possible, source-line mapping.
 
