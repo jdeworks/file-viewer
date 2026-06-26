@@ -1128,7 +1128,7 @@ function defineHazards(world) {
   Object.defineProperty(world, "hazardAt", { value: hazardIndex(world), enumerable: false, writable: true, configurable: true });
   Object.defineProperty(world, "trapAt", { value: trapIndex(world), enumerable: false, writable: true, configurable: true });
 }
-function buildFloor(runSeed, floorNum) {
+function buildFloor(runSeed, floorNum, mods = {}) {
   const { grid, rooms, hidden, decor, dims, rng } = buildGrid(runSeed, floorNum);
   const width = dims.width;
   const height = dims.height;
@@ -1141,6 +1141,20 @@ function buildFloor(runSeed, floorNum) {
     if (flood.dist[idx] > far) {
       far = flood.dist[idx];
       exit = { x: idx % width, y: Math.floor(idx / width) };
+    }
+  }
+  let branchExit = null;
+  if (makeRng(`${runSeed}:${floorNum}:branchroll`).float() < 0.5) {
+    let bf = -1;
+    for (let i = 0; i < flood.count; i += 1) {
+      const idx = flood.order[i];
+      const x = idx % width;
+      const y = Math.floor(idx / width);
+      const awayFromExit = Math.abs(x - exit.x) + Math.abs(y - exit.y) > 24;
+      if (awayFromExit && flood.dist[idx] > bf) {
+        bf = flood.dist[idx];
+        branchExit = { x, y };
+      }
     }
   }
   const order = flood.order;
@@ -1156,12 +1170,15 @@ function buildFloor(runSeed, floorNum) {
       const idx = order[ci++];
       const x = idx % width;
       const y = Math.floor(idx / width);
-      if ((x !== start.x || y !== start.y) && (x !== exit.x || y !== exit.y)) return { x, y };
+      const onStair = x === start.x && y === start.y || x === exit.x && y === exit.y || branchExit && x === branchExit.x && y === branchExit.y;
+      if (!onStair) return { x, y };
     }
     return null;
   };
   const roomN = rooms.length;
-  const monsterCount = Math.max(16, Math.min(400, Math.round(roomN * 2.4)));
+  const danger = mods.branch ? 1.4 : 1;
+  const bounty = mods.branch ? 1.5 : 1;
+  const monsterCount = Math.max(16, Math.min(500, Math.round(roomN * 2.4 * danger)));
   const monsters = [];
   for (let i = 0; i < monsterCount; i += 1) {
     const c = take();
@@ -1174,7 +1191,7 @@ function buildFloor(runSeed, floorNum) {
   }
   const maxTier = Math.min(WEAPONS.length - 1, Math.floor(floorNum / 2) + 1);
   const weapons = [];
-  const weaponCount = Math.max(2, Math.min(24, Math.round(roomN * 0.18)));
+  const weaponCount = Math.max(2, Math.min(36, Math.round(roomN * 0.18 * bounty)));
   for (let i = 0; i < weaponCount; i += 1) {
     const wc = take();
     if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
@@ -1186,7 +1203,7 @@ function buildFloor(runSeed, floorNum) {
     if (c) potions.push({ x: c.x, y: c.y, taken: false });
   }
   const glyphs = [];
-  const glyphCount = Math.max(6, Math.min(60, Math.round(roomN * 0.3)));
+  const glyphCount = Math.max(6, Math.min(90, Math.round(roomN * 0.3 * bounty)));
   for (let i = 0; i < glyphCount; i += 1) {
     const c = take();
     if (!c) break;
@@ -1200,9 +1217,19 @@ function buildFloor(runSeed, floorNum) {
     else if (d.kind === "potion") potions.push({ x: d.x, y: d.y, taken: false });
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
+  if (floorNum >= 3 && floorNum % 2 === 1) {
+    const g = makeGuardian(rng, floorNum, monsters.length);
+    const spot = adjacentOpen(grid, exit) || take();
+    if (spot) {
+      g.x = spot.x;
+      g.y = spot.y;
+      g.home = { x: spot.x, y: spot.y };
+      monsters.push(g);
+    }
+  }
   const hazards = placeHazards(rng, floorNum, roomN, take);
   const traps = placeTraps(rng, floorNum, roomN, take);
-  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden, hazards, traps };
+  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, branchExit, branch: Boolean(mods.branch), monsters, weapons, potions, glyphs, hidden, hazards, traps };
   defineGrid(world, grid);
   defineHazards(world);
   return world;
@@ -1227,6 +1254,72 @@ function stepToExit(world, field) {
     }
   }
   return best ? { dir: best, steps: here > 0 ? here : bestD + 1 } : null;
+}
+function makeGuardian(rng, floor, idx) {
+  const g = spawnMonster(rng, floor, idx);
+  g.hp = Math.round(g.maxHp * 3);
+  g.maxHp = g.hp;
+  g.atk = Math.round(g.atk * 1.5);
+  g.glyph = "Ω";
+  g.name = "floor guardian";
+  g.guardian = true;
+  g.elite = true;
+  g.drop += 6;
+  g.xp += 12;
+  g.sight = 9;
+  g.chasing = false;
+  g.ranged = false;
+  g.ambush = false;
+  g.hidden = false;
+  g.explode = false;
+  g.venom = false;
+  if (rng.pick(["summon", "split"]) === "summon") {
+    g.summon = true;
+    g.split = false;
+  } else {
+    g.summon = false;
+    g.split = true;
+  }
+  return g;
+}
+function adjacentOpen(grid, p) {
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const x = p.x + dx;
+    const y = p.y + dy;
+    if (grid[y] && grid[y][x] === ".") return { x, y };
+  }
+  return null;
+}
+function spawnSplit(world, foe) {
+  let made = 0;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    if (made >= 2) break;
+    const x = foe.x + dx;
+    const y = foe.y + dy;
+    if (world.grid[y] && world.grid[y][x] === "." && !world.monsters.some((m) => m.alive && m.x === x && m.y === y)) {
+      const hp = Math.max(6, Math.round(foe.maxHp * 0.4));
+      world.monsters.push({
+        id: "shard",
+        glyph: "ω",
+        name: `shard of ${foe.name}`,
+        hp,
+        maxHp: hp,
+        atk: Math.max(2, Math.round(foe.atk * 0.6)),
+        xp: 2,
+        drop: 1,
+        alive: true,
+        x,
+        y,
+        home: { x, y },
+        dir: "down",
+        sight: 7,
+        chasing: true,
+        bucket: (made + 1) % 5,
+        statuses: {}
+      });
+      made += 1;
+    }
+  }
 }
 function gainGlyphs(player, base) {
   const mult = Number(player.glyphMult || 1);
@@ -1300,6 +1393,10 @@ function step(world, player, dir) {
       events.log.push(`${foe.name} unparsed. +${got} glyph${got === 1 ? "" : "s"}.`);
       awardXp(player, foe.xp, events);
       dropElite(world, foe, events);
+      if (foe.split) {
+        spawnSplit(world, foe);
+        events.log.push(`${foe.name} splits apart!`);
+      }
       if (foe.explode) detonate(world, foe, player, events);
       if (player.hp <= 0) {
         events.died = true;
@@ -1354,6 +1451,10 @@ function step(world, player, dir) {
     events.log.push(`parse potion. +${heal} HP.`);
   }
   if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
+  if (world.branchExit && nx === world.branchExit.x && ny === world.branchExit.y) {
+    events.descend = true;
+    events.branch = true;
+  }
   return events;
 }
 function revealHidden(world, player, h, events) {
@@ -1531,13 +1632,14 @@ var SECTIONS = [
   ["Fight", "Walk into a foe to attack (your ATK vs its HP). It hits back — watch your HP. Fast foes (race conditions) strike twice."],
   ["Foes", "s m n are light, L O heavy. Deeper floors add behaviours: y spitters shoot from afar, x segfaults blast on death, a ambushers hide as walls, u fork bombs spawn minions."],
   ["Elites", "Gilded, glowing foes (a prefix like armored/venomous) hit harder but drop a guaranteed weapon + glyph cache. Worth the risk."],
+  ["Guardian", "Band floors post a pink Ω guardian by the stairs — huge HP and a trick (it forks minions or splits into shards). Beat it to pass."],
   ["Status", "Poison ☣ / burn ♨ / bleed ✣ tick HP over time even while you stand still — keep moving and heal."],
   ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut)."],
   ["Traps", "Invisible until you trip them: dart (damage), alarm (wakes the floor), blink (flings you), pit (drops you a floor). Once sprung they're marked — denser deeper."],
   ["Loot", "Step on / weapons to raise ATK and % glyph shards to earn glyphs. Kills drop glyphs and XP (level up = more HP & ATK)."],
   ["Secret rooms", "Bump a faint, off-colour wall to open a hidden room: a cache, an ambush, a teleport to the stairs, a shrine (trade HP for a buff), a vault (prime loot, elite guards) or a captive ally that fights for you."],
   ["Biomes", "Floors are grouped into bands — Warrens, Flooded Cisterns, Emberworks, the Overflow — each with its own look and rising danger."],
-  ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot."],
+  ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot. A purple ≣ branch stair (some floors) drops you to a deadlier but much richer floor — your call."],
   ["Runs", "Dying or 'retreat' banks the run's glyphs and draws a fresh dungeon. Banked glyphs are permanent."],
   ["Shop", "Spend banked glyphs on permanent upgrades — they apply on your next run."],
   ["Boss", "It starts LOCKED. Open cipher.txt and read it to find the PASSAGE — that opens the boss. Then 'challenge boss'."]
@@ -1673,6 +1775,7 @@ function createView(screenEl) {
       pos(el, x, y);
     };
     place("exit", world.exit.x, world.exit.y, ">", "s2-c-exit");
+    if (world.branchExit) place("branch", world.branchExit.x, world.branchExit.y, "≣", "s2-c-branch");
     if (world.hazards) world.hazards.forEach((hz, i) => place("hz" + i, hz.x, hz.y, HAZARD_GLYPH[hz.type] || "^", HAZARD_CLASS[hz.type] || "s2-c-spikes"));
     if (world.traps) world.traps.forEach((tr, i) => {
       if (tr.sprung) place("tr" + i, tr.x, tr.y, TRAP_GLYPH[tr.type] || "˙", TRAP_CLASS);
@@ -1714,7 +1817,7 @@ function createView(screenEl) {
       const disguised = m.ambush && m.hidden;
       const glyph = disguised ? "#" : m.glyph;
       if (s.glyph.textContent !== glyph) s.glyph.textContent = glyph;
-      const color = disguised ? "s2-c-ambush" : m.ally ? "s2-c-ally" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe";
+      const color = disguised ? "s2-c-ambush" : m.ally ? "s2-c-ally" : m.guardian ? "s2-c-guardian" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe";
       const dot = !disguised && m.statuses && (m.statuses.burn || m.statuses.poison || m.statuses.bleed) ? " s2-foe-dot" : "";
       const cls = "s2-sprite " + color + dot;
       if (s.el.className !== cls) s.el.className = cls;
@@ -1850,6 +1953,7 @@ function createView(screenEl) {
     }
     for (const g of world.glyphs) if (!g.taken) dot(g.x, g.y, "#d78bff", 3);
     dot(world.exit.x, world.exit.y, "#7fe07f", 4);
+    if (world.branchExit) dot(world.branchExit.x, world.branchExit.y, "#c98bff", 4);
     for (const m of world.monsters) if (m.alive) dot(m.x, m.y, HEAVY_FOES.has(m.glyph) ? "#ff2bd0" : "#ff5a4a", 3);
     dot(world.pos.x, world.pos.y, "#79f0ff", 5);
   }
@@ -2076,7 +2180,7 @@ function renderStage2({
       return;
     }
     if (events.descend) {
-      descend(state);
+      descend(state, { branch: events.branch });
       persistAndPaint();
       return;
     }
@@ -2243,7 +2347,7 @@ function ensureWorld(state) {
     attachGrid(run.world, run.seed, run.world.floor);
   }
 }
-function descend(state) {
+function descend(state, opts = {}) {
   const run = state.run;
   run.entity.glyphsThisRun += 3;
   run.active = true;
@@ -2255,8 +2359,9 @@ function descend(state) {
     return;
   }
   run.floor += 1;
-  run.world = buildFloor(run.seed, run.floor);
-  appendLog(state, `floor ${run.floor - 1} parsed. descending. +3 glyphs.`);
+  run.world = buildFloor(run.seed, run.floor, { branch: Boolean(opts.branch) });
+  if (opts.branch) appendLog(state, `you take the branching stair — a deadlier, richer floor ${run.floor}.`);
+  else appendLog(state, `floor ${run.floor - 1} parsed. descending. +3 glyphs.`);
 }
 function resetRun(state, { banked, death }) {
   const run = state.run;

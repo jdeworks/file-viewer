@@ -65,7 +65,7 @@ function defineHazards(world) {
 }
 
 // Generate one floor: layout + spawn + stairs + entities, all from `${runSeed}:${floor}`.
-export function buildFloor(runSeed, floorNum) {
+export function buildFloor(runSeed, floorNum, mods = {}) {
   const { grid, rooms, hidden, decor, dims, rng } = buildGrid(runSeed, floorNum);
   const width = dims.width;
   const height = dims.height;
@@ -77,6 +77,20 @@ export function buildFloor(runSeed, floorNum) {
   for (let i = 0; i < flood.count; i += 1) {
     const idx = flood.order[i];
     if (flood.dist[idx] > far) { far = flood.dist[idx]; exit = { x: idx % width, y: Math.floor(idx / width) }; }
+  }
+  // B5 branching stair: on ~half of floors, a SECOND descent in a far, separate area — tougher and
+  // richer than the main one (the player opts into risk for loot). Seeded per floor; chosen as the
+  // farthest reachable cell that's also well away from the main exit so the two stairs don't cluster.
+  let branchExit = null;
+  if (makeRng(`${runSeed}:${floorNum}:branchroll`).float() < 0.5) {
+    let bf = -1;
+    for (let i = 0; i < flood.count; i += 1) {
+      const idx = flood.order[i];
+      const x = idx % width;
+      const y = Math.floor(idx / width);
+      const awayFromExit = Math.abs(x - exit.x) + Math.abs(y - exit.y) > 24;
+      if (awayFromExit && flood.dist[idx] > bf) { bf = flood.dist[idx]; branchExit = { x, y }; }
+    }
   }
   // Shuffle the reached cells in place (Fisher–Yates) and hand them out as unique spawn points.
   const order = flood.order;
@@ -90,14 +104,18 @@ export function buildFloor(runSeed, floorNum) {
       const idx = order[ci++];
       const x = idx % width;
       const y = Math.floor(idx / width);
-      if ((x !== start.x || y !== start.y) && (x !== exit.x || y !== exit.y)) return { x, y };
+      const onStair = (x === start.x && y === start.y) || (x === exit.x && y === exit.y) || (branchExit && x === branchExit.x && y === branchExit.y);
+      if (!onStair) return { x, y };
     }
     return null;
   };
 
-  // Counts scale with the number of rooms (one room per BSP leaf), so density tracks the map.
+  // Counts scale with the number of rooms (one room per BSP leaf), so density tracks the map. A
+  // branch floor (B5) is deadlier AND richer — the reward for taking the optional harder descent.
   const roomN = rooms.length;
-  const monsterCount = Math.max(16, Math.min(400, Math.round(roomN * 2.4)));
+  const danger = mods.branch ? 1.4 : 1;
+  const bounty = mods.branch ? 1.5 : 1;
+  const monsterCount = Math.max(16, Math.min(500, Math.round(roomN * 2.4 * danger)));
   const monsters = [];
   for (let i = 0; i < monsterCount; i += 1) {
     const c = take();
@@ -109,7 +127,7 @@ export function buildFloor(runSeed, floorNum) {
   // Scatter several weapons of mixed tiers (deeper floors skew toward better gear).
   const maxTier = Math.min(WEAPONS.length - 1, Math.floor(floorNum / 2) + 1);
   const weapons = [];
-  const weaponCount = Math.max(2, Math.min(24, Math.round(roomN * 0.18)));
+  const weaponCount = Math.max(2, Math.min(36, Math.round(roomN * 0.18 * bounty)));
   for (let i = 0; i < weaponCount; i += 1) {
     const wc = take();
     if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
@@ -122,7 +140,7 @@ export function buildFloor(runSeed, floorNum) {
     if (c) potions.push({ x: c.x, y: c.y, taken: false });
   }
   const glyphs = [];
-  const glyphCount = Math.max(6, Math.min(60, Math.round(roomN * 0.3)));
+  const glyphCount = Math.max(6, Math.min(90, Math.round(roomN * 0.3 * bounty)));
   for (let i = 0; i < glyphCount; i += 1) {
     const c = take();
     if (!c) break;
@@ -138,10 +156,18 @@ export function buildFloor(runSeed, floorNum) {
     else if (d.kind === "potion") potions.push({ x: d.x, y: d.y, taken: false });
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
+  // B6 floor guardian on band floors (3, 5, 7, 9…): a beefy, mechanic-bearing foe posted by the
+  // stairs, so the descent is punctuated by a real spike you must get past.
+  if (floorNum >= 3 && floorNum % 2 === 1) {
+    const g = makeGuardian(rng, floorNum, monsters.length);
+    const spot = adjacentOpen(grid, exit) || take();
+    if (spot) { g.x = spot.x; g.y = spot.y; g.home = { x: spot.x, y: spot.y }; monsters.push(g); }
+  }
+
   // Hazards + traps last, on the floor cells nothing else claimed (unique via the shared `take`).
   const hazards = placeHazards(rng, floorNum, roomN, take);
   const traps = placeTraps(rng, floorNum, roomN, take);
-  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden, hazards, traps };
+  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, branchExit, branch: Boolean(mods.branch), monsters, weapons, potions, glyphs, hidden, hazards, traps };
   defineGrid(world, grid);
   defineHazards(world);
   return world;
@@ -171,6 +197,48 @@ export function stepToExit(world, field) {
     if (d >= 0 && d < bestD) { bestD = d; best = dir; }
   }
   return best ? { dir: best, steps: here > 0 ? here : bestD + 1 } : null;
+}
+
+// B6 guardian: take a roster spawn, beef it up (3× HP, 1.5× ATK), mark it, and give it ONE scripted
+// mechanic — summon (forks minions, handled in monsterTurn) or split (spawns shards on death, below).
+function makeGuardian(rng, floor, idx) {
+  const g = spawnMonster(rng, floor, idx);
+  g.hp = Math.round(g.maxHp * 3); g.maxHp = g.hp;
+  g.atk = Math.round(g.atk * 1.5);
+  g.glyph = "Ω"; g.name = "floor guardian"; g.guardian = true; g.elite = true;
+  g.drop += 6; g.xp += 12; g.sight = 9; g.chasing = false;
+  g.ranged = false; g.ambush = false; g.hidden = false; g.explode = false; g.venom = false;
+  if (rng.pick(["summon", "split"]) === "summon") { g.summon = true; g.split = false; }
+  else { g.summon = false; g.split = true; }
+  return g;
+}
+
+function adjacentOpen(grid, p) {
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const x = p.x + dx;
+    const y = p.y + dy;
+    if (grid[y] && grid[y][x] === ".") return { x, y };
+  }
+  return null;
+}
+
+// A split-mechanic foe spawns two weaker shards on adjacent open cells when it dies.
+function spawnSplit(world, foe) {
+  let made = 0;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    if (made >= 2) break;
+    const x = foe.x + dx;
+    const y = foe.y + dy;
+    if (world.grid[y] && world.grid[y][x] === "." && !world.monsters.some((m) => m.alive && m.x === x && m.y === y)) {
+      const hp = Math.max(6, Math.round(foe.maxHp * 0.4));
+      world.monsters.push({
+        id: "shard", glyph: "ω", name: `shard of ${foe.name}`, hp, maxHp: hp,
+        atk: Math.max(2, Math.round(foe.atk * 0.6)), xp: 2, drop: 1, alive: true,
+        x, y, home: { x, y }, dir: "down", sight: 7, chasing: true, bucket: (made + 1) % 5, statuses: {}
+      });
+      made += 1;
+    }
+  }
 }
 
 function gainGlyphs(player, base) {
@@ -259,6 +327,7 @@ export function step(world, player, dir) {
       events.log.push(`${foe.name} unparsed. +${got} glyph${got === 1 ? "" : "s"}.`);
       awardXp(player, foe.xp, events);
       dropElite(world, foe, events);            // elites leave a guaranteed cache (A3)
+      if (foe.split) { spawnSplit(world, foe); events.log.push(`${foe.name} splits apart!`); } // B6
       if (foe.explode) detonate(world, foe, player, events); // segfaults blast on death (A1)
       if (player.hp <= 0) { events.died = true; return events; }
     } else {
@@ -317,6 +386,8 @@ export function step(world, player, dir) {
     events.log.push(`parse potion. +${heal} HP.`);
   }
   if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
+  // B5: the optional branch stair descends to a deadlier, richer floor.
+  if (world.branchExit && nx === world.branchExit.x && ny === world.branchExit.y) { events.descend = true; events.branch = true; }
   return events;
 }
 

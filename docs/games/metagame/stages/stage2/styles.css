@@ -211,6 +211,7 @@
 .s2-c-elite { color: #ffd24a; font-weight: 700; text-shadow: 0 0 5px #ff9b2e; } /* elite — gilded + glow */
 .s2-c-ambush { color: #6b5026; font-weight: 400; } /* disguised ambusher — exact terrain colour */
 .s2-c-ally { color: #5effc4; font-weight: 700; text-shadow: 0 0 5px #00d68a; } /* freed captive ally */
+.s2-c-guardian { color: #ff5edd; font-weight: 700; text-shadow: 0 0 7px #ff00aa; } /* B6 floor guardian */
 .s2-foe-dot { filter: hue-rotate(45deg) brightness(1.1); } /* poisoned/burning tint */
 
 /* Hazard tiles (A2) — sparse colored cells. */
@@ -227,6 +228,7 @@
 .s2-c-potion { color: #6effa6; font-weight: 700; }
 .s2-c-glyph { color: #d78bff; }
 .s2-c-exit { color: #7fe07f; font-weight: 700; }
+.s2-c-branch { color: #c98bff; font-weight: 700; text-shadow: 0 0 5px #8a3aff; } /* B5 branch stair */
 
 /* Stairwell Sense readout — a status chip above the action buttons (shortest-route next step). */
 .s2-compass {

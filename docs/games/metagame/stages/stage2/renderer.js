@@ -195,7 +195,7 @@ export function renderStage2({
       return;
     }
     if (events.descend) {
-      descend(state);
+      descend(state, { branch: events.branch });
       persistAndPaint();
       return;
     }
@@ -365,7 +365,7 @@ function ensureWorld(state) {
   }
 }
 
-function descend(state) {
+function descend(state, opts = {}) {
   const run = state.run;
   run.entity.glyphsThisRun += 3;
   run.active = true;
@@ -377,8 +377,9 @@ function descend(state) {
     return;
   }
   run.floor += 1;
-  run.world = buildFloor(run.seed, run.floor);
-  appendLog(state, `floor ${run.floor - 1} parsed. descending. +3 glyphs.`);
+  run.world = buildFloor(run.seed, run.floor, { branch: Boolean(opts.branch) });
+  if (opts.branch) appendLog(state, `you take the branching stair — a deadlier, richer floor ${run.floor}.`);
+  else appendLog(state, `floor ${run.floor - 1} parsed. descending. +3 glyphs.`);
 }
 
 // Bank the run's glyphs, roll a fresh entity from purchased upgrades, and draw a new dungeon.

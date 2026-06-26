@@ -147,6 +147,7 @@ export function createView(screenEl) {
       pos(el, x, y);
     };
     place("exit", world.exit.x, world.exit.y, ">", "s2-c-exit");
+    if (world.branchExit) place("branch", world.branchExit.x, world.branchExit.y, "≣", "s2-c-branch"); // B5 risky descent
     // Hazard tiles (A2) — sparse colored cells; static, so only reconciled on camera moves.
     if (world.hazards) world.hazards.forEach((hz, i) => place("hz" + i, hz.x, hz.y, HAZARD_GLYPH[hz.type] || "^", HAZARD_CLASS[hz.type] || "s2-c-spikes"));
     // Sprung traps (B4) leave a marker; un-sprung traps stay invisible.
@@ -174,7 +175,7 @@ export function createView(screenEl) {
       const disguised = m.ambush && m.hidden;
       const glyph = disguised ? "#" : m.glyph;
       if (s.glyph.textContent !== glyph) s.glyph.textContent = glyph;
-      const color = disguised ? "s2-c-ambush" : m.ally ? "s2-c-ally" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe";
+      const color = disguised ? "s2-c-ambush" : m.ally ? "s2-c-ally" : m.guardian ? "s2-c-guardian" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe";
       const dot = !disguised && m.statuses && (m.statuses.burn || m.statuses.poison || m.statuses.bleed) ? " s2-foe-dot" : "";
       const cls = "s2-sprite " + color + dot;
       if (s.el.className !== cls) s.el.className = cls;
@@ -294,6 +295,7 @@ export function createView(screenEl) {
     if (world.potions) for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);
     for (const g of world.glyphs) if (!g.taken) dot(g.x, g.y, "#d78bff", 3);
     dot(world.exit.x, world.exit.y, "#7fe07f", 4);
+    if (world.branchExit) dot(world.branchExit.x, world.branchExit.y, "#c98bff", 4);
     for (const m of world.monsters) if (m.alive) dot(m.x, m.y, HEAVY_FOES.has(m.glyph) ? "#ff2bd0" : "#ff5a4a", 3);
     dot(world.pos.x, world.pos.y, "#79f0ff", 5);
   }

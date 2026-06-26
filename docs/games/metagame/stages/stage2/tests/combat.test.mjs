@@ -166,5 +166,23 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   ok(ev.damageTaken === 0, "the freed ally never damages the player");
 }
 
+// ── B5 branch stair + B6 guardian ────────────────────────────────────────────────────────────────
+{
+  let normal = null;
+  let branch = null;
+  for (let s = 0; s < 30 && !(normal && branch); s += 1) {
+    const w = buildFloor("branch-find" + s, 3);
+    if (w.branchExit && !branch) branch = buildFloor("branch-find" + s, 3, { branch: true });
+    if (!normal) normal = buildFloor("branch-find" + s, 3);
+  }
+  ok(branch && branch.monsters.length > normal.monsters.length, "branch floor is deadlier than the normal floor");
+}
+{
+  const w = buildFloor("guardian", 3);
+  const g = w.monsters.find((m) => m.guardian);
+  ok(g && (g.summon || g.split) && Math.abs(g.x - w.exit.x) + Math.abs(g.y - w.exit.y) <= 2, "a guardian with a mechanic posts by the stairs on band floors");
+  ok(!buildFloor("guardian", 2).monsters.some((m) => m.guardian), "no guardian on a non-band floor");
+}
+
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");
 if (failed) process.exit(1);
