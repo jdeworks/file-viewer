@@ -100,7 +100,22 @@ function bossCombat({ deck = ["SYN"], hp = 300, seed = 1, locked = false } = {})
   assert.equal(b.turn, a.turn, "same seed ⇒ same turn count");
 }
 
-// ── locked (ch9 unread): every Signal is refused ⇒ unwinnable (B3 preview) ────────────────────────
+// ── locked (ch9 unread): every Signal is refused in EVERY phase ⇒ unwinnable (the un-cheat) ────────
+{
+  // Even a perfectly-correct handshake sequence deals 0 while ch9 is unread, in all three phases.
+  for (const phase of [1, 2, 3]) {
+    const c = bossCombat({ locked: true });
+    c.bossPhase = phase; c.enemy.hp = BOSS_PHASE_HP[phase];
+    c.hand = ["ACK", "SYN", "SYN"]; c.player.energy = 99;
+    const before = c.enemy.hp;
+    // Play a correct handshake (ACK then SYNs). Bounded — SYN draws 2 after an ACK, so the hand
+    // can refill; the cap stops that from looping while still playing the whole opening sequence.
+    for (let k = 0; k < 12 && c.hand.length && !c.over; k++) {
+      if (!playCard(c, 0).ok) break;
+    }
+    assert.equal(c.enemy.hp, before, `locked: phase ${phase} boss takes 0 despite a correct sequence`);
+  }
+}
 {
   const deck = ["SYN", "ACK", "PRIORITY_PACKET", "SYN"];
   const c = bossCombat({ deck, hp: 500, seed: 7, locked: true });

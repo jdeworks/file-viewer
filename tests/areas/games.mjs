@@ -692,9 +692,15 @@ export async function run(ctx) {
     ['SYN', 'SYN', 'SYN', 'SYN', 'SYN', 'ACK', 'ACK', 'ACK', 'ACK', 'SEGMENT']
   ));
   // It is a real combat (data-play hand), not the retired 3-button puzzle.
-  await page.waitForSelector('.s6db-combat .s6db-boss-banner', { timeout: 4000 });
+  await page.waitForSelector('.s6db-combat .s6db-boss-banner.is-locked', { timeout: 4000 });
   pass('Stage 6 boss is a real-deck fight reached only through a run');
-  // Stage-clear gate (un-cheat): locked until ch9 is read — read the codex from the boss banner.
+  // Un-cheat is load-bearing: while ch9 is unread, a correct attack sequence deals 0 (boss HP unchanged).
+  const lockedAttack = await page.evaluate(() => window.__fvStage6.autoNegotiate(3));
+  if (lockedAttack.enemyHp !== 60 || lockedAttack.bossDefeated) {
+    throw new Error(`Stage 6 boss took damage while ch9 locked: ${JSON.stringify(lockedAttack)}`);
+  }
+  pass('Stage 6 boss is unwinnable until Chapter 9 is read (locked Signals deal 0)');
+  // Stage-clear gate (un-cheat): read the codex from the boss banner to unlock the negotiation.
   await page.click('.s6db-combat .s6db-boss-banner [data-action="epub"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'protocols_of_the_entity.epub' && window.__fv.state.type.id === 'epub', null, { timeout: 5000 });
   await page.waitForFunction(() => {

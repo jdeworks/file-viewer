@@ -26,3 +26,8 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   reading the epub mid-fight rebuilds the combat unlocked. ui-combat.js gains a boss banner
   (phase rule + locked PROTOCOL MISMATCH + codex button) with styles. Deleted the retired
   ui-boss.js + content.js. Smoke rewritten to win via the real deck (`__fvStage6.autoNegotiate`).
+- B3 — ch9 load-bearing inside the real fight (un-cheat proven): the lock was wired in B2; B3 adds
+  the proof. Unit test: a correct handshake deals 0 to the boss in ALL three phases while locked.
+  Smoke: after jumpToBoss (locked) an autoNegotiate(3) leaves boss HP at 60 and undefeated
+  (PROTOCOL MISMATCH is load-bearing), THEN reading ch9 + autoNegotiate wins. (Caught + fixed an
+  unbounded test loop: SYN draws 2 after an ACK, refilling the hand.)
