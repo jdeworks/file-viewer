@@ -32,6 +32,11 @@ const HELP = {
   source: 'Open this Netlify setting in source.',
 };
 
+const KNOWN_TOP_LEVEL_KEYS = new Set([
+  'build', 'build.environment', 'context', 'dev', 'functions', 'headers',
+  'headers.values', 'plugins', 'redirects',
+]);
+
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -79,6 +84,7 @@ function parseNetlifyToml(text) {
     headers: [],
     contexts: [],
     dev: {},
+    unknownTopLevel: [],
   };
   let section = '';
   let current = null;
@@ -92,6 +98,7 @@ function parseNetlifyToml(text) {
     const tableSection = /^\[([^\]]+)\]$/.exec(trimmed);
     if (arraySection) {
       section = arraySection[1];
+      if (!isKnownTopLevelSection(section)) model.unknownTopLevel.push({ key: section, line: lineNo });
       headerValues = null;
       if (section === 'redirects') {
         current = { line: lineNo };
@@ -106,6 +113,7 @@ function parseNetlifyToml(text) {
     }
     if (tableSection) {
       section = tableSection[1];
+      if (!isKnownTopLevelSection(section)) model.unknownTopLevel.push({ key: section, line: lineNo });
       current = null;
       headerValues = section === 'headers.values' ? model.headers[model.headers.length - 1] : null;
       if (section.startsWith('context.')) {
@@ -131,6 +139,10 @@ function parseNetlifyToml(text) {
   return model;
 }
 
+function isKnownTopLevelSection(section) {
+  return KNOWN_TOP_LEVEL_KEYS.has(section) || section.startsWith('context.');
+}
+
 function maskedEnv(key, value) {
   const masked = maskedValue(key, value);
   const title = masked.reason ? ` title="${esc(masked.reason)}"` : '';
@@ -139,6 +151,9 @@ function maskedEnv(key, value) {
 
 function collectIssues(model) {
   const issues = [];
+  for (const item of model.unknownTopLevel) {
+    issues.push({ severity: 'info', label: 'unknown key', line: item.line, message: `[${item.key}] is not a common Netlify top-level section; check for a typo or unsupported setting.` });
+  }
   if (!model.build.command) {
     issues.push({ severity: 'warning', label: 'build', line: sectionLine('', 'build'), message: 'No build command is configured.' });
   }

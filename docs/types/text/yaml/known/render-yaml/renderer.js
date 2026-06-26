@@ -44,6 +44,8 @@ const HELP = {
   open: 'Open this Render setting in source.',
 };
 
+const KNOWN_TOP_LEVEL_KEYS = new Set(['databases', 'envVarGroups', 'previews', 'services']);
+
 function typeClass(type) {
   const t = (type || '').toLowerCase();
   if (t === 'web') return 'rdr-type-web';
@@ -161,6 +163,11 @@ function renderDatabases(databases, text) {
 
 function collectIssues(cfg, text, services, databases) {
   const issues = [];
+  for (const key of Object.keys(cfg || {})) {
+    if (!KNOWN_TOP_LEVEL_KEYS.has(key)) {
+      issues.push({ severity: 'info', label: 'unknown key', line: keyLine(text, key), message: `"${key}" is not a common render.yaml top-level key; check for a typo or unsupported Render field.` });
+    }
+  }
   const databaseNames = new Set(databases.map((db) => db.name).filter(Boolean));
   for (const svc of services) {
     const name = svc.name || 'service';

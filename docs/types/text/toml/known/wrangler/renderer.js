@@ -41,6 +41,13 @@ const HELP = {
   source: 'Open this Wrangler setting in source.',
 };
 
+const KNOWN_TOP_LEVEL_KEYS = new Set([
+  'account_id', 'assets', 'build', 'compatibility_date', 'compatibility_flags',
+  'd1_databases', 'durable_objects', 'env', 'kv_namespaces', 'main', 'migrations',
+  'name', 'observability', 'placement', 'queues', 'r2_buckets', 'route', 'routes',
+  'site', 'tail_consumers', 'triggers', 'vars', 'vectorize',
+]);
+
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -94,6 +101,9 @@ function envVarsFor(envCfg) {
 
 function collectIssues(model, text) {
   const issues = [];
+  for (const item of model.unknownTopLevel || []) {
+    issues.push({ severity: 'info', label: 'unknown key', line: item.line, message: `"${item.key}" is not a common Wrangler top-level key or section; check for a typo or unsupported setting.` });
+  }
   if (!model.main) {
     issues.push({ severity: 'warning', label: 'main', line: 1, message: 'No Worker entrypoint is configured.' });
   }
@@ -164,6 +174,23 @@ function accountLabel(accountId) {
   return accountId ? `${String(accountId).slice(0, 8)}...` : '';
 }
 
+function topLevelKeys(text) {
+  const out = [];
+  for (const [idx, raw] of String(text || '').split(/\r?\n/).entries()) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const section = /^\[\[?([^\]]+)\]?\]$/.exec(line);
+    if (section) {
+      const root = section[1].split('.')[0];
+      out.push({ key: root, line: idx + 1 });
+      continue;
+    }
+    const kv = /^([A-Za-z0-9_.-]+)\s*=/.exec(line);
+    if (kv) out.push({ key: kv[1].split('.')[0], line: idx + 1 });
+  }
+  return out;
+}
+
 export function render(intake) {
   const text = intake.text || '';
   let cfg = {};
@@ -179,6 +206,7 @@ export function render(intake) {
     kvNamespaces: Array.isArray(cfg.kv_namespaces) ? cfg.kv_namespaces : [],
     durableObjects: cfg.durable_objects && Array.isArray(cfg.durable_objects.bindings) ? cfg.durable_objects.bindings : [],
     envs: envModel(cfg, text),
+    unknownTopLevel: topLevelKeys(text).filter((item, idx, arr) => !KNOWN_TOP_LEVEL_KEYS.has(item.key) && arr.findIndex((other) => other.key === item.key) === idx),
   };
 
   const metaHtml = [

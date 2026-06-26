@@ -380,6 +380,16 @@ export async function run(ctx) {
   else pass('netlify.toml: badge shown');
   if (/npm run build|dist/i.test(ntlText)) pass('netlify.toml: build command shown'); else fail('netlify build: ' + ntlText.slice(0, 200));
   if (/Netlify Review|Content-Security-Policy|Strict-Transport-Security|broad rewrite/i.test(ntlText)) pass('netlify.toml: review findings shown'); else fail('netlify review: ' + ntlText.slice(0, 300));
+  const ntlBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/toml/known/netlify/renderer.js');
+    const rendered = (await mod.render({ text: '[build]\ncommand = "npm run build"\npublish = "dist"\n\n[[redircts]]\nfrom = "/*"\nto = "/index.html"\nstatus = 200\n' })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Netlify Review|unknown key|redircts/i.test(ntlBad.out) && !ntlBad.open) pass('netlify.toml: unknown top-level section diagnostic shown'); else fail('netlify unknown key: ' + JSON.stringify(ntlBad).slice(0, 700));
   const ntlHelpTitle = await page.$eval('.netlifytoml-doc .ntl-link[data-source-line]', (e) => e.getAttribute('title') || '');
   if (/Netlify|Open line|source/i.test(ntlHelpTitle)) pass('netlify.toml: hover source help shown'); else fail('netlify hover help: ' + ntlHelpTitle);
   const ntlSourceCollapsed = await page.$eval('.netlifytoml-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
@@ -400,6 +410,17 @@ export async function run(ctx) {
   if (/nextjs|Next\.js/i.test(vclText)) pass('vercel.json: framework shown'); else fail('vercel framework: ' + vclText.slice(0, 200));
   if (/Vercel Review|Content-Security-Policy|rewrite|public env|function/i.test(vclText)) pass('vercel.json: review findings shown'); else fail('vercel review: ' + vclText.slice(0, 300));
   if (!vclText.includes('@api-secret-key') && !vclText.includes('@stripe-token')) pass('vercel.json: secrets masked'); else fail('vercel secrets leaked: ' + vclText.slice(0, 500));
+  const vclBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/json/known/vercel/renderer.js');
+    const text = JSON.stringify({ framework: 'nextjs', rewritse: [{ source: '/(.*)', destination: '/' }] }, null, 2);
+    const rendered = (await mod.render({ text })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Vercel Review|unknown key|rewritse/i.test(vclBad.out) && !vclBad.open) pass('vercel.json: unknown top-level key diagnostic shown'); else fail('vercel unknown key: ' + JSON.stringify(vclBad).slice(0, 700));
   const vclHelpTitle = await page.$eval('.verceljson-doc .vcl-link[data-source-line]', (e) => e.getAttribute('title') || '');
   if (/Vercel|Open line|source/i.test(vclHelpTitle)) pass('vercel.json: hover source help shown'); else fail('vercel hover help: ' + vclHelpTitle);
   const vclSourceCollapsed = await page.$eval('.verceljson-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));

@@ -148,7 +148,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Railway config: source-linked services/source/build/deploy/env/mount/network settings, healthcheck/restart/reference/volume/secret review findings, masking reasons, and collapsed redacted source.
 - [x] Firebase config: source-linked hosting/rewrites/redirects/headers/functions/emulators/services settings, broad rewrite/security-header/runtime/emulator review findings, and collapsed source.
 - [x] Render.com config: source-linked services/build/start/schedule/env/database settings, healthcheck/reference/secret review findings, managed-secret notes, and collapsed redacted source.
-- [ ] Add schema/key validation, public env warnings, broad rewrites, missing security headers, stale compatibility dates.
+- [x] Add schema/key validation, public env warnings, broad rewrites, missing security headers, stale compatibility dates.
 - [ ] Generic YAML/TOML: add JSONPath-style query parity, path breadcrumbs, duplicate key detection where possible, source-line mapping.
 - [x] Generic TOML: live fallback tree with path breadcrumbs, duplicate-key/table diagnostics, click-to-source rows, and collapsed numbered source.
 - [x] Generic YAML: live fallback tree with path breadcrumbs, workflow-like steps summary, secret-like scalar warnings/redaction, click-to-source rows, and collapsed redacted source.

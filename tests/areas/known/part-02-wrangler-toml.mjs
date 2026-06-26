@@ -11,6 +11,16 @@ export async function run(ctx) {
   if (/Wrangler|Cloudflare/i.test(wglText)) pass('wrangler.toml: badge shown'); else fail('wrangler badge: ' + wglText.slice(0, 200));
   if (/my-worker|MY_KV|example\.com/i.test(wglText)) pass('wrangler.toml: content shown'); else fail('wrangler content: ' + wglText.slice(0, 200));
   if (/Wrangler Review|compatibility|wildcard route/i.test(wglText)) pass('wrangler.toml: review findings shown'); else fail('wrangler review: ' + wglText.slice(0, 300));
+  const wglBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/toml/known/wrangler/renderer.js');
+    const rendered = (await mod.render({ text: 'name = "demo"\nmain = "src/index.ts"\ncompatibility_date = "2023-01-01"\nrouets = ["example.com/*"]\n' })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Wrangler Review|unknown key|rouets/i.test(wglBad.out) && !wglBad.open) pass('wrangler.toml: unknown top-level key diagnostic shown'); else fail('wrangler unknown key: ' + JSON.stringify(wglBad).slice(0, 700));
   const wglHelpTitle = await page.$eval('#previewHost .wgl-doc .wgl-link[data-source-line]', (e) => e.getAttribute('title') || '');
   if (/Wrangler|Open line|source/i.test(wglHelpTitle)) pass('wrangler.toml: hover source help shown'); else fail('wrangler hover help: ' + wglHelpTitle);
   const wglSourceCollapsed = await page.$eval('#previewHost .wgl-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
@@ -404,6 +414,17 @@ export async function run(ctx) {
   if (/Firebase/i.test(fbsText)) pass('firebase.json: badge shown'); else fail('firebase badge: ' + fbsText.slice(0, 200));
   if (/dist|hosting|functions|emulators/i.test(fbsText)) pass('firebase.json: config sections shown'); else fail('firebase config: ' + fbsText.slice(0, 200));
   if (/Firebase Review|Content-Security-Policy|Strict-Transport-Security|broad hosting rewrite|nodejs18/i.test(fbsText)) pass('firebase.json: review findings shown'); else fail('firebase review: ' + fbsText.slice(0, 300));
+  const fbsBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/json/known/firebase/renderer.js');
+    const text = JSON.stringify({ hsoting: { public: 'dist' }, hosting: { rewrites: [{ source: '**', destination: '/index.html' }] } }, null, 2);
+    const rendered = (await mod.render({ text })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Firebase Review|unknown key|hsoting/i.test(fbsBad.out) && !fbsBad.open) pass('firebase.json: unknown top-level key diagnostic shown'); else fail('firebase unknown key: ' + JSON.stringify(fbsBad).slice(0, 700));
   const fbsHelpTitle = await page.$eval('#previewHost .fbs-doc .fbs-link[data-source-line]', (e) => e.getAttribute('title') || '');
   if (/Firebase|Open line|source/i.test(fbsHelpTitle)) pass('firebase.json: hover source help shown'); else fail('firebase hover help: ' + fbsHelpTitle);
   const fbsSourceCollapsed = await page.$eval('#previewHost .fbs-doc .kf-source-details', (e) => !e.open && /Source/.test(e.textContent));

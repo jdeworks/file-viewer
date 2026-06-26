@@ -39,6 +39,11 @@ const HELP = {
   open: 'Open this Railway setting in source.',
 };
 
+const KNOWN_TOP_LEVEL_KEYS = new Set([
+  '$schema', 'build', 'deploy', 'envVars', 'environments', 'mounts', 'networks',
+  'plugins', 'services', 'source', 'variables',
+]);
+
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -140,6 +145,11 @@ function collectServices(cfg) {
 
 function collectIssues(cfg, text, services) {
   const issues = [];
+  for (const key of Object.keys(cfg || {})) {
+    if (!KNOWN_TOP_LEVEL_KEYS.has(key)) {
+      issues.push({ severity: 'info', label: 'unknown key', line: keyLine(text, key), message: `"${key}" is not a common Railway top-level key; check for a typo or unsupported schema field.` });
+    }
+  }
   if (!cfg.$schema) {
     issues.push({ severity: 'info', label: 'schema', line: 1, message: 'No Railway schema URL is declared; editor validation may be weaker.' });
   }
