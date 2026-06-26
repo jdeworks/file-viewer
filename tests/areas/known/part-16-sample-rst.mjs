@@ -14,6 +14,7 @@ export async function run(ctx) {
   if (/Installation|Usage|Introduction/i.test(rstText)) pass('sample.rst: section headings shown'); else fail('rst sections: ' + rstText.slice(0, 300));
   if (/note|code-block|warning/i.test(rstText)) pass('sample.rst: directives listed'); else fail('rst directives: ' + rstText.slice(0, 300));
   if (/References|Reference Review|document ref/i.test(rstText)) pass('sample.rst: references and standalone doc warnings shown'); else fail('rst references: ' + rstText.slice(0, 500));
+  if (/Targets|Substitutions/i.test(rstText)) pass('sample.rst: target and substitution summary cards shown'); else fail('rst target cards: ' + rstText.slice(0, 500));
   const rstSourceOpen = await page.$eval('#previewHost .rst-doc .kf-source-details', (e) => e.open);
   if (!rstSourceOpen) pass('sample.rst: source starts collapsed'); else fail('rst source should start collapsed');
   const rstDirectiveHint = await page.$eval('#previewHost .rst-doc .rst-dir-tag', (e) => e.title);
@@ -24,6 +25,17 @@ export async function run(ctx) {
     highlighted: !!e.querySelector('.kf-source-hit'),
   }));
   if (rstJump.open && rstJump.highlighted) pass('sample.rst: outline click opens and highlights source'); else fail('rst source jump: ' + JSON.stringify(rstJump));
+  const rstBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/restructuredtext/renderer.js');
+    const text = 'Demo\n====\n\n.. |product| replace:: Widget\n\nSee |missing| and :ref:`intro`.\n\n.. _intro:\n\nIntro\n-----\n\n.. toctree::\n   :maxdepth 2\n   guide/install\n   api/index\n\n.. include:: shared/intro.rst\n   :bad option\n\n.. image:: images/logo.png\n';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    rendered.remove();
+    return { out, issues };
+  });
+  if (/Directive Targets|toctree|shared\/intro\.rst|images\/logo\.png|Substitutions|missing substitution|directive option/i.test(rstBad.out + rstBad.issues)) pass('sample.rst: targets, substitutions, and directive diagnostics shown'); else fail('rst diagnostics: ' + JSON.stringify(rstBad).slice(0, 800));
 
   // ── sample.org viewer (Org-mode) ──
   await openExample('sample.org');

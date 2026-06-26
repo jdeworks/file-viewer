@@ -54,6 +54,9 @@ function parseRst(text) {
   const refs = [];
   const labels = new Map();
   const anchors = new Map();
+  const directiveTargets = [];
+  const substitutions = new Map();
+  const substitutionUses = [];
   const issues = [];
   let wordCount = 0;
 
@@ -81,11 +84,26 @@ function parseRst(text) {
     }
 
     // Directives: `.. name::` or `.. name:: args`
-    const dirM = line.match(/^\s*\.\.\s+([\w-]+)\s*::\s*(.*)$/);
+    const dirM = line.match(/^\s*\.\.\s+(.+?)\s*::\s*(.*)$/);
     if (dirM) {
-      addDirective(directiveMap, dirM[1], { line: i + 1, arg: dirM[2].trim() });
-      if ((dirM[1] === 'include' || dirM[1] === 'image' || dirM[1] === 'figure') && dirM[2].trim()) {
-        issues.push({ severity: 'info', label: 'external file', line: i + 1, message: `${dirM[1]} target "${dirM[2].trim()}" cannot be resolved from this standalone preview.` });
+      const name = dirM[1];
+      const arg = dirM[2].trim();
+      addDirective(directiveMap, name, { line: i + 1, arg });
+      if ((name === 'include' || name === 'image' || name === 'figure') && arg) {
+        directiveTargets.push({ kind: name, target: arg, line: i + 1, external: true });
+        issues.push({ severity: 'info', label: 'external file', line: i + 1, message: `${name} target "${arg}" cannot be resolved from this standalone preview.` });
+      }
+      if (name === 'toctree') {
+        for (const target of collectDirectiveBodyTargets(lines, i + 1)) directiveTargets.push({ kind: 'toctree', ...target });
+      }
+      const substM = name.match(/^\|(.+)\|\s+(replace|image|unicode)$/);
+      if (substM) {
+        const key = substM[1].trim();
+        if (substitutions.has(key)) issues.push({ severity: 'warning', label: 'duplicate substitution', line: i + 1, message: `Substitution "${key}" is also defined on line ${substitutions.get(key).line}.` });
+        substitutions.set(key, { name: key, kind: substM[2], line: i + 1, value: arg });
+      }
+      for (const opt of collectDirectiveOptionIssues(lines, i + 1)) {
+        issues.push({ severity: 'warning', label: 'directive option', line: opt.line, message: `Possible malformed option in ${name}: "${opt.text}". Options should look like ":name: value".` });
       }
       continue;
     }
@@ -98,6 +116,7 @@ function parseRst(text) {
     }
 
     for (const ref of inlineRefs(line, i + 1)) refs.push(ref);
+    for (const subst of inlineSubstitutionUses(line, i + 1)) substitutionUses.push(subst);
 
     // Word count from regular text
     if (line.trim() && !isAdornLine(line) && !/^\s*\.\.\s/.test(line)) {
@@ -125,8 +144,11 @@ function parseRst(text) {
       issues.push({ severity: 'info', label: 'document ref', line: ref.line, message: `Document reference "${ref.target}" points outside this standalone preview.` });
     }
   }
+  for (const subst of substitutionUses) {
+    if (!substitutions.has(subst.name)) issues.push({ severity: 'warning', label: 'missing substitution', line: subst.line, message: `Substitution "${subst.name}" is used but not defined in this file.` });
+  }
 
-  return { docTitle, docTitleLine, sections, directives: sortedDirectives(directiveMap), refs, labels: [...labels.entries()].map(([name, line]) => ({ name, line })), issues, wordCount };
+  return { docTitle, docTitleLine, sections, directives: sortedDirectives(directiveMap), refs, labels: [...labels.entries()].map(([name, line]) => ({ name, line })), directiveTargets, substitutions: [...substitutions.values()].sort((a, b) => a.name.localeCompare(b.name)), substitutionUses, issues, wordCount };
 }
 
 function anchorKey(text) {
@@ -155,11 +177,46 @@ function sortedDirectives(map) {
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function collectDirectiveBodyTargets(lines, start) {
+  const out = [];
+  for (let j = start; j < lines.length; j++) {
+    const raw = lines[j];
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    if (!/^\s+/.test(raw)) break;
+    if (trimmed.startsWith(':')) continue;
+    if (/^\.\.\s/.test(trimmed)) break;
+    out.push({ target: trimmed, line: j + 1, external: true });
+  }
+  return out;
+}
+
+function collectDirectiveOptionIssues(lines, start) {
+  const out = [];
+  for (let j = start; j < lines.length; j++) {
+    const raw = lines[j];
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    if (!/^\s+/.test(raw)) break;
+    if (/^\.\.\s/.test(trimmed)) break;
+    if (trimmed.startsWith(':') && !/^:[\w-]+:/.test(trimmed)) out.push({ line: j + 1, text: trimmed });
+  }
+  return out;
+}
+
 function inlineRefs(line, lineNo) {
   const refs = [];
   for (const m of line.matchAll(/:(doc|ref):`([^`]+)`/g)) refs.push({ kind: m[1], target: m[2].trim(), line: lineNo });
   for (const m of line.matchAll(/`([^`<]+?)\s*<([^>]+)>`_/g)) refs.push({ kind: /^https?:\/\//i.test(m[2]) ? 'external' : 'link', target: m[2].trim(), label: m[1].trim(), line: lineNo });
   return refs;
+}
+
+function inlineSubstitutionUses(line, lineNo) {
+  const uses = [];
+  for (const m of line.matchAll(/(^|[^|])\|([^|\s][^|]*?)\|([^_]|$)/g)) {
+    uses.push({ name: m[2].trim(), line: lineNo });
+  }
+  return uses;
 }
 
 function highlightRstLine(line) {
@@ -192,7 +249,7 @@ function highlightRstLine(line) {
 
 export function render(intake) {
   const text = intake.text || '';
-  const { docTitle, docTitleLine, sections, directives, refs, labels, issues, wordCount } = parseRst(text);
+  const { docTitle, docTitleLine, sections, directives, refs, labels, directiveTargets, substitutions, substitutionUses, issues, wordCount } = parseRst(text);
   const allLines = text.split('\n');
 
   const host = document.createElement('div');
@@ -229,8 +286,9 @@ export function render(intake) {
     { value: sections.length, label: 'Sections' },
     { value: directives.length, label: 'Directive types' },
     { value: refs.length, label: 'References' },
+    { value: directiveTargets.length, label: 'Targets' },
+    { value: substitutions.length, label: 'Substitutions' },
     { value: `~${wordCount}`, label: 'Words' },
-    { value: allLines.length, label: 'Lines' },
   ]) {
     const card = document.createElement('div');
     card.className = 'rst-card';
@@ -326,6 +384,51 @@ export function render(intake) {
     host.appendChild(sec);
   }
 
+  if (directiveTargets.length) {
+    const sec = document.createElement('div');
+    sec.className = 'rst-sec';
+    const h3 = document.createElement('h3');
+    h3.textContent = 'Directive Targets';
+    sec.appendChild(h3);
+    const ul = document.createElement('ul');
+    ul.className = 'rst-ref-list';
+    for (const target of directiveTargets.slice(0, 30)) {
+      const li = document.createElement('li');
+      li.appendChild(chip(target.kind, target.kind === 'toctree' ? 'info' : 'warn', directiveTargetHint(target.kind)));
+      li.appendChild(sourceButton(target.target, target.line, 'Open directive target in source'));
+      li.appendChild(chip(target.external ? 'external file' : 'local', target.external ? 'warn' : 'ok'));
+      ul.appendChild(li);
+    }
+    sec.appendChild(ul);
+    host.appendChild(sec);
+  }
+
+  if (substitutions.length || substitutionUses.length) {
+    const sec = document.createElement('div');
+    sec.className = 'rst-sec';
+    const h3 = document.createElement('h3');
+    h3.textContent = 'Substitutions';
+    sec.appendChild(h3);
+    const ul = document.createElement('ul');
+    ul.className = 'rst-ref-list';
+    for (const subst of substitutions.slice(0, 20)) {
+      const li = document.createElement('li');
+      li.appendChild(chip(subst.kind, 'info', 'Substitution definition available to inline |name| usages.'));
+      li.appendChild(sourceButton(`|${subst.name}|`, subst.line, 'Open substitution definition'));
+      if (subst.value) li.appendChild(chip(subst.value, 'muted'));
+      ul.appendChild(li);
+    }
+    const defined = new Set(substitutions.map((item) => item.name));
+    for (const use of substitutionUses.filter((item) => !defined.has(item.name)).slice(0, 20)) {
+      const li = document.createElement('li');
+      li.appendChild(chip('missing', 'warn', 'Used substitution has no definition in this file.'));
+      li.appendChild(sourceButton(`|${use.name}|`, use.line, 'Open substitution use'));
+      ul.appendChild(li);
+    }
+    sec.appendChild(ul);
+    host.appendChild(sec);
+  }
+
   const issueEl = issueList(issues, { title: 'Reference Review' });
   if (issueEl) host.appendChild(issueEl);
 
@@ -347,4 +450,14 @@ function directiveHint(name) {
     figure: 'Embeds an image with caption/legend.',
   };
   return hints[name] || 'reStructuredText directive';
+}
+
+function directiveTargetHint(kind) {
+  const hints = {
+    include: 'Includes another RST source file at build time.',
+    image: 'Embeds an image asset.',
+    figure: 'Embeds an image asset with caption or legend.',
+    toctree: 'Sphinx table-of-contents target; each row points to another document.',
+  };
+  return hints[kind] || 'Directive target';
 }
