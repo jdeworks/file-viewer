@@ -52,3 +52,7 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   energy/turn but Vulnerable each turn) — both tagged `cursed`. All use existing hooks; the act-verb
   (delay/throughput) relics wait for D2/D3. relics.test: build-definers fire on the right primitive,
   cursed downsides apply. (Made the C2b relic-exhaustion test pool-size-agnostic via RELICS.length.)
+- C4 — Authored map composition: replaced per-node random `pickType` with `composeAct` — every act is
+  GUARANTEED an elite (in a later middle layer), a shop, and an event, plus the existing all-rest
+  pre-boss layer and all-combat start; everything else is combat (≥4 reps/act). Fully seeded. New
+  mapgen.test.mjs asserts the invariants across 7 seeds + determinism.

@@ -25,10 +25,12 @@ export function generateAct(act, seed) {
     const width = layerWidth(layer, rng);
     const nodes = [];
     for (let col = 0; col < width; col++) {
-      nodes.push(makeNode(act, layer, col, rng));
+      // Default composition: start layer + middles are combat; the layer before the boss is a rest.
+      nodes.push({ id: nodeId(act, layer, col), act, layer, col, type: defaultType(layer), next: [] });
     }
     layers.push(nodes);
   }
+  composeAct(layers, rng); // guarantee an elite, a shop and an event (deterministic), rest is combat
   layers.push([{ id: nodeId(act, CONTENT_LAYERS, 0), act, layer: CONTENT_LAYERS, col: 0, type: "boss", next: [] }]);
 
   wireEdges(layers, rng);
@@ -56,20 +58,32 @@ function layerWidth(layer, rng) {
   return 2 + (rng() < 0.5 ? 1 : 0); // 2 or 3
 }
 
-function makeNode(act, layer, col, rng) {
-  return { id: nodeId(act, layer, col), act, layer, col, type: pickType(layer, rng), next: [] };
+function defaultType(layer) {
+  // Start layer is combat; the layer before the boss is a guaranteed pre-boss rest; middles default
+  // to combat (composeAct then carves in the required elite/shop/event).
+  return layer === CONTENT_LAYERS - 1 ? "rest" : "combat";
 }
 
-// Type rules: first layer is always combat; the layer before the boss is always rest; a single shop
-// and at least one elite land in the middle; the rest are combat with occasional events.
-function pickType(layer, rng) {
-  if (layer === 0) return "combat";
-  if (layer === CONTENT_LAYERS - 1) return "rest";
-  const roll = rng();
-  if (layer >= 2 && layer <= CONTENT_LAYERS - 2 && roll < 0.18) return "elite";
-  if (roll < 0.30) return "event";
-  if (roll < 0.42) return "shop";
-  return "combat";
+// Authored composition (replaces per-node random rolls): each act is GUARANTEED to offer an elite,
+// a shop and an event among its middle layers (1..CONTENT_LAYERS-2), with everything else combat so
+// the act's verb gets plenty of reps before the mini-boss. Fully deterministic from the act rng.
+function composeAct(layers, rng) {
+  const mid = [];
+  for (let l = 1; l <= CONTENT_LAYERS - 2; l++) mid.push(l);
+  // Elite lands in a LATER middle layer so the act warms up first.
+  const eliteIdx = 1 + Math.floor(rng() * (mid.length - 1));
+  const eliteLayer = mid[eliteIdx];
+  const pool = mid.filter((l) => l !== eliteLayer);
+  const shopLayer = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+  const eventLayer = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+  setOne(layers[eliteLayer], "elite", rng);
+  setOne(layers[shopLayer], "shop", rng);
+  setOne(layers[eventLayer], "event", rng);
+}
+
+// Set one (seeded) column in a layer to `type`, leaving the rest as-is (combat).
+function setOne(layerNodes, type, rng) {
+  layerNodes[Math.floor(rng() * layerNodes.length)].type = type;
 }
 
 function wireEdges(layers, rng) {

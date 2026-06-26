@@ -972,10 +972,11 @@ function generateAct(act, seed) {
     const width = layerWidth(layer, rng);
     const nodes = [];
     for (let col = 0; col < width; col++) {
-      nodes.push(makeNode(act, layer, col, rng));
+      nodes.push({ id: nodeId(act, layer, col), act, layer, col, type: defaultType(layer), next: [] });
     }
     layers.push(nodes);
   }
+  composeAct(layers, rng);
   layers.push([{ id: nodeId(act, CONTENT_LAYERS, 0), act, layer: CONTENT_LAYERS, col: 0, type: "boss", next: [] }]);
   wireEdges(layers, rng);
   return { act, layers, startIds: layers[0].map((n) => n.id) };
@@ -996,17 +997,23 @@ function layerWidth(layer, rng) {
   if (layer === 0) return 2;
   return 2 + (rng() < 0.5 ? 1 : 0);
 }
-function makeNode(act, layer, col, rng) {
-  return { id: nodeId(act, layer, col), act, layer, col, type: pickType(layer, rng), next: [] };
+function defaultType(layer) {
+  return layer === CONTENT_LAYERS - 1 ? "rest" : "combat";
 }
-function pickType(layer, rng) {
-  if (layer === 0) return "combat";
-  if (layer === CONTENT_LAYERS - 1) return "rest";
-  const roll = rng();
-  if (layer >= 2 && layer <= CONTENT_LAYERS - 2 && roll < 0.18) return "elite";
-  if (roll < 0.3) return "event";
-  if (roll < 0.42) return "shop";
-  return "combat";
+function composeAct(layers, rng) {
+  const mid = [];
+  for (let l = 1; l <= CONTENT_LAYERS - 2; l++) mid.push(l);
+  const eliteIdx = 1 + Math.floor(rng() * (mid.length - 1));
+  const eliteLayer = mid[eliteIdx];
+  const pool = mid.filter((l) => l !== eliteLayer);
+  const shopLayer = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+  const eventLayer = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+  setOne(layers[eliteLayer], "elite", rng);
+  setOne(layers[shopLayer], "shop", rng);
+  setOne(layers[eventLayer], "event", rng);
+}
+function setOne(layerNodes, type, rng) {
+  layerNodes[Math.floor(rng() * layerNodes.length)].type = type;
 }
 function wireEdges(layers, rng) {
   for (let i = 0; i < layers.length - 1; i++) {
