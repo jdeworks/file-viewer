@@ -293,12 +293,27 @@ function makePuzzle(seed, { width = 5, height = 5 } = {}) {
 // ../../docs/games/metagame/stages/stage3/board.js
 var CH = { [FILLED]: "#", [EMPTY]: "x", [UNKNOWN]: "." };
 var FROM_CH = { "#": FILLED, x: EMPTY, ".": UNKNOWN };
-function sizeForRun(run) {
-  return Math.max(5, Math.min(12, 5 + Math.floor(Number(run.solvedCount || 0) / 2)));
+function sizeForRun(run, shop) {
+  const cap = 12 + Number((shop || {}).overclock || 0);
+  return Math.max(5, Math.min(cap, 5 + Math.floor(Number(run.solvedCount || 0) / 2)));
 }
-function puzzleForRun(run) {
-  const size = sizeForRun(run);
+function puzzleForRun(run, shop) {
+  const size = sizeForRun(run, shop);
   return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size });
+}
+function applyPrefetch(board, count) {
+  if (!count) return board;
+  let done = 0;
+  for (let y = 0; y < board.puzzle.height && done < count; y += 1) {
+    for (let x = 0; x < board.puzzle.width && done < count; x += 1) {
+      if (board.puzzle.solution[y][x] === FILLED && board.marks[y][x] !== FILLED) {
+        board.marks[y][x] = FILLED;
+        done += 1;
+      }
+    }
+  }
+  board.solved = isSolved(board.puzzle, board.marks);
+  return board;
 }
 function encodeMarks(marks) {
   return marks.map((row) => row.map((v) => CH[v] || ".").join(""));
@@ -456,6 +471,67 @@ function buildGrid(puzzle, handlers) {
   return { el: wrap, update };
 }
 
+// ../../docs/games/metagame/stages/stage3/shop.js
+var SHOP_UPGRADES = [
+  { id: "prefetch", name: "Prefetch Cache", desc: "+1 correct cell pre-filled each snapshot", max: 6 },
+  { id: "throughput", name: "Throughput", desc: "+25% registers per solve", max: 5 },
+  { id: "oracle", name: "Oracle", desc: "+1 hint (reveal a correct cell) per snapshot", max: 4 },
+  { id: "parity", name: "Parity Unit", desc: "+1 integrity check (flag wrong fills) per snapshot", max: 3 },
+  { id: "overclock", name: "Overclock", desc: "+1 to the maximum grid size (deeper, richer snapshots)", max: 3 }
+];
+var BASE = { prefetch: 40, throughput: 80, oracle: 60, parity: 70, overclock: 150 };
+var GROWTH = { prefetch: 1.7, throughput: 1.9, oracle: 1.8, parity: 1.8, overclock: 2 };
+var ACTIVE = /* @__PURE__ */ new Set(["prefetch", "throughput", "overclock"]);
+function upgradeCost(id, level) {
+  return Math.round((BASE[id] || 50) * (GROWTH[id] || 1.8) ** level);
+}
+function upgradeLevel(state, id) {
+  return Number((state.shopUpgrades || {})[id] || 0);
+}
+function buildShopPanel({ state, save, onClose }) {
+  const box = document.createElement("div");
+  box.className = "s3-shop";
+  function rowHtml(up) {
+    const lvl = upgradeLevel(state, up.id);
+    const maxed = lvl >= up.max;
+    const cost = upgradeCost(up.id, lvl);
+    const afford = !maxed && Number(state.registers || 0) >= cost;
+    return `<div class="s3-shop-row">
+      <div>
+        <strong>${up.name}</strong> <span class="s3-shop-lv">Lv ${lvl}/${up.max}</span>
+        <div class="s3-shop-desc">${up.desc}</div>
+      </div>
+      <button type="button" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${maxed ? "MAX" : cost + " reg"}</button>
+    </div>`;
+  }
+  function paint() {
+    box.innerHTML = `
+      <div class="s3-shop-head">DEFRAG SHOP
+        <span class="s3-shop-bank">${Number(state.registers || 0)} registers</span>
+        <button type="button" data-shop="close" class="s3-shop-x" aria-label="close">&#10005;</button>
+      </div>
+      <div class="s3-shop-note">spend registers on permanent upgrades — they apply to every snapshot.</div>
+      ${SHOP_UPGRADES.filter((u) => ACTIVE.has(u.id)).map(rowHtml).join("")}`;
+    box.querySelectorAll("[data-buy]").forEach((b) => b.addEventListener("click", () => buy(b.dataset.buy)));
+    box.querySelector('[data-shop="close"]').addEventListener("click", () => onClose());
+  }
+  function buy(id) {
+    const up = SHOP_UPGRADES.find((u) => u.id === id);
+    if (!up) return;
+    state.shopUpgrades = state.shopUpgrades || {};
+    const lvl = Number(state.shopUpgrades[id] || 0);
+    if (lvl >= up.max) return;
+    const cost = upgradeCost(id, lvl);
+    if (Number(state.registers || 0) < cost) return;
+    state.registers -= cost;
+    state.shopUpgrades[id] = lvl + 1;
+    save?.();
+    paint();
+  }
+  paint();
+  return { el: box };
+}
+
 // ../../docs/games/metagame/stages/stage3/renderer.js
 var MOVE = {
   ArrowUp: [0, -1],
@@ -486,7 +562,10 @@ function renderStage3(ctx) {
     </header>
     <div class="s3-objective" data-field="objective"></div>
     <div class="s3-play">
-      <div class="s3-grid-host"></div>
+      <div class="s3-grid-col">
+        <div class="s3-grid-host"></div>
+        <div class="s3-toolbar"><button type="button" data-action="shop">defrag shop</button></div>
+      </div>
       <aside class="s3-side">
         <div class="s3-help">arrows / WASD move · space fill · x mark · click fills, right-click marks</div>
         <section class="s3-boss">
@@ -512,6 +591,7 @@ function renderStage3(ctx) {
   const keyInput = root.querySelector(".s3-key");
   const gridHost = root.querySelector(".s3-grid-host");
   const btsBtn = root.querySelector('[data-action="bts"]');
+  let overlay = null;
   const setText = (el, v) => {
     const s = String(v);
     if (el.textContent !== s) el.textContent = s;
@@ -526,8 +606,13 @@ function renderStage3(ctx) {
   loadBoard();
   paintHud();
   function loadBoard() {
-    const puzzle = puzzleForRun(state.run);
+    const fresh = !state.run.marks;
+    const puzzle = puzzleForRun(state.run, state.shopUpgrades);
     board = createBoard(puzzle, state.run.marks);
+    if (fresh && upgradeLevel(state, "prefetch")) {
+      applyPrefetch(board, upgradeLevel(state, "prefetch"));
+      state.run.marks = encodeMarks(board.marks);
+    }
     grid = buildGrid(puzzle, { onCell: (x, y, mark) => {
       board.cursor = { x, y };
       applyCell(x, y, mark);
@@ -548,7 +633,8 @@ function renderStage3(ctx) {
   }
   function onSolved() {
     const size = board.puzzle.width;
-    const reward = size * size + 5;
+    const mult = 1 + 0.25 * upgradeLevel(state, "throughput");
+    const reward = Math.round((size * size + 5) * mult);
     state.registers += reward;
     state.run.solvedCount += 1;
     state.run.index += 1;
@@ -567,7 +653,7 @@ function renderStage3(ctx) {
     setText(fields.registers, state.registers);
     setText(fields.retained, state.retained);
     setText(fields.snap, `#${state.run.index + 1}`);
-    const size = sizeForRun(state.run);
+    const size = sizeForRun(state.run, state.shopUpgrades);
     setText(fields.size, `${size}×${size}`);
     const pr = progress(board.puzzle, board.marks);
     setText(fields.objective, board.solved ? "snapshot restored — drawing the next…" : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit. clear snapshots to retain fragments.`);
@@ -584,8 +670,25 @@ function renderStage3(ctx) {
       }));
     }
   }
+  function toggleShop() {
+    if (overlay) {
+      overlay.remove();
+      overlay = null;
+      paintHud();
+      return;
+    }
+    const panel = buildShopPanel({ state, save, onClose: () => {
+      if (overlay) {
+        overlay.remove();
+        overlay = null;
+      }
+      paintHud();
+    } });
+    overlay = panel.el;
+    root.querySelector(".s3-grid-col").appendChild(panel.el);
+  }
   const onKey = (event) => {
-    if (!root.isConnected) return;
+    if (!root.isConnected || overlay) return;
     const tag = event.target && event.target.tagName || "";
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || event.target?.isContentEditable) return;
     if (Object.prototype.hasOwnProperty.call(MOVE, event.key)) {
@@ -610,6 +713,10 @@ function renderStage3(ctx) {
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const action = button.dataset.action;
+    if (action === "shop") {
+      toggleShop();
+      return;
+    }
     if (action === "v1") viewer?.openFile?.(MEMORY_V1_PATH, { text: memoryV1Text(state), source: "stage3" });
     if (action === "v2") viewer?.openFile?.(MEMORY_V2_PATH, { text: memoryV2Text(state), source: "stage3" });
     if (action === "restore") tryRestoreDiffKey({ state, actions, achievements, bell, input: keyInput.value });

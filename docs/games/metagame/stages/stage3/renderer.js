@@ -2,7 +2,8 @@ import { defeatMemoryLeak, getBossLockState, pushLog, tryRestoreDiffKey } from "
 import { memoryV1Text, memoryV2Text } from "./content.js";
 import { BTS_PATH, MEMORY_V1_PATH, MEMORY_V2_PATH } from "./messages.js";
 import { buildGrid } from "./grid.js";
-import { createBoard, encodeMarks, moveCursor, progress, puzzleForRun, setCell, sizeForRun } from "./board.js";
+import { applyPrefetch, createBoard, encodeMarks, moveCursor, progress, puzzleForRun, setCell, sizeForRun } from "./board.js";
+import { buildShopPanel, upgradeLevel } from "./shop.js";
 
 const MOVE = {
   ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
@@ -24,7 +25,10 @@ export function renderStage3(ctx) {
     </header>
     <div class="s3-objective" data-field="objective"></div>
     <div class="s3-play">
-      <div class="s3-grid-host"></div>
+      <div class="s3-grid-col">
+        <div class="s3-grid-host"></div>
+        <div class="s3-toolbar"><button type="button" data-action="shop">defrag shop</button></div>
+      </div>
       <aside class="s3-side">
         <div class="s3-help">arrows / WASD move · space fill · x mark · click fills, right-click marks</div>
         <section class="s3-boss">
@@ -51,6 +55,7 @@ export function renderStage3(ctx) {
   const keyInput = root.querySelector(".s3-key");
   const gridHost = root.querySelector(".s3-grid-host");
   const btsBtn = root.querySelector('[data-action="bts"]');
+  let overlay = null; // open shop panel, or null
   const setText = (el, v) => { const s = String(v); if (el.textContent !== s) el.textContent = s; };
   const setHidden = (el, h) => { if (el.hidden !== h) el.hidden = h; };
   const completeOnce = once((result) => onStageComplete?.(result));
@@ -61,10 +66,13 @@ export function renderStage3(ctx) {
   loadBoard();
   paintHud();
 
-  // Draw the current run's snapshot (regenerated from the seed) and restore any saved marks.
+  // Draw the current run's snapshot (regenerated from the seed) and restore any saved marks. A FRESH
+  // snapshot (no saved marks) gets the Prefetch Cache pre-fills.
   function loadBoard() {
-    const puzzle = puzzleForRun(state.run);
+    const fresh = !state.run.marks;
+    const puzzle = puzzleForRun(state.run, state.shopUpgrades);
     board = createBoard(puzzle, state.run.marks);
+    if (fresh && upgradeLevel(state, "prefetch")) { applyPrefetch(board, upgradeLevel(state, "prefetch")); state.run.marks = encodeMarks(board.marks); }
     grid = buildGrid(puzzle, { onCell: (x, y, mark) => { board.cursor = { x, y }; applyCell(x, y, mark); } });
     gridHost.replaceChildren(grid.el);
     grid.update(board);
@@ -83,7 +91,8 @@ export function renderStage3(ctx) {
   // few clears, then draw the next, deeper snapshot.
   function onSolved() {
     const size = board.puzzle.width;
-    const reward = size * size + 5;
+    const mult = 1 + 0.25 * upgradeLevel(state, "throughput"); // Throughput upgrade
+    const reward = Math.round((size * size + 5) * mult);
     state.registers += reward;
     state.run.solvedCount += 1;
     state.run.index += 1;
@@ -100,7 +109,7 @@ export function renderStage3(ctx) {
     setText(fields.registers, state.registers);
     setText(fields.retained, state.retained);
     setText(fields.snap, `#${state.run.index + 1}`);
-    const size = sizeForRun(state.run);
+    const size = sizeForRun(state.run, state.shopUpgrades);
     setText(fields.size, `${size}×${size}`);
     const pr = progress(board.puzzle, board.marks);
     setText(fields.objective, board.solved
@@ -116,8 +125,17 @@ export function renderStage3(ctx) {
     }
   }
 
+  // Defrag shop overlay — buying upgrades spends registers; closing repaints (next snapshot reflects
+  // prefetch/overclock). The current board isn't retroactively changed.
+  function toggleShop() {
+    if (overlay) { overlay.remove(); overlay = null; paintHud(); return; }
+    const panel = buildShopPanel({ state, save, onClose: () => { if (overlay) { overlay.remove(); overlay = null; } paintHud(); } });
+    overlay = panel.el;
+    root.querySelector(".s3-grid-col").appendChild(panel.el);
+  }
+
   const onKey = (event) => {
-    if (!root.isConnected) return;
+    if (!root.isConnected || overlay) return;
     const tag = (event.target && event.target.tagName) || "";
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || event.target?.isContentEditable) return; // leave the key field alone
     if (Object.prototype.hasOwnProperty.call(MOVE, event.key)) {
@@ -136,6 +154,7 @@ export function renderStage3(ctx) {
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const action = button.dataset.action;
+    if (action === "shop") { toggleShop(); return; }
     if (action === "v1") viewer?.openFile?.(MEMORY_V1_PATH, { text: memoryV1Text(state), source: "stage3" });
     if (action === "v2") viewer?.openFile?.(MEMORY_V2_PATH, { text: memoryV2Text(state), source: "stage3" });
     if (action === "restore") tryRestoreDiffKey({ state, actions, achievements, bell, input: keyInput.value });

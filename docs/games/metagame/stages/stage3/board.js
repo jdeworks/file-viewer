@@ -7,15 +7,30 @@ import { makePuzzle, FILLED, EMPTY, UNKNOWN } from "./nonogram.js";
 const CH = { [FILLED]: "#", [EMPTY]: "x", [UNKNOWN]: "." };
 const FROM_CH = { "#": FILLED, x: EMPTY, ".": UNKNOWN };
 
-// Grid size grows with how many snapshots you've cleared this run (the early corruption ramp; the
-// full ladder is a later feature). Clamped to a comfortable line-solvable range.
-export function sizeForRun(run) {
-  return Math.max(5, Math.min(12, 5 + Math.floor(Number(run.solvedCount || 0) / 2)));
+// Grid size grows with snapshots cleared this run; the Overclock upgrade lifts the cap (deeper,
+// richer snapshots). Clamped to a comfortable line-solvable range.
+export function sizeForRun(run, shop) {
+  const cap = 12 + Number((shop || {}).overclock || 0);
+  return Math.max(5, Math.min(cap, 5 + Math.floor(Number(run.solvedCount || 0) / 2)));
 }
 
-export function puzzleForRun(run) {
-  const size = sizeForRun(run);
+export function puzzleForRun(run, shop) {
+  const size = sizeForRun(run, shop);
   return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size });
+}
+
+// Prefetch Cache: pre-fill the first `count` solution cells (deterministic order) so a snapshot
+// starts partly solved. Applied only to a fresh board (no saved marks). Returns the board.
+export function applyPrefetch(board, count) {
+  if (!count) return board;
+  let done = 0;
+  for (let y = 0; y < board.puzzle.height && done < count; y += 1) {
+    for (let x = 0; x < board.puzzle.width && done < count; x += 1) {
+      if (board.puzzle.solution[y][x] === FILLED && board.marks[y][x] !== FILLED) { board.marks[y][x] = FILLED; done += 1; }
+    }
+  }
+  board.solved = isSolved(board.puzzle, board.marks);
+  return board;
 }
 
 export function encodeMarks(marks) {

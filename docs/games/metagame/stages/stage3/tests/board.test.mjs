@@ -1,6 +1,6 @@
 // Stage 3 play model: solve detection, marks encode/decode round-trip, clue cross-out, run sizing.
 import { makePuzzle, FILLED } from "../nonogram.js";
-import { createBoard, isSolved, setCell, encodeMarks, lineDone, sizeForRun, puzzleForRun, progress } from "../board.js";
+import { createBoard, isSolved, setCell, encodeMarks, lineDone, sizeForRun, puzzleForRun, progress, applyPrefetch } from "../board.js";
 
 let failed = 0;
 const ok = (cond, msg) => { console.log(`${cond ? "OK" : "FAIL"} ${msg}`); if (!cond) failed += 1; };
@@ -37,6 +37,15 @@ ok(pr.have === pr.need && pr.need > 0, "progress reaches have===need on a solved
 ok(sizeForRun({ solvedCount: 0 }) === 5 && sizeForRun({ solvedCount: 8 }) <= 12 && sizeForRun({ solvedCount: 100 }) === 12, "size ramps 5→12 and clamps");
 const r = { seed: "s3-run0", index: 2, solvedCount: 0 };
 ok(JSON.stringify(puzzleForRun(r).solution) === JSON.stringify(puzzleForRun(r).solution), "puzzleForRun is deterministic for a run");
+
+// Prefetch pre-fills only CORRECT cells; Overclock lifts the size cap.
+const pf = createBoard(makePuzzle("pf-seed", { width: 6, height: 6 }));
+applyPrefetch(pf, 3);
+let pfFilled = 0;
+let pfWrong = 0;
+for (let y = 0; y < 6; y += 1) for (let x = 0; x < 6; x += 1) if (pf.marks[y][x] === FILLED) { pfFilled += 1; if (pf.puzzle.solution[y][x] !== FILLED) pfWrong += 1; }
+ok(pfFilled === 3 && pfWrong === 0, "prefetch fills exactly N correct cells");
+ok(sizeForRun({ solvedCount: 100 }, {}) === 12 && sizeForRun({ solvedCount: 100 }, { overclock: 3 }) === 15, "overclock lifts the grid-size cap");
 
 console.log(failed ? `\nSTAGE 3 BOARD FAILED (${failed})` : "\nSTAGE 3 BOARD PASSED");
 if (failed) process.exit(1);

@@ -106,6 +106,41 @@
 }
 .s3-controls button:hover { border-color: var(--s3-blue); }
 
+.s3-grid-col { position: relative; }
+.s3-toolbar { display: flex; gap: 8px; margin-top: 8px; }
+.s3-toolbar button {
+  background: #e6f1fb;
+  border: 1px solid var(--s3-line);
+  color: var(--s3-fg);
+  cursor: pointer;
+  padding: 6px 9px;
+}
+.s3-toolbar button:hover { border-color: var(--s3-blue); }
+
+/* Defrag shop overlay. */
+.s3-shop {
+  background: #fffaf0;
+  border: 1px solid var(--s3-blue);
+  box-shadow: 0 12px 30px rgba(12, 68, 124, 0.25);
+  left: 50%;
+  max-width: 96%;
+  padding: 12px 14px;
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  width: 320px;
+  z-index: 5;
+}
+.s3-shop-head { align-items: center; border-bottom: 1px solid var(--s3-line); display: flex; font-weight: 700; gap: 8px; padding-bottom: 8px; }
+.s3-shop-bank { font-weight: 400; }
+.s3-shop-x { background: none; border: 1px solid var(--s3-line); color: var(--s3-fg); cursor: pointer; margin-left: auto; padding: 2px 8px; }
+.s3-shop-note { color: #5c6670; font-size: 0.82em; margin: 8px 0; }
+.s3-shop-row { align-items: center; border-top: 1px solid #ece9df; display: flex; gap: 10px; justify-content: space-between; padding: 8px 0; }
+.s3-shop-lv { color: #5c6670; font-weight: 400; }
+.s3-shop-desc { color: #4a5560; font-size: 0.82em; }
+.s3-shop-row button { background: #e6f1fb; border: 1px solid var(--s3-line); color: var(--s3-fg); cursor: pointer; padding: 6px 10px; white-space: nowrap; }
+.s3-shop-row button:disabled { cursor: default; opacity: 0.45; }
+
 .s3-log { color: #5c6670; font-size: 0.88em; margin: 0 0 0 18px; }
 
 @media (max-width: 760px) {
