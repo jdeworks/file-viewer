@@ -328,6 +328,17 @@ export async function run(ctx) {
   if (!ntlText.includes('Netlify')) fail('netlify.toml: missing badge');
   else pass('netlify.toml: badge shown');
   if (/npm run build|dist/i.test(ntlText)) pass('netlify.toml: build command shown'); else fail('netlify build: ' + ntlText.slice(0, 200));
+  if (/Netlify Review|Content-Security-Policy|Strict-Transport-Security|broad rewrite/i.test(ntlText)) pass('netlify.toml: review findings shown'); else fail('netlify review: ' + ntlText.slice(0, 300));
+  const ntlHelpTitle = await page.$eval('.netlifytoml-doc .ntl-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Netlify|Open line|source/i.test(ntlHelpTitle)) pass('netlify.toml: hover source help shown'); else fail('netlify hover help: ' + ntlHelpTitle);
+  const ntlSourceCollapsed = await page.$eval('.netlifytoml-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
+  if (ntlSourceCollapsed) pass('netlify.toml: source collapsed'); else fail('netlify source should start collapsed');
+  const ntlSourceLine = await page.$eval('.netlifytoml-doc .ntl-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('.netlifytoml-doc .kf-source-details');
+    return details?.open && document.getElementById(`netlify-line-${line}`);
+  }, ntlSourceLine, { timeout: 3000 });
+  pass('netlify.toml: source links open source');
 
   // ── Vercel config viewer ──
   await openExample('Vercel config (vercel.json demo)');
