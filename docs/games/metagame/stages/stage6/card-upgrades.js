@@ -30,7 +30,24 @@ const SPECS = {
   THROTTLE: { text: "Apply 3 Weak to the enemy.", effect: (ctx) => ctx.applyEnemy("weak", 3) },
   RENEGOTIATE: { text: "Remove your debuffs and gain 9 block.", effect: (ctx) => { ctx.clearSelfDebuffs(); ctx.block(9); } },
   CIPHER_LAYER: { text: "Gain 1 Strength and 9 block.", effect: (ctx) => { ctx.applySelf("strength", 1); ctx.block(9); } },
-  TCP_STACK: { cost: 1, text: "Gain 2 Strength. (cost 1)", effect: (ctx) => ctx.applySelf("strength", 2) }
+  TCP_STACK: { cost: 1, text: "Gain 2 Strength. (cost 1)", effect: (ctx) => ctx.applySelf("strength", 2) },
+  // C5b additions
+  SCAN: { text: "Deal 6. Apply 1 Weak to the enemy.", effect: (ctx) => { ctx.deal(6); ctx.applyEnemy("weak", 1); } },
+  JITTER: { text: "Deal 6. (cost 0)", effect: (ctx) => ctx.deal(6) },
+  PIPELINE: { text: "Deal 5. If you've played 2+ cards this turn, deal 5 more.", effect: (ctx) => { ctx.deal(5); if (ctx.cardsPlayed >= 2) ctx.deal(5); } },
+  SPOOF: { text: "Apply 2 Vulnerable to the enemy. Draw 1.", effect: (ctx) => { ctx.applyEnemy("vulnerable", 2); ctx.draw(1); } },
+  DDOS: { text: "Deal 8 for each card played this turn. Exhaust.", effect: (ctx) => ctx.deal(8 * ctx.cardsPlayed) },
+  REPLAY: { text: "Deal 13. If ACK was played this turn, deal 6 more.", effect: (ctx) => { ctx.deal(13); if (ctx.playedThisTurn("ACK")) ctx.deal(6); } },
+  BACKLOG: { text: "Gain 11 block.", effect: (ctx) => ctx.block(11) },
+  NAGLE: { text: "Gain 6 block. Draw 1.", effect: (ctx) => { ctx.block(6); ctx.draw(1); } },
+  FIREWALL: { text: "Gain 15 block. Apply 1 Weak to the enemy.", effect: (ctx) => { ctx.block(15); ctx.applyEnemy("weak", 1); } },
+  CONGESTION_CTL: { text: "Gain 10 block.", effect: (ctx) => ctx.block(10) },
+  SACK: { text: "Gain 8 block. Draw 2.", effect: (ctx) => { ctx.block(8); ctx.draw(2); } },
+  ENCRYPT: { text: "Gain 6 block and 1 Strength.", effect: (ctx) => { ctx.block(6); ctx.applySelf("strength", 1); } },
+  HANDSHAKE_LAYER: { cost: 0, text: "Gain 1 Strength. (cost 0)", effect: (ctx) => ctx.applySelf("strength", 1) },
+  DEEP_PACKET: { text: "Gain 2 Strength. Apply 2 Vulnerable to the enemy.", effect: (ctx) => { ctx.applySelf("strength", 2); ctx.applyEnemy("vulnerable", 2); } },
+  SESSION_KEY: { text: "Gain 2 Strength. Draw 1.", effect: (ctx) => { ctx.applySelf("strength", 2); ctx.draw(1); } },
+  ONION: { text: "Gain 4 Strength. Exhaust.", effect: (ctx) => ctx.applySelf("strength", 4) }
 };
 
 export function isUpgradedId(id) {

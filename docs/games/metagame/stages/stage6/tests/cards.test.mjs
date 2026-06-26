@@ -5,10 +5,11 @@ import { canUpgrade, upgradeIdFor } from "../card-upgrades.js";
 
 // ── the pool is split across all three archetypes ──────────────────────────────────────────────────
 {
+  assert.ok(CARDS.length >= 36, `pool is at least 36 cards (have ${CARDS.length})`);
   const byType = (t) => CARDS.filter((c) => c.type === t);
-  assert.ok(byType("Signal").length >= 6, "Signal archetype represented");
-  assert.ok(byType("Protocol").length >= 5, "Protocol archetype represented");
-  assert.ok(byType("Layer").length >= 2, "Layer archetype represented");
+  assert.ok(byType("Signal").length >= 12, "Signal archetype well represented");
+  assert.ok(byType("Protocol").length >= 10, "Protocol archetype well represented");
+  assert.ok(byType("Layer").length >= 6, "Layer archetype well represented");
   // ids are unique.
   assert.equal(new Set(CARDS.map((c) => c.id)).size, CARDS.length, "card ids are unique");
 }

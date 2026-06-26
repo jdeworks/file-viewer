@@ -61,3 +61,9 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   registerCard, REWARD_POOL, STARTING_DECK). card-upgrades.js unchanged (resolves via the registry).
   New cards.test.mjs: archetypes represented, ids unique, every card has a registered "+" upgrade.
   (Pool still 20; C5b expands to ≥36.)
+- C5b — Expanded the pool to 36 cards (17 Signal / 12 Protocol / 7 Layer): +6 Signal (SCAN, JITTER,
+  PIPELINE, SPOOF, DDOS, REPLAY), +5 Protocol (BACKLOG, NAGLE, FIREWALL, CONGESTION_CTL, SACK),
+  +5 Layer (ENCRYPT, HANDSHAKE_LAYER, DEEP_PACKET, SESSION_KEY, ONION) — all using existing
+  primitives, each with a card-upgrades SPEC. cards.test now asserts ≥36 + per-archetype depth.
+  **Phase C COMPLETE** (deck-building now matters: upgrades, economy sinks, build-defining relics,
+  authored maps, three real archetypes). Next: Phase D (one new verb/act) — D1 sequence.

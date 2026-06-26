@@ -37,5 +37,30 @@ export const PROTOCOL_CARDS = [
     id: "RENEGOTIATE", type: "Protocol", cost: 1, rarity: "rare",
     text: "Remove your debuffs and gain 6 block.",
     effect: (ctx) => { ctx.clearSelfDebuffs(); ctx.block(6); }
+  },
+  {
+    id: "BACKLOG", type: "Protocol", cost: 1, rarity: "common",
+    text: "Gain 8 block.",
+    effect: (ctx) => ctx.block(8)
+  },
+  {
+    id: "NAGLE", type: "Protocol", cost: 1, rarity: "uncommon",
+    text: "Gain 4 block. Draw 1.",
+    effect: (ctx) => { ctx.block(4); ctx.draw(1); }
+  },
+  {
+    id: "FIREWALL", type: "Protocol", cost: 2, rarity: "rare",
+    text: "Gain 12 block. Apply 1 Weak to the enemy.",
+    effect: (ctx) => { ctx.block(12); ctx.applyEnemy("weak", 1); }
+  },
+  {
+    id: "CONGESTION_CTL", type: "Protocol", cost: 1, rarity: "uncommon",
+    text: "Gain 7 block.",
+    effect: (ctx) => ctx.block(7)
+  },
+  {
+    id: "SACK", type: "Protocol", cost: 2, rarity: "rare",
+    text: "Gain 6 block. Draw 2.",
+    effect: (ctx) => { ctx.block(6); ctx.draw(2); }
   }
 ];

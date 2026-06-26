@@ -58,5 +58,35 @@ export const SIGNAL_CARDS = [
     id: "BURST_FRAME", type: "Signal", cost: 3, rarity: "uncommon", exhaust: true,
     text: "Deal 30. Apply 1 Weak to yourself. Exhaust.",
     effect: (ctx) => { ctx.deal(30); ctx.applySelf("weak", 1); }
+  },
+  {
+    id: "SCAN", type: "Signal", cost: 1, rarity: "common",
+    text: "Deal 4. Apply 1 Weak to the enemy.",
+    effect: (ctx) => { ctx.deal(4); ctx.applyEnemy("weak", 1); }
+  },
+  {
+    id: "JITTER", type: "Signal", cost: 0, rarity: "uncommon",
+    text: "Deal 4.",
+    effect: (ctx) => ctx.deal(4)
+  },
+  {
+    id: "PIPELINE", type: "Signal", cost: 1, rarity: "uncommon",
+    text: "Deal 4. If you've played 2+ cards this turn, deal 4 more.",
+    effect: (ctx) => { ctx.deal(4); if (ctx.cardsPlayed >= 2) ctx.deal(4); }
+  },
+  {
+    id: "SPOOF", type: "Signal", cost: 1, rarity: "rare",
+    text: "Apply 1 Vulnerable to the enemy. Draw 1.",
+    effect: (ctx) => { ctx.applyEnemy("vulnerable", 1); ctx.draw(1); }
+  },
+  {
+    id: "DDOS", type: "Signal", cost: 3, rarity: "rare", exhaust: true,
+    text: "Deal 6 for each card played this turn. Exhaust.",
+    effect: (ctx) => ctx.deal(6 * ctx.cardsPlayed)
+  },
+  {
+    id: "REPLAY", type: "Signal", cost: 2, rarity: "uncommon",
+    text: "Deal 10. If ACK was played this turn, deal 5 more.",
+    effect: (ctx) => { ctx.deal(10); if (ctx.playedThisTurn("ACK")) ctx.deal(5); }
   }
 ];
