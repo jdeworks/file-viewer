@@ -249,6 +249,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     getLastSettingsImport: () => settingsUi.getLastImport(),
     dispatch,
     importSettings: settingsUi.importSettings,
+    relinkFiles: settingsUi.relinkFiles,
     addPinkNoise() {
       addGeneratedLane('room-tone', 'Pink noise bed', { kind: 'pink-noise', levelDb: -52 });
       render();

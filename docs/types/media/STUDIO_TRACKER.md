@@ -366,18 +366,25 @@ Stage 7 project settings import/export UI has started:
   element`, and `Do not change media objects`.
 - Wired the helper into the multi-lane Mix controller, modular video source
   controller, and modular Compare controller. Those controllers now expose
-  `importSettings()` and last-import state for smoke coverage while the UI
-  provides the user-facing settings export/import and reapply panel.
+  `importSettings()`, `relinkFiles()`, and last-import state for smoke coverage
+  while the UI provides the user-facing settings export/import, missing-media
+  browse/drop relink, and reapply panel.
+- Missing imported assets can now be relinked by dropping or browsing local
+  media in the settings reapply panel. The helper hashes local files when
+  possible, falls back to filename/size/mime/last-modified matching, stores
+  `File` objects only in the runtime file map keyed by the imported asset id,
+  and keeps exported settings free of media bytes and runtime caches.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
   media, exposes all three required reapply choices, and applies the ask-per-
   element choice without serializing media bytes. `tests/areas/media-studio-
   video-export-timeline.mjs` proves the same settings surface on opened video
-  source, and `tests/areas/media-studio-compare.mjs` proves it on modular
-  Compare for audio and video.
-- Stage 7 remaining work: add drag-to-relink missing assets, implement the final
-  video export path behind capability/ffmpeg gating, and move export provenance
-  to the shared project plan for all media kinds.
+  source, including drag/drop relink for a missing imported video asset, and
+  `tests/areas/media-studio-compare.mjs` proves it on modular Compare for audio
+  and video.
+- Stage 7 remaining work: implement the final video export path behind
+  capability/ffmpeg gating, and move export provenance to the shared project
+  plan for all media kinds.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

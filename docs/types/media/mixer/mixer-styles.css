@@ -50,6 +50,65 @@
   height: 30px;
 }
 
+.mmx-settings-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mmx-settings-download,
+.mmx-settings-import-label,
+.mmx-relink-choice,
+.mmx-relink-drop {
+  min-height: 28px;
+  padding: 5px 8px;
+  border: 1px solid var(--mmx-border);
+  border-radius: 6px;
+  background: color-mix(in srgb, canvas 92%, currentColor 8%);
+  color: inherit;
+  font-size: 12px;
+}
+
+.mmx-settings-import-label,
+.mmx-relink-drop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.mmx-settings-import,
+.mmx-relink-file {
+  max-width: 132px;
+  font-size: 11px;
+}
+
+.mmx-relink-modal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, #e5534b 42%, var(--mmx-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, canvas 88%, #e5534b 12%);
+}
+
+.mmx-relink-summary {
+  color: var(--mmx-muted);
+  font-size: 12px;
+}
+
+.mmx-relink-drop {
+  border-style: dashed;
+}
+
+.mmx-relink-drop-active .mmx-relink-modal {
+  outline: 2px solid #e5534b;
+  outline-offset: 2px;
+}
+
 .mmx-zoom {
   width: 128px;
 }

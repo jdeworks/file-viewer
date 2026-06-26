@@ -163,8 +163,11 @@ config-only settings export/import and an import reapply panel with the required
 `Apply to all elements`, `Ask per element`, and `Do not change media objects`
 choices. The UI uses the pure `importProjectSettings()`/`applyRelinkChoice()`
 path and runtime local-asset evidence, so media bytes remain outside the
-exported project. The next Stage 7 work is drag-to-relink missing assets and
-final ffmpeg-gated video export.
+exported project. Missing imported media can now be relinked from the same
+settings panel by browsing or dropping local files; the file objects stay in the
+runtime map while the project receives only matched identity/config metadata.
+The next Stage 7 work is final ffmpeg-gated video export and shared export
+provenance.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

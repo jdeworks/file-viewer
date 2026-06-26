@@ -1,8 +1,11 @@
 import {
   MIXER_REAPPLY_CHOICES,
   applyRelinkChoice,
+  classifyMixerFile,
+  hashFileIdentity,
   exportProjectSettingsJson,
   importProjectSettings,
+  matchMissingAssets,
 } from './index.js';
 
 export function createProjectSettingsUi({
@@ -34,12 +37,43 @@ export function createProjectSettingsUi({
   };
 
   const onChange = async (event) => {
-    if (!event.target?.matches?.('.mmx-settings-import')) return;
-    const file = event.target.files?.[0];
+    if (!event.target?.matches?.('.mmx-settings-import, .mmx-relink-file')) return;
+    const files = [...(event.target.files || [])];
+    const file = files[0];
     event.target.value = '';
     if (!file) return;
     try {
-      importSettings(await file.text());
+      if (event.target.matches('.mmx-relink-file')) {
+        await relinkFiles(files);
+      } else {
+        importSettings(await file.text());
+      }
+    } catch (error) {
+      root.dataset.lastSettingsError = error?.message || String(error);
+      render();
+    }
+  };
+
+  const onDragOver = (event) => {
+    if (!lastImport?.relink?.missing?.length || !event.dataTransfer?.files?.length) return;
+    event.preventDefault();
+    event.stopPropagation();
+    root.classList.add('mmx-relink-drop-active');
+  };
+
+  const onDragLeave = (event) => {
+    if (!root.contains(event.relatedTarget)) root.classList.remove('mmx-relink-drop-active');
+  };
+
+  const onDrop = async (event) => {
+    if (!lastImport?.relink?.missing?.length) return;
+    const files = [...(event.dataTransfer?.files || [])];
+    if (!files.length) return;
+    event.preventDefault();
+    event.stopPropagation();
+    root.classList.remove('mmx-relink-drop-active');
+    try {
+      await relinkFiles(files);
     } catch (error) {
       root.dataset.lastSettingsError = error?.message || String(error);
       render();
@@ -48,14 +82,21 @@ export function createProjectSettingsUi({
 
   root.addEventListener('click', onClick);
   root.addEventListener('change', onChange);
+  root.addEventListener('dragover', onDragOver);
+  root.addEventListener('dragleave', onDragLeave);
+  root.addEventListener('drop', onDrop);
 
   return {
     decorate,
     importSettings,
+    relinkFiles,
     getLastImport: () => lastImport,
     destroy() {
       root.removeEventListener('click', onClick);
       root.removeEventListener('change', onChange);
+      root.removeEventListener('dragover', onDragOver);
+      root.removeEventListener('dragleave', onDragLeave);
+      root.removeEventListener('drop', onDrop);
     },
   };
 
@@ -68,6 +109,36 @@ export function createProjectSettingsUi({
     root.dataset.lastRelinkMatches = String(imported.relink.matches.length);
     render();
     return imported;
+  }
+
+  async function relinkFiles(files = []) {
+    if (!lastImport) return null;
+    const candidates = [];
+    for (const file of files) {
+      const asset = await assetMetadataFromFile(file);
+      if (!asset) continue;
+      candidates.push({ asset, file });
+    }
+    const availableAssets = [
+      ...localAssetsFromRuntime(getProject(), runtimeFiles),
+      ...candidates.map((candidate) => candidate.asset),
+    ];
+    const relink = matchMissingAssets(lastImport.project.assets, availableAssets);
+    for (const match of relink.matches) {
+      const candidate = candidates.find((item) => item.asset.id === match.localAsset.id);
+      if (candidate) runtimeFiles?.set?.(match.assetId, candidate.file);
+    }
+    lastImport = {
+      ...lastImport,
+      relink,
+      needsRelink: relink.missing.length > 0,
+    };
+    root.dataset.lastRelinkMissing = String(relink.missing.length);
+    root.dataset.lastRelinkMatches = String(relink.matches.length);
+    root.dataset.lastRelinkDropped = String(candidates.length);
+    root.dataset.lastSettingsImport = relink.missing.length ? 'needs-relink' : 'ready';
+    render();
+    return lastImport;
   }
 
   function decorate() {
@@ -104,6 +175,18 @@ function renderRelinkPanel(state) {
   summary.className = 'mmx-relink-summary';
   summary.textContent = `${state.relink.matches.length} matched · ${state.relink.missing.length} missing`;
   panel.append(title, summary);
+  if (state.relink.missing.length) {
+    const drop = document.createElement('label');
+    drop.className = 'mmx-relink-drop';
+    drop.textContent = 'Drop or browse matching media to relink missing assets';
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.className = 'mmx-relink-file';
+    input.accept = 'audio/*,video/*,image/*';
+    input.multiple = true;
+    drop.append(input);
+    panel.append(drop);
+  }
   for (const [choice, label] of [
     [MIXER_REAPPLY_CHOICES.APPLY_ALL, 'Apply to all elements'],
     [MIXER_REAPPLY_CHOICES.ASK_PER_ELEMENT, 'Ask per element'],
@@ -136,4 +219,26 @@ function downloadSettings(json, filename) {
     URL.revokeObjectURL(link.href);
     link.remove();
   }, 0);
+}
+
+async function assetMetadataFromFile(file) {
+  if (!file) return null;
+  const classified = classifyMixerFile(file);
+  if (classified.kind === 'unknown') return null;
+  let hash = null;
+  try {
+    hash = await hashFileIdentity(file);
+  } catch {
+    hash = null;
+  }
+  return {
+    id: `local-relink-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name: file.name || 'Local media',
+    mime: file.type || '',
+    size: file.size || 0,
+    lastModified: file.lastModified || null,
+    hash,
+    capabilities: classified.capabilities || {},
+    status: 'available',
+  };
 }

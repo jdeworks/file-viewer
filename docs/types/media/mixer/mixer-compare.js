@@ -133,6 +133,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     getOverlap: () => computeCompareOverlap(project),
     exportSettings: () => exportProjectSettingsJson(project),
     importSettings: settingsUi.importSettings,
+    relinkFiles: settingsUi.relinkFiles,
     getLastSettingsImport: () => settingsUi.getLastImport(),
     dispatch,
   };

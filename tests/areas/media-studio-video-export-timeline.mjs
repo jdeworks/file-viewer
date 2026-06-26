@@ -145,6 +145,60 @@ export async function runVideoExportAndTimelineChecks(ctx) {
     && !sourceSettingsImport.hasBytes)
     pass('P6: modular video source imports config-only settings with reapply choices');
   else fail('modular video source settings import: ' + JSON.stringify(sourceSettingsImport));
+  const sourceMissingRelink = await page.$eval(tlModeSel + ' .mmx-video-source', async (root) => {
+    const originalJson = root.__mediaMixerVideoSource.exportSettings();
+    const settings = JSON.parse(originalJson);
+    const missingAssetId = 'asset-imported-missing-video';
+    settings.assets[0].id = missingAssetId;
+    settings.assets[0].name = 'sample-relinked.mp4';
+    settings.assets[0].size = 5;
+    settings.assets[0].lastModified = 12345;
+    settings.assets[0].mime = 'video/mp4';
+    settings.assets[0].hash = null;
+    settings.elements[0].assetId = missingAssetId;
+    const imported = root.__mediaMixerVideoSource.importSettings(JSON.stringify(settings), []);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const beforeMissing = imported.relink.missing.length;
+    const hasBrowse = !!root.querySelector('.mmx-relink-file');
+    const file = new File([new Uint8Array(5)], 'sample-relinked.mp4', { type: 'video/mp4', lastModified: 12345 });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    const dragEvent = new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer });
+    const dropEvent = new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer });
+    root.dispatchEvent(dragEvent);
+    const dropPrevented = !root.dispatchEvent(dropEvent);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const relinked = root.__mediaMixerVideoSource.getLastSettingsImport();
+    root.querySelector('.mmx-relink-choice[data-choice="apply-all"]')?.click();
+    const asset = root.__mediaMixerVideoSource.getProject().assets[0];
+    const result = {
+      beforeMissing,
+      afterMissing: relinked.relink.missing.length,
+      matches: relinked.relink.matches.length,
+      dropped: Number(root.dataset.lastRelinkDropped || 0),
+      hasBrowse,
+      dropPrevented,
+      choice: root.dataset.lastRelinkChoice || '',
+      applied: Number(root.dataset.lastRelinkApplied || 0),
+      status: asset?.status || '',
+      name: asset?.name || '',
+    };
+    root.__mediaMixerVideoSource.importSettings(originalJson);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    root.querySelector('.mmx-relink-choice[data-choice="do-not-change-media"]')?.click();
+    return {
+      ...result,
+      restoredName: root.__mediaMixerVideoSource.getProject().assets[0]?.name || '',
+    };
+  });
+  if (sourceMissingRelink.beforeMissing === 1 && sourceMissingRelink.afterMissing === 0
+    && sourceMissingRelink.matches === 1 && sourceMissingRelink.dropped === 1
+    && sourceMissingRelink.hasBrowse && sourceMissingRelink.dropPrevented
+    && sourceMissingRelink.choice === 'apply-all'
+    && sourceMissingRelink.applied === 1 && sourceMissingRelink.status === 'available'
+    && sourceMissingRelink.name === 'sample-relinked.mp4')
+    pass('P6: modular video source relinks missing imported media from local file');
+  else fail('modular video source missing-media relink: ' + JSON.stringify(sourceMissingRelink));
   await page.waitForFunction((sel) => Number(document.querySelector(sel)?.dataset.frameSources || 0) > 0,
     tlModeSel + ' .mmx-video-source .mmx-frame-preview', { timeout: 12000 });
   const sourceFrameCount = await page.$eval(tlModeSel + ' .mmx-video-source .mmx-frame-preview',

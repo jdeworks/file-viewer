@@ -103,6 +103,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     getViewport: () => viewport,
     exportSettings: () => exportProjectSettingsJson(project),
     importSettings: settingsUi.importSettings,
+    relinkFiles: settingsUi.relinkFiles,
     getLastSettingsImport: () => settingsUi.getLastImport(),
     dispatch,
   };
