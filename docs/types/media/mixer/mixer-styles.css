@@ -211,3 +211,43 @@
   margin: 0;
   color: var(--mmx-muted);
 }
+
+.mmx-audio-listen .media-waveform-surface {
+  overflow-x: auto;
+}
+
+.mmx-capability-note {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--mmx-border, color-mix(in srgb, currentColor 18%, transparent));
+  border-radius: 8px;
+  color: var(--mmx-muted, color-mix(in srgb, currentColor 58%, transparent));
+  background: color-mix(in srgb, canvas 94%, #4c78a8 6%);
+  font-size: 12px;
+}
+
+.mmx-listen-viewport-tools,
+.mmx-listen-project-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.mmx-listen-tool,
+.mmx-settings-export,
+.mmx-settings-import {
+  min-height: 28px;
+}
+
+.mmx-listen-zoom,
+.mmx-listen-pan {
+  inline-size: min(180px, 100%);
+}
+
+.media-lane-trim.mmx-source-moving {
+  outline: 2px solid #e5534b;
+  outline-offset: 2px;
+  cursor: grabbing;
+}

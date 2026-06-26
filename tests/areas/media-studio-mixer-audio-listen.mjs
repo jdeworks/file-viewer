@@ -19,6 +19,9 @@ export async function run(ctx) {
       cursor: !!el.querySelector('.media-lane-cursor'),
       canvas: !!el.querySelector('.media-waveform-surface canvas.media-wv-canvas'),
       exportButton: !!el.querySelector('.mmx-settings-export'),
+      zoom: !!el.querySelector('.mmx-listen-zoom'),
+      pan: !!el.querySelector('.mmx-listen-pan'),
+      capabilityNote: /Enable Media Transcoding/.test(el.querySelector('.mmx-capability-note')?.textContent || ''),
       controls: ['.media-lane-offset', '.media-lane-in', '.media-lane-out', '.media-lane-gain', '.media-lane-fade-in', '.media-lane-fade-out', '.media-lane-room-toggle']
         .every((selector) => !!el.querySelector(selector)),
     };
@@ -26,9 +29,71 @@ export async function run(ctx) {
   if (initial.nativeHidden && initial.mixerContext === 'listen' && initial.projectId && initial.elementId)
     pass('modular audio listen: Sample.wav opens through mixer-owned context with hidden native source');
   else fail('modular audio listen context missing: ' + JSON.stringify(initial));
-  if (initial.lane && initial.ruler && initial.cursor && initial.canvas && initial.controls)
+  if (initial.lane && initial.ruler && initial.cursor && initial.canvas && initial.controls && initial.zoom && initial.pan && initial.capabilityNote)
     pass('modular audio listen: one-lane waveform editor controls render');
   else fail('modular audio listen surfaces missing: ' + JSON.stringify(initial));
+
+  const transport = await page.$eval('#previewHost .media-listen-surface.mmx-audio-listen', async (el) => {
+    const audio = document.querySelector('#previewHost audio.media-view');
+    el.querySelector('.media-listen-play').click();
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    const playAttempted = !audio.paused || audio.currentTime >= 0;
+    el.querySelector('.media-listen-stop').click();
+    return {
+      playAttempted,
+      stoppedAt: audio.currentTime,
+      paused: audio.paused,
+    };
+  });
+  if (transport.playAttempted && transport.paused && transport.stoppedAt === 0)
+    pass('modular audio listen: play/pause/stop controls operate hidden audio source');
+  else fail('modular audio listen transport mismatch: ' + JSON.stringify(transport));
+
+  const viewport = await page.$eval('#previewHost .media-listen-surface.mmx-audio-listen', (el) => {
+    el.__mediaMixerListen.setZoom(2);
+    el.__mediaMixerListen.setPan(40);
+    return {
+      zoom: el.dataset.mixerZoom,
+      pan: el.dataset.mixerPan,
+      canvasWidth: el.querySelector('.media-wv-canvas')?.style.width || '',
+    };
+  });
+  if (viewport.zoom === '2' && viewport.pan === '40' && viewport.canvasWidth === '200%')
+    pass('modular audio listen: zoom/pan update visible viewport state');
+  else fail('modular audio listen zoom/pan mismatch: ' + JSON.stringify(viewport));
+
+  const moved = await page.$eval('#previewHost .media-listen-surface.mmx-audio-listen', (el) => {
+    const before = Number(el.dataset.mixerOffsetMs || 0);
+    const region = el.querySelector('.media-lane-trim');
+    const rect = region.getBoundingClientRect();
+    region.dispatchEvent(new PointerEvent('pointerdown', {
+      bubbles: true,
+      pointerId: 9,
+      button: 0,
+      clientX: rect.left + 8,
+      clientY: rect.top + rect.height / 2,
+    }));
+    region.dispatchEvent(new PointerEvent('pointermove', {
+      bubbles: true,
+      pointerId: 9,
+      clientX: rect.left + 80,
+      clientY: rect.top + rect.height / 2,
+    }));
+    region.dispatchEvent(new PointerEvent('pointerup', {
+      bubbles: true,
+      pointerId: 9,
+      clientX: rect.left + 80,
+      clientY: rect.top + rect.height / 2,
+    }));
+    return {
+      before,
+      after: Number(el.dataset.mixerOffsetMs || 0),
+      input: el.querySelector('.media-lane-offset')?.value,
+    };
+  });
+  if (moved.after > moved.before && Number(moved.input) > 0)
+    pass('modular audio listen: dragging source region moves start offset state');
+  else fail('modular audio listen source drag mismatch: ' + JSON.stringify(moved));
 
   const roundtrip = await page.$eval('#previewHost .media-listen-surface.mmx-audio-listen', (el) => {
     const set = (selector, value) => {
@@ -83,4 +148,3 @@ export async function run(ctx) {
     pass('modular audio listen: Sample.mp3 uses the same mixer-owned Listen context');
   else fail('modular audio listen Sample.mp3 mismatch: ' + JSON.stringify(mp3));
 }
-
