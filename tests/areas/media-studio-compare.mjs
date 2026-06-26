@@ -41,12 +41,15 @@ export async function exerciseCompare(ctx, kind) {
       overlapMs: overlap?.overlap?.durationMs || 0,
       view: root.dataset.compareView,
       hasOverlayButton: !!root.querySelector('.mmx-compare-view[data-view="overlay"]'),
+      hasSettingsExport: !!root.querySelector('.mmx-settings-download'),
+      hasSettingsImport: !!root.querySelector('.mmx-settings-import'),
       hasBytes: /blob:|data:|objectURL|mediaBytes|frameCache|thumbnailCache/i.test(settings),
     };
   });
   if (modularCompare.lanes === 2 && modularCompare.elements === 2
     && modularCompare.compareA && modularCompare.compareB && modularCompare.overlapMs > 0
-    && modularCompare.view === 'stacked' && modularCompare.hasOverlayButton && !modularCompare.hasBytes)
+    && modularCompare.view === 'stacked' && modularCompare.hasOverlayButton
+    && modularCompare.hasSettingsExport && modularCompare.hasSettingsImport && !modularCompare.hasBytes)
     pass(`${kind} compare: modular shared-model A/B surface mounts with config-only state`);
   else fail(`${kind} modular compare state: ` + JSON.stringify(modularCompare));
   await page.click(`${panelSel} .mmx-compare-source .mmx-compare-view[data-view="overlay"]`);
@@ -90,6 +93,25 @@ export async function exerciseCompare(ctx, kind) {
   if (modularDrop.bName === expectedName && expectedCaps && modularDrop.compareB && modularDrop.overlapMs > 0 && !modularDrop.hasBytes)
     pass(`${kind} compare: modular B file browse retargets shared compare state`);
   else fail(`${kind} modular compare B file: ` + JSON.stringify(modularDrop));
+  const modularSettings = await page.$eval(`${panelSel} .mmx-compare-source`, async (root) => {
+    const json = root.__mediaMixerCompare.exportSettings();
+    const imported = root.__mediaMixerCompare.importSettings(json);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    root.querySelector('.mmx-relink-choice[data-choice="apply-all"]')?.click();
+    return {
+      matches: imported.relink.matches.length,
+      missing: imported.relink.missing.length,
+      modal: !!root.querySelector('.mmx-relink-modal'),
+      choice: root.dataset.lastRelinkChoice || '',
+      applied: Number(root.dataset.lastRelinkApplied || 0),
+      hasBytes: /blob:|data:|objectURL|mediaBytes|frameCache|thumbnailCache/i.test(json),
+    };
+  });
+  if (modularSettings.matches >= 1 && modularSettings.missing >= 0
+    && modularSettings.modal && modularSettings.choice === 'apply-all'
+    && modularSettings.applied >= 1 && !modularSettings.hasBytes)
+    pass(`${kind} compare: modular settings import exposes reapply choices`);
+  else fail(`${kind} modular compare settings import: ` + JSON.stringify(modularSettings));
   const layouts = await page.$$eval(`${panelSel} .media-compare-layout-btn`, (els) => els.map((el) => ({
     layout: el.dataset.layout,
     text: el.textContent.trim(),

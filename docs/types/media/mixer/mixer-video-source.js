@@ -15,6 +15,7 @@ import { updateProjectElementField } from './mixer-audio-multi-helpers.js';
 import { classifyMixerFile } from './mixer-media-drop.js';
 import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
 import { MIXER_LAYOUT } from './mixer-hit-test.js';
+import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
 
 const SOURCE_ASSET_ID = 'asset-video-source';
 
@@ -33,6 +34,14 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
   const runtimeFiles = new Map();
   if (intake?.file) runtimeFiles.set(SOURCE_ASSET_ID, intake.file);
   const visualRuntime = createMixerVisualRuntime({ runtimeFiles, onUpdate: render });
+  const settingsUi = createProjectSettingsUi({
+    root,
+    getProject: () => project,
+    setProject: (next) => { project = next; },
+    runtimeFiles,
+    render,
+    filename: `${(intake?.filename || 'video-source').replace(/\.[^.]+$/, '')}.mixer.json`,
+  });
 
   const dispatch = (action) => {
     if (action.type === 'seek') setCursorMs(action.cursorMs, { syncMedia: true });
@@ -93,6 +102,8 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     getProject: () => project,
     getViewport: () => viewport,
     exportSettings: () => exportProjectSettingsJson(project),
+    importSettings: settingsUi.importSettings,
+    getLastSettingsImport: () => settingsUi.getLastImport(),
     dispatch,
   };
   render();
@@ -105,6 +116,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       destroyed = true;
       interactions.destroy();
       visualRuntime.dispose();
+      settingsUi.destroy();
       root.removeEventListener('pointerdown', onPointerDown);
       root.removeEventListener('pointermove', onPointerMove);
       root.removeEventListener('pointerup', onPointerUp);
@@ -128,6 +140,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     });
     visualRuntime.update(project, viewport.cursorMs);
     decorate();
+    settingsUi.decorate();
   }
 
   function setCursorMs(cursorMs, { syncMedia = false } = {}) {

@@ -27,6 +27,7 @@ import {
   isMixerDropFile,
   probeDroppedVisualMetadata,
 } from './mixer-media-drop.js';
+import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
 
 const ASSET_ID = 'asset-compare-source';
 
@@ -43,6 +44,14 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
   const runtimeFiles = new Map();
   if (intake?.file) runtimeFiles.set(ASSET_ID, intake.file);
   const visualRuntime = createMixerVisualRuntime({ runtimeFiles, onUpdate: render });
+  const settingsUi = createProjectSettingsUi({
+    root,
+    getProject: () => project,
+    setProject: (next) => { project = next; },
+    runtimeFiles,
+    render,
+    filename: `${kind}-compare.mixer.json`,
+  });
 
   const dispatch = (action) => {
     if (action.type === 'seek') viewport = { ...viewport, cursorMs: Math.max(0, Number(action.cursorMs) || 0) };
@@ -123,6 +132,8 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     getViewport: () => viewport,
     getOverlap: () => computeCompareOverlap(project),
     exportSettings: () => exportProjectSettingsJson(project),
+    importSettings: settingsUi.importSettings,
+    getLastSettingsImport: () => settingsUi.getLastImport(),
     dispatch,
   };
   render();
@@ -132,6 +143,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
       destroyed = true;
       interactions.destroy();
       visualRuntime.dispose();
+      settingsUi.destroy();
       root.removeEventListener('click', onClick);
       root.removeEventListener('input', onInput);
       root.removeEventListener('change', onChange);
@@ -155,6 +167,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     });
     visualRuntime.update(project, viewport.cursorMs);
     decorateCompare();
+    settingsUi.decorate();
   }
 
   function decorateCompare() {

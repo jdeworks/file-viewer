@@ -102,6 +102,8 @@ export async function runVideoExportAndTimelineChecks(ctx) {
       hasVisual: !!root.querySelector('.mmx-element-visual'),
       thumbCount: Number(root.querySelector('.mmx-thumb-strip')?.dataset.thumbCount || 0),
       hasTransform: !!root.querySelector('.mmx-inspector-visual-opacity'),
+      hasSettingsExport: !!root.querySelector('.mmx-settings-download'),
+      hasSettingsImport: !!root.querySelector('.mmx-settings-import'),
       hasMediaBytes: /objectURL|blob:|data:|waveformSummary|frameCache|thumbnailCache/i.test(settings || ''),
       hasVideo: !!element?.capabilities?.hasVideo,
       hasAudio: !!element?.capabilities?.hasAudio,
@@ -122,6 +124,27 @@ export async function runVideoExportAndTimelineChecks(ctx) {
   else fail('modular video source metadata: ' + JSON.stringify(modularVideoSource));
   if (!modularVideoSource.hasMediaBytes) pass('P6: modular video source settings export remains config-only');
   else fail('modular video settings export leaked media data');
+  if (modularVideoSource.hasSettingsExport && modularVideoSource.hasSettingsImport)
+    pass('P6: modular video source exposes project settings import/export controls');
+  else fail('modular video source settings controls: ' + JSON.stringify(modularVideoSource));
+  const sourceSettingsImport = await page.$eval(tlModeSel + ' .mmx-video-source', async (root) => {
+    const json = root.__mediaMixerVideoSource.exportSettings();
+    const imported = root.__mediaMixerVideoSource.importSettings(json);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    root.querySelector('.mmx-relink-choice[data-choice="do-not-change-media"]')?.click();
+    return {
+      matches: imported.relink.matches.length,
+      missing: imported.relink.missing.length,
+      modal: !!root.querySelector('.mmx-relink-modal'),
+      choice: root.dataset.lastRelinkChoice || '',
+      hasBytes: /objectURL|blob:|data:|waveformSummary|frameCache|thumbnailCache/i.test(json),
+    };
+  });
+  if (sourceSettingsImport.matches >= 1 && sourceSettingsImport.missing === 0
+    && sourceSettingsImport.modal && sourceSettingsImport.choice === 'do-not-change-media'
+    && !sourceSettingsImport.hasBytes)
+    pass('P6: modular video source imports config-only settings with reapply choices');
+  else fail('modular video source settings import: ' + JSON.stringify(sourceSettingsImport));
   await page.waitForFunction((sel) => Number(document.querySelector(sel)?.dataset.frameSources || 0) > 0,
     tlModeSel + ' .mmx-video-source .mmx-frame-preview', { timeout: 12000 });
   const sourceFrameCount = await page.$eval(tlModeSel + ' .mmx-video-source .mmx-frame-preview',

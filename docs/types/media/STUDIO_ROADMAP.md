@@ -157,14 +157,14 @@ detailed analysis/live-preview coverage until the modular surface can choose A/B
 from arbitrary existing mixer elements and render equivalent waveform/visual
 overlay analysis.
 
-Stage 7 has started with a reusable project settings UI helper. Multi-lane Mix
-now has toolbar controls for config-only settings export/import and an import
-reapply panel with the required `Apply to all elements`, `Ask per element`, and
-`Do not change media objects` choices. The UI uses the pure
-`importProjectSettings()`/`applyRelinkChoice()` path and runtime local-asset
-evidence, so media bytes remain outside the exported project. The next Stage 7
-work is to reuse the same settings surface in video source and modular Compare,
-then add drag-to-relink missing assets and final ffmpeg-gated video export.
+Stage 7 has started with a reusable project settings UI helper. Multi-lane Mix,
+opened video source, and modular Compare now have toolbar controls for
+config-only settings export/import and an import reapply panel with the required
+`Apply to all elements`, `Ask per element`, and `Do not change media objects`
+choices. The UI uses the pure `importProjectSettings()`/`applyRelinkChoice()`
+path and runtime local-asset evidence, so media bytes remain outside the
+exported project. The next Stage 7 work is drag-to-relink missing assets and
+final ffmpeg-gated video export.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 
