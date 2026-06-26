@@ -1,7 +1,9 @@
-// renderer.js — Stage 6 Protocol Codex controller: routes between the hub, the act-map run
-// (combat / reward / rest / shop / event), and The Refused Connection negotiation. Owns the
-// transient combat instance (never persisted — a reload re-instantiates from the run's node).
-// The stage-clear gate is unchanged: read the codex (epub), then defeat The Refused Connection.
+// renderer.js — Stage 6 Protocol Codex controller: routes between the hub and the act-map run
+// (combat / reward / rest / shop / event). Owns the transient combat instance (never persisted —
+// a reload re-instantiates from the run's node). The act-4 boss, The Refused Connection, is fought
+// with the player's REAL deck (boss-combat.js wires the negotiation as an acceptance hook); the
+// stage-clear gate is unchanged: read the codex (epub) — without it every Signal deals 0 — then
+// defeat the boss with the deck built across acts 1–3.
 
 import { createCombat, playCard, endTurn, makeRng } from "./combat.js";
 import { instantiateEnemy } from "./enemies.js";
@@ -12,15 +14,14 @@ import {
   takeReward, rest, removeCard, closeNode, buyCard, awardRelic, prestigeCost, FINAL_BOSS_ACT,
   seatAtFinalBoss
 } from "./run.js";
-import {
-  applyProtocolChapter9Unlock, getBossLockState, recordLockedBossAttempt,
-  playProtocolCard, startProtocolTurn
-} from "./boss.js";
+import { applyProtocolChapter9Unlock, getBossLockState } from "./boss.js";
+import { wireBossCombat, autoNegotiate as runAutoNegotiate } from "./boss-combat.js";
 import { combatView } from "./ui-combat.js";
 import { hubView, mapView, deathView, wonView } from "./ui-map.js";
 import { rewardView, restView, shopView, eventView } from "./ui-rewards.js";
-import { bossView } from "./ui-boss.js";
 import { ACTION_NAME, BTS_PATH, EPUB_PATH } from "./messages.js";
+
+const REFUSED_CONNECTION = "the-refused-connection";
 
 export function renderStage6({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
@@ -51,6 +52,19 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       combat = null;
       commit();
       return state.run.currentNodeId;
+    },
+    // TEST/DEBUG: drive the in-run boss fight with a correct handshake strategy using the REAL
+    // engine + acceptance. NOT a bypass — if ch9 is unread the boss is locked and this cannot win.
+    autoNegotiate(maxTurns = 80) {
+      const run = state.run;
+      if (!run || run.status !== "boss") return { ok: false, reason: "not-at-boss" };
+      if (!combat || combat.nodeId !== run.currentNodeId) combat = makeCombat(run);
+      runAutoNegotiate(combat, maxTurns);
+      const enemyHp = combat.enemy?.hp;
+      const result = combat.result;
+      if (combat.over) finishCombat(run);
+      commit();
+      return { ok: true, result, enemyHp, bossDefeated: Boolean(state.boss.defeated), won: state.run?.status === "won" };
     }
   };
 
@@ -63,10 +77,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     // run.status === "boss" case below) — there is no standalone hub-reachable boss screen.
     if (state.ui.screen !== "run" || !run) { combat = null; return mount(hubView(state, lockState())); }
     switch (run.status) {
-      case "combat": return mountCombat(run);
-      case "boss": return run.act >= FINAL_BOSS_ACT
-        ? mount(bossView(state, lockState(), { fromRun: true }))
-        : mountCombat(run);
+      // Every boss — including the act-4 finale — is now a real-deck fight (combatView).
+      case "combat": case "boss": return mountCombat(run);
       case "reward": combat = null; return mount(rewardView(run));
       case "rest": combat = null; return mount(restView(run));
       case "shop": combat = null; return mount(shopView(run));
@@ -86,7 +98,6 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
 
   // ── combat lifecycle ─────────────────────────────────────────────────────────────────────────
   function makeCombat(run) {
-    const node = nodeById(run.map, run.currentNodeId);
     const enemyId = enemyForCurrentNode(run, makeRng(strHash(`${run.seed}:${run.currentNodeId}:enemy`)));
     const enemy = instantiateEnemy(enemyId, run.act);
     const c = createCombat({
@@ -97,15 +108,31 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       relics: relicsFor(run.relics)
     });
     c.nodeId = run.currentNodeId;
+    // The act-4 finale: layer the negotiation onto the real fight. ch9 unread ⇒ locked ⇒ every
+    // Signal deals 0 (the load-bearing un-cheat); reading the codex rebuilds this combat unlocked.
+    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked });
     return c;
   }
 
   function finishCombat(run) {
     const win = combat.result === "win";
+    const node = nodeById(run.map, run.currentNodeId);
+    const isFinalBoss = node?.type === "boss" && run.act >= FINAL_BOSS_ACT;
     resolveCombat(run, { win, hpRemaining: combat.player.hp });
     if (win && run.act > (state.meta.bestAct || 0)) state.meta.bestAct = run.act;
     if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
     combat = null;
+    if (win && isFinalBoss) finalBossDefeated(run);
+  }
+
+  // The act-4 boss fell to the real deck: mark the codex gate answered and complete the stage.
+  function finalBossDefeated(run) {
+    state.boss.defeated = true;
+    state.boss.reached = true;
+    state.meta.firstClearComplete = true;
+    state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
+    state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
+    completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
   }
 
   function doPrestige() {
@@ -135,29 +162,6 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     closeNode(run);
   }
 
-  // ── final boss negotiation ───────────────────────────────────────────────────────────────────
-  function challengeBoss() {
-    state.boss.reached = true;
-    if (!lockState().unlocked) { recordLockedBossAttempt(state); return; }
-    applyProtocolChapter9Unlock({ state, achievements, bell });
-  }
-
-  function playBossCard(cardId) {
-    playProtocolCard({ state, card: cardId });
-    if (state.boss.defeated) onBossDefeated();
-  }
-
-  function onBossDefeated() {
-    state.meta.firstClearComplete = true;
-    const run = state.run;
-    if (run && run.status === "boss") {
-      resolveCombat(run, { win: true, hpRemaining: run.hp });
-      state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
-      state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
-    }
-    completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
-  }
-
   // ── click delegation ─────────────────────────────────────────────────────────────────────────
   function handleClick(event) {
     const run = state.run;
@@ -171,8 +175,6 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   function handleTarget(event, run) {
     const play = event.target.closest("[data-play]");
     if (play && combat && !combat.over) { playCard(combat, Number(play.dataset.play)); if (combat.over) finishCombat(run); return true; }
-    const card = event.target.closest("[data-card]");
-    if (card) { playBossCard(card.dataset.card); return true; }
     if (!run) return false;
     const node = event.target.closest("[data-node]");
     if (node) { moveTo(run, node.dataset.node); return true; }
@@ -198,9 +200,11 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       case "to-hub": state.ui.screen = "hub"; return true;
       case "to-map": if (run) closeNode(run); return true;
       case "end-turn": if (combat && !combat.over) { endTurn(combat); if (combat.over) finishCombat(run); } return true;
-      case "boss": challengeBoss(); return true;
-      case "new-turn": startProtocolTurn(state); return true;
-      case "epub": openEpub({ viewer, actions, achievements, bell, state }); return true;
+      case "epub":
+        openEpub({ viewer, actions, achievements, bell, state });
+        // Reading ch9 mid-fight unlocks the negotiation: rebuild the boss combat so it is no longer locked.
+        if (combat && combat.bossPhase && combat.bossLocked) combat = null;
+        return true;
       case "bts": openBts({ bts, viewer }); return true;
       default: return false;
     }

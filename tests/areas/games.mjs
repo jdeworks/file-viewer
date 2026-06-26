@@ -686,11 +686,16 @@ export async function run(ctx) {
   await page.click('.s6db-hub [data-action="begin-run"]');
   await page.waitForSelector('.s6db-map .s6db-node.is-available[data-node]', { timeout: 4000 });
   pass('Stage 6 run begins: act map offers routable nodes');
-  // Reach the act-4 boss via the deterministic test hook (a real run would clear acts 1–3 first).
-  await page.evaluate(() => window.__fvStage6.jumpToBoss());
-  await page.waitForSelector('.s6db-boss', { timeout: 4000 });
-  // Stage-clear gate (un-cheat): read the codex, then negotiate The Refused Connection in-run.
-  await page.click('.s6db-boss [data-action="epub"]');
+  // Reach the act-4 boss via the deterministic test hook with a winnable deck (a real run would
+  // clear acts 1–3 and build this deck itself). The boss is fought with this REAL deck.
+  await page.evaluate(() => window.__fvStage6.jumpToBoss(
+    ['SYN', 'SYN', 'SYN', 'SYN', 'SYN', 'ACK', 'ACK', 'ACK', 'ACK', 'SEGMENT']
+  ));
+  // It is a real combat (data-play hand), not the retired 3-button puzzle.
+  await page.waitForSelector('.s6db-combat .s6db-boss-banner', { timeout: 4000 });
+  pass('Stage 6 boss is a real-deck fight reached only through a run');
+  // Stage-clear gate (un-cheat): locked until ch9 is read — read the codex from the boss banner.
+  await page.click('.s6db-combat .s6db-boss-banner [data-action="epub"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'protocols_of_the_entity.epub' && window.__fv.state.type.id === 'epub', null, { timeout: 5000 });
   await page.waitForFunction(() => {
     try {
@@ -698,17 +703,15 @@ export async function run(ctx) {
       return Boolean(save.actions?.['6.protocol_ch9_read'] && save.achievements?.['stage6.protocol_ch9_read']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  await page.waitForSelector('.s6db-boss button[data-card="SYN"]:not([disabled])', { timeout: 4000 });
-  for (const card of ['SYN', 'Signal', 'ACK', 'Signal', 'Signal', 'Signal', 'ACK', 'Signal', 'Signal']) {
-    await page.click(`button[data-card="${card}"]`);
-  }
+  // With ch9 read the negotiation is unlocked: clear the fight with the real deck (correct handshake).
+  await page.evaluate(() => window.__fvStage6.autoNegotiate());
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return save.defeated?.includes(6) && save.unlockedStages?.includes(7);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 6 codex gate clears Protocol Codex via The Refused Connection');
+  pass('Stage 6 codex gate clears Protocol Codex via the real-deck negotiation');
 
   await page.waitForSelector('.stage7-identity-arbiter', { timeout: 8000 });
   await page.click('[data-action="photo"]');

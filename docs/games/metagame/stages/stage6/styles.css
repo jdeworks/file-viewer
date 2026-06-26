@@ -144,6 +144,15 @@ button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !
 .s6db-boss-rules { display: grid; gap: 8px; align-content: start; }
 .s6db-boss-rules article { display: grid; gap: 4px; border: 1px solid #b8962e; border-radius: 6px; background: #f6efdf; padding: 10px; }
 
+/* The act-4 real-deck negotiation banner (above the combat screen). */
+.s6db-boss-banner { border: 2px solid #b8962e; border-radius: 8px; background: #f6efdf; padding: 10px 12px; margin-bottom: 10px; }
+.s6db-boss-banner.is-locked { border-color: #8b2020; background: #f7e7e2; }
+.s6db-boss-banner-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.s6db-boss-banner-head strong { letter-spacing: 0.04em; }
+.s6db-boss-phase { font-size: 0.82rem; color: #6b513a; }
+.s6db-boss-rule { margin: 6px 0 0; font-style: italic; color: #3b2a1c; }
+.s6db-boss-mismatch { margin: 6px 0; color: #8b2020; font-weight: 700; }
+
 /* ── end screens ───────────────────────────────────────────────────────────── */
 .s6db-end h2 { margin-top: 0; }
 .s6db-end--dead h2 { color: #8b2020; }

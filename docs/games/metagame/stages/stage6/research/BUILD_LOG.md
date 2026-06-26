@@ -19,3 +19,10 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   `wireBossCombat()` (3 phases, ch9 `locked` flag, phase-3 ongoing damage) + `autoNegotiate()`
   test driver; enemies.js gains `the-refused-connection`. Unit test boss-combat.test.mjs:
   SYN-lead/ACK gating, phase advance, full real-deck win (deterministic), locked⇒unwinnable.
+- B2b — Switched the in-run boss to the real-deck fight: renderer routes the act-4 boss through
+  `mountCombat` (was the 3-button screen), `makeCombat` wires `wireBossCombat({locked:!ch9})`,
+  `finishCombat`→`finalBossDefeated` completes the stage on a real win; removed the dead
+  challengeBoss/playBossCard/onBossDefeated + `boss`/`new-turn` actions + data-card handler;
+  reading the epub mid-fight rebuilds the combat unlocked. ui-combat.js gains a boss banner
+  (phase rule + locked PROTOCOL MISMATCH + codex button) with styles. Deleted the retired
+  ui-boss.js + content.js. Smoke rewritten to win via the real deck (`__fvStage6.autoNegotiate`).

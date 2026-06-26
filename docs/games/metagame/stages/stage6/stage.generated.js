@@ -1134,6 +1134,75 @@ function hashSeed(seed, nodeId2) {
   return h || 1;
 }
 
+// ../../docs/games/metagame/stages/stage6/boss-combat.js
+var BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60 };
+var ONGOING_DAMAGE = 8;
+function isSignalCard(card) {
+  return card?.type === "Signal";
+}
+function accepts(combat, card) {
+  if (!isSignalCard(card)) return true;
+  if (combat.bossLocked) return false;
+  const phase = combat.bossPhase || 1;
+  if (phase === 1) return combat.playedIdsThisTurn[0] === "SYN";
+  if (phase === 2) return combat.playedIdsThisTurn.includes("ACK");
+  return true;
+}
+function wireBossCombat(combat, { locked = false } = {}) {
+  combat.bossPhase = 1;
+  combat.bossLocked = Boolean(locked);
+  combat.enemy.hp = BOSS_PHASE_HP[1];
+  combat.enemy.maxHp = BOSS_PHASE_HP[1];
+  combat.acceptance = accepts;
+  combat.advancePhase = (c) => {
+    const phase = c.bossPhase || 1;
+    if (phase >= 3) return false;
+    c.bossPhase = phase + 1;
+    c.enemy.hp = BOSS_PHASE_HP[c.bossPhase];
+    c.enemy.maxHp = BOSS_PHASE_HP[c.bossPhase];
+    c.log = [...c.log || [], `Phase ${c.bossPhase}.`].slice(-10);
+    return true;
+  };
+  combat.onPlayerTurnEnd = (c) => {
+    if ((c.bossPhase || 1) !== 3 || c.bossLocked) return;
+    if (!c.playedIdsThisTurn.includes("ACK")) {
+      c.log = [...c.log || [], "no ACK — 8 ongoing damage."].slice(-10);
+      dealToPlayer(c, ONGOING_DAMAGE);
+      if (c.player.hp <= 0 && !c.over) {
+        c.over = true;
+        c.result = "lose";
+      }
+    }
+  };
+  return combat;
+}
+function autoNegotiate(combat, maxTurns = 80) {
+  let turns = 0;
+  while (!combat.over && turns++ < maxTurns) {
+    playHandshakeTurn(combat);
+    if (combat.over) break;
+    endTurn(combat);
+  }
+  return combat;
+}
+function playHandshakeTurn(combat) {
+  if ((combat.bossPhase || 1) === 1) playFirstMatch(combat, (c) => c.id === "SYN");
+  else playFirstMatch(combat, (c) => c.type === "Protocol");
+  let guard = 0;
+  while (guard++ < 20 && playFirstMatch(combat, () => true)) {
+  }
+}
+function playFirstMatch(combat, pred) {
+  for (let i = 0; i < combat.hand.length; i++) {
+    const card = cardById(combat.hand[i]);
+    if (!card || card.cost > combat.player.energy) continue;
+    if (!pred(card)) continue;
+    playCard(combat, i);
+    return true;
+  }
+  return false;
+}
+
 // ../../docs/games/metagame/stages/stage6/ui-combat.js
 var STATUS_LABEL = {
   strength: "STR",
@@ -1141,11 +1210,17 @@ var STATUS_LABEL = {
   weak: "WEAK"
 };
 var TIER_BADGE = { elite: "☠ ELITE", boss: "☣ BOSS" };
+var PHASE_RULE = {
+  1: "HANDSHAKE — lead each turn with SYN, or your Signals are refused.",
+  2: "ESTABLISHED — play an ACK before your Signals, or they are refused.",
+  3: "MAINTAIN — Signals always land, but a turn with no ACK costs 8 ongoing."
+};
 function combatView(combat, run) {
   const el = document.createElement("div");
   el.className = "s6db-combat";
   const intent = currentIntent(combat);
   el.innerHTML = `
+    ${bossBanner(combat)}
     <div class="s6db-combat-head">
       <span class="s6db-turn">turn ${combat.turn}</span>
       <span class="s6db-pile">draw ${combat.draw.length} · discard ${combat.discard.length}${combat.exhaust.length ? ` · exhaust ${combat.exhaust.length}` : ""}</span>
@@ -1169,6 +1244,20 @@ function combatView(combat, run) {
   const log2 = el.querySelector(".s6db-log");
   log2.replaceChildren(...combat.log.slice(-5).map(toLi));
   return el;
+}
+function bossBanner(combat) {
+  if (!combat.bossPhase) return "";
+  const locked = Boolean(combat.bossLocked);
+  return `
+    <div class="s6db-boss-banner${locked ? " is-locked" : ""}">
+      <div class="s6db-boss-banner-head">
+        <strong>THE REFUSED CONNECTION</strong>
+        <span class="s6db-boss-phase">phase ${combat.bossPhase} / 3</span>
+      </div>
+      <p class="s6db-boss-rule">${esc(PHASE_RULE[combat.bossPhase] || "")}</p>
+      ${locked ? `<p class="s6db-boss-mismatch">PROTOCOL MISMATCH — every Signal deals 0 until you read Chapter 9.</p>
+           <button type="button" data-action="epub">open the codex</button>` : ""}
+    </div>`;
 }
 function describeIntent(intent, combat) {
   if (!intent) return { kind: "unknown", icon: "…", primary: "—", detail: "" };
@@ -1491,89 +1580,8 @@ function esc3(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// ../../docs/games/metagame/stages/stage6/content.js
-var phaseRules = [
-  {
-    phase: 1,
-    title: "SYN Phase",
-    rule: "SYN must be played first each turn before Signal damage is accepted."
-  },
-  {
-    phase: 2,
-    title: "ACK Phase",
-    rule: "ACK must precede Signal damage."
-  },
-  {
-    phase: 3,
-    title: "Unknown Protocol",
-    rule: "ACK must be played each turn to avoid ongoing damage."
-  }
-];
-var protocolCards = [
-  { id: "SYN", type: "Signal", text: "Open a connection. Required first in Phase 1." },
-  { id: "ACK", type: "Protocol", text: "Acknowledge the current protocol rule." },
-  { id: "Signal", type: "Signal", text: "Deal 30 accepted damage when phase rules are met." }
-];
-
-// ../../docs/games/metagame/stages/stage6/ui-boss.js
-function bossView(state, lock, { fromRun = false } = {}) {
-  const el = document.createElement("div");
-  el.className = "s6db-boss";
-  const boss = state.boss;
-  el.innerHTML = `
-    <header class="s6db-boss-hud">
-      <strong>THE REFUSED CONNECTION</strong>
-      <span>phase ${boss.phase}</span>
-      <span>boss hp ${boss.defeated ? 0 : boss.hp}</span>
-      <span class="s6db-boss-status">${esc4(lock.status)}${lock.defeated ? " / answered" : ""}</span>
-    </header>
-    <div class="s6db-boss-layout">
-      <section class="s6db-boss-stage">
-        <p class="s6db-boss-hint">${esc4(lock.hint)}</p>
-        <div class="s6db-boss-turn">first ${esc4(boss.turn?.firstCard || "none")} · ACK ${boss.turn?.playedAck ? "yes" : "no"}</div>
-        <div class="s6db-card-row" aria-label="protocol cards"></div>
-      </section>
-      <section class="s6db-boss-rules" aria-label="Chapter 9 rules"></section>
-    </div>
-    <ol class="s6db-log" aria-label="protocol log"></ol>
-    <div class="s6db-hub-actions">
-      <button type="button" data-action="boss"${lock.defeated ? " disabled" : ""}>${lock.unlocked ? "negotiate" : "challenge"}</button>
-      <button type="button" data-action="new-turn">new turn</button>
-      <button type="button" data-action="epub">open the codex</button>
-      ${boss.defeated ? `<button type="button" data-action="bts">open trace.bts</button>` : ""}
-      ${fromRun ? "" : `<button type="button" data-action="to-hub" class="s6db-ghost">back to hub</button>`}
-    </div>`;
-  const rules = el.querySelector(".s6db-boss-rules");
-  rules.replaceChildren(...phaseRules.map((rule) => {
-    const item = document.createElement("article");
-    item.innerHTML = `<strong>${esc4(rule.title)}</strong><span>${esc4(rule.rule)}</span>`;
-    return item;
-  }));
-  const cards = el.querySelector(".s6db-card-row");
-  cards.replaceChildren(...protocolCards.map((card) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `s6db-card s6db-card--${card.type.toLowerCase()}`;
-    button.dataset.card = card.id;
-    button.disabled = boss.defeated || !lock.unlocked;
-    button.innerHTML = `<strong class="s6db-card-id">${esc4(card.id)}</strong>
-      <span class="s6db-card-type">${esc4(card.type)}</span>
-      <small class="s6db-card-text">${esc4(card.text)}</small>`;
-    return button;
-  }));
-  const log2 = el.querySelector(".s6db-log");
-  log2.replaceChildren(...(state.log || []).slice(-6).map((line) => {
-    const li = document.createElement("li");
-    li.textContent = line;
-    return li;
-  }));
-  return el;
-}
-function esc4(value) {
-  return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
-}
-
 // ../../docs/games/metagame/stages/stage6/renderer.js
+var REFUSED_CONNECTION = "the-refused-connection";
 function renderStage6({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage6-protocol-codex";
@@ -1602,6 +1610,19 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       combat = null;
       commit();
       return state.run.currentNodeId;
+    },
+    // TEST/DEBUG: drive the in-run boss fight with a correct handshake strategy using the REAL
+    // engine + acceptance. NOT a bypass — if ch9 is unread the boss is locked and this cannot win.
+    autoNegotiate(maxTurns = 80) {
+      const run = state.run;
+      if (!run || run.status !== "boss") return { ok: false, reason: "not-at-boss" };
+      if (!combat || combat.nodeId !== run.currentNodeId) combat = makeCombat(run);
+      autoNegotiate(combat, maxTurns);
+      const enemyHp = combat.enemy?.hp;
+      const result = combat.result;
+      if (combat.over) finishCombat(run);
+      commit();
+      return { ok: true, result, enemyHp, bossDefeated: Boolean(state.boss.defeated), won: state.run?.status === "won" };
     }
   };
   return { repaint: route, destroy() {
@@ -1615,10 +1636,10 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       return mount(hubView(state, lockState()));
     }
     switch (run.status) {
+      // Every boss — including the act-4 finale — is now a real-deck fight (combatView).
       case "combat":
-        return mountCombat(run);
       case "boss":
-        return run.act >= FINAL_BOSS_ACT ? mount(bossView(state, lockState(), { fromRun: true })) : mountCombat(run);
+        return mountCombat(run);
       case "reward":
         combat = null;
         return mount(rewardView(run));
@@ -1652,7 +1673,6 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     mount(combatView(combat, run));
   }
   function makeCombat(run) {
-    const node = nodeById(run.map, run.currentNodeId);
     const enemyId = enemyForCurrentNode(run, makeRng(strHash2(`${run.seed}:${run.currentNodeId}:enemy`)));
     const enemy = instantiateEnemy(enemyId, run.act);
     const c = createCombat({
@@ -1663,14 +1683,26 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       relics: relicsFor(run.relics)
     });
     c.nodeId = run.currentNodeId;
+    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked });
     return c;
   }
   function finishCombat(run) {
     const win = combat.result === "win";
+    const node = nodeById(run.map, run.currentNodeId);
+    const isFinalBoss = node?.type === "boss" && run.act >= FINAL_BOSS_ACT;
     resolveCombat(run, { win, hpRemaining: combat.player.hp });
     if (win && run.act > (state.meta.bestAct || 0)) state.meta.bestAct = run.act;
     if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
     combat = null;
+    if (win && isFinalBoss) finalBossDefeated(run);
+  }
+  function finalBossDefeated(run) {
+    state.boss.defeated = true;
+    state.boss.reached = true;
+    state.meta.firstClearComplete = true;
+    state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
+    state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
+    completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
   }
   function doPrestige() {
     const cost = prestigeCost(state.meta.protocolVersion || 0);
@@ -1695,28 +1727,6 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     }
     closeNode(run);
   }
-  function challengeBoss() {
-    state.boss.reached = true;
-    if (!lockState().unlocked) {
-      recordLockedBossAttempt(state);
-      return;
-    }
-    applyProtocolChapter9Unlock({ state, achievements, bell });
-  }
-  function playBossCard(cardId) {
-    playProtocolCard({ state, card: cardId });
-    if (state.boss.defeated) onBossDefeated();
-  }
-  function onBossDefeated() {
-    state.meta.firstClearComplete = true;
-    const run = state.run;
-    if (run && run.status === "boss") {
-      resolveCombat(run, { win: true, hpRemaining: run.hp });
-      state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
-      state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
-    }
-    completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
-  }
   function handleClick(event) {
     const run = state.run;
     if (handleTarget(event, run)) return commit();
@@ -1730,11 +1740,6 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     if (play && combat && !combat.over) {
       playCard(combat, Number(play.dataset.play));
       if (combat.over) finishCombat(run);
-      return true;
-    }
-    const card = event.target.closest("[data-card]");
-    if (card) {
-      playBossCard(card.dataset.card);
       return true;
     }
     if (!run) return false;
@@ -1800,14 +1805,9 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
           if (combat.over) finishCombat(run);
         }
         return true;
-      case "boss":
-        challengeBoss();
-        return true;
-      case "new-turn":
-        startProtocolTurn(state);
-        return true;
       case "epub":
         openEpub({ viewer, actions, achievements, bell, state });
+        if (combat && combat.bossPhase && combat.bossLocked) combat = null;
         return true;
       case "bts":
         openBts({ bts, viewer });

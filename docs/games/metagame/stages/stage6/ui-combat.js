@@ -13,11 +13,18 @@ const STATUS_LABEL = {
 };
 const TIER_BADGE = { elite: "☠ ELITE", boss: "☣ BOSS" };
 
+const PHASE_RULE = {
+  1: "HANDSHAKE — lead each turn with SYN, or your Signals are refused.",
+  2: "ESTABLISHED — play an ACK before your Signals, or they are refused.",
+  3: "MAINTAIN — Signals always land, but a turn with no ACK costs 8 ongoing."
+};
+
 export function combatView(combat, run) {
   const el = document.createElement("div");
   el.className = "s6db-combat";
   const intent = currentIntent(combat);
   el.innerHTML = `
+    ${bossBanner(combat)}
     <div class="s6db-combat-head">
       <span class="s6db-turn">turn ${combat.turn}</span>
       <span class="s6db-pile">draw ${combat.draw.length} · discard ${combat.discard.length}${combat.exhaust.length ? ` · exhaust ${combat.exhaust.length}` : ""}</span>
@@ -43,6 +50,26 @@ export function combatView(combat, run) {
   const log = el.querySelector(".s6db-log");
   log.replaceChildren(...combat.log.slice(-5).map(toLi));
   return el;
+}
+
+// The act-4 boss negotiation banner: only rendered for a wired boss combat (combat.bossPhase set).
+// Shows the active phase rule, and — while ch9 is unread (locked) — a PROTOCOL MISMATCH warning and
+// a button to open the codex (reading Chapter 9 is the load-bearing un-cheat).
+function bossBanner(combat) {
+  if (!combat.bossPhase) return "";
+  const locked = Boolean(combat.bossLocked);
+  return `
+    <div class="s6db-boss-banner${locked ? " is-locked" : ""}">
+      <div class="s6db-boss-banner-head">
+        <strong>THE REFUSED CONNECTION</strong>
+        <span class="s6db-boss-phase">phase ${combat.bossPhase} / 3</span>
+      </div>
+      <p class="s6db-boss-rule">${esc(PHASE_RULE[combat.bossPhase] || "")}</p>
+      ${locked
+        ? `<p class="s6db-boss-mismatch">PROTOCOL MISMATCH — every Signal deals 0 until you read Chapter 9.</p>
+           <button type="button" data-action="epub">open the codex</button>`
+        : ""}
+    </div>`;
 }
 
 // Classify an enemy intent so the UI can telegraph it with an icon, a kind colour, and the number
