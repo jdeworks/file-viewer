@@ -293,10 +293,23 @@ export async function run(ctx) {
   await openExample('mongod.conf');
   await page.waitForSelector('#previewHost .mg-doc', { timeout: 12000 });
   const mgText = await page.$eval('#previewHost .mg-doc', (e) => e.textContent);
+  const mgHtml = await page.$eval('#previewHost .mg-doc', (e) => e.innerHTML);
   if (/MongoDB/i.test(mgText)) pass('mongod.conf: MongoDB badge shown'); else fail('mongod badge: ' + mgText.slice(0, 200));
   if (/27017|\/var\/lib\/mongodb/i.test(mgText)) pass('mongod.conf: storage/network settings shown'); else fail('mongod storage: ' + mgText.slice(0, 300));
   if (/rs0|replSet/i.test(mgText)) pass('mongod.conf: replication section shown'); else fail('mongod repl: ' + mgText.slice(0, 300));
-  if (/••••/.test(mgText)) pass('mongod.conf: keyFile value masked'); else fail('mongod masking: ' + mgText.slice(0, 300));
+  if (/\[configured\]/.test(mgText)) pass('mongod.conf: keyFile value masked'); else fail('mongod masking: ' + mgText.slice(0, 300));
+  if (/MongoDB Review|bind scope|authorization|key file/i.test(mgText)) pass('mongod.conf: review findings shown'); else fail('mongod review: ' + mgText.slice(0, 500));
+  if ((mgText + mgHtml).includes('/etc/mongodb/keyfile')) fail('mongod.conf: keyFile path leaked'); else pass('mongod.conf: keyFile path redacted');
+  const mgHelpTitle = await page.$eval('#previewHost .mg-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/MongoDB|Open line|source/i.test(mgHelpTitle)) pass('mongod.conf: setting hover explains source action'); else fail('mongod hover title: ' + mgHelpTitle);
+  const mgSourceCollapsed = await page.$eval('#previewHost .mg-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (mgSourceCollapsed) pass('mongod.conf: redacted source starts collapsed'); else fail('mongod source was not collapsed');
+  const mgSourceLine = await page.$eval('#previewHost .mg-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .mg-doc .kf-source-details');
+    return details?.open && document.getElementById(`mg-line-${line}`);
+  }, mgSourceLine);
+  pass('mongod.conf: clicking setting opens source line');
 
   // ── my.cnf viewer ──
   await openExample('my.cnf (MySQL)');
