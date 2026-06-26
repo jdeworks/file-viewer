@@ -228,7 +228,6 @@ export async function mountVideoModePanels({
   exportPanel,
   onRegisterController,
   onReleaseController,
-  onTranscodedSource,
 }) {
   const states = createWorkspaceModes({
     tabWrap: modeTabs,
@@ -264,22 +263,7 @@ export async function mountVideoModePanels({
       ));
       return mixerController;
     }
-    const timelineToggle = makeTogglePanel({
-      label: 'Detailed legacy timeline',
-      panelClass: 'media-legacy-timeline-panel',
-      mount: async (innerPanel) => {
-        const { mountTimeline } = await import('./timeline.js');
-        return mountTimeline(innerPanel, intake, mediaElement, onTranscodedSource);
-      },
-    });
-    timelineToggle.wrap.classList.add('media-legacy-timeline-wrap');
-    panel.append(timelineToggle.wrap);
-    return {
-      destroy() {
-        mixerController?.destroy?.();
-        timelineToggle?.destroy?.();
-      },
-    };
+    return mixerController;
   });
 
   let subtitleController = null;

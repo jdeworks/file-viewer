@@ -289,7 +289,6 @@ export async function render(intake, ctx = {}) {
       exportPanel,
       onRegisterController: registerModeController,
       onReleaseController: releaseModeController,
-      onTranscodedSource: applyTranscodedSource,
     });
     subtitleController = videoModeData.subtitleController;
   }

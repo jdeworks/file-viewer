@@ -212,7 +212,12 @@ helper has been audited: the modular surface now owns second-media lanes,
 music-bed lanes, transitions, trim/fade state, visual preview, settings
 import/export, and final export planning, while source-project helpers and
 toolbar summaries have been split into `mixer-video-source-helpers.js` to keep
-the modular Timeline mount maintainable.
+the modular Timeline mount maintainable. Timeline mode now mounts only the
+modular video-source mixer; the old `timeline.js` compatibility DOM helper and
+`.tl-*` stylesheet block have been removed while pure ffmpeg arg-builder
+coverage remains in `video-filters.js`. The next Stage 8 work is retiring the
+remaining legacy Compare disclosure after the modular Compare surface carries
+the needed detailed readouts directly.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

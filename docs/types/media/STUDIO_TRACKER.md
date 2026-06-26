@@ -503,9 +503,14 @@ Stage 7 project settings import/export UI has started:
   lookup, music-bed gain, and edit/transition summaries have been split into
   `mixer-video-source-helpers.js` so the modular Timeline mount can keep
   shrinking toward removal of the compatibility surface.
-- Stage 8 remaining work: map or intentionally retire the remaining one-shot
-  legacy ffmpeg wrappers, then remove compatibility-only legacy surfaces once
-  equivalent workflows are directly covered.
+- Removed the legacy video Timeline compatibility surface. Timeline mode now
+  mounts only the modular video-source mixer; the old `timeline.js` DOM helper,
+  `.tl-*` stylesheet block, and old Timeline viewport helper test have been
+  deleted. Pure one-shot ffmpeg arg-builder coverage remains in
+  `video-filters.js` and the focused media-studio smoke.
+- Stage 8 remaining work: retire the remaining legacy Compare disclosure once
+  equivalent detailed compare readouts are directly represented by the modular
+  Compare surface.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

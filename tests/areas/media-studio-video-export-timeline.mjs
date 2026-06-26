@@ -438,8 +438,7 @@ export async function runVideoExportAndTimelineChecks(ctx) {
       visualX: updated?.visual?.x,
       visualOpacity: updated?.visual?.opacity,
       legacyMounted: !!root.closest('[data-mode="timeline"]')?.querySelector('.tl-wrap'),
-      legacyToggle: [...root.closest('[data-mode="timeline"]')?.querySelectorAll('.media-wv-toggle') || []]
-        .some((button) => /Detailed legacy timeline/.test(button.textContent || '')),
+      legacyToggle: !!root.closest('[data-mode="timeline"]')?.querySelector('.media-legacy-timeline-wrap'),
     };
   });
   if (modularTimelineGrammar.ruler && modularTimelineGrammar.playhead
@@ -460,8 +459,8 @@ export async function runVideoExportAndTimelineChecks(ctx) {
     && modularTimelineGrammar.visualX === 11 && modularTimelineGrammar.visualOpacity === 0.72)
     pass('P6: modular Timeline inspector updates visual transform and incoming transition state');
   else fail('modular Timeline visual state: ' + JSON.stringify(modularTimelineGrammar));
-  if (!modularTimelineGrammar.legacyMounted && modularTimelineGrammar.legacyToggle)
-    pass('P6: legacy video timeline stays lazy behind an explicit detailed legacy disclosure');
+  if (!modularTimelineGrammar.legacyMounted && !modularTimelineGrammar.legacyToggle)
+    pass('P6: legacy video timeline is removed from Timeline mode');
   else fail('legacy timeline default state: ' + JSON.stringify(modularTimelineGrammar));
 
   // PURE arg-builder unit checks (no ffmpeg load): xfade offset math + acrossfade/mux args.
